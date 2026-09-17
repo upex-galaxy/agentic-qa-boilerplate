@@ -61,6 +61,7 @@ The MCP handles both; there is no loss either way.
 bun run api:login                       # active env (TEST_ENV), role=user
 bun run api:login staging               # explicit env
 bun run api:login staging --role admin  # named role
+bun run api:login staging --profile W1  # isolated token set -> .auth/profiles/W1/
 ```
 
 It authenticates the env+role's credentials (from `.env`) and writes:
@@ -69,9 +70,11 @@ It authenticates the env+role's credentials (from `.env`) and writes:
 |---|---|
 | `.auth/tokens.env`  | **Sourceable.** One upserted line per role+env: `export API_TOKEN_<ROLE>_<ENV>='<token>'` (others preserved). |
 | `.auth/tokens.json` | Metadata keyed by `<ROLE>_<ENV>`: `token`, `tokenType`, `expiresIn`, `createdAt` — for freshness checks. |
-| `.auth/api-state.json` | Unchanged — consumed by the Playwright API fixture. |
+| `.auth/api-state.json` | Unchanged — consumed by the Playwright API fixture. Never profiled. |
 
 **Naming:** the token env var is `API_TOKEN_<ROLE>_<ENV>`, uppercase (e.g. `API_TOKEN_ADMIN_STAGING`, `API_TOKEN_USER_LOCAL`). Default role = `user`. Multiple roles/envs coexist in the same files.
+
+**`--profile <name>`:** writes `tokens.env` / `tokens.json` under `.auth/profiles/<name>/` instead of `.auth/` directly — an isolated token set that never overwrites the default one. Used by an orchestration conductor to mint one credential set per worker/session (see `orca-orchestration`); a worker then sources its own `.auth/profiles/<name>/tokens.env` instead of the shared file.
 
 Nothing is written to `.env`, and **no credential enters any MCP** — so there is **no restart** after login.
 
@@ -127,7 +130,7 @@ If `createdAt + expiresIn` is in the past (or a request returns `401`), re-mint 
 
 ```
 Discover : OpenAPI MCP  -> list-api-endpoints / get-api-endpoint-schema   (read only)
-Mint     : bun run api:login <env> [--role <role>]                        (-> .auth/tokens.env)
+Mint     : bun run api:login <env> [--role <role>] [--profile <name>]     (-> .auth/tokens.env)
 Execute  : source .auth/tokens.env && curl -H "Authorization: Bearer $API_TOKEN_<ROLE>_<ENV>" "$API_BASE_URL/<path>"
 Refresh  : 401 or stale createdAt+expiresIn (.auth/tokens.json) -> re-run api:login
 ```

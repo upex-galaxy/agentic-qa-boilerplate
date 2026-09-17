@@ -150,6 +150,19 @@ git_strategy:
     # via git-flow-master Strategy Setup. Nothing was rematerialized — main already exists.
     strategy_source: chosen # inherited | chosen
 
+# Defaults for multi-session orchestration (supervised worker fleets via Orca —
+# see the orca-orchestration skill). Owned by that skill; read directly, NOT
+# {{VAR}} template references in the section-prefixed sense (leaves resolve as
+# flat {{VAR}} names like every other top-level section — see .agents/README.md
+# §"orchestration" for the exact declared names). An explicit user instruction
+# in the conductor session ALWAYS overrides these defaults for that run; they
+# apply only when the user says nothing.
+orchestration:
+  max_workers: 4 # concurrent workers per round
+  default_agent: claude # claude | codex | opencode
+  default_model: '' # full provider model id; empty = the harness default
+  default_effort: high # harness effort level when supported
+
 # Files `bun run up` must keep as THIS project's own. Read by `cli/update-boilerplate.ts`
 # at the start of every run and merged into the protected watchlist (AGENTS.md,
 # .agents/project.yaml, .mcp.json, opencode.jsonc, .codex/config.toml,

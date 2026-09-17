@@ -264,6 +264,16 @@ const EXTERNAL_CLIS: ReadonlyArray<{ name: string, install?: string, docs: strin
     docs: 'https://resend.com/docs/cli',
     purpose: 'email development + transactional sending',
   },
+  {
+    // Desktop app (Orca ADE) that also ships a scriptable `orca` CLI. Fully
+    // optional: enables `/orca-orchestration` multi-session coordination.
+    // The boilerplate works identically without it — one-shot subagents
+    // (AGENTS.md §3) remain the default executor.
+    name: 'orca',
+    install: 'brew install --cask stablyai/orca/orca   # macOS. Windows/Linux: download from https://www.onorca.dev/docs/install',
+    docs: 'https://www.onorca.dev/docs/cli/overview',
+    purpose: 'multi-session agent orchestration (optional) — used by /orca-orchestration',
+  },
 ];
 
 interface CommunitySkill {

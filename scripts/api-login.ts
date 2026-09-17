@@ -19,6 +19,7 @@
  *   bun run api:login local                 # Authenticate against local environment
  *   bun run api:login staging               # Authenticate against staging environment
  *   bun run api:login staging --role admin  # Named role → var API_TOKEN_ADMIN_STAGING
+ *   bun run api:login staging --profile W1  # Isolated token set → .auth/profiles/W1/
  *   bun run api:login --help                # Show help
  *
  * Environment URLs, credentials, and auth endpoints are sourced from
@@ -69,6 +70,27 @@ if (roleIdx !== -1) {
   args.splice(roleIdx, 2);
 }
 
+// Parse the optional --profile flag (default: none = unchanged .auth/ paths).
+// A named profile writes the sourceable token + metadata under an isolated
+// .auth/profiles/<name>/ directory instead of the shared .auth/, so a
+// conductor can mint one token set per worker/session without overwriting
+// the default one. .auth/api-state.json (Playwright) is never profiled.
+let profile: string | null = null;
+const profileIdx = args.findIndex(a => a === '--profile');
+if (profileIdx !== -1) {
+  const profileVal = args[profileIdx + 1];
+  if (!profileVal || profileVal.startsWith('-')) {
+    log('--profile requires a value (e.g. --profile W1)', 'error');
+    process.exit(1);
+  }
+  if (!/^[\w.-]+$/.test(profileVal) || profileVal === '.' || profileVal === '..') {
+    log(`--profile must be a single path segment (letters, digits, . _ -): got "${profileVal}"`, 'error');
+    process.exit(1);
+  }
+  profile = profileVal;
+  args.splice(profileIdx, 2);
+}
+
 // Validate and override TEST_ENV BEFORE importing config,
 // because config/variables.ts reads TEST_ENV at evaluation time.
 const validEnvs = ['local', 'staging']; // Must match Environment type in config/variables.ts
@@ -92,8 +114,11 @@ const { config, env } = await import('@variables');
 
 const PROJECT_ROOT = resolve(import.meta.dir, '..');
 const AUTH_DIR = resolve(PROJECT_ROOT, '.auth');
-const TOKENS_ENV_FILE = resolve(AUTH_DIR, 'tokens.env');
-const TOKENS_JSON_FILE = resolve(AUTH_DIR, 'tokens.json');
+// --profile <name> redirects the sourceable token + metadata into an isolated
+// subdirectory; the default (no --profile) path is unchanged.
+const TOKENS_DIR = profile ? resolve(AUTH_DIR, 'profiles', profile) : AUTH_DIR;
+const TOKENS_ENV_FILE = resolve(TOKENS_DIR, 'tokens.env');
+const TOKENS_JSON_FILE = resolve(TOKENS_DIR, 'tokens.json');
 
 // ╔══════════════════════════════════════════════════════════════════╗
 // ║  PROJECT-SPECIFIC AUTHENTICATION CONFIGURATION                  ║
@@ -215,21 +240,24 @@ function saveApiState(apiState: ApiState): void {
 //
 // Agentic API testing executes authenticated requests with curl, NOT through
 // the OpenAPI MCP (which is schema-read-only). The token is stored two ways,
-// both under .auth/ (gitignored):
-//   - .auth/tokens.env  — a shell-sourceable file. One line per role+env:
+// both under .auth/ (gitignored), or under .auth/profiles/<name>/ when
+// --profile <name> is given (isolated token set — e.g. one per orchestration
+// worker/session/credential, so a conductor can mint several without
+// overwriting the default one):
+//   - tokens.env  — a shell-sourceable file. One line per role+env:
 //     `export API_TOKEN_<ROLE>_<ENV>='<token>'`. The agent runs
 //     `source .auth/tokens.env && curl -H "Authorization: Bearer $API_TOKEN_..."`
 //     in a SINGLE shell call (env vars do NOT persist across the agent's separate
 //     Bash calls — the file on disk is the source of truth, re-sourced per call).
-//   - .auth/tokens.json — structured metadata (token, tokenType, expiresIn,
+//   - tokens.json — structured metadata (token, tokenType, expiresIn,
 //     createdAt) keyed by `<ROLE>_<ENV>`, so the maneuver can check token
 //     freshness before reusing it.
 // Nothing is written to .env and no credential is injected into any MCP — so no
 // agent/terminal restart is needed after login.
 
 function ensureAuthDir(): void {
-  if (!existsSync(AUTH_DIR)) {
-    mkdirSync(AUTH_DIR, { recursive: true });
+  if (!existsSync(TOKENS_DIR)) {
+    mkdirSync(TOKENS_DIR, { recursive: true });
   }
 }
 
@@ -289,7 +317,7 @@ function showHelp(): void {
 \x1B[1mAPI Login\x1B[0m - Authenticate and store a token for tests & agentic API testing
 
 \x1B[1mUSAGE\x1B[0m
-  bun run api:login [environment] [--role <role>]
+  bun run api:login [environment] [--role <role>] [--profile <name>]
 
 \x1B[1mENVIRONMENTS\x1B[0m
   local       Authenticate against local dev server (default)
@@ -300,13 +328,18 @@ function showHelp(): void {
   bun run api:login local                 # Force local environment
   bun run api:login staging               # Force staging environment
   bun run api:login staging --role admin  # Named role -> var API_TOKEN_ADMIN_STAGING
+  bun run api:login staging --profile W1  # Isolated token set -> .auth/profiles/W1/
 
 \x1B[1mTOKEN STORAGE\x1B[0m
-  .auth/api-state.json    Used by Playwright test fixtures (unchanged).
+  .auth/api-state.json    Used by Playwright test fixtures (unchanged; never profiled).
   .auth/tokens.env        Sourceable: export API_TOKEN_<ROLE>_<ENV>='<token>'.
                           One line per role+env (upserted; others preserved).
   .auth/tokens.json       Metadata (expiresIn, createdAt) keyed by <ROLE>_<ENV>
                           for token-freshness checks.
+  --profile <name>        Writes tokens.env / tokens.json under
+                          .auth/profiles/<name>/ instead of .auth/ directly —
+                          an isolated token set (e.g. per orchestration worker)
+                          that never overwrites the default one.
   NOTE: the token is NOT written to .env and NOT injected into any MCP. The
   OpenAPI MCP is schema-read-only; run authenticated requests via curl:
     source .auth/tokens.env && \\
@@ -322,8 +355,9 @@ function showHelp(): void {
   Auth format:        scripts/api-login.ts (PROJECT-SPECIFIC section)
 
 \x1B[1mOPTIONS\x1B[0m
-  -r, --role <role>   Role label for the token var (default: user)
-  -h, --help          Show this help
+  -r, --role <role>     Role label for the token var (default: user)
+  --profile <name>      Isolated token set under .auth/profiles/<name>/ (default: none)
+  -h, --help            Show this help
 `);
 }
 
@@ -336,7 +370,7 @@ const ROLE_UPPER = role.toUpperCase();
 const TOKEN_VAR = `API_TOKEN_${ROLE_UPPER}_${ENV_UPPER}`;
 const TOKEN_KEY = `${ROLE_UPPER}_${ENV_UPPER}`;
 
-console.log(`\n\x1B[1mAPI Login\x1B[0m — ${env.current} — role: ${role}\n`);
+console.log(`\n\x1B[1mAPI Login\x1B[0m — ${env.current} — role: ${role}${profile ? ` — profile: ${profile}` : ''}\n`);
 
 log(`User: ${config.testUser.email}`);
 
@@ -364,9 +398,12 @@ saveTokenMeta(TOKEN_KEY, {
   role,
   env: env.current,
   var: TOKEN_VAR,
+  profile,
 });
+
+const RELATIVE_TOKENS_ENV = `.auth/${profile ? `profiles/${profile}/` : ''}tokens.env`;
 
 console.log('\n\x1B[32m\u2713 Login completed!\x1B[0m');
 console.log('\n\x1B[36mNext\x1B[0m \u2014 execute authenticated requests with curl (no restart needed):');
-console.log('   source .auth/tokens.env && \\');
+console.log(`   source ${RELATIVE_TOKENS_ENV} && \\`);
 console.log(`   curl -s -H "Authorization: Bearer $${TOKEN_VAR}" "$API_BASE_URL/<path>"\n`);
