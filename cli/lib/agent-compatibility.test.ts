@@ -5,7 +5,13 @@ import { dirname, join, resolve } from 'node:path';
 
 import { afterEach, describe, expect, test } from 'bun:test';
 
-import { PERSONALITY_CONTRACT } from '../../.agents/hooks/personality-reinject.mjs';
+import {
+  orcaAvailable,
+  PERSONALITY_CONTRACT,
+  proposeSessionTitle,
+  resolveWorktree,
+  sessionLabel,
+} from '../../.agents/hooks/personality-reinject.mjs';
 import { PersonalityReinject } from '../../.opencode/plugins/personality-reinject.js';
 import {
   CLAUDE_HOOK_COMMAND,
@@ -13,6 +19,8 @@ import {
   CODEX_HOOK_COMMAND_WINDOWS,
   declaredMcpIds,
   EXPECTED_MCP,
+  HOOK_IDENTITY_MARKER,
+  HOOK_ORCA_MARKER,
   KNOWN_MCP_IDS,
   stripJsonComments,
   validateHookCompatibility,
@@ -68,6 +76,110 @@ function copyFromRepo(root: string, relativePath: string): void {
   const destination = join(root, relativePath);
   mkdirSync(dirname(destination), { recursive: true });
   copyFileSync(join(REPO_ROOT, relativePath), destination);
+}
+
+// ---------------------------------------------------------------------------
+// Hook emitter harness. The emitter resolves identity from stdin (the harness
+// payload), from the environment and from the home directory, so every run
+// gets a sandboxed HOME and a PATH pointing at `<sandbox>/bin` — an `orca`
+// file there is what makes the conditional Orca line appear. The environment
+// is REPLACED, never inherited: the suite itself runs inside a harness whose
+// CLAUDE_* variables would otherwise decide the outcome.
+// ---------------------------------------------------------------------------
+
+const NODE_BINARY = Bun.which('node') ?? 'node';
+const HOOK_EMITTER = join(REPO_ROOT, '.agents/hooks/personality-reinject.mjs');
+
+interface EmitterRun {
+  exitCode: number
+  stdout: string
+  stderr: string
+}
+
+interface EmitterOptions {
+  input?: string
+  env?: Record<string, string>
+  home?: string
+}
+
+function runEmitter(options: EmitterOptions = {}): EmitterRun {
+  const home = options.home ?? temporaryRoot('agent identity home ');
+  const result = Bun.spawnSync({
+    cmd: [NODE_BINARY, HOOK_EMITTER],
+    cwd: REPO_ROOT,
+    stdin: new TextEncoder().encode(options.input ?? ''),
+    stdout: 'pipe',
+    stderr: 'pipe',
+    env: { PATH: join(home, 'bin'), HOME: home, USERPROFILE: home, ...options.env },
+  });
+  return {
+    exitCode: result.exitCode,
+    stdout: result.stdout.toString(),
+    stderr: result.stderr.toString(),
+  };
+}
+
+interface HookSpecificOutput {
+  hookEventName: string
+  additionalContext: string
+  sessionTitle?: string
+}
+
+function hookSpecificOutput(stdout: string): HookSpecificOutput {
+  const parsed = JSON.parse(stdout) as { hookSpecificOutput: HookSpecificOutput };
+  return parsed.hookSpecificOutput;
+}
+
+const CLAUDE_SESSION_PID = '4242';
+const CLAUDE_SESSION_ID = 'c0ffee12-3456-7890-abcd-ef0123456789';
+
+/** `~/.claude/sessions/<CLAUDE_PID>.json` as Claude Code writes it. */
+function claudeHome(name: string, nameSource: string): string {
+  const home = temporaryRoot('agent identity claude home ');
+  write(home, `.claude/sessions/${CLAUDE_SESSION_PID}.json`, `${JSON.stringify({
+    pid: Number(CLAUDE_SESSION_PID),
+    sessionId: CLAUDE_SESSION_ID,
+    name,
+    nameSource,
+  })}\n`);
+  return home;
+}
+
+const CLAUDE_ENV = { CLAUDE_PROJECT_DIR: REPO_ROOT, CLAUDE_PID: CLAUDE_SESSION_PID };
+
+function claudePayload(prompt: string): string {
+  return JSON.stringify({
+    session_id: CLAUDE_SESSION_ID,
+    transcript_path: join(REPO_ROOT, 'transcript.jsonl'),
+    cwd: REPO_ROOT,
+    permission_mode: 'default',
+    hook_event_name: 'UserPromptSubmit',
+    prompt,
+  });
+}
+
+/** Codex pipes `turn_id` too, and keeps its thread names in a JSONL index. */
+function codexHome(threadName: string, sessionId: string): string {
+  const home = temporaryRoot('agent identity codex home ');
+  write(home, '.codex/session_index.jsonl', [
+    JSON.stringify({ id: 'older-session', thread_name: 'something else', updated_at: 1 }),
+    JSON.stringify({ id: sessionId, thread_name: threadName, updated_at: 2 }),
+    '',
+  ].join('\n'));
+  return home;
+}
+
+function codexPayload(sessionId: string, prompt: string): string {
+  return JSON.stringify({
+    session_id: sessionId,
+    turn_id: 'turn-1',
+    transcript_path: null,
+    cwd: REPO_ROOT,
+    hook_event_name: 'UserPromptSubmit',
+    model: 'gpt-5.1-codex',
+    permission_mode: 'default',
+    prompt,
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -322,16 +434,15 @@ function repositoryFixture(): string {
 }
 
 describe('shared personality hook', () => {
-  test('emits the canonical payload and exits successfully', () => {
-    const result = Bun.spawnSync({
-      cmd: ['node', join(REPO_ROOT, '.agents/hooks/personality-reinject.mjs')],
-      stdout: 'pipe',
-      stderr: 'pipe',
-    });
+  test('emits the contract plus the identity line and exits successfully', () => {
+    const result = runEmitter();
 
     expect(result.exitCode).toBe(0);
-    expect(result.stdout.toString()).toBe(PERSONALITY_CONTRACT);
-    expect(result.stderr.toString()).toBe('');
+    expect(result.stderr).toBe('');
+    // No harness payload, no CLAUDE_*/CODEX_* variables: plain text, no JSON.
+    expect(result.stdout).toContain(PERSONALITY_CONTRACT);
+    expect(result.stdout).toContain(`${HOOK_IDENTITY_MARKER} worktree=primary session=unknown harness=unknown`);
+    expect(result.stdout).not.toContain(HOOK_ORCA_MARKER);
   });
 
   test('names AGENTS.md as canonical, never CLAUDE.md', () => {
@@ -346,10 +457,129 @@ describe('shared personality hook', () => {
     const originalArray = output.system;
 
     await transform({ sessionID: 'test', model: {} }, output);
+    const afterFirst = output.system.length;
     await transform({ sessionID: 'test', model: {} }, output);
 
     expect(output.system).toBe(originalArray);
-    expect(output.system).toEqual(['base system', PERSONALITY_CONTRACT]);
+    expect(output.system.length).toBe(afterFirst);
+    expect(output.system[0]).toBe('base system');
+    expect(output.system[1]).toBe(PERSONALITY_CONTRACT);
+    // The label degrades to the raw id: OpenCode exposes no session name.
+    expect(output.system[2]).toContain('session=test harness=opencode');
+  });
+});
+
+describe('agent identity', () => {
+  test('Claude Code receives additionalContext and a title derived from the prompt', () => {
+    const run = runEmitter({
+      home: claudeHome('agentic-qa-boilerplate-7', 'derived'),
+      env: CLAUDE_ENV,
+      input: claudePayload('sprint-testing UPEX-123 please plan the QA'),
+    });
+
+    expect(run.exitCode).toBe(0);
+    const output = hookSpecificOutput(run.stdout);
+    expect(output.hookEventName).toBe('UserPromptSubmit');
+    expect(output.additionalContext).toContain(PERSONALITY_CONTRACT);
+    expect(output.additionalContext).toContain(
+      `${HOOK_IDENTITY_MARKER} worktree=primary session=agentic-qa-boilerplate-7 (${CLAUDE_SESSION_ID.slice(0, 8)}) harness=claude-code`,
+    );
+    expect(output.sessionTitle).toBe('UPEX-123-sprint-testing');
+  });
+
+  test('a user-set session name is never renamed and is used verbatim', () => {
+    const run = runEmitter({
+      home: claudeHome('release-audit', 'user'),
+      env: CLAUDE_ENV,
+      input: claudePayload('sprint-testing UPEX-123 please plan the QA'),
+    });
+
+    const output = hookSpecificOutput(run.stdout);
+    expect(output.sessionTitle).toBeUndefined();
+    expect(output.additionalContext).toContain('session=release-audit harness=claude-code');
+  });
+
+  test('a prompt with no workflow and issue key leaves the title alone', () => {
+    const run = runEmitter({
+      home: claudeHome('agentic-qa-boilerplate-7', 'derived'),
+      env: CLAUDE_ENV,
+      input: claudePayload('what does this repo do?'),
+    });
+
+    expect(hookSpecificOutput(run.stdout).sessionTitle).toBeUndefined();
+  });
+
+  test('Codex gets the same JSON shape without a session title', () => {
+    const sessionId = '019abcde-1111-2222-3333-444455556666';
+    const run = runEmitter({
+      home: codexHome('BK-77 retest', sessionId),
+      input: codexPayload(sessionId, 'sprint-testing BK-77 retest the fix'),
+    });
+
+    expect(run.exitCode).toBe(0);
+    const output = hookSpecificOutput(run.stdout);
+    expect(output.hookEventName).toBe('UserPromptSubmit');
+    expect(output.additionalContext).toContain(
+      `session=BK-77 retest (${sessionId.slice(0, 8)}) harness=codex`,
+    );
+    // `sessionTitle` is a Claude Code field; the Codex output wire has no such
+    // key, so emitting it there would risk the whole payload being rejected.
+    expect(output.sessionTitle).toBeUndefined();
+  });
+
+  test('the Orca line appears only when an orca binary sits on PATH', () => {
+    const home = temporaryRoot('agent identity orca ');
+    write(home, 'bin/orca', '#!/bin/sh\nexit 0\n');
+    write(home, 'bin/orca-ide', '#!/bin/sh\nexit 0\n'); // the Linux CLI name
+
+    expect(runEmitter({ home }).stdout).toContain(HOOK_ORCA_MARKER);
+    expect(runEmitter().stdout).not.toContain(HOOK_ORCA_MARKER);
+  });
+
+  test('ORCA_WORKTREE_ID names the worktree, its absence means primary', () => {
+    // A linked worktree's `.git` is a FILE; the primary checkout's is a directory.
+    const linked = temporaryRoot('agent identity linked worktree ');
+    write(linked, '.git', 'gitdir: /elsewhere/.git/worktrees/BK-123-login\n');
+    expect(resolveWorktree({ ORCA_WORKTREE_ID: 'repo-id::/work/orca/BK-123-login' }, linked)).toBe('BK-123-login');
+    expect(resolveWorktree({ ORCA_WORKTREE_ID: 'repo-id::C:\\work\\orca\\BK-9' }, linked)).toBe('BK-9');
+    expect(resolveWorktree({}, linked)).toBe('primary');
+    // Orca sets the variable for the primary checkout too: a `.git` directory wins.
+    const primary = temporaryRoot('agent identity primary ');
+    mkdirSync(join(primary, '.git'));
+    expect(resolveWorktree({ ORCA_WORKTREE_ID: 'repo-id::/work/orca/BK-123-login' }, primary)).toBe('primary');
+  });
+
+  test('the session label follows the name-source ladder', () => {
+    const sessionId = 'abcdef12-3456';
+    expect(sessionLabel({ sessionName: 'nightly', nameSource: 'user', sessionId })).toBe('nightly');
+    expect(sessionLabel({ sessionName: 'nightly', nameSource: 'derived', sessionId })).toBe('nightly (abcdef12)');
+    expect(sessionLabel({ sessionName: 'nightly', nameSource: 'unknown', sessionId })).toBe('nightly (abcdef12)');
+    expect(sessionLabel({ sessionId })).toBe(sessionId);
+    expect(sessionLabel({})).toBe('unknown');
+  });
+
+  test('an explicit --name hint in the prompt wins over the workflow shape', () => {
+    expect(proposeSessionTitle({
+      prompt: 'test-automation UPEX-9 --name "fleet worker 2"',
+      identity: { nameSource: 'derived' },
+    })).toBe('fleet worker 2');
+    expect(proposeSessionTitle({
+      prompt: 'test-automation UPEX-9',
+      identity: { nameSource: 'none' },
+    })).toBe('UPEX-9-test-automation');
+    expect(proposeSessionTitle({
+      prompt: 'test-automation UPEX-9',
+      identity: { nameSource: 'unknown' },
+    })).toBe('');
+  });
+
+  test('orcaAvailable never spawns a process and tolerates an empty PATH', () => {
+    const home = temporaryRoot('agent identity path ');
+    write(home, 'bin/orca', '');
+
+    expect(orcaAvailable({ PATH: join(home, 'bin') })).toBe(true);
+    expect(orcaAvailable({ PATH: join(home, 'missing') })).toBe(false);
+    expect(orcaAvailable({})).toBe(false);
   });
 });
 
@@ -376,12 +606,13 @@ describe('Codex hook portability', () => {
     const result = Bun.spawnSync({
       cmd: ['sh', '-c', CODEX_HOOK_COMMAND],
       cwd: nested,
+      stdin: new TextEncoder().encode(''),
       stdout: 'pipe',
       stderr: 'pipe',
     });
 
     expect(result.exitCode).toBe(0);
-    expect(result.stdout.toString()).toBe(PERSONALITY_CONTRACT);
+    expect(result.stdout.toString()).toContain(PERSONALITY_CONTRACT);
   });
 
   test('renders a Windows command with Git-root and Join-Path resolution', () => {

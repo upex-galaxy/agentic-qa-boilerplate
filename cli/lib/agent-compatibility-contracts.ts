@@ -37,6 +37,22 @@ export const KNOWN_MCP_IDS = [
   'postman',
 ] as const;
 
+/**
+ * The emitter carries three payloads per prompt (output contract, forensic
+ * identity line, conditional Orca line), so the contract pins the exports the
+ * three adapters rely on plus the markers a consumer greps for. A drift here
+ * is a harness that silently lost its identity line: `git-flow-master` would
+ * then write `Session: unknown` into every commit trailer instead of failing.
+ */
+export const HOOK_IDENTITY_EXPORTS = [
+  'resolveAgentIdentity',
+  'agentContextLines',
+  'orcaAvailable',
+] as const;
+
+export const HOOK_IDENTITY_MARKER = 'AGENT IDENTITY:';
+export const HOOK_ORCA_MARKER = 'ORCA: available.';
+
 export const CLAUDE_HOOK_COMMAND = 'node "$CLAUDE_PROJECT_DIR/.agents/hooks/personality-reinject.mjs"';
 export const CODEX_HOOK_COMMAND = 'root="$(git rev-parse --show-toplevel)" && node "$root/.agents/hooks/personality-reinject.mjs"';
 export const CODEX_HOOK_COMMAND_WINDOWS = 'powershell.exe -NoProfile -Command "$root = git rev-parse --show-toplevel; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; node (Join-Path $root \'.agents/hooks/personality-reinject.mjs\')"';
@@ -592,11 +608,29 @@ export function validateHookCompatibility(root = process.cwd()): string[] {
     if (!shared.includes('AGENTS.md') || shared.includes('CLAUDE.md')) {
       errors.push('Shared personality hook must reference AGENTS.md and must not treat CLAUDE.md as canonical.');
     }
+    for (const name of HOOK_IDENTITY_EXPORTS) {
+      if (!shared.includes(`export function ${name}`)) {
+        errors.push(`Shared hook emitter must export ${name}(): the identity line has one source.`);
+      }
+    }
+    for (const marker of [HOOK_IDENTITY_MARKER, HOOK_ORCA_MARKER]) {
+      if (!shared.includes(marker)) {
+        errors.push(`Shared hook emitter must emit the "${marker}" line.`);
+      }
+    }
     if (!plugin.includes('../../.agents/hooks/personality-reinject.mjs')) {
       errors.push('OpenCode personality adapter must import the shared hook contract.');
     }
+    if (!plugin.includes('agentContextLines')) {
+      errors.push('OpenCode personality adapter must push the shared context lines (agentContextLines), identity line included.');
+    }
     if (plugin.includes('output.system =')) {
       errors.push('OpenCode personality adapter must mutate output.system in place.');
+    }
+    for (const [label, source] of [['emitter', shared], ['OpenCode adapter', plugin]] as const) {
+      if (personalAbsolutePath(source)) {
+        errors.push(`Shared hook ${label} contains an absolute personal path.`);
+      }
     }
     for (const duplicate of ['.claude/hooks/personality-reinject.js', '.codex/hooks/personality-reinject.js']) {
       if (existsSync(join(resolvedRoot, duplicate))) {
