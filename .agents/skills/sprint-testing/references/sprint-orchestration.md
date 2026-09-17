@@ -4,6 +4,8 @@ Use this reference when iterating multiple issues in a sprint. Covers: building 
 
 > "Issue", not "story": Story, Bug, Defect, Improvement, Tech Story and Tech Debt are all coverable, and the sprint queue holds whichever of them the project declares (see §Part 1 Step 1).
 
+> Everything here describes the default of **one executor**. When the run has more than one (fleet mode — `SKILL.md` §"Executors — the second axis"), read `fleet-conductor.md` alongside this file: it owns exactly what the fan-out adds and repeats nothing this file already says.
+
 ---
 
 ## Parameters
@@ -26,7 +28,7 @@ If a parameter is missing, ASK the user before proceeding. Before starting, veri
 You are the ORCHESTRATOR for in-sprint QA on `{{PROJECT_NAME}}`. Manage the workflow by dispatching sub-agents per stage, maintaining shared memory, and interacting with the user at defined checkpoints.
 
 1. NEVER execute testing stages yourself. ALWAYS delegate to a sub-agent via the Agent tool (sequential fallback when sub-agents are unavailable).
-2. Sub-agents run SEQUENTIALLY — one stage at a time. Wait for completion before dispatching the next.
+2. Sub-agents run SEQUENTIALLY — one stage at a time. Wait for completion before dispatching the next. This is a rule about the stages of ONE issue and it holds unconditionally; fleet mode (N>1 executors) runs issues concurrently and each worker still runs its own four stages sequentially.
 3. After every sub-agent finishes, re-read `test-session-memory.md` and present a brief summary to the user.
 4. TOOL FAILURE -> STOP, surface error, do NOT dispatch next sub-agent, wait for user instructions.
 5. **Blocking** BUG_FOUND (smoke/env down, data integrity, security-exploitable) -> PAUSE, present bug to user, wait for decision. A **non-blocking** finding does NOT pause: the Execution subagent logs it and finishes the pass, and you surface it at Stage 2 close. Classify by the "Finding triage" table in `exploration-patterns.md`; a FAIL is not auto-Critical.
@@ -95,6 +97,16 @@ and mirrors them onto the **STP** issue (`STP: Sprint#{N}: {objective}`, a Test 
    - Done = `{{jira.status.story.qa_approved}}` (with artifacts) / `ready_for_release` / `deployed_to_production`.
    - Cancelled = `{{jira.status.story.aborted}}`.
 6. **Detect QA automation tasks**: `Type = QA Task` OR title contains "E2E Tests" / "Integration Tests", assigned to `qa_lead`. Collect them as their own wave in the queue.
+6b. **Assign the executors — and, at N>1, the rounds.** The executors answer comes from the second scope question (`SKILL.md` §"Executors — the second axis"), never from guessing.
+
+   | Executors | `Owner` cell | `Pattern` cell | Rounds |
+   |---|---|---|---|
+   | 1 (default) | `{qa_lead or unassigned}` — exactly as before | `Sequential` | none; the queue is walked in order |
+   | N (fleet mode) | the **worker label** that owns the issue (`W1`, `W2`, …) | `Fleet` | inside the current wave, group the `PENDING` rows into rounds of at most `orchestration.max_workers` (`.agents/project.yaml`); record the round number next to the label |
+
+   **Rounds are not waves — do not conflate them.** A **wave** is a Jira-**status** bucket (Step 3 / Step 5 above): it decides *which* issues are eligible and in what order. A **round** is a concurrency group: it decides *how many* run at the same time. Rounds are numbered INSIDE a wave ("Wave 1, round 2") and restart at 1 when a new wave opens. Wave ordering, wave membership and the Step 3 classification table are identical at N=1 and N>1.
+
+   Two issues whose fixture/data intent would WRITE the same entity never share a round — split them across rounds (`fleet-conductor.md` §Claims).
 7. **Write the sprint session pair** using the two schemas below.
 8. **Find-or-create the STP** (`SKILL.md` §Session Start 0.7) and seed its **description** from `plan.md`. Present → read-first, then update the description in place; never blind-overwrite another planner's edit.
 9. **Report** a short board summary: totals, wave counts, carryovers, and every work type skipped in Step 1d.
@@ -139,6 +151,10 @@ Sprint-wide mode. One nested sub-scope per issue at `.session/sprint-testing/spr
 {Status lives in "Exit condition": PENDING while queued, then PASSED / FAILED / BLOCKED /
  DEFERRED / SKIPPED once Stage 3 closed the issue. The orchestrator scans for the
  lowest-numbered PENDING to pick the next issue.}
+
+{`Pattern` = `Sequential` at one executor (the default). In fleet mode (N>1 executors) it
+ reads `Fleet` and `Owner` carries the worker label plus its round — `W2 (r1)` — per Step 6b.
+ Both columns already existed; fleet mode only gives them a second legal value.}
 
 ## Risks & open questions
 - {risk} — mitigation: {…}
@@ -227,6 +243,41 @@ ORCHESTRATOR                           SUB-AGENTS
     |-> Present per-issue summary, WAIT for user OK
     |-> Loop to next issue
 ```
+
+This is the loop at **one executor**, and it is the default. It is unchanged.
+
+### The fleet loop (N>1 executors only)
+
+At more than one executor the loop iterates over **rounds** instead of over single issues. Everything inside an issue is identical — the same four dispatches, the same artifacts, the same gates — it simply happens inside a launched worker session rather than here.
+
+```
+CONDUCTOR                                   WORKERS (one per issue of the round)
+    |
+    |-> Read plan.md queue + tail of sprint progress.md
+    |-> Form the round: current wave, <= max_workers PENDING rows,
+    |   no two write-claims on the same entity           (Part 1 Step 6b)
+    |-> Conductor-only prep: mint tokens, bulk tracker pull      (fleet-conductor.md §2/§7)
+    |-> Seed one brief.md per issue + regenerate launch.txt WHOLE (fleet-conductor.md §4/§5)
+    |-> Syntax-check every launch line, then launch the round
+    |                                       --> each worker: Session Start -> Stage 1
+    |                                           -> Stage 2 -> Stage 3, no checkpoints
+    |-> WAIT on the mailbox (one waiter, no polling, no monitor)
+    |   `ask` -> answer it · `escalation` -> decide · `claim` -> arbitrate + broadcast
+    |-> A worker reports done:
+    |     verify its checklist (STEP 5)
+    |     append ONE sprint progress.md entry + ONE STP comment   (STEP 4 — unchanged)
+    |     move the queue row off PENDING · archive the sub-scope
+    |     release/close that worker IN THE ACT
+    |-> Round drained -> present the round summary + dashboard, WAIT for user OK
+    |-> Next round; wave advances only when its rounds are exhausted
+```
+
+Invariants this loop must not break:
+
+- **STP parity is untouched.** `plan.md` ↔ description (one writer: the conductor), `progress.md` ↔ comments (append-only). The conductor makes both sprint-altitude writes even in fleet mode — see `fleet-conductor.md` §10 for why one writer is kept although appends cannot collide.
+- **STEP 4, STEP 5, STEP 6 and STEP 7 below are unchanged.** They run per closed issue and at sprint close exactly as written, whoever executed the issue.
+- **A worker never talks to the user**, and the user's checkpoint is the round, not each issue. Per-issue detail goes into the round summary.
+- **A finished worker is closed immediately**, not at the end of the round.
 
 ### STEP 1 — Auto-detect the next issue
 

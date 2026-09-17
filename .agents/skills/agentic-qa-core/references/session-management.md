@@ -49,7 +49,49 @@ Rules:
 - `<scope>` is invocation-specific (see §9 for the naming convention per skill). Project-scope skills omit it entirely — files live directly at `.session/<skill-slug>/{plan.md, progress.md}`.
 - `.session/` is **gitignored** in both repos. The contents are work-in-progress orchestration scaffolding, not committed deliverables. Audit history lives in (a) Engram observations under the `session/...` topic prefix, (b) the canonical domain artifacts each skill already commits to `.context/...`.
 - `.session/.archive/` is also gitignored. The archive exists for local resume-replay and human inspection during the same session; long-term audit is delegated to Engram.
-- A skill MUST NOT write anywhere else under `.session/`. Sibling directories under `.session/` are reserved for future use.
+- A skill MUST NOT write anywhere else under `.session/`. Sibling directories under `.session/` are reserved for future use, with one registered exception: `.session/orchestration/<slug>/` (see below).
+
+### Registered sibling: `.session/orchestration/<slug>/`
+
+Fleet coordination (one conductor, several launched workers) is shared vocabulary across every workflow skill's dispatch, not a single skill's own scope — so it does not fit the `.session/<skill-slug>/<scope>/` shape above. It lives at the top-level sibling `.session/orchestration/<slug>/` instead, gitignored and LOCAL like every other `.session/` path, owned and documented by `.agents/skills/orca-orchestration/SKILL.md`. It holds `run.md`, `roster.md`, `COMMON.md`, `W-<label>.md`, `launch.txt`, `claims.md`, `learnings.md`, `skill-improvements.md`, `kickoff.md` and `reports/<label>.md`; schemas and companion-file rules for that scope are owned by `orca-orchestration`, not by this document. `<slug>` is the run identifier a conductor picks at session start (kebab-case). This sibling is exempt from the `SESSION_RETROFITTED_SKILLS` lint (`scripts/lint-skills.ts`), which validates only the `<skill-slug>` shape: `orca-orchestration` does not write `.session/orca-orchestration/`, so its scope is not a candidate for that check.
+
+### Companion files inside a scope
+
+`plan.md` and `progress.md` are the contract and the only two files this doctrine governs. A scope MAY hold additional **companion files** when the skill genuinely needs state that is neither the plan nor the append-only log — as long as they sit INSIDE that scope directory (the rule above still binds: nothing is written elsewhere under `.session/`) and nothing outside the machine depends on one existing. They are disposable by construction: `.session/` is gitignored and local.
+
+Registered companions today, all owned by `sprint-testing`:
+
+| File | Altitude | What it is |
+|---|---|---|
+| `test-session-memory.md` | issue (`<KEY>/` or `sprint-<N>/<KEY>/`) | the domain payload shared across that issue's four stage dispatches: TMS modality, issue context, stage results, checklist |
+| `<KEY>/brief.md` | issue, inside a sprint scope | the payload a conductor seeds for a launched worker before it exists |
+| `roster.md` | sprint (`sprint-<N>/`) | one row per worker: label · issue · session label · handles · state |
+| `launch.txt` | sprint | one self-contained launch line per issue; regenerated whole, never patched |
+| `claims.md` | sprint | append-only ledger of declared read/write intents on shared fixture data |
+| `reports/<label>.md` | sprint | a worker's long report, referenced from its done-message |
+
+The four sprint-altitude ones exist only when the run has more than one executor (`sprint-testing/references/fleet-conductor.md`). A single-executor run has none of them, and a resume must treat every one of them as optional.
+
+### `## Live Progress` — the heartbeat contract
+
+A long-running session cannot be observed through `progress.md`: that file is written by the **orchestrator** at phase boundaries, so while a phase is in flight it says nothing, and a session running unattended (a launched worker, an unattended routine) has no orchestrator standing by to write it.
+
+So a session that must be observable while it works appends **one line per stage boundary** to a `## Live Progress` section of its own `test-session-memory.md` (or, for a skill without that companion, of the scope's plan-adjacent companion it already owns):
+
+```
+## Live Progress
+- 14:02 Session Start done · preflight GREEN (ui, api, db)
+- 14:31 Stage 1 done · ATP <KEY> · ATS <KEY> · 7 TCs
+- 15:10 Stage 2 running · smoke GO · 4/7 PASSED
+```
+
+Rules:
+
+- **One line per stage boundary**, prefixed `HH:MM`, append-only, shortest useful form. It is a liveness signal, not a report.
+- **A blocker goes in the line**, as a `BLOCKED_<REASON>` token (the observer greps for `BLOCKED_`), in addition to whatever channel the session uses to escalate. The token survives a dead channel; the channel is the reinforcement.
+- **It is a file, not a message.** Nothing pushes it anywhere: an observer reads it when it wants to. Periodic "still alive" messages to a coordinator are a separate thing and are prohibited by the worker contract.
+- **It does not replace `progress.md`** and never carries a phase entry's fields. `progress.md` stays the resume signal (§7); `## Live Progress` answers only "is this session moving, and when did it last move?". Staleness is judged from the last line's timestamp.
+- **Optional by default.** A skill that runs attended in the foreground has no reason to write it, and a resume never requires it.
 
 ## 4. Phase 0 — Resume contract (MANDATORY)
 
@@ -255,6 +297,8 @@ The shape of `<scope>` is decided per skill, not per invocation. Each retrofitte
 | `regression-testing` | `<env>-<YYYY-MM-DD>` (e.g. `staging-2026-05-20`) | Invocation env + date |
 | `shift-left-testing` | `<YYYY-MM-DD>-<descriptor>` | Session init |
 | `project-discovery` | (none — project scope) | — |
+
+`orca-orchestration` is not in this table: it does not write `.session/<skill-slug>/<scope>/` at all. Its scope lives under the registered sibling `.session/orchestration/<slug>/` (§3), so it is exempt from the shape check below.
 
 A skill MUST validate its `<scope>` matches its declared shape before writing the directory. Mismatch is a lint failure.
 

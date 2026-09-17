@@ -31,6 +31,8 @@ compact_rules: |
   - Bug retest (Modality jira-xray): ONE repro `Test` by default, created at fix-verification time (Stage 2), linked Bug↔Test via the `test` slug and executed in the retest Execution (`ReTest: {BUG_KEY}: {summary}`); 1:N only with a written test-design justification. Modality jira-native: no in-sprint TCs (the bug is the immediate retest case) — persistent-Test decisions defer to Stage 4.
   - STP find-or-create fires on the sprint's FIRST ticket: `STP: Sprint#{N}: {objective}` (Test Plan item, parent: QA Master Test Plan; a LIVING planner — append each tested ticket, keep progress current). The sprint recap Execution `STR: Sprint#{N}: Regression Testing` (parent: QA Test Artifacts) is created at sprint close.
   - Two modes, ASKED at Session Start, never inferred: **sprint-wide** (the whole sprint's QA backlog) or **single-issue** (one issue from it). Only `sprint-wide` creates/updates the STP and the sprint session pair; `single-issue` creates neither.
+  - Mode is a SCOPE, and scope is only one axis: **scope** (single-issue | sprint-wide) × **executors** (1 | N). One executor is the default and is unchanged in every detail. N>1 ("fleet mode") is sprint-wide ONLY, fires when the user answers the executors question with N (`orchestration.max_workers` in `.agents/project.yaml` is a round cap, never a switch); the orchestration gate then decides only who opens the sessions (pass → Orca launches/supervises; fail → the human pastes the same launch lines), and never changes what an issue's pipeline does — only who runs it. Canon: `sprint-testing/references/fleet-conductor.md`.
+  - Fleet mode invariants: the launch file is written ALWAYS (gate or no gate — without the gate the human pastes its N lines) and when the gate fails the orchestration tool is NEVER named to the user; a worker = single-issue mode + `PARALLEL_TESTING` / `PARALLEL_TICKET`, no checkpoints, preflight MCP probes NOT skippable, zero sprint-altitude writes; **rounds** (concurrency groups) are NOT **waves** (Jira-status buckets).
   - `sprint-wide` is a REAL session scope, not a folder: `.session/sprint-testing/sprint-<N>/{plan.md, progress.md}` per `agentic-qa-core/references/session-management.md` §6/§7, holding one nested `<JIRA-KEY>/` sub-scope per issue. `plan.md` is the local STP (queue + waves + assignment); `progress.md` is the append-only sprint log, one entry per issue close. There is NO local sprint tracker file — anything the team needs lives in the STP in Jira.
   - Sprint scope is a JQL QUERY, never a hardcoded issue-type list: take the work types declared `coverable: true` in `.agents/jira-required.yaml`, resolve each one's `jira_issue_type` (`A | B | C` = ordered alternatives, first the instance has wins), intersect with `.agents/jira-workflows.json`. A declared type the instance lacks is SKIPPED WITH A NOTE, never a blocker.
   - STP maintenance parity (concurrent testers): `plan.md` ↔ the STP issue DESCRIPTION — rewritten wholesale, so ONE writer (whoever plans the sprint), read-first before writing. `progress.md` ↔ the STP issue COMMENTS — append-only on both sides, one comment per issue close, so two testers never clobber each other. Where the comment log and a Story's ATR disagree, the **ATR wins** — it is the artifact of record.
@@ -151,10 +153,11 @@ This skill is compliant with the doctrine in `AGENTS.md` §"Orchestration Mode (
 | Stage 1 — Planning (ATP + draft TCs + risk triage) | Sequential | dispatch a Planning subagent: produce the ATP artifact + risk score + draft TC outlines; bug tickets get the veto + triage decision tree applied                                |
 | Stage 2 — Execution (smoke + UI/API/DB exploration)| Sequential | dispatch an Execution subagent: smoke pass first, then triforce (UI/API/DB) exploration; capture evidence under the PBI folder; surface BUG_FOUND if applicable                  |
 | Stage 3 — Reporting (ATR + QA comment + transition)| Sequential | dispatch a Reporting subagent: fill the ATR, post the QA comment, transition the issue, file bug reports if any                                                                 |
+| Fleet fan-out (sprint-wide, N>1 executors ONLY)    | Parallel   | fan out N **worker briefs** — one per issue of the round — as launchable sessions, not as subagents of this turn: seed `<KEY>/brief.md`, write `launch.txt`, launch, wait, process reports. Absent in every N=1 run. Canon: `references/fleet-conductor.md` |
 
 > **Modes are equivalent in dispatch shape**. Single-issue mode runs ONE pass through these four dispatches. Sprint-wide loops them per issue. There is no longer a "single-issue inline" path — both modes pay the same 4-dispatch cost so behavior is uniform and reviews are consistent.
 
-> **Sequential, not Parallel**: each stage feeds the next (Session Start's PBI folder is read by Stage 1; Stage 1's ATP is read by Stage 2; Stage 2's evidences are read by Stage 3). Parallelism inside a single issue would race on shared PBI state.
+> **Sequential, not Parallel**: each stage feeds the next (Session Start's PBI folder is read by Stage 1; Stage 1's ATP is read by Stage 2; Stage 2's evidences are read by Stage 3). Parallelism inside a single issue would race on shared PBI state. The Fleet row above does not weaken this: it parallelizes ACROSS issues (each worker owns one issue end to end and runs these four dispatches Sequentially inside it), never the stages of one issue.
 
 > **On any subagent failure**: STOP, report the partial state (which stages completed, what artifacts landed), present retry / skip-stage / abort options. Do NOT auto-fix nor auto-rollback. See `.agents/skills/agentic-qa-core/references/orchestration-doctrine.md`.
 
@@ -180,6 +183,32 @@ A sprint number in the invocation is a strong hint, not an answer — "QA sprint
 |---|---|---|---|
 | `sprint-wide` | created at `.session/sprint-testing/sprint-<N>/` | found-or-created and kept current | `sprint-<N>/<JIRA-KEY>/`, one per issue |
 | `single-issue` | **not created** | **not created** (exactly as today) | `<JIRA-KEY>/` at the top level |
+
+**Then, and ONLY for `sprint-wide`, ask the second question** (skip it entirely for `single-issue` — one issue has one executor by definition):
+
+> Run the queue **in this session** (one executor), or **fan it out to one session per issue** (a fleet)?
+
+### Executors — the second axis (1 or N)
+
+Mode is a **scope**, and scope is only half of the picture. What this skill runs is `scope × executors`:
+
+| | **1 executor** (default) | **N executors** (fleet mode) |
+|---|---|---|
+| **single-issue** | today's behaviour | does not exist — one issue, one executor |
+| **sprint-wide** | today's behaviour: this session walks the queue, issue by issue | this session becomes the **conductor**; one launched session per issue of the round runs the same 4 dispatches on its own issue |
+
+**N=1 is unchanged, byte for byte.** Same queue, same waves, same dispatches, same STP writes, same checkpoints. Nothing in fleet mode alters what happens to an issue — only *who* runs it.
+
+Fleet mode is ON when BOTH hold:
+
+1. scope = `sprint-wide`;
+2. the user answered the second question above with N executors. `.agents/project.yaml` → `orchestration.max_workers` is never itself a switch — it only caps how many of those N executors run per round once fleet mode is already on.
+
+**How the sessions get launched is then decided by the orchestration gate, and only that.** Gate passes (binary present + runtime reachable) → the orchestration layer launches and supervises them. Gate fails → the same fan-out happens by hand: the conductor writes `.session/sprint-testing/sprint-<N>/launch.txt` (it writes it either way — one self-contained line per issue) and tells the user to open N terminals and paste one line each. The three-state gate itself lives in `orca-orchestration/SKILL.md`; this skill never reimplements it.
+
+**Silence rule.** When the gate does not pass, the orchestration tool is **never named, never recommended and never reported** — not in the plan, not in the preflight gate, not in the ATR, not in the dashboard. A gap in tooling the user does not have is not a QA finding.
+
+Everything fleet mode adds — the conductor's duties, worker identity (`PARALLEL_TESTING` / `PARALLEL_TICKET`), brief seeding, `launch.txt` rules, rounds, the auth one-writer rule, browser isolation, claims, the liveness dashboard — is in `references/fleet-conductor.md`. The transport (sessions, terminals, mailbox, cleanup) is in `orca-orchestration`, cited from there as `[ORCHESTRATION_TOOL]` pseudocode.
 
 ### Sprint scope is a JQL query, never a hardcoded type list
 
@@ -473,6 +502,7 @@ Run the same 4 dispatches; the Stage 1 briefing additionally applies the veto + 
 - After each stage subagent returns, the orchestrator appends a phase entry to the ISSUE's `progress.md` per `agentic-qa-core/references/session-management.md` §7. After Stage 3 completes, the orchestrator (a) appends ONE entry to the SPRINT's `progress.md` and mirrors it as one STP comment, then (b) runs Archive on the issue sub-scope: moves `.session/sprint-testing/sprint-<N>/<ISSUE>/` to `.session/.archive/<YYYY-MM-DD>-sprint-testing-sprint-<N>-<ISSUE>/` and calls `mem_session_summary`. The PBI artifacts under `.context/PBI/` stay. The sprint pair is archived only at sprint close (§STEP 7), never while an issue is mid-flight.
 - **Nothing local is a deliverable.** `.session/` is gitignored and exists only on this machine. The sprint's shareable record is the STP in Jira (description ← `plan.md`, comments ← `progress.md`) and the per-Story ATP / ATS / ATR items. Never tell the user a local file is the canonical output.
 - Stop on TOOL FAILURE. Pause on BUG_FOUND. Append the sprint `progress.md` entry ONLY after Stage 3 completes.
+- **N>1 executors (fleet mode)**: everything above still holds — the loop is the same queue, the waves are the same, the STP parity is the same, and the sprint-altitude writes stay with this session. What changes is that the per-issue 4-dispatch sequence runs inside a launched worker session instead of here, in **rounds** of at most `orchestration.max_workers` issues inside the current wave. Read `references/fleet-conductor.md` before seeding the first brief; the transport is `[ORCHESTRATION_TOOL]` pseudocode resolved in `orca-orchestration`.
 
 ---
 
@@ -525,6 +555,7 @@ If Session Start reports that any of the project-wide context files are missing,
 | `[AUTOMATION_TOOL]` | playwright-cli skill or Playwright MCP | `AGENTS.md` Tool Resolution |
 | `[DB_TOOL]` | DBHub MCP or Supabase MCP | `AGENTS.md` Tool Resolution |
 | `[API_TOOL]` | Schema read → OpenAPI MCP (read-only); execute → curl (token via `bun run api:login`) | `AGENTS.md` Tool Resolution + `agentic-qa-core/references/api-testing-doctrine.md` |
+| `[ORCHESTRATION_TOOL]` | the multi-session orchestration layer — used ONLY in fleet mode (sprint-wide, N>1 executors) | `orca-orchestration` (the tool owner; this skill names verbs, never commands) |
 
 Concrete tools (`bun`, `git`, `gh`) are used literally. Project variables like `{{PROJECT_KEY}}`, `{{DB_MCP}}`, `{{WEB_URL}}` are resolved from `.agents/project.yaml` (env-scoped vars resolve to the active environment).
 
@@ -537,6 +568,7 @@ All references are self-contained. Load one at a time.
 | Reference | Read when |
 |-----------|-----------|
 | `sprint-orchestration.md` | Running sprint-wide mode, building the sprint session pair + the STP, resuming a session, appending the sprint log, dispatching stage sub-agents, handling stop/pause/`continue-from`. |
+| `fleet-conductor.md` | Sprint-wide with MORE THAN ONE executor — worker identity + env vars, brief seeding, `launch.txt`, rounds inside waves, auth one-writer, per-worker browser isolation, claims, the liveness dashboard and the blocked tokens. Skip it entirely at N=1. |
 | `session-entry-points.md` | Initializing a session (any mode), loading project + module context, creating the PBI folder + `context.md` and the session dir + `test-session-memory.md`, Team Discussion extraction rules, user-story workflow step order, bug Triage -> Verify -> Report workflow. |
 | `acceptance-test-planning.md` | Stage 1 Planning — generating the ATP (Acceptance Test Plan) for a ticket, Test Analysis structure, TC nomenclature `{US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]`, traceability creation + verification, and the Bug Analysis variant. |
 | `feature-test-planning.md` | Stage 1 Planning at feature / multi-story level — building a feature test plan, risk triage rubric, scenario decomposition, and variable + test-data identification. |
@@ -575,6 +607,7 @@ All references are self-contained. Load one at a time.
 
 - [ ] Phase 0 — Session resume check ran (read `.session/sprint-testing/<scope>/progress.md`); user chose resume / restart / abort if prior state existed
 - [ ] Mode ASKED and answered (`sprint-wide` / `single-issue`) — never inferred from the invocation wording
+- [ ] Sprint-wide: executors ASKED and answered (1 or N). N>1 → `references/fleet-conductor.md` read and its checklist run; N=1 → nothing about fleet mode applies and nothing about it was said to the user
 - [ ] Sprint-wide: `.session/sprint-testing/sprint-<N>/plan.md` written with the JQL-resolved queue; skipped work types noted, not treated as blockers
 - [ ] Session Start complete, user confirmed the story explanation
 - [ ] `.session/sprint-testing/<scope>/plan.md` written (per `session-management.md` §6 schema)
