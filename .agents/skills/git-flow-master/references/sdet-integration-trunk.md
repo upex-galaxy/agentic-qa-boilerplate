@@ -123,6 +123,16 @@ gh pr merge --merge   # merge commit (--no-ff equivalent); NEVER squash here
 | **`--no-ff`** (merge commit), **never squash**, into the trunk | Preserves each ticket's commit detail so the consolidated history "reads like multiple branches merged." Squash here flattens the very history the suite wants to keep. |
 | **Sync gate** (`git merge origin/main`) before the final PR | The only thing that guarantees a clean `trunk → main` diff. See below. |
 
+### Several workers on one suite
+
+The loop above is written for one session walking the chain, and that remains the default. When a batch is worked by a fleet (`.agents/skills/test-automation/references/batch-fleet.md`), the shape changes in exactly three places and nowhere else:
+
+- **Ticket branches are cut from the trunk in parallel** — each worker in its own worktree, each branch off the trunk's then-current tip. Still never off another ticket branch.
+- **The trunk stays single-writer.** Only the conductor merges into it, one PR at a time, in an order it decides; a worker opens its PR and stops. Step 0's "start from a clean, up-to-date trunk" becomes the conductor's job between merges, and a worker whose branch is now behind re-merges the trunk into its branch rather than waiting.
+- **After each merge the conductor regenerates `kata-manifest.json`** and re-runs the suite on the merged state. Two green branches can be red together.
+
+The sync gate, the final PR, `--no-ff`, and the local double-env gate are unchanged — the double-env gate runs in each worker's own worktree.
+
 ---
 
 ## Reading the Sanity-CI gate (infra failures vs real test failures)

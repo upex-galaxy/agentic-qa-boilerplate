@@ -35,6 +35,7 @@ It does not assume one branching model. The project may run on `main` only, on `
 - DO NOT: run a repo-wide discard (`git restore .`, `git checkout -- .`, `git reset --hard`, untargeted `git stash`, `git clean -f`) — concurrent sessions may share this working tree. Discard only explicit paths this session modified; unclear ownership means stop and ask.
 - DO NOT: `git add -A` or `git add .`. List explicit paths, so a secret or another session's work cannot ride along.
 - DO: keep one commit to one responsibility, in conventional format (`{type}({ISSUE-KEY}): {description}`). Commit messages, branch names and PR bodies are English and carry NO AI attribution.
+- DO: close EVERY commit message, in every strategy, with the two forensic trailers `Worktree: <name|primary>` then `Session: <label>`, copied from the `AGENT IDENTITY:` line in session context (`unknown` when a value cannot be resolved). They are forensics, not attribution — a harness-branded trailer (`Claude-Session:`, an AI `Co-Authored-By:`) stays forbidden.
 - WHEN a pre-commit hook rejects a commit: stop, fix the underlying issue, and create a NEW commit. Never `--amend` the rejected one.
 - DO: propose every branch name, commit set, and PR body and wait for an explicit OK before executing.
 - DO: stop at PR creation — merging is the user's next step, never automatic. If the `gh` transport is missing or unauthenticated, surface the blocker instead of implying a PR was opened.
@@ -274,6 +275,18 @@ Group changes by responsibility, not by file type:
 - **No AI attribution.** No `Generated with Claude Code`, no `Co-Authored-By: Claude`, no equivalent line. Commits look human-authored. (Critical Reminder #3 in `AGENTS.md`.)
 - If a pre-commit hook fails, **stop, fix the underlying issue, create a NEW commit**. Never `--amend` a commit the hook rejected — `--amend` operates on the previous commit, which destroys context.
 
+**Forensic trailers (mandatory, every commit, every strategy).** The last two lines of every commit message are:
+
+```
+Worktree: <name|primary>
+Session: <label>
+```
+
+- Both values come from the `AGENT IDENTITY:` line the prompt hook injects into this session's context (`worktree=…`, `session=…`). Copy them; do not re-derive them per commit. The session label may contain spaces and parentheses (`my-session (c0ffee12)`): take everything after `session=` up to the literal ` harness=` token, never split the line on whitespace.
+- `primary` is the correct worktree value when the session is not running in a linked worktree. When a value could not be resolved at all, write `unknown` — never guess a name, never drop the key. A missing trailer is less recoverable than an honest `unknown`.
+- Nothing goes below them, and nothing is added beside them.
+- **These are forensics, not attribution.** They record WHICH working tree and WHICH session produced the commit, so a bisect, an incident review, or a parallel-session post-mortem can find the right transcript. They are deliberately harness-agnostic: no tool, vendor, or model is named. The prohibition in Critical Rule #3 is untouched — never `Claude-Session:`, never a `Co-Authored-By:` for an AI, never a "Generated with …" line, never any other harness-branded key.
+
 Present all proposed commits as one block. Wait for OK / modify / reject before executing.
 
 ### 3.3 Push
@@ -477,7 +490,7 @@ The branch plan that comes out of the decision is the **contract** for execution
 1b. **`policy:` records INTENT, not enforcement.** Reconcile it by RUNNING `bun run git:policy verify` (Step 1b) at the first push / PR / merge intent, then `--stamp` when clean. Never perform the protection queries by hand, and never state what the remote requires from a `declared` reading. `git:policy apply` is a dry run until `--yes`, and refuses to remove a guard, lower the approval bar, turn off code-owner review, or widen the merge methods unless `--allow-loosening` is passed for that specific give-up.
 1c. **`strategy: solo-main` is the shipped DEFAULT, not evidence of a decision.** `meta.strategy_source` tells them apart: `inherited` means nobody chose. On a repo whose `project.project_name` is set and whose `strategy_source` is still `inherited`, OFFER Strategy Setup and say what the default costs (no integration branch, no promotion path, no review gate). Strategy Setup stamps `chosen`; nothing else may.
 2. **One commit = one responsibility.** Never bundle unrelated changes.
-3. **No AI attribution** in commits or PR bodies. Commits look human-authored. (Critical Reminder #3 in `AGENTS.md`.)
+3. **No AI attribution** in commits or PR bodies. Commits look human-authored. (Critical Reminder #3 in `AGENTS.md`.) The two forensic trailers of 3.2 (`Worktree:` / `Session:`) are the one thing that always closes a commit message — they name a working tree and a session, never a tool, so they are not attribution and not optional.
 4. **Confirm before pushing to any protected branch.** Strategy-driven; see Step 3.3. (Critical Reminder #5 in `AGENTS.md`.)
 5. **Never force-push, never rewrite pushed history, never `--no-verify`** unless the user explicitly authorises it AND the branch is unshared. (Critical Reminder #6 in `AGENTS.md`.)
 6. **No `git add -A` / `git add .`** — always list explicit paths.
@@ -509,18 +522,22 @@ The branch plan that comes out of the decision is the **contract** for execution
 When work needs to be isolated from in-progress changes on the current branch — a second
 AI session running in parallel, a hotfix while a feature is open, or unrelated WIP you do
 not want to mix — use a **git worktree** (a second working directory on its own branch,
-sharing one `.git`). Two paths:
+sharing one `.git`). Three paths:
 
 - **Manual git** (portable, any tool): `git worktree add ../dir -b feat/x main` → work →
   `git worktree remove` / `prune`.
 - **Claude Code harness** (this agent only): `EnterWorktree` moves the session into a fresh
   worktree under `.claude/worktrees/`; `ExitWorktree` (`keep`/`remove`) leaves it. Other
   coding agents lack this — they use the manual path.
+- **Orchestrated** (a coordinated fleet of worker sessions): the orchestration layer creates,
+  provisions and removes one worktree per worker, outside the repo and visible to the owner.
+  Git mechanics are identical; the lifecycle is owned by `orca-orchestration/SKILL.md`.
 
-Key gotcha: a fresh worktree contains only the **tracked** files of its base — **untracked
-WIP does not teleport**, so `mv` it in (or commit first). Keep the primary tree's
-`git status` clean. Full lifecycle, multi-session safety rules, and the decision guide:
-`references/worktrees.md`.
+Key gotchas: a fresh worktree contains only the **tracked** files of its base — **untracked
+WIP does not teleport** (`mv` it in, or commit first) and every **gitignored** file is
+missing too (`bun run worktree:provision`). Keep the primary tree's `git status` clean, and
+run the **orphan audit** before removing a worktree — gitignored evidence dies with it. Full
+lifecycle, multi-session safety rules, and the decision guide: `references/worktrees.md`.
 
 ---
 
@@ -530,6 +547,7 @@ WIP does not teleport**, so `mv` it in (or commit first). Keep the primary tree'
 - [ ] Strategy resolved (detected from the `git_strategy:` block in `.agents/project.yaml`, inferred from layout, or asked) and persisted to that block if newly chosen.
 - [ ] Branch / commit / push / PR / conflict operation followed the runbook for that strategy.
 - [ ] Each commit is atomic, conventional, and free of AI attribution.
+- [ ] Each commit message ends with the two forensic trailers (`Worktree:` then `Session:`), values taken from the `AGENT IDENTITY:` context line or written as `unknown`.
 - [ ] No `git add -A` / `--force` / `--no-verify` used unless explicitly authorised.
 - [ ] No global discard ran (`git restore .` / `git checkout -- .` / `git reset --hard` / untargeted `git stash` / `git clean`); any discard targeted explicit session-owned paths only.
 - [ ] PR (if created) has Title <70 chars, body with Summary / Changes / Test Plan / Traceability / Risk, base branch matches strategy.
@@ -550,6 +568,6 @@ WIP does not teleport**, so `mv` it in (or commit first). Keep the primary tree'
 | `references/conventional-commits.md` | Full type vocabulary, scope rules, breaking-change syntax, mixed-changes precedence. Read when proposing commits.                                      |
 | `references/pr-templating.md`        | PR body template, placeholder rules, label / reviewer / draft conventions, multi-strategy base-branch table. Read when opening a PR.                   |
 | `references/conflict-resolution.md`  | Per-conflict-type playbooks (merge / rebase / push-rejected / detached-HEAD / stash / unrelated histories / hook rejection). Read when Step 3.5 fires. |
-| `references/worktrees.md`            | Git worktrees for isolated/parallel work — manual git + Claude Code `EnterWorktree`/`ExitWorktree`, the untracked-files gotcha, multi-session safety, cleanup, decision guide. Read when isolating work or running parallel sessions. |
+| `references/worktrees.md`            | Git worktrees for isolated/parallel work — manual git, Claude Code `EnterWorktree`/`ExitWorktree`, orchestrated worktrees, the untracked-files gotcha, gitignored-file provisioning, multi-session safety, the orphan audit before removal, cleanup, decision guide. Read when isolating work or running parallel sessions. |
 
 Read references on demand — do not load them all upfront. Each file is self-contained.

@@ -113,16 +113,23 @@ which runs each subagent in its own temporary, auto-cleaned worktree. Use that o
 parallel subagents mutate files and would otherwise collide — not to isolate a whole
 session.
 
-### Manual vs harness at a glance
+## Approach C — Orchestrated worktree (managed by the orchestration layer)
 
-| | `git worktree` (manual) | `EnterWorktree` (Claude Code) |
-| --- | --- | --- |
-| Portability | any tool / agent | Claude Code only |
-| Directory location | anywhere you choose (`../dir`) | fixed under `.claude/worktrees/` |
-| Base ref | whatever you pass | setting: `fresh`=origin/default or `head` |
-| Moves the agent's session | no (you `cd`) | yes, automatically |
-| Cleanup | manual (`remove`/`prune`) | `ExitWorktree remove` |
-| Branch naming | you choose | derived from the name (rename with `git branch -m`) |
+When several agent sessions are being coordinated — a conductor plus N workers — the worktrees are created and destroyed by the orchestration layer instead of by hand, one per worker, outside the repo. The mechanics (create, provision, launch a session into it, remove) belong to `orca-orchestration/SKILL.md`; from git's point of view it is still an ordinary linked worktree, so everything else in this file applies unchanged. Write the calls as `[ORCHESTRATION_TOOL] <verb>: …` pseudocode and load that skill for the HOW. Topology choice per activity: `orca-orchestration/references/topologies.md`.
+
+The distinction that matters here: an orchestrated worktree is **visible to the owner** (board card, managed terminal, phone) and outlives the session that made it, while a harness worktree lives inside the repo and is invisible outside the session that created it.
+
+### Manual vs harness vs orchestrated at a glance
+
+| | `git worktree` (manual) | `EnterWorktree` (Claude Code) | Orchestrated (Approach C) |
+| --- | --- | --- | --- |
+| Portability | any tool / agent | Claude Code only | any agent, but needs the orchestration app + binary on the machine |
+| Directory location | anywhere you choose (`../dir`) | fixed under `.claude/worktrees/` | the orchestrator's own workspace dir, outside the repo |
+| Base ref | whatever you pass | setting: `fresh`=origin/default or `head` | the base you pass at create time — **verify the new HEAD against `origin/<base>`**, it resolves local refs |
+| Moves the agent's session | no (you `cd`) | yes, automatically | no — it creates the tree, then a session is launched INTO it |
+| Cleanup | manual (`remove`/`prune`) | `ExitWorktree remove` | orchestrated removal + `git worktree prune`, always after the orphan audit below |
+| Branch naming | you choose | derived from the name (rename with `git branch -m`) | you choose at create time |
+| Owner can see it (board / phone) | no | no | yes |
 
 ---
 
@@ -145,6 +152,19 @@ tracked files, git sees them as deleted in the source tree. Restore with:
 ```bash
 git checkout -- path/to/tracked-file        # bring a tracked file back into the source tree
 ```
+
+---
+
+## Provisioning: what a fresh worktree does NOT have (all approaches)
+
+Untracked files are only half of it. Everything **gitignored** is missing too, and that half fails in ways that point at the wrong cause: no `.env` means the MCP servers do not parse (they reference `${VAR}`) and any login script has no credentials; no `node_modules/` reports `Cannot find module`; a missing `.claude/skills` alias makes every Claude Code skill invocation an `Unknown skill`; a missing `.context/PBI/` cache fails **silently** — the session simply cannot see the synced ticket.
+
+```bash
+bun run worktree:provision          # in the new worktree: .env, deps, the skills alias, community skills, .auth/
+bun run context:hydrate             # rebuild the Jira cache (needs credentials, so run it after the above)
+```
+
+`.session/` is deliberately NOT provisioned: a plan, brief, or roster written inside a worktree dies with it. Keep those in the primary checkout and cite them by **absolute** path. Full gap table and how to wire provisioning as an orchestration setup hook: `orca-orchestration/references/provisioning.md`.
 
 ---
 
@@ -178,8 +198,23 @@ Rule of thumb: **one session = one worktree = one branch.**
 
 ---
 
+## Orphan audit — run BEFORE removing any worktree
+
+Removing a worktree deletes its directory, and **gitignored files are not in git**: `.env`, `.auth/`, captured evidence and screenshots, local reports, anything under `.session/`. A clean `git status` says nothing about them — it is exactly the state in which they look safe to delete.
+
+```bash
+git -C <worktree> status --porcelain            # tracked work: must be committed AND pushed
+git -C <worktree> log --oneline origin/<base>.. # commits that exist only here
+git -C <worktree> status --porcelain --ignored   # THE audit: every ignored/untracked file about to die
+```
+
+For each survivor in that last list, decide once: **copy it out** to the primary checkout (evidence, reports, anything a Jira comment or an ATR already references), or accept the loss deliberately (`node_modules/`, caches, a `.env` that is just a copy). A durable document belongs in the primary checkout or in the tracker, never only in a worktree. Only then remove the worktree.
+
+---
+
 ## Cleanup checklist
 
+- [ ] Orphan audit ran (`--ignored`) and every file worth keeping was copied to the primary checkout.
 - [ ] Branch's work is committed and pushed (or deliberately discarded).
 - [ ] `git worktree remove <path>` (or `ExitWorktree remove`) — succeeds only when clean.
 - [ ] `git branch -d <branch>` once the branch is merged.
@@ -198,6 +233,8 @@ Rule of thumb: **one session = one worktree = one branch.**
 | Claude Code, want the session moved for you | `EnterWorktree` (base `fresh` for independence) |
 | Any other agent / portable script | `git worktree add … -b …` (Approach A) |
 | Parallel subagents mutating files | `Agent`/workflow `isolation: "worktree"` |
+| A coordinated fleet of worker sessions the owner wants to watch and steer | Orchestrated worktree per worker (Approach C) — `orca-orchestration/SKILL.md` |
+| Several sessions that only read code and write to the tracker (manual QA, AC refinement) | **No worktree** — same checkout. The isolation they need is a browser profile and a session dir, not a second tree |
 
 ---
 

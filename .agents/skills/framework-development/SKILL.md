@@ -75,6 +75,18 @@ This skill is compliant with the doctrine in `AGENTS.md` §"Orchestration Mode (
 
 ---
 
+## Fleet seam (optional)
+
+Phase 2 Code is sequential per task batch by default, and a change that fits one plan stays that way. A **wave** — several persistent worker sessions taking one task batch each, a conductor integrating them — is for a plan whose batches are genuinely independent (different files, no shared public API in flight). Offer it; never enter it silently.
+
+- **Topology: same checkout with file ownership per worker.** Each worker's brief lists the exact files it owns and commits with explicit paths (never `git add -A`), so two workers never stage each other's work. When two batches must touch the same module, they do not run in the same wave: serialize them, or give each worker its own worktree.
+- The conductor writes `launch.txt` in `.session/framework-development/<change-name>/` — one self-contained line per worker — **always**, whether or not any orchestration transport exists on the machine. Launching, supervising and closing those sessions is `orca-orchestration/SKILL.md` (`[ORCHESTRATION_TOOL]`); with nothing to launch them, the human pastes the same lines.
+- **Phase 0 and Phase 3 stay with the conductor.** The path self-check runs once, over the union of every worker's paths, before the first launch; the four Phase 3 verifiers run once, on the integrated tree, after the last worker reports. A per-worker green gate is not a wave gate.
+- **Read before every edit.** A worker's neighbour may have changed a shared file since the brief was written; Critical Rule #15 (no global discards) binds twice as hard when sessions share a tree.
+- **Silence rule**: the absence of an orchestration transport is never named to the user and never appears in the preflight gate or the plan.
+
+---
+
 ## Readiness Preflight Gate (MANDATORY — runs before Phase 0)
 
 > Full doctrine: `agentic-qa-core/references/preflight-gate.md`. Runs FIRST, before the path self-check and resume check. Two laws: (1) **args-as-answers** — the change name and touched paths are provided args; ask only the gaps. (2) **probe, don't assume**. Surface gaps + REDs as ONE `AskUserQuestion` checklist; self-fix with approval + explanation; STOP on any blocking RED. This skill evolves the framework itself — it does NOT hit a live env, Jira, DB, or API — so its gate is a **dev-toolchain readiness** check that pairs with the Phase 0 path self-check. **Generic baseline** (the two laws, secret/restart handling, output contract) is inherited from the reference §3.1 — not repeated here; the env/creds half of the baseline is N/A for meta-work. Below is only this skill's **specific capability delta**.

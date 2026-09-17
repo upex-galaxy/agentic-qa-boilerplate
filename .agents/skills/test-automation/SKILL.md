@@ -162,6 +162,22 @@ When in doubt, ask the user which scope. Never assume "module" just because mult
 
 ---
 
+## Batch mode (fleet) — optional second executor
+
+A batch (module-driven, or several ticket-driven scopes queued together) runs **sequentially in one session by default**: one Work Package at a time, Plan → Code → Review each. That is this skill's behaviour and it does not change.
+
+A **batch fleet** — several persistent sessions working different Work Packages at once, coordinated by a conductor — is opt-in. Enter it only when the user asks for it, or when the batch holds 3+ Work Packages that touch **disjoint modules**. Everything below is a scoping rule; the launch and lifecycle transport lives in `orca-orchestration/SKILL.md` (`[ORCHESTRATION_TOOL]`), never here.
+
+- **Work Package (WP) = one delivery unit = one `test-specs/<ID>/` spec** (`spec.md` + `automation-plan.md` + `atc/*.md` under the Epic's `test-specs/` tree). Sprint origin: the `Candidate` TCs of one Story. Discovery origin: a Tech Story. A batch is a list of WPs, never a list of files.
+- **Partition by module, not by ticket.** One worker owns every WP that touches a module's components; WPs sharing a module run **sequentially inside that worker**. NEVER two workers on the same module — same-module WPs share Pages / Apis / fixtures and collide in the files with the least merge tolerance.
+- **One worktree per worker.** This skill writes code, and two sessions in one checkout contend on the git index even when their files are disjoint. Branch + PR per `git_strategy` (`sdet` = one trunk, see `.agents/skills/git-flow-master/references/sdet-integration-trunk.md`).
+- **The conductor regenerates `kata-manifest.json` per integration** (`bun run kata:manifest`). It is generated output — never hand-merged, never resolved as a text conflict.
+- **The batch runs with or without an orchestration binary.** The conductor always writes the launch file (one self-contained line per worker); with the binary those exact lines are launched for it, without it the human pastes them. Same payload either way, and nothing about the absence is reported to the user.
+
+Full protocol — partition algorithm, collision table, conductor-only operations, integration order, per-worker brief: `references/batch-fleet.md`.
+
+---
+
 ## Workflow — Plan → Code → Review
 
 ```
@@ -468,6 +484,7 @@ Not every invocation needs every reference. Load the specific file when the task
 - **Designing test data (Discover → Modify → Generate), fixtures JSON, faker** → `references/test-data-management.md`
 - **`@atc` / `@step` decorators, NDJSON results, TMS sync mechanics** → `references/atc-tracing.md`
 - **Writing the Plan (module / ticket / ATC scopes and templates)** → `references/planning-playbook.md`
+- **Running a batch across several parallel sessions (partition by module, conductor duties, integration order)** → `references/batch-fleet.md`
 - **Running the review checklist (E2E or API)** → `references/review-checklists.md`
 - **Configuring Playwright, CI integration, projects, sharding** → `references/ci-integration.md`
 - **Session resume contract, plan.md/progress.md schemas, archive policy, Engram per-phase checkpoint** → `../agentic-qa-core/references/session-management.md` (Phase 0 + Phase 1 + Archive of this skill)

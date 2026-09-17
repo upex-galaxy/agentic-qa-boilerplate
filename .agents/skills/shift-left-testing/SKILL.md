@@ -109,6 +109,18 @@ This skill is compliant with the doctrine in `AGENTS.md` §"Orchestration Mode (
 
 ---
 
+## Fleet seam (optional)
+
+Refinement is **sequential by design** (above) and stays that way by default. A fleet — one persistent worker session per Story, a conductor collecting their reports — is available only when the user explicitly asks for it on a large batch. Then:
+
+- **Topology: same checkout.** This skill writes nothing but Jira: no code, no branch, no git index to contend on. A worktree per Story would be pure cost.
+- The conductor writes `launch.txt` in `.session/shift-left-testing/<batch-id>/` — one self-contained line per Story — **always**, whether or not any orchestration transport exists on the machine. Launching, supervising and closing those sessions is `orca-orchestration/SKILL.md` (`[ORCHESTRATION_TOOL]`); with nothing to launch them, the human pastes the same lines.
+- **The per-Story user OK does not disappear, it moves**: the conductor presents each worker's refinement summary as it lands and waits for the same approve / veto decision before that Story's Phase 3 handoff runs. A fleet that skips this is not this skill running faster, it is this skill not running.
+- **One writer per Story.** Two workers never refine the same Story, and every Jira write for a Story belongs to that Story's worker. The batch report and the epic comment stay with the conductor.
+- **Silence rule**: the absence of an orchestration transport is never named to the user, never appears in the preflight gate, and never appears in the batch report.
+
+---
+
 ## Workflow — one pipeline, three phases
 
 ```
@@ -468,6 +480,7 @@ If Phase 0.3 reports any project-wide context file missing, STOP and hand off �
 |-----|-------------|------------|
 | `[ISSUE_TRACKER_TOOL]` | `acli`, Atlassian MCP, or `{{ISSUE_TRACKER_CLI}}` | `AGENTS.md` Tool Resolution |
 | `[TMS_TOOL]` | xray-cli skill (Modality jira-xray) OR `acli` (Modality jira-native) | `AGENTS.md` Tool Resolution |
+| `[ORCHESTRATION_TOOL]` | the multi-session orchestration CLI (fleet seam only) | `orca-orchestration/SKILL.md` |
 
 > **Reads vs writes split** (per `agentic-qa-core/references/acli-integration.md` §"Reads vs writes"): detailed reads (description, ACs, scope, comments, parent epic) → `bun run jira:sync-issues get/jql`, then read the synced `.md`. Writes (custom-field update, comment, transition, label, link) + the trivial key+summary+status candidate list → `acli`. NEVER `acli view` for a custom field.
 | `[DB_TOOL]` | DBHub MCP or Supabase MCP | `AGENTS.md` Tool Resolution |
