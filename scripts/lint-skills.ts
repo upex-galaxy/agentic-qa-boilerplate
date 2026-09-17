@@ -119,6 +119,7 @@ const KNOWN_CATEGORIES = new Set([
   'automation-cli',
   'ci-cd',
   'framework-evolution',
+  'orchestration',
 ]);
 
 /**

@@ -1,0 +1,33 @@
+# launch.txt — one self-contained line per worker
+#
+# Copy to the workflow skill's own session scope (e.g. .session/sprint-testing/sprint-<N>/launch.txt
+# or .session/orchestration/<slug>/launch.txt). Owner: the conductor.
+#
+# RULES (see references/launch-seam.md):
+#   1. Written ALWAYS, with or without a runtime. Without one, a human pastes these lines.
+#   2. The line handed to the launcher is this line, BYTE FOR BYTE. Never paraphrased.
+#   3. Regenerated WHOLE on each planning pass. Finished items drop out; nothing is edited in place.
+#   4. Self-contained: it exports what the worker needs and starts the agent with the full prompt.
+#   5. No `"` and no `<` or `>` inside the prompt. They break the shell parse, the terminal still
+#      reports success, and nothing runs.
+#   6. Validate before launching:  sh -n <this file>        (or the equivalent for the user's shell)
+#   7. Comment lines (starting with #) are documentation; strip them before a syntax check if the
+#      checker objects, and never hand one to the launcher.
+#
+# Claude Code — full model id (never an alias: an alias moves on its own), effort, auto permission
+# mode, session name. `bun run claude --` forwards the arguments through the env-loading wrapper,
+# which is what makes the repo's env file win over an inherited variable.
+bun run claude -- --model <full-model-id> --effort high --permission-mode auto -n "<KEY>-<slug>" 'Read <ABS>/.session/orchestration/<slug>/COMMON.md then <ABS>/.session/orchestration/<slug>/W-<label>.md and execute your brief. Channel: orca orchestration. No heartbeats.'
+
+# With environment variables a workflow skill needs the worker to see (one line, still self-contained):
+PARALLEL_TESTING=true PARALLEL_TICKET=<KEY> bun run claude -- --model <full-model-id> --effort high --permission-mode auto -n "<KEY>-<slug>" 'Read <ABS>/.session/sprint-testing/sprint-<N>/<KEY>/brief.md and execute it. Channel: orca orchestration. No heartbeats.'
+
+# OpenCode — verified flags: -m/--model, --agent, --prompt, --auto (auto-approve permissions not
+# explicitly denied), -s/--session, -c/--continue, --fork. There is NO name flag and NO effort flag,
+# so the brief instructs the worker to rename itself to its label in its first turn.
+bun run opencode -- --model <provider/model> --auto --prompt 'Read <ABS>/.session/orchestration/<slug>/COMMON.md then <ABS>/.session/orchestration/<slug>/W-<label>.md and execute your brief. First turn: rename this session to <KEY>-<slug>. Channel: orca orchestration. No heartbeats.'
+
+# Codex — this repo ships `bun run codex` with the same env wrapper. Its name / permission /
+# effort flags were NOT verified here: read `codex --help` on the machine, use only flags it lists,
+# and if no name flag exists, keep the rename instruction in the brief.
+bun run codex -- <verified flags only> 'Read <ABS>/.session/orchestration/<slug>/COMMON.md then <ABS>/.session/orchestration/<slug>/W-<label>.md and execute your brief. First turn: rename this session to <KEY>-<slug>. Channel: orca orchestration. No heartbeats.'
