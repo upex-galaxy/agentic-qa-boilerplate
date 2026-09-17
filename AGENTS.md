@@ -8,7 +8,7 @@
 
 1. **CREDENTIALS**: ALWAYS read from `.env`. NEVER hardcode/guess. Example keys: `LOCAL_USER_EMAIL`, `STAGING_USER_PASSWORD`.
 2. **PLAN BEFORE CODING**: Produce test plan (`spec.md` / impl plan) BEFORE writing test code. Flow: Plan → Code → Review.
-3. **NO AI ATTRIBUTION**: NEVER include "Generated with AI", harness branding, or AI `Co-Authored-By` trailers in commits. Commits look human-authored.
+3. **NO AI ATTRIBUTION**: NEVER include "Generated with AI", harness branding, or AI `Co-Authored-By` trailers in commits. Commits look human-authored. **Forensic trailers are the one MANDATORY exception and are NOT attribution**: every commit ends with `Worktree: <name|primary>` then `Session: <label>` — harness-agnostic provenance that answers "which checkout and which session produced this line", not "who wrote it" (canon + label rule: `/git-flow-master`). `Claude-Session:` and every other harness-branded trailer stay FORBIDDEN.
 4. **SHIFT-LEFT**: Evaluate ACs for clarity, testability, completeness. Raise questions ONLY when genuine gaps exist, never force questions to fill checklist.
 5. **PUSH TO PROTECTED = RESOLVE `git_strategy.policy.direct_push_to_protected`** (`.agents/project.yaml`; protected list = `git_strategy.protected`): `forbidden` → NEVER direct-push, route through a PR. `confirm` → ask explicit user confirmation before EVERY push. `allowed` → standing authorization, push without asking. `git_strategy` block missing or null (fresh scaffold) → behave as `confirm` (safe default: ask). NEVER hardcode the answer here — the variable is the decision.
 6. **GIT HISTORY (INVARIANTS, not strategy choices — no `git_strategy` value relaxes them)**: NEVER rewrite pushed history (rebase/amend on pushed commits). NEVER force-push a branch others may share — at minimum every branch in `git_strategy.protected`, plus integration/ephemeral trunks in `git_strategy.branches`. NEVER delete remote branches without confirmation. ALWAYS add forward (new commits, not rewrite). ALWAYS preserve merge history.
@@ -91,6 +91,18 @@ Example: ❌ "Added `waitForResponse('**/api/auth/login')` before toast assertio
 
 **NO SUBAGENTS FOR**: quick lookups, memory reads/writes, task tracking, asking user, planning.
 
+**TWO EXECUTORS.** One-shot subagents are the DEFAULT executor and nothing below changes that. A second, OPTIONAL executor exists: the **supervised worker** — a persistent agent session coordinated through `/orca-orchestration` (conductor ↔ worker mailbox). It is gated on the orchestration binary AND a reachable runtime; when either is missing the repo is SILENT about it and the work runs on subagents plus the `launch.txt` lines a human pastes. Never name it to the user from a workflow skill when the gate fails.
+
+| | One-shot subagent (default) | Supervised worker (optional) |
+|---|---|---|
+| Lifetime | inside the turn | until it is explicitly closed |
+| Context | lost when it reports | persists; you keep talking to it |
+| Communication | none until it finishes | ask / reply / send at any moment, both ways |
+| Git | the orchestrator's index | own worktree, or the shared checkout under declared file ownership |
+| Best for | reading, mapping, verifying; one-shot tasks | writing + integrating alone, a whole story, work the owner wants to step into |
+
+The conductor keeps using SUBAGENTS for its own reads and verifications: that is what keeps the coordinating context clean. A supervised worker is warranted when the unit of work is a whole scope (one story, one module) that writes and integrates by itself. Doctrine: `agentic-qa-core/references/orchestration-doctrine.md`; transport: `/orca-orchestration`.
+
 **7-COMPONENT BRIEFING (MANDATORY every dispatch)**: canonical template + filled examples: `agentic-qa-core/references/briefing-template.md`.
 
 1. **Goal**: one sentence
@@ -140,6 +152,7 @@ Example: ❌ "Added `waitForResponse('**/api/auth/login')` before toast assertio
 | Test-architecture decision (record/supersede) | "record an ADR", "document our fixture/runner/isolation decision", "architecture decision record" |: (see `.context/ADR/README.md`) | `.context/ADR/`, `agentic-qa-core/references/adr-doctrine.md` | Read + Write |
 | Refresh project maps / test strategy | "refresh context", "business data/feature/API map", "master test plan" | `/project-context` (selected mode) | target code, `.context/`, live read-only sources | Read + approved artifact write |
 | Sync AI repository context | "sync AI context", legacy `/sync-ai-memory` | `/sync-ai-context` | `README.md`, this file, `.context/`, `package.json` | Edit |
+| Orchestrate several sessions (fleet of workers) | "orchestrate", "fleet", "workers", "one session per story", "resume the run", "automation routine", "orquestar", "lanza workers", "una sesión por historia", "comunícate con el worker" | `/orca-orchestration` | `.agents/project.yaml` → `orchestration:` block (defaults); the skill self-loads its references | `[ORCHESTRATION_TOOL]` (gate: binary + reachable runtime; silent when absent) |
 | Git / PR work | any git intent | `/git-flow-master` (auto) | `git status`, `git log` | `git` + `gh` |
 | Browser action | "screenshot", "trace", "record" | `/playwright-cli` | - | Playwright CLI |
 | Jira / Xray operation | "Jira issue", "Xray import" | `/acli` or `/xray-cli` | `.agents/jira-required.yaml`, `.agents/jira-fields.json` | CLI |
@@ -191,7 +204,7 @@ Example: ❌ "Added `waitForResponse('**/api/auth/login')` before toast assertio
 
 **`cli/` IS IMPORT-CLOSED (binding invariant).** NOTHING under `cli/` may import from a sibling top-level directory — not `scripts/`, `config/`, `tests/`, `api/`, `packages/`, and not through a `@alias`. `cli/` is the updater's self-update component: `runUpdate` refreshes those files in place and re-execs the process BEFORE any other component is synced, so the NEW `cli/` runs against the target repo's OWN, old copy of everything else. An escaping import therefore bricks `bun run up` for anyone jumping more than one release — and because the failure is at module load, it takes `up --rollback`, `setup` and `setup:doctor` down with it, leaving no in-repo way out. Shared code goes in `cli/lib/`; a `scripts/` file that needs it imports FROM `cli/` (that direction is safe: `scripts/` is synced later, never re-exec'd mid-run). Enforced by the `no-restricted-imports` block scoped to `cli/**` in `eslint.config.js`, so `lint:check` catches it in CI, pre-push, and `repo:check`.
 
-**HOOK: one emitter, three adapters.** `.agents/hooks/personality-reinject.mjs` holds the contract text once. Claude and Codex execute it as a command hook (stdout becomes developer context on both); OpenCode imports the constant from a thin plugin. Contract enforced by `cli/lib/agent-compatibility-contracts.ts`: no absolute personal paths, no duplicated hook file, OpenCode must mutate `output.system` in place. Codex's adapter carries `commandWindows` for PowerShell and resolves the repo via `git rev-parse --show-toplevel`.
+**HOOK: one emitter, three adapters.** `.agents/hooks/personality-reinject.mjs` holds the contract text once. Claude and Codex execute it as a command hook (stdout becomes developer context on both); OpenCode imports the constant from a thin plugin. The SAME emitter also resolves and injects one `AGENT IDENTITY:` line per prompt (worktree · session label · harness — the value `git-flow-master` copies into the `Worktree:` / `Session:` commit trailers of Rule #3) and, ONLY when the orchestration binary is present on the machine, one extra line naming `/orca-orchestration`. Binary absent = no line at all, which is the silence rule of the optional executor (§3). Still one emitter and three adapters: no second hook file, no per-harness copy of the text. Contract enforced by `cli/lib/agent-compatibility-contracts.ts`: no absolute personal paths, no duplicated hook file, OpenCode must mutate `output.system` in place. Codex's adapter carries `commandWindows` for PowerShell and resolves the repo via `git rev-parse --show-toplevel`.
 
 **MCP: one declared set, three formats, semantic parity.** The canonical server set is whatever `.mcp.json` declares: every server there must exist in `opencode.jsonc` and `.codex/config.toml` with the same `.env` dependencies and the same literal env settings, and a server present in one host only fails naming the server and the host. Parity is checked by NORMALIZING each native format (JSON / JSONC / TOML) into a common shape (transport, command, args, url, `.env` dependencies, literal env, enabled) then comparing. The boilerplate's own six (`context7`, `tavily`, `playwright`, `dbhub`, `openapi`, `postman`) additionally get a strict per-host shape check whenever the project declares them; any other server gets the generic check only, so a downstream project may drop or add servers freely. Env references keep each host's own syntax: `${VAR}` (`.mcp.json`), `{env:VAR}` (`opencode.jsonc`), `env_vars` / `bearer_token_env_var` (`.codex/config.toml`, which never expands placeholders); Critical Rule #10 applies to all three. Per-MCP decision rules → §5.
 
@@ -214,6 +227,8 @@ Repo organizes skills in 4 tiers with different discovery + load rules:
 - **T2**: Project-vendored. Committed in `.agents/skills/` from upstream (e.g. `judgment-day` from gentle-ai). License + attribution preserved in frontmatter. Load silent on explicit trigger.
 - **T3**: Community project-level. Installed by `install.ts` into `.agents/skills/` (not committed). Load silent if category matches task domain.
 - **T4**: Community user-level. Installed globally. ALWAYS ASK before loading.
+
+> **Orchestration vendor stubs are T4 and OPTIONAL.** The orchestration binary ships its own guides (`orca-cli`, `orchestration`) and can install them user-level. They are NEVER required and never gate anything: T1 `orca-orchestration` asks the binary for command grammar on demand, so availability is decided by the binary + a reachable runtime, never by an installed stub. Do not add them to `install.ts`.
 
 > Layout convention: T1 repo skills → `.agents/skills/<slug>/` (committed source). T3 community skills share that project store. Claude Code discovers the same tree through the generated `.claude/skills` alias; user-level T4 skills remain harness-specific. `install.ts` targets the canonical store for project skills and passes `--agent` only for user-level installs.
 
@@ -245,6 +260,7 @@ Full contract: `.agents/skills/agentic-qa-core/references/skill-composition-stra
 | `xray-cli` | `/xray-cli` | Xray Cloud test management. |
 | `acli` | `/acli` | Atlassian CLI. Resolves `[ISSUE_TRACKER_TOOL]` and `[TMS_TOOL]` (Modality jira-native). |
 | `git-flow-master` | (auto on git/PR intents) | End-to-end Git operator. Auto-detects branching strategy. Owns branch / commit / push / PR / conflict / chained-PR. |
+| `orca-orchestration` | `/orca-orchestration`, "orchestrate", "fleet", "workers", "resume the run", "orquestar", "lanza workers", "una sesión por historia", "comunícate con el worker" | Multi-session orchestration layer (CONDUCTOR / WORKER / AUTOMATION modes) over the `orca` binary: launches persistent supervised workers, coordinates them through the run mailbox, owns worktree provisioning and the claims protocol. OPTIONAL by construction — gate = binary + reachable runtime; workflow skills stay silent and fall back to their `launch.txt` when it fails. Owns the `orchestration:` block in `.agents/project.yaml`. |
 | `judgment-day` | `/judgment-day`, `juzgar`, `dual review` | T2 vendored from gentle-ai (Apache-2.0). Adversarial dual-judge review (2 blind judges in parallel, synthesis, fix loop, re-judge). Cited as optional gate by `/test-automation` Phase 3 + `/git-flow-master` pre-PR. Never auto-invoked. |
 | `pr-review-lead` | `pr-review-lead`, "review this PR", "revisa este PR" | QA Lead / QA Architect review of a PR's test-automation work against KATA doctrine (or the target repo's own doctrine) — every finding grounded in a doctrine citation or code location. Works on this repo or external repos (`owner/repo#PR` via `gh`). Runs a strictness preflight (Flexible / Standard / Strict); never posts to GitHub without explicit final OK. NOT for reviewing your own uncommitted diff (default code-review flow) or blind dual review (`/judgment-day`). |
 
@@ -290,6 +306,7 @@ Full contract: `.agents/skills/agentic-qa-core/references/skill-composition-stra
 | `[API_TOOL]` | API testing | **Schema read**: OpenAPI MCP (read-only). **Execute**: `curl` (token via `bun run api:login` → `.auth/tokens.env`). Canon: `agentic-qa-core/references/api-testing-doctrine.md` | Postman |
 | `[DOCS_TOOL]` | Library / framework / SDK / API / CLI official docs | Context7 MCP (`mcp__context7__resolve-library-id` → `mcp__context7__query-docs`) | built-in `WebSearch` / `WebFetch` (last resort only) |
 | `[WEB_SEARCH_TOOL]` | General web search, community fixes, troubleshooting, non-doc research | Tavily MCP (`mcp__tavily__tavily_search` / `tavily_extract` / `tavily_research`) | built-in `WebSearch` / `WebFetch` (last resort only) |
+| `[ORCHESTRATION_TOOL]` | Multi-session orchestration: launch / supervise / message / close persistent workers, worktrees, runs, automations | `/orca-orchestration` (owns the `orca` binary grammar; gate = binary + reachable runtime) | one-shot subagents (§3) + the skill's `launch.txt` lines pasted into terminals by hand |
 
 > **Reads-vs-writes carve-out**: the `[ISSUE_TRACKER_TOOL]` / `[TMS_TOOL]` rows resolve to the WRITE / transition / link / trivial-lookup tool. DETAILED CONTENT reads (custom fields, ACs, ATP/ATR, comments) instead route through `bun run jira:sync-issues get <KEY> --include-comments` / `jql "<query>"`: read the synced `.md` (`acli view` returns null for `customfield_*`). Traceability link-graph + Xray run status stay on `/acli` / `/xray-cli`. See §9 and `agentic-qa-core/references/acli-integration.md`.
 
@@ -302,6 +319,7 @@ Full contract: `.agents/skills/agentic-qa-core/references/skill-composition-stra
 - Before any `[API_TOOL] ...` → the OpenAPI MCP is **schema-read-only** (discover endpoints + read schemas); load `agentic-qa-core/references/api-testing-doctrine.md` for the schema → `bun run api:login` → `curl` maneuver. Execute authenticated requests with curl, NEVER via the MCP.
 - Before any `[DOCS_TOOL] ...` → use Context7 MCP tools directly (no skill load: MCP self-documents). NEVER substitute with `WebSearch` / `WebFetch` for library docs.
 - Before any `[WEB_SEARCH_TOOL] ...` → use Tavily MCP tools directly. NEVER substitute with built-in `WebSearch` / `WebFetch` unless Tavily unavailable.
+- Before any `[ORCHESTRATION_TOOL] ...` → load `/orca-orchestration`. Workflow skills write the pseudocode and NEVER the literal command; the HOW (verbs, flags, gate, cleanup) lives in that skill's `references/`. Gate fails → no mention, no recommendation: run the documented fallback.
 
 **TMS modality fallback** (resolved by `test-documentation/SKILL.md` §Phase 0):
 
@@ -331,6 +349,7 @@ Skills using `[TMS_TOOL]` MUST include parallel pseudocode branches for both mod
 | `bun` | `/bun` (community USER) |
 | `bun xray` | `/xray-cli` (in-repo). `test enrich` backfills the synced Test `.md` cache with the Xray-internal associations the REST sync cannot see: inlined Preconditions + Test Set membership |
 | `supabase` / `wrangler` / `vercel` | `/regression-testing` (in-repo — private report hosting; protocol: `regression-testing/references/private-hosting-setup.md`) |
+| `orca` | `/orca-orchestration` (in-repo). That skill holds WHEN/WHAT; the real command grammar is served by the binary on demand (`orca skills get <topic>`) and is never copied into the repo |
 
 **RULE**: Before any Bash call naming these binaries, check matching skill loaded. If not → load via Skill tool first. Hard gate, not suggestion.
 
@@ -531,6 +550,7 @@ Git / PR work → `/git-flow-master` auto-loads. Details in `.agents/skills/git-
 - Semantic prefixes: `feat:` / `fix:` / `docs:` / `test:` / `refactor:` / `chore:`
 - One commit = one responsibility. Clear messages.
 - **NO AI attribution** in commits.
+- **Forensic trailers, every commit, every strategy**: last two lines are `Worktree: <name|primary>` then `Session: <label>`, taken from the `AGENT IDENTITY:` context line the hook injects (§4.5); `unknown` when nothing resolves. Provenance, not attribution (Rule #3) — and never `Claude-Session:` or any harness-branded key. Label rule + per-harness resolution: `/git-flow-master`.
 - **Push policy = Critical Rule #5**: resolve `git_strategy.policy.direct_push_to_protected` (this repo: `allowed` — standing authorization, no per-push confirm).
 - Test-automation PRs use `.agents/skills/git-flow-master/references/pr-test-automation.md` (auto-loaded by `/git-flow-master` on `test/*` branches). Title format: `{type}({ISSUE-KEY}): {description}`.
 

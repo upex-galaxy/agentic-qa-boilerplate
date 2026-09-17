@@ -207,6 +207,7 @@ Rules:
 - **Memory reads/writes** — orchestrator owns memory. Subagents must not read or write `AGENTS.md` / `AGENTS.md` / persistent memory.
 - **Task tracking** (TaskCreate / TaskUpdate / progress files) — orchestrator owns tasks.
 - **Asking the user for input** — only the orchestrator can prompt the user. Subagents that hit a question must STOP and report.
+  - Exception, supervised workers ONLY: a persistent worker launched through `/orca-orchestration` sends its conductor a blocking `ask` over the run mailbox instead of stopping, and still never prompts the user (nobody is watching its terminal). Subagents keep the STOP-and-report rule unchanged.
 - **Planning / decision-making** — the orchestrator decides what to do next. Subagents execute pre-decided steps.
 - **Sleeping / polling** — if you would `sleep`, you probably wanted Background pattern instead.
 - **Running tests on someone else's behalf** — verification is part of the same agent that made the change. Don't fan out a "verify" agent for a 1-step edit.

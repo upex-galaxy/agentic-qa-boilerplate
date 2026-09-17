@@ -12,6 +12,18 @@
 
 **DO NOT USE SUBAGENTS FOR**: quick lookups, memory reads/writes, task tracking, asking user, planning.
 
+**TWO EXECUTORS**: one-shot subagents are the DEFAULT and nothing below changes for them. A second, OPTIONAL executor exists: the **supervised worker** — a persistent agent session coordinated through `/orca-orchestration` (conductor ↔ worker mailbox), gated on the orchestration binary AND a reachable runtime. When the gate fails the repo says NOTHING about it and the work runs on subagents plus the launch lines a human pastes.
+
+| | One-shot subagent (default) | Supervised worker (optional) |
+|---|---|---|
+| Lifetime | inside the turn | until it is explicitly closed |
+| Context | lost when it reports | persists; you keep talking to it |
+| Communication | none until it finishes | ask / reply / send at any moment, both ways |
+| Git | the orchestrator's index | own worktree, or the shared checkout under declared file ownership |
+| Best for | reading, mapping, verifying; one-shot tasks | writing + integrating alone, a whole story, work the owner wants to step into |
+
+The conductor keeps using SUBAGENTS for its own reads and verifications — that is what keeps the coordinating context clean. A supervised worker is warranted when the unit of work is a whole scope (one story, one module) that writes and integrates by itself. Every action on a worker is written as `[ORCHESTRATION_TOOL] <verb>: …` pseudocode; the HOW lives in `orca-orchestration/references/coordinator-playbook.md` and `orca-orchestration/references/worker-contract.md`.
+
 **7-COMPONENT BRIEFING (MANDATORY every dispatch)**:
 
 1. **Goal** — one sentence
