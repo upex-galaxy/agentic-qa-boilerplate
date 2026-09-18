@@ -36,6 +36,12 @@
  *   - `bypass_actors` beyond the org-admin role. Real actor IDs are org
  *     identity, not project config, and must not live in a versioned per-project
  *     file. `verify` reports them; `apply` preserves whatever is already there.
+ *     A caller without admin rights on the repository is not served that field
+ *     AT ALL: the key is omitted and `current_user_can_bypass` reads `never`.
+ *     That is a permissions artifact, not an empty bypass list, so `verify`
+ *     reports UNKNOWN and never drift — the same law as the classic-404 case
+ *     above, which `/git-flow-master` Step 1b states outright: absence of data
+ *     is not data.
  *   - CODEOWNERS. `require_code_owner_review` is derived from whether the file
  *     actually exists, because turning it on without one produces a requirement
  *     nobody outside the bypass list can ever satisfy.
@@ -89,12 +95,30 @@ interface PullRequestParams {
 
 interface Rule { type: string, parameters?: Record<string, unknown> }
 
+interface BypassActor { actor_type: string, bypass_mode: string }
+
+/** The subset of `GET /repos/{owner}/{repo}/rulesets/{id}` this tool reads. */
+interface RulesetDetail {
+  bypass_actors?: BypassActor[] | null
+  current_user_can_bypass?: string
+}
+
+/**
+ * Whether the bypass list was READ, or merely not served. Two different facts,
+ * and collapsing them is the defect this type exists to make unrepresentable.
+ */
+export type BypassAssessment
+  = | { known: true, actors: BypassActor[], hasAdminBypass: boolean }
+    | { known: false, reason: string, currentUserCanBypass: string | null };
+
 interface Finding {
   severity: 'drift' | 'accepted' | 'info'
   field: string
   declared: string
   enforced: string
   note?: string
+  /** The host's side of this field could not be read. Not parity, not drift. */
+  unknown?: boolean
 }
 
 // ---------------------------------------------------------------------------
@@ -129,6 +153,12 @@ function gh(path: string, args: string[] = []): unknown | null {
 function ghExitCode(path: string): number {
   try { return Bun.spawnSync(['gh', 'api', path], { stdout: 'pipe', stderr: 'pipe' }).exitCode ?? 1; }
   catch { return 1; }
+}
+
+/** The `login` `gh` is currently authenticated as. Named in every UNKNOWN report. */
+function activeGitHubAccount(): string | null {
+  const me = gh('user') as { login?: string } | null;
+  return typeof me?.login === 'string' ? me.login : null;
 }
 
 function readStrategy(): GitStrategy {
@@ -277,6 +307,51 @@ export function buildRules(gs: GitStrategy, codeowners: boolean, current: Rule[]
 }
 
 // ---------------------------------------------------------------------------
+// bypass visibility
+// ---------------------------------------------------------------------------
+
+/**
+ * Is the ruleset's bypass list readable by the account that asked?
+ *
+ * GitHub serves `bypass_actors` only to a caller with admin rights on the
+ * repository. Everyone else receives the SAME, unchanged ruleset with the key
+ * omitted and `current_user_can_bypass: "never"`. Coercing that to `[]` turns
+ * "you may not look" into "there is nothing there", and on any machine holding
+ * two GitHub accounts it reports a bypass list nobody touched as overnight host
+ * drift — exit 1, blocking `repo:check` and the pre-push hook.
+ *
+ * A PRIVILEGED caller on a ruleset with no bypass actors gets `[]`: a present,
+ * empty array. So the discriminator is the SHAPE of the field, never its length.
+ * `current_user_can_bypass` is reported verbatim as corroboration rather than
+ * branched on, because its enum is GitHub's to extend, not ours to assume.
+ */
+export function assessBypass(detail: RulesetDetail | null): BypassAssessment {
+  const canBypass = typeof detail?.current_user_can_bypass === 'string' ? detail.current_user_can_bypass : null;
+  if (detail === null) {
+    return {
+      known: false,
+      reason: 'the ruleset detail could not be read (403, 404, or no network)',
+      currentUserCanBypass: null,
+    };
+  }
+  const actors = detail.bypass_actors;
+  if (!Array.isArray(actors)) {
+    return {
+      known: false,
+      reason: canBypass === null
+        ? 'GitHub omitted `bypass_actors` from the response'
+        : `GitHub omitted \`bypass_actors\` — this account is not an admin of the repository (current_user_can_bypass: ${canBypass})`,
+      currentUserCanBypass: canBypass,
+    };
+  }
+  return {
+    known: true,
+    actors,
+    hasAdminBypass: actors.some(a => a?.actor_type === 'OrganizationAdmin' || a?.actor_type === 'RepositoryRole'),
+  };
+}
+
+// ---------------------------------------------------------------------------
 // verify
 // ---------------------------------------------------------------------------
 
@@ -409,18 +484,35 @@ function verify(gs: GitStrategy, slug: string, stamp: boolean): number {
   const rs = (gh(`repos/${slug}/rulesets`) as { id: number, name: string }[] | null) ?? [];
   const target = rs.find(r => r.name === RULESET_NAME) ?? rs[0];
   if (target) {
-    const full = gh(`repos/${slug}/rulesets/${target.id}`) as { bypass_actors?: { actor_type: string, bypass_mode: string }[] } | null;
-    const actors = full?.bypass_actors ?? [];
+    const detail = gh(`repos/${slug}/rulesets/${target.id}`) as RulesetDetail | null;
+    const bypass = assessBypass(detail);
     const declaredBypass = gs.policy?.admin_bypass === true;
-    const hasAdminBypass = actors.some(a => a.actor_type === 'OrganizationAdmin' || a.actor_type === 'RepositoryRole');
     console.log(pc.bold(`Ruleset ${target.name} (id ${target.id})`));
-    console.log(`  bypass_actors: ${actors.length === 0 ? 'none' : actors.map(a => `${a.actor_type}/${a.bypass_mode}`).join(', ')}`);
-    if (declaredBypass !== hasAdminBypass) {
+    if (bypass.known) {
+      console.log(`  bypass_actors: ${bypass.actors.length === 0 ? 'none' : bypass.actors.map(a => `${a.actor_type}/${a.bypass_mode}`).join(', ')}`);
+      if (declaredBypass !== bypass.hasAdminBypass) {
+        findings.push({
+          severity: 'drift',
+          field: 'admin_bypass',
+          declared: String(declaredBypass),
+          enforced: String(bypass.hasAdminBypass),
+        });
+      }
+    }
+    else {
+      // The ruleset did not change; the READER did. Report who is asking and
+      // how to ask as someone who can see the answer — then get out of the way.
+      const who = activeGitHubAccount();
+      console.log(`  bypass_actors: ${pc.yellow('UNKNOWN')} — ${bypass.reason}`);
+      console.log(pc.dim(`  active gh account: ${who ?? 'could not be resolved'}`));
+      console.log(pc.dim('  To read it: `gh auth switch --user <repo-admin>` (or `gh auth login`), then re-run verify.'));
       findings.push({
-        severity: 'drift',
+        severity: 'info',
+        unknown: true,
         field: 'admin_bypass',
         declared: String(declaredBypass),
-        enforced: String(hasAdminBypass),
+        enforced: `UNKNOWN — ${bypass.reason}`,
+        note: `Active gh account: ${who ?? 'unresolved'}. Not counted as drift: absence of data is not data.`,
       });
     }
     console.log('');
@@ -434,8 +526,10 @@ function verify(gs: GitStrategy, slug: string, stamp: boolean): number {
   // A stale entry accepts a divergence that no longer exists — surface it so the
   // list cannot silently accumulate dead exceptions.
   const matched = new Set(findings.filter(f => f.severity === 'accepted').map(f => f.field));
+  // A field whose host side could not be READ cannot prove its acceptance stale.
+  const undeterminable = new Set(findings.filter(f => f.unknown === true).map(f => f.field));
   for (const a of acceptedByField.keys()) {
-    if (!matched.has(a)) {
+    if (!matched.has(a) && !undeterminable.has(a)) {
       findings.push({
         severity: 'info',
         field: a,
@@ -468,7 +562,10 @@ function verify(gs: GitStrategy, slug: string, stamp: boolean): number {
   }
   if (infos.length > 0) {
     console.log(`\n${pc.bold(`NOTES (${infos.length}):`)}`);
-    for (const f of infos) { console.log(`  ${pc.yellow('▲')} ${f.field}: ${f.enforced}`); }
+    for (const f of infos) {
+      console.log(`  ${pc.yellow('▲')} ${f.field}: ${f.enforced}`);
+      if (f.note) { console.log(pc.dim(`      ${f.note}`)); }
+    }
   }
 
   console.log('');
@@ -711,4 +808,8 @@ function main(): void {
   }
 }
 
-main();
+// Guarded so the pure helpers above can be imported by a test without running
+// the CLI. Same convention as scripts/tests-map.ts and scripts/sync-jira-issues.ts.
+if (import.meta.main) {
+  main();
+}
