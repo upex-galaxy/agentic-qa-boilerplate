@@ -1,6 +1,6 @@
 ---
 name: agentic-qa-onboard
-description: "Walks new users through this repo's QA flow — Playwright + KATA + Allure + Xray stack, Jira QA workflow (Backlog → Shift-Left QA → Estimation → Ready For Dev → Ready For QA → In Test → QA Approved → Ready For Release → Deployed to Production), /shift-left-testing for pre-sprint AC refinement on backlog Stories, /sprint-testing for in-sprint manual QA, /test-documentation for TMS test cases, /test-automation for KATA-compliant E2E/API tests, /regression-testing for CI suite execution, /framework-development for boilerplate evolution, MCPs available (six canonical: Context7, Tavily, Playwright, DBHub, OpenAPI, Postman — Atlassian is opt-in via docs/mcp/), critical env vars, and the ordered 4-phase NEW-PROJECT setup path (foundation → Jira catalogs → /project-discovery + /adapt-framework → git Strategy Setup). ALSO the front desk for anyone who is lost or wants to understand how the repo or any workflow skill works — conceptually AND visually: it explains in plain human language (suspending caveman/compressed register) and can open per-skill how-it-works presentations (Spanish, technical terms in English) in the user's default browser after asking. Triggers on: `onboard me to QA`, `explain this QA repo`, `first time using this`, `primer vez en QA`, `/agentic-qa-onboard`, `I don't know how to use this`, `how does sprint-testing / test-automation work`, `how does this skill work`, `show me how it works`, `teach me how QA works here`, `walk me through this skill`, `no sé cómo usar esto`, `no entiendo cómo funciona el repo`, `cómo funciona este skill`, `explícame cómo funciona`, `enséñame cómo se hace`, `how do I set this repo up for my app`, `full setup for a new project`, `cómo configuro el repo para mi proyecto`, `setup completo del repo`. Do NOT use for: pre-sprint refinement (use /shift-left-testing), feature QA on a ticket (use /sprint-testing), authoring test cases in TMS (use /test-documentation), writing automated tests (use /test-automation), running regression suites (use /regression-testing)."
+description: "Walks new users through this repo's QA flow — Playwright + KATA + Allure + Xray stack, Jira QA workflow (Backlog → Shift-Left QA → Estimation → Ready For Dev → Ready For QA → In Test → QA Approved → Ready For Release → Deployed to Production), /shift-left-testing for pre-sprint AC refinement on backlog Stories, /sprint-testing for in-sprint manual QA, /test-documentation for TMS test cases, /test-automation for KATA-compliant E2E/API tests, /regression-testing for CI suite execution, /framework-development for boilerplate evolution, MCPs available (six canonical: Context7, Tavily, Playwright, DBHub, OpenAPI, Postman — Atlassian is opt-in via docs/mcp/), critical env vars, and the ordered 4-phase NEW-PROJECT setup path (foundation → Jira catalogs → /project-discovery + /adapt-framework → git Strategy Setup). ALSO the front desk for anyone who is lost or wants to understand how the repo or any workflow skill works — conceptually AND visually: it explains in plain human language (suspending caveman/compressed register) and can open per-skill how-it-works presentations (Spanish, technical terms in English) in the user's default browser after asking. Triggers on: `onboard me to QA`, `explain this QA repo`, `first time using this`, `primer vez en QA`, `/agentic-qa-onboard`, `I don't know how to use this`, `how does sprint-testing / test-automation work`, `how does this skill work`, `show me how it works`, `teach me how QA works here`, `walk me through this skill`, `no sé cómo usar esto`, `no entiendo cómo funciona el repo`, `cómo funciona este skill`, `explícame cómo funciona`, `enséñame cómo se hace`, `how do I set this repo up for my app`, `full setup for a new project`, `cómo configuro el repo para mi proyecto`, `setup completo del repo`. Do NOT use for: pre-sprint refinement (use /shift-left-testing), feature QA on a ticket (use /sprint-testing), authoring test cases in TMS (use /test-documentation), writing automated tests (use /test-automation), running regression suites (use /regression-testing), launching or supervising a fleet of parallel worker sessions (use /orca-orchestration — this skill only explains that the option exists)."
 license: MIT
 compatibility: [claude-code, opencode]
 phase: bootstrap
@@ -32,6 +32,7 @@ This skill is specific to **this** Playwright + KATA QA boilerplate and points a
 - WHEN someone is lost or asks how a skill works: suspend the compressed / caveman register for the whole explanation — full sentences, warm tone, and each technical term defined the first time it appears. Resume the normal register once they are oriented.
 - DO: mirror the user's language in the explanation. The visual decks ship in Spanish only (technical terms stay English) — say so before opening one for an English speaker.
 - WHEN the goal is unclear: ask ONE question first (testing a ticket, or understanding the whole flow?). Never dump all six stages on someone who asked about one.
+- WHEN someone asks about running several sessions at once ("parallelize the sprint", "one session per story", "orquestar", "lanza workers"): explain the two executors in plain words — a one-shot subagent lives inside the current turn and is the default for almost everything, a supervised worker is a persistent session you keep talking to — then hand off to `/orca-orchestration`. Its deck is `packages/decks/orca-orchestration/how-it-works.es.html`.
 - DO: explain the concept in plain words, and why it matters, BEFORE any command, flag, or file path.
 - DO NOT: open a how-it-works deck without asking — it launches the user's default browser. Open exactly ONE, then let them come back with questions before offering the next.
 - WHEN opening a deck: prefer the published GitHub Pages URL over the local file, because a project scaffolded from this boilerplate may not carry the HTML. Use the local copy only offline or on explicit request.
@@ -59,7 +60,7 @@ This skill is also the **front desk** for anyone who is confused: *"I don't know
 
 ## How-it-works presentations (visual, in the browser)
 
-Six of the workflow skills ship a **self-contained HTML presentation** (Spanish; technical terms in English) that teaches the skill as a **step-by-step workflow** — and `agentic-qa-core` adds two cross-cutting reference decks (naming conventions + skills inputs/outputs; see the section below). Each how-it-works deck follows the same shape: slide 1 is the cover (`/skill-name`), slide 2 is the full workflow map (main path + adjacent paths: gates, fallbacks, handoffs), then one phase per slide with the craft concepts embedded where they apply, closing with handoffs and how to invoke the skill.
+Seven of the skills ship a **self-contained HTML presentation** (Spanish; technical terms in English) that teaches the skill as a **step-by-step workflow** — and `agentic-qa-core` adds two cross-cutting reference decks (naming conventions + skills inputs/outputs; see the section below). Each how-it-works deck follows the same shape: slide 1 is the cover (`/skill-name`), slide 2 is the full workflow map (main path + adjacent paths: gates, fallbacks, handoffs), then one phase per slide with the craft concepts embedded where they apply, closing with handoffs and how to invoke the skill.
 
 | Skill / activity         | Deck (Spanish)                                             |
 | ------------------------ | ---------------------------------------------------------- |
@@ -69,6 +70,7 @@ Six of the workflow skills ship a **self-contained HTML presentation** (Spanish;
 | Test Automation (KATA)   | `packages/decks/test-automation/how-it-works.es.html`      |
 | Regression & GO/NO-GO    | `packages/decks/regression-testing/how-it-works.es.html`   |
 | Xray for Jira (workflow) | `packages/decks/xray-cli/how-it-works.es.html`             |
+| Multi-session orchestration | `packages/decks/orca-orchestration/how-it-works.es.html` |
 
 ### Cross-cutting reference decks (agentic-qa-core)
 
@@ -231,6 +233,23 @@ You confirm at the gates.
 
 ---
 
+## Running several sessions at once (optional)
+
+Everything above assumes one AI session at a time, and that is the normal way to work. There is a second way, and it is worth knowing it exists before someone asks for it.
+
+The AI has **two executors**. A *one-shot subagent* lives inside the current turn: it reads, verifies or maps something, reports back, and its memory dies with the report. That is the default and it covers almost all work. A *supervised worker* is a persistent session with its own scope that the conductor session keeps talking to — useful when the work does not fit inside a turn: a whole story tested end to end, a module automated and integrated, a cluster of CI failures chased down.
+
+`/orca-orchestration` owns that second executor: one **conductor** (the session talking to you) coordinating a **fleet** of workers, in **rounds** of a few at a time. Each workflow skill still owns _what_ gets done; the orchestration skill owns _how_ the sessions are launched, briefed, supervised and closed, plus the claims protocol that stops two workers from fighting over the same test user or fixture.
+
+Two things to tell a newcomer:
+
+- **It is optional.** The transport needs an orchestration runtime installed and reachable. Without it, a workflow skill never mentions it — it writes its launch file exactly as before and you paste the lines into your own terminals. Same plan, same briefs, more manual work.
+- **It is not "faster QA".** It was dogfooded on a real sprint: three of the most delayed stories tested in parallel, 32 minutes of parallel execution, 21 tracker artefacts and 9 quality issues. The value that showed up was not the hour saved — it was three sessions measuring the same environment from three angles, catching things a single session structurally cannot, including one conductor instruction that was simply wrong and that a worker refused to follow because its own measurement disagreed.
+
+Visual deck: `packages/decks/orca-orchestration/how-it-works.es.html` (same opening protocol as every other deck — ask first).
+
+---
+
 ## MCPs available
 
 Six canonical MCPs ship with the boilerplate:
@@ -296,6 +315,7 @@ Verify your config with `bun run vars:check` (should report 0 errors when fully 
 | `acli`               | `/acli`                | Atlassian CLI wrapper for Jira/Confluence terminal work                        |
 | `xray-cli`           | `/xray-cli`            | Xray Cloud TMS CLI                                                             |
 | `git-flow-master`    | (auto on git intents)  | End-to-end Git operator (branch, commit, push, PR, conflict, chained-PR)       |
+| `orca-orchestration` | "orchestrate", "fleet", "one session per story", "orquestar" | One conductor coordinating a fleet of persistent worker sessions (one per story / module / failure cluster). Optional and silent when no orchestration runtime is installed. Each workflow skill keeps owning the WHAT; this one owns the HOW |
 | `judgment-day`       | `/judgment-day`, `juzgar` | Vendored from gentle-ai (Apache-2.0). Adversarial dual-judge review (2 blind judges in parallel, fix loop, re-judge). Optional gate cited by `/test-automation` Phase 3 + `/git-flow-master` pre-PR. |
 
 ---
@@ -362,5 +382,6 @@ If any box is unchecked, fix that first. The downstream skills assume a green fo
 - Run a regression suite → use `/regression-testing`
 - Discover a brand-new target project → use `/project-discovery`
 - Adapt the KATA test architecture to a target stack → use `/adapt-framework`
+- Launch or supervise several parallel sessions → use `/orca-orchestration`
 
 The onboard tour ends at the moment the user knows which skill to call next. From there, the relevant workflow skill takes over.

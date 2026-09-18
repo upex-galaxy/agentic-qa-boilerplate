@@ -486,6 +486,26 @@ The orchestration model is not improvised per session — it is captured in cano
 
 When a skill writes `Use the dispatch defined in §Subagent Dispatch Strategy: Parallel`, that line is shorthand for the full briefing assembled from the references above. The doctrine is a single source, cited from many places.
 
+### 9.1 Supervised workers: the second executor
+
+Everything above describes **one-shot subagents**: they live inside the current turn, report once, and their context dies with the report. That is the default executor and it covers most work. Some work does not fit inside a turn — a whole story tested end to end, a module automated and integrated, a failure cluster chased down — and for that the practice has a second executor: the **supervised worker**, a persistent session with its own scope that the orchestrator keeps talking to.
+
+| | One-shot subagent (default) | Supervised worker |
+| --- | --- | --- |
+| Lives | inside the turn | until it is closed |
+| Context | lost when it reports | persists; the conductor keeps talking to it |
+| Channel | none until it finishes | messages, blocking questions and replies at any time |
+| Git | the orchestrator's | its own worktree, or the shared checkout under explicit file ownership |
+| Best for | reading, verifying, mapping | writing and integrating on its own; long work; when the engineer wants to step in |
+
+The vocabulary is fixed: the **conductor** is the session talking to the engineer, a **worker** is one launched session, the **fleet** is all workers of a run, and a **round** is one concurrency group. They do not compete with subagents — the conductor still uses subagents for its own reads, and in the measured run those reads were the expensive part, not the parallel work.
+
+This was dogfooded on a real sprint before it was written down. Three of the most delayed stories (47, 47 and 46 days waiting for QA) were tested in parallel by three supervised sessions: **32 minutes of parallel execution, three complete Planning → Execution → Reporting passes, 21 tracker artefacts and 9 quality issues**, two stories approved with documented debt and one failed and blocked on two real defects in the feature's own promise. The hour saved is not the argument. The argument is that three sessions measuring the same shared environment from three angles caught things a single session structurally cannot — including a stale claim in the project's own doctrine that would have weakened every ATR, a cross-worker hazard on a shared account, and a conductor instruction that was simply wrong and that one worker refused to follow because its own measurement contradicted it. That refusal is now doctrine, not luck.
+
+**It is optional, and silent when absent.** The transport is gated on an orchestration runtime being installed and reachable. When it is not, a workflow skill never mentions it: it writes its launch file exactly as before and the engineer pastes the lines by hand. The plan, the briefs and the per-worker scope are identical either way — the runtime accelerates launching, the channel and the close, and is a prerequisite for nothing.
+
+The HOW lives in one place: the `orca-orchestration` skill (topologies, provisioning, the brief, the claims protocol for shared fixtures and credentials, the measured gotchas). Each workflow skill keeps owning the WHAT.
+
 ---
 
 ## 10. The in-sprint flow: Session Start → Planning → Execution → Reporting
