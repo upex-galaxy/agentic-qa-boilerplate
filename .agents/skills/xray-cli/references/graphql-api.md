@@ -477,11 +477,13 @@ Two hard boundaries of the Xray Cloud GraphQL schema, verified by introspection 
 do not go looking for mutations that do not exist:
 
 - **No coverage mutation.** Requirement coverage ("this Story is covered") is not
-  an Xray GraphQL concept at write time — it is the **Jira issue link** whose
-  inward description is `is tested by` (link-type slug `test` in
-  `.agents/jira-required.yaml`). Write it via `bun xray link create <FROM> <TO>
-  --type test` (Jira REST `POST /rest/api/3/issueLink`), never via GraphQL.
-  GraphQL only *reads* coverage (`coverableIssues` on a Test).
+  an Xray GraphQL concept at write time — it is a **Jira issue link** of the
+  `test` type (link-type slug `test` in `.agents/jira-required.yaml`) whose entry
+  ON THE STORY carries the artifact under `inwardIssue`. Write it via
+  `bun xray link create <ARTIFACT> <STORY> --type test` (Jira REST
+  `POST /rest/api/3/issueLink`), never via GraphQL. GraphQL only *reads* coverage
+  (`coverableIssues` on a Test, `getCoverableIssue(issueId).tests` from the Story
+  side — the query that measured the direction; see SKILL.md §Direction).
 - **Datasets/parametrization are READ-only.** The schema exposes `getDataset` /
   `getDatasets` queries and **zero** dataset mutations, so parameter values and
   shared Parameter Lists cannot be created or edited by any API client — they
@@ -500,14 +502,25 @@ do not go looking for mutations that do not exist:
 
 ## Test Run Statuses
 
-| Status | Description |
-|--------|-------------|
-| `TODO` | Not started |
-| `EXECUTING` | In progress |
-| `PASSED` | Test passed |
-| `FAILED` | Test failed |
-| `ABORTED` | Test aborted |
-| `BLOCKED` | Test blocked by dependency |
+Xray's DEFAULT vocabulary. It is **not** the instance's: run statuses are
+per-project configuration (Xray Settings → Test Run Statuses), and a project may
+define only the first four. The mutation is rejected for a status the project
+does not define — measured on a live instance that accepts `TODO` / `EXECUTING` /
+`PASSED` / `FAILED` and nothing else.
+
+| Status | Description | Availability |
+|--------|-------------|--------------|
+| `TODO` | Not started | Safe floor |
+| `EXECUTING` | In progress | Safe floor |
+| `PASSED` | Test passed | Safe floor |
+| `FAILED` | Test failed | Safe floor |
+| `ABORTED` | Test aborted | Xray default; may be absent |
+| `BLOCKED` | Test blocked by dependency | Xray default; may be absent |
+
+When the status you need is absent, record the run in one the project DOES define
+and say why in the run comment (`run comment --id <runId> --comment ...`). Never
+leave the run at `TODO`: that reads as "never executed", which is a different
+fact from "executed and blocked".
 
 ## GraphQL Schema Explorer
 

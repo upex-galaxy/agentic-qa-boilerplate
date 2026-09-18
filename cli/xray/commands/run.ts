@@ -65,14 +65,33 @@ export async function status(flags: Flags): Promise<void> {
   const id = requireFlag(flags, 'id');
   const statusValue = requireFlag(flags, 'status').toUpperCase();
 
-  const validStatuses = ['TODO', 'EXECUTING', 'PASSED', 'FAILED', 'ABORTED', 'BLOCKED'];
-  if (!validStatuses.includes(statusValue)) {
-    throw new Error(`Invalid status. Valid values: ${validStatuses.join(', ')}`);
+  // Xray's DEFAULT vocabulary. It is not the instance's: a project can drop
+  // statuses (one measured instance accepts only TODO / EXECUTING / PASSED /
+  // FAILED) and Xray rejects the others at mutation time. This list therefore
+  // only catches typos; the instance has the last word, and the error below is
+  // what tells the caller so instead of leaving a bare GraphQL failure.
+  const defaultStatuses = ['TODO', 'EXECUTING', 'PASSED', 'FAILED', 'ABORTED', 'BLOCKED'];
+  if (!defaultStatuses.includes(statusValue)) {
+    log.warn(
+      `'${statusValue}' is not one of Xray's default statuses (${defaultStatuses.join(', ')}). `
+      + 'Sending it anyway — a project may define its own.',
+    );
   }
 
   log.dim(`Updating test run ${id} to ${statusValue}...`);
 
-  await graphql(MUTATIONS.updateTestRunStatus, { id, status: statusValue });
+  try {
+    await graphql(MUTATIONS.updateTestRunStatus, { id, status: statusValue });
+  }
+  catch (err) {
+    throw new Error(
+      `Could not set run ${id} to ${statusValue}: ${err instanceof Error ? err.message : String(err)}\n`
+      + 'If the status was rejected, this project does not define it. Xray statuses are per-instance '
+      + '(Settings -> Test Run Statuses); a project may accept only TODO / EXECUTING / PASSED / FAILED. '
+      + 'Record a blocked or aborted case in the status the project DOES define, and say so in the run '
+      + 'comment (\'run comment --id <id> --comment ...\') — never leave the run TODO as if it was never executed.',
+    );
+  }
 
   log.success(`Test run status updated to ${statusValue}`);
 }

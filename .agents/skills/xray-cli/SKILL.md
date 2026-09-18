@@ -19,7 +19,10 @@ complementary_categories: [tms]
 - DO: pin every ATR execution to a Test Environment (value from `active_env`), so results stay comparable across runs. An execution that slipped through without one is repaired in place, not left.
 - DO: keep the Set-first cascade: the per-Story ATS holds the membership, and the Plan (ATP) and Execution (ATR) derive their test lists from it rather than maintaining their own.
 - DO: fill Story coverage with the Jira-layer issue link from the ATS to the Story. Plan→Story and Execution→Story links are administrative traceability and cover nothing; a direct Test→Story link is a last resort for an instance with no Test Set work type. Plan/Execution/Set MEMBERSHIP is Xray-internal GraphQL and is never an issue link.
-- DO: verify traceability with the one-call three-edge check, never from the coverage edge alone — a missing ATP→Story or ATR→Story link is a FAIL, not a warning, and the same call compares the ATS membership against the Plan and Execution test lists.
+- DO: state the coverage direction as the RAW FIELD, never as an outward/inward description: on a Story, the counting edge is the `issuelinks` entry carrying the artifact under `inwardIssue`. The artifact-first argument order produces it. Verify against Xray coverage (the three-edge check or the coverage panel), never against Jira link semantics — a Jira link list looks correct in both directions.
+- DO: replace an inverted coverage link, never add a corrected one on top: Jira dedupes a link between the same pair and type regardless of direction, so the create is a silent no-op until the wrong link is deleted by its own link id. Read the id first, dry-run, then delete with an explicit confirmation.
+- DO: verify traceability with the one-call three-edge check, never from the coverage edge alone — a missing ATP→Story or ATR→Story link is a FAIL, not a warning, and the same call compares the ATS membership against the Plan and Execution test lists. Sweep a whole project (several keys or a JQL query) at least once per engagement: an inverted link is invisible per Story and only reads as a pattern in aggregate.
+- DO: treat Xray run statuses as PER-INSTANCE vocabulary. `TODO` / `EXECUTING` / `PASSED` / `FAILED` are the safe floor; `ABORTED` and `BLOCKED` are Xray defaults a project may not define, and the mutation is rejected when it does not. Record a blocked case in a status the project DOES define and explain it in the run comment — never leave the run `TODO`, which reads as never executed.
 - WHEN a Jira-fallback path created the container without authenticated Xray: the Xray layer never registered the tests and runs come back empty. Reconcile with the per-entity sync (or the bulk repair scan) before importing results.
 - DO: import results onto an existing Execution key, never scoped to a project — the import API cannot set a parent, so a project-scoped import mints a fresh unparented Execution on every run, outside the artifact ladder.
 - DO NOT: hand-craft Xray JSON payloads outside this CLI, or reuse a bearer token past its 24h TTL. A stale token produces silent 401s mid-import that read like network blips.
@@ -311,6 +314,9 @@ bun xray run status --id <runId> --status PASSED
 bun xray run status --id <runId> --status FAILED
 bun xray run status --id <runId> --status TODO
 bun xray run status --id <runId> --status EXECUTING
+# ABORTED and BLOCKED are Xray DEFAULTS, not guaranteed on the instance: a
+# project that did not define them rejects the mutation. Record the case in a
+# status the project does define and explain it in the run comment.
 bun xray run status --id <runId> --status ABORTED
 bun xray run status --id <runId> --status BLOCKED
 
@@ -428,16 +434,40 @@ bun xray set remove-tests --set <id> --tests <id1>,<id2>
 ### Jira Issue Links (`link create` — the coverage write-path)
 
 Xray's GraphQL API has **no coverage mutation**: requirement coverage is nothing
-but the Jira issue link whose inward description is `is tested by`. `link create`
-writes that link via Jira REST (`POST /rest/api/3/issueLink`) — it is the ONLY
-command in this CLI that fills the Story's coverage panel. The link-type `--type`
-takes a **slug** resolved from `.agents/jira-required.yaml` → `link_types`
-(default `test`); never pass a literal Jira link-type name. Direction: `<FROM>`
-is the **outward** side, `<TO>` the **inward** side — for coverage, the ATS
-`tests` the Story, so the Story ends up `is tested by` the ATS.
+but a Jira issue link of the `test` type between the artifact and the Story.
+`link create` writes it via Jira REST — it is the ONLY command in this CLI that
+fills the Story's coverage panel. The link-type `--type` takes a **slug** resolved
+from `.agents/jira-required.yaml` → `link_types` (default `test`); never pass a
+literal Jira link-type name.
+
+#### Direction — the one measured statement (read this, do not re-derive it)
+
+> **On a Story, the coverage-correct edge is the `issuelinks` entry that carries
+> the artifact under `inwardIssue`.** `bun xray link create <ARTIFACT> <STORY>
+> --type test` produces exactly that shape. The opposite shape
+> (`outwardIssue: <ARTIFACT>` on the Story) is a link that exists, reads as a
+> link, and carries **zero** coverage.
+
+State it as a **raw field name**, never as an outward/inward *description*. The
+descriptions ("tests" / "is tested by") can be read in either direction by a
+careful reader, and that is not a hypothetical: three agents once read the same
+sentence in opposite directions and one of them rewired live coverage links on
+the strength of it. A field name cannot be read two ways.
+
+How it was established, so it is auditable rather than doctrinal: Xray Cloud
+GraphQL `getCoverableIssue(issueId).tests`, read-only, on a live Story carrying
+BOTH shapes over two disjoint sets of ten real Tests. Xray returned the ten
+under `inwardIssue` and none of the ten under `outwardIssue` — same Story, same
+link type, same artifact type, so direction was the only variable. It
+reproduced across a project: 21 Stories wired the other way returned zero
+coverage against as many as 69 attached Tests.
+
+**Verify against Xray's coverage, never against Jira's link semantics.** The
+check is `bun xray trace <STORY>` (below), or the Story's coverage panel. A Jira
+link list looks correct in both directions.
 
 ```bash
-# Coverage: link the Story's ATS to the Story (fills the coverage panel)
+# Coverage: the Set tests the Story (Story then carries inwardIssue: -180)
 bun xray link create {{PROJECT_KEY}}-180 {{PROJECT_KEY}}-42 --type test
 
 # Default --type is test — equivalent to the above
@@ -446,6 +476,36 @@ bun xray link create {{PROJECT_KEY}}-180 {{PROJECT_KEY}}-42
 # Any other slug from jira-required.yaml link_types works the same way
 bun xray link create {{PROJECT_KEY}}-110 {{PROJECT_KEY}}-42 --type test_design
 ```
+
+The confirmation line is rendered from the payload actually sent, and prints the
+raw shape the Story ends up with. Read it: an earlier version of this command
+described the link it *intended* while storing the other one, and every coverage
+link it created was inverted without a single visible error.
+
+#### Repairing an inverted link (`link delete`)
+
+**Jira dedupes a link between the same pair and type regardless of direction**,
+so creating the corrected link on top of a wrong one is a silent no-op. The wrong
+one has to go first, and it is addressed by the link's OWN id — not an issue key,
+not an issue id. `trace --json` prints that id for a failing coverage edge whose link exists.
+
+```bash
+# 1. Read the offending link id
+bun xray trace {{PROJECT_KEY}}-42 --json
+
+# 2. Look at what you are about to remove
+bun xray link delete --id <LINK_ID> --dry-run
+
+# 3. Delete, then recreate the right way round
+bun xray link delete --id <LINK_ID> --yes
+bun xray link create {{PROJECT_KEY}}-180 {{PROJECT_KEY}}-42 --type test
+
+# 4. Confirm
+bun xray trace {{PROJECT_KEY}}-42
+```
+
+`--yes` is mandatory: deleting a link is irreversible and Jira says nothing when
+the id belongs to a different pair than you expected.
 
 > **Two layers, never confused**: `link create` writes **Jira-layer** issue links
 > (coverage, traceability). Plan/Execution/Set *membership* (`plan add-tests`,
@@ -465,8 +525,8 @@ It reports PASS/FAIL per edge:
 
 | Edge | What must hold |
 |---|---|
-| `Story↔ATS` | a Test Set is linked by the `test` link type, with the **Story as the inward party** (`is tested by`). The only edge Xray's coverage panel counts |
-| `ATP↔Story` | same link type and direction, from the Test Plan. Administrative — covers nothing |
+| `Story↔ATS` | a Test Set is linked by the `test` link type and appears under **`inwardIssue`** in the Story's `issuelinks` entry. The only edge Xray's coverage panel counts |
+| `ATP↔Story` | same link type and same shape, from the Test Plan. Administrative — covers nothing |
 | `ATR↔Story` | same, from the Test Execution. Administrative |
 | list parity | ATS membership == ATP test list == ATR test list. Read over GraphQL, because that membership is Xray-internal and invisible to a link read |
 
@@ -474,16 +534,32 @@ It reports PASS/FAIL per edge:
 # Verify one Story; exits 0 only when all four edges hold
 bun xray trace {{PROJECT_KEY}}-42
 
-# Machine-readable: per-edge status, the resolved ATS/ATP/ATR keys, the three test lists
+# Machine-readable: per-edge status, the resolved ATS/ATP/ATR keys, the three test
+# lists, and the LINK ID of a failing coverage edge whose link exists
 bun xray trace {{PROJECT_KEY}}-42 --json
+
+# Several Stories at once (also comma-separated)
+bun xray trace {{PROJECT_KEY}}-42 {{PROJECT_KEY}}-43
+
+# Whole-project sweep -> repair worklist
+bun xray trace --jql "project = {{PROJECT_KEY}} AND issuetype = Story" --limit 100
 ```
 
 Every failed edge prints the exact command that repairs it — a `link create` for
-a missing or inverted link, a `plan add-set` / `exec add-set` cascade for a list
-that drifted from the ATS. An inverted link FAILS even though the link exists:
-it carries no coverage. The link-type name is resolved from
-`.agents/jira-required.yaml` → `link_types`, so a workspace that renamed its
-`Test` type is matched by its own name.
+a missing link, the `link delete` → `link create` pair for an inverted one, a
+`plan add-set` / `exec add-set` cascade for a list that drifted from the ATS. An
+inverted link FAILS even though the link exists: it carries no coverage. The
+link-type name is resolved from `.agents/jira-required.yaml` → `link_types`, so a
+workspace that renamed its `Test` type is matched by its own name.
+
+**Run the sweep, not only the per-Story check.** An inverted coverage link is
+invisible on one Story: the link is there, the panel is merely empty, and nothing
+reports it. It only reads as a problem in aggregate — on one measured project,
+21 of 43 linked Stories were wired the wrong way and one of them lost a fully
+populated 69-Test Set. A sweep prints one worklist and keeps going past a Story
+it cannot read, so a permission error on row 3 does not hide rows 4-40. With
+more than one key the `--json` output wraps the per-Story objects in
+`{ stories, unreadable, summary }`; a single key keeps the original shape.
 
 Artifact selection follows the ratified title grammar: among several linked Test
 Sets, `ATS: {STORY_KEY}` wins over a feature-level `TS:` Set, and every unpicked
@@ -667,12 +743,16 @@ bun xray set create --project {{PROJECT_KEY}} --summary "ATS: {{PROJECT_KEY}}-42
   --tests {{PROJECT_KEY}}-100,{{PROJECT_KEY}}-101
 #    -> {{PROJECT_KEY}}-180
 
-# 2. Link the ATS to the Story — the PRIMARY link that fills the coverage panel
+# 2. Link the ATS to the Story — the PRIMARY link that fills the coverage panel.
+#    Artifact first, Story second: the Story must end up carrying
+#    `inwardIssue: {{PROJECT_KEY}}-180`, the only shape Xray counts.
 #    (live-verified: ATP->Story and ATR->Story links are administrative
 #    traceability and contribute NOTHING to coverage). A direct TC->Story link
 #    is the only other link that covers, and it is a LAST RESORT — for an
 #    instance with no Test Set work type. Prefer the ATS.
 bun xray link create {{PROJECT_KEY}}-180 {{PROJECT_KEY}}-42 --type test
+#    Verify the shape landed before moving on (cheap, read-only):
+bun xray trace {{PROJECT_KEY}}-42
 
 # 3. Create the Test Plan (ATP container) and derive its list from the ATS
 bun xray plan create --project {{PROJECT_KEY}} --summary "ATP: {{PROJECT_KEY}}-42: User can log in"

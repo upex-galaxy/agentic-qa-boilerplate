@@ -306,15 +306,26 @@ export async function getLinkedTests(issueKey: string): Promise<LinkedTest[] | n
 export interface IssueLinkView {
   key: string
   id: string
+  /**
+   * Id of the LINK itself (`issuelinks[].id`), not of either issue. It is the
+   * only handle `DELETE /rest/api/3/issueLink/{issueLinkId}` accepts, so a
+   * remediation that names a link has to carry it.
+   */
+  linkId: string
   /** Jira issue type display name of the LINKED issue. */
   issueType: string
   summary: string
   /** Display name of the link type on this instance. */
   linkTypeName: string
   /**
-   * Which side the READ issue sits on. `inward` means the linked issue is the
-   * outward party, so the read issue reads the inward description
-   * ("is tested by") — the direction the coverage edge requires.
+   * Which FIELD the LINKED issue appears under in this entry — the raw shape,
+   * not a semantic reading. `inward` means the entry carries
+   * `inwardIssue: <linked>`, which for the `test` link type on a Story is the
+   * shape Xray's coverage panel counts (measured; see `createIssueLink`).
+   *
+   * Stated as a shape on purpose: the outward/inward DESCRIPTIONS can be read
+   * in either direction by an operator, and doing so is what produced a wrong
+   * coverage recipe. The field name cannot be read two ways.
    */
   side: 'inward' | 'outward'
 }
@@ -352,8 +363,9 @@ export async function getIssueLinks(issueKey: string): Promise<IssueLinkView[] |
   const issue = (await response.json()) as JiraIssueWithLinks;
   const out: IssueLinkView[] = [];
   for (const link of issue.fields?.issuelinks ?? []) {
-    // `outwardIssue` on the record means the READ issue is the outward party,
-    // so it reads the OUTWARD description and the linked issue is inward.
+    // The entry names the OTHER issue, under the field name that issue carried
+    // in the payload that created the link (measured round trip — see
+    // `createIssueLink`). `side` reports that field name verbatim.
     const outward = link.outwardIssue;
     const inward = link.inwardIssue;
     const linked = outward ?? inward;
@@ -363,6 +375,7 @@ export async function getIssueLinks(issueKey: string): Promise<IssueLinkView[] |
     out.push({
       key: linked.key,
       id: linked.id,
+      linkId: link.id,
       issueType: linked.fields?.issuetype?.name ?? 'unknown',
       summary: linked.fields?.summary ?? '',
       linkTypeName: link.type?.name ?? 'unknown',
@@ -372,32 +385,17 @@ export async function getIssueLinks(issueKey: string): Promise<IssueLinkView[] |
   return out;
 }
 
-// ============================================================================
-// ISSUE LINK CREATION — the coverage write-path (`link create`)
-// ============================================================================
-
 /**
- * Create a Jira issue link via `POST /rest/api/3/issueLink`.
+ * Resolve every issue key matching a JQL query via `POST /rest/api/3/search/jql`.
  *
- * Direction follows Jira's own payload semantics: `outwardIssue` is the party
- * the OUTWARD description reads from, `inwardIssue` the one the INWARD
- * description reads from. For the link type named `Test` (outward `tests`,
- * inward `is tested by`): outward = the test artifact (Test / Test Set),
- * inward = the covered Story — the Story then shows "is tested by".
+ * Used by `trace --jql` to turn "every Story in this project with a Test link"
+ * into a repair worklist. The endpoint pages by opaque token and requires the
+ * same `jql`/`fields` on every request: a token-only body answers 400.
  *
- * `typeName` is the instance's DISPLAY name; callers resolve it from the
- * `.agents/jira-required.yaml` link-type catalog, never hardcode it.
- *
- * Returns `null` when Jira credentials are not configured (same contract as
- * every read above — the caller surfaces the guiding error). Throws on a
- * non-OK Jira response, with the body included: Jira's 404 for an unknown
- * link-type name is otherwise indistinguishable from a missing issue.
+ * Returns `null` when Jira credentials are not configured. Throws on a non-OK
+ * response.
  */
-export async function createIssueLink(
-  typeName: string,
-  outwardKey: string,
-  inwardKey: string,
-): Promise<true | null> {
+export async function searchIssueKeys(jql: string, maxResults = 100): Promise<string[] | null> {
   const config = loadConfig();
   const baseUrl = resolveJiraBaseUrl(config?.jira_base_url);
   const email = config?.jira_email || process.env.ATLASSIAN_EMAIL;
@@ -408,6 +406,126 @@ export async function createIssueLink(
   }
 
   const auth = Buffer.from(`${email}:${token}`).toString('base64');
+  const keys: string[] = [];
+  let nextPageToken: string | undefined;
+
+  for (;;) {
+    const body: Record<string, unknown> = nextPageToken
+      ? { jql, fields: ['key'], maxResults, nextPageToken }
+      : { jql, fields: ['key'], maxResults };
+
+    const response = await fetch(`${baseUrl}/rest/api/3/search/jql`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Jira REST JQL search failed: ${response.status} ${response.statusText} - ${text}`);
+    }
+
+    const page = (await response.json()) as {
+      isLast?: boolean
+      nextPageToken?: string
+      issues?: Array<{ key: string }>
+    };
+    for (const issue of page.issues ?? []) {
+      keys.push(issue.key);
+    }
+
+    if (page.isLast || !page.nextPageToken) {
+      break;
+    }
+    nextPageToken = page.nextPageToken;
+  }
+
+  return keys;
+}
+
+// ============================================================================
+// ISSUE LINK CREATION — the coverage write-path (`link create`)
+// ============================================================================
+
+/** The exact `POST /rest/api/3/issueLink` body sent, returned so callers can report it. */
+export interface IssueLinkPayload {
+  type: { name: string }
+  outwardIssue: { key: string }
+  inwardIssue: { key: string }
+}
+
+/**
+ * Build the `POST /rest/api/3/issueLink` body for "`subjectKey` <outward verb>
+ * `objectKey`" — e.g. "the ATS *tests* the Story".
+ *
+ * The field assignment is INVERTED relative to what the field names suggest,
+ * and that is a measured fact, not a reading of Jira's docs:
+ *
+ *   1. Round trip. A link POSTed as `{outwardIssue: A, inwardIssue: B}` reads
+ *      back from B's `issuelinks` as `outwardIssue: A`, and from A's as
+ *      `inwardIssue: B`. A key keeps the PAYLOAD field name it was sent under
+ *      when the other issue is read.
+ *   2. Coverage. Xray counts a Story's coverage only from the entry that
+ *      carries the artifact under `inwardIssue` on the STORY. Measured on one
+ *      Story holding both shapes over two disjoint sets of ten Tests: the ten
+ *      under `inwardIssue` were returned by `getCoverableIssue(...).tests`, the
+ *      ten under `outwardIssue` were not (live instance, 2026-09).
+ *
+ * So the covering artifact must be sent as `inwardIssue` and the covered issue
+ * as `outwardIssue`. The previous assignment was the other way round, which
+ * made the documented recipe `link create <ARTIFACT> <STORY> --type test`
+ * store the zero-coverage shape while its confirmation line described the
+ * correct one — the read path (`trace`) was right all along.
+ *
+ * `typeName` is the instance's DISPLAY name; callers resolve it from the
+ * `.agents/jira-required.yaml` link-type catalog, never hardcode it.
+ */
+export function buildIssueLinkPayload(
+  typeName: string,
+  subjectKey: string,
+  objectKey: string,
+): IssueLinkPayload {
+  return {
+    type: { name: typeName },
+    outwardIssue: { key: objectKey },
+    inwardIssue: { key: subjectKey },
+  };
+}
+
+/**
+ * Create a Jira issue link via `POST /rest/api/3/issueLink`.
+ *
+ * `subjectKey` performs the link type's OUTWARD verb, `objectKey` receives it
+ * (coverage: subject = the Test / Test Set, object = the Story). See
+ * `buildIssueLinkPayload` for the measured field mapping.
+ *
+ * Returns the payload actually POSTed, so the caller's confirmation line can be
+ * generated from it instead of from an assumption, or `null` when Jira
+ * credentials are not configured (same contract as every read above — the
+ * caller surfaces the guiding error). Throws on a non-OK Jira response, with
+ * the body included: Jira's 404 for an unknown link-type name is otherwise
+ * indistinguishable from a missing issue.
+ */
+export async function createIssueLink(
+  typeName: string,
+  subjectKey: string,
+  objectKey: string,
+): Promise<IssueLinkPayload | null> {
+  const config = loadConfig();
+  const baseUrl = resolveJiraBaseUrl(config?.jira_base_url);
+  const email = config?.jira_email || process.env.ATLASSIAN_EMAIL;
+  const token = config?.jira_api_token || process.env.ATLASSIAN_API_TOKEN;
+
+  if (!baseUrl || !email || !token) {
+    return null;
+  }
+
+  const payload = buildIssueLinkPayload(typeName, subjectKey, objectKey);
+  const auth = Buffer.from(`${email}:${token}`).toString('base64');
   const response = await fetch(`${baseUrl}/rest/api/3/issueLink`, {
     method: 'POST',
     headers: {
@@ -415,17 +533,53 @@ export async function createIssueLink(
       'Accept': 'application/json',
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      type: { name: typeName },
-      outwardIssue: { key: outwardKey },
-      inwardIssue: { key: inwardKey },
-    }),
+    body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
     const text = await response.text();
     throw new Error(
-      `Jira REST issueLink create failed (${outwardKey} -> ${inwardKey}, type "${typeName}"): `
+      `Jira REST issueLink create failed (${subjectKey} -> ${objectKey}, type "${typeName}"): `
+      + `${response.status} ${response.statusText} - ${text}`,
+    );
+  }
+
+  return payload;
+}
+
+/**
+ * Delete one Jira issue link by its own id via
+ * `DELETE /rest/api/3/issueLink/{issueLinkId}`.
+ *
+ * It exists because repairing an inverted coverage link REQUIRES a delete:
+ * Jira dedupes a link between the same pair and type regardless of direction,
+ * so creating the corrected link on top of the wrong one is a silent no-op
+ * (measured). The id is the `issuelinks[].id` of the entry, surfaced by
+ * `getIssueLinks` as `linkId` — never an issue id and never an issue key.
+ *
+ * Returns `null` when Jira credentials are not configured. Throws on a non-OK
+ * response; 204 and 200 both mean deleted.
+ */
+export async function deleteIssueLink(linkId: string): Promise<true | null> {
+  const config = loadConfig();
+  const baseUrl = resolveJiraBaseUrl(config?.jira_base_url);
+  const email = config?.jira_email || process.env.ATLASSIAN_EMAIL;
+  const token = config?.jira_api_token || process.env.ATLASSIAN_API_TOKEN;
+
+  if (!baseUrl || !email || !token) {
+    return null;
+  }
+
+  const auth = Buffer.from(`${email}:${token}`).toString('base64');
+  const response = await fetch(`${baseUrl}/rest/api/3/issueLink/${encodeURIComponent(linkId)}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Basic ${auth}`, Accept: 'application/json' },
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(
+      `Jira REST issueLink delete failed (link id ${linkId}): `
       + `${response.status} ${response.statusText} - ${text}`,
     );
   }

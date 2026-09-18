@@ -87,6 +87,8 @@ Resolve mode before the readiness preflight and Phase -1 session workflow.
 
 If the user has not supplied the ticket key required by `repair-traceability`, ask for it before any TMS call. Missing credentials remain a hard stop under `AGENTS.md` Critical Rule #10.
 
+> **`repair-traceability` on ONE ticket cannot see the failure that matters most.** Coverage-link direction is a project-wide condition: an inverted link is invisible on its own Story (the link is present, the coverage panel is merely empty, nothing reports it) and only reads as a pattern in aggregate — on one measured project, 21 of 43 linked Stories were wired the wrong way, one of them losing a fully populated 69-Test Test Set. So when the mode audits a ticket, ALSO offer the project-wide mixed-direction sweep before applying anything: the `[TMS_TOOL]` traceability check accepts several keys or a JQL query and returns one repair worklist. Direction doctrine, the delete-before-recreate rule (Jira dedupes the pair+type, so adding the corrected link is a silent no-op) and the sweep are canon in `agentic-qa-core/references/traceability-linking.md` §4 and §10. Read them before proposing any link repair; the plan the user approves must say which links get deleted, by id.
+
 ---
 
 ## Subagent Dispatch Strategy

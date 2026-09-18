@@ -178,7 +178,13 @@ ${colors.bold}TEST RUNS${colors.reset}
                      --execution <id>   Execution issue ID
   run status         Update test run status
                      --id <id>          Test run ID (required)
-                     --status <status>  TODO|EXECUTING|PASSED|FAILED|ABORTED|BLOCKED
+                     --status <status>  Xray DEFAULTS: TODO|EXECUTING|PASSED|FAILED|
+                                        ABORTED|BLOCKED. The vocabulary is
+                                        PER-INSTANCE: a project may accept only
+                                        TODO|EXECUTING|PASSED|FAILED and reject the
+                                        rest at mutation time. Record a blocked case
+                                        in a status the project defines and explain
+                                        it with 'run comment'; never leave it TODO.
 
   run step-status    Update a specific step status
                      --run <id>         Test run ID
@@ -256,16 +262,27 @@ ${colors.bold}TEST SETS${colors.reset}
 
 ${colors.bold}ISSUE LINKS${colors.reset}
   link create        Create a Jira issue link between two issues
-                     <FROM_KEY>         Outward party (required)
-                     <TO_KEY>           Inward party (required)
+                     <FROM_KEY>         Performs the link type's outward verb (required)
+                     <TO_KEY>           Receives it (required)
                      --type <slug>      Link-type SLUG from .agents/jira-required.yaml
                                         -> link_types (default: test). Display names
                                         are resolved from the catalog, never hardcoded.
-                     Direction: FROM is the OUTWARD side, TO the INWARD side.
                      Coverage case: 'link create <ATS_KEY> <STORY_KEY> --type test'
-                     leaves the Story "is tested by" the Test Set — the edge the
-                     Xray coverage panel reads. Also: TC→Story (last resort),
-                     Bug↔Test.
+                     — the Set tests the Story. MEASURED shape: the Story's
+                     issuelinks entry then carries 'inwardIssue: <ATS_KEY>', and
+                     that is the only shape Xray's coverage panel counts. The
+                     confirmation line prints the payload actually POSTed.
+                     Also: TC→Story (last resort), Bug↔Test.
+
+  link delete        Remove one issue link by its own id
+                     --id <LINK_ID>     issuelinks[].id (required) — NOT an issue
+                                        key and NOT an issue id
+                     --yes              Required to apply. Deleting is not reversible
+                     --dry-run          Print what would be deleted and stop
+                     Needed to repair an inverted link: Jira dedupes a link between
+                     the same pair and type regardless of direction, so recreating
+                     it is a silent no-op until the wrong one is gone. 'trace --json'
+                     prints the id for a failing coverage edge whose link exists.
 
 ${colors.bold}TRACEABILITY${colors.reset}
   trace <STORY_KEY>  Verify the three-edge traceability check in one call:
@@ -273,9 +290,16 @@ ${colors.bold}TRACEABILITY${colors.reset}
                      Xray coverage panel counts), ATP↔Story and ATR↔Story
                      (administrative), plus ATS membership == ATP test list ==
                      ATR test list. Read-only.
-                     --json             Machine-readable verdict
-                     Exits 0 only when ALL four edges pass; every failed edge
-                     prints the exact command that repairs it.
+                     <STORY_KEY>...     One or more keys (also comma-separated)
+                     --jql <query>      Verify every issue the query returns
+                     --limit <n>        Page size for --jql (default: 100)
+                     --json             Machine-readable verdict. One key keeps the
+                                        single-object shape; a sweep wraps it in
+                                        { stories, unreadable, summary }
+                     Exits 0 only when ALL four edges pass for EVERY Story; every
+                     failed edge prints the exact command that repairs it, and a
+                     sweep closes with a repair worklist. An inverted coverage link
+                     is invisible per Story and only reads as a pattern in a sweep.
 
 ${colors.bold}IMPORT RESULTS${colors.reset}
   import junit       Import JUnit XML results
@@ -391,12 +415,21 @@ ${colors.bold}EXAMPLES${colors.reset}
   # Associate executions with a plan
   xray plan add-executions {{PROJECT_KEY}}-200 --executions {{PROJECT_KEY}}-194,{{PROJECT_KEY}}-195
 
-  # Coverage link: the Story ends up "is tested by" the Test Set
+  # Coverage link: the Set tests the Story (Story then carries inwardIssue: -180)
   xray link create {{PROJECT_KEY}}-180 {{PROJECT_KEY}}-42 --type test
 
   # Verify a Story's full traceability in one call (exit 0 = all four edges hold)
   xray trace {{PROJECT_KEY}}-42
   xray trace {{PROJECT_KEY}}-42 --json
+
+  # Sweep a project for inverted / missing coverage links and get a repair worklist
+  xray trace --jql "project = {{PROJECT_KEY}} AND issuetype = Story" --limit 100
+
+  # Repair one inverted link: read the id, dry-run, delete, recreate
+  xray trace {{PROJECT_KEY}}-42 --json
+  xray link delete --id 10421 --dry-run
+  xray link delete --id 10421 --yes
+  xray link create {{PROJECT_KEY}}-180 {{PROJECT_KEY}}-42 --type test
 
   # Diff Jira-layer vs Xray-layer for a Test Execution and (optionally) repair
   xray exec sync --execution {{PROJECT_KEY}}-194
@@ -674,9 +707,13 @@ async function main(): Promise<void> {
           case 'create':
             await link.create(flags, positional);
             break;
+          case 'delete':
+          case 'rm':
+            await link.del(flags, positional);
+            break;
           default:
             log.error(`Unknown link command: ${subcommand}`);
-            log.info('Available: create');
+            log.info('Available: create, delete');
         }
         break;
 

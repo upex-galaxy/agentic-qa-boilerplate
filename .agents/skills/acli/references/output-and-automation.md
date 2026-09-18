@@ -111,6 +111,35 @@ acli jira workitem view {{PROJECT_KEY}}-N --json | jq '.fields.summary'
 
 The default human-readable table is stable enough for `grep`/`awk` inspection, but not for production parsing — use `--json` or `--csv`.
 
+### zsh does not word-split an unquoted expansion (bites every loop over key pairs)
+
+A loop that expands two keys from one variable works in `bash` and **silently
+passes ONE argument** in `zsh`, which is the default interactive shell on macOS:
+
+```bash
+# BROKEN under zsh: each iteration passes the literal string "KEY-1 KEY-2"
+for pair in "{{PROJECT_KEY}}-180 {{PROJECT_KEY}}-42"; do
+  acli jira workitem link create --out $pair --type "Test" --yes
+done
+
+# PORTABLE: split explicitly, or never put two values in one variable
+for pair in "{{PROJECT_KEY}}-180 {{PROJECT_KEY}}-42"; do
+  set -- ${=pair}          # zsh-only split operator
+  acli jira workitem link create --out "$1" --in "$2" --type "Test" --yes
+done
+
+# BEST: one variable per value, no splitting at all
+while IFS=, read -r artifact story; do
+  acli jira workitem link create --out "$artifact" --in "$story" --type "Test" --yes
+done < pairs.csv
+```
+
+The failure is loud but misleading: the command reports a missing or malformed
+argument, so the reader blames the CLI rather than the shell. Measured while
+repairing links in a batch. Any documented one-liner in this repo that expands a
+pair from a variable should use the CSV form above, which is portable across
+`bash`, `zsh` and CI runners alike.
+
 ## Confirmation, errors, batches
 
 | Flag              | Purpose                                                             |

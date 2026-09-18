@@ -17,6 +17,7 @@ function link(over: Partial<TraceLinkRecord> = {}): TraceLinkRecord {
     issueType: 'Test Set',
     summary: `ATS: ${STORY} Login`,
     linkTypeName: 'Test',
+    linkId: '10421',
     storySide: 'inward',
     ...over,
   };
@@ -102,8 +103,18 @@ describe('checkLinkEdge', () => {
   test('an inverted link fails even though the link exists', () => {
     const edge = checkLinkEdge(spec(link({ storySide: 'outward' })), 'Test', STORY);
     expect(edge.status).toBe('FAIL');
-    expect(edge.detail).toContain('wrong way round');
-    expect(edge.remediation).toContain('delete the inverted link');
+    expect(edge.detail).toContain('sits under outwardIssue');
+  });
+
+  test('the inverted-link remediation names the link id and is not a blind delete', () => {
+    const edge = checkLinkEdge(spec(link({ storySide: 'outward', linkId: '77123' })), 'Test', STORY);
+    // The id is the only handle the delete endpoint accepts; the old text told
+    // an operator to "delete the inverted link in Jira" and named nothing.
+    expect(edge.remediation).toContain('link id 77123');
+    expect(edge.remediation).toContain('bun xray link delete --id 77123 --dry-run');
+    expect(edge.remediation).toContain('bun xray link delete --id 77123 --yes');
+    expect(edge.remediation).toContain('bun xray link create UPEX-180 UPEX-42 --type test');
+    expect(edge.remediation).not.toContain('delete the inverted link in Jira');
   });
 
   test('a renamed link type is matched by the catalog name, case-insensitively', () => {

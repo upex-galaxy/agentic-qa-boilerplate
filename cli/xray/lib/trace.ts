@@ -7,9 +7,10 @@
  * per edge whether traceability holds.
  *
  * The four verdicts are:
- *   1. `Story↔ATS`  — the COVERAGE edge. The Test Set must be the outward party
- *                     of a `test` link, so the Story reads "is tested by". This
- *                     is the only edge Xray's coverage panel counts.
+ *   1. `Story↔ATS`  — the COVERAGE edge. The Test Set must appear under
+ *                     `inwardIssue` in the Story's `issuelinks` entry for the
+ *                     `test` link type. Measured: that is the only shape Xray's
+ *                     coverage panel counts, and the only edge it counts at all.
  *   2. `ATP↔Story`  — administrative. Same link type, same direction.
  *   3. `ATR↔Story`  — administrative. Same link type, same direction.
  *   4. list parity  — ATS membership == ATP test list == ATR test list. That
@@ -29,9 +30,15 @@ export interface TraceLinkRecord {
   /** Display name of the link type on this instance (never hardcoded upstream). */
   linkTypeName: string
   /**
-   * Which side of the link the STORY sits on. `inward` means the linked issue
-   * is the outward party — the Story reads the inward description
-   * ("is tested by"), which is the direction coverage requires.
+   * Id of the LINK itself (`issuelinks[].id`), carried so a remediation can
+   * name the exact link to remove instead of telling an operator to find it.
+   */
+  linkId: string
+  /**
+   * Which FIELD the artifact appears under in the STORY's entry — the raw
+   * shape, not a semantic reading. `inward` (the entry carries
+   * `inwardIssue: <artifact>`) is the shape Xray's coverage panel counts;
+   * `outward` is a link that exists and covers nothing.
    */
   storySide: 'inward' | 'outward'
 }
@@ -46,6 +53,12 @@ export interface TraceEdge {
   detail: string
   /** The exact command that fixes it, or null when the edge passes. */
   remediation: string | null
+  /**
+   * `issuelinks[].id` of the artifact's link to the Story, when one exists.
+   * Null on `lists-match` (no single link backs that edge) and on a missing
+   * artifact (there is no link to name an id for).
+   */
+  linkId: string | null
 }
 
 export interface TraceArtifacts {
@@ -121,10 +134,19 @@ export interface EdgeSpec {
 
 /**
  * Verify one link edge: the artifact exists, carries the `test` link type, and
- * sits on the OUTWARD side so the Story reads "is tested by".
+ * appears under `inwardIssue` in the Story's entry — the shape Xray's coverage
+ * panel counts.
  *
  * `linkTypeName` comes from the `.agents/jira-required.yaml` catalog, so a
  * workspace that renamed its link type is still matched by its own name.
+ *
+ * The inverted-link remediation is deliberately TWO commands, the first of
+ * which refuses to run without `--yes`. It used to read "delete the inverted
+ * link in Jira, then: link create ...", with no link id and no confirmation
+ * step, on a gate that exits 1 — a destructive instruction an operator ran on
+ * live data. It also could not have worked as a one-liner: Jira dedupes a link
+ * between the same pair and type regardless of direction, so the recreate half
+ * is a silent no-op until the delete lands.
  */
 export function checkLinkEdge(spec: EdgeSpec, linkTypeName: string, storyKey: string): TraceEdge {
   const base = { id: spec.id, label: spec.label } as const;
@@ -137,10 +159,11 @@ export function checkLinkEdge(spec: EdgeSpec, linkTypeName: string, storyKey: st
       status: 'FAIL',
       detail: `no ${spec.acronym} linked to ${storyKey}`,
       remediation: fix(`<${spec.acronym}_KEY>`),
+      linkId: null,
     };
   }
 
-  const { key, linkTypeName: actual, storySide } = spec.artifact;
+  const { key, linkTypeName: actual, storySide, linkId } = spec.artifact;
 
   if (normalize(actual) !== normalize(linkTypeName)) {
     return {
@@ -148,6 +171,7 @@ export function checkLinkEdge(spec: EdgeSpec, linkTypeName: string, storyKey: st
       status: 'FAIL',
       detail: `${key} is linked by "${actual}", not "${linkTypeName}"`,
       remediation: fix(key),
+      linkId,
     };
   }
 
@@ -155,12 +179,17 @@ export function checkLinkEdge(spec: EdgeSpec, linkTypeName: string, storyKey: st
     return {
       ...base,
       status: 'FAIL',
-      detail: `${key} is linked the wrong way round — ${storyKey} is the outward party, so it does not read "is tested by"`,
-      remediation: `delete the inverted link in Jira, then: ${fix(key)}`,
+      detail: `${key} sits under outwardIssue in ${storyKey}'s issuelinks — the link exists and carries no coverage`,
+      remediation:
+        `review link id ${linkId} on ${storyKey}, then replace it (Jira dedupes the pair+type, `
+        + 'so the create is a no-op until the delete lands): '
+        + `bun xray link delete --id ${linkId} --dry-run  →  `
+        + `bun xray link delete --id ${linkId} --yes  →  ${fix(key)}`,
+      linkId,
     };
   }
 
-  return { ...base, status: 'PASS', detail: `${key} (${actual})`, remediation: null };
+  return { ...base, status: 'PASS', detail: `${key} (${actual})`, remediation: null, linkId };
 }
 
 // ============================================================================
@@ -204,6 +233,7 @@ export function checkMembership(lists: MembershipLists, keys: MembershipKeys): T
       status: 'FAIL',
       detail: 'no ATS to compare against — the Plan and the Run derive their lists from its membership',
       remediation: null,
+      linkId: null,
     };
   }
 
@@ -232,7 +262,7 @@ export function checkMembership(lists: MembershipLists, keys: MembershipKeys): T
   }
 
   if (problems.length === 0) {
-    return { ...base, status: 'PASS', detail: `${lists.ats.length} test(s) in all three`, remediation: null };
+    return { ...base, status: 'PASS', detail: `${lists.ats.length} test(s) in all three`, remediation: null, linkId: null };
   }
 
   return {
@@ -240,6 +270,7 @@ export function checkMembership(lists: MembershipLists, keys: MembershipKeys): T
     status: 'FAIL',
     detail: problems.join('; '),
     remediation: fixes.length > 0 ? fixes.join(' && ') : null,
+    linkId: null,
   };
 }
 
