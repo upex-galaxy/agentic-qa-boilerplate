@@ -573,6 +573,14 @@ describe('agent identity', () => {
     })).toBe('');
   });
 
+  test('the native-path fleet-worker prompt shape still derives a title', () => {
+    // H1: the worker's prompt MUST begin with `/<workflow> <KEY> fleet worker …`.
+    expect(proposeSessionTitle({
+      prompt: '/sprint-testing BK-123 fleet worker: run every stage without returning to the prompt.',
+      identity: { nameSource: 'none' },
+    })).toBe('BK-123-sprint-testing');
+  });
+
   test('orcaAvailable never spawns a process and tolerates an empty PATH', () => {
     const home = temporaryRoot('agent identity path ');
     write(home, 'bin/orca', '');

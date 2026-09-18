@@ -52,7 +52,12 @@ export const ORCA_CONTEXT_LINE = [
   'channel = orca orchestration, never SendMessage/AskUserQuestion.',
 ].join(' ');
 
-/** A workflow skill plus an issue key in the first prompt names the session. */
+/**
+ * A workflow skill plus an issue key in the first prompt names the session.
+ * Matches unanchored, so it also accepts the native-path fleet-worker shape
+ * (`/sprint-testing BK-123 fleet worker: …`): the workflow name and the key
+ * still appear adjacent, only trailed by more prompt text.
+ */
 export const WORKFLOW_PROMPT_PATTERN
   = /(sprint-testing|test-automation|shift-left-testing|regression-testing|framework-development)\s+([A-Z][A-Z0-9]+-\d+)/;
 
@@ -299,8 +304,8 @@ function sanitizeTitle(value) {
 /**
  * A title only when no human named the session: `nameSource` `user` (a `/rename`
  * or `--name`) and `unknown` (a name of unverifiable origin) are both left
- * alone. `--name <value>` in the prompt wins over the workflow + issue-key
- * shape, which yields `<KEY>-<workflow>`.
+ * alone. An explicit `--name <value>` wins first, then the workflow +
+ * issue-key shape, which yields `<KEY>-<workflow>`.
  */
 export function proposeSessionTitle({ prompt = '', identity = {} } = {}) {
   if (identity.nameSource === 'user' || identity.nameSource === 'unknown') { return ''; }

@@ -148,7 +148,7 @@ Declare the intent at partition time (which WP reads which entity, which one wri
 
 ## 9 · The launch file and the silence rule
 
-The conductor **always** writes the launch file — one self-contained line per worker — whether or not any orchestration binary exists on the machine. With it, those exact lines are what gets launched; without it, the human pastes them into N terminals. Identical payloads are what keeps the two paths from drifting; a paraphrased line is the failure this rule exists to prevent. Shape, validation, and the three gated lines: `orca-orchestration/references/launch-seam.md`.
+The conductor **always** writes the launch file — one self-contained line per worker — whether or not any orchestration binary exists on the machine. Supervised launch is the native path (`orca-orchestration`'s `worker-start --agent`); `launch.txt` is the payload for the human-paste fallback when nothing can launch it, and for the unsupervised custom-argv path in between. Identical payloads are what keeps the paths from drifting; a paraphrased line is the failure this rule exists to prevent. Shape, validation, and the three gated lines: `orca-orchestration/references/launch-seam.md`.
 
 The absence of an orchestration binary costs nothing and is never reported: not in the preflight gate, not in the plan, not in the review, and never named to the user from this skill.
 

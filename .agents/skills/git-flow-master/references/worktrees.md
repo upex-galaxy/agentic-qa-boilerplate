@@ -119,6 +119,8 @@ When several agent sessions are being coordinated — a conductor plus N workers
 
 The distinction that matters here: an orchestrated worktree is **visible to the owner** (board card, managed terminal, phone) and outlives the session that made it, while a harness worktree lives inside the repo and is invisible outside the session that created it.
 
+Launching a session into that worktree can go through the native path (supervised — the orchestrator recognizes the session and can address it directly) or the custom-argv path (never supervised, the default fallback); from git's point of view the worktree itself is identical either way.
+
 ### Manual vs harness vs orchestrated at a glance
 
 | | `git worktree` (manual) | `EnterWorktree` (Claude Code) | Orchestrated (Approach C) |

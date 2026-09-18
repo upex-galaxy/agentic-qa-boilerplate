@@ -272,6 +272,7 @@ Group changes by responsibility, not by file type:
 
 - One commit = one responsibility. Never bundle unrelated changes.
 - Never `git add -A` or `git add .` — list explicit paths to avoid leaking secrets (`.env`, credentials) or unrelated work.
+- **PBI ladder guard (repos running the `.context/PBI/` cache, `AGENTS.md` §9).** After staging, run `git diff --cached --name-only | grep '^\.context/'`. Anything staged there must be one of the three `[COMMIT]`-tier paths (`.context/PBI/README.md`, `.context/PBI/templates/**`, `.context/PBI/epics/*/test-specs/**`); every other match is `[SYNC]` cache that leaked past the ignore ladder — a directory like `stories/` reads as untracked in `git status` and an explicit-path `git add` descends straight past the exclusion. Unstage it (`git restore --staged <path>`) before the commit proceeds. A commit that touches no `.context/` path skips this check.
 - **No AI attribution.** No `Generated with Claude Code`, no `Co-Authored-By: Claude`, no equivalent line. Commits look human-authored. (Critical Reminder #3 in `AGENTS.md`.)
 - If a pre-commit hook fails, **stop, fix the underlying issue, create a NEW commit**. Never `--amend` a commit the hook rejected — `--amend` operates on the previous commit, which destroys context.
 
