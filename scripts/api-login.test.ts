@@ -267,4 +267,13 @@ describe('help text and entry point', () => {
     expect(stdout).toContain('--profile <name>');
     expect(stdout).not.toContain('Unknown environment');
   });
+
+  test('the entry file is wired to the split, not a pre-split copy that only prints the same banner', () => {
+    // A gate that cannot fail is worse than no gate, because it converts a warning
+    // into a false all-clear: a pre-split 510-line copy could reprint this exact
+    // --help banner without ever importing either half. Assert the wiring itself.
+    const source = readFileSync(ENTRY, 'utf-8');
+    expect(source).toContain('from \'./lib/api-login-core\'');
+    expect(source).toContain('from \'./api-login.project\'');
+  });
 });
