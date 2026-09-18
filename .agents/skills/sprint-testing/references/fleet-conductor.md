@@ -52,25 +52,37 @@ The **orchestration gate** (binary present + runtime reachable, three-state, can
 
 ---
 
-## 3. Worker identity — two env vars, nothing else
+## 3. Worker identity — the prompt and the brief, not the environment
 
-The launch line exports exactly two variables; they are what turns a generic `sprint-testing` invocation into a worker:
+**The prompt is the channel.** A worker's first prompt opens with the skill, the issue key and the literal token `fleet worker`, then points at its brief:
 
-| Variable | Value | Effect on the worker |
+```
+/sprint-testing UPEX-123 fleet worker env: staging. Brief: <abs path to brief.md>. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints.
+```
+
+Same text on both launch paths (§5 rule 2), so a worker cannot tell them apart.
+
+Two signals, in this order, make a session a worker:
+
+| Signal | Where | What it decides |
 |---|---|---|
-| `PARALLEL_TESTING` | `true` | this session is a worker of a fleet |
-| `PARALLEL_TICKET` | the issue key | the single issue it owns |
+| the token `fleet worker` next to a skill invocation and an issue key | the launch prompt | this session is a worker; that key is the single issue it owns |
+| `Label` · `Task` · `Dispatch` in the brief's `## Meta` | `sprint-<N>/<KEY>/brief.md` | which worker it is, and how it reports (§10) |
 
-A worker that sees both:
+**Environment variables are NOT a channel.** Measured 2026-09-17 (three-worker fleet, one repo): an env prefix written into a launch line did not survive the launcher, and all three sessions ran with both variables empty while behaving as workers only because the prompt said so. `PARALLEL_TESTING` / `PARALLEL_TICKET` therefore survive as an OPTIONAL redundant hint on the human-paste path (a pasted shell line does carry its own prefix) and nothing in this skill may depend on them. A session that sees the env vars but no `fleet worker` prompt and no brief is not a worker — the prompt and the brief are the only detection channel.
 
-- runs **single-issue** mode on `PARALLEL_TICKET` — it does NOT ask the mode question, because the answer is already in the environment;
+A worker:
+
+- runs **single-issue** mode on the key in its prompt — it does NOT ask the mode question, because the prompt already answered it;
+- **runs to completion without returning to its prompt.** Stage boundaries are not checkpoints and are not places to stop and wait: the run ends when the done-report is sent (§10), and until then the worker keeps working. A worker that parks at its prompt after Stage 1 looks exactly like a crashed one to the conductor's liveness sweep;
 - runs **without checkpoints**: no "explain the story and WAIT for OK", no per-stage "brief the user and wait". Nobody is watching its terminal. The gates it would have asked a human become report content instead: the story explanation and every stage summary go into its report, and anything that genuinely needs a decision goes out as an `ask` (§10), not as a `AskUserQuestion` nobody will ever see;
 - **never skips the Readiness Preflight Gate**, and never skips the MCP probes inside it. This is the single most expensive shortcut a worker can take: a worker whose DB tool never answered produces a confident ATR with a missing trifuerza leg, and nothing downstream catches it. Measured on the source fleet (2026-09, sprint 19): 3 of 8 workers ran an entire issue with no DB connectivity;
 - creates **no sprint-altitude state**: no `sprint-<N>/plan.md`, no `sprint-<N>/progress.md`, no STP find-or-create, no STP comment. Its scope is `sprint-<N>/<KEY>/` and only that;
 - mints **no tokens** and runs **no bulk sync** (§2);
-- reports **once** when done, plus `ask` / `escalation` as needed, and then stops. No heartbeats — periodic "still alive" messages wake the conductor for nothing and are prohibited by the worker contract (`orca-orchestration/references/worker-contract.md`), which overrides any generic preamble the launcher injects.
+- reports **once** when done, plus `ask` / `escalation` as needed, and then stops. No heartbeats — periodic "still alive" messages wake the conductor for nothing and are prohibited by the worker contract (`orca-orchestration/references/worker-contract.md`), which overrides any generic preamble the launcher injects;
+- takes its **test-case format from the brief** and never asks for it (`SKILL.md` §"Test-case format — ask once per batch"): the conductor asks the user once per batch, the worker applies the declared format to its whole batch, and a silent brief earns ONE `ask`, not a guess.
 
-A session with neither variable set is not a worker. Nothing else in this skill reads them.
+A session with no `fleet worker` prompt and no brief is not a worker, and nothing in this skill reads the environment to decide otherwise.
 
 ---
 
@@ -86,9 +98,11 @@ The brief extends the 7-component briefing (`agentic-qa-core/references/briefing
 # Brief — <KEY> (worker <label>)
 
 ## Meta
+label: <W1> · task: <task id or "-"> · dispatch: <dispatch id or "-">
 issue: <KEY> · type: <type> · priority: <priority> · wave: <n> · round: <n>
 sprint scope (absolute path): <abs>/.session/sprint-testing/sprint-<N>/
 environment: <env> · web: <url> · api: <url>
+test-case format: Manual | Gherkin   ← decided once per batch by the conductor, never asked here
 
 ## The issue
 <title>
@@ -121,8 +135,10 @@ Run: <run id — ONLY when this worker was launched without a supervised dispatc
 
 ## Rules
 - single-issue mode on <KEY>, no checkpoints, preflight gate + MCP probes NOT skippable
+- run every stage without returning to the prompt until the done-report is sent; stage boundaries are not checkpoints
 - no sprint-altitude writes, no token minting, no bulk sync
 - no heartbeats; report once at the end
+- if your own measurement contradicts an instruction in this brief or a later message, STOP and `ask` with both readings and your evidence — never comply silently and never deviate silently
 - <for a non-Claude harness: rename this session to <KEY>-<slug> with /rename as your first action>
 ```
 
@@ -138,19 +154,21 @@ Address: `.session/sprint-testing/sprint-<N>/launch.txt`. One self-contained lin
 
 Rules:
 
-1. **Always written**, gate or no gate. It is the contract; the orchestration layer is a shortcut that consumes the same bytes.
-2. **Byte-identical payload.** When the orchestration layer launches a worker, it receives *this exact line*. Never paraphrase it into a command — a paraphrased line is the one failure mode this rule exists to prevent.
+1. **Always written**, gate or no gate. It is the record of what the fleet was asked to do, and the **human-paste** path consumes it literally.
+2. **Byte-identical where it is pasted.** A human (or a launcher that takes a whole command line) gets *this exact line*; never paraphrase it. On the supervised path the transport opens the session itself with its own arguments and cannot accept a custom command line, so what travels there is the **prompt payload** of this line, delivered to the live session as its first message (`orca-orchestration/references/launch-seam.md` §2). The prompt is the part that must stay identical across both paths — it is what makes a session a worker (§3).
 3. **Regenerated whole** at every round boundary. Never patched line by line: issues that closed **drop out**, issues that arrived get appended. A stale line relaunches a finished issue.
-4. **Self-contained**: the two env vars, the harness invocation, the session name, and the prompt, in one line that works when pasted into a fresh terminal at the repo root.
+4. **Self-contained**: the harness invocation, the session name, the prompt, and (paste path only) the optional env prefix, in one line that works when pasted into a fresh terminal at the repo root. The prefix is a convenience for a pasted line — it does not reach a session the transport opened, so the prompt must carry everything the worker needs (§3).
 5. **No `"` and no `<` / `>` inside the prompt text.** Measured (2026-09-04, source fleet): a quote inside the prompt produced a shell parse error that killed five of five lines *and* silently dropped the env-var exports, so the workers ran as non-workers. Reword the prompt instead.
 6. **Validate every line before launch** with a shell syntax check (`bash -n` on a file holding the lines; `zsh -n` where the user's shell is zsh). A line that does not parse is not launched.
-7. The harness invocation itself (binary, model / effort / permission / session-name flags per harness) is owned by `orca-orchestration/references/launch-seam.md`. This skill owns only the payload: the env prefix and the `sprint-testing` prompt.
+7. The harness invocation itself (binary, model / effort / permission / session-name flags per harness) and which launch path supervises are owned by `orca-orchestration/references/launch-seam.md`. This skill owns only the payload: the `sprint-testing` worker prompt.
 
 Shape (Claude Code; verified 2026-09-17 in this repo that `bun run claude -- <args>` forwards `<args>` verbatim through the `dotenv` wrapper):
 
 ```
-PARALLEL_TESTING=true PARALLEL_TICKET=UPEX-123 bun run claude -- <harness flags per launch-seam.md> -n "UPEX-123-checkout-tax" "/sprint-testing UPEX-123 mode: worker env: staging. Brief: <abs path to brief.md>"
+PARALLEL_TESTING=true PARALLEL_TICKET=UPEX-123 bun run claude -- <harness flags per launch-seam.md> -n "UPEX-123-checkout-tax" "/sprint-testing UPEX-123 fleet worker env: staging. Brief: <abs path to brief.md>. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints."
 ```
+
+The quoted prompt is the payload. On the supervised path it is what the conductor sends to the session the moment it is ready — same text, no shell around it.
 
 ---
 
@@ -172,7 +190,16 @@ PARALLEL_TESTING=true PARALLEL_TICKET=UPEX-123 bun run claude -- <harness flags 
 
 So: the **conductor mints every token before the round launches**, once per role the round needs. A worker only *sources* what already exists — it never logs in, never refreshes, never re-mints. A worker whose token is expired or missing does not fix it: it emits `BLOCKED_AUTH_STALE` (§10) and stops the affected leg.
 
-When token sets must be isolated per worker or per credential, the conductor mints into a **per-worker profile** (a separate token file per worker) and each brief names the absolute path the worker sources. One writer either way.
+When token sets must be isolated per worker or per credential, the conductor mints into a **per-worker profile** — a separate token file per worker, one invocation per worker and role:
+
+```
+bun run api:login <env> --profile <label>      # e.g. staging --profile W1
+bun run api:login <env> --role admin --profile W2
+```
+
+**Name the environment first, positionally.** `api-login` is a project-adapted script: every repo owns its own copy, and flag order relative to the environment is not guaranteed identical across copies. Naming the environment positionally, before any flag, works on every copy regardless of how that copy parses `--role` / `--profile`. Read `--help` on the repo you are in when in doubt; never guess a flag.
+
+Each brief then names the **absolute path** of the token file its worker sources (`.auth/profiles/<label>/tokens.env`). One writer either way: the worker sources, never mints.
 
 ---
 
@@ -261,7 +288,9 @@ Both of those surfaces are append-only, so a worker appending its own would be *
 
 ## 11. Per-worker browser isolation
 
-`.playwright/cli.config.json` is **shared** and today's doctrine has each ticket repoint its `outputDir` before capturing. With N workers that is last-writer-wins: worker 3's screenshots land in worker 1's ticket folder.
+`.playwright/cli.config.json` is **shared**, and a workflow step that has each ticket repoint its `outputDir` before capturing is last-writer-wins: worker 3's screenshots land in worker 1's ticket folder.
+
+**The shared config's `outputDir` stays neutral.** It ships pointing at a tool-owned directory, never at a ticket's evidence folder, and no session repoints it — not even the first one, because the value is committed and outlives the ticket. Measured 2026-09-17: a project whose committed config still pointed at one story's evidence folder cross-contaminated the first unqualified capture of all three workers in the round. A repo that finds a ticket path there fixes the config once (back to the tool-owned directory) rather than racing to overwrite it. Canon: `agentic-qa-core/references/evidence-conventions.md` §1 (Bucket A) + §5.
 
 Two things must be per-worker, and neither one edits the shared file:
 
@@ -287,6 +316,10 @@ Each worker closes its browser sessions before reporting done. Ten orphaned brow
 | a worker idle with a clean working tree 10 minutes after launch | the brief never reached it | re-send the brief; creating + launching + briefing is indivisible (§4) |
 | the conductor learns nothing for an hour | it is polling instead of waiting on the mailbox, or a batch was acknowledged without being processed | `orca-orchestration/references/coordinator-playbook.md` |
 | a worker asked the user something | it used a user-facing prompt instead of `ask` | §10; the brief must forbid it |
+| a worker ran the queue mode question, or tested nothing at all | its prompt carried no `fleet worker` token and no brief path, so it never knew it was a worker | §3, §5 rule 2 |
+| a worker sits at its prompt with Stage 1 done and nothing sent | it treated the stage boundary as a checkpoint | §3; restate the continuation rule in the brief |
+| the whole round launched with no tokens | `api:login` was called with a flag before the positional environment | §7 |
+| half the Tests came back Manual and half Gherkin | the format was not in the briefs and each worker decided for itself | §4 `## Meta`; `SKILL.md` §"Test-case format" |
 
 ---
 
@@ -295,11 +328,12 @@ Each worker closes its browser sessions before reporting done. Ten orphaned brow
 - [ ] Mode is sprint-wide AND (user asked OR `orchestration.max_workers` > 1) AND the gate was evaluated
 - [ ] Gate failed → `launch.txt` written, user told to paste N lines, orchestration layer never named
 - [ ] `roster.md` written: one row per worker (label · issue · session label · handles · state)
-- [ ] One `brief.md` per issue in the round, with ACs **verbatim**, absolute paths, siblings, and the no-heartbeat / no-checkpoint / preflight-not-skippable rules
+- [ ] One `brief.md` per issue in the round, with ACs **verbatim**, absolute paths, siblings, the declared test-case format, and the no-heartbeat / no-checkpoint / run-to-done / measurement-contradiction rules
 - [ ] `launch.txt` regenerated whole for this round; closed issues dropped; every line syntax-checked; no `"` / `<>` in any prompt
+- [ ] Every worker prompt opens with the skill, its issue key, the token `fleet worker` and its brief path — the only detection channel (§3)
 - [ ] Round size ≤ cap; no two `write` claims on one entity inside the round; `Owner` + `Pattern: Fleet` set on every queue row
-- [ ] Tokens minted by the conductor before launch; no worker logs in
-- [ ] Per-worker browser profile + output dir; shared `.playwright/cli.config.json` untouched
+- [ ] Tokens minted by the conductor before launch, environment named positionally, one profile per worker; every brief names the absolute token path; no worker logs in (§7)
+- [ ] Per-worker browser profile + output dir; shared `.playwright/cli.config.json` untouched and its `outputDir` neutral
 - [ ] Dashboard presented at the round checkpoint: native liveness first, `BLOCKED_` grep second, staleness > 20 min flagged
 - [ ] Every worker released / closed as it finishes — not at the end of the round
 - [ ] Sprint `progress.md` entry + STP comment + queue row + issue archive written by the CONDUCTOR, one per closed issue, after Stage 3 verified

@@ -55,7 +55,7 @@ Deep-dive the UI on `{{WEB_URL}}` via `[AUTOMATION_TOOL]`. Goal: validate ACs, d
 | Screenshot | `[AUTOMATION_TOOL]` | Evidence |
 | Console + Network | `[AUTOMATION_TOOL]` | Observe errors / requests |
 
-Before any `[AUTOMATION_TOOL]` call, set `.playwright/cli.config.json` `outputDir` to `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/evidence/`. Screenshots still need the full path in `--filename` because `outputDir` does not apply to `.png`.
+Before any `[AUTOMATION_TOOL]` call, capture with an explicit destination path resolving to the ticket's `evidence/` folder — never repoint the shared `.playwright/cli.config.json` `outputDir` (see `agentic-qa-core/references/evidence-conventions.md` §1 Bucket B and §5). Screenshots still need the full path in `--filename` because `outputDir` does not apply to `.png`.
 
 ### 1.2 Scenario loop (per AC)
 
@@ -411,7 +411,7 @@ At end of Stage 2, each Stage-1 test outline / TC must have PASSED or FAILED. No
 
 ## §6. Pre-flight checklist
 
-- [ ] Playwright / automation tool config `outputDir` set to `evidence/` folder BEFORE first action
+- [ ] Capture destination is an explicit full path into the ticket's `evidence/` folder per capture — the shared `.playwright/cli.config.json` `outputDir` is never repointed (§1.1, `agentic-qa-core/references/evidence-conventions.md` §1 Bucket A + §5)
 - [ ] Credentials pulled from `.env` (no hardcoding)
 - [ ] Smoke test ran FIRST and produced Go decision
 - [ ] Triforce layers selected based on feature type (UI / API / DB)

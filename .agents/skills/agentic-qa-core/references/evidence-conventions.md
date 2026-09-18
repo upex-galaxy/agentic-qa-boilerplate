@@ -16,7 +16,7 @@ Every file produced while testing falls into exactly one of three buckets. Misfi
 
 **Bucket B rule — explicit destination, always.** Every capture command MUST receive an explicit destination path resolving to the ticket's `evidence/` folder. Never let a capture fall back to the tool default — that writes to the repo root CWD and clutters the workspace with stray files that look like committed assets. Note the known gotcha: `outputDir` in the automation tool config does NOT apply to screenshots — pass the full path in the capture command's filename argument (see `sprint-testing/references/exploration-patterns.md` §1.1).
 
-**Bucket A rule — hands off the shared config.** Do not repoint the automation tool's `outputDir` mid-session beyond what the active workflow skill instructs; parallel sessions can share it.
+**Bucket A rule — hands off the shared config.** Do not repoint the automation tool's `outputDir`: it stays at the tool-owned directory it ships with (`.playwright/output`), which is what lets parallel sessions share the file. A workflow step that says "set `outputDir` to the ticket's evidence folder before capturing" is a single-session assumption and is superseded by §5. The value is **committed**, so a ticket path written there outlives the ticket: measured 2026-09-17, a repo whose config still pointed at one story's evidence folder cross-contaminated the first unqualified capture of all three concurrent sessions. Find a ticket path there → fix it back to the tool-owned directory once, do not race to overwrite it.
 
 ---
 

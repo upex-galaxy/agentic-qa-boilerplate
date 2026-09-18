@@ -187,6 +187,35 @@ huge payloads, Unicode/emoji, expired token, clock skew, network drop. Frame
 exploration as a **charter** (a time-boxed mission against a specific risk area),
 not aimless clicking. Charters complement — never replace — the systematic cases.
 
+### Unreachable preconditions — the empty state on a shared, long-lived account
+
+A derived case is only real if the environment can be put into the state it needs. The
+recurring case is the **empty state**: "with no orders yet, the list shows the onboarding
+panel". On a shared staging account that has been used by the whole team for a year, zero
+orders is unreachable, and the case quietly becomes untestable. The measured failure
+(2026-09-17) is not that it was skipped: it is that it was skipped **silently**, reported as
+covered, and the AC's own promise was never checked.
+
+Three legitimate outcomes, in order of preference:
+
+1. **A fixture identity.** Create (or take) a dedicated account / tenant / workspace that
+   exists to be empty, name it in the test's preconditions, and run the case there. This is
+   the answer for anything cheap to provision, and the same trick reaches a first-login,
+   never-verified or zero-quota state.
+2. **A reset path the product already has.** An owned tenant the test can empty, a seed
+   script, a soft-delete the product exposes. Use it only when the case can afford the blast
+   radius on a shared environment — never empty data another session is using
+   (`sprint-testing/references/fleet-conductor.md` §8 claims, when several sessions run).
+3. **Declared unobservable, with a product decision attached.** When neither 1 nor 2 is
+   available, the case is **not dropped**: it is recorded as `BLOCKED — unreachable
+   precondition: <state>` in the plan and the results, with the reason and what it would take
+   (a fixture account, a seed hook, a reset endpoint). That is a product / test-environment
+   decision to be raised, not a QA omission to be hidden — and per the `Improvement` bridge it
+   may itself be the report worth filing.
+
+**Never** substitute a similar-looking state for the empty one ("only two orders" is not
+"none"), and never mark such a case PASSED on a partial observation.
+
 ### Risk-based prioritization — orders the set, never truncates it silently
 
 Once cases are derived, prioritize by risk = likelihood × impact (data integrity,
@@ -263,6 +292,10 @@ a justified N/A) to each is not done.
 [ ] PARAM Same-behavior data variants collapsed into ONE parameterized artifact
          per partition (Examples / fixture rows), not N separate artifacts?
 [ ] RISK Cases prioritized; any scope-driven drop logged explicitly?
+[ ] OBS  Every case's precondition reachable in the target environment? Empty /
+         first-time / zero-quota states either have a fixture identity or are
+         declared `BLOCKED — unreachable precondition` with what it would take?
+         (or N/A: no case needs a state the environment cannot produce)
 ```
 
 **N/A is a valid answer — but it must be a deliberate, stated N/A, not a skipped

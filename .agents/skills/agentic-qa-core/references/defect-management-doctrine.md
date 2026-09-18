@@ -131,6 +131,31 @@ issue has its own QA owner; clobbering it destroys accountability and metrics.
   write only if empty (or on explicit, justified override). The REST writer
   (Part 6) enforces this — never blind-set the field.
 
+### Transitions that reassign (binding)
+
+The never-overwrite rule protects `qa_assignee` from the harness. It does not
+protect the native `assignee` from **Jira itself**: a workflow transition may
+carry an *assign* post-function that the transition catalog does not show.
+Measured 2026-09-17 on a live project: `start_testing` and `qa_sign_off` each
+silently moved a Story's `assignee` from the developer to the QA engineer who
+fired the transition. On a project whose doctrine keeps the two owners distinct
+— this one — QA sign-off quietly took delivery ownership off the dev on every
+Story it passed, and nothing reported it.
+
+Binding, on every transition the harness fires on a work item:
+
+1. **Read `assignee` before firing.** The `Get Transitions` call the transition
+   step already makes returns the issue: take the value from that read.
+2. **Read it back after.** One field on one issue — covered by the single extra
+   read the light stage verifier already allows (`artifact-lifecycle.md` §5).
+3. **Moved by a post-function → restore the previous owner**, and record the
+   post-function in the stage's Transition Trail so the next session expects it.
+4. **A project may genuinely want QA as `assignee` while testing.** That is the
+   user's decision, not a default: ask once, record the answer, stop restoring
+   for that project.
+5. **Never "solve" it by leaving `qa_assignee` empty.** The two fields answer
+   different questions; collapsing them is the drift this Part exists to stop.
+
 ---
 
 ## Part 3 — Components (the affected product area)
@@ -276,7 +301,14 @@ first time a sync reports the name-prefix fallback.
 When a skill is about to file a Bug/Defect/Improvement (or a Test), it resolves
 the relevant process epic by the configured name:
 
-1. **Exists** → parent the new issue to it. (This is the steady state.)
+1. **Exists** → parent the new issue to it **and cache its key** into
+   `.agents/project.yaml` `qa.qa_epics.<epic>.key` when that leaf is still
+   `null` (or holds a stale key). Discovery without cache-back is the measured
+   failure: 2026-09-17, all four Epics existed in Jira while every `key` was
+   `null`, so each session re-discovered them — or read the `null` as "absent"
+   and proposed creating duplicates of Epics that were already there. The cache
+   is the whole point of the leaf; leaving it `null` after a successful lookup
+   is a defect, not a no-op.
 2. **Absent** → create it once as the project's QA process epic, write the
    project's defect-management (or test-repository) **strategy summary into the
    epic description**, record its key into `.agents/project.yaml`

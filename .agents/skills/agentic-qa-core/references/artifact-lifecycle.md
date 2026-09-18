@@ -56,6 +56,11 @@ decides that, not the skill. Everything after that is the harness's job.
 | **Tech Story / Tech Debt** | `tech_story` / `tech_debt` | dev (external) | `to_do` | dev owns `start_working` / `ready` · `/sprint-testing` Reporting on a coverable tech item: `test_finished` → `automated` (the QA-verified terminal) or `complete` → `completed` when the item carried no test scope | `completed` / `automated` |
 | **`[QA] Shift-Left Review` subtask** | `subtask` | `/shift-left-testing` Phase 1 | `active` | handoff, after the exhaustive session annotations are posted on it: `complete` → `close` | `close` |
 
+**A row in this table is where the artifact must END UP, not a promise that the move is free.**
+A mapped, available transition can still be refused by the instance's own field validators —
+measured on the ATS `done` → `close` row, refused by five mandatory fields at once. That is
+**§4.2**, not a reason to leave the artifact behind.
+
 ### 1.1 Three edges that do not exist — do not look for them
 
 The catalog is the authority, and it says **no** to these. Route around them, never invent an id:
@@ -97,6 +102,16 @@ owner.** `qa_assignee` is the QA owner and is DISTINCT from the native dev `assi
 **Before EDITING an artifact that already exists**: read its `assignee` first. If it is
 someone else, **ask the user before reassigning** — do not take ownership silently to make
 an edit go through. If the user declines, report the edit as blocked with the owner named.
+
+**A transition can reassign the issue behind your back.** Some workflows carry an *assign*
+post-function that is invisible in the transition catalog. Measured 2026-09-17: on a work item,
+both `start_testing` and `qa_sign_off` silently moved the native `assignee` from the developer
+to the QA engineer who fired them, on a project whose doctrine deliberately keeps the two
+owners distinct. So on any transition of a work item: read `assignee` before firing (the same
+GET that lists the available transitions gives it), read it back after, and if the transition
+moved it, **restore the previous owner** and record the post-function in the stage's Transition
+Trail. QA ownership belongs in `{{jira.qa_assignee}}`; the native `assignee` belongs to whoever
+the project says owns delivery. Canon: `defect-management-doctrine.md` Part 2.
 
 ## 3. Parenting rule — one line, cited
 
@@ -141,8 +156,8 @@ must not end up with silently un-transitioned artifacts. When a transition is ne
    skip nobody saw is the bug this file exists to kill.
 6. **Slug present but Jira REJECTS the transition** (permission, workflow condition, a
    validator demanding a field): report the **exact** error text, do NOT retry blindly, and
-   ask. A condition failure usually means a required field is empty or the acting user is not
-   the assignee — check §2 before blaming the catalog.
+   run **§4.2**. This is a different failure from steps 2-5 — the catalog is right and the
+   instance is gating the move.
 
 ### 4.1 Synonym table — for step 3's best guess
 
@@ -161,6 +176,40 @@ must not end up with silently un-transitioned artifacts. When a transition is ne
 | `automated` (test_case) | AUTOMATED · Automated · Done |
 
 A match is a **suggestion to the user**, never an automatic choice. Present it, wait.
+
+### 4.2 Mapped slug, gated by validators — the transition exists and Jira still says no
+
+§4 steps 2-5 cover a slug the catalog does **not** have. This covers the commoner case: the
+slug resolves, the transition is listed as available, and firing it returns a validation
+error. Measured 2026-09-17: closing a Test Set was refused by **five** mandatory-field
+validators at once (Test Analysis, VCR Estimation, Test Outline, automation type, regression
+flag) — none of them in the transition catalog, all of them added by the project's own screen
+configuration. A stage that reads that as "transition unavailable" strands the artifact in
+`designing` and still reports itself done.
+
+1. **Read the error in full.** A validator names the fields it wants. A *condition* failure
+   (`you do not have permission`, `the issue is not assigned to you`) is a different thing —
+   check §2 first: an artifact the acting user does not own is the commonest cause, and taking
+   ownership to force an edit through is not automatic (ask).
+2. **Fill what the stage legitimately knows**, then re-fire ONCE. A mandatory field the stage
+   has real content for (the test outline it just authored, the automation type the ROI verdict
+   already decided) is written and the transition retried. This is the normal resolution and
+   needs no user interaction.
+3. **Never invent a value to satisfy a validator.** An estimation, a risk rating or a
+   regression flag the stage does not actually know is fabricated data that outlives the
+   session and is later read as QA's judgement.
+4. **Whatever is left → ONE `AskUserQuestion`**, naming the artifact, the target status, the
+   exact fields the validator demands and which of them the stage cannot answer:
+   *fill them together now* / *leave the artifact at `<current status>`* / *another route the
+   user names*.
+5. **On leave**: the light verifier (§5) takes that line as an explicit stated N/A quoting the
+   validator's own words — never a blank, and never the misleading "no transition available".
+6. **Record it once per project, not once per artifact.** A validator set this heavy is
+   configuration, not an incident: note it in the session `progress.md` checkpoint the first
+   time it fires so later stages of the same run expect it, and raise it with the team — five
+   mandatory fields on a close transition is friction QA pays every sprint.
+   `bun run jira:sync-workflows` will NOT learn it: screen configuration is not part of the
+   transition catalog, so there is nothing to re-sync.
 
 ---
 
