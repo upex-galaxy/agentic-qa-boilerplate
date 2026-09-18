@@ -271,6 +271,7 @@ behaviour.
 | `references/gotchas.md` | every measured gotcha with symptom, fix, date and the version it was verified against, plus the vendor guide's known lies |
 | `references/automations.md` | unattended routines: recipes, the frozen-prompt trap, cost per wake-up, "the dispatcher never produces" |
 | `references/launch-seam.md` | how a workflow skill writes its launch file and its three gated lines, and what it must never do |
+| `references/html-surfaces.md` | opening a generated page (coverage map, report, deck) in a worktree-bound browser tab instead of the system browser: the gate, the two routes, the clipboard dead end, the split-state rule |
 | `references/orca-machine-setup.md` | the one-time per-machine checklist (not versionable) |
 | `references/session-identity.md` | session identity per harness, the label rule, where it is injected, the commit trailers |
 | `templates/run.md` · `templates/roster.md` · `templates/launch.txt` · `templates/COMMON.md` · `templates/W-brief.md` | the files a Run is made of |

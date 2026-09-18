@@ -110,7 +110,7 @@ stage boundaries are not checkpoints. Channel: orca orchestration. No heartbeats
 
 ### 2.3 · The three gated lines
 
-When the gate passes (`SKILL.md` §The gate), a workflow skill may do exactly three things, each one
+When the gate passes (`SKILL.md` §The gate), a workflow skill may do exactly four things, each one
 gated and each one silent when the gate fails:
 
 1. **Hand the work to the launcher** instead of asking the human to paste it: one supervised worker
@@ -120,6 +120,9 @@ gated and each one silent when the gate fails:
    `Run: <run_id>` when the worker is launched without a dispatch.
 3. **Add the mailbox report** to what a worker already writes: the workflow's own tokens and files
    stay, the message is an addition. Never a replacement.
+4. **Open a generated HTML surface in a worktree-bound tab** instead of the system browser — a
+   coverage map, a report, a deck (`references/html-surfaces.md`). Gate fails: open it the ordinary
+   way and say nothing. The system browser is the normal outcome, not a degraded one.
 
 Everything else — Runs, Tasks, adoption, board cards, waiting, acking, liveness, closing — belongs to
 this skill. A workflow skill never spells out a command for it.
