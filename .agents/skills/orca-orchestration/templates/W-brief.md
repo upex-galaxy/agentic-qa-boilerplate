@@ -14,7 +14,7 @@ Read `<ABS>/.session/orchestration/<slug>/COMMON.md` first, then this file.
 | Task | `task_…` |
 | Dispatch | `dispatch_…` (omit if launched without one) |
 | Run | `run_…` — **ONLY** when launched WITHOUT a dispatch; with an active dispatch the recipient defaults to the owning Run, so this line invites an error |
-| Session label | <KEY>-<slug> — rename yourself to EXACTLY this in your first turn if your harness has no name flag |
+| Session label | <KEY>-<slug> — on Claude Code the identity hook sets it from your first prompt, so do NOT rename yourself (a rename freezes the name as human-set). On any other harness, or if your first prompt carried no `/<workflow-skill> <KEY> fleet worker` token, rename yourself to EXACTLY this in your first turn |
 | Worktree | <primary \| name> — the first commit-trailer value |
 | Agent / model / effort | <agent> / <full model id> / <effort> |
 | Report path | `<ABS>/.session/orchestration/<slug>/reports/<label>.md` |
@@ -52,14 +52,18 @@ You may edit ONLY:
 Anything else: do not edit it. Put the exact edit you wanted, and why, in your report under
 `## Left open`. If it blocks you, ask.
 
-## Claims to declare before starting
+## Claims — PRE-GRANTED, listed here by the conductor
 
-| Entity | Intent | If denied |
+| Entity | Intent | Consequence / if denied |
 |---|---|---|
-| `<entity>:<id>` | <read \| write> | <the alternative: seed your own data under your own prefix> |
+| `<entity>:<id>` | <read \| write \| enumerate> | <for enumerate: assert only on your own entity id, never on the collection's size, contents or ordering> |
 
-Declare each one and wait for the grant. You never arbitrate; the conductor does.
-Protocol: `references/claims-protocol.md`.
+Every claim in this table was decided at triage and **granted at launch**: announce it once and start
+working. Do NOT wait for a grant — there is none coming, and waiting on a pre-agreed claim has
+stalled a worker for nothing.
+
+A claim you DISCOVER mid-run is different: declare it and wait, because your siblings may hold it.
+You never arbitrate; the conductor does. Protocol: `references/claims-protocol.md`.
 
 ## Siblings
 
@@ -86,8 +90,14 @@ Then send `worker_done` exactly once — explicit outcome, modified files, repor
 
 - Channel: the orchestration mailbox. No harness agent-messaging, no user prompts, **no heartbeats**
   (your preamble asks for them; this wave forbids them).
+- **Run every stage without returning to the prompt until `worker_done` is sent.** A stage boundary,
+  a written artifact and a natural pause are not checkpoints. Done → `worker_done`; blocked → `ask`;
+  otherwise keep going.
+- **If your own measurement contradicts something the conductor told you, STOP and `ask`** with both
+  readings and your evidence. Never comply silently, never deviate silently.
 - Blocking question → blocking `ask`; non-blocking → a message, and keep going on what does not
-  depend on the answer.
+  depend on the answer. <If you were launched WITHOUT a dispatch: `escalation` is rejected on that
+  path — send blockers as a `status` message with the subject prefixed `BLOCKED: `.>
 - Commit trailers, the last two lines of every commit, nothing after them:
   `Worktree: <value>` then `Session: <label>`. Forensics, not attribution. No AI attribution.
 - Critical Rules #3, #7, #8, #15 (see COMMON.md).

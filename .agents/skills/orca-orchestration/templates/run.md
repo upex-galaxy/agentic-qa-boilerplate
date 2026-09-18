@@ -15,7 +15,9 @@
 | Topology | <same-checkout fleet \| worktree per worker \| worktree per cluster> (`references/topologies.md`) |
 | Worker cap | <n> (source: `.agents/project.yaml` → `orchestration.max_workers`, or the user's explicit instruction for this run) |
 | Agent / model / effort | <agent> / <full model id> / <effort> |
+| Supervision | <supervised (native launch) \| unsupervised (custom-argv terminals or pasted lines)> — the native path needs the agent's default permission mode AND direnv on this machine (`references/orca-machine-setup.md` §3); when either is missing, say so HERE, because it changes how every worker is nudged and closed |
 | Board status mapping | <todo=… · in-progress=… · in-review=… · completed=…> |
+| Board card shape | <one card per worker \| ONE fleet card pointing at the roster (same-checkout fleet)> (`references/coordinator-playbook.md` §3) |
 | Gate state at start | <C ready \| A no binary (fallback: human pastes launch.txt)> |
 
 ## Scope files

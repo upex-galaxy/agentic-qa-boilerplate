@@ -91,6 +91,7 @@ Rules:
 - **A blocker goes in the line**, as a `BLOCKED_<REASON>` token (the observer greps for `BLOCKED_`), in addition to whatever channel the session uses to escalate. The token survives a dead channel; the channel is the reinforcement.
 - **It is a file, not a message.** Nothing pushes it anywhere: an observer reads it when it wants to. Periodic "still alive" messages to a coordinator are a separate thing and are prohibited by the worker contract.
 - **It does not replace `progress.md`** and never carries a phase entry's fields. `progress.md` stays the resume signal (§7); `## Live Progress` answers only "is this session moving, and when did it last move?". Staleness is judged from the last line's timestamp.
+- **For an Orca-supervised worker, this timestamp is corroboration, not the primary liveness signal.** The primary signal is the on-screen spinner line, per `orca-orchestration/references/coordinator-playbook.md` §5.
 - **Optional by default.** A skill that runs attended in the foreground has no reason to write it, and a resume never requires it.
 
 ## 4. Phase 0 — Resume contract (MANDATORY)

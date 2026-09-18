@@ -25,7 +25,13 @@ a path inside its own worktree.
 
 ---
 
-## 1 · The cycle, in order
+## 1 · The cycle, in order — the NATIVE path (supervised, the default)
+
+**Supervision comes from the launch, and only from the launch.** The runtime decides "is this an
+agent" from the argv IT started, never from the running process, so a terminal created with our own
+command line can never be adopted: `worker-start --terminal <handle>` answers `agent_unconfigured`
+on a terminal whose agent is demonstrably alive on screen (measured three ways, gotcha G44). There is
+exactly one supervised launch, and it is the native one.
 
 ```bash
 # 1 · once per wave: create the Run (a namespace + a home inbox; it schedules nothing)
@@ -33,8 +39,10 @@ orca orchestration run-create --objective "<what is being coordinated>" --json <
 #     save run_id + the coordinator handle into .session/orchestration/<slug>/run.md
 
 # 2 · one Task per worker, BEFORE launching anything
-orca orchestration task-create --spec "<one line>" --task-title "<KEY> <short>" --json </dev/null
-#     --deps <json_array> exists but the element shape is undocumented: do not use it yet (gotcha G8)
+orca orchestration task-create --spec "<KEY> <short> — one line of scope>" --json </dev/null
+#     --task-title is accepted and DISCARDED (every task comes back with title null, G49):
+#     put the human-readable label in --spec and in roster.md
+#     --deps <json_array> exists but the element shape is undocumented: do not use it yet (G8)
 
 # 3 · placement
 #   same checkout  → nothing to create
@@ -45,33 +53,48 @@ git -C <wt> merge --ff-only origin/<base>
 git -C <wt> rev-parse --short HEAD          # MUST equal origin/<base>; never mask this with `|| true`
 bun run worktree:provision <wt>             # references/provisioning.md
 
-# 4 · launch with OUR argv — the byte-identical line from launch.txt
-orca terminal create --worktree <active|id:<repoId>::<path>> --title "<KEY>-<slug>" \
-  --command '<the launch line, verbatim>' --json </dev/null
-orca terminal wait --terminal <handle> --for tui-idle --timeout-ms 180000 --json </dev/null
+# 4 · LAUNCH natively → supervised, with the preamble injected by the runtime
+orca orchestration worker-start --task <task_id> --worktree <current|id:<repoId>::<path>> \
+  --agent <claude|codex|opencode> --model <full-model-id> --effort <level> --json </dev/null
+#     → the dispatch id and the worker's terminal handle: record BOTH in roster.md.
+#       (Lost them? worker-show --dispatch <id>, or terminal list --worktree <sel>.)
+#     --effort requires --model; neither combines with --terminal. --name names a NEW WORKTREE,
+#       not the session: there is no session-name flag on this path (see §1b).
+#     Prerequisites, both invisible from here: the agent's per-machine default arguments must carry
+#       an auto permission mode, and direnv must load the env file in the interactive shell (G45).
+#       references/orca-machine-setup.md §3.
 
-# 5 · ADOPT the terminal into the Task → supervised + injected preamble
-orca orchestration worker-start --task <task_id> --terminal <handle> --json </dev/null   # → dispatch_…
-#     native alternative when the argv does not matter (see references/orca-machine-setup.md):
-#     orca orchestration worker-start --task <id> --worktree current --agent claude \
-#       --model <full-model-id> --effort high --json </dev/null
-#     (--model/--effort cannot combine with --terminal; --effort requires --model)
+# 5 · verify readiness AND credentials on the worker's screen, before sending it any work
+orca terminal read --terminal <handle> --screen --json </dev/null
+#     want: the agent's status footer (model, effort) AND evidence the env file loaded
+#     (a direnv export line, or the worker's own first probe). No credentials → fix the machine,
+#     do not dispatch work to it.
 
-# 6 · verify it actually started (a created terminal reports success on DELIVERY, not on run)
-orca terminal read --terminal <handle> --screen --json </dev/null   # look for the agent's status footer
+# 6 · send the prompt — the ONE verb that reaches a running session (G46)
+orca terminal send --terminal <handle> --enter \
+  --text '/sprint-testing <KEY> fleet worker. Read <ABS>/.session/orchestration/<slug>/COMMON.md then <ABS>/.session/orchestration/<slug>/W-<label>.md and execute your brief. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints. Channel: orca orchestration. No heartbeats.' \
+  --json </dev/null
+#     The prompt MUST OPEN with `/<workflow-skill> <KEY> fleet worker`: that token is what the
+#     identity hook turns into the session title (there is no name flag here), and what the workflow
+#     skill reads to know it is a fleet worker. Everything after it is the brief pointer plus the
+#     continuation sentence.
+#     On `agent_prompt_stalled`: the text is usually ALREADY queued. Read the screen or
+#     `worktree ps` before resending, or the worker gets the message twice (G52).
 
-# 7 · board card
-orca worktree set --worktree <sel> --display-name "<KEY> <short>" \
+# 7 · board card — ONE fleet-level card per worktree (§3)
+orca worktree set --worktree <sel> --display-name "<slug> · round <N>" \
   --workspace-status in-progress \
-  --comment "<KEY> · Stage 1 · session <session label>" --json </dev/null
+  --comment "<slug> · round <N> · <n> workers · run <run_id> · roster: <ABS>/.session/orchestration/<slug>/roster.md" \
+  --json </dev/null
 
-# 8 · wait INSIDE the turn, one waiter, ack in the same command that re-arms
+# 8 · wait INSIDE the turn, one waiter, rolling, ack in the same command that re-arms (§4)
 orca orchestration check --run <run_id> --wait --types worker_done,escalation,question \
-  --timeout-ms 900000 --json </dev/null
+  --timeout-ms 540000 --json </dev/null
 #     process the WHOLE batch → reply to every question → decide each terminal's fate → only then:
-orca orchestration check --run <run_id> --ack <delivery_id> --wait --types … --timeout-ms … --json </dev/null
+orca orchestration check --run <run_id> --ack <delivery_id> --wait --types … --timeout-ms 540000 --json </dev/null
 
 # 9 · close immediately (verify integration first: git cherry / PR / tracker state)
+orca terminal read --terminal <handle> --screen --json </dev/null   # READ THE COST FOOTER FIRST (G54)
 orca orchestration worker-release --dispatch <dispatch_id> --json </dev/null
 #     worktree removal ONLY after the orphan audit (§6)
 orca worktree rm --worktree id:<repoId>::<path> --force --json </dev/null && git worktree prune
@@ -82,8 +105,48 @@ loop or a background shell that read never returns: the command hangs with no ou
 indistinguishable from slow work. Measured 2026-09-04: a loop creating 18 tasks blocked on the FIRST
 call for over three minutes; with `</dev/null` all 18 finished in seconds.
 
-**Steps 3-4-5 plus the brief are ONE indivisible operation.** Splitting them is how a worker ends up
-sitting idle: it happened twice on 2026-09-02, once for five hours.
+**Steps 3-4-5-6 are ONE indivisible operation.** Splitting them is how a worker ends up sitting
+idle: it happened twice on 2026-09-02, once for five hours.
+
+---
+
+## 1b · What the native path costs, and the custom-argv fallback
+
+The native launch is the only supervised one, and it is not free. What it gives up, and what to do
+about each:
+
+| Given up | Consequence | Compensation |
+|---|---|---|
+| the session-name flag | the roster, the board card and the `Session:` commit trailer all key off the label | the prompt opens with `/<workflow-skill> <KEY> fleet worker`, and the identity hook titles the session from it (`references/session-identity.md` §2) |
+| environment variables in the launch line | a worker cannot be marked as a fleet worker by an exported variable | the brief and the prompt token carry it. `sprint-testing` detects worker mode from them, not from the environment |
+| the prompt in the launch itself | the worker starts idle at its prompt | step 6: `terminal send` immediately after readiness. Until it lands, the worker has nothing to do |
+| a launch line that also loads the env file | credentials depend on the MACHINE having direnv, and nothing reports their absence | step 5: verify credentials on screen BEFORE dispatching work (G45) |
+
+**The custom-argv path** (`terminal create --command '<the line from launch.txt>'` plus
+`terminal wait --for tui-idle`) keeps exactly one role: it is the shape of the line a HUMAN pastes
+when there is no runtime, and the shape the conductor uses when it deliberately wants an unsupervised
+terminal it will drive by hand. On that path, and permanently:
+
+- there is no supervision and no adoption. Do not attempt `worker-start --terminal` (G44).
+- a dispatch id is still available: the plain `dispatch` form creates a real dispatch row without
+  injecting anything (G48), and `dispatch-show --task <id> --preamble` prints the preamble — **in
+  text mode only, `--json` returns the object without it** (G47). Write that text to a file in the
+  conductor's scope and send the worker a one-line pointer to it with `terminal send`.
+- `escalation` from such a terminal is REJECTED and the refusal comes back as a `status` message
+  (G53). The brief tells those workers to send blockers as `status` with the subject prefixed
+  `BLOCKED:`.
+- cleanup is by handle: count the terminals in the worktree, then close that one terminal and its
+  tab. The release verb does not apply (§6).
+
+```bash
+# unsupervised, by choice or because no native path is available on this machine
+orca terminal create --worktree <sel> --title "<KEY>-<slug>" --command '<launch.txt line, verbatim>' --json </dev/null
+orca terminal wait --terminal <handle> --for tui-idle --timeout-ms 180000 --json </dev/null
+orca orchestration dispatch --task <task_id> --to <handle> --json </dev/null             # → dispatch id, no injection
+orca orchestration dispatch-show --task <task_id> --preamble </dev/null > <ABS>/.session/orchestration/<slug>/preamble-<label>.md
+#     NOTE the missing --json: this one call prints the preamble in TEXT mode only (G47)
+orca terminal send --terminal <handle> --enter --text '<one-line pointer to the preamble file and the brief>' --json </dev/null
+```
 
 ---
 
@@ -111,12 +174,15 @@ exists to prevent. A worker writes exactly one file: its own report.
 The roster is what makes the phrasebook possible. One row per worker:
 
 ```
-| label | KEY | task_id | dispatch_id | terminal | worktree | agent | model | session label | status |
+| label | KEY | task_id | dispatch_id | terminal | worktree | agent | model | session label | resume | status |
 ```
 
-Without `dispatch_id` you cannot address a supervised worker; without `terminal` you cannot steer an
-unsupervised one; without the session label you cannot resume it after a crash. Update the row the
-moment any of those values is issued, not at the end of the round.
+Without `dispatch_id` you cannot address a supervised worker; without `terminal` you cannot steer or
+nudge one at all; without the session label and the `resume` command you cannot bring it back after a
+crash — and in a same-checkout fleet the roster is the ONLY place that per-worker recovery exists,
+because the board card is fleet-level there (§3). Update the row the moment any of those values is
+issued, not at the end of the round. Add the worker's cost to its row when you read the footer at
+close (gotcha G54): it is unreadable a second later.
 
 ---
 
@@ -132,8 +198,11 @@ Workspace status ids match the board columns (defaults `todo`, `in-progress`, `i
 `completed`; a project with custom columns uses its own ids). Map them to the workflow's own stages,
 and say which mapping you used in `run.md` so a second conductor reads the board the same way.
 
-The comment is not "what I am doing". It is **how a dead session is recovered**, so it carries the
-session label and whatever the harness needs to resume:
+The comment is not "what I am doing". It is **how a dead session is recovered**. Which means the card
+has two shapes, decided by the topology, because the card is per-WORKTREE and a same-checkout fleet
+has one worktree for N workers (gotcha G50).
+
+**One worker per worktree** — the card carries that worker's whole recovery block:
 
 ```
 <KEY> · Stage 2 execution
@@ -142,13 +211,31 @@ branch <branch>
 brief .session/orchestration/<slug>/W-<label>.md
 ```
 
-Whoever opens the card can resume that exact session. Set the card at launch and at every stage
-boundary, not only at the end.
+**N workers in one checkout** — one FLEET-level card, and per-worker recovery lives in the roster,
+which the card points at by absolute path:
+
+```
+<slug> · round <N> · <n> workers · run <run_id> · roster: <ABS>/.session/orchestration/<slug>/roster.md
+```
+
+The roster row is what makes that indirection safe, so it must carry, per worker, the session label
+and the exact resume command for its harness. A fleet card that points at a roster with no resume
+column is a card that recovers nothing.
+
+Whoever opens the card can resume that exact session, directly or one hop away. Set the card at
+launch and at every round boundary, not only at the end.
 
 ---
 
-## 4 · Waiting, and the two ways it goes wrong
+## 4 · Waiting, and the three ways it goes wrong
 
+- **A wait is ROLLING, not one long block.** The harness caps a foreground command at 600 s while a
+  round runs tens of minutes, so a single `--timeout-ms 1800000` is killed mid-wait and a timeout
+  becomes indistinguishable from a dead mailbox (gotcha G51). Wait at **`--timeout-ms 540000`** and
+  re-arm, with the verified ack in the SAME command, as many times as the round needs. A longer
+  single wait is acceptable only as a background job the harness itself tracks and notifies on; it is
+  never a shell `&`. The runtime's own mailbox notice remains the primary wake-up signal — the rolling
+  wait is what keeps the conductor's turn open, not what discovers the mail.
 - **One actionable waiter per Run.** A waiter started as a shell background job holds the slot with
   nobody listening, and `check` then answers with a "waiter exists" failure instead of a batch. A
   silent mailbox and a blocked one look identical from the conductor's side. Recover by finding and
@@ -178,6 +265,12 @@ observed arriving empty on the worker side; when a reply carries substance, dupl
 `orca terminal send --terminal <handle> --text '<same text>' --enter --json </dev/null` and say in
 the body that you did.
 
+**Mail is not a nudge.** `orchestration send --to <terminal handle>` queues mail that a working agent
+never reads, because nothing tells it to run `check` — and it returns `ok: true` exactly like the
+call that works (gotcha G46). The only verb that reaches a RUNNING session is `terminal send`. Use
+mailbox addresses (`run:<id>`, `dispatch:<id>`) for what a worker will check between turns, and
+`terminal send` for anything it has to see NOW.
+
 ---
 
 ## 5 · Liveness sweep (Orca-native signals FIRST)
@@ -202,6 +295,23 @@ fallback that also works with no runtime.
 5. Only then, the non-runtime fallback: grep the workflow's own blocked tokens in the session memory
    the workflow skill already writes, plus staleness (no progress line in more than ~20 minutes).
 
+### Stalled is not idle, and the prompt line cannot tell them apart
+
+The prompt box is ALWAYS drawn, so a screen read that greps for the prompt character reports "idle"
+for every worker, always — including one that is working (gotcha G55). The signal is the **spinner
+line** above the prompt box (`✽ …ing… (Nm Ns · ↓ N tokens)`):
+
+| Spinner on screen | `worker_done` sent | Verdict |
+|---|---|---|
+| yes | no | **working**. Leave it alone |
+| no | no | **STALLED**. It is parked at a prompt, and a stage boundary is the usual place |
+| no | yes | **idle**, finished. Read its cost footer, then close it |
+
+A stalled worker is nudged with `terminal send`, not with mail (§4), and the nudge repeats the
+continuation sentence rather than re-explaining the stage. Corroborate the verdict with the worker's
+own progress timestamp before acting: a worker mid-`ask` is waiting, not stalled, and waiting is
+healthy.
+
 Screen-read traps, all paid for: the lines arrive in `result.terminal.tail` (not `result.lines`); a
 parser that looks for `lines` returns empty forever, silently. The TUI status bar uses non-breaking
 spaces, so a grep including a space after a label never matches. `result.terminal.status == exited`
@@ -220,12 +330,16 @@ TUI comes back as stacked fragments. `--screen` and `--cursor` are mutually excl
 strategy asks for one, tracker artifacts in their declared status. A released worker whose work never
 integrated is the one failure that cannot be recovered from the board.
 
+**Read the cost footer BEFORE closing.** A worker's token and context usage exists only on its own
+screen and no command reports it, so closing the terminal destroys the number (gotcha G54). One
+`terminal read --screen`, the numbers into `roster.md`, then close.
+
 | Case | Close with |
 |---|---|
-| supervised (adopted into a Task) | `orca orchestration worker-release --dispatch <id> --json </dev/null` — closes that worker's terminal and no other; idempotent; an inspectable archive is preserved first, so `worker-read` still answers afterwards |
+| supervised (native launch, §1) | `orca orchestration worker-release --dispatch <id> --json </dev/null` — closes that worker's terminal and no other; idempotent; an inspectable archive is preserved first, so `worker-read` still answers afterwards |
 | needs to stay open for debugging | `orca orchestration worker-retain --dispatch <id>` — a durable exception a later explicit release clears |
 | uncertain / unreachable | `orca orchestration worker-abandon --dispatch <id>` — fences it WITHOUT claiming it stopped, and touches no resource |
-| unsupervised (launched without adoption) | COUNT the terminals in that worktree first, then `orca terminal close --terminal <handle> --tab --json </dev/null`. **Never** `orca terminal stop --worktree <sel>`: its radius is the whole worktree |
+| unsupervised (custom-argv launch, §1b) | COUNT the terminals in that worktree first, then `orca terminal close --terminal <handle> --tab --json </dev/null`. **Never** `orca terminal stop --worktree <sel>`: its radius is the whole worktree |
 
 ### Orphan audit before removing a worktree
 

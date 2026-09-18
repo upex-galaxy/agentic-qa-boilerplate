@@ -8,17 +8,19 @@ complementary_categories: [orchestration]
 # no truncation). Keep in sync with the doctrine below and in references/.
 compact_rules: |
   - DO gate on the BINARY plus a reachable RUNTIME, never on "is a vendor skill installed". Three states: A no binary, B binary with unreachable runtime, C ready. In a workflow skill, states A and B are TOTAL SILENCE: never name the orchestrator, never list it as a prerequisite, never mention it in an ATR or a blocked-token sweep. The one-line install recommendation belongs to THIS skill and fires only because the user asked for orchestration.
-  - DO write the launch file ALWAYS, with or without a runtime, and hand the launcher the SAME line byte for byte. A paraphrased line is the exact failure this rule exists to prevent: the two paths must be structurally incapable of diverging.
+  - DO write the launch file ALWAYS, with or without a runtime, and keep the PROMPT identical on both paths, byte for byte, opening with `/<workflow-skill> <KEY> fleet worker` and carrying the no-stopping sentence. The launch line itself is for a human to paste or for a deliberately unsupervised terminal; the prompt is the payload both paths share, and a paraphrased prompt is the exact failure this rule exists to prevent.
   - DO NOT copy the vendor command grammar into this repo. Ask the binary for it at the moment of use (`orca skills get orchestration` for the conductor, `orca skills get orca-cli` for terminals and worktrees, nothing for a worker — its injected preamble already carries the contract). A copied grammar goes stale in silence on the next release.
   - DO treat one-shot subagents as the DEFAULT executor (AGENTS.md §3, unchanged) and a supervised worker as the declared exception: persistent, addressable, owns a scope end to end. The conductor still uses subagents for its OWN reads.
   - DO NOT allow periodic heartbeats, even though the injected preamble asks for them. Every heartbeat wakes the conductor to read the word "alive". A worker sends exactly three things: `worker_done` (once, with an explicit outcome), `ask` (blocking), `escalation`. The brief must prohibit heartbeats in writing.
   - DO NOT use the harness's own agent-to-agent messaging or user-question tools from a worker: from an isolated worktree the conductor is not addressable and nobody is watching a user prompt. The channel is the orchestration mailbox, and a question that does not block goes out as a message while the worker keeps going on everything that does not depend on the answer.
-  - DO acknowledge every mailbox batch, verified, in the SAME command that re-arms the wait, and never inside a compound command whose exit code can be swallowed. An unacknowledged batch replays forever and hides everything queued behind it, and the runtime does not re-notify. One waiter per Run, never a shell background job, never a self-built monitor: the runtime notifies the conductor on its own.
-  - DO launch with a custom argv (a terminal created with our own command line) and THEN adopt that terminal into the Task to make it supervised. Adoption is what makes the lifecycle commands able to close that one terminal and no other; a context-only injection leaves it unsupervised on purpose.
+  - DO acknowledge every mailbox batch, verified, in the SAME command that re-arms the wait, and never inside a compound command whose exit code can be swallowed. An unacknowledged batch replays forever and hides everything queued behind it, and the runtime does not re-notify. Roll the wait in windows of at most 540 s, because the harness kills a foreground command at 600 s. One waiter per Run, never a shell background job, never a self-built monitor: the runtime notifies the conductor on its own.
+  - DO launch a supervised worker NATIVELY (the runtime starts the agent: task, worktree, agent, model, effort) and then send its prompt as the immediate next step. A terminal created with our own command line can NEVER be supervised — the runtime recognizes only agents it started, and adoption is refused on a terminal whose agent is demonstrably alive. Custom argv is the human-paste shape and the deliberately-unsupervised shape, nothing more.
+  - DO verify credentials on the worker's own screen before dispatching work to it. The native launch has no argv, so the environment file reaches it only through a per-machine direnv hook in the runtime's interactive shell: without it the worker starts clean, unsupervisedly broken, and fails much later at its first authenticated call.
+  - DO tell every worker, in the prompt AND in the brief, to run every stage without returning to the prompt until `worker_done` is sent: a stage boundary is not a checkpoint. And DO name the one `ask` that is mandatory: when a worker's own measurement contradicts a conductor instruction, it stops and asks with both readings and the evidence — never silent compliance, never silent deviation.
   - DO treat create + launch + brief as ONE indivisible operation, and verify a few minutes later that the brief actually landed (a created terminal reports success when the text was DELIVERED, not when it ran). Readiness is not completion.
-  - DO close a finished worker in the same turn. Release the supervised worker by its dispatch; without a dispatch, COUNT the terminals in that worktree before closing anything, because the stop verb's radius is the whole worktree. Remove a worktree only after the orphan audit, because everything gitignored inside it (env file, evidence, session scope) dies with it.
+  - DO close a finished worker in the same turn, and read its cost footer off its screen BEFORE closing: a worker's token and context usage exists nowhere else and dies with the terminal. Release the supervised worker by its dispatch; without a dispatch, COUNT the terminals in that worktree before closing anything, because the stop verb's radius is the whole worktree. Remove a worktree only after the orphan audit, because everything gitignored inside it (env file, evidence, session scope) dies with it.
   - DO pick the topology by what the work writes: manual QA and backlog grooming run as a fleet in the SAME checkout (state lives in the tracker); anything that writes code gets one Orca worktree per worker, because two sessions in one checkout collide on the git index even when they never touch the same file. Never two workers owning the same module.
-  - DO declare a claim before touching shared fixture data or a shared credential, and let the conductor arbitrate: first message wins, the conductor keeps the ledger and broadcasts the grant. Conductor-only operations (login / token minting, schema sync, tracker pull-push) are never delegated.
+  - DO declare a claim before touching shared fixture data or a shared credential, with one of three intents (`read` / `write` / `enumerate` — a listing that exposes siblings' entities is never an assertion target). A claim already listed in the brief is PRE-GRANTED: the worker announces it and works. Only a claim discovered mid-run waits, and the conductor arbitrates it: first message wins, it keeps the ledger and broadcasts the grant. Conductor-only operations (login / token minting, schema sync, tracker pull-push) are never delegated.
   - DO provision a fresh worktree BEFORE launching. A missing provisioning step disguises itself as something else: an absent env file reads as "the tool does not exist", absent dependencies as "a broken import", an absent tracker cache as a worker that simply cannot see the story.
   - DO keep `.agents/project.yaml` → `orchestration` as DEFAULTS only (worker cap, agent, model, effort). An explicit user instruction in the conductor session always overrides them for that run; the defaults apply only when the user said nothing.
   - WHEN a commit is produced by any session: the forensic trailers (`Worktree:` then `Session:`) are mandatory and are NOT AI attribution. Canon: `/git-flow-master`.
@@ -69,8 +71,8 @@ It is **optional by construction**. Everything here has a path that works with n
 2. Ask the binary for the grammar NOW, not earlier: `orca skills get orchestration` (and `orca skills get orca-cli` if you will create terminals or worktrees).
 3. Pick the topology from what the work WRITES (`references/topologies.md`), and run the triage-time collision check in claim vocabulary (`references/claims-protocol.md` §5).
 4. Create the scope `.session/orchestration/<slug>/`, seed `run.md`, `roster.md`, `COMMON.md`, `launch.txt` from `templates/`.
-5. Run the cycle in `references/coordinator-playbook.md` §1, in that order, and do not split create + launch + brief.
-6. Wait inside the turn, one waiter, ack verified in the same command that re-arms.
+5. Run the cycle in `references/coordinator-playbook.md` §1, in that order: Run → Tasks → placement → NATIVE launch → verify readiness and credentials on screen → send the prompt. Those last three are not separable.
+6. Wait inside the turn, one waiter, rolling windows of at most 540 s, ack verified in the same command that re-arms.
 7. Close each finished worker in the same turn; orphan audit before removing any worktree.
 8. Harvest `learnings.md` and `skill-improvements.md`, write `kickoff.md`, then report to the owner.
 
@@ -112,7 +114,7 @@ The reachability flag is NESTED (`.result.runtime.reachable`). A gate that looks
 |---|---|---|
 | **A · no binary** | **total silence**. Not named, not recommended, not a prerequisite, not in the ATR, not in the blocked-token sweep. The flow writes its launch file and the human pastes the lines | **one line**, and only because the user ASKED for orchestration (see the exact text below), then continue on the fallback |
 | **B · binary, runtime unreachable** | silence (same fallback) | `orca open --json` once, re-check once; still unreachable → treat as state A |
-| **C · ready** | the reinforcement activates without announcing itself: the runtime delivers the byte-identical launch lines, workers report to the mailbox IN ADDITION to the file tokens | full mode: conductor / worker / automation |
+| **C · ready** | the reinforcement activates without announcing itself: the runtime launches the workers and delivers the identical prompt, and they report to the mailbox IN ADDITION to the file tokens | full mode: conductor / worker / automation |
 
 **The exact recommendation (state A or B, this skill only)**, adapted to the user's language:
 
@@ -156,7 +158,8 @@ Practical rule: **the subagent explores and returns a map; the worker executes a
 2. **Do you want to hand the work away and stop caring?** → that is a **handoff**, ownership transfer, not orchestration: no Task, no Dispatch, no mailbox. The binary's `orca-cli` guide owns it; ask for that guide and follow it.
 3. **Do you need to supervise, wait for results, answer questions, or coordinate a dependency graph?** → orchestration. Continue.
 4. **Does the work write code?** → one Orca worktree per worker. **Does it not?** → fleet in the same checkout. See `references/topologies.md`.
-5. **Is there no human at the wheel?** → `references/automations.md`.
+5. **Do you want the workers SUPERVISED** (addressable by dispatch, closable one by one, preamble injected)? → the NATIVE launch, and nothing else: the runtime recognizes only agents it started itself. Two per-machine prerequisites decide whether that path exists here at all — the agent's default arguments and direnv (`references/orca-machine-setup.md` §3). Either one missing → the fleet still runs, every worker unsupervised, and you say so to the owner before launching rather than discovering it at cleanup.
+6. **Is there no human at the wheel?** → `references/automations.md`.
 
 ---
 
@@ -167,11 +170,11 @@ The owner speaks natural language to the conductor; the conductor translates. Th
 | The owner says | The conductor does | Notes |
 |---|---|---|
 | "how are they doing?" / "fleet status" | task list (brief) + worker list + the cross-worktree summary | answer as one table: KEY · stage · state · last message |
-| "talk to the worker on BK-123, tell it …" | supervised: a message addressed to that dispatch · unsupervised: text sent straight into its terminal | the roster resolves the label |
+| "talk to the worker on BK-123, tell it …" | text sent straight into its terminal; a mailbox message only for something it can read between turns | mail does NOT reach a busy worker, and it reports success anyway (`references/gotchas.md` G46). The roster resolves the label |
 | "ask W2 whether …" | a question message to that dispatch, then one mailbox wait | |
 | "what is X doing?" | read the worker's output by dispatch, then the rendered screen as backup | the screen is backup, never the channel |
 | "tell it yes" | reply to that message id | the id comes from the pending batch |
-| "launch another worker for …" | task-create → placement → launch → adopt → brief | one indivisible operation (see the playbook) |
+| "launch another worker for …" | task-create → placement → native launch → verify on screen → send the prompt | one indivisible operation (see the playbook) |
 | "pause / interrupt X" | send an interrupt into its terminal, then verify on the rendered screen | there is no native pause/resume |
 | "close X" / "it is done" | release the supervised worker by dispatch · without a dispatch: count terminals, then close that one terminal and its tab | never the worktree-wide stop without counting |
 | "pick up last night's wave" | bind this session to the existing Run id from `run.md`, then list tasks | a Run outlives the session that made it |
@@ -187,7 +190,7 @@ The owner speaks natural language to the conductor; the conductor translates. Th
 4. **One message, one task.** A long brief goes in a FILE, cited by absolute path into the primary checkout, never inside the message (it truncates) and never in a system temp directory (it triggers a permission prompt).
 5. **Launch in an auto permission mode, never an edits-only mode.** An edits-only mode covers file edits but not commands, so every script call waits on a human who is not watching; one worker left every tracker mutation computed and unexecuted.
 6. **Never acknowledge a batch you did not process.** Verified ack (the acknowledged id equals the one requested, the pending count drops), never inside a compound command. An unacknowledged batch hides everything behind it AND the runtime will not notify again.
-7. **Do not build a monitor.** The runtime notifies the conductor when mail arrives. A homemade monitor competes with that notice, arrives late by construction, and triggers on echoes of the conductor's own messages.
+7. **Do not build a monitor**, and roll the wait instead. The runtime notifies the conductor when mail arrives; a homemade monitor competes with that notice, arrives late by construction, and triggers on echoes of the conductor's own messages. The harness kills a foreground command at 600 s, so a realistic round is covered by successive waits of at most 540 s, each re-armed with the verified ack in the same command — not by one long block, and never by a shell background job.
 8. **The stop verb has worktree radius: count first.** To close one terminal, close that terminal (and its tab).
 9. **A base-ref flag resolves LOCAL refs**: verify the new worktree's SHA against the remote base, with no `|| true` to hide the failure. This was paid for twice.
 10. **Never name the orchestrator to the user from a workflow skill when the gate fails**, and never put it in prerequisites, in a non-bypassable probe, in the ATR environment block, or in a blocked-token sweep.
@@ -195,6 +198,8 @@ The owner speaks natural language to the conductor; the conductor translates. Th
 12. **One dev server and one browser per worktree**; close every browser-automation session before reporting (ten orphaned headless browsers, ~2.7 GB, measured).
 13. **Critical Rule #15 counts double** in a same-checkout fleet: no global discards, another session shares the tree.
 14. **Worker commits carry zero AI attribution** (Critical Rule #3) and the two forensic trailers (`Worktree:` / `Session:`), which are forensics, not attribution. Canon: `/git-flow-master`.
+15. **A stage boundary is not a checkpoint.** The launch prompt and the brief both say: run every stage without returning to the prompt until `worker_done` is sent. The pressure has to be in the PROMPT, because as a file pointer it reads as reference material — measured: two of three workers stopped mid-work on briefs that already forbade checkpoints.
+16. **"My measurement contradicts the conductor" is a mandatory `ask`.** The worker stops, sends both readings with its evidence, and waits. Never silent compliance, never silent deviation. This is the behaviour that makes a fleet worth more than a faster single session: a worker refused a wrong instruction from its conductor and was right, and nothing else in the run came close in value.
 
 ---
 
@@ -220,16 +225,18 @@ state is read:
 |---|---|
 | plan | identical: same topology decision, same triage-time collision check, same rounds |
 | brief | identical: `COMMON.md` + `W-<label>.md` in the scope, cited by absolute path |
-| launch | the conductor prints `launch.txt` and the human opens N terminals and pastes N lines |
+| launch | the conductor prints `launch.txt` and the human opens N terminals and pastes N lines. This is the ONLY path where the launch line itself is the payload, which is why the file is still written unconditionally |
 | identity | the human sets the session name from the line's own name flag, or the worker renames itself |
 | state | the workflow's own blocked-state tokens plus the tracker, exactly as a single session already does |
 | questions | the worker writes the question in its report with options and a recommendation, and keeps going on what does not depend on the answer |
 | close | the human closes the terminals |
 | claims | the degraded append-only ledger (`references/claims-protocol.md` §6), with smaller rounds |
 
-This path is the CONTRACT and the runtime path is the shortcut. Which is why the launch line is
-byte-identical on both: the path nobody exercises today is the one that silently breaks in three
-weeks.
+This path is the CONTRACT and the runtime path is the shortcut. Which is why the PROMPT is identical
+on both, down to its opening token and its no-stopping sentence: the path nobody exercises today is
+the one that silently breaks in three weeks. The launch LINE could not stay shared — a supervised
+worker has no argv at all — so the shared thing is the prompt, and it is the prompt that carries the
+behaviour.
 
 ---
 
@@ -239,8 +246,9 @@ weeks.
 |---|---|
 | "installing the vendor skill" enables orchestration | No. The binary already carries the commands. The stub only teaches when. The gate is on the binary |
 | a harness worktree equals an Orca worktree | No. The harness one lives inside the repo, invisible to the board and the phone, with no managed terminal. The Orca one has a card, terminals, a browser, and is reachable from the phone. To orchestrate: always the Orca one |
-| a context-only injection leaves a supervised worker | No: deliberately unsupervised, and the release verb does not close it. Supervised = the worker-start path |
-| the terminal went idle, so the worker finished | No: idle means ready for input. Finished means `worker_done` |
+| a context-only injection leaves a supervised worker | No: deliberately unsupervised, and the release verb does not close it. Supervised = the native launch |
+| a custom-argv terminal can be supervised | **No.** The runtime decides "is this an agent" from the argv IT launched, never from the running process, so adoption is refused on a terminal whose agent is alive on screen. Measured three ways (`references/gotchas.md` G44). Supervision is the native launch or nothing |
+| the terminal went idle, so the worker finished | No: idle means ready for input. Finished means `worker_done`. And the prompt line is ALWAYS drawn, so it cannot tell you either: the spinner line is the signal, and no spinner without `worker_done` means STALLED, not idle (G55) |
 | a heartbeat is useful progress | No: it means "alive", and it wakes the conductor. Prohibited in the brief |
 | the stop verb closes one terminal | No: its radius is the whole worktree |
 | subagents and workers compete | No: the subagent reads and maps inside the turn; the worker executes a scope and persists |

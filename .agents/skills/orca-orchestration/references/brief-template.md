@@ -44,8 +44,8 @@ a system temp directory (it triggers a permission prompt on some harnesses).
 
 ## 3 · The eight fleet fields
 
-1. **Identity and ids** — the worker label, `Task: <task_id>`, `Dispatch: <dispatch_id>` when
-   adopted, and `Run: <run_id>` **only** when the worker was launched WITHOUT a dispatch (with an
+1. **Identity and ids** — the worker label, `Task: <task_id>`, `Dispatch: <dispatch_id>` when it has
+   one, and `Run: <run_id>` **only** when the worker was launched WITHOUT a dispatch (with an
    active dispatch the recipient defaults to the owning Run, so a stray `Run:` line invites the
    worker to address it manually and get it wrong).
 
@@ -67,17 +67,34 @@ a system temp directory (it triggers a permission prompt on some harnesses).
    repeat: stage explicit paths, commit with a pathspec, re-read before every edit, retry on
    `index.lock`, no global discards (Critical Rule #15).
 
-5. **Claims to declare** — the per-worker claim list produced at triage
-   (`references/claims-protocol.md` §5), so declaring is a confirmation rather than a discovery.
-   Include the alternative to use if a claim is denied.
+5. **Claims, PRE-GRANTED** — the per-worker claim list produced at triage
+   (`references/claims-protocol.md` §5). Say in the brief, in those words, that everything listed is
+   **already granted**: the worker announces it and works, and only a claim discovered mid-run waits
+   for arbitration. A brief that lists claims while the protocol says "wait for the grant" is the
+   contradiction that stalled a real worker on nothing.
+   Include the consequence or the alternative per row: for `write`, what to do if it is ever revoked;
+   for `enumerate`, the standing consequence that no assertion may rest on that collection.
 
 6. **Reporting protocol** — the report path, the six report sections, and the exact `worker_done`
    shape: once, with an explicit outcome, with the modified files, with the report path. Plus:
-   after `worker_done`, stop; do not close your own terminal.
+   after `worker_done`, stop; do not close your own terminal. And, for a worker launched without a
+   dispatch, the `BLOCKED: ` status form that replaces `escalation` on that path.
+
+   **Continuation, in writing**: run every stage without returning to the prompt until `worker_done`
+   is sent; a stage boundary is not a checkpoint. It belongs here AND in the launch prompt, because
+   as a file pointer the same sentence reads as reference material — two of three workers in one
+   fleet stopped mid-work on briefs that already said it. The prompt is what makes it an instruction.
+
+   **The mandatory `ask`**: name it explicitly — when the worker's own measurement contradicts a
+   conductor instruction, it stops and asks with both readings and its evidence. Never silent
+   compliance, never silent deviation.
 
 7. **Session label and rename** — the label the roster, the board card and the commit trailer all
-   key off. On a harness whose launcher cannot set a name, instruct the worker to rename itself in
-   its first turn to EXACTLY that label.
+   key off. On the supervised path there is no name flag at all: on Claude Code the identity hook
+   titles the session from the prompt's `/<workflow-skill> <KEY> fleet worker` opening, so the brief
+   tells that worker NOT to rename itself (a rename freezes the name as human-set). Every other
+   harness, and any worker whose first prompt lacked the token, is instructed to rename itself in its
+   first turn to EXACTLY that label. Detail: `references/session-identity.md` §2b.
 
 8. **Trailer reminder** — the two forensic trailers as the last lines of every commit, and the
    reminder that they are forensics, not attribution, and that no AI attribution of any kind is
@@ -117,8 +134,9 @@ You may edit ONLY:
 - <path>
 Anything else: do not touch it. Put the exact edit you wanted in your report.
 
-## Claims to declare before starting
-- <entity>:<id> <read|write>    # if denied: <alternative>
+## Claims (pre-granted; announce and work)
+- <entity>:<id> <read|write|enumerate>    # enumerate: never assert on the collection
+# A claim discovered mid-run is declared and waited on.
 
 ## Siblings
 - <label> — <scope> — <state>
@@ -135,6 +153,9 @@ Then send worker_done exactly once, outcome succeeded|failed, with --files-modif
 
 ## Rules
 - Channel = the orchestration mailbox. No harness agent-messaging, no user prompts, NO heartbeats.
+- Run every stage without returning to the prompt until worker_done is sent; a stage boundary is not
+  a checkpoint.
+- A measurement of yours that contradicts an instruction of mine = STOP and ask, with both readings.
 - A blocking question goes out as a blocking ask; a non-blocking one goes out as a message and you
   keep working on everything that does not depend on the answer.
 - Commit trailers, last two lines, nothing after them:
@@ -156,5 +177,7 @@ Then send worker_done exactly once, outcome succeeded|failed, with --files-modif
 | a context path inside the worker's own worktree | the file is not there; the worker proceeds without it, silently |
 | no file-ownership list in a same-checkout fleet | two workers edit one file and one of them loses the work |
 | no explicit heartbeat prohibition | the worker obeys its injected preamble and wakes the conductor every few minutes |
+| claims listed in the brief while the protocol says "wait for the grant" | the worker cannot tell which document governs and stalls on a claim that was never disputed. Measured |
+| the continuation rule only in the brief, never in the prompt | the worker reads it as reference material and stops at the first stage boundary anyway. Measured on two of three workers |
 | a launch prompt containing `"` or `<` / `>` | the shell mangles the line; the terminal reports success and nothing ran |
 | "report when you are done" with no path and no shape | a prose report the conductor cannot diff, aggregate or hand to the next wave |

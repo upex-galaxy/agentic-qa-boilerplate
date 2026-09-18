@@ -1,14 +1,16 @@
 # Worker Contract — What a Launched Session Owes the Fleet
 
 > Loaded by: a worker session (WORKER mode), and by the conductor when it writes a brief.
-> A worker loads THIS file and its domain skill. It loads NEITHER vendor guide: the preamble
-> injected at adoption already carries the message grammar (`taskId`, `dispatchId`, the exact
-> syntax of `worker_done` / `ask` / `escalation`, and the correct `--from`).
+> A worker loads THIS file and its domain skill. It loads NEITHER vendor guide: on the supervised
+> path the runtime injects a preamble at launch that already carries the message grammar (`taskId`,
+> `dispatchId`, the exact syntax of `worker_done` / `ask` / `escalation`, and the correct `--from`).
+> Launched unsupervised, that same text reaches you as a FILE your brief points at — read it once,
+> and note that `escalation` is not available to you there (rule 8).
 > This file adds only what no vendor preamble knows: the rules of THIS repo.
 
 ---
 
-## The ten rules
+## The twelve rules
 
 1. **One task: the one in the brief.** Do not widen the scope. Do not create other workers. If you
    find something that changes the scope, STOP and report it — a scope correction is the conductor's
@@ -54,6 +56,11 @@
    `worker_done` at the end. **Never guess the Run** from a run listing: Runs from other repos
    coexist on the same machine. With an active Dispatch the recipient can be omitted — it defaults to
    the owning Run mailbox — so do not invent one.
+   **On that path `escalation` is not available to you**: the runtime rejects an escalation from a
+   terminal that owns no supervised dispatch, and it returns the refusal as a `status` message rather
+   than as an error — so it reads like a reply and your blocker never arrives (gotcha G53). Send
+   blockers as a `status` message whose subject starts with `BLOCKED: `, and say in the body what you
+   will do while you wait.
 
 9. **Git.** Same checkout: stage EXPLICIT paths (`git add <path> …`, never `-A` / `.`), commit with
    an explicit pathspec, re-read every file right before editing it (another worker may have changed
@@ -64,6 +71,22 @@
 10. **Critical Rule #15 counts double.** No repo-wide discards: another session shares this tree, and
     a global discard destroys its uncommitted work unrecoverably. Discard only explicit paths YOU
     modified in THIS session. Unsure who modified a file → do not restore it, ask the conductor.
+
+11. **Run to completion. A stage boundary is not a checkpoint.** Do not return to your prompt until
+    `worker_done` is sent: finishing a stage, writing an artifact, or reaching a natural pause is not
+    permission to stop and wait. If the work is done, send `worker_done`; if it is blocked, `ask` or
+    escalate (rule 8); otherwise keep going. Measured: two of three workers in one fleet stopped at a
+    stage boundary with work remaining, on briefs that already said "no checkpoints" — which is why
+    the instruction is in your PROMPT as well as here. Every one of those stops cost a manual nudge.
+
+12. **Your own measurement outranks an instruction — and you STOP and `ask`.** When something you
+    measured contradicts what the conductor told you, do not comply silently and do not deviate
+    silently. Send a blocking `ask` carrying BOTH readings, the evidence for yours (the command, the
+    data, the counts), and what you believe the consequence of each is. Then wait.
+    This is the highest-value behaviour ever recorded in a fleet: on 2026-09-17 a worker did it by
+    judgement and stopped a wrong blocker from shipping against a release. A conductor derives from
+    reports; you are the one holding the instrument. Silent compliance turns your measurement into
+    nothing, and silent deviation turns it into a mystery nobody can audit.
 
 ---
 
@@ -84,14 +107,22 @@ owned by `/git-flow-master`; the identity resolution is described in `references
 
 ---
 
-## Session naming (non-Claude harnesses)
+## Session naming
 
-A worker launched with a Claude Code argv is already named by its launch line, and that name shows up
-in the prompt box, the resume picker and the terminal title. On a harness where the launcher cannot
-set a name, the brief instructs the worker to rename itself in its FIRST turn, with that harness's
-own rename command (`/rename` is the documented form on Claude Code, OpenCode and Codex). Use exactly
-the label the brief gives you — the conductor's roster, the board card and the commit trailer all key
-off it, and a self-invented name breaks the resume path.
+**There is no name flag on the supervised path**: the runtime starts the agent itself and takes an
+agent, a model and an effort level, not a command line. Your name therefore comes from one of two
+places:
+
+- **Claude Code** — from your first prompt. It opens with `/<workflow-skill> <KEY> fleet worker`, and
+  the repo's identity hook turns that into the session title. Nothing for you to do; do NOT rename
+  yourself, because a rename marks the name as human-set and freezes it.
+- **Any other harness, or a Claude Code worker whose first prompt did not carry the token** — the
+  brief instructs you to rename yourself in your FIRST turn with that harness's own rename command
+  (`/rename` is the documented form on Claude Code, OpenCode and Codex).
+
+A worker launched from a pasted line on the no-runtime path may already be named by that line's own
+name flag. Either way: use EXACTLY the label the brief gives you. The conductor's roster, the board
+card and the commit trailer all key off it, and a self-invented name breaks the resume path.
 
 ---
 
@@ -109,9 +140,16 @@ off it, and a self-invented name breaks the resume path.
 
 ## Claims
 
-Before you touch shared fixture data, a shared account or a shared credential, DECLARE it and wait
-for the grant. Full protocol, message shapes and the non-runtime fallback:
-`references/claims-protocol.md`. You never arbitrate; the conductor does.
+Before you touch shared fixture data, a shared account or a shared credential, check your brief:
+
+- **A claim listed in your brief is already granted.** The conductor decided it at triage and
+  pre-granted it at launch. Announce it once and start working — do NOT wait for a grant that is
+  never coming. A worker that waited on a pre-agreed claim once stalled on nothing.
+- **A claim you discover mid-run is NOT granted.** Declare it and wait, because the conductor has to
+  check it against what your siblings hold.
+
+Full protocol, the three intents (`read` / `write` / `enumerate`), message shapes and the non-runtime
+fallback: `references/claims-protocol.md`. You never arbitrate; the conductor does.
 
 ---
 
@@ -127,7 +165,9 @@ has a known failure mode:
 - [ ] **File ownership**: the exact paths you may edit, and the instruction to request any other edit
       instead of making it.
 - [ ] The channel, and the prohibition of harness messaging / user prompts / heartbeats.
-- [ ] `Run: <run_id>` if you were launched without a dispatch.
+- [ ] The continuation rule (rule 11), in writing, and not only in the prompt.
+- [ ] `Run: <run_id>` if you were launched without a dispatch, and the `BLOCKED: ` status form that
+      replaces `escalation` on that path.
 - [ ] The sibling roster: who else is running and on what, so a fact you discover that changes
       someone else's decision gets broadcast instead of buried.
 - [ ] The claims you must declare before starting.

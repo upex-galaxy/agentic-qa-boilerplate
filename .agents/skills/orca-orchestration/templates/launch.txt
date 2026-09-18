@@ -4,8 +4,11 @@
 # or .session/orchestration/<slug>/launch.txt). Owner: the conductor.
 #
 # RULES (see references/launch-seam.md):
-#   1. Written ALWAYS, with or without a runtime. Without one, a human pastes these lines.
-#   2. The line handed to the launcher is this line, BYTE FOR BYTE. Never paraphrased.
+#   1. Written ALWAYS, with or without a runtime. These lines are for a HUMAN to paste, and for a
+#      terminal the conductor deliberately wants UNSUPERVISED. A supervised worker is launched
+#      natively (agent + model + effort, no command line) and gets its prompt sent right after
+#      readiness: a custom-argv terminal can never be adopted.
+#   2. The PROMPT is the payload both paths share, BYTE FOR BYTE. Never paraphrased.
 #   3. Regenerated WHOLE on each planning pass. Finished items drop out; nothing is edited in place.
 #   4. Self-contained: it exports what the worker needs and starts the agent with the full prompt.
 #   5. No `"` and no `<` or `>` inside the prompt. They break the shell parse, the terminal still
@@ -13,21 +16,35 @@
 #   6. Validate before launching:  sh -n <this file>        (or the equivalent for the user's shell)
 #   7. Comment lines (starting with #) are documentation; strip them before a syntax check if the
 #      checker objects, and never hand one to the launcher.
+#   8. Every prompt OPENS with `/<workflow-skill> <KEY> fleet worker` (the identity hook titles the
+#      session from it, and the workflow skill detects fleet mode from it) and CARRIES the
+#      continuation sentence: run every stage without returning to the prompt until worker_done is
+#      sent. Both paths, every harness.
+#   9. An environment prefix is at most a redundant signal on THIS path and reaches a native worker
+#      never. Do not make fleet detection depend on it.
 #
 # Claude Code — full model id (never an alias: an alias moves on its own), effort, auto permission
 # mode, session name. `bun run claude --` forwards the arguments through the env-loading wrapper,
 # which is what makes the repo's env file win over an inherited variable.
-bun run claude -- --model <full-model-id> --effort high --permission-mode auto -n "<KEY>-<slug>" 'Read <ABS>/.session/orchestration/<slug>/COMMON.md then <ABS>/.session/orchestration/<slug>/W-<label>.md and execute your brief. Channel: orca orchestration. No heartbeats.'
+bun run claude -- --model <full-model-id> --effort high --permission-mode auto -n "<KEY>-<slug>" '/<workflow-skill> <KEY> fleet worker. Read <ABS>/.session/orchestration/<slug>/COMMON.md then <ABS>/.session/orchestration/<slug>/W-<label>.md and execute your brief. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints. Channel: orca orchestration. No heartbeats.'
 
-# With environment variables a workflow skill needs the worker to see (one line, still self-contained):
-PARALLEL_TESTING=true PARALLEL_TICKET=<KEY> bun run claude -- --model <full-model-id> --effort high --permission-mode auto -n "<KEY>-<slug>" 'Read <ABS>/.session/sprint-testing/sprint-<N>/<KEY>/brief.md and execute it. Channel: orca orchestration. No heartbeats.'
+# Per-issue brief, the sprint shape (one line, still self-contained). The environment variables are
+# OPTIONAL and redundant here: fleet mode is detected from the prompt token and the brief, because a
+# prefix reaches a native supervised worker never and was measured EMPTY in all three sessions of a
+# real fleet even on this path.
+bun run claude -- --model <full-model-id> --effort high --permission-mode auto -n "<KEY>-<slug>" '/sprint-testing <KEY> fleet worker. Read <ABS>/.session/sprint-testing/sprint-<N>/<KEY>/brief.md and execute it. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints. Channel: orca orchestration. No heartbeats.'
+
+# The SAME prompt, delivered on the supervised path (no argv, so no name flag and no prefix):
+#   1. launch natively:  [ORCHESTRATION_TOOL] worker-start: task + worktree + agent + model + effort
+#   2. read the screen:  status footer present AND credentials loaded (direnv), or fix the machine
+#   3. send the prompt:  [ORCHESTRATION_TOOL] terminal send, the text between the quotes above
 
 # OpenCode — verified flags: -m/--model, --agent, --prompt, --auto (auto-approve permissions not
 # explicitly denied), -s/--session, -c/--continue, --fork. There is NO name flag and NO effort flag,
 # so the brief instructs the worker to rename itself to its label in its first turn.
-bun run opencode -- --model <provider/model> --auto --prompt 'Read <ABS>/.session/orchestration/<slug>/COMMON.md then <ABS>/.session/orchestration/<slug>/W-<label>.md and execute your brief. First turn: rename this session to <KEY>-<slug>. Channel: orca orchestration. No heartbeats.'
+bun run opencode -- --model <provider/model> --auto --prompt '/<workflow-skill> <KEY> fleet worker. Read <ABS>/.session/orchestration/<slug>/COMMON.md then <ABS>/.session/orchestration/<slug>/W-<label>.md and execute your brief. First turn: rename this session to <KEY>-<slug>. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints. Channel: orca orchestration. No heartbeats.'
 
 # Codex — this repo ships `bun run codex` with the same env wrapper. Its name / permission /
 # effort flags were NOT verified here: read `codex --help` on the machine, use only flags it lists,
 # and if no name flag exists, keep the rename instruction in the brief.
-bun run codex -- <verified flags only> 'Read <ABS>/.session/orchestration/<slug>/COMMON.md then <ABS>/.session/orchestration/<slug>/W-<label>.md and execute your brief. First turn: rename this session to <KEY>-<slug>. Channel: orca orchestration. No heartbeats.'
+bun run codex -- <verified flags only> '/<workflow-skill> <KEY> fleet worker. Read <ABS>/.session/orchestration/<slug>/COMMON.md then <ABS>/.session/orchestration/<slug>/W-<label>.md and execute your brief. First turn: rename this session to <KEY>-<slug>. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints. Channel: orca orchestration. No heartbeats.'

@@ -77,12 +77,22 @@ message syntax. Use it, and nothing else:
 
 - **Blocking question** → a blocking `ask` to the conductor. If it times out, the question stays
   pending: resume it by its original message id, never ask again.
+- **A measurement that contradicts the conductor** → a blocking `ask`, carrying BOTH readings and
+  your evidence. This one is mandatory: never comply silently and never deviate silently. It is the
+  behaviour that makes a fleet worth more than a single faster session.
 - **Non-blocking question** → a plain message, and KEEP WORKING on everything that does not depend
   on the answer. Asking is not stopping.
-- **Blocker** → an `escalation`.
+- **Blocker** → an `escalation` — unless you were launched WITHOUT a dispatch, where the runtime
+  rejects it and returns the refusal as a `status` message, so your blocker silently never arrives.
+  On that path: a `status` message whose subject starts with `BLOCKED: `.
 - **Finished (or stopping)** → exactly ONE `worker_done`, with an explicit outcome
   (`succeeded` / `failed` — never a failure stated only in prose), your modified files, and the
   path of your report. Then STOP: no new work, no polling, and never close your own terminal.
+
+**Run every stage without returning to the prompt until `worker_done` is sent.** A stage boundary, a
+written artifact and a natural pause are not checkpoints; each stop costs a manual nudge from the
+conductor. Work done → `worker_done`. Work blocked → `ask` or the blocker form above. Anything else →
+keep going.
 
 **Prohibited**, and this is not negotiable:
 
@@ -92,6 +102,14 @@ message syntax. Use it, and nothing else:
 - **periodic heartbeats.** Your injected preamble asks for them; this repo forbids them, because
   each one wakes the conductor to read the word "alive". You send three things and nothing else:
   `worker_done`, `ask`, `escalation`.
+
+## Claims on shared data
+
+Your own brief lists the claims you hold, with one of three intents: `read`, `write`, or
+`enumerate` (a listing on a shared account that exposes your siblings' entities — nothing is
+mutated, and nothing about that collection may be asserted on: its size, contents and ordering
+belong to the whole fleet). **Everything in that table is already granted**: announce it and work.
+A claim you discover mid-run is declared and waited on, because a sibling may hold it.
 
 ## Your report
 

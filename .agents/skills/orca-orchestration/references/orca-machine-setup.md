@@ -49,16 +49,17 @@ untracked skill directory and collide with the repo's own tier model. Global (th
 
 ---
 
-## 3 · Agent default arguments (the native-launch prerequisite)
+## 3 · The two native-launch prerequisites
 
-This is the item that decides whether the NATIVE launch path is usable at all.
+These two items decide whether **supervision** is available on this machine at all, so they are not
+optional extras. The native launch (`worker-start --agent <agent> --model <id> --effort <level>`) is
+the ONLY supervised one: the runtime recognizes only agents it started itself, so a terminal created
+from our own command line can never be adopted (`references/gotchas.md` G44). A machine that has not
+done both items below can still run a fleet, but every worker on it is unsupervised.
 
-The default launch path in this repo is a custom argv: we create the terminal with our own command
-line and then adopt it into the Task. That path needs no settings at all, which is exactly why it is
-the default.
+### 3.1 · The agent's default arguments (permission mode)
 
-The native path (`worker-start --agent <agent> --model <id> --effort <level>`) lets the runtime start
-the agent itself. It accepts a model and an effort level and **nothing else**: there is no argument
+The native path accepts a model and an effort level and **nothing else**: there is no argument
 passthrough on `worker-start` or on `worktree create`, so a permission mode cannot be expressed as a
 flag. It has to be a per-agent default configured in the app:
 
@@ -80,9 +81,35 @@ Two things to know before relying on it:
 - **(unverified)** the exact label of the settings section and the field, which may differ per app
   version. Read the screen, do not trust this sentence.
 
-Until that override exists on a machine, the native path is not usable there and the custom-argv
-path is the only correct one. Neither the repo nor a teammate's machine can tell whether you did it,
-which is the whole problem with a non-versionable setting.
+Until that override exists on a machine, a native worker launches in whatever mode the app's
+per-agent default gives it, which is the trap gotcha G27 describes. Neither the repo nor a teammate's
+machine can tell whether you did it, which is the whole problem with a non-versionable setting.
+
+### 3.2 · direnv, so a supervised worker has credentials
+
+A launch line can export variables; the native launch cannot, because it has no argv. What it has is
+Orca's **interactive shell**, and that is the whole seam: with direnv installed and hooked into that
+shell, an `.envrc` that sources the repo's env file fires when the worker's terminal opens, and the
+worker starts with credentials. Measured 2026-09-17: a direct probe showed
+`direnv: export +ATLASSIAN_API_TOKEN +ATLASSIAN_EMAIL …` and then the probe variable reading `SET`.
+
+Without direnv, the same command produces a supervised worker with NO credentials **and nothing
+reports it**. It fails much later, at its first authenticated call, with an error that reads like a
+broken tool (gotcha G45).
+
+```bash
+command -v direnv                                # the hook must be installed AND hooked into the shell
+cat .envrc                                       # must source the repo's env file; never commit secrets here
+direnv allow                                     # once per checkout, per machine
+```
+
+Two rules that follow from this being per-machine and invisible:
+
+- The conductor **verifies credentials on the worker's screen** before sending it any work
+  (`references/coordinator-playbook.md` §1 step 5). Readiness is not capability.
+- `.envrc` is a per-machine convenience, not a repo contract. Nothing in this repo may depend on it
+  existing: the custom-argv line loads the env file through the repo's own wrapper instead, and that
+  is why the human-paste path needs none of this.
 
 ---
 
@@ -124,8 +151,10 @@ find out during a real fleet, and record it in `references/gotchas.md`.
 [ ] binary installed, `orca status` reports a reachable runtime; appVersion noted
 [ ] (optional) vendor stubs installed GLOBALLY, never --local in this repo
 [ ] Settings -> Agents: `claude` default args include `--permission-mode auto`
-    (only needed for the native launch path; the custom-argv default needs nothing)
+    (prerequisite of the SUPERVISED native launch; a pasted custom-argv line needs nothing)
 [ ] other agents: their documented equivalent, verified, not guessed
+[ ] direnv installed, hooked into the shell, `.envrc` sources the env file, `direnv allow` run
+    (the only way a native worker gets credentials; verify on the worker's screen at launch)
 [ ] repo setup script set to `bun run worktree:provision`, policy run-by-default
 [ ] (optional) phone paired
 [ ] a single test worker launched and released end to end BEFORE a real fleet

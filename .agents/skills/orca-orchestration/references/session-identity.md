@@ -61,6 +61,30 @@ that honour it are owned by the hook emitter (`.agents/hooks/personality-reinjec
 verifies them against the official docs before emitting anything — this file does not restate them,
 precisely so there is one place that can be wrong.
 
+### 2b · On the supervised path the NAME comes from the prompt
+
+The `name at launch` row above applies to a pasted launch line. It does not apply to a supervised
+worker: the native launch starts the agent itself and takes an agent, a model and an effort level,
+**never a command line**, so there is no name flag to pass (`references/coordinator-playbook.md` §1b).
+
+The replacement is the prompt's fixed opening. A worker's first prompt begins with
+`/<workflow-skill> <KEY> fleet worker`, and the hook emitter turns that shape — a workflow trigger
+plus an issue key — into the session title, but only while no human has named the session. Two
+consequences that bite in practice:
+
+- **Do not rename a Claude Code worker whose prompt carried the token.** A rename marks the name as
+  human-set, and the emitter then leaves it alone forever, which is correct behaviour and not what
+  you wanted.
+- **A worker whose first prompt did NOT carry the token stays unnamed**, and its brief must tell it
+  to rename itself to exactly the roster label in its first turn. Same instruction as for the
+  harnesses with no name flag at all.
+
+The conductor reads the resulting label back off the screen rather than assuming it: the agent's
+status bar carries the session label together with the model and the effort level, and
+`terminal read --screen` is how you see it (gotcha G13 — the default read mode returns stacked
+fragments of a repainting TUI). Grep it as a BARE token: that bar is drawn with non-breaking spaces,
+so a pattern that includes a label plus a space never matches (gotcha G15).
+
 ---
 
 ## 3 · The label rule
@@ -119,12 +143,17 @@ Whatever was only in the conductor's head is lost; whatever is in the card is re
 
 So at every launch and every stage boundary:
 
-- the terminal title is the session label (a Claude Code worker launched with a name flag gets this
-  for free, since the name becomes the terminal title; elsewhere set it explicitly);
-- the board card's display name is the work key plus a short title;
+- the terminal title is the session label (a worker launched from a pasted line with a name flag gets
+  this for free, since the name becomes the terminal title; on the supervised path set it explicitly
+  with the terminal-rename verb, or read back the title the hook set from the prompt);
+- the board card's display name is the work key plus a short title — or, in a same-checkout fleet,
+  the fleet's own display name, because the card is per-worktree there;
 - the board card's comment carries the recovery block: stage, session label, branch, and the absolute
-  path of the brief (`references/coordinator-playbook.md` §3).
+  path of the brief. **In a same-checkout fleet the card cannot hold N of those**, so it points at
+  the roster instead and the roster carries per-worker recovery
+  (`references/coordinator-playbook.md` §3, gotcha G50).
 
 The roster keeps the machine-readable side of the same facts (task, dispatch, terminal handle,
-worktree, agent, model, session label, status), and it is what the owner phrasebook resolves
-"the one on BK-123" against.
+worktree, agent, model, session label, resume command, status), and it is what the owner phrasebook
+resolves "the one on BK-123" against. In a fleet of N workers in one checkout it is not a convenience:
+it is the only recovery record there is.
