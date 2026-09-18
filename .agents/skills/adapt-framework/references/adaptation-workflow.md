@@ -332,7 +332,7 @@ export type Create{Entity}Response = Create{Entity}Path['responses']['201']['con
 - `tests/components/api/AuthApi.ts` — real `endpoints.login`, payload shape, types from `@schemas/auth.types`. **Replace `@atc('PROJ-101')` / `@atc('PROJ-102')` with `@atc('{{PROJECT_KEY}}-NNN')`** (leave the instructional `UPEX-101` comment example alone).
 - `tests/components/ui/LoginPage.ts` — real locators (`getByTestId` / `getByRole`), tight assertions (URL change AND a post-login element). Replace its `PROJ-` ATC keys too.
 - `tests/components/api/ApiBase.ts` — modify `buildHeaders()` only if the auth header is non-standard.
-- **`scripts/api-login.ts` (PROJECT-SPECIFIC section) — REQUIRED for the agentic curl API-testing flow.** Adapt `buildAuthPayload()` (request body field names — `email` vs `username`, etc.) and `extractTokenFromResponse()` (response token field — `access_token` / `token` / `id_token`) to the target's login contract (same answers as §1.7 Auth). This is a **separate code path** from the Playwright setups above: `bun run api:login` powers the schema-read-only-MCP + curl maneuver (`.auth/tokens.env` → `curl`), per `agentic-qa-core/references/api-testing-doctrine.md`. If the target returns a different token shape and this is not adapted, `.auth/tokens.env` stays empty and every authenticated curl 401s — while the Playwright setups still pass, hiding the break.
+- **`scripts/api-login.project.ts` — the ONLY file to adapt for the agentic curl API-testing flow.** Adapt `buildAuthPayload()` (request body field names — `email` vs `username`, etc.) and `extractTokenFromResponse()` (response token field — `access_token` / `token` / `id_token`) to the target's login contract (same answers as §1.7 Auth), plus the optional `loginEndpoint` / `headers` / `environments` / `extraFlags` exports when the target needs them. Do NOT touch `scripts/api-login.ts` (10-line entry) or `scripts/lib/api-login-core.ts` (the CLI: args, `--role`, `--profile`, token storage, `--help`): `scripts/lib/api-login-core.ts` is synced, so `bun run up` keeps delivering upstream improvements there. `scripts/api-login.ts` itself is delivered once and never overwritten after that, same as this adapter file — a repo scaffolded before the core/adapter split still has its whole pre-split CLI at that path, so the updater never silently replaces it. A pre-split repo adopts the split by hand: replace `scripts/api-login.ts` with the current 10-line entry from the boilerplate, then this adapter file is the only one left to adapt. This is a **separate code path** from the Playwright setups above: `bun run api:login` powers the schema-read-only-MCP + curl maneuver (`.auth/tokens.env` → `curl`), per `agentic-qa-core/references/api-testing-doctrine.md`. If the target returns a different token shape and this is not adapted, `.auth/tokens.env` stays empty and every authenticated curl 401s — while the Playwright setups still pass, hiding the break.
 
 ### 5.2 Adapt setups
 
@@ -352,7 +352,7 @@ source .auth/tokens.env && \
   -H "Authorization: Bearer $API_TOKEN_USER_<ENV>" "$API_BASE_URL/<a-known-endpoint>"
 ```
 
-The first two prove the Playwright setups (session reuse). The last two prove the **agentic curl flow** (`api-login.ts` adapted → `.auth/tokens.env` → authenticated curl). A 2xx (or an app-level 4xx that is NOT 401) means the token minted by `api:login` authenticates; a `401` means `scripts/api-login.ts` (§5.1) or the creds are wrong. All must pass — the suite depends on session reuse AND the agentic API-testing maneuver depends on `api:login`.
+The first two prove the Playwright setups (session reuse). The last two prove the **agentic curl flow** (`api-login.ts` adapted → `.auth/tokens.env` → authenticated curl). A 2xx (or an app-level 4xx that is NOT 401) means the token minted by `api:login` authenticates; a `401` means `scripts/api-login.project.ts` (§5.1) or the creds are wrong. All must pass — the suite depends on session reuse AND the agentic API-testing maneuver depends on `api:login`.
 
 ---
 
@@ -477,7 +477,7 @@ Run in this exact order. Stop on the first failure; report with diagnostics; do 
 11. bun run repo:check           # format + lint + types + vars + skills + registry + env
 ```
 
-If run #10 re-runs the auth setup, session reuse is broken — check `playwright.config.ts` project dependencies and `.auth/*` freshness. If run #9 reports **0 tests**, the smoke tag is wrong (must be `@critical`). If run #8 leaves `.auth/tokens.env` empty (no `API_TOKEN_<ROLE>_<ENV>` line), `scripts/api-login.ts` is not adapted to the target's login contract (§5.1) — the agentic curl maneuver will 401.
+If run #10 re-runs the auth setup, session reuse is broken — check `playwright.config.ts` project dependencies and `.auth/*` freshness. If run #9 reports **0 tests**, the smoke tag is wrong (must be `@critical`). If run #8 leaves `.auth/tokens.env` empty (no `API_TOKEN_<ROLE>_<ENV>` line), `scripts/api-login.project.ts` is not adapted to the target's login contract (§5.1) — the agentic curl maneuver will 401.
 
 ---
 
@@ -501,7 +501,7 @@ Run every detection signal and print a per-subsystem **GENERIC / ADAPTED** table
 | Smoke tag | `playwright.config.ts` smoke `grep` tag == tag on smoke tests == `smoke.yml` filter — all `@critical` |
 | kata-manifest | `bun run kata:manifest:check` exits 0 **AND** `grep -c 'Example' kata-manifest.json` == 0 **AND** the new entity component is listed |
 | Auth setups | `.auth/api-state.json` + `.auth/user.json` exist non-empty |
-| Agentic curl auth | `bun run api:login <env>` populates `.auth/tokens.env` with an `API_TOKEN_<ROLE>_<ENV>` line (proves `scripts/api-login.ts` adapted for the curl maneuver) |
+| Agentic curl auth | `bun run api:login <env>` populates `.auth/tokens.env` with an `API_TOKEN_<ROLE>_<ENV>` line (proves `scripts/api-login.project.ts` adapted for the curl maneuver) |
 | Session reuse | second `test:smoke` does not execute api-setup/ui-setup (and ≥1 test actually ran) |
 | Business context | `grep -l 'placeholder\|Run \`/business-' .context/business/*.md .context/master-test-plan.md` returns nothing |
 | CI workflows | workflow `options:` == env union; secret names match scheme; smoke filter == config grep tag |
@@ -534,7 +534,7 @@ Done only when **every** box is true (all map to a Phase 9 signal):
 - [ ] `bun run kata:manifest:check` exits 0 and the manifest has no `Example` entries
 - [ ] `bun run test:smoke` runs ≥1 `@critical` test on staging and passes
 - [ ] Second smoke run reuses `.auth/*` (no re-login)
-- [ ] `bun run api:login` populates `.auth/tokens.env` (agentic curl API-testing maneuver works; `scripts/api-login.ts` adapted)
+- [ ] `bun run api:login` populates `.auth/tokens.env` (agentic curl API-testing maneuver works; `scripts/api-login.project.ts` adapted)
 - [ ] No `PROJ-`/`UPEX-` ATC decorator remains in `tests/components/`
 - [ ] No `Example*` component, `module-example/` spec, or hotel/booking data remains
 - [ ] No component imports `@openapi`; only `api/schemas/` facades do
@@ -552,7 +552,7 @@ Done only when **every** box is true (all map to a Phase 9 signal):
 |-------|-------------------|------------------------|
 | Login endpoint | `POST /auth/login` | Real path from `api/openapi-types.ts` or `business-api-map.md` |
 | Token format | `Bearer <jwt>` in body | `access_token` / `id_token` / cookie / hybrid |
-| api:login auth section | default `{email,password}` → `{access_token}` | `scripts/api-login.ts` `buildAuthPayload` / `extractTokenFromResponse` → target's login body + token field (powers the agentic curl maneuver) |
+| api:login auth section | default `{email,password}` → `{access_token}` | `scripts/api-login.project.ts` `buildAuthPayload` / `extractTokenFromResponse` → target's login body + token field (powers the agentic curl maneuver) |
 | Token refresh | per-run mint, NO auto-refresh | per-run mint or staleness check (decide in §1.4) |
 | Success URL | `/dashboard/` | Project's post-login route |
 | API base prefix | `/api` | `/api/v1`, `/v2`, subdomain, or none |
@@ -578,7 +578,7 @@ Done only when **every** box is true (all map to a Phase 9 signal):
 
 - Auth is the most fragile part — always test against real staging, never mocks.
 - Credentials live in `.env`. Hardcoding them is a hard stop.
-- `api-login.ts` does **not** auto-refresh — it mints per run (writes `.auth/api-state.json` for Playwright AND `.auth/tokens.env` + `.auth/tokens.json` for the agentic curl maneuver). Don't document a refresh that doesn't exist. Adapt its PROJECT-SPECIFIC section (`buildAuthPayload` / `extractTokenFromResponse`) to the target — a wrong token shape leaves `.auth/tokens.env` empty and every curl 401s.
+- `api-login.ts` does **not** auto-refresh — it mints per run (writes `.auth/api-state.json` for Playwright AND `.auth/tokens.env` + `.auth/tokens.json` for the agentic curl maneuver). Don't document a refresh that doesn't exist. Adapt `scripts/api-login.project.ts` (`buildAuthPayload` / `extractTokenFromResponse`) to the target — a wrong token shape leaves `.auth/tokens.env` empty and every curl 401s. The CLI around it — `scripts/lib/api-login-core.ts` (synced) and `scripts/api-login.ts` (delivered once, never overwritten; adopt the split by hand if the repo pre-dates it) — is never adapted.
 - Golden KATA rule: components import from `@schemas/*`, never `@openapi`. Keep `@openapi` scoped to facades.
 - Steps (Layer 3.5) carry no `@atc` and no fixed assertions — they chain ATCs only.
 - MCP edits preserve three-harness parity across `.mcp.json`, `opencode.jsonc`, and `.codex/config.toml`. Miss one and that harness loses the server or receives empty env → Rule #10 hard stop.

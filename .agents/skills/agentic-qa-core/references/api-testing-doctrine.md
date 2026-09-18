@@ -62,7 +62,14 @@ bun run api:login                       # active env (TEST_ENV), role=user
 bun run api:login staging               # explicit env
 bun run api:login staging --role admin  # named role
 bun run api:login staging --profile W1  # isolated token set -> .auth/profiles/W1/
+bun run api:login --profile W1          # flags may also precede the env (active env)
+bun run api:login --help                # options, storage paths, required .env vars
 ```
+
+Flag order does not matter and a flag VALUE is never read as the environment
+(`--profile W1` mints for the active env, it does not look for an env called
+`W1`). Both `--flag value` and `--flag=value` work; an unrecognized flag is an
+error, never a silent environment guess.
 
 It authenticates the env+role's credentials (from `.env`) and writes:
 
