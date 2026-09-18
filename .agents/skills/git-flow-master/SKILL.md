@@ -357,7 +357,7 @@ gh pr create \
   [--draft]
 ```
 
-**Stop at PR creation.** Merging is the user's explicit next step. Never auto-merge. Surface: _"Review the PR. Once approved, merge via the GitHub UI or run `gh pr merge {number} --squash --delete-branch`."_
+**Stop at PR creation.** Merging is the user's explicit next step. Never auto-merge. Surface: _"Review the PR. Once approved, merge via the GitHub UI or run `gh pr merge {number} --squash --delete-branch`."_ **One carve-out**: when a supervised worker's dispatch or brief NAMES the merge as a step, that instruction IS the explicit next step and the worker merges. The rule exists so a PR is never merged by an agent acting on its own judgement; a dispatch that says "open the PR and merge it" is not the agent's judgement, it is the owner's, delivered through the channel the fleet uses for every other instruction. Say in the report that the merge was pre-authorized and by which line of the brief.
 
 **Optional pre-PR adversarial gate** — when the diff exceeds the 400-line cognitive review budget OR touches shared scaffolding (KATA base classes, fixtures, OpenAPI schemas), surface `/judgment-day` as an optional pre-PR review: _"Diff is large / touches shared scaffolding. Want to run `/judgment-day` before opening the PR?"_. Two blind judges review the diff in parallel; only approves when both agree. See `.agents/skills/judgment-day/SKILL.md`. Never invoked automatically — user opts in.
 
@@ -497,7 +497,7 @@ The branch plan that comes out of the decision is the **contract** for execution
 6. **No `git add -A` / `git add .`** — always list explicit paths.
 7. **Show proposed commits / branches / PR body and wait for OK** before executing. The user can accept, modify, or reject any item.
 8. **`gh` CLI is the PR transport.** If `gh` is missing or unauthenticated (`gh auth status` fails), stop and surface the blocker. Do not pretend a PR was opened.
-9. **PRs stop at creation.** Merging is the user's explicit next step.
+9. **PRs stop at creation.** Merging is the user's explicit next step — with the one carve-out in 3.4: a supervised worker whose dispatch or brief NAMES the merge is executing the owner's instruction, not its own judgement, and merges.
 10. **Strategy is sticky.** Once resolved, persist in the `git_strategy:` block of `.agents/project.yaml`. The next invocation re-reads the block rather than asking again.
 11. **Language**: artifacts (commits, branches, PR bodies, AGENTS.md sections) in English. Mirror the user's language only in conversation.
 12. **No global discards.** Never `git restore .`, `git checkout -- .`, `git reset --hard`, untargeted `git stash`, or `git clean -f` — concurrent agent sessions may share this working tree without worktrees. Discard only explicit paths this session modified; if file ownership is unclear, stop and ask the user. (Critical Rule #15 in `AGENTS.md`; see also `references/worktrees.md` for true isolation.)
