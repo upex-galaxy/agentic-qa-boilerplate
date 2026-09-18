@@ -57,7 +57,8 @@ It is **optional by construction**. Everything here has a path that works with n
 | Situation | Use instead |
 |---|---|
 | a read, a verification, a map — anything that fits in this turn | one-shot subagents (AGENTS.md §3). This is most work |
-| "hand this to another agent and forget it" | that is a HANDOFF, not orchestration: no Task, no Dispatch, no mailbox. Ask the binary for its `orca-cli` guide |
+| "hand this TASK to another agent and forget it" | that is a HANDOFF, not orchestration: no Task, no Dispatch, no mailbox. Ask the binary for its `orca-cli` guide |
+| "hand this whole SESSION to a fresh one, my context is full" | ownership transfer of the session itself, same worktree, same harness | `/session-handoff` |
 | per-ticket manual QA | `/sprint-testing` |
 | writing test code | `/test-automation` |
 | branch / commit / push / PR mechanics, or a plain `git worktree` with no fleet | `/git-flow-master` |
@@ -155,7 +156,7 @@ Practical rule: **the subagent explores and returns a map; the worker executes a
 ## Decision tree: is this even orchestration?
 
 1. **Does the work fit in this turn, and is it a read / verification / map?** → one-shot subagent. Stop here. This is most work.
-2. **Do you want to hand the work away and stop caring?** → that is a **handoff**, ownership transfer, not orchestration: no Task, no Dispatch, no mailbox. The binary's `orca-cli` guide owns it; ask for that guide and follow it.
+2. **Do you want to hand the work away and stop caring?** → that is a **handoff**, ownership transfer, not orchestration: no Task, no Dispatch, no mailbox. A single TASK handed to another agent is the binary's `orca-cli` guide; ask for that guide and follow it. A whole SESSION handed to its own successor because the context window is filling up is `/session-handoff`.
 3. **Do you need to supervise, wait for results, answer questions, or coordinate a dependency graph?** → orchestration. Continue.
 4. **Does the work write code?** → one Orca worktree per worker. **Does it not?** → fleet in the same checkout. See `references/topologies.md`.
 5. **Do you want the workers SUPERVISED** (addressable by dispatch, closable one by one, preamble injected)? → the NATIVE launch, and nothing else: the runtime recognizes only agents it started itself. Two per-machine prerequisites decide whether that path exists here at all — the agent's default arguments and direnv (`references/orca-machine-setup.md` §3). Either one missing → the fleet still runs, every worker unsupervised, and you say so to the owner before launching rather than discovering it at cleanup.

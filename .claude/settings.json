@@ -54,6 +54,7 @@
       "mcp__postman__*",
       "Skill(agentic-qa-core)",
       "Skill(orca-orchestration)",
+      "Skill(session-handoff)",
       "Skill(agentic-qa-onboard)",
       "Skill(project-discovery)",
       "Skill(project-context)",
