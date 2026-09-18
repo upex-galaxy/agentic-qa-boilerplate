@@ -21,10 +21,14 @@ import {
   diffStats,
   lintStagedNoStashNote,
   markdownSectionDelta,
+  PATH_PREREQUISITES,
   persistArchivedSkillMarkers,
+  prerequisiteFor,
   protectNote,
   readGitStrategyStamp,
   renderParityReport,
+  RESOLVED_BY_APPLY_MARK,
+  resolvedByApply,
   runVerdict,
   strictVerdict,
   structuralEvidence,
@@ -172,12 +176,21 @@ describe('section-level evidence', () => {
   });
 
   test('key delta separates upstream additions from project-only keys', () => {
-    expect(configKeyDelta(['a', 'b.x'], ['a', 'b.y'])).toEqual({ added: ['b.y'], projectOnly: ['b.x'], changed: [], changedDetail: {} });
+    expect(configKeyDelta(['a', 'b.x'], ['a', 'b.y'])).toEqual({ added: ['b.y'], projectOnly: ['b.x'], changed: [], changedDetail: {}, changedArrays: [], addedObjects: [] });
     // With values (Maps) the shared keys whose values differ are named; a top
     // key with object children is judged through its children only.
     const mine = configEntries('{"a":1,"b":{"x":1,"y":[1]},"c":{"z":1}}', 'x.json')!;
     const theirs = configEntries('{"a":2,"b":{"x":1,"y":[2]},"c":{"z":1}}', 'x.json')!;
-    expect(configKeyDelta(mine, theirs)).toEqual({ added: [], projectOnly: [], changed: ['a', 'b.y'], changedDetail: {} });
+    // An array on both sides is reported by its ELEMENTS, and listed in
+    // `changedArrays` so the evidence never calls an appended entry a changed value.
+    expect(configKeyDelta(mine, theirs)).toEqual({
+      added: [],
+      projectOnly: [],
+      changed: ['a', 'b.y'],
+      changedDetail: { 'b.y': 'added: ["2"], removed: ["1"]' },
+      changedArrays: ['b.y'],
+      addedObjects: [],
+    });
   });
 
   test('watched-file evidence names sections for markdown and keys for config, plus hunk counts', () => {
@@ -284,7 +297,7 @@ describe('collectParityFindings', () => {
     expect(agents.evidence).toContain('port upstream additions only: "5.5 MULTI-HARNESS"');
     expect(agents.evidence).toContain('keep project-only heading: "9. ACME ONLY"');
     expect(agents.evidence).toContain('body differs in 1: "1. RULES"');
-    expect(agents.evidence).toMatch(/\d+ hunks? \(\+\d+\/-\d+\)$/);
+    expect(agents.evidence).toMatch(/\d+ hunks? \(\+\d+\/-\d+\); memory$/);
     expect(agents.diff).toContain('@@');
 
     const settings = byPath('.claude/settings.json');
@@ -299,7 +312,7 @@ describe('collectParityFindings', () => {
     const codex = byPath('.codex/config.toml');
     expect(codex.surface).toBe('mcp');
     expect(codex.blocking).toBe(true);
-    expect(codex.evidence).toMatch(/^missing: n8n \(declared in \.mcp\.json\); only here: acme \(not in \.mcp\.json\): declare them in \.mcp\.json and opencode\.jsonc, or remove them; port upstream additions only: "mcp_servers\.n8n"; keep project-only key: "mcp_servers\.acme"; \d+ hunks? \(\+\d+\/-\d+\)$/);
+    expect(codex.evidence).toMatch(/^missing: n8n \(declared in \.mcp\.json\); only here: acme \(not in \.mcp\.json\): declare them in \.mcp\.json and opencode\.jsonc, or remove them; port upstream additions only: "mcp_servers\.n8n"; keep project-only key: "mcp_servers\.acme"; \d+ hunks? \(\+\d+\/-\d+\); codex mcp registry$/);
     // Following `take upstream` literally would delete `acme`, the project's own
     // server: a row naming project-only content always suggests `merge`.
     expect(codex.suggested).toBe('merge');
@@ -502,9 +515,12 @@ describe('renderParityReport', () => {
     expect(prompt.startsWith('Parity review after `bun run up` (upstream upex-galaxy/agentic-qa-boilerplate@abcdef1, project lock 1234567).')).toBe(true);
     expect(prompt).toContain('WAIT for a decision per row');
     expect(prompt).toContain('(keep project | take upstream | merge) BEFORE editing anything');
-    expect(prompt).toContain('| # | Surface | File | What differs (evidence) | Suggested |');
-    expect(prompt).toContain('| 1 | Instructions | AGENTS.md | port upstream additions only: "5.5 MULTI-HARNESS"');
-    expect(prompt).toMatch(/\| MCP \| \.codex\/config\.toml \| missing: n8n \(declared in \.mcp\.json\); only here: acme \(not in \.mcp\.json\): declare them in \.mcp\.json and opencode\.jsonc, or remove them; port upstream additions only: "mcp_servers\.n8n"[^|]* \| merge \(BLOCKING\) \|/);
+    expect(prompt).toContain('| # | Surface | File | Now | What differs (evidence) | Suggested |');
+    expect(prompt).toContain('| 1 | Instructions | AGENTS.md | kept | port upstream additions only: "5.5 MULTI-HARNESS"');
+    // A watched path is never overwritten; a row that is not a two-copy contest says so with `-`.
+    expect(prompt).toContain('| 10 | Env | .env | - |');
+    expect(prompt).toContain('`Now` is the copy on disk today');
+    expect(prompt).toMatch(/\| MCP \| \.codex\/config\.toml \| kept \| missing: n8n \(declared in \.mcp\.json\); only here: acme \(not in \.mcp\.json\): declare them in \.mcp\.json and opencode\.jsonc, or remove them; port upstream additions only: "mcp_servers\.n8n"[^|]* \| merge \(BLOCKING\) \|/);
     expect(prompt).toContain('`take upstream` is suggested only where the project lacks the content entirely');
     expect(prompt.trimEnd().endsWith('Post-merge: bun run agents:compat && bun run agents:compat:check && bun run repo:check')).toBe(true);
     // Scannable: never the diff itself, never rule numbers.
@@ -540,7 +556,7 @@ describe('renderParityReport', () => {
       suggested: 'merge',
       blocking: false,
     }], META);
-    expect(prompt).toContain('| 1 | Hooks | .claude/settings.json | a \\| b c | merge |');
+    expect(prompt).toContain('| 1 | Hooks | .claude/settings.json | - | a \\| b c | merge |');
   });
 });
 
@@ -695,7 +711,7 @@ describe('rows the diff-based table could not see before', () => {
     expect(jira.surface).toBe('instructions');
     expect(jira.suggested).toBe('merge');
     expect(jira.blocking).toBe(false);
-    expect(jira.evidence).toBe('informational: upstream added 1 key: "required.priority"; merge = add the new keys, values are project identity and never compared');
+    expect(jira.evidence).toBe('informational: upstream added 1 key: "required.priority"; merge = add the new keys, values are project identity and never compared; manifest');
     expect(jira.diff).toContain('+  priority:');
   });
 
@@ -709,7 +725,7 @@ describe('rows the diff-based table could not see before', () => {
     expect(findings[0].surface).toBe('components');
     expect(findings[0].suggested).toBe('merge');
     expect(findings[0].blocking).toBe(false);
-    expect(findings[0].evidence).toBe('content differs (no key structure): review the hunks in the saved file; 1 hunk (+0/-1)');
+    expect(findings[0].evidence).toBe('content differs (no key structure): review the hunks in the saved file; 1 hunk (+0/-1); project gates live here');
     expect(findings[0].diff).toContain('-bun run e2e');
     // A project-declared path sits on Skills (under .agents/skills/) or Componentes, never on Instrucciones.
     write(root, '.agents/skills/acli/SKILL.md', '## A\n\n## Project note\n');
@@ -724,7 +740,7 @@ describe('rows the diff-based table could not see before', () => {
       ['.agents/skills/acli/SKILL.md', 'skills', 'keep project'],
       ['scripts/x.ts', 'components', 'merge'],
     ]);
-    expect(declared[0].evidence).toBe('project-only heading: "Project note"; upstream adds nothing; 1 hunk (+0/-2)');
+    expect(declared[0].evidence).toBe('project-only heading: "Project note"; upstream adds nothing; 1 hunk (+0/-2); declared');
   });
 
   test('a package.json key kept at the project value: one row per key, both values in the file body only', () => {
@@ -785,7 +801,7 @@ describe('MCP registries are compared per server, args and env included', () => 
   test('a nested server object is compared whole; the evidence names the server and the fields that differ', () => {
     const mine = configEntries('{"mcpServers":{"context7":{"command":"npx","args":["-y","@upstash/context7-mcp@1"],"env":{"CONTEXT7_API_KEY":"ref"}}}}', '.mcp.json')!;
     const theirs = configEntries('{"mcpServers":{"context7":{"command":"npx","args":["-y","@upstash/context7-mcp@2"],"env":{"CONTEXT7_API_KEY":"ref"}}}}', '.mcp.json')!;
-    expect(configKeyDelta(mine, theirs)).toEqual({ added: [], projectOnly: [], changed: ['mcpServers.context7'], changedDetail: { 'mcpServers.context7': 'args differ' } });
+    expect(configKeyDelta(mine, theirs)).toEqual({ added: [], projectOnly: [], changed: ['mcpServers.context7'], changedDetail: { 'mcpServers.context7': 'args differ' }, changedArrays: [], addedObjects: [] });
 
     expect(row(
       '{"mcpServers":{"context7":{"command":"npx","args":["a"]},"supabase":{"command":"npx","args":["s"],"env":{"SUPABASE_ACCESS_TOKEN":"ref"}}}}',
@@ -827,9 +843,164 @@ describe('a git-tracked .context/PBI/ cache is one row on Componentes', () => {
       pbiCache: { tracked: 370, recipePath: '.agents/prompts/pbi-cache-migration.md' },
     });
     expect(findings.map(f => [f.surface, f.path, f.suggested, f.blocking])).toEqual([['components', '.context/PBI/', 'decide', false]]);
-    expect(findings[0].evidence).toBe('370 tracked path(s) still in git (Jira cache, gitignored by design); migration recipe saved to .agents/prompts/pbi-cache-migration.md');
+    // The ignore clause is the row's whole value: the ladder was already at full
+    // parity with upstream while 370 paths stayed tracked, so "fix .gitignore" is
+    // a detour the row must close off.
+    expect(findings[0].evidence).toBe('370 tracked path(s) still in git (Jira cache, gitignored by design); an ignore rule does not untrack what is already in the index; run the recipe; migration recipe saved to .agents/prompts/pbi-cache-migration.md');
     expect(renderParityReport(findings, META).surfaces.find(s => s.surface === 'components')?.cell).toBe('1 hallazgo: .context/PBI/');
     // Nothing tracked: no row.
     expect(collectParityFindings({ root, upstreamDir: temporaryRoot(), drift: [], compatErrors: [], archivedSkills: [], archivedSkillsDir: join(root, 'x'), heldBack: [], envNewKeys: [], pbiCache: null })).toEqual([]);
+  });
+});
+
+describe('a kept file whose hunk gates another file of the same release', () => {
+  // Live finding (Bunkai): upstream shipped a skill declaring the new category
+  // `orchestration` AND the one-line `scripts/lint-skills.ts` hunk that admits
+  // it. The script was in `updater.protected_paths`, so only the skill landed
+  // and `bun run skills:check` failed on a freshly synced repo. The row's whole
+  // evidence was `2 hunks (+1/-5)`, so `keep project` was chosen off it.
+  function base(root: string, upstream: string): ParityInput {
+    return { root, upstreamDir: upstream, drift: [], compatErrors: [], archivedSkills: [], archivedSkillsDir: join(root, 'x'), heldBack: [], envNewKeys: [] };
+  }
+
+  test('the row names the prerequisite and its gate, blocks, and fails --strict', () => {
+    const root = temporaryRoot();
+    const upstream = temporaryRoot();
+    write(root, 'scripts/lint-skills.ts', 'const KNOWN_CATEGORIES = [\'testing\'];\n');
+    write(upstream, 'scripts/lint-skills.ts', 'const KNOWN_CATEGORIES = [\'testing\', \'orchestration\'];\n');
+    const findings = collectParityFindings({
+      ...base(root, upstream),
+      drift: [{ path: 'scripts/lint-skills.ts', reason: 'declared', source: 'project' }],
+    });
+    expect(findings).toHaveLength(1);
+    expect(findings[0].blocking).toBe(true);
+    expect(findings[0].suggested).toBe('merge');
+    expect(findings[0].side).toBe('kept');
+    expect(findings[0].evidence).toContain('PREREQUISITE for this release');
+    expect(findings[0].evidence).toContain('`bun run skills:check`');
+    expect(strictVerdict(true, findings).exitCode).toBe(1);
+    // The prompt's BLOCKING legend covers both kinds now.
+    expect(buildParityPrompt(findings, META)).toContain('carry a hunk another file of this release depends on');
+    // And the terminal table shows the surface as blocked, not merely warned.
+    expect(renderParityReport(findings, META).surfaces.find(s => s.surface === 'components')?.state).toBe('blocked');
+  });
+
+  test('a watched path with no declaration keeps its non-blocking row; the manifest is injectable', () => {
+    const root = temporaryRoot();
+    const upstream = temporaryRoot();
+    write(root, 'allurerc.mjs', 'export default { name: \'acme\' };\n');
+    write(upstream, 'allurerc.mjs', 'export default { name: \'boilerplate\' };\n');
+    const drift = [{ path: 'allurerc.mjs', reason: 'report name adapted per project' }];
+    const plain = collectParityFindings({ ...base(root, upstream), drift });
+    expect(plain[0].blocking).toBe(false);
+    expect(plain[0].side).toBe('kept');
+    expect(plain[0].evidence).not.toContain('PREREQUISITE');
+
+    const declared = collectParityFindings({
+      ...base(root, upstream),
+      drift,
+      prerequisites: { 'allurerc.mjs': { requiredBy: 'the categories dashboard the synced reporter writes', gate: 'bun run report:check' } },
+    });
+    expect(declared[0].blocking).toBe(true);
+    expect(declared[0].evidence).toContain('the categories dashboard the synced reporter writes');
+    expect(declared[0].evidence).toContain('`bun run report:check`');
+  });
+
+  test('the shipped manifest declares the category vocabulary at least', () => {
+    expect(prerequisiteFor('scripts/lint-skills.ts')).not.toBeNull();
+    expect(prerequisiteFor('scripts/lint-skills.ts')?.gate).toBe('bun run skills:check');
+    expect(prerequisiteFor('scripts\\lint-skills.ts')).toBe(PATH_PREREQUISITES['scripts/lint-skills.ts']);
+    expect(prerequisiteFor('README.md')).toBeNull();
+  });
+});
+
+describe('evidence a reader can act on without opening the diff', () => {
+  function base(root: string, upstream: string): ParityInput {
+    return { root, upstreamDir: upstream, drift: [], compatErrors: [], archivedSkills: [], archivedSkillsDir: join(root, 'x'), heldBack: [], envNewKeys: [] };
+  }
+
+  test('an array key reports the elements added and removed, never "values differ"', () => {
+    // Live finding (Bunkai): row 7 read "same keys, values differ at
+    // permissions.allow" while upstream had simply APPENDED two permissions.
+    const evidence = describeWatchedFile(
+      '.claude/settings.json',
+      JSON.stringify({ permissions: { allow: ['Bash(bun *)', 'Bash(git *)'] } }),
+      JSON.stringify({ permissions: { allow: ['Bash(bun *)', 'Bash(orca *)', 'Skill(orca-orchestration)'] } }),
+      '--- a\n+++ b\n@@ -1 +1 @@\n-old\n+new\n',
+    );
+    expect(evidence).toContain('"permissions.allow": added: ["Bash(orca *)", "Skill(orca-orchestration)"], removed: ["Bash(git *)"]');
+    expect(evidence).not.toContain('values differ at');
+  });
+
+  test('a truncated additions list still names every new top-level object', () => {
+    // Live finding (Bunkai): one of the "+3 more" on a CI workflow row was a
+    // 99-line `jobs.XrayImport`, so a 180-line change read as six lines.
+    const project = 'name: regression\non:\n  push: {}\njobs:\n  Smoke:\n    runs-on: ubuntu-latest\n';
+    const upstream = 'name: regression\non:\n  push: {}\nconcurrency:\n  group: ci\n  cancel-in-progress: true\nenv:\n  TZ: UTC\njobs:\n  Smoke:\n    runs-on: ubuntu-latest\n  XrayImport:\n    runs-on: ubuntu-latest\n';
+    const evidence = describeWatchedFile('.github/workflows/regression.yml', project, upstream, '--- a\n+++ b\n@@ -1 +1 @@\n-x\n+y\n');
+    expect(evidence).toBe('upstream added 6 keys: "concurrency", "env", "jobs.XrayImport" (new objects), "concurrency.group", "concurrency.cancel-in-progress", "env.TZ"; nothing project-only; 1 hunk (+1/-1)');
+    // With more scalars than the list shows, the containers still survive the truncation.
+    const many = 'name: regression\non:\n  push: {}\nconcurrency:\n  group: ci\n  cancel-in-progress: true\n  a: 1\n  b: 2\njobs:\n  Smoke:\n    runs-on: ubuntu-latest\n  XrayImport:\n    runs-on: ubuntu-latest\n';
+    const truncated = describeWatchedFile('.github/workflows/regression.yml', project, many, '');
+    expect(truncated).toContain('"concurrency", "jobs.XrayImport" (new objects)');
+    expect(truncated).toContain('+1 more');
+    // Three additions or fewer are all named anyway: no marker, no noise.
+    expect(describeWatchedFile('.mcp.json', '{"mcpServers":{"a":{}}}', '{"mcpServers":{"a":{},"b":{}}}', '')).toContain('upstream added 1 key: "mcpServers.b";');
+  });
+
+  test('each row says which copy is on disk: kept, overwritten, or neither', () => {
+    const root = temporaryRoot();
+    write(root, 'scripts/x.ts', 'upstream\n');
+    write(root, '.backups/update-1/scripts/x.ts', 'ours\n');
+    const findings = collectParityFindings({
+      ...base(root, temporaryRoot()),
+      localEdits: [{ path: 'scripts/x.ts', component: 'scripts', backupPath: join(root, '.backups/update-1/scripts/x.ts') }],
+      packageJsonKept: [{ file: 'package.json', section: 'scripts', key: 'repo:check', localValue: 'a', upstreamValue: 'a && b' }],
+      envNewKeys: ['ORCA_HOME'],
+    });
+    expect(findings.map(f => [f.path, f.side])).toEqual([
+      ['.env', undefined],
+      ['scripts/x.ts', 'overwritten'],
+      ['package.json', 'kept'],
+    ]);
+  });
+});
+
+describe('the dry-run table marks what the apply step resolves by itself', () => {
+  // Live finding (Bunkai): --dry-run reported 22 rows / 12 blocking, the real
+  // run 16 / 6, because applying the files rebuilt the generated surfaces. A
+  // reader planning from the dry-run over-estimated the manual work by 40%.
+  const compat: ParityFinding = { id: 1, surface: 'skills', path: '.claude/skills', evidence: 'skills alias missing', suggested: 'run agents:compat', blocking: true };
+  const drift: ParityFinding = { id: 2, surface: 'instructions', path: 'AGENTS.md', evidence: 'body differs in 1: "1. RULES"', suggested: 'merge', blocking: false, side: 'kept' };
+
+  test('the marked rows are the ones the run rebuilds or re-delivers, and only those', () => {
+    expect(resolvedByApply(compat)).toBe(true);
+    expect(resolvedByApply(drift)).toBe(false);
+    // The six rows the live run resolved by itself: a contract against the old
+    // hook emitter, whose file the apply delivers. Its own path could not be
+    // extracted from the message, so the evidence is what identifies it.
+    expect(resolvedByApply({
+      path: '(compat)',
+      evidence: 'claude hook command must be exactly: node "$CLAUDE_PROJECT_DIR/.agents/hooks/personality-reinject.mjs"',
+      suggested: 'take upstream',
+      blocking: true,
+    })).toBe(true);
+    // A project-owned registry is never re-delivered: the contract needs a human.
+    expect(resolvedByApply({ path: '.codex/config.toml', evidence: 'missing: n8n', suggested: 'take upstream', blocking: true })).toBe(false);
+    expect(resolvedByApply({ path: '.claude/settings.json', evidence: 'stale hook command', suggested: 'take upstream', blocking: true })).toBe(false);
+    // A stray wrapper is a decision (declare it in the overlay, or delete it).
+    expect(resolvedByApply({ path: '.claude/commands/rogue.md', evidence: 'wrapper not produced by .agents/compatibility/command-aliases.json', suggested: 'add to overlay', blocking: true })).toBe(false);
+  });
+
+  test('the mark and its legend appear on a dry-run only', () => {
+    const dry = buildParityPrompt([compat, drift], { ...META, dryRun: true });
+    expect(dry).toContain('Parity review after `bun run up --dry-run`');
+    expect(dry).toContain(`skills alias missing ${RESOLVED_BY_APPLY_MARK}`);
+    expect(dry).toContain('this table lists MORE work than the run that applies');
+    expect(dry).not.toContain(`"1. RULES" ${RESOLVED_BY_APPLY_MARK}`);
+
+    const real = buildParityPrompt([compat, drift], META);
+    expect(real).not.toContain(RESOLVED_BY_APPLY_MARK);
+    expect(real).toContain('Parity review after `bun run up` (upstream');
   });
 });

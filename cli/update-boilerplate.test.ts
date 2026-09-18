@@ -114,8 +114,11 @@ describe('post-apply gates', () => {
     return root;
   }
 
-  test('the KATA manifest check is a gate next to types and lint', () => {
-    expect([...GATE_SCRIPTS]).toEqual(['types:check', 'lint:check', 'kata:manifest:check']);
+  test('the KATA manifest and skill-lint checks are gates next to types and lint', () => {
+    // `skills:check` is the only gate that sees a half-delivered release: a new
+    // skill applied here, the category vocabulary it needs kept in a protected
+    // file (see PATH_PREREQUISITES).
+    expect([...GATE_SCRIPTS]).toEqual(['types:check', 'lint:check', 'kata:manifest:check', 'skills:check']);
   });
 
   test('a failing gate reports exit code, error count, the first lines and which applied files they name', () => {

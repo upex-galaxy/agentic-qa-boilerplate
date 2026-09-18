@@ -50,6 +50,8 @@ import {
   PARITY_PROMPT_PATH,
   persistArchivedSkillMarkers,
   renderParityReport,
+  RESOLVED_BY_APPLY_MARK,
+  resolvedByApply,
   runVerdict,
 } from './lib/updater-parity';
 import { makePbiCacheMigrationHook } from './lib/updater-pbi';
@@ -71,8 +73,14 @@ const UPSTREAM_DIR = process.env[UPDATER_UPSTREAM_DIR_ENV] || TEMP_DIR;
 const VERSION_FILE = '.template/boilerplate.lock.json';
 /** Post-apply gates: each gets this long, then it is skipped with a note. */
 const GATE_TIMEOUT_MS = 120_000;
-/** Scripts run as gates when `package.json` defines them (a missing one is skipped). */
-export const GATE_SCRIPTS = ['types:check', 'lint:check', 'kata:manifest:check'] as const;
+/**
+ * Scripts run as gates when `package.json` defines them (a missing one is
+ * skipped). `skills:check` is here because a release can ship a skill and the
+ * vocabulary hunk that makes it lintable in two different files: when the
+ * second one is protected, only this gate sees the half-delivered pair (see
+ * `PATH_PREREQUISITES` in `./lib/updater-parity.ts`).
+ */
+export const GATE_SCRIPTS = ['types:check', 'lint:check', 'kata:manifest:check', 'skills:check'] as const;
 
 const TOOLING_FILES = ['.editorconfig', '.prettierrc', '.gitattributes'];
 const AGENTS_DOCS_FILES = ['README.md'];
@@ -265,8 +273,8 @@ REPORTE DE PARIDAD (al final de cada corrida, incluido --dry-run):
   exit 1, nunca en "Sincronizacion completada".
 
 VERIFICACION POST-SYNC (gates):
-  Tras aplicar archivos, corre \`types:check\`, \`lint:check\` y
-  \`kata:manifest:check\` de tu package.json (120 s cada uno; un gate que no
+  Tras aplicar archivos, corre \`types:check\`, \`lint:check\`,
+  \`kata:manifest:check\` y \`skills:check\` de tu package.json (120 s cada uno; un gate que no
   termina se omite; uno que no existe se salta). Un gate roto NO bloquea:
   aparece como fila "Verificacion" (codigo de salida, primeras lineas de error,
   que archivos aplicados esta corrida nombra) y como linea "Gates:" en el
@@ -310,9 +318,11 @@ FLAGS:
                          BLOQUEANTE de paridad (contrato de compatibilidad
                          roto: alias, wrappers, hooks, MCP). Por defecto solo
                          avisa y sale 0. El drift de archivos protegidos nunca
-                         bloquea.
-  --no-gates             No corre types:check / lint:check / kata:manifest:check
-                         tras aplicar
+                         bloquea, salvo cuando su hunk upstream es requisito de
+                         otro archivo de la misma release (la fila lo dice y
+                         nombra el gate que lo prueba).
+  --no-gates             No corre types:check / lint:check / kata:manifest:check /
+                         skills:check tras aplicar
   --rollback             Restaura backup mas reciente
   --skill a,b,c          Sincroniza solo los skills indicados (subcomando skills)
   --list                 Lista los skills disponibles en el template
@@ -984,7 +994,14 @@ const PROTECTED_WATCHLIST: ProtectedWatchEntry[] = [
   { path: 'tests/components/UiFixture.ts', reason: 'UI fixture wiring adapted per project' },
   { path: 'tests/components/api/ApiBase.ts', reason: 'KATA L2 HTTP base adapted to the target API' },
   { path: 'tests/components/ui/UiBase.ts', reason: 'KATA L2 UI base adapted to the target app' },
-  { path: 'scripts/api-login.ts', reason: 'project auth flow (excluded from script sync)' },
+  // Since the api-login split the generic CLI lives in `scripts/lib/api-login-core.ts`
+  // (plainly synced) and the project's auth flow in `scripts/api-login.project.ts`
+  // (bootstrapOnlyPaths below). The entry itself stays watched: a repo scaffolded
+  // BEFORE the split still has its whole adapted CLI at this path, so overwriting it
+  // with the 10-line entry would silently replace the project's auth flow with the
+  // boilerplate default. Watched = never overwritten + one drift row when upstream
+  // changes it, which is the nudge to adopt the split.
+  { path: 'scripts/api-login.ts', reason: 'entry point of the project auth CLI; a pre-split repo still carries its whole adapted flow here (the split moves it to scripts/api-login.project.ts)' },
   // `structural`: project identity. Only keys upstream ADDED make a row
   // (informational); a value that differs from upstream's own scaffold never does.
   { path: '.agents/jira-required.yaml', reason: 'methodology manifest: upstream owns the baseline work_types + field slugs, the project owns its fallbacks and omissions. It is the INPUT to jira:sync-workflows, which catalogs only the work_types declared in it — a stale manifest silently regenerates a truncated jira-workflows.json and still exits 0.', structural: true },
@@ -1252,6 +1269,9 @@ function makeParityHook(sink: ReportSink, priorLockSha: string, dryRun: boolean,
       upstreamSha: summary.newHeadSha,
       lockSha: priorLockSha,
       promptFile: PARITY_PROMPT_PATH,
+      // A dry-run applies nothing, so the rows the apply step would resolve by
+      // itself are still on the table: they get marked instead of read as work.
+      dryRun,
     });
     runFacts.parity = { findings, report };
     if (findings.length === 0 || dryRun) { return; }
@@ -1291,6 +1311,12 @@ function printEndOfRun(summary: RunSummary, dryRun: boolean): void {
       tui.log.info(`${parity.findings.length} hallazgo(s) de paridad${blocking > 0 ? ` (${blocking} bloqueante(s))` : ''}. Nada fue modificado en archivos protegidos.`);
       if (dryRun) {
         tui.log.info('[dry-run] prompt not saved (la corrida real lo escribe en '.concat(pc.cyan(PARITY_PROMPT_PATH), ' con los diffs completos).'));
+        // The dry-run table always reads as MORE work than the real run: the
+        // apply step rebuilds the generated surfaces by itself.
+        const selfResolving = parity.findings.filter(resolvedByApply).length;
+        if (selfResolving > 0) {
+          tui.log.info(`[dry-run] ${selfResolving} fila(s) marcadas ${RESOLVED_BY_APPLY_MARK}: las resuelve la corrida real al aplicar, no son trabajo manual.`);
+        }
       }
       else if (runFacts.promptKept) {
         tui.log.info(`Prompt de la corrida anterior conservado en ${pc.cyan(PARITY_PROMPT_PATH)} (esta corrida no aplicó nada; puede tener más filas que la tabla de arriba).`);
@@ -1667,19 +1693,30 @@ async function main(): Promise<void> {
       '.agents/jira-link-types.json',
       '.agents/jira-required.yaml',
       '.agents/compatibility/command-aliases.project.json',
+      // The auth ADAPTER (buildAuthPayload / extractTokenFromResponse /
+      // environments). Same deal as the command-alias overlay: delivered when
+      // missing, then owned by the project. Its two synced neighbours —
+      // scripts/lib/api-login-core.ts (the CLI) and scripts/api-login.ts (the
+      // entry) — carry every upstream improvement, so nothing forces a project
+      // to re-adapt to get them.
+      'scripts/api-login.project.ts',
       ...watchlist.map(e => e.path),
     ],
     // Files inside a synced component that must NEVER be delivered or
-    // overwritten by the sync:
-    //  - the generated surfaces (see GENERATED_PATHS): CLAUDE.md is the shim
-    //    the migration / scaffold writes, REGISTRY.md is rebuilt by
-    //    makeSkillsRegistryHook;
-    //  - scripts/api-login.ts: project-adapted auth CLI (override points for the
-    //    project's auth flow). Shipped once via the create-* scaffold tarball,
-    //    then owned by the project — re-syncing would clobber the adaptation.
+    // overwritten by the sync: the generated surfaces (see GENERATED_PATHS).
+    // CLAUDE.md is the shim the migration / scaffold writes, REGISTRY.md is
+    // rebuilt by makeSkillsRegistryHook.
+    //
+    // `scripts/api-login.ts` left this list when the api-login split landed:
+    // the project-specific half now lives in `scripts/api-login.project.ts`
+    // (bootstrapOnlyPaths above) and the CLI in `scripts/lib/api-login-core.ts`
+    // (plainly synced, so `--profile`-class improvements reach every project).
+    // The entry stays on PROTECTED_WATCHLIST, which already means "delivered
+    // when missing, never overwritten": a repo scaffolded before the split
+    // keeps its adapted CLI at that path and gets a drift row instead of a
+    // silent replacement.
     excludePaths: [
       ...GENERATED_PATHS,
-      'scripts/api-login.ts',
     ],
     // The boilerplate's own design material. `docs` is a synced component, so
     // without this every consumer project inherits our proposals and backlogs as

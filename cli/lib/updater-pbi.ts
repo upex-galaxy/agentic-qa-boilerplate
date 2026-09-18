@@ -12,7 +12,7 @@
  * This hook detects that legacy state after every sync: it lists what git
  * tracks under `.context/PBI/`, subtracts the committed allowlist and, when
  * anything remains, persists a migration recipe for the consumer's AI agent
- * and reports ONE fact (count + recipe path) that the parity report renders
+ * and reports ONE fact (count + `test-specs/` count + recipe path) that the parity report renders
  * as a single row on Componentes. The terminal never gets the path list: on a
  * live run 370 paths dumped inline dwarfed the eight parity rows they were
  * competing with. It NEVER touches the git index itself: untracking is
@@ -39,6 +39,21 @@ export const PBI_COMMIT_ALLOWLIST_DESCRIPTION
   = '.context/PBI/README.md, .context/PBI/templates/**, .context/PBI/epics/*/test-specs/**';
 
 const TEST_SPECS_RE = /^\.context\/PBI\/epics\/[^/]+\/test-specs\//;
+
+/**
+ * A `test-specs/` directory at ANY depth. The allowlist above only covers
+ * `epics/<epic>/test-specs/`, so a legacy tree (measured: `.context/PBI/auth/
+ * test-specs/**` with a ROADMAP, a PROGRESS, a spec, an implementation plan and
+ * two ATC files) is swept into the untrack list although `test-specs/` is
+ * `[COMMIT]` tier everywhere else in the doctrine. The recipe names those paths
+ * before touching the index instead of dropping them silently.
+ */
+const TEST_SPECS_ANYWHERE_RE = /(?:^|\/)test-specs\//;
+
+/** Out-of-allowlist paths that still live under some `test-specs/` directory. */
+export function pbiTestSpecPaths(outOfAllowlist: readonly string[]): string[] {
+  return outOfAllowlist.filter(p => TEST_SPECS_ANYWHERE_RE.test(p.replace(/\\/g, '/')));
+}
 
 /** True when a tracked path is part of the committed allowlist. */
 export function isPbiAllowlisted(trackedPath: string): boolean {
@@ -72,6 +87,25 @@ export function filterPbiTrackedPaths(trackedPaths: string[]): string[] {
 export function buildPbiMigrationPrompt(outOfAllowlist: string[]): string {
   const quoted = outOfAllowlist.map(p => `"${p}"`).join(' ');
   const pathList = outOfAllowlist.map(p => `   - ${p}`).join('\n');
+  const testSpecs = pbiTestSpecPaths(outOfAllowlist);
+  const testSpecWarning = testSpecs.length === 0
+    ? []
+    : [
+        `WARNING — ${testSpecs.length} of those path(s) live under a \`test-specs/\` directory, which is`,
+        '[COMMIT] tier everywhere else in the doctrine (automation plans are versioned with the test',
+        'code). They are outside the allowlist only because the allowlist matches',
+        '`.context/PBI/epics/<epic>/test-specs/**` and these sit at another depth:',
+        testSpecs.map(p => `   - ${p}`).join('\n'),
+        '',
+        'DECIDE PER PATH BEFORE STEP 2, and say which you chose:',
+        '   (a) it is a real automation plan -> `git mv` it under',
+        '       `.context/PBI/epics/<EPIC-KEY>-<slug>/test-specs/` so it stays versioned, and drop it',
+        '       from the untrack list below;',
+        '   (b) it is a stale scaffold example -> untrack it with the rest, knowingly.',
+        'Never untrack a `test-specs/` path without that decision: unlike the [SYNC] files around it,',
+        'its content does not exist in Jira and `bun run context:hydrate` cannot bring it back.',
+        '',
+      ];
   return [
     'Migrate this repository\'s `.context/PBI/` tree from git-tracked to gitignored-cache.',
     '',
@@ -90,16 +124,27 @@ export function buildPbiMigrationPrompt(outOfAllowlist: string[]): string {
     'Git currently tracks these paths OUTSIDE that allowlist:',
     pathList,
     '',
+    ...testSpecWarning,
     'Run these steps IN ORDER (do not skip or reorder — step 1 is the recovery point',
     'every later step relies on):',
     '',
-    '1. Tag the current state as a FULL recovery point, before untracking anything:',
-    '   git tag pbi-pre-cache-migration',
+    '1. Tag the current state as a FULL recovery point, before untracking anything, and PUSH the',
+    '   tag: step 5 asks the TEAM to confirm nothing was lost, and a tag that lives on one laptop',
+    '   protects nobody. The annotation is not optional either — a bare `git tag` fails outright',
+    '   (`fatal: no tag message?`) on a machine configured to require one:',
+    '   git tag -a pbi-pre-cache-migration -m "State before untracking the .context/PBI Jira cache"',
+    '   git push origin pbi-pre-cache-migration',
     '',
     '2. Untrack EXACTLY the out-of-allowlist paths listed above (files stay on disk):',
     `   git rm -r --cached -- ${quoted}`,
     '',
-    '3. Commit the untracking:',
+    '3. AUDIT THE INDEX before committing. This commit must only REMOVE paths: the same gitignore',
+    '   ladder that makes the migration necessary also makes a `git add`-from-status re-stage cache',
+    '   files (`stories/` shows up as one untracked directory). Both commands must print nothing:',
+    '   git diff --cached --diff-filter=ACM --name-only | grep \'^\\.context/\'',
+    '   git status --porcelain --untracked-files=no -- .context/PBI | grep -v \'^D \'',
+    '   Anything printed means something other than the untracking is staged: unstage it',
+    '   (`git restore --staged -- <path>`) and re-run the audit. Then commit:',
     '   git commit -m "chore: untrack .context/PBI cache (Jira is the source of truth)"',
     '',
     '4. Rebuild the cache from Jira (needs ATLASSIAN_* credentials in .env):',
@@ -160,6 +205,8 @@ export interface PbiCacheFact {
   tracked: number
   /** Repo-relative path of the saved recipe (forward slashes). */
   recipePath: string
+  /** Of those, how many sit under a `test-specs/` directory at a legacy depth. */
+  testSpecs: number
 }
 
 /** The recipe file's name before 8.3: removed when the new one is written, so a stale dump never lingers. */
@@ -181,7 +228,7 @@ export function makePbiCacheMigrationHook(
     const outOfAllowlist = filterPbiTrackedPaths(listTrackedPbiPaths(cwd));
     if (outOfAllowlist.length === 0) { return; }
     const recipePath = path.relative(cwd, cfg.promptOutPath).replace(/\\/g, '/');
-    report({ tracked: outOfAllowlist.length, recipePath });
+    report({ tracked: outOfAllowlist.length, recipePath, testSpecs: pbiTestSpecPaths(outOfAllowlist).length });
     if (cfg.dryRun) { return; }
     try {
       fs.mkdirSync(path.dirname(cfg.promptOutPath), { recursive: true });

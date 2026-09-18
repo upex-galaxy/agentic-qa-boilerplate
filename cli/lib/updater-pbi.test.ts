@@ -80,9 +80,10 @@ describe('buildPbiMigrationPrompt', () => {
   ];
   const prompt = buildPbiMigrationPrompt(paths);
 
-  test('carries the ordered commands: tag, rm --cached, commit, hydrate', () => {
-    const tagAt = prompt.indexOf('git tag pbi-pre-cache-migration');
+  test('carries the ordered commands: tag, rm --cached, audit, commit, hydrate', () => {
+    const tagAt = prompt.indexOf('git tag -a pbi-pre-cache-migration -m');
     const rmAt = prompt.indexOf('git rm -r --cached --');
+    const auditAt = prompt.indexOf('git diff --cached --diff-filter=ACM --name-only');
     const commitAt = prompt.indexOf('git commit -m');
     // The WHY paragraph also mentions context:hydrate — look for the step-4
     // command, i.e. the occurrence AFTER the commit step.
@@ -90,9 +91,41 @@ describe('buildPbiMigrationPrompt', () => {
     const diffAt = prompt.indexOf('git diff pbi-pre-cache-migration -- .context/PBI');
     expect(tagAt).toBeGreaterThan(-1);
     expect(rmAt).toBeGreaterThan(tagAt);
-    expect(commitAt).toBeGreaterThan(rmAt);
+    expect(auditAt).toBeGreaterThan(rmAt);
+    expect(commitAt).toBeGreaterThan(auditAt);
     expect(hydrateAt).toBeGreaterThan(commitAt);
     expect(diffAt).toBeGreaterThan(hydrateAt);
+  });
+
+  test('the recovery tag is annotated and pushed', () => {
+    // A bare `git tag` dies with `fatal: no tag message?` where an annotation is
+    // required, and a tag that never leaves the laptop cannot back step 5's
+    // team-wide confirmation.
+    expect(prompt).toContain('git tag -a pbi-pre-cache-migration -m "State before untracking the .context/PBI Jira cache"');
+    expect(prompt).toContain('git push origin pbi-pre-cache-migration');
+  });
+
+  test('the untracking is paired with a post-stage audit of the index', () => {
+    expect(prompt).toContain('AUDIT THE INDEX before committing');
+    expect(prompt).toContain('git diff --cached --diff-filter=ACM --name-only | grep \'^\\.context/\'');
+    expect(prompt).toContain('git restore --staged -- <path>');
+  });
+
+  test('a test-specs path at a legacy depth is named and decided BEFORE anything is untracked', () => {
+    // `test-specs/` is [COMMIT] tier everywhere else in the doctrine; the
+    // allowlist only matches it under `epics/<epic>/`, so another depth would
+    // otherwise be swept into the untrack list with no warning.
+    const withSpecs = buildPbiMigrationPrompt([
+      '.context/PBI/epic-tree.md',
+      '.context/PBI/auth/test-specs/ROADMAP.md',
+      '.context/PBI/auth/test-specs/TC-1/spec.md',
+    ]);
+    expect(withSpecs).toContain('WARNING — 2 of those path(s) live under a `test-specs/` directory');
+    expect(withSpecs).toContain('   - .context/PBI/auth/test-specs/ROADMAP.md');
+    expect(withSpecs).toContain('DECIDE PER PATH BEFORE STEP 2');
+    expect(withSpecs.indexOf('DECIDE PER PATH BEFORE STEP 2')).toBeLessThan(withSpecs.indexOf('git rm -r --cached'));
+    // No `test-specs/` path outside the allowlist: no warning at all.
+    expect(prompt).not.toContain('DECIDE PER PATH BEFORE STEP 2');
   });
 
   test('untracks EXACTLY the out-of-allowlist paths, quoted', () => {
@@ -117,7 +150,7 @@ describe('buildPbiPromptFileContent', () => {
     const md = buildPbiPromptFileContent(['.context/PBI/epic-tree.md']);
     expect(md).toContain('AUTO-GENERATED, SINGLE-USE');
     expect(md).toContain('```text');
-    expect(md).toContain('git tag pbi-pre-cache-migration');
+    expect(md).toContain('git tag -a pbi-pre-cache-migration -m');
   });
 });
 
@@ -156,7 +189,7 @@ describe('the afterApply hook', () => {
       const facts: PbiCacheFact[] = [];
 
       await makePbiCacheMigrationHook({ promptOutPath: out, dryRun: true }, sink, f => facts.push(f))(summary);
-      expect(facts).toEqual([{ tracked: 2, recipePath: '.agents/prompts/pbi-cache-migration.md' }]);
+      expect(facts).toEqual([{ tracked: 2, recipePath: '.agents/prompts/pbi-cache-migration.md', testSpecs: 0 }]);
       expect(existsSync(out)).toBe(false);
 
       await makePbiCacheMigrationHook({ promptOutPath: out }, sink, f => facts.push(f))(summary);
