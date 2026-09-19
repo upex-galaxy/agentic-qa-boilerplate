@@ -25,6 +25,33 @@
  *                               (e.g. ['--method']); their values arrive in
  *                               `context.flags` and never get mistaken for the
  *                               positional environment
+ *   authenticate                (optional) LAST RESORT - see below
+ *
+ * ── `authenticate` is the LAST RESORT ─────────────────────────────────────
+ * Export it only when the flow cannot be expressed as ONE request: reusing a
+ * token you already hold (zero requests), branching on a 401, chaining several
+ * requests across different paths, or reading the credential from somewhere
+ * other than that one response body. It replaces the core's POST entirely, so
+ * this project stops receiving upstream improvements to the request phase -
+ * retry, backoff, timeouts, error rendering - and owns them itself. That is
+ * expressiveness bought with divergence: take it only when there is no
+ * alternative, and keep `buildAuthPayload` for every flow that is one request.
+ *
+ *   export async function authenticate(
+ *     { email, password }: { email: string, password: string },
+ *     context: ApiLoginContext,
+ *     io: ApiLoginIo,
+ *   ): Promise<ExtractedToken | null> {
+ *     const response = await io.fetch(`${io.apiUrl}/auth/token`, { ... });
+ *     if (!response.ok) {
+ *       io.log(`Auth failed with ${response.status}`, 'error');
+ *       return null;   // the core exits 1; log the reason yourself
+ *     }
+ *     return { accessToken: '...', tokenType: 'Bearer', expiresIn: 3600, refreshToken: null };
+ *   }
+ *
+ * Everything around it is unchanged: argument parsing, `--role`, `--profile`,
+ * `--help`, the empty-token check and the three output files stay the core's.
  */
 
 import type { ApiLoginContext, ExtractedToken } from './lib/api-login-core';

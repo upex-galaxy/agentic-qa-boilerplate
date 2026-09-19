@@ -16,12 +16,16 @@
  *   3. The adapter seam: loginEndpoint / headers / payload / token extraction
  *      / extraFlags all come from the project adapter.
  *   4. `--help` is accurate and the real entry point resolves both halves.
+ *   5. The `authenticate` escape hatch: an adapter that exports it makes ZERO
+ *      calls to the core's own POST path, and the core keeps owning everything
+ *      around it (the empty-token check, the three files, the exit code).
+ *   6. The next-step hint is usable in the shell the operator is actually in.
  *
  * No network: the auth request is a stubbed `fetchImpl`. No writes outside a
  * temp dir: `authDir` + `apiStatePath` are redirected per test.
  */
 
-import type { ApiLoginAdapter } from './lib/api-login-core';
+import type { ApiLoginAdapter, ApiLoginContext } from './lib/api-login-core';
 
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -30,7 +34,7 @@ import { join, resolve } from 'node:path';
 import { afterEach, describe, expect, test } from 'bun:test';
 
 import * as projectAdapter from './api-login.project';
-import { parseApiLoginArgs, renderHelp, runApiLogin, upsertTokenEnvLine, upsertTokenMeta } from './lib/api-login-core';
+import { parseApiLoginArgs, renderHelp, renderTokenUsage, runApiLogin, upsertTokenEnvLine, upsertTokenMeta } from './lib/api-login-core';
 
 // Credentials must exist BEFORE config/variables.ts is evaluated (it reads
 // process.env at module-evaluation time), and which environment is active
@@ -248,6 +252,157 @@ describe('runApiLogin', () => {
     expect(help).toContain('scripts/api-login.project.ts');
     expect(help).toContain('scripts/lib/api-login-core.ts');
     expect(help).toContain('local, staging');
+  });
+});
+
+describe('the authenticate escape hatch', () => {
+  /** Counts every hook the core would have driven itself, so a skip is measurable. */
+  function spyAdapter(overrides: Partial<ApiLoginAdapter> = {}) {
+    const seen = { payload: 0, extract: 0 };
+    const adapter: Partial<ApiLoginAdapter> = {
+      buildAuthPayload: (email, password, context) => {
+        seen.payload++;
+        return projectAdapter.buildAuthPayload(email, password, context);
+      },
+      extractTokenFromResponse: (body, context) => {
+        seen.extract++;
+        return projectAdapter.extractTokenFromResponse(body, context);
+      },
+      ...overrides,
+    };
+    return { adapter, seen };
+  }
+
+  async function runWith(argv: string[], root: string, calls: FetchCall[], adapter: Partial<ApiLoginAdapter>) {
+    return runApiLogin({ ...projectAdapter, ...adapter } as ApiLoginAdapter, {
+      argv,
+      authDir: root,
+      apiStatePath: join(root, 'api-state.json'),
+      fetchImpl: stubFetch(calls),
+      log: () => {},
+    });
+  }
+
+  test('an adapter exporting authenticate causes ZERO calls to the core POST path', async () => {
+    // The condition the decision was approved on. Without this count the hook
+    // would inherit the defect fixed in 6672c80: a gate that passes whether or
+    // not the wiring exists. Stub the one fetch seam and count.
+    const root = scratch();
+    const calls: FetchCall[] = [];
+    const { adapter, seen } = spyAdapter({
+      authenticate: async () => ({ accessToken: 'tok-hatch', tokenType: 'Hatch', expiresIn: 99, refreshToken: 'r-1' }),
+    });
+
+    expect(await runWith([], root, calls, adapter)).toBe(0);
+
+    // Zero requests, and neither hook the core would have driven itself ran.
+    expect(calls).toHaveLength(0);
+    expect(seen.payload).toBe(0);
+    expect(seen.extract).toBe(0);
+
+    // Everything AROUND the request is still the core's: all three files.
+    expect(readFileSync(join(root, 'tokens.env'), 'utf-8')).toBe(`export API_TOKEN_USER_${ENV_UPPER}='tok-hatch'\n`);
+    const meta = JSON.parse(readFileSync(join(root, 'tokens.json'), 'utf-8')) as Record<string, { var: string, expiresIn: number }>;
+    expect(meta[`USER_${ENV_UPPER}`]).toMatchObject({ var: `API_TOKEN_USER_${ENV_UPPER}`, expiresIn: 99 });
+    expect(JSON.parse(readFileSync(join(root, 'api-state.json'), 'utf-8')) as { tokenType: string, refreshToken: string }).toMatchObject({ tokenType: 'Hatch', refreshToken: 'r-1' });
+  });
+
+  test('authenticate receives the credentials, the parsed context and the core own fetch seam', async () => {
+    const root = scratch();
+    const calls: FetchCall[] = [];
+    // One capture object: assignments happen inside a callback, which TS does
+    // not narrow through, so separate `let x = null` would each collapse to `never`.
+    const captured: { credentials?: { email: string, password: string }, context?: ApiLoginContext, apiUrl?: string } = {};
+
+    const { adapter } = spyAdapter({
+      extraFlags: ['--method'],
+      authenticate: async (creds, ctx, seam) => {
+        captured.credentials = creds;
+        captured.context = ctx;
+        captured.apiUrl = seam.apiUrl;
+        // The adapter drives its OWN requests through the seam the core lent it,
+        // which is exactly the stub this test installed.
+        await seam.fetch(`${seam.apiUrl}/magic-link`, { method: 'POST', body: JSON.stringify({ step: 1 }) });
+        seam.log('minted out of band', 'success');
+        return { accessToken: 'tok-two-step', tokenType: 'Bearer', expiresIn: 60, refreshToken: null };
+      },
+    });
+
+    expect(await runWith(['--role', 'admin', '--profile', 'W4', '--method', 'magic'], root, calls, adapter)).toBe(0);
+
+    expect(captured.credentials).toEqual({ email: config.testUser.email, password: config.testUser.password });
+    expect(captured.context).toMatchObject({ role: 'admin', profile: 'W4', flags: { '--method': 'magic' } });
+    expect(captured.apiUrl).toBe(config.apiUrl);
+
+    // The only request made is the adapter's own, on its own path.
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.url).toBe(`${config.apiUrl}/magic-link`);
+    expect(readFileSync(join(root, 'profiles', 'W4', 'tokens.env'), 'utf-8')).toContain(`export API_TOKEN_ADMIN_${ENV_UPPER}='tok-two-step'`);
+  });
+
+  test('authenticate returning null exits 1 and writes nothing', async () => {
+    const root = scratch();
+    const calls: FetchCall[] = [];
+    const { adapter } = spyAdapter({ authenticate: async () => null });
+
+    expect(await runWith([], root, calls, adapter)).toBe(1);
+    expect(calls).toHaveLength(0);
+    expect(existsSync(join(root, 'tokens.env'))).toBe(false);
+    expect(existsSync(join(root, 'api-state.json'))).toBe(false);
+  });
+
+  test('the empty-token check still guards the hatch', async () => {
+    const root = scratch();
+    const calls: FetchCall[] = [];
+    const { adapter } = spyAdapter({
+      authenticate: async () => ({ accessToken: '', tokenType: 'Bearer', expiresIn: 1, refreshToken: null }),
+    });
+
+    expect(await runWith([], root, calls, adapter)).toBe(1);
+    expect(existsSync(join(root, 'tokens.env'))).toBe(false);
+  });
+
+  test('--help and a bad command line still short-circuit before the adapter runs', async () => {
+    const root = scratch();
+    let ran = 0;
+    const { adapter } = spyAdapter({ authenticate: async () => { ran++; return null; } });
+
+    expect(await runWith(['--help'], root, [], adapter)).toBe(0);
+    expect(await runWith(['--bogus'], root, [], adapter)).toBe(1);
+    expect(ran).toBe(0);
+  });
+});
+
+describe('the next-step hint follows the operator shell', () => {
+  const realPlatform = process.platform;
+  function withPlatform<T>(value: string, body: () => T): T {
+    Object.defineProperty(process, 'platform', { value, configurable: true });
+    try { return body(); }
+    finally { Object.defineProperty(process, 'platform', { value: realPlatform, configurable: true }); }
+  }
+
+  test('POSIX sources tokens.env; Windows reads tokens.json with curl.exe', () => {
+    const paths = { tokensEnv: '.auth/tokens.env', tokensJson: '.auth/tokens.json' };
+    const names = { tokenVar: 'API_TOKEN_USER_LOCAL', tokenKey: 'USER_LOCAL' };
+
+    const posix = withPlatform('darwin', () => renderTokenUsage(paths, names));
+    expect(posix[0]).toBe('source .auth/tokens.env && \\');
+    expect(posix[1]).toContain('Bearer $API_TOKEN_USER_LOCAL');
+
+    // `source` is a POSIX builtin and tokens.env is `export VAR='...'`, so
+    // PowerShell has to go through tokens.json; and a bare `curl` there is an
+    // alias for Invoke-WebRequest, which does not understand -H.
+    const win = withPlatform('win32', () => renderTokenUsage(paths, names));
+    expect(win.join('\n')).not.toContain('source ');
+    expect(win[0]).toContain('Get-Content .auth/tokens.json');
+    expect(win[0]).toContain('.USER_LOCAL.token');
+    expect(win[1]).toContain('curl.exe -s -H "Authorization: Bearer $t"');
+    expect(win[1]).toContain('$env:API_BASE_URL');
+  });
+
+  test('the --help screen carries the hint for the host it is printed on', () => {
+    expect(withPlatform('win32', () => renderHelp())).toContain('curl.exe');
+    expect(withPlatform('linux', () => renderHelp())).toContain('source .auth/tokens.env');
   });
 });
 
