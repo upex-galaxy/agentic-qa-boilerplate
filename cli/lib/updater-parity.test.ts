@@ -13,6 +13,7 @@ import {
   collectParityFindings,
   compatErrorSuggestion,
   compatErrorSurface,
+  CONFIG_BLOCK_READERS,
   configEntries,
   configKeyDelta,
   configKeys,
@@ -22,6 +23,7 @@ import {
   frameworkGatesNote,
   lintStagedNoStashNote,
   markdownSectionDelta,
+  missingConfigBlocks,
   PATH_PREREQUISITES,
   persistArchivedSkillMarkers,
   prerequisiteFor,
@@ -489,6 +491,95 @@ describe('the pre-commit hook carries the --no-stash fix downstream', () => {
     expect(hook).toBeDefined();
     expect(hook!.evidence).not.toContain('--no-stash');
     expect(hook!.note).toBeUndefined();
+  });
+});
+
+describe('a missing config block a shipped skill reads blocks the run', () => {
+  // E2: a top-level block upstream added is otherwise `structural` —
+  // informational, never blocking — which is right for project identity and
+  // wrong when a skill in the same release reads the block: it then fails at
+  // runtime, mid-session, instead of here where there is an operator.
+  const READERS = {
+    '.agents/project.yaml': {
+      git_strategy: { skill: '/git-flow-master', requiredBy: 'the protected-branch list and the push policy' },
+    },
+  };
+
+  function findings(projectYaml: string, upstreamYaml: string, readers = READERS): ParityFinding[] {
+    const root = temporaryRoot();
+    const upstream = temporaryRoot();
+    write(root, '.agents/project.yaml', projectYaml);
+    write(upstream, '.agents/project.yaml', upstreamYaml);
+    return collectParityFindings({
+      root,
+      upstreamDir: upstream,
+      drift: [{ path: '.agents/project.yaml', reason: 'per-project identity', structural: true }],
+      compatErrors: [],
+      archivedSkills: [],
+      archivedSkillsDir: join(root, '.template/pre-agents-migration/skills'),
+      heldBack: [],
+      envNewKeys: [],
+      configBlockReaders: readers,
+    });
+  }
+
+  test('the block is missing: the row blocks and names the skill that reads it', () => {
+    const row = findings(
+      'project:\n  name: consumer\n',
+      'project:\n  name: upstream\ngit_strategy:\n  strategy: solo-main\n',
+    ).find(f => f.path === '.agents/project.yaml');
+    expect(row!.blocking).toBe(true);
+    expect(row!.suggested).toBe('merge');
+    expect(row!.evidence).toContain('BLOCKING');
+    expect(row!.evidence).toContain('/git-flow-master');
+    // The values stay the project's: the row asks for the block, not the config.
+    expect(row!.evidence).toContain('adapt its VALUES to this project');
+  });
+
+  test('a block the project HAS stays informational however much its values differ', () => {
+    const rows = findings(
+      'project:\n  name: consumer\ngit_strategy:\n  strategy: sdet\n  protected: [main, staging]\n',
+      'project:\n  name: upstream\ngit_strategy:\n  strategy: solo-main\n  protected: [main]\n',
+    ).filter(f => f.path === '.agents/project.yaml');
+    // Values are project identity: the structural comparison finds no added key,
+    // so nothing escalates. (An unrelated `git` surface row about
+    // `strategy_source` can still be there; it is not this rule's doing.)
+    expect(rows.every(f => !f.blocking)).toBe(true);
+    expect(rows.some(f => f.evidence.includes('BLOCKING'))).toBe(false);
+  });
+
+  test('an undeclared block upstream added is informational, exactly as before', () => {
+    const row = findings(
+      'project:\n  name: consumer\n',
+      'project:\n  name: upstream\nsome_new_block:\n  a: 1\n',
+    ).find(f => f.path === '.agents/project.yaml');
+    expect(row!.blocking).toBe(false);
+    expect(row!.evidence).toContain('informational');
+    expect(row!.evidence).not.toContain('BLOCKING');
+  });
+
+  test('missingConfigBlocks is top-level only and declaration-driven', () => {
+    const project = 'git_strategy:\n  strategy: solo-main\n';
+    const upstream = 'git_strategy:\n  strategy: solo-main\n  policy:\n    direct_push_to_protected: allowed\n';
+    // `policy` is a CHILD of a block the project has: a value-shaped difference,
+    // not the absent-block failure this escalates.
+    expect(missingConfigBlocks('.agents/project.yaml', project, upstream, READERS)).toEqual([]);
+    // A file with no declaration never escalates, whatever it is missing.
+    expect(missingConfigBlocks('.mcp.json', '{}', '{"git_strategy":{}}', READERS)).toEqual([]);
+    // A side that is not a key/value map at all: no guessing. (YAML that merely
+    // fails the parser falls back to a key line-scan by design, so the honest
+    // no-structure case is a document that parses to something else.)
+    expect(missingConfigBlocks('.agents/project.yaml', '- a\n- b\n', 'git_strategy:\n  a: 1\n', READERS)).toEqual([]);
+  });
+
+  test('the shipped declaration names real blocks and real skills', () => {
+    const declared = CONFIG_BLOCK_READERS['.agents/project.yaml'];
+    expect(Object.keys(declared)).toContain('git_strategy');
+    expect(Object.keys(declared)).toContain('orchestration');
+    for (const reader of Object.values(declared)) {
+      expect(reader.skill.startsWith('/')).toBe(true);
+      expect(reader.requiredBy.length).toBeGreaterThan(20);
+    }
   });
 });
 

@@ -164,6 +164,8 @@ export interface ParityInput {
   pbiCache?: PbiCacheInput | null
   /** Prerequisite declarations, keyed by repo-relative path. Defaults to `PATH_PREREQUISITES`. */
   prerequisites?: Record<string, PathPrerequisite>
+  /** Which shipped skill reads which top-level config block. Defaults to `CONFIG_BLOCK_READERS`. */
+  configBlockReaders?: Record<string, Record<string, ConfigBlockReader>>
 }
 
 export interface PbiCacheInput {
@@ -306,6 +308,84 @@ export const PATH_PREREQUISITES: Record<string, PathPrerequisite> = {
     gate: 'bun test scripts/api-login.test.ts',
   },
 };
+
+export interface ConfigBlockReader {
+  /** The skill that reads the block, spelled as it is invoked. */
+  skill: string
+  /** What the skill needs the block FOR, in one scannable phrase. */
+  requiredBy: string
+}
+
+/**
+ * Top-level blocks of a structural config file that a SHIPPED SKILL reads,
+ * per file. A block upstream added and the project does not have is otherwise
+ * reported as `structural`: informational, never blocking. That is right for
+ * project identity — a value upstream chose is none of the project's business —
+ * but wrong the moment a skill in the same release reads the block: the release
+ * ships a skill that fails at RUNTIME, in the middle of somebody's session,
+ * rather than at sync time when there is a prompt and an operator.
+ *
+ * So the rule is narrow on purpose: the block must be MISSING (a block that is
+ * present with different values stays informational, always), top-level, and
+ * DECLARED here. Nothing is inferred. Declaring a block is the deliberate act
+ * of saying "a skill breaks without this", and the cost of that act is one
+ * blocking row for every project that lacks it.
+ *
+ * WHERE THIS LIVES, and why here: beside `PATH_PREREQUISITES`, which is the
+ * same statement about a different unit — that one says a kept FILE leaves the
+ * release half-delivered, this one says a missing BLOCK does. Same authors,
+ * same review surface, same rendering. A per-skill frontmatter declaration was
+ * the alternative and is worse: the skill that needs the block ships from
+ * UPSTREAM, so the scanner would have to read the upstream clone's skills to
+ * judge the project's config, and a project that deleted the skill would lose
+ * the row that explains its own broken config.
+ */
+export const CONFIG_BLOCK_READERS: Record<string, Record<string, ConfigBlockReader>> = {
+  '.agents/project.yaml': {
+    git_strategy: {
+      skill: '/git-flow-master',
+      requiredBy: 'the branching strategy, the protected-branch list and `policy.direct_push_to_protected`, which Critical Rule #5 resolves before every push. Without the block the skill cannot tell an authorized direct push from a forbidden one, and `bun run git:policy verify` has no declared side to compare the host ruleset against',
+    },
+    orchestration: {
+      skill: '/orca-orchestration',
+      requiredBy: 'the fleet defaults (worktree provisioning, run mailbox, claims) the skill reads before launching a single worker',
+    },
+  },
+};
+
+/**
+ * Top-level blocks the project is MISSING that a shipped skill reads. Empty for
+ * a file with no declaration, for one that does not parse, and for every block
+ * whose only difference is its values.
+ */
+export function missingConfigBlocks(
+  filePath: string,
+  project: string,
+  upstream: string,
+  readers: Record<string, Record<string, ConfigBlockReader>> = CONFIG_BLOCK_READERS,
+): { block: string, reader: ConfigBlockReader }[] {
+  const declared = readers[filePath.replace(/\\/g, '/')];
+  if (declared === undefined) { return []; }
+  const mine = configEntries(project, filePath);
+  const theirs = configEntries(upstream, filePath);
+  if (!mine || !theirs) { return []; }
+  return Object.entries(declared)
+    // Top-level only: `configEntries` also carries `top.child` rows, and a
+    // missing CHILD of a block the project has is a value-shaped difference,
+    // not the absent-block failure this escalates.
+    .filter(([block]) => theirs.has(block) && !mine.has(block))
+    .map(([block, reader]) => ({ block, reader }));
+}
+
+/**
+ * The clause that turns a missing declared block into a blocking row. It names
+ * the skill, because the operator's real question is "what breaks if I skip
+ * this", and the answer is a skill they already have installed.
+ */
+export function configBlockClause(missing: { block: string, reader: ConfigBlockReader }[]): string {
+  const each = missing.map(m => `\`${m.block}:\` — read by \`${m.reader.skill}\` for ${m.reader.requiredBy}`);
+  return `BLOCKING: ${missing.length} block(s) upstream added are MISSING here and a shipped skill reads them, so it fails at runtime instead of at sync time: ${each.join(' | ')}. Take upstream's block and adapt its VALUES to this project; the values are yours, the block's existence is not`;
+}
 
 /** The declaration for a path, or null when its content gates nothing else. */
 export function prerequisiteFor(
@@ -1028,8 +1108,16 @@ export function collectParityFindings(input: ParityInput): ParityFinding[] {
     };
     if (entry.structural) {
       const evidence = structuralEvidence(entry.path, project, upstream);
-      if (evidence === null) { continue; }
-      drifted.set(entry.path, { surface: watchedSurface(entry.path, entry.source), path: entry.path, evidence: withPrerequisite(evidence), suggested: 'merge', blocking: prerequisite !== null, side: 'kept', diff, projectOnly: true });
+      // A MISSING top-level block a shipped skill reads is not informational:
+      // the skill fails at runtime in somebody's session instead of here, where
+      // there is an operator and a prompt. It escalates even when
+      // `structuralEvidence` found nothing else to say.
+      const missingBlocks = missingConfigBlocks(entry.path, project, upstream, input.configBlockReaders);
+      if (evidence === null && missingBlocks.length === 0) { continue; }
+      const structural = [evidence, missingBlocks.length > 0 ? configBlockClause(missingBlocks) : null]
+        .filter((part): part is string => part !== null)
+        .join('; ');
+      drifted.set(entry.path, { surface: watchedSurface(entry.path, entry.source), path: entry.path, evidence: withPrerequisite(structural), suggested: 'merge', blocking: prerequisite !== null || missingBlocks.length > 0, side: 'kept', diff, projectOnly: true });
       continue;
     }
     const { evidence, projectOnly, suggested } = watchedFileEvidence(entry.path, project, upstream, diff);
