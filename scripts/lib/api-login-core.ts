@@ -58,6 +58,16 @@ export interface ApiLoginContext {
   flags: Readonly<Record<string, string>>
 }
 
+/** What the core lends to an adapter that drives the auth exchange itself. */
+export interface ApiLoginIo {
+  /** The core's own `fetchImpl`, so tests keep stubbing a single seam. */
+  fetch: typeof fetch
+  /** The core's logger, with the same prefix and icons as its own lines. */
+  log: (msg: string, level?: 'info' | 'warn' | 'error' | 'success') => void
+  /** `config.apiUrl`, already resolved for the active environment. */
+  apiUrl: string
+}
+
 /**
  * The project-specific half. `scripts/api-login.project.ts` exports these as
  * named exports and the entry point passes its module namespace here, so the
@@ -68,6 +78,25 @@ export interface ApiLoginAdapter {
   buildAuthPayload: (email: string, password: string, context: ApiLoginContext) => Record<string, unknown>
   /** Pull the token fields out of the auth response body. */
   extractTokenFromResponse: (body: Record<string, unknown>, context: ApiLoginContext) => ExtractedToken
+  /**
+   * LAST RESORT. Replaces the core's single POST: when present, the core skips
+   * `buildAuthPayload`, the request itself and `extractTokenFromResponse`, and
+   * keeps everything else (argument parsing, `--role`, `--profile`, `--help`,
+   * the empty-token check, the state assembly, the three output files, the
+   * exit code). Return `null` after logging why, and the run exits 1.
+   *
+   * Prefer `buildAuthPayload` whenever the flow is a single request: an
+   * adapter that owns the exchange stops receiving upstream improvements to
+   * the request phase (retry, backoff, timeouts, error rendering). Use this
+   * only for flows the single POST cannot express - reusing a held token,
+   * branching on a 401, chaining several requests across paths, or reading the
+   * credential from somewhere other than that one response body.
+   */
+  authenticate?: (
+    credentials: { email: string, password: string },
+    context: ApiLoginContext,
+    io: ApiLoginIo,
+  ) => Promise<ExtractedToken | null>
   /** Overrides `config.auth.loginEndpoint` (relative to `config.apiUrl`). */
   loginEndpoint?: string
   /** Extra request headers (merged over `Accept` + `Content-Type`). */
@@ -261,9 +290,37 @@ export function upsertTokenMeta(existingContent: string, key: string, entry: Rec
 // Help
 // ============================================
 
+/**
+ * The "now use the token" hint, rendered for the shell the operator is
+ * actually in. `tokens.env` is written in POSIX `export VAR='...'` form and
+ * `source` is a POSIX builtin, so on Windows the hint points at `tokens.json`
+ * instead - and at `curl.exe`, because a bare `curl` is an alias for
+ * `Invoke-WebRequest` in Windows PowerShell 5.1 and does not understand `-H`.
+ * Returns the two command lines unindented; each caller adds its own indent.
+ */
+export function renderTokenUsage(
+  paths: { tokensEnv: string, tokensJson: string },
+  names: { tokenVar: string, tokenKey: string },
+): [string, string] {
+  if (process.platform === 'win32') {
+    return [
+      `$t = (Get-Content ${paths.tokensJson} | ConvertFrom-Json).${names.tokenKey}.token`,
+      'curl.exe -s -H "Authorization: Bearer $t" "$env:API_BASE_URL/<path>"',
+    ];
+  }
+  return [
+    `source ${paths.tokensEnv} && \\`,
+    `curl -s -H "Authorization: Bearer $${names.tokenVar}" "$API_BASE_URL/<path>"`,
+  ];
+}
+
 /** The `--help` screen. Environments and required .env vars follow the adapter. */
 export function renderHelp(adapter: Pick<ApiLoginAdapter, 'environments' | 'extraFlags'> = {}): string {
   const environments = adapter.environments ?? DEFAULT_ENVIRONMENTS;
+  const [usageFirst, usageSecond] = renderTokenUsage(
+    { tokensEnv: '.auth/tokens.env', tokensJson: '.auth/tokens.json' },
+    { tokenVar: 'API_TOKEN_<ROLE>_<ENV>', tokenKey: '<ROLE>_<ENV>' },
+  );
   const extraFlags = adapter.extraFlags ?? [];
   const credentials = environments
     .map(e => `  For ${e}:${' '.repeat(Math.max(1, 12 - e.length))}${e.toUpperCase()}_USER_EMAIL, ${e.toUpperCase()}_USER_PASSWORD`)
@@ -302,8 +359,8 @@ export function renderHelp(adapter: Pick<ApiLoginAdapter, 'environments' | 'extr
                           that never overwrites the default one.
   NOTE: the token is NOT written to .env and NOT injected into any MCP. The
   OpenAPI MCP is schema-read-only; run authenticated requests via curl:
-    source .auth/tokens.env && \\
-    curl -H "Authorization: Bearer \$API_TOKEN_<ROLE>_<ENV>" "\$API_BASE_URL/<path>"
+    ${usageFirst}
+    ${usageSecond}
   No agent/terminal restart is needed after login.
 
 \x1B[1mREQUIRED .env VARIABLES\x1B[0m
@@ -400,37 +457,58 @@ export async function runApiLogin(adapter: ApiLoginAdapter, runtime: ApiLoginRun
     return 1;
   }
 
-  log(`Authenticating against ${url}...`);
+  log(adapter.authenticate
+    ? 'Authenticating through the project adapter...'
+    : `Authenticating against ${url}...`);
 
   const doFetch = runtime.fetchImpl ?? fetch;
   let apiState: ApiState;
 
   try {
-    const payload = adapter.buildAuthPayload(email, password, context);
+    let tokenData: ExtractedToken;
+    // Only the built-in path has a response body to name when the token is
+    // empty; an adapter that ran its own exchange already logged its own detail.
+    let emptyTokenDetail: string | null = null;
 
-    const response = await doFetch(url, {
-      method: 'POST',
-      headers: {
-        'Accept': '*/*',
-        'Content-Type': 'application/json',
-        ...adapter.headers,
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      const body = await response.text();
-      log(`Authentication failed with status ${response.status}`, 'error');
-      log(`Response: ${body}`, 'error');
-      return 1;
+    if (adapter.authenticate) {
+      // The adapter owns the whole exchange: no payload, no POST, no extraction.
+      const obtained = await adapter.authenticate({ email, password }, context, {
+        fetch: doFetch,
+        log,
+        apiUrl: config.apiUrl,
+      });
+      // null = the adapter already logged why it could not obtain a token.
+      if (!obtained) { return 1; }
+      tokenData = obtained;
     }
+    else {
+      const payload = adapter.buildAuthPayload(email, password, context);
 
-    const responseBody = (await response.json()) as Record<string, unknown>;
-    const tokenData = adapter.extractTokenFromResponse(responseBody, context);
+      const response = await doFetch(url, {
+        method: 'POST',
+        headers: {
+          'Accept': '*/*',
+          'Content-Type': 'application/json',
+          ...adapter.headers,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const body = await response.text();
+        log(`Authentication failed with status ${response.status}`, 'error');
+        log(`Response: ${body}`, 'error');
+        return 1;
+      }
+
+      const responseBody = (await response.json()) as Record<string, unknown>;
+      tokenData = adapter.extractTokenFromResponse(responseBody, context);
+      emptyTokenDetail = `Response keys: ${Object.keys(responseBody).join(', ')}`;
+    }
 
     if (!tokenData.accessToken) {
       log('Authentication response did not contain an access token.', 'error');
-      log(`Response keys: ${Object.keys(responseBody).join(', ')}`, 'error');
+      if (emptyTokenDetail) { log(emptyTokenDetail, 'error'); }
       return 1;
     }
 
@@ -490,8 +568,12 @@ export async function runApiLogin(adapter: ApiLoginAdapter, runtime: ApiLoginRun
 
   out('\n\x1B[32m✓ Login completed!\x1B[0m');
   out('\n\x1B[36mNext\x1B[0m — execute authenticated requests with curl (no restart needed):');
-  out(`   source ${relativeTokensEnv} && \\`);
-  out(`   curl -s -H "Authorization: Bearer $${tokenVar}" "$API_BASE_URL/<path>"\n`);
+  const [nextFirst, nextSecond] = renderTokenUsage(
+    { tokensEnv: relativeTokensEnv, tokensJson: relativeTokensJson },
+    { tokenVar, tokenKey },
+  );
+  out(`   ${nextFirst}`);
+  out(`   ${nextSecond}\n`);
 
   return 0;
 }
