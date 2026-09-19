@@ -15,7 +15,9 @@
  */
 
 import { existsSync, watch } from 'node:fs';
-import { basename, join, relative } from 'node:path';
+import { basename, join } from 'node:path';
+
+import { relativePosix } from './lib/posix-path';
 
 // ============================================================================
 // Types
@@ -219,6 +221,19 @@ async function scanDirectory(dirPath: string): Promise<string[]> {
 // Main Generation Function
 // ============================================================================
 
+/**
+ * Locale-independent string ordering.
+ *
+ * JS string relational operators compare UTF-16 code units, which is the same
+ * answer on every machine. That is the whole point here: the manifest is
+ * byte-compared by `--check`.
+ */
+function byCodeUnit(a: string, b: string): number {
+  if (a < b) { return -1; }
+  if (a > b) { return 1; }
+  return 0;
+}
+
 async function generateManifest(): Promise<KataManifest> {
   const manifest: KataManifest = {
     version: '1.0',
@@ -244,7 +259,7 @@ async function generateManifest(): Promise<KataManifest> {
     const component: ComponentInfo = {
       name: await extractClassName(file),
       file: basename(file),
-      relativePath: relative(PROJECT_ROOT, file),
+      relativePath: relativePosix(PROJECT_ROOT, file),
       atcs,
     };
     manifest.components.api.push(component);
@@ -258,7 +273,7 @@ async function generateManifest(): Promise<KataManifest> {
     const component: ComponentInfo = {
       name: await extractClassName(file),
       file: basename(file),
-      relativePath: relative(PROJECT_ROOT, file),
+      relativePath: relativePosix(PROJECT_ROOT, file),
       atcs,
     };
     manifest.components.ui.push(component);
@@ -271,7 +286,7 @@ async function generateManifest(): Promise<KataManifest> {
     const steps: StepsInfo = {
       name: await extractClassName(file),
       file: basename(file),
-      relativePath: relative(PROJECT_ROOT, file),
+      relativePath: relativePosix(PROJECT_ROOT, file),
       methods: await extractStepsMethods(file),
     };
     manifest.steps.push(steps);
@@ -286,12 +301,15 @@ async function generateManifest(): Promise<KataManifest> {
 
   // Deterministic ordering — Bun.Glob.scan order is filesystem-dependent.
   // Sorting here keeps `kata-manifest.json` byte-stable across machines so
-  // `--check` stays meaningful and PR diffs stay reviewable.
-  manifest.components.api.sort((a, b) => a.name.localeCompare(b.name));
-  manifest.components.ui.sort((a, b) => a.name.localeCompare(b.name));
-  manifest.steps.sort((a, b) => a.name.localeCompare(b.name));
+  // `--check` stays meaningful and PR diffs stay reviewable. `localeCompare()`
+  // would not deliver that: with no locale argument it collates per the host's
+  // ICU locale, which is exactly the machine-dependence this block exists to
+  // remove. `byCodeUnit` is the same comparison on every machine.
+  manifest.components.api.sort((a, b) => byCodeUnit(a.name, b.name));
+  manifest.components.ui.sort((a, b) => byCodeUnit(a.name, b.name));
+  manifest.steps.sort((a, b) => byCodeUnit(a.name, b.name));
   for (const component of [...manifest.components.api, ...manifest.components.ui]) {
-    component.atcs.sort((a, b) => a.id.localeCompare(b.id));
+    component.atcs.sort((a, b) => byCodeUnit(a.id, b.id));
   }
   for (const steps of manifest.steps) {
     steps.methods.sort();

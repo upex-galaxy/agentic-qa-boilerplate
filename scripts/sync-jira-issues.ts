@@ -1651,6 +1651,27 @@ function syncModuleContextFile(
 // MARKDOWN GENERATORS
 // ============================================================================
 
+/**
+ * Jira timestamps, rendered machine-independently.
+ *
+ * `toLocaleDateString()` / `toLocaleString()` follow the host's ICU locale, so
+ * the same issue cached as `9/18/2026` on en-US and `18/09/2026` on es-ES. The
+ * cache under `.context/PBI/` is gitignored, so this never produced a git
+ * conflict; it did mean two teammates reading one ticket saw different dates,
+ * and any regex over these lines was locale-dependent. ISO-8601 is the same
+ * string everywhere, and it sorts.
+ */
+function isoDate(raw: string): string {
+  const d = new Date(raw);
+  return Number.isNaN(d.getTime()) ? 'Unknown' : d.toISOString().slice(0, 10);
+}
+
+/** Same contract as `isoDate`, to the minute, in UTC. */
+function isoDateTime(raw: string): string {
+  const d = new Date(raw);
+  return Number.isNaN(d.getTime()) ? 'Unknown' : `${d.toISOString().slice(0, 16).replace('T', ' ')} UTC`;
+}
+
 function generateEpicMarkdown(
   epic: JiraIssue,
   stories: JiraIssue[],
@@ -1721,8 +1742,8 @@ function generateEpicMarkdown(
     '',
     '## Metadata',
     '',
-    `- **Created:** ${fields.created ? new Date(fields.created).toLocaleDateString() : 'Unknown'}`,
-    `- **Updated:** ${fields.updated ? new Date(fields.updated).toLocaleDateString() : 'Unknown'}`,
+    `- **Created:** ${fields.created ? isoDate(fields.created) : 'Unknown'}`,
+    `- **Updated:** ${fields.updated ? isoDate(fields.updated) : 'Unknown'}`,
     `- **Reporter:** ${fields.reporter?.displayName || 'Unknown'}`,
     `- **Assignee:** ${fields.assignee?.displayName || 'Unassigned'}`,
   );
@@ -1800,8 +1821,8 @@ function generateStoryMarkdown(
     '',
     '## Metadata',
     '',
-    `- **Created:** ${fields.created ? new Date(fields.created).toLocaleDateString() : 'Unknown'}`,
-    `- **Updated:** ${fields.updated ? new Date(fields.updated).toLocaleDateString() : 'Unknown'}`,
+    `- **Created:** ${fields.created ? isoDate(fields.created) : 'Unknown'}`,
+    `- **Updated:** ${fields.updated ? isoDate(fields.updated) : 'Unknown'}`,
     `- **Reporter:** ${fields.reporter?.displayName || 'Unknown'}`,
     `- **Assignee:** ${fields.assignee?.displayName || 'Unassigned'}`,
   );
@@ -1835,7 +1856,7 @@ function generateCommentsMarkdown(
   else {
     for (const comment of comments) {
       const author = comment.author?.displayName || 'Unknown';
-      const date = new Date(comment.created).toLocaleString();
+      const date = isoDateTime(comment.created);
       const body = adfToMarkdown(comment.body as AdfDocument);
 
       lines.push(`### ${author} - ${date}`, '', body, '', '---', '');
@@ -1943,8 +1964,8 @@ function generateBugMarkdown(
     '',
     '## Metadata',
     '',
-    `- **Created:** ${fields.created ? new Date(fields.created).toLocaleDateString() : 'Unknown'}`,
-    `- **Updated:** ${fields.updated ? new Date(fields.updated).toLocaleDateString() : 'Unknown'}`,
+    `- **Created:** ${fields.created ? isoDate(fields.created) : 'Unknown'}`,
+    `- **Updated:** ${fields.updated ? isoDate(fields.updated) : 'Unknown'}`,
     `- **Reporter:** ${fields.reporter?.displayName || 'Unknown'}`,
     `- **Assignee:** ${fields.assignee?.displayName || 'Unassigned'}`,
   );
@@ -2047,8 +2068,8 @@ function generateDefectMarkdown(
     '',
     '## Metadata',
     '',
-    `- **Created:** ${fields.created ? new Date(fields.created).toLocaleDateString() : 'Unknown'}`,
-    `- **Updated:** ${fields.updated ? new Date(fields.updated).toLocaleDateString() : 'Unknown'}`,
+    `- **Created:** ${fields.created ? isoDate(fields.created) : 'Unknown'}`,
+    `- **Updated:** ${fields.updated ? isoDate(fields.updated) : 'Unknown'}`,
     `- **Reporter:** ${fields.reporter?.displayName || 'Unknown'}`,
     `- **Assignee:** ${fields.assignee?.displayName || 'Unassigned'}`,
   );
@@ -2106,8 +2127,8 @@ function generateImprovementMarkdown(
     '',
     '## Metadata',
     '',
-    `- **Created:** ${fields.created ? new Date(fields.created).toLocaleDateString() : 'Unknown'}`,
-    `- **Updated:** ${fields.updated ? new Date(fields.updated).toLocaleDateString() : 'Unknown'}`,
+    `- **Created:** ${fields.created ? isoDate(fields.created) : 'Unknown'}`,
+    `- **Updated:** ${fields.updated ? isoDate(fields.updated) : 'Unknown'}`,
     `- **Reporter:** ${fields.reporter?.displayName || 'Unknown'}`,
     `- **Assignee:** ${fields.assignee?.displayName || 'Unassigned'}`,
   );
@@ -2164,8 +2185,8 @@ function generateTestMarkdown(
     '',
     '## Metadata',
     '',
-    `- **Created:** ${fields.created ? new Date(fields.created).toLocaleDateString() : 'Unknown'}`,
-    `- **Updated:** ${fields.updated ? new Date(fields.updated).toLocaleDateString() : 'Unknown'}`,
+    `- **Created:** ${fields.created ? isoDate(fields.created) : 'Unknown'}`,
+    `- **Updated:** ${fields.updated ? isoDate(fields.updated) : 'Unknown'}`,
     `- **Reporter:** ${fields.reporter?.displayName || 'Unknown'}`,
     `- **Assignee:** ${fields.assignee?.displayName || 'Unassigned'}`,
   );
@@ -2230,8 +2251,8 @@ function generateXrayArtifactMarkdown(
     '',
     '## Metadata',
     '',
-    `- **Created:** ${fields.created ? new Date(fields.created).toLocaleDateString() : 'Unknown'}`,
-    `- **Updated:** ${fields.updated ? new Date(fields.updated).toLocaleDateString() : 'Unknown'}`,
+    `- **Created:** ${fields.created ? isoDate(fields.created) : 'Unknown'}`,
+    `- **Updated:** ${fields.updated ? isoDate(fields.updated) : 'Unknown'}`,
     `- **Reporter:** ${fields.reporter?.displayName || 'Unknown'}`,
     `- **Assignee:** ${fields.assignee?.displayName || 'Unassigned'}`,
   );
@@ -3619,8 +3640,8 @@ function renderAutoContent(issue: JiraIssue, entry: WorkTypeEntry, config: Confi
     '',
     '## Metadata',
     '',
-    `- **Created:** ${f.created ? new Date(f.created).toLocaleDateString() : 'Unknown'}`,
-    `- **Updated:** ${f.updated ? new Date(f.updated).toLocaleDateString() : 'Unknown'}`,
+    `- **Created:** ${f.created ? isoDate(f.created) : 'Unknown'}`,
+    `- **Updated:** ${f.updated ? isoDate(f.updated) : 'Unknown'}`,
     `- **Reporter:** ${f.reporter?.displayName ?? 'Unknown'}`,
     `- **Assignee:** ${f.assignee?.displayName ?? 'Unassigned'}`,
   );

@@ -43,6 +43,7 @@ import { join, relative } from 'node:path';
 import { parse as parseYaml } from 'yaml';
 
 import { resolveAtlassianInstance } from '../cli/lib/atlassian-instance';
+import { compareWorkTypes } from './lib/jira-required-baseline';
 
 // -----------------------------------------------------------------------------
 // Types
@@ -1630,6 +1631,34 @@ function printLiveReport(outcome: LiveCheckOutcome): void {
   console.log('');
 }
 
+/**
+ * Is this project's `work_types:` set behind upstream's?
+ *
+ * WARN-ONLY and deliberately absent from the exit expression below: a project may
+ * legitimately not use a work type, and a legitimate omission must not become a
+ * wall. What it prevents is the silent case — `jira:sync-workflows` catalogs ONLY
+ * the work types the manifest declares, so a manifest missing one upstream has
+ * added regenerates a truncated `jira-workflows.json`, exits 0, and drops every
+ * transition on that type into the unmapped-status fallback for good.
+ *
+ * Full detail and the standalone command: `bun run jira:baseline`.
+ */
+function printBaselineReport(localWorkTypeSlugs: string[]): void {
+  const cmp = compareWorkTypes(localWorkTypeSlugs);
+  if (cmp.missingLocally.length === 0) { return; }
+
+  console.log('Upstream baseline');
+  console.log('-----------------');
+  console.log(
+    `⚠️  ${cmp.missingLocally.length} work type(s) declared upstream, absent from this manifest: ${
+      cmp.missingLocally.join(', ')}`,
+  );
+  console.log('    jira:sync-workflows catalogs only what the manifest declares, so any');
+  console.log('    transition on those resolves through the unmapped-status fallback.');
+  console.log('    Not an error if the project does not use them. Detail: `bun run jira:baseline`.');
+  console.log('');
+}
+
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   if (args.includes('-h') || args.includes('--help')) {
@@ -1717,6 +1746,7 @@ async function main(): Promise<void> {
       workflowsCatalogPresent,
     );
     printLinkTypesReport(linkTypeResults, linkTypesDeferred);
+    printBaselineReport(workTypes.map(w => w.slug));
     if (liveOutcome) { printLiveReport(liveOutcome); }
   }
 

@@ -597,6 +597,19 @@ Options:
   help           Show this message
 `;
 
+/**
+ * The shell command that opens a file in the default application, per platform.
+ *
+ * Printed, never executed — `open` is macOS-only, so hardcoding it handed a
+ * Linux or Windows reader a command their shell does not have.
+ * `scripts/onboarding.ts` runs the same three-way split for the spawn it does.
+ */
+function openCommand(): string {
+  if (process.platform === 'darwin') { return 'open'; }
+  if (process.platform === 'win32') { return 'start'; }
+  return 'xdg-open';
+}
+
 function main(): void {
   const args = process.argv.slice(2);
   if (args.includes('help') || args.includes('--help')) {
@@ -647,7 +660,7 @@ function main(): void {
       },
     }, null, 2));
   }
-  log.info(`Open it: open ${outPath}`);
+  log.info(`Open it: ${openCommand()} ${outPath}`);
 }
 
 export {

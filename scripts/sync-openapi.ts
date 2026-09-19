@@ -18,14 +18,21 @@
  *   bun run api:sync --config                     # Use saved config
  */
 
+import { join } from 'node:path';
 import { createInterface } from 'node:readline';
 import { $ } from 'bun';
+
+import { toPosix } from './lib/posix-path';
 
 // ============================================
 // Configuration
 // ============================================
 
-const API_DIR = `${import.meta.dir}/../api`;
+// `join` + normalise, not string concatenation: the raw form produced
+// `C:\repo\scripts/../api` on Windows, a mixed-separator path with an unresolved
+// `..` that then gets interpolated into Bun Shell and into `openapi-typescript -o`.
+// Resolving it here removes the question instead of answering it.
+const API_DIR = toPosix(join(import.meta.dir, '..', 'api'));
 const CONFIG_FILE = `${API_DIR}/.openapi-config.json`;
 const TYPES_FILE = `${API_DIR}/openapi-types.ts`;
 

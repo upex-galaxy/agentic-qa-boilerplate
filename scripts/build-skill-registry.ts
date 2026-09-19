@@ -59,6 +59,8 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSy
 import { join, relative } from 'node:path';
 import { parse as parseYaml } from 'yaml';
 
+import { relativePosix } from './lib/posix-path';
+
 // -----------------------------------------------------------------------------
 // Config
 // -----------------------------------------------------------------------------
@@ -367,7 +369,9 @@ function processSkill(slug: string): SkillEntry {
 
   return {
     slug,
-    path: relative(REPO_ROOT, skillPath),
+    // `/`-separated: this lands in the tracked REGISTRY.md, which
+    // `skills:registry:check` compares as full text.
+    path: relativePosix(REPO_ROOT, skillPath),
     frontmatter,
     purpose,
     rules,
