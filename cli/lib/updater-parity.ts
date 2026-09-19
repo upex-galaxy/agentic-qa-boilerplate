@@ -154,6 +154,10 @@ export interface ParityInput {
   envNewKeys: string[]
   /** Permission allow-list entries the additive merge added to `.claude/settings.json`. */
   allowListAdded?: string[]
+  /** Evidence for the unresolved-doctrine ledger row (`runDoctrineLedger`), when there is debt. */
+  doctrineDebt?: string | null
+  /** The file that row is about. Defaults to `AGENTS.md` (`DOCTRINE_FILE`). */
+  doctrineFile?: string
   /** Project-edited synced files this run overwrote. */
   localEdits?: LocalEditInput[]
   /** `package.json` keys kept at the project's value while upstream differs. */
@@ -1218,6 +1222,30 @@ export function collectParityFindings(input: ParityInput): ParityFinding[] {
       blocking: true,
     });
   }
+  // The doctrine ledger: one aggregated row for AGENTS.md sections this project
+  // still lacks. Unlike every other watched-file row it is tracked by CONTENT,
+  // so `keep project` does not retire it — writing the section does. It folds
+  // onto the existing AGENTS.md drift row when there is one, so a run never
+  // shows two rows about the same file.
+  if (typeof input.doctrineDebt === 'string' && input.doctrineDebt !== '') {
+    // The path comes from the caller, not from an import of `updater-doctrine`:
+    // that module imports `markdownSectionDelta` from here, and taking the
+    // constant back would close the cycle.
+    const doctrinePath = input.doctrineFile ?? 'AGENTS.md';
+    const existing = drifted.get(doctrinePath);
+    if (existing) { existing.evidence = `${existing.evidence}; ${input.doctrineDebt}`; }
+    else {
+      findings.push({
+        surface: 'instructions',
+        path: doctrinePath,
+        evidence: input.doctrineDebt,
+        suggested: 'merge',
+        blocking: false,
+        side: 'kept',
+      });
+    }
+  }
+
   findings.push(...[...drifted.values()].map(({ projectOnly: _projectOnly, ...finding }) => finding), ...compat);
 
   // 3. Archived skills: the migration kept the legacy copy because upstream owns the name.

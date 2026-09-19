@@ -494,6 +494,52 @@ describe('the pre-commit hook carries the --no-stash fix downstream', () => {
   });
 });
 
+describe('the doctrine ledger row', () => {
+  function base(root: string, upstream: string): Parameters<typeof collectParityFindings>[0] {
+    return {
+      root,
+      upstreamDir: upstream,
+      drift: [],
+      compatErrors: [],
+      archivedSkills: [],
+      archivedSkillsDir: join(root, '.template/pre-agents-migration/skills'),
+      heldBack: [],
+      envNewKeys: [],
+    };
+  }
+
+  test('with no AGENTS.md drift row of its own it stands alone on Instrucciones', () => {
+    const root = temporaryRoot();
+    const findings = collectParityFindings({ ...base(root, temporaryRoot()), doctrineDebt: 'informational: 2 doctrine section(s) missing' });
+    const row = findings.find(f => f.path === 'AGENTS.md');
+    expect(row!.surface).toBe('instructions');
+    expect(row!.blocking).toBe(false);
+    expect(row!.evidence).toContain('2 doctrine section(s) missing');
+  });
+
+  test('it folds onto the AGENTS.md drift row instead of raising a second one', () => {
+    const root = temporaryRoot();
+    const upstream = temporaryRoot();
+    write(root, 'AGENTS.md', '# Memory\n\n## 1. RULES\n\nmine\n');
+    write(upstream, 'AGENTS.md', '# Memory\n\n## 1. RULES\n\nmine\n\n## 9. DOCTRINE\n\nnew\n');
+    const findings = collectParityFindings({
+      ...base(root, upstream),
+      drift: [{ path: 'AGENTS.md', reason: 'AI memory adapted per project' }],
+      doctrineDebt: 'informational: 1 doctrine section(s) unresolved for 4 run(s)',
+    });
+    const rows = findings.filter(f => f.path === 'AGENTS.md');
+    expect(rows).toHaveLength(1);
+    expect(rows[0].evidence).toContain('unresolved for 4 run(s)');
+    // The ordinary drift evidence is still there: the fold appends, never replaces.
+    expect(rows[0].evidence).toContain('AI memory adapted per project');
+  });
+
+  test('no debt means no row', () => {
+    const root = temporaryRoot();
+    expect(collectParityFindings({ ...base(root, temporaryRoot()), doctrineDebt: null }).find(f => f.path === 'AGENTS.md')).toBeUndefined();
+  });
+});
+
 describe('a missing config block a shipped skill reads blocks the run', () => {
   // E2: a top-level block upstream added is otherwise `structural` —
   // informational, never blocking — which is right for project identity and
