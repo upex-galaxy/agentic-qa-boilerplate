@@ -248,8 +248,17 @@ function main(): void {
 /** Shared remedy block — printed for drift whether it lands as an error or a warning. */
 function printDriftRemedy(): void {
   console.log('Fix (ENV_DRIFT): the process value is stale and shadows .env. Find who injected it —');
-  console.log('  ps eww -p $PPID                          # walk the ancestry; repeat up the chain');
-  console.log('  env -i HOME=$HOME zsh -l -c \'echo $VAR\'   # test the login shell in isolation');
+  if (process.platform === 'win32') {
+    // `ps`, `env` and `zsh` are all POSIX-only, and this text is handed to the
+    // operator at the exact moment they are debugging env drift.
+    console.log('  Get-CimInstance Win32_Process -Filter "ProcessId=$PID" | Select ParentProcessId');
+    console.log('                                           # walk the ancestry; repeat up the chain');
+    console.log('  powershell -NoProfile -Command \'$env:VAR\'  # test a shell without your profile');
+  }
+  else {
+    console.log('  ps eww -p $PPID                          # walk the ancestry; repeat up the chain');
+    console.log('  env -i HOME=$HOME zsh -l -c \'echo $VAR\'   # test the login shell in isolation');
+  }
   console.log('Testing from the contaminated shell inherits the bad value and gives a false negative.');
   console.log('Restarting the app does NOT fix it: the value is re-inherited from the same parent.');
   console.log('Relaunch the agent session through `bun run claude` / `bun run opencode` (they pass');

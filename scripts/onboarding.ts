@@ -43,7 +43,7 @@
 
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { join, relative, resolve } from 'node:path';
+import { join, relative, resolve, sep } from 'node:path';
 
 // ============================================================================
 // CONSTANTS
@@ -265,10 +265,12 @@ async function handleRequest(req: Request): Promise<Response> {
   }
 
   // Resolve to an absolute path and verify it stays inside ONBOARDING_DIR_ABS.
-  // Using `${dir}/` as the prefix prevents the classic `<dir>foo` bypass
+  // Using `${dir}${sep}` as the prefix prevents the classic `<dir>foo` bypass
   // (e.g. ONBOARDING_DIR_ABS = /a/b would otherwise match /a/b-evil).
+  // The separator must be the PLATFORM's own: `resolve()` emits `\` on Windows,
+  // so a hardcoded `/` prefix never matches there and every request 403s.
   const candidate = resolve(join(ONBOARDING_DIR_ABS, decoded));
-  const guardPrefix = `${ONBOARDING_DIR_ABS}/`;
+  const guardPrefix = ONBOARDING_DIR_ABS + sep;
   if (candidate !== ONBOARDING_DIR_ABS && !candidate.startsWith(guardPrefix)) {
     return new Response('Forbidden', { status: 403 });
   }

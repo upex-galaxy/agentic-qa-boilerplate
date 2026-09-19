@@ -90,6 +90,8 @@
 import { existsSync, lstatSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
+import { relativePosix } from './lib/posix-path';
+
 // -----------------------------------------------------------------------------
 // Constants
 // -----------------------------------------------------------------------------
@@ -850,7 +852,10 @@ function isAntiPatternCitation(line: string): boolean {
 function gatherAllSkillMarkdown(): string[] {
   if (!existsSync(SKILLS_DIR)) { return []; }
   return walkSkillMarkdown(SKILLS_DIR).filter((f) => {
-    const rel = f.slice(SKILLS_DIR.length + 1);
+    // `/`-normalised: the `includes('/')` top-level guard below is dead on
+    // Windows otherwise. Latent today (every SKILL_AGGREGATE_FILES entry is a
+    // top-level name), live the moment a nested basename joins that set.
+    const rel = relativePosix(SKILLS_DIR, f);
     if (!rel.includes('/') && SKILL_AGGREGATE_FILES.has(rel)) { return false; }
     return true;
   });
@@ -882,7 +887,10 @@ function scanSkillLines(
 }
 
 function relScopeForSkillFile(file: string): string {
-  return file.replace(`${REPO_ROOT}/`, '');
+  // `relative` + normalise, not a `${REPO_ROOT}/` string replace: on Windows both
+  // sides are backslash-separated, so the replace never matched and the finding
+  // printed an absolute path. `skillSlugForFile` above already gets this right.
+  return relativePosix(REPO_ROOT, file);
 }
 
 /**
