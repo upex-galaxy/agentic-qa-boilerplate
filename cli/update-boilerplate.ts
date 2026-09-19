@@ -23,6 +23,7 @@ import { checkAgentCompatibility, COMMAND_ALIAS_MANIFEST, repairAgentSurfaces, S
 import * as tui from './lib/tui';
 import {
   cleanupTempDir,
+  createBackupDir,
   detectGitVersion,
   gitVersionMeetsMin,
   isLocalTemplateSource,
@@ -33,6 +34,7 @@ import {
   suggestCommitMessage,
   UPDATER_UPSTREAM_DIR_ENV,
 } from './lib/updater-core';
+import { DOCTRINE_FILE, runDoctrineLedger } from './lib/updater-doctrine';
 import { detectProtectedDrift, mergeProtectedWatchlist, persistMarkers, readProjectProtectedPaths, splitFirstProjectAdvice } from './lib/updater-drift';
 import {
   applyHarnessMigration,
@@ -55,6 +57,7 @@ import {
   runVerdict,
 } from './lib/updater-parity';
 import { makePbiCacheMigrationHook } from './lib/updater-pbi';
+import { CLAUDE_SETTINGS_FILE, mergeAllowList } from './lib/updater-settings';
 import { parseDotEnvExampleKeys, requiredNow, VAR_MANIFEST } from './lib/variables-manifest.ts';
 
 // --- CONFIGURATION ---
@@ -134,8 +137,10 @@ export const COMPONENTS: Component[] = [
   { name: 'cli', type: 'directory', paths: ['cli'] },
   { name: 'vscode', type: 'directory', paths: ['.vscode'] },
   // `.husky/pre-commit` and `.husky/pre-push` are on PROTECTED_WATCHLIST (the
-  // project's gates live there): delivered once when missing, never
-  // overwritten. Anything else under `.husky/` (the `_/` helpers) keeps syncing.
+  // project's gates and their ordering live there): delivered once when missing,
+  // never overwritten. Everything else under `.husky/` keeps syncing — which is
+  // exactly how `framework-gates.sh` reaches a project scaffolded earlier: the
+  // gates upstream owns sit in that synced file, and each hook sources it.
   { name: 'husky', type: 'directory', paths: ['.husky'] },
   { name: 'agents-docs', type: 'file-list', paths: ['.agents'], files: AGENTS_DOCS_FILES },
   { name: 'tooling', type: 'file-list', paths: ['.'], files: TOOLING_FILES },
@@ -428,9 +433,13 @@ interface RunFacts {
   promptKept: boolean
   /** `.context/PBI/` paths still tracked in git, and where the migration recipe was saved. */
   pbiCache: PbiCacheFact | null
+  /** Permission allow-list entries the additive merge added to `.claude/settings.json`. */
+  allowListAdded: string[]
+  /** One-line evidence for the unresolved-doctrine ledger row, when AGENTS.md carries debt. */
+  doctrineDebt: string | null
   parity: { findings: ParityFinding[], report: ParityReport } | null
 }
-const runFacts: RunFacts = { compat: null, envNewKeys: [], migration: null, migrationPlanned: false, aliasDeferred: false, gates: [], gatesSkippedReason: null, promptKept: false, pbiCache: null, parity: null };
+const runFacts: RunFacts = { compat: null, envNewKeys: [], migration: null, migrationPlanned: false, aliasDeferred: false, gates: [], gatesSkippedReason: null, promptKept: false, pbiCache: null, allowListAdded: [], doctrineDebt: null, parity: null };
 
 // --- ENV-VAR DRIFT DETECTION (afterApply hook) ---
 //
@@ -514,6 +523,49 @@ async function detectEnvVarDrift(
   if (res.status !== 0) {
     sink.warn('`bun run setup --variables` terminó con error o fue cancelado.');
   }
+}
+
+// --- CLAUDE PERMISSION ALLOW LIST (afterApply hook) ---
+//
+// `.claude/settings.json` is bootstrap-only AND watched, so a skill shipped
+// upstream used to arrive without the `Skill(<name>)` entry that authorizes it
+// and silently could not be invoked. This merges ONE array additively —
+// `permissions.allow` — and leaves `deny`, `ask`, `hooks`, `env` and every
+// other key exactly as the project wrote them. See `updater-settings.ts` for
+// why removals are deliberately not remembered.
+//
+// Backup before write, like every other mutation the run makes: the file is on
+// the watchlist, so a consumer who dislikes the addition restores it from
+// `.backups/` and expresses the removal in `deny`.
+function makeAllowListHook(
+  templateDir: string,
+  sink: ReportSink,
+  dryRun: boolean,
+): (summary: RunSummary) => Promise<void> {
+  return async (summary: RunSummary): Promise<void> => {
+    if (dryRun) {
+      runFacts.allowListAdded = mergeAllowList(process.cwd(), templateDir).added;
+      return;
+    }
+    const localPath = path.join(process.cwd(), CLAUDE_SETTINGS_FILE);
+    const { added, merged } = mergeAllowList(process.cwd(), templateDir);
+    if (merged === null) { return; }
+    try {
+      // This run's backup dir when it made one; otherwise its own, so the
+      // pre-write backup contract holds even on a run that wrote nothing else.
+      const dir = summary.backupDir ?? createBackupDir(process.cwd());
+      const backupPath = path.join(dir, CLAUDE_SETTINGS_FILE);
+      fs.mkdirSync(path.dirname(backupPath), { recursive: true });
+      fs.copyFileSync(localPath, backupPath);
+      fs.writeFileSync(localPath, merged, 'utf-8');
+    }
+    catch (err) {
+      sink.warn(`No se pudo fusionar la allow list de ${CLAUDE_SETTINGS_FILE}: ${err instanceof Error ? err.message : String(err)}`);
+      return;
+    }
+    runFacts.allowListAdded = added;
+    sink.step(`Permisos agregados a ${CLAUDE_SETTINGS_FILE}: ${added.length}`);
+  };
 }
 
 // --- SKILLS REGISTRY REGEN (afterApply hook) ---
@@ -1021,8 +1073,14 @@ const PROTECTED_WATCHLIST: ProtectedWatchEntry[] = [
   // 8.2 every run force-applied upstream's copy over a committed merge and
   // re-raised the same row forever. Same delivery as `.claude/settings.json`:
   // once when missing (bootstrapOnlyPaths below), then project-owned.
-  { path: '.husky/pre-commit', reason: 'project gates live here' },
-  { path: '.husky/pre-push', reason: 'project gates live here' },
+  //
+  // The gates UPSTREAM owns no longer live here: they moved to the plainly
+  // synced `.husky/framework-gates.sh`, which each hook sources and calls in one
+  // function. That is the only way a gate added upstream reaches a project
+  // scaffolded earlier — a never-overwritten hook cannot grow one. The hooks
+  // stay watched for what is genuinely theirs: ordering, and their own gates.
+  { path: '.husky/pre-commit', reason: 'project gates and their ordering live here; the gates upstream owns come from the synced .husky/framework-gates.sh, so a hook that does not source it never sees another one' },
+  { path: '.husky/pre-push', reason: 'project gates and their ordering live here; the gates upstream owns come from the synced .husky/framework-gates.sh, so a hook that does not source it never sees another one' },
 ];
 
 /**
@@ -1256,6 +1314,9 @@ function makeParityHook(sink: ReportSink, priorLockSha: string, dryRun: boolean,
       archivedSkillsDir,
       heldBack,
       envNewKeys: runFacts.envNewKeys,
+      allowListAdded: runFacts.allowListAdded,
+      doctrineDebt: runFacts.doctrineDebt,
+      doctrineFile: DOCTRINE_FILE,
       localEdits: (summary.localEditsOverwritten ?? []).map(edit => ({
         ...edit,
         backupPath: summary.backupDir ? path.join(summary.backupDir, edit.path) : null,
@@ -1744,6 +1805,9 @@ async function main(): Promise<void> {
         ? composeHooks(
             sink,
             async () => { runFacts.envNewKeys = computeEnvNewKeys(UPSTREAM_DIR); },
+            // Read-only: records what the real run would add, writes nothing.
+            makeAllowListHook(UPSTREAM_DIR, sink, true),
+            async () => { runFacts.doctrineDebt = runDoctrineLedger(process.cwd(), UPSTREAM_DIR, { dryRun: true }); },
             // Read-only detection so the preview's table matches the real run's.
             makePbiCacheMigrationHook({ promptOutPath: path.join(process.cwd(), PBI_MIGRATION_PROMPT_PATH), dryRun: true }, sink, (fact) => { runFacts.pbiCache = fact; }),
             makeParityHook(sink, priorLockSha, true, watchlist),
@@ -1754,6 +1818,15 @@ async function main(): Promise<void> {
             // the sync must already resolve skills through `.claude/skills`.
             makeAgentCompatibilityHook(sink),
             makeKataManifestHook(sink),
+            // Before the compat check reads settings.json? No: after. The merge
+            // only ADDS allow entries, which no compatibility contract asserts
+            // on, and running it late keeps the hook order above untouched.
+            makeAllowListHook(UPSTREAM_DIR, sink, false),
+            // The unresolved-doctrine ledger. Content-tracked, so unlike every
+            // other watched-file nudge it survives `keep project` and clears
+            // only when the section is actually written. Runs before the parity
+            // hook, which folds its one row in.
+            async () => { runFacts.doctrineDebt = runDoctrineLedger(process.cwd(), UPSTREAM_DIR); },
             async () => detectEnvVarDrift(UPSTREAM_DIR, sink, nonInteractive),
             async () => upsertGitStrategyBlock(UPSTREAM_DIR, sink, nonInteractive),
             makeYamlBackfillHook(QA_EPICS_BACKFILL, UPSTREAM_DIR, sink, nonInteractive),

@@ -178,6 +178,41 @@ describe('dirty-tree guard: self-update re-exec', () => {
     expect(foreignDirtyPaths(' M cli-tools/x.ts\n M cli/y.ts', ['cli'])).toEqual(['cli-tools/x.ts']);
   });
 
+  test('an accented filename survives git C-quoting, from real git output', () => {
+    // The downstream repos are Spanish. With `core.quotepath` at its default,
+    // git wraps any non-ASCII path in quotes and escapes its UTF-8 bytes as
+    // octal. Decoding those wrong gives a path that matches no exemption and
+    // hashes to nothing, so the dirty-tree guard aborts `bun run up` naming a
+    // file that does not exist. Drive the real binary, not a hand-typed line.
+    const root = temporaryRoot();
+    git(root, ['init', '--quiet', '--initial-branch=main']);
+    write(root, 'src/configuración.md', 'hola\n');
+    write(root, 'src/plain.md', 'plain\n');
+    const porcelain = git(root, ['status', '--porcelain', '--untracked-files=all']).trimEnd();
+    // Guard the premise: if this git ever stopped quoting, the test would pass
+    // for the wrong reason and the regression could come back unnoticed.
+    expect(porcelain).toContain('\\303\\263');
+    expect(parsePorcelainPaths(porcelain).sort()).toEqual(['src/configuración.md', 'src/plain.md']);
+    // And the guard it feeds: the accented path is dirt like any other, and an
+    // exemption on its directory covers it.
+    expect(foreignDirtyPaths(porcelain, [])).toContain('src/configuración.md');
+    expect(foreignDirtyPaths(porcelain, ['src'])).toEqual([]);
+  });
+
+  test('C-quoted escapes decode by byte, and unquoted paths are left literal', () => {
+    // Multi-byte characters are several octal escapes that only mean anything
+    // decoded together; a per-escape decode yields replacement characters.
+    expect(parsePorcelainPaths('?? "a/\\360\\237\\232\\200.md"')).toEqual(['a/🚀.md']);
+    // The named single-character escapes, and a literal backslash in a name.
+    expect(parsePorcelainPaths('?? "a/b\\\\c.md"')).toEqual(['a/b\\c.md']);
+    expect(parsePorcelainPaths('?? "a/say \\"hi\\".md"')).toEqual(['a/say "hi".md']);
+    expect(parsePorcelainPaths('?? "a/tab\\there.md"')).toEqual(['a/tab\there.md']);
+    // An UNQUOTED path is already literal: porcelain uses forward slashes on
+    // every platform, so a backslash there is part of the filename and must
+    // survive. The old code turned it into a separator.
+    expect(parsePorcelainPaths(' M a/b\\c.ts')).toEqual(['a/b\\c.ts']);
+  });
+
   test('component claims cover directory trees and file-list literals', () => {
     expect(componentOwnedPaths(CLI)).toEqual(['cli']);
     expect(componentOwnedPaths({ name: 'tooling', type: 'file-list', paths: ['.'], files: ['.editorconfig'] })).toEqual(['.editorconfig']);

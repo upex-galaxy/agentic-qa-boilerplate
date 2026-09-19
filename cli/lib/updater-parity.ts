@@ -44,6 +44,7 @@ import { parse as parseYaml } from 'yaml';
 
 import { stripJsonComments } from './agent-compatibility-contracts.ts';
 import { COMMAND_ALIAS_MANIFEST, COMMAND_ALIAS_PROJECT_MANIFEST, compatibilityErrorGroup, undeclaredCommandWrappers } from './agent-compatibility.ts';
+import { CLAUDE_SETTINGS_FILE } from './updater-settings';
 
 // ============================================================================
 // TYPES
@@ -151,6 +152,12 @@ export interface ParityInput {
   heldBack: HeldBackComponent[]
   /** Keys upstream `.env.example` documents that the project's `.env` / `.env.example` lack. */
   envNewKeys: string[]
+  /** Permission allow-list entries the additive merge added to `.claude/settings.json`. */
+  allowListAdded?: string[]
+  /** Evidence for the unresolved-doctrine ledger row (`runDoctrineLedger`), when there is debt. */
+  doctrineDebt?: string | null
+  /** The file that row is about. Defaults to `AGENTS.md` (`DOCTRINE_FILE`). */
+  doctrineFile?: string
   /** Project-edited synced files this run overwrote. */
   localEdits?: LocalEditInput[]
   /** `package.json` keys kept at the project's value while upstream differs. */
@@ -161,6 +168,8 @@ export interface ParityInput {
   pbiCache?: PbiCacheInput | null
   /** Prerequisite declarations, keyed by repo-relative path. Defaults to `PATH_PREREQUISITES`. */
   prerequisites?: Record<string, PathPrerequisite>
+  /** Which shipped skill reads which top-level config block. Defaults to `CONFIG_BLOCK_READERS`. */
+  configBlockReaders?: Record<string, Record<string, ConfigBlockReader>>
 }
 
 export interface PbiCacheInput {
@@ -268,6 +277,12 @@ export function protectNote(filePath: string): string {
 /** The hook whose `lint-staged` invocation the symlinked skills alias breaks. */
 export const HUSKY_PRE_COMMIT = '.husky/pre-commit';
 
+/** Its pre-push sibling. Same delivery: once when missing, then project-owned. */
+export const HUSKY_PRE_PUSH = '.husky/pre-push';
+
+/** The SYNCED file both hooks source to get the gates upstream owns. */
+export const HUSKY_GATES_FILE = '.husky/framework-gates.sh';
+
 export interface PathPrerequisite {
   /** What the upstream hunk is needed FOR, in one scannable phrase. */
   requiredBy: string
@@ -297,6 +312,84 @@ export const PATH_PREREQUISITES: Record<string, PathPrerequisite> = {
     gate: 'bun test scripts/api-login.test.ts',
   },
 };
+
+export interface ConfigBlockReader {
+  /** The skill that reads the block, spelled as it is invoked. */
+  skill: string
+  /** What the skill needs the block FOR, in one scannable phrase. */
+  requiredBy: string
+}
+
+/**
+ * Top-level blocks of a structural config file that a SHIPPED SKILL reads,
+ * per file. A block upstream added and the project does not have is otherwise
+ * reported as `structural`: informational, never blocking. That is right for
+ * project identity — a value upstream chose is none of the project's business —
+ * but wrong the moment a skill in the same release reads the block: the release
+ * ships a skill that fails at RUNTIME, in the middle of somebody's session,
+ * rather than at sync time when there is a prompt and an operator.
+ *
+ * So the rule is narrow on purpose: the block must be MISSING (a block that is
+ * present with different values stays informational, always), top-level, and
+ * DECLARED here. Nothing is inferred. Declaring a block is the deliberate act
+ * of saying "a skill breaks without this", and the cost of that act is one
+ * blocking row for every project that lacks it.
+ *
+ * WHERE THIS LIVES, and why here: beside `PATH_PREREQUISITES`, which is the
+ * same statement about a different unit — that one says a kept FILE leaves the
+ * release half-delivered, this one says a missing BLOCK does. Same authors,
+ * same review surface, same rendering. A per-skill frontmatter declaration was
+ * the alternative and is worse: the skill that needs the block ships from
+ * UPSTREAM, so the scanner would have to read the upstream clone's skills to
+ * judge the project's config, and a project that deleted the skill would lose
+ * the row that explains its own broken config.
+ */
+export const CONFIG_BLOCK_READERS: Record<string, Record<string, ConfigBlockReader>> = {
+  '.agents/project.yaml': {
+    git_strategy: {
+      skill: '/git-flow-master',
+      requiredBy: 'the branching strategy, the protected-branch list and `policy.direct_push_to_protected`, which Critical Rule #5 resolves before every push. Without the block the skill cannot tell an authorized direct push from a forbidden one, and `bun run git:policy verify` has no declared side to compare the host ruleset against',
+    },
+    orchestration: {
+      skill: '/orca-orchestration',
+      requiredBy: 'the fleet defaults (worktree provisioning, run mailbox, claims) the skill reads before launching a single worker',
+    },
+  },
+};
+
+/**
+ * Top-level blocks the project is MISSING that a shipped skill reads. Empty for
+ * a file with no declaration, for one that does not parse, and for every block
+ * whose only difference is its values.
+ */
+export function missingConfigBlocks(
+  filePath: string,
+  project: string,
+  upstream: string,
+  readers: Record<string, Record<string, ConfigBlockReader>> = CONFIG_BLOCK_READERS,
+): { block: string, reader: ConfigBlockReader }[] {
+  const declared = readers[filePath.replace(/\\/g, '/')];
+  if (declared === undefined) { return []; }
+  const mine = configEntries(project, filePath);
+  const theirs = configEntries(upstream, filePath);
+  if (!mine || !theirs) { return []; }
+  return Object.entries(declared)
+    // Top-level only: `configEntries` also carries `top.child` rows, and a
+    // missing CHILD of a block the project has is a value-shaped difference,
+    // not the absent-block failure this escalates.
+    .filter(([block]) => theirs.has(block) && !mine.has(block))
+    .map(([block, reader]) => ({ block, reader }));
+}
+
+/**
+ * The clause that turns a missing declared block into a blocking row. It names
+ * the skill, because the operator's real question is "what breaks if I skip
+ * this", and the answer is a skill they already have installed.
+ */
+export function configBlockClause(missing: { block: string, reader: ConfigBlockReader }[]): string {
+  const each = missing.map(m => `\`${m.block}:\` — read by \`${m.reader.skill}\` for ${m.reader.requiredBy}`);
+  return `BLOCKING: ${missing.length} block(s) upstream added are MISSING here and a shipped skill reads them, so it fails at runtime instead of at sync time: ${each.join(' | ')}. Take upstream's block and adapt its VALUES to this project; the values are yours, the block's existence is not`;
+}
 
 /** The declaration for a path, or null when its content gates nothing else. */
 export function prerequisiteFor(
@@ -378,6 +471,43 @@ export function lintStagedNoStashNote(projectHook: string): string | null {
     '',
     '`--no-stash` only drops lint-staged\'s protection for unstaged hunks that collide with its own auto-fix.',
     'What gets committed is unchanged.',
+  ].join('\n');
+}
+
+/**
+ * Both husky hooks are bootstrap-only: delivered once when missing, then
+ * project-owned, because a project's own gates live in them. The cost was that
+ * a gate added upstream never reached a project scaffolded earlier — four of
+ * them had already failed to land anywhere downstream.
+ *
+ * Upstream's fix is the gates split: the gates upstream owns moved into the
+ * SYNCED `.husky/framework-gates.sh`, and each hook sources it and calls one
+ * function. A hook that predates the split keeps every gate inlined and will
+ * never see another one, and nothing but this row can tell it so — which is the
+ * same shape as the `--no-stash` note, and the same reason it exists.
+ *
+ * Returns the adoption note while the hook does not source the gates file; null
+ * once it does.
+ */
+export function frameworkGatesNote(projectHook: string, hookPath: string): string | null {
+  const sourced = projectHook
+    .split('\n')
+    .some(line => !line.trimStart().startsWith('#') && line.includes('framework-gates.sh'));
+  if (sourced) { return null; }
+  const fn = hookPath === HUSKY_PRE_PUSH ? 'framework_gates_pre_push' : 'framework_gates_pre_commit';
+  return [
+    `Adopt the gates split in ${hookPath}. Your gates and their ordering stay yours; replace only the block`,
+    'that runs upstream\'s gates with the call below, and every gate a future release adds arrives with',
+    `${HUSKY_GATES_FILE} instead of needing this file rewritten:`,
+    '',
+    '    GATES="$(dirname -- "$0")/framework-gates.sh"',
+    '    if [ -f "$GATES" ]; then',
+    '      . "$GATES"',
+    `      ${fn}`,
+    '    fi',
+    '',
+    'The `-f` guard is not decoration: `.husky/_/h` runs the hook under `sh -e`, so sourcing a file that is',
+    'not there kills the hook. Read the synced file for what each gate covers.',
   ].join('\n');
 }
 
@@ -982,20 +1112,40 @@ export function collectParityFindings(input: ParityInput): ParityFinding[] {
     };
     if (entry.structural) {
       const evidence = structuralEvidence(entry.path, project, upstream);
-      if (evidence === null) { continue; }
-      drifted.set(entry.path, { surface: watchedSurface(entry.path, entry.source), path: entry.path, evidence: withPrerequisite(evidence), suggested: 'merge', blocking: prerequisite !== null, side: 'kept', diff, projectOnly: true });
+      // A MISSING top-level block a shipped skill reads is not informational:
+      // the skill fails at runtime in somebody's session instead of here, where
+      // there is an operator and a prompt. It escalates even when
+      // `structuralEvidence` found nothing else to say.
+      const missingBlocks = missingConfigBlocks(entry.path, project, upstream, input.configBlockReaders);
+      if (evidence === null && missingBlocks.length === 0) { continue; }
+      const structural = [evidence, missingBlocks.length > 0 ? configBlockClause(missingBlocks) : null]
+        .filter((part): part is string => part !== null)
+        .join('; ');
+      drifted.set(entry.path, { surface: watchedSurface(entry.path, entry.source), path: entry.path, evidence: withPrerequisite(structural), suggested: 'merge', blocking: prerequisite !== null || missingBlocks.length > 0, side: 'kept', diff, projectOnly: true });
       continue;
     }
     const { evidence, projectOnly, suggested } = watchedFileEvidence(entry.path, project, upstream, diff);
-    // The pre-commit hook is never overwritten, so a consumer only learns about
-    // the `--no-stash` fix if the row says so (issue #28, bug 2).
-    const noStash = entry.path === HUSKY_PRE_COMMIT ? lintStagedNoStashNote(project) : null;
+    // Neither husky hook is ever overwritten, so a consumer only learns about an
+    // upstream fix to one if the row says so: the `--no-stash` flag (issue #28,
+    // bug 2) and the gates split, without which no gate a future release adds
+    // ever runs there. Both can be pending on the same hook.
+    const hookNotes: { clause: string, note: string }[] = [];
+    if (entry.path === HUSKY_PRE_COMMIT) {
+      const noStash = lintStagedNoStashNote(project);
+      if (noStash !== null) {
+        hookNotes.push({ clause: 'lint-staged still runs without --no-stash, which breaks every commit behind the .claude/skills symlink', note: noStash });
+      }
+    }
+    if (entry.path === HUSKY_PRE_COMMIT || entry.path === HUSKY_PRE_PUSH) {
+      const gates = frameworkGatesNote(project, entry.path);
+      if (gates !== null) {
+        hookNotes.push({ clause: `this hook does not source ${HUSKY_GATES_FILE}, so no gate a future release adds will ever run here`, note: gates });
+      }
+    }
     drifted.set(entry.path, {
       surface: watchedSurface(entry.path, entry.source),
       path: entry.path,
-      evidence: withPrerequisite(noStash === null
-        ? evidence
-        : `${evidence}; lint-staged still runs without --no-stash, which breaks every commit behind the .claude/skills symlink`),
+      evidence: withPrerequisite([evidence, ...hookNotes.map(n => n.clause)].join('; ')),
       // A prerequisite row cannot be "reviewed later": the release is
       // half-delivered until its hunk lands, so it is a merge, and it blocks.
       suggested: prerequisite === null ? suggested : 'merge',
@@ -1003,7 +1153,7 @@ export function collectParityFindings(input: ParityInput): ParityFinding[] {
       side: 'kept',
       diff,
       projectOnly,
-      ...(noStash === null ? {} : { note: noStash }),
+      ...(hookNotes.length === 0 ? {} : { note: hookNotes.map(n => n.note).join('\n\n') }),
     });
   }
 
@@ -1072,6 +1222,30 @@ export function collectParityFindings(input: ParityInput): ParityFinding[] {
       blocking: true,
     });
   }
+  // The doctrine ledger: one aggregated row for AGENTS.md sections this project
+  // still lacks. Unlike every other watched-file row it is tracked by CONTENT,
+  // so `keep project` does not retire it — writing the section does. It folds
+  // onto the existing AGENTS.md drift row when there is one, so a run never
+  // shows two rows about the same file.
+  if (typeof input.doctrineDebt === 'string' && input.doctrineDebt !== '') {
+    // The path comes from the caller, not from an import of `updater-doctrine`:
+    // that module imports `markdownSectionDelta` from here, and taking the
+    // constant back would close the cycle.
+    const doctrinePath = input.doctrineFile ?? 'AGENTS.md';
+    const existing = drifted.get(doctrinePath);
+    if (existing) { existing.evidence = `${existing.evidence}; ${input.doctrineDebt}`; }
+    else {
+      findings.push({
+        surface: 'instructions',
+        path: doctrinePath,
+        evidence: input.doctrineDebt,
+        suggested: 'merge',
+        blocking: false,
+        side: 'kept',
+      });
+    }
+  }
+
   findings.push(...[...drifted.values()].map(({ projectOnly: _projectOnly, ...finding }) => finding), ...compat);
 
   // 3. Archived skills: the migration kept the legacy copy because upstream owns the name.
@@ -1146,6 +1320,22 @@ export function collectParityFindings(input: ParityInput): ParityFinding[] {
       evidence: `upstream .env.example added ${input.envNewKeys.length} key(s): ${input.envNewKeys.join(', ')}`,
       suggested: 'decide',
       blocking: false,
+    });
+  }
+
+  // The allow-list merge is additive and already decided: it ran, and this row
+  // says what it added so nothing is a surprise. Informational, never blocking
+  // — `deny` is untouched and wins, so an entry a project does not want is
+  // re-expressible there without this row asking anything of it.
+  const allowAdded = input.allowListAdded ?? [];
+  if (allowAdded.length > 0) {
+    findings.push({
+      surface: 'components',
+      path: CLAUDE_SETTINGS_FILE,
+      evidence: `informational: ${allowAdded.length} permission(s) added to permissions.allow (set-union with upstream; deny/ask/hooks/env untouched): ${allowAdded.join(', ')}`,
+      suggested: 'keep project',
+      blocking: false,
+      side: 'kept',
     });
   }
 

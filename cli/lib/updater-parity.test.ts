@@ -13,14 +13,17 @@ import {
   collectParityFindings,
   compatErrorSuggestion,
   compatErrorSurface,
+  CONFIG_BLOCK_READERS,
   configEntries,
   configKeyDelta,
   configKeys,
   describeWatchedFile,
   diffNoIndex,
   diffStats,
+  frameworkGatesNote,
   lintStagedNoStashNote,
   markdownSectionDelta,
+  missingConfigBlocks,
   PATH_PREREQUISITES,
   persistArchivedSkillMarkers,
   prerequisiteFor,
@@ -464,11 +467,14 @@ describe('the pre-commit hook carries the --no-stash fix downstream', () => {
     expect(buildParityFileBody(findings, META)).toContain('+bunx lint-staged --no-stash');
   });
 
-  test('a hook that already has the flag drifts without the note', () => {
+  test('a hook that already has the flag and sources the gates drifts without a note', () => {
     const root = temporaryRoot();
     const upstream = temporaryRoot();
-    write(root, '.husky/pre-commit', 'bunx lint-staged --no-stash\nbun run types:check\n');
-    write(upstream, '.husky/pre-commit', 'bunx lint-staged --no-stash\nbun run types:check\nbun run vars:check\n');
+    // Both adoption nudges satisfied: the flag is there AND the hook sources the
+    // synced gates file, so the only thing left is ordinary drift.
+    const adopted = 'bunx lint-staged --no-stash\n. "$(dirname -- "$0")/framework-gates.sh"\nframework_gates_pre_commit\n';
+    write(root, '.husky/pre-commit', adopted);
+    write(upstream, '.husky/pre-commit', `${adopted}bun run project:extra\n`);
 
     const findings = collectParityFindings({
       root,
@@ -485,6 +491,238 @@ describe('the pre-commit hook carries the --no-stash fix downstream', () => {
     expect(hook).toBeDefined();
     expect(hook!.evidence).not.toContain('--no-stash');
     expect(hook!.note).toBeUndefined();
+  });
+});
+
+describe('the doctrine ledger row', () => {
+  function base(root: string, upstream: string): Parameters<typeof collectParityFindings>[0] {
+    return {
+      root,
+      upstreamDir: upstream,
+      drift: [],
+      compatErrors: [],
+      archivedSkills: [],
+      archivedSkillsDir: join(root, '.template/pre-agents-migration/skills'),
+      heldBack: [],
+      envNewKeys: [],
+    };
+  }
+
+  test('with no AGENTS.md drift row of its own it stands alone on Instrucciones', () => {
+    const root = temporaryRoot();
+    const findings = collectParityFindings({ ...base(root, temporaryRoot()), doctrineDebt: 'informational: 2 doctrine section(s) missing' });
+    const row = findings.find(f => f.path === 'AGENTS.md');
+    expect(row!.surface).toBe('instructions');
+    expect(row!.blocking).toBe(false);
+    expect(row!.evidence).toContain('2 doctrine section(s) missing');
+  });
+
+  test('it folds onto the AGENTS.md drift row instead of raising a second one', () => {
+    const root = temporaryRoot();
+    const upstream = temporaryRoot();
+    write(root, 'AGENTS.md', '# Memory\n\n## 1. RULES\n\nmine\n');
+    write(upstream, 'AGENTS.md', '# Memory\n\n## 1. RULES\n\nmine\n\n## 9. DOCTRINE\n\nnew\n');
+    const findings = collectParityFindings({
+      ...base(root, upstream),
+      drift: [{ path: 'AGENTS.md', reason: 'AI memory adapted per project' }],
+      doctrineDebt: 'informational: 1 doctrine section(s) unresolved for 4 run(s)',
+    });
+    const rows = findings.filter(f => f.path === 'AGENTS.md');
+    expect(rows).toHaveLength(1);
+    expect(rows[0].evidence).toContain('unresolved for 4 run(s)');
+    // The ordinary drift evidence is still there: the fold appends, never replaces.
+    expect(rows[0].evidence).toContain('AI memory adapted per project');
+  });
+
+  test('no debt means no row', () => {
+    const root = temporaryRoot();
+    expect(collectParityFindings({ ...base(root, temporaryRoot()), doctrineDebt: null }).find(f => f.path === 'AGENTS.md')).toBeUndefined();
+  });
+});
+
+describe('a missing config block a shipped skill reads blocks the run', () => {
+  // E2: a top-level block upstream added is otherwise `structural` —
+  // informational, never blocking — which is right for project identity and
+  // wrong when a skill in the same release reads the block: it then fails at
+  // runtime, mid-session, instead of here where there is an operator.
+  const READERS = {
+    '.agents/project.yaml': {
+      git_strategy: { skill: '/git-flow-master', requiredBy: 'the protected-branch list and the push policy' },
+    },
+  };
+
+  function findings(projectYaml: string, upstreamYaml: string, readers = READERS): ParityFinding[] {
+    const root = temporaryRoot();
+    const upstream = temporaryRoot();
+    write(root, '.agents/project.yaml', projectYaml);
+    write(upstream, '.agents/project.yaml', upstreamYaml);
+    return collectParityFindings({
+      root,
+      upstreamDir: upstream,
+      drift: [{ path: '.agents/project.yaml', reason: 'per-project identity', structural: true }],
+      compatErrors: [],
+      archivedSkills: [],
+      archivedSkillsDir: join(root, '.template/pre-agents-migration/skills'),
+      heldBack: [],
+      envNewKeys: [],
+      configBlockReaders: readers,
+    });
+  }
+
+  test('the block is missing: the row blocks and names the skill that reads it', () => {
+    const row = findings(
+      'project:\n  name: consumer\n',
+      'project:\n  name: upstream\ngit_strategy:\n  strategy: solo-main\n',
+    ).find(f => f.path === '.agents/project.yaml');
+    expect(row!.blocking).toBe(true);
+    expect(row!.suggested).toBe('merge');
+    expect(row!.evidence).toContain('BLOCKING');
+    expect(row!.evidence).toContain('/git-flow-master');
+    // The values stay the project's: the row asks for the block, not the config.
+    expect(row!.evidence).toContain('adapt its VALUES to this project');
+  });
+
+  test('a block the project HAS stays informational however much its values differ', () => {
+    const rows = findings(
+      'project:\n  name: consumer\ngit_strategy:\n  strategy: sdet\n  protected: [main, staging]\n',
+      'project:\n  name: upstream\ngit_strategy:\n  strategy: solo-main\n  protected: [main]\n',
+    ).filter(f => f.path === '.agents/project.yaml');
+    // Values are project identity: the structural comparison finds no added key,
+    // so nothing escalates. (An unrelated `git` surface row about
+    // `strategy_source` can still be there; it is not this rule's doing.)
+    expect(rows.every(f => !f.blocking)).toBe(true);
+    expect(rows.some(f => f.evidence.includes('BLOCKING'))).toBe(false);
+  });
+
+  test('an undeclared block upstream added is informational, exactly as before', () => {
+    const row = findings(
+      'project:\n  name: consumer\n',
+      'project:\n  name: upstream\nsome_new_block:\n  a: 1\n',
+    ).find(f => f.path === '.agents/project.yaml');
+    expect(row!.blocking).toBe(false);
+    expect(row!.evidence).toContain('informational');
+    expect(row!.evidence).not.toContain('BLOCKING');
+  });
+
+  test('missingConfigBlocks is top-level only and declaration-driven', () => {
+    const project = 'git_strategy:\n  strategy: solo-main\n';
+    const upstream = 'git_strategy:\n  strategy: solo-main\n  policy:\n    direct_push_to_protected: allowed\n';
+    // `policy` is a CHILD of a block the project has: a value-shaped difference,
+    // not the absent-block failure this escalates.
+    expect(missingConfigBlocks('.agents/project.yaml', project, upstream, READERS)).toEqual([]);
+    // A file with no declaration never escalates, whatever it is missing.
+    expect(missingConfigBlocks('.mcp.json', '{}', '{"git_strategy":{}}', READERS)).toEqual([]);
+    // A side that is not a key/value map at all: no guessing. (YAML that merely
+    // fails the parser falls back to a key line-scan by design, so the honest
+    // no-structure case is a document that parses to something else.)
+    expect(missingConfigBlocks('.agents/project.yaml', '- a\n- b\n', 'git_strategy:\n  a: 1\n', READERS)).toEqual([]);
+  });
+
+  test('the shipped declaration names real blocks and real skills', () => {
+    const declared = CONFIG_BLOCK_READERS['.agents/project.yaml'];
+    expect(Object.keys(declared)).toContain('git_strategy');
+    expect(Object.keys(declared)).toContain('orchestration');
+    for (const reader of Object.values(declared)) {
+      expect(reader.skill.startsWith('/')).toBe(true);
+      expect(reader.requiredBy.length).toBeGreaterThan(20);
+    }
+  });
+});
+
+describe('the allow-list merge is reported, never silent', () => {
+  test('an informational Componentes row names every permission the merge added', () => {
+    const root = temporaryRoot();
+    const upstream = temporaryRoot();
+    const findings = collectParityFindings({
+      root,
+      upstreamDir: upstream,
+      drift: [],
+      compatErrors: [],
+      archivedSkills: [],
+      archivedSkillsDir: join(root, '.template/pre-agents-migration/skills'),
+      heldBack: [],
+      envNewKeys: [],
+      allowListAdded: ['Skill(pr-review-lead)', 'Skill(session-handoff)'],
+    });
+    const row = findings.find(f => f.path === '.claude/settings.json');
+    expect(row!.surface).toBe('components');
+    expect(row!.blocking).toBe(false);
+    expect(row!.evidence).toContain('2 permission(s) added');
+    expect(row!.evidence).toContain('Skill(pr-review-lead)');
+    // The row has to say what was NOT touched, or it reads like a file rewrite.
+    expect(row!.evidence).toContain('deny/ask/hooks/env untouched');
+  });
+
+  test('a run that added nothing raises no row at all', () => {
+    const root = temporaryRoot();
+    const findings = collectParityFindings({
+      root,
+      upstreamDir: temporaryRoot(),
+      drift: [],
+      compatErrors: [],
+      archivedSkills: [],
+      archivedSkillsDir: join(root, '.template/pre-agents-migration/skills'),
+      heldBack: [],
+      envNewKeys: [],
+      allowListAdded: [],
+    });
+    expect(findings.find(f => f.path === '.claude/settings.json')).toBeUndefined();
+  });
+});
+
+describe('the husky hooks carry the gates split downstream', () => {
+  // Both hooks are bootstrap-only, so a gate added upstream never reached a
+  // project scaffolded earlier. The gates upstream owns now live in the SYNCED
+  // `.husky/framework-gates.sh`; a hook that does not source it still sees
+  // nothing, and only this row can say so.
+
+  test('the note fires only for a hook that does not source the gates file', () => {
+    const pending = frameworkGatesNote('bunx lint-staged --no-stash\nbun run types:check\n', '.husky/pre-commit');
+    expect(pending).toContain('framework_gates_pre_commit');
+    expect(pending).toContain('if [ -f "$GATES" ]; then');
+    // The pre-push hook is nudged towards its OWN function, not pre-commit's.
+    expect(frameworkGatesNote('bun run lint:check\n', '.husky/pre-push')).toContain('framework_gates_pre_push');
+    // Already adopted: silence.
+    expect(frameworkGatesNote('. "$(dirname -- "$0")/framework-gates.sh"\nframework_gates_pre_push\n', '.husky/pre-push')).toBeNull();
+    // A mention in a comment is not an adoption.
+    expect(frameworkGatesNote('# see framework-gates.sh\nbun run types:check\n', '.husky/pre-commit')).toContain('Adopt the gates split');
+  });
+
+  test('both hooks get the row, and pre-commit can carry both nudges at once', () => {
+    const root = temporaryRoot();
+    const upstream = temporaryRoot();
+    // A pre-split project: every gate inlined, lint-staged without the flag.
+    write(root, '.husky/pre-commit', 'bunx lint-staged\nbun run types:check\n');
+    write(root, '.husky/pre-push', 'bun run format:check && bun run lint:check\n');
+    write(upstream, '.husky/pre-commit', 'bunx lint-staged --no-stash\n. "$(dirname -- "$0")/framework-gates.sh"\nframework_gates_pre_commit\n');
+    write(upstream, '.husky/pre-push', '. "$(dirname -- "$0")/framework-gates.sh"\nframework_gates_pre_push\n');
+
+    const findings = collectParityFindings({
+      root,
+      upstreamDir: upstream,
+      drift: [
+        { path: '.husky/pre-commit', reason: 'project gates live here' },
+        { path: '.husky/pre-push', reason: 'project gates live here' },
+      ],
+      compatErrors: [],
+      archivedSkills: [],
+      archivedSkillsDir: join(root, '.template/pre-agents-migration/skills'),
+      heldBack: [],
+      envNewKeys: [],
+    });
+
+    const preCommit = findings.find(f => f.path === '.husky/pre-commit');
+    expect(preCommit!.evidence).toContain('does not source .husky/framework-gates.sh');
+    // Both nudges land on the same row rather than one hiding the other.
+    expect(preCommit!.evidence).toContain('--no-stash');
+    expect(preCommit!.note).toContain('+bunx lint-staged --no-stash');
+    expect(preCommit!.note).toContain('framework_gates_pre_commit');
+
+    const prePush = findings.find(f => f.path === '.husky/pre-push');
+    expect(prePush!.evidence).toContain('does not source .husky/framework-gates.sh');
+    expect(prePush!.note).toContain('framework_gates_pre_push');
+    // Adoption is a merge the operator reviews, never a silent overwrite.
+    expect(prePush!.blocking).toBe(false);
   });
 });
 
@@ -718,8 +956,10 @@ describe('rows the diff-based table could not see before', () => {
   test('a drifted file without key structure (a husky hook) reads its hunks; the row is never blocking', () => {
     const root = temporaryRoot();
     const upstream = temporaryRoot();
-    write(root, '.husky/pre-push', '#!/bin/sh\nbun run repo:check\nbun run e2e\n');
-    write(upstream, '.husky/pre-push', '#!/bin/sh\nbun run repo:check\n');
+    // Both copies already source the synced gates file, so the gates-split nudge
+    // stays silent and the evidence is purely the hunk reading under test.
+    write(root, '.husky/pre-push', '#!/bin/sh\n. "$(dirname -- "$0")/framework-gates.sh"\nbun run e2e\n');
+    write(upstream, '.husky/pre-push', '#!/bin/sh\n. "$(dirname -- "$0")/framework-gates.sh"\n');
     const findings = collectParityFindings({ ...base(root, upstream), drift: [{ path: '.husky/pre-push', reason: 'project gates live here' }] });
     expect(findings).toHaveLength(1);
     expect(findings[0].surface).toBe('components');
