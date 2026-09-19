@@ -1,41 +1,17 @@
 {
-  "compilerOptions": {
-    "target": "ESNext",
-    "lib": ["ESNext", "DOM"],
-    "moduleDetection": "force",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "paths": {
-      "@/*": ["./*"],
-      "@ui/*": ["./tests/components/ui/*"],
-      "@api/*": ["./tests/components/api/*"],
-      "@steps/*": ["./tests/components/steps/*"],
-      "@utils/*": ["./tests/utils/*"],
-      "@data/*": ["./tests/data/*"],
-      "@variables": ["./config/variables.ts"],
-      "@TestContext": ["./tests/components/TestContext.ts"],
-      "@UiFixture": ["./tests/components/UiFixture.ts"],
-      "@ApiFixture": ["./tests/components/ApiFixture.ts"],
-      "@TestFixture": ["./tests/components/TestFixture.ts"],
-      "@DataFactory": ["./tests/data/DataFactory.ts"],
-      "@openapi": ["./api/openapi-types.ts"],
-      "@schemas/*": ["./api/schemas/*"],
-      "@schemas": ["./api/schemas/index.ts"]
-    },
-    "resolveJsonModule": true,
-    "types": ["bun", "node", "@playwright/test"],
-    "allowImportingTsExtensions": true,
-    "allowJs": true,
-    "strict": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noEmit": true,
-    "sourceMap": true,
-    "esModuleInterop": true,
-    "verbatimModuleSyntax": false,
-    "skipLibCheck": true
-  },
+  "_comment": [
+    "PROJECT-OWNED — `bun run up` never overwrites this file.",
+    "",
+    "`tsconfig.base.json` is the synced half: compiler options and, above all,",
+    "the path aliases every synced file imports through. This file owns what is",
+    "genuinely the project's: which directories are type-checked.",
+    "",
+    "Override any compiler option by redeclaring it under `compilerOptions`",
+    "here — `extends` merges that object key by key. `paths` is the exception:",
+    "redeclaring it replaces the base map wholesale, so copy the base map and",
+    "append rather than listing only the new alias."
+  ],
+  "extends": "./tsconfig.base.json",
   "include": [
     "config/**/*.ts",
     "tests/**/*.ts",
@@ -44,7 +20,8 @@
     "cli/**/*.ts",
     "packages/**/*.ts",
     "playwright.config.ts",
-    "eslint.config.js"
+    "eslint.config.js",
+    "eslint.config.base.js"
   ],
   "exclude": [
     "node_modules",
