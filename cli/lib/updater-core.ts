@@ -1063,11 +1063,53 @@ export function selfUpdateComponentByContent(
  */
 export const LAST_APPLY_FILE = '.template/last-apply.json';
 
+/** The single-character C escapes git emits inside a quoted path, to their byte. */
+const C_ESCAPE_BYTES: Record<string, number> = {
+  'a': 0x07,
+  'b': 0x08,
+  'f': 0x0C,
+  'n': 0x0A,
+  'r': 0x0D,
+  't': 0x09,
+  'v': 0x0B,
+  '\\': 0x5C,
+  '"': 0x22,
+};
+
+/**
+ * Decode the body of a git C-quoted path (`core.quotepath`, ON by default):
+ * any path with a space, a control character or a byte above 0x7f comes back
+ * wrapped in double quotes with its bytes escaped.
+ *
+ * The `\NNN` escapes are octal BYTES of the UTF-8 encoding, not characters, so
+ * they are collected into a buffer and decoded once at the end — otherwise
+ * `configuraci\303\263n.md` yields two replacement characters instead of `ó`.
+ */
+function decodeCQuotedPath(body: string): string {
+  const bytes: number[] = [];
+  for (let i = 0; i < body.length; i++) {
+    const ch = body[i];
+    if (ch !== '\\') { bytes.push(...Buffer.from(ch, 'utf8')); continue; }
+    const next = body[i + 1];
+    if (next === undefined) { bytes.push(0x5C); break; } // trailing lone backslash
+    const simple = C_ESCAPE_BYTES[next];
+    if (simple !== undefined) { bytes.push(simple); i += 1; continue; }
+    const octal = /^[0-7]{1,3}/.exec(body.slice(i + 1))?.[0];
+    if (octal !== undefined) { bytes.push(Number.parseInt(octal, 8) & 0xFF); i += octal.length; continue; }
+    bytes.push(0x5C); // unknown escape: keep the backslash, re-read the next char
+  }
+  return Buffer.from(bytes).toString('utf8');
+}
+
 /**
  * Paths named by `git status --porcelain` output. Renames (`R  old -> new`)
  * report BOTH sides: either one being foreign is reason enough to stop.
- * Quoted paths (spaces, unicode) lose their quotes. Tolerates a line whose
- * leading status column was trimmed away (` D path` -> `D path`).
+ * Tolerates a line whose leading status column was trimmed away
+ * (` D path` -> `D path`).
+ *
+ * A QUOTED path is C-unescaped (see `decodeCQuotedPath`). An unquoted one is
+ * already literal and is left exactly as it came: porcelain emits forward
+ * slashes on every platform, so a backslash there belongs to the filename.
  */
 export function parsePorcelainPaths(porcelain: string): string[] {
   const out: string[] = [];
@@ -1080,8 +1122,10 @@ export function parsePorcelainPaths(porcelain: string): string[] {
     else if (raw.length > 2 && raw[1] === ' ') { rest = raw.slice(2); }
     else { rest = raw.trim(); }
     for (const side of rest.split(' -> ')) {
-      const unquoted = side.trim().replace(/^"(.*)"$/, '$1');
-      if (unquoted !== '') { out.push(unquoted.replace(/\\/g, '/')); }
+      const trimmed = side.trim();
+      const quoted = /^"(.*)"$/.exec(trimmed)?.[1];
+      const path = quoted === undefined ? trimmed : decodeCQuotedPath(quoted);
+      if (path !== '') { out.push(path); }
     }
   }
   return out;
