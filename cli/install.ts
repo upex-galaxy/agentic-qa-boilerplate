@@ -155,6 +155,22 @@ interface InstallState {
    */
   steps: Record<string, string>
   skills: Record<string, InstallStatus>
+  /**
+   * The upstream ref each PROJECT-level community skill was installed from,
+   * keyed by slug. The skills CLI records a CONTENT hash in
+   * `skills-lock.json`, which pins what is on disk but cannot be compared
+   * against a remote without cloning it — so `bun run setup:doctor` would have
+   * no way to tell a scaffold-day skill from a current one. These three skills
+   * are gitignored and sit outside the updater's surface, so nothing else
+   * would ever notice.
+   *
+   * Recorded on a successful install, and only reported afterwards: doctor
+   * never offers to reinstall, because an overwrite of a gitignored skill has
+   * no backup to restore from and would destroy a local patch unrecoverably.
+   * Absent for a repo installed before this existed — that reads as "not
+   * tracked", never as "current".
+   */
+  communitySkillRefs?: Record<string, CommunitySkillRef>
   mcps: Record<string, McpStatus>
   externalClis: Record<string, CliStatus>
   pendingEnvVars: string[]
@@ -276,9 +292,32 @@ const EXTERNAL_CLIS: ReadonlyArray<{ name: string, install?: string, docs: strin
   },
 ];
 
-interface CommunitySkill {
+export interface CommunitySkill {
   package: string // git URL or shorthand 'owner/repo'
   skill?: string // omit or '*' to install all skills from the package
+}
+
+export interface CommunitySkillRef {
+  /** The package the skill came from, as declared in PROJECT_LEVEL_SKILLS. */
+  package: string
+  /** Remote HEAD commit at install time, or null when the remote was unreachable. */
+  ref: string | null
+  recordedAt: string
+}
+
+/**
+ * The remote's current HEAD commit, via a single `git ls-remote` — no clone.
+ * Null on any failure (offline, private repo, not a git remote): an unknown
+ * baseline must read as unknown, never as up to date.
+ */
+export function remoteHeadRef(
+  packageUrl: string,
+  run: (binary: string, args: string[]) => { ok: boolean, stdout: string } = tryRun,
+): string | null {
+  const result = run('git', ['ls-remote', packageUrl, 'HEAD']);
+  if (!result.ok) { return null; }
+  const sha = result.stdout.trim().split(/\s+/)[0];
+  return /^[0-9a-f]{40}$/.test(sha) ? sha : null;
 }
 
 export function buildCommunitySkillArgs(
@@ -308,7 +347,7 @@ export const PROJECT_SKILL_DESTINATION = '.agents/skills';
  * agentic-qa-onboard, acli, xray-cli, git-flow-master) live committed under
  * .agents/skills/ and are NOT listed here.
  */
-const PROJECT_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [
+export const PROJECT_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [
   // playwright-cli (Microsoft): browser automation CLI used by /sprint-testing
   // and /test-automation as the primary [AUTOMATION_TOOL].
   { package: 'https://github.com/microsoft/playwright-cli', skill: 'playwright-cli' },
@@ -951,6 +990,15 @@ async function installCommunitySkills(
     if (result.ok) {
       s.stop(`Installed: ${slug}`);
       state.skills[stateKey] = 'installed';
+      // Only PROJECT level: these three are gitignored, re-fetched on every
+      // install and invisible to the updater, so they are the ones that can
+      // silently run their scaffold-day version forever.
+      if (level === 'project') {
+        state.communitySkillRefs = {
+          ...state.communitySkillRefs,
+          [slug]: { package: item.package, ref: remoteHeadRef(item.package), recordedAt: new Date().toISOString() },
+        };
+      }
     }
     else {
       s.stop(`Failed: ${slug} — ${(result.stderr || result.stdout).trim().slice(0, 120) || 'unknown error'}`);
