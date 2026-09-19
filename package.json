@@ -51,6 +51,7 @@
     "format:check": "prettier --check '**/*.{json,yml,yaml,css,scss,html}' --ignore-path .prettierignore",
     "format:fix": "prettier --write '**/*.{json,yml,yaml,css,scss,html}' --ignore-path .prettierignore",
     "jira:check": "bun scripts/check-jira-setup.ts",
+    "jira:baseline": "bun scripts/check-jira-baseline.ts",
     "jira:sync-fields": "bun scripts/sync-jira-fields.ts",
     "jira:sync-issues": "bun scripts/sync-jira-issues.ts",
     "jira:sync-link-types": "bun scripts/sync-jira-link-types.ts",
