@@ -85,7 +85,11 @@ const GATE_TIMEOUT_MS = 120_000;
  */
 export const GATE_SCRIPTS = ['types:check', 'lint:check', 'kata:manifest:check', 'skills:check'] as const;
 
-const TOOLING_FILES = ['.editorconfig', '.prettierrc', '.gitattributes'];
+const TOOLING_FILES = ['.editorconfig', '.prettierrc', '.gitattributes', 'tsconfig.base.json', 'eslint.config.base.js'];
+// The SYNCED half of the variables module. A file-list, not a directory:
+// `config/variables.ts` (watchlisted) and `config/validateTestEnv.ts` are
+// project-owned - the whole point of the split is that they are NOT synced.
+const CONFIG_CORE_FILES = ['variables.core.ts'];
 const AGENTS_DOCS_FILES = ['README.md'];
 const ENV_TEMPLATE_FILES = ['.env.example'];
 // `.claude/settings.json` holds the project's permission allow/deny lists and
@@ -144,6 +148,7 @@ export const COMPONENTS: Component[] = [
   { name: 'husky', type: 'directory', paths: ['.husky'] },
   { name: 'agents-docs', type: 'file-list', paths: ['.agents'], files: AGENTS_DOCS_FILES },
   { name: 'tooling', type: 'file-list', paths: ['.'], files: TOOLING_FILES },
+  { name: 'config-core', type: 'file-list', paths: ['config'], files: CONFIG_CORE_FILES },
   // `.env.example` carries NO secrets (placeholder values only) and fast-forwards
   // safely. Shipping it is the prerequisite for env-var drift detection — the
   // afterApply hook can only diff against an `.env.example` we have shipped.
@@ -1039,7 +1044,7 @@ const PROTECTED_WATCHLIST: ProtectedWatchEntry[] = [
   { path: 'AGENTS.md', reason: 'per-project AI memory (identity, env URLs, custom rules); CLAUDE.md is only a generated shim onto it', markerPath: '.template/claude-md.upstream.sha' },
   { path: 'allurerc.mjs', reason: 'report name + dashboard layout adapted per project' },
   { path: 'playwright.config.ts', reason: 'projects, timeouts and reporters adapted per stack' },
-  { path: 'config/variables.ts', reason: 'environment/variable map adapted per project' },
+  { path: 'config/variables.ts', reason: 'environment/variable map adapted per project. The instance resolver and the TMS/browser/reporting blocks moved to the synced `config/variables.core.ts`, because an adapted copy used to stop receiving resolver fixes for the host the Jira-Direct provider writes results onto.' },
   { path: 'tests/components/TestContext.ts', reason: 'KATA L1 base adapted to the target stack' },
   { path: 'tests/components/TestFixture.ts', reason: 'KATA L4 fixture registry adapted per project' },
   { path: 'tests/components/ApiFixture.ts', reason: 'API fixture wiring adapted per project' },
@@ -1061,8 +1066,8 @@ const PROTECTED_WATCHLIST: ProtectedWatchEntry[] = [
   { path: '.github/workflows/smoke.yml', reason: 'CI suite adapted (secrets, envs, jobs)' },
   { path: '.github/workflows/sanity.yml', reason: 'CI suite adapted (secrets, envs, jobs)' },
   { path: '.agents/project.yaml', reason: 'per-project identity + env map, but upstream keeps ADDING structural blocks (e.g. git_strategy). A project scaffolded before a block existed never learns it should have one.', structural: true },
-  { path: 'tsconfig.json', reason: 'path aliases (@utils, @api, @schemas, @variables) are the contract every synced file imports through — a new upstream alias breaks synced code in a project whose tsconfig never learned it.' },
-  { path: 'eslint.config.js', reason: 'lint rules evolve upstream and .husky/pre-commit runs eslint against this local config.' },
+  { path: 'tsconfig.json', reason: 'project-owned `include` / `exclude`: which directories this repo type-checks. The path aliases every synced file imports through moved to the synced `tsconfig.base.json` this file extends, so a new upstream alias now arrives on its own.' },
+  { path: 'eslint.config.js', reason: 'project-owned overrides; .husky/pre-commit runs eslint against this local config. The shared rules and the cli/ import-closure block that guards the updater live in the synced `eslint.config.base.js` this file spreads.' },
   // The three MCP registries are project-owned since 8.2 (they used to sync
   // through `agent-root-config`): a consumer adds its own servers there.
   { path: '.mcp.json', reason: 'MCP registry with project-specific servers/vars' },

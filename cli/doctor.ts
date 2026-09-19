@@ -656,6 +656,37 @@ export async function runDoctor(): Promise<DoctorReport> {
     );
   }
 
+  // Jira manifest baseline - is this project's `work_types:` set behind upstream's?
+  // `jira:sync-workflows` catalogs ONLY what `.agents/jira-required.yaml` declares, so a
+  // manifest missing a work type upstream has added regenerates a truncated
+  // `jira-workflows.json`, exits 0, and drops every transition on that type into the
+  // unmapped-status fallback for good.
+  //
+  // WARN-ONLY and never a pending_action: a project may legitimately not use a work type.
+  // Shelled out rather than imported because `cli/` is import-closed and may not reach into
+  // `scripts/` (AGENTS.md 4.5); the baseline lives in
+  // `scripts/lib/jira-required-baseline.ts` so it travels as ordinary synced code.
+  if (existsSync(join(process.cwd(), '.agents', 'jira-required.yaml'))) {
+    const baseline = tryRun('bun', ['run', '--silent', 'jira:baseline', '--json']);
+    if (baseline.ok) {
+      try {
+        const parsed = JSON.parse(baseline.stdout) as { missingLocally?: string[] };
+        const missing = parsed.missingLocally ?? [];
+        if (missing.length > 0) {
+          tui.log.warn(
+            `.agents/jira-required.yaml is behind the upstream baseline: ${missing.join(', ')}.\n`
+            + '       jira:sync-workflows catalogs only the work types the manifest declares, so\n'
+            + '       transitions on those resolve through the unmapped-status fallback.\n'
+            + '       Not an error if this project does not use them. Detail: `bun run jira:baseline`.',
+          );
+        }
+      }
+      catch {
+        // Malformed output is not a doctor failure. The standalone command reports it.
+      }
+    }
+  }
+
   // node_modules / dotenv-cli
   if (!report.deps_installed) {
     report.pending_actions.push({

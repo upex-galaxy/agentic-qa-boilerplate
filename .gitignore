@@ -119,7 +119,11 @@ build/
 # CLAUDE.md plus any legacy skill whose name .agents/skills already owned. Local
 # recovery material, never repo content — review it, then delete it).
 .template/pre-agents-migration/
-# `.template/last-apply.json` is GITIGNORED (per-dev record of what the last
+# `.template/last-apply.json`# `.template/doctrine-ledger.json` is GITIGNORED (per-dev runtime record of which
+# AGENTS.md doctrine sections upstream has that this checkout still lacks; it
+# re-surfaces the row until the text is actually present, so it is state, not content).
+.template/doctrine-ledger.json
+ is GITIGNORED (per-dev record of what the last
 # `bun run up` wrote, with hashes: the next run's dirty-tree guard recognises
 # that uncommitted output as its own instead of aborting on it).
 .template/last-apply.json

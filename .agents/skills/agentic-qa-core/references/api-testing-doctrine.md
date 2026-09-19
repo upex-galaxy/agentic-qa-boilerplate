@@ -19,6 +19,9 @@ Agentic API testing has THREE distinct tools, each with ONE job. Mixing them is 
 +------------------------+------------------------------+-----------------------------------+
 ```
 
+> **The PASO 3 recipe above is the POSIX one.** `source` is a shell builtin that neither `cmd` nor PowerShell has, and `.auth/tokens.env` is written as `export VAR='...'`, which PowerShell cannot read either. On Windows outside a POSIX shell, read the token from `.auth/tokens.json` instead and call `curl.exe` by its full name: in Windows PowerShell 5.1 a bare `curl` is an alias for `Invoke-WebRequest`, which does not understand `-H` and will fail in a way that looks like an auth problem rather than a shell one. The token itself is identical on every platform; only the way you hand it to the request changes. `bun run api:login` prints the correct next step for the platform it ran on.
+
+
 **THE HARD RULE:** the OpenAPI MCP is **schema-read-only**. It discovers endpoints and reads request/response schemas — it does **NOT** execute authenticated requests. Every authenticated request runs through **curl**, with a token minted by `bun run api:login`. No exceptions.
 
 ---

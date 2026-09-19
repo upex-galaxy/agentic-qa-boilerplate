@@ -45,12 +45,12 @@ export const DOCTRINE_FILE = 'AGENTS.md';
 
 /**
  * Where the ledger lives: the updater's per-developer marker store, beside the
- * sha markers it deliberately does not use. That directory is already
- * gitignored as a whole and already holds a non-`.sha` marker
- * (`claude-skills-alias.deferred`), so the ledger needs no new ignore rule — it
+ * sha markers it deliberately does not use, so it sits beside them rather than
+ * among them: `.template/upstream-sha/` is documented as one marker per synced
+ * entry, and a ledger is not a marker. It carries its own `.gitignore` line — it
  * is runtime state of one machine, never repo content.
  */
-export const DOCTRINE_LEDGER_FILE = '.template/upstream-sha/doctrine-ledger.json';
+export const DOCTRINE_LEDGER_FILE = '.template/doctrine-ledger.json';
 
 export interface DoctrineLedgerEntry {
   /** How many runs have seen this section absent, this one included. */
