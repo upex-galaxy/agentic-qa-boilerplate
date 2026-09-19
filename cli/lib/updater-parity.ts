@@ -44,6 +44,7 @@ import { parse as parseYaml } from 'yaml';
 
 import { stripJsonComments } from './agent-compatibility-contracts.ts';
 import { COMMAND_ALIAS_MANIFEST, COMMAND_ALIAS_PROJECT_MANIFEST, compatibilityErrorGroup, undeclaredCommandWrappers } from './agent-compatibility.ts';
+import { CLAUDE_SETTINGS_FILE } from './updater-settings';
 
 // ============================================================================
 // TYPES
@@ -151,6 +152,8 @@ export interface ParityInput {
   heldBack: HeldBackComponent[]
   /** Keys upstream `.env.example` documents that the project's `.env` / `.env.example` lack. */
   envNewKeys: string[]
+  /** Permission allow-list entries the additive merge added to `.claude/settings.json`. */
+  allowListAdded?: string[]
   /** Project-edited synced files this run overwrote. */
   localEdits?: LocalEditInput[]
   /** `package.json` keys kept at the project's value while upstream differs. */
@@ -1201,6 +1204,22 @@ export function collectParityFindings(input: ParityInput): ParityFinding[] {
       evidence: `upstream .env.example added ${input.envNewKeys.length} key(s): ${input.envNewKeys.join(', ')}`,
       suggested: 'decide',
       blocking: false,
+    });
+  }
+
+  // The allow-list merge is additive and already decided: it ran, and this row
+  // says what it added so nothing is a surprise. Informational, never blocking
+  // — `deny` is untouched and wins, so an entry a project does not want is
+  // re-expressible there without this row asking anything of it.
+  const allowAdded = input.allowListAdded ?? [];
+  if (allowAdded.length > 0) {
+    findings.push({
+      surface: 'components',
+      path: CLAUDE_SETTINGS_FILE,
+      evidence: `informational: ${allowAdded.length} permission(s) added to permissions.allow (set-union with upstream; deny/ask/hooks/env untouched): ${allowAdded.join(', ')}`,
+      suggested: 'keep project',
+      blocking: false,
+      side: 'kept',
     });
   }
 

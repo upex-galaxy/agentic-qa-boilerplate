@@ -492,6 +492,47 @@ describe('the pre-commit hook carries the --no-stash fix downstream', () => {
   });
 });
 
+describe('the allow-list merge is reported, never silent', () => {
+  test('an informational Componentes row names every permission the merge added', () => {
+    const root = temporaryRoot();
+    const upstream = temporaryRoot();
+    const findings = collectParityFindings({
+      root,
+      upstreamDir: upstream,
+      drift: [],
+      compatErrors: [],
+      archivedSkills: [],
+      archivedSkillsDir: join(root, '.template/pre-agents-migration/skills'),
+      heldBack: [],
+      envNewKeys: [],
+      allowListAdded: ['Skill(pr-review-lead)', 'Skill(session-handoff)'],
+    });
+    const row = findings.find(f => f.path === '.claude/settings.json');
+    expect(row!.surface).toBe('components');
+    expect(row!.blocking).toBe(false);
+    expect(row!.evidence).toContain('2 permission(s) added');
+    expect(row!.evidence).toContain('Skill(pr-review-lead)');
+    // The row has to say what was NOT touched, or it reads like a file rewrite.
+    expect(row!.evidence).toContain('deny/ask/hooks/env untouched');
+  });
+
+  test('a run that added nothing raises no row at all', () => {
+    const root = temporaryRoot();
+    const findings = collectParityFindings({
+      root,
+      upstreamDir: temporaryRoot(),
+      drift: [],
+      compatErrors: [],
+      archivedSkills: [],
+      archivedSkillsDir: join(root, '.template/pre-agents-migration/skills'),
+      heldBack: [],
+      envNewKeys: [],
+      allowListAdded: [],
+    });
+    expect(findings.find(f => f.path === '.claude/settings.json')).toBeUndefined();
+  });
+});
+
 describe('the husky hooks carry the gates split downstream', () => {
   // Both hooks are bootstrap-only, so a gate added upstream never reached a
   // project scaffolded earlier. The gates upstream owns now live in the SYNCED

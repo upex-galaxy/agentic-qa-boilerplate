@@ -23,6 +23,7 @@ import { checkAgentCompatibility, COMMAND_ALIAS_MANIFEST, repairAgentSurfaces, S
 import * as tui from './lib/tui';
 import {
   cleanupTempDir,
+  createBackupDir,
   detectGitVersion,
   gitVersionMeetsMin,
   isLocalTemplateSource,
@@ -55,6 +56,7 @@ import {
   runVerdict,
 } from './lib/updater-parity';
 import { makePbiCacheMigrationHook } from './lib/updater-pbi';
+import { CLAUDE_SETTINGS_FILE, mergeAllowList } from './lib/updater-settings';
 import { parseDotEnvExampleKeys, requiredNow, VAR_MANIFEST } from './lib/variables-manifest.ts';
 
 // --- CONFIGURATION ---
@@ -430,9 +432,11 @@ interface RunFacts {
   promptKept: boolean
   /** `.context/PBI/` paths still tracked in git, and where the migration recipe was saved. */
   pbiCache: PbiCacheFact | null
+  /** Permission allow-list entries the additive merge added to `.claude/settings.json`. */
+  allowListAdded: string[]
   parity: { findings: ParityFinding[], report: ParityReport } | null
 }
-const runFacts: RunFacts = { compat: null, envNewKeys: [], migration: null, migrationPlanned: false, aliasDeferred: false, gates: [], gatesSkippedReason: null, promptKept: false, pbiCache: null, parity: null };
+const runFacts: RunFacts = { compat: null, envNewKeys: [], migration: null, migrationPlanned: false, aliasDeferred: false, gates: [], gatesSkippedReason: null, promptKept: false, pbiCache: null, allowListAdded: [], parity: null };
 
 // --- ENV-VAR DRIFT DETECTION (afterApply hook) ---
 //
@@ -516,6 +520,49 @@ async function detectEnvVarDrift(
   if (res.status !== 0) {
     sink.warn('`bun run setup --variables` terminó con error o fue cancelado.');
   }
+}
+
+// --- CLAUDE PERMISSION ALLOW LIST (afterApply hook) ---
+//
+// `.claude/settings.json` is bootstrap-only AND watched, so a skill shipped
+// upstream used to arrive without the `Skill(<name>)` entry that authorizes it
+// and silently could not be invoked. This merges ONE array additively —
+// `permissions.allow` — and leaves `deny`, `ask`, `hooks`, `env` and every
+// other key exactly as the project wrote them. See `updater-settings.ts` for
+// why removals are deliberately not remembered.
+//
+// Backup before write, like every other mutation the run makes: the file is on
+// the watchlist, so a consumer who dislikes the addition restores it from
+// `.backups/` and expresses the removal in `deny`.
+function makeAllowListHook(
+  templateDir: string,
+  sink: ReportSink,
+  dryRun: boolean,
+): (summary: RunSummary) => Promise<void> {
+  return async (summary: RunSummary): Promise<void> => {
+    if (dryRun) {
+      runFacts.allowListAdded = mergeAllowList(process.cwd(), templateDir).added;
+      return;
+    }
+    const localPath = path.join(process.cwd(), CLAUDE_SETTINGS_FILE);
+    const { added, merged } = mergeAllowList(process.cwd(), templateDir);
+    if (merged === null) { return; }
+    try {
+      // This run's backup dir when it made one; otherwise its own, so the
+      // pre-write backup contract holds even on a run that wrote nothing else.
+      const dir = summary.backupDir ?? createBackupDir(process.cwd());
+      const backupPath = path.join(dir, CLAUDE_SETTINGS_FILE);
+      fs.mkdirSync(path.dirname(backupPath), { recursive: true });
+      fs.copyFileSync(localPath, backupPath);
+      fs.writeFileSync(localPath, merged, 'utf-8');
+    }
+    catch (err) {
+      sink.warn(`No se pudo fusionar la allow list de ${CLAUDE_SETTINGS_FILE}: ${err instanceof Error ? err.message : String(err)}`);
+      return;
+    }
+    runFacts.allowListAdded = added;
+    sink.step(`Permisos agregados a ${CLAUDE_SETTINGS_FILE}: ${added.length}`);
+  };
 }
 
 // --- SKILLS REGISTRY REGEN (afterApply hook) ---
@@ -1264,6 +1311,7 @@ function makeParityHook(sink: ReportSink, priorLockSha: string, dryRun: boolean,
       archivedSkillsDir,
       heldBack,
       envNewKeys: runFacts.envNewKeys,
+      allowListAdded: runFacts.allowListAdded,
       localEdits: (summary.localEditsOverwritten ?? []).map(edit => ({
         ...edit,
         backupPath: summary.backupDir ? path.join(summary.backupDir, edit.path) : null,
@@ -1752,6 +1800,8 @@ async function main(): Promise<void> {
         ? composeHooks(
             sink,
             async () => { runFacts.envNewKeys = computeEnvNewKeys(UPSTREAM_DIR); },
+            // Read-only: records what the real run would add, writes nothing.
+            makeAllowListHook(UPSTREAM_DIR, sink, true),
             // Read-only detection so the preview's table matches the real run's.
             makePbiCacheMigrationHook({ promptOutPath: path.join(process.cwd(), PBI_MIGRATION_PROMPT_PATH), dryRun: true }, sink, (fact) => { runFacts.pbiCache = fact; }),
             makeParityHook(sink, priorLockSha, true, watchlist),
@@ -1762,6 +1812,10 @@ async function main(): Promise<void> {
             // the sync must already resolve skills through `.claude/skills`.
             makeAgentCompatibilityHook(sink),
             makeKataManifestHook(sink),
+            // Before the compat check reads settings.json? No: after. The merge
+            // only ADDS allow entries, which no compatibility contract asserts
+            // on, and running it late keeps the hook order above untouched.
+            makeAllowListHook(UPSTREAM_DIR, sink, false),
             async () => detectEnvVarDrift(UPSTREAM_DIR, sink, nonInteractive),
             async () => upsertGitStrategyBlock(UPSTREAM_DIR, sink, nonInteractive),
             makeYamlBackfillHook(QA_EPICS_BACKFILL, UPSTREAM_DIR, sink, nonInteractive),
