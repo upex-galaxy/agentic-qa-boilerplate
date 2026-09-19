@@ -21,6 +21,7 @@ import {
   EXPECTED_MCP,
   HOOK_IDENTITY_MARKER,
   HOOK_ORCA_MARKER,
+  hookScriptPath,
   KNOWN_MCP_IDS,
   stripJsonComments,
   validateHookCompatibility,
@@ -669,6 +670,35 @@ describe('hook adapters', () => {
     ].join('\n'));
 
     expect(validateHookCompatibility(root)).toContain('OpenCode personality adapter must mutate output.system in place.');
+  });
+
+  test('reads the emitter path out of every adapter form', () => {
+    expect(hookScriptPath(CLAUDE_HOOK_COMMAND)).toBe('.agents/hooks/personality-reinject.mjs');
+    expect(hookScriptPath(CODEX_HOOK_COMMAND)).toBe('.agents/hooks/personality-reinject.mjs');
+    expect(hookScriptPath(CODEX_HOOK_COMMAND_WINDOWS)).toBe('.agents/hooks/personality-reinject.mjs');
+    expect(hookScriptPath('node run-something')).toBeNull();
+  });
+
+  test('rejects a hook command pointing at a file that does not exist', () => {
+    // The shape a rename leaves behind: `.claude/settings.json` is bootstrap-only,
+    // so it keeps naming the emitter's old path while the emitter has moved.
+    const root = contractFixture();
+    write(root, '.claude/settings.json', hookSettings(
+      'node "$CLAUDE_PROJECT_DIR/.agents/hooks/personality-reinject-renamed.mjs"',
+    ));
+
+    expect(validateHookCompatibility(root)).toContain(
+      'claude hook command points at a file that does not exist: .agents/hooks/personality-reinject-renamed.mjs',
+    );
+  });
+
+  test('rejects a hook command that names no repository-relative script', () => {
+    const root = contractFixture();
+    write(root, '.claude/settings.json', hookSettings('node --version'));
+
+    expect(validateHookCompatibility(root)).toContain(
+      'claude hook command does not name a repository-relative hook script.',
+    );
   });
 });
 
