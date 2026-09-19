@@ -268,6 +268,12 @@ export function protectNote(filePath: string): string {
 /** The hook whose `lint-staged` invocation the symlinked skills alias breaks. */
 export const HUSKY_PRE_COMMIT = '.husky/pre-commit';
 
+/** Its pre-push sibling. Same delivery: once when missing, then project-owned. */
+export const HUSKY_PRE_PUSH = '.husky/pre-push';
+
+/** The SYNCED file both hooks source to get the gates upstream owns. */
+export const HUSKY_GATES_FILE = '.husky/framework-gates.sh';
+
 export interface PathPrerequisite {
   /** What the upstream hunk is needed FOR, in one scannable phrase. */
   requiredBy: string
@@ -378,6 +384,43 @@ export function lintStagedNoStashNote(projectHook: string): string | null {
     '',
     '`--no-stash` only drops lint-staged\'s protection for unstaged hunks that collide with its own auto-fix.',
     'What gets committed is unchanged.',
+  ].join('\n');
+}
+
+/**
+ * Both husky hooks are bootstrap-only: delivered once when missing, then
+ * project-owned, because a project's own gates live in them. The cost was that
+ * a gate added upstream never reached a project scaffolded earlier — four of
+ * them had already failed to land anywhere downstream.
+ *
+ * Upstream's fix is the gates split: the gates upstream owns moved into the
+ * SYNCED `.husky/framework-gates.sh`, and each hook sources it and calls one
+ * function. A hook that predates the split keeps every gate inlined and will
+ * never see another one, and nothing but this row can tell it so — which is the
+ * same shape as the `--no-stash` note, and the same reason it exists.
+ *
+ * Returns the adoption note while the hook does not source the gates file; null
+ * once it does.
+ */
+export function frameworkGatesNote(projectHook: string, hookPath: string): string | null {
+  const sourced = projectHook
+    .split('\n')
+    .some(line => !line.trimStart().startsWith('#') && line.includes('framework-gates.sh'));
+  if (sourced) { return null; }
+  const fn = hookPath === HUSKY_PRE_PUSH ? 'framework_gates_pre_push' : 'framework_gates_pre_commit';
+  return [
+    `Adopt the gates split in ${hookPath}. Your gates and their ordering stay yours; replace only the block`,
+    'that runs upstream\'s gates with the call below, and every gate a future release adds arrives with',
+    `${HUSKY_GATES_FILE} instead of needing this file rewritten:`,
+    '',
+    '    GATES="$(dirname -- "$0")/framework-gates.sh"',
+    '    if [ -f "$GATES" ]; then',
+    '      . "$GATES"',
+    `      ${fn}`,
+    '    fi',
+    '',
+    'The `-f` guard is not decoration: `.husky/_/h` runs the hook under `sh -e`, so sourcing a file that is',
+    'not there kills the hook. Read the synced file for what each gate covers.',
   ].join('\n');
 }
 
@@ -987,15 +1030,27 @@ export function collectParityFindings(input: ParityInput): ParityFinding[] {
       continue;
     }
     const { evidence, projectOnly, suggested } = watchedFileEvidence(entry.path, project, upstream, diff);
-    // The pre-commit hook is never overwritten, so a consumer only learns about
-    // the `--no-stash` fix if the row says so (issue #28, bug 2).
-    const noStash = entry.path === HUSKY_PRE_COMMIT ? lintStagedNoStashNote(project) : null;
+    // Neither husky hook is ever overwritten, so a consumer only learns about an
+    // upstream fix to one if the row says so: the `--no-stash` flag (issue #28,
+    // bug 2) and the gates split, without which no gate a future release adds
+    // ever runs there. Both can be pending on the same hook.
+    const hookNotes: { clause: string, note: string }[] = [];
+    if (entry.path === HUSKY_PRE_COMMIT) {
+      const noStash = lintStagedNoStashNote(project);
+      if (noStash !== null) {
+        hookNotes.push({ clause: 'lint-staged still runs without --no-stash, which breaks every commit behind the .claude/skills symlink', note: noStash });
+      }
+    }
+    if (entry.path === HUSKY_PRE_COMMIT || entry.path === HUSKY_PRE_PUSH) {
+      const gates = frameworkGatesNote(project, entry.path);
+      if (gates !== null) {
+        hookNotes.push({ clause: `this hook does not source ${HUSKY_GATES_FILE}, so no gate a future release adds will ever run here`, note: gates });
+      }
+    }
     drifted.set(entry.path, {
       surface: watchedSurface(entry.path, entry.source),
       path: entry.path,
-      evidence: withPrerequisite(noStash === null
-        ? evidence
-        : `${evidence}; lint-staged still runs without --no-stash, which breaks every commit behind the .claude/skills symlink`),
+      evidence: withPrerequisite([evidence, ...hookNotes.map(n => n.clause)].join('; ')),
       // A prerequisite row cannot be "reviewed later": the release is
       // half-delivered until its hunk lands, so it is a merge, and it blocks.
       suggested: prerequisite === null ? suggested : 'merge',
@@ -1003,7 +1058,7 @@ export function collectParityFindings(input: ParityInput): ParityFinding[] {
       side: 'kept',
       diff,
       projectOnly,
-      ...(noStash === null ? {} : { note: noStash }),
+      ...(hookNotes.length === 0 ? {} : { note: hookNotes.map(n => n.note).join('\n\n') }),
     });
   }
 

@@ -1,41 +1,19 @@
 bunx lint-staged --no-stash
 
-# Light-weight repo health checks on every commit (fast, cover full repo).
-bun run types:check
-bun run vars:check
-bun run skills:check
-
-# kata-manifest freshness gate — only runs when staged files affect it.
-STAGED=$(git diff --cached --name-only --diff-filter=ACMRD)
-if echo "$STAGED" | grep -qE '^(tests/components/|scripts/kata-manifest\.ts$|kata-manifest\.json$)'; then
-  bun run kata:manifest:check || {
-    echo ""
-    echo "❌ kata-manifest.json is stale. Fix:"
-    echo "   bun run kata:manifest && git add kata-manifest.json"
-    exit 1
-  }
-fi
-
-# skill-registry freshness gate — only runs when staged files affect it.
-if echo "$STAGED" | grep -qE '^(\.agents/skills/.+/SKILL\.md$|scripts/build-skill-registry\.ts$|\.agents/skills/REGISTRY\.md$)'; then
-  bun run skills:registry:check || {
-    echo ""
-    echo "❌ .agents/skills/REGISTRY.md is stale. Fix:"
-    echo "   bun run skills:registry && git add .agents/skills/REGISTRY.md"
-    exit 1
-  }
-fi
-
-# cross-harness compatibility gate — only runs when staged files affect it.
-# Covers the generated Claude skills alias, the command wrappers, the three hook
-# adapters and MCP parity across the three host configs. Everything it guards is
-# generated or mirrored, so a hand-edit is invisible to every other check.
-if echo "$STAGED" | grep -qE '^(\.agents/compatibility/|\.agents/hooks/|\.claude/commands/|\.opencode/commands/|\.opencode/plugins/|\.codex/|\.claude/settings\.json$|\.mcp\.json$|opencode\.jsonc$|cli/lib/agent-compatibility.*\.ts$|scripts/agent-compatibility.*\.ts$)'; then
-  bun run agents:compat:check || {
-    echo ""
-    echo "❌ Cross-harness compatibility is out of contract. Fix:"
-    echo "   bun run agents:compat   # regenerates wrappers + repairs the Claude skills alias"
-    echo "   then re-stage whatever it rewrote under .claude/commands/ and .opencode/commands/"
-    exit 1
-  }
+# Framework gates, in one call. They live in `.husky/framework-gates.sh`, which
+# the boilerplate updater SYNCS, while this hook is project-owned and never
+# overwritten — so a gate added upstream lands here without rewriting your file.
+# The `-f` guard is required: `.husky/_/h` runs this under `sh -e`, and sourcing
+# a file that is not there would kill the hook.
+#
+# Your own gates go around this call; the ordering in this file is yours.
+# `lint-staged` stays above it on purpose: it REWRITES staged files, so it has
+# to finish before anything reads the staged list.
+GATES="$(dirname -- "$0")/framework-gates.sh"
+if [ -f "$GATES" ]; then
+  . "$GATES"
+  framework_gates_pre_commit
+else
+  echo "⚠️  .husky/framework-gates.sh missing — framework pre-commit gates SKIPPED."
+  echo "   Restore it with: bun run up"
 fi

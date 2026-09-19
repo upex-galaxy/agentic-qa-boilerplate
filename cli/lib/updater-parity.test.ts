@@ -19,6 +19,7 @@ import {
   describeWatchedFile,
   diffNoIndex,
   diffStats,
+  frameworkGatesNote,
   lintStagedNoStashNote,
   markdownSectionDelta,
   PATH_PREREQUISITES,
@@ -464,11 +465,14 @@ describe('the pre-commit hook carries the --no-stash fix downstream', () => {
     expect(buildParityFileBody(findings, META)).toContain('+bunx lint-staged --no-stash');
   });
 
-  test('a hook that already has the flag drifts without the note', () => {
+  test('a hook that already has the flag and sources the gates drifts without a note', () => {
     const root = temporaryRoot();
     const upstream = temporaryRoot();
-    write(root, '.husky/pre-commit', 'bunx lint-staged --no-stash\nbun run types:check\n');
-    write(upstream, '.husky/pre-commit', 'bunx lint-staged --no-stash\nbun run types:check\nbun run vars:check\n');
+    // Both adoption nudges satisfied: the flag is there AND the hook sources the
+    // synced gates file, so the only thing left is ordinary drift.
+    const adopted = 'bunx lint-staged --no-stash\n. "$(dirname -- "$0")/framework-gates.sh"\nframework_gates_pre_commit\n';
+    write(root, '.husky/pre-commit', adopted);
+    write(upstream, '.husky/pre-commit', `${adopted}bun run project:extra\n`);
 
     const findings = collectParityFindings({
       root,
@@ -485,6 +489,62 @@ describe('the pre-commit hook carries the --no-stash fix downstream', () => {
     expect(hook).toBeDefined();
     expect(hook!.evidence).not.toContain('--no-stash');
     expect(hook!.note).toBeUndefined();
+  });
+});
+
+describe('the husky hooks carry the gates split downstream', () => {
+  // Both hooks are bootstrap-only, so a gate added upstream never reached a
+  // project scaffolded earlier. The gates upstream owns now live in the SYNCED
+  // `.husky/framework-gates.sh`; a hook that does not source it still sees
+  // nothing, and only this row can say so.
+
+  test('the note fires only for a hook that does not source the gates file', () => {
+    const pending = frameworkGatesNote('bunx lint-staged --no-stash\nbun run types:check\n', '.husky/pre-commit');
+    expect(pending).toContain('framework_gates_pre_commit');
+    expect(pending).toContain('if [ -f "$GATES" ]; then');
+    // The pre-push hook is nudged towards its OWN function, not pre-commit's.
+    expect(frameworkGatesNote('bun run lint:check\n', '.husky/pre-push')).toContain('framework_gates_pre_push');
+    // Already adopted: silence.
+    expect(frameworkGatesNote('. "$(dirname -- "$0")/framework-gates.sh"\nframework_gates_pre_push\n', '.husky/pre-push')).toBeNull();
+    // A mention in a comment is not an adoption.
+    expect(frameworkGatesNote('# see framework-gates.sh\nbun run types:check\n', '.husky/pre-commit')).toContain('Adopt the gates split');
+  });
+
+  test('both hooks get the row, and pre-commit can carry both nudges at once', () => {
+    const root = temporaryRoot();
+    const upstream = temporaryRoot();
+    // A pre-split project: every gate inlined, lint-staged without the flag.
+    write(root, '.husky/pre-commit', 'bunx lint-staged\nbun run types:check\n');
+    write(root, '.husky/pre-push', 'bun run format:check && bun run lint:check\n');
+    write(upstream, '.husky/pre-commit', 'bunx lint-staged --no-stash\n. "$(dirname -- "$0")/framework-gates.sh"\nframework_gates_pre_commit\n');
+    write(upstream, '.husky/pre-push', '. "$(dirname -- "$0")/framework-gates.sh"\nframework_gates_pre_push\n');
+
+    const findings = collectParityFindings({
+      root,
+      upstreamDir: upstream,
+      drift: [
+        { path: '.husky/pre-commit', reason: 'project gates live here' },
+        { path: '.husky/pre-push', reason: 'project gates live here' },
+      ],
+      compatErrors: [],
+      archivedSkills: [],
+      archivedSkillsDir: join(root, '.template/pre-agents-migration/skills'),
+      heldBack: [],
+      envNewKeys: [],
+    });
+
+    const preCommit = findings.find(f => f.path === '.husky/pre-commit');
+    expect(preCommit!.evidence).toContain('does not source .husky/framework-gates.sh');
+    // Both nudges land on the same row rather than one hiding the other.
+    expect(preCommit!.evidence).toContain('--no-stash');
+    expect(preCommit!.note).toContain('+bunx lint-staged --no-stash');
+    expect(preCommit!.note).toContain('framework_gates_pre_commit');
+
+    const prePush = findings.find(f => f.path === '.husky/pre-push');
+    expect(prePush!.evidence).toContain('does not source .husky/framework-gates.sh');
+    expect(prePush!.note).toContain('framework_gates_pre_push');
+    // Adoption is a merge the operator reviews, never a silent overwrite.
+    expect(prePush!.blocking).toBe(false);
   });
 });
 
@@ -718,8 +778,10 @@ describe('rows the diff-based table could not see before', () => {
   test('a drifted file without key structure (a husky hook) reads its hunks; the row is never blocking', () => {
     const root = temporaryRoot();
     const upstream = temporaryRoot();
-    write(root, '.husky/pre-push', '#!/bin/sh\nbun run repo:check\nbun run e2e\n');
-    write(upstream, '.husky/pre-push', '#!/bin/sh\nbun run repo:check\n');
+    // Both copies already source the synced gates file, so the gates-split nudge
+    // stays silent and the evidence is purely the hunk reading under test.
+    write(root, '.husky/pre-push', '#!/bin/sh\n. "$(dirname -- "$0")/framework-gates.sh"\nbun run e2e\n');
+    write(upstream, '.husky/pre-push', '#!/bin/sh\n. "$(dirname -- "$0")/framework-gates.sh"\n');
     const findings = collectParityFindings({ ...base(root, upstream), drift: [{ path: '.husky/pre-push', reason: 'project gates live here' }] });
     expect(findings).toHaveLength(1);
     expect(findings[0].surface).toBe('components');

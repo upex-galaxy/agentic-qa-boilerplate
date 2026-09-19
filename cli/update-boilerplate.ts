@@ -134,8 +134,10 @@ export const COMPONENTS: Component[] = [
   { name: 'cli', type: 'directory', paths: ['cli'] },
   { name: 'vscode', type: 'directory', paths: ['.vscode'] },
   // `.husky/pre-commit` and `.husky/pre-push` are on PROTECTED_WATCHLIST (the
-  // project's gates live there): delivered once when missing, never
-  // overwritten. Anything else under `.husky/` (the `_/` helpers) keeps syncing.
+  // project's gates and their ordering live there): delivered once when missing,
+  // never overwritten. Everything else under `.husky/` keeps syncing — which is
+  // exactly how `framework-gates.sh` reaches a project scaffolded earlier: the
+  // gates upstream owns sit in that synced file, and each hook sources it.
   { name: 'husky', type: 'directory', paths: ['.husky'] },
   { name: 'agents-docs', type: 'file-list', paths: ['.agents'], files: AGENTS_DOCS_FILES },
   { name: 'tooling', type: 'file-list', paths: ['.'], files: TOOLING_FILES },
@@ -1021,8 +1023,14 @@ const PROTECTED_WATCHLIST: ProtectedWatchEntry[] = [
   // 8.2 every run force-applied upstream's copy over a committed merge and
   // re-raised the same row forever. Same delivery as `.claude/settings.json`:
   // once when missing (bootstrapOnlyPaths below), then project-owned.
-  { path: '.husky/pre-commit', reason: 'project gates live here' },
-  { path: '.husky/pre-push', reason: 'project gates live here' },
+  //
+  // The gates UPSTREAM owns no longer live here: they moved to the plainly
+  // synced `.husky/framework-gates.sh`, which each hook sources and calls in one
+  // function. That is the only way a gate added upstream reaches a project
+  // scaffolded earlier — a never-overwritten hook cannot grow one. The hooks
+  // stay watched for what is genuinely theirs: ordering, and their own gates.
+  { path: '.husky/pre-commit', reason: 'project gates and their ordering live here; the gates upstream owns come from the synced .husky/framework-gates.sh, so a hook that does not source it never sees another one' },
+  { path: '.husky/pre-push', reason: 'project gates and their ordering live here; the gates upstream owns come from the synced .husky/framework-gates.sh, so a hook that does not source it never sees another one' },
 ];
 
 /**
