@@ -6,7 +6,7 @@ import { dirname, join, resolve } from 'node:path';
 
 import { afterEach, describe, expect, test } from 'bun:test';
 
-import { diagnoseAgentCompatibility } from './doctor.ts';
+import { communitySkillStatus, diagnoseAgentCompatibility } from './doctor.ts';
 import {
   buildCommunitySkillArgs,
   detectAgents,
@@ -14,7 +14,9 @@ import {
   launchCommandsForAgents,
   migrateAgentIds,
   parseAgentsEnv,
+  PROJECT_LEVEL_SKILLS,
   PROJECT_SKILL_DESTINATION,
+  remoteHeadRef,
   repairRepositoryCompatibility,
 } from './install.ts';
 import { declaredMcpIds } from './lib/agent-compatibility-contracts.ts';
@@ -312,6 +314,54 @@ describe('doctor and updater parity', () => {
     const syncedFiles = COMPONENTS.flatMap(component => component.files ?? []);
     for (const never of ['CLAUDE.md', '.mcp.json', 'opencode.jsonc']) {
       expect(syncedFiles).not.toContain(never);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T3 community skills. Installed once at scaffold time, gitignored, and
+// outside the updater's surface — so without this reporting a project runs its
+// scaffold-day copy forever with no signal. Reporting only: no reinstall path,
+// because an overwrite of a gitignored skill has no backup to restore from.
+// ---------------------------------------------------------------------------
+
+describe('community skill version reporting', () => {
+  const SHA = 'a'.repeat(40);
+  const OTHER = 'b'.repeat(40);
+
+  test('reads the remote HEAD from one ls-remote, no clone', () => {
+    const calls: string[][] = [];
+    const run = (binary: string, args: string[]): { ok: boolean, stdout: string } => {
+      calls.push([binary, ...args]);
+      return { ok: true, stdout: `${SHA}\tHEAD\n` };
+    };
+
+    expect(remoteHeadRef('https://github.com/microsoft/playwright-cli', run)).toBe(SHA);
+    expect(calls).toEqual([['git', 'ls-remote', 'https://github.com/microsoft/playwright-cli', 'HEAD']]);
+  });
+
+  test('an unreachable or nonsense remote yields null, never a stale sha', () => {
+    expect(remoteHeadRef('x', () => ({ ok: false, stdout: '' }))).toBeNull();
+    expect(remoteHeadRef('x', () => ({ ok: true, stdout: '' }))).toBeNull();
+    expect(remoteHeadRef('x', () => ({ ok: true, stdout: 'not-a-sha\tHEAD\n' }))).toBeNull();
+  });
+
+  test('ignorance never reads as current', () => {
+    expect(communitySkillStatus(false, SHA, SHA)).toBe('not-installed');
+    expect(communitySkillStatus(true, null, SHA)).toBe('untracked');
+    expect(communitySkillStatus(true, SHA, null)).toBe('unknown');
+  });
+
+  test('compares the recorded baseline against the remote head', () => {
+    expect(communitySkillStatus(true, SHA, SHA)).toBe('current');
+    expect(communitySkillStatus(true, SHA, OTHER)).toBe('outdated');
+  });
+
+  test('every declared T3 skill carries the package the baseline is recorded against', () => {
+    expect(PROJECT_LEVEL_SKILLS.length).toBeGreaterThan(0);
+    for (const item of PROJECT_LEVEL_SKILLS) {
+      expect(item.package).toMatch(/^https?:\/\//);
+      expect(item.skill).toBeTruthy();
     }
   });
 });

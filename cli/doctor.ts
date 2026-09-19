@@ -192,6 +192,27 @@ export interface AgentCompatibilityDiagnostic {
   }
 }
 
+/**
+ * One T3 community skill: declared in `cli/install.ts` PROJECT_LEVEL_SKILLS,
+ * installed once at scaffold time, gitignored, and outside the updater's
+ * surface — so nothing else in the repo would ever notice it aging.
+ *
+ * `current` / `outdated` compare the remote HEAD recorded when the installer
+ * last installed it against the remote HEAD now. The other three states are
+ * honest ignorance, never a green tick:
+ *   `not-installed` — declared, absent on disk
+ *   `untracked`     — installed before the installer recorded a baseline
+ *   `unknown`       — the remote could not be reached (offline, private repo)
+ */
+export interface CommunitySkillRow {
+  slug: string
+  package: string
+  installed: boolean
+  recorded_ref: string | null
+  available_ref: string | null
+  status: 'current' | 'outdated' | 'not-installed' | 'untracked' | 'unknown'
+}
+
 interface DoctorReport {
   status: 'ok' | 'needs-action'
   repo_root: string
@@ -212,6 +233,14 @@ interface DoctorReport {
   deps_installed: boolean
   playwright_browsers: boolean
   direnv: DirenvState
+  /**
+   * REPORTING ONLY. An outdated row never becomes a pending action and never
+   * turns the overall status to `needs-action`: these skills are gitignored,
+   * so an overwrite has no backup to restore from and a locally patched skill
+   * would be destroyed unrecoverably. Showing the drift is worth doing;
+   * offering to fix it from here is not.
+   */
+  community_skills: CommunitySkillRow[]
   pending_actions: PendingAction[]
 }
 
@@ -451,6 +480,75 @@ function runPreflight(): never {
 // Main check
 // ----------------------------------------------------------------------------
 
+/**
+ * `git ls-remote` is one round trip and no clone, but it still talks to the
+ * network inside a command people run to diagnose a broken setup. Cap it, and
+ * treat every failure as `unknown`.
+ */
+function tryRunWithTimeout(binary: string, args: string[], timeoutMs: number): { ok: boolean, stdout: string } {
+  try {
+    const stdout = execFileSync(binary, args, {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+      timeout: timeoutMs,
+    });
+    return { ok: true, stdout };
+  }
+  catch {
+    return { ok: false, stdout: '' };
+  }
+}
+
+/**
+ * The verdict for one T3 skill. Ignorance never reads as `current`: a skill
+ * that is absent, was installed before the baseline existed, or whose remote
+ * could not be reached each get their own state.
+ */
+export function communitySkillStatus(
+  installed: boolean,
+  recordedRef: string | null,
+  availableRef: string | null,
+): CommunitySkillRow['status'] {
+  if (!installed) { return 'not-installed'; }
+  if (recordedRef === null) { return 'untracked'; }
+  if (availableRef === null) { return 'unknown'; }
+  return availableRef === recordedRef ? 'current' : 'outdated';
+}
+
+/**
+ * Loaded lazily: `cli/install.ts` pulls third-party prompt dependencies, and
+ * `--preflight` must keep loading node built-ins only (it runs before
+ * `bun install`). `runDoctor` is never reached in preflight mode.
+ */
+async function collectCommunitySkills(): Promise<CommunitySkillRow[]> {
+  const { PROJECT_LEVEL_SKILLS, remoteHeadRef } = await import('./install.ts');
+
+  let recorded: Record<string, { ref?: string | null } | undefined> = {};
+  try {
+    const raw = await readFile(join(REPO_ROOT, '.template', 'installer.state.json'), 'utf8');
+    recorded = (JSON.parse(raw) as { communitySkillRefs?: typeof recorded }).communitySkillRefs ?? {};
+  }
+  catch {
+    // No installer state (fresh clone, or an install predating the baseline):
+    // every row reads `untracked`, which is the truthful answer.
+  }
+
+  const rows: CommunitySkillRow[] = [];
+  for (const item of PROJECT_LEVEL_SKILLS) {
+    const slug = item.skill && item.skill !== '*' ? item.skill : item.package.split('/').slice(-1)[0];
+    const installed = existsSync(join(REPO_ROOT, '.agents', 'skills', slug, 'SKILL.md'));
+    const recordedRef = recorded[slug]?.ref ?? null;
+    const availableRef = installed && recordedRef !== null
+      ? remoteHeadRef(item.package, (binary, args) => tryRunWithTimeout(binary, args, 5000))
+      : null;
+
+    const status = communitySkillStatus(installed, recordedRef, availableRef);
+
+    rows.push({ slug, package: item.package, installed, recorded_ref: recordedRef, available_ref: availableRef, status });
+  }
+  return rows;
+}
+
 export async function runDoctor(): Promise<DoctorReport> {
   const agentCompatibility = diagnoseAgentCompatibility(REPO_ROOT);
   const report: DoctorReport = {
@@ -468,6 +566,7 @@ export async function runDoctor(): Promise<DoctorReport> {
     deps_installed: existsSync(NODE_MODULES_DOTENV),
     playwright_browsers: playwrightBrowsersInstalled(),
     direnv: { installed: false },
+    community_skills: await collectCommunitySkills(),
     pending_actions: [],
   };
 
@@ -697,6 +796,33 @@ function printHuman(report: DoctorReport): void {
     v === 'set' ? 'set' : 'missing',
   ]);
   process.stdout.write(`${tui.table(['Variable', 'Status', 'Value'], envRows)}\n`);
+
+  // T3 community skills. Deliberately its own section and NOT a check row:
+  // nothing here is a failure, and an outdated skill must not push the report
+  // to `needs action` (see DoctorReport.community_skills for why there is no
+  // reinstall path).
+  if (report.community_skills.length > 0) {
+    tui.section('Community skills (T3 — installed once, gitignored, reported only)');
+    const shortRef = (ref: string | null): string => ref === null ? '-' : ref.slice(0, 8);
+    const icon = (status: CommunitySkillRow['status']): string =>
+      tui.statusIcon(status === 'current' ? 'ok' : status === 'outdated' || status === 'not-installed' ? 'warn' : 'warn');
+    const note: Record<CommunitySkillRow['status'], string> = {
+      'current': 'up to date with upstream',
+      'outdated': 'upstream has moved since install',
+      'not-installed': 'declared but absent — run bun run setup',
+      'untracked': 'installed before the baseline existed; re-run bun run setup to start tracking',
+      'unknown': 'remote unreachable — no verdict',
+    };
+    const rows = report.community_skills.map(skill => [
+      skill.slug,
+      `${icon(skill.status)} ${skill.status}`,
+      shortRef(skill.recorded_ref),
+      shortRef(skill.available_ref),
+      note[skill.status],
+    ]);
+    process.stdout.write(`${tui.table(['Skill', 'Status', 'Installed', 'Available', 'Note'], rows)}\n`);
+    process.stdout.write('  Updating one is a manual decision: these live outside git, so an overwrite has no backup.\n\n');
+  }
 
   if (compat.errors.length > 0) {
     tui.section('Cross-harness compatibility errors');

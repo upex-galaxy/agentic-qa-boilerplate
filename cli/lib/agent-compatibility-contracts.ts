@@ -552,6 +552,21 @@ function personalAbsolutePath(command: string): boolean {
   return /(?:^|[\s"'])(?:\/Users\/|\/home\/|[A-Za-z]:[\\/]Users[\\/])/.test(command);
 }
 
+/**
+ * The repository-relative script a hook command executes, or null when the
+ * command names none.
+ *
+ * Every adapter reaches the emitter through a root placeholder — `$CLAUDE_PROJECT_DIR`
+ * for Claude, `$root` for both Codex forms — so whatever follows that placeholder IS
+ * the repository-relative path, wherever the emitter happens to live. Deriving it
+ * rather than hardcoding `.agents/hooks/` is the point: a rename of the emitter is
+ * exactly what this is here to catch.
+ */
+export function hookScriptPath(command: string): string | null {
+  const match = /(?:\$CLAUDE_PROJECT_DIR\/|\$root\/|\$root\s+')([^"')]+\.m?js)/.exec(command);
+  return match === null ? null : match[1];
+}
+
 function readHookCommand(settings: JsonObject, host: 'claude' | 'codex'): JsonObject {
   const hooks = object(settings.hooks, `${host} hooks`);
   const event = hooks.UserPromptSubmit;
@@ -600,6 +615,20 @@ export function validateHookCompatibility(root = process.cwd()): string[] {
     for (const [host, command] of [['claude', claudeCommand], ['codex', codexCommand], ['codex-windows', codexWindows]] as const) {
       if (personalAbsolutePath(command)) {
         errors.push(`${host} hook command contains an absolute personal path.`);
+      }
+      // `.claude/settings.json` and `.codex/hooks.json` are bootstrap-only: the
+      // updater ships them once and never overwrites them, so an upstream rename
+      // of the emitter leaves a downstream project pointing at a file that no
+      // longer exists. The hook is what injects the `AGENT IDENTITY:` line that
+      // git-flow-master copies into the mandatory commit trailers, so that
+      // failure is silent trailer loss rather than an error. Resolve the path
+      // the adapter actually carries, not the one the constant above pins.
+      const script = hookScriptPath(command);
+      if (script === null) {
+        errors.push(`${host} hook command does not name a repository-relative hook script.`);
+      }
+      else if (!existsSync(join(resolvedRoot, script))) {
+        errors.push(`${host} hook command points at a file that does not exist: ${script}`);
       }
     }
 

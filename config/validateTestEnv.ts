@@ -1,9 +1,17 @@
 /**
  * KATA Architecture - Test Environment Variables Validator
  *
+ * PROJECT-OWNED, and deliberately so. Validation splits unevenly: the
+ * credential half names `LOCAL_USER_EMAIL` / `STAGING_USER_PASSWORD` and the
+ * environment names themselves, which are this project's vocabulary, while the
+ * TMS half names providers and Atlassian keys, which are framework facts. Only
+ * the second half moved into the synced core (`validateTmsEnvironment`);
+ * pushing the first half up there would have put a project's own configuration
+ * into a file that gets overwritten.
+ *
  * Validates required runtime variables for the active test environment:
- * - Credentials: Only for current TEST_ENV (local or staging)
- * - TMS: Only if AUTO_SYNC=true (validates Xray or Jira based on TMS_PROVIDER)
+ * - Credentials: Only for current TEST_ENV (local or staging) — here
+ * - TMS: Only if AUTO_SYNC=true (Xray or Jira per TMS_PROVIDER) — synced core
  *
  * Usage:
  *   - Importable: call validateTestEnvironment(vars) with pre-extracted env vars
@@ -11,10 +19,10 @@
  */
 
 // The Atlassian host is resolved, not read from the environment: it lives in
-// `.agents/project.yaml` -> `issue_tracker.atlassian_url`. Imported directly
-// rather than through `@variables` so this module keeps working standalone
-// without pulling in the whole config graph.
-import { normalizeAtlassianUrl, readAtlassianUrlFromYaml } from '../cli/lib/atlassian-instance';
+// `.agents/project.yaml` -> `issue_tracker.atlassian_url`. Imported from the
+// synced core rather than through `@variables` so this module keeps working
+// standalone without pulling in the whole config graph.
+import { resolvedAtlassianUrlForValidation, validateTmsEnvironment } from './variables.core';
 
 /** Variables needed for validation (subset of all env vars) */
 export interface EnvVarsToValidate {
@@ -67,37 +75,8 @@ export function validateTestEnvironment(vars: EnvVarsToValidate): void {
     errors.push(`Unknown TEST_ENV: ${vars.TEST_ENV}. Valid values: local, staging`);
   }
 
-  // Validate TMS config only if AUTO_SYNC=true
-  if (vars.AUTO_SYNC === 'true') {
-    const provider = vars.TMS_PROVIDER || 'xray';
-
-    if (provider === 'xray') {
-      if (!vars.XRAY_CLIENT_ID) {
-        errors.push('XRAY_CLIENT_ID is required when AUTO_SYNC=true and TMS_PROVIDER=xray');
-      }
-      if (!vars.XRAY_CLIENT_SECRET) {
-        errors.push('XRAY_CLIENT_SECRET is required when AUTO_SYNC=true and TMS_PROVIDER=xray');
-      }
-    }
-    else if (provider === 'jira') {
-      if (!vars.ATLASSIAN_URL) {
-        errors.push(
-          'The Atlassian host is required when AUTO_SYNC=true and TMS_PROVIDER=jira. '
-          + 'It is NOT an env var: set `issue_tracker.atlassian_url` in .agents/project.yaml '
-          + '(`bun run agents:setup`), then check it with `bun run --silent jira:url`.',
-        );
-      }
-      if (!vars.ATLASSIAN_EMAIL) {
-        errors.push('ATLASSIAN_EMAIL is required when AUTO_SYNC=true and TMS_PROVIDER=jira');
-      }
-      if (!vars.ATLASSIAN_API_TOKEN) {
-        errors.push('ATLASSIAN_API_TOKEN is required when AUTO_SYNC=true and TMS_PROVIDER=jira');
-      }
-    }
-    else {
-      errors.push(`Unknown TMS_PROVIDER: ${provider}. Valid values: xray, jira`);
-    }
-  }
+  // TMS config (only when AUTO_SYNC=true) — synced half.
+  errors.push(...validateTmsEnvironment(vars));
 
   if (errors.length > 0) {
     throw new Error(`Test environment validation failed:\n${errors.map(e => `  - ${e}`).join('\n')}`);
@@ -119,9 +98,7 @@ if (import.meta.main) {
     XRAY_CLIENT_SECRET: process.env.XRAY_CLIENT_SECRET,
     // Resolved, not read: the host lives in .agents/project.yaml and only falls
     // back to the env var for a repo that has not been set up yet.
-    ATLASSIAN_URL: readAtlassianUrlFromYaml()
-      ?? normalizeAtlassianUrl(process.env.ATLASSIAN_URL)
-      ?? undefined,
+    ATLASSIAN_URL: resolvedAtlassianUrlForValidation(),
     ATLASSIAN_EMAIL: process.env.ATLASSIAN_EMAIL,
     ATLASSIAN_API_TOKEN: process.env.ATLASSIAN_API_TOKEN,
   };

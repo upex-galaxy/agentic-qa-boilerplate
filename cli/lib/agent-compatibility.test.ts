@@ -21,6 +21,7 @@ import {
   EXPECTED_MCP,
   HOOK_IDENTITY_MARKER,
   HOOK_ORCA_MARKER,
+  hookScriptPath,
   KNOWN_MCP_IDS,
   stripJsonComments,
   validateHookCompatibility,
@@ -39,6 +40,7 @@ import {
   groupCompatibilityErrors,
   isInside,
   mergedCommandAliases,
+  normalizeNewlines,
   POSIX_CLAUDE_SKILLS_TARGET,
   repairAgentSurfaces,
   repairClaudeSkillsAlias,
@@ -670,6 +672,35 @@ describe('hook adapters', () => {
 
     expect(validateHookCompatibility(root)).toContain('OpenCode personality adapter must mutate output.system in place.');
   });
+
+  test('reads the emitter path out of every adapter form', () => {
+    expect(hookScriptPath(CLAUDE_HOOK_COMMAND)).toBe('.agents/hooks/personality-reinject.mjs');
+    expect(hookScriptPath(CODEX_HOOK_COMMAND)).toBe('.agents/hooks/personality-reinject.mjs');
+    expect(hookScriptPath(CODEX_HOOK_COMMAND_WINDOWS)).toBe('.agents/hooks/personality-reinject.mjs');
+    expect(hookScriptPath('node run-something')).toBeNull();
+  });
+
+  test('rejects a hook command pointing at a file that does not exist', () => {
+    // The shape a rename leaves behind: `.claude/settings.json` is bootstrap-only,
+    // so it keeps naming the emitter's old path while the emitter has moved.
+    const root = contractFixture();
+    write(root, '.claude/settings.json', hookSettings(
+      'node "$CLAUDE_PROJECT_DIR/.agents/hooks/personality-reinject-renamed.mjs"',
+    ));
+
+    expect(validateHookCompatibility(root)).toContain(
+      'claude hook command points at a file that does not exist: .agents/hooks/personality-reinject-renamed.mjs',
+    );
+  });
+
+  test('rejects a hook command that names no repository-relative script', () => {
+    const root = contractFixture();
+    write(root, '.claude/settings.json', hookSettings('node --version'));
+
+    expect(validateHookCompatibility(root)).toContain(
+      'claude hook command does not name a repository-relative hook script.',
+    );
+  });
 });
 
 describe('MCP semantic parity', () => {
@@ -862,6 +893,68 @@ describe('canonical sources', () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// A CRLF checkout — what a downstream project gets under `core.autocrlf=true`
+// once `.gitattributes` is deleted. Every generated surface is written with
+// pure `\n`, so byte equality against the file git hands back is what breaks:
+// the shim comparison threw (killing `agents:compat:check`, `repo:check` and
+// the pre-push hook together) and all 20 wrappers read as stale, so the repair
+// rewrote them on every run. `crlf()` is what git's conversion does.
+// ---------------------------------------------------------------------------
+
+function crlf(text: string): string {
+  return text.replace(/\n/g, '\r\n');
+}
+
+function toCrlfOnDisk(root: string, relativePath: string): void {
+  const path = join(root, relativePath);
+  writeFileSync(path, crlf(readFileSync(path, 'utf8')));
+}
+
+describe('CRLF checkout', () => {
+  test('normalizeNewlines maps CRLF to LF and leaves LF alone', () => {
+    expect(normalizeNewlines('@AGENTS.md\r\n')).toBe(CLAUDE_INSTRUCTIONS_SHIM);
+    expect(normalizeNewlines(CLAUDE_INSTRUCTIONS_SHIM)).toBe(CLAUDE_INSTRUCTIONS_SHIM);
+  });
+
+  test('accepts a CRLF shim and still rejects a shim that grew prose', () => {
+    const root = temporaryRoot();
+    write(root, 'AGENTS.md', '# memory\n');
+    mkdirSync(join(root, '.agents/skills'), { recursive: true });
+
+    write(root, 'CLAUDE.md', crlf(CLAUDE_INSTRUCTIONS_SHIM));
+    expect(validateCanonicalSources(root)).toEqual([]);
+
+    write(root, 'CLAUDE.md', crlf('@AGENTS.md\n\nSome operational prose.\n'));
+    expect(validateCanonicalSources(root)).toEqual(['CLAUDE.md must contain exactly `@AGENTS.md` followed by one newline.']);
+  });
+
+  test('leaves CRLF wrappers alone instead of rewriting them on every run', () => {
+    const root = repositoryFixture();
+    for (const host of ['.claude/commands', '.opencode/commands']) {
+      for (const alias of ALIASES) {
+        toCrlfOnDisk(root, `${host}/${alias.alias}.md`);
+      }
+    }
+
+    expect(validateCommandAliases(root)).toEqual([]);
+    expect(repairCommandWrappers(root)).toBe(0);
+    // Untouched: rewriting them with LF only dirties a tree git converts back.
+    expect(readFileSync(join(root, '.claude/commands/master-test-plan.md'), 'utf8')).toContain('\r\n');
+  });
+
+  test('still reports a CRLF wrapper whose content actually drifted', () => {
+    const root = repositoryFixture();
+    write(root, '.claude/commands/master-test-plan.md', crlf('---\ndescription: hand-edited\n---\n'));
+
+    expect(validateCommandAliases(root)).toEqual([
+      'claude command wrapper is stale: .claude/commands/master-test-plan.md',
+    ]);
+    expect(repairCommandWrappers(root)).toBe(1);
+    expect(validateCommandAliases(root)).toEqual([]);
+  });
+});
+
 describe('Claude skills alias', () => {
   test('constructs portable POSIX and Windows alias plans', () => {
     const root = temporaryRoot();
@@ -888,6 +981,20 @@ describe('Claude skills alias', () => {
     expect(readlinkSync(join(root, '.claude/skills'))).toBe(POSIX_CLAUDE_SKILLS_TARGET);
     expect(readFileSync(join(root, '.claude/skills/project-context/SKILL.md'), 'utf8')).toContain('name: project-context');
     expect(repairClaudeSkillsAlias(root, 'linux').status).toBe('valid');
+  });
+
+  test('accepts a junction target that differs only in case', () => {
+    // A Windows filesystem is case-insensitive, and `readlinkSync` can return a
+    // drive-letter (or any segment) cased differently from `process.cwd()`. A
+    // case-sensitive comparison called that an unexpected target and made the
+    // repair unlink and recreate a junction that was already correct.
+    const root = repositoryFixture();
+    const canonical = join(root, '.agents', 'skills');
+    mkdirSync(join(root, '.claude'), { recursive: true });
+    symlinkSync(canonical.replace('.agents', '.AGENTS'), join(root, '.claude/skills'), 'dir');
+
+    expect(checkAgentCompatibility(root, 'win32').alias.status).toBe('valid');
+    expect(repairClaudeSkillsAlias(root, 'win32').status).toBe('valid');
   });
 
   test('re-points a symlink aimed somewhere else', () => {
