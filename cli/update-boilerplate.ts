@@ -85,7 +85,7 @@ const GATE_TIMEOUT_MS = 120_000;
  */
 export const GATE_SCRIPTS = ['types:check', 'lint:check', 'kata:manifest:check', 'skills:check'] as const;
 
-const TOOLING_FILES = ['.editorconfig', '.prettierrc', '.gitattributes', 'tsconfig.base.json', 'eslint.config.base.js'];
+const TOOLING_FILES = ['.editorconfig', '.prettierrc', '.gitattributes', 'tsconfig.base.json', 'eslint.config.base.js', 'bunfig.toml'];
 // The SYNCED half of the variables module. A file-list, not a directory:
 // `config/variables.ts` (watchlisted) and `config/validateTestEnv.ts` are
 // project-owned - the whole point of the split is that they are NOT synced.

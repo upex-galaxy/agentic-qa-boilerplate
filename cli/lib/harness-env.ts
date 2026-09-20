@@ -753,7 +753,7 @@ export function generate(root = REPO_ROOT, opts: { dryRun?: boolean } = {}): Gen
 
 export interface CheckFinding {
   /** Which surface the finding is about. */
-  surface: 'claude' | 'opencode' | 'env' | 'allowlist'
+  surface: 'claude' | 'opencode' | 'codex' | 'env' | 'allowlist'
   /** Stable machine tag, so a caller can format without parsing prose. */
   kind:
     | 'env-missing'
@@ -769,6 +769,7 @@ export interface CheckFinding {
     | 'undeclared'
     | 'declared-not-referenced'
     | 'referenced-not-declared'
+    | 'codex-process-env-only'
   /** Variable NAMES or file paths. NEVER a value. */
   names: string[]
   /** One line a human can act on. */
@@ -891,6 +892,30 @@ export function check(root = REPO_ROOT): CheckResult {
       names: opencode.rewritten,
       detail: `${OPENCODE_CONFIG} still uses {env:VAR} for these; {env:} resolves from the process environment, which a desktop launch does not have.`,
       blocking: true,
+    });
+  }
+  // Codex, reported and deliberately NOT emitted to.
+  //
+  // `.codex/config.toml` IS project-level and overrides the user layer, so the
+  // obvious move is to put values in it. It is also COMMITTED, which makes that
+  // the one thing we must not do. Codex reads `bearer_token_env_var` and
+  // forwards `env_vars` from its OWN process environment at connect time, so a
+  // committed file can name a credential but never carry one.
+  //
+  // NOT blocking: a Codex user launching through `bun run codex`, or with direnv
+  // in the shell, is fully working today. Blocking would report a broken setup
+  // for a setup that is merely unimproved. But staying SILENT is worse: a Codex
+  // desktop launch has no process environment, so those servers start with
+  // nothing and fail later as an auth error that reads like a broken tool. This
+  // finding exists so that hour is never spent.
+  const codexNames = allowlist.scans.find(s => s.file === CODEX_CONFIG)?.vars ?? [];
+  if (codexNames.length > 0) {
+    findings.push({
+      surface: 'codex',
+      kind: 'codex-process-env-only',
+      names: codexNames,
+      detail: `${CODEX_CONFIG} NAMES these and reads them from Codex's own process environment; a committed file cannot carry their values. Launch with \`bun run codex\` (or direnv in the shell). A GUI/desktop launch has no process environment and these will be empty.`,
+      blocking: false,
     });
   }
   if (opencode.undeclared.length > 0) {

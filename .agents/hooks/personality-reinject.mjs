@@ -45,6 +45,29 @@ export const PERSONALITY_CONTRACT = [
 export const IDENTITY_PREFIX = 'AGENT IDENTITY:';
 
 /** Second line, emitted only when the `orca` binary is present. */
+/**
+ * Emitted when this checkout has no `.env`. It is the ONE failure this repo
+ * cannot detect any other way in time.
+ *
+ * A harness reads its MCP config and spawns every MCP server BEFORE any hook
+ * runs (measured: 3 of 3). So by the time you read this line those servers are
+ * already alive, already holding whatever credential they were given, and a
+ * missing one shows up much later as an auth error that reads like a broken
+ * tool. We cannot fix that session. We CAN stop the human from spending an hour
+ * on it, and make the next session correct.
+ *
+ * Why it fires most often in a worktree: `git worktree add`, a harness-created
+ * worktree and `orca worktree create` all copy TRACKED files only, and `.env`
+ * is gitignored by design. `bun run worktree:provision <path>` is what carries
+ * it across, and nothing runs that automatically.
+ */
+export const MISSING_ENV_LINE = [
+  'CREDENTIALS: no `.env` in this checkout, so every MCP server in this session',
+  'started without one. They are already running; this session cannot be repaired.',
+  'Fix and restart: in a worktree run `bun run worktree:provision <this path>` from',
+  'the main checkout; in a fresh clone run `bun run setup`. Then `bun run harness:env`.',
+].join(' ');
+
 export const ORCA_CONTEXT_LINE = [
   'ORCA: available.',
   'Multi-session orchestration -> /orca-orchestration.',
@@ -279,6 +302,22 @@ export function orcaAvailable(env = process.env) {
   return false;
 }
 
+/**
+ * Is there a `.env` where the harness would look for one?
+ *
+ * Deliberately a single `existsSync` on a path we already know: this runs on
+ * EVERY prompt, so it must cost nothing. It checks existence and not contents,
+ * because a `.env` that exists but lacks a specific key is `harness:env:check`'s
+ * job, which runs in `setup:doctor` and can afford to read files.
+ */
+export function envFileMissing(options = {}) {
+  const { env = process.env, existsSync: exists = existsSync } = options;
+  const root = options.repoRoot ?? env.CLAUDE_PROJECT_DIR ?? env.CODEX_PROJECT_DIR ?? process.cwd();
+  if (!root) { return false; }
+  try { return !exists(join(root, '.env')); }
+  catch { return false; }
+}
+
 export function identityLine(identity) {
   return `${IDENTITY_PREFIX} worktree=${identity.worktree} session=${identity.label} harness=${identity.harness}`;
 }
@@ -290,6 +329,7 @@ export function agentContextLines(options = {}) {
   const orca = options.orca ?? orcaAvailable(env);
   const lines = [PERSONALITY_CONTRACT, identityLine(identity)];
   if (orca) { lines.push(ORCA_CONTEXT_LINE); }
+  if (options.envMissing ?? envFileMissing({ env })) { lines.push(MISSING_ENV_LINE); }
   return lines;
 }
 

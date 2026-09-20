@@ -397,7 +397,12 @@ export const MCP_SERVER_SECRETS: Record<string, readonly string[]> = {
   context7: [],
   tavily: ['TAVILY_API_KEY'],
   playwright: [],
-  dbhub: ['DBHUB_HOST', 'DBHUB_DATABASE', 'DBHUB_USER', 'DBHUB_PASSWORD'],
+  // All six that `dbhub.toml` interpolates. PORT and TYPE were missing until
+  // 2026-09-20: the configs referenced them, this hand-written map did not, so
+  // the installer never prompted for them and a fresh project hit a dbhub that
+  // would not connect. Found by the generator's scan-vs-declared cross-check,
+  // which is the whole reason that cross-check exists.
+  dbhub: ['DBHUB_TYPE', 'DBHUB_HOST', 'DBHUB_PORT', 'DBHUB_DATABASE', 'DBHUB_USER', 'DBHUB_PASSWORD'],
   openapi: ['API_BASE_URL', 'OPENAPI_SPEC_PATH'],
   postman: ['POSTMAN_API_KEY'],
 };
@@ -1077,12 +1082,35 @@ export function parseEnvFile(content: string): Record<string, string> {
     const eq = line.indexOf('=');
     if (eq <= 0) { continue; }
     const key = line.slice(0, eq).trim();
-    let value = line.slice(eq + 1).trim();
-    if (
-      (value.startsWith('"') && value.endsWith('"'))
-      || (value.startsWith('\'') && value.endsWith('\''))
-    ) {
+    // The comment scan runs on the RAW slice, BEFORE trimming. `.env.example`
+    // ships `DBHUB_TYPE=          # sqlserver | postgres`, and trimming first
+    // would delete the very whitespace that marks the `#` as a comment, leaving
+    // the comment itself as the value.
+    const rawValue = line.slice(eq + 1);
+    let value = rawValue.trim();
+    const quoted
+      = (value.startsWith('"') && value.endsWith('"') && value.length > 1)
+        || (value.startsWith('\'') && value.endsWith('\'') && value.length > 1);
+    if (quoted) {
       value = value.slice(1, -1);
+    }
+    else {
+      // Strip an inline comment from an UNQUOTED value. `.env.example` ships
+      // lines like `DBHUB_TYPE=          # sqlserver | postgres | mysql`, and
+      // without this the installer read the whole trailing string as the
+      // credential: a value that is wrong rather than missing, which fails at
+      // connect time looking like a broken database instead of a bad .env.
+      //
+      // Two things stay part of the value, and both are real:
+      //   - a `#` inside QUOTES, which is why this is the else branch
+      //   - a `#` with NO whitespace before it, because `PASS=pass#word` is a
+      //     password containing a hash, not a comment
+      // So the marker is whitespace-then-hash. Same rule as `stripInlineComments`
+      // in cli/lib/harness-env.ts, which is tested; kept as four characters of
+      // regex here rather than an import, because that module imports FROM this
+      // one and the dependency would be circular.
+      const comment = rawValue.search(/\s#/);
+      if (comment >= 0) { value = rawValue.slice(0, comment).trim(); }
     }
     out[key] = value;
   }

@@ -1,0 +1,28 @@
+# ============================================
+# Bun runtime + test configuration
+# ============================================
+# SYNCED by `bun run up` (declared in TOOLING_FILES, cli/update-boilerplate.ts).
+# Edit it upstream; a downstream copy is overwritten on every update.
+
+[test]
+# Keep `bun test` off the Playwright suites.
+#
+# `tests/e2e/` and `tests/integration/` are PLAYWRIGHT specs, run by
+# `bun run test:e2e` and friends through the Playwright runner. A bare
+# `bun test` used to discover them anyway and each file died at collection with
+# "Playwright Test did not expect test.describe() to be called here" — four red
+# files in a repo where nothing was wrong.
+#
+# That mattered more than a cosmetic annoyance: `bun test` is the command a
+# newcomer types, and a suite that greets them with four failures teaches them
+# that red is normal here. It is not. With this, a bare `bun test` runs the unit
+# suite and is green, and the Playwright specs run under the runner that owns
+# them.
+#
+# Do NOT narrow this to the two directory names: `**/e2e/**` and
+# `**/integration/**` also cover a module that grows its own pair, which is the
+# shape a downstream project reaches first.
+pathIgnorePatterns = [
+  "**/e2e/**",
+  "**/integration/**",
+]
