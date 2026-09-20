@@ -50,6 +50,8 @@
     "context:hydrate": "bun scripts/sync-jira-issues.ts pull --include-comments",
     "format:check": "prettier --check '**/*.{json,yml,yaml,css,scss,html}' --ignore-path .prettierignore",
     "format:fix": "prettier --write '**/*.{json,yml,yaml,css,scss,html}' --ignore-path .prettierignore",
+    "harness:env": "bun scripts/harness-env.ts",
+    "harness:env:check": "bun scripts/harness-env.ts --check",
     "jira:check": "bun scripts/check-jira-setup.ts",
     "jira:baseline": "bun scripts/check-jira-baseline.ts",
     "jira:sync-fields": "bun scripts/sync-jira-fields.ts",
