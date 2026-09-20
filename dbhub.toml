@@ -1,9 +1,18 @@
 # ============================================
 # DBHub Configuration
 # ============================================
-# Credentials resolved via ${VAR} interpolation from the process environment
-# (loaded from .env by the MCP launcher). Safe to commit — no secrets in this
-# file.
+# Credentials resolved via ${VAR} interpolation from the process environment.
+# Safe to commit — no secrets in this file.
+#
+# WHO EXPANDS THIS: the `dbhub` tool itself, NOT any harness. It reads the
+# environment of the process it was spawned in, which is the MCP child process.
+# So whatever gives that child its environment also fixes this file; there is
+# nothing harness-specific to configure here.
+#
+# HOW IT FAILS: a missing variable does NOT stop startup. dbhub substitutes the
+# literal `${VAR}` string and the connection fails later, which reads as a
+# database problem rather than a missing credential. Check the DBHUB_* vars in
+# .env first whenever a dbhub query fails for no apparent reason.
 #
 # Required environment variables (declare in .env):
 #   DBHUB_TYPE       — sqlserver | postgres | mysql | sqlite
