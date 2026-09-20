@@ -52,6 +52,11 @@ import {
 // Canonical variable manifest (source of truth — D1). Imports only `node:fs`,
 // so it is safe to load statically here without breaking the dependency-free
 // `--preflight` contract (no third-party deps pulled in).
+import {
+  check as checkHarnessEnv,
+  CLAUDE_LOCAL_SETTINGS,
+  OPENCODE_SECRET_DIR,
+} from './lib/harness-env.ts';
 import { playwrightBrowsersInstalled } from './lib/playwright-cache.ts';
 import { requiredNow, varsFor } from './lib/variables-manifest.ts';
 
@@ -241,7 +246,30 @@ interface DoctorReport {
    * offering to fix it from here is not.
    */
   community_skills: CommunitySkillRow[]
+  /**
+   * Whether `.env` and the generated per-harness credential surfaces agree.
+   *
+   * This is the gate that stops a GENERATED file from rotting. The surfaces are
+   * the only thing that reaches an MCP server on a launch with no command line
+   * (a desktop harness, a natively-launched supervised worker), and they are
+   * derived from `.env`, so the day someone adds a variable they desynchronize
+   * in silence: the server still starts, still looks healthy, and dies at its
+   * first authenticated call.
+   *
+   * `findings` carries variable NAMES and a verdict only — never a value.
+   */
+  harness_env: HarnessEnvDiagnostic
   pending_actions: PendingAction[]
+}
+
+export interface HarnessEnvDiagnostic {
+  /** false when at least one blocking finding stands. */
+  ok: boolean
+  /** `emitted N of M declared variables; K not referenced by any MCP config` */
+  summary: string
+  /** Variable names the generator emits, for the record. Never their values. */
+  allowlist: string[]
+  findings: Array<{ surface: string, kind: string, names: string[], detail: string, blocking: boolean }>
 }
 
 // ----------------------------------------------------------------------------
@@ -441,6 +469,40 @@ export function diagnoseAgentCompatibility(
 // Preflight (blocker-only gate for `bun run setup`)
 // ----------------------------------------------------------------------------
 
+/**
+ * Run the generator's `--check` and shape it for the report.
+ *
+ * Wrapped in a try so a broken config can never take the whole doctor down: the
+ * doctor's job is to TELL you what is wrong, and a doctor that crashes on the
+ * thing it was meant to diagnose is useless. A throw becomes one blocking
+ * finding naming the module, not a stack trace.
+ */
+function harnessEnvDiagnostic(): HarnessEnvDiagnostic {
+  try {
+    const result = checkHarnessEnv(REPO_ROOT);
+    return {
+      ok: result.ok,
+      summary: result.summary,
+      allowlist: result.allowlist.all,
+      findings: result.findings,
+    };
+  }
+  catch (err) {
+    return {
+      ok: false,
+      summary: 'the harness-env check could not run',
+      allowlist: [],
+      findings: [{
+        surface: 'claude',
+        kind: 'check-failed',
+        names: [],
+        detail: `harness-env check threw: ${(err as Error).message}`,
+        blocking: true,
+      }],
+    };
+  }
+}
+
 function preflightFail(msg: string, fix: string): never {
   // Dependency-free output — preflight may run before `bun install`, so no TUI.
   process.stderr.write(`Preflight failed: ${msg}\n`);
@@ -567,6 +629,7 @@ export async function runDoctor(): Promise<DoctorReport> {
     playwright_browsers: playwrightBrowsersInstalled(),
     direnv: { installed: false },
     community_skills: await collectCommunitySkills(),
+    harness_env: harnessEnvDiagnostic(),
     pending_actions: [],
   };
 
@@ -750,6 +813,18 @@ export async function runDoctor(): Promise<DoctorReport> {
     });
   }
 
+  if (!report.harness_env.ok) {
+    const blocking = report.harness_env.findings.filter(f => f.blocking);
+    report.pending_actions.push({
+      type: 'shell_command',
+      target: 'bun run harness:env',
+      hint: 'The per-harness credential surfaces disagree with .env, so an MCP server '
+        + `launched without a command line gets no credential: ${
+          blocking.map(f => `${f.kind} (${f.names.join(', ')})`).join('; ')}`,
+      where: `${CLAUDE_LOCAL_SETTINGS} + ${OPENCODE_SECRET_DIR}/`,
+    });
+  }
+
   if (!agentCompatibility.file_correct) {
     report.pending_actions.push({
       type: 'shell_command',
@@ -827,6 +902,23 @@ function printHuman(report: DoctorReport): void {
     v === 'set' ? 'set' : 'missing',
   ]);
   process.stdout.write(`${tui.table(['Variable', 'Status', 'Value'], envRows)}\n`);
+
+  // Per-harness credential surfaces. Its own section because it is per-VARIABLE
+  // and per-surface, which a single check row cannot carry: an exit code says
+  // something is stale, it does not say WHICH credential is missing, and that
+  // gap is how a missing credential becomes a mystery an hour later.
+  tui.section('Harness credential surfaces (.env -> the files a harness reads at startup)');
+  process.stdout.write(`  ${tui.statusIcon(report.harness_env.ok ? 'ok' : 'fail')} ${report.harness_env.summary}\n`);
+  process.stdout.write(`  allowlist: ${report.harness_env.allowlist.join(', ') || '(none)'}\n`);
+  for (const finding of report.harness_env.findings) {
+    const icon = tui.statusIcon(finding.blocking ? 'fail' : 'warn');
+    process.stdout.write(`  ${icon} ${finding.kind}: ${finding.names.join(', ') || '-'}\n`);
+    process.stdout.write(`    ${finding.detail}\n`);
+  }
+  if (!report.harness_env.ok) {
+    process.stdout.write('  Fix: bun run harness:env  (values are never printed by the generator or by this report)\n');
+  }
+  process.stdout.write('\n');
 
   // T3 community skills. Deliberately its own section and NOT a check row:
   // nothing here is a failure, and an outdated skill must not push the report
