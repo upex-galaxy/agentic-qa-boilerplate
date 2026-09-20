@@ -306,20 +306,43 @@ function stripTrailingCommas(source: string): string {
   return result;
 }
 
-const PLACEHOLDER = /\$\{([A-Z][A-Z0-9_]*)\}|\{env:([A-Z][A-Z0-9_]*)\}/g;
+/**
+ * OpenCode's `{file:<path>/<VAR>}` form, which substitutes a FILE'S CONTENTS.
+ *
+ * It belongs here because it is a DEPENDENCY, not a literal.
+ * `{file:.auth/opencode/TAVILY_API_KEY}` says the server needs TAVILY_API_KEY
+ * exactly as `{env:TAVILY_API_KEY}` does; only the delivery route differs, and
+ * `scripts/harness-env.ts` generates those files from `.env`. This checker exists
+ * to assert SEMANTIC parity across the three hosts, so reading the file form as
+ * an opaque literal reported the hosts as disagreeing when they agree. Teaching
+ * the normalizer this form is not loosening the contract, it is correcting a
+ * blind spot the contract always had, which only surfaced once something finally
+ * used the other route.
+ *
+ * WHAT KEEPS IT SAFE, and do not widen it: only an ALL-CAPS final path segment
+ * matches. A generic `{file:some/config.json}` or `{file:certs/ca.pem}` still
+ * reads as a literal, which is correct — those are files, not credentials named
+ * after a variable. Widening this pattern would start swallowing real literals.
+ */
+const FILE_REF = /\{file:(?:[^}]*\/)?([A-Z][A-Z0-9_]*)\}/g;
 
-/** OpenCode spells a placeholder `{env:VAR}`; compare it as `${VAR}`. */
+const PLACEHOLDER = /\$\{([A-Z][A-Z0-9_]*)\}|\{env:([A-Z][A-Z0-9_]*)\}|\{file:(?:[^}]*\/)?([A-Z][A-Z0-9_]*)\}/g;
+
+/** OpenCode spells a placeholder `{env:VAR}` or `{file:dir/VAR}`; compare both as `${VAR}`. */
 function canonicalPlaceholders(text: string): string {
-  return text.replace(/\{env:([A-Z][A-Z0-9_]*)\}/g, (_match, name: string) => ref(name));
+  return text
+    .replace(/\{env:([A-Z][A-Z0-9_]*)\}/g, (_match, name: string) => ref(name))
+    .replace(FILE_REF, (_match, name: string) => ref(name));
 }
 
-/** Every `${VAR}` / `{env:VAR}` referenced anywhere inside `value`. */
+/** Every `${VAR}` / `{env:VAR}` / `{file:dir/VAR}` referenced anywhere inside `value`. */
 function placeholderNames(value: unknown): string[] {
   const names = new Set<string>();
   const visit = (entry: unknown): void => {
     if (typeof entry === 'string') {
       for (const match of entry.matchAll(PLACEHOLDER)) {
-        names.add(match[1] ?? match[2]);
+        const name = match[1] ?? match[2] ?? match[3];
+        if (name !== undefined) { names.add(name); }
       }
     }
     else if (Array.isArray(entry)) {
