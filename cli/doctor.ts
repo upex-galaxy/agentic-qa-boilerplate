@@ -28,7 +28,7 @@
 
 import type { CompatibilityCheck, CompatibilityErrorGroup } from './lib/agent-compatibility.ts';
 import { execFileSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -38,6 +38,7 @@ import {
   validateHookCompatibility,
   validateMcpParity,
 } from './lib/agent-compatibility-contracts.ts';
+
 import {
   checkAgentCompatibility,
   commandWrapperCounts,
@@ -45,6 +46,7 @@ import {
   groupCompatibilityErrors,
   validateCanonicalSources,
 } from './lib/agent-compatibility.ts';
+import { projectDelta, SCHEMA_FILE, SCHEMA_SOURCE } from './lib/agents-schema.ts';
 import {
   formatInstanceMismatchWarning,
   resolveAtlassianInstance,
@@ -259,6 +261,16 @@ interface DoctorReport {
    * `findings` carries variable NAMES and a verdict only — never a value.
    */
   harness_env: HarnessEnvDiagnostic
+  /**
+   * Which key paths upstream's `.agents/project.schema.yaml` declares that this
+   * project's `.agents/project.yaml` does not have.
+   *
+   * NEVER a failure. Being behind upstream is not a broken repo, and the moment
+   * an upstream key addition turns a project's own checks red, the project
+   * learns to skip them. `bun run up` is where it becomes actionable; here it
+   * is the answer to "why is my project behaving oddly".
+   */
+  project_schema: ProjectSchemaDiagnostic
   pending_actions: PendingAction[]
 }
 
@@ -477,6 +489,33 @@ export function diagnoseAgentCompatibility(
  * thing it was meant to diagnose is useless. A throw becomes one blocking
  * finding naming the module, not a stack trace.
  */
+export interface ProjectSchemaDiagnostic {
+  /** Key paths the schema declares and this project lacks, grouped by block. */
+  gaps: Array<{ block: string, paths: string[], wholeBlock: boolean }>
+  /** Blocks silenced through `updater.schema_exempt`. */
+  exempt: string[]
+  /** Set when nothing could be compared: a parse failure, or no schema on disk. */
+  note: string | null
+}
+
+/**
+ * Same try-wrapping as the harness-env diagnostic, for the same reason: a
+ * doctor that crashes on the thing it was meant to diagnose is useless.
+ */
+function projectSchemaDiagnostic(): ProjectSchemaDiagnostic {
+  const sourcePath = join(REPO_ROOT, SCHEMA_SOURCE);
+  const schemaPath = join(REPO_ROOT, SCHEMA_FILE);
+  if (!existsSync(sourcePath)) { return { gaps: [], exempt: [], note: `${SCHEMA_SOURCE} not found` }; }
+  if (!existsSync(schemaPath)) { return { gaps: [], exempt: [], note: `${SCHEMA_FILE} not found — run \`bun run up\` to receive it` }; }
+  try {
+    const delta = projectDelta(readFileSync(sourcePath, 'utf8'), readFileSync(schemaPath, 'utf8'));
+    return { gaps: delta.gaps, exempt: delta.exempt, note: delta.error };
+  }
+  catch (err) {
+    return { gaps: [], exempt: [], note: `the schema comparison threw: ${(err as Error).message}` };
+  }
+}
+
 function harnessEnvDiagnostic(): HarnessEnvDiagnostic {
   try {
     const result = checkHarnessEnv(REPO_ROOT);
@@ -630,6 +669,7 @@ export async function runDoctor(): Promise<DoctorReport> {
     direnv: { installed: false },
     community_skills: await collectCommunitySkills(),
     harness_env: harnessEnvDiagnostic(),
+    project_schema: projectSchemaDiagnostic(),
     pending_actions: [],
   };
 
@@ -919,6 +959,30 @@ function printHuman(report: DoctorReport): void {
     process.stdout.write('  Fix: bun run harness:env  (values are never printed by the generator or by this report)\n');
   }
   process.stdout.write('\n');
+
+  // Project schema gap. Its own section and NOT a check row, for the same
+  // reason the community-skills block is not one: nothing here is a failure,
+  // and it must never push the report to `needs action`. It answers a
+  // different question from the checks above — not "is something broken" but
+  // "has upstream moved and am I still on the old shape".
+  if (report.project_schema.note !== null || report.project_schema.gaps.length > 0) {
+    tui.section('Project config vs upstream schema (.agents/project.yaml)');
+    if (report.project_schema.note !== null) {
+      process.stdout.write(`  ${tui.statusIcon('warn')} ${report.project_schema.note}\n`);
+    }
+    else {
+      const total = report.project_schema.gaps.reduce((n, g) => n + g.paths.length, 0);
+      process.stdout.write(`  ${tui.statusIcon('warn')} upstream declares ${total} key path(s) this project does not have\n`);
+      for (const gap of report.project_schema.gaps) {
+        process.stdout.write(`  ${gap.block}${gap.wholeBlock ? ' (whole block)' : ''}: ${gap.paths.join(', ')}\n`);
+      }
+      process.stdout.write('  Fix: bun run up  (offers to insert them, one prompt per block, insert-only)\n');
+    }
+    if (report.project_schema.exempt.length > 0) {
+      process.stdout.write(`  silenced via updater.schema_exempt: ${report.project_schema.exempt.join(', ')}\n`);
+    }
+    process.stdout.write('\n');
+  }
 
   // T3 community skills. Deliberately its own section and NOT a check row:
   // nothing here is a failure, and an outdated skill must not push the report

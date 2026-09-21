@@ -44,6 +44,7 @@ import { parse as parseYaml } from 'yaml';
 
 import { stripJsonComments } from './agent-compatibility-contracts.ts';
 import { COMMAND_ALIAS_MANIFEST, COMMAND_ALIAS_PROJECT_MANIFEST, compatibilityErrorGroup, undeclaredCommandWrappers } from './agent-compatibility.ts';
+import { hasDeepWalk, walkGovernedFile } from './agents-schema.ts';
 import { CLAUDE_SETTINGS_FILE } from './updater-settings';
 
 // ============================================================================
@@ -306,6 +307,10 @@ export const PATH_PREREQUISITES: Record<string, PathPrerequisite> = {
   'scripts/lint-skills.ts': {
     requiredBy: 'the skill-category vocabulary every .agents/skills/**/SKILL.md is linted against; a skill shipped in the same release that declares a new category stays unlintable until this file carries it',
     gate: 'bun run skills:check',
+  },
+  'cli/lib/agents-schema.ts': {
+    requiredBy: 'the generator and the rule table behind `.agents/project.schema.yaml`, which ships in the same release; a kept older copy compares a project against a template whose key set and safety reversals it does not implement, and reports a clean bill of health while doing it',
+    gate: 'bun test cli/lib/agents-schema.test.ts',
   },
   'scripts/api-login.ts': {
     requiredBy: 'the 10-line entry that wires `scripts/lib/api-login-core.ts` (synced generic CLI) to `scripts/api-login.project.ts` (the project auth adapter); a kept pre-split copy never imports either, so agentic CLI improvements land inert until the project ports its own auth flow into the adapter and takes upstream\'s entry',
@@ -940,6 +945,34 @@ export function structuralEvidence(filePath: string, project: string, upstream: 
   if (path.extname(filePath).toLowerCase() === '.md') {
     added = markdownSectionDelta(project, upstream).added;
     unit = 'heading';
+  }
+  else if (hasDeepWalk(filePath)) {
+    // `.agents/project.yaml` and nothing else today. The 2-level walk below
+    // is right for an MCP registry, where depth 3 is a server's args; it is
+    // wrong here, where it cannot see 46 of 93 key paths — including
+    // `git_strategy.policy.direct_push_to_protected`, which Critical Rule #5
+    // resolves every push against. Measured on a project missing
+    // `orchestration:`: 42 paths visible to the old walk, 88 to this one.
+    //
+    // Comparing against UPSTREAM'S OWN yaml rather than against
+    // `.agents/project.schema.yaml` is safe and deliberate: this function
+    // compares key paths and never values, and `agents:schema:check` gates the
+    // two files to the same key set. The schema is what INSERTION reads, where
+    // the maintainer's values would genuinely leak.
+    const mine = walkGovernedFile(project, filePath);
+    const theirs = walkGovernedFile(upstream, filePath);
+    // Invariant 2: a parse failure says so instead of degrading to a narrower
+    // key set and reporting success.
+    if (!mine) { return `informational: this project's ${filePath} does not parse — schema comparison SKIPPED, so upstream additions are invisible until it is fixed`; }
+    if (!theirs) { return null; }
+    const containers = new Set(theirs.containers);
+    added = [...theirs.entries.keys()].filter(k => !mine.entries.has(k));
+    addedObjects = added.filter(k => containers.has(k));
+    // A whole new block reports the block, not its leaves: `orchestration`
+    // plus its four children is one decision, not five.
+    const wholeBlocks = new Set(addedObjects.filter(k => !k.includes('.')));
+    added = added.filter(k => wholeBlocks.size === 0 || !k.includes('.') || !wholeBlocks.has(k.split('.')[0]));
+    unit = 'key path';
   }
   else {
     const mine = configEntries(project, filePath);

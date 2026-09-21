@@ -241,8 +241,22 @@ describe('section-level evidence', () => {
   test('structural (identity) files: a row only for upstream additions, labelled informational; values are never compared', () => {
     expect(structuralEvidence('.agents/project.yaml', 'project:\n  name: acme\n', 'project:\n  name: null\n')).toBeNull();
     expect(structuralEvidence('.agents/project.yaml', 'project:\n  name: acme\n  extra: 1\n', 'project:\n  name: null\n')).toBeNull();
+    // A WHOLE new block is ONE decision, not the block plus each of its
+    // leaves: per-key reporting on a project 46 paths behind is unreadable.
     expect(structuralEvidence('.agents/project.yaml', 'project:\n  name: acme\n', 'project:\n  name: null\nupdater:\n  protected_paths: []\n'))
-      .toBe('informational: upstream added 2 keys: "updater", "updater.protected_paths"; merge = add the new keys, values are project identity and never compared');
+      .toBe('informational: upstream added 1 key path: "updater"; merge = add the new key paths, values are project identity and never compared');
+    // Depth 3+, which the 2-level walk could not see at all. This is the whole
+    // point of the deep walk: 46 of 93 paths in the real file live down here,
+    // `git_strategy.policy.direct_push_to_protected` among them.
+    expect(structuralEvidence('.agents/project.yaml', 'git_strategy:\n  policy:\n    admin_bypass: true\n', 'git_strategy:\n  policy:\n    admin_bypass: true\n    direct_push_to_protected: confirm\n'))
+      .toBe('informational: upstream added 1 key path: "git_strategy.policy.direct_push_to_protected"; merge = add the new key paths, values are project identity and never compared');
+    // Invariant 2: an unparseable project file says so instead of quietly
+    // comparing a narrower key set and reporting nothing to do.
+    expect(structuralEvidence('.agents/project.yaml', 'project:\n  : : :\n', 'project:\n  name: null\n'))
+      .toContain('does not parse');
+    // `.agents/jira-required.yaml` deliberately stays on the 2-level walk.
+    expect(structuralEvidence('.agents/jira-required.yaml', 'required:\n  a: 1\n', 'required:\n  a: 1\n  b: 2\n'))
+      .toBe('informational: upstream added 1 key: "required.b"; merge = add the new keys, values are project identity and never compared');
     expect(structuralEvidence('x.md', '## A\n\nmine\n', '## A\n\ntheirs\n')).toBeNull();
     expect(structuralEvidence('x.md', '## A\n', '## A\n\n## B\n')).toBe('informational: upstream added 1 heading: "B"; merge = add the new headings, values are project identity and never compared');
   });
