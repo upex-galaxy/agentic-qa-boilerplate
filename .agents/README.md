@@ -20,6 +20,7 @@ The directory has two roles:
 | `jira-workflows.json` | Auto-generated catalog of workflow statuses + transitions per `work_type`, keyed by canonical slug. Each `work_type` entry has `jira_issue_type`, `workflow_scheme`, `workflow`, `statuses`, `transitions`. | Generated only — **do not edit by hand** | `bun run jira:sync-workflows` |
 | `jira-link-types.json` | Auto-generated catalog of every issue link type in your Jira workspace (e.g. `blocks`, `relates`, `is caused by`), keyed by canonical slug. Each entry has `id`, `name`, `outward`, `inward`, `exists_in_workspace`. | Generated only — **do not edit by hand** | `bun run jira:sync-link-types` |
 | `jira-required.yaml` | Declarative manifest of the custom fields AND `work_types:` (issue types + canonical statuses + canonical transitions) the methodology requires. The contract between skills and the user's Jira. | Methodology maintainers | Updated when a skill adds or drops a `{{jira.<slug>}}` / `{{jira.work_type.*}}` / `{{jira.status.*}}` / `{{jira.transition.*}}` reference. |
+| `project.schema.yaml` | The TEMPLATE `project.yaml` is compared against: the same file with its placeholders blank, its methodology defaults kept, and every value or comment that is the BOILERPLATE's own identity replaced. Generated upstream, SYNCED here like any other upstream file. `bun run up` uses it to offer the keys this project lacks. | Generated only — **do not edit by hand**, and in a consumer project do not regenerate it either: it is upstream's, not yours | `bun run agents:schema` (boilerplate only). Here: `bun run up`. See what you are missing with `bun run agents:schema --project`. |
 | `README.md` | This file. | Methodology maintainers | — |
 
 ## `git_strategy` (block inside `project.yaml`)
@@ -72,6 +73,22 @@ updater:
 - **Semantics**: identical to the upstream watchlist. Never overwritten (also under `--auto` and `--force`), delivered once from upstream when the file is missing locally, included in the sparse checkout so its upstream copy can be diffed, one drift row per upstream change (marker under `.template/upstream-sha/`).
 - **Validation**: a path outside the repo (absolute, `..`), under `.git`, a directory, or a non-string is reported at the start of the run (`updater.protected_paths (.agents/project.yaml): entrada ignorada "...": <reason>.`) and ignored; the run continues. Duplicates and paths already on the upstream watchlist are folded silently.
 - **Bootstrap-only**: `project.yaml` is never synced, so the list is entirely yours. The nested list is structured config read directly by the updater, so `vars:check` skips it (same carve-out as `git_strategy` and `qa.qa_epics`).
+
+### `updater.schema_exempt`
+
+Top-level blocks of `project.yaml` this project has deliberately removed and does not want offered back.
+
+```yaml
+updater:
+  protected_paths: []
+  schema_exempt: [orchestration] # top-level block NAMES, not key paths
+```
+
+`bun run up` compares this file against `project.schema.yaml` to full depth and offers to insert what upstream has and you lack. A block you removed on purpose would be re-offered on every run forever, and a warning that recurs forever is one people silence wholesale — which costs them the real gaps too. Listing it here silences that block and nothing else.
+
+- **Block names only.** `orchestration`, not `orchestration.max_workers`. The prompt is per block, so the opt-out is too.
+- **It silences, it does not fix.** An exempt block is still absent. `bun run agents:schema --project` prints what is silenced alongside what is missing, so the decision stays visible.
+- **Same carve-out as `protected_paths`**: read directly by the updater, so `vars:check` skips it.
 
 ## `orchestration` (block inside `project.yaml`)
 
