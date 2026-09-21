@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-09-18T16:25:33.962Z`
+> Generated: `2026-09-21T17:08:31.915Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -239,6 +239,7 @@ Skills indexed: 21
 - DO treat one-shot subagents as the DEFAULT executor (AGENTS.md §3, unchanged) and a supervised worker as the declared exception: persistent, addressable, owns a scope end to end. The conductor still uses subagents for its OWN reads.
 - DO NOT allow periodic heartbeats, even though the injected preamble asks for them. Every heartbeat wakes the conductor to read the word "alive". A worker sends exactly three things: `worker_done` (once, with an explicit outcome), `ask` (blocking), `escalation`. The brief must prohibit heartbeats in writing.
 - DO NOT use the harness's own agent-to-agent messaging or user-question tools from a worker: from an isolated worktree the conductor is not addressable and nobody is watching a user prompt. The channel is the orchestration mailbox, and a question that does not block goes out as a message while the worker keeps going on everything that does not depend on the answer.
+- DO treat the channel as an ASSIGNMENT, not a preference: `orchestration send` carries every message between sessions and is byte-intact; anything longer than a couple of sentences goes in a FILE with a one-line pointer; `terminal send` drives a terminal (commands, CLI calls, harness slash-commands, keystrokes) and nothing else, because it truncates silently, keeps only the TAIL and still reports success. The one exception is the launch handoff prompt of a supervised worker, which has no argv to travel in: keep it short and point it at a file. And read every send result as a statement about the CALL, never about the outcome.
 - DO acknowledge every mailbox batch, verified, in the SAME command that re-arms the wait, and never inside a compound command whose exit code can be swallowed. An unacknowledged batch replays forever and hides everything queued behind it, and the runtime does not re-notify. Roll the wait in windows of at most 540 s, because the harness kills a foreground command at 600 s. One waiter per Run, never a shell background job, never a self-built monitor: the runtime notifies the conductor on its own.
 - DO launch a supervised worker NATIVELY (the runtime starts the agent: task, worktree, agent, model, effort) and then send its prompt as the immediate next step. A terminal created with our own command line can NEVER be supervised — the runtime recognizes only agents it started, and adoption is refused on a terminal whose agent is demonstrably alive. Custom argv is the human-paste shape and the deliberately-unsupervised shape, nothing more.
 - DO verify credentials on the worker's own screen before dispatching work to it. The native launch has no argv, so the environment file reaches it only through a per-machine direnv hook in the runtime's interactive shell: without it the worker starts clean, unsupervisedly broken, and fails much later at its first authenticated call.

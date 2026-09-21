@@ -10,7 +10,7 @@
 
 ---
 
-## The twelve rules
+## The fourteen rules
 
 1. **One task: the one in the brief.** Do not widen the scope. Do not create other workers. If you
    find something that changes the scope, STOP and report it — a scope correction is the conductor's
@@ -87,6 +87,23 @@
     judgement and stopped a wrong blocker from shipping against a release. A conductor derives from
     reports; you are the one holding the instrument. Silent compliance turns your measurement into
     nothing, and silent deviation turns it into a mystery nobody can audit.
+
+13. **You cannot verify that a `terminal send` reached the conductor, so you do not report with
+    one.** Everything you owe upward — status, `ask`, `worker_done`, a blocker — goes through the
+    **mailbox**, and anything longer than a couple of sentences goes in your report file with a
+    one-line pointer to its absolute path. The reason is not preference: `terminal send` truncates
+    silently, keeps only the TAIL, and answers with a byte count for what it WROTE, not for what the
+    other side received (gotchas G60, G64) — and you have no way to check the destination, because
+    the conductor's screen is not yours to read. The mailbox is byte-intact and leaves a row someone
+    can re-read later. Channel table and the one exception: `references/channel-discipline.md`.
+
+14. **The same error with the opposite sign: a fragment you RECEIVE is a truncation, not a short
+    message.** Text that arrives beginning mid-sentence — mid-word, even — is what survived a
+    truncated send, and because the head is what gets lost it reads like a typo or a stray keystroke
+    instead of like a missing instruction. Do not answer it, do not guess the rest, and do not act on
+    the half you can see. Say what you received, verbatim, and ask for the pointer: the file, by
+    absolute path, or the same content through the mailbox. Measured 2026-09-21, in both directions,
+    between two sessions that had each just written the rule they were breaking (G64).
 
 ---
 

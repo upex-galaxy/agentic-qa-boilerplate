@@ -277,13 +277,20 @@ Answering a blocking question uses the message id from the pending batch
 (`orca orchestration reply --id <msg_id> --body "<text>" --json </dev/null`). A reply body has been
 observed arriving empty on the worker side; when a reply carries substance, duplicate it with
 `orca terminal send --terminal <handle> --text '<same text>' --enter --json </dev/null` and say in
-the body that you did.
+the body that you did — **only while the text still fits in a sentence or two.** Past that, the
+duplicate is prose through the lossy verb (hard rule 4): write the answer to a file in the Run scope
+and send the one-line pointer instead, then have the worker state the decision back in its own words
+before it acts on it.
 
-**Mail is not a nudge.** `orchestration send --to <terminal handle>` queues mail that a working agent
-never reads, because nothing tells it to run `check` — and it returns `ok: true` exactly like the
-call that works (gotcha G46). The only verb that reaches a RUNNING session is `terminal send`. Use
-mailbox addresses (`run:<id>`, `dispatch:<id>`) for what a worker will check between turns, and
-`terminal send` for anything it has to see NOW.
+**Mail is not a nudge — and a nudge is not the message.** `orchestration send --to <terminal handle>`
+queues mail that a working agent never reads, because nothing tells it to run `check`, and it returns
+`ok: true` exactly like the call that works (gotcha G46). The only verb that reaches a RUNNING session
+is `terminal send`. That does NOT make it the channel: the message itself goes to a mailbox address
+(`run:<id>`, `dispatch:<id>`), or into a file with a one-line pointer when it runs long, and
+`terminal send` carries at most one sentence telling the busy worker to go read it
+("check your mailbox: `<subject>`"). It truncates silently and keeps only the tail (hard rule 4,
+G60, G64), so a nudge that grows into the instruction is how the instruction gets lost. Full
+assignment: `references/channel-discipline.md`.
 
 ---
 
