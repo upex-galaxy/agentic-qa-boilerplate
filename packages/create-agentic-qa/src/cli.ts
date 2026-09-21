@@ -23,6 +23,7 @@ import {
   rewriteProjectYaml,
   sanitizeProjectName,
   scrubGitHistory,
+  seedProjectYamlFromSchema,
 } from './prepare.ts';
 import { rollback } from './rollback.ts';
 import { ensureBunAvailable, ensureGitAvailable, runBunInstall, runBunSetup } from './runners.ts';
@@ -162,11 +163,15 @@ async function main(): Promise<number> {
       await scrubGitHistory(projectDir);
       await pruneBootstrapExcludes(projectDir);
       await rewritePackageJson(projectDir, projectName);
+      // Seed FIRST, then write identity into it: what travels is upstream's
+      // template, not the maintainer's filled yaml. The provenance reset is
+      // the fallback for a template tagged before the schema existed.
+      const seeded = await seedProjectYamlFromSchema(projectDir);
       await rewriteProjectYaml(projectDir, {
         projectName,
         projectKey: args.projectKey,
       });
-      await resetGitStrategyMeta(projectDir);
+      if (!seeded) { await resetGitStrategyMeta(projectDir); }
       s2.stop('Project prepared');
     }
     catch (err) {
