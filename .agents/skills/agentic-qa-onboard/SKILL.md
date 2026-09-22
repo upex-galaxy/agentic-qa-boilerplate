@@ -336,17 +336,22 @@ Full details in [`INSTALLER.md`](../../../INSTALLER.md).
 
 ## Community skills installed at user level
 
-`bun run setup` also runs `bunx skills add --global` for 7 cross-project skills:
+`bun run setup` also runs `bunx skills add --global` for 6 cross-project skills (the last row of the table below is NOT one of them — the orchestration binary installs it, not `setup`):
 
-| Skill | Source | Use |
+**Every installed skill needs a LOADER, or it should not be installed.** An install that no flow
+ever reaches is tokens spent on a capability nobody invokes — and the failure is silent, because an
+unused skill looks exactly like a working one. So the third column is not decoration: it names the
+skill and the moment that loads this one, or says plainly that only a human invokes it.
+
+| Skill | Source | Loaded by / when |
 | --- | --- | --- |
-| `skill-creator` | anthropics/skills | Create / edit / measure skills |
-| `find-skills` | vercel-labs/skills | Discover installable skills |
-| `github-actions-docs` | xixu-me/skills | GitHub Actions reference |
-| `brainstorming` | obra/superpowers | Pre-implementation discovery |
-| `html-ppt` | lewislulu/html-ppt-skill | HTML presentation authoring |
-| `bun` | bun.sh/docs | Bun runtime reference |
-| `mkd` | upex-galaxy/agentic-user-skills | Make Decision: decision-deck browser UI (justified options + copy-JSON contract) |
+| `skill-creator` | anthropics/skills | **user-invoked only, today.** No flow names it. `/framework-development` is the natural owner when the change IS a skill, but its skill list does not say so yet — do not read this row as if it did |
+| `find-skills` | vercel-labs/skills | **automatic, last resort.** `agentic-qa-core/references/skill-composition-strategy.md` §11.2: scan T1+T2, then installed T3+T4, and only if a task domain still has no match does any flow invoke this — then asks before installing |
+| `github-actions-docs` | xixu-me/skills | `/framework-development` and `/regression-testing` when EDITING or diagnosing `.github/workflows/**` (both name it; reading a workflow does not need it) |
+| `html-ppt` | lewislulu/html-ppt-skill | **user-invoked only.** `packages/decks/` is hand-authored; this is for a one-off deck outside that tree |
+| `bun` | bun.sh/docs | any flow hitting an unfamiliar Bun API (§6.5 CLI mapping) |
+| `mkd` | upex-galaxy/agentic-user-skills | any flow that reaches the decision threshold in `agentic-qa-core/references/decision-elicitation-doctrine.md` (>3 decisions, or one dense one) |
+| `orchestration.orchestrator_skills` | the orchestration binary | `/orca-orchestration`, ALONGSIDE it — the vendor owns the command grammar, the repo skill owns when and what |
 
 Plus 3 project-level community skills installed into `.agents/skills/` (not committed): `playwright-cli`, `playwright-best-practices`, `resend-cli`. See `cli/install.ts` `PROJECT_LEVEL_SKILLS` and `USER_LEVEL_SKILLS` arrays.
 

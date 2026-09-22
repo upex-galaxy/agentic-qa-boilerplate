@@ -111,7 +111,7 @@ framework_gates_pre_commit() {
 #   - agents:compat:check        unconditional safety net for the cross-harness contract:
 #                                the generated `.claude/skills` alias, the command wrappers
 #                                against `.agents/compatibility/command-aliases.json`,
-#                                the three hook adapters, and MCP parity for every server
+#                                the three hook adapters, MCP parity for every server, and that eslint.config.js wires every block the synced base exports
 #                                declared in .mcp.json across `.mcp.json` / `opencode.jsonc`
 #                                / `.codex/config.toml`. All of it is generated or mirrored,
 #                                so nothing else notices when a wrapper is hand-edited or an

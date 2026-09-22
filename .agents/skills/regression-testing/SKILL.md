@@ -51,7 +51,7 @@ Three phases, always in this order: **Execute → Analyze → Report**. Do not s
 
 ## Inputs
 
-- `.github/workflows/*.yml` — workflow files for regression / smoke / sanity suites; defines triggers, inputs, and artifact uploads.
+- `.github/workflows/*.yml` — workflow files for regression / smoke / sanity suites; defines triggers, inputs, and artifact uploads. **LOAD `/github-actions-docs` before editing or diagnosing one**: Actions syntax (matrix, `needs`, reusable workflows, artifact retention, permissions) is the part of this skill's surface that changes upstream without telling anyone, and a guessed key fails at runner start with a message that points nowhere. Reading one does not need it; changing one does.
 - `.context/master-test-plan.md` — regression Epic key + expected pass-rate SLOs per suite.
 - `playwright.config.ts` — reporter config, retry policy, project matrix; needed to interpret retry counts and shard splits.
 - Previous run's Allure report (artifact URL or local download under `./analysis/previous/`) — baseline for trend computation.

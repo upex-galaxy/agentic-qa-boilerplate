@@ -213,7 +213,7 @@ Different files have different sections that must never be rewritten. Apply the 
 
 **`AGENTS.md` (canonical instructions — priority §0–§11 structure as of the structural refactor):**
 - §0 Preamble ("THIS IS NOT A README")
-- §1 CRITICAL RULES — ALWAYS APPLY (11 rules, caveman-compressed)
+- §1 CRITICAL RULES — ALWAYS APPLY (every rule, caveman-compressed — the count grows; never hardcode it)
 - §2 BEHAVIORAL LAYER — HOW AI REASONS (4 UPPERCASE principles)
 - §3 ORCHESTRATION MODE — PERMANENTLY ACTIVE (7-component briefing, execution patterns)
 - §4 CONTEXT LOADING MAP — TASK → WHAT TO LOAD (preserve table SHAPE; rows may be patched)
@@ -362,7 +362,7 @@ This step focuses on `AGENTS.md`. It receives a deeper sync than other supplemen
 **Sections to preserve verbatim** (per the §0–§11 preserve-list in Step 3):
 
 - §0 Preamble
-- §1 CRITICAL RULES — ALWAYS APPLY (all 11 rules, including #11 "SCRIPTS = READ `package.json` DIRECTLY")
+- §1 CRITICAL RULES — ALWAYS APPLY (ALL rules, whatever the current count, including #11 "SCRIPTS = READ `package.json` DIRECTLY")
 - §2 BEHAVIORAL LAYER (4 principles, scope notes)
 - §3 ORCHESTRATION MODE — PERMANENTLY ACTIVE (7-component briefing, execution patterns, exempt-skill list)
 - §6 TOOL RESOLUTION (resolution table + MANDATORY load-skill-first rule)

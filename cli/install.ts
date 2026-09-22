@@ -372,7 +372,6 @@ const USER_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [
   { package: 'https://github.com/anthropics/skills', skill: 'skill-creator' },
   { package: 'https://github.com/vercel-labs/skills', skill: 'find-skills' },
   { package: 'https://github.com/xixu-me/skills', skill: 'github-actions-docs' },
-  { package: 'https://github.com/obra/superpowers', skill: 'brainstorming' },
   { package: 'https://github.com/lewislulu/html-ppt-skill', skill: 'html-ppt' },
   { package: 'https://bun.sh/docs', skill: 'bun' },
   // Cross-project decision-deck CLI (`mkd`, Make Decision): the AI writes a spec
