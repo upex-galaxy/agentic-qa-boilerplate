@@ -1007,6 +1007,7 @@ const COMPAT_GROUP_SURFACE: Record<CompatibilityErrorGroup, ParitySurface> = {
   wrappers: 'commands',
   hooks: 'hooks',
   mcp: 'mcp',
+  lint: 'gates',
 };
 
 /** Same classifier `bun run agents:compat` groups its output by. */

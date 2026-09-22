@@ -697,6 +697,66 @@ export function validateHookCompatibility(root = process.cwd()): string[] {
   return errors;
 }
 
+/**
+ * Every scoped config block `eslint.config.base.js` exports must be wired into
+ * `eslint.config.js`.
+ *
+ * THE HOLE THIS CLOSES. The base is SYNCED, so a new block reaches every
+ * project on the next `bun run up`. `eslint.config.js` is on the protected
+ * watchlist and is NEVER overwritten, and the wiring — importing the block and
+ * passing it to `antfu(...)` — lives only there. So upstream can ship a rule
+ * that lands on disk, exports cleanly, and enforces NOTHING, while
+ * `lint:check` stays green and the parity report shows at most a
+ * non-blocking drift row. Measured on this repo: `CLI_IMPORT_CLOSURE` has
+ * carried that hole since it was introduced, and `KATA_IMPORT_ALIASES`
+ * inherited it the day it was added.
+ *
+ * This is a NAME check on purpose. Verifying the blocks actually take effect
+ * would mean executing the consumer's flat config, which depends on its
+ * plugins resolving — a check that cannot run is worse than a coarse one that
+ * does. A project is free to narrow a block's `files` afterwards; it is not
+ * free to drop it silently.
+ */
+export function validateEslintBlockWiring(root = process.cwd()): string[] {
+  const basePath = join(root, 'eslint.config.base.js');
+  const consumerPath = join(root, 'eslint.config.js');
+  if (!existsSync(basePath) || !existsSync(consumerPath)) { return []; }
+
+  let base: string;
+  let consumer: string;
+  try {
+    base = readFileSync(basePath, 'utf8');
+    consumer = readFileSync(consumerPath, 'utf8');
+  }
+  catch { return []; }
+
+  // Scoped blocks are SCREAMING_SNAKE exports; `BASE_ESLINT_OPTIONS` is the
+  // options object spread into the first argument, not a block, so it is
+  // excluded by name.
+  const blocks = [...base.matchAll(/^export const ([A-Z][A-Z0-9_]*)\s*=/gm)]
+    .map(m => m[1])
+    .filter(name => name !== 'BASE_ESLINT_OPTIONS');
+
+  // Comments are stripped before the search, and the search is word-bounded.
+  // Both matter, and the first one was a live hole the moment this check was
+  // written: `eslint.config.js`'s own JSDoc says "Extra project-only config
+  // blocks go after `CLI_IMPORT_CLOSURE`", so a raw `includes` found that name
+  // in prose and passed a consumer that had stopped wiring the block at all.
+  // The word boundary closes the second: without it, wiring
+  // `CLI_IMPORT_CLOSURE_EXTRA` silently satisfies `CLI_IMPORT_CLOSURE`.
+  const code = consumer
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1');
+
+  const errors: string[] = [];
+  for (const name of blocks) {
+    if (!new RegExp(`\\b${name}\\b`).test(code)) {
+      errors.push(`eslint.config.js does not wire ${name} from eslint.config.base.js: the rule ships but enforces nothing. Add it to the import and to the antfu(...) call.`);
+    }
+  }
+  return errors;
+}
+
 export function compatibilityContractPaths(root = process.cwd()): string[] {
   const resolvedRoot = resolve(root);
   return [

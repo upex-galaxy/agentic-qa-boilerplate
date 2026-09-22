@@ -23,7 +23,7 @@ import type { Stats } from 'node:fs';
 import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, readlinkSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
 import { isAbsolute, join, normalize, relative, resolve } from 'node:path';
 
-import { validateHookCompatibility, validateMcpParity } from './agent-compatibility-contracts.ts';
+import { validateEslintBlockWiring, validateHookCompatibility, validateMcpParity } from './agent-compatibility-contracts.ts';
 
 export const CLAUDE_INSTRUCTIONS_SHIM = '@AGENTS.md\n';
 
@@ -132,9 +132,9 @@ export interface CompatibilityCheck {
 }
 
 /** The surface a compatibility error belongs to, so a report can group them. */
-export type CompatibilityErrorGroup = 'alias' | 'wrappers' | 'hooks' | 'mcp' | 'instructions';
+export type CompatibilityErrorGroup = 'alias' | 'wrappers' | 'hooks' | 'mcp' | 'lint' | 'instructions';
 
-export const COMPATIBILITY_GROUP_ORDER: CompatibilityErrorGroup[] = ['instructions', 'alias', 'wrappers', 'hooks', 'mcp'];
+export const COMPATIBILITY_GROUP_ORDER: CompatibilityErrorGroup[] = ['instructions', 'alias', 'wrappers', 'hooks', 'mcp', 'lint'];
 
 export const COMPATIBILITY_GROUP_LABEL: Record<CompatibilityErrorGroup, string> = {
   instructions: 'Instructions (AGENTS.md + CLAUDE.md shim, canonical skills)',
@@ -142,6 +142,7 @@ export const COMPATIBILITY_GROUP_LABEL: Record<CompatibilityErrorGroup, string> 
   wrappers: 'Command wrappers (.claude/commands, .opencode/commands)',
   hooks: 'Hook adapters',
   mcp: 'MCP parity (.mcp.json, opencode.jsonc, .codex/config.toml)',
+  lint: 'Lint config wiring (eslint.config.js <- eslint.config.base.js)',
 };
 
 /** Classify one error message by its wording (the messages are ours). */
@@ -150,6 +151,9 @@ export function compatibilityErrorGroup(message: string): CompatibilityErrorGrou
   if (/command wrapper|command alias/i.test(message)) { return 'wrappers'; }
   if (/skills alias|\.claude\/skills/i.test(message)) { return 'alias'; }
   if (/hook/i.test(message)) { return 'hooks'; }
+  // A synced block that the project-owned consumer never wired: the rule is
+  // on disk and enforcing nothing. Not an instructions problem.
+  if (/eslint\.config/i.test(message)) { return 'lint'; }
   return 'instructions';
 }
 
@@ -513,6 +517,7 @@ export function checkAgentCompatibility(
     errors.push(...validateCommandAliases(paths.root));
     errors.push(...validateHookCompatibility(paths.root));
     errors.push(...validateMcpParity(paths.root));
+    errors.push(...validateEslintBlockWiring(paths.root));
   }
   catch (error) {
     errors.push(error instanceof Error ? error.message : String(error));
