@@ -12,14 +12,23 @@
 
 ## 1 · The three channels
 
+The two verbs are named in `.agents/project.yaml` → `orchestration.message_verb` and
+`orchestration.terminal_verb`, not hardcoded here, so a project on another orchestrator keeps the
+doctrine and swaps the commands. On this repo they resolve to `{{MESSAGE_VERB}} send` and
+`{{TERMINAL_VERB}} send` on {{ORCHESTRATOR_NAME}}.
+
 | Channel | What it carries | Integrity |
 |---|---|---|
-| **`orchestration send`** (the mailbox) | **every message between sessions**: status, questions, answers, decisions, escalations | **byte-intact.** Measured 2026-09-21, orca 1.4.190: three messages read back at exactly 126, 896 and 30 bytes (G66) |
+| **`{{MESSAGE_VERB}} send`** (the mailbox) | **every message between sessions**: status, questions, answers, decisions, escalations | **byte-intact.** Measured 2026-09-21, orca 1.4.190: three messages read back at exactly 126, 896 and 30 bytes (G66) |
 | **a file plus a one-line pointer** | **anything longer than a couple of sentences**: briefs, reports, scope agreements, evidence, anything with a table | perfect, and re-readable later, which a message is not |
-| **`terminal send`** | **driving a terminal**: commands, CLI calls, harness slash-commands, keystrokes | **lossy.** Truncates silently, keeps only the TAIL, reports success anyway (G60, G64) |
+| **`{{TERMINAL_VERB}} send`** | **driving a terminal**: commands, CLI calls, harness slash-commands, keystrokes | **lossy.** Truncates silently, keeps only the TAIL, reports success anyway (G60, G64) |
 
-**The test**: if a human would READ it, it does not go through `terminal send`. If a shell or a TUI
-would EXECUTE it, that is exactly what the verb is for.
+**The test**: if a human would READ it, it does not go through `{{TERMINAL_VERB}} send`. If a shell
+or a TUI would EXECUTE it, that is exactly what the verb is for.
+
+**The vendor stubs, for the same reason.** `orchestration.orchestrator_skills` measure about 2k tokens for the
+pair (4150 and 3862 bytes, 2026-09-22) and load alongside this skill. The figure is here rather than
+in `project.yaml` because a config file should carry the setting, not the lab notebook.
 
 The corollary that surprises people: the mailbox is not the unreliable channel. A session that meets
 one truncated `terminal send` and concludes "messaging between agents is unreliable" starts avoiding

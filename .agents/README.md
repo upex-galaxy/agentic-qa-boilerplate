@@ -108,8 +108,17 @@ orchestration:
 | `default_agent` | `{{DEFAULT_AGENT}}` | Which harness launches a worker when the user doesn't say: `claude` \| `codex` \| `opencode`. |
 | `default_model` | `{{DEFAULT_MODEL}}` | Full provider model id passed to the launch line; empty string defers to the harness's own default. |
 | `default_effort` | `{{DEFAULT_EFFORT}}` | Effort level passed to the launch line, when the harness supports one. |
+| `orchestrator_name` | `{{ORCHESTRATOR_NAME}}` | The orchestration application, as the operator names it. Prose only. |
+| `orchestrator_cli` | `{{ORCHESTRATOR_CLI}}` | The binary on `PATH`. Empty = no orchestrator on this machine: every workflow skill falls back to the pasted-launch-line path and says NOTHING about it. |
+| `message_verb` | `{{MESSAGE_VERB}}` | The command that carries **messages between sessions**. Byte-intact. |
+| `terminal_verb` | `{{TERMINAL_VERB}}` | The command that **drives a terminal**: commands, CLI calls, harness slash-commands, keystrokes. Truncates a long payload silently and keeps only the TAIL. |
+| `orchestrator_skills` | *(none — a list)* | Vendor skills the orchestrator installs at user level, loaded ALONGSIDE `/orca-orchestration`. Referenced by path (`orchestration.orchestrator_skills`), never as a `{{VAR}}`: a list is not a substitutable scalar, same carve-out as `git_strategy.protected`. |
 
-**An explicit user instruction in the conductor session always overrides these defaults for that run** — they are the fallback only when the user says nothing (e.g. "launch 6 workers" beats `max_workers: 4` for that dispatch). `bun run vars:check` reports the four leaves as `DECLARED_BUT_UNUSED` until a skill or doc references `{{MAX_WORKERS}}` etc. by name; that warning does not fail the check.
+**`message_verb` and `terminal_verb` are NOT interchangeable, and that pair is the point.** The test: if a HUMAN would read it, it does not go through `terminal_verb`; if a shell or a TUI would EXECUTE it, that is what the verb is for. One structural exception: a supervised worker's FIRST prompt must go through `terminal_verb`, because the native launch has no argv — keep it short and pointing at a file. Full doctrine, measurements and the reverse-direction rules: `orca-orchestration/references/channel-discipline.md`.
+
+**Naming the orchestrator here is what lets a skill stop hardcoding it.** A project on a different orchestrator keeps the whole doctrine and swaps five values.
+
+**An explicit user instruction in the conductor session always overrides these defaults for that run** — they are the fallback only when the user says nothing (e.g. "launch 6 workers" beats `max_workers: 4` for that dispatch). `bun run vars:check` reports any leaf as `DECLARED_BUT_UNUSED` until a skill or doc references it by name; that warning does not fail the check.
 
 ## Variable syntax conventions
 

@@ -1,7 +1,8 @@
 # Worker Contract — What a Launched Session Owes the Fleet
 
 > Loaded by: a worker session (WORKER mode), and by the conductor when it writes a brief.
-> A worker loads THIS file and its domain skill. It loads NEITHER vendor guide: on the supervised
+> A worker loads THIS file, its domain skill, and the stubs in `orchestration.orchestrator_skills`
+> (`.agents/project.yaml`) — the vendor's command grammar, about 2k tokens for the pair. On the supervised
 > path the runtime injects a preamble at launch that already carries the message grammar (`taskId`,
 > `dispatchId`, the exact syntax of `worker_done` / `ask` / `escalation`, and the correct `--from`).
 > Launched unsupervised, that same text reaches you as a FILE your brief points at — read it once,

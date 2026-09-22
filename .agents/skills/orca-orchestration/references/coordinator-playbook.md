@@ -1,9 +1,9 @@
 # Coordinator Playbook — The Conductor's Full Cycle
 
 > Loaded by: `orca-orchestration` in CONDUCTOR mode.
-> Grammar source: ask the binary (`orca skills get orchestration`, and `orca skills get orca-cli`
-> when you create terminals or worktrees). This file carries the ORDER, the repo-specific
-> decisions and the traps — not the vendor reference.
+> Grammar source: LOAD the stubs in `orchestration.orchestrator_skills` (`.agents/project.yaml`)
+> alongside this skill, then ask the binary only for a DEEP topic a stub points at. This file
+> carries the ORDER, the repo-specific decisions and the traps — not the vendor reference.
 > Every command below was checked against the live schema (`orca agent-context --json`,
 > app version 1.4.190, 2026-09-17). Re-check with `orca agent-context --json` before trusting a
 > flag on a newer version.

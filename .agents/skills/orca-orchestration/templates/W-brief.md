@@ -38,8 +38,9 @@ do not re-read the full SKILL.md unless an instruction below says so.>
 
 ## Skills to load
 
-`/<domain-skill>`, and `/orca-orchestration` in WORKER mode (it loads
-`references/worker-contract.md`). NOT the vendor guides: your injected preamble already carries the
+`/<domain-skill>`, `/orca-orchestration` in WORKER mode (it loads
+`references/worker-contract.md`), and the stubs in `orchestration.orchestrator_skills` — the vendor
+command grammar, cheap and worth it. Your injected preamble additionally carries the
 message grammar.
 
 ## File ownership

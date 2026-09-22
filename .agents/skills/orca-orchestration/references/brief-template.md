@@ -35,7 +35,7 @@ a system temp directory (it triggers a permission prompt on some harnesses).
 | 1 | **Goal** | unchanged: one sentence |
 | 2 | **Context docs** | ABSOLUTE paths into the PRIMARY checkout. A relative path resolves against a cwd the worker may not share, and a path inside the worker's own worktree may not exist there at all |
 | 3 | **Project Standards (auto-resolved)** | unchanged: compact rules pasted from the generated skill registry. A worker trusts them and does not re-read the full SKILL.md unless told to |
-| 4 | **Skills to load** | the domain skill by trigger, plus `orca-orchestration` in WORKER mode. NOT the vendor guides: the injected preamble carries the message grammar |
+| 4 | **Skills to load** | the domain skill by trigger, `orca-orchestration` in WORKER mode, AND the stubs in `orchestration.orchestrator_skills` (the vendor command grammar — load them, they are ~2k tokens for the pair and skipping them is what produces invented flags) |
 | 5 | **Exact instructions** | numbered, each naming its tool or skill action, and each verifiable |
 | 6 | **Report format** | two destinations now: the long report FILE, and the `worker_done` message that points at it |
 | 7 | **Rules** | the relevant Critical Rules, plus the fleet prohibitions below |

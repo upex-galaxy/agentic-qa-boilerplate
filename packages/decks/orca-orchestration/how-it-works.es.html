@@ -538,13 +538,13 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
    cuándo partir el trabajo · topología por actividad · provisioning · brief · gotchas medidos · phrasebook
         ^ apunta a v
 LAYER 2 · GRAMÁTICA + MÁQUINA  las guías que sirve el binario       (mailbox, Run, Task, ciclo del worker)
-   versionadas CON el binario. Los stubs de usuario no enseñan nada: dicen "pregúntale al binario".
+   versionadas CON el binario. Los stubs de usuario llevan la gramática de comandos y se cargan junto a esta skill: ~2k tokens el par.
         ^ opera sobre v
 LAYER 1 · APP                 la app corriendo · runtime alcanzable · board · móvil</div>
     <div class="grid g3 mt-m">
       <div class="card"><p class="lbl">Regla de composición</p><p class="small mt-s">Si la guía del binario ya lo dice, aquí va un <b>puntero</b>, no una copia. Una copia se desincroniza en silencio en el próximo release.</p></div>
       <div class="card"><p class="lbl">Consecuencia para el gate</p><p class="small mt-s">Se evalúa sobre <b>binario + runtime</b>, nunca sobre "¿está instalado el skill del vendor?". Una máquina con binario y sin stubs es plenamente capaz.</p></div>
-      <div class="card card-accent"><p class="lbl">Consecuencia para el coste</p><p class="small mt-s">Cargar las guías del vendor "por si acaso" son decenas de miles de tokens que no habilitan nada. Se piden justo antes de usarlas, y solo el rol que las necesita. El <b>worker no carga ninguna</b>: su preámbulo inyectado ya lleva su contrato.</p></div>
+      <div class="card card-accent"><p class="lbl">Consecuencia para el coste</p><p class="small mt-s">Los stubs del vendor miden ~2k tokens el par y SE CARGAN junto a la skill: saltárselos es lo que produce flags inventados. On-demand queda solo para los temas profundos que un stub apenas señda. Se piden justo antes de usarlas, y solo el rol que las necesita. El <b>worker no carga ninguna</b>: su preámbulo inyectado ya lleva su contrato.</p></div>
     </div>
     <div class="notes">Aquí está la razón de que el SKILL.md sea corto: lo que vive en el repo es lo que ninguna guía del vendor tiene — nuestros gaps de provisioning, la topología por actividad, el brief, los gotchas medidos, la integración con git y el phrasebook del owner.</div>
   </section>
@@ -612,7 +612,7 @@ LAYER 1 · APP                 la app corriendo · runtime alcanzable · board �
       <li><b>8 · Cosechar</b> <span class="mono">learnings.md</span> y <span class="mono">skill-improvements.md</span>, escribir <span class="mono">kickoff.md</span>, y reportar al owner.</li>
     </ul>
     <p class="small dim mt-m">El paso 5 es el que más incidentes produjo: <b>crear + lanzar + entregar el brief es una operación indivisible</b>. Dos incidentes distintos dejaron un worker ocioso durante horas porque el brief nunca llegó.</p>
-    <div class="notes">El paso 2 tiene una razón de coste: la gramática del binario son decenas de miles de tokens. El paso 7 tiene una razón de estabilidad: diez worktrees vivos tumbaron el runtime dos veces en una sesión.</div>
+    <div class="notes">El paso 2 tiene una razón de coste invertida en 2026-09-22: los stubs son baratos (~2k el par) y se cargan; lo caro es el payload profundo del binario, que sigue siendo on-demand. El paso 7 tiene una razón de estabilidad: diez worktrees vivos tumbaron el runtime dos veces en una sesión.</div>
   </section>
 
   <!-- 8. LANZAMIENTO -->
@@ -683,7 +683,7 @@ LAYER 1 · APP                 la app corriendo · runtime alcanzable · board �
       <div class="card card-accent"><p class="lbl">El trigger de <span class="mono">ask</span> que salvó el dogfood</p><p class="small mt-s">Cuando <b>tu propia medición contradice una instrucción del conductor</b>: PARA y pregunta, con las dos lecturas y la evidencia. Nunca cumplas en silencio, nunca te desvíes en silencio.</p><p class="small mt-s">Un worker lo hizo por criterio propio y es la razón de que el reporte del run no esté equivocado. Ahora es doctrina, no suerte.</p></div>
       <div class="card"><p class="lbl">El canal, y lo que no es canal</p><p class="small mt-s">Lo único que llega a una sesión que está trabajando es <b>texto enviado a su terminal</b>. Un mensaje dirigido a la terminal por la vía de orquestación reporta éxito y no llega. La pantalla renderizada es <b>respaldo</b> para ver qué hace un worker, nunca el canal.</p></div>
     </div>
-    <div class="notes">El worker no carga ninguna guía del vendor: su preámbulo inyectado ya lleva el contrato. Carga su reference corto y su skill de dominio (/sprint-testing, /test-automation…).</div>
+    <div class="notes">El worker SÍ carga los stubs del vendor (orchestration.orchestrator_skills); su preámbulo inyectado lleva además el contrato. Carga su reference corto y su skill de dominio (/sprint-testing, /test-automation…).</div>
   </section>
 
   <!-- 11. CLAIMS -->

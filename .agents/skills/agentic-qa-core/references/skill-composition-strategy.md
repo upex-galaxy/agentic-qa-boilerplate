@@ -24,7 +24,7 @@ The repo ships with **11 project-owned workflow skills** + **1 vendored skill** 
 - **Engram only** (user-level via gentle-ai minimal preset): persistent memory binary + MCP adapter. No SDD-* skills, no foundation skills. Users who want the full SDD suite for `/framework-development` work install it manually: `gentle-ai install --components engram,sdd --agent <a>`.
 - **Vendored T2 skill**: `judgment-day` (Apache-2.0, attribution preserved in frontmatter) lives committed under `.agents/skills/judgment-day/`. No upstream dependency.
 - **3 community skills (project-level)**: `playwright-cli` (Microsoft), `playwright-best-practices` (currents-dev), `resend-cli` (resend).
-- **6 community skills (user-level / global)**: `skill-creator`, `find-skills`, `github-actions-docs`, `brainstorming`, `html-ppt`, `bun`.
+- **5 community skills (user-level / global)**: `skill-creator`, `find-skills`, `github-actions-docs`, `html-ppt`, `bun`.
 
 Current state (AGENTS.md): T1 skills named explicitly in §5; T2/T3/T4 mentioned by category. Auto-discovery: zero mechanism. Cross-skill composition: only project-owned sister calls (`sprint-testing` → `test-documentation`, `git-flow-master`).
 
@@ -47,7 +47,7 @@ Four tiers. Different discovery and load rules per tier.
 | **T2 — Vendored** | `.agents/skills/` (committed, upstream attribution in frontmatter) | `judgment-day` (gentle-ai, Apache-2.0) | Named in AGENTS.md | Silent on explicit user trigger (`/judgment-day`, `juzgar`) or when cited by host orchestrator (`test-automation` Phase 3, `git-flow-master` pre-PR) |
 | **T2-opt — Optional gentle-ai SDD bundle (user-installed)** | `~/.claude/skills/sdd-*` (only if user runs `gentle-ai install --components engram,sdd`) | `sdd-init`, `sdd-explore`, `sdd-propose`, `sdd-spec`, `sdd-design`, `sdd-tasks`, `sdd-apply`, `sdd-verify`, `sdd-archive`, `sdd-onboard` | NOT installed by `bun run setup` (minimal preset = engram only). Discovered at runtime from system-reminder skill list when present | Silent **inside** `framework-development` only — see §4 anti-leak contract. NEVER silent inside `shift-left-testing`, `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing` |
 | **T3 — Community project-level** | `.agents/skills/` (installed by `install.ts` PROJECT_LEVEL_SKILLS, not committed) | `playwright-cli`, `playwright-best-practices`, `resend-cli` | Named **by category** in AGENTS.md (not by skill name). Discovered at runtime from system-reminder skill list | Silent if matched by category (e.g. user writes a Playwright test → load `playwright-best-practices`) |
-| **T4 — Community user-level** | `~/.claude/skills/` (installed by `install.ts` USER_LEVEL_SKILLS) | `skill-creator`, `find-skills`, `github-actions-docs`, `brainstorming`, `html-ppt`, `bun` | **NOT named in AGENTS.md**. Discovered at runtime from system-reminder skill list. Auto-match by task domain | **ASK user before load** (may not be installed, or user may not want it for this task) |
+| **T4 — Community user-level** | `~/.claude/skills/` (installed by `install.ts` USER_LEVEL_SKILLS) | `skill-creator`, `find-skills`, `github-actions-docs`, `html-ppt`, `bun` | **NOT named in AGENTS.md**. Discovered at runtime from system-reminder skill list. Auto-match by task domain | **ASK user before load** (may not be installed, or user may not want it for this task) |
 
 ### Tier decision rule
 
@@ -68,9 +68,9 @@ T3 list (`PROJECT_LEVEL_SKILLS` in `cli/install.ts`):
 `playwright-cli` (microsoft), `playwright-best-practices` (currents-dev), `resend-cli` (resend).
 
 T4 list (`USER_LEVEL_SKILLS` in `cli/install.ts`):
-`skill-creator`, `find-skills`, `github-actions-docs`, `brainstorming`, `html-ppt`, `bun`.
+`skill-creator`, `find-skills`, `github-actions-docs`, `html-ppt`, `bun`.
 
-**Orchestration vendor stubs are T4 but NOT in `USER_LEVEL_SKILLS`**: `orca-cli` and `orchestration` are guides bundled with the orchestration binary, which installs them user-level itself. They are optional and NEVER required — T1 `orca-orchestration` requests command grammar from the binary on demand, so the availability gate is the binary + a reachable runtime and never an installed stub. Do not add them to `install.ts`; per-machine setup lives in `orca-orchestration/references/orca-machine-setup.md`.
+**Orchestration vendor stubs are T4 but NOT in `USER_LEVEL_SKILLS`**: `orca-cli` and `orchestration` are guides bundled with the orchestration binary, which installs them user-level itself. They are optional and NEVER required — T1 `orca-orchestration` LOADS the stubs named in `orchestration.orchestrator_skills` (`.agents/project.yaml`) alongside itself — about 2k tokens for the pair — and requests only DEEP topics from the binary on demand, so the availability gate is the binary + a reachable runtime and never an installed stub. Do not add them to `install.ts`; per-machine setup lives in `orca-orchestration/references/orca-machine-setup.md`.
 
 ---
 
@@ -221,7 +221,7 @@ Project-owned and project-dependency skills are named explicitly. Community skil
 | `meta-skill` | `skill-creator`, `find-skills` | only on user request (find-skills auto-invoked per §8.2 as last-resort); also `framework-development` (skill evolution) and `session-handoff` (session continuity) |
 | `ci-cd` | `github-actions-docs` | `regression-testing`, `framework-development` (CI workflow evolution) |
 | `framework-evolution` | (no T3/T4 — concept-only category) | `framework-development` (self-tag) |
-| `orchestration` | (the binary's own `orca-cli` / `orchestration` guides — optional T4, served by the binary, never required) | `orca-orchestration` (self-tag); `session-handoff` (successor launch rides the same terminal layer, but a handoff is ownership transfer, NOT a Run/Task/Dispatch); cited as the transport by `sprint-testing`, `test-automation`, `shift-left-testing`, `framework-development`, `regression-testing` |
+| `orchestration` | (the binary's own guides, named in `orchestration.orchestrator_skills` — optional to HAVE, loaded alongside `/orca-orchestration` when present, and never a gate) | `orca-orchestration` (self-tag); `session-handoff` (successor launch rides the same terminal layer, but a handoff is ownership transfer, NOT a Run/Task/Dispatch); cited as the transport by `sprint-testing`, `test-automation`, `shift-left-testing`, `framework-development`, `regression-testing` |
 
 Categories deliberately omitted from the QA scope (present in the dev sister doc, not relevant here): `frontend-ui`, `frontend-framework`, `forms-validation`, `backend-db`, `language`, `seo`, `deploy`, `creativity`, `doc-generation`, `prose-polishing`, `presentation`. QA does not author UI, deploy, or write production code; if a category appears legitimately needed in the future, add it via §5.1 (additive change).
 

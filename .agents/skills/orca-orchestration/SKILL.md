@@ -9,7 +9,7 @@ complementary_categories: [orchestration]
 compact_rules: |
   - DO gate on the BINARY plus a reachable RUNTIME, never on "is a vendor skill installed". Three states: A no binary, B binary with unreachable runtime, C ready. In a workflow skill, states A and B are TOTAL SILENCE: never name the orchestrator, never list it as a prerequisite, never mention it in an ATR or a blocked-token sweep. The one-line install recommendation belongs to THIS skill and fires only because the user asked for orchestration.
   - DO write the launch file ALWAYS, with or without a runtime, and keep the PROMPT identical on both paths, byte for byte, opening with `/<workflow-skill> <KEY> fleet worker` and carrying the no-stopping sentence. The launch line itself is for a human to paste or for a deliberately unsupervised terminal; the prompt is the payload both paths share, and a paraphrased prompt is the exact failure this rule exists to prevent.
-  - DO NOT copy the vendor command grammar into this repo. Ask the binary for it at the moment of use (`orca skills get orchestration` for the conductor, `orca skills get orca-cli` for terminals and worktrees, nothing for a worker — its injected preamble already carries the contract). A copied grammar goes stale in silence on the next release.
+  - DO NOT copy the vendor command grammar into this repo. LOAD the stubs listed in `orchestration.orchestrator_skills` (`.agents/project.yaml`) alongside this skill — conductor AND worker, they are about 2k tokens for the pair — and ask the binary only for the DEEP topics a stub points at. A copied grammar goes stale in silence on the next release; a grammar nobody loaded produces invented flags.
   - DO treat one-shot subagents as the DEFAULT executor (AGENTS.md §3, unchanged) and a supervised worker as the declared exception: persistent, addressable, owns a scope end to end. The conductor still uses subagents for its OWN reads.
   - DO NOT allow periodic heartbeats, even though the injected preamble asks for them. Every heartbeat wakes the conductor to read the word "alive". A worker sends exactly three things: `worker_done` (once, with an explicit outcome), `ask` (blocking), `escalation`. The brief must prohibit heartbeats in writing.
   - DO NOT use the harness's own agent-to-agent messaging or user-question tools from a worker: from an isolated worktree the conductor is not addressable and nobody is watching a user prompt. The channel is the orchestration mailbox, and a question that does not block goes out as a message while the worker keeps going on everything that does not depend on the answer.
@@ -70,7 +70,7 @@ It is **optional by construction**. Everything here has a path that works with n
 ## Quick start (conductor)
 
 1. Run the gate. State A or B → say the one line below and continue on the fallback.
-2. Ask the binary for the grammar NOW, not earlier: `orca skills get orchestration` (and `orca skills get orca-cli` if you will create terminals or worktrees).
+2. **Load every skill in `orchestration.orchestrator_skills` now, alongside this one.** They are the vendor's command grammar and they are small; this skill is the WHEN and the WHAT. Skipping them is what produces invented flags. Then ask the binary for a DEEP topic only when a stub points at one (`{{ORCHESTRATOR_CLI}} skills get <topic>`). Nothing installed → skip straight to asking the binary; the gate never depended on the stubs.
 3. Pick the topology from what the work WRITES (`references/topologies.md`), and run the triage-time collision check in claim vocabulary (`references/claims-protocol.md` §5).
 4. Create the scope `.session/orchestration/<slug>/`, seed `run.md`, `roster.md`, `COMMON.md`, `launch.txt` from `templates/`.
 5. Run the cycle in `references/coordinator-playbook.md` §1, in that order: Run → Tasks → placement → NATIVE launch → verify readiness and credentials on screen → send the prompt. Those last three are not separable.
@@ -97,7 +97,11 @@ LAYER 1 · APP                the app running · runtime reachable · board · p
 
 **Consequence for the gate**: it is evaluated on `binary + runtime`, NEVER on "is the vendor skill installed". A machine with the binary and no stubs is fully capable, because this reference knows how to ask the binary for the grammar.
 
-**Consequence for cost**: loading the vendor guides "just in case" is tens of thousands of tokens that enable nothing. The guide is fetched when it is about to be used, and only by the role that needs it: conductor → `orchestration`; whoever creates terminals or worktrees → `orca-cli`; **worker → neither**, its injected preamble already carries its contract.
+**Consequence for cost — CORRECTED 2026-09-22, this paragraph used to say the opposite.** It claimed loading the vendor guides was "tens of thousands of tokens that enable nothing" and told every role to fetch on demand, worker included. **Measured: the two stubs are 4150 and 3862 bytes, about 2k tokens for the pair.** The old claim conflated the user-level SKILL.md STUB with the full topic payload the binary serves on demand (`{{ORCHESTRATOR_CLI}} skills get <topic>`) — those are different artifacts and only the second is large.
+
+So the rule is now: **`orchestration.orchestrator_skills` load ALONGSIDE this skill, never instead of it.** This skill owns WHEN and WHAT; the vendor stubs own the command grammar. Two thousand tokens up front is cheaper than one iteration spent correcting an invented flag, which is what the fetch-on-demand posture actually cost on a live sprint-testing fleet. The on-demand fetch stays for the DEEP topics a stub only points at.
+
+The list is `orchestration.orchestrator_skills` in `.agents/project.yaml`, not a hardcoded name here. Empty list = nothing installed, and this skill falls back to asking the binary for its grammar — which is still fully capable, per the gate rule above.
 
 ---
 
@@ -147,8 +151,8 @@ Practical rule: **the subagent explores and returns a map; the worker executes a
 
 | Mode | Who | Loads | Does NOT load |
 |---|---|---|---|
-| **CONDUCTOR** | the session talking to the owner | this SKILL.md + `references/coordinator-playbook.md` + the binary's `orchestration` guide right before the first command + its `orca-cli` guide if it creates terminals or worktrees | nothing else; its reads go through subagents |
-| **WORKER** | each launched session | `references/worker-contract.md` (short) + `references/channel-discipline.md` (shorter) + its domain skill (`/sprint-testing`, `/test-automation`, …) | neither vendor guide: the injected preamble carries the contract |
+| **CONDUCTOR** | the session talking to the owner | this SKILL.md + `references/coordinator-playbook.md` + every stub in `orchestration.orchestrator_skills`, loaded up front; a DEEP topic from the binary only when a stub points at one | nothing else; its reads go through subagents |
+| **WORKER** | each launched session | `orchestration.orchestrator_skills` + `references/worker-contract.md` (short) + `references/channel-discipline.md` (shorter) + its domain skill (`/sprint-testing`, `/test-automation`, …) | nothing else: the injected preamble carries the rest of its contract |
 | **AUTOMATION** | an unattended scheduled routine | `references/automations.md` + this SKILL.md in conductor mode | anything that produces output: **the dispatcher never produces** |
 | **OWNER** | the user, by chat or phone | the phrasebook below | |
 
@@ -206,6 +210,12 @@ The owner speaks natural language to the conductor; the conductor translates. Th
 18. **`ok: false` on a `terminal send` means a HUMAN is typing in that terminal. Never retry.** It is the runtime protecting that person's input box, not a transport failure: a retry interleaves your keystrokes with theirs, and a fallback to a longer message makes it worse. Wait, then read the screen (G65). Do not conclude the session is unreachable.
 19. **A message that begins mid-sentence is a TRUNCATION until proven otherwise.** The head is what gets lost, so the damage reads like a typo or a stray keystroke rather than like a missing message, and nobody goes looking for the rest (G64). Ask for the pointer; **never answer the fragment**, and never reconstruct what you think it said.
 20. **A name is not an address: sign with the terminal handle plus the Run id.** Three addressing failures, and the two quiet ones cost more than the loud one: a name that resolves to NOTHING (loud — three sessions were routed at a dead conductor name and each improvised differently); a name that resolves ONLY TO ITSELF, read by a session out of its own roster and unresolvable by every peer, which looks verified from the inside (G70); and a name that PREFIX-MATCHES the wrong session in a different repository and returns success (G69). A brief, a report or a seed names its author by the terminal handle (`ORCA_TERMINAL_HANDLE`, which is in the environment and is not a self-report) plus the Run id — never by a name the session read about itself.
+
+21. **The channel carries no identity, so a RECIPIENT verifies the sender.** Rule 20 is the sending half; this is the other one, and it is the half that actually got burned. A message arrives with no trustworthy author — the transport can prefix-match the wrong session in another repository and still return success (G69) — so a recipient that cannot identify the sender from the payload ASKS instead of inferring from context. The corollary bites hardest on a REPLY: answering a message whose author you assumed is how a scope agreement about one repository landed in a session working in another.
+
+22. **A conductor decides scope; a worker decides execution.** The split is not seniority, it is blast radius: a worker changes what its brief already named, and anything that widens the brief — a new file owner, another ticket, a different branch, a schema or fixture other workers share — stops and escalates. A worker that quietly widens its own scope is the failure the claims protocol cannot see, because no claim was ever filed. Conductors own the inverse error: a brief so narrow the worker must widen it to finish is a conductor defect, not a worker one.
+
+23. **A report is a COUNT, not a narrative.** "Mostly done", "almost there" and "a few failures" are not states a conductor can act on: they force a follow-up question that the report existed to prevent. Every stage report and every standby report leads with numbers — how many passed, how many remain, how many are blocked and on whom — and the prose comes after, if at all. Full shape: `references/standby-report-contract.md`.
 
 ---
 
@@ -275,6 +285,7 @@ behaviour.
 | `references/topologies.md` | topology per repo activity, "when a worktree", git rules per topology |
 | `references/provisioning.md` | what a fresh worktree of THIS repo lacks, how to repair it, the provisioning script, the setup hook |
 | `references/brief-template.md` | the fleet extension of the 7-component briefing, plus the two templates |
+| `references/standby-report-contract.md` | what a session emits when it STOPS: the six parts, the closed blocker vocabulary, the three envelopes, and why it is not a progress table or a heartbeat. Read when a session goes to standby or reaches a final status |
 | `references/gotchas.md` | every measured gotcha with symptom, fix, date and the version it was verified against, plus the vendor guide's known lies |
 | `references/automations.md` | unattended routines: recipes, the frozen-prompt trap, cost per wake-up, "the dispatcher never produces" |
 | `references/launch-seam.md` | how a workflow skill writes its launch file and its three gated lines, and what it must never do |
