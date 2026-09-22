@@ -342,7 +342,11 @@ describe('projectDelta', () => {
     expect(delta.gaps).toHaveLength(1);
     expect(delta.gaps[0].block).toBe('orchestration');
     expect(delta.gaps[0].wholeBlock).toBe(true);
-    expect(delta.gaps[0].paths).toHaveLength(4);
+    // Every leaf of the block, whatever the count: asserting a hardcoded
+    // number here just breaks the day someone legitimately adds a key.
+    const blockLeaves = [...schemaKeyPaths(schema)!.keys()].filter(k => k.startsWith('orchestration.'));
+    expect(delta.gaps[0].paths.sort()).toEqual(blockLeaves.sort());
+    expect(delta.gaps[0].paths.length).toBeGreaterThan(3);
   });
 
   // The headline of the whole change: this path sits at depth 3, so the
