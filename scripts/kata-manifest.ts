@@ -318,6 +318,49 @@ async function generateManifest(): Promise<KataManifest> {
   return manifest;
 }
 
+/**
+ * Every `@atc` id that decorates more than one method, with where they live.
+ *
+ * An ATC id is the key the TMS and the teardown report both group by
+ * (`tests/teardown/global.teardown.ts` buckets results by `testId`), so a
+ * duplicate silently collapses N ATCs into one coverage row: a failure in one
+ * component becomes indistinguishable from a failure in another. The
+ * boilerplate shipped four methods on `PROJ-101` and four more on `PROJ-102`
+ * for exactly as long as nothing looked.
+ *
+ * Reported, never auto-renamed. Which id a method should carry is a TMS fact
+ * this script cannot know.
+ */
+export function findDuplicateAtcIds(manifest: KataManifest): Map<string, string[]> {
+  const seen = new Map<string, string[]>();
+  for (const component of [...manifest.components.api, ...manifest.components.ui]) {
+    for (const atc of component.atcs) {
+      const where = `${component.name}.${atc.method}`;
+      seen.set(atc.id, [...(seen.get(atc.id) ?? []), where]);
+    }
+  }
+  return new Map([...seen].filter(([, uses]) => uses.length > 1));
+}
+
+/**
+ * Print duplicate ids and say whether that should fail the caller.
+ *
+ * FAILS in `--check` (the pre-commit + CI gate) and WARNS on a plain
+ * generate, so a developer mid-refactor is told without being blocked while
+ * the second method is still being written.
+ */
+function reportDuplicateAtcIds(manifest: KataManifest, fatal: boolean): boolean {
+  const dupes = findDuplicateAtcIds(manifest);
+  if (dupes.size === 0) { return false; }
+  const write = fatal ? console.error : console.warn;
+  write(`${fatal ? '❌' : '⚠️ '} ${dupes.size} @atc id(s) used by more than one method:`);
+  for (const [id, uses] of dupes) { write(`     ${id} -> ${uses.join(', ')}`); }
+  write('   An id is the key the TMS and the teardown coverage report group by,');
+  write('   so duplicates collapse several ATCs into one row and hide which failed.');
+  write('   Give each method its own id (they are TMS test-case ids, not labels).');
+  return fatal;
+}
+
 // ============================================================================
 // Check Mode (CI-grade freshness validator)
 // ============================================================================
@@ -354,6 +397,9 @@ async function checkManifest(): Promise<number> {
   const existingNorm = JSON.stringify(stripVolatile(existing), null, 2);
 
   if (freshNorm === existingNorm) {
+    // Freshness and uniqueness are different questions. A manifest can be
+    // perfectly in sync with a tree that carries four methods on one id.
+    if (reportDuplicateAtcIds(fresh, true)) { return 1; }
     console.log('✅ kata-manifest.json is up to date.');
     return 0;
   }
@@ -395,6 +441,9 @@ async function main() {
       console.log(`   📦 Components: ${manifest.summary.totalComponents} (${manifest.summary.apiComponents} API, ${manifest.summary.uiComponents} UI)`);
       console.log(`   🎯 ATCs: ${manifest.summary.totalATCs}`);
       console.log(`   🔗 Steps modules: ${manifest.summary.stepsModules}`);
+      // Warn only here: `--check` is the gate. Mid-refactor, the second
+      // method carrying a borrowed id may simply not be finished yet.
+      reportDuplicateAtcIds(manifest, false);
     }
   };
 

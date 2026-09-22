@@ -25,7 +25,7 @@ test.describe('PROJ-200: Example Feature', () => {
    * @critical - Included in smoke tests
    *
    * Tests the happy path for the example feature.
-   * ATC: PROJ-101
+   * ATC: PROJ-131
    */
   test('PROJ-200: should complete example flow successfully', { tag: ['@critical'] }, async ({ ui }) => {
     // ARRANGE - Generate test data using DataFactory (available via ui.data)
@@ -43,7 +43,7 @@ test.describe('PROJ-200: Example Feature', () => {
 
   /**
    * Tests error handling for invalid input.
-   * ATC: PROJ-102
+   * ATC: PROJ-132
    */
   test('PROJ-200: should show error for invalid input', async ({ ui }) => {
     // ARRANGE

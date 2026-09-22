@@ -80,8 +80,14 @@ export class ExampleSteps extends TestContext {
    * Step: Navigate to authenticated page
    *
    * Combines login + navigation into a reusable precondition chain.
+   *
+   * OBJECT PARAM, not three positional ones. `typescript-patterns.md` §1:
+   * "3+ parameters, use an object parameter. No exceptions." Three bare
+   * strings also read identically at the call site — `('/x', a, b)` gives the
+   * reader nothing, and swapping the last two is a silent bug.
    */
-  async navigateAsAuthenticatedUser(path: string, email: string, password: string) {
+  async navigateAsAuthenticatedUser(args: { path: string, email: string, password: string }) {
+    const { path, email, password } = args;
     if (!this._page || !this._request) {
       throw new Error(
         'Page and Request context must be set. Pass { page, request } in constructor options.',

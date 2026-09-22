@@ -16,6 +16,6 @@
  */
 import antfu from '@antfu/eslint-config';
 
-import { BASE_ESLINT_OPTIONS, CLI_IMPORT_CLOSURE } from './eslint.config.base.js';
+import { BASE_ESLINT_OPTIONS, CLI_IMPORT_CLOSURE, KATA_IMPORT_ALIASES } from './eslint.config.base.js';
 
-export default antfu({ ...BASE_ESLINT_OPTIONS }, CLI_IMPORT_CLOSURE);
+export default antfu({ ...BASE_ESLINT_OPTIONS }, CLI_IMPORT_CLOSURE, KATA_IMPORT_ALIASES);

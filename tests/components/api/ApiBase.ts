@@ -135,7 +135,15 @@ export class ApiBase extends TestContext {
    * // With query parameters
    * const [response, results] = await this.apiGET<SearchResults>('/api/search', { params: { q: 'test' } });
    */
-  async apiGET<TBody = Record<string, unknown>>(
+  // The six HTTP helpers below are `protected`, not public, and that is the
+  // KATA layer boundary made mechanical rather than advisory: a test must go
+  // through an ATC or a `@step` helper on a Layer-3 component, never reach
+  // past it to raw HTTP. `kata-architecture.md` §4 has always declared them
+  // `protected`; the code shipped them public, so `api.apiPOST(...)` from a
+  // test compiled fine and skipped the whole component layer with nothing
+  // objecting. Subclasses are unaffected: `this.apiGET(...)` is exactly what
+  // `protected` allows.
+  protected async apiGET<TBody = Record<string, unknown>>(
     endpoint: string,
     options: RequestOptions = {},
   ): Promise<[APIResponse, TBody]> {
@@ -170,7 +178,7 @@ export class ApiBase extends TestContext {
    *   { name: 'John', email: 'john@example.com' }
    * );
    */
-  async apiPOST<TBody = Record<string, unknown>, TPayload = Record<string, unknown>>(
+  protected async apiPOST<TBody = Record<string, unknown>, TPayload = Record<string, unknown>>(
     endpoint: string,
     data: TPayload,
     options: RequestOptions = {},
@@ -212,7 +220,7 @@ export class ApiBase extends TestContext {
    *   { name: 'John Updated' }
    * );
    */
-  async apiPUT<TBody = Record<string, unknown>, TPayload = Record<string, unknown>>(
+  protected async apiPUT<TBody = Record<string, unknown>, TPayload = Record<string, unknown>>(
     endpoint: string,
     data: TPayload,
     options: RequestOptions = {},
@@ -254,7 +262,7 @@ export class ApiBase extends TestContext {
    *   { status: 'active' }
    * );
    */
-  async apiPATCH<TBody = Record<string, unknown>, TPayload = Record<string, unknown>>(
+  protected async apiPATCH<TBody = Record<string, unknown>, TPayload = Record<string, unknown>>(
     endpoint: string,
     data: TPayload,
     options: RequestOptions = {},
@@ -296,7 +304,7 @@ export class ApiBase extends TestContext {
    *   { grant_type: 'password', username: 'user', password: 'pass', client_id: 'public' }
    * );
    */
-  async apiPOSTForm<TBody = Record<string, unknown>>(
+  protected async apiPOSTForm<TBody = Record<string, unknown>>(
     endpoint: string,
     formData: Record<string, string>,
     options: RequestOptions = {},
@@ -342,7 +350,7 @@ export class ApiBase extends TestContext {
    * @example
    * const [response, result] = await this.apiDELETE<DeleteResponse>('/api/user/123');
    */
-  async apiDELETE<TBody = Record<string, unknown>>(
+  protected async apiDELETE<TBody = Record<string, unknown>>(
     endpoint: string,
     options: RequestOptions = {},
   ): Promise<[APIResponse, TBody]> {

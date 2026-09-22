@@ -276,7 +276,7 @@ For every endpoint the component exposes, the test file (or sibling test files) 
 
 | ID | Check | Severity |
 |----|-------|----------|
-| A-T1 | `ApiFixture` forwards `setRequestContext`, `setAuthToken`, `clearAuthToken` to every child API component. A new component missing these wires is a reject. | CRITICAL |
+| A-T1 | `ApiFixture` overrides `setAuthToken` and `clearAuthToken` and forwards BOTH to every child API component. A new component missing either wire is a reject: it keeps a stale token after the fixture cleared one. The request context is NOT forwarded — it arrives through the constructor (`new XApi(options)`), so there is no `setRequestContext` to check. | CRITICAL |
 | A-T2 | Tests requiring auth call an auth ATC in `beforeEach` — not inline in every test. | HIGH |
 | A-T3 | Credentials come from `@variables` (resolved from `.env`). No hardcoded emails/passwords. | CRITICAL |
 | A-T4 | Token rotation / refresh flows are exercised at least once for components that own them. | MEDIUM |

@@ -112,6 +112,36 @@ export const BASE_ESLINT_OPTIONS = {
 };
 
 /**
+ * KATA test code imports through path aliases, never through `./` or `../`.
+ *
+ * `typescript-patterns.md` §8 asserts "Lint rejects relative imports" and
+ * `/test-automation` anti-pattern T5 repeats it. Until this block existed the
+ * claim was false: `eslint-plugin-import` is not a dependency and the only
+ * import restriction in the repo was `CLI_IMPORT_CLOSURE`, scoped to `cli/**`.
+ * `lint:check` was green with four relative imports in the test tree, so the
+ * rule every reviewer had been told to trust was enforcing nothing.
+ *
+ * Aliases (`tsconfig.base.json`): `@ui/` `@api/` `@steps/` `@utils/` `@data/`
+ * `@schemas/` `@variables` `@TestContext` `@TestFixture` `@ApiFixture`
+ * `@UiFixture` `@DataFactory` `@openapi`.
+ *
+ * `playwright.config.ts` is in scope: it is part of the test framework and
+ * `@variables` resolves there too. Nothing outside the test tree is touched,
+ * so `scripts/`, `cli/` and `packages/` keep their own conventions.
+ */
+export const KATA_IMPORT_ALIASES = {
+  files: ['tests/**/*.ts', 'playwright.config.ts'],
+  rules: {
+    'no-restricted-imports': ['error', {
+      patterns: [{
+        group: ['./*', '../*'],
+        message: 'KATA test code imports through path aliases (@ui/ @api/ @steps/ @utils/ @data/ @schemas/ @variables @TestContext @TestFixture), never relative paths. See typescript-patterns.md §8.',
+      }],
+    }],
+  },
+};
+
+/**
  * --- cli/ IMPORT CLOSURE (updater self-update invariant) ---
  *
  * `cli/` is the updater's self-update component: `runUpdate` refreshes those

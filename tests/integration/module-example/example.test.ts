@@ -23,7 +23,7 @@ import { expect, test } from '@TestFixture';
 test.describe('PROJ-100: Example API', () => {
   /**
    * Tests successful resource creation.
-   * ATC: PROJ-101
+   * ATC: PROJ-121
    */
   test('PROJ-100: should create resource successfully', { tag: ['@critical'] }, async ({ api }) => {
     // ARRANGE - Prepare test data using DataFactory (available via api.data)
@@ -38,7 +38,7 @@ test.describe('PROJ-100: Example API', () => {
 
   /**
    * Tests error handling for invalid data.
-   * ATC: PROJ-102
+   * ATC: PROJ-122
    */
   test('PROJ-100: should return error for invalid data', async ({ api }) => {
     // ARRANGE - Invalid payload

@@ -197,16 +197,21 @@ Do not mark a method `public` if it is a helper inside an ATC. Keep private meth
 
 ## 7. Error Handling
 
-Fail fast in public methods with a descriptive error. Silent fail in utility helpers that legitimately may not find data.
+Fail fast in the methods a test can reach with a descriptive error. Silent fail in utility helpers that legitimately may not find data.
 
 ```typescript
-// PUBLIC — fail fast
-async apiGET<T>(endpoint: string): Promise<T> {
-  if (!this.request) {
-    throw new Error('Request context not set. Call setRequestContext() first.');
-  }
-  // ... implementation
+// REACHABLE BY A TEST (an ATC) — fail fast
+@atc('TICKET-ID')
+async createOrderSuccessfully(payload: OrderPayload): Promise<[APIResponse, OrderResponse, OrderPayload]> {
+  const [response, body, sent] = await this.apiPOST<OrderResponse, OrderPayload>('/orders', payload);
+  expect(response.status()).toBe(201);
+  return [response, body, sent];
 }
+
+// The HTTP helpers themselves are `protected` (see kata-architecture.md §4):
+// a test must go through an ATC, never past it to raw HTTP. `ApiBase` throws
+// from its `get request()` getter when no context is available — there is no
+// `setRequestContext()` to call, the context is constructor-injected.
 
 // UTILITY — silent fail, return null/undefined
 private async parseResponseBody<T>(response: Response): Promise<T | null> {
@@ -283,7 +288,7 @@ import { UsersApi } from '@api/UsersApi';
 import { config } from '../../../config/variables';
 ```
 
-Lint rejects relative imports via `eslint-plugin-import` rules. Fix them — do not disable the rule.
+Lint rejects relative imports: `KATA_IMPORT_ALIASES` in `eslint.config.base.js`, a core `no-restricted-imports` block scoped to `tests/**/*.ts` + `playwright.config.ts`. There is no `eslint-plugin-import` in this repo. Dynamic `await import('./x')` is outside the rule. Fix them — do not disable the rule.
 
 ---
 

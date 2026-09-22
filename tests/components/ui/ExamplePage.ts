@@ -96,7 +96,7 @@ export class ExamplePage extends UiBase {
    *
    * TODO: Replace 'PROJ' with your Jira project key (e.g., @atc('UPEX-101'))
    */
-  @atc('PROJ-101')
+  @atc('PROJ-131')
   async submitFormWithValidData(data: ExampleFormData) {
     await this.goto();
 
@@ -119,7 +119,7 @@ export class ExamplePage extends UiBase {
    *
    * TODO: Replace 'PROJ' with your Jira project key (e.g., @atc('UPEX-102'))
    */
-  @atc('PROJ-102')
+  @atc('PROJ-132')
   async submitFormWithInvalidEmail(email: string, password: string) {
     await this.goto();
 

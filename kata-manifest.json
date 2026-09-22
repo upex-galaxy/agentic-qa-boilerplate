@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-08-21T03:24:13.665Z",
+  "generatedAt": "2026-09-21T13:42:36.993Z",
   "components": {
     "api": [
       {
@@ -26,19 +26,14 @@
         "relativePath": "tests/components/api/ExampleApi.ts",
         "atcs": [
           {
-            "id": "PROJ-101",
+            "id": "PROJ-121",
             "method": "createResourceSuccessfully",
             "line": 57
           },
           {
-            "id": "PROJ-102",
+            "id": "PROJ-122",
             "method": "createResourceWithInvalidData",
             "line": 88
-          },
-          {
-            "id": "PROJ-103",
-            "method": "getResourceSuccessfully",
-            "line": 113
           }
         ]
       }
@@ -50,12 +45,12 @@
         "relativePath": "tests/components/ui/ExamplePage.ts",
         "atcs": [
           {
-            "id": "PROJ-101",
+            "id": "PROJ-131",
             "method": "submitFormWithValidData",
             "line": 99
           },
           {
-            "id": "PROJ-102",
+            "id": "PROJ-132",
             "method": "submitFormWithInvalidEmail",
             "line": 122
           }
@@ -67,12 +62,12 @@
         "relativePath": "tests/components/ui/LoginPage.ts",
         "atcs": [
           {
-            "id": "PROJ-101",
+            "id": "PROJ-111",
             "method": "loginSuccessfully",
             "line": 84
           },
           {
-            "id": "PROJ-102",
+            "id": "PROJ-112",
             "method": "loginWithInvalidCredentials",
             "line": 101
           }
@@ -94,7 +89,7 @@
   ],
   "summary": {
     "totalComponents": 4,
-    "totalATCs": 9,
+    "totalATCs": 8,
     "apiComponents": 2,
     "uiComponents": 2,
     "stepsModules": 1

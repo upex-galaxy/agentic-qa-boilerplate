@@ -413,11 +413,11 @@ export class ApiFixture extends ApiBase {
     this.orders = new OrdersApi(options);
   }
 
-  override setRequestContext(request: APIRequestContext) {
-    super.setRequestContext(request);
-    this.auth.setRequestContext(request);
-    this.orders.setRequestContext(request);
-  }
+  // NOTE: there is no `setRequestContext` to override. The request context
+  // arrives through the constructor (`new OrdersApi(options)`) and `ApiBase`
+  // exposes it as a `get request()` getter. Only the two TOKEN methods need
+  // forwarding, because a token is set AFTER construction and every component
+  // holds its own copy.
   override setAuthToken(token: string) {
     super.setAuthToken(token);
     this.auth.setAuthToken(token);
@@ -581,7 +581,7 @@ Before leaving the coding phase:
 - [ ] Every ATC contains at least one status-code assertion plus one shape assertion.
 - [ ] Error ATCs use `ApiErrorResponse` as the body type, not the success response.
 - [ ] Max 2 positional parameters; 3+ collapse to an object param.
-- [ ] `ApiFixture` registered the new component AND forwarded `setRequestContext` / `setAuthToken` / `clearAuthToken`.
+- [ ] `ApiFixture` registered the new component AND forwarded BOTH `setAuthToken` and `clearAuthToken` to it. There is no `setRequestContext`: the request context arrives through the constructor.
 - [ ] Test file under `tests/integration/{module}/`, name follows `{verb}{Resource}.test.ts`.
 - [ ] `test` imported from `@TestFixture`.
 - [ ] Ticket ID prefix in describe/test.

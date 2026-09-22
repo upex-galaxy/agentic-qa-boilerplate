@@ -90,16 +90,29 @@ If you are tempted to put an API helper in `tests/utils/`, stop — it depends o
 
 ## 5. Import aliases (INVARIANT)
 
-Aliases are mandatory across `tests/**`. **This one is doctrine, not a compiler**: the alias set is
-declared in `tsconfig.json`, but nothing rejects a relative import inside `tests/**`. The only
-`no-restricted-imports` block in `eslint.config.js` is scoped to `cli/**`, and it exists to keep the
-updater import-closed — it says nothing about the test layers. There is no `eslint-plugin-import` in
-this repo. So the enforcement point for this invariant is review (`/pr-review-lead`), not CI. Do not
-cite a lint rule here that a reader can grep for and fail to find; if the rule is ever added, this
-paragraph is what changes.
+Aliases are mandatory across `tests/**`, and **this one is now a compiler, not just doctrine**. The
+alias set is declared in `tsconfig.base.json`; `KATA_IMPORT_ALIASES` in `eslint.config.base.js` is a
+core `no-restricted-imports` block scoped to `tests/**/*.ts` + `playwright.config.ts` that rejects
+every `./` and `../` import there. It is a SECOND block beside `CLI_IMPORT_CLOSURE` (which stays
+scoped to `cli/**` and guards the updater's import closure); the two file sets are disjoint.
 
-The alias set actually declared in `tsconfig.json` `paths` (the authority — read it, do not trust a
-copy):
+Three things a reader should know before citing it:
+
+- There is still **no `eslint-plugin-import`** in this repo. The rule is core ESLint. Do not
+  attribute it to a plugin nobody installed — that was the previous version of this paragraph's
+  mistake, in reverse.
+- **Dynamic `await import('./x')` is not caught.** The rule matches static import and export
+  declarations only.
+- **`eslint.config.js` is project-owned and never overwritten by the sync**, so a downstream project
+  receives the exported block and not the wiring. `validateEslintBlockWiring`
+  (`cli/lib/agent-compatibility-contracts.ts`) fails `agents:compat:check` when a block the base
+  exports is absent from the consumer, which is what stops the rule from shipping inert.
+
+Review (`/pr-review-lead`) is no longer the only enforcement point, but it still owns the half a
+lint rule cannot judge: whether the alias chosen is the RIGHT one for the layer.
+
+The alias set actually declared in `tsconfig.base.json` `paths` (the authority — read it, do not
+trust a copy; `tsconfig.json` extends the base and declares no `paths` of its own):
 
 ```
 "@/*"           -> ./*
@@ -134,7 +147,7 @@ Renaming an alias is a major-version-bump-level change because every test file a
 
 KATA distinguishes the public API surface (ATCs and class-public helpers) from internal utilities. Error-handling discipline differs by surface and is part of the test contract.
 
-- **Public methods (ATCs, class-public helpers): fail fast — `throw new Error(...)` with descriptive message**. Test must fail loudly at the call site. Example: `apiGET<T>(...)` throws if `this.request` is unset.
+- **Methods a test can reach (ATCs, class-public `@step` helpers): fail fast — `throw new Error(...)` with descriptive message**. Test must fail loudly at the call site. Note the `apiXXX` HTTP primitives are `protected`, not part of that surface: `ApiBase` fails fast from its `get request()` getter when no context is available.
 - **Private utilities (parsers, matchers, internal helpers): silent fail — `return null` / `return undefined`**. Caller decides. Example: `parseResponseBody<T>` returns `null` when the response is not JSON.
 - **Why**: public methods are part of the test contract that downstream tests rely on; failing silently masks real bugs. Utilities are convenience — `null` lets the caller handle the missing-data case explicitly.
 
@@ -155,9 +168,9 @@ Where new code CAN safely land WITHOUT a major-version bump. Anything not on thi
 | New agnostic utility | `tests/utils/<name>.ts` | MUST NOT depend on Playwright `Page` or `APIRequestContext`. If it does, it belongs in `UiBase` or `ApiBase`. |
 | New helper method on `ApiBase` | `tests/components/api/ApiBase.ts` | MUST be reusable across multiple `*Api` subclasses. Domain-specific logic stays in the Domain component. |
 | New helper method on `UiBase` | `tests/components/ui/UiBase.ts` | Same constraint — must be reusable across multiple `*Page` subclasses. |
-| New Domain component | `tests/components/api/{Resource}Api.ts` or `tests/components/ui/{Page}Page.ts` | MUST be registered in the matching Fixture (`ApiFixture`, `UiFixture`). Without registration, tests cannot reach it. ApiFixture must also forward `setRequestContext`/`setAuthToken`/`clearAuthToken`. |
+| New Domain component | `tests/components/api/{Resource}Api.ts` or `tests/components/ui/{Page}Page.ts` | MUST be registered in the matching Fixture (`ApiFixture`, `UiFixture`). Without registration, tests cannot reach it. ApiFixture must also forward `setAuthToken` and `clearAuthToken` to it (there is no `setRequestContext` — the request context arrives through the constructor). |
 | New Steps module | `tests/components/steps/{Domain}Steps.ts` | Extends `TestContext`; instantiated directly in tests (`new {Domain}Steps(options)`) — NEVER fixture-registered. NOT decorated with `@atc`. Used only when 3+ ATCs repeat across 3+ files. Anti-duplication check: `kata-manifest.json` `steps[]` lists every existing Steps module — consult it before proposing a new one. |
-| New Fixture registration entry | `ApiFixture` / `UiFixture` constructor | Must mirror auth propagation pattern (forward `setRequestContext` / `setAuthToken` / `clearAuthToken` from ApiFixture override). |
+| New Fixture registration entry | `ApiFixture` / `UiFixture` constructor | Must mirror the auth propagation pattern (forward `setAuthToken` and `clearAuthToken` from the ApiFixture overrides; the request context is constructor-injected, not forwarded). |
 | New OpenAPI facade | `api/schemas/{domain}.types.ts` | Must be re-exported from `api/schemas/index.ts` barrel. Only facade files import `@openapi`. |
 | New DataFactory generator | `tests/data/DataFactory.ts` (+ matching interface in `tests/data/types.ts`) | Use `faker` only inside DataFactory. Tests/components must NEVER import `faker` directly. |
 | New static fixture data | `tests/data/fixtures/*.json` | Only for reference data (roles, permission matrices, mock responses, configuration trees). Transactional data goes to DataFactory. |
@@ -175,7 +188,7 @@ Mandatory verification matrix when modifying load-bearing surface area. Each row
 | If you change... | You must verify... |
 |------------------|-------------------|
 | `ApiBase.apiGET/POST/PUT/PATCH/DELETE` signature or tuple return | Re-run ALL Api ATC tests; type-check entire repo; grep every `*Api.ts` for tuple destructure shape. |
-| `ApiBase` auth methods (`setAuthToken`, `clearAuthToken`, `setRequestContext`) | Verify `ApiFixture` overrides forward to every registered Api component. Run all 401-coverage tests. |
+| `ApiBase` auth methods (`setAuthToken`, `clearAuthToken`) | Verify `ApiFixture` overrides forward to every registered Api component. Run all 401-coverage tests. |
 | `UiBase.interceptResponse` / `waitForApiResponse` signature | Re-run ALL UI ATCs that use interception; confirm Allure attachments still produce. |
 | `TestContext` constructor or option shape (`TestContextOptions`) | Audit every Layer 2/3/3.5 constructor that calls `super(options)`. Re-run full suite. |
 | Fixture signature in `TestFixture`/`ApiFixture`/`UiFixture` | Grep all consumers (`tests/**/*.test.ts`); update destructures; re-run full suite. |

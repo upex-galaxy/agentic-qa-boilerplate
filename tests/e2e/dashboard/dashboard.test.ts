@@ -21,7 +21,12 @@ test.describe('UPEX-200: Dashboard', { tag: ['@critical'] }, () => {
    * This test verifies that the authenticated session from e2e-setup
    * is correctly loaded and allows access to protected pages.
    */
-  test('UPEX-200: should load dashboard with authenticated session', async ({ page }) => {
+  // Raw `page`, deliberately, and the ONLY place in this repo where that is
+  // right. This asserts INFRASTRUCTURE — that `ui-setup` saved a storage state
+  // and Playwright loaded it — not a domain flow. There is no Page component to
+  // route through because there is no feature under test. Every test that
+  // exercises the product goes through `{ ui }` / `{ api }` / `{ test }`.
+  test('UPEX-200: should load dashboard when a saved session is restored', async ({ page }) => {
     // Navigate to home/dashboard - should work because we're authenticated
     await page.goto('/');
 
@@ -35,12 +40,17 @@ test.describe('UPEX-200: Dashboard', { tag: ['@critical'] }, () => {
   });
 
   /**
-   * Validates that the test user info is accessible via API.
-   * Uses the same session from the browser to verify API access.
+   * Validates that the authenticated API session resolves the current user.
+   *
+   * `{ api }`, not `{ test }`. This never touches the UI, and the hybrid
+   * fixture opens a browser for nothing (fixture-selection table in
+   * `/test-automation`). The previous comment claimed it reused "the same
+   * session from the browser" — it never did: the API fixture carries the
+   * Bearer token from `api-setup`, not the browser cookie.
    */
-  test('UPEX-200: should access user info via API with session token', async ({ test: fixture }) => {
+  test('UPEX-200: should return the current user when the API session is valid', async ({ api }) => {
     // Use helper (not ATC) — this is a read-only verification
-    const [response, userInfo] = await fixture.api.auth.getCurrentUser();
+    const [response, userInfo] = await api.auth.getCurrentUser();
 
     // Test-level assertions (UPEX Dojo format: { user: {...} })
     expect(response.ok()).toBe(true);

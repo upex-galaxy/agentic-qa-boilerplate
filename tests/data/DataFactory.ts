@@ -9,7 +9,7 @@
  *   - Import directo: import { DataFactory } from '@DataFactory'
  */
 
-import type { TestBooking, TestCredentials, TestHotel, TestUser } from './types';
+import type { TestBooking, TestCredentials, TestHotel, TestUser } from '@data/types';
 
 import { faker } from '@faker-js/faker';
 

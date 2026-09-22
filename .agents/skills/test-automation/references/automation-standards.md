@@ -600,7 +600,7 @@ await Promise.all([
 ### Soft fail (use sparingly)
 
 ```typescript
-@atc('TICKET-ID', { softFail: true, severity: 'medium' })
+@atc('TICKET-ID', { softFail: true, severity: 'normal' }) // Allure's vocabulary: blocker | critical | normal | minor | trivial. `'medium'` is a type error.
 async verifyOptionalField() { ... }
 ```
 
@@ -635,7 +635,7 @@ These three are distinct: `@blocked:{BUG-KEY}` blames the product (a filed bug),
 
 ## 8. Error Handling
 
-### Inside ATCs (public methods)
+### Inside ATCs (the methods a test can reach)
 
 Fail fast with a descriptive error.
 

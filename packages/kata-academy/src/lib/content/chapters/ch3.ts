@@ -184,7 +184,7 @@ export class AuthSteps extends TestContext {
     super(options);
   }
 
-  async navigateAsAuthenticatedUser(path: string, email: string, password: string) {
+  async navigateAsAuthenticatedUser(args: { path: string, email: string, password: string }) {
     if (!this._page || !this._request) {
       throw new Error('Page and Request context must be set.');
     }
@@ -211,7 +211,7 @@ export class AuthSteps extends TestContext {
       {
         title: 'tests/components/api/ApiBase.ts — apiPOST (fragmento)',
         sourcePath: 'tests/components/api/ApiBase.ts',
-        code: `async apiPOST<TBody, TPayload>(
+        code: `protected async apiPOST<TBody, TPayload>(
   endpoint: string,
   data: TPayload,
   options: RequestOptions = {},

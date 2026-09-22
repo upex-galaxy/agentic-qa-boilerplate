@@ -282,7 +282,7 @@ export class TestContext {
 ### 5.6 L2 — la tupla de `ApiBase.apiPOST` (fragmento)
 
 ```ts
-async apiPOST<TBody, TPayload>(
+protected async apiPOST<TBody, TPayload>(
   endpoint: string,
   data: TPayload,
   options: RequestOptions = {},
@@ -413,13 +413,13 @@ async checkoutWithNewUser() {
         "name": "LoginPage",
         "relativePath": "tests/components/ui/LoginPage.ts",
         "atcs": [
-          { "id": "PROJ-101", "method": "loginSuccessfully", "line": 41 },
-          { "id": "PROJ-102", "method": "loginWithInvalidCredentials", "line": 73 }
+          { "id": "PROJ-111", "method": "loginSuccessfully", "line": 84 },
+          { "id": "PROJ-112", "method": "loginWithInvalidCredentials", "line": 101 }
         ]
       }
     ]
   },
-  "summary": { "totalComponents": 4, "totalATCs": 9 }
+  "summary": { "totalComponents": 4, "totalATCs": 8 }
 }
 ```
 
@@ -448,8 +448,16 @@ Reglas que el ensamblador debe hacer cumplir (con feedback visual):
 - `retries: 0`, `workers: 1` en el config del seed (conservador a propósito).
 - La sync automática a TMS está **apagada por defecto** (`AUTO_SYNC=false`);
   el import de JUnit a Xray vía `bun xray import junit` existe pero es manual.
-- Un mismo ID puede aparecer en 2 componentes (AuthApi y LoginPage comparten
-  `PROJ-101` en el seed): son la variante API y UI del mismo caso de negocio.
+- Un mismo ID NO puede aparecer en 2 métodos. El seed daba `PROJ-101` a
+  `AuthApi.authenticateSuccessfully` y a `LoginPage.loginSuccessfully` a la vez,
+  y eso colapsaba las dos ATCs en una sola fila del reporte de cobertura: un
+  fallo en una era indistinguible del fallo en la otra. Hoy cada método tiene su
+  id (`AuthApi` 101/102, `LoginPage` 111/112, `ExampleApi` 121/122, `ExamplePage`
+  131/132) y `kata:manifest:check` falla sobre cualquier duplicado. La variante
+  API y la variante UI del mismo caso de negocio son DOS casos de prueba en el
+  TMS, no uno con dos implementaciones.
+- Lo que sí colapsa en una fila, correctamente, es la MISMA ATC ejecutada varias
+  veces (reutilizada como precondición): una fila, N ejecuciones.
 - El boilerplate es una PLANTILLA: `PROJ` es placeholder del key real de Jira.
 
 ## 8. Contrato de ingeniería para agentes (OBLIGATORIO)

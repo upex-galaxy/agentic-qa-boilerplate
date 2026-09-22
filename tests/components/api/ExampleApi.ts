@@ -27,7 +27,7 @@ import type { TestContextOptions } from '@TestContext';
 
 import { ApiBase } from '@api/ApiBase';
 import { expect } from '@playwright/test';
-import { atc } from '@utils/decorators';
+import { atc, step } from '@utils/decorators';
 
 // Re-export types for consumers that import from ExampleApi
 export type { CreateExampleRequest, CreateExampleResponse, GetExampleResponse } from '@schemas/example.types';
@@ -54,7 +54,7 @@ export class ExampleApi extends ApiBase {
    * TODO: Replace 'PROJ' with your Jira project key (e.g., @atc('UPEX-101'))
    * TODO: Update endpoint path
    */
-  @atc('PROJ-101')
+  @atc('PROJ-121')
   async createResourceSuccessfully(
     payload: CreateExampleRequest,
   ): Promise<[APIResponse, CreateExampleResponse, CreateExampleRequest]> {
@@ -85,7 +85,7 @@ export class ExampleApi extends ApiBase {
    * TODO: Replace 'PROJ' with your Jira project key (e.g., @atc('UPEX-102'))
    * TODO: Update endpoint path
    */
-  @atc('PROJ-102')
+  @atc('PROJ-122')
   async createResourceWithInvalidData(
     payload: CreateExampleRequest,
   ): Promise<[APIResponse, Record<string, unknown>, CreateExampleRequest]> {
@@ -103,14 +103,21 @@ export class ExampleApi extends ApiBase {
   }
 
   /**
-   * ATC: GET request - expects success (200)
+   * HELPER: read-only GET.
    *
-   * Example of a GET ATC for fetching resources.
+   * NOT an ATC, and this is the whole point of the example. An ATC is a
+   * complete mini-flow that CHANGES STATE (Precondition + Action +
+   * Assertions); a bare read is a helper, decorated `@step` so it still shows
+   * up in the trace and the Allure tree. `kata-architecture.md` §6 Rule 7
+   * prints the opposite shape verbatim as WRONG.
    *
-   * TODO: Replace 'PROJ' with your Jira project key (e.g., @atc('UPEX-103'))
+   * The fixed assertions stay: a helper may assert its own contract. What it
+   * may not do is claim a TMS test-case id for an operation that tests nothing
+   * a user can do.
+   *
    * TODO: Update endpoint path
    */
-  @atc('PROJ-103')
+  @step
   async getResourceSuccessfully(resourceId: string): Promise<[APIResponse, GetExampleResponse]> {
     // TODO: Update endpoint
     const [response, body] = await this.apiGET<GetExampleResponse>(`/api/example/${resourceId}`);

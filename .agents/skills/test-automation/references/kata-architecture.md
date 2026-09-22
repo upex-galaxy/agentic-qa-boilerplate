@@ -143,6 +143,7 @@ protected async apiGET<T>(path: string): Promise<[APIResponse, T]>
 protected async apiPOST<T, P>(path: string, payload: P): Promise<[APIResponse, T, P]>
 protected async apiPUT<T, P>(path: string, payload: P): Promise<[APIResponse, T, P]>
 protected async apiPATCH<T, P>(path: string, payload: P): Promise<[APIResponse, T, P]>
+protected async apiPOSTForm<T>(path: string, form: FormData, options?: RequestOptions): Promise<[APIResponse, T]>
 protected async apiDELETE<T>(path: string): Promise<[APIResponse, T]>
 ```
 
@@ -517,7 +518,11 @@ export class AuthSteps extends TestContext {
     return { token: body.token };
   }
 
-  async navigateAsAuthenticatedUser(path: string, email: string, password: string) {
+  // Object param: 3+ arguments never go positional (see typescript-patterns.md
+  // §1). Three bare strings also read identically at the call site, so
+  // swapping the last two is a silent bug.
+  async navigateAsAuthenticatedUser(args: { path: string, email: string, password: string }) {
+    const { path, email, password } = args;
     if (!this._page || !this._request) {
       throw new Error('Page and Request context must be set.');
     }
@@ -536,7 +541,7 @@ import { AuthSteps } from '@steps/AuthSteps';
 
 test('TICKET-ID: should display confirmation after checkout', async ({ ui, page, request }) => {
   const steps = new AuthSteps({ page, request });
-  await steps.navigateAsAuthenticatedUser('/checkout', config.testUser.email, config.testUser.password);
+  await steps.navigateAsAuthenticatedUser({ path: '/checkout', email: config.testUser.email, password: config.testUser.password });
   await ui.checkout.completeCheckoutSuccessfully();
   await expect(page.locator('[data-testid="confirmation"]')).toBeVisible();
 });
@@ -599,7 +604,7 @@ async getCurrentUser() { ... }
 | Apply to | Layer 3 state-changing ATCs | Layer 3 read-only helpers |
 | NDJSON export | Yes | No |
 
-`@atc` options: `softFail` (failure logs but does not block), `severity` (critical/high/medium/low for reporting). Both decorators mask sensitive parameters (`password`, `token`, `secret`) in trace output.
+`@atc` options: `softFail` (failure logs but does not block), `severity` for reporting. `severity` takes ALLURE's vocabulary — `'blocker' | 'critical' | 'normal' | 'minor' | 'trivial'` (`tests/utils/decorators.ts`) — because the value is forwarded straight to Allure. It is NOT the `critical/high/medium/low` scale used by the review checklists; passing one of those is a type error. Both decorators mask sensitive parameters (`password`, `token`, `secret`) in trace output.
 
 Never apply decorators to Layer 2 base methods or private helpers. Detailed tracing mechanics live in a separate tracing reference.
 

@@ -18,12 +18,12 @@ import type {
   TestResult,
   TestStep,
 } from '@playwright/test/reporter';
-import type { AtcResult } from './utils/decorators';
+import type { AtcResult } from '@utils/decorators';
 
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 
-import { ATC_PARTIAL_PATH } from './utils/decorators';
+import { ATC_PARTIAL_PATH } from '@utils/decorators';
 
 // ANSI Color Codes
 const colors = {
