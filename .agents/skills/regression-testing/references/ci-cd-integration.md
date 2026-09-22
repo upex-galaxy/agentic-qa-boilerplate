@@ -10,7 +10,7 @@ Read this when configuring new workflows, modifying existing ones, debugging CI-
 |---------|-------|----------|---------|
 | Pull request (`build.yml`) | Static checks + compile only — no test execution | 2-5 min | Block PRs that break the framework build |
 | Daily 00:00 UTC (`regression.yml`) | Full suite: integration + E2E, Allure report | 20-60 min | Regression + trend data |
-| Daily 02:00 UTC (`smoke.yml`) | `@critical` smoke project | 2-5 min | Environment heartbeat |
+| Daily 02:00 UTC (`smoke.yml`) | `@critical` smoke projects (`smoke-ui` + `smoke-api`) | 2-5 min | Environment heartbeat |
 | Manual (`sanity.yml`) | Targeted subset (`grep` \| `test_file`) | varies | Verify a fix or a suspect area |
 
 Do NOT run the full E2E suite on every PR — it is too slow and costly. Do NOT ignore flaky tests — fix them.
@@ -117,7 +117,7 @@ Key points:
 **`smoke.yml`** — daily at 02:00 UTC and on `workflow_dispatch` (`environment` input):
 
 - Same env block as regression (`TEST_ENV` selector + `LOCAL_*` / `STAGING_*` credential secrets).
-- Single job: `bun run pw:install` → `bun run test:smoke` (the `smoke` Playwright project — `@critical` tagged tests across e2e + integration).
+- Single job: `bun run pw:install` → `bun run test:smoke` (the `smoke-ui` + `smoke-api` Playwright projects — `@critical` tagged tests, ONE project per surface so a UI `storageState` never reaches an API test).
 - Publishes its Allure report per environment; the run summary prints the published URL (`.../<TEST_ENV>/smoke/`).
 
 **`sanity.yml`** — `workflow_dispatch` only, with inputs for `environment`, test type, `grep`, and `test_file`:
@@ -160,12 +160,13 @@ export default defineConfig({
   ],
   use: {
     baseURL: config.baseUrl,   // resolved from .agents/project.yaml by TEST_ENV — never a BASE_URL env secret
-    trace: env.isCI ? 'retain-on-failure' : 'on-first-retry',
+    trace: 'retain-on-failure', // flat: with `retries: 0`, `on-first-retry` never fires and a local failure yields no trace
     screenshot: config.reporting.screenshotOnFailure ? 'only-on-failure' : 'off',
     video: env.isCI && config.reporting.videoOnFailure ? 'retain-on-failure' : 'off',
   },
   projects: [
-    // global-setup → ui-setup / api-setup → e2e | integration | smoke → global-teardown
+    // global-setup → ui-setup  → e2e | smoke-ui  → global-teardown
+    //              → api-setup → integration | smoke-api
     // (dependency-chained projects; see the real file for the full list, incl. sandbox)
   ],
 });
@@ -198,7 +199,7 @@ Rules:
 | Script | Role in CI |
 |--------|-----------|
 | `test` / `test:e2e` / `test:integration` | Full run / `e2e` project / `integration` project |
-| `test:smoke` | `smoke` project (`@critical` grep across e2e + integration) |
+| `test:smoke` | `smoke-ui` + `smoke-api` projects (`@critical` grep, one per surface) |
 | `test:env:check` | Validates env configuration before any suite runs |
 | `test:sync` | TMS results sync (`tests/utils/jiraSync.ts`) |
 | `lint:check` / `types:check` | Static gates in `build.yml` |

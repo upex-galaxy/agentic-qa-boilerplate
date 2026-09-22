@@ -364,7 +364,7 @@ export interface PackageJsonDelta {
 export interface PackageJsonKeyOption {
   /** The exact key name (value submitted by multiselect). */
   value: string
-  /** Display label, e.g. `"test:smoke" → "playwright test --project=smoke"`. */
+  /** Display label, e.g. `"test:smoke" → "playwright test --project=smoke-ui --project=smoke-api"`. */
   label: string
   /** Whether the key is checked by default in the multiselect. */
   checked: boolean

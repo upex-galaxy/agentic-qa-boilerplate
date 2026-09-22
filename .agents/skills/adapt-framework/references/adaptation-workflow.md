@@ -138,7 +138,7 @@ config/variables.ts · config/validateTestEnv.ts · playwright.config.ts
 .github/workflows/{regression,sanity,smoke,build}.yml · kata-manifest.json
 ```
 
-> **NOTE:** `AuthApi.ts` and `LoginPage.ts` are KEPT but still carry placeholder `@atc('PROJ-101')` / `@atc('PROJ-102')` decorators — these get rewritten to `{{PROJECT_KEY}}` in Phase 5. The boilerplate also ships instructional `UPEX-101` examples inside comments/JSDoc (`AuthApi.ts:10`, `tests/utils/decorators.ts`) — those are documentation, leave them.
+> **NOTE:** `AuthApi.ts` and `LoginPage.ts` are KEPT but still carry placeholder decorators — `@atc('PROJ-101')` / `@atc('PROJ-102')` on `AuthApi`, `@atc('PROJ-111')` / `@atc('PROJ-112')` on `LoginPage` — which get rewritten to `{{PROJECT_KEY}}` in Phase 5. Every id is DISTINCT on purpose: `kata:manifest:check` fails on a duplicate, because an id is the key the TMS and the teardown coverage report both group by. The boilerplate also ships instructional `UPEX-101` examples inside comments/JSDoc (`AuthApi.ts:10`, `tests/utils/decorators.ts`) — those are documentation, leave them.
 
 ### 1.4 Decide auth strategy (decision tree)
 
@@ -404,7 +404,7 @@ After deleting `tests/{e2e,integration}/module-example/`, remove the now-dead `t
 
 ### 6.4 First smoke test
 
-Create `tests/e2e/{feature}/smoke.test.ts` (or `tests/integration/{feature}/` for API-only) tagged **`@critical`** — the repo-wide convention that `playwright.config.ts` smoke project greps (`grep: /@critical/`) and the workflows run. **Do NOT tag `@smoke`** — `test:smoke` would select zero tests. Uses the new component through the fixture; asserts ≥1 domain operation end-to-end. No mocks against real auth.
+Create `tests/e2e/{feature}/smoke.test.ts` (or `tests/integration/{feature}/` for API-only) tagged **`@critical`** — the repo-wide convention that `playwright.config.ts`'s smoke projects grep (`smoke-ui` and `smoke-api`, both `grep: /@critical/`) and the workflows run. **Do NOT tag `@smoke`** — `test:smoke` would select zero tests. Uses the new component through the fixture; asserts ≥1 domain operation end-to-end. No mocks against real auth.
 
 ### 6.5 Reconsider existing reference specs
 
@@ -416,7 +416,7 @@ Create `tests/e2e/{feature}/smoke.test.ts` (or `tests/integration/{feature}/` fo
 
 ### 7.1 Regenerate the KATA manifest
 
-Deleting `Example*` and adding the entity makes `kata-manifest.json` stale (it still lists `PROJ-101/102/103`). `.husky/pre-commit` blocks commits on a stale manifest (Rule #12).
+Deleting `Example*` and adding the entity makes `kata-manifest.json` stale (it still lists the eight shipped ids: `PROJ-101/102` on `AuthApi`, `111/112` on `LoginPage`, `121/122` on `ExampleApi`, `131/132` on `ExamplePage`). `.husky/pre-commit` blocks commits on a stale manifest (Rule #12).
 
 ```bash
 bun run kata:manifest          # regenerate

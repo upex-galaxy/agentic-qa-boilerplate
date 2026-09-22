@@ -41,7 +41,7 @@ export default defineConfig({
 
   use: {
     baseURL,
-    trace: env.isCI ? 'retain-on-failure' : 'on-first-retry',
+    trace: 'retain-on-failure', // NOT `on-first-retry`: with `retries: 0` there is never a first retry, so a local failure would produce no trace at all
     screenshot: config.reporting.screenshotOnFailure ? 'only-on-failure' : 'off',
     video: env.isCI && config.reporting.videoOnFailure ? 'retain-on-failure' : 'off',
     headless: env.isCI || config.browser.headless,
@@ -73,11 +73,24 @@ export default defineConfig({
       dependencies: ['api-setup'],
       use: {} },
 
-    { name: 'smoke',
+    // ONE SMOKE PROJECT PER SURFACE. A single project spanning
+    // `{e2e,integration}` has to pick ONE `use` block, and picking the UI one
+    // hands a browser storageState — and therefore the session COOKIE — to API
+    // tests. A test that clears the Bearer token to assert 401 then gets 200,
+    // because the cookie still authenticates. Measured in this boilerplate:
+    // the same test passed under `--project=integration` and failed under
+    // `--project=smoke`. Each half mirrors its full-suite sibling plus the grep.
+    { name: 'smoke-ui',
       grep: /@critical/,
-      testMatch: '**/{e2e,integration}/**/*.test.ts',
-      dependencies: ['ui-setup', 'api-setup'],
+      testMatch: '**/e2e/**/*.test.ts',
+      dependencies: ['ui-setup'],
       use: { ...devices['Desktop Chrome'], storageState: config.auth.storageStatePath } },
+
+    { name: 'smoke-api',
+      grep: /@critical/,
+      testMatch: '**/integration/**/*.test.ts',
+      dependencies: ['api-setup'],
+      use: {} },
 
     { name: 'global-teardown',
       testMatch: /global\.teardown\.ts/,
@@ -188,7 +201,7 @@ The deliberate divergences are few. **`retries` and `workers` are NOT among them
 | Setting | Local | CI | Reason |
 |---------|-------|-----|--------|
 | `forbidOnly` | `false` | `true` | Let devs iterate with `.only`, block it on merge. |
-| `trace` | `'on-first-retry'` | `'retain-on-failure'` | Local: keep disk light. CI: always capture failures for postmortem. |
+| `trace` | `'retain-on-failure'` | `'retain-on-failure'` | NOT a divergence. `'on-first-retry'` locally is a trap while `retries: 0`: there is no first retry, so the failure you just got produces no trace. A green run writes nothing either way. |
 | `video` | `'off'` | `'retain-on-failure'` (when `config.reporting.videoOnFailure`) | Same rationale. |
 | `headless` | `config.browser.headless` | forced `true` | CI runners have no display. |
 | `github` reporter | off | opt-in (commented in shipped config) | Writes PR annotations when enabled. |

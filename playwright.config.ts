@@ -9,7 +9,7 @@
  */
 
 import { defineConfig, devices } from '@playwright/test';
-import { config, env } from './config/variables';
+import { config, env } from '@variables';
 
 // Use values from centralized config (no direct process.env access)
 const baseURL = config.baseUrl;
@@ -82,7 +82,11 @@ export default defineConfig({
 
   use: {
     baseURL,
-    trace: env.isCI ? 'retain-on-failure' : 'on-first-retry',
+    // `retain-on-failure` on BOTH sides, deliberately. `on-first-retry` was the
+    // local value, and `retries: 0` above means there is never a first retry —
+    // so a local failure produced no trace at all, which is the one artifact
+    // you need for the failure you just got.
+    trace: 'retain-on-failure',
     screenshot: config.reporting.screenshotOnFailure ? 'only-on-failure' : 'off',
     video: env.isCI && config.reporting.videoOnFailure ? 'retain-on-failure' : 'off',
     headless: env.isCI || config.browser.headless,
@@ -146,18 +150,37 @@ export default defineConfig({
     },
 
     // ============================================
-    // Smoke Tests - @critical tagged tests from any suite
-    // Usage: bun run test:smoke
+    // Smoke Tests - @critical tagged tests, ONE PROJECT PER SURFACE
+    // Usage: bun run test:smoke  (runs both)
+    //
+    // Split on purpose. A single `smoke` project spanning `{e2e,integration}`
+    // has to pick ONE `use` block, and it picked the UI one — which handed a
+    // browser storageState to API tests. That storage state carries the
+    // session COOKIE, so `api.clearAuthToken()` (which only nulls the Bearer
+    // header) left the request authenticated: `UPEX-100: should fail without
+    // token` asserted 401 and got 200, passing under `--project=integration`
+    // and failing under `--project=smoke`. A project that spans two surfaces
+    // cannot carry one surface's auth state.
+    //
+    // Each half now mirrors its full-suite sibling exactly, plus the grep:
+    // `smoke-ui` == `e2e` + @critical, `smoke-api` == `integration` + @critical.
     // ============================================
     {
-      name: 'smoke',
+      name: 'smoke-ui',
       grep: /@critical/,
-      testMatch: '**/{e2e,integration}/**/*.test.ts',
-      dependencies: ['ui-setup', 'api-setup'],
+      testMatch: '**/e2e/**/*.test.ts',
+      dependencies: ['ui-setup'],
       use: {
         ...devices['Desktop Chrome'],
         storageState: config.auth.storageStatePath,
       },
+    },
+    {
+      name: 'smoke-api',
+      grep: /@critical/,
+      testMatch: '**/integration/**/*.test.ts',
+      dependencies: ['api-setup'],
+      use: {},
     },
 
     // ============================================
