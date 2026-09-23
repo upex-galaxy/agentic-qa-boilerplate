@@ -716,7 +716,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <tr><td><b>Visual</b></td><td>breakpoints responsive · loading states · layouts rotos · elementos solapados</td></tr>
     </tbody>
   </table>
-  <div class="callout mt-m"><h4>Si al probar encuentras un caso nuevo…</h4><p>…que el ATP de Stage 1 no derivó (una partición, un boundary, una transición), <b>añádelo de vuelta</b> al set de outlines. La cobertura es el piso (ACs) <b>más</b> esta capa de riesgo, no el testing improvisado en lugar de la planificación.</p></div>
+  <div class="callout mt-m"><h4>Si al probar encuentras un caso nuevo…</h4><p>…que el ATP de Planning no derivó (una partición, un boundary, una transición), <b>añádelo de vuelta</b> al set de outlines. La cobertura es el piso (ACs) <b>más</b> esta capa de riesgo, no el testing improvisado en lugar de la planificación.</p></div>
   <div class="notes">El checklist de edge cases UI. Los caracteres especiales (script/DROP TABLE) son sondas de seguridad básicas. Lo encontrado se realimenta al plan, no reemplaza al plan.</div>
 </section>
 
@@ -1013,7 +1013,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       </ul>
     </div>
   </div>
-  <div class="callout warn mt-m"><h4>Por qué no parar por todo</h4><p>Pausar una pasada de 17 TCs por un hallazgo cosmético desperdicia el dispatch y pierde cobertura. Un finding no-bloqueante se registra y la pasada <b>continúa</b>; todos se surfacean juntos al cierre de Stage 2. Un bloqueante genuino sí detiene de inmediato.</p></div>
+  <div class="callout warn mt-m"><h4>Por qué no parar por todo</h4><p>Pausar una pasada de 17 TCs por un hallazgo cosmético desperdicia el dispatch y pierde cobertura. Un finding no-bloqueante se registra y la pasada <b>continúa</b>; todos se surfacean juntos al cierre de Execution <span class="dim">(históricamente Stage 2)</span>. Un bloqueante genuino sí detiene de inmediato.</p></div>
   <div class="notes">La pausa graduada: bloqueante (env/corrupción/seguridad) detiene; no-bloqueante (cosmético/menor) se registra y la pasada sigue. Un FAIL no es auto-Critical. El objetivo es cobertura completa.</div>
 </section>
 
@@ -1038,7 +1038,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="grid g2 mt-s">
     <div class="card card-accent">
       <h4>Propagación de estado</h4>
-      <p class="dim">Al cerrar Stage 2, cada outline / TC tiene <b>PASSED o FAILED</b>. Sin NOT RUN. Si uno queda NOT RUN: o está fuera de scope (di por qué en Notes) o está incompleto (vuelve al loop).</p>
+      <p class="dim">Al cerrar Execution, cada outline / TC tiene <b>PASSED o FAILED</b>. Sin NOT RUN. Si uno queda NOT RUN: o está fuera de scope (di por qué en Notes) o está incompleto (vuelve al loop).</p>
     </div>
     <div class="card card-accent">
       <h4>Disciplina de evidencia</h4>
@@ -1049,8 +1049,8 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       </ul>
     </div>
   </div>
-  <div class="callout mt-m"><h4>El log es el handoff a Stage 3</h4><p>El bloque Stage-2 de <span class="mono">test-session-memory.md</span> (smoke + tablas UI/API/DB + Findings) es lo que Stage 3 consume: los Findings alimentan los bugs, los pass/fail alimentan el ATR.</p></div>
-  <div class="notes">Sin NOT RUN: todo termina PASSED o FAILED. Evidencia en el estado de fallo, nombrada y gitignored. El memory de Stage 2 es el input de Stage 3 (Findings→bugs, pass/fail→ATR).</div>
+  <div class="callout mt-m"><h4>El log es el handoff a Reporting</h4><p>El bloque Execution de <span class="mono">test-session-memory.md</span> (smoke + tablas UI/API/DB + Findings) es lo que Reporting consume: los Findings alimentan los bugs, los pass/fail alimentan el ATR.</p></div>
+  <div class="notes">Sin NOT RUN: todo termina PASSED o FAILED. Evidencia en el estado de fallo, nombrada y gitignored. El memory de Execution es el input de Reporting (Findings→bugs, pass/fail→ATR).</div>
 </section>
 
 <!-- 31. QUIZ 3 -->
@@ -1074,7 +1074,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <div class="opt"><span class="mk">B</span><span><span class="mono">BLOCKED</span> a secas — no se pudo correr</span></div>
         <div class="opt" data-correct="1"><span class="mk">C</span><span><span class="mono">BLOCKED — needs time fixture</span> + la opción elegida y la razón</span></div>
       </div>
-      <div class="qexp"><b>BLOCKED — needs time fixture.</b> Nunca un BLOCKED desnudo ni un NOT RUN. Documenta el borde, por qué no se pudo, y el follow-up (opción 3: defer escrito). Así la cobertura no se pierde en silencio y viaja a Stage 3.</div>
+      <div class="qexp"><b>BLOCKED — needs time fixture.</b> Nunca un BLOCKED desnudo ni un NOT RUN. Documenta el borde, por qué no se pudo, y el follow-up (opción 3: defer escrito). Así la cobertura no se pierde en silencio y viaja a Reporting.</div>
     </div>
   </div>
   <div class="notes">Las dos reglas de disciplina: cosmético = no-bloqueante (sigue), y nunca BLOCKED/NOT RUN desnudo (siempre con razón + camino).</div>
@@ -1099,9 +1099,9 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <li><b>Smoke primero</b> — Go/No-Go del ambiente, ≤10 min, siempre revisa la red.</li>
     <li><b>Capas por tipo de feature</b> — el orden lo decide qué cambió; cada capa prueba su verdad.</li>
     <li><b>Triagea cada finding</b> — bloqueante detiene, no-bloqueante registra y sigue.</li>
-    <li><b>Cierra con rigor</b> — sin NOT RUN, evidencia en el estado de fallo, Findings al handoff de Stage 3.</li>
+    <li><b>Cierra con rigor</b> — sin NOT RUN, evidencia en el estado de fallo, Findings al handoff de Reporting.</li>
   </ul>
-  <div class="notes">El recap del flujo completo: smoke → UI/API/DB (orden por feature) → triage → status → findings a Stage 3. Las tres fuerzas en una pasada.</div>
+  <div class="notes">El recap del flujo completo: smoke → UI/API/DB (orden por feature) → triage → status → findings a Reporting. Las tres fuerzas en una pasada.</div>
 </section>
 
 <!-- 33. HOW TO DO IT WELL -->

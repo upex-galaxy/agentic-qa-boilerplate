@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Shift-Left Testing · Cómo funciona</title>
+<title>Orca Orchestration · Cómo funciona</title>
 <style>
 /* ============================================================
    Self-contained deck — html-ppt assets inlined (fonts, base,
    tokyo-night theme, animations) + deck-local styles.
-   Source: ~/.agents/skills/html-ppt (tokyo-night harness).
+   Source: ~/.agents/skills/html-ppt (harness) · content: orca-orchestration SKILL.md + references.
    ============================================================ */
 
 /* ---- fonts.css ---- */
@@ -333,491 +333,571 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   [class*="anim-"]{animation:none!important;transition:none!important}
 }
 
+/* ---- deck-local: orca-orchestration workflow ---- */
+/* ===== Deck-local: tipografía grande + más aire para exposición en proyector ===== */
+  .slide{padding:64px 84px}
+  .h1{font-size:88px;line-height:1.02}
+  .h2{font-size:62px;line-height:1.06;margin-bottom:10px}
+  .h4{font-size:26px}
+  .kicker{font-size:17px;letter-spacing:.1em}
+  .lede{font-size:30px;line-height:1.5;max-width:60ch;font-weight:400}
+  .small{font-size:19px;line-height:1.55}
+  .dim{color:var(--text-2)}
+  .card{padding:26px 28px;background:var(--surface);border:1px solid var(--border-strong)}
+  .card-soft{background:var(--grad-soft)}
+  .card-accent{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset,var(--shadow)}
+  .lbl{font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-2);font-weight:700}
+  ul.big{font-size:21px;line-height:2.05;margin:0;padding-left:1.1em}
+  ul.big li{margin-bottom:2px}
+  ul.big.tight{font-size:17.5px;line-height:1.6}
+  ul.big.tight li{margin-bottom:10px}
 
-/* ---- deck-local (shift-left-testing · workflow paso a paso) ---- */
-.slide{padding:52px 80px}
-.h1{font-size:72px;line-height:1.04;color:var(--text-1)}
-.h2{font-size:40px;line-height:1.1;margin-bottom:8px;color:var(--text-1)}
-h4,.h4{font-size:17px;color:var(--text-1)}
-.mono-title{font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-weight:700;letter-spacing:-.03em}
-.kicker{font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-size:14px;font-weight:600;text-transform:none;letter-spacing:.02em}
-.kicker::before{content:"// ";opacity:.7}
-.grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
-.lede{font-size:21px;max-width:66ch}
-.sm{font-size:14px;line-height:1.55;color:var(--text-2);margin:0}
-.sm b,.sm strong{color:var(--text-1)}
-.above{position:relative;z-index:1}
-.fx-host{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.45}
-.slide code,.slide kbd{font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-size:.9em;
-  background:rgba(122,162,247,.12);border:1px solid rgba(122,162,247,.25);border-radius:6px;
-  padding:1px 6px;color:#9cc2ff;white-space:nowrap}
+  /* schematic mockups — monospace forzado sobre tema sans */
+  .mk{font-family:'JetBrains Mono','IBM Plex Mono',ui-monospace,monospace;font-size:18px;line-height:1.5;
+      white-space:pre;background:#16161e;border:1px solid var(--border-strong);
+      border-radius:14px;padding:24px 26px;color:#c0caf5;overflow:auto;box-shadow:var(--shadow)}
 
-/* ---- chips ---- */
-.chip{display:inline-flex;align-items:center;gap:9px;padding:9px 15px;border-radius:10px;font-size:14.5px;
-  font-weight:600;background:var(--surface);border:1px solid var(--border-strong);color:var(--text-1)}
-.cdot{display:inline-block;width:10px;height:10px;border-radius:50%;flex:none}
+  /* etiquetas tipo issue Jira — grandes */
+  .tag{display:inline-block;padding:5px 14px;border-radius:8px;font-size:17px;font-weight:700;
+       letter-spacing:.02em;border:1px solid transparent}
+  .tag-test{background:rgba(122,162,247,.18);color:#9cc2ff;border-color:rgba(122,162,247,.5)}
+  .tag-plan{background:rgba(158,206,106,.16);color:#b9e08a;border-color:rgba(158,206,106,.5)}
+  .tag-exec{background:rgba(224,175,104,.16);color:#f0c886;border-color:rgba(224,175,104,.5)}
+  .tag-bug{background:rgba(247,118,142,.18);color:#ff9bac;border-color:rgba(247,118,142,.5)}
+  .tag-story{background:rgba(192,202,245,.14);color:#c0caf5;border-color:var(--border-strong)}
+  .h2 .tag{font-size:.46em;padding:.18em .5em;border-radius:.28em;vertical-align:middle;
+           position:relative;top:-.06em}
 
-/* ---- cards ---- */
-.card{padding:20px 22px;border:1px solid var(--border-strong)}
-.card h4{margin:0 0 8px}
-.card-accent{border-top:3px solid var(--accent)}
+  /* chips de estado grandes */
+  .chip{display:inline-flex;align-items:center;gap:10px;padding:12px 20px;border-radius:12px;
+        font-size:20px;font-weight:700;background:var(--surface);border:1px solid var(--border-strong)}
+  .dot{display:inline-block;width:16px;height:16px;border-radius:50%}
+  .q{font-size:58px;font-weight:800;line-height:1.04;letter-spacing:-.01em}
 
-/* ---- bullet list ---- */
-.blist{list-style:none;padding:0;margin:14px 0 0}
-.blist li{position:relative;padding:8px 0 8px 26px;font-size:14.5px;color:var(--text-2);line-height:1.5;border-bottom:1px solid var(--border)}
-.blist li:last-child{border-bottom:none}
-.blist li::before{content:"\25B8";position:absolute;left:2px;top:8px;color:var(--accent);font-weight:700}
-.blist li b{color:var(--text-1);font-weight:600}
-.blist.tight li{padding:6px 0 6px 26px;font-size:13.5px}
+  table.tt{width:100%;border-collapse:separate;border-spacing:0 10px;font-size:20px}
+  table.tt th{color:var(--accent-2);font-weight:800;font-size:16px;letter-spacing:.08em;
+              text-transform:uppercase;text-align:left;padding:0 16px 4px}
+  table.tt td{background:var(--surface);border-top:1px solid var(--border-strong);
+              border-bottom:1px solid var(--border-strong);padding:16px 16px;vertical-align:top}
+  table.tt td:first-child{border-left:1px solid var(--border-strong);border-radius:12px 0 0 12px}
+  table.tt td:last-child{border-right:1px solid var(--border-strong);border-radius:0 12px 12px 0}
 
-/* ---- data table ---- */
-.dtable{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px}
-.dtable th{text-align:left;padding:9px 12px;color:var(--accent-2);font-weight:700;font-size:12px;
-  text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border-strong)}
-.dtable td{padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text-2);vertical-align:top;line-height:1.45}
-.dtable tr:last-child td{border-bottom:none}
-.dtable td b{color:var(--text-1);font-weight:600}
-.dtable td.ok{color:var(--good);font-weight:700;white-space:nowrap}
-.dtable td.opt{color:var(--warn);font-weight:700;white-space:nowrap}
+  .fx-host{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.45}
+  .above{position:relative;z-index:1}
+  .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .deck-footer .mono{font-size:12px}
 
-/* ---- terminal ---- */
-.term{background:#16161e;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;
-  font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-size:13.5px;line-height:1.62;box-shadow:var(--shadow)}
-.term .bar{display:flex;align-items:center;gap:7px;padding:9px 14px;background:#1f2335;
-  border-bottom:1px solid var(--border);font-size:11.5px;color:var(--text-3)}
-.term .tdot{width:10px;height:10px;border-radius:50%;background:#f7768e;flex:none}
-.term .tdot:nth-child(2){background:#e0af68}
-.term .tdot:nth-child(3){background:#9ece6a}
-.term pre{margin:0;padding:16px 20px;color:#c0caf5;overflow:auto;white-space:pre}
-.term .p{color:#9ece6a;font-weight:700}
-.term .c{color:#c0caf5}
-.term .o{color:#a9b1d6}
-.term .cmt{color:#565f89;font-style:italic}
-.term .kw{color:#f7768e}
-.term .str{color:#9ece6a}
-.term .fn{color:#bb9af7}
-.term .num{color:#ff9e64}
+  /* ===== sprint-testing deck additions ===== */
+  .h2.md{font-size:46px;line-height:1.08}
+  table.tt.sm{font-size:15.5px;border-spacing:0 8px}
+  table.tt.sm th{font-size:13px;padding:0 12px 2px}
+  table.tt.sm td{padding:11px 12px}
+  .mk.sm{font-size:14.5px;line-height:1.45;padding:18px 20px}
 
-/* ---- callout ---- */
-.callout{border-left:3px solid var(--accent);background:rgba(122,162,247,.08);padding:13px 18px;
-  border-radius:0 10px 10px 0;margin-top:14px}
-.callout h4{font-size:14.5px;margin:0 0 4px;color:var(--accent)}
-.callout p{font-size:13.5px;color:var(--text-2);line-height:1.55;margin:0}
-.callout.warn{border-left-color:var(--warn);background:rgba(224,175,104,.09)}
-.callout.warn h4{color:var(--warn)}
+  /* workflow map (slide 2) */
+  .wmap{display:flex;flex-direction:column;gap:12px;margin-top:16px}
+  .wrow{display:flex;align-items:stretch;gap:8px}
+  .wnode{flex:1;min-width:0;background:var(--surface);border:1px solid var(--border-strong);
+         border-radius:10px;padding:10px 12px}
+  .wnode .wn{font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:800;
+             letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+  .wnode .wt{font-size:15px;font-weight:700;color:var(--text-1);line-height:1.25;margin-top:2px}
+  .wnode .wd{font-size:12.5px;color:var(--text-2);line-height:1.38;margin-top:4px}
+  .wnode .wg{font-size:12px;color:var(--warn);line-height:1.35;margin-top:6px}
+  .wnode.stop{border-color:rgba(247,118,142,.55)}
+  .wnode.stop .wn{color:var(--bad)}
+  .wnode.out{border-style:dashed;background:transparent}
+  .warr{flex:none;align-self:center;color:var(--text-3);font-size:19px;font-weight:800}
+  .wchip{display:inline-flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;
+         padding:7px 13px;border-radius:9px;border:1px dashed var(--border-strong);color:var(--text-2)}
+  .wchip b{color:var(--text-1)}
+  .wlbl{flex:none;align-self:center;font-family:'JetBrains Mono',monospace;font-size:12px;
+        letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);width:86px}
 
-/* ---- numbered step cards ---- */
-.steps{display:grid;gap:24px 18px;margin-top:30px}
-.steps.s3{grid-template-columns:repeat(3,1fr)}
-.steps.s4{grid-template-columns:repeat(4,1fr)}
-.step{position:relative;padding:22px 18px 16px;border:1px solid var(--border-strong);border-radius:12px;background:var(--surface)}
-.step .num{position:absolute;top:-15px;left:16px;width:32px;height:32px;border-radius:9px;background:var(--grad);
-  color:#16161e;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;
-  font-family:'JetBrains Mono',monospace}
-.step h4{margin:8px 0 6px;font-size:15px}
-.step p{font-size:13px;color:var(--text-2);line-height:1.5;margin:0}
+  /* ===== orca-orchestration deck additions ===== */
+  table.tt.xs{font-size:14px;border-spacing:0 6px}
+  table.tt.xs th{font-size:12px;padding:0 10px 2px}
+  table.tt.xs td{padding:9px 10px}
 
-/* ---- do / don't comparison ---- */
-.vs{display:grid;grid-template-columns:1fr 52px 1fr;gap:16px;align-items:stretch;margin-top:18px}
-.vs .mid{font-size:34px;font-weight:800;color:var(--text-3);display:flex;align-items:center;justify-content:center}
-.vs .bad-side{border-top:3px solid var(--bad)}
-.vs .good-side{border-top:3px solid var(--good)}
-.vs h3{font-size:17px;margin:0 0 10px;color:var(--text-1)}
-.vs ul{padding-left:17px;margin:0;font-size:13.5px;line-height:1.7;color:var(--text-2)}
-.vs .bad-side li::marker{color:var(--bad)}
-.vs .good-side li::marker{color:var(--good)}
+  /* metric tiles (dogfood numbers) */
+  .met{background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;
+       padding:16px 18px}
+  .met .n{font-family:'JetBrains Mono',monospace;font-size:40px;font-weight:800;line-height:1;
+          color:var(--accent)}
+  .met .n.good{color:var(--good)}
+  .met .n.bad{color:var(--bad)}
+  .met .n.warn{color:var(--warn)}
+  .met .u{font-size:13.5px;color:var(--text-2);line-height:1.35;margin-top:8px}
 
-/* ---- workflow map (slide 2) ---- */
-.wf{position:relative;margin-top:16px}
-.wf::before{content:"";position:absolute;left:17px;top:16px;bottom:16px;width:2px;
-  background:linear-gradient(180deg,var(--warn),var(--accent) 30%,var(--accent-2) 70%,var(--good));opacity:.45}
-.wf-row{display:grid;grid-template-columns:216px 1fr 270px;gap:14px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--border)}
-.wf-row:last-child{border-bottom:none}
-.wf-node{display:flex;align-items:center;gap:11px;font-weight:700;font-size:15px;color:var(--text-1);position:relative;z-index:1}
-.wf-num{flex:none;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;
-  font-family:'JetBrains Mono',monospace;font-weight:800;font-size:15px;background:var(--surface);
-  border:1px solid var(--accent);color:var(--accent);box-shadow:0 0 0 4px var(--bg)}
-.wf-node.gatey .wf-num{border-color:var(--warn);color:var(--warn)}
-.wf-node.okey .wf-num{border-color:var(--good);color:var(--good)}
-.wf-what{font-size:13.5px;color:var(--text-2);line-height:1.45}
-.wf-what b{color:var(--text-1);font-weight:600}
-.wf-side{display:flex;flex-direction:column;gap:5px;align-items:flex-end}
-.gate,.fb,.hand{display:inline-block;padding:3px 10px;border-radius:7px;font-family:'JetBrains Mono',monospace;font-size:11.5px;white-space:nowrap}
-.gate{background:rgba(224,175,104,.14);border:1px solid rgba(224,175,104,.5);color:var(--warn)}
-.fb{background:transparent;border:1px dashed var(--border-strong);color:var(--text-3)}
-.hand{background:rgba(158,206,106,.13);border:1px solid rgba(158,206,106,.5);color:var(--good)}
+  /* state badges for the gate */
+  .st{display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;
+      font-size:14px;font-weight:800;letter-spacing:.06em;padding:5px 11px;border-radius:8px;
+      border:1px solid var(--border-strong);background:var(--surface)}
+  .st.a{color:var(--bad);border-color:rgba(247,118,142,.5)}
+  .st.b{color:var(--warn);border-color:rgba(224,175,104,.5)}
+  .st.c{color:var(--good);border-color:rgba(158,206,106,.5)}
+
+  /* three-column compare (subagent vs worker) */
+  .cmp{display:grid;grid-template-columns:.9fr 1fr 1fr;gap:0 14px;font-size:16.5px}
+  .cmp>div{padding:11px 4px;border-bottom:1px solid var(--border)}
+  .cmp .hd{font-size:13px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;
+           color:var(--accent-2);border-bottom:1px solid var(--border-strong)}
+  .cmp .k{color:var(--text-3);font-weight:600}
 </style>
 </head>
 <body>
 
 <div class="deck">
 
-<!-- 1. PORTADA -->
-<section class="slide is-active" data-title="Portada">
-  <div class="fx-host" data-fx="constellation"></div>
-  <div class="above">
-    <p class="eyebrow">AGENTIC QA · WORKFLOW SKILL · SHIFT-LEFT</p>
-    <h1 class="h1 mono-title anim-rise-in" data-anim="rise-in"><span class="grad">/</span>shift-left-testing</h1>
-    <p class="lede mt-m">QA pre-sprint sobre un lote de Stories del backlog: refina los Acceptance Criteria, saca a la luz gaps y ambigüedades, y deja redactado el ATP real de cada Story en madurez outline — los defectos se <b>previenen en los requisitos</b>, no se detectan tras implementar.</p>
-    <div class="row wrap mt-l" style="gap:10px">
-      <span class="chip"><span class="cdot" style="background:var(--accent)"></span>Shift-Left <span class="dim">(históricamente Stage 0)</span> · Pre-sprint</span>
-      <span class="chip"><span class="cdot" style="background:var(--accent-2)"></span>Batch de 1-12 Stories</span>
-      <span class="chip"><span class="cdot" style="background:var(--warn)"></span>Sin ejecución — la feature no existe</span>
-      <span class="chip"><span class="cdot" style="background:var(--good)"></span>Jira es canónico</span>
-    </div>
-  </div>
-  <div class="notes">Bienvenidos. Este deck recorre el workflow real del skill /shift-left-testing paso a paso: qué entra, qué hace la IA, qué gates esperan tu aprobación y qué artefactos salen. Regla de oro: corregir un defecto en los requisitos cuesta 1; en desarrollo, 10; en producción, 100.</div>
-</section>
+  <div class="deck-footer"><span class="mono">/orca-orchestration · conductor · fleet · workers</span><span class="slide-number" data-current="1" data-total="20"></span></div>
 
-<!-- 2. MAPA DEL WORKFLOW -->
-<section class="slide" data-title="Mapa del workflow">
-  <p class="kicker">el mapa completo — índice mental del deck</p>
-  <h2 class="h2" data-anim="fade-up">Un pipeline, tres fases <span class="grad">+ gates humanos</span></h2>
-  <div class="wf anim-stagger-list">
-    <div class="wf-row">
-      <div class="wf-node gatey"><span class="wf-num">!</span>Preflight Gate</div>
-      <div class="wf-what">Readiness de tooling + contexto. <b>Args-as-answers</b> · <b>probe, don't assume</b>. Un solo checklist de gaps; RED bloqueante → STOP.</div>
-      <div class="wf-side"><span class="fb">RED → arregla .env + reinicia</span></div>
-    </div>
-    <div class="wf-row">
-      <div class="wf-node"><span class="wf-num">0</span>Session Init</div>
-      <div class="wf-what">Resume check · modalidad TMS A/B · carga <b>/acli</b> · verifica <b>.context/</b> · resuelve candidatos · crea <b>.session/&lt;batch-id&gt;/</b></div>
-      <div class="wf-side"><span class="fb">falta contexto → /project-discovery</span></div>
-    </div>
-    <div class="wf-row">
-      <div class="wf-node"><span class="wf-num">1</span>Selection</div>
-      <div class="wf-what">Sync-read por candidato → filtro de tipo → frescura de label → <b>veto</b> → <b>risk score</b> → tabla ranqueada de candidatos</div>
-      <div class="wf-side"><span class="gate">GATE · OK del usuario</span><span class="fb">no-Story → rechazo en voz alta</span></div>
-    </div>
-    <div class="wf-row">
-      <div class="wf-node"><span class="wf-num">2</span>Refinement ×N</div>
-      <div class="wf-what">1 subagente por Story, <b>SECUENCIAL</b> · playbook en alcance outline → <b>shift-left-refinement.md</b> + resumen por Story</div>
-      <div class="wf-side"><span class="gate">GATE · OK por Story</span><span class="fb">error → retry / skip / abort</span></div>
-    </div>
-    <div class="wf-row">
-      <div class="wf-node"><span class="wf-num">3</span>Handoff ×N</div>
-      <div class="wf-what">6 mutaciones Jira por Story · labels · qa_assignee · transición <b>Backlog → Shift-Left QA → Estimation</b> y STOP</div>
-      <div class="wf-side"><span class="fb">campo ausente → comment fallback</span><span class="fb">subtask [QA] Shift-Left Review: In Progress al aceptar → Done al handoff</span></div>
-    </div>
-    <div class="wf-row">
-      <div class="wf-node okey"><span class="wf-num">✓</span>Batch report</div>
-      <div class="wf-what">Agrega preguntas PO/Dev (dedupe) → <b>batch-report.md</b> → comment en el epic padre si comparten uno · archiva la sesión</div>
-      <div class="wf-side"><span class="hand">→ /sprint-testing · cortocircuito</span></div>
-    </div>
-  </div>
-  <p class="dim2 mt-s" style="font-size:13px"><span class="gate">GATE</span> espera aprobación humana &nbsp;·&nbsp; <span class="fb">caja punteada</span> fallback / camino adyacente &nbsp;·&nbsp; <span class="hand">→</span> handoff a otra skill</p>
-  <div class="callout mt-m"><h4>El contrato agéntico de Shift-Left</h4><p>El <b>agente</b> reescribe los ACs como Given/When/Then con datos concretos, saca a la luz gaps y ambigüedades, redacta el ATP pre-sprint en el campo de la Story y aplica el Test-Design Checklist. La <b>persona</b> firma el lote de Stories candidatas y el resumen por Story, y nunca deja pasar una Story a <span class="mono">Estimation</span> sin eso. <b>Evidencia que sobrevive</b>: los ACs reescritos, los gaps como preguntas abiertas a PO/Dev, la label fechada y la subtask de revisión. Autonomía CSA <b>2</b> y <b>sin verificador separado</b>: el PO o el dev que refina la Story es el revisor natural.</p></div>
-  <div class="notes">Memoriza esta columna: Preflight → Init → Selection → Refinement → Handoff → Batch report. Cada fila es una sección del deck. A la derecha viven los caminos adyacentes: gates de aprobación, fallbacks y handoffs hacia otras skills.</div>
-</section>
-
-<!-- 3. PREFLIGHT GATE -->
-<section class="slide" data-title="Preflight Gate">
-  <p class="kicker">antes de la Phase 0 — readiness gate</p>
-  <h2 class="h2" data-anim="fade-up">Preflight: <span class="grad">probar, no asumir</span></h2>
-  <div class="grid g2 mt-m anim-stagger-list">
-    <div class="card card-accent"><h4>Ley 1 · Args-as-answers</h4><p class="sm">Lo que el usuario ya dijo (los IDs de Story, la modalidad, "groom the backlog") cuenta como respuesta dada. Solo se preguntan los gaps reales — todos juntos, en UN checklist.</p></div>
-    <div class="card card-accent"><h4>Ley 2 · Probe, don't assume</h4><p class="sm">Cada capacidad se verifica con un probe real. Un RED bloqueante detiene la sesión: la skill nombra la env var exacta, apunta a <code>.env</code> y pide reiniciar la sesión del agente.</p></div>
-  </div>
-  <table class="dtable">
-    <thead><tr><th>Capacidad</th><th>Necesidad</th><th>Probe / por qué</th></tr></thead>
-    <tbody>
-      <tr><td><b>/acli</b> — issue tracker</td><td class="ok">REQUIRED</td><td><code>bun run jira:check</code> — todo el output del refinamiento aterriza en Jira</td></tr>
-      <tr><td><b>Modalidad TMS resuelta</b></td><td class="ok">REQUIRED</td><td>A: Xray · B: Jira-native — se persiste para el pipeline; el ATP pre-sprint vive en el campo en AMBAS</td></tr>
-      <tr><td><b>/xray-cli</b> + creds <code>XRAY_*</code></td><td class="opt">N/A</td><td>No se usa pre-sprint: el ATP es field-first — el Test Plan item lo crea <code>/sprint-testing</code> Planning desde el campo</td></tr>
-      <tr><td><b>Contexto de negocio</b></td><td class="ok">REQUIRED</td><td><code>.context/business/*</code> + <code>master-test-plan.md</code> — sin ellos, preguntas vagas al PO</td></tr>
-      <tr><td><b>Lista de candidatos</b></td><td class="ok">REQUIRED</td><td>IDs explícitos o JQL de backlog — tamaño confirmado con el usuario</td></tr>
-    </tbody>
-  </table>
-  <div class="callout"><h4>Gate ligero por diseño</h4><p>Shift-left nunca ejecuta contra un sistema vivo: env de la app, credenciales de test-user, DBHub, OpenAPI, Playwright y resend son N/A aquí. La viabilidad se establece LEYENDO código, APIs y schema — jamás corriendo la app.</p></div>
-  <div class="notes">El preflight corre antes que todo, incluso antes del resume check. Sus dos leyes evitan los dos fallos clásicos: interrogar al usuario por cosas que ya dijo, y asumir que una CLI está autenticada sin probarla.</div>
-</section>
-
-<!-- 4. PHASE 0 -->
-<section class="slide" data-title="Phase 0 · Session Init">
-  <p class="kicker">phase 0 — session resume check + init</p>
-  <h2 class="h2" data-anim="fade-up">Phase 0 · Arrancar <span class="grad">o retomar</span> la sesión</h2>
-  <div class="grid g2 mt-m" style="align-items:start;gap:30px">
-    <ul class="blist tight anim-stagger-list" style="margin-top:0">
-      <li><b>0.0 Resume check.</b> ¿Existe <code>progress.md</code> del batch? → ofrecer <b>resume / restart / abort</b>. Restart archiva lo anterior como <code>-aborted</code>.</li>
-      <li><b>0.1 Modalidad TMS.</b> Probe de 4 pasos (A: Xray · B: Jira-native). Se persiste en <code>plan.md</code> §Inputs.</li>
-      <li><b>0.2 Tool skills.</b> <code>/acli</code> siempre (escrituras + búsqueda trivial). Lecturas de detalle → <code>bun run jira:sync-issues</code>, nunca <code>acli view</code>.</li>
-      <li><b>0.3 Contexto.</b> 4 archivos <code>.context/</code> verificados; si falta uno → STOP → <b>/project-discovery</b>.</li>
-      <li><b>0.4 Candidatos.</b> IDs explícitos (UPEX-100,101,102) o JQL de backlog. Sweet spot 1-12; &gt;12 se divide en sesiones.</li>
-      <li><b>0.5 Carpeta de sesión</b> + <code>plan.md</code> (Goal · Inputs · fases · riesgos) + primer entry en <code>progress.md</code>.</li>
-    </ul>
-    <div class="term">
-      <div class="bar"><span class="tdot"></span><span class="tdot"></span><span class="tdot"></span><span>estado de sesión — dónde vive cada cosa</span></div>
-<pre><span class="fn">.session/shift-left-testing/2026-07-06-payments/</span>
-├─ plan.md          <span class="cmt"># canónico: modalidad + candidatos + fases</span>
-├─ progress.md      <span class="cmt"># append-only, 1 entry por fase → resume</span>
-├─ candidates.md    <span class="cmt"># output de Phase 1</span>
-└─ batch-report.md  <span class="cmt"># output de Phase 3</span>
-
-<span class="cmt"># el entregable por Story vive en su carpeta PBI:</span>
-<span class="fn">.context/PBI/epics/EPIC-&lt;KEY&gt;-&lt;slug&gt;/stories/</span>
-<span class="fn">  STORY-&lt;KEY&gt;-&lt;slug&gt;/</span>shift-left-refinement.md
-
-<span class="cmt"># al cerrar: mv → .session/.archive/&lt;fecha&gt;-...-&lt;batch-id&gt;/</span></pre>
-    </div>
-  </div>
-  <div class="notes">La sesión es resumible por diseño: plan.md es el registro canónico de decisiones y progress.md permite retomar a mitad de lote sin repetir Stories ya refinadas. El descriptor kebab-case permite dos sesiones el mismo día.</div>
-</section>
-
-<!-- 5. PHASE 1 · EMBUDO -->
-<section class="slide" data-title="Phase 1 · Selection">
-  <p class="kicker">phase 1 — selection · el embudo de triage</p>
-  <h2 class="h2" data-anim="fade-up">Selection: leer bien, <span class="grad">filtrar en voz alta</span></h2>
-  <div class="term mt-s">
-    <div class="bar"><span class="tdot"></span><span class="tdot"></span><span class="tdot"></span><span>lectura de detalle — regla reads-vs-writes</span></div>
-<pre><span class="p">$ </span><span class="c">bun run jira:sync-issues get UPEX-100 --include-comments</span>   <span class="cmt"># 1 Story: ACs + custom fields + comments</span>
-<span class="p">$ </span><span class="c">bun run jira:sync-issues jql "project = UPEX AND issueType = Story AND status in (Backlog, ...)"</span>
-<span class="cmt"># NUNCA `acli view` para custom fields — devuelve null. `acli search` solo para la lista trivial.</span></pre>
-  </div>
-  <div class="steps s4 anim-stagger-list">
-    <div class="step"><div class="num">1</div><h4>Filtro de tipo</h4><p>Solo Stories. Bug / Spike / Sub-task / Tech-debt → rechazo CON motivo de una línea, nunca en silencio.</p></div>
-    <div class="step"><div class="num">2</div><h4>Frescura de label</h4><p>¿Ya <code>shift-left-reviewed</code> &lt;30 días? Se muestra aparte — el usuario decide skip o refresh.</p></div>
-    <div class="step"><div class="num">3</div><h4>Tabla de veto</h4><p>Money / auth / data-integrity / integración / state machine → FORZAR FULL. CSS puro / copy / docs → SKIP.</p></div>
-    <div class="step"><div class="num">4</div><h4>Risk score</h4><p>Solo sin veto. Feature nueva +3 · datos dinámicos +3 · AC-light +2 · esfuerzo +2 · &gt;5 comentarios +1…</p></div>
-  </div>
-  <div class="callout"><h4>5 · Escaneo de viabilidad de datos (solo HIGH)</h4><p>Lectura de <code>business-data-map</code> / <code>business-api-map</code> / <code>master-test-plan</code> — sin queries, sin API calls. Si el modelo de datos no soporta los ACs → flag <code>DATA-FEASIBILITY-RISK</code> (suave: no bloquea, se vuelve pregunta crítica al PO).</p></div>
-  <div class="notes">El embudo va en orden estricto: tipo antes que label, label antes que veto, veto antes que score. El rechazo ruidoso ES valor — a menudo revela que el tablero está mal etiquetado.</div>
-</section>
-
-<!-- 6. PHASE 1 · VETO vs SCORE + GATE -->
-<section class="slide" data-title="Phase 1 · Veto y gate">
-  <p class="kicker">phase 1 — el veto vence al score · gate de candidatos</p>
-  <h2 class="h2" data-anim="fade-up">El juicio anula la aritmética — <span class="grad">y tú apruebas el set</span></h2>
-  <div class="grid g2 mt-m" style="align-items:start;gap:30px">
-    <div>
-      <table class="dtable" style="margin-top:0">
-        <thead><tr><th>Score</th><th>Nivel</th><th>Profundidad de refinamiento</th></tr></thead>
-        <tbody>
-          <tr><td><b>0-3</b></td><td>LOW</td><td>SKIP — PO/Dev escriben los ACs sin QA</td></tr>
-          <tr><td><b>4-7</b></td><td>MEDIUM</td><td>Refinamiento estándar (Fases 1-3 + outlines)</td></tr>
-          <tr><td><b>8+</b></td><td>HIGH</td><td>Extendido — más caza de ambigüedades y edge cases; set de preguntas ampliado</td></tr>
-        </tbody>
-      </table>
-      <div class="callout" style="margin-top:12px"><h4>El score es orientativo</h4><p>El usuario puede rescatar una LOW si huele complejidad oculta. Y el VETO cortocircuita: una Story de refunds es refinamiento obligatorio aunque puntúe 2; un retoque de CSS es skip aunque toque cinco archivos.</p></div>
-    </div>
-    <div class="card" style="border-top:3px solid var(--warn)">
-      <h4 style="color:var(--warn)">GATE — presenta la tabla y ESPERA el OK</h4>
-      <p class="sm mt-s">Phase 1 termina con una tabla ranqueada: <b>Accepted</b> (riesgo · score · veto override · data-feasibility), <b>Rejected</b> (no-Story, con motivo), <b>Skipped</b> (LOW), <b>Already Reviewed</b> (skip/refresh?), orden recomendado y preguntas abiertas.</p>
-      <p class="sm mt-s"><b>No se refina nada</b> hasta que el humano confirme el set. Puede vetar Stories, rescatar LOWs o cambiar el orden. La lista aceptada se persiste en <code>plan.md</code> §Inputs y se registra el checkpoint en <code>progress.md</code>.</p>
-    </div>
-  </div>
-  <div class="notes">La selección es una propuesta, no una decisión. Este gate mantiene al humano dirigiendo el lote — el mismo patrón que el Story Explanation gate de sprint-testing.</div>
-</section>
-
-<!-- 7. PHASE 2 · EL LOOP OUTLINE -->
-<section class="slide" data-title="Phase 2 · Loop outline">
-  <p class="kicker">phase 2 — refinement · un subagente por story, secuencial</p>
-  <h2 class="h2" data-anim="fade-up">Refinement: el playbook, en <span class="grad">alcance outline</span></h2>
-  <p class="sm" style="max-width:100ch">Reuso deliberado: ~70% de la lógica vive en <code>sprint-testing/references/acceptance-test-planning.md</code> §Fases 1-3 — el subagente la cita y aplica el <b>delta shift-left</b>. Secuencial por diseño: presentas cada resumen al usuario antes de despachar la siguiente Story.</p>
-  <div class="vs">
-    <div class="card good-side">
-      <h3>Corre (alcance outline)</h3>
-      <ul>
-        <li><b>Fase 1 · Critical Analysis</b> — contexto negocio + técnico; lecturas de código LIGERAS (¿es viable?), sin reproducción</li>
-        <li><b>Fase 2 · Story Quality Analysis</b> — el corazón (siguiente slide)</li>
-        <li><b>Fase 3 · Refined ACs</b> — Given/When/Then con datos específicos</li>
-        <li><b>Fase 4 · outlines</b> — solo NOMBRES + coverage estimate (guía la estimación del PO)</li>
-        <li><b>Fase 5 · edge cases</b> — solo nombres + criticidad</li>
-      </ul>
-    </div>
-    <div class="mid">vs</div>
-    <div class="card bad-side">
-      <h3>Difiere o prohíbe</h3>
-      <ul>
-        <li>Tablas de parametrización, test-data JSON, recetas Faker → in-sprint (<code>/sprint-testing</code>)</li>
-        <li>Creación de TCs en el TMS → Documentation (<code>/test-documentation</code>)</li>
-        <li>Mutaciones Jira → las hace Phase 3, nunca el subagente</li>
-        <li>Ejecución: smoke, queries DB, API calls → NADA corre</li>
-        <li>Git: sin branch, sin commit — Jira es canónico</li>
-        <li>Carpeta <code>evidence/</code> — no existe nada que capturar</li>
-      </ul>
-    </div>
-  </div>
-  <div class="notes">La disciplina outline separa shift-left del diseño de tests ejecutable: títulos de outline y conteo de cobertura, nunca los datos. El ATP que se escribe ya es el real — solo que en madurez outline. Generar recetas de Faker ahora sería trabajo desperdiciado que se rehace in-sprint.</div>
-</section>
-
-<!-- 8. PHASE 2 · EL CORAZÓN -->
-<section class="slide" data-title="Phase 2 · El corazón">
-  <p class="kicker">phase 2 — story quality analysis + doctrina de diseño</p>
-  <h2 class="h2" data-anim="fade-up">El corazón: <span class="grad">lo que la Story calla</span></h2>
-  <div class="grid g2 mt-m anim-stagger-list" style="align-items:start">
-    <div class="card card-accent">
-      <h4>Qué cazas (Fase 2 del playbook)</h4>
-      <ul class="blist tight">
-        <li><b>Ambigüedades</b> — ubicación + pregunta a PO/Dev + impacto en testing + aclaración sugerida</li>
-        <li><b>Gaps</b> — AC / regla de negocio faltante, por qué es crítico, riesgo si se omite</li>
-        <li><b>Edge cases no escritos</b> — escenario + comportamiento probable + criticidad</li>
-        <li><b>Contradicciones</b> — "la descripción dice X pero el AC3 dice Y", explícito</li>
-        <li><b>Testeabilidad</b> — Yes / Partial / No, listando cada AC vago o dependencia no aislable</li>
-      </ul>
-      <p class="sm mt-s">Toolkit: <code>refinement-questions.md</code> — catálogo por arquetipo (auth, money, search, state machine, integración, RBAC).</p>
-    </div>
-    <div class="card card-accent">
-      <h4>Doctrina de diseño (vinculante)</h4>
-      <ul class="blist tight">
-        <li><b>Los ACs son el PISO</b>, no el techo — el refinamiento empuja más allá del happy path</li>
-        <li><b>1:N por defecto</b> — un AC no trivial implica varios outlines; colapsar a 1 exige justificación escrita "trivially atomic"</li>
-        <li><b>Técnica por gatillo</b> — rangos → BVA · estados → State-Transition · condiciones que interactúan → Decision Table · 3+ factores → Pairwise</li>
-        <li><b>Todo escenario inferido</b> lleva el marcador <code>NEEDS PO/DEV CONFIRMATION</code> — textual, hasta Jira</li>
-        <li><b>Una Story limpia es resultado válido</b> — cero preguntas forzadas; relleno y sub-derivación son AMBOS fallos</li>
-      </ul>
-    </div>
-  </div>
-  <div class="notes">Aquí es donde el shift-left crea valor: el PO todavía puede actuar. Cada ambigüedad cazada es un defecto de producción borrado antes de nacer. Un gap no es solo una pregunta — es un outline faltante.</div>
-</section>
-
-<!-- 9. PHASE 2 · ENTREGABLE -->
-<section class="slide" data-title="Phase 2 · Entregable">
-  <p class="kicker">phase 2 — el entregable + gate por story</p>
-  <h2 class="h2" data-anim="fade-up">shift-left-refinement.md — <span class="grad">y tu OK por Story</span></h2>
-  <div class="grid g2 mt-m" style="align-items:start;gap:30px">
-    <div class="term" style="font-size:12.5px">
-      <div class="bar"><span class="tdot"></span><span class="tdot"></span><span class="tdot"></span><span>shift-left-refinement.md — esqueleto + ejemplo</span></div>
-<pre>├─ Phase 1 · Critical Analysis
-├─ Phase 2 · Story Quality Analysis   <span class="cmt">← el corazón</span>
-├─ Phase 3 · Refined ACs
-│   <span class="kw">Given</span> user with active OTP &lt;5 min
-│   <span class="kw">When</span>  submits code <span class="str">"000000"</span> (wrong)
-│   <span class="kw">Then</span>  UI <span class="str">"Invalid code"</span> · API <span class="num">401</span> · DB no session
-│   <span class="fn">NEEDS PO/DEV CONFIRMATION</span> <span class="cmt">← si fue inferido</span>
-├─ Phase 4 · Test Outlines (pre-sprint) <span class="cmt">← nombres + coverage</span>
-├─ Phase 5 · Edge Cases (pre-sprint)    <span class="cmt">← nombres + criticidad</span>
-├─ Story Quality Assessment · Critical Questions for PO
-├─ Technical Questions for Dev · Suggested Improvements
-└─ Data feasibility flags · Recommended testing strategy</pre>
-    </div>
-    <div>
-      <ul class="blist tight" style="margin-top:0">
-        <li><b>Archivo NON-Jira</b> en la carpeta PBI de la Story — se escribe a mano. Los espejos Jira (<code>story.md</code>, <code>acceptance-criteria.md</code>) SOLO los genera el sync.</li>
-        <li><b>Bootstrap</b> — si la carpeta PBI no existe, el subagente la crea con un <code>context.md</code> mínimo. Sin <code>evidence/</code>.</li>
-        <li><b>Convención de outline</b> — <code>Should &lt;behavior&gt; &lt;condition&gt;</code>, agrupados por tipo con tabla de coverage (Positive / Negative / Boundary / Integration).</li>
-        <li><b>Retorno al orquestador</b> — JSON compacto: quality, #gaps, #preguntas PO/Dev, outlines por tipo, flags.</li>
-        <li><b>GATE</b> — el orquestador presenta el resumen, espera tu OK, registra el checkpoint <code>Phase 2.&lt;n&gt;</code> en <code>progress.md</code> y recién entonces despacha la siguiente Story.</li>
-      </ul>
-    </div>
-  </div>
-  <div class="notes">El orden de secciones es estructural: se convierte en el bloque que el PO lee en Jira. El checkpoint por Story permite retomar un lote a la mitad sin repetir trabajo.</div>
-</section>
-
-<!-- 10. PHASE 3 · 6 MUTACIONES -->
-<section class="slide" data-title="Phase 3 · Handoff">
-  <p class="kicker">phase 3 — handoff · 6 mutaciones jira por story (vía /acli)</p>
-  <h2 class="h2" data-anim="fade-up">Handoff: <span class="grad">seis mutaciones</span>, en orden</h2>
-  <div class="steps s3 anim-stagger-list">
-    <div class="step"><div class="num">1</div><h4>ACs → campo</h4><p>Refined ACs al campo <code>acceptance_criteria</code>. Fallback si no existe: comentario "## Acceptance Criteria". Verifica con re-sync.</p></div>
-    <div class="step"><div class="num">2</div><h4>Descripción</h4><p>Append de "QA Refinements (Shift-Left Analysis)": edge cases + reglas aclaradas + preguntas. Leer primero — NUNCA sobrescribir.</p></div>
-    <div class="step"><div class="num">3</div><h4>ATP</h4><p>Puebla el campo <code>acceptance_test_plan</code> con el ATP pre-sprint (madurez outline) — <b>field-first</b>: el Test Plan item <b>"ATP: {STORY-KEY}: {título}"</b> NO se crea aquí; lo crea <code>/sprint-testing</code> Planning desde este MISMO campo, sin variante de título. Fallback si el campo no existe: comentario "## Acceptance Test Plan".</p></div>
-    <div class="step"><div class="num">4</div><h4>Comentario</h4><p>UN comentario de handoff: puntero al campo (@PO / @Dev-lead solo si están en <code>project.yaml</code>). Body completo inline SOLO si el campo no existe.</p></div>
-    <div class="step"><div class="num">5</div><h4>Labels + QA Assignee</h4><p><code>shift-left-reviewed</code> + <code>shift-left-{YYYY-MM-DD}</code>. <code>qa_assignee</code> = self, read-before-write, vía REST PUT (acli no escribe customfields).</p></div>
-    <div class="step"><div class="num">6</div><h4>Transición + subtask + traza</h4><p>analyze → estimate y STOP en Estimation. La subtask <b>[QA] Shift-Left Review</b> recibe las anotaciones exhaustivas de sesión y pasa a <b>Done</b> (la Story queda limpia). Verifica con re-sync que el ATP aterrizó en el campo: el comentario es un PUNTERO, y el espejo byte a byte solo aplica en modo fallback (campo ausente) — <code>fix-traceability</code> lo audita después.</p></div>
-  </div>
-  <div class="callout" style="margin-top:24px"><h4>Nunca ADF a mano</h4><p>El body se autoría en Markdown local y <code>/acli</code> lo convierte en su ruta md-to-ADF. ADF artesanal corrompe el body en Jira (y el espejo byte a byte del modo fallback).</p></div>
-  <div class="notes">Secuencial, una Story a la vez, para que revises el estado de Jira antes de la siguiente mutación. El subagente devuelve un log por Story: atp_field, labels, transiciones, trace_status.</div>
-</section>
-
-<!-- 11. PHASE 3 · GUARDRAILS -->
-<section class="slide" data-title="Phase 3 · Guardrails">
-  <p class="kicker">phase 3 — guardrails de transición + resume</p>
-  <h2 class="h2" data-anim="fade-up">STOP en Estimation — <span class="grad">y todo re-ejecutable</span></h2>
-  <div class="grid g2 mt-m" style="align-items:start;gap:30px">
-    <div>
-      <table class="dtable" style="margin-top:0">
-        <thead><tr><th>Status actual</th><th>Acción</th></tr></thead>
-        <tbody>
-          <tr><td><b>Backlog</b></td><td><code>analyze</code> → Shift-Left QA, luego <code>estimate</code> → Estimation</td></tr>
-          <tr><td><b>Shift-Left QA</b></td><td>solo <code>estimate</code></td></tr>
-          <tr><td><b>Estimation</b></td><td>nada — ya está en el objetivo</td></tr>
-          <tr><td><b>Más allá</b> (Ready For Dev…)</td><td>SKIP + warning — el refinamiento aterriza igual, el workflow no se toca</td></tr>
-        </tbody>
-      </table>
-      <div class="callout warn" style="margin-top:12px"><h4>La estimación es del PO + Dev lead</h4><p>QA jamás avanza <code>estimate → ready_for_dev</code> ni compromete la Story a un sprint. Y NUNCA se transiciona a Estimation sin el ATP pre-sprint poblado — ese ATP es lo que hace estimable a la Story (anti-patrón L5).</p></div>
-    </div>
-    <div class="card">
-      <h4>Resume seguro — cada paso es idempotente</h4>
-      <ul class="blist tight">
-        <li>Sección ya en la descripción → skip · campo ATP → overwrite OK · comentario ya existente → skip</li>
-        <li>Labels son set-based · transición lee el status antes de aplicar</li>
-        <li>Subtask <b>[QA] Shift-Left Review</b>: find-or-create bajo la Story, nunca duplica (sin subtasks en el proyecto → skip con warning)</li>
-        <li><b>Error de subagente</b> → STOP, estado parcial reportado, opciones retry / skip / abort. Sin auto-rollback: las mutaciones quedan registradas en el batch report para retomar.</li>
-      </ul>
-    </div>
-  </div>
-  <div class="notes">Dos innegociables: parar en Estimation (la estimación es decisión de negocio) y ambos labels siempre — sin ellos se rompe el cortocircuito de /sprint-testing el próximo sprint.</div>
-</section>
-
-<!-- 12. BATCH REPORT + ARCHIVE -->
-<section class="slide" data-title="Batch report">
-  <p class="kicker">phase 3 — cierre de sesión · batch report + archive</p>
-  <h2 class="h2" data-anim="fade-up">El batch report: <span class="grad">lo único que el grooming lee</span></h2>
-  <div class="grid g2 mt-m anim-stagger-list" style="align-items:start">
-    <div class="card card-accent">
-      <h4>Qué agrega</h4>
-      <ul class="blist tight">
-        <li>Metadatos de sesión — candidatos / aceptadas / rechazadas / saltadas / refinadas</li>
-        <li>Línea por Story: riesgo · #gaps · #preguntas PO · #tech Qs · #outlines · status final · traza</li>
-        <li><b>Preguntas al PO dedupeadas</b> y ranqueadas por cuántas Stories bloquea cada una</li>
-        <li>Distribución de riesgo + bloqueadores <code>DATA-FEASIBILITY</code> con pre-work requerido</li>
-        <li>Orden recomendado de sprint planning (riesgo + dependencias)</li>
-      </ul>
-    </div>
-    <div class="card card-accent">
-      <h4>Adónde va — y el cierre</h4>
-      <ul class="blist tight">
-        <li>Siempre: <code>.session/shift-left-testing/&lt;batch-id&gt;/batch-report.md</code></li>
-        <li>Si TODAS las Stories comparten epic padre → se publica como comentario en ese epic; si no, se entrega inline al usuario</li>
-        <li>Nunca se publica en cada Story — el comentario per-Story ya existe (paso 4)</li>
-        <li>Entry final en <code>progress.md</code> → <b>Archive</b>: la carpeta de sesión se mueve a <code>.session/.archive/</code></li>
-        <li>Cierre de memoria: <code>mem_session_summary</code> con el resumen + ruta del archive</li>
-      </ul>
-    </div>
-  </div>
-  <div class="notes">"Esta pregunta bloquea tres Stories" es exactamente cómo un PO quiere triagear. Si publicar en el epic falla, no aborta: el reporte local es autoritativo.</div>
-</section>
-
-<!-- 13. CIERRE -->
-<section class="slide" data-title="Cierre">
-  <p class="kicker">cómo invocar · qué sigue en el pipeline</p>
-  <h2 class="h2" data-anim="fade-up">Dispara la skill — <span class="grad">y qué viene después</span></h2>
-  <div class="grid g2 mt-m" style="align-items:start;gap:30px">
-    <div>
-      <div class="term">
-        <div class="bar"><span class="tdot"></span><span class="tdot"></span><span class="tdot"></span><span>claude-code</span></div>
-<pre><span class="p">&gt; </span><span class="c">/shift-left-testing UPEX-100,101,102</span>
-<span class="cmt"># o en lenguaje natural:</span>
-<span class="p">&gt; </span><span class="c">groom the backlog</span>
-<span class="p">&gt; </span><span class="c">shift-left these stories</span>
-<span class="p">&gt; </span><span class="c">pre-sprint QA on these 5 stories</span></pre>
-      </div>
-      <div class="row wrap mt-m" style="gap:8px">
-        <span class="chip" style="font-size:12.5px">Refined ACs en Jira</span>
-        <span class="chip" style="font-size:12.5px">ATP pre-sprint (outline)</span>
-        <span class="chip" style="font-size:12.5px">2 labels</span>
-        <span class="chip" style="font-size:12.5px">Status: Estimation</span>
-        <span class="chip" style="font-size:12.5px">shift-left-refinement.md</span>
-        <span class="chip" style="font-size:12.5px">batch-report.md</span>
+  <!-- 1. PORTADA -->
+  <section class="slide is-active" data-title="Portada">
+    <div class="fx-host" data-fx="constellation"></div>
+    <div class="above">
+      <p class="eyebrow">AGENTIC QA · ORCHESTRATION SKILL</p>
+      <h1 class="h1 mono anim-rise-in" data-anim="rise-in" style="font-size:74px"><span class="grad">/</span>orca-orchestration</h1>
+      <p class="lede mt-m">Un <b>conductor</b> coordinando una <b>flota</b> de sesiones persistentes: una por historia, por módulo o por cluster de fallos.</p>
+      <div class="row wrap mt-l" style="gap:12px">
+        <span class="chip"><span class="dot" style="background:var(--accent)"></span>Conductor · worker · fleet · round</span>
+        <span class="chip"><span class="dot" style="background:var(--good)"></span>El skill = el HOW, no el WHAT</span>
+        <span class="chip"><span class="dot" style="background:var(--accent-2)"></span>Opcional: silencio total sin runtime</span>
       </div>
     </div>
-    <table class="dtable" style="margin-top:0">
-      <thead><tr><th>Después necesitas…</th><th>Skill</th></tr></thead>
+    <div class="notes">Deck del skill /orca-orchestration: cómo una sesión conductora coordina varias sesiones worker. Todo el contenido viene del SKILL.md y sus references, más los números medidos del dogfood. → para avanzar, S presentador, O overview, F pantalla completa.</div>
+  </section>
+
+  <!-- 2. MAPA DEL DECK -->
+  <section class="slide" data-title="Mapa del workflow">
+    <p class="kicker">El mapa completo · índice del deck</p>
+    <h2 class="h2 md">Del gate al cierre, con <span class="grad">fallback</span> en cada paso</h2>
+    <div class="wmap">
+      <div class="wrow">
+        <div class="wlbl">Decidir</div>
+        <div class="wnode"><div class="wn">1 · ¿es orquestación?</div><div class="wt">Subagente o worker</div><div class="wd">Si cabe en este turno, es un subagente. Si hay que escribir, integrar y volver mañana, es un worker.</div></div>
+        <div class="warr">→</div>
+        <div class="wnode"><div class="wn">2 · gate</div><div class="wt">Binario + runtime</div><div class="wd">Tres estados. A y B caen al fallback sin nombrar nada.</div><div class="wg">Nunca se evalúa "¿está instalado el skill del vendor?"</div></div>
+        <div class="warr">→</div>
+        <div class="wnode"><div class="wn">3 · topología</div><div class="wt">Qué ESCRIBE el trabajo</div><div class="wd">Mismo checkout, worktree por módulo, worktree por cluster.</div></div>
+      </div>
+      <div class="wrow">
+        <div class="wlbl">Preparar</div>
+        <div class="wnode"><div class="wn">4 · scope</div><div class="wt">run · roster · briefs</div><div class="wd"><span class="mono">run.md</span>, <span class="mono">roster.md</span>, <span class="mono">COMMON.md</span>, <span class="mono">launch.txt</span> desde las plantillas.</div></div>
+        <div class="warr">→</div>
+        <div class="wnode"><div class="wn">5 · provisioning</div><div class="wt">Antes de lanzar</div><div class="wd">Credenciales, alias de skills, dependencias, caché del tracker.</div><div class="wg">Un gap de provisioning se disfraza de otro fallo</div></div>
+        <div class="warr">→</div>
+        <div class="wnode"><div class="wn">6 · claims</div><div class="wt">Fixtures y credenciales</div><div class="wd">Los del brief van pre-concedidos; los nuevos esperan grant.</div></div>
+      </div>
+      <div class="wrow">
+        <div class="wlbl">Correr</div>
+        <div class="wnode"><div class="wn">7 · launch</div><div class="wt">Crear + lanzar + briefar</div><div class="wd">Una operación indivisible. El prompt lleva la presión de continuidad.</div></div>
+        <div class="warr">→</div>
+        <div class="wnode"><div class="wn">8 · esperar</div><div class="wt">Un solo waiter</div><div class="wd">Esperas rodantes, ack verificado en el mismo comando. Sin monitores caseros.</div></div>
+        <div class="warr">→</div>
+        <div class="wnode"><div class="wn">9 · liveness</div><div class="wt">Stalled ≠ idle</div><div class="wd">Sin spinner y sin <span class="mono">worker_done</span> = atascado, no ocioso.</div></div>
+      </div>
+      <div class="wrow">
+        <div class="wlbl">Cerrar</div>
+        <div class="wnode out"><div class="wn">10 · cierre</div><div class="wt">Mismo turno</div><div class="wd">Liberar, leer el footer de coste ANTES de cerrar, auditoría de huérfanos antes de borrar un worktree.</div></div>
+        <div class="warr">→</div>
+        <div class="wnode out"><div class="wn">11 · cosecha</div><div class="wt">learnings · skill-improvements</div><div class="wd">Memoria entre sesiones + <span class="mono">kickoff.md</span> para el próximo conductor.</div></div>
+        <div class="warr">→</div>
+        <div class="wnode out"><div class="wn">12 · reporte</div><div class="wt">Al owner</div><div class="wd">Una tabla: KEY · stage · estado · último mensaje.</div></div>
+      </div>
+      <div class="wrow" style="margin-top:4px">
+        <div class="wlbl">Sin runtime</div>
+        <div class="wchip"><b>Fallback completo:</b> el plan, el brief y el <span class="mono">launch.txt</span> son idénticos. Cambian el lanzamiento (lo pega un humano), las preguntas (van en el reporte) y el cierre.</div>
+      </div>
+    </div>
+    <div class="notes">Este es el índice: los pasos 1-12 son las diapositivas siguientes. La fila de abajo es la razón por la que el skill es seguro de adoptar: sin runtime, el trabajo no cambia de forma.</div>
+  </section>
+
+  <!-- 3. DOS EJECUTORES -->
+  <section class="slide" data-title="Dos ejecutores">
+    <p class="kicker">Paso 1 · ¿es orquestación de verdad?</p>
+    <h2 class="h2 md">Dos ejecutores, y el <span class="grad">subagente</span> sigue siendo el default</h2>
+    <p class="small dim mt-s">La doctrina del repo (AGENTS.md §3) no cambia: el subagente one-shot ejecuta casi todo. El worker supervisado es el <b>segundo</b> ejecutor, y solo cuando el trabajo no cabe en un turno.</p>
+    <div class="cmp mt-m">
+      <div class="hd"></div><div class="hd">Subagente one-shot (default)</div><div class="hd">Worker supervisado (este skill)</div>
+      <div class="k">Vive</div><div>dentro del turno</div><div>hasta que lo cierras</div>
+      <div class="k">Contexto</div><div>se pierde cuando reporta</div><div>persiste; le sigues hablando</div>
+      <div class="k">Canal</div><div>ninguno hasta que termina; no se puede pausar</div><div>mensajes, preguntas bloqueantes y respuestas en cualquier momento</div>
+      <div class="k">El owner lo ve</div><div>no</div><div>sí: board, terminal, móvil</div>
+      <div class="k">Git</div><div>el del orquestador</div><div>el suyo (worktree) o compartido con file ownership explícito</div>
+      <div class="k">Mejor para</div><div>leer, verificar, mapear; el briefing de 7 componentes</div><div>escribir e integrar solo; una historia completa; trabajo largo</div>
+    </div>
+    <p class="small mt-m"><b>No compiten.</b> El conductor sigue usando subagentes para sus propias lecturas. En el dogfood, 7 subagentes del conductor costaron ~980.000 tokens contra ~180.000 de output observado en tres workers que hicieron tres pases completos de historia.</p>
+    <div class="notes">El punto de esta diapositiva es desactivar el entusiasmo: orquestar no es mejor, es distinto. Y el coste medido dice que las lecturas del conductor fueron la parte cara, no el trabajo paralelo.</div>
+  </section>
+
+  <!-- 4. TRES CAPAS -->
+  <section class="slide" data-title="Tres capas">
+    <p class="kicker">Arquitectura · por qué este skill es corto</p>
+    <h2 class="h2 md">Tres capas, y la nuestra <span class="grad">apunta</span> en vez de copiar</h2>
+    <div class="mk sm mt-m">LAYER 3 · DOCTRINA DEL REPO   .agents/skills/orca-orchestration/   (T1, versionado, este skill)
+   cuándo partir el trabajo · topología por actividad · provisioning · brief · gotchas medidos · phrasebook
+        ^ apunta a v
+LAYER 2 · GRAMÁTICA + MÁQUINA  las guías que sirve el binario       (mailbox, Run, Task, ciclo del worker)
+   versionadas CON el binario. Los stubs de usuario llevan la gramática de comandos y se cargan junto a esta skill: ~2k tokens el par.
+        ^ opera sobre v
+LAYER 1 · APP                 la app corriendo · runtime alcanzable · board · móvil</div>
+    <div class="grid g3 mt-m">
+      <div class="card"><p class="lbl">Regla de composición</p><p class="small mt-s">Si la guía del binario ya lo dice, aquí va un <b>puntero</b>, no una copia. Una copia se desincroniza en silencio en el próximo release.</p></div>
+      <div class="card"><p class="lbl">Consecuencia para el gate</p><p class="small mt-s">Se evalúa sobre <b>binario + runtime</b>, nunca sobre "¿está instalado el skill del vendor?". Una máquina con binario y sin stubs es plenamente capaz.</p></div>
+      <div class="card card-accent"><p class="lbl">Consecuencia para el coste</p><p class="small mt-s">Los stubs del vendor miden ~2k tokens el par y SE CARGAN junto a la skill: saltárselos es lo que produce flags inventados. On-demand queda solo para los temas profundos que un stub apenas señda. Se piden justo antes de usarlas, y solo el rol que las necesita. El <b>worker no carga ninguna</b>: su preámbulo inyectado ya lleva su contrato.</p></div>
+    </div>
+    <div class="notes">Aquí está la razón de que el SKILL.md sea corto: lo que vive en el repo es lo que ninguna guía del vendor tiene — nuestros gaps de provisioning, la topología por actividad, el brief, los gotchas medidos, la integración con git y el phrasebook del owner.</div>
+  </section>
+
+  <!-- 5. EL GATE -->
+  <section class="slide" data-title="El gate">
+    <p class="kicker">Paso 2 · el gate de tres estados</p>
+    <h2 class="h2 md">Sin runtime, el orquestador <span class="grad">no existe</span></h2>
+    <table class="tt sm mt-m">
+      <thead><tr><th style="width:170px">Estado</th><th>En un workflow skill (<span class="mono">sprint-testing</span>, <span class="mono">test-automation</span>…)</th><th>En este skill</th></tr></thead>
       <tbody>
-        <tr><td>La Story llega a <b>Ready For QA</b></td><td><code>/sprint-testing</code> — lee <code>shift-left-reviewed</code> (&lt;30 días) y cortocircuita sus fases de planning</td></tr>
-        <tr><td>TCs formales + ROI, cuando la Story shippea</td><td><code>/test-documentation</code> — Documentation</td></tr>
-        <tr><td>Código de test automatizado</td><td><code>/test-automation</code> — Automation · luego <code>/regression-testing</code> — Regression</td></tr>
-        <tr><td>Falta contexto de negocio</td><td><code>/project-discovery</code> + <code>/business-*-map</code> + <code>/master-test-plan</code></td></tr>
-        <tr><td>Revisión adversarial del refinamiento (opcional)</td><td><code>/judgment-day</code> — nunca auto-invocado</td></tr>
+        <tr><td><span class="st a">A · sin binario</span></td><td><b>Silencio total.</b> No se nombra, no se recomienda, no es prerequisito, no entra en el ATR ni en el barrido de tokens de bloqueo. El flujo escribe su launch file y el humano pega las líneas.</td><td><b>Una línea</b>, y solo porque el usuario PIDIÓ orquestación; después se continúa por el fallback.</td></tr>
+        <tr><td><span class="st b">B · binario, runtime inalcanzable</span></td><td>Silencio (mismo fallback).</td><td>Un intento de abrir el runtime, un re-chequeo; si sigue inalcanzable se trata como estado A.</td></tr>
+        <tr><td><span class="st c">C · listo</span></td><td>El refuerzo se activa sin anunciarse: el runtime entrega las líneas de lanzamiento y los workers reportan al mailbox ADEMÁS de a los tokens de archivo.</td><td>Modo completo: conductor / worker / automation.</td></tr>
       </tbody>
     </table>
-  </div>
-  <p class="dim2 mt-m" style="font-size:13px">← → navegar · O overview · S presentador · N notas · F pantalla completa</p>
-  <div class="notes">Recuerda tres cosas: prevenir antes que detectar; el veto vence al score y la señal vence al volumen; un comando conduce las tres fases con un gate humano en cada paso de consecuencia. El label que pones hoy le ahorra trabajo al equipo el próximo sprint.</div>
-</section>
+    <div class="grid g2 mt-m">
+      <div class="card card-accent"><p class="lbl">El gotcha que hace fallar el gate</p><p class="small mt-s">La bandera de alcanzabilidad está <b>anidada</b> en la salida JSON del binario. Un gate que busca un campo plano falla en cerrado y en silencio sobre una máquina perfectamente capaz. Verifica cualquier edición del gate corriendo <b>las dos ramas</b>.</p></div>
+      <div class="card"><p class="lbl">Regla de plataforma (Linux)</p><p class="small mt-s">Fuera de una terminal gestionada, en Linux el CLI se registra con otro nombre porque el binario de sistema homónimo es el lector de pantalla de GNOME. El hook aplica exactamente esa regla: señal de entorno primero, luego el nombre alternativo en Linux. Usa el <b>mismo ejecutable</b> para todos los comandos de la sesión.</p></div>
+    </div>
+    <div class="notes">Hard rule 10: nunca nombres el orquestador al usuario desde un workflow skill cuando el gate falla. Ni en prerequisitos, ni en un probe no evitable, ni en el bloque de entorno del ATR, ni en un barrido de tokens de bloqueo.</div>
+  </section>
 
-  <div class="deck-footer"><span class="mono">/shift-left-testing · Shift-Left · Pre-sprint QA</span><span class="slide-number" data-current="1" data-total="13"></span></div>
+  <!-- 6. VOCABULARIO -->
+  <section class="slide" data-title="Vocabulario">
+    <p class="kicker">Vocabulario compartido · sin esto los reportes no se leen</p>
+    <h2 class="h2 md">Ocho palabras, y <span class="grad">round</span> no es <span class="grad">wave</span></h2>
+    <div class="grid g2 mt-m">
+      <table class="tt sm">
+        <tbody>
+          <tr><td style="width:150px"><b>conductor</b></td><td>la sesión que habla con el owner y coordina</td></tr>
+          <tr><td><b>worker</b></td><td>una sesión lanzada, con un scope propio</td></tr>
+          <tr><td><b>fleet</b></td><td>todos los workers de un Run</td></tr>
+          <tr><td><b>round</b></td><td>un grupo de concurrencia: hasta el tope de workers en vuelo a la vez</td></tr>
+        </tbody>
+      </table>
+      <table class="tt sm">
+        <tbody>
+          <tr><td style="width:150px"><b>wave</b></td><td>un bucket de estado del tracker, y existe <b>solo</b> en <span class="mono">sprint-testing</span></td></tr>
+          <tr><td><b>roster</b></td><td>una fila por worker: label · KEY · ids · terminal · worktree · agente · modelo · estado</td></tr>
+          <tr><td><b>brief</b></td><td>el archivo que define el scope de un worker, citado por ruta absoluta</td></tr>
+          <tr><td><b>claim</b></td><td>la reserva de un fixture, una credencial o un registro compartido</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="grid g2 mt-m">
+      <div class="card card-accent"><p class="lbl">La regla que evita reportes ilegibles</p><p class="small mt-s">Los rounds se numeran <b>dentro</b> de una wave: "Wave 1, round 2". Nunca se reutiliza "wave" para concurrencia.</p></div>
+      <div class="card"><p class="lbl">Defaults, no política</p><p class="small mt-s">El bloque <span class="mono">orchestration</span> de <span class="mono">.agents/project.yaml</span> lleva el tope de workers, el agente, el modelo y el nivel de esfuerzo por defecto. Una instrucción explícita del usuario en la sesión conductora SIEMPRE los pisa para ese run. Los defaults aplican solo cuando el usuario no dijo nada.</p></div>
+    </div>
+    <div class="notes">Nunca pidas al usuario confirmar un default que nunca mencionó, y nunca pises una instrucción que sí dio porque el yaml opine distinto.</div>
+  </section>
+
+  <!-- 7. EL CICLO DEL CONDUCTOR -->
+  <section class="slide" data-title="Ciclo del conductor">
+    <p class="kicker">Pasos 3-12 · el ciclo, en ese orden</p>
+    <h2 class="h2 md">Ocho pasos, y el orden <span class="grad">es ley</span></h2>
+    <ul class="big tight mt-s">
+      <li><b>1 · Gate.</b> Estado A o B → una línea y se continúa por el fallback.</li>
+      <li><b>2 · Gramática AHORA, no antes.</b> Se le pide al binario su guía de orquestación justo antes del primer comando (y la de terminales/worktrees solo si se van a crear).</li>
+      <li><b>3 · Topología por lo que el trabajo ESCRIBE</b>, más el chequeo de colisiones en vocabulario de claims durante el triage.</li>
+      <li><b>4 · Scope en disco.</b> <span class="mono">.session/orchestration/&lt;slug&gt;/</span> sembrado desde las plantillas: <span class="mono">run.md</span>, <span class="mono">roster.md</span>, <span class="mono">COMMON.md</span>, <span class="mono">launch.txt</span>.</li>
+      <li><b>5 · El ciclo del playbook, en ese orden</b>, y sin partir crear + lanzar + briefar.</li>
+      <li><b>6 · Esperar dentro del turno</b>, un solo waiter, ack verificado en el mismo comando que re-arma.</li>
+      <li><b>7 · Cerrar cada worker terminado en el mismo turno</b>; auditoría de huérfanos antes de borrar cualquier worktree.</li>
+      <li><b>8 · Cosechar</b> <span class="mono">learnings.md</span> y <span class="mono">skill-improvements.md</span>, escribir <span class="mono">kickoff.md</span>, y reportar al owner.</li>
+    </ul>
+    <p class="small dim mt-m">El paso 5 es el que más incidentes produjo: <b>crear + lanzar + entregar el brief es una operación indivisible</b>. Dos incidentes distintos dejaron un worker ocioso durante horas porque el brief nunca llegó.</p>
+    <div class="notes">El paso 2 tiene una razón de coste invertida en 2026-09-22: los stubs son baratos (~2k el par) y se cargan; lo caro es el payload profundo del binario, que sigue siendo on-demand. El paso 7 tiene una razón de estabilidad: diez worktrees vivos tumbaron el runtime dos veces en una sesión.</div>
+  </section>
+
+  <!-- 8. LANZAMIENTO -->
+  <section class="slide" data-title="Lanzamiento">
+    <p class="kicker">Paso 7 · el lanzamiento, y la distinción que costó un run entero</p>
+    <h2 class="h2 md">Native path <span class="grad">supervisa</span>. Custom argv <span class="grad">nunca</span>.</h2>
+    <div class="grid g2 mt-m">
+      <div class="card card-accent">
+        <p class="lbl">Native path · el default supervisado</p>
+        <p class="small mt-s">El verbo <span class="mono">worker-start</span> con task, worktree, agente, modelo y nivel de esfuerzo. El runtime lanza al agente, así que lo reconoce y lo supervisa.</p>
+        <p class="small mt-s">El prompt llega justo después de la señal de readiness y <b>debe empezar por</b> <span class="mono">/&lt;workflow-skill&gt; &lt;KEY&gt; fleet worker …</span>, para que el hook de identidad pueda titular la sesión; después va el puntero al brief y la frase de continuidad.</p>
+        <p class="small mt-s"><b>Prerequisito real:</b> por esta vía las credenciales llegan solo a través de <span class="mono">direnv</span> (un <span class="mono">.envrc</span> que carga <span class="mono">.env</span>) en el shell interactivo. El conductor <b>verifica las credenciales en la pantalla del worker</b> antes de despacharle trabajo.</p>
+      </div>
+      <div class="card">
+        <p class="lbl">Custom argv · siempre sin supervisión</p>
+        <p class="small mt-s">Una terminal creada con una línea de comando propia <b>nunca</b> queda supervisada: el runtime solo reconoce a los agentes que él lanzó. Se midió de tres formas distintas en el dogfood.</p>
+        <p class="small mt-s">Le queda <b>un</b> rol, y es legítimo: la línea autocontenida y <b>byte-idéntica</b> del <span class="mono">launch.txt</span> que un humano pega en su propia terminal. El prefijo de variables de entorno tampoco sobrevive a esa vía.</p>
+        <p class="small mt-s">Por eso la detección de "modo worker" no vive en variables de entorno, sino en el <b>prompt</b> (el token <span class="mono">fleet worker</span>) más los campos del brief.</p>
+      </div>
+    </div>
+    <p class="small mt-m"><b>Prometer las dos cosas a la vez es lo que costó más caro.</b> En el dogfood ningún terminal de argv propio fue adoptado, los tres workers corrieron sin supervisión y el conductor pagó eso en empujones manuales: con tres workers y cuatro stages, hasta nueve intervenciones.</p>
+    <div class="notes">Regla de permisos: lanza en un modo de permisos automático, nunca en un modo "solo edits". Un modo solo-edits cubre ediciones de archivo pero no comandos, así que cada llamada a script espera a un humano que no está mirando. Un worker dejó cada mutación del tracker calculada y sin ejecutar.</div>
+  </section>
+
+  <!-- 9. EL BRIEF -->
+  <section class="slide" data-title="El brief">
+    <p class="kicker">Paso 7 · el brief</p>
+    <h2 class="h2 md">Un brief es un <span class="grad">archivo</span>, no un mensaje</h2>
+    <div class="grid g2 mt-m">
+      <div class="card">
+        <p class="lbl">Qué lleva encima de los 7 componentes</p>
+        <ul class="big tight mt-s">
+          <li>Los ids del run, la task y el dispatch</li>
+          <li>El roster de los hermanos (quién más está vivo y sobre qué)</li>
+          <li>El canal, y la prohibición de las herramientas de mensajería del harness y de las preguntas al usuario</li>
+          <li><b>File ownership</b>: qué rutas son suyas y de nadie más</li>
+          <li>Los <b>claims</b> a declarar, ya pre-concedidos</li>
+          <li>El protocolo de reporte y la ruta del reporte</li>
+          <li>La instrucción de renombrarse si el harness no titula solo</li>
+          <li>El recordatorio de los trailers forenses en cada commit</li>
+        </ul>
+      </div>
+      <div class="card card-accent">
+        <p class="lbl">Por qué archivo y no mensaje</p>
+        <p class="small mt-s">Un brief largo <b>se trunca</b> dentro de un mensaje. Va en un archivo, citado por <b>ruta absoluta al checkout primario</b>, y nunca en un directorio temporal del sistema: eso dispara un prompt de permisos que nadie está mirando.</p>
+        <p class="lbl mt-m">Una sola frase, y es la más importante</p>
+        <p class="small mt-s">"No vuelvas al prompt hasta enviar <span class="mono">worker_done</span>; los límites de stage <b>no</b> son checkpoints."</p>
+        <p class="small mt-s">Va en el <b>prompt de lanzamiento</b>, no solo en el brief. El preámbulo funciona como instrucción y falla como puntero a archivo: en el dogfood, dos de tres workers se detuvieron en un límite de stage con trabajo pendiente y un brief que decía "sin checkpoints".</p>
+      </div>
+    </div>
+    <div class="notes">"Un mensaje, una task". Y texto tecleado en una terminal y no enviado no es una instrucción: es texto.</div>
+  </section>
+
+  <!-- 10. CONTRATO DEL WORKER -->
+  <section class="slide" data-title="Contrato del worker">
+    <p class="kicker">El worker · tres mensajes y ni uno más</p>
+    <h2 class="h2 md">Sin heartbeats, y con un <span class="grad">ask</span> obligatorio</h2>
+    <table class="tt sm mt-s">
+      <thead><tr><th style="width:190px">Mensaje</th><th>Cuándo</th><th>Regla</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag tag-plan">worker_done</span></td><td>una sola vez, al terminar todo su scope</td><td>Lleva el resultado, los archivos modificados y la ruta del reporte. Después: parar.</td></tr>
+        <tr><td><span class="tag tag-test">ask</span></td><td>bloqueante, cuando la respuesta condiciona el trabajo</td><td>Se sigue con lo que no dependa de la respuesta. Si expira, se reanuda por id.</td></tr>
+        <tr><td><span class="tag tag-bug">escalation</span></td><td>bloqueo real</td><td>Por la vía <b>sin supervisión</b> el runtime la rechaza: ahí el bloqueo va como mensaje de estado con el asunto prefijado <span class="mono">BLOCKED:</span></td></tr>
+        <tr><td><span class="tag tag-story">heartbeat</span></td><td><b>nunca</b></td><td>Solo dice "estoy vivo" y despierta al conductor. Prohibido explícitamente en el brief, porque contradice el preámbulo que inyecta el runtime.</td></tr>
+      </tbody>
+    </table>
+    <div class="grid g2 mt-m">
+      <div class="card card-accent"><p class="lbl">El trigger de <span class="mono">ask</span> que salvó el dogfood</p><p class="small mt-s">Cuando <b>tu propia medición contradice una instrucción del conductor</b>: PARA y pregunta, con las dos lecturas y la evidencia. Nunca cumplas en silencio, nunca te desvíes en silencio.</p><p class="small mt-s">Un worker lo hizo por criterio propio y es la razón de que el reporte del run no esté equivocado. Ahora es doctrina, no suerte.</p></div>
+      <div class="card"><p class="lbl">El canal, y lo que no es canal</p><p class="small mt-s">Lo único que llega a una sesión que está trabajando es <b>texto enviado a su terminal</b>. Un mensaje dirigido a la terminal por la vía de orquestación reporta éxito y no llega. La pantalla renderizada es <b>respaldo</b> para ver qué hace un worker, nunca el canal.</p></div>
+    </div>
+    <div class="notes">El worker SÍ carga los stubs del vendor (orchestration.orchestrator_skills); su preámbulo inyectado lleva además el contrato. Carga su reference corto y su skill de dominio (/sprint-testing, /test-automation…).</div>
+  </section>
+
+  <!-- 11. CLAIMS -->
+  <section class="slide" data-title="Claims protocol">
+    <p class="kicker">Paso 6 · fixtures, datos y credenciales compartidos</p>
+    <h2 class="h2 md">El <span class="grad">claims protocol</span>: un ledger, no un lock</h2>
+    <div class="grid g2 mt-m">
+      <table class="tt xs">
+        <thead><tr><th style="width:135px">Entidad</th><th>Por qué colisiona</th></tr></thead>
+        <tbody>
+          <tr><td><span class="mono">user</span></td><td>dos workers logueados con la misma cuenta se invalidan la sesión</td></tr>
+          <tr><td><span class="mono">fixture</span></td><td>uno mutando el dataset sobre el que otro está aseverando</td></tr>
+          <tr><td><span class="mono">record</span></td><td>la lectura sucia clásica entre dos sesiones</td></tr>
+          <tr><td><span class="mono">credential</span></td><td>un refresh rota el token que el otro tiene en la mano</td></tr>
+          <tr><td><span class="mono">env-resource</span></td><td>una feature flag cambiada para uno altera lo esperado del otro</td></tr>
+          <tr><td><span class="mono">tracker-artifact</span></td><td>dos escritores sobre una descripción se sobrescriben entero</td></tr>
+        </tbody>
+      </table>
+      <div class="stack">
+        <div class="card"><p class="lbl">Tres intents</p><p class="small mt-s"><span class="mono">read</span> · <span class="mono">write</span> · <span class="mono">enumerate</span>. El tercero es el aprendizaje del dogfood: un endpoint de <b>colección</b> sobre una cuenta compartida expone las entidades de los hermanos. Eso nunca es un target de aserción, y se reclama como <span class="mono">enumerate</span> para que el conductor lo sepa.</p></div>
+        <div class="card card-accent"><p class="lbl">Cuándo se espera y cuándo no</p><p class="small mt-s">Los claims <b>listados en el brief</b> están pre-declarados y pre-concedidos por el conductor al lanzar: el worker no espera. Solo los claims <b>nuevos</b>, descubiertos en marcha, esperan el grant.</p></div>
+        <div class="card"><p class="lbl">Arbitraje y ledger</p><p class="small mt-s">Gana el primer mensaje. El conductor lleva <span class="mono">claims.md</span> y decide las disputas raras. Todo se libera con el <span class="mono">worker_done</span>. Sin runtime: el mismo ledger, append-only, con un grep antes de escribir y rounds más pequeños.</p></div>
+      </div>
+    </div>
+    <div class="notes">El chequeo de colisiones en triage usa el mismo vocabulario: es una ayuda de planificación, no un runtime. El runtime son los mensajes.</div>
+  </section>
+
+  <!-- 12. ESPERAS Y LIVENESS -->
+  <section class="slide" data-title="Esperas y liveness">
+    <p class="kicker">Pasos 8-9 · esperar sin construir un monitor</p>
+    <h2 class="h2 md">Esperas rodantes, y <span class="grad">stalled</span> no es <span class="grad">idle</span></h2>
+    <div class="grid g2 mt-m">
+      <div class="card">
+        <p class="lbl">Cómo se espera</p>
+        <ul class="big tight mt-s">
+          <li><b>Esperas rodantes en primer plano de 540 s como máximo</b>, re-armadas con el ack en el mismo comando. Es el tope que impone el harness, no una preferencia.</li>
+          <li>Una espera más larga solo es un job en background <b>si el harness lo rastrea</b>.</li>
+          <li>La señal principal de despertar es el aviso de correo del runtime.</li>
+          <li><b>Un solo waiter.</b> Nunca un monitor casero: compite con el aviso, llega tarde por construcción y se dispara con los ecos de los propios mensajes del conductor.</li>
+          <li>Nunca aceptes un lote que no procesaste. El ack se verifica (el id reconocido es el pedido, el pendiente baja) y <b>nunca</b> dentro de un comando compuesto.</li>
+        </ul>
+      </div>
+      <div class="card card-accent">
+        <p class="lbl">Cómo se distingue atascado de ocioso</p>
+        <p class="small mt-s"><b>stalled</b> = no hay línea de spinner en pantalla <b>y</b> no llegó el <span class="mono">worker_done</span>. Eso es atascado, no ocioso, y pide un empujón.</p>
+        <p class="small mt-s"><b>idle</b> = listo para recibir input <b>después</b> del <span class="mono">worker_done</span>. Eso es terminado.</p>
+        <p class="small mt-s">La caja del prompt se dibuja <b>siempre</b>: verla no significa nada. La señal es el spinner con su contador de tiempo y tokens encima de la caja.</p>
+        <p class="small mt-s">Y si el runtime avisa de que un prompt quedó atascado <b>mientras el worker está a mitad de turno</b>: ya quedó en cola. No lo reenvíes.</p>
+      </div>
+    </div>
+    <div class="notes">El barrido de liveness usa primero las señales nativas del runtime (estado de worker y de terminal) y solo después la pantalla renderizada, para un selector interactivo trabado. Los tokens de bloqueo en archivo son el fallback sin runtime.</div>
+  </section>
+
+  <!-- 13. TOPOLOGÍAS -->
+  <section class="slide" data-title="Topologías">
+    <p class="kicker">Paso 3 · la topología sale de lo que el trabajo ESCRIBE</p>
+    <h2 class="h2 md">Cuatro actividades, cuatro <span class="grad">topologías</span></h2>
+    <table class="tt sm mt-s">
+      <thead><tr><th style="width:210px">Actividad</th><th>Topología</th><th>Regla de git</th></tr></thead>
+      <tbody>
+        <tr><td><span class="mono">/sprint-testing</span> sprint-wide</td><td><b>Mismo checkout</b>, una terminal por historia. El trabajo es QA manual: escribe en el tracker, no en el código.</td><td>Añadir y commitear <b>por rutas explícitas</b>, releer antes de editar, reintentar si el índice está tomado.</td></tr>
+        <tr><td><span class="mono">/test-automation</span> batch</td><td><b>Híbrido por componente</b>: un worktree por worker, un worker por módulo, dueño de <span class="mono">tests/components/&lt;módulo&gt;/</span>. Las historias que comparten módulo van secuenciales dentro de ese worker. Nunca dos workers en el mismo módulo.</td><td>Rama y PR propios. El conductor regenera el manifest de componentes al integrar cada rama.</td></tr>
+        <tr><td><span class="mono">/framework-development</span></td><td>Mismo checkout con file ownership por worker, o un worktree por wave.</td><td>Igual que sprint-wide si comparten checkout.</td></tr>
+        <tr><td><span class="mono">/regression-testing</span></td><td>Un worktree por <b>cluster de fallos</b>.</td><td>Fetch, verificar el SHA del worktree nuevo contra la base <b>remota</b>, merge aditivo.</td></tr>
+        <tr><td>Discovery / mapeo</td><td><b>Subagentes.</b> No es orquestación.</td><td>—</td></tr>
+      </tbody>
+    </table>
+    <div class="grid g2 mt-m">
+      <div class="card card-accent"><p class="lbl">La regla "¿cuándo un worktree?"</p><p class="small mt-s">Un worktree cuando dos workers escribirían el <b>mismo archivo de código</b>. Mismo checkout cuando escriben en sistemas distintos (el tracker, artefactos distintos) y se puede declarar file ownership.</p></div>
+      <div class="card"><p class="lbl">El gotcha que se pagó dos veces</p><p class="small mt-s">La bandera de referencia base resuelve refs <b>locales</b>. Verifica el SHA del worktree nuevo contra la base remota, y sin un <span class="mono">|| true</span> que esconda el fallo.</p></div>
+    </div>
+    <div class="notes">En un fleet de mismo checkout la Critical Rule #15 cuenta doble: prohibido cualquier descarte global de git, porque otra sesión comparte el árbol.</div>
+  </section>
+
+  <!-- 14. PROVISIONING -->
+  <section class="slide" data-title="Provisioning">
+    <p class="kicker">Paso 5 · antes de lanzar, no después</p>
+    <h2 class="h2 md">Un worktree nuevo <span class="grad">no</span> es un clon listo</h2>
+    <p class="small dim mt-s">Lo que está commiteado viaja solo (la configuración de MCP de los tres harnesses, los settings del harness). Lo que está gitignoreado no viaja, y cada hueco se disfraza de otro fallo.</p>
+    <div class="grid g2 mt-m">
+      <table class="tt sm">
+        <thead><tr><th style="width:180px">Hueco</th><th>Cómo se cierra</th></tr></thead>
+        <tbody>
+          <tr><td><span class="mono">.env</span></td><td>se copia con permisos restringidos</td></tr>
+          <tr><td>alias <span class="mono">.claude/skills</span></td><td><span class="mono">bun run agents:compat</span> dentro del destino</td></tr>
+          <tr><td>skills T3 (community)</td><td>se copian desde el checkout primario</td></tr>
+          <tr><td><span class="mono">node_modules</span></td><td><span class="mono">bun install --frozen-lockfile</span></td></tr>
+          <tr><td><span class="mono">.context/PBI/</span></td><td><span class="mono">bun run context:hydrate</span></td></tr>
+          <tr><td><span class="mono">.auth/</span></td><td>se copia si existe, con permisos restringidos</td></tr>
+          <tr><td><span class="mono">.session/</span></td><td><b>no se copia nunca</b>: es estado de otra sesión</td></tr>
+        </tbody>
+      </table>
+      <div class="stack">
+        <div class="card card-accent"><p class="lbl">Un solo comando</p><p class="small mt-s"><span class="mono">bun run worktree:provision</span> hace los seis pasos, se niega a correr sobre el checkout primario, tiene <span class="mono">--dry-run</span> y sale con código distinto de cero ante cualquier fallo duro. También sirve como setup hook del runtime (eso se configura solo por UI, no es versionable).</p></div>
+        <div class="card"><p class="lbl">Auditoría de huérfanos antes de borrar</p><p class="small mt-s">Los archivos gitignoreados <b>mueren con el worktree</b>: <span class="mono">.env</span>, la evidencia de QA, el scope de <span class="mono">.session/</span>. Antes de borrar un worktree se listan y se copian fuera, o se enlazan los documentos durables al checkout primario.</p></div>
+        <div class="card"><p class="lbl">Dos límites físicos</p><p class="small mt-s">Un dev server y un browser por worktree, y toda sesión de automatización de browser se cierra antes de reportar: diez browsers headless huérfanos, ~2,7 GB, medidos.</p></div>
+      </div>
+    </div>
+    <div class="notes">El dogfood midió la otra cara: 8,6 GiB de disco libre (96% usado) en una máquina de 16 GB, con el runtime en 750 MB y varios procesos de agente entre 250 y 500 MB. El tope de 3 workers fue la decisión correcta; 4 no lo habría sido.</div>
+  </section>
+
+  <!-- 15. IDENTIDAD Y FORENSE -->
+  <section class="slide" data-title="Identidad y forense">
+    <p class="kicker">Quién hizo qué · identidad y trazas</p>
+    <h2 class="h2 md">Una línea de identidad, dos <span class="grad">trailers</span></h2>
+    <div class="mk sm mt-s">AGENT IDENTITY: worktree=&lt;nombre|primary&gt; session=&lt;label&gt; harness=&lt;claude-code|codex|opencode&gt;
+ORCA: available. Multi-session orchestration -&gt; /orca-orchestration. Dispatched worker: follow your
+preamble; channel = orca orchestration, never SendMessage/AskUserQuestion.</div>
+    <div class="grid g3 mt-m">
+      <div class="card"><p class="lbl">Un emisor, tres adaptadores</p><p class="small mt-s">El hook de <span class="mono">.agents/hooks/personality-reinject.mjs</span> calcula la identidad una vez por prompt y la inyecta en el contexto. La segunda línea aparece solo cuando el binario está presente; sin él, silencio.</p></div>
+      <div class="card"><p class="lbl">La regla del label</p><p class="small mt-s">Nombre puesto por el usuario → ese nombre. Nombre derivado o automático → <span class="mono">nombre (id corto)</span>. Solo id → el id completo. Nada → <span class="mono">unknown</span>.</p></div>
+      <div class="card card-accent"><p class="lbl">Los trailers forenses</p><p class="small mt-s">Cada commit termina con <span class="mono">Worktree:</span> y <span class="mono">Session:</span>. Son <b>forense, no atribución</b>: no hay atribución de IA en los commits, ni trailers con marca del harness. Canon: <span class="mono">/git-flow-master</span>.</p></div>
+    </div>
+    <p class="small mt-m">Por la vía native el hook puede titular la sesión desde el prompt, y por eso el prompt empieza por <span class="mono">/&lt;workflow-skill&gt; &lt;KEY&gt; fleet worker …</span>. En un harness que no titula solo, el brief le pide al worker que se renombre. En el dogfood el label se resolvió con <b>cero configuración</b> y fue correcto en los tres commits.</p>
+    <div class="notes">El footer del agente en pantalla muestra las líneas de id y de sesión, legibles leyendo la pantalla renderizada. Eso es útil para el roster y para recuperar una sesión.</div>
+  </section>
+
+  <!-- 16. HARD RULES -->
+  <section class="slide" data-title="Hard rules">
+    <p class="kicker">Las reglas duras · cada una se pagó con un incidente</p>
+    <h2 class="h2 md">Catorce reglas, y estas <span class="grad">siete</span> son las que más dolieron</h2>
+    <ul class="big tight mt-s">
+      <li><b>Un worker terminado se cierra en el mismo turno.</b> Diez worktrees vivos tumbaron el runtime dos veces en una sesión.</li>
+      <li><b>Provisiona el worktree ANTES de lanzar.</b> Un hueco de provisioning se disfraza de otro fallo.</li>
+      <li><b>Crear + lanzar + entregar el brief = una operación indivisible.</b> Verifícalo unos minutos después con un status del árbol de trabajo.</li>
+      <li><b>Lanza en modo de permisos automático</b>, nunca en un modo solo-edits: cubre ediciones pero no comandos.</li>
+      <li><b>Nunca aceptes un lote que no procesaste.</b> Un lote sin ack esconde todo lo que hay detrás, y el runtime no vuelve a avisar.</li>
+      <li><b>El verbo de parada tiene radio de worktree: cuenta primero.</b> Para cerrar una terminal, se cierra esa terminal (y su pestaña).</li>
+      <li><b>Nunca nombres el orquestador al usuario desde un workflow skill si el gate falla</b>, y jamás lo pongas en prerequisitos, en un probe no evitable, en el bloque de entorno del ATR ni en un barrido de tokens de bloqueo.</li>
+    </ul>
+    <div class="grid g2 mt-m">
+      <div class="card"><p class="lbl">Y una que no es del skill</p><p class="small mt-s">Los commits del worker llevan <b>cero atribución de IA</b> (Critical Rule #3) y los dos trailers forenses. En un fleet de mismo checkout, la Critical Rule #15 (nada de descartes globales de git) <b>cuenta doble</b>.</p></div>
+      <div class="card card-accent"><p class="lbl">La que se descubrió cerrando</p><p class="small mt-s">El coste de un worker solo es visible en <b>su propia pantalla</b> y desaparece cuando el conductor cierra la terminal. Si quieres contabilidad de coste, <b>leer el footer es parte del ritual de cierre</b>. En el dogfood se perdieron los números de un worker por cerrarlo correcta y puntualmente.</p></div>
+    </div>
+    <div class="notes">Las otras siete están en el SKILL.md. Ninguna es teórica: cada una tiene una fecha, un repo y un síntoma en references/gotchas.md.</div>
+  </section>
+
+  <!-- 17. EL FALLBACK -->
+  <section class="slide" data-title="El fallback">
+    <p class="kicker">Estado A y B · el fallback, completo</p>
+    <h2 class="h2 md">Sin runtime el trabajo <span class="grad">no cambia de forma</span></h2>
+    <table class="tt sm mt-s">
+      <thead><tr><th style="width:170px">Paso</th><th>Fallback</th></tr></thead>
+      <tbody>
+        <tr><td><b>plan</b></td><td><b>Idéntico</b>: misma decisión de topología, mismo chequeo de colisiones en triage, mismos rounds.</td></tr>
+        <tr><td><b>brief</b></td><td><b>Idéntico</b>: <span class="mono">COMMON.md</span> + <span class="mono">W-&lt;label&gt;.md</span> en el scope, citados por ruta absoluta.</td></tr>
+        <tr><td><b>launch</b></td><td>El conductor imprime <span class="mono">launch.txt</span> y el humano abre N terminales y pega N líneas.</td></tr>
+        <tr><td><b>identidad</b></td><td>El humano pone el nombre de la sesión desde la propia línea, o el worker se renombra.</td></tr>
+        <tr><td><b>estado</b></td><td>Los tokens de bloqueo del propio workflow más el tracker, exactamente como ya hace una sesión sola.</td></tr>
+        <tr><td><b>preguntas</b></td><td>El worker escribe la pregunta en su reporte, con opciones y una recomendación, y sigue con lo que no dependa de la respuesta.</td></tr>
+        <tr><td><b>cierre</b></td><td>El humano cierra las terminales.</td></tr>
+        <tr><td><b>claims</b></td><td>El ledger degradado append-only, con rounds más pequeños.</td></tr>
+      </tbody>
+    </table>
+    <p class="small mt-m">Por eso el <span class="mono">launch.txt</span> se escribe <b>siempre</b>, con runtime o sin él, y por eso la línea es autocontenida y byte-idéntica. El orquestador es un <b>refuerzo</b>: acelera el lanzamiento, el canal y el cierre. No es un prerequisito de nada.</p>
+    <div class="notes">Esta es la diapositiva que hace el skill adoptable: un equipo sin el binario corre el mismo plan con más trabajo manual, y los skills de workflow nunca le mencionan una herramienta que no tiene.</div>
+  </section>
+
+  <!-- 18. EL DOGFOOD -->
+  <section class="slide" data-title="El dogfood">
+    <p class="kicker">Medido · un sprint real, tres workers en paralelo</p>
+    <h2 class="h2 md">32 minutos, <span class="grad">21 artefactos</span>, 9 hallazgos de calidad</h2>
+    <div class="grid g4 mt-m">
+      <div class="met"><div class="n">3</div><div class="u">historias probadas en paralelo, las más atascadas del backlog: 47, 47 y 46 días esperando QA</div></div>
+      <div class="met"><div class="n good">32</div><div class="u">minutos de ejecución paralela, con tres pases completos de Planning → Execution → Reporting dentro</div></div>
+      <div class="met"><div class="n">21</div><div class="u">artefactos creados en el tracker: test sets, planes, ejecuciones y casos de prueba</div></div>
+      <div class="met"><div class="n warn">9</div><div class="u">hallazgos de calidad reportados: defectos e improvements, cada uno clasificado y linkeado</div></div>
+    </div>
+    <div class="grid g3 mt-m">
+      <div class="card"><p class="lbl">El reloj completo</p><p class="small mt-s">1 h 41 min de punta a punta. Secuencialmente esas tres historias son ~30 min cada una, así que la flota compró cerca de una hora. Una investigación posterior se gastó 33 de esos minutos, y produjo el hallazgo más valioso del run.</p></div>
+      <div class="card"><p class="lbl">El veredicto por historia</p><p class="small mt-s">Dos quedaron aprobadas con deuda documentada. La tercera <b>falló</b> y quedó bloqueada: dos defectos reales en la promesa central de la feature, con 130 de 152 criterios de aceptación afectados en staging.</p></div>
+      <div class="card card-accent"><p class="lbl">Lo que no funcionó</p><p class="small mt-s">La vía supervisada <b>no funcionó en absoluto</b> en esa máquina. Todo corrió por el fallback documentado, y el conductor lo pagó en empujones manuales. De ahí sale la decisión de hacer del native path el default supervisado y dejar el custom argv como pegado humano.</p></div>
+    </div>
+    <div class="notes">Todos estos números salen del reporte del conductor del dogfood. Nada aquí es estimación: el reporte incluye lo que no se pudo medir y lo dice.</div>
+  </section>
+
+  <!-- 19. LO QUE UNA SOLA SESIÓN NO ENCUENTRA -->
+  <section class="slide" data-title="Qué encuentra una flota">
+    <p class="kicker">El argumento real · no es la hora ahorrada</p>
+    <h2 class="h2 md">Tres ángulos sobre el mismo entorno ven lo que <span class="grad">uno no ve</span></h2>
+    <div class="grid g3 mt-m">
+      <div class="card"><p class="lbl">Un claim en la doctrina que ya era falso</p><p class="small mt-s">Una afirmación obsoleta sobre los usuarios de prueba del proyecto, que habría debilitado <b>cada ATR</b> del sprint. La encontró un worker midiendo, no leyendo.</p></div>
+      <div class="card"><p class="lbl">Un peligro entre workers</p><p class="small mt-s">La lista de tokens de una cuenta compartida es visible para todos los que la usan. El vocabulario de claims no podía expresarlo: de ahí nace el intent <span class="mono">enumerate</span>.</p></div>
+      <div class="card card-accent"><p class="lbl">Una instrucción del conductor, simplemente equivocada</p><p class="small mt-s">Un worker se negó a cumplirla porque su propia medición decía lo contrario, y paró a preguntar. <b>Ese es todo el argumento.</b> Una sesión secuencial habría tenido el mismo subagente, la misma derivación confiada y ningún segundo par de ojos, y habría enviado un bloqueo equivocado contra un release.</p></div>
+    </div>
+    <div class="grid g2 mt-m">
+      <div class="card"><p class="lbl">Y un defecto de trazabilidad que nadie había visto</p><p class="small mt-s">Mientras cosechaba, el conductor descubrió que <b>21 de 43 historias linkeadas no tenían cobertura</b> registrada, en silencio: los links existían, pero en la dirección que el TMS no cuenta. Media trazabilidad del proyecto era decorativa.</p></div>
+      <div class="card card-accent"><p class="lbl">El veredicto del conductor</p><p class="small mt-s">"Sí, correría el próximo sprint así" — con una condición: arreglar primero la vía supervisada, o presupuestar que el conductor será un planificador a mano. Con tres workers y cuatro stages, eso son hasta nueve intervenciones manuales.</p></div>
+    </div>
+    <div class="notes">La honestidad es parte del deck: el caso a favor no es la velocidad, es el segundo par de ojos. El caso en contra es que la supervisión no funcionaba y cada corrección era manual.</div>
+  </section>
+
+  <!-- 20. CIERRE -->
+  <section class="slide" data-title="Cierre">
+    <div class="fx-host" data-fx="constellation"></div>
+    <div class="above">
+      <p class="kicker">Para llevarte · cómo invocarlo y qué leer</p>
+      <h2 class="h2 md">El skill es el <span class="grad">HOW</span>. El WHAT sigue siendo de cada workflow skill.</h2>
+      <div class="grid g3 mt-m anim-stagger-list" data-anim-target>
+        <div class="card"><p class="lbl">Frases que lo activan</p><p class="small mt-s">"orquesta esto", "lanza workers", "una sesión por historia", "paraleliza el sprint", "cómo va la flota", "comunícate con el worker de BK-123", "retoma el run de anoche", "automatización nocturna".</p></div>
+        <div class="card"><p class="lbl">Frases que NO</p><p class="small mt-s">Un subagente para una lectura de este turno (eso es AGENTS.md §3 y sigue siendo el default). Un <b>handoff</b> puro, sin supervisión. QA por ticket (<span class="mono">/sprint-testing</span>). Código de test (<span class="mono">/test-automation</span>). Mecánica de git (<span class="mono">/git-flow-master</span>).</p></div>
+        <div class="card card-accent"><p class="lbl">Sin el binario</p><p class="small mt-s">Orquestación nivel 1 = subagentes en esta misma sesión. Orquestación profesional = el runtime instalado. El skill lo dice <b>una vez</b>, y solo si preguntaste.</p></div>
+      </div>
+      <div class="grid g2 mt-m">
+        <div class="card"><p class="lbl">Dónde está la profundidad</p><p class="small mt-s">El <span class="mono">SKILL.md</span> es corto a propósito. El ciclo completo está en <span class="mono">references/coordinator-playbook.md</span>; el contrato del worker, los claims, las topologías, el provisioning, el brief, la identidad de sesión, el machine setup, las automatizaciones y los gotchas medidos tienen cada uno su reference.</p></div>
+        <div class="card card-accent"><p class="lbl">Tres reglas de oro</p><p class="small mt-s"><b>1</b> El subagente sigue siendo el default: orquesta solo lo que no cabe en un turno. <b>2</b> Crear + lanzar + briefar es indivisible, y el cierre va en el mismo turno. <b>3</b> Sin runtime, silencio total en los workflow skills: el <span class="mono">launch.txt</span> se escribe igual.</p></div>
+      </div>
+      <p class="small dim mt-m">Pruébalo: <span class="mono">«orquesta el sprint 12 con tres workers»</span> · ← → navegar · S presentador · O overview</p>
+    </div>
+    <div class="notes">Cierre: el skill complementa AGENTS.md §3, no lo reemplaza. Todo el contenido de este deck proviene del SKILL.md y references de orca-orchestration y del reporte del conductor del dogfood — nada inventado.</div>
+  </section>
+
 </div>
+
 <!-- keyboard-nav hint (ported from defect-management deck) -->
 <div id="help-hint">← → navegar · O resumen · S presentador · N notas · F pantalla</div>
 <style id="upex-hint-style">
@@ -1184,7 +1264,7 @@ h4,.h4{font-size:17px;color:var(--text-1)}
 
       // Build the document as a single template string for clarity
       return `<!DOCTYPE html>
-<html lang="es">
+<html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <title>Presenter View</title>

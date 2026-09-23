@@ -830,11 +830,11 @@ workers: <span class="tk-n">1</span>,</pre>
   <h2 data-anim="fade-up">KATA: <span class="grad-text">los tres patrones, ordenados en capas</span> 🥋</h2>
   <div class="cols">
     <div data-anim="slide-l">
-      <p style="margin-bottom:.8rem">KATA (<b>Komponent Action Test Architecture</b>) no inventa nada nuevo: <b>organiza</b> lo que ya viste en tres capas nombradas sobre una base de utilities y fixtures, donde cada capa <code class="pill">extends</code> la anterior.</p>
+      <p style="margin-bottom:.8rem">KATA (<b>Komponent Action Test Architecture</b>) no inventa nada nuevo: <b>organiza</b> lo que ya viste en <b>cuatro capas nombradas, más Steps opcional</b> — TestContext, Base, Components de dominio y Fixtures — donde cada capa <code class="pill">extends</code> la anterior. Los archivos de test <b>consumen</b> los Fixtures: no son una capa.</p>
       <div class="cards" data-stagger>
         <div class="card"><h3>🎁 POM → capa de Componentes</h3><p>Tu <code class="pill">LoginPage</code> es un componente de dominio. Ahí viven las <b>ATCs</b>.</p></div>
         <div class="card"><h3>🔧 Fixtures → capa 4</h3><p><code class="pill">{ api }</code>, <code class="pill">{ ui }</code>, <code class="pill">{ test }</code> inyectan los componentes ya listos.</p></div>
-        <div class="card"><h3>⚙️ Paralelización → config</h3><p>La misma <code class="pill">playwright.config.ts</code>: workers, projects, dependencias.</p></div>
+        <div class="card"><h3>⚙️ Paralelización → config</h3><p>La misma <code class="pill">playwright.config.ts</code>: workers, projects, dependencias. <b>No es una capa</b>: <code class="pill">config/</code> es zona DRY.</p></div>
       </div>
     </div>
     <div data-anim="fade-up" style="animation-delay:.25s">
@@ -899,7 +899,7 @@ workers: <span class="tk-n">1</span>,</pre>
       <div class="card" style="margin-top:.7rem"><h3>🧱 Atómica</h3><p>Una ATC <b>nunca</b> llama a otra ATC. ¿Cadenas reutilizables? Eso es un <b>Step</b> (capa 3.5).</p></div>
     </div>
   </div>
-  <div class="notes"><p>La ÚNICA pieza realmente nueva de KATA respecto a lo que ya saben: la ATC y el decorador @atc. Código real, adaptado del LoginPage del repo (PROJ-101, loginSuccessfully). Define ATC: caso de prueba completo (mini-flujo), no una interacción. El decorador @atc('TICKET') la liga a Jira 1:1 — trazabilidad. Reglas duras a mencionar sin agobiar: ATC atómica (no llama a otra ATC), aserciones fijas dentro / de negocio fuera (la regla del acto 1, ahora con nombre KATA). Un decorador es solo "un método con una etiqueta que añade comportamiento" — no te metas en la mecánica de decorators aquí.</p></div>
+  <div class="notes"><p>La ÚNICA pieza realmente nueva de KATA respecto a lo que ya saben: la ATC y el decorador @atc. Código real, adaptado del LoginPage del repo (PROJ-111, loginSuccessfully). Define ATC: caso de prueba completo (mini-flujo), no una interacción. El decorador @atc('TICKET') la liga a Jira 1:1 — trazabilidad. Reglas duras a mencionar sin agobiar: ATC atómica (no llama a otra ATC), aserciones fijas dentro / de negocio fuera (la regla del acto 1, ahora con nombre KATA). Un decorador es solo "un método con una etiqueta que añade comportamiento" — no te metas en la mecánica de decorators aquí.</p></div>
 </section>
 
 <!-- 23 · STEPPER: trazar una ATC por las capas -->

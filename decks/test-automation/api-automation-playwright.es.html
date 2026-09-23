@@ -800,7 +800,7 @@ if (errors.length === 0) {
   <h2 data-anim="fade-up">KATA: <span class="grad-text">todo lo de hoy, ordenado en capas</span> 🥋</h2>
   <div class="cols">
     <div data-anim="slide-l">
-      <p style="margin-bottom:.8rem">KATA (<b>Komponent Action Test Architecture</b>) no inventa nada: <b>organiza</b> el cliente, las aserciones y los datos en tres capas nombradas sobre una base de utilities y fixtures, donde cada una <code class="pill">extends</code> la anterior. El lado API es idéntico al UI — solo cambia la base.</p>
+      <p style="margin-bottom:.8rem">KATA (<b>Komponent Action Test Architecture</b>) no inventa nada: <b>organiza</b> el cliente, las aserciones y los datos en <b>cuatro capas nombradas, más Steps opcional</b> — TestContext, Base, Components de dominio y Fixtures — donde cada una <code class="pill">extends</code> la anterior. El lado API es idéntico al UI: solo cambia la base.</p>
       <div class="cards" data-stagger>
         <div class="card"><h3>🎁 Cliente → Componentes</h3><p>Tu <code class="pill">OrdersApi</code> es un componente de dominio. Ahí viven las <b>ATCs</b> de API.</p></div>
         <div class="card"><h3>🎯 Aserciones → dentro de la ATC</h3><p>Status y schema fijos van <b>dentro</b>; las de negocio, en el test.</p></div>

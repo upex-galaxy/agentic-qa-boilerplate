@@ -262,7 +262,12 @@ ul.plain b{color:var(--t1)}
       ├─ 4a sprint-testing      <span class="ar">QA manual por ticket</span>
       ├─ 4b test-documentation  <span class="ar">TMS + ROI</span>
       ├─ 4c test-automation     <span class="ar">KATA · solo verdict Candidate</span>
-      └─ 4d regression-testing  <span class="ar">release gate GO / NO-GO</span></div>
+      └─ 4d regression-testing  <span class="ar">release gate GO / NO-GO</span>
+      │
+      ▼
+<span class="f4">FASE 5 · Producción</span>           <span class="ar">Observation · L4</span>
+      └─ rutina agéntica, sin skill  <span class="ar">SLOs · error budget · realimenta el próximo shift-left</span></div>
+      <p class="lede" style="margin-top:.6rem"><b>Observation está declarado, no implementado</b>: hoy nada bajo <code>.agents/skills/</code> lo ejecuta. Aparece acá para que el mapa no mienta sobre dónde termina el sistema.</p>
 
       <div class="legend">
         <div class="lg k-dep"><span class="io-k">skills</span>qué skills y references carga la tarea</div>
@@ -364,7 +369,7 @@ ul.plain b{color:var(--t1)}
         <div class="proc-hd"><span class="pid">P3</span><h3>Handoff a Jira</h3><span class="repo qa">qa</span></div>
         <div class="io deps"><span class="io-k">skills</span><div><span class="chip">references/handoff-protocol.md</span><span class="chip">acli</span><span class="chip">defect-management-doctrine.md</span><span class="chip">traceability-linking.md</span></div></div>
         <div class="io in"><span class="io-k">stdin ←</span><div><code>shift-left-refinement.md</code> · <code>acceptance-criteria.md</code> re-sincronizado</div></div>
-        <div class="io jira"><span class="io-k">jira ⇄</span><div>Campos: <code>{{jira.acceptance_criteria}}</code> · <code>{{jira.acceptance_test_plan}}</code> <b class="hi-warn">field-first en AMBAS modalidades</b> (NO Test Plan item pre-sprint — lo crea sprint-testing Stage 1 desde el field) · sección <b>«QA Refinements (Shift-Left Analysis)»</b> en la description · <code>{{jira.qa_assignee}}</code> <b class="hi-warn">solo si está vacío</b> · Labels: <code>shift-left-reviewed</code> + <code>shift-left-{{YYYY-MM-DD}}</code> · Transiciones: <b>Backlog → Shift-Left QA → Estimation</b> · Comentario: puntero al campo ATP (fallback sin custom field: cuerpo bajo <code>## Acceptance Test Plan (ATP)</code>) · subtask <b>«[QA] Shift-Left Review»</b>: anotaciones exhaustivas de sesión + transición a <b>Done</b></div></div>
+        <div class="io jira"><span class="io-k">jira ⇄</span><div>Campos: <code>{{jira.acceptance_criteria}}</code> · <code>{{jira.acceptance_test_plan}}</code> <b class="hi-warn">field-first en AMBAS modalidades</b> (NO Test Plan item pre-sprint — lo crea sprint-testing Planning desde el field) · sección <b>«QA Refinements (Shift-Left Analysis)»</b> en la description · <code>{{jira.qa_assignee}}</code> <b class="hi-warn">solo si está vacío</b> · Labels: <code>shift-left-reviewed</code> + <code>shift-left-{{YYYY-MM-DD}}</code> · Transiciones: <b>Backlog → Shift-Left QA → Estimation</b> · Comentario: puntero al campo ATP (fallback sin custom field: cuerpo bajo <code>## Acceptance Test Plan (ATP)</code>) · subtask <b>«[QA] Shift-Left Review»</b>: anotaciones exhaustivas de sesión + transición a <b>Done</b></div></div>
       </div>
 
       <div class="exit"><b>loop 2a ⇄ 2b</b> hasta ACs firmes → <b>exit 0</b> → status <b>Ready For Dev</b></div>
@@ -428,20 +433,20 @@ ul.plain b{color:var(--t1)}
     <article class="pane" id="p4" style="--ac:#22d3ee">
       <p class="kick">fase 4a · repo qa-boilerplate</p>
       <h2>Sprint Testing <span class="grad">manual por ticket</span></h2>
-      <p class="lede">Skill <code>/sprint-testing</code>: Stages 1-3 — Planning · Execution · Reporting.</p>
+      <p class="lede">Skill <code>/sprint-testing</code>: Planning · Execution · Reporting <span class="muted">(históricamente Stages 1-3)</span>.</p>
 
       <div class="proc">
         <div class="proc-hd"><span class="pid">S1</span><h3>Planning</h3><span class="repo qa">qa</span></div>
         <div class="io deps"><span class="io-k">skills</span><div><span class="chip mand">test-design-doctrine.md — MANDATORIO</span><span class="chip mand">defect-management-doctrine.md — MANDATORIO</span><span class="chip">acli / xray-cli</span><span class="chip">shift-left-testing (short-circuit si label &lt;30 días)</span></div></div>
         <div class="io in"><span class="io-k">stdin ←</span><div><code>story.md</code> · <code>acceptance-criteria.md</code> · <code>acceptance-test-plan.md</code> · <code>comments.md</code> · <code>domain-glossary.md</code> · <code>master-test-plan.md</code> · campos <code>{{jira.qa_assignee}}</code> · AC · priority · label <code>shift-left-reviewed</code></div></div>
         <div class="io out"><span class="io-k">stdout →</span><div>Primer ticket del sprint: <b>STP «STP: Sprint#{N}: {objetivo}»</b> find-or-create · orden <b>Set-first</b>: Test Set <b>«ATS: {US}: {título}»</b> → epic <b class="hi-jira">QA Test Artifacts</b> con link <b>ATS→Story</b> (<b class="hi-out">el link de coverage</b>) → Test Plan <b>«ATP: {STORY}: {título}»</b> desde el field del shift-left → epic <b class="hi-jira">QA Master Test Plan</b> → Test Execution <b>«ATR: …»</b> con <code>--environment</code> <b class="hi-warn">siempre</b> (gate: sin environment no hay ATR) · listas de Plan/Exec derivadas de la membership del ATS · triage de riesgo en bugs: <b>0-3 LOW · 4-7 MEDIUM (pregunta) · 8+ HIGH</b></div></div>
-        <div class="io note"><span class="io-k">nota</span><div><code>kata-manifest.json</code> se vuelve load-bearing recién en el hand-off de Stage 3 → test-automation, no en Planning.</div></div>
+        <div class="io note"><span class="io-k">nota</span><div><code>kata-manifest.json</code> se vuelve load-bearing recién en el hand-off de Reporting → test-automation, no en Planning.</div></div>
       </div>
 
       <div class="proc">
         <div class="proc-hd"><span class="pid">S2</span><h3>Execution <span class="muted">(trifuerza UI · API · DB)</span></h3><span class="repo qa">qa</span></div>
         <div class="io deps"><span class="io-k">skills</span><div><span class="chip">playwright-cli (UI)</span><span class="chip">OpenAPI MCP + curl (API)</span><span class="chip">DBHub MCP (DB)</span><span class="chip">bug-screenshot-annotation (bugs visuales)</span></div></div>
-        <div class="io in"><span class="io-k">stdin ←</span><div>ATP de Stage 1 · <code>test-session-memory.md</code></div></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div>ATP de Planning · <code>test-session-memory.md</code></div></div>
         <div class="io out"><span class="io-k">stdout →</span><div>Evidencia en <code>stories/STORY-*/evidence/</code> · imágenes anotadas · PASS/FAIL en <code>test-session-memory.md</code> (o Test Run) · Test nuevo <b>solo si hay defecto reproducible</b></div></div>
       </div>
 
@@ -513,7 +518,7 @@ ul.plain b{color:var(--t1)}
 
       <div class="proc">
         <div class="proc-hd"><span class="pid">P3</span><h3>Review</h3><span class="repo qa">qa</span></div>
-        <div class="io deps"><span class="io-k">skills</span><div><span class="chip">judgment-day (opcional)</span><span class="chip">test-documentation + acli (transición del TC)</span></div></div>
+        <div class="io deps"><span class="io-k">skills</span><div><span class="chip mand">/pr-review-lead o /judgment-day — REQUERIDO</span><span class="chip">test-documentation + acli (transición del TC)</span></div></div>
         <div class="io in"><span class="io-k">stdin ←</span><div>Archivos nuevos/modificados de Code</div></div>
         <div class="io out"><span class="io-k">stdout →</span><div><code>kata-manifest.json</code> regenerado (<code>bun run kata:manifest</code>)</div></div>
         <div class="io jira"><span class="io-k">jira ⇄</span><div>TC → <b>In Review</b> (al abrir PR) → <b>Automated</b> (al mergear a main con CI verde)</div></div>
@@ -551,7 +556,7 @@ ul.plain b{color:var(--t1)}
         <div class="proc-hd"><span class="pid">⚖</span><h3>judgment-day</h3><span class="repo both">dev + qa</span></div>
         <div class="io in"><span class="io-k">stdin ←</span><div>Diff/PR bajo revisión · <code>AGENTS.md</code> · <code>REGISTRY.md</code></div></div>
         <div class="io out"><span class="io-k">stdout →</span><div>Veredicto en chat: <b>APPROVED ✅ / ESCALATED ⚠️</b> · en la fase de fix <b>sí</b> puede modificar archivos (delega un fix agent) — lo que nunca toca es Jira</div></div>
-        <div class="io note"><span class="io-k">nota</span><div><b>Nunca auto-invocado.</b> Gate opcional en: Stage 3 dev · Review de test-automation · pre-PR de git-flow-master.</div></div>
+        <div class="io note"><span class="io-k">nota</span><div><b>Nunca auto-invocado.</b> Gate opcional en: Code Review (dev) · Review de test-automation · pre-PR de git-flow-master.</div></div>
       </div>
 
       <div class="proc">
