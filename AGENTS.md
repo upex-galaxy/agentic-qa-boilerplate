@@ -476,7 +476,7 @@ Verify any change with `git check-ignore -v` on both a `test-specs/` file (must 
   tech-stories/TECHSTORY-<KEY>-<slug>/           [SYNC - coverable folder: tech-story.md + ATP + ATR + …]
   tech-debts/TECHDEBT-<KEY>-<slug>/              [SYNC - coverable folder: tech-debt.md + ATP + ATR + …]
   defects/                                       [SYNC - standalone defect issues]
-  test-plans/{FTP|STP|ATP}-<KEY>-<slug>.md                 [SYNC - filename mirrors the title acronym; non-conforming titles keep TESTPLAN-]
+  test-plans/{FTP|STP|RTP|ATP}-<KEY>-<slug>.md             [SYNC - filename mirrors the title acronym; non-conforming titles keep TESTPLAN-]
   test-executions/{STR|ATR|RETEST}-<KEY>-<slug>.md         [SYNC - same rule; non-conforming titles keep TESTEXEC-/RETESTEXEC-]
   test-sets/ preconditions/                                [SYNC - TESTSET-/PRECONDITION-<KEY>-<slug>.md]
   ^ all four: Xray container issues (jira-xray); description holds the ATP/ATR body. Higher altitudes arrive via the QA-process-epic sweep, NOT the Story walk. Test↔Precondition association + Test Set membership are Xray-internal (GraphQL only), invisible to the REST sync: read via `bun xray test enrich`

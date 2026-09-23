@@ -88,8 +88,8 @@ All Plans and Runs follow one **unified grammar** — the QA planning ladder:
 {ACRONYM}: {scope-id}: {descriptor}
 ```
 
-- **ACRONYM** — `FTP` · `STP` · `ATP` (Plans) · `STR` · `ATR` (Runs — FTR retired: feature results are read from the per-Story ATRs and reviewed at sprint close next to the STR; the results side has NO aggregation edge) · `ATS` (Acceptance Test Set, per-Story — mandatory) · `TS` (feature-level Test Set — optional grouping) · `ReTest` (bug re-test Run). A reader / JQL sees altitude + plan-vs-run in the first token, and Plan pairs with Run visually.
-- **scope-id** — the key of the thing under test at that altitude: feature-Epic key, `Sprint#{N}`, or Story key.
+- **ACRONYM** — `FTP` · `STP` · `ATP` · `RTP` (Plans) · `STR` · `ATR` (Runs — FTR retired: feature results are read from the per-Story ATRs and reviewed at sprint close next to the STR; the results side has NO aggregation edge) · `ATS` (Acceptance Test Set, per-Story — mandatory) · `TS` (feature-level Test Set — optional grouping) · `ReTest` (bug re-test Run). A reader / JQL sees altitude + plan-vs-run in the first token, and Plan pairs with Run visually.
+- **scope-id** — the key of the thing under test at that altitude: feature-Epic key, `Sprint#{N}`, Story key, or the project key / module for the product-altitude RTP.
 - **descriptor** — human-readable; embeds the testing term where required (`Story Testing`, `Feature Testing`, `Regression Testing`).
 
 | Artifact | Jira work type | Format | Example |
@@ -99,6 +99,7 @@ All Plans and Runs follow one **unified grammar** — the QA planning ladder:
 | ATR — Story Test Execution | Test Execution | `ATR: {STORY-KEY}: Story Testing` | `ATR: PROJ-123: Story Testing` |
 | FTP — Feature Test Plan | Test Plan | `FTP: {EPIC-KEY}: {feature}` | `FTP: PROJ-42: Checkout & Payments` |
 | STP — Sprint Test Plan | Test Plan | `STP: Sprint#{N}: {objective}` | `STP: Sprint#30: Payments hardening` |
+| RTP — Regression Test Plan (product-altitude, long-lived) | Test Plan | `RTP: {PROJECT_KEY\|module}: Regression Test Plan` | `RTP: PROJ: Regression Test Plan` |
 | STR — Sprint Test Results | Test Execution | `STR: Sprint#{N}: Regression Testing` | `STR: Sprint#30: Regression Testing` |
 | ATS — Acceptance Test Set (per-Story, **mandatory**) | Test Set | `ATS: {US_ID}: {story title}` | `ATS: GX-101: Pay with credit card` |
 | Test Set (TS — feature-level, **optional**) | Test Set | `TS: {EPIC-KEY\|module}: Validate {feature}` | `TS: GX-42: Validate credit card payment` |
@@ -108,7 +109,7 @@ All Plans and Runs follow one **unified grammar** — the QA planning ladder:
 Notes:
 
 - **Items over fields (by excellence).** Every Plan is a **Test Plan** issue and every Run is a **Test Execution** issue — in BOTH modalities (these are native Jira work types, Xray-independent). The Story custom field for ATP/ATR is a **degraded fallback ONLY**, used when those work types are unavailable in the instance. See `tms-architecture.md` §Container per modality.
-- **QA-process Epic homes** (3-axis model): every **Test Plan** (FTP/STP/ATP) parents to **QA Master Test Plan**; every **Test Execution** (STR/ATR), **Test Set** (ATS and TS), and **Precondition** parents to **QA Test Artifacts**; every **Test** (TC) parents to **QA Test Repository**. The parent says only which QA bucket; scope (Story / feature / Sprint) travels on an issue link, product area on `components` — mandatory on Tests, Test Plans, Test Executions AND the per-Story **ATS** (all inherit the source Story's components); **OPTIONAL on the feature-level `TS:` only** (a feature Set can span modules; its member Tests carry them).
+- **QA-process Epic homes** (3-axis model): every **Test Plan** (FTP/STP/ATP/RTP) parents to **QA Master Test Plan**; every **Test Execution** (STR/ATR), **Test Set** (ATS and TS), and **Precondition** parents to **QA Test Artifacts**; every **Test** (TC) parents to **QA Test Repository**. The parent says only which QA bucket; scope (Story / feature / Sprint) travels on an issue link, product area on `components` — mandatory on Tests, Test Plans, Test Executions AND the per-Story **ATS** (all inherit the source Story's components); **OPTIONAL on the feature-level `TS:` only** (a feature Set can span modules; its member Tests carry them).
 - **`ReTest:`** is already prefix-style and stays as-is. It is a Test Execution under **QA Test Artifacts**.
 - **Precondition**: the **title states the required state**, the **content holds the setup steps** — the two are kept distinct (`Payment: Authenticated user with a saved card` titles the state; the steps to reach it live in the issue body).
 - **ATS is mandatory per Story** (even with a single TC) and holds ALL the Story's TCs; the ATP's and the Execution's test lists derive from its membership (Set-first). Its ATS→Story `is tested by` link is what fills the Xray coverage panel — ATP/ATR links do not (live-verified). The feature-level `TS:` survives as an **optional** grouping (smoke / regression / feature suite).

@@ -351,7 +351,7 @@ const FOLDER_PREFIX: Record<string, string> = {
  * `ReTest:` spelling the Re-Test Execution subtask has always used.
  */
 const LADDER_TITLE_ACRONYMS: Record<string, readonly string[]> = {
-  test_plan: ['FTP', 'STP', 'ATP'],
+  test_plan: ['FTP', 'STP', 'ATP', 'RTP'],
   test_execution: ['STR', 'ATR'],
   re_test_execution: ['RETEST'],
 };
@@ -2372,13 +2372,19 @@ const STORY_ATS_PREFIX = /^ATS:/i;
  * is an **Epic**, never a Test Plan work type — see
  * `agentic-qa-core/references/defect-management-doctrine.md` Part 4 — so no Test
  * Plan can legitimately carry that prefix, and an Epic never reaches this guard.
+ *
+ * `RTP` is the product-altitude Regression Test Plan: long-lived, one per
+ * project (or module), the promotion target `/test-documentation` moves a
+ * regression-worthy TC into. An RTP linked to a Story is never that Story's
+ * ATP, so the guard skips it with an info line, exactly like FTP / STP.
  */
-const HIGHER_ALTITUDE_PREFIX = /^(FTP|FTR|STP|STR):/i;
+const HIGHER_ALTITUDE_PREFIX = /^(FTP|FTR|STP|STR|RTP):/i;
 
 /** Human label for a skipped higher-altitude artifact's info line. */
 function higherAltitudeLabel(summary: string): string {
   const m = HIGHER_ALTITUDE_PREFIX.exec(summary.trim());
   const p = (m?.[1] ?? '').toUpperCase();
+  if (p === 'RTP') { return 'product-altitude'; }
   return p === 'STP' || p === 'STR' ? 'sprint-altitude' : 'feature-altitude';
 }
 
@@ -2924,7 +2930,8 @@ function writeQaArtifactsIndex(
  * Decides whether a child of a QA-process Epic is materialized by the sweep below.
  *
  * The sweep exists for the artifacts NOTHING else can reach — the higher-altitude
- * ladder (FTP / STP / STR) plus the supporting Test Sets and Preconditions. Every
+ * ladder (FTP / STP / STR, and the product-altitude RTP) plus the supporting Test
+ * Sets and Preconditions. Every
  * other child of a QA bucket already has an owner and must be left to it, or the
  * sweep writes a second copy of work the rest of the pipeline placed correctly:
  *
@@ -2945,7 +2952,7 @@ function sweptFromQaEpic(entry: WorkTypeEntry, summary: string): boolean {
  * Sweeps the children of the QA-process Epics so the top rungs of the planning
  * ladder materialize locally.
  *
- * WHY a separate path: FTP / STP / STR sit ABOVE a Story, so the coverage walk —
+ * WHY a separate path: FTP / STP / STR / RTP sit ABOVE a Story, so the coverage walk —
  * which descends from a coverable issue through its links — structurally cannot
  * reach them, and the Story-altitude guard (HIGHER_ALTITUDE_PREFIX) is right to
  * keep skipping them there. The QA Epics ARE the index of these artifacts, which
