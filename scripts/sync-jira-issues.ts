@@ -339,7 +339,7 @@ const FOLDER_PREFIX: Record<string, string> = {
 // The ratified title grammar is `{ACRONYM}: {scope}: {desc}`
 // (docs/qa-standard/planning-ladder-proposal.md §3), so altitude is legible in
 // the first token of a Jira title. The filename mirrors that signal: one `ls`
-// of `test-plans/` then shows the ladder state (FTP / STP / ATP) at a glance
+// of `test-plans/` then shows the ladder state (FTP / STP / RTP / ATP) at a glance
 // instead of a wall of identical `TESTPLAN-` files.
 // ---------------------------------------------------------------------------
 
@@ -352,7 +352,7 @@ const FOLDER_PREFIX: Record<string, string> = {
  */
 const LADDER_TITLE_ACRONYMS: Record<string, readonly string[]> = {
   test_plan: ['FTP', 'STP', 'ATP', 'RTP'],
-  test_execution: ['STR', 'ATR'],
+  test_execution: ['STR', 'ATR', 'RTR'],
   re_test_execution: ['RETEST'],
 };
 
@@ -638,7 +638,7 @@ interface SyncResult {
     tests: number
     tech_stories: number
     tech_debts: number
-    /** Higher-altitude ladder artifacts (FTP/STP/ATP · STR/ATR · Test Sets · Preconditions). */
+    /** Higher-altitude ladder artifacts (FTP/STP/RTP/ATP · STR/RTR/ATR · Test Sets · Preconditions). */
     qa_artifacts: number
   }
   warnings: string[]
@@ -2377,14 +2377,20 @@ const STORY_ATS_PREFIX = /^ATS:/i;
  * project (or module), the promotion target `/test-documentation` moves a
  * regression-worthy TC into. An RTP linked to a Story is never that Story's
  * ATP, so the guard skips it with an info line, exactly like FTP / STP.
+ *
+ * `RTR` is the product-altitude regression run record: the Test Execution
+ * `/regression-testing` creates per verdict (`RTR: {env}-{date}: Regression
+ * Testing`), linked to the RTP through Xray's `testPlan` field. One per
+ * verdict, never reused. An RTR linked to a Story is never that Story's ATR:
+ * it records a whole regression run, not that Story's acceptance results.
  */
-const HIGHER_ALTITUDE_PREFIX = /^(FTP|FTR|STP|STR|RTP):/i;
+const HIGHER_ALTITUDE_PREFIX = /^(FTP|FTR|STP|STR|RTP|RTR):/i;
 
 /** Human label for a skipped higher-altitude artifact's info line. */
 function higherAltitudeLabel(summary: string): string {
   const m = HIGHER_ALTITUDE_PREFIX.exec(summary.trim());
   const p = (m?.[1] ?? '').toUpperCase();
-  if (p === 'RTP') { return 'product-altitude'; }
+  if (p === 'RTP' || p === 'RTR') { return 'product-altitude'; }
   return p === 'STP' || p === 'STR' ? 'sprint-altitude' : 'feature-altitude';
 }
 

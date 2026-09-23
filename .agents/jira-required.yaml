@@ -867,18 +867,20 @@ work_types:
     description: |
       Xray Test Execution — holds the ATR body in its description (role atr). Altitude guard
       (sync-jira-issues): only an Execution titled `ATR:*` / `ReTest:*` syncs as a Story's
-      acceptance-test-results.md; `STR:*` / `FTR:*` Executions are skipped with an info line
-      (`FTR` is a legacy guard — the rung was cut, the skip stays for pre-migration data).
-      Unprefixed titles keep the legacy behavior (any linked Execution counts). Higher
+      acceptance-test-results.md; `STR:*` / `RTR:*` / `FTR:*` Executions are skipped with an
+      info line (`FTR` is a legacy guard — the rung was cut, the skip stays for pre-migration
+      data). Unprefixed titles keep the legacy behavior (any linked Execution counts). Higher
       altitudes still MATERIALIZE — the QA-process-epic sweep writes them to test-executions/
-      as STR-/ATR-<KEY>-<slug>.md (non-conforming titles fall back to TESTEXEC-).
+      as STR-/RTR-/ATR-<KEY>-<slug>.md (non-conforming titles fall back to TESTEXEC-).
     sync: discovery
     role: atr
     content: description
     local_dir: test-executions
-    # Lifecycle: the ATR and the STR both ride this workflow. Moved by /sprint-testing
-    # Reporting (ATR) and by whoever closes the sprint (STR — /sprint-testing batch close
-    # or /regression-testing). Doctrine: agentic-qa-core/references/artifact-lifecycle.md
+    # Lifecycle: the ATR, the STR and the RTR all ride this workflow. Moved by /sprint-testing
+    # Reporting (ATR), by whoever closes the sprint (STR — /sprint-testing batch close or
+    # /regression-testing) and by /regression-testing after each verdict (RTR: one per
+    # verdict, closed once the GO / CAUTION / NO-GO comment is posted).
+    # Doctrine: agentic-qa-core/references/artifact-lifecycle.md
     required_statuses:
       active: { description: 'Execution open, runs still being recorded (Create lands here)' }
       close: { description: Execution closed after every run status is recorded (terminal) }

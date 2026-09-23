@@ -40,7 +40,7 @@ Everything under `.context/PBI/` is one of three things. Getting the tier wrong 
       acceptance-test-plan.md  acceptance-test-results.md   [SYNC ← Xray Test Plan/Execution desc OVERRIDES Story field, else field, else stub]
       comments.md                                 [SYNC, --include-comments]
       test-cases/                                 [SYNC ← the Test issues linked to this Story]
-      test-executions/                            [SYNC — only when >1 Execution linked; ATR-/STR-/RETEST-<KEY>-<slug>.md]
+      test-executions/                            [SYNC — only when >1 Execution linked; ATR-/STR-/RTR-/RETEST-<KEY>-<slug>.md]
       defects/<PREFIX>-<KEY>-<slug>/              [SYNC — linked defects nested as coverable folders]
       context.md                                  [LOCAL] session notes about the repo, not the ticket
       evidence/                                   [LOCAL] screenshots
@@ -53,7 +53,7 @@ Everything under `.context/PBI/` is one of three things. Getting the tier wrong 
   defects/                                        [SYNC — standalone defect issues]
   qa-artifacts/_index.md                          [SYNC — register of the QA-process Epics (QA buckets); no per-epic folders, their content is distributed into the dirs below]
   test-plans/                                     [SYNC — FTP-/STP-/RTP-/ATP-<KEY>-<slug>.md; description holds the plan body]
-  test-executions/                                [SYNC — STR-/ATR-/RETEST-<KEY>-<slug>.md; description holds the run body]
+  test-executions/                                [SYNC — STR-/RTR-/ATR-/RETEST-<KEY>-<slug>.md; description holds the run body]
   test-sets/ preconditions/                       [SYNC — TESTSET-/PRECONDITION-<KEY>-<slug>.md]
 ```
 
@@ -63,7 +63,7 @@ Folder naming follows Jira IDs verbatim — `<KEY>` is the Jira issue key, `<slu
 
 ## The planning ladder on disk
 
-The rungs above a Story — **FTP** (feature), **STP** / **STR** (sprint), **RTP** (product regression, long-lived) — sit *above* a Story, so the coverage walk that descends from a coverable issue through its links structurally cannot reach them. They used to never materialize at all. Two rules fix that.
+The rungs above a Story — **FTP** (feature), **STP** / **STR** (sprint), **RTP** (product regression, long-lived) and **RTR** (its run record, one per verdict) — sit *above* a Story, so the coverage walk that descends from a coverable issue through its links structurally cannot reach them. They used to never materialize at all. Two rules fix that.
 
 **Discovery goes through the QA-process Epics.** An unfiltered `pull` sweeps the children of the four QA buckets (`QA Master Test Plan`, `QA Test Artifacts`, `QA Test Repository`, `QA Defect Management`), resolved exactly as `qa-artifacts/_index.md` resolves them: the `QA-Artifact` label, then the cached `qa.qa_epics.*.key` in `.agents/project.yaml`, then the `QA ` name prefix. No new configuration — the Epics already *are* the index. The sweep only takes what nothing else owns (Test Plans, Test Executions, Test Sets, Preconditions); Bugs, Defects, Improvements and Tests keep their existing owners so no artifact is written twice. A project with no QA-process Epics runs zero extra queries. Skip it with `pull --no-qa-artifacts`.
 
@@ -76,6 +76,7 @@ The rungs above a Story — **FTP** (feature), **STP** / **STR** (sprint), **RTP
 | `test-plans/` | `RTP: PROJ: Regression Test Plan` | `RTP-PROJ-60-regression-test-plan.md` |
 | `test-plans/` | `ATP: PROJ-123: Apply discount` | `ATP-PROJ-123-apply-discount.md` |
 | `test-executions/` | `STR: Sprint#30: Regression Testing` | `STR-PROJ-52-regression-testing.md` |
+| `test-executions/` | `RTR: staging-2026-09-23: Regression Testing` | `RTR-PROJ-61-regression-testing.md` |
 | `test-executions/` | `ATR: PROJ-123: Story Testing` | `ATR-PROJ-124-story-testing.md` |
 | `test-executions/` | `ReTest: PROJ-123: Story Testing` | `RETEST-PROJ-130-story-testing.md` |
 
@@ -83,7 +84,7 @@ One `ls test-plans/` then shows the ladder state at a glance. A title that does 
 
 Renaming is free here (the tree is a regenerable cache), and the sync deletes the same issue's file under its old name so an adopted grammar does not leave two copies of one Plan.
 
-**The Story-altitude guard is unchanged.** An `FTP:` / `STP:` / `STR:` / `RTP:` Plan or Execution linked to a Story is still *never* materialized as that Story's `acceptance-test-plan.md` / `acceptance-test-results.md` — it is named in an INFO line and skipped. An FTP linked to a Story is not that Story's ATP. The two paths are separate: the guard keeps the Story folder honest, the sweep gives the higher rungs their own home.
+**The Story-altitude guard is unchanged.** An `FTP:` / `STP:` / `STR:` / `RTP:` / `RTR:` Plan or Execution linked to a Story is still *never* materialized as that Story's `acceptance-test-plan.md` / `acceptance-test-results.md` — it is named in an INFO line and skipped. An FTP linked to a Story is not that Story's ATP. The two paths are separate: the guard keeps the Story folder honest, the sweep gives the higher rungs their own home.
 
 ## What the `.gitignore` actually does
 

@@ -50,6 +50,12 @@ interface XrayImportPayload {
     summary: string
     description: string
     testEnvironments: string[]
+    /**
+     * Key of the Test Plan the minted Execution is linked to (the RTP). Set
+     * only when `RTP_KEY` is non-empty: the schema is closed and an empty
+     * string is a value Xray rejects, not an absent field.
+     */
+    testPlanKey?: string
   }
   tests: XrayTestExecution[]
 }
@@ -181,20 +187,20 @@ async function syncToXray(results: Record<string, AtcResult[]>): Promise<SyncRes
     if (issueType === null) {
       console.log(
         `[INFO] Could not read the issue type of ${stpExecutionKey} (no Atlassian `
-        + 'credentials, or Jira unreachable) — importing without the STP/STR check.',
+        + 'credentials, or Jira unreachable): importing without the Plan-vs-Execution check.',
       );
     }
     else if (kind.includes('test plan')) {
       console.error(
-        `[ERROR] STP_EXECUTION_KEY=${stpExecutionKey} is a "${issueType}" — that is the `
-        + 'key OF the STP. Pass the key of the STR instead: the Test Execution linked '
-        + 'to the STP. A Test Plan derives its status from its Executions, so results '
-        + 'are never written into one.',
+        `[ERROR] STP_EXECUTION_KEY=${stpExecutionKey} is a "${issueType}": that is the `
+        + 'key OF a Plan (the RTP or the STP). Pass the key of the RTR (or the sprint-close '
+        + 'STR) instead: the Test Execution this run imports into. A Test Plan derives '
+        + 'its status from its Executions, so results are never written into one.',
       );
       return {
         provider: 'xray',
         success: false,
-        message: 'STP_EXECUTION_KEY points at a Test Plan, not at the STR Test Execution',
+        message: 'STP_EXECUTION_KEY points at a Test Plan, not at the RTR / STR Test Execution',
       };
     }
     else if (!kind.includes('test execution')) {
@@ -245,29 +251,36 @@ async function syncToXray(results: Record<string, AtcResult[]>): Promise<SyncRes
     }
 
     // Preferred path: write onto an Execution that already exists in Jira. That
-    // item was created by /regression-testing or /sprint-testing, so it already
-    // carries its parent ("QA Test Artifacts" epic), its Test Environment and a
-    // title in the ratified grammar. Nothing is invented here.
+    // item is the RTR /regression-testing created for this run (or the
+    // sprint-close STR), so it already carries its parent ("QA Test Artifacts"
+    // epic), its Test Environment, its `testPlan` link to the RTP and a title in
+    // the ratified grammar. Nothing is invented here.
     //
     // Fallback path (no STP_EXECUTION_KEY): Xray creates the Execution from
     // `info`. That schema has no parent field, so the item lands UNPARENTED and
-    // no later call in this file can adopt it — reparenting is a Jira REST
+    // no later call in this file can adopt it: reparenting is a Jira REST
     // `PUT /issue/{key}` on the parent field, which needs Atlassian credentials
     // the Xray provider does not have. We do what the API does allow: the
-    // ratified title shape and the Test Environment from the active env.
+    // ratified RTR title shape, the Test Environment from the active env and,
+    // when RTP_KEY is set, the `testPlanKey` link so the minted RTR is at least
+    // plan-linked. The key is added only when non-empty: `info` is a closed
+    // schema and an empty string is a value Xray rejects, not an absent field.
+    const rtpKey = config.tms.rtpKey;
     const payload: XrayImportPayload = stpExecutionKey
       ? { testExecutionKey: stpExecutionKey, tests }
       : {
           info: {
             project: projectKey,
-            // {ACRONYM}: {scope-id}: {descriptor} — docs/qa-standard/planning-ladder-proposal.md
-            summary: `STR: Build#${env.buildId}: Regression Testing`,
+            // {ACRONYM}: {scope-id}: {descriptor}: docs/qa-standard/planning-ladder-proposal.md
+            summary: `RTR: Build#${env.buildId}: Regression Testing`,
             description:
               `Automated test execution via KATA Architecture\nEnvironment: ${env.current}\n\n`
               + 'Created by the test run itself, so it has no parent Epic. Set '
-              + 'STP_EXECUTION_KEY to an existing Test Execution under the "QA Test '
-              + 'Artifacts" epic to keep results on a parented item instead.',
+              + 'STP_EXECUTION_KEY to the RTR (or the sprint-close STR): an existing Test '
+              + 'Execution under the "QA Test Artifacts" epic, to keep results on a '
+              + 'parented item instead.',
             testEnvironments: [env.current],
+            ...(rtpKey ? { testPlanKey: rtpKey } : {}),
           },
           tests,
         };
@@ -276,10 +289,13 @@ async function syncToXray(results: Record<string, AtcResult[]>): Promise<SyncRes
       console.log(`[UPLOAD] Importing results into existing Test Execution ${stpExecutionKey}...`);
     }
     else {
+      const planNote = rtpKey
+        ? `The minted item is linked to the RTP ${rtpKey} (RTP_KEY).`
+        : 'Set RTP_KEY so the minted item is at least linked to the RTP.';
       console.warn(
-        '[WARN] STP_EXECUTION_KEY is not set — Xray will create a NEW, unparented '
-        + 'Test Execution for this run. Point it at the STR/ATR item under the '
-        + '"QA Test Artifacts" epic to avoid orphan executions.',
+        '[WARN] STP_EXECUTION_KEY is not set: Xray will create a NEW, unparented '
+        + 'Test Execution for this run. Point it at the RTR (or the sprint-close STR) '
+        + `under the "QA Test Artifacts" epic to avoid orphan executions. ${planNote}`,
       );
       console.log('[UPLOAD] Importing results to X-Ray...');
     }

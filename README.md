@@ -360,7 +360,8 @@ AUTO_SYNC=false
 XRAY_CLIENT_ID=
 XRAY_CLIENT_SECRET=
 XRAY_PROJECT_KEY=
-STP_EXECUTION_KEY=          # key of the STR (not the STP) that results are imported onto
+STP_EXECUTION_KEY=          # key of the Test Execution this run imports into: the RTR by default, the sprint-close STR at sprint close; never a Test Plan key
+RTP_KEY=                    # optional, local-only: RTP key so a locally minted Execution is at least plan-linked
 ```
 
 ### (b) Runtime URLs — `config/variables.ts`
@@ -719,7 +720,8 @@ AUTO_SYNC                   # default: false
 XRAY_CLIENT_ID
 XRAY_CLIENT_SECRET
 XRAY_PROJECT_KEY
-STP_EXECUTION_KEY           # key of the STR (not the STP) that results are imported onto
+STP_EXECUTION_KEY           # key of the Test Execution this run imports into: the RTR by default, the sprint-close STR at sprint close; never a Test Plan key
+RTP_KEY                     # optional, local-only: RTP key so a locally minted Execution is at least plan-linked
 
 # Atlassian credentials (required if TMS_PROVIDER=jira AND AUTO_SYNC=true; also
 # used by MCP atlassian, acli, xray-cli, and scripts/sync-jira-*.ts).
@@ -866,10 +868,14 @@ XRAY_CLIENT_SECRET=your-client-secret
 XRAY_PROJECT_KEY=YOUR-PROJECT
 AUTO_SYNC=true
 
-# Key of the STR (not the STP) that results are imported onto — the Test Execution
-# linked to the sprint's STP, under the "QA Test Artifacts" epic. Leave it empty and
-# every run mints a brand-new, unparented Test Execution instead.
+# Key of the Test Execution this run imports into: the RTR by default (created per
+# regression run by /regression-testing, linked to the RTP), the sprint-close STR at
+# sprint close; never a Test Plan key. Both live under the "QA Test Artifacts" epic.
+# Leave it empty and every run mints a brand-new, unparented Test Execution instead.
 STP_EXECUTION_KEY=YOUR-PROJECT-194
+# Optional, local-only: the RTP key, so an Execution minted by the local fallback is
+# at least linked to the plan. No workflow reads it.
+RTP_KEY=YOUR-PROJECT-60
 ```
 
 ### Sync Test Results
