@@ -4,6 +4,8 @@ description: "Foundation skill that hosts shared references cited by other workf
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 complementary_categories: [meta-skill]
+metadata:
+  kind: core
 ---
 
 # Agentic QA Core — Foundation reference host
@@ -64,6 +66,9 @@ This skill does NOT orchestrate workflows, does NOT generate files, and does NOT
 | `references/evidence-conventions.md` | `sprint-testing`, `bug-screenshot-annotation`, `regression-testing`, and any subagent briefed to capture evidence | The shared three-bucket model for every file produced while testing, plus the naming contract. Prevents the two recurring failures: stray artifacts at the repo root, and "evidence" claimed in a report that never existed on disk. |
 | `references/acli-integration.md` | Every skill that resolves `[ISSUE_TRACKER_TOOL]` / `[TMS_TOOL]` to `/acli` | The QA-side plug for the tool-agnostic `acli` skill: which slug, which status, which custom field, which modality. Load it BEFORE the tool surface — `acli/SKILL.md` answers *how the binary works*, this answers *what to send it here*. |
 | `references/jira-publishing-gotchas.md` | Any skill about to publish to a Jira rich-text field (Story / Bug / Test body or custom field) | The Markdown → ADF conversion edges that produce an HTTP 400 at publish time, and how to pre-empt them. Scope boundary: this is what BREAKS; `acli/references/adf-authoring-style.md` is what reads well. |
+| `references/skill-refinement-protocol.md` | The 6 workflow skills (session close), `skill-scaffold.md` | How a session PROPOSES a lesson for a skill instead of editing it: the four criteria (stable, not regenerable, changes behaviour, paid for), the `refinements.md` block schema, the apply matrix per skill owner, and the human gate per entry. |
+| `references/skill-scaffold.md` | `framework-development` (the change IS a skill), `project-context` mode `context-skill` | The contract every new T1 skill is born with: frontmatter incl. `metadata.kind`, per-kind files + suffix + mandatory sections, the three-question test for context skills (`.context/` holds facts, the skill holds judgment, cite never copy), the minimal context-skill template and the Definition of Done. |
+| `references/upstream-feedback.md` | The 6 workflow skills (failure / blocker path), `skill-refinement-protocol.md` §4 | Filing a skill problem against the boilerplate: repo resolution order (`UPEX_TEMPLATE_REPO` → installer lock → local), the redacted draft, explicit OK before `gh issue create`, verification with `gh issue view`, the manual-filing fallback. |
 
 When a skill cites one of these, it includes a Dependencies block at the top so the AI knows to load `agentic-qa-core` before continuing.
 

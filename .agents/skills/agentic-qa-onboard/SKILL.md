@@ -5,6 +5,8 @@ license: MIT
 compatibility: [claude-code, opencode]
 phase: bootstrap
 complementary_categories: [meta-skill]
+metadata:
+  kind: workflow
 ---
 
 <!-- Model preferences (advisory; dispatchers may use to route) -->
@@ -345,7 +347,7 @@ skill and the moment that loads this one, or says plainly that only a human invo
 
 | Skill | Source | Loaded by / when |
 | --- | --- | --- |
-| `skill-creator` | anthropics/skills | **user-invoked only, today.** No flow names it. `/framework-development` is the natural owner when the change IS a skill, but its skill list does not say so yet — do not read this row as if it did |
+| `skill-creator` | anthropics/skills | `/framework-development` when the change IS a skill, and `project-context` mode `context-skill` for a consumer's SUT context skill. Both scaffold from `agentic-qa-core/references/skill-scaffold.md` and load this one (T4: ask first) ONLY for the test prompts and the description optimizer; the scaffold works without it |
 | `find-skills` | vercel-labs/skills | **automatic, last resort.** `agentic-qa-core/references/skill-composition-strategy.md` §11.2: scan T1+T2, then installed T3+T4, and only if a task domain still has no match does any flow invoke this — then asks before installing |
 | `github-actions-docs` | xixu-me/skills | `/framework-development` and `/regression-testing` when EDITING or diagnosing `.github/workflows/**` (both name it; reading a workflow does not need it) |
 | `html-ppt` | lewislulu/html-ppt-skill | **user-invoked only.** `packages/decks/` is hand-authored; this is for a one-off deck outside that tree |

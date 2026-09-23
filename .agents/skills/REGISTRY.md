@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-09-23T10:05:45.445Z`
+> Generated: `2026-09-23T19:05:22.430Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -34,7 +34,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: composing a specific command, publishing rich text, running the REST PUT workaround, or working any surface outside Jira work items.
 
-> Source: `.agents/skills/acli/SKILL.md` · phase: `unknown` · extraction strategy: A
+> Source: `.agents/skills/acli/SKILL.md` · phase: `unknown` · kind: `utility` · extraction strategy: A
 
 ---
 
@@ -50,7 +50,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
 
-> Source: `.agents/skills/adapt-framework/SKILL.md` · phase: `unknown` · extraction strategy: B
+> Source: `.agents/skills/adapt-framework/SKILL.md` · phase: `unknown` · kind: `workflow` · extraction strategy: B
 
 ---
 
@@ -72,7 +72,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: you need the full table of hosted references and who cites each one, the deck-hosting details, or the exact `## Dependencies` block shape to add to a skill.
 
-> Source: `.agents/skills/agentic-qa-core/SKILL.md` · phase: `unknown` · extraction strategy: A
+> Source: `.agents/skills/agentic-qa-core/SKILL.md` · phase: `unknown` · kind: `core` · extraction strategy: A
 
 ---
 
@@ -97,7 +97,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: walking the full 4-phase new-project setup, listing env vars or MCPs in detail, or answering which deck covers a given topic.
 
-> Source: `.agents/skills/agentic-qa-onboard/SKILL.md` · phase: `bootstrap` · extraction strategy: A
+> Source: `.agents/skills/agentic-qa-onboard/SKILL.md` · phase: `bootstrap` · kind: `workflow` · extraction strategy: A
 
 ---
 
@@ -119,7 +119,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: building the annotation HTML, choosing shape types, or handling a case the local render cannot cover (e.g. a photo of physical signage that would need anonymization).
 
-> Source: `.agents/skills/bug-screenshot-annotation/SKILL.md` · phase: `unknown` · extraction strategy: A
+> Source: `.agents/skills/bug-screenshot-annotation/SKILL.md` · phase: `unknown` · kind: `workflow` · extraction strategy: A
 
 ---
 
@@ -138,13 +138,14 @@ Skills indexed: 21
 - DO NOT: bump a major version of Playwright / Bun / TypeScript without a regression run on a representative E2E suite — lockstep upgrades hide breaks in fixture lifecycle, locator engines, and type emit.
 - DO NOT: refactor `cli/install.ts` without exercising the full install flow on a clean clone. Verification on an already-installed repo proves nothing, and the installer is the one surface where a bug ships silently to every new user.
 - WHEN the chosen approach reshapes test architecture (KATA layers, a fixture API, the runner, the isolation/parallelization model, the OpenAPI/type pipeline) AND is hard to reverse: record an ADR under `.context/ADR/` after plan approval and before coding, drafted `Proposed` for the human to accept. ADRs are append-only — supersede, never rewrite.
-- DO: verify with all four checks (test, types, lint, skills) and treat any non-zero exit as REJECT — present retry / skip-and-document / abort, never auto-fix.
+- DO: verify with all four checks (test, types, lint, skills) and treat any non-zero exit as REJECT — present retry / skip-and-document / abort, never auto-fix. A skill that itself broke (a wrong step, a missing verifier, a stale rule) is reported upstream per `../agentic-qa-core/references/upstream-feedback.md`: drafted and redacted locally, filed only on explicit OK, verified with `gh issue view`.
+- WHEN the change IS a skill (a new or restructured `.agents/skills/<slug>/`): scaffold it per `../agentic-qa-core/references/skill-scaffold.md` (frontmatter incl. `metadata.kind`, per-kind files and sections, Definition of Done). `skill-creator` (T4, ask before loading) is loaded only for the test prompts and the description optimizer; the scaffold works without it. Consumer SUT context skills are NOT this skill's job: `project-context` mode `context-skill` owns them.
 - DO NOT: let a subagent write `progress.md`; it is orchestrator-only. Code subagents return one-line summaries per task, and the orchestrator does not read their diffs.
 - DO: archive the session directory only after all four verifiers pass. On REJECT it stays in place so the run can be debugged or resumed.
 
 **Read full SKILL.md when**: writing the plan artifact, batching Code-phase tasks, resuming an interrupted session, or reading the ALLOWED/FORBIDDEN path tables themselves.
 
-> Source: `.agents/skills/framework-development/SKILL.md` · phase: `unknown` · extraction strategy: A
+> Source: `.agents/skills/framework-development/SKILL.md` · phase: `unknown` · kind: `workflow` · extraction strategy: A
 
 ---
 
@@ -171,7 +172,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: running Strategy Setup, resolving a specific conflict type, picking a base branch or branch prefix for an unfamiliar strategy, or setting up an isolated worktree.
 
-> Source: `.agents/skills/git-flow-master/SKILL.md` · phase: `implementation` · extraction strategy: A
+> Source: `.agents/skills/git-flow-master/SKILL.md` · phase: `implementation` · kind: `workflow` · extraction strategy: A
 
 ---
 
@@ -194,7 +195,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: the mode is ambiguous, a dry-run diff or migration audit looks wrong, or you need the selected reference's step-by-step phases and verification list.
 
-> Source: `.agents/skills/jira-administration/SKILL.md` · phase: `unknown` · extraction strategy: A
+> Source: `.agents/skills/jira-administration/SKILL.md` · phase: `unknown` · kind: `workflow` · extraction strategy: A
 
 ---
 
@@ -224,7 +225,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
 
-> Source: `.agents/skills/judgment-day/SKILL.md` · phase: `unknown` · extraction strategy: B
+> Source: `.agents/skills/judgment-day/SKILL.md` · phase: `unknown` · kind: `workflow` · extraction strategy: B
 
 ---
 
@@ -254,7 +255,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: starting a fleet cold, arbitrating a claim, choosing a topology, recovering a Run from a previous session, or writing an unattended automation.
 
-> Source: `.agents/skills/orca-orchestration/SKILL.md` · phase: `unknown` · source: frontmatter `compact_rules` (verbatim)
+> Source: `.agents/skills/orca-orchestration/SKILL.md` · phase: `unknown` · kind: `workflow` · source: frontmatter `compact_rules` (verbatim)
 
 ---
 
@@ -279,7 +280,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: applying the severity rubric or score weighting, probing an external repo for its doctrine, or drafting the posting flow itself.
 
-> Source: `.agents/skills/pr-review-lead/SKILL.md` · phase: `unknown` · extraction strategy: A
+> Source: `.agents/skills/pr-review-lead/SKILL.md` · phase: `unknown` · kind: `workflow` · extraction strategy: A
 
 ---
 
@@ -288,7 +289,8 @@ Skills indexed: 21
 **Purpose**: Generate or refresh the canonical business context maps and master test plan.
 
 **Compact Rules**:
-- Exactly ONE mode per run: `data` · `features` · `api` · `test-plan` · `refresh-all`. Load only that mode's reference; never open a second one in the same pass.
+- Exactly ONE mode per run: `data` · `features` · `api` · `test-plan` · `refresh-all` · `context-skill`. Load only that mode's reference; never open a second one in the same pass.
+- `context-skill` scaffolds the JUDGMENT layer over a map the other modes produced (`../agentic-qa-core/references/skill-scaffold.md` §3): it cites `.context/` paths and never copies their content; the map must exist first. `refresh-all` never includes it.
 - Mode → reference → output: `data` → `references/data.md` → `.context/business/business-data-map.md` · `features` → `references/features.md` → `.context/business/business-feature-map.md` · `api` → `references/api.md` → `.context/business/business-api-map.md` · `test-plan` → `references/test-plan.md` → `.context/master-test-plan.md`.
 - User did not name a mode → ASK. NEVER infer `refresh-all` from a generic "refresh the context" request.
 - `refresh-all` runs strictly `data` → `features` → `api` → `test-plan`, one at a time. Each reference's own validation and approval gate must close before the next is loaded. Never skip ahead.
@@ -300,7 +302,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: the requested mode is ambiguous, a `refresh-all` chain fails mid-sequence, or you need the selected reference's own analysis steps and validation gate.
 
-> Source: `.agents/skills/project-context/SKILL.md` · phase: `unknown` · extraction strategy: A
+> Source: `.agents/skills/project-context/SKILL.md` · phase: `unknown` · kind: `workflow` · extraction strategy: A
 
 ---
 
@@ -326,7 +328,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: running any phase's sub-steps, applying a completion gate's content checks, or resolving the pre-`adapt-framework` prerequisite list.
 
-> Source: `.agents/skills/project-discovery/SKILL.md` · phase: `unknown` · extraction strategy: A
+> Source: `.agents/skills/project-discovery/SKILL.md` · phase: `unknown` · kind: `workflow` · extraction strategy: A
 
 ---
 
@@ -354,7 +356,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: driving the CI commands, applying the GO/CAUTION/NO-GO scoring table, resolving a borderline classification, wiring the TMS artifacts, or writing the report.
 
-> Source: `.agents/skills/regression-testing/SKILL.md` · phase: `unknown` · extraction strategy: A
+> Source: `.agents/skills/regression-testing/SKILL.md` · phase: `unknown` · kind: `workflow` · extraction strategy: A
 
 ---
 
@@ -384,7 +386,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
 
-> Source: `.agents/skills/session-handoff/SKILL.md` · phase: `unknown` · extraction strategy: B
+> Source: `.agents/skills/session-handoff/SKILL.md` · phase: `unknown` · kind: `workflow` · extraction strategy: B
 
 ---
 
@@ -406,7 +408,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: running the batch grooming pipeline, writing the per-Story `shift-left-refinement.md`, or handling the PO/Dev handoff.
 
-> Source: `.agents/skills/shift-left-testing/SKILL.md` · phase: `unknown` · extraction strategy: A
+> Source: `.agents/skills/shift-left-testing/SKILL.md` · phase: `unknown` · kind: `workflow` · extraction strategy: A
 
 ---
 
@@ -430,7 +432,7 @@ Skills indexed: 21
 - Execution = smoke pass first, then trifuerza (UI/API/DB) exploration; capture evidence under the PBI folder.
 - API testing = three-tool maneuver: OpenAPI MCP for schema (READ-ONLY) → `bun run api:login` for the token (→ `.auth/tokens.env`) → **curl** for authenticated requests. NEVER execute via the OpenAPI MCP. Canon: `agentic-qa-core/references/api-testing-doctrine.md`.
 - Consult `domain-glossary.md` (if present) before authoring the ATP, refined ACs, and TC outlines.
-- On any subagent failure: STOP, report partial state, offer retry / skip-stage / abort. No auto-fix, no auto-rollback.
+- On any subagent failure: STOP, report partial state, offer retry / skip-stage / abort. No auto-fix, no auto-rollback. A skill that itself broke (a wrong step, a missing verifier, a stale rule) is reported upstream per `../agentic-qa-core/references/upstream-feedback.md`: drafted and redacted locally, filed only on explicit OK, verified with `gh issue view`.
 - Stage 1 Set-first order (Modality jira-xray — AUTHORITATIVE): the Story's coverage backbone is its **ATS** (`ATS: {US_ID}: {story title}` — mandatory per Story, even with a single TC; parent: QA Test Artifacts epic; components inherited from the Story). Create the sprint `Test` issues, put ALL of them in the ATS, and link **ATS→Story** via the `test` slug (Story `is tested by` ATS) — the PRIMARY coverage-bearing edge (fills the Xray coverage panel); a direct TC→Story link is the only other coverage-bearing edge (last resort, valid only when no ATS can exist); Story↔ATP and Story↔ATR links are administrative traceability with ZERO coverage.
 - The ATP item is find-or-created FROM the `{{jira.acceptance_test_plan}}` field (where shift-left authored it) — pre-sprint the ATP lives ONLY in that field; Stage 1 is where the Test Plan item is born (parent: QA Master Test Plan epic).
 - Derive, never re-list: the ATP's and the ATR Execution's test lists are DERIVED from the ATS membership — never maintained as independent id lists (three hand-maintained lists drift silently and corrupt coverage).
@@ -447,7 +449,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: starting a sprint cold, resuming a session, or handling a bug-triage / sprint-wide flow not covered by the rules above.
 
-> Source: `.agents/skills/sprint-testing/SKILL.md` · phase: `unknown` · source: frontmatter `compact_rules` (verbatim)
+> Source: `.agents/skills/sprint-testing/SKILL.md` · phase: `unknown` · kind: `workflow` · source: frontmatter `compact_rules` (verbatim)
 
 ---
 
@@ -465,7 +467,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
 
-> Source: `.agents/skills/sync-ai-context/SKILL.md` · phase: `unknown` · extraction strategy: B
+> Source: `.agents/skills/sync-ai-context/SKILL.md` · phase: `unknown` · kind: `workflow` · extraction strategy: B
 
 ---
 
@@ -487,7 +489,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: writing KATA component code, choosing fixtures for a hybrid flow, or applying the Phase 3 review checklist.
 
-> Source: `.agents/skills/test-automation/SKILL.md` · phase: `unknown` · extraction strategy: A
+> Source: `.agents/skills/test-automation/SKILL.md` · phase: `unknown` · kind: `workflow` · extraction strategy: A
 
 ---
 
@@ -514,7 +516,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: resolving TMS modality, computing ROI, writing Gherkin, or wiring US-ATP-ATR-TC traceability links.
 
-> Source: `.agents/skills/test-documentation/SKILL.md` · phase: `unknown` · source: frontmatter `compact_rules` (verbatim)
+> Source: `.agents/skills/test-documentation/SKILL.md` · phase: `unknown` · kind: `workflow` · source: frontmatter `compact_rules` (verbatim)
 
 ---
 
@@ -542,4 +544,4 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: composing a specific command, wiring the canonical end-to-end Story flow, running backup/restore or a cross-site migration, or enriching the synced PBI cache.
 
-> Source: `.agents/skills/xray-cli/SKILL.md` · phase: `unknown` · extraction strategy: A
+> Source: `.agents/skills/xray-cli/SKILL.md` · phase: `unknown` · kind: `utility` · extraction strategy: A

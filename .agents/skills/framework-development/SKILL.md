@@ -4,6 +4,8 @@ description: "Framework evolution mode — evolves the QA boilerplate itself (KA
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 complementary_categories: [framework-evolution, meta-skill]
+metadata:
+  kind: workflow
 ---
 
 # Framework Development — Evolve the QA Boilerplate
@@ -26,7 +28,8 @@ The skill exists because framework-surface changes — new fixture, new layer he
 - DO NOT: bump a major version of Playwright / Bun / TypeScript without a regression run on a representative E2E suite — lockstep upgrades hide breaks in fixture lifecycle, locator engines, and type emit.
 - DO NOT: refactor `cli/install.ts` without exercising the full install flow on a clean clone. Verification on an already-installed repo proves nothing, and the installer is the one surface where a bug ships silently to every new user.
 - WHEN the chosen approach reshapes test architecture (KATA layers, a fixture API, the runner, the isolation/parallelization model, the OpenAPI/type pipeline) AND is hard to reverse: record an ADR under `.context/ADR/` after plan approval and before coding, drafted `Proposed` for the human to accept. ADRs are append-only — supersede, never rewrite.
-- DO: verify with all four checks (test, types, lint, skills) and treat any non-zero exit as REJECT — present retry / skip-and-document / abort, never auto-fix.
+- DO: verify with all four checks (test, types, lint, skills) and treat any non-zero exit as REJECT — present retry / skip-and-document / abort, never auto-fix. A skill that itself broke (a wrong step, a missing verifier, a stale rule) is reported upstream per `../agentic-qa-core/references/upstream-feedback.md`: drafted and redacted locally, filed only on explicit OK, verified with `gh issue view`.
+- WHEN the change IS a skill (a new or restructured `.agents/skills/<slug>/`): scaffold it per `../agentic-qa-core/references/skill-scaffold.md` (frontmatter incl. `metadata.kind`, per-kind files and sections, Definition of Done). `skill-creator` (T4, ask before loading) is loaded only for the test prompts and the description optimizer; the scaffold works without it. Consumer SUT context skills are NOT this skill's job: `project-context` mode `context-skill` owns them.
 - DO NOT: let a subagent write `progress.md`; it is orchestrator-only. Code subagents return one-line summaries per task, and the orchestrator does not read their diffs.
 - DO: archive the session directory only after all four verifiers pass. On REJECT it stays in place so the run can be debugged or resumed.
 
@@ -168,6 +171,8 @@ Dispatch: **Single**. The Plan subagent writes one consolidated artifact at `.se
 
 Present the plan to the user. Wait for approval before Phase 2.
 
+When the change IS a skill, the plan's Task breakdown follows `../agentic-qa-core/references/skill-scaffold.md` §2 for that kind, and the Verification checklist includes its §5 Definition of Done.
+
 **ADR seeding (framework architecture).** When the chosen approach reshapes the framework's test architecture — KATA layers, fixture APIs, the test runner, the isolation/parallelization model, or the OpenAPI/type pipeline — and the decision passes the two-gate test (architectural AND hard to reverse per `agentic-qa-core/references/adr-doctrine.md` §1), record a `.context/ADR/ADR-NNNN-<slug>.md` after the plan is approved and before Phase 2 coding. Framework evolution is meta-work: its decisions bind every test session that follows, so historicize them rather than leaving them in a one-off `plan.md` that gets archived. The plan's "Invariants touched" / "Public API delta" sections are the prime ADR candidates. Draft `Proposed`; the human accepts. Template + lifecycle: `.context/ADR/README.md`.
 
 ### Phase 2 — Code
@@ -228,7 +233,7 @@ Archive is a "close-the-loop" step, not "ship-the-code". Code is shipped by `/gi
 
 ## Session close contract
 
-**Session-footer contract (mandatory at close).** The final phase is not done until the two chat-facing blocks from `../agentic-qa-core/references/session-footer-contract.md` are printed: (1) consolidated screenshot list — repo-relative paths, verified on disk, bug annotations first — plus in-flow surfacing of every capture's path the instant it lands; (2) Session Footer listing skills/MCPs/CLIs actually used + testing levels touched, with explicit "none" entries for expected-but-untouched levels. Framing for this skill: meta. Multi-subagent sessions: each stage report carries the five footer fields (`skills_loaded`, `mcps_used`, `clis_used`, `testing_levels_touched`, `screenshots_captured`); the orchestrator compiles the footer ONCE at close. Chat only — never in a Jira comment or ATR body.
+**Session-footer contract (mandatory at close).** The final phase is not done until the two chat-facing blocks from `../agentic-qa-core/references/session-footer-contract.md` are printed: (1) consolidated screenshot list — repo-relative paths, verified on disk, bug annotations first — plus in-flow surfacing of every capture's path the instant it lands; (2) Session Footer listing skills/MCPs/CLIs actually used + testing levels touched, with explicit "none" entries for expected-but-untouched levels. Framing for this skill: meta. Multi-subagent sessions: each stage report carries the five footer fields (`skills_loaded`, `mcps_used`, `clis_used`, `testing_levels_touched`, `screenshots_captured`); the orchestrator compiles the footer ONCE at close. Chat only — never in a Jira comment or ATR body. Lessons noticed during the session are PROPOSED to `.session/<skill-slug>/<scope>/refinements.md` and never applied to a live skill, per `../agentic-qa-core/references/skill-refinement-protocol.md`; the footer's `Refinements proposed:` line counts them.
 
 ---
 

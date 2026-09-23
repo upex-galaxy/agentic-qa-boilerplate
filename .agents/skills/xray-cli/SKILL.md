@@ -5,6 +5,8 @@ license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 allowed-tools: Bash(bun xray:*)
 complementary_categories: [tms]
+metadata:
+  kind: utility
 ---
 
 # Xray CLI - Test Management

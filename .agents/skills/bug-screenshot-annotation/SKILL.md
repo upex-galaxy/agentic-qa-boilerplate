@@ -3,6 +3,8 @@ name: bug-screenshot-annotation
 description: "Turns a raw bug screenshot into a QA-style annotated evidence image — circles/ovals around the broken region, arrows, callout text boxes, a 'BUG — <KEY>' corner badge, and axis tick-marks for date/offset bugs. Use whenever a bug is visual or positional (overlapping elements, misalignment, wrong date/offset on a chart axis, a UI element in the wrong place) and a plain screenshot would need a paragraph to explain what's wrong — the annotated image should make the defect obvious at a glance, the way a QA engineer would mark it up with Snagit or Markup. Triggers on: annotate bug screenshot, mark up evidence, add circles/arrows to screenshot, clarify this bug visually, anota este bug, marca la captura, resalta el bug en la imagen. Runs 100% locally (HTML+CSS overlays rendered via a loopback-only HTTP server and captured with playwright-cli) — do NOT use for photos of physical objects or documents where the fix is inherent to an external image-editing/generative service; this skill only knows how to overlay shapes on a screenshot you already have on disk. Do NOT use for filing the bug itself (that's sprint-testing Stage 2/3) or for routine before/after screenshots that already read clearly without markup — this skill is for the specific case where a raw screenshot alone doesn't communicate the defect."
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
+metadata:
+  kind: workflow
 ---
 
 # Bug Screenshot Annotation
