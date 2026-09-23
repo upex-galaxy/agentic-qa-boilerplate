@@ -281,6 +281,27 @@ const EXTERNAL_CLIS: ReadonlyArray<{ name: string, install?: string, docs: strin
     purpose: 'email development + transactional sending',
   },
   {
+    // The STANDALONE binary. The repo also pins `varlock` as a devDependency,
+    // which is what `bun run vars:schema:check`, the pre-push warning and
+    // `setup:doctor` run through `bunx`; that copy is NOT on the PATH a
+    // harness gives an MCP server (measured: `bunx varlock` resolves from the
+    // project, a bare `varlock` does not). The binary is optional until the
+    // MCP wrapping phase makes it the server command on every host.
+    //
+    // Install paths, per varlock.dev and the 1.20.0 release assets:
+    //   macOS        brew install dmno-dev/tap/varlock
+    //   Linux/macOS  curl -sSfL https://varlock.dev/install.sh | sh -s
+    //   Windows      no PowerShell installer is published; Git Bash runs the
+    //                same install.sh (msys/mingw are recognised, installs
+    //                varlock.exe), and `npm i -g varlock` / `bun add -g varlock`
+    //                put a shim on PATH for PowerShell and cmd.
+    //                (documented, not measured on Windows)
+    name: 'varlock',
+    install: 'brew install dmno-dev/tap/varlock   # macOS. Linux: curl -sSfL https://varlock.dev/install.sh | sh -s · Windows: npm i -g varlock',
+    docs: 'https://varlock.dev/getting-started/installation',
+    purpose: 'env schema validation + secret injection (optional standalone; the devDependency covers the gates)',
+  },
+  {
     // Desktop app (Orca ADE) that also ships a scriptable `orca` CLI. Fully
     // optional: enables `/orca-orchestration` multi-session coordination.
     // The boilerplate works identically without it — one-shot subagents

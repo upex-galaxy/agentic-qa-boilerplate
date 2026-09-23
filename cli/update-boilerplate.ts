@@ -97,6 +97,13 @@ const CONFIG_CORE_FILES = ['variables.core.ts'];
 // against a template frozen at scaffold time and reports nothing to do.
 const AGENTS_DOCS_FILES = ['README.md', 'project.schema.yaml'];
 const ENV_TEMPLATE_FILES = ['.env.example'];
+// The varlock env schema, in two halves like `config/variables{.core,}.ts`:
+// `.env.core.schema` is GENERATED from cli/lib/variables-manifest.ts by
+// `bun run vars:schema` and plainly synced; `.env.schema` imports it, carries
+// the root decorators and the project's own variables, and is delivered ONCE
+// (PROTECTED_WATCHLIST below folds it into bootstrapOnlyPaths). Neither file
+// holds a value. `env-template` stays alongside until `.env.example` retires.
+const ENV_SCHEMA_FILES = ['.env.schema', '.env.core.schema'];
 // `.claude/settings.json` holds the project's permission allow/deny lists and
 // the hook wiring. Component `agent-root-config` delivers it ONCE (bootstrapOnly:
 // a project without the file gets upstream's copy, exactly like `.codex/`); once
@@ -158,6 +165,7 @@ export const COMPONENTS: Component[] = [
   // safely. Shipping it is the prerequisite for env-var drift detection — the
   // afterApply hook can only diff against an `.env.example` we have shipped.
   { name: 'env-template', type: 'file-list', paths: ['.'], files: ENV_TEMPLATE_FILES },
+  { name: 'env-schema', type: 'file-list', paths: ['.'], files: ENV_SCHEMA_FILES },
 ];
 
 // --- ARG PARSE ---
@@ -1037,6 +1045,10 @@ const PROTECTED_WATCHLIST: ProtectedWatchEntry[] = [
   { path: 'allurerc.mjs', reason: 'report name + dashboard layout adapted per project' },
   { path: 'playwright.config.ts', reason: 'projects, timeouts and reporters adapted per stack' },
   { path: 'config/variables.ts', reason: 'environment/variable map adapted per project. The instance resolver and the TMS/browser/reporting blocks moved to the synced `config/variables.core.ts`, because an adapted copy used to stop receiving resolver fixes for the host the Jira-Direct provider writes results onto.' },
+  // Same split for the env schema: the framework half (`.env.core.schema`) is
+  // generated and synced; this importer holds the project's own variables and
+  // root decorators, so it is delivered once and then only reported on.
+  { path: '.env.schema', reason: 'project-owned half of the varlock env schema (root decorators + the project\'s own variables). The framework half is the synced, generated `.env.core.schema` it imports.' },
   { path: 'tests/components/TestContext.ts', reason: 'KATA L1 base adapted to the target stack' },
   { path: 'tests/components/TestFixture.ts', reason: 'KATA L4 fixture registry adapted per project' },
   { path: 'tests/components/ApiFixture.ts', reason: 'API fixture wiring adapted per project' },

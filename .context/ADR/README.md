@@ -65,6 +65,7 @@ Who authors: a human QA architect / lead directly, **or** an AI workflow that de
 | --- | ----- | ------ | ---------- | ------------- |
 | [ADR-0001](./ADR-0001-artifact-ladder-local-cache.md) | The local cache mirrors the artifact ladder's title grammar | Accepted | — | — |
 | [ADR-0002](./ADR-0002-regression-run-record.md) | Every regression verdict gets its own run record: the RTR | Accepted | — | — |
+| [ADR-0003](./ADR-0003-env-schema-owner-varlock.md) | varlock owns the env schema; the schema ships in two files | Proposed | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first.
 
