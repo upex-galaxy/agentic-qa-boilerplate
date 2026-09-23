@@ -83,6 +83,17 @@ Beyond the per-skill workflow decks, `agentic-qa-core` ships two transversal ref
 | "How is everything named?" — artifact/test/branch/ID naming conventions                                   | `packages/decks/agentic-qa-core/naming-conventions.es.html` |
 | "How do the skills fit together?" — the E2E flow (story → refinement → dev → testing) as **inputs & outputs** per skill: what each phase reads, which skills it loads, what it produces, which Jira fields/transitions it touches | `packages/decks/agentic-qa-core/skills-io-flow.es.html`     |
 
+### CI mini-course (regression-testing)
+
+Two chaptered, quiz-driven decks teach Continuous Integration for testing on this repo's own `.github/workflows/*.yml`. Offer them by intent, in order: Part I first unless the person already writes workflows.
+
+| User intent                                                                                                   | Deck (Spanish)                                                            |
+| ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| "How does GitHub Actions work?" / "what is a job, a runner, a secret, an artifact" / "read me smoke.yml"      | `packages/decks/regression-testing/ci-pipelines-fundamentals.es.html`    |
+| "Why four suites?" / "how do results reach Xray?" / "how would the app deploy trigger our suites?" / "write my own workflow" | `packages/decks/regression-testing/ci-pipelines-architecture.es.html` |
+
+They stop where `regression-testing/how-it-works.es.html` starts (failure classification and the GO / CAUTION / NO-GO verdict); offer that deck for the analysis part.
+
 The skills-io deck is the best single answer to "what does skill X need / produce" or "show me the whole pipeline" — it renders as a Mac-style terminal with one tab per phase (arrow keys or `1-9` to switch tabs). The full deck catalog (including the academy/craft decks per skill) lives on the published homepage below.
 
 Single files (CSS + JS inlined) — they open by double-click, no server. Navigate with `←` `→`, `S` for speaker notes, `O` for the slide overview, `F` for fullscreen.
