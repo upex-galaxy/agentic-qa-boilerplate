@@ -78,7 +78,7 @@ Key points:
 
 ## 4. Daily regression — the shipped `regression.yml`
 
-Runs daily at 00:00 UTC and on `workflow_dispatch` (with `environment` and `generate_allure` inputs). Read the real file — this is the shape, not a copy:
+Runs daily at 00:00 UTC and on `workflow_dispatch` (with `environment`, `generate_allure` and `execution_key` inputs). Read the real file — this is the shape, not a copy:
 
 ```
 regression.yml
@@ -87,7 +87,9 @@ regression.yml
 │        STAGING_USER_EMAIL / STAGING_USER_PASSWORD   (secrets)
 │        TMS_PROVIDER = vars.TMS_PROVIDER || 'xray'   (repo VARIABLE, not a secret)
 │        AUTO_SYNC + XRAY_CLIENT_ID / XRAY_CLIENT_SECRET (TMS sync, optional)
-│        STP_EXECUTION_KEY                            (secret — the STR's key)
+│        STP_EXECUTION_KEY = inputs.execution_key || secrets.STP_EXECUTION_KEY
+│                 (the Execution this run imports into: the RTR by default,
+│                  the sprint-close STR when the run is the sprint close)
 ├── job: integration   → bun run test:integration  → Sync Results to TMS → uploads integration-allure-results + integration-test-results
 ├── job: e2e           → bun run test:e2e          → Sync Results to TMS → uploads e2e-allure-results + e2e-test-results
 │       (the sync step is `bun run test:sync`, gated on AUTO_SYNC == 'true' AND
@@ -99,14 +101,17 @@ regression.yml
 └── job: XrayImport   (if: always() && vars.TMS_PROVIDER == 'xray', continue-on-error)
         downloads the *-test-results artifacts → [TMS_TOOL] JUnit import into $STP_EXECUTION_KEY
         skips with an annotation when AUTO_SYNC != 'true', Xray creds are missing,
-        or STP_EXECUTION_KEY is unset; a jira-native repo skips the job silently
+        or no execution key resolved (no execution_key input AND no secret);
+        a jira-native repo skips the job silently
 ```
 
 Key points:
 - Credentials are the env-prefixed pairs (`LOCAL_*` / `STAGING_*`) matching `config/variables.ts` — there are no `TEST_USER_*` secrets, and no URL secrets: `config.baseUrl` resolves from `.agents/project.yaml` by `TEST_ENV`.
 - TMS sync (Xray) runs off `AUTO_SYNC` + `XRAY_CLIENT_ID` / `XRAY_CLIENT_SECRET`; the Jira-Direct alternative uses `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` (present in the file, commented until enabled).
 - **There are two write-back legs, one per modality, and they never both fire.** On a jira-native project the `Sync Results to TMS` step inside each test job runs `bun run test:sync` after the Playwright process has exited (`reports/atc_results.json` is written by `KataReporter.onEnd()`, too late for anything inside the run — issue #27). On an Xray project that step is skipped and the `XrayImport` job below does the import instead.
-- **The Xray write-back leg is the `XrayImport` job**, gated on `TMS_PROVIDER` (a repo VARIABLE — a job-level `if:` can read `vars` but never `secrets`). It runs `if: always()` so a failing suite still reports its results, and `continue-on-error` so a TMS outage never turns a green suite red. `STP_EXECUTION_KEY` names the **STR** Test Execution the JUnit reports import into — never the STP itself; unset means the job skips with a warning annotation rather than minting an orphan Execution.
+- **The Xray write-back leg is the `XrayImport` job**, gated on `TMS_PROVIDER` (a repo VARIABLE — a job-level `if:` can read `vars` but never `secrets`). It runs `if: always()` so a failing suite still reports its results, and `continue-on-error` so a TMS outage never turns a green suite red. `STP_EXECUTION_KEY` names **the Execution this run imports into**: the **RTR** (`RTR: {scope-id}: Regression Testing`, created by `/regression-testing` Phase 1 before the trigger) by default, the sprint-close **STR** when the run is the sprint close. Never a Test Plan (the STP or the RTP): a plan derives its status from its Executions and is never written into. The name is kept for downstream secrets; the semantics are the new ones.
+- **The `execution_key` `workflow_dispatch` input overrides the secret.** `env.STP_EXECUTION_KEY` resolves to `inputs.execution_key || secrets.STP_EXECUTION_KEY`, and that input is how `/regression-testing` passes the RTR it just created (`-f execution_key=<RTR-KEY>`). Regression, smoke and sanity all declare it.
+- **A scheduled nightly with no key skips the import with a warning.** A scheduled run has no dispatcher to mint an RTR, so `regression.yml` imports only when the secret is set. Two fixes: run the nightly through `/regression-testing` (one RTR per verdict, the intended path), or point the secret at a standing RTR for the period it covers. Neither the STP nor the RTP is ever a valid value.
 - The `allure-report` job runs `if: always()` so failures still produce a report; the Slack failure notification block exists but ships commented out.
 - The artifact name the analysis phase downloads is `merged-allure-results-<TEST_ENV>`.
 
@@ -114,17 +119,19 @@ Key points:
 
 ## 5. Smoke + sanity — the shipped `smoke.yml` and `sanity.yml`
 
-**`smoke.yml`** — daily at 02:00 UTC and on `workflow_dispatch` (`environment` input):
+**`smoke.yml`** — daily at 02:00 UTC and on `workflow_dispatch` (`environment` and `execution_key` inputs):
 
 - Same env block as regression (`TEST_ENV` selector + `LOCAL_*` / `STAGING_*` credential secrets).
 - Single job: `bun run pw:install` → `bun run test:smoke` (the `smoke-ui` + `smoke-api` Playwright projects — `@critical` tagged tests, ONE project per surface so a UI `storageState` never reaches an API test).
 - Publishes its Allure report per environment; the run summary prints the published URL (`.../<TEST_ENV>/smoke/`).
+- **Imports into the TMS ONLY when `execution_key` is passed explicitly.** `env.STP_EXECUTION_KEY` is `inputs.execution_key` alone, never the shared secret, so a smoke run can never write into the regression execution (the skill's R6: smoke and regression results are never mixed). No key → the sync step is skipped, by design.
 
-**`sanity.yml`** — `workflow_dispatch` only, with inputs for `environment`, test type, `grep`, and `test_file`:
+**`sanity.yml`** — `workflow_dispatch` only, with inputs for `environment`, test type, `grep`, `test_file`, and `execution_key`:
 
 - Routes to `bun run test`, `bun run test:e2e`, or `bun run test:integration` with the optional `--grep` filter, or runs a single `test_file`.
 - `grep` and `test_file` are mutually exclusive — passing both silently ignores one (see the skill's Gotchas).
 - Uploads `sanity-playwright-report` + test-results artifacts; report publishing supports both the private Portal and GitHub Pages paths.
+- Same TMS rule as smoke: imports only with an explicit `execution_key`, never through the shared secret, so a one-file sanity run never flips Test Runs inside a regression execution.
 
 Neither shipped suite uses sharding or a multi-browser matrix today — the suite runs single-worker (see §6). The sharding recipes in §9 are the scaling path for a downstream project whose suite outgrows one runner.
 
@@ -218,7 +225,7 @@ Repository Settings → Secrets → Actions (the names match `config/variables.t
 | `LOCAL_USER_EMAIL` / `LOCAL_USER_PASSWORD` | Test account for `TEST_ENV=local` |
 | `STAGING_USER_EMAIL` / `STAGING_USER_PASSWORD` | Test account for `TEST_ENV=staging` |
 | `AUTO_SYNC` | Master switch for the TMS write-back — `'true'` to enable. Gates both the `Sync Results to TMS` step and the `XrayImport` job. Absent/anything else = every suite runs with sync off (the workflows default it to `'false'`) |
-| `STP_EXECUTION_KEY` | Key of the **STR** — the Test Execution linked to the sprint's STP, filed under the `QA Test Artifacts` epic. **NOT the STP's own key**: a Test Plan derives its status from Executions and is never written into, so CI refuses to import without a real Execution key and skips with a warning |
+| `STP_EXECUTION_KEY` | **The Execution this run imports into**: the RTR (`RTR: {scope-id}: Regression Testing`, `testPlan` → RTP) by default, the sprint-close STR (`testPlan` → STP + RTP) when the run is the sprint close; both filed under the `QA Test Artifacts` epic. Name kept for downstream secrets. The `execution_key` dispatch input overrides it (that is how `/regression-testing` passes the RTR it created); as a secret it only serves a scheduled run with no dispatcher. **NOT a Test Plan key** (STP or RTP): a plan derives its status from Executions and is never written into, so CI refuses to import without a real Execution key and skips with a warning. Smoke and sanity never read this secret |
 | `XRAY_CLIENT_ID` / `XRAY_CLIENT_SECRET` | Xray Cloud API credentials (TMS sync, Modality jira-xray) |
 | `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` | Jira-Direct TMS sync alternative (commented in the workflows until enabled) |
 | `PORTAL_URL` / `PORTAL_PROJECT` / `PORTAL_API_KEY`, `R2_*` | Private report portal publishing (optional; see `references/private-hosting-setup.md`) |
