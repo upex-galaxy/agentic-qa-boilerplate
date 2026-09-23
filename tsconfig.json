@@ -20,6 +20,7 @@
     "cli/**/*.ts",
     "packages/**/*.ts",
     "playwright.config.ts",
+    "env.d.ts",
     "eslint.config.js",
     "eslint.config.base.js"
   ],

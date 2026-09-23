@@ -59,6 +59,14 @@ node_modules/
 # enumerate the name someone's editor happened to pick.
 .env*
 !.env.example
+# The varlock env schema travels: the synced core half and the project-owned
+# importer. Both declare NAMES and types only, never a value (see the header
+# of cli/lib/env-schema.ts). `.env.local` and every other `.env*` stay denied.
+!.env.schema
+!.env.core.schema
+# Written by varlock on every `varlock load` from the schema (@generateTsTypes),
+# so it is generated output: regenerate, never commit, exactly as varlock docs.
+env.d.ts
 # Force-track .envrc (overrides global ~/.gitignore_global, which often
 # blanket-ignores it). Our .envrc has no secrets — it only sources .env.
 !.envrc
