@@ -27,7 +27,7 @@ them. Edit decks here only; the published site is regenerated on push.
 | `sprint-testing/` | Stages 1-3 — the per-ticket QA workflow, defect management, trifuerza exploration |
 | `test-documentation/` | Stage 4 — TMS authoring + ROI, plus the test-case craft deck |
 | `test-automation/` | Stage 5 — KATA + Playwright automation, coding decks, dev craft, Dojo labs |
-| `regression-testing/` | Stage 6 — CI suite execution and the GO / CAUTION / NO-GO verdict |
+| `regression-testing/` | Stage 6 — CI suite execution and the GO / CAUTION / NO-GO verdict, plus the two-part CI mini-course (`ci-pipelines-fundamentals` → `ci-pipelines-architecture`: GitHub Actions taught on this repo's own workflows) |
 | `xray-cli/` | The Xray-for-Jira workflow as the TMS side of the pipeline |
 | `orca-orchestration/` | Multi-session orchestration: one conductor, a fleet of supervised workers |
 
