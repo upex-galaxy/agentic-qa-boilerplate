@@ -244,7 +244,7 @@ Project-owned and project-dependency skills are named explicitly. Community skil
 | `testing-component` | `playwright-best-practices` (component testing section) | `test-automation` (rare — when the project has component tests) |
 | `accessibility` | `playwright-best-practices` (axe-core section) | `test-automation` (a11y suites), `sprint-testing` (manual a11y checks) |
 | `vcs` | (no T3/T4 — `git-flow-master` is T1 and covers `gh` CLI usage natively) | `git-flow-master`, `regression-testing` (CI run inspection) |
-| `runtime` | `bun` | `framework-development`, `test-automation` (script / bundler tweaks) |
+| `automation-cli` | `bun` | `framework-development`, `test-automation` (script / bundler tweaks) |
 | `issue-tracker` | (acli is T1) | `sprint-testing`, `test-documentation` |
 | `tms` | (xray-cli is T1; acli covers Modality jira-native) | `test-documentation`, `sprint-testing` |
 | `meta-skill` | `skill-creator`, `find-skills` | only on user request (find-skills auto-invoked per §8.2 as last-resort); also `framework-development` (skill evolution) and `session-handoff` (session continuity) |
