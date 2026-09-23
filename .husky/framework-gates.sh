@@ -64,6 +64,21 @@ framework_gates_pre_commit() {
     }
   fi
 
+  # env-schema freshness gate — only runs when staged files affect it, and only
+  # where the script exists (same two guards as the project-schema gate above).
+  # `.env.core.schema` is GENERATED from cli/lib/variables-manifest.ts; the check
+  # also loads the committed schema pair through the pinned varlock, so a
+  # varlock bump that breaks the import fails here, not in someone's session.
+  if echo "$_fg_staged" | grep -qE '^(cli/lib/variables-manifest\.ts$|cli/lib/env-schema\.ts$|scripts/env-schema\.ts$|\.env\.core\.schema$|\.env\.schema$|package\.json$)' \
+    && grep -q '"vars:schema:check"' package.json 2>/dev/null; then
+    bun run vars:schema:check || {
+      echo ""
+      echo "❌ .env.core.schema is stale or the schema pair does not load. Fix:"
+      echo "   bun run vars:schema && git add .env.core.schema"
+      exit 1
+    }
+  fi
+
   # skill-registry freshness gate — only runs when staged files affect it.
   if echo "$_fg_staged" | grep -qE '^(\.agents/skills/.+/SKILL\.md$|scripts/build-skill-registry\.ts$|\.agents/skills/REGISTRY\.md$)'; then
     bun run skills:registry:check || {
@@ -123,6 +138,15 @@ framework_gates_pre_commit() {
 #                                and exits 0 (absence of data is not drift), and divergences
 #                                listed in git_strategy.policy.accepted_divergences report
 #                                as ACCEPTED, not drift. Only UNACCEPTED drift blocks a push.
+#   - varlock load               the developer's own .env against the committed env schema
+#                                (.env.schema + .env.core.schema). WARN-ONLY in this phase: it
+#                                describes the developer's machine, like vars:env:check's drift
+#                                rule, and the runtime does not yet go through varlock. Runs
+#                                only when the schema and the pinned devDependency are both
+#                                present, so a project synced to this gates file but not to
+#                                this package.json is untouched. Output is redacted by varlock
+#                                (sensitive values never print); we still send it to /dev/null
+#                                and name the command to rerun, so the hook stays quiet on green.
 #
 # Commands are still spelled out here rather than behind one aggregate npm script:
 # every command below already exists in every scaffolded project, so this function
@@ -136,5 +160,21 @@ framework_gates_pre_push() {
     && bun run skills:registry:check \
     && bun run kata:manifest:check \
     && bun run agents:compat:check \
-    && bun run git:policy verify
+    && bun run git:policy verify \
+    && framework_gate_varlock_warn
+}
+
+# The warn-only env-schema validation described above. A function so the
+# `&&` chain in framework_gates_pre_push stays one expression: this never
+# returns non-zero, because a red here is advice, not a block, until the
+# runtime itself goes through varlock.
+framework_gate_varlock_warn() {
+  if [ -f .env.schema ] && grep -q '"varlock"' package.json 2>/dev/null; then
+    if ! bunx varlock load --agent >/dev/null 2>&1; then
+      echo ""
+      echo "⚠️  varlock: your .env does not satisfy .env.schema (warn-only for now)."
+      echo "   See what is missing (values are redacted):  bunx varlock load"
+    fi
+  fi
+  return 0
 }
