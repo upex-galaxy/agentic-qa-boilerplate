@@ -4,6 +4,8 @@ description: "Acts as a QA Lead / QA Architect reviewing a pull request's test-a
 license: MIT
 compatibility: [claude-code, opencode]
 complementary_categories: [meta-skill]
+metadata:
+  kind: workflow
 ---
 
 # PR Review Lead — QA Architect / Lead Reviewer

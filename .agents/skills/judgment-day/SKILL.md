@@ -4,6 +4,7 @@ description: "Trigger: judgment day, dual review, adversarial review, juzgar. Ru
 license: Apache-2.0
 complementary_categories: [meta-skill]
 metadata:
+  kind: workflow
   author: gentleman-programming
   version: "1.4"
   vendored_from: "https://github.com/Gentleman-Programming/gentle-ai"

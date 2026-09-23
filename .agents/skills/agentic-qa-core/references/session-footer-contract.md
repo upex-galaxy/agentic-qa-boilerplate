@@ -44,6 +44,7 @@ Printed once, at session/flow close, in chat:
 - **MCPs used** — every MCP server actually *called* (not just connected).
 - **CLIs used** — every CLI tool actually invoked.
 - **Testing levels touched** — one line per testing-pyramid level the session actually exercised, each with a one-clause note of WHAT was done there. Say **"none"** explicitly for an expected-but-untouched level — never omit it silently, and never pad coverage that didn't happen.
+- **Refinements proposed** — `N → <path>` where the path is the running skill's `.session/<skill-slug>/<scope>/refinements.md` (`skill-refinement-protocol.md` §2). `0` when none, and no path. The proposals are never applied by the session: the line exists so the human knows there is something to review.
 
 Template:
 
@@ -58,6 +59,7 @@ Testing levels touched:
 - API — exercised via curl (POST /orders happy + 400 matrix); RLS probe VERIFIED
 - Unit — none
 - Accessibility / Performance / Security — none (out of scope for this ticket)
+Refinements proposed: 1 → .session/sprint-testing/PROJ-277/refinements.md
 ```
 
 ### Framing per skill type

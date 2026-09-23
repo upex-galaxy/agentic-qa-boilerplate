@@ -4,6 +4,8 @@ description: "Compact an entire agent session into a handoff document so a NEW s
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 complementary_categories: [meta-skill, orchestration]
+metadata:
+  kind: workflow
 ---
 
 # Session Handoff

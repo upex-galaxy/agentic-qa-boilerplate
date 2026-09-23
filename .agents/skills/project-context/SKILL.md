@@ -1,9 +1,11 @@
 ---
 name: project-context
-description: "Generate or refresh the canonical business context maps and master test plan. Use for business-data-map, business-feature-map, business-api-map, master-test-plan, refresh project context, refresh all context, entity map, feature inventory, API business map, or risk-ranked test roadmap. Routes exactly one mode at a time unless refresh-all is explicit. UPDATE mode always shows a diff and waits for approval before overwriting."
+description: "Generate or refresh the canonical business context maps and master test plan. Use for business-data-map, business-feature-map, business-api-map, master-test-plan, refresh project context, refresh all context, entity map, feature inventory, API business map, or risk-ranked test roadmap. Also scaffolds a project-owned <aspect>-context skill over an existing map (context-skill mode). Routes exactly one mode at a time unless refresh-all is explicit. UPDATE mode always shows a diff and waits for approval before overwriting."
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 complementary_categories: [testing-e2e, testing-api, meta-skill]
+metadata:
+  kind: workflow
 ---
 
 # Project Context
@@ -12,7 +14,8 @@ Own the four regenerative project-context artifacts without duplicating their wo
 
 ## Compact Rules
 
-- Exactly ONE mode per run: `data` · `features` · `api` · `test-plan` · `refresh-all`. Load only that mode's reference; never open a second one in the same pass.
+- Exactly ONE mode per run: `data` · `features` · `api` · `test-plan` · `refresh-all` · `context-skill`. Load only that mode's reference; never open a second one in the same pass.
+- `context-skill` scaffolds the JUDGMENT layer over a map the other modes produced (`../agentic-qa-core/references/skill-scaffold.md` §3): it cites `.context/` paths and never copies their content; the map must exist first. `refresh-all` never includes it.
 - Mode → reference → output: `data` → `references/data.md` → `.context/business/business-data-map.md` · `features` → `references/features.md` → `.context/business/business-feature-map.md` · `api` → `references/api.md` → `.context/business/business-api-map.md` · `test-plan` → `references/test-plan.md` → `.context/master-test-plan.md`.
 - User did not name a mode → ASK. NEVER infer `refresh-all` from a generic "refresh the context" request.
 - `refresh-all` runs strictly `data` → `features` → `api` → `test-plan`, one at a time. Each reference's own validation and approval gate must close before the next is loaded. Never skip ahead.
@@ -35,6 +38,7 @@ Resolve one mode from the invocation. Load only the reference named in that row.
 | `api` | `business-api-map`, API business map | `references/api.md` | `.context/business/business-api-map.md` |
 | `test-plan` | `master-test-plan`, risk-ranked test roadmap | `references/test-plan.md` | `.context/master-test-plan.md` |
 | `refresh-all` | refresh all project context | all four references, one at a time | all four outputs |
+| `context-skill` | `context skill`, scaffold `<aspect>-context`, judgment layer over a map | `references/context-skill.md` | `.agents/skills/<aspect>-context/` (project-owned, never shipped upstream) |
 
 If the user does not identify a mode, ask which artifact to refresh. Do not infer `refresh-all` from a generic request.
 
