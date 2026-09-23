@@ -363,6 +363,16 @@ XRAY_PROJECT_KEY=
 STP_EXECUTION_KEY=          # key of the STR (not the STP) that results are imported onto
 ```
 
+Every variable also has a **typed schema**, read by [varlock](https://varlock.dev): `.env.core.schema` (generated from `cli/lib/variables-manifest.ts`, synced by `bun run up`) plus `.env.schema` (yours: root decorators and the variables your project-under-test adds). Neither holds a value. Validate your `.env` against it with sensitive values redacted:
+
+```bash
+bunx varlock load --agent      # exit 0 = every required item for your TEST_ENV is set
+bunx varlock explain TEST_ENV  # where one value comes from
+bun run vars:schema            # regenerate .env.core.schema after editing the manifest
+```
+
+The schema is a gate today (pre-commit freshness, pre-push warn-only, first step of `build.yml`); the runtime still reads `.env` directly. The standalone `varlock` binary is optional at this stage: the pinned devDependency covers every gate. Install it for later phases with `brew install dmno-dev/tap/varlock` (macOS), `curl -sSfL https://varlock.dev/install.sh | sh -s` (Linux) or `npm i -g varlock` (Windows PowerShell / cmd; documented by varlock, not measured here).
+
 ### (b) Runtime URLs — `config/variables.ts`
 
 Update `envDataMap` in `config/variables.ts` with your application URLs. The `Environment` type currently accepts `local` and `staging`; extend the type when you need a third environment.
