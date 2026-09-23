@@ -4,6 +4,8 @@ description: "Orchestrates pre-sprint Shift-Left QA on a batch of backlog Storie
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 complementary_categories: [testing-e2e, issue-tracker, tms]
+metadata:
+  kind: workflow
 ---
 
 ## Inputs

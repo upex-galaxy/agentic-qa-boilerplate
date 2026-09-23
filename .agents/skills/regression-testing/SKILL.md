@@ -4,6 +4,8 @@ description: "Execute regression test suites via CI/CD, analyze results, classif
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 complementary_categories: [testing-e2e, ci-cd]
+metadata:
+  kind: workflow
 ---
 
 ## Forbidden invocations

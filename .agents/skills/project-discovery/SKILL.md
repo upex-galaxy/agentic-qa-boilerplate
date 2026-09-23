@@ -4,6 +4,8 @@ description: "Onboard a project through four discovery phases: Constitution, Arc
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 complementary_categories: [meta-skill]
+metadata:
+  kind: workflow
 ---
 
 # Project Discovery — Onboarding Orchestrator

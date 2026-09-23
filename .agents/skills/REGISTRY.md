@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-09-22T19:53:37.031Z`
+> Generated: `2026-09-23T09:53:25.202Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -34,7 +34,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: composing a specific command, publishing rich text, running the REST PUT workaround, or working any surface outside Jira work items.
 
-> Source: `.agents/skills/acli/SKILL.md` · phase: `unknown` · extraction strategy: A
+> Source: `.agents/skills/acli/SKILL.md` · phase: `unknown` · kind: `utility` · extraction strategy: A
 
 ---
 
@@ -50,7 +50,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
 
-> Source: `.agents/skills/adapt-framework/SKILL.md` · phase: `unknown` · extraction strategy: B
+> Source: `.agents/skills/adapt-framework/SKILL.md` · phase: `unknown` · kind: `workflow` · extraction strategy: B
 
 ---
 
@@ -72,7 +72,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: you need the full table of hosted references and who cites each one, the deck-hosting details, or the exact `## Dependencies` block shape to add to a skill.
 
-> Source: `.agents/skills/agentic-qa-core/SKILL.md` · phase: `unknown` · extraction strategy: A
+> Source: `.agents/skills/agentic-qa-core/SKILL.md` · phase: `unknown` · kind: `core` · extraction strategy: A
 
 ---
 
@@ -97,7 +97,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: walking the full 4-phase new-project setup, listing env vars or MCPs in detail, or answering which deck covers a given topic.
 
-> Source: `.agents/skills/agentic-qa-onboard/SKILL.md` · phase: `bootstrap` · extraction strategy: A
+> Source: `.agents/skills/agentic-qa-onboard/SKILL.md` · phase: `bootstrap` · kind: `workflow` · extraction strategy: A
 
 ---
 
@@ -119,7 +119,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: building the annotation HTML, choosing shape types, or handling a case the local render cannot cover (e.g. a photo of physical signage that would need anonymization).
 
-> Source: `.agents/skills/bug-screenshot-annotation/SKILL.md` · phase: `unknown` · extraction strategy: A
+> Source: `.agents/skills/bug-screenshot-annotation/SKILL.md` · phase: `unknown` · kind: `workflow` · extraction strategy: A
 
 ---
 
@@ -144,7 +144,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: writing the plan artifact, batching Code-phase tasks, resuming an interrupted session, or reading the ALLOWED/FORBIDDEN path tables themselves.
 
-> Source: `.agents/skills/framework-development/SKILL.md` · phase: `unknown` · extraction strategy: A
+> Source: `.agents/skills/framework-development/SKILL.md` · phase: `unknown` · kind: `workflow` · extraction strategy: A
 
 ---
 
@@ -171,7 +171,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: running Strategy Setup, resolving a specific conflict type, picking a base branch or branch prefix for an unfamiliar strategy, or setting up an isolated worktree.
 
-> Source: `.agents/skills/git-flow-master/SKILL.md` · phase: `implementation` · extraction strategy: A
+> Source: `.agents/skills/git-flow-master/SKILL.md` · phase: `implementation` · kind: `workflow` · extraction strategy: A
 
 ---
 
@@ -194,7 +194,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: the mode is ambiguous, a dry-run diff or migration audit looks wrong, or you need the selected reference's step-by-step phases and verification list.
 
-> Source: `.agents/skills/jira-administration/SKILL.md` · phase: `unknown` · extraction strategy: A
+> Source: `.agents/skills/jira-administration/SKILL.md` · phase: `unknown` · kind: `workflow` · extraction strategy: A
 
 ---
 
@@ -224,7 +224,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
 
-> Source: `.agents/skills/judgment-day/SKILL.md` · phase: `unknown` · extraction strategy: B
+> Source: `.agents/skills/judgment-day/SKILL.md` · phase: `unknown` · kind: `workflow` · extraction strategy: B
 
 ---
 
@@ -254,7 +254,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: starting a fleet cold, arbitrating a claim, choosing a topology, recovering a Run from a previous session, or writing an unattended automation.
 
-> Source: `.agents/skills/orca-orchestration/SKILL.md` · phase: `unknown` · source: frontmatter `compact_rules` (verbatim)
+> Source: `.agents/skills/orca-orchestration/SKILL.md` · phase: `unknown` · kind: `workflow` · source: frontmatter `compact_rules` (verbatim)
 
 ---
 
@@ -279,7 +279,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: applying the severity rubric or score weighting, probing an external repo for its doctrine, or drafting the posting flow itself.
 
-> Source: `.agents/skills/pr-review-lead/SKILL.md` · phase: `unknown` · extraction strategy: A
+> Source: `.agents/skills/pr-review-lead/SKILL.md` · phase: `unknown` · kind: `workflow` · extraction strategy: A
 
 ---
 
@@ -300,7 +300,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: the requested mode is ambiguous, a `refresh-all` chain fails mid-sequence, or you need the selected reference's own analysis steps and validation gate.
 
-> Source: `.agents/skills/project-context/SKILL.md` · phase: `unknown` · extraction strategy: A
+> Source: `.agents/skills/project-context/SKILL.md` · phase: `unknown` · kind: `workflow` · extraction strategy: A
 
 ---
 
@@ -326,7 +326,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: running any phase's sub-steps, applying a completion gate's content checks, or resolving the pre-`adapt-framework` prerequisite list.
 
-> Source: `.agents/skills/project-discovery/SKILL.md` · phase: `unknown` · extraction strategy: A
+> Source: `.agents/skills/project-discovery/SKILL.md` · phase: `unknown` · kind: `workflow` · extraction strategy: A
 
 ---
 
@@ -352,7 +352,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: driving the CI commands, applying the GO/CAUTION/NO-GO scoring table, resolving a borderline classification, wiring the TMS artifacts, or writing the report.
 
-> Source: `.agents/skills/regression-testing/SKILL.md` · phase: `unknown` · extraction strategy: A
+> Source: `.agents/skills/regression-testing/SKILL.md` · phase: `unknown` · kind: `workflow` · extraction strategy: A
 
 ---
 
@@ -382,7 +382,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
 
-> Source: `.agents/skills/session-handoff/SKILL.md` · phase: `unknown` · extraction strategy: B
+> Source: `.agents/skills/session-handoff/SKILL.md` · phase: `unknown` · kind: `workflow` · extraction strategy: B
 
 ---
 
@@ -404,7 +404,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: running the batch grooming pipeline, writing the per-Story `shift-left-refinement.md`, or handling the PO/Dev handoff.
 
-> Source: `.agents/skills/shift-left-testing/SKILL.md` · phase: `unknown` · extraction strategy: A
+> Source: `.agents/skills/shift-left-testing/SKILL.md` · phase: `unknown` · kind: `workflow` · extraction strategy: A
 
 ---
 
@@ -445,7 +445,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: starting a sprint cold, resuming a session, or handling a bug-triage / sprint-wide flow not covered by the rules above.
 
-> Source: `.agents/skills/sprint-testing/SKILL.md` · phase: `unknown` · source: frontmatter `compact_rules` (verbatim)
+> Source: `.agents/skills/sprint-testing/SKILL.md` · phase: `unknown` · kind: `workflow` · source: frontmatter `compact_rules` (verbatim)
 
 ---
 
@@ -463,7 +463,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
 
-> Source: `.agents/skills/sync-ai-context/SKILL.md` · phase: `unknown` · extraction strategy: B
+> Source: `.agents/skills/sync-ai-context/SKILL.md` · phase: `unknown` · kind: `workflow` · extraction strategy: B
 
 ---
 
@@ -485,7 +485,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: writing KATA component code, choosing fixtures for a hybrid flow, or applying the Phase 3 review checklist.
 
-> Source: `.agents/skills/test-automation/SKILL.md` · phase: `unknown` · extraction strategy: A
+> Source: `.agents/skills/test-automation/SKILL.md` · phase: `unknown` · kind: `workflow` · extraction strategy: A
 
 ---
 
@@ -512,7 +512,7 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: resolving TMS modality, computing ROI, writing Gherkin, or wiring US-ATP-ATR-TC traceability links.
 
-> Source: `.agents/skills/test-documentation/SKILL.md` · phase: `unknown` · source: frontmatter `compact_rules` (verbatim)
+> Source: `.agents/skills/test-documentation/SKILL.md` · phase: `unknown` · kind: `workflow` · source: frontmatter `compact_rules` (verbatim)
 
 ---
 
@@ -540,4 +540,4 @@ Skills indexed: 21
 
 **Read full SKILL.md when**: composing a specific command, wiring the canonical end-to-end Story flow, running backup/restore or a cross-site migration, or enriching the synced PBI cache.
 
-> Source: `.agents/skills/xray-cli/SKILL.md` · phase: `unknown` · extraction strategy: A
+> Source: `.agents/skills/xray-cli/SKILL.md` · phase: `unknown` · kind: `utility` · extraction strategy: A

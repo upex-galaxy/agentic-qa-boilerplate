@@ -4,6 +4,8 @@ description: "Framework evolution mode — evolves the QA boilerplate itself (KA
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 complementary_categories: [framework-evolution, meta-skill]
+metadata:
+  kind: workflow
 ---
 
 # Framework Development — Evolve the QA Boilerplate

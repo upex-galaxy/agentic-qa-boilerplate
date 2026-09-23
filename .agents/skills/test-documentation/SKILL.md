@@ -4,6 +4,8 @@ description: "Analyze, prioritize, and document test cases in TMS (Jira/Xray), o
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 complementary_categories: [tms, issue-tracker]
+metadata:
+  kind: workflow
 # compact_rules is consumed VERBATIM by scripts/build-skill-registry.ts (frontmatter-first,
 # no truncation). Keep in sync with the binding doctrine below and in references/.
 compact_rules: |

@@ -4,6 +4,8 @@ description: "Generate or refresh the canonical business context maps and master
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 complementary_categories: [testing-e2e, testing-api, meta-skill]
+metadata:
+  kind: workflow
 ---
 
 # Project Context

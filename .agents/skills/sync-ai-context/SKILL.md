@@ -4,6 +4,8 @@ description: "Synchronize AI-critical repository documents against current conte
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 complementary_categories: [meta-skill]
+metadata:
+  kind: workflow
 ---
 
 # Sync AI Context

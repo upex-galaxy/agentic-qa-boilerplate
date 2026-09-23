@@ -4,6 +4,8 @@ description: "Plan, write, and review automated tests following KATA (Komponent 
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 complementary_categories: [testing-e2e, testing-api, testing-component, automation-cli, accessibility]
+metadata:
+  kind: workflow
 ---
 
 ## Forbidden invocations

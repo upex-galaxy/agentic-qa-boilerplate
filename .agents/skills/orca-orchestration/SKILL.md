@@ -4,6 +4,8 @@ description: "Multi-session agent orchestration for this repo: one conductor ses
 license: MIT
 compatibility: [claude-code, codex, opencode]
 complementary_categories: [orchestration]
+metadata:
+  kind: workflow
 # compact_rules is consumed VERBATIM by scripts/build-skill-registry.ts (frontmatter-first,
 # no truncation). Keep in sync with the doctrine below and in references/.
 compact_rules: |

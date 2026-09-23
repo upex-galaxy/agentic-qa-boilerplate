@@ -4,6 +4,8 @@ description: "Foundation skill that hosts shared references cited by other workf
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 complementary_categories: [meta-skill]
+metadata:
+  kind: core
 ---
 
 # Agentic QA Core — Foundation reference host

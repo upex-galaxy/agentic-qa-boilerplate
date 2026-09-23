@@ -5,6 +5,8 @@ license: MIT
 compatibility: [claude-code, cursor, codex, opencode]
 allowed-tools: Bash(acli:*)
 complementary_categories: [issue-tracker]
+metadata:
+  kind: utility
 ---
 
 # Atlassian CLI (`acli`)

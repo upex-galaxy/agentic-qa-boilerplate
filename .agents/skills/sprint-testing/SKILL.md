@@ -4,6 +4,8 @@ description: "Orchestrates in-sprint manual QA per issue across Stages 1 (Planni
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 complementary_categories: [testing-e2e, testing-api, issue-tracker]
+metadata:
+  kind: workflow
 # compact_rules is consumed VERBATIM by scripts/build-skill-registry.ts (frontmatter-first,
 # no truncation). Keep in sync with the binding doctrine below and in references/.
 compact_rules: |

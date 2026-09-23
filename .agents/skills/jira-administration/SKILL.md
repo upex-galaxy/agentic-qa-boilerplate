@@ -4,6 +4,8 @@ description: "Run bounded Jira administration workflows for project Components o
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 complementary_categories: [issue-tracker, meta-skill]
+metadata:
+  kind: workflow
 ---
 
 # Jira Administration
