@@ -618,7 +618,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <tbody>
         <tr><td><b>Planning</b></td><td><b>Solo outlines</b> en el ATP (nombre + 1 línea). Sin issues <span class="mono">Test</span>: un Test nativo es documentación y espera al gate de Documentation.</td><td><b>Crea + ejecuta</b> issues <span class="mono">Test</span> para los outlines, a detalle ejecutable, agrupados en el ATS (Test Set per-Story) y ejecutados vía un Test Execution — el Test ES la unidad de ejecución de Xray.</td></tr>
         <tr><td><b>Execution</b></td><td>Corre los outlines + explora más allá; PASS/FAIL en la memoria de sesión.</td><td>Ejecuta los Tests + explora. Una sonda exploratoria se vuelve Test solo si halló un defecto o vale repetirla.</td></tr>
-        <tr><td><b>Documentation</b></td><td><b>Crea</b> Tests solo para lo regression-worthy, tras el ROI.</td><td><b>Selecciona + promueve</b> al <b>Regression Test Plan (RTP)</b> — el <span class="mono">Test Plan</span> long-lived del proyecto — + Test Set, y los enriquece.</td></tr>
+        <tr><td><b>Documentation</b></td><td><b>Crea</b> Tests solo para lo regression-worthy, tras el ROI.</td><td><b>Selecciona + promueve</b> al <b>Regression Test Plan (RTP)</b> — el <span class="mono">Test Plan</span> long-lived del proyecto, contra el que <span class="mono">/regression-testing</span> escribe cada RTR — + Test Set, y los enriquece.</td></tr>
       </tbody>
     </table>
     <div class="grid g2 mt-m">
@@ -747,7 +747,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <li>Local: el par de sesión de siempre en <span class="mono">.session/sprint-testing/sprint-&lt;N&gt;/</span> — <span class="mono">plan.md</span> (scope, waves, asignación) y <span class="mono">progress.md</span> (append-only, una entrada por issue cerrado).</li>
         <li>Loop: primer issue <b>PENDING</b> de Wave 1 → los mismos 4 despachos → resumen por issue → <b>tu OK</b> para el siguiente.</li>
         <li>STOP en TOOL FAILURE · ⏸ en BUG_FOUND bloqueante.</li>
-        <li><b>Cierre del sprint:</b> se crea el <span class="mono">STR: Sprint#{N}: Regression Testing</span> como recap de resultados y el STP se cierra.</li>
+        <li><b>Cierre del sprint:</b> se crea el <span class="mono">STR: Sprint#{N}: Regression Testing</span> como recap de resultados y el STP se cierra. Las corridas de regresión durante el sprint no son el STR: cada una deja su propio RTR, que pertenece a <span class="mono">/regression-testing</span>.</li>
       </ul>
       <div class="stack">
         <div class="card card-accent"><p class="lbl">El estado que ve el equipo = el STP</p><p class="small mt-s">La <b>descripción</b> del STP lleva el plan estable (un solo escritor, read-first); los <b>comentarios</b> llevan el progreso append-only, uno por issue cerrado. Si el log de comentarios y el ATR de una Story se contradicen, <b>manda el ATR</b>.</p></div>

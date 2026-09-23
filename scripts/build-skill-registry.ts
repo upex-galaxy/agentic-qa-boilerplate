@@ -83,6 +83,8 @@ interface SkillFrontmatter {
   name?: string
   description?: string
   phase?: string
+  /** `metadata.kind` is the purpose axis (context / workflow / utility / core); gated by `skills:check`. */
+  metadata?: { kind?: string }
   compact_rules?: unknown
 }
 
@@ -422,7 +424,7 @@ function renderEntry(entry: SkillEntry): string {
   const strategyLabel = entry.strategy === 'frontmatter'
     ? 'source: frontmatter `compact_rules` (verbatim)'
     : `extraction strategy: ${entry.strategy}`;
-  lines.push(`> Source: \`${entry.path}\` · phase: \`${entry.frontmatter.phase ?? 'unknown'}\` · ${strategyLabel}`);
+  lines.push(`> Source: \`${entry.path}\` · phase: \`${entry.frontmatter.phase ?? 'unknown'}\` · kind: \`${entry.frontmatter.metadata?.kind ?? 'unknown'}\` · ${strategyLabel}`);
   return lines.join('\n');
 }
 

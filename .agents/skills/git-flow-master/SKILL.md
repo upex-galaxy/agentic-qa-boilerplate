@@ -5,6 +5,8 @@ license: MIT
 compatibility: [claude-code, opencode]
 phase: implementation
 complementary_categories: []
+metadata:
+  kind: workflow
 ---
 
 <!-- Model preferences (advisory; dispatchers may use to route) -->

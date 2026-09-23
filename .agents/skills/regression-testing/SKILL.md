@@ -4,6 +4,8 @@ description: "Execute regression test suites via CI/CD, analyze results, classif
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 complementary_categories: [testing-e2e, ci-cd]
+metadata:
+  kind: workflow
 ---
 
 ## Forbidden invocations
@@ -41,8 +43,10 @@ Three phases, always in this order: **Execute → Analyze → Report**. Do not s
 - DO NOT: emit GO while any REGRESSION-class failure stands. Hard vetoes regardless of score: any `@critical` test failing, any HIGH/CRITICAL-severity regression, or a pass rate below 90%.
 - DO: file only CONFIRMED product failures — the REGRESSION class, plus a NEW TEST failure once manually confirmed to be a real defect. FLAKY, ENVIRONMENT and KNOWN ISSUE get no issue at all. Triage decides WHETHER to file; the defect-management doctrine decides the type and the fields.
 - DO NOT: open a GitHub issue for a quality failure. It is filed in the issue tracker, parented to the QA Defect Management process epic and linked to the source Story — never to a product or dev epic.
-- DO: create every Test Execution with its Test Environment (from `active_env`) and `assignee` = self at create time, close the STR only AFTER the verdict is written, and leave the RTP at its ready status — a suite run never completes the plan it ran from.
-- DO NOT: invent a sprint number. Take `N` from the user or from the STP's own scope-id; a guessed `N` forks a duplicate STP/STR pair. Nothing found and nothing given → ask before creating at sprint altitude.
+- DO: create the RTR (Regression Test Results, a Test Execution: `RTR: {scope-id}: Regression Testing`, parent QA Test Artifacts, Test Environment set, assignee self, `testPlan` → RTP) BEFORE triggering CI, persist its key beside `RUN_ID`, and pass it as the `execution_key` dispatch input. One RTR per verdict. The STR is created or completed ONLY when the run is the sprint close (then it links to both the STP and the RTP).
+- DO NOT: import a regular regression run into the sprint STR, and never let smoke or sanity write into a regression execution: they import only when an execution key is passed explicitly.
+- DO: close the RTR (or the sprint-close STR) via `complete` only AFTER the verdict comment is posted on it, and leave the RTP at its ready status: a suite run never completes the plan it ran from.
+- DO NOT: invent a sprint number. The RTR needs none (its scope-id is `{env}-{YYYY-MM-DD}` or a release tag). `N` matters only for the sprint-close STR: take it from the user or from the STP's own scope-id, and ask before creating anything at sprint altitude.
 - DO NOT: skip the artifact download on a red build (evidence vanishes after the retention window), and never merge smoke and regression results into one pass-rate — their SLOs differ.
 
 **Read full SKILL.md when**: driving the CI commands, applying the GO/CAUTION/NO-GO scoring table, resolving a borderline classification, wiring the TMS artifacts, or writing the report.
@@ -58,7 +62,9 @@ Three phases, always in this order: **Execute → Analyze → Report**. Do not s
 - `kata-manifest.json` — registry of tests and ATCs available; used to cross-reference failed test IDs.
 - `.agents/jira-required.yaml` — Jira refs (project key, work types, transitions) for filing regression issues.
 - `agentic-qa-core/references/defect-management-doctrine.md` — **canonical authority** for classifying (Bug/Defect/Improvement), the mandatory field matrix, QA-Assignee ownership, and the QA process epic when a confirmed regression is filed in Jira (Phase 3). Read BEFORE filing any defect.
-- `agentic-qa-core/references/artifact-lifecycle.md` — **canonical authority** for artifact statuses: the STR closes at `{{jira.status.test_execution.close}}` after the verdict, the RTP stays at `{{jira.status.test_plan.ready}}`, every created artifact carries `assignee` = self, and an unmapped transition slug goes through the §4 fallback instead of a silent skip. Read BEFORE firing any transition.
+- **RTP key** (`RTP: {{PROJECT_KEY}}: Regression Test Plan`, a Test Plan item parented to QA Master Test Plan): found by title via `[TMS_TOOL]` in Phase 1, it is the RTR's `testPlan` target. Producer: `/test-documentation` (promotion of `regression-candidate` TCs); this skill never creates it and never writes into it. Modality jira-native: there is no Test Plan item, the promotion is the `regression-candidate` label on the Test issues, so there is no key to resolve.
+- **RTR** (`RTR: <<SCOPE_ID>>: Regression Testing`, a Test Execution parented to QA Test Artifacts): the run record this skill CREATES in Phase 1 before the trigger, CI imports into, and Phase 3 closes after the verdict. One per verdict. Its key is persisted beside `RUN_ID` in `plan.md` and passed to CI as the `execution_key` dispatch input.
+- `agentic-qa-core/references/artifact-lifecycle.md` — **canonical authority** for artifact statuses: the RTR (or the sprint-close STR) closes at `{{jira.status.test_execution.close}}` after the verdict, the RTP stays at `{{jira.status.test_plan.ready}}`, every created artifact carries `assignee` = self, and an unmapped transition slug goes through the §4 fallback instead of a silent skip. Read BEFORE firing any transition.
 
 ---
 
@@ -80,7 +86,7 @@ This skill is compliant with the doctrine in `AGENTS.md` §"Orchestration Mode (
 | Generate executive report                                  | Single     | inline — final synthesis, decisions live here                                                                  |
 | GO / CAUTION / NO-GO verdict                               | Single     | inline — main thread owns release decisions                                                                    |
 
-- **Error protocol**: On any subagent failure: STOP, report full context to user, present retry / skip / abort options. Do NOT auto-fix. See `.agents/skills/agentic-qa-core/references/orchestration-doctrine.md`.
+- **Error protocol**: On any subagent failure: STOP, report full context to user, present retry / skip / abort options. Do NOT auto-fix. See `.agents/skills/agentic-qa-core/references/orchestration-doctrine.md`. A skill that itself broke (a wrong step, a missing verifier, a stale rule) is reported upstream per `../agentic-qa-core/references/upstream-feedback.md`: drafted and redacted locally, filed only on explicit OK, verified with `gh issue view`.
 
 ---
 
@@ -90,7 +96,7 @@ Triage itself is never parallelized across sessions: one conductor reads the run
 
 - **Topology: one worktree per failure cluster.** A cluster's fix is code (a spec, a locator, a fixture), so each worker gets its own checkout and its own branch; two sessions in one checkout contend on the git index even on disjoint files. One cluster = one worker = one branch. Never two workers on one cluster.
 - The conductor writes `launch.txt` in `.session/regression-testing/<scope>/` — one self-contained line per cluster — **always**, whether or not any orchestration transport exists on the machine. Launching, supervising and closing those sessions is `orca-orchestration/SKILL.md` (`[ORCHESTRATION_TOOL]`): supervised launch is the native path, and `launch.txt` is the payload for the human-paste fallback when nothing can launch it.
-- **The verdict never moves.** GO / CAUTION / NO-GO, the metrics, the STR and every Jira write stay with the conductor (Phase 3). A worker fixes its cluster and reports; it does not re-score the run, does not file the defect, and does not transition the STR.
+- **The verdict never moves.** GO / CAUTION / NO-GO, the metrics, the RTR (or the sprint-close STR) and every Jira write stay with the conductor (Phase 3). A worker fixes its cluster and reports; it does not re-score the run, does not file the defect, and does not transition the RTR.
 - Each worker's fix is authored under `/test-automation` (Plan → Code → Review) on its own branch, and lands per `git_strategy` — a regression fix is not exempt from the automation gate.
 - **Silence rule**: the absence of an orchestration transport is never named to the user, never appears in the preflight gate, and never appears in the Environment block or the report.
 
@@ -107,7 +113,7 @@ Triage itself is never parallelized across sessions: one conductor reads the run
 | GitHub Actions Secrets/Variables | REQUIRED | The runner authenticates with env-prefixed creds (`secrets.<ENV>_USER_EMAIL` / `_PASSWORD`) + `XRAY_*` / `ATLASSIAN_*` as Repository/Environment Secrets — the suite 401s mid-run without them. `gh secret list` (add `--env <env>` for environment scope) shows them; missing → `gh secret set <NAME>` from `.env`. `/adapt-framework` only emits a manual list today, so this is the most common silent gap. |
 | Allure 3 local | REQUIRED | `bunx allure` resolves (devDep, no global install); `allurerc.mjs` present for `bun allure:agent` markdown triage. |
 | Active env | REQUIRED | The suite runs against `<<ACTIVE_ENV>>` (default `{{DEFAULT_ENV}}`). Confirm it is the intended target before a 20–60 min run. |
-| `[TMS_TOOL]` (result sync) | OPTIONAL | Only when `.agents/project.yaml` `testing.tms_cli` is set — Stage 3 pushes run status. jira-xray → `/xray-cli` + `XRAY_*`. |
+| `[TMS_TOOL]` (result sync) | OPTIONAL | Only when `.agents/project.yaml` `testing.tms_cli` is set: Phase 1 creates the RTR before the trigger, Phase 3 posts the verdict on it and closes it. jira-xray → `/xray-cli` + `XRAY_*`. |
 | `[ISSUE_TRACKER_TOOL]` (file regression issues) | OPTIONAL | Only on NO-GO / CAUTION-with-regressions, to file issues. Load `/acli` then. |
 
 Test-user creds, OpenAPI/`API_TOKEN`, DBHub and Playwright browsers live **inside the CI runner**, not the orchestrator — this skill does not exercise them locally, so they are out of scope for this gate. After the gate clears (all REQUIRED GREEN), continue to Phase 0 below.
@@ -122,7 +128,7 @@ Before suite selection or any `gh workflow run`, run the resume contract from `a
 2. Check `.session/regression-testing/<scope>/progress.md`.
 3. If it does NOT exist → proceed to suite selection + Phase 1 preflight + plan.md write.
 4. If it DOES exist:
-   - Read `plan.md` (captured `suite`, `env`, `workflow_file`, `RUN_ID` if Phase 1 already triggered).
+   - Read `plan.md` (captured `suite`, `env`, `workflow_file`, `RTR_KEY` if Phase 1 already created the run record, `RUN_ID` if Phase 1 already triggered).
    - Read tail of `progress.md`.
    - If `RUN_ID` is present AND `progress.md` last entry is `Phase 1 — Trigger — status: completed` but Monitor entry is missing/failed: surface the option to **re-attach** to the existing `RUN_ID` via `gh run view <RUN_ID> --json status,conclusion` instead of re-triggering. This is the high-value resume case.
    - Otherwise surface the standard offer **resume / restart / abort**. On `restart`, archive to `.session/.archive/<YYYY-MM-DD>-regression-testing-<scope>-aborted/` first.
@@ -186,24 +192,58 @@ gh workflow list
 
 If `gh` is not authenticated, stop and ask the user to run `gh auth login`. Do not proceed.
 
-**Write `.session/regression-testing/<scope>/plan.md`** per `agentic-qa-core/references/session-management.md` §6 BEFORE the Trigger step below. Capture: Goal (suite + env + reason for run), Inputs (workflow file path, env vars, optional grep/test_file for sanity), Approach (subagent pattern per stage from the dispatch table above), Phase breakdown (Trigger → Monitor → Download → Classify → Compute → Report → Verdict), Risks, Verification checklist (all 3 artifacts download + verdict emitted), Cross-references (`.context/reports/regression-<env>-<date>.md` will hold the final verdict). `RUN_ID` lands in `plan.md` §Inputs AFTER the Trigger step captures it — append, do not rewrite the body.
+**Write `.session/regression-testing/<scope>/plan.md`** per `agentic-qa-core/references/session-management.md` §6 BEFORE the Trigger step below. Capture: Goal (suite + env + reason for run), Inputs (workflow file path, env vars, optional grep/test_file for sanity), Approach (subagent pattern per stage from the dispatch table above), Phase breakdown (Trigger → Monitor → Download → Classify → Compute → Report → Verdict), Risks, Verification checklist (all 3 artifacts download + verdict emitted), Cross-references (`.context/reports/regression-<env>-<date>.md` will hold the final verdict). `RTR_KEY` lands in `plan.md` §Inputs after the Create-the-RTR step below, and `RUN_ID` joins it AFTER the Trigger step captures it — append, do not rewrite the body.
+
+### Create the RTR (before the trigger)
+
+The run record is born BEFORE CI starts, so the workflow receives its key and imports into it instead of into a shared secret. `<<SCOPE_ID>>` = `<<ACTIVE_ENV>>-<YYYY-MM-DD>` (the same value as the session `<scope>`), or the release tag (e.g. `v2.3.0-rc1`) when the user says the run is a release candidate. Regression suite only: smoke and sanity get no RTR (see the Trigger block).
+
+1. **Resolve the RTP**: find the Test Plan titled `RTP: {{PROJECT_KEY}}: Regression Test Plan`. Missing → do NOT create it here (the RTP is `/test-documentation`'s promotion artifact): create the RTR without the `testPlan` edge, record the gap as a stated N/A in the verifier and the report, and recommend running the promotion first.
+2. **Find-or-create the RTR**. A same-scope RTR still `{{jira.status.test_execution.active}}` (no verdict yet: an ENVIRONMENT re-run, a resumed session) is REUSED. A same-scope RTR already `{{jira.status.test_execution.close}}` (verdict written) means this is a NEW run: append `#2` (then `#3`) to the scope-id. Never reopen a closed RTR (`reactive` stays unused).
+3. **Persist** `<<RTR_KEY>>` in `.session/regression-testing/<scope>/plan.md` §Inputs, on the line `RUN_ID` will join after the trigger. Resume reads both.
+4. **Pass it to CI** as `-f execution_key=<<RTR_KEY>>` on `gh workflow run` (Trigger block below). The workflow's `execution_key` input overrides the `STP_EXECUTION_KEY` secret (`references/ci-cd-integration.md` §4).
+
+```
+[TMS_TOOL] Find Test Plan:
+  summary: RTP: {{PROJECT_KEY}}: Regression Test Plan
+  -> <<RTP_KEY>>   (missing: RTR without testPlan + stated gap; never create the RTP here)
+
+[TMS_TOOL] Find-or-create Test Execution:
+  summary: RTR: <<SCOPE_ID>>: Regression Testing        # e.g. RTR: staging-2026-09-23: Regression Testing
+  parent: {QA Test Artifacts epic: qa.qa_epics.test_artifacts_epic.key, resolved by .name when the key is null}
+  testEnvironments: [<<ACTIVE_ENV>>]
+  assignee: self
+  testPlan: <<RTP_KEY>>
+  -> <<RTR_KEY>>   (persist beside RUN_ID, pass as execution_key)
+
+# Modality jira-native
+RTR: n/a (jira-native has no Test Executions); results = per-Test status writes + [LOCAL] report
+  -> no key: trigger WITHOUT execution_key; the CI jira-native leg writes per-Test status,
+     the verdict lives in the [LOCAL] report (and a comment on the Release issue when one exists)
+```
+
+**Sprint-close variant.** When the user says this run IS the sprint close, the target is the STR instead of an RTR: find-or-create `STR: Sprint#{N}: Regression Testing` per the existing contract (§TMS sync: parent QA Test Artifacts, Test Environment, assignee self, `testPlan` → STP AND `testPlan` → RTP, dual membership), persist its key in the same `plan.md` slot, and pass it as `execution_key` the same way. `N` comes from the user or from the STP's scope-id, never invented.
 
 ### Trigger
 
 ```bash
-# Full regression
+# Full regression: execution_key = the RTR (or sprint-close STR) created in the step above
 gh workflow run regression.yml \
   -f environment=staging \
+  -f execution_key=$RTR_KEY \
   -f video_record=false \
   -f generate_allure=true
 
-# Smoke
+# Smoke (no execution_key: smoke never writes into a regression execution;
+# pass one only when its results deliberately belong in a specific Execution)
 gh workflow run smoke.yml -f environment=staging -f generate_allure=true
 
-# Sanity (grep OR test_file, never both)
+# Sanity (grep OR test_file, never both; same execution_key rule as smoke)
 gh workflow run sanity.yml -f environment=staging -f test_type=e2e -f grep="@auth"
 gh workflow run sanity.yml -f environment=staging -f test_file="tests/e2e/auth/login.test.ts"
 ```
+
+Modality jira-native: omit `execution_key` on every suite; there is no Execution to import into.
 
 ### Capture run ID
 
@@ -214,7 +254,7 @@ gh run list --workflow=regression.yml --limit=1 --json databaseId,status,created
 
 Store as `RUN_ID`. Every subsequent step uses it.
 
-**Progress checkpoint after Trigger**: append `RUN_ID` to `.session/regression-testing/<scope>/plan.md` §Inputs (so resume can re-attach) AND append a phase entry `## Phase 1.Trigger — <ts>` with `status: completed`, `next: Phase 1.Monitor`, `notes: RUN_ID=<value>` to `progress.md`. This is the critical persistence point — Trigger landing without `RUN_ID` persisted means resume cannot re-attach.
+**Progress checkpoint after Trigger**: append `RUN_ID` to `.session/regression-testing/<scope>/plan.md` §Inputs (so resume can re-attach) AND append a phase entry `## Phase 1.Trigger — <ts>` with `status: completed`, `next: Phase 1.Monitor`, `notes: RUN_ID=<value> RTR_KEY=<value>` to `progress.md`. This is the critical persistence point — Trigger landing without `RUN_ID` persisted means resume cannot re-attach, and without `RTR_KEY` a resumed session cannot tell which Execution CI imported into.
 
 ### Monitor to completion
 
@@ -437,40 +477,56 @@ the returned Jira key to reference in the report.
 
 > **Prerequisite**: Load `/xray-cli` skill (Modality jira-xray) before executing the `[TMS_TOOL]` commands below. In Modality jira-native, load `/acli` instead and map test-execution operations to native Jira issues (see `test-documentation/references/jira-setup.md`).
 
-The sprint regression maps to two Jira **items** (items-first by excellence — the Story custom field is never used at this altitude).
+A regression run maps to Jira **items** (items-first by excellence: no Story custom field exists at this altitude). The default pair is RTP + RTR. The STP + STR pair applies only to the sprint-close run.
 
-> **This skill has no sprint concept of its own.** `N` is NOT derivable from a suite run: take it from the user, or from the `Sprint#{N}` scope-id of the STP this skill finds. **Never invent it** — a guessed `N` forks a duplicate STP/STR pair for the sprint. No STP found and no `N` given → ASK before creating anything at sprint altitude.
+- **RTP** (Regression Test Plan): a **Test Plan** item titled `RTP: {{PROJECT_KEY}}: Regression Test Plan`, parent **QA Master Test Plan** (`qa.qa_epics.master_test_plan_epic.name`). **Producer: `/test-documentation`** (promotion of `regression-candidate` TCs). This skill only CONSUMES it as the RTR's `testPlan` target: it is **never written into** and never created here. An Xray Test Plan aggregates the LATEST status of each of its Tests across all Executions, so the RTP answers "is the regression suite green right now" on its own as RTRs accumulate (`test-documentation/references/xray-platform.md` §4).
+- **RTR** (Regression Test Results): a **Test Execution** item titled `RTR: <<SCOPE_ID>>: Regression Testing` (e.g. `RTR: staging-2026-09-23: Regression Testing`, or `RTR: v2.3.0-rc1: Regression Testing` for a release candidate), parent **QA Test Artifacts** (`qa.qa_epics.test_artifacts_epic.name`), `testPlan` → RTP, Test Environment + `assignee` = self at create. **Producer: THIS skill**, Phase 1, before the trigger (§Create the RTR). It is the CI import target: the `execution_key` dispatch input carries its key, and the `STP_EXECUTION_KEY` secret (name kept for downstream repos) is only the fallback for a scheduled run that no dispatcher minted a key for. **One RTR per verdict**: an ENVIRONMENT re-run before the verdict imports into the same RTR; a re-run after a verdict (a NO-GO fixed and retried) is a NEW RTR with a `#2` scope-id; never `reactive`.
+- **STP + STR** (sprint close ONLY): `STP: Sprint#{N}: {sprint objective}` (Test Plan, parent QA Master Test Plan, `relates to` the Sprint; producer `/sprint-testing`, whose Session Start find-or-creates it on the sprint's first ticket; this skill consumes it and find-or-creates it only as a fallback, never writes results into it) and `STR: Sprint#{N}: Regression Testing` (Test Execution, parent QA Test Artifacts, `relates to` the Sprint, `testPlan` → STP AND `testPlan` → RTP, dual membership). The STR is the sprint-close recap of all sprint results: **whoever arrives first creates it, the other completes it** (`/sprint-testing`'s batch close, or this skill when it runs the closing regression). A regular regression run during the sprint is an RTR, never the STR. The run's term is **Regression Testing**: "Sprint" already comes from the `Sprint#{N}` scope-id.
 
-- **STP** (Sprint Test Plan) — a **Test Plan** item titled `STP: Sprint#{N}: {sprint objective}` (e.g. `STP: Sprint#30: Checkout hardening`). Parents to the **QA Master Test Plan** epic (`qa.qa_epics.master_test_plan_epic.name`); `relates to` the Sprint. **Producer: `/sprint-testing`** — its Session Start find-or-creates the STP on the FIRST ticket of the sprint, and every tested ticket updates it (a live planner: scope, progress). This skill **CONSUMES** the STP as context; it find-or-creates it **only as a fallback** when a suite runs and the STP is missing. **Never write results into it**: an Xray Test Plan aggregates the LATEST status of each of its Tests across all Executions, so the STP rolls up on its own as the ATRs and the STR accumulate — it carries the plan (description) and the human observations (comments), nothing else (`test-documentation/references/xray-platform.md` §4).
-- **STR** (Sprint Test Results) — a **Test Execution** item titled `STR: Sprint#{N}: Regression Testing` (e.g. `STR: Sprint#30: Regression Testing`). Parents to the **QA Test Artifacts** epic (`qa.qa_epics.test_artifacts_epic.name`); `relates to` the Sprint; `testPlan` → STP. Created at sprint **CLOSE** as the recap of all sprint results — by THIS skill when it runs the closing regression, or completed by `/sprint-testing`'s batch close if that already created it: **whoever arrives first creates it, the other completes it**. The run's term is **Regression Testing** — "Sprint" already comes from the `Sprint#{N}` scope-id, so the title carries no redundant "Sprint Regression".
+> **`N` is a sprint-close concern only.** The RTR needs no sprint number. When the run IS the sprint close, `N` comes from the user or from the `Sprint#{N}` scope-id of the STP this skill finds. **Never invent it**: a guessed `N` forks a duplicate STP/STR pair. No STP found and no `N` given → ASK before creating anything at sprint altitude.
 
-**Environment gate**: every Test Execution this skill creates — the STR included — carries the **Test Environment** taken from `active_env` in `.agents/project.yaml`, set at create time. An Execution without its environment fails the checklist: do not write results into it until the environment is set.
+**Environment gate**: every Test Execution this skill creates (the RTR, and the STR at sprint close) carries the **Test Environment** taken from `active_env` in `.agents/project.yaml`, set at create time. An Execution without its environment fails the checklist: do not write results into it until the environment is set.
 
-**Ownership gate**: every artifact this skill CREATES (the STR, and the STP in the fallback case) carries `assignee` = the authenticated session user, set at create time — `agentic-qa-core/references/artifact-lifecycle.md` §2. Xray refuses membership edits on a Test Plan the caller does not own, so an unassigned Plan turns into a blocker the moment tests must be added to it. If the find returns an artifact someone ELSE owns, do not reassign it silently: ask first.
+**Ownership gate**: every artifact this skill CREATES (the RTR; at sprint close the STR, and the STP in the fallback case) carries `assignee` = the authenticated session user, set at create time — `agentic-qa-core/references/artifact-lifecycle.md` §2. Xray refuses membership edits on a Test Plan the caller does not own, so an unassigned Plan turns into a blocker the moment tests must be added to it. If the find returns an artifact someone ELSE owns, do not reassign it silently: ask first.
 
 **Lifecycle gate** (`agentic-qa-core/references/artifact-lifecycle.md` §1):
 
-- The **STR** is born `{{jira.status.test_execution.active}}` and MUST be transitioned to `{{jira.status.test_execution.close}}` via `{{jira.transition.test_execution.complete}}` **after the GO / CAUTION / NO-GO verdict is written** — never before the verdict, never left open.
+- The **RTR** is born `{{jira.status.test_execution.active}}` in Phase 1 and MUST be transitioned to `{{jira.status.test_execution.close}}` via `{{jira.transition.test_execution.complete}}` **after the GO / CAUTION / NO-GO verdict comment is posted on it**: never before the verdict, never left open, never reopened (`reactive` stays unused; a later run is a new RTR).
+- The **STR** (sprint close only) follows the same rule after the sprint-close verdict.
 - The **RTP** (and any Test Plan this skill only consumed) stays at `{{jira.status.test_plan.ready}}` and is **never completed** by a regression run: the RTP is long-lived, and a suite execution does not finish the plan it ran from. Do NOT fire `{{jira.transition.test_plan.complete}}` here.
 - The **STP** is closed by whoever owns sprint close, not by this skill — unless this skill IS the sprint close (see the sprint-close DoD in `stage-gates.md`), in which case `{{jira.transition.test_plan.complete}}` moves it to `{{jira.status.test_plan.completed}}` after the STR is closed.
 - **Unmapped slug** → `artifact-lifecycle.md` §4 fallback: list the LIVE transitions, propose the closest synonym in ONE `AskUserQuestion`, fire the live id on yes, recommend `bun run jira:sync-workflows`. Never skip silently, never guess an id.
 
-**Find-or-create the STR before updating it** — never assume another producer already created it; if `/sprint-testing`'s batch close got there first, the find returns its item and this skill only completes it:
+**The run record already exists when Phase 3 starts**: the RTR was created in Phase 1 and CI imported into it through `execution_key`, so Phase 3 only writes what CI did not, posts the verdict and closes it. At sprint close, never assume another producer already created the STR; if `/sprint-testing`'s batch close got there first, the find returns its item and this skill only completes it:
 
 ```
+# Default: the RTR created in Phase 1 (§Create the RTR)
+[TMS_TOOL] Update Test Execution:
+  executionKey: <<RTR_KEY>>
+  results: {per-ATC status + failure comments from Phase 2, only what the CI import did not land}
+
+[ISSUE_TRACKER_TOOL] Add Comment:
+  issue: <<RTR_KEY>>
+  body: {GO / CAUTION / NO-GO verdict, score, blockers, workflow-run + Allure links}
+
+# After the verdict comment is posted: close the run, never leave it ACTIVE
+[ISSUE_TRACKER_TOOL] Transition: {{jira.transition.test_execution.complete}}   # active -> close
+  issue: <<RTR_KEY>>
+
+# Sprint close ONLY: the STR is the target instead, with dual plan membership
 [TMS_TOOL] Find-or-create Test Execution:
   summary: STR: Sprint#{N}: Regression Testing
-  parent: {QA Test Artifacts epic — qa.qa_epics.test_artifacts_epic.name}
-  links: {relates to → Sprint; testPlan → STP key}
+  parent: {QA Test Artifacts epic: qa.qa_epics.test_artifacts_epic.name}
+  links: {relates to → Sprint; testPlan → STP key; testPlan → RTP key}
   environment: {active_env from .agents/project.yaml}
+  assignee: self
+  -> then the same Update / Add Comment / Transition sequence on the STR key
 
-[TMS_TOOL] Update Test Execution:
-  executionKey: {STR execution-key}
-  results: {per-ATC status + failure comments from Phase 2}
-
-# After the Phase 3 verdict is written — close the run, never leave it ACTIVE:
-[ISSUE_TRACKER_TOOL] Transition: {{jira.transition.test_execution.complete}}   # active -> close
-  issue: {STR execution-key}
+# Modality jira-native
+RTR: n/a (jira-native has no Test Executions); results = per-Test status writes + [LOCAL] report
+[ISSUE_TRACKER_TOOL] Update Test status: {per-Test status field write, one per executed Test;
+  the CI leg already did this when AUTO_SYNC is on, so write only what it did not land}
+verdict: `.context/reports/regression-{env}-{date}.md` ([LOCAL]) + a comment on the Release issue when one exists
 ```
 
 ### Write the report
@@ -516,7 +572,7 @@ Score: {score}/9. {one-line rationale}
 - Workflow run: {url}
 - Allure: {url}
 - Created issues: {list}
-- TMS execution: {key / url}
+- TMS execution: RTR: {key} (testPlan → RTP {key}) | STR: {key} (sprint close, testPlan → STP + RTP) | n/a (jira-native, stated skip)
 
 ## Recommendations
 1. Immediate (pre-release): {...}
@@ -532,14 +588,17 @@ Score: {score}/9. {one-line rationale}
 | CAUTION | Review with team lead; document accepted risks; proceed deliberately |
 | NO-GO | Block release; assign regression issues; schedule fix verification; plan re-run |
 
-Whatever the verdict, close the run: transition the STR to `{{jira.status.test_execution.close}}` via `{{jira.transition.test_execution.complete}}`, leave the RTP at `{{jira.status.test_plan.ready}}`, then run the **light stage verifier** (`agentic-qa-core/references/artifact-lifecycle.md` §5). Stage-specific lines:
+Whatever the verdict, close the run record: post the GO / CAUTION / NO-GO comment ON the RTR (on the STR only when the run is the sprint close), transition it to `{{jira.status.test_execution.close}}` via `{{jira.transition.test_execution.complete}}`, leave the RTP at `{{jira.status.test_plan.ready}}`, then run the **light stage verifier** (`agentic-qa-core/references/artifact-lifecycle.md` §5). Stage-specific lines:
 
 ```
-[ ] STR exists by KEY, carries its Test Environment, assignee = self
-[ ] STR at {{jira.status.test_execution.close}} — via complete, AFTER the verdict
-[ ] STR -> STP linked via the `testPlan` edge
+[ ] RTR exists by KEY and existed BEFORE the CI trigger (its key went out as execution_key)
+[ ] RTR carries its Test Environment (active_env), assignee = self, parent QA Test Artifacts
+[ ] RTR -> RTP linked via the `testPlan` edge (a missing RTP is a STATED N/A naming the promotion gap)
+[ ] Verdict comment posted ON the RTR (the durable record, not the local report file)
+[ ] RTR at {{jira.status.test_execution.close}} via complete, AFTER the verdict; never reactive
+[ ] Sprint close only: STR exists by KEY, testPlan -> STP AND -> RTP, closed after the sprint-close verdict
 [ ] RTP untouched at {{jira.status.test_plan.ready}} (a regression run never completes it)
-[ ] Verdict comment posted in the TMS (the durable record — not the local report file)
+[ ] Modality jira-native: the RTR line is the stated skip note; per-Test status writes landed; [LOCAL] report written
 [ ] Any unmapped slug went through the §4 fallback (asked), never a silent skip
 ```
 
@@ -547,7 +606,7 @@ Whatever the verdict, close the run: transition the STR to `{{jira.status.test_e
 
 After Phase 1 Monitor returns, after each Phase 2 step (Collect / Parse / Compute / Classify / Severity), and after Phase 3 Verdict, the orchestrator appends a phase entry to `.session/regression-testing/<scope>/progress.md` per `agentic-qa-core/references/session-management.md` §7. `artifacts_touched` records the downloaded CI artifacts (allure / evidence / playwright dirs) + the final `.context/reports/regression-<env>-<date>.md`.
 
-After the Verdict emits, the orchestrator runs Archive per `agentic-qa-core/references/session-management.md` §8: moves `.session/regression-testing/<scope>/` to `.session/.archive/<YYYY-MM-DD>-regression-testing-<scope>/` (two-file dir preserved) and calls `mem_session_summary` with the archive path. `.context/reports/regression-<env>-<date>.md` stays in the reports dir as a **local generated report** — that directory is gitignored `[LOCAL]` output (`.context/reports/README.md`), so the file exists only on the machine that ran the suite and nothing downstream may depend on it. **The durable record is the STR in the TMS plus the GO / CAUTION / NO-GO comment** posted with it.
+After the Verdict emits, the orchestrator runs Archive per `agentic-qa-core/references/session-management.md` §8: moves `.session/regression-testing/<scope>/` to `.session/.archive/<YYYY-MM-DD>-regression-testing-<scope>/` (two-file dir preserved) and calls `mem_session_summary` with the archive path. `.context/reports/regression-<env>-<date>.md` stays in the reports dir as a **local generated report** — that directory is gitignored `[LOCAL]` output (`.context/reports/README.md`), so the file exists only on the machine that ran the suite and nothing downstream may depend on it. **The durable record is the RTR in the TMS (the STR only at sprint close) plus the GO / CAUTION / NO-GO comment** posted on it. Modality jira-native: the per-Test status writes plus this `[LOCAL]` report, by stated skip.
 
 On Verdict = NO-GO with regressions still being filed as issues, archive WAITS until the issue-creation step completes (so the session state still references the open issue list at archive time).
 
@@ -565,7 +624,7 @@ On Verdict = NO-GO with regressions still being filed as issues, archive WAITS u
 - **Sanity + `grep` and `test_file` are mutually exclusive.** Passing both makes the workflow ignore one silently. Pick one.
 - **Video recording inflates artifact size by 5-10x.** Only enable `video_record=true` when debugging flakiness or capturing bug evidence. Never enable it for nightly regression.
 - **CI credentials come from GitHub secrets, not `.env`.** Do not copy values from local `.env` into workflow YAML — reference `${{ secrets.NAME }}` only.
-- **Session-footer contract (mandatory at close).** The final phase is not done until the two chat-facing blocks from `../agentic-qa-core/references/session-footer-contract.md` are printed: (1) consolidated screenshot list — repo-relative paths, verified on disk, bug annotations first — plus in-flow surfacing of every capture's path the instant it lands; (2) Session Footer listing skills/MCPs/CLIs actually used + testing levels touched, with explicit "none" entries for expected-but-untouched levels. Framing for this skill: execution. Multi-subagent sessions: each stage report carries the five footer fields (`skills_loaded`, `mcps_used`, `clis_used`, `testing_levels_touched`, `screenshots_captured`); the orchestrator compiles the footer ONCE at close. Chat only — never in a Jira comment or ATR body.
+- **Session-footer contract (mandatory at close).** The final phase is not done until the two chat-facing blocks from `../agentic-qa-core/references/session-footer-contract.md` are printed: (1) consolidated screenshot list — repo-relative paths, verified on disk, bug annotations first — plus in-flow surfacing of every capture's path the instant it lands; (2) Session Footer listing skills/MCPs/CLIs actually used + testing levels touched, with explicit "none" entries for expected-but-untouched levels. Framing for this skill: execution. Multi-subagent sessions: each stage report carries the five footer fields (`skills_loaded`, `mcps_used`, `clis_used`, `testing_levels_touched`, `screenshots_captured`); the orchestrator compiles the footer ONCE at close. Chat only — never in a Jira comment or ATR body. Lessons noticed during the session are PROPOSED to `.session/<skill-slug>/<scope>/refinements.md` and never applied to a live skill, per `../agentic-qa-core/references/skill-refinement-protocol.md`; the footer's `Refinements proposed:` line counts them.
 
 ---
 
@@ -597,8 +656,8 @@ On Verdict = NO-GO with regressions still being filed as issues, archive WAITS u
 ## Quick reference
 
 ```bash
-# Trigger + get run ID in one shot
-gh workflow run regression.yml -f environment=staging && sleep 5 && \
+# Trigger + get run ID in one shot (RTR_KEY = the Execution created in Phase 1 §Create the RTR)
+gh workflow run regression.yml -f environment=staging -f execution_key=$RTR_KEY && sleep 5 && \
   RUN_ID=$(gh run list --workflow=regression.yml --limit=1 --json databaseId -q '.[0].databaseId') && \
   echo "RUN_ID=$RUN_ID"
 

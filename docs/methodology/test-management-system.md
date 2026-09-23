@@ -1001,12 +1001,13 @@ Uses their technical expertise to:
 | **MTP**                | Master Test Plan - ONE per project; the `QA Master Test Plan` Epic mirrored by `.context/master-test-plan.md` |
 | **FTP**                | Feature Test Plan - ONE per feature/Epic, a living document refined across the epic; feeds every child story's ATP |
 | **STP**                | Sprint Test Plan - ONE per sprint (`STP: Sprint#{N}: {objective}`); living planner opened at sprint start, updated per tested ticket, closed at sprint end |
-| **STR**                | Sprint Test Results - ONE per sprint (`STR: Sprint#{N}: Regression Testing`); the sprint's own regression Execution. A sibling recap, NOT an aggregate of the Stories' ATRs - no `ATR is part of STR` link type exists, so per-Story outcomes are read from the ATRs directly |
+| **STR**                | Sprint Test Results - ONE per sprint (`STR: Sprint#{N}: Regression Testing`); the sprint-close recap of the sprint's results, linked to the STP (and the RTP); not the CI import target of a regular regression run (that is the RTR). A sibling recap, NOT an aggregate of the Stories' ATRs - no `ATR is part of STR` link type exists, so per-Story outcomes are read from the ATRs directly |
 | **ATP**                | Acceptance Test Plan - ONE per User Story; pre-sprint it lives in the `{{jira.acceptance_test_plan}}` field (outline maturity), the Test Plan item is born in sprint Stage 1 |
 | **ATR**                | Acceptance Test Results - ONE per User Story; the Test Execution reporting what was run and found |
 | **ATS**                | Acceptance Test Set - ONE per User Story, mandatory; the Test Set whose link to the Story provides coverage, and whose membership drives the ATP/ATR test lists |
 | **TS**                 | Feature-level Test Set (`TS: {scope}: Validate {feature}`) - optional grouping for smoke / regression / feature scopes |
 | **RTP**                | Regression Test Plan - ONE long-lived Test Plan per project/module (`RTP: {PROJECT_KEY\|module}: Regression Test Plan`); the promotion target for every `regression-candidate` TC and the list the regression Execution runs from - it never reaches a terminal status |
+| **RTR**                | Regression Test Results - ONE Test Execution per regression verdict (`RTR: {scope-id}: Regression Testing`, scope-id `{env}-{YYYY-MM-DD}` or a release tag), linked to the RTP, parented to QA Test Artifacts; created before the CI trigger so the run imports into it, closed after the GO / CAUTION / NO-GO comment |
 | **Early-Game**         | Prevention phase (Steps 1-4) - QA Analyst led                             |
 | **Mid-Game**           | Detection phase (Steps 5-9) - QA Automation Engineer led                  |
 | **Late-Game**          | Observation phase (Steps 10-15) - QA + DevOps/SRE                         |

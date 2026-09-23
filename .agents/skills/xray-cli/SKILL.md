@@ -5,6 +5,8 @@ license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 allowed-tools: Bash(bun xray:*)
 complementary_categories: [tms]
+metadata:
+  kind: utility
 ---
 
 # Xray CLI - Test Management
@@ -581,6 +583,15 @@ bun xray import cucumber --file cucumber-report.json --project DEMO
 # Import Xray JSON format
 bun xray import xray --file xray-results.json
 ```
+
+> **`--plan` without `--execution` mints a NEW Test Execution.** `import junit --plan <RTP-KEY>`
+> with no `--execution` makes Xray create a fresh Test Execution and link it to that plan: the
+> CLI appends `testPlanKey` and omits `testExecKey` (`cli/xray/commands/import.ts`), and Xray's
+> import endpoints create the Execution whenever no `testExecKey` is given, associating it with
+> the plan (Xray Cloud REST docs, import execution JUnit). That is the RTR fallback path, and the
+> Execution it mints is unparented and untitled by the ladder grammar, so `/regression-testing`
+> creates the RTR first and passes `--execution <RTR-KEY>` instead. Use `--plan` alone only when
+> nothing better exists.
 
 ### Backup & Restore
 

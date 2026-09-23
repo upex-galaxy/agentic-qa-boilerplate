@@ -31,6 +31,11 @@ on:
         required: true
         default: true
         type: boolean
+      execution_key:
+        description: 'Key of the Test Execution this run imports into: the RTR created by /regression-testing for this run (or the sprint-close STR). Overrides the STP_EXECUTION_KEY secret.'
+        required: false
+        default: ''
+        type: string
 
 concurrency:
   # Suite runs publish Allure to gh-pages. Two overlapping runs race on that
@@ -58,13 +63,17 @@ env:
   AUTO_SYNC: ${{ secrets.AUTO_SYNC || 'false' }}
   XRAY_CLIENT_ID: ${{ secrets.XRAY_CLIENT_ID }}
   XRAY_CLIENT_SECRET: ${{ secrets.XRAY_CLIENT_SECRET }}
-  # Key of the STR — the Test Execution linked to the sprint's STP, created by
-  # /regression-testing or /sprint-testing and already parented to the
-  # "QA Test Artifacts" epic. NOT the STP's own key: a Test Plan derives its
-  # status from its Executions and is never written into. Empty = the XrayImport
-  # job below skips, because importing with no target mints a new, unparented
-  # Execution on every run.
-  STP_EXECUTION_KEY: ${{ secrets.STP_EXECUTION_KEY }}
+  # Key of the Test Execution this run imports into. By default that is the RTR
+  # (`RTR: {env}-{date}: Regression Testing`, one per verdict): /regression-testing
+  # creates it BEFORE triggering this workflow, linked to the RTP and parented to
+  # the "QA Test Artifacts" epic, and passes its key as the `execution_key`
+  # dispatch input. The secret is the fallback for a scheduled run (no inputs on
+  # a cron trigger), and it is the sprint-close STR only when the run IS the
+  # sprint close. Never a Test Plan key: a Test Plan derives its status from its
+  # Executions and is never written into. Empty = the XrayImport job below
+  # skips, because importing with no target mints a new, unparented Execution
+  # on every run. The name is kept for downstream secrets; the semantics moved.
+  STP_EXECUTION_KEY: ${{ github.event.inputs.execution_key || secrets.STP_EXECUTION_KEY }}
   # Atlassian credentials — uncomment when AUTO_SYNC=true. Required by the
   # "Sync … Results to TMS" steps below on a jira-native project (TMS_PROVIDER=jira
   # writes a status field and a comment on each Test issue), and by the Xray
@@ -443,7 +452,7 @@ jobs:
           # fresh Test Execution per run, and Xray's import API cannot parent it
           # to the "QA Test Artifacts" epic afterwards. Skipping beats orphaning.
           if [ -z "${STP_EXECUTION_KEY:-}" ]; then
-            echo "::warning title=Xray import skipped::STP_EXECUTION_KEY is not set, so results were NOT imported. Set it to the key of the STR — the Test Execution linked to the sprint's STP, under the 'QA Test Artifacts' epic — not to the STP's own key."
+            echo "::warning title=Xray import skipped::No execution key, so results were NOT imported. Set execution_key (the RTR key) when dispatching, or the STP_EXECUTION_KEY secret for scheduled runs; never the RTP/STP key. The target is a Test Execution under the 'QA Test Artifacts' epic."
             exit 0
           fi
 
@@ -462,7 +471,7 @@ jobs:
             echo "::warning title=Xray import::No junit.xml found in the downloaded artifacts — nothing to import."
           else
             echo "## Xray Import" >> $GITHUB_STEP_SUMMARY
-            echo "Imported $imported JUnit report(s) into Test Execution \`${STP_EXECUTION_KEY}\`." >> $GITHUB_STEP_SUMMARY
+            echo "Imported $imported JUnit report(s) into Test Execution \`${STP_EXECUTION_KEY}\` (the RTR for this run, or the sprint-close STR). Set execution_key when dispatching, or the STP_EXECUTION_KEY secret for scheduled runs; never the RTP/STP key." >> $GITHUB_STEP_SUMMARY
           fi
 
   # ============================================

@@ -6,7 +6,7 @@
     <title>Test Management Architecture — la escalera de artefactos QA</title>
     <meta
       name="description"
-      content="Cómo el boilerplate Agentic QA organiza la gestión de pruebas: la escalera MTP / FTP / STP / ATP con sus corredores STR y ATR, los cuatro epics de proceso en Jira, quién produce cada artefacto y cómo bajan al caché local."
+      content="Cómo el boilerplate Agentic QA organiza la gestión de pruebas: la escalera MTP / RTP / FTP / STP / ATP con sus corredores RTR, STR y ATR, los cuatro epics de proceso en Jira, quién produce cada artefacto y cómo bajan al caché local."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -354,12 +354,12 @@
 
     <div class="wrap hero">
       <p class="eyebrow">Test Management Architecture</p>
-      <h1>Cuatro altitudes, un plan y un corredor <em>en cada una</em>.</h1>
+      <h1>Cinco altitudes, un plan y un corredor <em>en cada una</em>.</h1>
       <p class="lede">
-        Cómo este repositorio organiza la gestión de pruebas: la escalera MTP → FTP → STP → ATP con
-        sus corredores STR y ATR, los cuatro epics de proceso que los sostienen en Jira, qué skill
-        produce cada artefacto y cómo bajan todos al caché local. Todo lo que sigue está verificado
-        contra el código, no contra la intención.
+        Cómo este repositorio organiza la gestión de pruebas: la escalera MTP → RTP → FTP → STP →
+        ATP con sus corredores RTR, STR y ATR, los cuatro epics de proceso que los sostienen en
+        Jira, qué skill produce cada artefacto y cómo bajan todos al caché local. Todo lo que sigue
+        está verificado contra el código, no contra la intención.
       </p>
     </div>
 
@@ -378,19 +378,20 @@
         <div class="fig-wrap">
           <svg
             class="fig"
-            viewBox="0 0 1000 420"
+            viewBox="0 0 1000 496"
             role="img"
             aria-labelledby="tm-ladder-title tm-ladder-desc"
             xmlns="http://www.w3.org/2000/svg"
           >
             <title id="tm-ladder-title">Escalera de artefactos QA por altitud</title>
             <desc id="tm-ladder-desc">
-              Cuatro bandas apiladas de alcance más amplio a más puntual: Master con el MTP, Feature
-              con el FTP, Sprint con el STP y el STR, y Story con el ATP, el ATS y el ATR. Cada
-              banda muestra su tipo de issue en Jira y quién lo produce.
+              Cinco bandas apiladas de alcance más amplio a más puntual: Master con el MTP,
+              Regresión con el RTP y el RTR, Feature con el FTP, Sprint con el STP y el STR, y Story
+              con el ATP, el ATS y el ATR. Cada banda muestra su tipo de issue en Jira y quién lo
+              produce.
             </desc>
 
-            <rect width="1000" height="420" fill="#161b22" />
+            <rect width="1000" height="496" fill="#161b22" />
             <defs>
               <marker id="tm-ar" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
                 <polygon points="0 0, 8 3, 0 6" fill="#9aa6b2" />
@@ -410,7 +411,7 @@
             </text>
             <line
               x1="64"
-              y1="316"
+              y1="392"
               x2="64"
               y2="48"
               stroke="#9aa6b2"
@@ -419,7 +420,7 @@
             />
             <text
               x="64"
-              y="336"
+              y="412"
               fill="#6e7681"
               font-size="8"
               font-family="'JetBrains Mono', monospace"
@@ -503,7 +504,7 @@
               1 por proyecto
             </text>
 
-            <!-- FEATURE -->
+            <!-- REGRESIÓN -->
             <rect
               x="120"
               y="116"
@@ -533,7 +534,7 @@
               text-anchor="middle"
               letter-spacing="0.14em"
             >
-              FEATURE
+              REGRESIÓN
             </text>
             <text
               x="248"
@@ -543,7 +544,7 @@
               font-weight="600"
               font-family="'Inter', sans-serif"
             >
-              FTP
+              RTP
             </text>
             <text
               x="248"
@@ -552,10 +553,17 @@
               font-size="9"
               font-family="'JetBrains Mono', monospace"
             >
-              Test Plan — 1 por epic
+              Test Plan · vivo, nunca se completa
             </text>
-            <text x="592" y="142" fill="#9aa6b2" font-size="11" font-family="'Inter', sans-serif">
-              FTR retirado
+            <text
+              x="592"
+              y="142"
+              fill="#e6edf3"
+              font-size="13"
+              font-weight="600"
+              font-family="'Inter', sans-serif"
+            >
+              RTR
             </text>
             <text
               x="592"
@@ -564,7 +572,7 @@
               font-size="9"
               font-family="'JetBrains Mono', monospace"
             >
-              se leen en los ATR, sin agregación
+              Test Execution · 1 por veredicto
             </text>
             <text
               x="904"
@@ -574,10 +582,10 @@
               font-family="'JetBrains Mono', monospace"
               text-anchor="end"
             >
-              sprint-testing
+              1 plan · n corridas
             </text>
 
-            <!-- SPRINT -->
+            <!-- FEATURE -->
             <rect
               x="120"
               y="192"
@@ -607,11 +615,85 @@
               text-anchor="middle"
               letter-spacing="0.14em"
             >
-              SPRINT
+              FEATURE
             </text>
             <text
               x="248"
               y="218"
+              fill="#e6edf3"
+              font-size="13"
+              font-weight="600"
+              font-family="'Inter', sans-serif"
+            >
+              FTP
+            </text>
+            <text
+              x="248"
+              y="236"
+              fill="#6e7681"
+              font-size="9"
+              font-family="'JetBrains Mono', monospace"
+            >
+              Test Plan — 1 por epic
+            </text>
+            <text x="592" y="218" fill="#9aa6b2" font-size="11" font-family="'Inter', sans-serif">
+              FTR retirado
+            </text>
+            <text
+              x="592"
+              y="236"
+              fill="#6e7681"
+              font-size="9"
+              font-family="'JetBrains Mono', monospace"
+            >
+              se leen en los ATR, sin agregación
+            </text>
+            <text
+              x="904"
+              y="228"
+              fill="#6e7681"
+              font-size="9"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="end"
+            >
+              sprint-testing
+            </text>
+
+            <!-- SPRINT -->
+            <rect
+              x="120"
+              y="268"
+              width="800"
+              height="64"
+              rx="8"
+              fill="#1c2230"
+              stroke="rgba(139,148,158,0.22)"
+              stroke-width="1"
+            />
+            <rect
+              x="136"
+              y="284"
+              width="88"
+              height="16"
+              rx="4"
+              fill="none"
+              stroke="rgba(139,148,158,0.42)"
+              stroke-width="0.8"
+            />
+            <text
+              x="180"
+              y="296"
+              fill="#9aa6b2"
+              font-size="7"
+              font-family="'JetBrains Mono', monospace"
+              text-anchor="middle"
+              letter-spacing="0.14em"
+            >
+              SPRINT
+            </text>
+            <text
+              x="248"
+              y="294"
               fill="#e6edf3"
               font-size="13"
               font-weight="600"
@@ -621,7 +703,7 @@
             </text>
             <text
               x="248"
-              y="236"
+              y="312"
               fill="#6e7681"
               font-size="9"
               font-family="'JetBrains Mono', monospace"
@@ -630,7 +712,7 @@
             </text>
             <text
               x="592"
-              y="218"
+              y="294"
               fill="#e6edf3"
               font-size="13"
               font-weight="600"
@@ -640,7 +722,7 @@
             </text>
             <text
               x="592"
-              y="236"
+              y="312"
               fill="#6e7681"
               font-size="9"
               font-family="'JetBrains Mono', monospace"
@@ -649,7 +731,7 @@
             </text>
             <text
               x="904"
-              y="228"
+              y="304"
               fill="#6e7681"
               font-size="9"
               font-family="'JetBrains Mono', monospace"
@@ -661,7 +743,7 @@
             <!-- STORY (focal) -->
             <rect
               x="120"
-              y="268"
+              y="344"
               width="800"
               height="64"
               rx="8"
@@ -671,7 +753,7 @@
             />
             <rect
               x="136"
-              y="284"
+              y="360"
               width="88"
               height="16"
               rx="4"
@@ -681,7 +763,7 @@
             />
             <text
               x="180"
-              y="296"
+              y="372"
               fill="#ffa657"
               font-size="7"
               font-family="'JetBrains Mono', monospace"
@@ -692,7 +774,7 @@
             </text>
             <text
               x="248"
-              y="294"
+              y="370"
               fill="#e6edf3"
               font-size="13"
               font-weight="600"
@@ -702,7 +784,7 @@
             </text>
             <text
               x="248"
-              y="312"
+              y="388"
               fill="#9aa6b2"
               font-size="9"
               font-family="'JetBrains Mono', monospace"
@@ -711,7 +793,7 @@
             </text>
             <text
               x="592"
-              y="294"
+              y="370"
               fill="#e6edf3"
               font-size="13"
               font-weight="600"
@@ -721,7 +803,7 @@
             </text>
             <text
               x="592"
-              y="312"
+              y="388"
               fill="#9aa6b2"
               font-size="9"
               font-family="'JetBrains Mono', monospace"
@@ -730,7 +812,7 @@
             </text>
             <text
               x="904"
-              y="304"
+              y="380"
               fill="#ffa657"
               font-size="9"
               font-family="'JetBrains Mono', monospace"
@@ -741,15 +823,15 @@
 
             <line
               x1="40"
-              y1="364"
+              y1="440"
               x2="960"
-              y2="364"
+              y2="440"
               stroke="rgba(139,148,158,0.22)"
               stroke-width="0.8"
             />
             <text
               x="40"
-              y="384"
+              y="460"
               fill="#6e7681"
               font-size="8"
               font-family="'JetBrains Mono', monospace"
@@ -759,7 +841,7 @@
             </text>
             <rect
               x="132"
-              y="374"
+              y="450"
               width="20"
               height="12"
               rx="3"
@@ -767,10 +849,10 @@
               stroke="#ffa657"
               stroke-width="0.8"
             />
-            <text x="160" y="384" fill="#9aa6b2" font-size="9" font-family="'Inter', sans-serif">
+            <text x="160" y="460" fill="#9aa6b2" font-size="9" font-family="'Inter', sans-serif">
               la altitud donde se ejecuta el trabajo diario
             </text>
-            <text x="520" y="384" fill="#6e7681" font-size="9" font-family="'Inter', sans-serif">
+            <text x="520" y="460" fill="#6e7681" font-size="9" font-family="'Inter', sans-serif">
               Todo plan cuelga del epic QA Master Test Plan. Todo corredor, de QA Test Artifacts.
             </text>
           </svg>
@@ -2107,6 +2189,24 @@
                 <td>Epic</td>
                 <td>es uno de los cuatro</td>
                 <td>1 por proyecto</td>
+              </tr>
+              <tr>
+                <td><strong>RTP</strong> Regression Test Plan</td>
+                <td>
+                  <code>test-documentation</code> al promover cada <code>regression-candidate</code>
+                </td>
+                <td>Test Plan</td>
+                <td>QA Master Test Plan</td>
+                <td>1 por proyecto o módulo, vivo (queda en <code>ready</code>)</td>
+              </tr>
+              <tr>
+                <td><strong>RTR</strong> Regression Test Results</td>
+                <td>
+                  <code>regression-testing</code> antes del trigger de CI, cierra tras el veredicto
+                </td>
+                <td>Test Execution (<code>testPlan</code> → RTP)</td>
+                <td>QA Test Artifacts</td>
+                <td>1 por veredicto GO / CAUTION / NO-GO</td>
               </tr>
               <tr>
                 <td><strong>FTP</strong> Feature Test Plan</td>

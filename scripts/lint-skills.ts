@@ -11,7 +11,7 @@
  *         (gitignored, fetched at install time, NOT committed)
  *   T4  — community user-level, declared in cli/install.ts:USER_LEVEL_SKILLS
  *
- * Fourteen checks are run; each violation is printed prefixed with the relevant
+ * Seventeen checks are run; each violation is printed prefixed with the relevant
  * skill or array name. Exit code 0 = pass (no ERROR violations), 1 = at least
  * one ERROR violation. WARN and INFO are reported but do not cause non-zero exit.
  *
@@ -84,6 +84,22 @@
  *      requires command-shape context to avoid false positives on prose
  *      references like `/acli` or "(acli is T1)". ERROR severity.
  *
+ *  15. KIND-MISSING — a T1 / vendored T2 SKILL.md must declare the purpose
+ *      axis `metadata.kind` (one of `KNOWN_KINDS`). Committed community
+ *      skills (T3 / T4 bodies the project does not author) are exempt, like
+ *      every other T1-only check. Doctrine: strategy doc §2b. ERROR severity.
+ *
+ *  16. KIND-VOCAB — a declared `metadata.kind` must be one of `KNOWN_KINDS`
+ *      (context / workflow / utility / core). ERROR severity.
+ *
+ *  17. KIND-SUFFIX — the slug suffix and the declared kind must agree in BOTH
+ *      directions (`KIND_SUFFIX_RULES`): a slug ending `-context` must declare
+ *      kind `context` and a `context` skill must end `-context`; a slug ending
+ *      `-cli` / `-tool` / `-app` must declare kind `utility` and a `utility`
+ *      skill must carry one of those suffixes. Slugs named in
+ *      `KIND_SUFFIX_EXEMPT` predate the rule and skip it. `workflow` and
+ *      `core` carry no suffix rule. ERROR severity.
+ *
  * Usage: bun run scripts/lint-skills.ts   (or: bun run skills:check)
  */
 
@@ -123,6 +139,35 @@ const KNOWN_CATEGORIES = new Set([
   'framework-evolution',
   'orchestration',
 ]);
+
+/**
+ * Purpose axis vocabulary (`metadata.kind`) — mirrors §2b of the strategy doc.
+ * Orthogonal to the tier (ownership) and to `complementary_categories`
+ * (domain): a skill is exactly one of these. Checks 15-17.
+ */
+const KNOWN_KINDS = new Set(['context', 'workflow', 'utility', 'core']);
+
+/**
+ * Slugs exempt from KIND-SUFFIX (check 17), in both directions. Every entry
+ * predates the suffix rule and is grandfathered BY NAME so the exemption stays
+ * visible here instead of hiding in a looser regex:
+ *   - `acli`: a utility without the `-cli` / `-tool` / `-app` suffix.
+ *   - `project-context`, `sync-ai-context`: workflows whose slug ends
+ *     `-context` (the suffix the `context` kind reserves).
+ * A new skill picks a slug that matches its kind; it does not get added here.
+ */
+const KIND_SUFFIX_EXEMPT = new Set<string>(['acli', 'project-context', 'sync-ai-context']);
+
+/**
+ * Suffix ⇔ kind table for KIND-SUFFIX (check 17), enforced both ways: a slug
+ * carrying one of the suffixes must declare that kind, and a skill declaring
+ * that kind must carry one of its suffixes (unless in `KIND_SUFFIX_EXEMPT`).
+ * `workflow` and `core` are absent on purpose: they have no suffix rule.
+ */
+const KIND_SUFFIX_RULES: ReadonlyArray<{ kind: string, suffixes: readonly string[] }> = [
+  { kind: 'context', suffixes: ['-context'] },
+  { kind: 'utility', suffixes: ['-cli', '-tool', '-app'] },
+];
 
 /**
  * QA workflow skills subject to the anti-leak rule (check 6). The "Forbidden
@@ -249,17 +294,21 @@ type CategoriesField
 interface SkillFrontmatter {
   name?: string
   categoriesField: CategoriesField
+  /** `metadata.kind` (purpose axis); undefined when the nested key is absent. */
+  kind?: string
   raw: string
 }
 
 /**
  * Extracts the YAML frontmatter (between leading `---` fences) and pulls out
- * `name` and `complementary_categories`. We only need a tiny subset, so we
- * do not pull in a YAML dependency — the format we expect is:
+ * `name`, `complementary_categories` and `metadata.kind`. We only need a tiny
+ * subset, so we do not pull in a YAML dependency — the format we expect is:
  *
  *   ---
  *   name: foo
  *   complementary_categories: [a, b, c]
+ *   metadata:
+ *     kind: workflow
  *   ---
  *
  * If the categories field uses block-list YAML (- a / - b), we also handle
@@ -312,7 +361,17 @@ function parseFrontmatter(content: string): SkillFrontmatter | null {
     categoriesField = { state: 'present-nonempty', values: categories };
   }
 
-  return { name, categoriesField, raw: block };
+  // Nested form only: `metadata:` followed by an indented block holding `kind:`.
+  // `metadata` is the extension point the Agent Skills frontmatter spec allows,
+  // so `kind` is never read from the top level.
+  let kind: string | undefined;
+  const metadataMatch = block.match(/^metadata:[ \t]*\n((?:[ \t]+\S[^\n]*\n?)+)/m);
+  if (metadataMatch) {
+    const kindMatch = metadataMatch[1].match(/^[ \t]+kind:[ \t]*["']?([\w-]+)["']?/m);
+    if (kindMatch) { kind = kindMatch[1]; }
+  }
+
+  return { name, categoriesField, kind, raw: block };
 }
 
 // -----------------------------------------------------------------------------
@@ -1047,6 +1106,27 @@ function main(): void {
         t1WithFrameworkEvolution.push(entry);
       }
     }
+
+    // Checks 15-17: purpose axis (`metadata.kind`). Runs on every skill this
+    // walk classifies as T1 (project-authored) or vendored T2; the committed
+    // community skills were skipped above, so a vendor body is never linted.
+    if (fm.kind === undefined) {
+      violation('ERROR', entry, 'KIND-MISSING: frontmatter must declare `metadata.kind` (one of: context, workflow, utility, core); see skill-composition-strategy.md §2b');
+    }
+    else if (!KNOWN_KINDS.has(fm.kind)) {
+      violation('ERROR', entry, `KIND-VOCAB: \`metadata.kind: ${fm.kind}\` is not in the §2b vocabulary (context, workflow, utility, core)`);
+    }
+    else if (!KIND_SUFFIX_EXEMPT.has(entry)) {
+      for (const rule of KIND_SUFFIX_RULES) {
+        const matchedSuffix = rule.suffixes.find(suffix => entry.endsWith(suffix));
+        if (matchedSuffix && fm.kind !== rule.kind) {
+          violation('ERROR', entry, `KIND-SUFFIX: slug ends \`${matchedSuffix}\` so \`metadata.kind\` must be \`${rule.kind}\`, found \`${fm.kind}\``);
+        }
+        if (fm.kind === rule.kind && !matchedSuffix) {
+          violation('ERROR', entry, `KIND-SUFFIX: \`metadata.kind: ${rule.kind}\` requires a slug ending ${rule.suffixes.map(s => `\`${s}\``).join(' / ')} (grandfathered by name in KIND_SUFFIX_EXEMPT: ${[...KIND_SUFFIX_EXEMPT].join(', ')})`);
+        }
+      }
+    }
   }
 
   // Build T1 dir slug set (available after the T1 walk).
@@ -1156,6 +1236,9 @@ function main(): void {
     'SESSION-SCOPE-INVALID (.session/<skill>/<scope>/ shape mismatch)',
     'SKILL-HARDCODED-CFID (literal customfield_NNNN outside tool-owner allowlist)',
     'SKILL-LITERAL-TOOL (literal acli / xray / mcp__atlassian__ / curl rest/api/3/ outside tool-owner allowlist)',
+    'KIND-MISSING (T1 / vendored T2 SKILL.md without `metadata.kind`)',
+    'KIND-VOCAB (`metadata.kind` outside context / workflow / utility / core)',
+    'KIND-SUFFIX (slug suffix `-context` / `-cli` / `-tool` / `-app` vs declared kind, both directions)',
   ];
 
   if (violations.length === 0) {

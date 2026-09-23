@@ -4,6 +4,8 @@ description: "Adapt this boilerplate's KATA test architecture, auth, schemas, va
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 complementary_categories: [testing-e2e, testing-api, ci-cd, meta-skill]
+metadata:
+  kind: workflow
 ---
 
 # Adapt Framework

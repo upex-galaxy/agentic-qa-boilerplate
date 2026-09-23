@@ -5,6 +5,8 @@ license: MIT
 compatibility: [claude-code, opencode]
 phase: bootstrap
 complementary_categories: [meta-skill]
+metadata:
+  kind: workflow
 ---
 
 <!-- Model preferences (advisory; dispatchers may use to route) -->
@@ -197,7 +199,7 @@ Backlog → Shift-Left QA → Estimation → Ready For Dev → In Progress → I
 
 (Test cases in the TMS have their own lifecycle too: `READY → In Review → Candidate → In Automation → Pull Request → AUTOMATED` — `MANUAL` is the terminal for tests that will never be automated.)
 
-Each Story gets three canonical TMS artifacts: the **ATP** (plan), the **ATR** (results), and the **ATS** (Acceptance Test Set — groups ALL the Story's TCs; its link to the Story is what fills the Xray coverage panel). Above the Story sits the planning ladder: **FTP** per feature/Epic (`/sprint-testing` feature-test-planning), **STP** at sprint start + **STR** recap at sprint close (`/sprint-testing`, with `/regression-testing` as fallback/completer), and the **MTP** Epic from `/master-test-plan`.
+Each Story gets three canonical TMS artifacts: the **ATP** (plan), the **ATR** (results), and the **ATS** (Acceptance Test Set — groups ALL the Story's TCs; its link to the Story is what fills the Xray coverage panel). Above the Story sits the planning ladder: **FTP** per feature/Epic (`/sprint-testing` feature-test-planning), **STP** at sprint start + **STR** recap at sprint close (`/sprint-testing`, with `/regression-testing` as fallback/completer), the long-lived **RTP** (Regression Test Plan, fed by `/test-documentation`) with one **RTR** (Regression Test Results) per regular regression run, which `/regression-testing` creates before the CI trigger and closes with its GO / CAUTION / NO-GO verdict, and the **MTP** Epic from `/master-test-plan`.
 
 Two conventions apply to every quality issue you file along the way. **Components** are the target app's functional modules — mandatory on bugs, defects, improvements, and Tests — and are reconciled against the app's real modules via `/jira-components`. And bugs parent to the QA process epics (e.g. "QA Defect Management"), never a product/dev epic, carrying the source Story via an issue-link: parent = QA bucket, link = source Story, components = product module (the three-axis model).
 
@@ -214,7 +216,7 @@ Two conventions apply to every quality issue you file along the way. **Component
 5. Executes smoke + trifuerza exploration (UI / API / DB).
 6. Files ATR (Acceptance Test Results) + bug reports if defects found.
 7. Transitions the ticket through QA states.
-8. Hands off to Stage 4 (`/test-documentation`) to document the executed test cases in the TMS and score ROI — Stage 4's Candidate verdicts are what feed `/test-automation`. Where those Candidates physically go: Stage 4 refines each one (the sprint TC is a draft, its title re-derived to the canonical `{US_ID}: TC#: should …` form), groups them into named e2e regression flows, and adds every one to the project's long-lived **Regression Test Plan (RTP)** with the `regression-candidate` label — that RTP membership, not any local report, is what `/test-automation` and `/regression-testing` read downstream.
+8. Hands off to Stage 4 (`/test-documentation`) to document the executed test cases in the TMS and score ROI — Stage 4's Candidate verdicts are what feed `/test-automation`. Where those Candidates physically go: Stage 4 refines each one (the sprint TC is a draft, its title re-derived to the canonical `{US_ID}: TC#: should …` form), groups them into named e2e regression flows, and adds every one to the project's long-lived **Regression Test Plan (RTP)** with the `regression-candidate` label — that RTP membership, not any local report, is what `/test-automation` and `/regression-testing` read downstream, and every regular regression run records its results in an RTR linked to that RTP (the STR stays the sprint-close recap).
 
 You confirm at the gates.
 
@@ -345,7 +347,7 @@ skill and the moment that loads this one, or says plainly that only a human invo
 
 | Skill | Source | Loaded by / when |
 | --- | --- | --- |
-| `skill-creator` | anthropics/skills | **user-invoked only, today.** No flow names it. `/framework-development` is the natural owner when the change IS a skill, but its skill list does not say so yet — do not read this row as if it did |
+| `skill-creator` | anthropics/skills | `/framework-development` when the change IS a skill, and `project-context` mode `context-skill` for a consumer's SUT context skill. Both scaffold from `agentic-qa-core/references/skill-scaffold.md` and load this one (T4: ask first) ONLY for the test prompts and the description optimizer; the scaffold works without it |
 | `find-skills` | vercel-labs/skills | **automatic, last resort.** `agentic-qa-core/references/skill-composition-strategy.md` §11.2: scan T1+T2, then installed T3+T4, and only if a task domain still has no match does any flow invoke this — then asks before installing |
 | `github-actions-docs` | xixu-me/skills | `/framework-development` and `/regression-testing` when EDITING or diagnosing `.github/workflows/**` (both name it; reading a workflow does not need it) |
 | `html-ppt` | lewislulu/html-ppt-skill | **user-invoked only.** `packages/decks/` is hand-authored; this is for a one-off deck outside that tree |

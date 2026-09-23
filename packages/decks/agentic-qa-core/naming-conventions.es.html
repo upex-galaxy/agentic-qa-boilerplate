@@ -217,6 +217,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
       <thead><tr><th>Altitud</th><th>Plan (P)</th><th>Results (R)</th></tr></thead>
       <tbody>
         <tr><td>Producto</td><td class="m"><span class="lp">MTP</span> — Master Test Plan</td><td class="dim">—</td></tr>
+        <tr><td>Regresión</td><td class="m"><span class="lp">RTP</span> · Regression Test Plan</td><td class="m"><span class="lp">RTR</span> · Regression Test Results</td></tr>
         <tr><td>Feature</td><td class="m"><span class="lp">FTP</span> — Feature Test Plan</td><td class="dim">— (FTR recortado: duplicaba al STR)</td></tr>
         <tr><td>Sprint</td><td class="m"><span class="lp">STP</span> — Sprint Test Plan</td><td class="m"><span class="lp">STR</span> — Sprint Test Results</td></tr>
         <tr><td>Story</td><td class="m"><span class="lp">ATP</span> — Acceptance Test Plan</td><td class="m"><span class="lp">ATR</span> — Acceptance Test Results</td></tr>
@@ -233,7 +234,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
       </tbody>
     </table>
   </div>
-  <div class="callout mt-m" style="padding:11px 14px"><p style="margin:0" class="dim"><b>Primera letra</b> = altitud: <b>M</b>aster · <b>F</b>eature · <b>S</b>print · <b>A</b>cceptance (Story). <b>Última letra</b>: <b>P</b> = Plan (qué se probará) · <b>R</b> = <b>Results</b> (el paraguas: la ejecución y sus runs) · <b>S</b> = <b>Set</b> (agrupa — la familia Story es ATC/ATP/ATR/ATS). Un "run" = una iteración de la ejecución.</p></div>
+  <div class="callout mt-m" style="padding:11px 14px"><p style="margin:0" class="dim"><b>Primera letra</b> = altitud: <b>M</b>aster · <b>R</b>egression · <b>F</b>eature · <b>S</b>print · <b>A</b>cceptance (Story). <b>Última letra</b>: <b>P</b> = Plan (qué se probará) · <b>R</b> = <b>Results</b> (el paraguas: la ejecución y sus runs) · <b>S</b> = <b>Set</b> (agrupa — la familia Story es ATC/ATP/ATR/ATS). Un "run" = una iteración de la ejecución.</p></div>
 </section>
 
 <!-- 3 · LAS 7 CAPAS -->
@@ -408,6 +409,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
   </div>
   <div class="lstack mt-m">
     <div class="lbar" style="--ac:#a78bfa"><span class="ln">PRODUCT</span><span class="ld">MTP — Master Test Plan</span><span class="lx">Epic QA Master Test Plan</span></div>
+    <div class="lbar" style="--ac:#fb923c"><span class="ln">REGRESSION</span><span class="ld">RTP vivo (lo alimenta /test-documentation al promover) → RTR por corrida (/regression-testing) · "Regression Testing", 1 por veredicto</span><span class="lx">{PROJECT_KEY|module} · {scope-id}</span></div>
     <div class="lbar" style="--ac:#34d399"><span class="ln">FEATURE</span><span class="ld">FTP — item-first; /sprint-testing lo crea/actualiza al cargar el Epic (sin Results: FTR recortado)</span><span class="lx">{EPIC-KEY}</span></div>
     <div class="lbar" style="--ac:#60a5fa"><span class="ln">SPRINT</span><span class="ld">STP al inicio del sprint (/sprint-testing) → STR al cierre — "Regression Testing", 1/sprint</span><span class="lx">Sprint#{N}</span></div>
     <div class="lbar" style="--ac:#22d3ee"><span class="ln">STORY</span><span class="ld">ATP → ATR — "Story Testing", 1 run</span><span class="lx">{STORY-KEY}</span></div>
@@ -417,6 +419,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
     <thead><tr><th>Altitud</th><th>Plan</th><th>Results</th><th>Patrón</th></tr></thead>
     <tbody>
       <tr><td>Product</td><td class="m"><span class="lp">MTP</span></td><td class="dim">—</td><td class="m">Epic <span class="dim">QA Master Test Plan</span> (+ master-test-plan.md local)</td></tr>
+      <tr><td>Regression</td><td class="m"><span class="lp">RTP</span></td><td class="m"><span class="lp">RTR</span></td><td class="m">RTP: {PROJECT_KEY|module}: Regression Test Plan · RTR: {scope-id}: Regression Testing <span class="dim">· RTP long-lived, lo alimenta /test-documentation y nunca se completa · RTR 1 por veredicto, lo crea /regression-testing antes del trigger con testPlan → RTP; el STR de cierre de sprint también apunta al RTP</span></td></tr>
       <tr><td>Feature</td><td class="m"><span class="lp">FTP</span></td><td class="dim">—</td><td class="m">FTP: {EPIC-KEY}: … <span class="dim">— item-first; lo crea/actualiza /sprint-testing al cargar el Epic (FTR recortado)</span></td></tr>
       <tr><td>Sprint</td><td class="m"><span class="lp">STP</span></td><td class="m"><span class="lp">STR</span></td><td class="m">STP/STR: Sprint#{N}: … <span class="dim">— STP al inicio del sprint (/sprint-testing, lo consume regression) · STR "Regression Testing" al cierre, 1/sprint</span></td></tr>
       <tr><td>Story</td><td class="m"><span class="lp">ATP</span></td><td class="m"><span class="lp">ATR</span></td><td class="m">ATP/ATR: {STORY-KEY}: … <span class="dim">— término ATR "Story Testing", 1 run</span></td></tr>

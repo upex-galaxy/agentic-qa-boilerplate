@@ -72,6 +72,8 @@ Registered companions today, all owned by `sprint-testing`:
 
 The four sprint-altitude ones exist only when the run has more than one executor (`sprint-testing/references/fleet-conductor.md`). A single-executor run has none of them, and a resume must treat every one of them as optional.
 
+Two companions any workflow skill may write inside its own scope, both governed by `agentic-qa-core/references/skill-refinement-protocol.md` and `agentic-qa-core/references/upstream-feedback.md`: `refinements.md` (append-only proposals for a skill edit, never the edit itself) and `upstream-issue-NN.md` (a redacted draft of an issue against the boilerplate, filed only on explicit OK). A resume treats both as optional.
+
 ### `## Live Progress` — the heartbeat contract
 
 A long-running session cannot be observed through `progress.md`: that file is written by the **orchestrator** at phase boundaries, so while a phase is in flight it says nothing, and a session running unattended (a launched worker, an unattended routine) has no orchestrator standing by to write it.
