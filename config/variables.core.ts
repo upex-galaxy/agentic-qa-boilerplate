@@ -45,14 +45,21 @@ const {
   // === TMS Configuration ===
   TMS_PROVIDER = 'xray', // Used: config.tms.provider (jiraSync) - 'xray' | 'jira'
   AUTO_SYNC = 'false', // Used: config.tms.autoSync (jiraSync, global.teardown)
-  // Key of the STR — the Test Execution linked to the sprint's STP — that this
-  // run writes results ONTO. NOT the STP's own key: an Xray Test Plan derives
-  // its status from its Executions and is never written into. The item is
-  // created by /regression-testing or /sprint-testing, already parented to the
+  // Key of the Test Execution this run imports into: the RTR by default (one
+  // per regression verdict, created by /regression-testing before the trigger,
+  // linked to the RTP), the sprint-close STR only when the run IS the sprint
+  // close. Never a Test Plan key: an Xray Test Plan derives its status from its
+  // Executions and is never written into. The item is already parented to the
   // "QA Test Artifacts" epic. Empty = the sync mints its own Execution, which
-  // no API call can parent afterwards. Read only when TMS_PROVIDER=xray.
+  // no API call can parent afterwards. Read only when TMS_PROVIDER=xray. The
+  // NAME is kept so downstream secrets keep working; only the semantics moved.
   // See tests/utils/jiraSync.ts.
   STP_EXECUTION_KEY = '', // Used: config.tms.stpExecutionKey (jiraSync)
+  // Key of the RTP (the product-altitude Regression Test Plan). Optional and
+  // local-only: used ONLY by the in-process Xray fallback, so an Execution
+  // minted by `bun run test:sync` without an execution key is at least linked
+  // to the plan. CI never needs it: /regression-testing creates the RTR first.
+  RTP_KEY = '', // Used: config.tms.rtpKey (jiraSync fallback only)
 
   // === Xray Cloud (required only if TMS_PROVIDER=xray AND AUTO_SYNC=true) ===
   XRAY_CLIENT_ID = '', // Required if AUTO_SYNC=true (jiraSync)
@@ -124,6 +131,7 @@ export const TMS_CONFIG = {
   provider: TMS_PROVIDER as 'xray' | 'jira' | 'none',
   autoSync: AUTO_SYNC === 'true',
   stpExecutionKey: STP_EXECUTION_KEY,
+  rtpKey: RTP_KEY,
   xray: {
     clientId: XRAY_CLIENT_ID,
     clientSecret: XRAY_CLIENT_SECRET,

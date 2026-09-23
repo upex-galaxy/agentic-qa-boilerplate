@@ -49,6 +49,7 @@ decides that, not the skill. Everything after that is the harness's job.
 | **MTP** (Master Test Plan) | `epic` | `/project-context` mode `test-plan` | — | the MTP is the **QA Master Test Plan Epic**, not a Test Plan item (defect-management-doctrine Part 4). Never moved | n/a |
 | **ATR** (Acceptance Test Results) | `test_execution` | `/sprint-testing` Planning (created with its Test Environment) | `active` | Reporting, after every run status is recorded: `complete` → `close` | `close` |
 | **STR** (Sprint Test Results) | `test_execution` | sprint close — `/sprint-testing` batch close or `/regression-testing`, whoever arrives first | `active` | after the GO / CAUTION / NO-GO verdict is written: `complete` → `close` | `close` |
+| **RTR** (Regression Test Results) | `test_execution` | `/regression-testing` Phase 1, before the CI trigger (created with its Test Environment, assignee self, `testPlan → RTP`) | `active` | after the GO / CAUTION / NO-GO verdict comment is posted on it: `complete` → `close`. One RTR per verdict: an environment re-run before the verdict imports into the same RTR; a re-run after a verdict is a new RTR, never `reactive` | `close` |
 | **Re-Test Execution** | `re_test_execution` | `/sprint-testing` bug retest | `active` | after the repro Test's run is recorded PASSED/FAILED: `complete` → `close` | `close` |
 | **ATS** (Acceptance Test Set) | `test_set` | `/sprint-testing` Planning (Set-first order, step ①) | `designing` | Reporting, once membership is final: `done` → `close` | `close` |
 | **TS** (feature Test Set, optional) | `test_set` | `/test-documentation` (lazily, 1:1 with the Epic) | `designing` | **stays `designing`** — a feature set keeps accepting members for the life of the feature. `done` → `close` only when the Epic itself closes | `close` (at Epic close) |
@@ -85,7 +86,7 @@ use it; no skill fires it on its own.
 ## 2. Ownership rule — set the assignee at CREATE, always
 
 **On CREATE of any QA artifact** — Test Plan (ATP / STP / FTP / RTP), Test Execution
-(ATR / STR / Re-Test), Test Set (ATS / TS), Precondition, Test (TC), and the `[QA]
+(ATR / STR / RTR / Re-Test), Test Set (ATS / TS), Precondition, Test (TC), and the `[QA]
 Shift-Left Review` subtask — **the harness sets `assignee` to the acting QA user (the
 authenticated session identity, i.e. self).**
 

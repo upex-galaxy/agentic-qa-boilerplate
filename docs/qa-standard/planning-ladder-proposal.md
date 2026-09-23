@@ -1,4 +1,4 @@
-# QA Planning Ladder — Nomenclature Standard (ratified 2026-06-26, amended 2026-08-21 and 2026-09-15)
+# QA Planning Ladder — Nomenclature Standard (ratified 2026-06-26, amended 2026-08-21, 2026-09-15 and 2026-09-23)
 
 > **This is ratified doctrine, not an open proposal.** The skills treat it as settled
 > (`agentic-qa-core/references/defect-management-doctrine.md`, `traceability-linking.md`), so do not
@@ -24,8 +24,8 @@
 > `Regression Testing` ("Sprint" comes from the scope-id, no redundancy) →
 > `STR: Sprint#30: Regression Testing`.
 >
-> **Scope**: the test-PLANNING hierarchy (MTP / FTP / STP / ATP) and its RUNNERS
-> (STR / ATR), the **ATS** coverage rung, the four QA-process Epics that hold them, the
+> **Scope**: the test-PLANNING hierarchy (MTP / FTP / STP / ATP / RTP) and its RUNNERS
+> (STR / ATR / RTR), the **ATS** coverage rung, the four QA-process Epics that hold them, the
 > Jira-item-over-custom-field rule, plus Test Set naming. Test-CASE naming
 > (`should …`), `@atc`, components, tags, branches — already ratified, see the Naming Codex.
 
@@ -64,7 +64,7 @@ QA artifact type has a dedicated governance Epic.
 |---|---|---|---|
 | **QA Master Test Plan** (the MTP) | `master_test_plan_epic` | every **Test Plan** (FTP · STP · ATP · RTP) | NEW |
 | **QA Test Repository** | `test_repository_epic` | every **Test** (Test Case) | exists |
-| **QA Test Artifacts** | `test_artifacts_epic` | every **Test Execution** (STR · ATR), **Precondition**, **Test Set** (ATS · TS) | NEW |
+| **QA Test Artifacts** | `test_artifacts_epic` | every **Test Execution** (STR · ATR · RTR), **Precondition**, **Test Set** (ATS · TS) | NEW |
 | **QA Defect Management** | `defect_epic` | every **Bug / Defect / Improvement** | exists |
 
 **The `QA ` prefix is deliberate** (existing convention): a reader scanning the Epic list
@@ -110,8 +110,9 @@ components          ->  PRODUCT module     (what part of the product it touches)
 | STP | Test Plan | QA Master Test Plan | `relates to` the **Sprint** (+ regression scope) |
 | ATP | Test Plan | QA Master Test Plan | `tests` the **User Story** |
 | RTP | Test Plan | QA Master Test Plan | `relates to` the Regression Epic (if any); membership = `regression-candidate` Tests |
-| STR | Test Execution | QA Test Artifacts | `relates to` Sprint · `testPlan` → STP |
+| STR | Test Execution | QA Test Artifacts | `relates to` Sprint · `testPlan` → STP and → RTP (dual membership) |
 | ATR | Test Execution | QA Test Artifacts | `is tested by` Story · `testPlan` → ATP |
+| RTR | Test Execution | QA Test Artifacts | `testPlan` → RTP · optional `relates to` a Release issue (release-candidate runs) |
 | ATS | Test Set | QA Test Artifacts | `tests` the **User Story** — **this link is what fills the coverage panel** |
 | TS (feature-level) | Test Set | QA Test Artifacts | groups Tests by feature/module (optional) |
 | Precondition | Precondition | QA Test Artifacts | `relates to` the Tests it sets up |
@@ -139,7 +140,7 @@ Parent stays the MTP Epic for all Plans regardless of roll-up.
 | **Sprint** | **STP** Sprint Test Plan | **STR** Sprint Test Results | Test Plan → Test Execution | **STP** created at sprint START — find-or-create in the Session Start of the FIRST sprint ticket in `/sprint-testing` (fallback: `/regression-testing` creates it when running suites); a LIVING planner updated per tested ticket, closed at sprint end. **STR** created at sprint CLOSE as the recap of all results (`/sprint-testing` batch-close or `/regression-testing` — first to arrive creates it, the other completes it) | 1 per sprint (term: "Regression Testing"; "Sprint" comes from the `Sprint#{N}` scope-id) |
 | **User Story** | **ATP** Acceptance Test Plan | **ATR** Acceptance Test Results | Test Plan → Test Execution | pre-sprint the ATP lives ONLY in `{{jira.acceptance_test_plan}}` (authored by `/shift-left-testing`); the Test Plan ITEM is born in sprint-testing S1 from that field. ATR item created in S1, filled in S3 | ATP 1 per Story · ATR 1 run ("Story Testing") |
 | **User Story (coverage)** | **ATS** Acceptance Test Set | — (membership, not a run) | Test Set | sprint-testing S1, **Set-first**: create/update the ATS with the TCs BEFORE the ATP/ATR items — Plan and Exec derive their test lists from the ATS membership | 1 per Story, **mandatory** (even with a single TC) |
-| **Product (regression, long-lived)** | **RTP** Regression Test Plan | — (the **STR** runs it: a regression execution derives its test list from the RTP membership) | Test Plan | `/test-documentation` find-or-creates it and promotes every `regression-candidate` TC into it (Phase 3). Unlike every other Plan it has **no terminal**: it reaches `ready` on the first promotion and stays there for the life of the product — a regression run never completes the plan it ran from | 1 per project (or per module) |
+| **Product (regression, long-lived)** | **RTP** Regression Test Plan | **RTR** Regression Test Results (one per regression verdict; the sprint-close STR may also link to the RTP) | Test Plan → Test Execution | `/test-documentation` find-or-creates it and promotes every `regression-candidate` TC into it (Phase 3). Unlike every other Plan it has **no terminal**: it reaches `ready` on the first promotion and stays there for the life of the product — a regression run never completes the plan it ran from. **RTR** created by `/regression-testing` BEFORE the CI trigger (so CI imports into its key), the verdict comment lands on it, closed after the verdict | 1 per project (or per module) · RTR 1 per verdict |
 
 ---
 
@@ -149,7 +150,7 @@ Parent stays the MTP Epic for all Plans regardless of roll-up.
 {ACRONYM}: {scope-id}: {descriptor}
 ```
 
-- **ACRONYM** — `MTP` (epic) · `FTP` · `STP` · `ATP` · `RTP` (plans) · `STR` · `ATR` (runs) · `ATS` (per-Story Test Set — the ATC/ATP/ATR/ATS family).
+- **ACRONYM** — `MTP` (epic) · `FTP` · `STP` · `ATP` · `RTP` (plans) · `STR` · `ATR` · `RTR` (runs) · `ATS` (per-Story Test Set — the ATC/ATP/ATR/ATS family).
 - **scope-id** — the key of the thing under test at that altitude (feature-Epic key, `Sprint N`, Story key).
 - **descriptor** — human-readable, embeds the testing-term where the user requires it.
 
@@ -163,6 +164,7 @@ Parent stays the MTP Epic for all Plans regardless of roll-up.
 | **ATR** | Test Execution | `ATR: {STORY-KEY}: Story Testing` | `ATR: PROJ-123: Story Testing` |
 | **ATS** | Test Set | `ATS: {STORY-KEY}: {story title}` | `ATS: PROJ-123: Apply discount at checkout` |
 | **RTP** | Test Plan | `RTP: {PROJECT_KEY\|module}: Regression Test Plan` | `RTP: PROJ: Regression Test Plan` |
+| **RTR** | Test Execution | `RTR: {scope-id}: Regression Testing` (scope-id `{env}-{YYYY-MM-DD}`, optional `#2` suffix the same day, or a release tag for a release candidate) | `RTR: staging-2026-09-23: Regression Testing` · `RTR: v2.3.0-rc1: Regression Testing` |
 
 > **No "ATP DRAFT" variant exists.** The pre-sprint pass (`/shift-left-testing`) authors the ATP
 > at outline maturity **into the `{{jira.acceptance_test_plan}}` custom field only** — no Test
@@ -197,7 +199,7 @@ Parent stays the MTP Epic for all Plans regardless of roll-up.
 ## 4. Items over custom fields (standard behavior change)
 
 **By excellence, every Plan and every Run is a real Jira issue** — a **Test Plan** item for
-FTP/STP/ATP and a **Test Execution** item for STR/ATR — in BOTH modalities (these are
+FTP/STP/ATP/RTP and a **Test Execution** item for STR/ATR/RTR — in BOTH modalities (these are
 native Jira work types in the UPEX workspace, Xray-independent).
 
 **Fallback (degraded mode only):** ATP/ATR MAY live as custom fields on the User Story
@@ -265,3 +267,12 @@ run/coverage engine on top.
 ### Amendment — RTP ratified 2026-09-15
 
 - **RTP added to the ladder** — the long-lived **Regression Test Plan** the live layer already ran under that full name now carries the ladder acronym, so it reads beside FTP / STP / ATP instead of being invented ad hoc by each reader. One per project (or per module), `RTP: {PROJECT_KEY|module}: Regression Test Plan`, parented to the **QA Master Test Plan** Epic, produced by `/test-documentation` as the promotion target for every `regression-candidate` TC and consumed by `/regression-testing` (the STR derives its test list from the RTP membership). It is the only Plan with **no terminal**: `ready` on the first promotion, `ready` for the life of the product.
+
+### Amendment — RTR ratified 2026-09-23
+
+- **RTR added to the ladder**: the **Regression Test Results**, the Runner the RTP row above had left empty. One **Test Execution** per regression verdict, `RTR: {scope-id}: Regression Testing` with scope-id `{env}-{YYYY-MM-DD}` (optional `#2` suffix for a second verdict the same day) or a release tag for a release candidate (`RTR: v2.3.0-rc1: Regression Testing`), parented to the **QA Test Artifacts** Epic, linked to the RTP through the Xray `testPlan` field, carrying its Test Environment and an assignee (self) from creation. Same `test_execution` workflow as STR and ATR (`active` → `complete` → `close`): no catalog change. `/regression-testing` creates it at `active` BEFORE the CI trigger so the run imports into its key, posts the GO / CAUTION / NO-GO comment on it, then closes it. An environment re-run before the verdict imports into the same RTR; a re-run after a verdict is a NEW RTR, never a re-opened one.
+- **STR keeps its sprint-close role**: `STR: Sprint#{N}: Regression Testing` stays the recap of the sprint's results, created by whoever arrives first at sprint close, and now carries **dual `testPlan` membership**: the STP (as before) AND the RTP, so the RTP's latest-status rollup includes the sprint-close run. Every other regression run is an RTR.
+- **`STP → RTP` roll-up REJECTED**: the RTP is a curated per-TC subset (only Candidate / Manual verdicts are promoted, Deferred never enters), so a sprint plan is not "part of" it; regression membership is expressed per Test through Test Plan membership plus the `regression-candidate` label, never by chaining sprint plans into the RTP. The results side likewise has no roll-up: no `STR is part of RTR`, no `RTR is part of anything`.
+- **Modality jira-native**: no RTR item (there is no Test Execution work type); skip with a stated note, the results are the per-Test status writes plus the `[LOCAL]` report. Parity with the STR rule.
+- **CI write-back**: the import target of a run is the RTR of THAT run, passed per run (a `workflow_dispatch` input over the `STP_EXECUTION_KEY` secret, whose name is kept and whose meaning becomes "the Execution this run imports into"); smoke and sanity never write into a regression Execution unless a key is passed to them explicitly.
+- Rationale, the six decisions and the rejected alternatives: `.context/ADR/ADR-0002-regression-run-record.md`.

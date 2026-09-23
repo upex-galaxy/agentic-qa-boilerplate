@@ -246,13 +246,13 @@ components          ->  PRODUCT module/epic  ("what part of the product it affec
 
 | Epic | Holds | Project-configured name |
 |---|---|---|
-| **Master Test Plan epic** | every **Test Plan** (FTP/STP/ATP) | `qa.qa_epics.master_test_plan_epic.name` — **"QA Master Test Plan"** |
+| **Master Test Plan epic** | every **Test Plan** (FTP/STP/ATP/RTP) | `qa.qa_epics.master_test_plan_epic.name` — **"QA Master Test Plan"** |
 | **Test Repository epic** | every **Test** (TC) | `qa.qa_epics.test_repository_epic.name` — **"QA Test Repository"** |
-| **Test Artifacts epic** | every **Test Execution** (STR/ATR), **Precondition**, and **Test Set** — both the per-Story **ATS** (`ATS: {US_ID}: {story title}` — MANDATORY per Story, components INHERITED from the Story) and the optional feature-level **`TS:`** (`TS: {EPIC\|module}: Validate {feature}` — components optional, may cross modules) | `qa.qa_epics.test_artifacts_epic.name` — **"QA Test Artifacts"** |
+| **Test Artifacts epic** | every **Test Execution** (STR/ATR/RTR), **Precondition**, and **Test Set** — both the per-Story **ATS** (`ATS: {US_ID}: {story title}` — MANDATORY per Story, components INHERITED from the Story) and the optional feature-level **`TS:`** (`TS: {EPIC\|module}: Validate {feature}` — components optional, may cross modules) | `qa.qa_epics.test_artifacts_epic.name` — **"QA Test Artifacts"** |
 | **Defect epic** | every **bug/defect/improvement** | `qa.qa_epics.defect_epic.name` — **"QA Defect Management"** |
 
 - The **Master Test Plan epic has a special role**: it is an **Epic** (not a Test
-  Plan work type), is the **parent of all Test Plans** (FTP/STP/ATP), mirrors
+  Plan work type), is the **parent of all Test Plans** (FTP/STP/ATP/RTP), mirrors
   `.context/master-test-plan.md` + points to the official QA team repository, and is
   cross-linked (`relates to`) to its three sibling QA epics (Test Repository, Test
   Artifacts, Defect Management) — so the four form a navigable QA-governance cluster.

@@ -97,10 +97,10 @@ how much has been built.
 | **Planning** | Creates ATS → ATP → ATR set-first, derives TCs or outlines per modality, decides the UI/API/DB surfaces by triage + veto + risk score | The Story Explanation checkpoint (the skill explains the story and waits) | ATP as a Test Plan item, ATR carrying its Test Environment (hard gate), coverage stated on both axes | **2** | **none** |
 | **Execution** | Runs smoke as Go/No-Go, executes the outlines, explores past them across the trifuerza, proposes bugs with derived severity | The triage of every bug and the **filing** of every bug; any security/auth severity recalibration | Screenshots under the PBI `evidence/` folder, smoke demonstrably run first | **3** | **none** |
 | **Reporting** | Fills the ATR, writes the QA comment, creates and verifies the traceability links | The workflow transition (`qa_sign_off` / `defect_reported`) | ATR as a Test Execution item, links resolved and verified in direction | **2** | **none** |
-| **Sprint close** | Creates or completes the sprint STR (first-to-arrive creates it, the other completes it), sets its Test Environment, links STR → STP via the `testPlan` edge | The STP's closure — its final scope/progress and the transition to its terminal state | STR as a Test Execution item carrying its Test Environment, STR → STP link resolved, STP at its terminal state | **2** | **none** |
+| **Sprint close** | Creates or completes the sprint STR (first-to-arrive creates it, the other completes it), sets its Test Environment, links STR → STP via the `testPlan` edge and STR → RTP (dual membership) | The STP's closure — its final scope/progress and the transition to its terminal state | STR as a Test Execution item carrying its Test Environment, STR → STP and STR → RTP links resolved, STP at its terminal state | **2** | **none** |
 | **Documentation** | Derives scenarios by technique, scores ROI, proposes Candidate / Manual / Deferred, persists only the regression-worthy ones | **Every ROI verdict**, the regression epic, the Test Set | ROI score per scenario; the >50% Candidate/Manual alarm answered | **2** | **recommended** — a second agent re-reads the verdicts against the ATR |
 | **Automation** | Writes `spec.md` + `automation-plan.md`, then KATA code with `@atc`, then runs the three verifiers and opens the PR | The plan **before a line of code**; the merge; the call at the third revision loop | Tests green, types clean, lint clean, `@atc` ids resolving to real tickets, manifest fresh | **2 → 3** inside the approved plan | **required** — `/pr-review-lead` or `/judgment-day`, in a clean context |
-| **Regression** | Runs the suite, classifies every failure, computes pass-rate and trend, emits GO / CAUTION / NO-GO, writes the STR | The CAUTION verdict; never invents the sprint number | Allure report; ≥5 runs of history before the word FLAKY is allowed (below that: INSUFFICIENT HISTORY); rate computed over the last N = min(10, available); STR → STP | **3** (4 for a clean GO) | **none** |
+| **Regression** | Runs the suite, classifies every failure, computes pass-rate and trend, emits GO / CAUTION / NO-GO, writes the RTR (one per verdict, `testPlan → RTP`); the STR only when the run is the sprint close | The CAUTION verdict; never invents the sprint number | Allure report; ≥5 runs of history before the word FLAKY is allowed (below that: INSUFFICIENT HISTORY); rate computed over the last N = min(10, available); RTR → RTP (STR → STP and STR → RTP at sprint close) | **3** (4 for a clean GO) | **none** |
 | **Observation** | *(agentic routine, no skill)* Watches SLOs, error budget, RUM and canary signals; opens items into the backlog; feeds the next Shift-Left pass | The SLOs and the error-budget policy; the decision to stop releases | Product metrics against the project's own targets | **3** | **n/a** |
 
 Read the table with the DoD checklist of the same stage, not instead of it: the
@@ -140,7 +140,7 @@ terminal there) is `artifact-lifecycle.md` §1. Do not restate it; resolve again
 | **Sprint close** | STP · STR | STP at `completed` (via `complete`); STR at `close` (via `complete`) after the verdict is written |
 | **Documentation** | promoted TCs · RTP · feature TS · Preconditions | Candidate TCs at `candidate` (via `automation_review_from_ready` → `approve_to_automate`); Manual TCs at `manual` (via `for_manual`, **from `ready` — there is no `in_review` → `manual` edge**); Deferred TCs stay `ready`; RTP at `ready` and **stays there** (long-lived, never `completed`); feature TS stays `designing`; Preconditions stay `active` (no transition exists) |
 | **Automation** | TCs in scope | `in_automation` at Code start (via `start_automation`); `pull_request` when the ticket PR opens (via `create_pr`); `automated` ONLY after the suite PR merges to `main` with CI green (via `merged`) |
-| **Regression** | STR · RTP | STR at `close` (via `complete`) after the verdict; RTP **untouched at `ready`** — a regression run never completes the plan it ran from |
+| **Regression** | RTR · STR · RTP | RTR at `close` (via `complete`) after the verdict comment is posted on it, one RTR per verdict; STR at `close` (via `complete`) only when the run is the sprint close; RTP **untouched at `ready`** — a regression run never completes the plan it ran from |
 | **Observation** | *(no skill, no artifacts)* | n/a |
 
 **Ownership and parenting are part of the same gate.** Every artifact CREATED by a
@@ -242,8 +242,9 @@ the stage NEEDS REVISION.
 [ ] The sprint **STR** (`STR: Sprint#{N}: Regression Testing`, Test Execution item, parent
     QA Test Artifacts) exists — first-to-arrive creates it, the other completes it
 [ ] The STR carries its **Test Environment** (same hard gate as the ATR): no environment → DoD failure
-[ ] The STR links to the sprint STP via the `testPlan` edge (`STR → STP`); the STP is closed out
-    with its final scope/progress and transitioned to its terminal state
+[ ] The STR links to the sprint STP via the `testPlan` edge (`STR → STP`) and to the RTP
+    (`STR → RTP`, dual membership); the STP is closed out with its final scope/progress and
+    transitioned to its terminal state
 [ ] Skip-with-a-stated-note ONLY when the `Test Plan` / `Test Execution` work types are absent
     (no field fallback at sprint altitude) — never a silent skip
 [ ] Artifact statuses match §"Lifecycle expectations per stage"; light stage verifier run
@@ -293,6 +294,14 @@ Review:
 [ ] Every failure classified (REGRESSION / FLAKY / KNOWN / ENVIRONMENT / NEW TEST)
 [ ] Pass-rate + trend computed; no silent truncation of skipped/dropped tests
 [ ] GO / CAUTION / NO-GO verdict stated with the evidence behind it
+[ ] The RTR (Test Execution, parent QA Test Artifacts) exists BEFORE the CI trigger and CI
+    imported into ITS key (never the shared sprint secret)
+[ ] The RTR carries its Test Environment and an assignee (self)
+[ ] The RTR links to the RTP via the `testPlan` edge (`RTR → RTP`); the RTP stays `ready`
+[ ] The verdict comment is posted on the RTR, then `complete` → `close`; a re-run after the
+    verdict opens a NEW RTR
+[ ] Modality jira-native: no RTR item, skip with a stated note; results = per-Test status
+    writes + the `[LOCAL]` report
 [ ] Artifact statuses match §"Lifecycle expectations per stage"; light stage verifier run
 ```
 

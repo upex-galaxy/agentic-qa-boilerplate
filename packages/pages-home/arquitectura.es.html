@@ -402,7 +402,7 @@
       <section>
         <div class="wrap">
           <div class="kicker">02 · La escalera de artefactos</div>
-          <h2>Cuatro altitudes de planificación, cada una con dueño real</h2>
+          <h2>Cinco altitudes de planificación, cada una con dueño real</h2>
           <p>
             La escalera quedó ratificada y ejecutable: cada artefacto tiene quién lo crea y cuándo.
             Y la familia de aceptación se completa con un integrante nuevo: el <b>ATS</b>.
@@ -420,6 +420,24 @@
                 <td>Producto</td>
                 <td>Epic <code>QA Master Test Plan</code> + archivo local</td>
                 <td><code>/master-test-plan</code></td>
+              </tr>
+              <tr>
+                <td><b>RTP</b> · Regression Test Plan</td>
+                <td>Regresión</td>
+                <td><code>RTP: {PROJECT_KEY|módulo}: Regression Test Plan</code></td>
+                <td>
+                  <code>/test-documentation</code> al promover cada TC
+                  <code>regression-candidate</code> (vivo, nunca se completa)
+                </td>
+              </tr>
+              <tr>
+                <td><b>RTR</b> · Regression Test Results <span class="ok">· nuevo</span></td>
+                <td>Regresión</td>
+                <td><code>RTR: {scope-id}: Regression Testing</code></td>
+                <td>
+                  <code>/regression-testing</code> antes del trigger de CI, 1 por veredicto;
+                  <code>testPlan</code> → RTP; se cierra tras el GO / CAUTION / NO-GO
+                </td>
               </tr>
               <tr>
                 <td><b>FTP</b> — Feature Test Plan</td>

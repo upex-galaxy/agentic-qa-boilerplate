@@ -1274,9 +1274,9 @@
             <div class="fig-scroll">
               <svg
                 class="diagram d-ladder"
-                viewBox="0 0 700 332"
+                viewBox="0 0 700 406"
                 role="img"
-                aria-label="Escalera de artefactos en cuatro altitudes: a nivel producto el MTP Master Test Plan; a nivel feature el FTP Feature Test Plan y el TS Test Set opcional; a nivel sprint el STP Sprint Test Plan y el STR Sprint Test Results; a nivel story el ATP Acceptance Test Plan, el ATS Acceptance Test Set y el ATR Acceptance Test Results. El link ATS→Story es el que llena el coverage panel de Xray; un link directo TC→Story es el único otro que cuenta, como último recurso cuando no puede existir un ATS."
+                aria-label="Escalera de artefactos en cinco altitudes: a nivel producto el MTP Master Test Plan; a nivel regresión el RTP Regression Test Plan y el RTR Regression Test Results; a nivel feature el FTP Feature Test Plan y el TS Test Set opcional; a nivel sprint el STP Sprint Test Plan y el STR Sprint Test Results; a nivel story el ATP Acceptance Test Plan, el ATS Acceptance Test Set y el ATR Acceptance Test Results. El link ATS→Story es el que llena el coverage panel de Xray; un link directo TC→Story es el único otro que cuenta, como último recurso cuando no puede existir un ATS."
               >
                 <defs>
                   <marker
@@ -1296,17 +1296,21 @@
                 <line class="rail" x1="40" y1="46" x2="40" y2="112" marker-end="url(#ah2)" />
                 <line class="rail" x1="40" y1="120" x2="40" y2="186" marker-end="url(#ah2)" />
                 <line class="rail" x1="40" y1="194" x2="40" y2="260" marker-end="url(#ah2)" />
+                <line class="rail" x1="40" y1="268" x2="40" y2="334" marker-end="url(#ah2)" />
                 <circle class="dot" cx="40" cy="46" r="3.5" />
                 <circle class="dot" cx="40" cy="120" r="3.5" />
                 <circle class="dot" cx="40" cy="194" r="3.5" />
                 <circle class="dot" cx="40" cy="268" r="3.5" />
+                <circle class="dot" cx="40" cy="342" r="3.5" />
                 <line class="rail" x1="44" y1="46" x2="186" y2="46" />
                 <line class="rail" x1="44" y1="120" x2="186" y2="120" />
                 <line class="rail" x1="44" y1="194" x2="186" y2="194" />
                 <line class="rail" x1="44" y1="268" x2="186" y2="268" />
-                <text class="t-mono" x="52" y="86">se abre por feature</text>
-                <text class="t-mono" x="52" y="160">se abre por sprint</text>
-                <text class="t-mono" x="52" y="234">se abre por story</text>
+                <line class="rail" x1="44" y1="342" x2="186" y2="342" />
+                <text class="t-mono" x="52" y="86">se promueve por ROI</text>
+                <text class="t-mono" x="52" y="160">se abre por feature</text>
+                <text class="t-mono" x="52" y="234">se abre por sprint</text>
+                <text class="t-mono" x="52" y="308">se abre por story</text>
 
                 <!-- producto -->
                 <text class="t-phase" x="190" y="16">PRODUCTO</text>
@@ -1314,47 +1318,57 @@
                 <text class="t-code" x="204" y="44">MTP</text>
                 <text class="t-sub" x="204" y="60">Master Test Plan</text>
 
-                <!-- feature -->
-                <text class="t-phase" x="190" y="90">FEATURE</text>
+                <!-- regresión -->
+                <text class="t-phase" x="190" y="90">REGRESIÓN</text>
                 <rect class="box" x="190" y="96" width="148" height="48" rx="8" />
-                <text class="t-code" x="204" y="118">FTP</text>
-                <text class="t-sub" x="204" y="134">Feature Test Plan</text>
+                <text class="t-code" x="204" y="118">RTP</text>
+                <text class="t-sub" x="204" y="134">Regression Test Plan</text>
                 <rect class="box" x="352" y="96" width="148" height="48" rx="8" />
-                <text class="t-code" x="366" y="118">TS</text>
-                <text class="t-sub" x="366" y="134">Test Set · opcional</text>
+                <text class="t-code" x="366" y="118">RTR</text>
+                <text class="t-sub" x="366" y="134">Regression Test Results</text>
+
+                <!-- feature -->
+                <text class="t-phase" x="190" y="164">FEATURE</text>
+                <rect class="box" x="190" y="170" width="148" height="48" rx="8" />
+                <text class="t-code" x="204" y="192">FTP</text>
+                <text class="t-sub" x="204" y="208">Feature Test Plan</text>
+                <rect class="box" x="352" y="170" width="148" height="48" rx="8" />
+                <text class="t-code" x="366" y="192">TS</text>
+                <text class="t-sub" x="366" y="208">Test Set · opcional</text>
 
                 <!-- sprint -->
-                <text class="t-phase" x="190" y="164">SPRINT</text>
-                <rect class="box" x="190" y="170" width="148" height="48" rx="8" />
-                <text class="t-code" x="204" y="192">STP</text>
-                <text class="t-sub" x="204" y="208">Sprint Test Plan</text>
-                <rect class="box" x="352" y="170" width="148" height="48" rx="8" />
-                <text class="t-code" x="366" y="192">STR</text>
-                <text class="t-sub" x="366" y="208">Sprint Test Results</text>
+                <text class="t-phase" x="190" y="238">SPRINT</text>
+                <rect class="box" x="190" y="244" width="148" height="48" rx="8" />
+                <text class="t-code" x="204" y="266">STP</text>
+                <text class="t-sub" x="204" y="282">Sprint Test Plan</text>
+                <rect class="box" x="352" y="244" width="148" height="48" rx="8" />
+                <text class="t-code" x="366" y="266">STR</text>
+                <text class="t-sub" x="366" y="282">Sprint Test Results</text>
 
                 <!-- story -->
-                <text class="t-phase" x="190" y="238">STORY</text>
-                <rect class="box" x="190" y="244" width="148" height="48" rx="8" />
-                <text class="t-code" x="204" y="266">ATP</text>
-                <text class="t-sub" x="204" y="282">Acceptance Test Plan</text>
-                <rect class="accent-box" x="352" y="244" width="148" height="48" rx="8" />
-                <text class="t-code t-amber" x="366" y="266">ATS</text>
-                <text class="t-sub" x="366" y="282">Acceptance Test Set</text>
-                <rect class="box" x="514" y="244" width="148" height="48" rx="8" />
-                <text class="t-code" x="528" y="266">ATR</text>
-                <text class="t-sub" x="528" y="282">Acceptance Test Results</text>
+                <text class="t-phase" x="190" y="312">STORY</text>
+                <rect class="box" x="190" y="318" width="148" height="48" rx="8" />
+                <text class="t-code" x="204" y="340">ATP</text>
+                <text class="t-sub" x="204" y="356">Acceptance Test Plan</text>
+                <rect class="accent-box" x="352" y="318" width="148" height="48" rx="8" />
+                <text class="t-code t-amber" x="366" y="340">ATS</text>
+                <text class="t-sub" x="366" y="356">Acceptance Test Set</text>
+                <rect class="box" x="514" y="318" width="148" height="48" rx="8" />
+                <text class="t-code" x="528" y="340">ATR</text>
+                <text class="t-sub" x="528" y="356">Acceptance Test Results</text>
 
-                <rect x="190" y="308" width="9" height="9" rx="2" fill="#ffa657" />
-                <text class="t-sub" x="206" y="317">
+                <rect x="190" y="382" width="9" height="9" rx="2" fill="#ffa657" />
+                <text class="t-sub" x="206" y="391">
                   ATS→Story llena el coverage panel. TC→Story directo cuenta como last resort.
                 </text>
               </svg>
             </div>
             <figcaption>
-              Cuatro altitudes, un descenso. El MTP se abre en FTPs por feature, cada sprint corta
-              su STP, y cada Story recibe su trío de aceptación. El ATS lleva borde ámbar porque es
-              el único de los tres cuya asociación de Tests cuenta como coverage: el ATP y el ATR
-              son trazabilidad administrativa.
+              Cinco altitudes, un descenso. El MTP se abre en FTPs por feature, cada sprint corta su
+              STP, y cada Story recibe su trío de aceptación. El RTP es el plan de regresión vivo
+              que alimenta el ROI de Documentation, y cada corrida regular de regresión deja su RTR
+              contra él. El ATS lleva borde ámbar porque es el único de los tres cuya asociación de
+              Tests cuenta como coverage: el ATP y el ATR son trazabilidad administrativa.
             </figcaption>
           </figure>
 

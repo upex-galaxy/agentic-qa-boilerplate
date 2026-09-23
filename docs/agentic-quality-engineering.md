@@ -54,7 +54,7 @@ ONBOARDING (one-time) →   SHIFT-LEFT        →  SESSION START → PLANNING �
 | **Reporting** | `sprint-testing` | ATR, bug tickets, QA comment on the source ticket |
 | **Documentation** | `test-documentation` | TMS artefacts with ROI verdict (Candidate / Manual / Deferred); every Candidate promoted into the project's **Regression Test Plan (RTP)** with the `regression-candidate` label |
 | **Automation** | `test-automation` | KATA Playwright tests, `@atc` decorated and traceable |
-| **Regression** | `regression-testing` | CI pass-rate, failure classification, GO / CAUTION / NO-GO verdict — the STR derives its test list from the RTP membership, and leaves the RTP itself open |
+| **Regression** | `regression-testing` | CI pass-rate, failure classification, GO / CAUTION / NO-GO verdict — the RTR runs the RTP (one Test Execution per verdict, linked to the RTP, the CI import target of that run) and leaves the RTP itself open; the sprint-close STR derives its list from the RTP membership and may also link to it |
 | **Observation** (production) | *none yet — the operating unit is an **agentic routine**, capability L4* | Production signals (SLO burn, error budget, RUM, canary) turned into backlog items that reopen the next Shift-Left pass |
 
 **Observation is declared, not implemented.** Nothing under `.agents/skills/` executes it today, and it deliberately carries no Definition-of-Done checklist — an empty checklist reads as an implemented gate. It is named here because a pipeline that stops at Regression describes a release, not a lifecycle: without it the loop above is a straight line, and the method's own claim to extend past the release has no owner.
@@ -158,7 +158,8 @@ The rest of this document describes how that strategy is implemented in code and
 | **FTP**               | Feature Test Plan. One per feature Epic, maintained by `sprint-testing`'s feature-test-planning as living context.           |
 | **RTP**               | Regression Test Plan. One long-lived Test Plan item per project (or module), `RTP: {PROJECT_KEY\|module}: Regression Test Plan`, parented to the QA Master Test Plan Epic. The Documentation stage promotes every Candidate TC into it; the Regression stage runs its membership. It has no terminal status — a regression run never completes the plan it ran from. Distinct from the MTP, which is the Epic plus `.context/master-test-plan.md` (strategy and bucket, never a Plan item). |
 | **STP**               | Sprint Test Plan. One per sprint, opened at sprint start by `sprint-testing` (fallback: `regression-testing`), closed at sprint end. Its description carries the sprint plan (one writer, read-first); its comments carry the append-only progress log, one entry per issue closed. It is the team-visible sprint state — when the comment log and a Story's ATR disagree, the ATR wins. |
-| **STR**               | Sprint Test Results. One per sprint, the sprint-close recap execution (`STR: Sprint#{N}: Regression Testing`).               |
+| **STR**               | Sprint Test Results. One per sprint, the sprint-close recap execution (`STR: Sprint#{N}: Regression Testing`), linked to the STP and the RTP; not the CI import target of a regular regression run. |
+| **RTR**               | Regression Test Results. One Test Execution per regression verdict (`RTR: {scope-id}: Regression Testing`, scope-id `{env}-{YYYY-MM-DD}` or a release tag), parented to QA Test Artifacts and linked to the RTP. Created by the Regression stage before the CI trigger so the run imports into it; carries the GO / CAUTION / NO-GO comment; closed after the verdict. |
 | **TC**                | Test Case. A single, traceable verification linked to an acceptance criterion.                                               |
 | **ATC**               | Acceptance Test Case — the test case itself. `@atc('PROJ-101')` is its representation in code: the decorator carries the TMS ticket key, nothing else. |
 | **PBI**               | Product Backlog Item. In this repo, the local folder (`.context/PBI/...`) that stores per-ticket and per-module knowledge.   |
@@ -753,7 +754,7 @@ Classification decides the release verdict. Five flaky tests do not block a rele
 
 ### The artefacts
 
-- The suite's scope is the membership of the project's `RTP` — the Documentation stage promotes every `regression-candidate` TC into it, and the STR is written against that list.
+- The suite's scope is the membership of the project's `RTP` — the Documentation stage promotes every `regression-candidate` TC into it. Each verdict is recorded in its own `RTR` (one Test Execution per regression verdict, linked to the RTP), which is the Execution the CI run imports into; the sprint-close `STR` derives its list from the same membership and may also link to the RTP.
 - GitHub Actions runs the regression suite nightly and on-demand (`.github/workflows/`).
 - Allure generates the report dashboard.
 - The skill emits a release note with the verdict, the pass rate, the critical failures (if any), and the classification summary.

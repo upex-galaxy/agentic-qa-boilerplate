@@ -26,6 +26,11 @@ on:
         required: true
         default: true
         type: boolean
+      execution_key:
+        description: 'Key of the Test Execution this run imports into (an RTR created by /regression-testing, or the sprint-close STR). Empty = the Xray import is skipped; smoke never writes into a regression execution on its own.'
+        required: false
+        default: ''
+        type: string
 
 concurrency:
   # Same gh-pages publish race as regression.yml — queue, never cancel.
@@ -43,16 +48,20 @@ env:
   # TMS write-back (optional, opt-in). Mirrors regression.yml so a project that
   # turns AUTO_SYNC on gets the same behaviour from every suite. This workflow
   # has no separate Xray JUnit-import job, so the sync step below covers both
-  # modalities: 'xray' imports the ATC runs into STP_EXECUTION_KEY, 'jira'
-  # writes a status field and a comment on each Test issue.
+  # modalities: 'xray' imports the ATC runs into the execution_key passed at
+  # dispatch (and skips without one), 'jira' writes a status field and a
+  # comment on each Test issue.
   TMS_PROVIDER: ${{ vars.TMS_PROVIDER || 'xray' }}
   AUTO_SYNC: ${{ secrets.AUTO_SYNC || 'false' }}
   XRAY_CLIENT_ID: ${{ secrets.XRAY_CLIENT_ID }}
   XRAY_CLIENT_SECRET: ${{ secrets.XRAY_CLIENT_SECRET }}
-  # Key of the STR — the Test Execution linked to the sprint's STP, already
-  # parented to the "QA Test Artifacts" epic. NOT the STP's own key. Empty means
-  # Xray mints a new, unparented Execution per run.
-  STP_EXECUTION_KEY: ${{ secrets.STP_EXECUTION_KEY }}
+  # Smoke and sanity never write into a regression execution. The
+  # STP_EXECUTION_KEY secret is NOT read here on purpose: it names the RTR (or
+  # the sprint-close STR) of the regression suite, and a smoke run of the
+  # @critical subset importing into it would flip Test Runs that belong to a
+  # full regression verdict. Pass an execution key explicitly at dispatch to
+  # import; otherwise the Xray leg is skipped. Empty on a schedule trigger.
+  STP_EXECUTION_KEY: ${{ github.event.inputs.execution_key }}
   # Atlassian credentials — uncomment when AUTO_SYNC=true on a jira-native
   # project. There is NO ATLASSIAN_URL secret: the host is read from the
   # checked-out .agents/project.yaml (issue_tracker.atlassian_url).
@@ -94,8 +103,11 @@ jobs:
       # reports/atc_results.json is written by KataReporter.onEnd(), which fires
       # after the global-teardown project, so nothing inside the run can read it
       # (issue #27). `always()` so a failing suite still reports its results.
+      # jira-native writes a per-Test status and needs no execution key. Xray
+      # imports ONLY into an explicit key, so a smoke run never flips Test Runs
+      # inside the regression execution and never mints an orphan Execution.
       - name: Sync Results to TMS
-        if: always() && env.AUTO_SYNC == 'true'
+        if: always() && env.AUTO_SYNC == 'true' && (env.TMS_PROVIDER != 'xray' || env.STP_EXECUTION_KEY != '')
         run: bun run test:sync
 
       - name: Upload Allure Results

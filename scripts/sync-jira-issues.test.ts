@@ -129,11 +129,13 @@ describe('ladderTitleAcronym / fileNamePrefix', () => {
     expect(fileNamePrefix('test_plan', 'FTP: PROJ-42: Checkout & Payments')).toBe('FTP');
     expect(fileNamePrefix('test_plan', 'STP: Sprint#30: Payments hardening')).toBe('STP');
     expect(fileNamePrefix('test_plan', 'ATP: PROJ-123: Apply discount at checkout')).toBe('ATP');
+    expect(fileNamePrefix('test_plan', 'RTP: PROJ: Regression Test Plan')).toBe('RTP');
   });
 
   test('a conforming Test Execution title does the same', () => {
     expect(fileNamePrefix('test_execution', 'STR: Sprint#30: Regression Testing')).toBe('STR');
     expect(fileNamePrefix('test_execution', 'ATR: PROJ-123: Story Testing')).toBe('ATR');
+    expect(fileNamePrefix('test_execution', 'RTR: staging-2026-09-23: Regression Testing')).toBe('RTR');
   });
 
   test('the Re-Test Execution keeps its `ReTest:` spelling', () => {
@@ -147,6 +149,10 @@ describe('ladderTitleAcronym / fileNamePrefix', () => {
     expect(ladderTitleAcronym('test_plan', 'ATR: PROJ-1: Story Testing')).toBeNull();
     expect(fileNamePrefix('test_plan', 'ATR: PROJ-1: Story Testing')).toBe('TESTPLAN');
     expect(ladderTitleAcronym('test_execution', 'ATP: PROJ-1: Something')).toBeNull();
+    // `RTP:` is a Plan acronym only: a Test Execution titled that way is not a run.
+    expect(ladderTitleAcronym('test_execution', 'RTP: PROJ: Regression Test Plan')).toBeNull();
+    // `RTR:` is a run acronym only: a Test Plan titled that way is not a plan.
+    expect(ladderTitleAcronym('test_plan', 'RTR: staging-2026-09-23: Regression Testing')).toBeNull();
   });
 
   test('a NON-conforming title keeps the legacy slug-based prefix', () => {
@@ -177,6 +183,16 @@ describe('HIGHER_ALTITUDE_PREFIX (Story-altitude guard)', () => {
     expect(HIGHER_ALTITUDE_PREFIX.test('FTP: PROJ-42: Checkout')).toBe(true);
     expect(HIGHER_ALTITUDE_PREFIX.test('STP: Sprint#30: Hardening')).toBe(true);
     expect(HIGHER_ALTITUDE_PREFIX.test('STR: Sprint#30: Regression Testing')).toBe(true);
+  });
+
+  test('skips the product-altitude RTP: a regression plan linked to a Story is not its ATP', () => {
+    expect(HIGHER_ALTITUDE_PREFIX.test('RTP: PROJ: Regression Test Plan')).toBe(true);
+    expect(higherAltitudeLabel('RTP: PROJ: Regression Test Plan')).toBe('product-altitude');
+  });
+
+  test('skips the product-altitude RTR: a regression run linked to a Story is not its ATR', () => {
+    expect(HIGHER_ALTITUDE_PREFIX.test('RTR: staging-2026-09-23: Regression Testing')).toBe(true);
+    expect(higherAltitudeLabel('RTR: staging-2026-09-23: Regression Testing')).toBe('product-altitude');
   });
 
   test('keeps the FTR legacy guard for pre-migration data', () => {

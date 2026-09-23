@@ -208,7 +208,7 @@ export const VAR_MANIFEST: VarSpec[] = [
     secret: false,
     required: false,
     critical: false,
-    obtainHint: 'key of the STR — the Test Execution linked to the sprint STP, already hanging off the "QA Test Artifacts" epic. NOT the key of the STP itself.',
+    obtainHint: 'key of the Test Execution this run imports into: the RTR (created by /regression-testing per run, linked to the RTP) by default, the sprint-close STR at sprint close. Both hang off the "QA Test Artifacts" epic. NEVER the key of a Plan (RTP or STP).',
     // Without it, an import mints a NEW Test Execution on every run. Xray's
     // import API cannot set a parent (`info` is `additionalProperties: false`),
     // so that item is orphaned: no QA-process epic, outside the ladder. Pointing
@@ -216,11 +216,28 @@ export const VAR_MANIFEST: VarSpec[] = [
     // artifact ladder expects them. CI refuses to import without it rather than
     // industrialising the orphan.
     //
-    // The name says which Plan the Execution belongs to, not which issue to
-    // pass: a Test Plan derives its status from its Executions and is never
-    // written into, so handing this the STP key is a mistake the sync detects
-    // and refuses. Xray-only — Modality jira-native has no Test Executions.
-    note: 'Target STR Test Execution for the results write-back (never the STP itself). Referenced by regression.yml; Xray-only, optional.',
+    // The NAME predates the RTR and is kept so downstream secrets keep working;
+    // the semantics moved: the value is the RTR by default and the STR only at
+    // sprint close. The regression workflow's `execution_key` dispatch input
+    // overrides this secret per run, so the secret is really the fallback for a
+    // scheduled run. A Test Plan derives its status from its Executions and is
+    // never written into, so handing this a Plan key is a mistake the sync
+    // detects and refuses. Xray-only: Modality jira-native has no Test Executions.
+    note: 'The Test Execution this run imports into: the RTR by default, the sprint-close STR at sprint close (never a Plan key). Overridden per dispatch by execution_key; referenced by regression.yml; Xray-only, optional.',
+  },
+  {
+    name: 'RTP_KEY',
+    destinations: ['local'],
+    secret: false,
+    required: false,
+    critical: false,
+    obtainHint: 'key of the RTP (Test Plan titled "RTP: <PROJECT>: Regression Test Plan"): only if you run bun run test:sync locally without an execution key.',
+    // Read by the in-process Xray fallback ONLY (tests/utils/jiraSync.ts). When
+    // no execution key is set and the sync has to mint an Execution, this key
+    // goes into `info.testPlanKey` so the orphan is at least linked to the RTP.
+    // No workflow reads it: CI gets a pre-created RTR from /regression-testing
+    // through the `execution_key` input, so the fallback never fires there.
+    note: 'Optional RTP key so the in-process Xray fallback links the Execution it mints to the plan. Local-only; no workflow reads it.',
   },
 
   // --- Operational CI flag ---

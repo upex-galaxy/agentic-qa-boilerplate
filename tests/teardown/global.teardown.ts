@@ -105,7 +105,7 @@ teardown('Global Teardown: report ATC coverage', () => {
     // model of the TMS that does not exist on their instance.
     if (config.tms.provider === 'xray') {
       console.log(
-        '       Then set STP_EXECUTION_KEY to the STR (the Test Execution linked to the sprint STP), or a new (unparented) one is created per run.',
+        '       Then set STP_EXECUTION_KEY to the RTR (the Test Execution for this regression run, linked to the RTP) or, at sprint close, to the STR; otherwise a new Execution is minted per run (set RTP_KEY so it is at least plan-linked).',
       );
     }
     else if (config.tms.provider === 'jira') {
