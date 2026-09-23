@@ -82,7 +82,7 @@ This skill is compliant with the doctrine in `AGENTS.md` §"Orchestration Mode (
 | Generate executive report                                  | Single     | inline — final synthesis, decisions live here                                                                  |
 | GO / CAUTION / NO-GO verdict                               | Single     | inline — main thread owns release decisions                                                                    |
 
-- **Error protocol**: On any subagent failure: STOP, report full context to user, present retry / skip / abort options. Do NOT auto-fix. See `.agents/skills/agentic-qa-core/references/orchestration-doctrine.md`.
+- **Error protocol**: On any subagent failure: STOP, report full context to user, present retry / skip / abort options. Do NOT auto-fix. See `.agents/skills/agentic-qa-core/references/orchestration-doctrine.md`. A skill that itself broke (a wrong step, a missing verifier, a stale rule) is reported upstream per `../agentic-qa-core/references/upstream-feedback.md`: drafted and redacted locally, filed only on explicit OK, verified with `gh issue view`.
 
 ---
 

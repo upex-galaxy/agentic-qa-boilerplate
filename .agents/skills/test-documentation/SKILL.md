@@ -115,7 +115,7 @@ This skill is compliant with the doctrine in `AGENTS.md` §"Orchestration Mode (
 | Phase 3 — Final report / reports (`COVERAGE-MATRIX-<scope>.md`, `PRIORITIZATION-<scope>.md`) | Single | inline — synthesis lives in the orchestrator                                                                                                                |
 
 - **Concurrency cap = 10 subagents** for Parallel TC creation. Jira and Xray APIs both rate-limit at ~10 writes/sec sustained; fanning out wider triggers 429 responses. If a module has >100 TCs, batches per subagent must be larger than 10 each (cap is on subagent count, not chunk size).
-- **Error protocol**: On any subagent failure: STOP, report the partial success state (which TCs landed, which failed, with their issue keys / errors), present retry / skip / abort options. Do NOT auto-fix nor auto-rollback. See `.agents/skills/agentic-qa-core/references/orchestration-doctrine.md`.
+- **Error protocol**: On any subagent failure: STOP, report the partial success state (which TCs landed, which failed, with their issue keys / errors), present retry / skip / abort options. Do NOT auto-fix nor auto-rollback. See `.agents/skills/agentic-qa-core/references/orchestration-doctrine.md`. A skill that itself broke (a wrong step, a missing verifier, a stale rule) is reported upstream per `../agentic-qa-core/references/upstream-feedback.md`: drafted and redacted locally, filed only on explicit OK, verified with `gh issue view`.
 
 ---
 

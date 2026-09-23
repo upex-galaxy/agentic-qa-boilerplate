@@ -107,7 +107,7 @@ This skill is compliant with the doctrine in `AGENTS.md` §"Orchestration Mode (
 
 > **Sequential by design**. Phase 2 refinement looks parallelizable (each Story is independent in Jira), but the orchestrator must present each Story's refinement summary to the user before moving on. This keeps the user in the loop, lets them veto a Story mid-batch, and matches the team-grooming cadence the skill is designed for. Parallelism would burn the user's attention budget.
 
-> **On any subagent failure**: STOP, report the partial state (which Stories refined, which Jira mutations landed), present retry / skip-story / abort options. Do NOT auto-fix nor auto-rollback. Jira mutations are recorded in the batch report so partial sessions are resumable. See `.agents/skills/agentic-qa-core/references/orchestration-doctrine.md`.
+> **On any subagent failure**: STOP, report the partial state (which Stories refined, which Jira mutations landed), present retry / skip-story / abort options. Do NOT auto-fix nor auto-rollback. Jira mutations are recorded in the batch report so partial sessions are resumable. See `.agents/skills/agentic-qa-core/references/orchestration-doctrine.md`. A skill that itself broke (a wrong step, a missing verifier, a stale rule) is reported upstream per `../agentic-qa-core/references/upstream-feedback.md`: drafted and redacted locally, filed only on explicit OK, verified with `gh issue view`.
 
 ---
 

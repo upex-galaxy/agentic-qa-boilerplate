@@ -88,7 +88,7 @@ This skill is compliant with the doctrine in `AGENTS.md` §"Orchestration Mode (
 | Review aggregation + merge/reject decision    | Single               | inline — orchestrator reads the 3 Verifier reports and decides                                                                  |
 
 - **Code phase scope rule**: each Code subagent edits multiple files in isolation, returns a list of changed files + a one-line summary per file. The orchestrator never reads the diffs — only the summary. If the user wants to see actual diffs, the orchestrator runs `git diff` inline after the subagent returns.
-- **On any Verifier failure**: STOP, return the failing report verbatim to the user, do NOT auto-fix the test code, do NOT re-dispatch the Code phase without user approval. See `.agents/skills/agentic-qa-core/references/orchestration-doctrine.md`.
+- **On any Verifier failure**: STOP, return the failing report verbatim to the user, do NOT auto-fix the test code, do NOT re-dispatch the Code phase without user approval. See `.agents/skills/agentic-qa-core/references/orchestration-doctrine.md`. A skill that itself broke (a wrong step, a missing verifier, a stale rule) is reported upstream per `../agentic-qa-core/references/upstream-feedback.md`: drafted and redacted locally, filed only on explicit OK, verified with `gh issue view`.
 - **MANDATORY context doc for Plan + Code briefings**: include `kata-manifest.json` (root) in the "Context docs" component (item 2 of the 7-component briefing). Without it the subagent will scan `tests/components/**` directly, burn tokens, and risk proposing duplicates. See Critical Rule #12 in `AGENTS.md`.
 
 ---

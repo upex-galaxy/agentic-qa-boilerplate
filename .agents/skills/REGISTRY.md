@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-09-23T09:59:40.652Z`
+> Generated: `2026-09-23T09:59:47.733Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -138,7 +138,7 @@ Skills indexed: 21
 - DO NOT: bump a major version of Playwright / Bun / TypeScript without a regression run on a representative E2E suite — lockstep upgrades hide breaks in fixture lifecycle, locator engines, and type emit.
 - DO NOT: refactor `cli/install.ts` without exercising the full install flow on a clean clone. Verification on an already-installed repo proves nothing, and the installer is the one surface where a bug ships silently to every new user.
 - WHEN the chosen approach reshapes test architecture (KATA layers, a fixture API, the runner, the isolation/parallelization model, the OpenAPI/type pipeline) AND is hard to reverse: record an ADR under `.context/ADR/` after plan approval and before coding, drafted `Proposed` for the human to accept. ADRs are append-only — supersede, never rewrite.
-- DO: verify with all four checks (test, types, lint, skills) and treat any non-zero exit as REJECT — present retry / skip-and-document / abort, never auto-fix.
+- DO: verify with all four checks (test, types, lint, skills) and treat any non-zero exit as REJECT — present retry / skip-and-document / abort, never auto-fix. A skill that itself broke (a wrong step, a missing verifier, a stale rule) is reported upstream per `../agentic-qa-core/references/upstream-feedback.md`: drafted and redacted locally, filed only on explicit OK, verified with `gh issue view`.
 - WHEN the change IS a skill (a new or restructured `.agents/skills/<slug>/`): scaffold it per `../agentic-qa-core/references/skill-scaffold.md` (frontmatter incl. `metadata.kind`, per-kind files and sections, Definition of Done). `skill-creator` (T4, ask before loading) is loaded only for the test prompts and the description optimizer; the scaffold works without it. Consumer SUT context skills are NOT this skill's job: `project-context` mode `context-skill` owns them.
 - DO NOT: let a subagent write `progress.md`; it is orchestrator-only. Code subagents return one-line summaries per task, and the orchestrator does not read their diffs.
 - DO: archive the session directory only after all four verifiers pass. On REJECT it stays in place so the run can be debugged or resumed.
@@ -430,7 +430,7 @@ Skills indexed: 21
 - Execution = smoke pass first, then trifuerza (UI/API/DB) exploration; capture evidence under the PBI folder.
 - API testing = three-tool maneuver: OpenAPI MCP for schema (READ-ONLY) → `bun run api:login` for the token (→ `.auth/tokens.env`) → **curl** for authenticated requests. NEVER execute via the OpenAPI MCP. Canon: `agentic-qa-core/references/api-testing-doctrine.md`.
 - Consult `domain-glossary.md` (if present) before authoring the ATP, refined ACs, and TC outlines.
-- On any subagent failure: STOP, report partial state, offer retry / skip-stage / abort. No auto-fix, no auto-rollback.
+- On any subagent failure: STOP, report partial state, offer retry / skip-stage / abort. No auto-fix, no auto-rollback. A skill that itself broke (a wrong step, a missing verifier, a stale rule) is reported upstream per `../agentic-qa-core/references/upstream-feedback.md`: drafted and redacted locally, filed only on explicit OK, verified with `gh issue view`.
 - Stage 1 Set-first order (Modality jira-xray — AUTHORITATIVE): the Story's coverage backbone is its **ATS** (`ATS: {US_ID}: {story title}` — mandatory per Story, even with a single TC; parent: QA Test Artifacts epic; components inherited from the Story). Create the sprint `Test` issues, put ALL of them in the ATS, and link **ATS→Story** via the `test` slug (Story `is tested by` ATS) — the PRIMARY coverage-bearing edge (fills the Xray coverage panel); a direct TC→Story link is the only other coverage-bearing edge (last resort, valid only when no ATS can exist); Story↔ATP and Story↔ATR links are administrative traceability with ZERO coverage.
 - The ATP item is find-or-created FROM the `{{jira.acceptance_test_plan}}` field (where shift-left authored it) — pre-sprint the ATP lives ONLY in that field; Stage 1 is where the Test Plan item is born (parent: QA Master Test Plan epic).
 - Derive, never re-list: the ATP's and the ATR Execution's test lists are DERIVED from the ATS membership — never maintained as independent id lists (three hand-maintained lists drift silently and corrupt coverage).

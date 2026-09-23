@@ -1,0 +1,72 @@
+name: Skill feedback
+description: A skill under .agents/skills/ misbehaved in a consumer project. Drafted locally, redacted, filed on explicit OK (agentic-qa-core/references/upstream-feedback.md).
+title: '[skill-feedback] <slug>: <one line>'
+labels: ['skill-feedback']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Everything below must pass the redaction gate: no Jira keys (use `PROJ-NNN`), no hosts, nothing quoted from `.context/PBI/`, `.env` or git identity. Only paths under `.agents/skills/`, `scripts/` and `cli/` are quoted verbatim.
+  - type: input
+    id: skill
+    attributes:
+      label: Skill slug
+      placeholder: sprint-testing
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind (metadata.kind of the skill)
+      options:
+        - workflow
+        - context
+        - utility
+        - core
+    validations:
+      required: true
+  - type: input
+    id: cursor
+    attributes:
+      label: Upstream cursor
+      description: The hash in `.template/upstream-sha/<slug>.sha`, or the `cliVersion` from `.template/installer.lock.json`.
+    validations:
+      required: true
+  - type: input
+    id: stage
+    attributes:
+      label: Stage / step where it broke
+      placeholder: Stage 2 Execution, smoke gate
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed
+    validations:
+      required: true
+  - type: textarea
+    id: fix
+    attributes:
+      label: Proposed fix
+      description: A diff against the upstream file, or prose.
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Date, session label, what was measured.
+    validations:
+      required: true
+  - type: checkboxes
+    id: redaction
+    attributes:
+      label: Redaction gate
+      options:
+        - label: Every literal in this issue either exists in the upstream repository or is a placeholder.
+          required: true
