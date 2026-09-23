@@ -27,7 +27,7 @@
  */
 
 import type { CompatibilityCheck, CompatibilityErrorGroup } from './lib/agent-compatibility.ts';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
@@ -51,6 +51,7 @@ import {
   formatInstanceMismatchWarning,
   resolveAtlassianInstance,
 } from './lib/atlassian-instance.ts';
+import { CORE_SCHEMA_FILE, PROJECT_SCHEMA_FILE } from './lib/env-schema.ts';
 // Canonical variable manifest (source of truth — D1). Imports only `node:fs`,
 // so it is safe to load statically here without breaking the dependency-free
 // `--preflight` contract (no third-party deps pulled in).
@@ -271,7 +272,32 @@ interface DoctorReport {
    * is the answer to "why is my project behaving oddly".
    */
   project_schema: ProjectSchemaDiagnostic
+  /**
+   * The developer's `.env` against the committed varlock schema
+   * (`.env.schema` + `.env.core.schema`), plus which varlock is reachable.
+   * The verdict comes from `varlock load --agent`, whose output is redacted:
+   * `errors` carries varlock's own diagnostic lines, item NAMES only.
+   */
+  env_schema: EnvSchemaDiagnostic
   pending_actions: PendingAction[]
+}
+
+export interface EnvSchemaDiagnostic {
+  /** Both schema files present at the repo root. */
+  schema_present: boolean
+  /**
+   * `standalone`: a `varlock` binary on PATH (what an MCP server can call).
+   * `devDependency`: only `node_modules/varlock` (what the gates run via bunx).
+   * `missing`: neither.
+   */
+  binary: 'standalone' | 'devDependency' | 'missing'
+  binary_version: string | null
+  /** `skipped` when the schema or the devDependency is absent. */
+  validation: 'ok' | 'invalid' | 'skipped'
+  /** Resolved item count on `ok`; names only ever reach this report. */
+  items: number
+  /** varlock's redacted diagnostic lines on `invalid`. */
+  errors: string[]
 }
 
 export interface HarnessEnvDiagnostic {
@@ -542,6 +568,84 @@ function harnessEnvDiagnostic(): HarnessEnvDiagnostic {
   }
 }
 
+/**
+ * Runs `bunx varlock load --agent` at the repo root. `--agent` is the mode
+ * built for exactly this consumer: JSON, sensitive values redacted. Stdout is
+ * parsed for the item COUNT and discarded; the redacted stderr lines are kept
+ * as the diagnosis when the load fails. Skipped when the schema or the pinned
+ * devDependency is absent, so a repo synced to this doctor but not to this
+ * package.json is not told its env is broken.
+ */
+// The SGR escape (`ESC [ ... m`) built from its code point: a literal control
+// character in a regex trips `no-control-regex`, and that rule is right that a
+// reader cannot see it.
+const ANSI_SGR = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, 'g');
+
+function envSchemaDiagnostic(): EnvSchemaDiagnostic {
+  const schemaPresent = existsSync(join(REPO_ROOT, PROJECT_SCHEMA_FILE)) && existsSync(join(REPO_ROOT, CORE_SCHEMA_FILE));
+  const devDep = existsSync(join(REPO_ROOT, 'node_modules', 'varlock', 'package.json'));
+
+  let binary: EnvSchemaDiagnostic['binary'] = 'missing';
+  let binaryVersion: string | null = null;
+  // `bun run setup:doctor` prepends node_modules/.bin to PATH, so a bare probe
+  // would find the devDependency's shim and call it "standalone". The question
+  // is what a harness-spawned MCP server finds, and that PATH has no
+  // node_modules/.bin in it, so strip every such segment before probing.
+  const pathSep = process.platform === 'win32' ? ';' : ':';
+  const binMarker = join('node_modules', '.bin');
+  const harnessPath = (process.env.PATH ?? '').split(pathSep).filter(seg => !seg.includes(binMarker)).join(pathSep);
+  // A global npm/bun install on Windows is a `varlock.cmd` shim, which a
+  // shell-less spawn does not resolve without the extension. Documented path,
+  // not measured on Windows.
+  const candidates = process.platform === 'win32' ? ['varlock', 'varlock.cmd'] : ['varlock'];
+  for (const name of candidates) {
+    const probe = spawnSync(name, ['--version'], { encoding: 'utf8', env: { ...process.env, PATH: harnessPath }, stdio: ['ignore', 'pipe', 'pipe'] });
+    if (!probe.error && probe.status === 0) {
+      binary = 'standalone';
+      binaryVersion = (probe.stdout ?? '').trim() || null;
+      break;
+    }
+  }
+  if (binary === 'missing' && devDep) {
+    binary = 'devDependency';
+    try {
+      const pkg = JSON.parse(readFileSync(join(REPO_ROOT, 'node_modules', 'varlock', 'package.json'), 'utf8')) as { version?: string };
+      binaryVersion = pkg.version ?? null;
+    }
+    catch {
+      binaryVersion = null;
+    }
+  }
+
+  const base: EnvSchemaDiagnostic = { schema_present: schemaPresent, binary, binary_version: binaryVersion, validation: 'skipped', items: 0, errors: [] };
+  if (!schemaPresent || !devDep) { return base; }
+
+  const run = spawnSync('bunx', ['varlock', 'load', '--agent'], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  if (run.error) {
+    return { ...base, validation: 'invalid', errors: [`could not run bunx varlock: ${run.error.message}`] };
+  }
+  if (run.status !== 0) {
+    const lines = `${run.stdout ?? ''}\n${run.stderr ?? ''}`
+      .split(/\r?\n/)
+      // Strip ANSI so the JSON report stays readable; varlock has already redacted values.
+      .map(l => l.replace(ANSI_SGR, '').trim())
+      .filter(l => l !== '' && !l.startsWith('💥') && !l.startsWith('🚨'));
+    return { ...base, validation: 'invalid', errors: lines.slice(0, 20) };
+  }
+  let items = 0;
+  try {
+    items = Object.keys(JSON.parse(run.stdout) as Record<string, unknown>).length;
+  }
+  catch {
+    // A non-JSON success is still a success; the count is informational.
+  }
+  return { ...base, validation: 'ok', items };
+}
+
 function preflightFail(msg: string, fix: string): never {
   // Dependency-free output — preflight may run before `bun install`, so no TUI.
   process.stderr.write(`Preflight failed: ${msg}\n`);
@@ -670,6 +774,7 @@ export async function runDoctor(): Promise<DoctorReport> {
     community_skills: await collectCommunitySkills(),
     harness_env: harnessEnvDiagnostic(),
     project_schema: projectSchemaDiagnostic(),
+    env_schema: envSchemaDiagnostic(),
     pending_actions: [],
   };
 
@@ -865,6 +970,19 @@ export async function runDoctor(): Promise<DoctorReport> {
     });
   }
 
+  // The env schema verdict. Only an INVALID load is an action: a missing
+  // standalone binary is reported in its section and becomes a requirement
+  // when the MCP servers are wrapped, not before.
+  if (report.env_schema.validation === 'invalid') {
+    report.pending_actions.push({
+      type: 'shell_command',
+      target: 'bunx varlock load',
+      hint: 'Your .env does not satisfy the committed env schema (.env.schema + .env.core.schema). '
+        + 'The command prints what is missing with sensitive values redacted; fill .env and re-run doctor.',
+      where: report.env_schema.errors[0],
+    });
+  }
+
   if (!agentCompatibility.file_correct) {
     report.pending_actions.push({
       type: 'shell_command',
@@ -957,6 +1075,33 @@ function printHuman(report: DoctorReport): void {
   }
   if (!report.harness_env.ok) {
     process.stdout.write('  Fix: bun run harness:env  (values are never printed by the generator or by this report)\n');
+  }
+  process.stdout.write('\n');
+
+  // Env schema (varlock). Its own section because it carries three different
+  // facts — is the schema there, which varlock can run, does the developer's
+  // .env satisfy it — and the last one is the diagnosis Rule #10 lacked: a
+  // missing credential named BEFORE an MCP server dies on it. Nothing here
+  // prints a value; `--agent` redacts and this report keeps only names.
+  tui.section('Env schema (varlock: .env.schema + .env.core.schema)');
+  const es = report.env_schema;
+  const binaryNote = es.binary === 'standalone'
+    ? `standalone binary${es.binary_version ? ` ${es.binary_version}` : ''}`
+    : es.binary === 'devDependency'
+      ? `devDependency only${es.binary_version ? ` (${es.binary_version})` : ''}; the standalone binary becomes required when MCP servers are wrapped`
+      : 'not found; run bun install (devDependency) or see bun run setup for the standalone binary';
+  process.stdout.write(`  ${tui.statusIcon(es.schema_present ? 'ok' : 'fail')} schema files ${es.schema_present ? 'present' : 'missing (bun run vars:schema)'}\n`);
+  process.stdout.write(`  ${tui.statusIcon(es.binary === 'missing' ? 'fail' : es.binary === 'standalone' ? 'ok' : 'warn')} varlock: ${binaryNote}\n`);
+  if (es.validation === 'ok') {
+    process.stdout.write(`  ${tui.statusIcon('ok')} .env satisfies the schema (${es.items} items resolved, values redacted)\n`);
+  }
+  else if (es.validation === 'invalid') {
+    process.stdout.write(`  ${tui.statusIcon('fail')} .env does not satisfy the schema:\n`);
+    for (const line of es.errors) { process.stdout.write(`    ${line}\n`); }
+    process.stdout.write('  Fix: fill the named items in .env, then: bunx varlock load --agent\n');
+  }
+  else {
+    process.stdout.write(`  ${tui.statusIcon('warn')} validation skipped (schema or devDependency absent)\n`);
   }
   process.stdout.write('\n');
 
