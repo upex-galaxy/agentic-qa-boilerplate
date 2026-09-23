@@ -64,6 +64,7 @@ Who authors: a human QA architect / lead directly, **or** an AI workflow that de
 | ADR | Title | Status | Supersedes | Superseded by |
 | --- | ----- | ------ | ---------- | ------------- |
 | [ADR-0001](./ADR-0001-artifact-ladder-local-cache.md) | The local cache mirrors the artifact ladder's title grammar | Accepted | — | — |
+| [ADR-0002](./ADR-0002-regression-run-record.md) | Every regression verdict gets its own run record: the RTR | Accepted | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first.
 
