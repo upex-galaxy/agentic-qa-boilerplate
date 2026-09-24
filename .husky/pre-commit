@@ -17,3 +17,14 @@ else
   echo "⚠️  .husky/framework-gates.sh missing — framework pre-commit gates SKIPPED."
   echo "   Restore it with: bun run up"
 fi
+
+# Docs dead-link gate — only when the staged set touches the human docs or the
+# decks, and only where the script exists (a project synced before it shipped).
+if git diff --cached --name-only --diff-filter=ACMRD | grep -qE '^(docs/|packages/decks/|README\.md$|INSTALLER\.md$|CONTEXT\.md$)' \
+  && grep -q '"docs:check"' package.json 2>/dev/null; then
+  bun run docs:check || {
+    echo ""
+    echo "❌ A doc links to a file or cites a path that does not exist. Fix the link, or the path."
+    exit 1
+  }
+fi
