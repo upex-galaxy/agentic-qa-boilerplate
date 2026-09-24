@@ -14,8 +14,8 @@
  *
  * PENDING: this script only validates STRUCTURE. It does not invoke a model,
  * so a green run here does NOT mean the 66 cases' skills actually activate
- * (or don't) for their prompts — that question is still open. See
- * docs/reports/2026-09-15-ola-f-doctrina.md "Qué queda abierto" for the full
+ * (or don't) for their prompts — that question is still open. See the
+ * CHANGELOG.md entry "Ola F doctrine debts and the eval runner" for the full
  * note; this comment is the other half of that pointer.
  *
  * What this script DOES check, for every case, deterministically and

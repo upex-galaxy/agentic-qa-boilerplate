@@ -24,6 +24,26 @@ below names which one it applies to:
   `agentic-quality-engineering.md` and `kata-fundamentals.md`. Earlier entries below that
   quote "domain Komponents" describe the state at that time and are left as written.
 
+### Recorded (Boilerplate — Ola F doctrine debts and the eval runner, 2026-09-15)
+Folded in from the former `docs/reports/2026-09-15-ola-f-doctrina.md` worker report, which
+was removed with the docs relaunch.
+- Automation stage: the separate verifier (`/pr-review-lead` or `/judgment-day`, clean
+  context) is REQUIRED, not opt-in, in `test-automation/SKILL.md` and in the Automation DoD
+  of `stage-gates.md`.
+- FLAKY carries two numbers, both correct: floor = 5 runs of history before the word is
+  allowed (below it: INSUFFICIENT HISTORY), window = the last N = min(10, available) runs
+  the failure rate is computed over. `regression-testing/SKILL.md` was the stale copy.
+- `stage-gates.md` contract table gained its Sprint close row (autonomy 2, no separate
+  verifier), derived from that stage's own DoD.
+- `defect-management-doctrine.md` Part 8: the Bug/Defect anti-patterns now name the real
+  error (classifying by when or where it was found, not by the feature's lifecycle stage).
+- `kata-academy`: two broken `sourcePath`s fixed (`tests/components/api/ApiBase.ts`,
+  `tests/components/ui/UiBase.ts`).
+- `scripts/run-skill-evals.ts` (`bun run skills:evals`, also in `build.yml`) validates the
+  STRUCTURE of every `evals/evals.json` (three shapes normalised). Still open: it does not
+  invoke a model, so it does not prove a skill actually activates for its prompts; that
+  needs a real model call and a grader (`claude plugin eval` format) plus an API key in CI.
+
 ## [Unreleased]
 
 ### Changed (Boilerplate — doctrine: named stages and the agentic contract)
