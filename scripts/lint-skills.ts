@@ -11,7 +11,7 @@
  *         (gitignored, fetched at install time, NOT committed)
  *   T4  — community user-level, declared in cli/install.ts:USER_LEVEL_SKILLS
  *
- * Seventeen checks are run; each violation is printed prefixed with the relevant
+ * Nineteen checks are run; each violation is printed prefixed with the relevant
  * skill or array name. Exit code 0 = pass (no ERROR violations), 1 = at least
  * one ERROR violation. WARN and INFO are reported but do not cause non-zero exit.
  *
@@ -100,6 +100,25 @@
  *      `KIND_SUFFIX_EXEMPT` predate the rule and skip it. `workflow` and
  *      `core` carry no suffix rule. ERROR severity.
  *
+ *  18. CAPABILITY-VOCAB — every name in `metadata.requires_capabilities` (the
+ *      MCP capabilities a skill needs, declared by CAPABILITY and resolved by
+ *      tool-name suffix, never by server prefix) must be in
+ *      `KNOWN_CAPABILITIES`, the mirror of
+ *      agentic-qa-core/references/mcp-capabilities.md §2. Inline `[a, b]` and
+ *      block `- a` list forms are both read. ERROR severity.
+ *
+ *  19. CAPABILITY-UNDECLARED — heuristic half of the correspondence rule
+ *      (mcp-capabilities.md §3): a T1 SKILL.md BODY (not its references/, and
+ *      outside fenced code blocks) that carries one of the five resolution
+ *      tags in `CAPABILITY_TAGS` (`[DB_TOOL]`, `[API_TOOL]`,
+ *      `[AUTOMATION_TOOL]`, `[DOCS_TOOL]`, `[WEB_SEARCH_TOOL]`) without
+ *      declaring the matching capability. A tag in a legend table trips it,
+ *      so the fix is "declare it or drop the row", never a script allowlist.
+ *      The reverse (declared but no tag) is NOT checked: skills legitimately
+ *      instruct use through tool names or MCP names instead of tags. A skill
+ *      of kind `core` is skipped: it hosts the doctrine that describes the
+ *      tags and never uses them. WARN severity.
+ *
  * Usage: bun run scripts/lint-skills.ts   (or: bun run skills:check)
  */
 
@@ -167,6 +186,28 @@ const KIND_SUFFIX_EXEMPT = new Set<string>(['acli', 'project-context', 'sync-ai-
 const KIND_SUFFIX_RULES: ReadonlyArray<{ kind: string, suffixes: readonly string[] }> = [
   { kind: 'context', suffixes: ['-context'] },
   { kind: 'utility', suffixes: ['-cli', '-tool', '-app'] },
+];
+
+/**
+ * MCP capability vocabulary (`metadata.requires_capabilities`) — mirrors §2 of
+ * .agents/skills/agentic-qa-core/references/mcp-capabilities.md. A skill
+ * declares the CAPABILITY it needs, never a server name, so the project
+ * `.mcp.json` server, a user-level server and a claude.ai connector all
+ * satisfy it. Add a name here AND in the reference, in the same change. Check 18.
+ */
+const KNOWN_CAPABILITIES = new Set(['web-search', 'library-docs', 'db', 'api-schema', 'browser']);
+
+/**
+ * Resolution tag → capability it resolves to (AGENTS.md §6). Drives the
+ * CAPABILITY-UNDECLARED heuristic (check 19): a SKILL.md body using the tag
+ * without declaring the capability is a WARN.
+ */
+const CAPABILITY_TAGS: ReadonlyArray<{ tag: string, capability: string }> = [
+  { tag: '[DB_TOOL]', capability: 'db' },
+  { tag: '[API_TOOL]', capability: 'api-schema' },
+  { tag: '[AUTOMATION_TOOL]', capability: 'browser' },
+  { tag: '[DOCS_TOOL]', capability: 'library-docs' },
+  { tag: '[WEB_SEARCH_TOOL]', capability: 'web-search' },
 ];
 
 /**
@@ -296,19 +337,23 @@ interface SkillFrontmatter {
   categoriesField: CategoriesField
   /** `metadata.kind` (purpose axis); undefined when the nested key is absent. */
   kind?: string
+  /** `metadata.requires_capabilities` (MCP capabilities); undefined when the nested key is absent. */
+  requiresCapabilities?: string[]
   raw: string
 }
 
 /**
  * Extracts the YAML frontmatter (between leading `---` fences) and pulls out
- * `name`, `complementary_categories` and `metadata.kind`. We only need a tiny
- * subset, so we do not pull in a YAML dependency — the format we expect is:
+ * `name`, `complementary_categories`, `metadata.kind` and
+ * `metadata.requires_capabilities`. We only need a tiny subset, so we do not
+ * pull in a YAML dependency — the format we expect is:
  *
  *   ---
  *   name: foo
  *   complementary_categories: [a, b, c]
  *   metadata:
  *     kind: workflow
+ *     requires_capabilities: [db, api-schema]
  *   ---
  *
  * If the categories field uses block-list YAML (- a / - b), we also handle
@@ -365,13 +410,38 @@ function parseFrontmatter(content: string): SkillFrontmatter | null {
   // `metadata` is the extension point the Agent Skills frontmatter spec allows,
   // so `kind` is never read from the top level.
   let kind: string | undefined;
+  let requiresCapabilities: string[] | undefined;
   const metadataMatch = block.match(/^metadata:[ \t]*\n((?:[ \t]+\S[^\n]*\n?)+)/m);
   if (metadataMatch) {
     const kindMatch = metadataMatch[1].match(/^[ \t]+kind:[ \t]*["']?([\w-]+)["']?/m);
     if (kindMatch) { kind = kindMatch[1]; }
+    requiresCapabilities = parseNestedList(metadataMatch[1], 'requires_capabilities');
   }
 
-  return { name, categoriesField, kind, raw: block };
+  return { name, categoriesField, kind, requiresCapabilities, raw: block };
+}
+
+/**
+ * Reads one list-valued key out of an indented `metadata:` block, in either
+ * form: inline `  key: [a, b]` or block `  key:\n    - a\n    - b`. Returns
+ * undefined when the key is absent (so "not declared" and "declared empty"
+ * stay distinguishable); quotes around a value are stripped.
+ */
+function parseNestedList(metadataBlock: string, key: string): string[] | undefined {
+  const inline = metadataBlock.match(new RegExp(`^[ \\t]+${key}:[ \\t]*\\[([^\\]]*)\\]`, 'm'));
+  if (inline) {
+    return inline[1].split(',').map(v => v.trim().replace(/^["']|["']$/g, '')).filter(v => v.length > 0);
+  }
+  const blockList = metadataBlock.match(new RegExp(`^[ \\t]+${key}:[ \\t]*\\n((?:[ \\t]+-[ \\t]+\\S[^\\n]*\\n?)+)`, 'm'));
+  if (blockList) {
+    const values: string[] = [];
+    for (const line of blockList[1].split('\n')) {
+      const m = line.match(/^[ \t]+-[ \t]+(.+)$/);
+      if (m) { values.push(m[1].trim().replace(/^["']|["']$/g, '')); }
+    }
+    return values;
+  }
+  return metadataBlock.match(new RegExp(`^[ \\t]+${key}:`, 'm')) ? [] : undefined;
 }
 
 // -----------------------------------------------------------------------------
@@ -1127,6 +1197,24 @@ function main(): void {
         }
       }
     }
+
+    // Check 18: every declared MCP capability is in the vocabulary.
+    const declaredCapabilities = new Set(fm.requiresCapabilities ?? []);
+    for (const capability of declaredCapabilities) {
+      if (!KNOWN_CAPABILITIES.has(capability)) {
+        violation('ERROR', entry, `CAPABILITY-VOCAB: \`metadata.requires_capabilities\` names \`${capability}\`, not in the mcp-capabilities.md §2 vocabulary (${[...KNOWN_CAPABILITIES].join(', ')})`);
+      }
+    }
+
+    // Check 19 (heuristic, WARN): a resolution tag in the SKILL.md body without
+    // the matching declaration. Body only — references/ are out of scope. A
+    // `core` skill hosts doctrine that DESCRIBES the tags; it never uses them.
+    const bodyOutsideFences = fm.kind === 'core' ? '' : stripFencedCodeBlocks(body);
+    for (const { tag, capability } of CAPABILITY_TAGS) {
+      if (bodyOutsideFences.includes(tag) && !declaredCapabilities.has(capability)) {
+        violation('WARN', entry, `CAPABILITY-UNDECLARED: body uses \`${tag}\` but \`metadata.requires_capabilities\` does not declare \`${capability}\` (declare it, or drop the mention if the skill never uses it; mcp-capabilities.md §3)`);
+      }
+    }
   }
 
   // Build T1 dir slug set (available after the T1 walk).
@@ -1239,6 +1327,8 @@ function main(): void {
     'KIND-MISSING (T1 / vendored T2 SKILL.md without `metadata.kind`)',
     'KIND-VOCAB (`metadata.kind` outside context / workflow / utility / core)',
     'KIND-SUFFIX (slug suffix `-context` / `-cli` / `-tool` / `-app` vs declared kind, both directions)',
+    'CAPABILITY-VOCAB (`metadata.requires_capabilities` outside web-search / library-docs / db / api-schema / browser)',
+    'CAPABILITY-UNDECLARED (resolution tag in SKILL.md body without the matching declaration; WARN)',
   ];
 
   if (violations.length === 0) {

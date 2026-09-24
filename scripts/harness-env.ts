@@ -12,6 +12,10 @@
  *   bun run harness:env --check      verify .env and the surfaces agree (exit 1 on drift)
  *   bun run harness:env --dry-run    print what WOULD change, write nothing
  *   bun run harness:env --json       machine-readable result for either mode
+ *   bun scripts/harness-env.ts --placeholders
+ *                                    create EMPTY .auth/opencode/<VAR> files for every {file:}
+ *                                    reference opencode.jsonc carries, never overwriting one.
+ *                                    Run by `prepare` on every `bun install`; reads no .env.
  *
  * NEVER PRINTS A VALUE. Every line below carries variable NAMES and a verdict.
  */
@@ -19,6 +23,7 @@
 import {
   check,
   CLAUDE_LOCAL_SETTINGS,
+  ensureOpencodePlaceholders,
   generate,
   OPENCODE_CONFIG,
   OPENCODE_SECRET_DIR,
@@ -28,6 +33,7 @@ const argv = process.argv.slice(2);
 const CHECK = argv.includes('--check');
 const DRY_RUN = argv.includes('--dry-run');
 const JSON_OUT = argv.includes('--json');
+const PLACEHOLDERS = argv.includes('--placeholders');
 const HELP = argv.includes('--help') || argv.includes('-h');
 
 function names(list: string[]): string {
@@ -41,6 +47,9 @@ if (HELP) {
   bun run harness:env --check      verify; exit 1 when .env and the surfaces disagree
   bun run harness:env --dry-run    report what would change, write nothing
   bun run harness:env --json       machine-readable result
+  bun scripts/harness-env.ts --placeholders
+                                   create the EMPTY ${OPENCODE_SECRET_DIR}/<VAR> files a fresh clone
+                                   lacks (run by \`prepare\` on bun install; never overwrites, reads no .env)
 
 Surfaces
   ${CLAUDE_LOCAL_SETTINGS}   env block, merged (every key it did not put there is preserved)
@@ -48,6 +57,24 @@ Surfaces
 
 Only variables an MCP config actually references are emitted. Values are never printed.
 `);
+  process.exit(0);
+}
+
+if (PLACEHOLDERS) {
+  // Runs inside `bun install` (the `prepare` script), so it must never fail the
+  // install: a missing placeholder is reported by `bun run setup:doctor` and
+  // fixed by `bun run harness:env`, while a red `bun install` blocks everything.
+  try {
+    const result = ensureOpencodePlaceholders();
+    process.stdout.write(
+      `harness-env --placeholders: ${OPENCODE_SECRET_DIR}/ created ${result.created.length} empty `
+      + `(${names(result.created)}); kept ${result.kept.length} existing${
+        result.error === undefined ? '' : `; WARNING ${result.error}`}\n`,
+    );
+  }
+  catch (err) {
+    process.stdout.write(`harness-env --placeholders: skipped (${(err as Error).message}); run \`bun run harness:env\` once .env is in place.\n`);
+  }
   process.exit(0);
 }
 

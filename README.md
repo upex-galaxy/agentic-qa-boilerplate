@@ -59,7 +59,8 @@ Before running `bunx create-agentic-qa@latest` or `bun install && bun run setup`
 
 | Tool                                                                                                                   | Min version | Why                                                                                                         | Install                                                                                |
 | ---------------------------------------------------------------------------------------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| **Bun**                                                                                                                | `>= 1.0.0`  | Runtime for every script (`bun install`, `bun run setup`, `bun run test`, `bun xray`, `bun cli/doctor.ts`)  | macOS/Linux/WSL: `curl -fsSL https://bun.sh/install \| bash` · Windows: `powershell -c "irm bun.sh/install.ps1 \| iex"` · [docs](https://bun.sh/docs/installation) |
+| **Bun**                                                                                                                | `>= 1.0.0`  | Runtime for every script (`bun install`, `bun run setup`, `bun run test`, `bun xray`, `bun run setup:doctor`) | macOS/Linux/WSL: `curl -fsSL https://bun.sh/install \| bash` · Windows: `powershell -c "irm bun.sh/install.ps1 \| iex"` · [docs](https://bun.sh/docs/installation) |
+| **Node**                                                                                                               | `>= 18`     | Hooks run `node .agents/hooks/personality-reinject.mjs`; checked by the scaffolder doctor and the `bun run setup` preflight | [nodejs.org](https://nodejs.org)                                                       |
 | **An agent** — [Claude Code](https://docs.claude.com/en/docs/claude-code), [OpenCode](https://opencode.ai/docs) **or** [Codex](https://developers.openai.com/codex/) | latest      | `bun run setup` Step 4 detects all three (`~/.claude/` or `claude` on PATH · `~/.config/opencode/` or `opencode` on PATH · `codex` on PATH or `.codex/config.toml` in the repo) and lets you pick which to configure; exits 1 only if none is found | See each project's official docs                           |
 | `git`                                                                                                                  | any         | Scaffolder runs `git init`; pre-commit hooks (Husky) require git                                            | [git-scm.com/downloads](https://git-scm.com/downloads)                                 |
 | `tar`                                                                                                                  | any         | Scaffolder extracts the template tarball. Either flavour works — GNU tar (Linux, WSL, Git Bash) or bsdtar   | Ships with macOS, Linux, and Windows 10 1803+ / Windows 11 (`C:\Windows\System32\tar.exe`) |
@@ -89,9 +90,9 @@ These are **not optional** for the workflow — each one is required by a specif
 
 | Tool     | What it buys you                                                                                                                                                                                                                                                                          | Install                                                                                       |
 | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `direnv` | Loads `.env` automatically when you `cd` into the repo, so the bare `claude` / `opencode` / `codex` binaries see MCP credentials. Without it the project ships `bun run claude` / `bun run opencode` / `bun run codex` wrappers (via `dotenv-cli`) that do the same thing — direnv just removes the `bun run` prefix. | macOS/Linux: `brew install direnv` / `apt install direnv` · [direnv.net](https://direnv.net/) |
+| `direnv` | Optional. Exports `.env` into your shell on `cd`, which only Codex (it reads the process environment) and shell-exported CLI vars (`acli`, `curl`, `bun xray`) need. Claude Code and OpenCode do not: `bun run harness:env` writes their credentials into `.claude/settings.local.json` and `.auth/opencode/*`. Without direnv, `bun run codex` loads `.env` the same way. | macOS/Linux: `brew install direnv` / `apt install direnv` · [direnv.net](https://direnv.net/) |
 
-> **Windows users**: skip direnv. The `bun run claude` / `bun run opencode` / `bun run codex` wrappers already load `.env` cross-platform with zero setup. direnv on PowerShell needs version 2.37+ and is officially experimental; Git Bash works but at that point the wrapper is simpler. The installer will offer the direnv hook; just decline it.
+> **Windows users**: skip direnv. The `bun run claude` / `bun run opencode` / `bun run codex` wrappers already load `.env` cross-platform with zero setup, and Claude Code / OpenCode read the surfaces `bun run harness:env` generates. direnv on PowerShell needs version 2.37+ and is officially experimental; Git Bash works but at that point the wrapper is simpler. The installer will offer the direnv hook; just decline it.
 
 ### MCP credentials (`.env` keys)
 
@@ -134,7 +135,7 @@ POSTMAN_API_KEY
 | **Get oriented before installing**                    | `bun run onboarding` — opens the docs site on its "Empezar aquí" page (`docs/core/empezar-aqui.html`)                                                                                                   |
 | **Understand the methodology**                        | `bun run docs` → Metodología ([IQL](docs/core/metodologia/iql.html), [how this repo implements it](docs/core/metodologia/este-repo.html)); official site: [upexgalaxy.com/metodologia](https://www.upexgalaxy.com/metodologia) |
 | **Browse the human docs**                             | `bun run docs` — local HTML site (setup guides, methodology, exploration); add your own pages under any `docs/` folder except `docs/core/`                                                                |
-| **See what `bun run setup` configures**               | [`INSTALLER.md`](INSTALLER.md) — run `bun cli/doctor.ts` after setup                                                                                                                                   |
+| **See what `bun run setup` configures**               | [`INSTALLER.md`](INSTALLER.md) — run `bun run setup:doctor` after setup                                                                                                                               |
 | **You're an AI agent**                                | [`AGENTS.md`](AGENTS.md) (auto-loaded each session on every supported harness)                                                                                                                         |
 
 > First-timers, use the scaffolder. It handles tarball download, git scrub, rename, `bun install`, and the interactive installer in one shot. The manual clone is for people hacking on the boilerplate itself.
@@ -203,7 +204,7 @@ bunx -y ccstatusline@latest
 
 ## Launching the agent
 
-Every MCP config ships with credential placeholders — real values live in `.env`. Launch the agent via one of these so env vars actually load:
+`.env` is the single source of credentials, but no harness reads it directly. Claude Code reads the `env` block of `.claude/settings.local.json`; OpenCode reads `.auth/opencode/<VAR>` files via `{file:}`; Codex reads the process environment (`bun run codex` or direnv). `bun run harness:env` derives the first two from `.env`, and `bun run setup:doctor` reports drift. After filling `.env`: run `bun run harness:env`, then restart the agent session (MCP servers read credentials at startup). Launch via one of these:
 
 ```bash
 # Cross-platform default (uses dotenv-cli, no extra tooling required):
@@ -211,7 +212,7 @@ bun run claude        # Claude Code
 bun run opencode      # OpenCode
 bun run codex         # Codex CLI
 
-# Optional: direnv autoload (any OS with direnv installed)
+# Optional: direnv autoload (Codex + shell CLIs such as acli / bun xray; Claude Code and OpenCode do not need it)
 direnv allow          # one-time per repo (the installer offers to run this)
 claude                # direct binary picks up .env from your shell
 
@@ -285,7 +286,7 @@ bun install
 bun run pw:install
 
 # 4. Copy env template
-cp .env.example .env   # then fill in the values
+cp .env.example .env   # fill in the values, then: bun run harness:env, then restart the agent session
 
 # 5. (Optional) Visual orientation — close tab + Ctrl-C when done.
 bun run onboarding
@@ -294,7 +295,7 @@ bun run onboarding
 bun run setup
 
 # 7. Validate the install
-bun cli/doctor.ts
+bun run setup:doctor
 ```
 
 > End-users building a new project should NOT clone manually — use `bunx create-agentic-qa@latest` so git history is scrubbed and the project is renamed automatically.

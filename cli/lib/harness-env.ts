@@ -748,6 +748,52 @@ export function generate(root = REPO_ROOT, opts: { dryRun?: boolean } = {}): Gen
 }
 
 // ----------------------------------------------------------------------------
+// Placeholders — the fresh-clone guarantee, before any `.env` exists
+// ----------------------------------------------------------------------------
+
+export interface PlaceholderResult {
+  /** Variable names whose value file was created EMPTY, because it was missing. */
+  created: string[]
+  /** Variable names whose value file already existed and was left untouched. */
+  kept: string[]
+  /** Set when `opencode.jsonc` exists but could not be parsed. Names the file, never its contents. */
+  error?: string
+}
+
+/**
+ * Make sure every `{file:.auth/opencode/<VAR>}` target `opencode.jsonc` points
+ * at EXISTS, creating an empty one where it does not.
+ *
+ * WHY. The committed config carries `{file:}` references, so a fresh clone has a
+ * config that points at files nothing has written yet. Measured on OpenCode
+ * 1.18.30: a MISSING `{file:}` target throws `bad file reference … does not
+ * exist` and invalidates the WHOLE config, not just that server, while an
+ * EXISTING EMPTY file substitutes silently to "" (exit 0). So an empty file is
+ * the safe degraded state, exactly as degraded as `{env:}` was, and its absence
+ * is a hard break. `bun install` runs this through the `prepare` script, which is
+ * the one step every path to a working clone (scaffolder, manual clone, updater)
+ * already runs; `scripts/provision-worktree.ts` runs it too, for a primary that
+ * never ran setup.
+ *
+ * WHAT IT NEVER DOES. It never reads `.env` (that is `generate()`'s job, once a
+ * `.env` exists) and it never overwrites a file: a file that exists may hold a
+ * real credential, and this runs on every `bun install`.
+ */
+export function ensureOpencodePlaceholders(root = REPO_ROOT): PlaceholderResult {
+  const scan = scanJson(root, OPENCODE_CONFIG, [OPENCODE_FILE_REF_PATTERN]);
+  const result: PlaceholderResult = { created: [], kept: [] };
+  if (scan.error !== undefined) { result.error = `${OPENCODE_CONFIG}: ${scan.error}`; }
+  const dir = join(root, OPENCODE_SECRET_DIR);
+  for (const name of scan.vars) {
+    const target = join(dir, name);
+    if (existsSync(target)) { result.kept.push(name); continue; }
+    secureFile(target, '');
+    result.created.push(name);
+  }
+  return result;
+}
+
+// ----------------------------------------------------------------------------
 // Check
 // ----------------------------------------------------------------------------
 

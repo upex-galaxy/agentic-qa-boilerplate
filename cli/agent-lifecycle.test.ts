@@ -160,7 +160,7 @@ describe('installer Codex lifecycle', () => {
     // The six DBHUB_* arrive through `env_vars` on the dbhub server: Codex
     // inherits only `core`, so anything dbhub.toml interpolates has to be
     // forwarded by name. All six are in INSTALLER_DEFERRED_VARS, so the
-    // installer defers them to `bun run doctor` instead of prompting.
+    // installer defers them to `bun run setup:doctor` instead of prompting.
     expect(await discoverRequiredEnvVars(['codex'], REPO_ROOT)).toEqual([
       'API_BASE_URL',
       'DBHUB_DATABASE',

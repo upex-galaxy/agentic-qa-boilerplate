@@ -13,7 +13,7 @@ gap. It disguises itself as something else, and the worker then debugs the wrong
 
 | Missing | Git state | How it fails without it | How it is restored |
 |---|---|---|---|
-| `.env` | ignored | **loud and silent at once**: `.mcp.json` uses `${VAR}` placeholders, so Claude Code fails to parse the MCP block and the session starts with no MCP tools (Critical Rule #10); and any script needing credentials fails on missing variables | copy it from the primary checkout, mode `0600`. On the SUPERVISED path the file existing is not enough — see §1b |
+| `.env` | ignored | **silent on every host but Codex** (Critical Rule #10): `.mcp.json` uses `${VAR}` placeholders, and an unset `${VAR}` is passed through as the LITERAL string, so the server starts and dies on its first authenticated call (401/403), not at parse time. Any script needing credentials fails on missing variables. On Claude Code the worker reads the `env` block of `.claude/settings.local.json`, on OpenCode the `.auth/opencode/*` files: both come from `bun run harness:env`, see §1b | copy it from the primary checkout, mode `0600`. On the SUPERVISED path the file existing is not enough — see §1b |
 | the `.claude/skills` alias → `.agents/skills` | ignored | loud, on Claude Code only: `Skill` answers `Unknown skill`. OpenCode and Codex read `.agents/skills/` natively and do not need it | `bun run agents:compat` inside the worktree (it creates a POSIX symlink or a Windows junction) |
 | T3 community skills (`playwright-cli`, `playwright-best-practices`, `resend-cli`) | ignored by explicit `.gitignore` entries | loud, at load time: the skill simply is not there | copy the directories from the primary checkout, or re-run the installer |
 | `node_modules/` | ignored | loud **with the wrong message**: `Cannot find module`, which reads as a broken import | `bun install --frozen-lockfile` |
@@ -31,22 +31,40 @@ placeholders, hence the `.env` dependency), `opencode.jsonc`, `.codex/config.tom
 ## 1b · The env file is present and the supervised worker still has no credentials
 
 A launch line LOADS the env file (the repo's own wrapper does it, which is why the human-paste path
-is immune). The supervised native launch has no launch line, so the only thing that loads the file
-is **direnv firing in Orca's interactive shell**. On a machine without it, the worker is fully
-provisioned, starts cleanly, and has no credentials — and nothing says so until its first
-authenticated call fails with an error that reads like a broken tool (gotcha G45).
+is immune). The supervised native launch has no launch line, so a worker gets credentials only from
+what it can read WITHOUT a shell:
+
+- **Claude Code**: the `env` block of `.claude/settings.local.json`, resolved from the MAIN checkout's
+  root on macOS/Linux (measured), so a worktree inherits it with no action. Provision copies the file
+  anyway, mode `0600`.
+- **OpenCode**: `.auth/opencode/<VAR>` via `{file:}` references in `opencode.jsonc`, relative to the
+  worktree. Provision copies `.auth/` from the primary; `bun install` creates empty placeholders on a
+  fresh clone so the config loads (degraded, not broken).
+- **Codex**, and anything inside a worker that reads a shell-exported variable (`acli`, `curl`,
+  `bun xray`): the process environment only. Here the seam is **direnv firing in Orca's interactive
+  shell**. On a machine without it, that worker is fully provisioned, starts cleanly, and has no
+  credentials, and nothing says so until its first authenticated call fails with an error that reads
+  like a broken tool (gotcha G45).
+
+The Claude and OpenCode surfaces are derived from `.env` by `bun run harness:env`. Run it in the
+primary after every `.env` change (Claude reads the primary's file; OpenCode gets its copy at
+provision time), then restart the agent session: MCP servers read credentials at startup.
 
 So for every worker launched on the native path, in this order:
 
-1. direnv installed and hooked, `.envrc` sourcing the env file, `direnv allow` run once per checkout
-   (`references/orca-machine-setup.md` §3.2). Per machine; not versionable; invisible to the repo.
+1. `bun run harness:env` up to date in the primary. For a Codex worker, or a brief that calls
+   shell-exported CLIs: direnv installed and hooked, `.envrc` sourcing the env file, `direnv allow`
+   run once per checkout (`references/orca-machine-setup.md` §3.2). Provision runs
+   `direnv allow <worktree>` itself when direnv is installed AND the primary's `.envrc` is already
+   allowed, and prints what it did. Per machine; not versionable; invisible to the repo.
 2. The conductor **reads the worker's screen and confirms credentials loaded** before sending it any
-   work (`references/coordinator-playbook.md` §1 step 5). A direnv export line or the worker's own
-   first probe is the evidence. No evidence → fix the machine, do not dispatch work.
+   work (`references/coordinator-playbook.md` §1 step 5). An MCP tool listed as connected, a direnv
+   export line, or the worker's own first probe is the evidence. No evidence → fix the machine, do
+   not dispatch work.
 
-No direnv on this machine → the supervised path is not usable there, and the fleet runs on pasted
-custom-argv lines, which carry their own env loading and lose supervision (`references/launch-seam.md`
-§1).
+No direnv on this machine → Claude and OpenCode workers still run supervised. A Codex worker, or any
+worker whose brief needs shell-exported variables, runs on pasted custom-argv lines, which carry their
+own env loading and lose supervision (`references/launch-seam.md` §1).
 
 ---
 

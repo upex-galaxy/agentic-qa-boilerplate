@@ -9,6 +9,13 @@
  *   3. That .session/ is deliberately never copied, even when present in the
  *      primary checkout — a worker reaches it by an absolute path instead.
  *   4. --dry-run reports intent without writing anything.
+ *   5. Every `{file:}` target the committed opencode.jsonc names EXISTS in the
+ *      worktree afterwards, empty when the primary's .auth/ had no value for
+ *      it (a missing target invalidates OpenCode's whole config).
+ *   6. With no direnv on PATH the direnv step prints its skip line and the
+ *      script still exits 0. The ALLOW path (direnv installed AND the primary's
+ *      .envrc approved) is not unit-testable: it needs a real direnv and a
+ *      real approval by the machine's owner, which a test must never grant.
  *
  * The fixture's package.json declares a trivial `agents:compat` script (`bun
  * -e "process.exit(0)"`) so the test never depends on this repo's real
@@ -17,9 +24,9 @@
  * test here, not that script's own behaviour.
  */
 
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { platform, tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { delimiter, join, resolve } from 'node:path';
 
 import { afterEach, describe, expect, test } from 'bun:test';
 
@@ -71,7 +78,19 @@ function fixture(): { primary: string, worktree: string } {
     '.agents/skills/community-skill/',
     '',
   ].join('\n'));
-  git(primary, 'add', 'package.json', '.gitignore');
+  // A committed OpenCode config pointing at a value file nothing has written:
+  // the fresh-clone shape. TAVILY_API_KEY gets a value from the primary's
+  // .auth/ below; DBHUB_HOST does not, so it must arrive as an empty placeholder.
+  writeFileSync(join(primary, 'opencode.jsonc'), [
+    '{',
+    '  "mcp": {',
+    '    "tavily": { "headers": { "Authorization": "Bearer {file:.auth/opencode/TAVILY_API_KEY}" } },',
+    '    "dbhub": { "environment": { "DBHUB_HOST": "{file:.auth/opencode/DBHUB_HOST}" } }',
+    '  }',
+    '}',
+    '',
+  ].join('\n'));
+  git(primary, 'add', 'package.json', '.gitignore', 'opencode.jsonc');
   git(primary, 'commit', '-q', '-m', 'init');
 
   // Real lockfile, so the script's `bun install --frozen-lockfile` succeeds later.
@@ -84,8 +103,9 @@ function fixture(): { primary: string, worktree: string } {
 
   // Gitignored state present in the primary, never committed.
   writeFileSync(join(primary, '.env'), 'LOCAL_USER_EMAIL=test@example.com\n');
-  mkdirSync(join(primary, '.auth'), { recursive: true });
+  mkdirSync(join(primary, '.auth', 'opencode'), { recursive: true });
   writeFileSync(join(primary, '.auth', 'tokens.env'), 'export API_TOKEN_USER_LOCAL=\'x\'\n');
+  writeFileSync(join(primary, '.auth', 'opencode', 'TAVILY_API_KEY'), 'tk-literal');
   mkdirSync(join(primary, '.session'), { recursive: true });
   writeFileSync(join(primary, '.session', 'probe.md'), 'must never be copied\n');
   mkdirSync(join(primary, '.agents', 'skills', 'community-skill'), { recursive: true });
@@ -97,9 +117,26 @@ function fixture(): { primary: string, worktree: string } {
   return { primary, worktree };
 }
 
-function run(cwdArgs: string[]): { code: number, out: string } {
-  const p = Bun.spawnSync({ cmd: ['bun', SCRIPT, ...cwdArgs], stdout: 'pipe', stderr: 'pipe' });
+function run(cwdArgs: string[], env: Record<string, string> = {}): { code: number, out: string } {
+  const p = Bun.spawnSync({ cmd: ['bun', SCRIPT, ...cwdArgs], stdout: 'pipe', stderr: 'pipe', env: { ...process.env, ...env } });
   return { code: p.exitCode ?? 1, out: `${p.stdout.toString()}${p.stderr.toString()}` };
+}
+
+/**
+ * A PATH with no `direnv` on it, but with `bun` and `git` still reachable: every
+ * PATH segment that holds a direnv executable is dropped, and a temp bin dir of
+ * symlinks to the real `bun` and `git` is prepended so the script's own
+ * subprocesses keep working when they lived in a dropped segment.
+ */
+function pathWithoutDirenv(): string {
+  const bin = mkdtempSync(join(tmpdir(), 'provision-worktree-bin-'));
+  temporaryRoots.push(bin);
+  for (const tool of ['bun', 'git']) {
+    const real = Bun.which(tool);
+    if (real) { symlinkSync(real, join(bin, tool)); }
+  }
+  const kept = (process.env.PATH ?? '').split(delimiter).filter(seg => seg !== '' && !existsSync(join(seg, 'direnv')));
+  return [bin, ...kept].join(delimiter);
 }
 
 describe('provision-worktree', () => {
@@ -132,6 +169,27 @@ describe('provision-worktree', () => {
 
     // .session/ exists in the primary but must NEVER be copied.
     expect(existsSync(join(worktree, '.session'))).toBe(false);
+  });
+
+  test('every {file:} target opencode.jsonc names exists afterwards: copied when the primary had it, EMPTY otherwise', () => {
+    const { worktree } = fixture();
+    const result = run([worktree]);
+    expect(result.code).toBe(0);
+    // Copied from the primary's .auth/, never overwritten by the placeholder step.
+    expect(readFileSync(join(worktree, '.auth', 'opencode', 'TAVILY_API_KEY'), 'utf8')).toBe('tk-literal');
+    // Absent in the primary: created empty, because a MISSING target breaks the whole config.
+    expect(existsSync(join(worktree, '.auth', 'opencode', 'DBHUB_HOST'))).toBe(true);
+    expect(readFileSync(join(worktree, '.auth', 'opencode', 'DBHUB_HOST'), 'utf8')).toBe('');
+    expect(result.out).toContain('OpenCode placeholders: 1 created empty (DBHUB_HOST)');
+  });
+
+  test('with no direnv on PATH the direnv step is skipped, says so, and the run still succeeds', () => {
+    if (IS_WINDOWS) { return; } // the PATH fixture uses symlinks; documented, not measured on Windows.
+    const { worktree } = fixture();
+    const result = run([worktree], { PATH: pathWithoutDirenv() });
+    expect(result.code).toBe(0);
+    expect(result.out).toContain('direnv: skipped (not installed)');
+    expect(result.out).not.toContain('direnv: allowed');
   });
 
   test('copied secrets are mode 0600 (files) / 0700 (dirs) on POSIX', () => {

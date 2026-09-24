@@ -6,6 +6,7 @@ compatibility: [claude-code, copilot, cursor, codex, opencode]
 complementary_categories: [meta-skill]
 metadata:
   kind: workflow
+  requires_capabilities: [db, api-schema]
 ---
 
 # Project Discovery — Onboarding Orchestrator
@@ -34,6 +35,7 @@ Grounding methodology: **IQL (Integrated Quality Lifecycle)** — QA is continuo
 - DO NOT: skip Phase 1 or its domain glossary on a fresh start. Downstream skills read the glossary as a precondition for ATP authoring and TC naming.
 - WHEN both a DB schema/migrations and ORM models exist: prefer the schema or migrations. ORM definitions drift from the live schema.
 - DO: mention the IQL methodology only if the user asks why the discovery is structured this way — never lecture someone who just wants the artifact.
+- DO: before any step that uses a declared MCP capability (`metadata.requires_capabilities`: `db`, `api-schema`), run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8: resolve by tool-name suffix, and when no available tool provides it STOP and name the capability + how to enable it, never a silent fallback.
 
 **Read full SKILL.md when**: running any phase's sub-steps, applying a completion gate's content checks, or resolving the pre-`adapt-framework` prerequisite list.
 

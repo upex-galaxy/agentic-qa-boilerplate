@@ -360,6 +360,8 @@ The validation script `scripts/lint-skills.ts` (implemented at `scripts/lint-ski
 11. **KIND-MISSING** (ERROR): a T1 or vendored T2 `SKILL.md` without `metadata.kind` (§2b). Committed community skills are exempt.
 12. **KIND-VOCAB** (ERROR): `metadata.kind` outside `context` / `workflow` / `utility` / `core` (`KNOWN_KINDS`).
 13. **KIND-SUFFIX** (ERROR): slug suffix and declared kind disagree in either direction (`-context` ⇔ `context`; `-cli` / `-tool` / `-app` ⇔ `utility`); slugs in `KIND_SUFFIX_EXEMPT` are skipped by name.
+14. **CAPABILITY-VOCAB** (ERROR): a name in `metadata.requires_capabilities` outside the vocabulary of `agentic-qa-core/references/mcp-capabilities.md` (`KNOWN_CAPABILITIES`).
+15. **CAPABILITY-UNDECLARED** (WARN): a SKILL.md body (fences stripped) that carries a tool-resolution tag for a capability (`[DB_TOOL]`, `[API_TOOL]`, `[AUTOMATION_TOOL]`, `[DOCS_TOOL]`, `[WEB_SEARCH_TOOL]`) the frontmatter does not declare; declare it or drop the row. `kind: core` skills are exempt.
 
 Output format: human-readable summary (counts of ERROR / WARN / INFO). Exit code: non-zero on ERROR, zero on WARN/INFO only.
 

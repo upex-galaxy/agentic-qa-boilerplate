@@ -117,27 +117,37 @@ jobs:
       - name: Install Playwright Browsers
         run: bun run pw:install
 
+      # The free-text inputs (grep, test_file) are typed by whoever dispatches
+      # the run. They reach the shell ONLY through env: so the expression is
+      # expanded in memory, never spliced into the script text, and are read
+      # quoted so a value with spaces or shell metacharacters stays one
+      # argument. GitHub secure-use guide: "Use an intermediate environment
+      # variable". No eval: the command is assembled as a bash array.
       - name: Run Sanity Tests on ${{ env.TEST_ENV }}
         shell: bash
+        env:
+          GREP_INPUT: ${{ github.event.inputs.grep }}
+          TEST_FILE: ${{ github.event.inputs.test_file }}
+          TEST_TYPE: ${{ github.event.inputs.test_type }}
         run: |
-          GREP_OPTION=""
-          if [ -n "${{ github.event.inputs.grep }}" ]; then
-            GREP_OPTION="--grep='${{ github.event.inputs.grep }}'"
+          grep_args=()
+          if [ -n "$GREP_INPUT" ]; then
+            grep_args=(--grep "$GREP_INPUT")
           fi
 
           # Determine which test command to run
-          if [ -n "${{ github.event.inputs.test_file }}" ]; then
-            echo "Running specific test file: ${{ github.event.inputs.test_file }}"
-            eval "bun run test ${{ github.event.inputs.test_file }} $GREP_OPTION"
-          elif [ "${{ github.event.inputs.test_type }}" == "e2e" ]; then
+          if [ -n "$TEST_FILE" ]; then
+            echo "Running specific test file: $TEST_FILE"
+            bun run test "$TEST_FILE" "${grep_args[@]}"
+          elif [ "$TEST_TYPE" == "e2e" ]; then
             echo "Running E2E tests"
-            eval "bun run test:e2e $GREP_OPTION"
-          elif [ "${{ github.event.inputs.test_type }}" == "integration" ]; then
+            bun run test:e2e "${grep_args[@]}"
+          elif [ "$TEST_TYPE" == "integration" ]; then
             echo "Running Integration tests"
-            eval "bun run test:integration $GREP_OPTION"
+            bun run test:integration "${grep_args[@]}"
           else
             echo "Running all tests"
-            eval "bun run test $GREP_OPTION"
+            bun run test "${grep_args[@]}"
           fi
 
       # The TMS write-back runs HERE, after the Playwright process has exited:
@@ -268,21 +278,24 @@ jobs:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          # Free-text input: read through env and quoted, never interpolated into the script.
+          ALLURE_SUITE: ${{ github.event.inputs.custom_allure_url || 'sanity' }}
+          CUSTOM_ALLURE_URL: ${{ github.event.inputs.custom_allure_url }}
         run: |
           if [ -n "$PORTAL_URL" ]; then
             bun scripts/ci/publish-allure-portal.ts \
               --env "${{ env.TEST_ENV }}" \
-              --suite "${{ github.event.inputs.custom_allure_url || 'sanity' }}" \
+              --suite "$ALLURE_SUITE" \
               --run "${{ github.run_number }}" \
               --results sanity-artifacts/allure-results
           else
             bun scripts/ci/publish-allure-pages.ts \
               --env "${{ env.TEST_ENV }}" \
-              --suite "${{ github.event.inputs.custom_allure_url || 'sanity' }}" \
+              --suite "$ALLURE_SUITE" \
               --run "${{ github.run_number }}" \
               --results sanity-artifacts/allure-results --pages gh-pages --keep 10
             echo "## Allure Report" >> $GITHUB_STEP_SUMMARY
-            echo "View the report: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/${{ env.TEST_ENV }}/${{ github.event.inputs.custom_allure_url }}/" >> $GITHUB_STEP_SUMMARY
+            echo "View the report: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/${{ env.TEST_ENV }}/${CUSTOM_ALLURE_URL}/" >> $GITHUB_STEP_SUMMARY
           fi
 
   # ============================================

@@ -430,7 +430,7 @@ export const MCP_SERVER_SECRETS: Record<string, readonly string[]> = {
 // Vars discovered from committed MCP configs that the installer should NOT
 // prompt for at install time — they are project-bound (require an existing
 // backend / Postman workspace / DB connection) and are surfaced later by
-// `bun run doctor` once the user has the necessary external resources.
+// `bun run setup:doctor` once the user has the necessary external resources.
 const INSTALLER_DEFERRED_VARS = new Set<string>([
   'API_BASE_URL',
   'OPENAPI_SPEC_PATH',
@@ -1246,7 +1246,7 @@ async function configureMcps(agents: AgentId[], state: InstallState): Promise<vo
     }
     if (INSTALLER_DEFERRED_VARS.has(name)) {
       stillPending.push(name);
-      log.dim(`  ${name}: deferred to \`bun run doctor\` (project-bound — needs backend / DB / workspace).`);
+      log.dim(`  ${name}: deferred to \`bun run setup:doctor\` (project-bound — needs backend / DB / workspace).`);
       continue;
     }
     if (NON_INTERACTIVE) {
@@ -1524,6 +1524,14 @@ async function offerDirenvAutoload(): Promise<void> {
   log.info(`direnv ${info.version} detected.`);
   if (info.platform === 'win32') {
     log.dim('  Tip: direnv on Windows works best in Git Bash. PowerShell support is experimental and requires direnv 2.37+.');
+  }
+
+  // `direnv allow` approves a file that EXECUTES on every `cd`. An unattended
+  // run (an AI agent, CI) must not grant that on the human's behalf: skip and
+  // say so, instead of letting `maybeConfirm`'s default-yes approve it silently.
+  if (NON_INTERACTIVE) {
+    log.dim('  skipped (non-interactive): run `direnv allow` yourself if you want shell autoload.');
+    return;
   }
 
   const proceed = await maybeConfirm(
@@ -2585,6 +2593,26 @@ function printNonCriticalNextSteps(): void {
   process.stdout.write('\n');
 }
 
+/**
+ * CRITICAL manifest vars with no value yet, by NAME. Mirrors the day-0 step's
+ * own test: `.env` or the process for an env-file var, the yaml resolver for the
+ * Atlassian host. Never returns a value.
+ */
+function missingCriticalVarNames(): string[] {
+  let envValues: Record<string, string> = {};
+  if (existsSync(ENV_PATH)) {
+    try { envValues = parseEnvFile(readFileSync(ENV_PATH, 'utf8')); }
+    catch { /* unreadable .env → treat all as empty */ }
+  }
+  return criticalVars().filter((spec) => {
+    if (valueSourceOf(spec) === 'atlassian-instance') {
+      try { resolveAtlassianInstance(); return false; }
+      catch { return true; }
+    }
+    return (envValues[spec.name] ?? process.env[spec.name] ?? '').trim().length === 0;
+  }).map(spec => spec.name);
+}
+
 function printClosingSummary(state: InstallState): void {
   const allSkillEntries = Object.entries(state.skills);
   const gentleAiSkills = allSkillEntries.filter(([k]) => k.includes('::'));
@@ -2644,10 +2672,23 @@ function printClosingSummary(state: InstallState): void {
   const circled = ['⓪', '①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨'];
   let stepNum = 0;
 
-  if (state.pendingEnvVars.length > 0) {
+  // Non-interactive (an AI agent drove the install): nobody typed a credential,
+  // so the CRITICAL set is still empty too. Say exactly which keys the agent has
+  // to ask its human for, names only, instead of leaving it to infer them.
+  const askHuman = NON_INTERACTIVE ? [...new Set([...missingCriticalVarNames(), ...state.pendingEnvVars])] : [];
+
+  if (state.pendingEnvVars.length > 0 || askHuman.length > 0) {
     process.stdout.write(`${circled[stepNum]}  ${COLORS.bold}Fill missing env vars${COLORS.reset}  ${COLORS.yellow}(BLOCKS the agent from working with MCPs)${COLORS.reset}\n`);
-    process.stdout.write(`    ${COLORS.cyan}Edit .env → set: ${state.pendingEnvVars.join(', ')}${COLORS.reset}\n`);
-    process.stdout.write(`    ${COLORS.dim}Without these, MCP servers will 401/403 silently.${COLORS.reset}\n\n`);
+    if (askHuman.length > 0) {
+      process.stdout.write(`    ${COLORS.cyan}Ask the human for these ${askHuman.length} keys: ${askHuman.join(', ')}${COLORS.reset}\n`);
+      process.stdout.write(`    ${COLORS.dim}Then write them to .env (never paste a value into a chat or a commit).${COLORS.reset}\n`);
+    }
+    else {
+      process.stdout.write(`    ${COLORS.cyan}Edit .env → set: ${state.pendingEnvVars.join(', ')}${COLORS.reset}\n`);
+    }
+    process.stdout.write(`    ${COLORS.dim}Without these, MCP servers will 401/403 silently.${COLORS.reset}\n`);
+    process.stdout.write(`    ${COLORS.cyan}Then: bun run harness:env${COLORS.reset}  ${COLORS.dim}(regenerates the credential files Claude and OpenCode read at startup)${COLORS.reset}\n`);
+    process.stdout.write(`    ${COLORS.cyan}Then restart the agent session${COLORS.reset}  ${COLORS.dim}(MCP servers read credentials at startup, not later)${COLORS.reset}\n\n`);
     stepNum++;
   }
 

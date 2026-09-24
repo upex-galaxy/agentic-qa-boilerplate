@@ -70,14 +70,15 @@ orca orchestration worker-start --task <task_id> --worktree <current|id:<repoId>
 #     --effort requires --model; neither combines with --terminal. --name names a NEW WORKTREE,
 #       not the session: there is no session-name flag on this path (see §1b).
 #     Prerequisites, both invisible from here: the agent's per-machine default arguments must carry
-#       an auto permission mode, and direnv must load the env file in the interactive shell (G45).
-#       references/orca-machine-setup.md §3.
+#       an auto permission mode, and credentials must reach the worker: Claude reads
+#       `.claude/settings.local.json`, OpenCode reads `.auth/opencode/*` (both from `bun run harness:env`),
+#       Codex needs direnv in the interactive shell (G45). references/orca-machine-setup.md §3.
 
 # 5 · verify readiness AND credentials on the worker's screen, before sending it any work
 orca terminal read --terminal <handle> --screen --json </dev/null
-#     want: the agent's status footer (model, effort) AND evidence the env file loaded
-#     (a direnv export line, or the worker's own first probe). No credentials → fix the machine,
-#     do not dispatch work to it.
+#     want: the agent's status footer (model, effort) AND evidence credentials loaded
+#     (an MCP tool listed as connected, a direnv export line on Codex, or the worker's own
+#     first probe). No credentials → fix the machine, do not dispatch work to it.
 
 # 6 · send the prompt — the ONE verb that reaches a running session (G46).
 #     On the NATIVE path the spec already delivered this text, so step 6 is a reinforcement
@@ -134,7 +135,7 @@ about each:
 | the session-name flag | the roster, the board card and the `Session:` commit trailer all key off the label | the prompt opens with `/<workflow-skill> <KEY> fleet worker`, and the identity hook titles the session from it (`references/session-identity.md` §2) |
 | environment variables in the launch line | a worker cannot be marked as a fleet worker by an exported variable | the brief and the prompt token carry it. `sprint-testing` detects worker mode from them, not from the environment |
 | the prompt in the launch itself | the worker starts idle at its prompt | step 6: `terminal send` immediately after readiness. Until it lands, the worker has nothing to do |
-| a launch line that also loads the env file | credentials depend on the MACHINE having direnv, and nothing reports their absence | step 5: verify credentials on screen BEFORE dispatching work (G45) |
+| a launch line that also loads the env file | Claude and OpenCode workers read the surfaces `bun run harness:env` generated; a Codex worker, or any shell-exported variable, depends on the MACHINE having direnv, and nothing reports its absence | step 5: verify credentials on screen BEFORE dispatching work (G45) |
 
 **The custom-argv path** (`terminal create --command '<the line from launch.txt>'` plus
 `terminal wait --for tui-idle`) keeps exactly one role: it is the shape of the line a HUMAN pastes

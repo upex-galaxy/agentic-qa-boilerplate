@@ -846,33 +846,37 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <p class="kicker">suite 2: la única que siempre necesita que le digas qué</p>
     <h2 class="h2"><span class="grad">sanity.yml</span>: ¿funciona ESTE cambio?</h2>
     <div class="split">
-      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>sanity.yml</b> · L120-141</span><span class="badge real">real</span></div>
-<pre class="sm"><span class="ln">120</span>      - <span class="key">name</span>: <span class="str">Run Sanity Tests on <span class="ex">${{ env.TEST_ENV }}</span></span>
-<span class="ln">121</span>        <span class="key">shell</span>: bash
-<span class="ln">122</span>        <span class="key">run</span>: |
-<span class="ln">123</span>          GREP_OPTION=""
-<span class="ln">124</span>          if [ -n "<span class="ex">${{ github.event.inputs.grep }}</span>" ]; then
-<span class="ln">125</span>            GREP_OPTION="--grep='<span class="ex">${{ github.event.inputs.grep }}</span>'"
-<span class="ln">126</span>          fi
-<span class="ln">128</span>          <span class="c"># Determine which test command to run</span>
-<span class="ln">129</span>          if [ -n "<span class="ex">${{ github.event.inputs.test_file }}</span>" ]; then
-<span class="ln">130</span>            echo "Running specific test file: <span class="ex">${{ github.event.inputs.test_file }}</span>"
-<span class="ln">131</span>            eval "bun run test <span class="ex">${{ github.event.inputs.test_file }}</span> $GREP_OPTION"
-<span class="ln">132</span>          elif [ "<span class="ex">${{ github.event.inputs.test_type }}</span>" == "e2e" ]; then
-<span class="ln">133</span>            echo "Running E2E tests"
-<span class="ln">134</span>            eval "bun run test:e2e $GREP_OPTION"
-<span class="ln">135</span>          elif [ "<span class="ex">${{ github.event.inputs.test_type }}</span>" == "integration" ]; then
-<span class="ln">136</span>            echo "Running Integration tests"
-<span class="ln">137</span>            eval "bun run test:integration $GREP_OPTION"
-<span class="ln">138</span>          else
-<span class="ln">139</span>            echo "Running all tests"
-<span class="ln">140</span>            eval "bun run test $GREP_OPTION"
-<span class="ln">141</span>          fi</pre></div>
+      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>sanity.yml</b> · L126-151</span><span class="badge real">real</span></div>
+<pre class="sm"><span class="ln">126</span>      - <span class="key">name</span>: <span class="str">Run Sanity Tests on <span class="ex">${{ env.TEST_ENV }}</span></span>
+<span class="ln">127</span>        <span class="key">shell</span>: bash
+<span class="ln">128</span>        <span class="key">env</span>:
+<span class="ln">129</span>          <span class="key">GREP_INPUT</span>: <span class="ex">${{ github.event.inputs.grep }}</span>
+<span class="ln">130</span>          <span class="key">TEST_FILE</span>: <span class="ex">${{ github.event.inputs.test_file }}</span>
+<span class="ln">131</span>          <span class="key">TEST_TYPE</span>: <span class="ex">${{ github.event.inputs.test_type }}</span>
+<span class="ln">132</span>        <span class="key">run</span>: |
+<span class="ln">133</span>          grep_args=()
+<span class="ln">134</span>          if [ -n "$GREP_INPUT" ]; then
+<span class="ln">135</span>            grep_args=(--grep "$GREP_INPUT")
+<span class="ln">136</span>          fi
+<span class="ln">138</span>          <span class="c"># Determine which test command to run</span>
+<span class="ln">139</span>          if [ -n "$TEST_FILE" ]; then
+<span class="ln">140</span>            echo "Running specific test file: $TEST_FILE"
+<span class="ln">141</span>            bun run test "$TEST_FILE" "${grep_args[@]}"
+<span class="ln">142</span>          elif [ "$TEST_TYPE" == "e2e" ]; then
+<span class="ln">143</span>            echo "Running E2E tests"
+<span class="ln">144</span>            bun run test:e2e "${grep_args[@]}"
+<span class="ln">145</span>          elif [ "$TEST_TYPE" == "integration" ]; then
+<span class="ln">146</span>            echo "Running Integration tests"
+<span class="ln">147</span>            bun run test:integration "${grep_args[@]}"
+<span class="ln">148</span>          else
+<span class="ln">149</span>            echo "Running all tests"
+<span class="ln">150</span>            bun run test "${grep_args[@]}"
+<span class="ln">151</span>          fi</pre></div>
       <div>
         <table class="tbl tight">
           <tr><th>Input</th><th>Tipo</th><th>Efecto</th></tr>
           <tr><td class="mono">test_type</td><td>choice all / e2e / integration</td><td>elige el script de package.json</td></tr>
-          <tr><td class="mono">grep</td><td>string</td><td><code class="k">--grep='…'</code>: por tag o por texto del título</td></tr>
+          <tr><td class="mono">grep</td><td>string</td><td><code class="k">--grep "…"</code>: por tag o por texto del título</td></tr>
           <tr><td class="mono">test_file</td><td>string</td><td>una ruta: gana sobre test_type</td></tr>
           <tr><td class="mono">custom_allure_url</td><td>string, default sanity</td><td>carpeta del reporte: <code class="k">/{env}/{custom}/</code></td></tr>
         </table>
@@ -880,11 +884,11 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
           <li><b>Precedencia:</b> archivo &gt; tipo. Y el grep se suma a cualquiera. Pasar <code class="k">grep</code> y <code class="k">test_file</code> a la vez funciona, pero el skill lo desaconseja: elegí uno para que el reporte diga qué probaste.</li>
           <li><b>Su uso canónico:</b> validar en CI un test que acabás de escribir, antes del PR. <code class="k">gh workflow run sanity.yml -f environment=staging -f test_file=tests/e2e/auth/login.test.ts</code>.</li>
         </ul>
-        <div class="callout bad mt-s"><h4>Nota de seguridad (mejora pendiente, no un bug funcional)</h4><p>Este step interpola inputs directamente dentro de <code class="k">run:</code> y los pasa por <code class="k">eval</code>. La guía de seguridad de GitHub recomienda no hacerlo: un input es texto controlado por quien dispara, y la forma segura es pasarlo primero a una variable de <code class="k">env:</code> y leerla como <code class="k">"$GREP"</code>. Aquí el riesgo es bajo (solo quien tiene permiso de dispatch en el repo puede escribirlo), pero al escribir el tuyo, usá el patrón seguro del Cap 10.</p></div>
+        <div class="callout good mt-s"><h4>Nota de seguridad (corregida en el workflow)</h4><p>Este step interpolaba <code class="k">grep</code> y <code class="k">test_file</code> directamente dentro de <code class="k">run:</code> y los pasaba por <code class="k">eval</code>. Un input es texto controlado por quien dispara, y la guía de seguridad de GitHub pide pasarlo primero a una variable de <code class="k">env:</code> y leerlo entre comillas. Eso es lo que ves arriba: los tres inputs entran por <code class="k">env:</code>, se leen como <code class="k">"$GREP_INPUT"</code> y <code class="k">"$TEST_FILE"</code>, y el <code class="k">eval</code> desapareció: el comando se arma como un array de bash. Mismas cuatro ramas, mismos mensajes. Al escribir el tuyo, seguí este patrón (Cap 10).</p></div>
       </div>
     </div>
     </div>
-    <div class="notes">sanity.yml: inputs y precedencia; uso canónico; nota honesta de hardening: interpolación de inputs en run + eval, docs recomiendan env intermedio. Etiquetada como mejora pendiente.</div>
+    <div class="notes">sanity.yml: inputs y precedencia; uso canónico; nota de hardening ya resuelta: los inputs pasaron a env:, se leen entre comillas y el eval se quitó (array de bash). Mostrar el listado como el ejemplo del patrón seguro.</div>
   </section>
 
   <!-- 8. ¿QUÉ SUITE CORRO? -->
@@ -1449,7 +1453,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
           <div class="opt" data-correct="1"><span class="mk">B</span><span><code class="k">env: GREP: ${{ github.event.inputs.grep }}</code> y en el run <code class="k">--grep="$GREP"</code>: el valor no participa en la generación del script</span></div>
           <div class="opt"><span class="mk">C</span><span>Pasarlo a un secret</span></div>
         </div>
-        <div class="qexp"><b>Variable intermedia.</b> Una expresión dentro de <code class="k">run:</code> se sustituye ANTES de que bash lea el script: un input con <code class="k">"; rm -rf …</code> se convierte en código. Con <code class="k">env:</code> el valor llega como variable de entorno y bash lo trata como dato. Es la recomendación literal de la guía de seguridad de GitHub, y la mejora pendiente que señalamos en sanity.yml L124-141.</div>
+        <div class="qexp"><b>Variable intermedia.</b> Una expresión dentro de <code class="k">run:</code> se sustituye ANTES de que bash lea el script: un input con <code class="k">"; rm -rf …</code> se convierte en código. Con <code class="k">env:</code> el valor llega como variable de entorno y bash lo trata como dato. Es la recomendación literal de la guía de seguridad de GitHub, y el patrón que hoy aplica sanity.yml L126-151: inputs por env:, leídos entre comillas, sin eval.</div>
       </div>
       <div class="qitem">
         <div class="qq"><span class="qn">Q10</span><span>Terminaste el workflow, mergeaste y a la mañana no corrió. Revisás: el cron está bien, el archivo está en main. ¿Qué mirás primero?</span></div>

@@ -6,6 +6,7 @@ compatibility: [claude-code, copilot, cursor, codex, opencode]
 complementary_categories: [testing-e2e, ci-cd]
 metadata:
   kind: workflow
+  requires_capabilities: [browser]
 ---
 
 ## Forbidden invocations
@@ -48,6 +49,7 @@ Three phases, always in this order: **Execute → Analyze → Report**. Do not s
 - DO: close the RTR (or the sprint-close STR) via `complete` only AFTER the verdict comment is posted on it, and leave the RTP at its ready status: a suite run never completes the plan it ran from.
 - DO NOT: invent a sprint number. The RTR needs none (its scope-id is `{env}-{YYYY-MM-DD}` or a release tag). `N` matters only for the sprint-close STR: take it from the user or from the STP's own scope-id, and ask before creating anything at sprint altitude.
 - DO NOT: skip the artifact download on a red build (evidence vanishes after the retention window), and never merge smoke and regression results into one pass-rate — their SLOs differ.
+- DO: before any step that uses the declared MCP capability (`metadata.requires_capabilities`: `browser`, the `[AUTOMATION_TOOL]` fallback for trace / screenshot inspection), run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8: resolve by tool-name suffix, and when no available tool provides it STOP and name the capability + how to enable it, never a silent fallback.
 
 **Read full SKILL.md when**: driving the CI commands, applying the GO/CAUTION/NO-GO scoring table, resolving a borderline classification, wiring the TMS artifacts, or writing the report.
 
