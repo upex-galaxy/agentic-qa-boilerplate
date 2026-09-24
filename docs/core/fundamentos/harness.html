@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Harness engineering</title>
+    <meta
+      name="description"
+      content="Qué es un harness (instrucciones, hooks, skills, MCP, memoria y gates alrededor del modelo), cómo este repo mantiene un solo cuerpo de instrucciones para Claude Code, OpenCode y Codex, y qué gates impiden que se desincronice."
+    />
+    <meta name="docs-order" content="30" />
+    <link rel="stylesheet" href="../../assets/docs.css" />
+    <script src="../../assets/docs.js"></script>
+    <style>
+      .harness-fig svg {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <article class="doc">
+      <header class="doc-header">
+        <nav class="breadcrumbs">
+          <span>Core</span><span>Fundamentos agénticos</span><span>Harness engineering</span>
+        </nav>
+        <h1>Harness engineering: todo lo que rodea al modelo</h1>
+        <p class="lede">
+          El modelo razona; el harness decide qué lee, qué puede tocar y qué se le impide romper.
+          Esta página explica de qué piezas está hecho un harness y cómo este repo sostiene uno solo
+          para tres herramientas distintas sin que se desincronicen.
+        </p>
+        <div class="meta-row">
+          <span class="badge accent">Fundamentos</span><span class="badge">Claude Code</span
+          ><span class="badge">OpenCode</span><span class="badge">Codex</span>
+        </div>
+      </header>
+
+      <nav class="toc">
+        <strong>En esta página</strong>
+        <ol>
+          <li><a href="#que-es">Qué es un harness</a></li>
+          <li><a href="#piezas">Las seis piezas</a></li>
+          <li><a href="#una-fuente">Una fuente, adaptadores finos</a></li>
+          <li><a href="#gates">Gates contra el drift</a></li>
+          <li><a href="#generado">Generado contra versionado</a></li>
+          <li><a href="#este-repo">Así lo hace este repo</a></li>
+          <li><a href="#errores">Errores comunes</a></li>
+          <li><a href="#profundizar">Para profundizar</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="que-es">Qué es un harness</h2>
+      <p>
+        Un modelo de lenguaje, solo, recibe texto y devuelve texto. Para que lea un repositorio,
+        ejecute un comando o cree un issue en Jira necesita una capa que le entregue contexto, le dé
+        herramientas y ponga límites. Esa capa es el harness. Claude Code, OpenCode y Codex son
+        harnesses: programas que envuelven al modelo, arman lo que ve en cada turno y ejecutan lo
+        que pide.
+      </p>
+      <p>
+        Harness engineering es el trabajo de diseñar y mantener esa capa para un proyecto concreto.
+        En la práctica consiste en escribir archivos: instrucciones, skills, hooks, configuración de
+        MCP y scripts de verificación. Con el mismo modelo, dos proyectos obtienen resultados muy
+        distintos según lo que cada uno le pone alrededor.
+      </p>
+
+      <h2 id="piezas">Las seis piezas</h2>
+      <p>
+        Cada harness usa nombres propios, pero las piezas se repiten. Esta tabla las ordena por la
+        pregunta que responde cada una.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Pieza</th>
+              <th>Pregunta que responde</th>
+              <th>Cuándo actúa</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Instrucciones</td>
+              <td>¿Qué reglas valen siempre en este repo?</td>
+              <td>Se cargan al abrir la sesión</td>
+            </tr>
+            <tr>
+              <td>Skills</td>
+              <td>¿Cómo se hace esta tarea concreta?</td>
+              <td>Bajo demanda, cuando la tarea coincide con su trigger</td>
+            </tr>
+            <tr>
+              <td>Hooks</td>
+              <td>¿Qué tiene que pasar sí o sí en cierto momento?</td>
+              <td>En eventos del harness (por ejemplo, antes de procesar cada prompt)</td>
+            </tr>
+            <tr>
+              <td>MCP</td>
+              <td>¿A qué sistemas externos puede llegar el agente?</td>
+              <td>Cuando el modelo llama a una tool del servidor</td>
+            </tr>
+            <tr>
+              <td>Memoria</td>
+              <td>¿Qué aprendimos en sesiones anteriores?</td>
+              <td>Entre sesiones; sobrevive al cierre de la ventana de contexto</td>
+            </tr>
+            <tr>
+              <td>Gates</td>
+              <td>¿Sigue todo lo anterior siendo coherente?</td>
+              <td>Antes de un commit, antes de un push y en CI</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Las cinco primeras le hablan al modelo. La sexta le habla al repositorio: los gates impiden
+        que las otras piezas se contradigan con el paso de los commits. Un harness sin gates se
+        degrada en silencio, porque nadie se entera de que una skill cita un archivo que ya no
+        existe hasta que un agente lo busca y falla.
+      </p>
+      <p>
+        La diferencia entre instrucciones y hooks es de garantía. Una instrucción es un pedido que
+        el modelo puede diluir en una sesión larga. Un hook es código que el harness ejecuta cada
+        vez, lo recuerde el modelo o no. Si una regla tiene que cumplirse siempre, va en un hook o
+        en un gate.
+      </p>
+
+      <h2 id="una-fuente">Una fuente, adaptadores finos</h2>
+      <p>
+        Este repo funciona en tres harnesses. La tentación obvia sería mantener tres copias de todo
+        (un <code>CLAUDE.md</code> con las reglas, otras en la configuración de OpenCode, otras para
+        Codex). Cada copia empezaría igual y a la tercera semana diría algo distinto.
+      </p>
+      <p>
+        La alternativa es tener un solo cuerpo de instrucciones y skills, y dejar en cada host un
+        adaptador mínimo que solo resuelva lo que ese host hace distinto: el formato del archivo de
+        MCP y la API de hooks. <code>AGENTS.md</code> es un formato abierto que OpenCode y Codex
+        leen de forma nativa; Claude Code lee <code>CLAUDE.md</code>, así que en este repo ese
+        archivo contiene una sola línea, <code>@AGENTS.md</code>, que importa el original.
+      </p>
+
+      <figure class="harness-fig">
+        <div class="frame">
+          <svg
+            viewBox="0 0 760 400"
+            role="img"
+            aria-labelledby="hx-title hx-desc"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <title id="hx-title">Una fuente, tres hosts</title>
+            <desc id="hx-desc">
+              Arriba, la fuente única: AGENTS.md, .agents/skills y el emisor de hooks. En el medio,
+              una franja de gates (skills:check, agents:compat:check, docs:check, vars). Abajo, tres
+              adaptadores finos que llevan esa fuente a Claude Code, OpenCode y Codex.
+            </desc>
+            <defs>
+              <marker
+                id="hx-arrow"
+                viewBox="0 0 10 10"
+                refX="9"
+                refY="5"
+                markerWidth="7"
+                markerHeight="7"
+                orient="auto-start-reverse"
+              >
+                <path d="M0,0 L10,5 L0,10 z" style="fill: var(--text-2)" />
+              </marker>
+            </defs>
+            <g font-family="var(--font-sans)" fill="currentColor">
+              <rect
+                x="150"
+                y="16"
+                width="460"
+                height="78"
+                rx="10"
+                stroke-width="2"
+                style="fill: var(--accent-soft); stroke: var(--accent)"
+              />
+              <text x="380" y="44" text-anchor="middle" font-size="17" font-weight="700">
+                Fuente única (versionada)
+              </text>
+              <text
+                x="380"
+                y="72"
+                text-anchor="middle"
+                font-size="13"
+                font-family="var(--font-mono)"
+                style="fill: var(--text-2)"
+              >
+                AGENTS.md · .agents/skills/ · .agents/hooks/
+              </text>
+
+              <rect
+                x="40"
+                y="140"
+                width="680"
+                height="56"
+                rx="8"
+                fill="none"
+                stroke-width="1.5"
+                stroke-dasharray="6 5"
+                style="stroke: var(--border-strong)"
+              />
+              <text x="60" y="164" font-size="13" font-weight="700" style="fill: var(--text-2)">
+                GATES
+              </text>
+              <text
+                x="60"
+                y="184"
+                font-size="12.5"
+                font-family="var(--font-mono)"
+                style="fill: var(--text-2)"
+              >
+                skills:check · skills:registry:check · agents:compat:check · docs:check · vars:check
+              </text>
+
+              <line
+                x1="380"
+                y1="94"
+                x2="380"
+                y2="136"
+                stroke-width="1.5"
+                marker-end="url(#hx-arrow)"
+                style="stroke: var(--text-2)"
+              />
+              <line
+                x1="380"
+                y1="196"
+                x2="130"
+                y2="246"
+                stroke-width="1.5"
+                marker-end="url(#hx-arrow)"
+                style="stroke: var(--text-2)"
+              />
+              <line
+                x1="380"
+                y1="196"
+                x2="380"
+                y2="246"
+                stroke-width="1.5"
+                marker-end="url(#hx-arrow)"
+                style="stroke: var(--text-2)"
+              />
+              <line
+                x1="380"
+                y1="196"
+                x2="630"
+                y2="246"
+                stroke-width="1.5"
+                marker-end="url(#hx-arrow)"
+                style="stroke: var(--text-2)"
+              />
+
+              <g font-size="12" font-family="var(--font-mono)">
+                <rect
+                  x="30"
+                  y="250"
+                  width="200"
+                  height="56"
+                  rx="6"
+                  style="fill: var(--surface-2); stroke: var(--border-strong)"
+                />
+                <text x="130" y="273" text-anchor="middle">CLAUDE.md → @AGENTS.md</text>
+                <text x="130" y="292" text-anchor="middle" style="fill: var(--text-2)">
+                  .claude/settings.json
+                </text>
+                <rect
+                  x="280"
+                  y="250"
+                  width="200"
+                  height="56"
+                  rx="6"
+                  style="fill: var(--surface-2); stroke: var(--border-strong)"
+                />
+                <text x="380" y="273" text-anchor="middle">opencode.jsonc</text>
+                <text x="380" y="292" text-anchor="middle" style="fill: var(--text-2)">
+                  .opencode/plugins/
+                </text>
+                <rect
+                  x="530"
+                  y="250"
+                  width="200"
+                  height="56"
+                  rx="6"
+                  style="fill: var(--surface-2); stroke: var(--border-strong)"
+                />
+                <text x="630" y="273" text-anchor="middle">.codex/config.toml</text>
+                <text x="630" y="292" text-anchor="middle" style="fill: var(--text-2)">
+                  .codex/hooks.json
+                </text>
+              </g>
+              <text x="380" y="330" text-anchor="middle" font-size="12" style="fill: var(--text-2)">
+                adaptadores finos: solo MCP y API de hooks
+              </text>
+
+              <g font-size="15" font-weight="700">
+                <rect
+                  x="55"
+                  y="344"
+                  width="150"
+                  height="40"
+                  rx="20"
+                  fill="none"
+                  stroke-width="2"
+                  style="stroke: var(--accent)"
+                />
+                <text x="130" y="369" text-anchor="middle">Claude Code</text>
+                <rect
+                  x="305"
+                  y="344"
+                  width="150"
+                  height="40"
+                  rx="20"
+                  fill="none"
+                  stroke-width="2"
+                  style="stroke: var(--accent)"
+                />
+                <text x="380" y="369" text-anchor="middle">OpenCode</text>
+                <rect
+                  x="555"
+                  y="344"
+                  width="150"
+                  height="40"
+                  rx="20"
+                  fill="none"
+                  stroke-width="2"
+                  style="stroke: var(--accent)"
+                />
+                <text x="630" y="369" text-anchor="middle">Codex</text>
+              </g>
+            </g>
+          </svg>
+        </div>
+        <figcaption>
+          Todo lo que el modelo lee sale de la fuente de arriba. Los adaptadores de abajo no
+          contienen reglas propias, y los gates del medio fallan si alguno empieza a tenerlas.
+        </figcaption>
+      </figure>
+
+      <h2 id="gates">Gates contra el drift</h2>
+      <p>
+        Drift es la distancia que se abre entre dos cosas que deberían decir lo mismo: una skill y
+        el archivo que cita, <code>.env.example</code> y el manifiesto de variables, el
+        <code>.mcp.json</code> y su equivalente en Codex. Nadie lo introduce a propósito. Aparece
+        porque alguien edita un lado y se olvida del otro, y el agente sigue leyendo la versión
+        vieja con total confianza.
+      </p>
+      <p>
+        Un gate es un script que compara los dos lados y termina con código de salida distinto de
+        cero si no coinciden. Lo que lo vuelve útil es dónde corre: en el hook de pre-commit, en el
+        de pre-push y en CI. Así el drift se detecta en el commit que lo crea, cuando arreglarlo
+        cuesta un minuto.
+      </p>
+
+      <h2 id="generado">Generado contra versionado</h2>
+      <p>
+        Hay dos clases de archivo en un harness y conviene distinguirlas a simple vista. Los
+        versionados son la fuente: se editan a mano y se revisan en un PR. Los generados son salida
+        de un script: se regeneran, y editarlos a mano es trabajo perdido, porque la próxima
+        regeneración lo pisa (o peor, un gate lo rechaza y no sabes por qué).
+      </p>
+      <p>
+        La regla práctica: antes de editar un archivo, pregunta de dónde sale. Si sale de un script,
+        edita la entrada del script y vuelve a correrlo.
+      </p>
+
+      <h2 id="este-repo">Así lo hace este repo</h2>
+      <p>
+        La sección 4.5 de <code>AGENTS.md</code> describe el contrato completo. Este es el mapa por
+        superficie:
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Superficie</th>
+              <th>Claude Code</th>
+              <th>OpenCode</th>
+              <th>Codex</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Instrucciones</td>
+              <td><code>CLAUDE.md</code> (generado, importa <code>AGENTS.md</code>)</td>
+              <td><code>AGENTS.md</code></td>
+              <td><code>AGENTS.md</code></td>
+            </tr>
+            <tr>
+              <td>Skills</td>
+              <td><code>.claude/skills</code> (alias generado)</td>
+              <td><code>.agents/skills/</code></td>
+              <td><code>.agents/skills/</code></td>
+            </tr>
+            <tr>
+              <td>Hook</td>
+              <td><code>.claude/settings.json</code></td>
+              <td><code>.opencode/plugins/personality-reinject.js</code></td>
+              <td><code>.codex/hooks.json</code></td>
+            </tr>
+            <tr>
+              <td>MCP</td>
+              <td><code>.mcp.json</code></td>
+              <td><code>opencode.jsonc</code></td>
+              <td><code>.codex/config.toml</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="hook-unico">Un emisor, tres adaptadores</h3>
+      <p>
+        El texto del hook vive una sola vez, en <code>.agents/hooks/personality-reinject.mjs</code>.
+        En cada prompt reinyecta el contrato de estilo de salida para que no se diluya en una sesión
+        larga, agrega una línea <code>AGENT IDENTITY:</code> (worktree, sesión y harness, que luego
+        terminan en los trailers de cada commit) y avisa si falta el <code>.env</code>. Claude Code
+        y Codex lo ejecutan como hook de comando en el evento <code>UserPromptSubmit</code>.
+        OpenCode no tiene hooks de comando, así que su plugin importa las mismas funciones y las
+        empuja al prompt de sistema.
+      </p>
+
+      <h3 id="aliases">Aliases de comandos</h3>
+      <p>
+        <code>.agents/compatibility/command-aliases.json</code> declara los comandos como
+        <code>/business-api-map</code> o <code>/break-down-tests</code>: cada entrada apunta a una
+        skill y un modo. <code>bun run agents:compat</code> genera a partir de ahí los wrappers de
+        <code>.claude/commands/</code> y <code>.opencode/commands/</code>. Un proyecto puede sumar
+        los suyos en un overlay opcional, <code>command-aliases.project.json</code>, que este repo
+        no trae.
+      </p>
+
+      <h3 id="cadena">La cadena de <code>repo:check</code></h3>
+      <p>
+        <code>bun run repo:check</code> encadena, en este orden, los gates del repo (copiado de
+        <code>package.json</code>):
+      </p>
+      <pre
+        data-lang="bash"
+      ><code>bun run format:check &amp;&amp; bun run lint:check &amp;&amp; bun run types:check \
+  &amp;&amp; bun run vars:check &amp;&amp; bun run vars:schema:check \
+  &amp;&amp; bun run skills:check &amp;&amp; bun run skills:registry:check \
+  &amp;&amp; bun run docs:check &amp;&amp; bun run agents:compat:check \
+  &amp;&amp; bun run agents:schema:check &amp;&amp; bun run kata:manifest:check \
+  &amp;&amp; bun run vars:env:check &amp;&amp; bun run git:policy verify</code></pre>
+      <p>Los que cuidan el harness en sí son estos:</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Script</th>
+              <th>Archivo</th>
+              <th>Qué detecta</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>skills:check</code></td>
+              <td><code>scripts/lint-skills.ts</code></td>
+              <td>
+                Frontmatter roto, categorías fuera del vocabulario, tiers incoherentes con
+                <code>cli/install.ts</code> y rutas citadas en una skill que ya no existen
+              </td>
+            </tr>
+            <tr>
+              <td><code>skills:registry:check</code></td>
+              <td><code>scripts/build-skill-registry.ts</code></td>
+              <td>
+                Que <code>.agents/skills/REGISTRY.md</code> (las reglas compactas que se copian en
+                cada briefing de subagente) esté al día con las skills
+              </td>
+            </tr>
+            <tr>
+              <td><code>agents:compat:check</code></td>
+              <td><code>scripts/agent-compatibility.ts</code></td>
+              <td>
+                El shim de <code>CLAUDE.md</code>, el alias de skills, los wrappers byte a byte, los
+                adaptadores de hooks y la paridad de servidores MCP entre los tres formatos
+              </td>
+            </tr>
+            <tr>
+              <td><code>vars:check</code> / <code>vars:env:check</code></td>
+              <td><code>scripts/lint-vars.ts</code> / <code>scripts/check-vars.ts</code></td>
+              <td>
+                Variables de proyecto mal usadas, y que <code>.env.example</code> y
+                <code>cli/lib/variables-manifest.ts</code> coincidan
+              </td>
+            </tr>
+            <tr>
+              <td><code>docs:check</code></td>
+              <td><code>scripts/lint-docs.ts</code></td>
+              <td>
+                Links relativos rotos, rutas citadas en <code>docs/</code> que no existen y páginas
+                sin <code>&lt;title&gt;</code> o descripción
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        No todos corren en todos lados. El pre-push, definido en
+        <code>.husky/framework-gates.sh</code>, corre entre otros
+        <code>skills:registry:check</code> y <code>agents:compat:check</code>; el pre-commit corre
+        siempre <code>types:check</code>, <code>vars:check</code> y <code>skills:check</code>, y el
+        resto solo cuando el commit toca los archivos que vigilan. <code>repo:check</code> es la
+        pasada completa, la que conviene correr antes de abrir un PR.
+      </p>
+
+      <div class="callout warn" id="errores">
+        <span class="callout-title">Errores comunes</span>
+        <p>
+          <strong>Editar un archivo generado.</strong> <code>CLAUDE.md</code>,
+          <code>.claude/commands/*.md</code>, <code>.opencode/commands/*.md</code> y
+          <code>.agents/skills/REGISTRY.md</code> son salida de scripts. Escribir reglas en
+          <code>CLAUDE.md</code> rompe <code>agents:compat:check</code>; un wrapper con cuerpo falla
+          como <code>contains workflow prose</code>. Edita la fuente y corre
+          <code>bun run agents:compat</code> o <code>bun run skills:registry</code>.
+        </p>
+        <p>
+          <strong>Confiar en que el MCP avisa si falta una variable.</strong> Si una variable de
+          <code>.env</code> no está definida, Claude Code pasa el texto literal <code>${VAR}</code>,
+          OpenCode pasa un string vacío, y el servidor muere más tarde, en su primera llamada
+          autenticada. Solo Codex falla al arrancar. Un 401 o una tool que falla sin explicación
+          casi siempre es eso: corrige el <code>.env</code> y reinicia la sesión, porque las
+          variables se leen cuando el harness levanta los servidores.
+        </p>
+        <p>
+          <strong>Lanzar el binario pelado.</strong> <code>bun run claude</code>,
+          <code>bun run opencode</code> y <code>bun run codex</code> envuelven al harness con
+          <code>dotenv -o -e .env</code>, que hace que el <code>.env</code> gane sobre una variable
+          heredada del shell. Sin eso, un valor viejo en tu terminal puede tapar el archivo.
+        </p>
+      </div>
+
+      <h2 id="profundizar">Para profundizar</h2>
+      <ul>
+        <li>
+          <a
+            href="https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents"
+            target="_blank"
+            rel="noopener"
+            >Effective harnesses for long-running agents</a
+          >
+          (Anthropic Engineering): cómo un harness sostiene el trabajo de un agente a lo largo de
+          muchas ventanas de contexto.
+        </li>
+        <li>
+          <a href="https://agents.md" target="_blank" rel="noopener">AGENTS.md</a>: el formato
+          abierto de instrucciones que leen OpenCode, Codex y otros agentes.
+        </li>
+        <li>
+          <a href="https://code.claude.com/docs/en/memory" target="_blank" rel="noopener"
+            >Claude Code: memoria y CLAUDE.md</a
+          >: cómo carga instrucciones Claude Code, incluidos los imports <code>@path</code>.
+        </li>
+        <li>
+          <a href="https://code.claude.com/docs/en/hooks" target="_blank" rel="noopener"
+            >Claude Code: hooks reference</a
+          >: eventos como <code>UserPromptSubmit</code> y el campo <code>additionalContext</code>.
+        </li>
+        <li>
+          <a
+            href="https://developers.openai.com/codex/customization/overview"
+            target="_blank"
+            rel="noopener"
+            >Codex: Customization</a
+          >: <code>AGENTS.md</code>, skills, MCP y memorias desde el lado de Codex.
+        </li>
+        <li>
+          <a
+            href="https://modelcontextprotocol.io/specification/latest"
+            target="_blank"
+            rel="noopener"
+            >Model Context Protocol: especificación</a
+          >: el protocolo que usan los tres hosts para hablar con servidores externos.
+        </li>
+      </ul>
+
+      <footer class="doc-footer">
+        Páginas relacionadas: <a href="context.html">Context engineering</a> ·
+        <a href="orquestacion.html">Orquestación</a> ·
+        <a href="agentic-dev.html">Agentic development</a> ·
+        <a href="../setup/index.html">Setup</a>. Fuente canónica: <code>AGENTS.md</code> §4.5 y
+        <code>cli/lib/agent-compatibility-contracts.ts</code>.
+      </footer>
+    </article>
+  </body>
+</html>
