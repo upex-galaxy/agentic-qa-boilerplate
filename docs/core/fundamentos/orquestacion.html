@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Orquestación</title>
+    <meta
+      name="description"
+      content="Subagentes y orquestación: la sesión principal como command center, el briefing de 7 componentes, los patrones de ejecución, los workers supervisados y los errores que cuestan caro."
+    />
+    <meta name="docs-order" content="40" />
+    <link rel="stylesheet" href="../../assets/docs.css" />
+    <script src="../../assets/docs.js"></script>
+    <style>
+      .orq-diagram svg {
+        width: 100%;
+        height: auto;
+        display: block;
+        color: var(--text);
+      }
+      .orq-box {
+        fill: var(--surface);
+        stroke: var(--border-strong);
+        stroke-width: 1.5;
+      }
+      .orq-hub {
+        fill: var(--accent-soft);
+        stroke: var(--accent);
+        stroke-width: 2;
+      }
+      .orq-mail {
+        fill: var(--surface-2);
+        stroke: var(--accent);
+        stroke-width: 1.5;
+        stroke-dasharray: 5 4;
+      }
+      .orq-dest {
+        fill: var(--green-soft);
+        stroke: var(--green);
+        stroke-width: 1.5;
+      }
+      .orq-line {
+        fill: none;
+        stroke: var(--text-2);
+        stroke-width: 1.5;
+      }
+      .orq-back {
+        fill: none;
+        stroke: var(--accent);
+        stroke-width: 1.5;
+        stroke-dasharray: 4 3;
+      }
+      .orq-verify {
+        fill: none;
+        stroke: var(--green);
+        stroke-width: 1.5;
+      }
+      .orq-t {
+        fill: currentColor;
+        font-family: var(--font-sans);
+        font-size: 13px;
+      }
+      .orq-s {
+        fill: var(--text-2);
+        font-family: var(--font-sans);
+        font-size: 11px;
+      }
+      .orq-h {
+        fill: currentColor;
+        font-family: var(--font-sans);
+        font-size: 14px;
+        font-weight: 700;
+      }
+      .orq-head {
+        fill: var(--text-2);
+      }
+      .orq-head-accent {
+        fill: var(--accent);
+      }
+      .orq-head-green {
+        fill: var(--green);
+      }
+    </style>
+  </head>
+  <body>
+    <article class="doc wide">
+      <header class="doc-header">
+        <nav class="breadcrumbs">
+          <span>Core</span><span>Fundamentos agénticos</span><span>Orquestación</span>
+        </nav>
+        <h1>Subagentes y orquestación</h1>
+        <p class="lede">
+          Cómo reparte el trabajo una sesión de IA cuando la tarea no cabe en una sola cabeza: qué
+          se delega, cómo se escribe el encargo, qué patrón conviene en cada caso y por qué un
+          mensaje de "éxito" todavía no prueba nada.
+        </p>
+        <div class="meta-row">
+          <span class="badge accent">Fundamentos</span><span class="badge">Subagentes</span
+          ><span class="badge">Briefing</span><span class="badge">Workers</span>
+        </div>
+      </header>
+
+      <nav class="toc">
+        <strong>En esta página</strong>
+        <ol>
+          <li><a href="#command-center">La sesión principal como command center</a></li>
+          <li><a href="#cuando-delegar">Qué se delega y qué no</a></li>
+          <li><a href="#briefing">El briefing de 7 componentes</a></li>
+          <li><a href="#patrones">Patrones de ejecución</a></li>
+          <li><a href="#dos-ejecutores">Subagente de un turno contra worker supervisado</a></li>
+          <li><a href="#errores">Errores comunes</a></li>
+          <li><a href="#este-repo">Así lo hace este repo</a></li>
+          <li><a href="#profundizar">Para profundizar</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="command-center">La sesión principal como command center</h2>
+      <p>
+        Cuando trabajas con un agente como Claude Code, OpenCode o Codex, la conversación que tienes
+        abierta tiene una ventana de contexto finita. Cada archivo que el agente lee, cada salida de
+        un comando y cada respuesta de un MCP ocupan espacio en ella. Si la misma sesión lee veinte
+        archivos, corre la suite de tests y además decide qué hacer después, llega un punto en que
+        el plan original queda enterrado bajo miles de líneas de salida que ya no sirven.
+      </p>
+      <p>
+        La orquestación separa dos papeles. La sesión principal, el <strong>command center</strong>,
+        habla contigo, planifica, decide y revisa. Los <strong>ejecutores</strong> (subagentes)
+        reciben un encargo cerrado, hacen el trabajo pesado en su propio contexto y devuelven un
+        reporte corto. El detalle de lo que leyeron se queda con ellos. A la sesión principal solo
+        llega la conclusión, y por eso puede seguir coordinando durante horas sin perder el hilo.
+      </p>
+      <p>
+        Hay una segunda ventaja: el paralelismo. Tres lecturas independientes lanzadas a la vez
+        tardan lo mismo que la más lenta de ellas. El costo también existe. Anthropic midió en su
+        sistema de research que los sistemas multiagente consumen unas 15 veces más tokens que un
+        chat normal, así que delegar tiene sentido cuando la tarea lo vale.
+      </p>
+
+      <figure class="orq-diagram">
+        <div class="frame">
+          <svg
+            role="img"
+            viewBox="0 0 760 380"
+            aria-labelledby="orq-title orq-desc"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <title id="orq-title">Command center con dos tipos de ejecutor</title>
+            <desc id="orq-desc">
+              La sesión principal, en el centro, envía briefs a la izquierda a tres subagentes de un
+              turno que devuelven un reporte y desaparecen, y a la derecha, a través de un mailbox,
+              a dos workers persistentes que conversan en ambos sentidos. Abajo, cada resultado se
+              verifica en el destino (archivo, pantalla, fila del tracker) antes de darlo por hecho.
+            </desc>
+            <defs>
+              <marker
+                id="orq-arrow"
+                viewBox="0 0 10 10"
+                refX="9"
+                refY="5"
+                markerWidth="7"
+                markerHeight="7"
+                orient="auto-start-reverse"
+              >
+                <path d="M0,0 L10,5 L0,10 z" class="orq-head" />
+              </marker>
+              <marker
+                id="orq-arrow-accent"
+                viewBox="0 0 10 10"
+                refX="9"
+                refY="5"
+                markerWidth="7"
+                markerHeight="7"
+                orient="auto-start-reverse"
+              >
+                <path d="M0,0 L10,5 L0,10 z" class="orq-head-accent" />
+              </marker>
+              <marker
+                id="orq-arrow-green"
+                viewBox="0 0 10 10"
+                refX="9"
+                refY="5"
+                markerWidth="7"
+                markerHeight="7"
+                orient="auto-start-reverse"
+              >
+                <path d="M0,0 L10,5 L0,10 z" class="orq-head-green" />
+              </marker>
+            </defs>
+
+            <text x="100" y="24" text-anchor="middle" class="orq-h">Subagentes de un turno</text>
+            <text x="100" y="40" text-anchor="middle" class="orq-s">por defecto</text>
+            <text x="660" y="24" text-anchor="middle" class="orq-h">Workers supervisados</text>
+            <text x="660" y="40" text-anchor="middle" class="orq-s">opcionales</text>
+
+            <rect x="300" y="110" width="160" height="80" rx="10" class="orq-hub" />
+            <text x="380" y="144" text-anchor="middle" class="orq-h">Sesión principal</text>
+            <text x="380" y="164" text-anchor="middle" class="orq-s">
+              planifica, decide, revisa
+            </text>
+
+            <rect x="30" y="60" width="140" height="44" rx="8" class="orq-box" />
+            <text x="100" y="87" text-anchor="middle" class="orq-t">Subagente A</text>
+            <rect x="30" y="128" width="140" height="44" rx="8" class="orq-box" />
+            <text x="100" y="155" text-anchor="middle" class="orq-t">Subagente B</text>
+            <rect x="30" y="196" width="140" height="44" rx="8" class="orq-box" />
+            <text x="100" y="223" text-anchor="middle" class="orq-t">Subagente C</text>
+
+            <path d="M300 130 L172 84" class="orq-line" marker-end="url(#orq-arrow)" />
+            <path d="M300 150 L172 150" class="orq-line" marker-end="url(#orq-arrow)" />
+            <path d="M300 170 L172 216" class="orq-line" marker-end="url(#orq-arrow)" />
+            <path d="M172 96 L300 140" class="orq-back" marker-end="url(#orq-arrow-accent)" />
+            <path d="M172 228 L300 180" class="orq-back" marker-end="url(#orq-arrow-accent)" />
+            <text x="236" y="100" text-anchor="middle" class="orq-s">brief</text>
+            <text x="236" y="245" text-anchor="middle" class="orq-s">reporte, y termina</text>
+
+            <rect x="505" y="118" width="80" height="64" rx="8" class="orq-mail" />
+            <text x="545" y="146" text-anchor="middle" class="orq-t">Mailbox</text>
+            <text x="545" y="164" text-anchor="middle" class="orq-s">ida y vuelta</text>
+
+            <rect x="610" y="80" width="130" height="50" rx="8" class="orq-box" />
+            <text x="675" y="102" text-anchor="middle" class="orq-t">Worker 1</text>
+            <text x="675" y="119" text-anchor="middle" class="orq-s">su worktree</text>
+            <rect x="610" y="170" width="130" height="50" rx="8" class="orq-box" />
+            <text x="675" y="192" text-anchor="middle" class="orq-t">Worker 2</text>
+            <text x="675" y="209" text-anchor="middle" class="orq-s">su worktree</text>
+
+            <path
+              d="M462 150 L503 150"
+              class="orq-back"
+              marker-start="url(#orq-arrow-accent)"
+              marker-end="url(#orq-arrow-accent)"
+            />
+            <path
+              d="M587 140 L608 110"
+              class="orq-back"
+              marker-start="url(#orq-arrow-accent)"
+              marker-end="url(#orq-arrow-accent)"
+            />
+            <path
+              d="M587 160 L608 190"
+              class="orq-back"
+              marker-start="url(#orq-arrow-accent)"
+              marker-end="url(#orq-arrow-accent)"
+            />
+
+            <rect x="230" y="290" width="300" height="64" rx="10" class="orq-dest" />
+            <text x="380" y="316" text-anchor="middle" class="orq-h">Verificar en el destino</text>
+            <text x="380" y="336" text-anchor="middle" class="orq-s">
+              releer el archivo, la pantalla, la fila del tracker
+            </text>
+            <path d="M380 192 L380 288" class="orq-verify" marker-end="url(#orq-arrow-green)" />
+            <text x="392" y="246" class="orq-s">"ok" dice que la llamada salió</text>
+            <text x="392" y="262" class="orq-s">el destino dice si pasó</text>
+          </svg>
+        </div>
+        <figcaption>
+          La sesión principal delega por dos vías: subagentes que viven un turno y workers
+          persistentes que conversan por un mailbox. Ninguna de las dos confirma un resultado; eso
+          se lee en el destino.
+        </figcaption>
+      </figure>
+
+      <h2 id="cuando-delegar">Qué se delega y qué no</h2>
+      <p>
+        La regla práctica es delegar lo que llena el contexto y quedarse con lo que requiere
+        criterio. Leer y escribir varios archivos, operar un MCP, investigar en varios repos, hacer
+        operaciones de git, correr la verificación (tests, tipos, lint) o una tarea larga son
+        trabajo de ejecutor. Una consulta rápida, leer o guardar memoria, llevar la lista de tareas,
+        preguntarte algo a ti y planificar se quedan en la sesión principal.
+      </p>
+      <p>
+        La planificación merece una nota aparte. Un subagente al que se le permite "decidir qué
+        hacer después" amplía su propio alcance sin avisar, y la sesión principal pierde la imagen
+        real del progreso. Las decisiones son del command center; los subagentes ejecutan.
+      </p>
+
+      <h2 id="briefing">El briefing de 7 componentes</h2>
+      <p>
+        Un subagente arranca sin nada de lo que tú y la sesión principal hablaron. Todo lo que sabe
+        está en el encargo que recibe, así que un encargo vago produce trabajo duplicado, huecos o
+        una interpretación distinta de la tarea. Anthropic cuenta un caso concreto en su sistema de
+        research: con instrucciones cortas del tipo "investiga la escasez de semiconductores",
+        varios subagentes terminaban haciendo las mismas búsquedas.
+      </p>
+      <p>Este repo obliga a que cada despacho lleve siete partes:</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Componente</th>
+              <th>Qué contiene</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>Goal</td>
+              <td>Una sola oración con el resultado esperado.</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>Context docs</td>
+              <td>
+                Los archivos que debe leer primero, con ruta absoluta (el directorio de trabajo de
+                un subagente se reinicia entre llamadas).
+              </td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>Project Standards</td>
+              <td>
+                Reglas compactas de las skills relevantes, tomadas del registro de skills, para que
+                el subagente no relea cada <code>SKILL.md</code> completo.
+              </td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td>Skills to load</td>
+              <td>Qué skills invocar antes de usar sus herramientas.</td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td>Exact instructions</td>
+              <td>Pasos numerados, cada uno con la herramienta o acción que usa.</td>
+            </tr>
+            <tr>
+              <td>6</td>
+              <td>Report format</td>
+              <td>Qué devuelve y con qué forma: campos con nombre, no prosa libre.</td>
+            </tr>
+            <tr>
+              <td>7</td>
+              <td>Rules</td>
+              <td>Las reglas críticas del proyecto que aplican a esta tarea.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Un ejemplo recortado, del tipo que la sesión principal escribe antes de despachar:</p>
+      <pre
+        data-lang="text"
+      ><code>Goal: Descargar el reporte de Allure del run &lt;&lt;RUN_ID&gt;&gt; y dejarlo generado en local.
+
+Context docs:
+  - &lt;&lt;REPO_ROOT&gt;&gt;/.github/workflows/regression.yml
+
+Skills to load: (ninguna, es una tarea de gh)
+
+Exact instructions:
+  1. Descargar el artefacto allure-results del run.
+  2. Si el directorio queda vacío, reportar el fallo y PARAR (sin reintentar).
+  3. Generar el reporte y comprobar que existe index.html.
+
+Report format: { "artifact": "allure", "ok": bool, "path": string, "error": string|null }
+
+Rules: no tocar archivos fuera del directorio de reportes; no correr git.</code></pre>
+      <p>
+        El formato del reporte es la parte que más se olvida y la que más ahorra. Si pides campos
+        con nombre, puedes juntar cinco reportes en paralelo sin leer cinco ensayos.
+      </p>
+
+      <h2 id="patrones">Patrones de ejecución</h2>
+      <p>
+        Hay cuatro formas de despachar. Para elegir, recorre las preguntas en orden y quédate con la
+        primera que encaja:
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Patrón</th>
+              <th>Cuándo</th>
+              <th>Ejemplo en QA</th>
+              <th>Trampa típica</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Inline (sin despacho)</td>
+              <td>Tarea corta que toca uno o dos archivos</td>
+              <td>Leer un archivo de config</td>
+              <td>Levantar un subagente para una lectura</td>
+            </tr>
+            <tr>
+              <td>Background</td>
+              <td>Algo largo que se vigila desde afuera</td>
+              <td>Esperar a que termine la suite de regresión en CI</td>
+              <td>Mandar a background algo de menos de 5 minutos</td>
+            </tr>
+            <tr>
+              <td>Parallel</td>
+              <td>N tareas iguales e independientes</td>
+              <td>Descargar tres artefactos del mismo run</td>
+              <td>Más de 10 a la misma API: Jira o GitHub responden con 429</td>
+            </tr>
+            <tr>
+              <td>Sequential</td>
+              <td>Cada etapa consume la salida de la anterior</td>
+              <td>Plan, luego código, luego review de un test</td>
+              <td>Encadenar dos lecturas que no dependen una de otra</td>
+            </tr>
+            <tr>
+              <td>Single</td>
+              <td>Una tarea no trivial que conviene aislar</td>
+              <td>Analizar un ticket de Jira y escribir el borrador del ATP</td>
+              <td>Reusar el mismo subagente en varias fases</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Antes de un fan-out en paralelo tienes que saber qué harás con los N reportes que vuelvan.
+        Si no puedes explicar ese paso de unión, en realidad tienes un trabajo secuencial
+        disfrazado.
+      </p>
+
+      <h2 id="dos-ejecutores">Subagente de un turno contra worker supervisado</h2>
+      <p>
+        El subagente clásico vive dentro de un turno: recibe el brief, trabaja, reporta y
+        desaparece. No puedes hablarle a mitad de camino, y su contexto se pierde al terminar. Para
+        la mayoría del trabajo (leer, mapear, verificar) es exactamente lo que quieres.
+      </p>
+      <p>
+        Algunas tareas son más grandes: una historia completa, un módulo entero, algo en lo que
+        quieres poder intervenir mientras avanza. Para eso existe un segundo ejecutor, el
+        <strong>worker supervisado</strong>: una sesión de agente persistente, con su propio
+        worktree de git, a la que la sesión principal (aquí llamada conductor) le escribe y de la
+        que recibe mensajes por un mailbox. Este ejecutor es opcional. Depende de tener instalado el
+        binario de orquestación y un runtime alcanzable; si falta cualquiera de los dos, el trabajo
+        sigue con subagentes y con líneas de lanzamiento que una persona pega a mano en terminales.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th>Subagente de un turno (por defecto)</th>
+              <th>Worker supervisado (opcional)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Cuánto vive</td>
+              <td>Lo que dura el turno</td>
+              <td>Hasta que alguien lo cierra</td>
+            </tr>
+            <tr>
+              <td>Memoria</td>
+              <td>Se pierde al entregar el reporte</td>
+              <td>Persiste; puedes seguir hablándole</td>
+            </tr>
+            <tr>
+              <td>Comunicación</td>
+              <td>Ninguna hasta que termina</td>
+              <td>Preguntas y respuestas en ambos sentidos, en cualquier momento</td>
+            </tr>
+            <tr>
+              <td>Git</td>
+              <td>Comparte el índice de la sesión principal</td>
+              <td>Su propio worktree, o el checkout compartido con dueños de archivo declarados</td>
+            </tr>
+            <tr>
+              <td>Sirve para</td>
+              <td>Leer, mapear, verificar, tareas de una sola vez</td>
+              <td>Escribir e integrar por su cuenta una historia o un módulo entero</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Aun con workers en marcha, el conductor sigue usando subagentes para sus propias lecturas y
+        verificaciones. Eso mantiene limpio el contexto de quien coordina.
+      </p>
+      <p>
+        Vale la pena conocer la postura contraria. Cognition (el equipo de Devin) argumenta que los
+        sistemas de varios agentes son frágiles porque las decisiones quedan repartidas y el
+        contexto no se comparte lo suficiente entre ellos. La respuesta práctica de este repo va en
+        esa línea: un worker recibe un alcance completo que escribe e integra solo, y cualquier cosa
+        que amplíe ese alcance vuelve al conductor.
+      </p>
+
+      <h2 id="errores">Errores comunes</h2>
+      <div class="callout warn">
+        <span class="callout-title">Lo que sale mal cuando se orquesta</span>
+        <p>
+          <strong>Dos sesiones en el mismo checkout.</strong> Aunque nunca toquen el mismo archivo,
+          comparten el índice de git: lo que una sesión agrega al staging entra en el próximo commit
+          de la otra, y un descarte global (<code>git restore .</code>,
+          <code>git reset --hard</code>) borra sin remedio lo que otra sesión todavía no guardó. Si
+          el trabajo escribe código, cada worker va en su propio worktree, y nadie descarta rutas
+          que no modificó en su sesión.
+        </p>
+        <p>
+          <strong>Conversar escribiendo en la terminal de otro agente.</strong> El envío de texto a
+          una terminal trunca en silencio, se queda solo con el final y aun así responde que salió
+          bien. Un mensaje que empieza a mitad de frase es una truncación hasta que se demuestre lo
+          contrario: pide el puntero al archivo y no respondas al fragmento. Los mensajes van por el
+          mailbox, y lo que pase de un par de oraciones va en un archivo.
+        </p>
+        <p>
+          <strong>Confundir el éxito de la llamada con el resultado.</strong> <code>ok: true</code>,
+          exit 0 o un id devuelto dicen que la petición estaba bien formada. Un mensaje puede quedar
+          aceptado con <code>"delivered_at": null</code> en el mismo recibo. Una escritura se
+          verifica releyéndola en el destino, un mensaje cuando el otro responde, una transición de
+          Jira releyendo el status.
+        </p>
+        <p>
+          <strong>Arreglar el error de un subagente por tu cuenta.</strong> Si un ejecutor falla, la
+          sesión principal para, te cuenta el contexto completo y te ofrece reintentar, saltar o
+          abortar. No corrige sin tu aprobación.
+        </p>
+      </div>
+
+      <h2 id="este-repo">Así lo hace este repo</h2>
+      <p>
+        El modo orquestación está activo en todas las sesiones y lo define la sección 3 de
+        <code>AGENTS.md</code>. La doctrina completa, con una copia para que los subagentes la
+        carguen sin leer todo <code>AGENTS.md</code>, está en
+        <code>.agents/skills/agentic-qa-core/references/orchestration-doctrine.md</code>. De ahí
+        salen las tablas de esta página.
+      </p>
+      <dl class="defs">
+        <dt>El briefing</dt>
+        <dd>
+          <code>.agents/skills/agentic-qa-core/references/briefing-template.md</code> tiene la
+          plantilla de 7 componentes y un ejemplo completo por patrón. La raíz del repo se escribe
+          como <code>&lt;&lt;REPO_ROOT&gt;&gt;</code> y la sesión principal la resuelve a una ruta
+          absoluta al despachar. La sección de Project Standards se arma desde
+          <code>.agents/skills/REGISTRY.md</code>, que genera <code>bun run skills:registry</code>.
+        </dd>
+        <dt>Los patrones</dt>
+        <dd>
+          <code>.agents/skills/agentic-qa-core/references/dispatch-patterns.md</code> tiene la
+          heurística por orden, los límites (máximo 10 en paralelo, background solo para más de 5
+          minutos) y ejemplos reales: descargas en paralelo en
+          <code>.agents/skills/regression-testing/SKILL.md</code> y la cadena Plan, Code, Review en
+          <code>.agents/skills/test-automation/SKILL.md</code>.
+        </dd>
+        <dt>Las skills de workflow</dt>
+        <dd>
+          Las seis skills de workflow deben tener una sección
+          <code>## Subagent Dispatch Strategy</code> con briefings de 7 componentes.
+        </dd>
+        <dt>Los workers supervisados</dt>
+        <dd>
+          <code>.agents/skills/orca-orchestration/SKILL.md</code> es la capa de transporte.
+          Comprueba tres estados (sin binario, binario sin runtime, listo) y en los dos primeros las
+          skills de workflow no mencionan el orquestador. Sus valores por defecto (máximo de
+          workers, agente, modelo) están en el bloque <code>orchestration:</code> de
+          <code>.agents/project.yaml</code>.
+        </dd>
+      </dl>
+      <p>Cinco de las hard rules de esa skill recogen los errores de la sección anterior:</p>
+      <ul>
+        <li>
+          <strong>Regla 4:</strong> un mensaje, una tarea, y el canal es una asignación. El mailbox
+          lleva todo mensaje entre sesiones y llega byte a byte; lo largo va en un archivo con un
+          puntero de una línea; el envío a terminal sirve para manejar una terminal (comandos,
+          slash-commands, teclas). La única excepción es el prompt de arranque de un worker
+          supervisado, que no tiene otro camino y por eso es corto y apunta a un archivo.
+        </li>
+        <li>
+          <strong>Regla 17:</strong> un código de éxito describe la llamada, nunca el resultado. Se
+          verifica en el destino: la pantalla, el mailbox, la fila.
+        </li>
+        <li>
+          <strong>Regla 18:</strong> un <code>ok: false</code> al escribir en una terminal significa
+          que una persona está escribiendo ahí. No se reintenta; se espera y se lee la pantalla.
+        </li>
+        <li>
+          <strong>Regla 19:</strong> un mensaje que empieza a mitad de frase es una truncación. Se
+          pide el puntero y nunca se reconstruye lo que "debía" decir.
+        </li>
+        <li>
+          <strong>Regla 20:</strong> un nombre no es una dirección. Quien escribe firma con el
+          handle de su terminal más el id del Run, porque un nombre puede no resolver a nadie o
+          coincidir por prefijo con una sesión de otro repositorio y aun así devolver éxito.
+        </li>
+      </ul>
+      <p>
+        La disciplina de canales completa, con lo que el envío a terminal sí hace bien (reactivar un
+        MCP caído en un worker, recargar plugins, interrumpir), está en
+        <code>.agents/skills/orca-orchestration/references/channel-discipline.md</code>. A nivel de
+        todo el repo, la regla crítica 16 de <code>AGENTS.md</code> generaliza la regla 17 a
+        cualquier escritura en Jira, llamada a un MCP o reporte de subagente, y la regla crítica 15
+        prohíbe los descartes globales de git porque varias sesiones pueden compartir el mismo
+        árbol.
+      </p>
+
+      <h2 id="profundizar">Para profundizar</h2>
+      <ul>
+        <li>
+          <a
+            href="https://www.anthropic.com/engineering/building-effective-agents"
+            target="_blank"
+            rel="noopener"
+            >Building effective agents</a
+          >
+          (Anthropic). Describe los patrones orchestrator-workers y parallelization, y cuándo un
+          workflow simple alcanza.
+        </li>
+        <li>
+          <a
+            href="https://www.anthropic.com/engineering/multi-agent-research-system"
+            target="_blank"
+            rel="noopener"
+            >How we built our multi-agent research system</a
+          >
+          (Anthropic). Qué necesita el encargo de un subagente y cuánto cuesta en tokens un sistema
+          multiagente.
+        </li>
+        <li>
+          <a href="https://code.claude.com/docs/en/sub-agents" target="_blank" rel="noopener"
+            >Create custom subagents</a
+          >
+          (documentación de Claude Code). Cómo se definen y se configuran los subagentes en el
+          harness que usa este repo.
+        </li>
+        <li>
+          <a
+            href="https://openai.com/business/guides-and-resources/a-practical-guide-to-building-ai-agents"
+            target="_blank"
+            rel="noopener"
+            >A practical guide to building agents</a
+          >
+          (OpenAI). El patrón manager contra el patrón descentralizado, y la recomendación de
+          empezar con un solo agente.
+        </li>
+        <li>
+          <a
+            href="https://cognition.com/blog/dont-build-multi-agents"
+            target="_blank"
+            rel="noopener"
+            >Don't Build Multi-Agents</a
+          >
+          (Cognition). El contrapunto: por qué compartir contexto entre agentes es difícil y cuándo
+          un solo agente es más confiable.
+        </li>
+      </ul>
+
+      <footer class="doc-footer">
+        Páginas relacionadas: <a href="prompting.html">Prompting</a>,
+        <a href="context.html">Context engineering</a>, <a href="harness.html">Harness</a>,
+        <a href="agentic-testing.html">Agentic testing</a>. Fuente canónica:
+        <code>AGENTS.md</code> §3 y
+        <code>.agents/skills/agentic-qa-core/references/orchestration-doctrine.md</code>.
+      </footer>
+    </article>
+  </body>
+</html>
