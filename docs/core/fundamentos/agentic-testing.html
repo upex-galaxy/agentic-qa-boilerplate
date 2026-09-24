@@ -158,7 +158,8 @@
             <desc id="aut-desc">
               Barras por stage. Shift-Left, Planning, Reporting y Documentation en 2. Execution en
               3. Automation pasa de 2 a 3 dentro del plan aprobado. Regression en 3, con 4 solo para
-              un GO limpio. Observation en 3 pero sin skill. Una línea punteada marca el techo en 3.
+              un GO limpio: la única excepción documentada al techo. Observation en 3 pero sin
+              skill. Una línea punteada marca el techo en 3.
             </desc>
             <g font-family="var(--font-sans)" font-size="11" style="fill: var(--text-2)">
               <text x="40" y="204" text-anchor="end">0</text>
@@ -263,10 +264,9 @@
       </figure>
 
       <p>
-        La excepción de Regression está escrita tal cual en la fuente: el contrato le asigna 3, y 4
-        para un GO limpio, aunque la misma página diga que ningún stage pasa de 3. Tómalo como que
-        un GO sin fallos puede avanzar sin que nadie lo apruebe, mientras que CAUTION siempre lo
-        firma una persona.
+        La excepción de Regression es deliberada y está documentada como tal en el contrato: ningún
+        stage supera 3, salvo Regression, que llega a 4 solo con un GO limpio. Un GO sin fallos
+        puede avanzar sin que nadie lo apruebe; CAUTION y NO-GO siempre los firma una persona.
       </p>
       <p>
         Cada stage se gobierna por dos caminos. El feedforward condiciona el trabajo antes de que

@@ -85,9 +85,11 @@ DoD item it never verified.
 | 4 | high — supervision by monitoring, not by approval |
 | 5 | full — no routine human involvement |
 
-**No stage in this pipeline runs above 3.** That ceiling is the architectural
-decision behind "skills do not run end-to-end autonomously", not an accident of
-how much has been built.
+**No stage in this pipeline runs above 3, except Regression, which may reach 4
+on a clean GO.** That ceiling is the architectural decision behind "skills do not
+run end-to-end autonomously", not an accident of how much has been built. The
+Regression exception is deliberate: a run with zero failures needs no human
+approval to advance, while any CAUTION or NO-GO is signed by a person.
 
 ### Contract table
 
@@ -117,7 +119,7 @@ governed — it is either unguided or uncorrected.
 | **Feedback** | corrects the work *after* it happens | the DoD checklists below; the executable gates (`bun run test`, `types:check`, `lint:check`, `skills:check`, `kata:manifest:check`); the regression suite and its failure classification; the separate verifier where the contract demands one |
 
 Feedforward is cheap and pre-emptive, feedback is expensive and late, and the two
-trade off against each other. That is why **Automation** — the only stage whose
+trade off against each other. That is why **Automation** — a stage whose
 autonomy reaches 3 — is also the only stage with a mandatory separate verifier:
 more rope on the way in is paid for with a harder check on the way out.
 
