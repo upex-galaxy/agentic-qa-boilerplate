@@ -131,8 +131,9 @@ POSTMAN_API_KEY
 | **Start a new project — magic command (recommended)** | `bunx create-agentic-qa@latest <your-repo-name>` — official scaffolder ([npm](https://www.npmjs.com/package/create-agentic-qa))                                                                               |
 | **Start a new project — GitHub "Use this template"**  | Click [**Use this template**](https://github.com/upex-galaxy/agentic-qa-boilerplate/generate) → clone your new repo → `bun install && bun run setup` (see [Other ways to start](#other-ways-to-start)) |
 | **Contribute to the boilerplate itself**              | `git clone …` then `bun install && bun run setup` (see [Other ways to start](#other-ways-to-start))                                                                                                    |
-| **Get oriented before installing**                    | `bun run onboarding` — opens `docs/onboarding.html` with sidebar nav                                                                                                                                   |
-| **Understand the methodology**                        | [`docs/agentic-quality-engineering.md`](docs/agentic-quality-engineering.md)                                                                                                                           |
+| **Get oriented before installing**                    | `bun run onboarding` — opens the docs site on its "Empezar aquí" page (`docs/core/empezar-aqui.html`)                                                                                                   |
+| **Understand the methodology**                        | `bun run docs` → Metodología ([IQL](docs/core/metodologia/iql.html), [how this repo implements it](docs/core/metodologia/este-repo.html)); official site: [upexgalaxy.com/metodologia](https://www.upexgalaxy.com/metodologia) |
+| **Browse the human docs**                             | `bun run docs` — local HTML site (setup guides, methodology, exploration); add your own pages under any `docs/` folder except `docs/core/`                                                                |
 | **See what `bun run setup` configures**               | [`INSTALLER.md`](INSTALLER.md) — run `bun cli/doctor.ts` after setup                                                                                                                                   |
 | **You're an AI agent**                                | [`AGENTS.md`](AGENTS.md) (auto-loaded each session on every supported harness)                                                                                                                         |
 
@@ -177,7 +178,7 @@ Useful flags (full list in [`packages/create-agentic-qa/README.md`](packages/cre
 Then continue with the per-project workflow:
 
 ```bash
-# Optional: open the orientation HTML (single-file tour, sidebar nav)
+# Optional: open the docs site on its "Empezar aquí" page
 bun run onboarding
 
 # Optional, Claude Code only: configure the statusline in a SEPARATE terminal
@@ -194,7 +195,7 @@ bunx -y ccstatusline@latest
 /regression-testing     # CI execution + GO / CAUTION / NO-GO
 ```
 
-> Don't chain `bun run onboarding && bun run setup` — the onboarding server is blocking and the chain deadlocks. Run them as separate steps.
+> Don't chain `bun run onboarding && bun run setup` — the docs server is blocking and the chain deadlocks. Run them as separate steps.
 
 > `bunx -y ccstatusline@latest` is Claude Code-only and optional. Run it from a plain terminal with NO agent running — concurrent TUIs fight over stdin and the configurator silently breaks. OpenCode users skip this: the `opencode-subagent-statusline` plugin is already wired into `opencode.jsonc`.
 
@@ -495,12 +496,10 @@ bun run test:smoke         # smoke / @critical tests
 │   ├── sanity.yml                # Pattern-based tests
 │   └── regression.yml            # Full regression
 │
-├── docs/                         # Human-facing docs
-│   ├── architectures/            # Architecture references
-│   ├── methodology/              # QA methodology
-│   ├── setup/                    # Setup guides
-│   ├── testing/                  # Testing documentation
-│   └── workflows/                # Workflow documentation
+├── docs/                         # Human docs site (`bun run docs`)
+│   ├── index.html                # Portal (sidebar built from each page's meta)
+│   ├── assets/                   # Shared docs.css / docs.js, IQL diagrams
+│   └── core/                     # Shipped pages (synced); other folders are project-owned
 │
 ├── packages/
 │   └── create-agentic-qa/        # Official npm scaffolder (bunx create-agentic-qa@latest <your-repo-name>) — own README + tests

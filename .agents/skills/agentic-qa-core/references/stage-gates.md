@@ -38,7 +38,7 @@ answered YES or a justified N/A) — not vibes. "N/A" is a valid answer only whe
 The pipeline is **eight named stages**. Stages are named by word, never by number.
 The number collided in two directions at once: the old "Stage 4" hosted IQL steps
 4 *and* 5, and "Stage 1" already meant something else inside the legacy TMLC prose
-under `docs/methodology/`. The table below is the **only** place the historical
+that used to live under docs/methodology. The table below is the **only** place the historical
 numbering appears; anything that still cites `stage-gates.md §Stage N` resolves
 through it.
 

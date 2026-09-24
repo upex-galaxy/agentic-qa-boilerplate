@@ -654,9 +654,8 @@ What you keep: every workflow skill committed in this repo (`/sprint-testing`, `
 - [AGENTS.md](./AGENTS.md) — the single instruction body every harness loads; §4.5 covers the multi-harness contract
 - [CONTEXT.md](./CONTEXT.md) — context-engineering strategy and the surface-by-harness map
 - [.agents/skills/agentic-qa-onboard/SKILL.md](./.agents/skills/agentic-qa-onboard/SKILL.md) — the orientation skill itself, entry point for `/agentic-qa-onboard`
-- [docs/setup/README.md](./docs/setup/README.md) — index of setup guides in this repo
-- [docs/setup/jira-setup-guide.md](./docs/setup/jira-setup-guide.md) — Jira/Atlassian credentials + acli login flow
-- [docs/setup/mcp-dbhub.md](./docs/setup/mcp-dbhub.md) / [mcp-openapi.md](./docs/setup/mcp-openapi.md) — MCP-specific setup notes
+- `bun run docs` — the human documentation site (`docs/`); its Setup section covers [Jira and Xray](./docs/core/setup/jira-xray.html), [DBHub](./docs/core/setup/dbhub.html) and [OpenAPI](./docs/core/setup/openapi.html)
+- `docs/` ownership — `bun run up` syncs only `docs/core/`, `docs/assets/`, `docs/index.html`, `docs/README.md` and `docs/.gitignore`; any other folder under `docs/` is yours and the updater never writes it
 
 ---
 

@@ -110,6 +110,17 @@ https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/<skill>/<deck>.html
 
 Example: `.../decks/sprint-testing/how-it-works.es.html`. The `<skill>/<file>` segment matches the local paths in the table above. **Prefer the published URL** — it always works, even in consumer projects scaffolded from this boilerplate (which may not carry the local HTML files). Use the local file only when offline or when the user explicitly wants the repo copy.
 
+### The docs site (second surface, local)
+
+The repo also ships a human documentation site under `docs/` (Spanish, technical terms in English): "Empezar aquí", Setup (Jira + Xray, DBHub, OpenAPI), the IQL methodology pages, Exploration (Postman, SQL cookbook) and the AI personality page. Where a deck teaches one skill's workflow, the site is the reference to come back to.
+
+| Intent | Command |
+|---|---|
+| Open the docs site | `bun run docs` (portal; `-- --page core/setup/dbhub.html` opens one page) |
+| Open the "start here" page | `bun run onboarding` |
+
+Both start a blocking local server and open the browser, so the same rule applies: ask first, and suggest the user runs it in their own terminal (`! bun run docs`) rather than chaining it with another command.
+
 ### Opening protocol (ALWAYS ask first)
 
 Opening a deck launches the user's default browser — an outward, local action — so **never open one without asking, and open only ONE at a time.**
@@ -176,7 +187,7 @@ After setup, fill `.env` with the credentials the rest of the workflow expects (
 | Phase | Goal | How |
 | ----- | ---- | --- |
 | 1. Foundation | Tooling green on this machine | `bun run setup` → fill `.env` → `bun run agents:setup` (project identity + environments in `.agents/project.yaml`) → `bun run pw:install` → `bun run jira:check` |
-| 2. Jira side | The tracker's catalogs mirrored locally | `bun run jira:sync-fields` + `jira:sync-workflows` + `jira:sync-link-types` (generate the `.agents/*.json` catalogs every skill reads) → `/jira-components` (reconcile Jira Components against the app's real modules). First-time Jira provisioning: `docs/setup/jira-setup-guide.md` |
+| 2. Jira side | The tracker's catalogs mirrored locally | `bun run jira:sync-fields` + `jira:sync-workflows` + `jira:sync-link-types` (generate the `.agents/*.json` catalogs every skill reads) → `/jira-components` (reconcile Jira Components against the app's real modules). First-time Jira provisioning: `docs/core/setup/jira-xray.html` (docs site, `bun run docs`) |
 | 3. App under test | The framework knows and fits YOUR app | `/project-discovery` (reverse-engineers the target repo → `.context/` with PRD, SRS, business maps) → `/adapt-framework` (adapts KATA, config, CI, MCPs to the stack; its Phase 0 GATES on `.context/` existing, so the order is enforced) → hands off to `/sync-ai-memory` |
 | 4. Git strategy | Branch policy is a decision, not an inherited default | Ask **"set up our git strategy"** (git-flow-master's Strategy Setup: 4 questions → `git_strategy:` block in `.agents/project.yaml`), then optionally `bun run git:policy apply` to mirror it on GitHub. If you skip this, git-flow-master OFFERS it on your first real git action anyway (template-trap guard) — and `bun run git:policy verify` runs on every push via the pre-push hook |
 

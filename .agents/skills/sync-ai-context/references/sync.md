@@ -19,8 +19,8 @@ A synchronized set of AI-critical documents. Every file in the sync scope is eit
 | `CLAUDE.md` | `compatibility-shim` | Must remain exactly `@AGENTS.md` plus one newline |
 | `INSTALLER.md` | `supplementary` | Installation guide; patched when step count, commands, or prerequisites drift |
 | `CONTEXT.md` | `anchor` | Context engineering reference (forward-looking target — include in scope as soon as it exists on disk) |
-| `docs/agentic-quality-engineering.md` | `supplementary` | Vision + lifecycle overview; patched for command name, skill name, or path changes |
-| `docs/onboarding.html` | `standalone-html` | Self-contained onboarding page (CSS + JS inlined, hand-maintained); patched for command names, quick-reference tables, and TL;DR mnemonic (see Step 3.5) |
+| `docs/core/metodologia/este-repo.html` | `standalone-html` | How this repo implements the IQL (skills per stage, doctrine references, integrations, PBI tree); patched for skill, command, or path changes (see Step 3.5) |
+| `docs/core/empezar-aqui.html` | `standalone-html` | "Start here" page of the docs site (`bun run docs` / `bun run onboarding`); patched for command names, the skills and MCP lists, the cheat sheet, and the scripts reference (see Step 3.5) |
 
 The audit step (Step 1.5) may extend this list if it discovers additional qualifying files.
 
@@ -142,8 +142,8 @@ SYNC TARGET LIST:
 - CLAUDE.md                                   [compatibility-shim]
 - INSTALLER.md                                [supplementary]
 - CONTEXT.md                                  [anchor — not yet on disk, skip this run]
-- docs/agentic-quality-engineering.md         [supplementary]
-- docs/onboarding.html                        [standalone-html]
+- docs/core/metodologia/este-repo.html        [standalone-html]
+- docs/core/empezar-aqui.html                 [standalone-html]
 ```
 
 **Extendability note for future maintainers**: to add a new document to the sync scope, either (a) ensure it matches one of the 5 rules above, or (b) add it explicitly to the "Sync scope" table in this command's header. Both approaches are equivalent — the audit picks up rule-matches automatically.
@@ -235,15 +235,10 @@ If a section listed here is missing from the file you're syncing, that is struct
 - All structural sections
 - Only patch: command name references, file path references, and any description that explicitly says "auto-detected" that has now been detected
 
-**`docs/agentic-quality-engineering.md`:**
-- Vision statements, principles, and narrative sections
-- Lifecycle diagrams and architecture ASCII art
-- Only patch: command/skill tables and path references
-
-**`docs/onboarding.html`:**
-- The entire `<style>` block, the entire `<script>` block, the structural hierarchy (`<section>`, `<div>`, `<nav>`, `<aside>`, `<header>`, `<footer>`), CSS classes, `id` attributes, `data-*` attributes, SVG diagrams, and any `viewBox` / coordinate math
-- Step-by-step prose and tutorial flow inside `<p>` blocks beyond the immediate fact
-- Only patch: command names inside `<code>` elements, table cell descriptions, the "three confusing pieces" table, the TL;DR mnemonic line, the cheat-sheet quick-reference table, the footer's "Last updated" date, and the footer version label when bumping
+**`docs/core/metodologia/este-repo.html` and `docs/core/empezar-aqui.html`** (Spanish pages of the docs site):
+- The `<head>` (title, description, `docs-order`, the links to `docs/assets/`), the structural hierarchy, CSS classes, `id` attributes, figures and SVG diagrams
+- Narrative prose beyond the immediate fact, and the Spanish register (technical terms stay English)
+- Only patch: command and script names inside `<code>`, table rows (skills, MCPs, doctrine references, integrations, the cheat sheet, the scripts reference), and path references
 
 ### Security protocol (applies to ALL targets)
 
@@ -306,21 +301,21 @@ Sync the **Available scripts** section against `package.json` — do not invent 
 
 ---
 
-## Step 3.5 — Sync `docs/onboarding.html`
+## Step 3.5 — Sync the docs site pages (`docs/core/empezar-aqui.html`, `docs/core/metodologia/este-repo.html`)
 
-**Approach: text-only edits on a self-contained, hand-maintained HTML page. Never regenerate from any MD source — there is no MD source.**
+**Approach: text-only edits on hand-maintained HTML pages. Never regenerate them from any MD source — there is no MD source.**
 
-**Rationale**: `docs/onboarding.html` is a `standalone-html` target. The CSS lives in an inlined `<style>` block, the navigation script lives in an inlined `<script>` block, and the document is the single source of truth for the onboarding tour (no paired Markdown). The sync touches only user-facing copy when it diverges from the canonical sources — `README.md`, `CONTEXT.md`, the `.context/` business maps, and `package.json` scripts — and never re-renders the page.
+**Rationale**: both pages are `standalone-html` targets of the human docs site (`bun run docs`). Their styles and behaviour live in the shared `docs/assets/docs.css` and `docs/assets/docs.js`, which the sync never edits. Each page is the single source of truth for its content (no paired Markdown). The sync touches only user-facing copy when it diverges from the canonical sources — `README.md`, `AGENTS.md` §4-§6, `CONTEXT.md`, the `.context/` business maps, and `package.json` scripts — and never re-renders a page.
 
 **Algorithm:**
-1. Read `docs/onboarding.html` directly.
+1. Read each page directly.
 2. Identify drifted user-facing copy by cross-referencing the canonical sources gathered in Step 2 (`package.json` scripts, skill names from `.agents/skills/`, aliases from `.agents/compatibility/command-aliases.json`, paths from `AGENTS.md`'s Context Loading Map, environment URLs from `.agents/project.yaml`).
-3. Apply text-only edits to user-facing copy: text nodes inside `<p>`, `<span>`, `<td>`, `<th>`, `<li>`, `<dt>`, `<dd>`, `<summary>`, `<code>` elements, plus the page `<title>` and the footer's "Last updated" line. When bumping the page after a substantive content change, also bump the footer version label (e.g. `v1.2` → `v1.3`).
+3. Apply text-only edits to user-facing copy: text nodes inside `<p>`, `<span>`, `<td>`, `<th>`, `<li>`, `<dt>`, `<dd>`, `<summary>`, `<code>` elements. Keep new prose in Spanish with English technical terms, like the rest of the page. Add a table row when a skill, MCP, doctrine reference or script was added; remove the row when it was removed.
 4. Apply the security protocol (pre-write redaction) before writing.
 
 **What to never touch:**
-- The entire `<style>` block (inlined CSS).
-- The entire `<script>` block (scroll-spy JS).
+- The `<head>` (title, meta description, `docs-order`, asset links) unless the page's subject changed.
+- `docs/assets/docs.css` and `docs/assets/docs.js` (shared by every page of the site).
 - Structural tags (`<section>`, `<div>`, `<nav>`, `<aside>`, `<header>`, `<footer>`, `<main>`, `<article>`).
 - CSS classes, `id` attributes, `data-*` attributes, `role` attributes.
 - SVG diagrams, including coordinate math, `viewBox` values, and `<path>` data.
@@ -328,11 +323,10 @@ Sync the **Available scripts** section against `package.json` — do not invent 
 - Any content that is NOT a drifted fact against the canonical sources.
 
 **Process:**
-1. Read `docs/onboarding.html` to know its current state.
+1. Read the page to know its current state.
 2. For each canonical-source fact that the page exposes (command names, script names, path references, TL;DR mnemonic phrasing, cheat-sheet rows), check whether the HTML copy matches. If drifted → patch the minimum text node. If matched → leave it.
 3. Do NOT reflow surrounding elements, do NOT collapse blocks, do NOT renumber sections.
-4. Update the footer's "Last updated" line to today's date when ANY text node is patched in this run.
-5. Apply the security protocol (pre-write redaction) before writing.
+4. Apply the security protocol (pre-write redaction) before writing.
 
 ---
 
@@ -391,7 +385,7 @@ After all individual patches are computed (but before any file is written), veri
 | `.context/` directory paths | `AGENTS.md`, `README.md`, `CONTEXT.md` | One file says `.context/business/`, another says `.context/mapping/` |
 | Skill names | All targets | Skill renamed but not all docs updated |
 | Environment URLs | `.agents/project.yaml` (source of truth), `README.md` | Staging URL changed in `.agents/project.yaml`, README still shows old. `AGENTS.md` does not inline env URLs. |
-| Script names | `package.json` (source of truth), `README.md`, `docs/onboarding.html` | Script renamed in `package.json` but README + docs still show old. `AGENTS.md` Rule #11 forbids inlining script tables. |
+| Script names | `package.json` (source of truth), `README.md`, `docs/core/empezar-aqui.html` | Script renamed in `package.json` but README + docs still show old. `AGENTS.md` Rule #11 forbids inlining script tables. |
 | Instruction topology | `README.md`, `INSTALLER.md`, `docs/*` | A doc presents `CLAUDE.md` as canonical instead of the `AGENTS.md` source plus shim. |
 
 **Drift detection algorithm:**
@@ -449,8 +443,8 @@ After writing all files, report per-target outcome and any redactions.
 | CLAUDE.md | unchanged | exact `@AGENTS.md` compatibility shim verified |
 | INSTALLER.md | unchanged | No drift detected |
 | CONTEXT.md | skipped | File does not yet exist on disk |
-| docs/agentic-quality-engineering.md | updated | Legacy command wording replaced by canonical skill/mode wording |
-| docs/onboarding.html | updated | skill/alias text nodes synchronized; footer "Last updated" bumped |
+| docs/core/metodologia/este-repo.html | updated | Skills table synchronized with AGENTS.md §5 |
+| docs/core/empezar-aqui.html | updated | skill/alias text nodes and the scripts reference synchronized |
 
 **Cross-doc drift resolved:**
 - {fact}: {old value} → {new value} in {N} files
@@ -490,7 +484,7 @@ If caveman is not installed, write normal terse content. caveman-compress is enh
 - [ ] AI-critical doc audit complete — Sync Target List produced (Step 1.5)
 - [ ] Context read in priority order (Step 2)
 - [ ] Each target patched in-place with real or placeholder values (Step 3)
-- [ ] `docs/onboarding.html` text nodes updated, HTML structure (style/script/SVG) intact (Step 3.5)
+- [ ] `docs/core/empezar-aqui.html` and `docs/core/metodologia/este-repo.html` text nodes updated, structure and `docs/assets/` untouched (Step 3.5)
 - [ ] AI memory file deep-synced — facts refreshed, stable rules preserved (Step 4)
 - [ ] Cross-doc consistency verified — all drift resolved before writing (Step 4.5)
 - [ ] Security + reference + consistency checks passed across all targets (Step 5)

@@ -37,7 +37,7 @@ agentic-qa-boilerplate/
 │   ├── compatibility/      → Slash-command alias manifest (source for every wrapper)
 │   └── hooks/              → Shared personality-reinject emitter (one file, three adapters)
 ├── .context/               → Documentation THAT the AI reads (context)
-├── docs/                   → Documentation for humans
+├── docs/                   → Human documentation site (`bun run docs`)
 └── tests/                  → KATA Architecture implementation
 ```
 
@@ -49,7 +49,7 @@ agentic-qa-boilerplate/
 | `.agents/project.yaml` + Jira catalogs | Tool-agnostic project config (`project.yaml`, `jira-fields.json`, `jira-required.yaml`) | When the AI needs to resolve `{{VAR}}` or `{{jira.<slug>}}` |
 | `.agents/skills/` | Task instructions + references (what to do, step by step) | When AI loads a skill for a specific task |
 | `.context/` | Facts about the system (what exists, how it works) | When AI needs to understand the system |
-| `docs/` | Learning material for humans | When humans need to learn |
+| `docs/` | HTML site for humans (`bun run docs`); `docs/core/` ships with the boilerplate, other folders are project-owned | When humans need to learn |
 
 ### 2.1 Host harnesses: one source, three consumers
 
@@ -157,7 +157,7 @@ Two systems, two consumers, two lifecycles. Use the right substrate for the righ
 └── master-test-plan.md        → What to test and why                (/master-test-plan)
 ```
 
-> **TMS configuration**: modality (Xray vs Jira-native) is derived from `.agents/project.yaml` `testing.tms_cli`. Regression Epic and label taxonomy are auto-discovered live by `/test-documentation` Phase 0 + Preflight. Jira/Xray setup lives in `docs/setup/jira-setup-guide.md`; the IQL methodology narrative is the official site, https://upexgalaxy.com/metodologia.
+> **TMS configuration**: modality (Xray vs Jira-native) is derived from `.agents/project.yaml` `testing.tms_cli`. Regression Epic and label taxonomy are auto-discovered live by `/test-documentation` Phase 0 + Preflight. Jira/Xray setup lives in `docs/core/setup/jira-xray.html`; the IQL methodology narrative is the official site, https://upexgalaxy.com/metodologia.
 
 Workflow instructions and role-specific guidelines (TAE, QA, MCP usage) now live inside agent skills under `.agents/skills/`.
 
@@ -205,12 +205,15 @@ Nineteen skills, all committed here. OpenCode and Codex read this directory dire
 
 ```
 docs/
-├── agentic-quality-engineering.md → Top-level entry point: vision, principles, lifecycle overview
-├── architectures/                 → Target application architecture
-├── methodology/                   → Testing methodology (IQL, KATA phases)
-├── setup/                         → Setup guides (MCP, tools)
-├── testing/                       → Testing guides (API, DB, automation)
-└── workflows/                     → Workflow guides (git, environments)
+├── index.html      → Portal: sidebar built from each page's <title> + meta description
+├── assets/         → Shared docs.css / docs.js and the IQL diagrams
+├── core/           → Shipped by the boilerplate, synced by `bun run up`
+│   ├── empezar-aqui.html   → Start here (also `bun run onboarding`)
+│   ├── setup/              → Jira + Xray, DBHub, OpenAPI
+│   ├── metodologia/        → IQL overview, the three phases, Observation, how this repo implements it
+│   ├── exploracion/        → Postman, SQL cookbook
+│   └── personalidad.html   → Human mirror of AGENTS.md §2
+└── <any other folder>/     → Project-owned pages, never written by the updater
 ```
 
 > Context engineering strategy has moved to `CONTEXT.md` at the repo root (alongside `README.md`, `AGENTS.md`, `INSTALLER.md`).
@@ -408,6 +411,6 @@ Never write the update into `CLAUDE.md`: it is a generated one-line shim, and `/
 
 ---
 
-> **You are here**: Context Engineering map for AI agents in the QA repo. **Read time**: 15 min. **Next**: [`docs/agentic-quality-engineering.md`](docs/agentic-quality-engineering.md).
+> **You are here**: Context Engineering map for AI agents in the QA repo. **Read time**: 15 min. **Next**: `bun run docs`, then [`docs/core/metodologia/este-repo.html`](docs/core/metodologia/este-repo.html).
 
 **Last Updated**: 2026-04-26

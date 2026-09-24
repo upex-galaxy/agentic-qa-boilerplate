@@ -2805,7 +2805,7 @@ function printClosingSummary(state: InstallState): void {
   process.stdout.write(`   ${COLORS.dim}Docs: https://docs.warp.dev/agent-platform/cli-agents/opencode/${COLORS.reset}\n\n`);
 
   // AI personality
-  process.stdout.write(`→  Curious who you're talking to? Read ${COLORS.cyan}docs/ai-personality.md${COLORS.reset}\n\n`);
+  process.stdout.write(`→  Curious who you're talking to? Run ${COLORS.cyan}bun run docs -- --page core/personalidad.html${COLORS.reset}\n\n`);
 
   // Reference
   tui.section('REFERENCE');

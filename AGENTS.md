@@ -28,7 +28,7 @@
 
 ## 2. BEHAVIORAL LAYER: HOW AI REASONS
 
-> Bias toward caution over speed. **Personality contract**: runtime contract for speech style + register. Mirror → `docs/ai-personality.md` (keep in sync when editing here).
+> Bias toward caution over speed. **Personality contract**: runtime contract for speech style + register. Human mirror → `docs/core/personalidad.html` (keep in sync when editing here).
 
 **LAYER SPLIT (binding).** Three sources govern chat output, each on ONE dimension, never overlapping:
 
@@ -40,7 +40,7 @@
 
 This §2 WINS on content and structure of information. OUTPUT STYLE never contradicts it: it only adds markdown-render discipline (headings, bold anchors, backticks, tables, block spacing) and human texture (no em dash, varied sentence length, no closing recap). Both compose with caveman, which only removes words.
 
-**These instruction files are NOT a style model.** `AGENTS.md`, `docs/ai-personality.md` and every `SKILL.md` are dense reference prose written for machine parsing. Do NOT imitate their typography, density, or arrow notation in chat replies.
+**These instruction files are NOT a style model.** `AGENTS.md` and every `SKILL.md` are dense reference prose written for machine parsing. Do NOT imitate their typography, density, or arrow notation in chat replies.
 
 **THINK BEFORE CODING.** State assumptions explicit. Multiple interpretations → present them, NEVER pick silently. Simpler approach exists → say so. Unclear → STOP, name confusion, ASK.
 
@@ -171,6 +171,7 @@ The conductor keeps using SUBAGENTS for its own reads and verifications: that is
 - `agentic-qa-core/references/decision-elicitation-doctrine.md`: **canonical decision-elicitation doctrine** (the ladder from harness prompt to `mkd` deck to plan mode · the threshold: >3 decisions or one dense one · what makes a deck worth the round trip · the non-silent gate and its fallback · delivery, including the worktree-bound browser tab and the one-copy rule · reading the returned contract, where a "did not understand" note means DO NOT EXECUTE). Load BEFORE asking a user to decide anything in batch.
 - `agentic-qa-core/references/artifact-lifecycle.md`: **canonical artifact lifecycle** — which status every artifact is created in, which skill/stage moves it where via which transition slug, terminal status (§1) · the three edges the catalog does NOT have (§1.1) · assignee-at-create on every QA artifact, because Xray refuses membership edits on a Test Plan the caller does not own (§2) · the **unmapped-status fallback protocol** (§4: list the LIVE transitions, ONE `AskUserQuestion`, fire the live id, recommend `bun run jira:sync-workflows` — never a silent skip) · the **light stage verifier** template every stage closes with (§5). Load BEFORE any transition.
 - `.context/`: project-wide context (discovery foundation by `/project-discovery`; maps and test strategy by `/project-context`)
+- `docs/`: the HUMAN documentation site (HTML, Spanish), served by `bun run docs` (`bun run onboarding` opens its "Empezar aquí" page). `docs/core/` + `docs/assets/` + the portal files are shipped and synced by `bun run up`; every other folder under `docs/` is project-owned and never written by the updater. The AI does not load it: canon lives in `.agents/skills/` references.
 - `.context/ADR/`: Test-architecture decision records (append-only). Hard-to-reverse test-arch decision (runner, fixtures, isolation, auth-in-tests, selector contract, flake policy) → record `ADR-NNNN-<slug>.md`; supersede, never delete. When-to-write + template → `.context/ADR/README.md`; AI detection/authoring → `agentic-qa-core/references/adr-doctrine.md`. Seeded by `/project-discovery`, `/framework-development`, `/sprint-testing`+`/test-automation` (Stage 1). NOT for flaky-fixes, local spec tweaks, or naming.
 - `.agents/project.yaml`: `{{VAR}}` source-of-truth (load ONCE per session, cache)
 - `.agents/jira-fields.json` · `jira-workflows.json` · `jira-required.yaml`: Jira catalogs
