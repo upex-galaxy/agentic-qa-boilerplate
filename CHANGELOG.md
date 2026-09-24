@@ -17,6 +17,20 @@ below names which one it applies to:
 ## Unreleased — Boilerplate
 
 ### Changed
+- `docs/` is now a human HTML site. `bun run docs` serves it locally (portal with a
+  sidebar built from each page's `<title>` and meta description, search, deep links,
+  dark and light themes); `bun run onboarding` opens the same site on its "Empezar aquí"
+  page; `bun run docs:build` writes the generated `docs/manifest.json` for static
+  hosting. The surviving Markdown became Spanish pages under `docs/core/`: Empezar aquí
+  (from `onboarding.html`), Setup (Jira + Xray, DBHub, OpenAPI), Metodología (the IQL
+  overview, the three phases and Observation from the official upexgalaxy.com site, plus
+  "Este repo y el IQL" from `agentic-quality-engineering.md`), Exploración (Postman, SQL
+  cookbook) and Personalidad (from `ai-personality.md`). No Markdown remains under
+  `docs/` except its README. `bun run up` now syncs only `docs/core/`, `docs/assets/`,
+  `docs/index.html`, `docs/README.md` and `docs/.gitignore`: any other folder under
+  `docs/` belongs to the project and is never written. `docs:check` also requires a
+  `<title>` and a meta description on every page (error in `docs/core/`, warning
+  elsewhere).
 - KATA spelling rule narrowed (owner decision, 2026-09-14): the K lives **only** in the
   expansion "Komponent Action Test Architecture". Everywhere else the word is spelled
   normally: the third layer is "domain Components", and the legacy doc says
