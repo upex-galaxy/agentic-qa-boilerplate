@@ -390,7 +390,7 @@ After all individual patches are computed (but before any file is written), veri
 | Skill and alias names | All targets | `AGENTS.md` says `sync-ai-context`, onboarding still presents `/refresh-ai-memory` |
 | `.context/` directory paths | `AGENTS.md`, `README.md`, `CONTEXT.md` | One file says `.context/business/`, another says `.context/mapping/` |
 | Skill names | All targets | Skill renamed but not all docs updated |
-| Environment URLs | `.agents/project.yaml` (source of truth), `README.md`, `docs/workflows/environments.md` | Staging URL changed in `.agents/project.yaml`, README + environments.md still show old. `AGENTS.md` does not inline env URLs. |
+| Environment URLs | `.agents/project.yaml` (source of truth), `README.md` | Staging URL changed in `.agents/project.yaml`, README still shows old. `AGENTS.md` does not inline env URLs. |
 | Script names | `package.json` (source of truth), `README.md`, `docs/onboarding.html` | Script renamed in `package.json` but README + docs still show old. `AGENTS.md` Rule #11 forbids inlining script tables. |
 | Instruction topology | `README.md`, `INSTALLER.md`, `docs/*` | A doc presents `CLAUDE.md` as canonical instead of the `AGENTS.md` source plus shim. |
 

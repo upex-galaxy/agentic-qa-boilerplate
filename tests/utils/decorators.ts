@@ -55,13 +55,15 @@ export interface AtcOptions {
  * @param options.severity - Allure severity level: 'blocker' | 'critical' | 'normal' | 'minor' | 'trivial'
  * @param options.description - Description for Allure report
  * @examples - Usage
- * Basic Usage - UI Component
+ * Basic Usage - UI Component (a complete mini-flow named {verb}{Resource}{Scenario},
+ * never a single interaction such as `fillEmailSuccessfully`)
  * ```typescript
  * @atc('UPEX-101')
- * async fillEmailSuccessfully(email: string) {
- *   const input = this.page.locator('[data-testid="email"]');
- *   await input.fill(email);
- *   await expect(input).toHaveValue(email);
+ * async loginSuccessfully(credentials: LoginCredentials) {
+ *   await this.page.locator('[data-testid="login-email-input"]').fill(credentials.email);
+ *   await this.page.locator('[data-testid="login-password-input"]').fill(credentials.password);
+ *   await this.page.locator('[data-testid="login-submit-button"]').click();
+ *   await expect(this.page).not.toHaveURL(/\/login/);
  * }
  * ```
  *
@@ -91,8 +93,8 @@ export interface AtcOptions {
  *
  * Console Output
  * ```typescript
- * ✅ [UPEX-101] fillEmailSuccessfully - PASS (234ms)
- * ❌ [UPEX-102] submitFormSuccessfully - FAIL: Element not found
+ * ✅ [UPEX-101] loginSuccessfully - PASS (234ms)
+ * ❌ [UPEX-102] completeCheckoutSuccessfully - FAIL: Element not found
  * ⚠️ [UPEX-103] Soft fail enabled - continuing execution
  * ```
  */

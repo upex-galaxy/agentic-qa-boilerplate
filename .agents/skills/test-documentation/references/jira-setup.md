@@ -60,8 +60,8 @@ XRAY_CLIENT_SECRET=...
 ATLASSIAN_EMAIL=you@example.com
 ATLASSIAN_API_TOKEN=...
 JIRA_PROJECT_KEY=PROJ
-XRAY_TEST_PLAN_KEY=PROJ-300      # optional
-XRAY_ENVIRONMENT=staging         # optional
+XRAY_PROJECT_KEY=PROJ            # optional, local sync only
+STP_EXECUTION_KEY=PROJ-194       # target Test Execution (RTR or sprint STR) for the write-back; never a Plan key
 ```
 
 Verify with `[TMS_TOOL] auth_status()` (load `/xray-cli` skill — it owns the literal command shape).

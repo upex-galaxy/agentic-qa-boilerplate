@@ -1,6 +1,6 @@
 # KATA Invariants — Framework Evolution Reference
 
-Canonical knowledge source for `framework-development`. Distinguishes what is INVARIANT (cannot break without major version bump) from what is EXTENSIBLE (safe evolution surface). Derived from the test-automation skill references and `docs/methodology/kata-fundamentals.md`. Use this file to gate framework changes: reject violations, approve safe extensions.
+Canonical knowledge source for `framework-development`. Distinguishes what is INVARIANT (cannot break without major version bump) from what is EXTENSIBLE (safe evolution surface). Derived from the test-automation skill references, chiefly `test-automation/references/kata-architecture.md`. Use this file to gate framework changes: reject violations, approve safe extensions.
 
 Terminology preserved verbatim: ATC, fixture, locator, Component, Steps, Helper, Page, Api, TestContext, ApiBase, UiBase, TestFixture.
 
@@ -262,4 +262,4 @@ These are POLICY tables, not INVARIANT rules. They can be amended additively wit
 
 ---
 
-*Reference compiled from `kata-architecture.md`, `typescript-patterns.md`, `api-patterns.md`, `e2e-patterns.md`, `atc-tracing.md`, `automation-standards.md`, `data-testid-strategy.md`, `test-data-management.md`, `review-checklists.md`, `test-automation/SKILL.md`, and `docs/methodology/kata-fundamentals.md`. Update only when a source doc changes a load-bearing rule.*
+*Reference compiled from `kata-architecture.md`, `typescript-patterns.md`, `api-patterns.md`, `e2e-patterns.md`, `atc-tracing.md`, `automation-standards.md`, `data-testid-strategy.md`, `test-data-management.md`, `review-checklists.md`, and `test-automation/SKILL.md`. Update only when a source doc changes a load-bearing rule.*

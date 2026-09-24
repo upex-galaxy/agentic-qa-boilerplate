@@ -95,6 +95,9 @@ export default defineConfig({
     { name: 'global-teardown',
       testMatch: /global\.teardown\.ts/,
       testDir: './tests/teardown' },
+
+    { name: 'sandbox',                 // isolated experiments: `*.sandbox.ts`, no dependencies,
+      testMatch: /.*\.sandbox\.ts/ },   // so no setup, no auth state and no teardown run with it
   ],
 
   outputDir: 'test-results',
@@ -110,6 +113,7 @@ Rules this template encodes:
 - **`retries: 0` everywhere** — locally and in CI. Tests are deterministic by doctrine; a failure is a signal to investigate, never something to mask with a retry.
 - **Serial execution is the shipped default** — `fullyParallel: false` + `workers: 1`. Parallelism is a deliberate future upgrade once the suite is proven stable, not a knob to flip casually.
 - **Teardown is a PROJECT** — `global-teardown` is activated by the `teardown:` property on `global-setup`, not by a `globalTeardown` hook and not by `dependencies`.
+- **`--no-deps` also skips the teardown.** Playwright ignores a project's `teardown` together with its `dependencies`, so `--project=e2e --no-deps` runs no setup AND no `global-teardown`: whatever the run creates stays behind. Use it only against state you set up by hand.
 
 ---
 
@@ -119,10 +123,16 @@ The setup projects gate the test projects. Visualised:
 
 ```
 global-setup
- ├── ui-setup  ──► e2e
- └── api-setup ──► integration
-                                    (both → global-teardown)
+ ├── ui-setup  ──► e2e, smoke-ui
+ └── api-setup ──► integration, smoke-api
+                                    (all → global-teardown)
+
+sandbox          (no dependencies, no teardown)
 ```
+
+`smoke-ui` / `smoke-api` are the `@critical` slice of each surface, one project per surface so
+an API test never inherits the browser `storageState` (see the comment in the template). CI's
+smoke suite runs both.
 
 ### 2.1 Generated auth artifacts
 

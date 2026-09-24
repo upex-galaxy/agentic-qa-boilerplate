@@ -172,13 +172,11 @@ The KATA convention `@atc('PROJ-101')` + `test('PROJ-101: should ...', ...)` ens
 |----------|---------|----------|
 | `XRAY_CLIENT_ID` | API client ID (Cloud) | Cloud only |
 | `XRAY_CLIENT_SECRET` | API client secret (Cloud) | Cloud only |
-| `XRAY_TOKEN` | Personal Access Token (Server/DC) | Server only |
 | _(site host)_ | `.agents/project.yaml` -> `issue_tracker.atlassian_url` — NOT an env var; read with `bun run --silent jira:url` | Always |
 | `ATLASSIAN_EMAIL` | Atlassian account email | Always |
 | `ATLASSIAN_API_TOKEN` | Atlassian API token | Always |
 | `JIRA_PROJECT_KEY` | Default project key | Optional (fallback to `{{PROJECT_KEY}}`) |
-| `XRAY_TEST_PLAN_KEY` | Default Test Plan for imports | Optional |
-| `XRAY_ENVIRONMENT` | Default test environment label | Optional |
+| `XRAY_PROJECT_KEY` | Xray project key for local sync; referenced by no workflow | Optional (local only) |
 | `STP_EXECUTION_KEY` | Target of the automated write-back: the **STR** Test Execution linked to the sprint STP — **never the STP's own key** (`tests/utils/jiraSync.ts` reads the issue type and refuses a Test Plan; see §4). Unset → each run mints a new, unparented Execution. | Xray only; required for write-back |
 
 Never hardcode these — always from `.env`. The `/xray-cli` skill reads them from the environment automatically.
@@ -203,36 +201,14 @@ Cloud rate limit: ~10 req/s per user (plan-dependent). Batch imports > 100 tests
 
 ## 9. CI/CD integration (reference pattern)
 
-GitHub Actions snippet — adapt the secret names to the project. The `/regression-testing` skill handles the full CI lifecycle.
+The live pattern is the `XrayImport` job in `.github/workflows/regression.yml`; the `/regression-testing` skill owns the CI lifecycle. What it does, in order:
 
-```yaml
-- name: Run tests
-  run: bun run test
-  env:
-    CI: true
+1. Skips with a notice when `AUTO_SYNC` is not `true` or `XRAY_CLIENT_ID` / `XRAY_CLIENT_SECRET` are not set.
+2. Skips with a warning when there is no target Test Execution: the `execution_key` dispatch input (the RTR) or the `STP_EXECUTION_KEY` secret. It never imports with only a project key, because that mints a new Execution that Xray's import API cannot parent to the QA Test Artifacts epic.
+3. Authenticates, then imports each `junit.xml` INTO that execution: `[TMS_TOOL] import junit: file=<report>, execution=<STP_EXECUTION_KEY>` (load `/xray-cli` for the literal command; `--plan` without `--execution` mints a new Execution, see that skill).
+4. Runs `continue-on-error`, so an Xray outage never turns a green suite red.
 
-- name: Get Xray token
-  if: always()
-  id: xray-auth
-  run: |
-    TOKEN=$(curl -s -X POST \
-      https://xray.cloud.getxray.app/api/v2/authenticate \
-      -H "Content-Type: application/json" \
-      -d "{\"client_id\":\"${XRAY_CLIENT_ID}\",\"client_secret\":\"${XRAY_CLIENT_SECRET}\"}" \
-      | tr -d '"')
-    echo "token=$TOKEN" >> $GITHUB_OUTPUT
-
-- name: Import results to Xray
-  if: always()
-  run: |
-    curl -X POST \
-      "https://xray.cloud.getxray.app/api/v2/import/execution/junit?projectKey=${{ vars.JIRA_PROJECT_KEY }}&testPlanKey=${{ vars.XRAY_TEST_PLAN_KEY }}" \
-      -H "Authorization: Bearer ${{ steps.xray-auth.outputs.token }}" \
-      -H "Content-Type: application/xml" \
-      --data-binary @test-results/junit.xml
-```
-
-Alternative: Playwright reporter `playwright-xray` posts results directly, no curl step. Use whichever the project already has configured.
+There is no `XRAY_TEST_PLAN_KEY` / `XRAY_ENVIRONMENT` variable: the target Execution already carries its Test Plan link and its Test Environment.
 
 ---
 

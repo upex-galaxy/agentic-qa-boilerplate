@@ -14,7 +14,7 @@ Turn an unknown codebase into a testable project. Four phases, always in order, 
 
 The discovery is **conversational**: you read the code, ask when ambiguous, confirm before writing files. Never fabricate -- if you cannot verify a claim from the source, mark it as a "Discovery Gap" and move on.
 
-Grounding methodology: **IQL (Integrated Quality Lifecycle)** — QA is continuous from requirement to release, not a gate at the end. The full rationale and step breakdown live in `docs/methodology/IQL-methodology.md` (shared across all QA skills). This skill does not depend on reading it — only point the user there if they ask why the discovery is structured this way.
+Grounding methodology: **IQL (Integrated Quality Lifecycle)** — QA is continuous from requirement to release, not a gate at the end. The stage contract every QA skill enforces lives in `agentic-qa-core/references/stage-gates.md`; the methodology narrative is the official IQL site: https://upexgalaxy.com/metodologia (ES) / https://upexgalaxy.com/en/methodology (EN). This skill does not depend on reading it — only point the user there if they ask why the discovery is structured this way.
 
 ---
 
@@ -379,7 +379,7 @@ Larger templates (full PRD sections, KATA component skeletons, `.context/infrast
 - **Phase 4 (backlog mapping, templates)** -> read `references/phase-4-specification.md`.
 - **Generating or refreshing business maps and master test plan** -> NOT this skill. Invoke the matching `project-context` mode.
 - **API endpoint sync** -> `bun run api:sync` for technical types; `project-context` mode `api` for business narrative.
-- **User asks about IQL methodology** -> point them to `docs/methodology/IQL-methodology.md` (shared across QA skills). This skill no longer carries its own IQL reference.
+- **User asks about IQL methodology** -> point them to the official site (https://upexgalaxy.com/metodologia ES, https://upexgalaxy.com/en/methodology EN) for the narrative and to `agentic-qa-core/references/stage-gates.md` for the enforced per-stage contract. This skill carries no IQL reference of its own.
 - **Code exploration (grep, read files)** -> use built-in tools. If the user wants a browser-driven exploration instead (UI-first discovery), load `/playwright-cli` skill.
 - **Issue-tracker operations (Phase 4)** -> resolve `[ISSUE_TRACKER_TOOL]` via AGENTS.md Tool Resolution. For Jira, load `/acli` skill (primary) or fall back to the Atlassian MCP. If the project also uses Xray for TMS, load `/xray-cli` additionally.
 - **Database inspection** -> resolve `[DB_TOOL]`; read-only queries only during discovery.

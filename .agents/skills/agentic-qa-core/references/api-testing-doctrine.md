@@ -126,12 +126,21 @@ If `createdAt + expiresIn` is in the past (or a request returns `401`), re-mint 
 
 ---
 
+## Types in automated tests: compile-time only
+
+Response and payload types come from the spec at BUILD time: `bun run api:sync` runs `openapi-typescript` and writes `api/openapi-types.ts`, and the facades under `api/schemas/` re-export from it. There is no runtime schema validator in this repo (no Zod, no Ajv): a type catches a test that reads a field the contract does not have, not an API that returns the wrong shape. Assert the shape you care about explicitly in the ATC. A doc or skill that says otherwise is stale.
+
+The OpenAPI MCP runs with `--tools dynamic`, which exposes exactly three tools: `list-api-endpoints`, `get-api-endpoint-schema` and `invoke-api-endpoint`. Only the first two are used (Step 1).
+
+---
+
 ## Anti-patterns (NEVER)
 
 - **NEVER** use the OpenAPI MCP's `invoke-api-endpoint` (or any MCP) to execute an authenticated test request. Schema reads only.
 - **NEVER** expect `$API_TOKEN_...` to survive across separate Bash calls — always `source .auth/tokens.env` in the same call as the curl.
 - **NEVER** hardcode or paste a raw token into a command, artifact, commit, or chat. It lives only in `.auth/` (gitignored).
 - **NEVER** write the token back into `.env` or inject it into an MCP.
+- **NEVER** "fix" an expired JWT by editing `.mcp.json` (or `opencode.jsonc` / `.codex/config.toml`). The MCP holds no credential by design; a stale token is refreshed by `bun run api:login` into `.auth/tokens.env`, nothing else.
 - **NEVER** report a schema-vs-target mismatch as a bug without first checking for dev/target schema drift.
 
 ---
