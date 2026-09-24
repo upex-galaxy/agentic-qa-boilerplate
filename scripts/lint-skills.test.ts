@@ -348,3 +348,49 @@ describe('lint-skills STALE-PATH on `.context/` (kind-scoped)', () => {
     expect(exitCode).toBe(1);
   });
 });
+
+describe('lint-skills volatile facts (Critical Rule #17, checks 20-21)', () => {
+  test('a path:line citation and a dated claim in a T1 body are FILE-LINE / CURRENT-STATE findings', () => {
+    const { output } = runLint(fixture({ listCommunityInAgentsMd: true, extraSkills: [{ slug: 'acme-flow', kind: 'workflow', body: 'See `cli/install.ts:403` for the probe.\nMeasured 2026-09-17 on a live project.' }] }));
+
+    expect(output).toContain('[.agents/skills/acme-flow/SKILL.md] FILE-LINE: `cli/install.ts:403`');
+    expect(output).toContain('[.agents/skills/acme-flow/SKILL.md] CURRENT-STATE: `Measured 2026-09-17`');
+  });
+
+  test('AGENTS.md is scanned too, and a fenced block or a volatile-ok line is not', () => {
+    const root = fixture({ listCommunityInAgentsMd: true });
+    write(root, 'AGENTS.md', [
+      '# AGENTS.md',
+      '',
+      '## 5. SKILLS + COMMANDS + MCPs REGISTRY',
+      '',
+      '| Skill | Trigger | Purpose |',
+      '|---|---|---|',
+      ...T1_SKILLS.map(slug => `| \`${slug}\` | \`/${slug}\` | fixture |`),
+      '| `resend-cli` | `/resend-cli` | community, installed at PROJECT level |',
+      '',
+      '## 6. TOOL RESOLUTION',
+      '',
+      'Since 8.4 the updater prints a table.',
+      '```',
+      'inside a fence: scripts/x.ts:1 today',
+      '```',
+      'The bad form is `scripts/x.ts:1` <!-- volatile-ok: teaching example -->',
+      '',
+    ].join('\n'));
+    const { output } = runLint(root);
+
+    expect(output).toContain('[AGENTS.md] CURRENT-STATE: `Since 8.4`');
+    expect(output).not.toContain('FILE-LINE:');
+  });
+
+  test('a community skill body committed in the store and the generated registry are not scanned', () => {
+    const root = fixture({ listCommunityInAgentsMd: true });
+    write(root, '.agents/skills/resend-cli/SKILL.md', '# resend-cli\n\nSee `src/index.ts:10`, as of 2026.\n');
+    write(root, '.agents/skills/REGISTRY.md', 'Generated today from `x.ts:1`.\n');
+    const { output } = runLint(root);
+
+    expect(output).not.toContain('FILE-LINE:');
+    expect(output).not.toContain('CURRENT-STATE:');
+  });
+});

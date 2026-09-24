@@ -11,7 +11,7 @@
  *         (gitignored, fetched at install time, NOT committed)
  *   T4  — community user-level, declared in cli/install.ts:USER_LEVEL_SKILLS
  *
- * Nineteen checks are run; each violation is printed prefixed with the relevant
+ * The checks below are run; each violation is printed prefixed with the relevant
  * skill or array name. Exit code 0 = pass (no ERROR violations), 1 = at least
  * one ERROR violation. WARN and INFO are reported but do not cause non-zero exit.
  *
@@ -127,13 +127,29 @@
  *      of kind `core` is skipped: it hosts the doctrine that describes the
  *      tags and never uses them. WARN severity.
  *
+ *  20. FILE-LINE — a `path.ext:N` / `:N-M` / `#LN` citation in the prose of any
+ *      committed markdown under .agents/ (community skills and generated
+ *      aggregates excluded) or in AGENTS.md, outside fenced blocks and the
+ *      frontmatter. A line number shifts on any edit above it; cite the file
+ *      plus a symbol or a heading. Per-line escape: `volatile-ok: <reason>`.
+ *      Severity: VOLATILE_SEVERITY (Critical Rule #17; canon
+ *      agentic-qa-core/references/volatile-facts.md).
+ *
+ *  21. CURRENT-STATE — a claim about the present in the same prose: "today",
+ *      "currently", "as of <year>", a dated "measured / verified", "since
+ *      <version>", a measured token or byte size, a tool version after a tool
+ *      name, and the Spanish equivalents. Same exclusions and escape hatch.
+ *      Severity: VOLATILE_SEVERITY.
+ *
  * Usage: bun run scripts/lint-skills.ts   (or: bun run skills:check)
  */
 
+import type { VolatileKind } from './lib/volatile-facts';
 import { existsSync, lstatSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { dirname, join } from 'node:path';
 
+import { dirname, join } from 'node:path';
 import { relativePosix } from './lib/posix-path';
+import { isVolatileExemptPath, scanVolatile, volatileRemedy } from './lib/volatile-facts';
 
 // -----------------------------------------------------------------------------
 // Constants
@@ -173,6 +189,16 @@ const KNOWN_CATEGORIES = new Set([
  * (domain): a skill is exactly one of these. Checks 15-17.
  */
 const KNOWN_KINDS = new Set(['context', 'workflow', 'utility', 'core']);
+
+/**
+ * Severity of the two volatile-facts checks (20-21). They land as WARN while
+ * the hand-applied cleanup runs and are promoted once the residue is zero or
+ * allowlisted with a reason; the promotion is this one edit.
+ */
+const VOLATILE_SEVERITY: Record<VolatileKind, Severity> = {
+  'FILE-LINE': 'WARN',
+  'CURRENT-STATE': 'WARN',
+};
 
 /**
  * Slugs exempt from KIND-SUFFIX (check 17), in both directions. Every entry
@@ -1045,6 +1071,53 @@ function gatherAllSkillMarkdown(): string[] {
   });
 }
 
+/**
+ * Every committed markdown file under `.agents/` that the project authors:
+ * community skill bodies (T3 / T4 tiers, real directories or symlinks) and the
+ * generated aggregates (`REGISTRY.md`, `.agents/prompts/`) are skipped.
+ */
+function gatherVolatileTargets(communitySlugs: ReadonlySet<string>): string[] {
+  const out: string[] = [];
+  const agentsDir = join(REPO_ROOT, '.agents');
+  const walk = (dir: string): void => {
+    for (const e of readdirSync(dir)) {
+      const full = join(dir, e);
+      if (lstatSync(full).isSymbolicLink()) { continue; }
+      const st = statSync(full);
+      if (st.isDirectory()) {
+        if (dir === agentsDir && e === 'prompts') { continue; }
+        if (dir === SKILLS_DIR && communitySlugs.has(e)) { continue; }
+        walk(full);
+      }
+      else if (e.endsWith('.md')) {
+        const rel = relativePosix(SKILLS_DIR, full);
+        if (!rel.includes('/') && SKILL_AGGREGATE_FILES.has(rel)) { continue; }
+        out.push(full);
+      }
+    }
+  };
+  if (existsSync(agentsDir)) { walk(agentsDir); }
+  if (existsSync(AGENTS_MD)) { out.push(AGENTS_MD); }
+  return out.filter(f => !isVolatileExemptPath(relativePosix(REPO_ROOT, f)));
+}
+
+/** Checks 20-21: FILE-LINE + CURRENT-STATE over the prose of the files above. */
+function checkVolatileFacts(files: string[]): void {
+  for (const file of files) {
+    let text: string;
+    try { text = readFileSync(file, 'utf8'); }
+    catch { continue; }
+    const rel = relativePosix(REPO_ROOT, file);
+    const seen = new Set<string>();
+    for (const hit of scanVolatile(text, { html: false })) {
+      const key = `${hit.line}:${hit.kind}`;
+      if (seen.has(key)) { continue; }
+      seen.add(key);
+      violation(VOLATILE_SEVERITY[hit.kind], rel, `${hit.kind}: \`${hit.match}\` (line ${hit.line}) — ${volatileRemedy(hit.kind)}`);
+    }
+  }
+}
+
 interface GrepFinding { file: string, line: number, text: string, match: string }
 
 function scanSkillLines(
@@ -1361,6 +1434,9 @@ function main(): void {
   checkSkillHardcodedCfid(skillFiles);
   checkSkillLiteralTools(skillFiles);
 
+  // Checks 20-21: volatile facts (Critical Rule #17) over .agents/**/*.md + AGENTS.md.
+  checkVolatileFacts(gatherVolatileTargets(new Set([...t3Slugs, ...t4Slugs])));
+
   // ---- Report ----
   const communityNote = committedCommunity.size > 0
     ? ` (+ ${committedCommunity.size} community skills committed in the store, tiers from cli/install.ts)`
@@ -1386,6 +1462,8 @@ function main(): void {
     'KIND-SUFFIX (slug suffix `-context` / `-cli` / `-tool` / `-app` vs declared kind, both directions)',
     'CAPABILITY-VOCAB (`metadata.requires_capabilities` outside web-search / library-docs / db / api-schema / browser)',
     'CAPABILITY-UNDECLARED (resolution tag in SKILL.md body without the matching declaration; WARN)',
+    `FILE-LINE (path:line citation in .agents/**/*.md + AGENTS.md prose; ${VOLATILE_SEVERITY['FILE-LINE']})`,
+    `CURRENT-STATE (today / as of / dated measurement / since <version> / tool version in the same prose; ${VOLATILE_SEVERITY['CURRENT-STATE']})`,
   ];
 
   if (violations.length === 0) {
