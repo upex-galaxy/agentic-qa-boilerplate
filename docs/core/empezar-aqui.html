@@ -157,7 +157,10 @@
             <tr>
               <td><code>node</code></td>
               <td><code>&gt;= 18</code></td>
-              <td>Lo exige el doctor del scaffolder.</td>
+              <td>
+                Los hooks ejecutan <code>node .agents/hooks/personality-reinject.mjs</code>. Lo
+                comprueban el doctor del scaffolder y el preflight de <code>bun run setup</code>.
+              </td>
             </tr>
             <tr>
               <td><strong>gentle-ai</strong></td>
@@ -255,7 +258,9 @@ bun run setup</code></pre>
           <strong>Configuración</strong>
           <p>
             Pide las credenciales que usan los MCPs y las guarda en <code>.env</code>. Ofrece
-            <code>direnv allow</code> y, si quieres, crea el repo en GitHub con <code>gh</code>.
+            <code>direnv allow</code> (opcional: solo lo necesitan Codex y las CLIs que leen
+            variables de la shell, como <code>acli</code>, <code>curl</code> o
+            <code>bun xray</code>) y, si quieres, crea el repo en GitHub con <code>gh</code>.
           </p>
         </li>
         <li>
@@ -346,7 +351,6 @@ bun run setup</code></pre>
         sacó de ahí.
       </p>
 
-      <!-- env-model: re-check after fix/onboarding-first-run merges -->
       <h3 id="modelo-env">Cómo llega cada credencial a cada harness</h3>
       <p>
         Un harness lee su configuración y arranca los servidores MCP antes de que corra cualquier
@@ -392,7 +396,10 @@ bun run setup</code></pre>
       <p>
         <code>harness:env</code> solo copia las variables que algún MCP usa, nunca el
         <code>.env</code> entero, y no imprime valores. <code>bun run harness:env:check</code> te
-        dice si <code>.env</code> y esos archivos se desincronizaron.
+        dice si <code>.env</code> y esos archivos se desincronizaron, y
+        <code>bun run setup:doctor</code> lo reporta también. En un clon nuevo,
+        <code>bun install</code> crea vacíos los archivos de <code>.auth/opencode/</code>, así que
+        OpenCode arranca antes de <code>bun run setup</code> (degradado, no roto).
       </p>
       <ol class="steps">
         <li>
@@ -963,7 +970,10 @@ subagente (contexto limpio)
               <td><code>bun run setup:doctor</code></td>
             </tr>
             <tr>
-              <td>Poner credenciales en <code>.env</code> o subirlas a GitHub Actions</td>
+              <td>
+                Poner credenciales en <code>.env</code> o subirlas a GitHub Actions (al terminar
+                regenera solo las credenciales de Claude Code y OpenCode)
+              </td>
               <td><code>bun run setup --variables</code></td>
             </tr>
             <tr>

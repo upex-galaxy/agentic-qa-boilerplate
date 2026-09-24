@@ -174,9 +174,9 @@ Run the interactive installer once after cloning:
 bun run setup
 ```
 
-This bootstraps `.agents/`, installs the gentle-ai `engram` component (minimal preset), configures the 6 canonical MCPs, downloads Playwright browsers, installs 7 user-level community skills + 3 project-level community skills, and verifies the `${VAR}` placeholders in the committed `.mcp.json` against your `.env`. Full details in [`INSTALLER.md`](../../../INSTALLER.md).
+This bootstraps `.agents/`, installs the gentle-ai `engram` component (minimal preset), configures the 6 canonical MCPs, downloads Playwright browsers, installs 7 user-level community skills + 3 project-level community skills, verifies the `${VAR}` placeholders in the committed `.mcp.json` against your `.env`, and generates the per-harness credential surfaces from it (the same thing `bun run harness:env` does). Full details in [`INSTALLER.md`](../../../INSTALLER.md).
 
-After setup, fill `.env` with the credentials the rest of the workflow expects (see "Critical env vars" below).
+After setup, fill `.env` with the credentials the rest of the workflow expects (see "Critical env vars" below), then run `bun run harness:env` and restart the agent session: MCP servers read credentials at startup. `bun run setup:doctor` is the health check.
 
 ---
 
@@ -186,7 +186,7 @@ After setup, fill `.env` with the credentials the rest of the workflow expects (
 
 | Phase | Goal | How |
 | ----- | ---- | --- |
-| 1. Foundation | Tooling green on this machine | `bun run setup` → fill `.env` → `bun run agents:setup` (project identity + environments in `.agents/project.yaml`) → `bun run pw:install` → `bun run jira:check` |
+| 1. Foundation | Tooling green on this machine | `bun run setup` → fill `.env` → `bun run harness:env` + restart the agent session → `bun run agents:setup` (project identity + environments in `.agents/project.yaml`) → `bun run pw:install` → `bun run jira:check` |
 | 2. Jira side | The tracker's catalogs mirrored locally | `bun run jira:sync-fields` + `jira:sync-workflows` + `jira:sync-link-types` (generate the `.agents/*.json` catalogs every skill reads) → `/jira-components` (reconcile Jira Components against the app's real modules). First-time Jira provisioning: `docs/core/setup/jira-xray.html` (docs site, `bun run docs`) |
 | 3. App under test | The framework knows and fits YOUR app | `/project-discovery` (reverse-engineers the target repo → `.context/` with PRD, SRS, business maps) → `/adapt-framework` (adapts KATA, config, CI, MCPs to the stack; its Phase 0 GATES on `.context/` existing, so the order is enforced) → hands off to `/sync-ai-memory` |
 | 4. Git strategy | Branch policy is a decision, not an inherited default | Ask **"set up our git strategy"** (git-flow-master's Strategy Setup: 4 questions → `git_strategy:` block in `.agents/project.yaml`), then optionally `bun run git:policy apply` to mirror it on GitHub. If you skip this, git-flow-master OFFERS it on your first real git action anyway (template-trap guard) — and `bun run git:policy verify` runs on every push via the pre-push hook |
@@ -289,14 +289,14 @@ Six canonical MCPs ship with the boilerplate:
 
 The **Atlassian MCP is opt-in** (setup in `agentic-qa-core/references/mcp-atlassian-optin.md`) — the primary Jira tools are `/acli` and `bun run jira:sync-issues`.
 
-**Decision rule:**
+**Decision rule** (tools resolve by CAPABILITY, i.e. by tool-name suffix, so a user-level server or a claude.ai connector exposing the same tools counts; a capability nobody provides is a point-of-use STOP, never a silent fallback: `agentic-qa-core/references/mcp-capabilities.md`):
 
-- Use **Context7** for "how to use X" — official docs, current API
-- Use **Tavily** for "how to solve X" — community fixes, troubleshooting
+- Use **Context7** (capability `library-docs`) for "how to use X" — official docs, current API
+- Use **Tavily** (capability `web-search`) for "how to solve X" — community fixes, troubleshooting
 - Use `/acli` for ticket WRITES (create, transition, comment, link); for detailed READS (custom fields, ACs, ATP/ATR, comments) use `bun run jira:sync-issues get`/`jql`
 - Use **Playwright MCP** for ad-hoc live browser interactions; for scripted runs use `/playwright-cli`
 
-`.mcp.json` lives at the repo root and is **committed** — it is secret-free, referencing secrets as `${VAR}` placeholders resolved from `.env`. Only `.mcp.local.json` (personal overrides) is gitignored.
+`.mcp.json` lives at the repo root and is **committed**: it is secret-free, referencing secrets as `${VAR}` placeholders. The value reaches each harness from `.env` through a generated surface (`bun run harness:env`): Claude Code reads the `env` block of `.claude/settings.local.json`, OpenCode reads `.auth/opencode/<VAR>` via `{file:}`, Codex reads the process environment (`bun run codex` or direnv). Only `.mcp.local.json` (personal overrides) is gitignored.
 
 ---
 
@@ -315,9 +315,9 @@ Place these in `.env` before running anything that talks to a real environment:
 
 `.env` is **gitignored**. Never commit it. `.agents/project.yaml` (committed) holds non-secret context (URLs, project key, environment names); `.env` holds the matching secrets.
 
-`.mcp.json` is **committed** and safe to commit — it never holds a secret value, only `${VAR}` placeholders that Claude Code resolves from `.env` at runtime. Personal overrides go in the gitignored `.mcp.local.json`.
+`.mcp.json` is **committed** and safe to commit: it never holds a secret value, only `${VAR}` placeholders. `.env` is the single source; `bun run harness:env` derives the Claude and OpenCode surfaces from it, and `bun run setup:doctor` reports drift. Personal overrides go in the gitignored `.mcp.local.json`.
 
-Verify your config with `bun run vars:check` (should report 0 errors when fully configured).
+Verify your config with `bun run vars:check` (should report 0 errors when fully configured). The full health check is `bun run setup:doctor`.
 
 ---
 
@@ -389,6 +389,7 @@ Plus 3 project-level community skills installed into `.agents/skills/` (not comm
 
 - [ ] Did you run `bun run setup`?
 - [ ] Did you fill `.env` with your own credentials (`LOCAL_*`, `STAGING_*`, `ATLASSIAN_*`, `XRAY_*`, `TAVILY_API_KEY`, `POSTMAN_API_KEY`)?
+- [ ] Did you run `bun run harness:env` after filling `.env`, then restart the agent session?
 - [ ] Did you populate `.agents/project.yaml` (run `bun run agents:setup` if not yet)?
 - [ ] Does `bun run vars:check` exit clean (0 errors)?
 - [ ] Did you run `bun run jira:check` to verify Jira credentials?
