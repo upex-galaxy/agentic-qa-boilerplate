@@ -1,7 +1,7 @@
 # Readiness Preflight Gate — Shared Doctrine
 
 > Cited by every testing workflow skill in this repo (`shift-left-testing`, `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `framework-development`). Loaded on demand at the very start of a skill, BEFORE its session-resume check and BEFORE any real work.
-> Sibling references: `./session-management.md` (resume contract — runs immediately AFTER this gate), `./orchestration-doctrine.md`, `./acli-integration.md`.
+> Sibling references: `./session-management.md` (resume contract — runs immediately AFTER this gate), `./orchestration-doctrine.md`, `./acli-integration.md`, `./mcp-capabilities.md` (capability vocabulary + enable table for the §8 point-of-use check).
 
 ## 1. Purpose
 
@@ -18,7 +18,7 @@ The gate is a **clause**, not a phase rewrite. It runs, it clears, then the skil
 ## 3. Gate sequence (run in order)
 
 1. **Resolve the environment.** From the invocation arg if present; else default **staging** (per `AGENTS.md` §8); ask only when genuinely ambiguous. Persist as `<<ACTIVE_ENV>>` for the session.
-2. **Assemble the required-capability set.** Each skill ships its own matrix (§"Required capabilities" in its SKILL.md). Drop capabilities that the resolved scope makes irrelevant (e.g. no DB surface in this ticket → DBHub is OPTIONAL).
+2. **Assemble the required-capability set.** Each skill ships its own matrix (§"Required capabilities" in its SKILL.md) plus the MCP capabilities its frontmatter declares (`metadata.requires_capabilities`, vocabulary in `./mcp-capabilities.md`; those are verified at the point of use, §8, not alarmed here). Drop capabilities that the resolved scope makes irrelevant (e.g. no DB surface in this ticket → DBHub is OPTIONAL).
 3. **Probe every required capability** (§4 table) → build a GREEN / RED status list.
 4. **Branch:**
    - All required GREEN → emit a one-line green summary, continue to the resume check.
@@ -57,7 +57,7 @@ Probe only what the skill's matrix lists. `[TAG_TOOL]` resolve per `AGENTS.md` �
 | **GitHub CLI** | `gh auth status` → authenticated; repo + workflows visible. | Not authed → user runs `gh auth login` themselves (suggest the `!` prefix); do not proceed. |
 | **Playwright browsers** | `bunx playwright --version` resolves; chromium installed. | Missing browser → offer to run `bun run pw:install` (explain it downloads chromium), then proceed. |
 | **Email (`resend`)** | `RESEND_API_KEY` set; the `resend` binary present (load `/resend-cli`). Mailbox can RECEIVE, not just send, for magic-link / token flows. | Send-only or missing key → STOP for email-dependent tickets; surface before authoring anything. |
-| **Web search / docs** | `TAVILY_API_KEY` set (Tavily); `context7` needs no key. | Missing key → degrade to built-in search; note the degradation, do not block. |
+| **Web search / docs** (`web-search` / `library-docs`) | At least one available tool provides the capability by suffix (`tavily_search` / `resolve-library-id`, any prefix: `mcp-capabilities.md` §2); `TAVILY_API_KEY` set when the provider is the committed `tavily` server. | No provider → the §8 point-of-use STOP (name the capability + how to enable it). Never degrade to built-in `WebSearch` / `WebFetch` on your own; the user may choose it explicitly. |
 | **Dev toolchain** | `bun run test` / `types:check` / `lint:check` resolve; `kata-manifest.json` present + `bun run kata:manifest:check` clean. | Stale manifest → `bun run kata:manifest`. Missing dep → `bun install`. |
 | **GitHub Actions Secrets/Variables** | For CI-driven skills only: the runner holds the env-prefixed creds + tokens as Repository / Environment Secrets — `gh secret list` / `gh variable list` (add `--env <env>` for environment-scoped) shows them. | Missing → set from `.env` via `gh secret set <NAME>` / `gh variable set <NAME>` (`--env <env>` for environment scope). NOTE: `/adapt-framework` today only EMITS a manual copy-paste list; pushing them with `gh secret set` is the lower-friction path and avoids a runner that 401s mid-suite. |
 
@@ -80,7 +80,7 @@ GREEN items are reported, not asked.
 ## 6. Secret & token handling (load-bearing — read every time)
 
 - Secrets live in `.env` ONLY. Never hardcode, never paste a secret into a skill artifact, a Jira field, a commit, or chat. When reporting status, say "set" / "unset" / "expired" — never the value.
-- `.mcp.json` consumes secrets as `${VAR}`; `opencode.jsonc` as `{env:VAR}`. Both read the value **at MCP-server spawn time** — there is no mid-session refresh (per `AGENTS.md` Critical Rule #10). So any write to `.env` that an MCP depends on (`OPENAPI_SPEC_PATH`, `DBHUB_*`, `XRAY_*`, `TAVILY_API_KEY`) requires the user to **restart the agent** (`bun claude` / `bun opencode`) before the change takes effect. (The API token is exempt — it is no longer injected into any MCP; curl reads `.auth/tokens.env` live.) Always end such a remedy with that instruction and STOP.
+- `.mcp.json` consumes secrets as `${VAR}`; `opencode.jsonc` as `{file:.auth/opencode/VAR}` (placeholder files created by `bun install`; an existing empty placeholder yields an empty string, a missing file is an OpenCode config error). Both read the value **at MCP-server spawn time** — there is no mid-session refresh (per `AGENTS.md` Critical Rule #10). So any write to `.env` that an MCP depends on (`OPENAPI_SPEC_PATH`, `DBHUB_*`, `XRAY_*`, `TAVILY_API_KEY`) requires the user to **restart the agent** (`bun claude` / `bun opencode`) before the change takes effect. (The API token is exempt — it is no longer injected into any MCP; curl reads `.auth/tokens.env` live.) Always end such a remedy with that instruction and STOP.
 
 ### The API testing maneuver (canonical — schema read / token / curl)
 
@@ -103,3 +103,15 @@ Readiness — <skill> — env: <<ACTIVE_ENV>>
 ```
 
 Then: all-GREEN → continue to the resume check. Any blocking RED unresolved → STOP at the gate. Never enter the skill's real work with a required capability RED.
+
+## 8. Point-of-use capability check (MCP capabilities)
+
+A disabled MCP is not a gate finding: nothing reports it at session start (people disable servers to save tokens). The check runs **immediately before the step that uses the capability**, for every capability the skill declares in `metadata.requires_capabilities` (vocabulary + enable table: `./mcp-capabilities.md`).
+
+1. **Look at the tools available in THIS session.** A tool provides a capability when its name, after the `mcp__<server>__` prefix, matches one of the capability's tool names (`tavily_search`, `resolve-library-id`, `execute_sql_<source>`, `list-api-endpoints`, `browser_*`, ...). The prefix is irrelevant: the project server, a user-level server and a claude.ai connector all qualify.
+2. **At least one provider → use it and continue.** No question, no note.
+3. **No provider → STOP before the step.** One message, three facts: the missing capability, the server that normally provides it, and the enable path for the running host (`/mcp` in Claude Code, `opencode.jsonc` on OpenCode, `.codex/config.toml` on Codex, or connecting the claude.ai connector). Then wait.
+4. **Never substitute on your own.** Built-in `WebSearch` / `WebFetch` for `web-search` or `library-docs`, route-file reading for `api-schema`, a guess for `db`: none of them is a silent fallback. The user's explicit "use X instead" is the only thing that unblocks a substitute, and the report then names the substitution.
+5. **The tool answers but fails on its first call (401/403, mystery error)** → that is the credential case: `AGENTS.md` Critical Rule #10 (exact env var, `.env`, RESTART).
+
+**User prompts follow the same rule.** A request that clearly needs a capability ("search the web for X", "look up the docs of Y", "query the staging DB") gets the same one-message STOP when no tool provides it, instead of a substitute.
