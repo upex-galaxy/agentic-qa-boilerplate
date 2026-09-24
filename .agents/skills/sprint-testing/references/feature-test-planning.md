@@ -301,3 +301,96 @@ Else:
 - [ ] FTP item (`FTP: {EPIC-KEY}: {feature}`) find-or-created under QA Master Test Plan with the plan in its description and linked `tests` the feature Epic — field / `## Feature Test Plan` fallback comment ONLY when the Test Plan work type is unavailable — AND the local cache materialized via `bun run jira:sync-issues`
 - [ ] Epic labeled `test-plan-ready`
 - [ ] Executive summary delivered to user, blocker called out if critical questions open
+
+---
+
+## Worked example: `FTP: UPEX-100: Authentication`
+
+A compact FTP body from this repo's own sample module (Epic `UPEX-100`, cached at
+`.context/PBI/epics/EPIC-UPEX-100-authentication/`). It is the automation-leaning subset a
+small, single-story feature needs, not the full 7-section Full-scope plan: read it for tone and
+granularity, not as a template. The selectors table is there because the module is already
+automated; a pre-automation FTP would stop at section 4. Formerly
+docs/testing/automation/feature-test-plan-example.md.
+
+### FTP: UPEX-100: Authentication
+
+> **Module**: Authentication (`/auth/*`)
+> **Total Tickets**: 1
+> **Total Items**: 4 TCs (2 API + 2 UI)
+> **Created**: 2026-03-19
+
+---
+
+#### 1. Executive Summary
+
+The authentication module is the gateway to the entire application. Every user flow depends on a valid session, making auth the highest-priority module for test coverage.
+
+**Key Risks:**
+- Invalid credentials silently creating sessions (security breach)
+- Token expiration not enforced (stale sessions)
+- Protected endpoints accessible without auth (authorization bypass)
+
+---
+
+#### 2. Module Overview
+
+| Aspect | Value |
+|--------|-------|
+| **Domain** | Authentication & Session Management |
+| **Primary Actors** | All users (login is universal) |
+| **API Endpoints** | `POST /api/auth/login`, `GET /api/auth/me` |
+| **UI Pages** | `/login` (public form) |
+
+---
+
+#### 3. Data Flow & API Endpoints
+
+```
+Login Flow (API):
+POST /api/auth/login { email, password }
+  → 200: { access_token, token_type, expires_in }
+  → 401: { error }
+
+Session Verification:
+GET /api/auth/me (requires Bearer token)
+  → 200: { user: { id, email, name } }
+  → 401: unauthorized
+```
+
+```
+Login Flow (UI):
+/login page → fill form → submit
+  → Success: redirect away from /login
+  → Failure: error message, stay on /login
+```
+
+---
+
+#### 4. Test Data Strategy
+
+| Data | Source | Notes |
+|------|--------|-------|
+| Valid credentials | `config.testUser` from `.env` | Pre-existing test user |
+| Invalid credentials | Inline in test | Hardcoded bad values |
+| Auth token | `api-state.json` from setup project | Auto-loaded by ApiFixture |
+
+---
+
+#### 5. Key Selectors Reference
+
+| Element | Selector | Page |
+|---------|----------|------|
+| Email input | `[data-testid="login-email-input"]` | `/login` |
+| Password input | `[data-testid="login-password-input"]` | `/login` |
+| Submit button | `[data-testid="login-submit-button"]` | `/login` |
+
+---
+
+#### See Also
+
+- Test specs: `.context/PBI/epics/EPIC-UPEX-100-authentication/test-specs/`
+- Component (API): `tests/components/api/AuthApi.ts`
+- Component (UI): `tests/components/ui/LoginPage.ts`
+- Test file (integration): `tests/integration/auth/user-session.test.ts`
+- Test file (e2e): `tests/e2e/dashboard/dashboard.test.ts`
