@@ -21,6 +21,7 @@ import {
   diffNoIndex,
   diffStats,
   frameworkGatesNote,
+  harnessLevelMcpNote,
   lintStagedNoStashNote,
   markdownSectionDelta,
   missingConfigBlocks,
@@ -1256,5 +1257,32 @@ describe('the dry-run table marks what the apply step resolves by itself', () =>
     const real = buildParityPrompt([compat, drift], META);
     expect(real).not.toContain(RESOLVED_BY_APPLY_MARK);
     expect(real).toContain('Parity review after `bun run up` (upstream');
+  });
+});
+
+describe('harnessLevelMcpNote', () => {
+  const upstream = JSON.stringify({ mcpServers: { context7: { command: 'bunx' } } });
+  test('names a server the project keeps that upstream moved to harness level, with its former key', () => {
+    const project = JSON.stringify({ mcpServers: { context7: { command: 'bunx' }, tavily: { type: 'http', url: 'https://mcp.tavily.com/mcp/' } } });
+    const note = harnessLevelMcpNote('.mcp.json', project, upstream);
+    expect(note).not.toBeNull();
+    expect(note!.clause).toContain('"tavily" now run at harness level');
+    expect(note!.clause).toContain('TAVILY_API_KEY');
+    expect(note!.note).toContain('keep project');
+    expect(note!.note).toContain('claude mcp add --scope user');
+  });
+  test('silent when the project declares none of them, when upstream still has them, and on a non-MCP file', () => {
+    expect(harnessLevelMcpNote('.mcp.json', upstream, upstream)).toBeNull();
+    const both = JSON.stringify({ mcpServers: { postman: { type: 'http', url: 'https://mcp.postman.com/mcp' } } });
+    expect(harnessLevelMcpNote('.mcp.json', both, both)).toBeNull();
+    expect(harnessLevelMcpNote('AGENTS.md', '# a', '# b')).toBeNull();
+  });
+  test('reads the Codex and OpenCode registries too', () => {
+    const codexProject = '[mcp_servers.postman]\nurl = "https://mcp.postman.com/mcp"\n';
+    const codexUpstream = '[mcp_servers.context7]\ncommand = "bunx"\n';
+    expect(harnessLevelMcpNote('.codex/config.toml', codexProject, codexUpstream)!.clause).toContain('postman');
+    const ocProject = '{ "mcp": { "tavily": { "type": "remote", "url": "https://mcp.tavily.com/mcp/" } } }';
+    const ocUpstream = '{ "mcp": { "context7": { "type": "local" } } }';
+    expect(harnessLevelMcpNote('opencode.jsonc', ocProject, ocUpstream)!.clause).toContain('tavily');
   });
 });

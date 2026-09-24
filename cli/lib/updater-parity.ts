@@ -45,6 +45,7 @@ import { parse as parseYaml } from 'yaml';
 import { stripJsonComments } from './agent-compatibility-contracts.ts';
 import { COMMAND_ALIAS_MANIFEST, COMMAND_ALIAS_PROJECT_MANIFEST, compatibilityErrorGroup, undeclaredCommandWrappers } from './agent-compatibility.ts';
 import { hasDeepWalk, walkGovernedFile } from './agents-schema.ts';
+import { HARNESS_LEVEL_MCPS } from './harness-level-mcps.ts';
 import { CLAUDE_SETTINGS_FILE } from './updater-settings';
 
 // ============================================================================
@@ -906,6 +907,37 @@ function costSignal(
   return { parts: [`same ${units(2)} and ${unit === 'heading' ? 'bodies' : 'values'}; formatting or comments differ`], suggested: 'keep project' };
 }
 
+/**
+ * A downstream project's protected MCP file still declares a server upstream
+ * moved to HARNESS level (ADR-0005, D3: web search, Postman). The file is on
+ * the watchlist, so nothing overwrites it; this note is how the project learns
+ * the server is now the harness's business. Returns the clause for the row and
+ * the longer note, or null when the project declares none of them or upstream
+ * still has them.
+ */
+export function harnessLevelMcpNote(filePath: string, project: string, upstream: string): { clause: string, note: string } | null {
+  if (!Object.values(MCP_HOST_FILE).includes(filePath)) { return null; }
+  const mine = configEntries(project, filePath);
+  const theirs = configEntries(upstream, filePath);
+  if (!mine || !theirs) { return null; }
+  const registries = ['mcpServers', 'mcp', 'mcp_servers'];
+  const moved = HARNESS_LEVEL_MCPS.filter(m =>
+    registries.some(r => mine.has(`${r}.${m.id}`)) && !registries.some(r => theirs.has(`${r}.${m.id}`)));
+  if (moved.length === 0) { return null; }
+  const ids = moved.map(m => m.id);
+  const vars = moved.map(m => m.formerEnvVar);
+  return {
+    clause: `${listNames(ids)} now run at harness level (upstream removed them and their keys ${listNames(vars)}): keep them here as project-only servers, or remove them and connect them once per machine`,
+    note: [
+      `Upstream no longer commits ${listNames(ids)}: a remote MCP server whose only project-side content is an API key is the harness's business, and the skills resolve it by capability whatever the server prefix (ADR-0005; .agents/skills/agentic-qa-core/references/mcp-capabilities.md).`,
+      'Two valid answers for this project:',
+      `  - keep project: the server stays a project-only entry in ${filePath} and its key stays in your .env and .env.example (the manifest no longer declares ${listNames(vars)}, so vars:env:check treats the uncommented line as an orphan unless you keep it commented or declare it in .env.schema).`,
+      `  - remove it here (and from the other two host files) and connect it at user level: Claude Code \`claude mcp add --scope user\` or a claude.ai connector; OpenCode ~/.config/opencode/opencode.json; Codex \`codex mcp add\`. Then drop ${listNames(vars)} from .env.`,
+      'bun run setup:doctor reports which of these servers your user-level configs already declare.',
+    ].join('\n'),
+  };
+}
+
 /** Evidence for a watched file, from its two copies plus the diff. */
 export function watchedFileEvidence(filePath: string, project: string, upstream: string, diff: string): WatchedFileEvidence {
   const stats = formatStats(diffStats(diff));
@@ -1176,6 +1208,10 @@ export function collectParityFindings(input: ParityInput): ParityFinding[] {
         hookNotes.push({ clause: `this hook does not source ${HUSKY_GATES_FILE}, so no gate a future release adds will ever run here`, note: gates });
       }
     }
+    // An MCP host file still carrying a server upstream moved to harness level:
+    // the row explains the move; the file is never overwritten.
+    const harnessLevel = harnessLevelMcpNote(entry.path, project, upstream);
+    if (harnessLevel !== null) { hookNotes.push(harnessLevel); }
     drifted.set(entry.path, {
       surface: watchedSurface(entry.path, entry.source),
       path: entry.path,

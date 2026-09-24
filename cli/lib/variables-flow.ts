@@ -543,7 +543,7 @@ async function promptVarsInto(
 }
 
 /**
- * Prompt the CRITICAL set (manifest `critical: true`) into `.env`. Thin wrapper
+ * Prompt the OFFERED set (manifest `critical: true`) into `.env`. Thin wrapper
  * over {@link promptVarsInto}.
  */
 async function runCriticalSet(
@@ -564,7 +564,7 @@ type MenuChoice = 'walk' | 'critical' | 'remote' | 'everything' | 'leave';
  *   (a) Walk — set EVERY local var one by one (Enter skips; overwrite-confirm on
  *       already-set). The flag-free human path; `--variables-local` is now purely
  *       a scripting alias.
- *   (b) Set / reset the CRITICAL variables (the 5 project-independent creds).
+ *   (b) Set / reset the OFFERED variables (manifest `critical: true`; skip is fine).
  *   (c) Push local .env → GitHub Actions secrets.
  *   (d) Everything (critical then push) / leave as-is.
  * Returns the rows map to print, plus the remote outcome for the closing notice.
@@ -576,7 +576,7 @@ async function runMenu(opts: VariablesFlowOptions): Promise<void> {
     message: 'What do you want to do?',
     options: [
       { label: 'Set variables one by one (walk all local vars)', value: 'walk' as const },
-      { label: 'Set / reset the critical variables (Atlassian, Resend, Tavily)', value: 'critical' as const },
+      { label: `Set / reset the offered variables (${criticalVars().map(s => s.name).join(', ')})`, value: 'critical' as const },
       { label: 'Push local .env → GitHub Actions secrets', value: 'remote' as const },
       { label: 'Everything (set critical, then push remote)', value: 'everything' as const },
       { label: 'Leave as-is (exit)', value: 'leave' as const },
