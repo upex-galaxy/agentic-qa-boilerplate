@@ -21,7 +21,11 @@ concurrency:
 env:
   CI: true
   TEST_ENV: 'staging'
-  # Credentials (required to validate environment configuration)
+  # Test-user pair for the selected TEST_ENV. OPTIONAL here: nothing in this
+  # job logs in, the env schema no longer requires a project credential, and
+  # test:env:check validates the shape only. Kept so `bunx playwright test
+  # --list` and config resolution see the same environment a real run would.
+  # A fork PR has no secrets and still passes.
   STAGING_USER_EMAIL: ${{ secrets.STAGING_USER_EMAIL }}
   STAGING_USER_PASSWORD: ${{ secrets.STAGING_USER_PASSWORD }}
 
@@ -43,13 +47,12 @@ jobs:
           fail-on-error: true
           show-summary: true
         # First gate, before any dependency is installed: loads .env.schema +
-        # .env.core.schema against the job's env block above (TEST_ENV=staging,
-        # so the staging test-user secrets are the required items) and writes a
-        # REDACTED summary to the job page. A PR from a fork has no secrets and
-        # fails here, exactly as it already failed at test:env:check below; the
-        # test:env:check step stays because the runtime still validates itself.
-        # The action bundles its own varlock (node24); the devDependency pin in
-        # package.json is what the local gates use.
+        # .env.core.schema against the job's env block above and writes a
+        # REDACTED summary to the job page. The only required item is TEST_ENV
+        # (it has a default); project credentials are optional typed examples,
+        # so a PR from a fork, which has no secrets, passes here and at
+        # test:env:check below. The action bundles its own varlock (node24);
+        # the devDependency pin in package.json is what the local gates use.
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2

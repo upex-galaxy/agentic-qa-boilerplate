@@ -170,43 +170,50 @@ export const VAR_MANIFEST: VarSpec[] = [
   },
 
   // --- Test user credentials (per-environment) ---
+  // PROJECT-UNDER-TEST EXAMPLES. The framework never requires them: which
+  // variable holds which environment's login is the project's vocabulary
+  // (`config/variables.ts`), and a project with no login has none. They stay
+  // declared, typed and OPTIONAL so a `.env` copied from the template still
+  // validates, and the one place that needs a value, `config.testUser`, fails
+  // with a named error at the point of use. Rename or delete them when you
+  // adapt the framework.
   {
     name: 'LOCAL_USER_EMAIL',
     destinations: ['local', 'github'],
     secret: false,
-    required: { ifEnv: 'TEST_ENV=local' },
+    required: false,
     critical: false,
     obtainHint: 'test-user creds for your project-under-test; set when adapting the framework to your project.',
-    note: 'Local test user email. CI secret in all workflows. Project-dependent — set later, not at install.',
+    note: 'Local test user email (project-under-test example: rename or delete when adapting). Read by config.testUser, which fails by name when empty. CI secret in the suite workflows.',
     schema: { type: 'email', example: 'qa.local@example.test' },
   },
   {
     name: 'LOCAL_USER_PASSWORD',
     destinations: ['local', 'github'],
     secret: true,
-    required: { ifEnv: 'TEST_ENV=local' },
+    required: false,
     critical: false,
     obtainHint: 'test-user creds for your project-under-test; set when adapting the framework to your project.',
-    note: 'Local test user password. CI secret in all workflows. Project-dependent — set later, not at install.',
+    note: 'Local test user password (project-under-test example: rename or delete when adapting). Read by config.testUser, which fails by name when empty. CI secret in the suite workflows.',
   },
   {
     name: 'STAGING_USER_EMAIL',
     destinations: ['local', 'github'],
     secret: false,
-    required: { ifEnv: 'TEST_ENV=staging' },
+    required: false,
     critical: false,
     obtainHint: 'test-user creds for your project-under-test; set when adapting the framework to your project.',
-    note: 'Staging test user email. CI secret in build/regression/sanity/smoke workflows. Project-dependent — set later.',
+    note: 'Staging test user email (project-under-test example: rename or delete when adapting). Read by config.testUser, which fails by name when empty. CI secret in the suite workflows.',
     schema: { type: 'email', example: 'qa.staging@example.test' },
   },
   {
     name: 'STAGING_USER_PASSWORD',
     destinations: ['local', 'github'],
     secret: true,
-    required: { ifEnv: 'TEST_ENV=staging' },
+    required: false,
     critical: false,
     obtainHint: 'test-user creds for your project-under-test; set when adapting the framework to your project.',
-    note: 'Staging test user password. Required when TEST_ENV=staging. Project-dependent — set later.',
+    note: 'Staging test user password (project-under-test example: rename or delete when adapting). Read by config.testUser, which fails by name when empty. CI secret in the suite workflows.',
   },
 
   // --- Xray (TMS, optional) ---

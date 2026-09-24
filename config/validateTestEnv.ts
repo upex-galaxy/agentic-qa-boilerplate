@@ -1,21 +1,25 @@
 /**
  * KATA Architecture - Test Environment Variables Validator
  *
- * PROJECT-OWNED, and deliberately so. Validation splits unevenly: the
- * credential half names `LOCAL_USER_EMAIL` / `STAGING_USER_PASSWORD` and the
- * environment names themselves, which are this project's vocabulary, while the
- * TMS half names providers and Atlassian keys, which are framework facts. Only
- * the second half moved into the synced core (`validateTmsEnvironment`);
- * pushing the first half up there would have put a project's own configuration
- * into a file that gets overwritten.
+ * PROJECT-OWNED. Validates the SHAPE of the runtime configuration, never the
+ * presence of a project credential:
+ * - `TEST_ENV` names an environment this project declares (here)
+ * - TMS credentials, only when `AUTO_SYNC=true` (synced core:
+ *   `validateTmsEnvironment` in `config/variables.core.ts`)
  *
- * Validates required runtime variables for the active test environment:
- * - Credentials: Only for current TEST_ENV (local or staging) — here
- * - TMS: Only if AUTO_SYNC=true (Xray or Jira per TMS_PROVIDER) — synced core
+ * The test-user pair (`LOCAL_USER_*`, `STAGING_USER_*`) is deliberately NOT
+ * checked here any more. Those variables are project-under-test examples the
+ * framework has no right to require: a project with no login has none, and a
+ * CI job that only compiles the framework (`build.yml`, a fork PR with no
+ * secrets) must pass without them. Their point of use is `config.testUser` in
+ * `config/variables.ts`, a getter that throws a named error the moment the
+ * ui-setup / api-setup projects read it with the active pair empty. Adopters
+ * that ported the credential half of this file into their own copy can delete
+ * it: the getter is the replacement.
  *
  * Usage:
  *   - Importable: call validateTestEnvironment(vars) with pre-extracted env vars
- *   - Standalone: bun run config/validateTestEnv.ts
+ *   - Standalone: bun run config/validateTestEnv.ts  (bun run test:env:check)
  */
 
 // The Atlassian host is resolved, not read from the environment: it lives in
@@ -24,15 +28,18 @@
 // standalone without pulling in the whole config graph.
 import { resolvedAtlassianUrlForValidation, validateTmsEnvironment } from './variables.core';
 
+/**
+ * The environments this project declares. Keep in step with `Environment` and
+ * `envDataMap` in `config/variables.ts` (the 4-way env-enum reconciliation in
+ * `/adapt-framework`): this list is what `test:env:check` names in its error.
+ */
+export const VALID_TEST_ENVS = ['local', 'staging'] as const;
+
 /** Variables needed for validation (subset of all env vars) */
 export interface EnvVarsToValidate {
   TEST_ENV: string
   AUTO_SYNC: string
   TMS_PROVIDER?: string
-  LOCAL_USER_EMAIL?: string
-  LOCAL_USER_PASSWORD?: string
-  STAGING_USER_EMAIL?: string
-  STAGING_USER_PASSWORD?: string
   XRAY_CLIENT_ID?: string
   XRAY_CLIENT_SECRET?: string
   /**
@@ -46,7 +53,7 @@ export interface EnvVarsToValidate {
 }
 
 /**
- * Validates test environment variables.
+ * Validates the test environment configuration.
  * Throws Error if validation fails (fail-fast).
  *
  * @param vars - Pre-extracted environment variables (avoids multiple process.env reads)
@@ -54,25 +61,9 @@ export interface EnvVarsToValidate {
 export function validateTestEnvironment(vars: EnvVarsToValidate): void {
   const errors: string[] = [];
 
-  // Validate credentials for CURRENT environment only
-  if (vars.TEST_ENV === 'local') {
-    if (!vars.LOCAL_USER_EMAIL) {
-      errors.push('LOCAL_USER_EMAIL is required for TEST_ENV=local');
-    }
-    if (!vars.LOCAL_USER_PASSWORD) {
-      errors.push('LOCAL_USER_PASSWORD is required for TEST_ENV=local');
-    }
-  }
-  else if (vars.TEST_ENV === 'staging') {
-    if (!vars.STAGING_USER_EMAIL) {
-      errors.push('STAGING_USER_EMAIL is required for TEST_ENV=staging');
-    }
-    if (!vars.STAGING_USER_PASSWORD) {
-      errors.push('STAGING_USER_PASSWORD is required for TEST_ENV=staging');
-    }
-  }
-  else {
-    errors.push(`Unknown TEST_ENV: ${vars.TEST_ENV}. Valid values: local, staging`);
+  // TEST_ENV must be one of the environments this project declares.
+  if (!(VALID_TEST_ENVS as readonly string[]).includes(vars.TEST_ENV)) {
+    errors.push(`Unknown TEST_ENV: ${vars.TEST_ENV}. Valid values: ${VALID_TEST_ENVS.join(', ')}`);
   }
 
   // TMS config (only when AUTO_SYNC=true) — synced half.
@@ -90,10 +81,6 @@ if (import.meta.main) {
     TEST_ENV: process.env.TEST_ENV || 'local',
     AUTO_SYNC: process.env.AUTO_SYNC || 'false',
     TMS_PROVIDER: process.env.TMS_PROVIDER || 'xray',
-    LOCAL_USER_EMAIL: process.env.LOCAL_USER_EMAIL,
-    LOCAL_USER_PASSWORD: process.env.LOCAL_USER_PASSWORD,
-    STAGING_USER_EMAIL: process.env.STAGING_USER_EMAIL,
-    STAGING_USER_PASSWORD: process.env.STAGING_USER_PASSWORD,
     XRAY_CLIENT_ID: process.env.XRAY_CLIENT_ID,
     XRAY_CLIENT_SECRET: process.env.XRAY_CLIENT_SECRET,
     // Resolved, not read: the host lives in .agents/project.yaml and only falls
@@ -103,10 +90,11 @@ if (import.meta.main) {
     ATLASSIAN_API_TOKEN: process.env.ATLASSIAN_API_TOKEN,
   };
 
-  console.log('\nValidating test environment variables...');
+  console.log('\nValidating test environment configuration...');
   console.log(`  TEST_ENV: ${vars.TEST_ENV}`);
   console.log(`  AUTO_SYNC: ${vars.AUTO_SYNC}`);
   console.log(`  TMS_PROVIDER: ${vars.TMS_PROVIDER}`);
+  console.log('  Test-user credentials are not checked here: config.testUser fails by name at the point of use.');
 
   try {
     validateTestEnvironment(vars);

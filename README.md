@@ -346,7 +346,7 @@ Edit `.env` with your project values:
 # Environment selector (valid: local, staging)
 TEST_ENV=local
 
-# Test User Credentials (only the current TEST_ENV is required)
+# Test User Credentials (project examples: never required up front; config.testUser fails by name when a test reads an empty pair)
 LOCAL_USER_EMAIL=
 LOCAL_USER_PASSWORD=
 STAGING_USER_EMAIL=your-test-user@example.com
@@ -700,15 +700,15 @@ The `.template/boilerplate.lock.json` file is committable: commit it so your tea
 | `sanity.yml`     | Manual         | Run tests by grep pattern   |
 | `regression.yml` | Daily midnight | Full test suite             |
 
-### Environment Secrets Required
+### Environment Secrets
 
-Required (only the credentials matching your active `TEST_ENV` are validated):
+The framework requires nothing but `TEST_ENV` (it has a default). The test-user pair is a project-under-test example: the suite workflows inject it as secrets, and `config.testUser` fails with a named error the first time a test reads an empty pair. Nothing validates it up front, so a fork PR with no secrets still builds.
 
 ```yaml
 # Environment selection
 TEST_ENV                    # local | staging
 
-# Test User Credentials (required for the active TEST_ENV)
+# Test User Credentials (project examples, read by config.testUser at the point of use)
 LOCAL_USER_EMAIL
 LOCAL_USER_PASSWORD
 STAGING_USER_EMAIL

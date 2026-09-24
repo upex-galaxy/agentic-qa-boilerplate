@@ -62,7 +62,7 @@ import {
   OPENCODE_SECRET_DIR,
 } from './lib/harness-env.ts';
 import { playwrightBrowsersInstalled } from './lib/playwright-cache.ts';
-import { requiredNow, varsFor } from './lib/variables-manifest.ts';
+import { varsFor } from './lib/variables-manifest.ts';
 
 // `tui` pulls third-party deps (boxen/cli-table3/figures/picocolors). It is
 // imported lazily inside main() so `--preflight` loads only node built-ins and
@@ -96,9 +96,9 @@ const MIN_NODE_MAJOR = 18;
 // surfaced separately/manually (edit `dbhub.toml`), so they are filtered out at
 // the call site; `VAR_HINTS` provides the per-var help text for reported vars.
 //
-// `requiredNow(spec, env)` decides required-vs-optional given the current
-// TEST_ENV (e.g. STAGING_USER_* is required only when TEST_ENV=staging). Vars
-// that are not required-now are still reported (set/missing) but do NOT block.
+// Only a var the manifest marks unconditionally `required` can block. Every
+// other var is reported (set / missing (optional)) and never blocks: a project
+// credential is validated by the code that reads it, with a named error.
 
 const VAR_HINTS: Record<string, { hint: string, where: string }> = {
   TEST_ENV: {
@@ -820,9 +820,10 @@ export async function runDoctor(): Promise<DoctorReport> {
     });
   }
 
-  // env vars — manifest-driven (D1). Every reported var is set/missing; only
-  // vars that are required GIVEN the current env (`requiredNow` resolves the
-  // `{ ifEnv: 'TEST_ENV=staging' }` clauses) push a blocking credential action.
+  // env vars — manifest-driven (D1). Every reported var is set/missing. Only a
+  // var the manifest marks unconditionally required pushes a credential action;
+  // a conditional clause is never a blocker here: a project credential is
+  // validated by the code that reads it, with a named error, not by the doctor.
   const envValues = report.env_file_exists
     ? parseEnvFile(await readFile(ENV_PATH, 'utf8'))
     : {};
@@ -832,7 +833,7 @@ export async function runDoctor(): Promise<DoctorReport> {
     const value = envValues[v];
     const isSet = value !== undefined && value.trim().length > 0;
     report.env_vars[v] = isSet ? 'set' : 'missing';
-    if (!isSet && requiredNow(spec, envValues)) {
+    if (!isSet && spec.required === true) {
       report.pending_actions.push({
         type: 'credential',
         target: v,
@@ -1089,12 +1090,14 @@ function printHuman(report: DoctorReport): void {
   checks.push(['Atlassian host (.agents/project.yaml)', hostRow]);
   process.stdout.write(`${tui.table(['Check', 'Status'], checks)}\n`);
 
-  // Env vars as a table
+  // Env vars as a table. A missing OPTIONAL var is information, not a failure:
+  // the FAIL icon is reserved for the ones the manifest marks required.
   tui.section('Env vars');
+  const requiredNames = new Set(varsFor('local').filter(s => s.required === true).map(s => s.name));
   const envRows = Object.entries(report.env_vars).map(([k, v]) => [
     k,
-    v === 'set' ? tui.statusIcon('ok') : tui.statusIcon('fail'),
-    v === 'set' ? 'set' : 'missing',
+    v === 'set' ? tui.statusIcon('ok') : tui.statusIcon(requiredNames.has(k) ? 'fail' : 'info'),
+    v === 'set' ? 'set' : requiredNames.has(k) ? 'missing' : 'missing (optional)',
   ]);
   process.stdout.write(`${tui.table(['Variable', 'Status', 'Value'], envRows)}\n`);
 

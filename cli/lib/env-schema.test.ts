@@ -121,10 +121,23 @@ describe('placeholders', () => {
     expect(placeholderFor(undefined, true).length).toBeGreaterThan(20);
   });
   test('placeholderEnv covers exactly what is required under the env', () => {
-    const local = placeholderEnv('local');
-    expect(Object.keys(local).sort()).toEqual(['LOCAL_USER_EMAIL', 'LOCAL_USER_PASSWORD', 'TEST_ENV']);
-    const staging = placeholderEnv('staging');
-    expect(Object.keys(staging).sort()).toEqual(['STAGING_USER_EMAIL', 'STAGING_USER_PASSWORD', 'TEST_ENV']);
+    // A synthetic manifest with a conditional core item: the helper still
+    // understands forEnv, even though the real manifest no longer emits one.
+    const manifest = [
+      spec({ name: 'TEST_ENV', required: true }),
+      spec({ name: 'LOCAL_ONLY', required: { ifEnv: 'TEST_ENV=local' } }),
+      spec({ name: 'STAGING_ONLY', required: { ifEnv: 'TEST_ENV=staging' } }),
+      spec({ name: 'OPTIONAL' }),
+    ];
+    expect(Object.keys(placeholderEnv('local', manifest)).sort()).toEqual(['LOCAL_ONLY', 'TEST_ENV']);
+    expect(Object.keys(placeholderEnv('staging', manifest)).sort()).toEqual(['STAGING_ONLY', 'TEST_ENV']);
+  });
+
+  test('the real manifest needs nothing but TEST_ENV under any env', () => {
+    // The framework requires only what it owns (ADR-0005): a project's
+    // test-user pair is an optional typed example, never a required item.
+    expect(Object.keys(placeholderEnv('local'))).toEqual(['TEST_ENV']);
+    expect(Object.keys(placeholderEnv('staging'))).toEqual(['TEST_ENV']);
   });
 });
 
@@ -179,9 +192,11 @@ describe('the committed pair loads through the pinned varlock', () => {
     }
   });
 
-  test('VAR_MANIFEST and the placeholder set agree on what staging needs', () => {
-    // Guard for the negative test above: if the manifest ever stops requiring
-    // staging credentials, that test would pass for the wrong reason.
-    expect(VAR_MANIFEST.some(s => s.name === 'STAGING_USER_PASSWORD' && schemaRequiredDecorator(s) === '@required=forEnv(staging)')).toBe(true);
+  test('the real manifest carries no conditional @required (project credentials are optional)', () => {
+    // ADR-0005: a test-user pair is the project's, so the synced schema never
+    // marks it required for an environment. A missing one fails by name at the
+    // point of use (config.testUser), not at varlock load.
+    const conditional = VAR_MANIFEST.filter(s => schemaRequiredDecorator(s)?.startsWith('@required=forEnv') === true).map(s => s.name);
+    expect(conditional).toEqual([]);
   });
 });
