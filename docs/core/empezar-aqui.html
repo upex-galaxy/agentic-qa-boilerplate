@@ -37,7 +37,7 @@
           <li><a href="#caminos">Elige tu camino</a></li>
           <li><a href="#piezas-confusas">Tres piezas que se confunden</a></li>
           <li><a href="#circuitos">Cómo se conecta todo: tres circuitos</a></li>
-          <li><a href="#mcps">Los seis MCPs</a></li>
+          <li><a href="#mcps">Los MCPs del repo</a></li>
           <li><a href="#engram">Engram: memoria entre sesiones</a></li>
           <li><a href="#chuleta">Chuleta: quiero X, ejecuto Y</a></li>
           <li><a href="#skills">Catálogo de skills</a></li>
@@ -302,8 +302,13 @@ bun run setup</code></pre>
       <h2 id="credenciales">Credenciales y arranque del agente</h2>
       <p>
         Copia <code>.env.example</code> a <code>.env</code> (el instalador lo hace por ti) y rellena
-        los valores. <code>.env</code> está en <code>.gitignore</code> y es la única fuente de
-        verdad de los secretos. Hay dos archivos que se parecen y no hacen lo mismo:
+        lo que tu trabajo necesite. <code>.env</code> está en <code>.gitignore</code> y es la única
+        fuente de verdad de los secretos. Nada de lo que falte bloquea la instalación ni el doctor:
+        cada variable tiene un alcance (framework, tooling o proyecto bajo prueba) y la valida el
+        código que la lee, con un error que la nombra. Qué variable es de quién, qué valida varlock
+        y qué se conecta fuera de <code>.env</code> está en
+        <a href="variables-de-entorno.html">Variables de entorno</a>. Hay dos archivos que se
+        parecen y no hacen lo mismo:
       </p>
       <div class="table-wrap">
         <table>
@@ -323,8 +328,9 @@ bun run setup</code></pre>
             <tr>
               <td>Ejemplos</td>
               <td>
-                <code>LOCAL_USER_EMAIL</code>, <code>ATLASSIAN_API_TOKEN</code>,
-                <code>TAVILY_API_KEY</code>, <code>XRAY_CLIENT_SECRET</code>
+                <code>ATLASSIAN_API_TOKEN</code>, <code>XRAY_CLIENT_SECRET</code>,
+                <code>DBHUB_PASSWORD</code>; por ejemplo <code>LOCAL_USER_EMAIL</code> (nombre de
+                ejemplo del proyecto bajo prueba)
               </td>
               <td>
                 <code>project.project_name</code>, URLs por entorno,
@@ -819,11 +825,13 @@ subagente (contexto limpio)
         </table>
       </div>
 
-      <h2 id="mcps">Los seis MCPs</h2>
+      <h2 id="mcps">Los MCPs del repo</h2>
       <p>
         Los declara <code>.mcp.json</code> y existen igual en <code>opencode.jsonc</code> y
-        <code>.codex/config.toml</code>. La regla general: primero el CLI (gasta menos tokens) y el
-        MCP como respaldo, salvo donde el MCP es la herramienta principal.
+        <code>.codex/config.toml</code>. Solo viven ahí los servers locales que leen valores del
+        proyecto (la base de datos, la API) y los que no necesitan clave. La regla general: primero
+        el CLI (gasta menos tokens) y el MCP como respaldo, salvo donde el MCP es la herramienta
+        principal.
       </p>
       <div class="table-wrap">
         <table>
@@ -842,11 +850,6 @@ subagente (contexto limpio)
                 antes que la búsqueda web para dudas de docs.
               </td>
               <td>ninguna</td>
-            </tr>
-            <tr>
-              <td><code>tavily</code></td>
-              <td>Búsqueda web: errores, soluciones de la comunidad, investigación general.</td>
-              <td><code>TAVILY_API_KEY</code></td>
             </tr>
             <tr>
               <td><code>playwright</code></td>
@@ -877,16 +880,17 @@ subagente (contexto limpio)
               </td>
               <td><code>API_BASE_URL</code>, <code>OPENAPI_SPEC_PATH</code></td>
             </tr>
-            <tr>
-              <td><code>postman</code></td>
-              <td>Colecciones de Postman; respaldo para pruebas de API.</td>
-              <td><code>POSTMAN_API_KEY</code></td>
-            </tr>
           </tbody>
         </table>
       </div>
       <p>
-        El MCP de Atlassian no está entre los seis: es opt-in y se documenta en
+        La búsqueda web y Postman no están en <code>.mcp.json</code> a propósito: son servers
+        remotos cuyo único contenido del lado del proyecto era una API key, así que se conectan una
+        vez por máquina a nivel del harness (un conector de claude.ai o un server de usuario en
+        Claude Code, la config global de OpenCode, <code>codex mcp add</code> en Codex) y los skills
+        los resuelven por capacidad, sea cual sea el prefijo. Cómo conectarlos por harness:
+        <a href="variables-de-entorno.html#mcps">Variables de entorno</a>. El MCP de Atlassian
+        tampoco está: es opt-in y se documenta en
         <code>.agents/skills/agentic-qa-core/references/mcp-atlassian-optin.md</code>. Jira y Xray
         se manejan con <code>acli</code> y <code>bun xray</code> (<a href="setup/jira-xray.html"
           >guía</a
@@ -1774,6 +1778,11 @@ subagente (contexto limpio)
 
       <h2 id="siguientes-pasos">Siguientes pasos</h2>
       <div class="cards">
+        <a class="card" href="variables-de-entorno.html">
+          <span class="badge accent">Credenciales</span>
+          <h3>Variables de entorno</h3>
+          <p>Los tres alcances, qué valida varlock, qué lee cada harness y qué va fuera de .env.</p>
+        </a>
         <div class="card">
           <span class="badge accent">Setup</span>
           <h3><a href="setup/index.html">Conectar Jira, la base de datos y la API</a></h3>

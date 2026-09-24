@@ -1,6 +1,6 @@
 ---
 name: agentic-qa-onboard
-description: "Walks new users through this repo's QA flow — Playwright + KATA + Allure + Xray stack, Jira QA workflow (Backlog → Shift-Left QA → Estimation → Ready For Dev → Ready For QA → In Test → QA Approved → Ready For Release → Deployed to Production), /shift-left-testing for pre-sprint AC refinement on backlog Stories, /sprint-testing for in-sprint manual QA, /test-documentation for TMS test cases, /test-automation for KATA-compliant E2E/API tests, /regression-testing for CI suite execution, /framework-development for boilerplate evolution, MCPs available (six canonical: Context7, Tavily, Playwright, DBHub, OpenAPI, Postman — Atlassian is opt-in via agentic-qa-core/references/mcp-atlassian-optin.md), critical env vars, and the ordered 4-phase NEW-PROJECT setup path (foundation → Jira catalogs → /project-discovery + /adapt-framework → git Strategy Setup). ALSO the front desk for anyone who is lost or wants to understand how the repo or any workflow skill works — conceptually AND visually: it explains in plain human language (suspending caveman/compressed register) and can open per-skill how-it-works presentations (Spanish, technical terms in English) in the user's default browser after asking. Triggers on: `onboard me to QA`, `explain this QA repo`, `first time using this`, `primer vez en QA`, `/agentic-qa-onboard`, `I don't know how to use this`, `how does sprint-testing / test-automation work`, `how does this skill work`, `show me how it works`, `teach me how QA works here`, `walk me through this skill`, `no sé cómo usar esto`, `no entiendo cómo funciona el repo`, `cómo funciona este skill`, `explícame cómo funciona`, `enséñame cómo se hace`, `how do I set this repo up for my app`, `full setup for a new project`, `cómo configuro el repo para mi proyecto`, `setup completo del repo`. Do NOT use for: pre-sprint refinement (use /shift-left-testing), feature QA on a ticket (use /sprint-testing), authoring test cases in TMS (use /test-documentation), writing automated tests (use /test-automation), running regression suites (use /regression-testing), launching or supervising a fleet of parallel worker sessions (use /orca-orchestration — this skill only explains that the option exists)."
+description: "Walks new users through this repo's QA flow — Playwright + KATA + Allure + Xray stack, Jira QA workflow (Backlog → Shift-Left QA → Estimation → Ready For Dev → Ready For QA → In Test → QA Approved → Ready For Release → Deployed to Production), /shift-left-testing for pre-sprint AC refinement on backlog Stories, /sprint-testing for in-sprint manual QA, /test-documentation for TMS test cases, /test-automation for KATA-compliant E2E/API tests, /regression-testing for CI suite execution, /framework-development for boilerplate evolution, MCPs available (committed in the project: Context7, Playwright, DBHub, OpenAPI; web search and Postman connect at harness level and resolve by capability; Atlassian is opt-in via agentic-qa-core/references/mcp-atlassian-optin.md), env vars by scope (framework / tooling / project-under-test, never a blocker), and the ordered 4-phase NEW-PROJECT setup path (foundation → Jira catalogs → /project-discovery + /adapt-framework → git Strategy Setup). ALSO the front desk for anyone who is lost or wants to understand how the repo or any workflow skill works — conceptually AND visually: it explains in plain human language (suspending caveman/compressed register) and can open per-skill how-it-works presentations (Spanish, technical terms in English) in the user's default browser after asking. Triggers on: `onboard me to QA`, `explain this QA repo`, `first time using this`, `primer vez en QA`, `/agentic-qa-onboard`, `I don't know how to use this`, `how does sprint-testing / test-automation work`, `how does this skill work`, `show me how it works`, `teach me how QA works here`, `walk me through this skill`, `no sé cómo usar esto`, `no entiendo cómo funciona el repo`, `cómo funciona este skill`, `explícame cómo funciona`, `enséñame cómo se hace`, `how do I set this repo up for my app`, `full setup for a new project`, `cómo configuro el repo para mi proyecto`, `setup completo del repo`. Do NOT use for: pre-sprint refinement (use /shift-left-testing), feature QA on a ticket (use /sprint-testing), authoring test cases in TMS (use /test-documentation), writing automated tests (use /test-automation), running regression suites (use /regression-testing), launching or supervising a fleet of parallel worker sessions (use /orca-orchestration — this skill only explains that the option exists)."
 license: MIT
 compatibility: [claude-code, opencode]
 phase: bootstrap
@@ -40,7 +40,7 @@ This skill is specific to **this** Playwright + KATA QA boilerplate and points a
 - WHEN opening a deck: prefer the published GitHub Pages URL over the local file, because a project scaffolded from this boilerplate may not carry the HTML. Use the local copy only offline or on explicit request.
 - DO: route a brand-new project through the ordered 4-phase setup path (foundation → Jira catalogs → discovery + adapt → git Strategy Setup). The joining-an-adapted-project checklist covers phase 1 only and is not a substitute.
 - DO NOT: state a Jira status or transition from memory. `.agents/jira-workflows.json` is authoritative — if a status is not in there, it does not exist in the instance.
-- DO: point library-docs questions at Context7 and troubleshooting at Tavily; ticket WRITES at `/acli`, and detailed ticket READS (custom fields, ACs, ATP/ATR, comments) at the Jira sync script, whose synced `.md` is what you read.
+- DO: point library-docs questions at Context7 and troubleshooting at the `web-search` capability (a harness-level server); ticket WRITES at `/acli`, and detailed ticket READS (custom fields, ACs, ATP/ATR, comments) at the Jira sync script, whose synced `.md` is what you read.
 - DO NOT: suggest swapping the stack. Playwright + KATA + Allure + TypeScript + bun is locked, and KATA is Playwright-specific — a project needing another runner should not start from this boilerplate.
 
 **Read full SKILL.md when**: walking the full 4-phase new-project setup, listing env vars or MCPs in detail, or answering which deck covers a given topic.
@@ -276,23 +276,23 @@ Visual deck: `packages/decks/orca-orchestration/how-it-works.es.html` (same open
 
 ## MCPs available
 
-Six canonical MCPs ship with the boilerplate:
+The project MCP files (`.mcp.json` and its OpenCode / Codex twins) commit only the local servers that read project values and the two that need no key:
 
-| MCP        | Use it for                                                              |
-| ---------- | ----------------------------------------------------------------------- |
-| Context7   | Official library docs (Playwright, KATA-relevant TS, Allure…)           |
-| Tavily     | Web search, troubleshooting community Q&A                               |
-| Playwright | Live browser interactions for exploratory QA (when CLI is not enough)   |
-| DBHub      | DB queries to validate state-mutating tests                             |
-| OpenAPI    | API endpoint exploration, contract checking                             |
-| Postman    | Saved request collections, request replay for API tests                 |
+| MCP        | Use it for                                                              | Lives in |
+| ---------- | ----------------------------------------------------------------------- | -------- |
+| Context7   | Official library docs (Playwright, KATA-relevant TS, Allure…)           | the project (no key) |
+| Playwright | Live browser interactions for exploratory QA (when CLI is not enough)   | the project (no key) |
+| DBHub      | DB queries to validate state-mutating tests                             | the project (`DBHUB_*`, project scope) |
+| OpenAPI    | API endpoint exploration, contract checking                             | the project (`API_BASE_URL`, `OPENAPI_SPEC_PATH`, project scope) |
+| Web search (capability `web-search`) | Troubleshooting, community Q&A                | HARNESS level: a claude.ai connector or a user-scope server; the skills resolve it by capability |
+| Postman    | Saved request collections, request replay for API tests                 | HARNESS level, same rule |
 
-The **Atlassian MCP is opt-in** (setup in `agentic-qa-core/references/mcp-atlassian-optin.md`) — the primary Jira tools are `/acli` and `bun run jira:sync-issues`.
+A remote server whose only project-side content was an API key is the harness's business (ADR-0005; the list of moved servers and how to connect each one per host: `cli/lib/harness-level-mcps.ts`, human guide `docs/core/variables-de-entorno.html`). The **Atlassian MCP is opt-in** (setup in `agentic-qa-core/references/mcp-atlassian-optin.md`) — the primary Jira tools are `/acli` and `bun run jira:sync-issues`.
 
 **Decision rule** (tools resolve by CAPABILITY, i.e. by tool-name suffix, so a user-level server or a claude.ai connector exposing the same tools counts; a capability nobody provides is a point-of-use STOP, never a silent fallback: `agentic-qa-core/references/mcp-capabilities.md`):
 
 - Use **Context7** (capability `library-docs`) for "how to use X" — official docs, current API
-- Use **Tavily** (capability `web-search`) for "how to solve X" — community fixes, troubleshooting
+- Use the **web-search** capability (a harness-level server, e.g. Tavily) for "how to solve X" — community fixes, troubleshooting
 - Use `/acli` for ticket WRITES (create, transition, comment, link); for detailed READS (custom fields, ACs, ATP/ATR, comments) use `bun run jira:sync-issues get`/`jql`
 - Use **Playwright MCP** for ad-hoc live browser interactions; for scripted runs use `/playwright-cli`
 
@@ -300,18 +300,19 @@ The **Atlassian MCP is opt-in** (setup in `agentic-qa-core/references/mcp-atlass
 
 ---
 
-## Critical env vars
+## Env vars, by scope
 
-Place these in `.env` before running anything that talks to a real environment:
+Every variable carries a scope in `cli/lib/variables-manifest.ts` (human guide: `docs/core/variables-de-entorno.html`). Nothing blocks install or the doctor: a value is validated by the code that reads it, with a named error. Fill what your work needs:
 
-| Var                                              | Used by                                            |
-| ------------------------------------------------ | -------------------------------------------------- |
-| `LOCAL_USER_EMAIL` / `LOCAL_USER_PASSWORD`       | Local app login (Playwright fixtures)              |
-| `STAGING_USER_EMAIL` / `STAGING_USER_PASSWORD`   | Staging smoke tests, manual exploration            |
-| `ATLASSIAN_EMAIL` / API token                    | `acli` Jira CLI (+ Atlassian MCP, if opted in). The site HOST is NOT in `.env` — it lives in `.agents/project.yaml` -> `issue_tracker.atlassian_url`; read it with `bun run --silent jira:url` |
-| `XRAY_CLIENT_ID` / `XRAY_CLIENT_SECRET`          | `bun xray` CLI (Xray Cloud authentication)         |
-| `TAVILY_API_KEY`                                 | Tavily MCP                                         |
-| `POSTMAN_API_KEY`                                | Postman MCP                                        |
+| Var                                              | Scope   | Used by                                            |
+| ------------------------------------------------ | ------- | -------------------------------------------------- |
+| `LOCAL_USER_EMAIL` / `LOCAL_USER_PASSWORD`       | project | Local app login (`config.testUser`, Playwright setup projects). Example names: an adapted project may rename them |
+| `STAGING_USER_EMAIL` / `STAGING_USER_PASSWORD`   | project | Staging smoke tests, manual exploration (same getter) |
+| `ATLASSIAN_EMAIL` / API token                    | core (gated on the Jira host) | `scripts/sync-jira-*`, `bun xray`, the Jira-Direct TMS provider (REST). The site HOST is NOT in `.env` — it lives in `.agents/project.yaml` -> `issue_tracker.atlassian_url`; read it with `bun run --silent jira:url` |
+| `XRAY_CLIENT_ID` / `XRAY_CLIENT_SECRET`          | core (gated on `AUTO_SYNC` + Xray) | `bun xray` CLI, results write-back |
+| `DBHUB_*`, `API_BASE_URL`, `OPENAPI_SPEC_PATH`   | project | the local `dbhub` / `openapi` MCP servers          |
+
+Not in `.env`: web search and Postman are MCP servers connected at harness level (a claude.ai connector, a user-scope server, the OpenCode / Codex user config), and `acli` / `resend` keep their own login. `bun run setup:doctor` shows every variable with its scope and which harness-level servers your user config declares.
 
 `.env` is **gitignored**. Never commit it. `.agents/project.yaml` (committed) holds non-secret context (URLs, project key, environment names); `.env` holds the matching secrets.
 
@@ -388,7 +389,7 @@ Plus 4 project-level community skills installed into `.agents/skills/` (not comm
 **Joining an already-adapted project**: run through this checklist before you reach for your first ticket:
 
 - [ ] Did you run `bun run setup`?
-- [ ] Did you fill `.env` with your own credentials (`LOCAL_*`, `STAGING_*`, `ATLASSIAN_*`, `XRAY_*`, `TAVILY_API_KEY`, `POSTMAN_API_KEY`)?
+- [ ] Did you fill `.env` with what your work needs (the test-user pair `config/variables.ts` declares, `ATLASSIAN_*` if the Jira host is set, `XRAY_*` if you sync results) and connect web search at harness level?
 - [ ] Did you run `bun run harness:env` after filling `.env`, then restart the agent session?
 - [ ] Did you populate `.agents/project.yaml` (run `bun run agents:setup` if not yet)?
 - [ ] Does `bun run vars:check` exit clean (0 errors)?

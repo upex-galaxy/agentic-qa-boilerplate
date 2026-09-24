@@ -12,15 +12,15 @@ A tool name has two halves: `mcp__<server>__<tool>`. The **prefix** is the serve
 
 ## 2. Vocabulary
 
-| Capability | Tool names that provide it (after the `mcp__<server>__` prefix) | Committed server (`.mcp.json`) | Used for |
+| Capability | Tool names that provide it (after the `mcp__<server>__` prefix) | Where the server lives | Used for |
 |---|---|---|---|
-| `web-search` | `tavily_search`, `tavily_extract`, `tavily_research` | `tavily` (needs `TAVILY_API_KEY`) | `[WEB_SEARCH_TOOL]`: community fixes, error lookups, non-doc research |
-| `library-docs` | `resolve-library-id`, `query-docs` | `context7` (no key) | `[DOCS_TOOL]`: official library / framework / SDK / CLI docs |
-| `db` | `execute_sql_<source_id>`, `search_objects_<source_id>` (DBHub appends the `dbhub.toml` source id, e.g. `execute_sql_primary`) | `dbhub` (needs `DBHUB_*`) | `[DB_TOOL]`: data validation, schema discovery (`./db-testing-doctrine.md`) |
-| `api-schema` | `list-api-endpoints`, `get-api-endpoint-schema` (the server also ships `invoke-api-endpoint`; never use it, execution is curl's job) | `openapi` (needs `OPENAPI_SPEC_PATH`, `API_BASE_URL`) | `[API_TOOL]` schema-read leg only (`./api-testing-doctrine.md`) |
-| `browser` | `browser_*` (`browser_navigate`, `browser_snapshot`, `browser_click`, `browser_take_screenshot`, ...) | `playwright` (no key) | `[AUTOMATION_TOOL]` fallback when `/playwright-cli` is not the right instrument |
+| `web-search` | `tavily_search`, `tavily_extract`, `tavily_research` | HARNESS level, never `.mcp.json`: a claude.ai connector, a user-scope Claude server, the OpenCode or Codex user config (the list of moved servers: `cli/lib/harness-level-mcps.ts`) | `[WEB_SEARCH_TOOL]`: community fixes, error lookups, non-doc research |
+| `library-docs` | `resolve-library-id`, `query-docs` | committed `context7` (no key) | `[DOCS_TOOL]`: official library / framework / SDK / CLI docs |
+| `db` | `execute_sql_<source_id>`, `search_objects_<source_id>` (DBHub appends the `dbhub.toml` source id, e.g. `execute_sql_primary`) | committed `dbhub` (project-scope `DBHUB_*`) | `[DB_TOOL]`: data validation, schema discovery (`./db-testing-doctrine.md`) |
+| `api-schema` | `list-api-endpoints`, `get-api-endpoint-schema` (the server also ships `invoke-api-endpoint`; never use it, execution is curl's job) | committed `openapi` (project-scope `OPENAPI_SPEC_PATH`, `API_BASE_URL`) | `[API_TOOL]` schema-read leg only (`./api-testing-doctrine.md`) |
+| `browser` | `browser_*` (`browser_navigate`, `browser_snapshot`, `browser_click`, `browser_take_screenshot`, ...) | committed `playwright` (no key) | `[AUTOMATION_TOOL]` fallback when `/playwright-cli` is not the right instrument |
 
-`postman` is committed in `.mcp.json` but no skill instructs its use, so it has no capability name yet. Add one here AND in `KNOWN_CAPABILITIES` the day a skill needs it; the lint rejects an undeclared name on purpose.
+Only LOCAL servers with project-scope values, plus the two that need no key, are committed in the project MCP files. A remote server whose only project-side content is an API key (web search, Postman) is the harness's business: connected once per machine, resolved here by suffix (ADR-0005). The Postman server has no capability name yet because no skill instructs its use; add one here AND in `KNOWN_CAPABILITIES` the day a skill needs it; the lint rejects an undeclared name on purpose.
 
 ## 3. Declaring a requirement (skill authors)
 
@@ -46,8 +46,10 @@ Before the step that uses a declared capability, check that at least one availab
 
 | Host | Where the server lives | How to enable |
 |---|---|---|
-| Claude Code | `.mcp.json` (project), `~/.claude.json` (user), or a claude.ai connector | `/mcp` inside the session lists every server and lets you enable, authenticate or reconnect one without leaving the session. Launch with `bun run claude` so `.env` feeds the `${VAR}` references. A claude.ai connector is connected from claude.ai settings and its tools appear under `mcp__claude_ai_<connector>__`. |
-| OpenCode | `opencode.jsonc` → `mcp.<server>` | Set `enabled: true`; secrets resolve through `{file:.auth/opencode/VAR}` (placeholder files created by `bun install`, an empty one yields an empty string). Restart the session. |
-| Codex CLI / Desktop | `.codex/config.toml` → `[mcp_servers.<server>]` | Present in a TRUSTED repository; a missing `bearer_token_env_var` fails loudly naming the server. Restart the session. |
+| Claude Code | `.mcp.json` (project, local servers), `~/.claude.json` (user scope: `claude mcp add --scope user ...`), or a claude.ai connector | `/mcp` inside the session lists every server and lets you enable, authenticate or reconnect one without leaving the session. Launch with `bun run claude` so `.env` feeds the project `${VAR}` references. A claude.ai connector is connected from claude.ai settings and its tools appear under `mcp__claude_ai_<connector>__`. |
+| OpenCode | `opencode.jsonc` → `mcp.<server>` (project), `~/.config/opencode/opencode.json` → `mcp` (user) | Set `enabled: true`; project secrets resolve through `{file:.auth/opencode/VAR}` (placeholder files created by `bun install`, an empty one yields an empty string). Restart the session. |
+| Codex CLI / Desktop | `.codex/config.toml` → `[mcp_servers.<server>]` (project), `~/.codex/config.toml` (user: `codex mcp add <name> --url <url>`) | Present in a TRUSTED repository; a missing `bearer_token_env_var` fails loudly naming the server. Restart the session. |
+
+`bun run setup:doctor` reports which harness-level servers this machine's user configs declare; a cloud connector leaves no file and is reported as not detectable, never as missing.
 
 Server enabled but the first call returns 401/403 or a mystery failure → that is the credential case of `AGENTS.md` Critical Rule #10: name the env var, point to `.env` / `.env.example`, ask for the fix and a RESTART (values are read at MCP spawn time).
