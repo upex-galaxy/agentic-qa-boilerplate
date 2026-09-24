@@ -83,13 +83,16 @@ La metodología de testing está basada en **IQL (Integrated Quality Lifecycle)*
 | [data-validation-testing.md](./testing/database/data-validation-testing.md) | Validación de datos en DB | ✅ Disponible |
 | [db-testing-doctrine.md](../.agents/skills/agentic-qa-core/references/db-testing-doctrine.md) | Maniobra canónica: DBHub MCP, `dbhub.toml`, cookbook de queries, troubleshooting | ✅ Disponible |
 
-### [Test Automation](./testing/automation/)
+### Test Automation
 
-| Documento | Descripción | Estado |
-|-----------|-------------|--------|
-| [dependency-injection.md](./testing/automation/dependency-injection.md) | Estrategia DI en arquitectura de tests | ✅ Disponible |
-| [playwright-framework.md](./testing/automation/playwright-framework.md) | Guía de proyectos Playwright | ✅ Disponible |
-| [playwright-api-testing.md](./testing/automation/playwright-api-testing.md) | API testing con Playwright + KATA | ✅ Disponible |
+La guía de automatización vive en las referencias del skill `/test-automation`, que es lo que la AI carga al escribir tests:
+
+| Documento | Descripción |
+|-----------|-------------|
+| [kata-architecture.md](../.agents/skills/test-automation/references/kata-architecture.md) | Capas KATA, fixtures, ATCs, Steps, migración de una suite existente |
+| [ci-integration.md](../.agents/skills/test-automation/references/ci-integration.md) | `playwright.config.ts`, proyectos, reporters, comandos |
+| [api-patterns.md](../.agents/skills/test-automation/references/api-patterns.md) | API testing con Playwright + KATA |
+| [test-data-management.md](../.agents/skills/test-automation/references/test-data-management.md) | `DataFactory`, fixtures JSON, datos por test |
 
 ---
 
@@ -141,7 +144,7 @@ Configura los MCPs que necesites:
 Elige según tus necesidades de testing:
 - Testing de APIs → [testing/api/](./testing/api/)
 - Testing de base de datos → [testing/database/](./testing/database/)
-- Automatización de tests → [testing/automation/](./testing/automation/)
+- Automatización de tests → [kata-architecture.md](../.agents/skills/test-automation/references/kata-architecture.md)
 
 ### 4. Seguir los Workflows
 

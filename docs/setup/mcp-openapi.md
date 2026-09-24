@@ -425,7 +425,7 @@ Para tests de API automatizados, usa el `ApiBase` del framework KATA en lugar de
 | Suite de tests automatizados | KATA ApiBase |
 | Integración CI/CD | KATA ApiBase |
 
-Ver `docs/testing/automation/playwright-api-testing.md` para patrones de API testing con KATA.
+Ver `.agents/skills/test-automation/references/api-patterns.md` para patrones de API testing con KATA.
 
 ---
 
