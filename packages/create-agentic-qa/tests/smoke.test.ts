@@ -325,6 +325,18 @@ describe('pruneBootstrapExcludes', () => {
     expect(existsSync(join(dir, 'docs', 'methodology', 'kata-fundamentals.md'))).toBe(true);
   });
 
+  test('removes the boilerplate docs/reports but keeps the rest of docs/', async () => {
+    mkdirSync(join(dir, 'docs', 'reports'), { recursive: true });
+    writeFileSync(join(dir, 'docs', 'reports', '2026-01-01-report.md'), '# Report');
+    mkdirSync(join(dir, 'docs', 'setup'), { recursive: true });
+    writeFileSync(join(dir, 'docs', 'setup', 'README.md'), '# Setup');
+
+    await pruneBootstrapExcludes(dir);
+
+    expect(existsSync(join(dir, 'docs', 'reports'))).toBe(false);
+    expect(existsSync(join(dir, 'docs', 'setup', 'README.md'))).toBe(true);
+  });
+
   // The consumer inherits the CAPABILITY to record ADRs — the README that says
   // when to write one and the template to copy — but none of OUR decisions.
   test('prunes recorded ADRs while keeping the ADR README and template', async () => {

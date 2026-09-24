@@ -350,6 +350,9 @@ const TEMPLATE_EXCLUDES = [
   // the framework do not. Mirrored in `repoOnlyPaths` (cli/update-boilerplate.ts)
   // so `bun run up` cannot re-deliver what this prunes.
   'docs/qa-standard',
+  // Worker and audit reports about evolving the boilerplate. Same reasoning as
+  // qa-standard: our working notes, not framework the consumer inherits.
+  'docs/reports',
 ] as const;
 
 /**

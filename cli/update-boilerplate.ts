@@ -1798,6 +1798,7 @@ async function main(): Promise<void> {
     // so ADRs only ever travel through the scaffold tarball, which prunes them.
     repoOnlyPaths: [
       'docs/qa-standard',
+      'docs/reports',
     ],
     // Watchlist files are NOT synced — included in the sparse clone only so
     // the protected-drift detection can read their upstream copies.
