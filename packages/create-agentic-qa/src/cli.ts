@@ -236,10 +236,10 @@ async function main(): Promise<number> {
     '',
     pc.bold('Next steps (in order):'),
     ...(cdCmd ? [`  1.  ${pc.cyan(cdCmd)}`] : []),
-    `  ${nextStepNum}.  ${pc.cyan('bun run claude')}     ${pc.dim('# or: bun run opencode')}`,
+    `  ${nextStepNum}.  ${pc.cyan('bun run claude')}     ${pc.dim('# or: bun run opencode / bun run codex')}`,
     `      ${pc.dim('then invoke /agentic-qa-onboard')}`,
     '',
-    pc.dim('Full guide: README.md → "Getting started"'),
+    pc.dim('Full guide: bun run onboarding'),
   ];
   process.stdout.write(`${tui.successBox(nextLines)}\n`);
 
