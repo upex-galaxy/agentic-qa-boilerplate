@@ -157,7 +157,7 @@ Two systems, two consumers, two lifecycles. Use the right substrate for the righ
 └── master-test-plan.md        → What to test and why                (/master-test-plan)
 ```
 
-> **TMS configuration**: modality (Xray vs Jira-native) is derived from `.agents/project.yaml` `testing.tms_cli`. Regression Epic and label taxonomy are auto-discovered live by `/test-documentation` Phase 0 + Preflight. IQL methodology reference lives in `docs/methodology/jira-platform.md`.
+> **TMS configuration**: modality (Xray vs Jira-native) is derived from `.agents/project.yaml` `testing.tms_cli`. Regression Epic and label taxonomy are auto-discovered live by `/test-documentation` Phase 0 + Preflight. Jira/Xray setup lives in `docs/setup/jira-setup-guide.md`; the IQL methodology narrative is the official site, https://upexgalaxy.com/metodologia.
 
 Workflow instructions and role-specific guidelines (TAE, QA, MCP usage) now live inside agent skills under `.agents/skills/`.
 

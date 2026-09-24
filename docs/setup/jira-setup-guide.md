@@ -1,7 +1,6 @@
 # Jira + Xray TMS Setup Guide
 
 > **Purpose**: Step-by-step guide to configure Jira with Xray as a Test Management System (TMS) aligned with IQL methodology.
-> **Prerequisite**: Read `jira-platform.md` first (canonical IQL reference for Jira/Xray usage).
 > **Time Estimate**: 2-4 hours for complete setup.
 
 ---
@@ -29,7 +28,7 @@ Before starting, ensure you have:
 - [ ] Jira Administrator permissions
 - [ ] Xray license (trial or paid)
 - [ ] Defined your modules/features list
-- [ ] Understood Test Type vs Test Run Status distinction (see `jira-platform.md`)
+- [ ] Understood Test Type vs Test Run Status distinction (see `.agents/skills/test-documentation/references/xray-platform.md`)
 
 ### Key Concepts to Remember
 
@@ -392,20 +391,66 @@ Create or update your `.env` file:
 ATLASSIAN_EMAIL=you@example.com
 ATLASSIAN_API_TOKEN=...
 
-# Jira-specific operational params
-JIRA_PROJECT_KEY=PROJ
+# Optional: overrides .agents/project.yaml project_key for one run
+# JIRA_PROJECT_KEY=PROJ
 
-# Xray Cloud authentication
+# Xray Cloud authentication (https://app.getxray.app -> API Keys)
 XRAY_CLIENT_ID=your_client_id
 XRAY_CLIENT_SECRET=your_client_secret
 
-# Xray Server/DC alternative
-# XRAY_TOKEN=your_personal_access_token
+# Xray project key for local sync (no workflow reads it)
+XRAY_PROJECT_KEY=PROJ
 
-# Optional Xray defaults
-XRAY_TEST_PLAN_KEY=PROJ-300
-XRAY_ENVIRONMENT=staging
+# Target Test Execution for the results write-back: the RTR of the run, or
+# the sprint-close STR. Never a Test Plan key.
+STP_EXECUTION_KEY=PROJ-194
 ```
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| _(site host)_ | `.agents/project.yaml` -> `issue_tracker.atlassian_url`, NOT an env var; print with `bun run --silent jira:url` | Yes |
+| `ATLASSIAN_EMAIL` | Atlassian account email | Yes |
+| `ATLASSIAN_API_TOKEN` | Atlassian API token | Yes |
+| `XRAY_CLIENT_ID` | Xray Cloud API client ID | Yes (Xray) |
+| `XRAY_CLIENT_SECRET` | Xray Cloud API client secret | Yes (Xray) |
+| `XRAY_PROJECT_KEY` | Project key for local Xray sync | Optional |
+| `STP_EXECUTION_KEY` | Test Execution the write-back imports into (RTR or sprint STR) | Required for write-back |
+| `JIRA_PROJECT_KEY` | One-run override of `project_key` | Optional |
+
+The authoritative list, with comments, is `.env.example`. This repo targets Xray **Cloud**; the Server/DC Personal Access Token flow is not wired.
+
+### Step 8.5: CLI quick reference
+
+The repo ships its own Xray CLI (`cli/xray/`), run as `bun xray`. The `/xray-cli` skill owns the full syntax; these are the commands you use during setup:
+
+```bash
+# Authentication
+bun xray auth login            # reads XRAY_CLIENT_ID / XRAY_CLIENT_SECRET from the environment
+bun xray auth status
+bun xray auth logout
+
+# Tests
+bun xray test list --project PROJ --limit 20
+bun xray test get PROJ-101
+bun xray test create --project PROJ --summary "Verify login with valid credentials" --type Manual --labels "e2e,auth"
+bun xray test add-step --test <issue-id> --action "..." --result "..."   # steps are NOT created by 'test create'
+bun xray test enrich --project PROJ         # backfill .context/PBI with Preconditions + Test Set membership
+
+# Test Executions
+bun xray exec list
+bun xray exec create --project PROJ --summary "RTR: staging-2026-09-24: Regression Testing" --environment staging
+bun xray exec add-tests --execution <issue-id> --tests <id1,id2>
+
+# Results import: ALWAYS into an explicit execution
+bun xray import junit --file test-results/junit.xml --execution PROJ-194
+
+# Test Plans
+bun xray plan list
+bun xray plan get PROJ-300
+bun xray plan add-tests ...                 # see `bun xray --help`
+```
+
+`import junit --plan <KEY>` without `--execution` creates a brand-new Test Execution on every run, which Xray's import API cannot parent to the QA Test Artifacts epic afterwards. Always pass `--execution`.
 
 ---
 
@@ -593,4 +638,4 @@ After completing this setup:
 
 **Document Created**: 2026-02-09
 **IQL Version**: 2.0
-**Compatible With**: jira-platform.md v1.0, cli/xray/index.ts v1.0.0
+**Compatible With**: `cli/xray/index.ts` (run `bun xray --help` for the current surface)

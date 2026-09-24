@@ -26,16 +26,11 @@ Esta documentación está orientada a **humanos** - para aprender conceptos, ent
 ```
 docs/
 ├── methodology/              # Metodologías de testing
-│   ├── IQL-methodology.md    # Integrated Quality Lifecycle
-│   ├── early-game-testing.md # Fase shift-left
-│   ├── mid-game-testing.md   # Fase de desarrollo activo
-│   ├── late-game-testing.md  # Fase de regresión
-│   └── kata-fundamentals.md  # Filosofía del framework KATA
+│   └── late-game-testing.md  # Fase de regresión
 │
 ├── testing/                  # Guías de testing por tipo
 │   ├── api/                  # Testing de APIs
-│   ├── database/             # Testing de base de datos
-│   └── automation/           # Automatización de tests
+│   └── database/             # Testing de base de datos
 │
 ├── setup/                    # Guías de configuración
 │   ├── mcp-dbhub.md          # Configuración de DBHub MCP
@@ -59,11 +54,10 @@ La metodología de testing está basada en **IQL (Integrated Quality Lifecycle)*
 
 | Documento | Descripción |
 |-----------|-------------|
-| [IQL-methodology.md](./methodology/IQL-methodology.md) | Vista completa de IQL |
-| [early-game-testing.md](./methodology/early-game-testing.md) | Testing shift-left (Steps 1-4) — ejecutado por `/shift-left-testing` (Stage 0) |
-| [mid-game-testing.md](./methodology/mid-game-testing.md) | Automatización (Steps 5-9) |
+| [Metodología IQL (sitio oficial)](https://upexgalaxy.com/metodologia) | Vista completa de IQL ([EN](https://upexgalaxy.com/en/methodology)) |
+| [stage-gates.md](../.agents/skills/agentic-qa-core/references/stage-gates.md) | Las etapas con nombre, qué firma la persona y el Definition of Done de cada una |
 | [late-game-testing.md](./methodology/late-game-testing.md) | Producción (Steps 10-15) |
-| [kata-fundamentals.md](./methodology/kata-fundamentals.md) | Filosofía del framework KATA |
+| [kata-architecture.md](../.agents/skills/test-automation/references/kata-architecture.md) | Arquitectura KATA: capas, fixtures, ATCs |
 
 ---
 
@@ -131,7 +125,7 @@ Guías para stacks tecnológicos específicos:
 
 ### 1. Entender la Metodología
 
-Lee la [Metodología IQL](./methodology/IQL-methodology.md) para entender las fases de testing.
+Lee la [Metodología IQL](https://upexgalaxy.com/metodologia) para entender las fases de testing.
 
 ### 2. Configurar Tus Herramientas
 

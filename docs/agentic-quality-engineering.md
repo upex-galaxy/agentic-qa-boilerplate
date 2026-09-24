@@ -837,7 +837,7 @@ The rest is execution.
 **See also**:
 - `AGENTS.md` — canonical project memory, Tool Resolution, and skill routing (Claude Code loads it through the generated one-line `CLAUDE.md` shim)
 - `CONTEXT.md` — strategy behind the three-tier context split (repo root)
-- `docs/methodology/IQL-methodology.md` — phased methodology deep-dive
+- https://upexgalaxy.com/metodologia (ES) / https://upexgalaxy.com/en/methodology (EN) — the official IQL methodology site
 - `.agents/skills/agentic-qa-core/SKILL.md` — foundation skill internals (bootstrap + shared references)
 - `.agents/skills/agentic-qa-core/references/orchestration-doctrine.md` — canonical orchestration doctrine cited by every workflow skill
 - `.agents/skills/acli/SKILL.md` — Atlassian CLI integration for Jira work-item operations

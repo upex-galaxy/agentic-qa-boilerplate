@@ -293,6 +293,5 @@ Estas métricas trabajan juntas para proporcionar una vista completa de la **sal
 
 ## Navegación
 
-- [Metodología IQL](./IQL-methodology.md) - Vista completa del Integrated Quality Lifecycle
-- [Early-Game Testing](./early-game-testing.md) - Fase 1: Prevención y estrategia temprana
-- [Mid-Game Testing](./mid-game-testing.md) - Fase 2: Detección e implementación
+- [Metodología IQL](https://upexgalaxy.com/metodologia) - Vista completa del Integrated Quality Lifecycle (sitio oficial)
+- [stage-gates.md](../../.agents/skills/agentic-qa-core/references/stage-gates.md) - Las etapas y su Definition of Done
