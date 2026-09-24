@@ -36,12 +36,6 @@ docs/
 │   ├── mcp-dbhub.md          # Configuración de DBHub MCP
 │   └── mcp-openapi.md        # Configuración de OpenAPI MCP
 │
-├── workflows/                # Flujos de trabajo
-│   ├── environments.md       # Ambientes dev, staging, prod
-│   ├── git-flow.md           # Flujo Git para desarrollo AI
-│   ├── test-manual-lifecycle.md   # Flujo TMLC
-│   └── test-automation-lifecycle.md # Flujo TALC
-│
 └── architectures/            # Guías específicas por stack
     └── supabase-nextjs/      # Configuración Supabase + Next.js
 ```
@@ -101,12 +95,14 @@ La guía de automatización vive en las referencias del skill `/test-automation`
 
 ## Workflows
 
-| Documento | Descripción | Estado |
-|-----------|-------------|--------|
-| [environments.md](./workflows/environments.md) | Guía de ambientes de desarrollo | ✅ Disponible |
-| [git-flow.md](./workflows/git-flow.md) | Flujo Git para desarrollo AI | ✅ Disponible |
-| [test-manual-lifecycle.md](./workflows/test-manual-lifecycle.md) | TMLC - Flujo de testing manual | ✅ Disponible |
-| [test-automation-lifecycle.md](./workflows/test-automation-lifecycle.md) | TALC - Flujo de automatización | ✅ Disponible |
+Los flujos viven en los skills que los ejecutan:
+
+| Flujo | Dónde |
+|-------|-------|
+| Testing manual (Planning, Execution, Reporting) | [sprint-testing/SKILL.md](../.agents/skills/sprint-testing/SKILL.md) |
+| Automatización (Plan → Code → Review) | [test-automation/SKILL.md](../.agents/skills/test-automation/SKILL.md) |
+| Git (estrategia, commits, PRs) | [git-flow-master/SKILL.md](../.agents/skills/git-flow-master/SKILL.md) y el bloque `git_strategy:` de [project.yaml](../.agents/project.yaml) |
+| Ambientes (`local` · `qa` · `staging` · `production`) | bloque `environments:` de [project.yaml](../.agents/project.yaml) |
 
 ---
 
@@ -142,8 +138,8 @@ Elige según tus necesidades de testing:
 
 ### 4. Seguir los Workflows
 
-- [Flujo Git](./workflows/git-flow.md) para control de versiones
-- [Ambientes](./workflows/environments.md) para etapas de deployment
+- [Flujo Git](../.agents/skills/git-flow-master/SKILL.md) para control de versiones
+- [Ambientes](../.agents/project.yaml) para etapas de deployment (bloque `environments:`)
 
 ---
 
