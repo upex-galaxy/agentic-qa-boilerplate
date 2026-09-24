@@ -77,7 +77,7 @@
     // them there on every host — Codex forwards nothing it was not told to.
     // An EMPTY value file leaves the variable empty and dbhub then fails on
     // connect rather than at startup, which reads like a database problem: check
-    // the DBHUB_* values in .env first. See docs/mcp/.
+    // the DBHUB_* values in .env first. See .agents/skills/agentic-qa-core/references/mcp-atlassian-optin.md (MCP parity contract).
     "dbhub": {
       "type": "local",
       "command": ["bunx", "-y", "@bytebase/dbhub@1.2.1", "--config", "dbhub.toml"],

@@ -255,7 +255,7 @@ const EXTERNAL_CLIS: ReadonlyArray<{ name: string, install?: string, docs: strin
   },
   {
     // Promoted to the sole default tool for Jira/Confluence/TMS work
-    // (Atlassian MCP is opt-in via docs/mcp/).
+    // (Atlassian MCP is opt-in via .agents/skills/agentic-qa-core/references/mcp-atlassian-optin.md).
     name: 'acli',
     docs: 'https://developer.atlassian.com/cloud/acli/guides/install-acli/',
     purpose: 'Atlassian (Jira/Confluence) CLI — used by /acli skill',

@@ -850,7 +850,7 @@ export async function runDoctor(): Promise<DoctorReport> {
   // The repo collapsed all Atlassian credentials onto the ATLASSIAN_* family;
   // these names are no longer read by any consumer. acli and
   // scripts/sync-jira-*.ts read ATLASSIAN_* directly; the Atlassian MCP server
-  // is opt-in via docs/mcp/.
+  // is opt-in via .agents/skills/agentic-qa-core/references/mcp-atlassian-optin.md.
   const LEGACY_JIRA_CRED_KEYS = ['JIRA_URL', 'JIRA_USER', 'JIRA_API_TOKEN', 'JIRA_BASE_URL', 'JIRA_EMAIL'] as const;
   const legacyPresent = LEGACY_JIRA_CRED_KEYS.filter(
     k => envValues[k] !== undefined && envValues[k].trim().length > 0,
