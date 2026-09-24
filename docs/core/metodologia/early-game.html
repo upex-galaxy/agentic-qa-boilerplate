@@ -1,0 +1,866 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Early-Game</title>
+    <meta
+      name="description"
+      content="Fase de prevención del IQL (steps 1-4, QA Analyst): los stages Shift-Left, Planning, Execution y Reporting, el ATP pre-sprint en el campo de la historia y el workflow de la User Story en Jira."
+    />
+    <meta name="docs-order" content="20" />
+    <link rel="stylesheet" href="../../assets/docs.css" />
+    <script src="../../assets/docs.js"></script>
+  </head>
+  <body>
+    <article class="doc wide">
+      <header class="doc-header">
+        <nav class="breadcrumbs">
+          <span>Core</span><span>Metodología</span><span>Early-Game</span>
+        </nav>
+        <h1>Early-Game: prevención</h1>
+        <p class="lede">
+          La primera fase del IQL cubre los steps 1 a 4 y la protagoniza el QA Analyst. Su pregunta
+          es «construyámoslo bien desde el principio»: la calidad se trabaja antes de que exista
+          código, y después se valida la historia en cuanto llega a un entorno de prueba.
+        </p>
+        <div class="meta-row">
+          <span class="badge accent">Fase 1 de 3</span><span class="badge">Steps 1-4</span
+          ><span class="badge">QA Analyst</span>
+        </div>
+      </header>
+
+      <div class="callout">
+        <span class="callout-title">Fuente oficial</span>
+        <p>
+          Esta página resume la sub-página
+          <a href="https://www.upexgalaxy.com/metodologia/early-game" target="_blank" rel="noopener"
+            >upexgalaxy.com/metodologia/early-game</a
+          >. Si algo de aquí no coincide con el sitio, manda el sitio. La versión en inglés está en
+          <a href="https://www.upexgalaxy.com/en/methodology" target="_blank" rel="noopener"
+            >upexgalaxy.com/en/methodology</a
+          >.
+        </p>
+      </div>
+
+      <nav class="toc">
+        <strong>En esta página</strong>
+        <ol>
+          <li><a href="#la-fase">La fase en una tabla</a></li>
+          <li><a href="#stages">Los stages de esta fase</a></li>
+          <li><a href="#steps">Los 4 steps del Early-Game</a></li>
+          <li><a href="#atributos">Atributos de calidad por riesgo</a></li>
+          <li><a href="#atp-pre-sprint">El ATP antes del sprint</a></li>
+          <li><a href="#orden">Ejecutar, priorizar, documentar</a></li>
+          <li><a href="#workflow-us">El workflow de la User Story</a></li>
+          <li><a href="#enfoques">Enfoques y herramientas</a></li>
+          <li><a href="#en-este-repo">En este repo</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="la-fase">La fase en una tabla</h2>
+      <div class="table-wrap">
+        <table>
+          <tbody>
+            <tr>
+              <th>Pregunta</th>
+              <td>«Construyámoslo bien desde el principio»</td>
+            </tr>
+            <tr>
+              <th>Enfoque</th>
+              <td>Prevención: evitar defectos con colaboración temprana y análisis</td>
+            </tr>
+            <tr>
+              <th>Rol protagonista</th>
+              <td>QA Analyst</td>
+            </tr>
+            <tr>
+              <th>Alcance</th>
+              <td>Steps 1-4</td>
+            </tr>
+            <tr>
+              <th>Enfoques integrados</th>
+              <td>Shift-Left, BDD, Risk-Based</td>
+            </tr>
+            <tr>
+              <th>Herramientas</th>
+              <td>
+                Jira (o tracker equivalente), Confluence (o wiki del equipo), cliente de API
+                (Postman, Bruno, curl), harness agéntico (Claude Code, OpenCode, Codex)
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="stages">Los stages de esta fase</h2>
+      <p>
+        El stage es lo que se ejecuta y lo que se gatea. Tiene nombre y nunca número. Cada stage
+        declara qué hace el agente, qué firma la persona, qué evidencia exige y con cuánta autonomía
+        trabaja (escala 0-5). Los steps quedan dentro del stage como su desglose. Ninguno de los
+        cuatro stages del Early-Game necesita un verificador separado, y en los cuatro el rol es QA
+        Analyst como executor.
+      </p>
+
+      <h3 id="stage-shift-left">Shift-Left (antes del sprint)</h3>
+      <p>
+        La historia se analiza antes de que exista una línea de código, en lote y sin crear ninguna
+        entidad en el TMS. De aquí salen el ATP, guardado en un campo de la historia, y las
+        preguntas que el equipo todavía puede contestar barato.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <tbody>
+            <tr>
+              <th>Nivel</th>
+              <td>L1 · Prevention · TMLC 1st</td>
+            </tr>
+            <tr>
+              <th>El agente hace</th>
+              <td>
+                Reescribe los criterios de aceptación en Given/When/Then con datos concretos,
+                detecta los gaps y los redacta como preguntas al PO o al dev, escribe el ATP en el
+                campo <code>acceptance_test_plan</code>, aplica el Test-Design Checklist y deja el
+                label fechado y la subtarea de revisión.
+              </td>
+            </tr>
+            <tr>
+              <th>La persona firma</th>
+              <td>
+                Aprueba el lote de historias candidatas y el resumen por historia, y contesta los
+                gaps. La historia nunca pasa de <code>Estimation</code>: ese es el tope duro del
+                stage.
+              </td>
+            </tr>
+            <tr>
+              <th>Evidencia exigida</th>
+              <td>
+                Criterios reescritos en la historia, gaps abiertos como preguntas con destinatario,
+                label fechado, subtarea <code>[QA] Shift-Left Review</code> cerrada y cero entidades
+                de TMS creadas.
+              </td>
+            </tr>
+            <tr>
+              <th>Autonomía</th>
+              <td>2 de 5</td>
+            </tr>
+            <tr>
+              <th>Salidas</th>
+              <td>
+                ATP en el campo <code>acceptance_test_plan</code>; gaps como preguntas al PO/dev
+              </td>
+            </tr>
+            <tr>
+              <th>Transiciones en Jira</th>
+              <td>
+                US: Backlog → Shift-Left QA (<em>Analyze</em>)<br />
+                US: Shift-Left QA → Estimation (<em>Estimate</em>)<br />
+                Subtarea [QA] Shift-Left Review: ACTIVE → Close (<em>Complete</em>)
+              </td>
+            </tr>
+            <tr>
+              <th>Steps</th>
+              <td>Step 1, mitad pre-sprint</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="stage-planning">Planning (dentro del sprint)</h3>
+      <p>
+        Con la historia ya en sprint, su plan se convierte en ítems: primero el ATS, después el ATP
+        y el ATR. La cobertura se arma en dos ejes, y el ATR no existe sin un entorno declarado.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <tbody>
+            <tr>
+              <th>Nivel</th>
+              <td>L1 · Prevention · TMLC 1st</td>
+            </tr>
+            <tr>
+              <th>El agente hace</th>
+              <td>
+                Crea el ATS primero y de ahí deriva el ATP y un ATR vacío. Deriva los casos
+                (outlines en <code>jira-native</code>, Test a detalle en <code>jira-xray</code>).
+                Decide por triage, veto y risk-score qué superficies UI/API/DB entran, sin
+                preguntarlo. Crea o encuentra el STP y el FTP de la épica.
+              </td>
+            </tr>
+            <tr>
+              <th>La persona firma</th>
+              <td>
+                Confirma la explicación de la historia antes de que el stage avance: el agente
+                cuenta qué entendió y espera el OK.
+              </td>
+            </tr>
+            <tr>
+              <th>Evidencia exigida</th>
+              <td>
+                ATP como ítem Test Plan creado desde el campo, orden set-first respetado, ATR
+                siempre con Test Environment (sin él el stage no cumple su DoD) y cobertura
+                declarada en dos ejes.
+              </td>
+            </tr>
+            <tr>
+              <th>Autonomía</th>
+              <td>2 de 5</td>
+            </tr>
+            <tr>
+              <th>Salidas</th>
+              <td>ATS, ATP (ítem Test Plan), ATR vacío con Test Environment, FTP, STP</td>
+            </tr>
+            <tr>
+              <th>Steps</th>
+              <td>Step 1, mitad in-sprint</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="stage-execution">Execution (dentro del sprint)</h3>
+      <p>
+        Son dos movimientos y van en este orden: el smoke valida el entorno y la Trifuerza valida la
+        feature. Lo que aparece fuera del plan vuelve al set en lugar de descartarse.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <tbody>
+            <tr>
+              <th>Nivel</th>
+              <td>L2 · Early Detection · TMLC 2nd</td>
+            </tr>
+            <tr>
+              <th>El agente hace</th>
+              <td>
+                Corre el smoke como Go/No-Go antes que nada, ejecuta lo planificado y explora más
+                allá por UI, API y DB. Realimenta las particiones nuevas al set y propone cada
+                hallazgo ya clasificado (Bug / Defect / Improvement) con su severidad derivada.
+              </td>
+            </tr>
+            <tr>
+              <th>La persona firma</th>
+              <td>
+                Hace el triage de cada hallazgo y decide si se filea: ningún bug se crea sin acuerdo
+                humano explícito de que el defecto es real. Recalibra a mano toda severidad de clase
+                seguridad o autenticación.
+              </td>
+            </tr>
+            <tr>
+              <th>Evidencia exigida</th>
+              <td>
+                Smoke corrido primero y registrado, capturas y respuestas en la carpeta de evidencia
+                del ticket, y cada hallazgo trazado a la historia y a su criterio de aceptación.
+              </td>
+            </tr>
+            <tr>
+              <th>Autonomía</th>
+              <td>3 de 5</td>
+            </tr>
+            <tr>
+              <th>Salidas</th>
+              <td>
+                Evidencia de la corrida; hallazgos clasificados como Bug, Defect o Improvement
+              </td>
+            </tr>
+            <tr>
+              <th>Transiciones en Jira</th>
+              <td>
+                US: Ready For QA → In Test (<em>Start Testing</em>)<br />
+                US: In Test → BLOCKED (<em>defect reported</em>)
+              </td>
+            </tr>
+            <tr>
+              <th>Steps</th>
+              <td>Step 3, la ejecución</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="stage-reporting">Reporting (dentro del sprint)</h3>
+      <p>
+        La corrida queda registrada: se llena el ATR, el comentario de QA cuenta lo que pasó y los
+        enlaces se verifican en su dirección. Sin eso la historia no se firma.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <tbody>
+            <tr>
+              <th>Nivel</th>
+              <td>L2 · Early Detection · TMLC 2nd</td>
+            </tr>
+            <tr>
+              <th>El agente hace</th>
+              <td>
+                Llena el ATR con el resultado por caso, escribe el comentario de QA, resuelve los
+                enlaces de la cascada y anota el follow-up de regresión.
+              </td>
+            </tr>
+            <tr>
+              <th>La persona firma</th>
+              <td>
+                La transición: el sign-off de la historia o el reporte del defecto. La firma siempre
+                es de una persona.
+              </td>
+            </tr>
+            <tr>
+              <th>Evidencia exigida</th>
+              <td>
+                ATR como ítem Test Execution, comentario de QA publicado y trazabilidad verificada
+                en su dirección (que el enlace exista no alcanza).
+              </td>
+            </tr>
+            <tr>
+              <th>Autonomía</th>
+              <td>2 de 5</td>
+            </tr>
+            <tr>
+              <th>Salidas</th>
+              <td>ATR lleno; comentario de QA</td>
+            </tr>
+            <tr>
+              <th>Transiciones en Jira</th>
+              <td>
+                US: In Test → QA Approved (<em>QA Sign-Off</em>)<br />
+                Bug / Defect / Improvement: Ready For QA → Closed (<em>ReTest Passed</em>)
+              </td>
+            </tr>
+            <tr>
+              <th>Steps</th>
+              <td>Step 3, el registro</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-title">¿Y el step 4?</span>
+        <p>
+          El step 4 (Priorización Risk-Based) pertenece al Early-Game, pero corre dentro del stage
+          Documentation, que se extiende hasta el Mid-Game. Su contrato completo está en
+          <a href="mid-game.html#stage-documentation">Mid-Game</a>.
+        </p>
+      </div>
+
+      <h2 id="steps">Los 4 steps del Early-Game</h2>
+      <p>
+        Los steps del Early-Game recorren el TMLC (Test Manual Life Cycle), cuyas cuatro etapas son
+        Análisis, Exploración, Priorización y Documentación. El step 2 es la excepción: es un evento
+        del SDLC, no trabajo de QA.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Step</th>
+              <th>Etapa</th>
+              <th>Qué se hace</th>
+              <th>Entregable</th>
+              <th>Stage</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>1. Análisis de Requerimientos</strong></td>
+              <td>TMLC 1st</td>
+              <td>
+                Analizar el Epic y cada Story antes del sprint, junto con las historias hermanas de
+                la misma épica.
+              </td>
+              <td>
+                ATP por Story (pre-sprint, en el campo de la historia) + FTP por Epic, cuyo ítem se
+                crea al abrir el sprint
+              </td>
+              <td>Shift-Left + Planning</td>
+            </tr>
+            <tr>
+              <td><strong>2. Desarrollo e Implementación</strong></td>
+              <td>Evento del SDLC</td>
+              <td>
+                Desarrollo construye y despliega la US en staging mientras QA prepara la estrategia.
+              </td>
+              <td>Entorno funcional para testing</td>
+              <td>Sin stage: es trabajo de desarrollo</td>
+            </tr>
+            <tr>
+              <td><strong>3. Pruebas Exploratorias Tempranas</strong></td>
+              <td>TMLC 2nd</td>
+              <td>Smoke de Go/No-Go y después exploración por Trifuerza (UI · API · DB).</td>
+              <td>US aprobada o bugs reportados, con el ATR como registro de la ejecución</td>
+              <td>Execution + Reporting</td>
+            </tr>
+            <tr>
+              <td><strong>4. Priorización Risk-Based</strong></td>
+              <td>TMLC 3rd</td>
+              <td>
+                Decidir qué escenarios del ATP merecen un Test Case persistente en el TMS y cuáles
+                quedan como exploratorios.
+              </td>
+              <td>ATP refinado, con un veredicto de ROI por escenario</td>
+              <td>Documentation, fase Prioritize</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="step-1">Step 1: Análisis de Requerimientos</h3>
+      <p>
+        El análisis del Epic y el de cada Story ocurren antes del sprint. Pre-sprint, el ATP de la
+        historia vive solo en el campo <code>acceptance_test_plan</code>, todavía sin ítem Test
+        Plan. El ítem FTP tampoco nace aquí: se crea o se refina dentro de
+        <code>/sprint-testing</code>, al cargar el contexto del Epic, ya en sprint. El FTP es un
+        documento vivo que se escribe una vez por épica y se refina a lo largo de ella, porque el
+        equipo aprende con cada historia que entrega.
+      </p>
+      <p>
+        La historia tampoco se analiza aislada. Se miran sus hermanas de la misma épica (las ya
+        desarrolladas, las que están en desarrollo y las que solo están definidas), y esa vista
+        completa de la feature es la que hace que los ATPs salgan mejores.
+      </p>
+      <ol class="steps">
+        <li>
+          <strong>1a. Análisis de Epic → FTP</strong>
+          <p>Contexto macro. Documento vivo que se refina durante toda la épica.</p>
+        </li>
+        <li>
+          <strong>1b. Análisis de las historias hermanas</strong>
+          <p>Entregadas, en desarrollo y solo definidas: la foto completa de la feature.</p>
+        </li>
+        <li>
+          <strong>1c. Análisis de Story → ATP</strong>
+          <p>Uno por Story, citando el FTP en vez de volver a derivarlo.</p>
+        </li>
+      </ol>
+
+      <h3 id="step-2">Step 2: Desarrollo e Implementación</h3>
+      <p>
+        Es el punto de sincronización con el SDLC: el período en que desarrollo construye mientras
+        QA trabaja en paralelo. No es tarea directa de QA. Se cuenta entre los 15 steps para que el
+        ciclo se lea completo, y el sitio oficial lo dibuja distinto. La herramienta es el
+        repositorio del cliente (GitHub / GitLab), y el estándar exige una rama por historia y un PR
+        revisado.
+      </p>
+
+      <h3 id="step-3">Step 3: Pruebas Exploratorias Tempranas</h3>
+      <p>
+        La US se valida en dos movimientos y en este orden. Primero el smoke test de Go/No-Go, que
+        valida el entorno. Después la exploración por Trifuerza (UI · API · DB), que valida la
+        feature ejecutando lo planificado en el ATP y en el FTP. Saltarse el smoke es el anti-patrón
+        clásico.
+      </p>
+      <p>
+        Los hallazgos se reportan en el momento, porque el reporte de defectos vive dentro de la
+        exploración y no es un step aparte. Antes de filear se clasifica cada hallazgo como Bug,
+        Defect o Improvement, y la clasificación sigue la etapa de vida de la feature, no el entorno
+        donde apareció. Cada uno se documenta con información clara y reproducible. La altitud
+        Feature no tiene ejecución propia: el FTP se consume como contexto y no genera resultados.
+      </p>
+
+      <h3 id="step-4">Step 4: Priorización Risk-Based</h3>
+      <p>
+        Aquí se decide qué escenarios del ATP merecen un TC persistente en el TMS. La decisión corre
+        después de ejecutar y reportar: el set de regresión se decide por ROI y nunca se asume al
+        planificar. Los criterios son impacto potencial, probabilidad de defectos y
+        valor-costo-riesgo. Cada escenario recibe uno de tres veredictos:
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Veredicto</th>
+              <th>Significa</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="badge green">Candidate</span></td>
+              <td>
+                Regresión automatizada: pasa al TALC y se implementa en código con Playwright.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="badge">Manual</span></td>
+              <td>Regresión manual. Es terminal: no se automatiza.</td>
+            </tr>
+            <tr>
+              <td><span class="badge warn">Deferred</span></td>
+              <td>
+                Fuera de la regresión. Se registra en el reporte de priorización y no se crea TC en
+                el TMS.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Candidate, MANUAL y Deferred también existen como estados de Jira (Candidate y MANUAL en el
+        TC, Deferred en el Bug). El veredicto y el estado comparten nombre, pero son cosas
+        distintas.
+      </p>
+
+      <h3 id="herramientas-steps">Herramientas por step</h3>
+      <p>
+        El sitio marca cada herramienta como <em>adaptable</em> (parte del estándar de
+        implementación, se puede cambiar) o <em>client-controlled</em> (la trae el entorno del
+        cliente).
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Herramienta</th>
+              <th>Tipo</th>
+              <th>Nota</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Harness agéntico (Claude Code, OpenCode, Codex)</td>
+              <td><span class="badge accent">Adaptable</span></td>
+              <td>
+                El método vive en los skills (markdown), no en el agente. Cambiar de harness cambia
+                velocidad y ergonomía, no el flujo.
+              </td>
+            </tr>
+            <tr>
+              <td>MCPs (OpenAPI, base de datos, tracker, navegador)</td>
+              <td><span class="badge accent">Adaptable</span></td>
+              <td>
+                Así lee el agente schema, datos y tracker. Regla del boilerplate: el MCP lee y nunca
+                ejecuta (la API se ejercita con curl y el token de la CLI), y un MCP configurado
+                está en rojo hasta que responde de verdad.
+              </td>
+            </tr>
+            <tr>
+              <td>Cliente de API (Postman, Bruno, curl)</td>
+              <td><span class="badge accent">Adaptable</span></td>
+              <td>La pata API de la Trifuerza. El boilerplate usa OpenAPI MCP + curl.</td>
+            </tr>
+            <tr>
+              <td>Jira (o tracker equivalente)</td>
+              <td><span class="badge">Client-controlled</span></td>
+              <td>
+                El IQL exige un workflow con sus estados y transiciones. Hoy solo Jira está
+                implementado (<code>.agents/jira-workflows.json</code>); otro tracker es trabajo de
+                adaptación que se evalúa al inicio.
+              </td>
+            </tr>
+            <tr>
+              <td>Confluence (o wiki del equipo)</td>
+              <td><span class="badge">Client-controlled</span></td>
+              <td>
+                La documentación del cliente. Los artefactos QA viven en el tracker, no en el wiki.
+              </td>
+            </tr>
+            <tr>
+              <td>GitHub / GitLab</td>
+              <td><span class="badge">Client-controlled</span></td>
+              <td>Repositorio y pull requests del step 2.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="atributos">Atributos de calidad por riesgo</h2>
+      <p>
+        El ATP de cada historia declara qué atributos aplican y por qué, a partir de su riesgo:
+        impacto, probabilidad, datos que toca y superficie expuesta. Lo que no entra por riesgo no
+        se prueba en esa historia. El FTP puede elevar un atributo a toda la feature, y
+        funcionalidad aplica siempre.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Atributo</th>
+              <th>Entra cuando la historia...</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Funcionalidad</td>
+              <td>Siempre (es el AC).</td>
+            </tr>
+            <tr>
+              <td>Seguridad</td>
+              <td>Toca autenticación, roles o datos sensibles, o recibe input externo.</td>
+            </tr>
+            <tr>
+              <td>Performance</td>
+              <td>Agrega listados, consultas o cálculos pesados, o toca un flujo con SLO.</td>
+            </tr>
+            <tr>
+              <td>Accesibilidad</td>
+              <td>Crea o cambia UI pública.</td>
+            </tr>
+            <tr>
+              <td>Resiliencia</td>
+              <td>Depende de integraciones externas, colas o reintentos.</td>
+            </tr>
+            <tr>
+              <td>Integridad de datos</td>
+              <td>Escribe, migra o transforma datos persistidos.</td>
+            </tr>
+            <tr>
+              <td>Compatibilidad</td>
+              <td>Corre en varios navegadores, dispositivos o versiones de API.</td>
+            </tr>
+            <tr>
+              <td>Privacidad</td>
+              <td>Procesa datos personales o regulados.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="atp-pre-sprint">El ATP antes del sprint vive en el campo de la historia</h2>
+      <p>
+        El Early-Game empieza antes que el sprint. En ese momento ya hay un plan por historia, pero
+        todavía no hay ítem: el ATP está únicamente en el campo
+        <code>{{jira.acceptance_test_plan}}</code> de la historia. La razón es práctica. Si el plan
+        naciera como ítem durante el análisis, cada historia descartada en el backlog dejaría un
+        Test Plan huérfano, sin nada que probar.
+      </p>
+      <p>
+        El ítem se crea en el primer stage del sprint (Planning), a partir de ese mismo campo. No
+        existe un estado intermedio «ATP DRAFT». El paso previo se marca con etiquetas y una
+        subtarea, visibles en el tablero:
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Marca</th>
+              <th>Valor</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Etiqueta</td>
+              <td><code>shift-left-reviewed</code></td>
+            </tr>
+            <tr>
+              <td>Etiqueta</td>
+              <td><code>shift-left-{YYYY-MM-DD}</code></td>
+            </tr>
+            <tr>
+              <td>Subtarea</td>
+              <td><code>[QA] Shift-Left Review</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <dl class="defs">
+        <dt>Nombre completo</dt>
+        <dd>Acceptance Test Plan</dd>
+        <dt>Dónde vive</dt>
+        <dd>
+          Antes del sprint, solo en el campo <code>{{jira.acceptance_test_plan}}</code> de la
+          historia. Durante el sprint, en un ítem Test Plan.
+        </dd>
+        <dt>Cuántos hay</dt>
+        <dd>Uno por historia</dd>
+        <dt>Título</dt>
+        <dd><code>ATP: {STORY-KEY}: {story title}</code></dd>
+      </dl>
+      <p>
+        El FTP funciona distinto. Es de la altitud de la épica y se refina mientras la épica avanza.
+        El ATP lo cita en vez de volver a derivarlo, y por eso el análisis de una historia empieza
+        mirando a sus hermanas.
+      </p>
+
+      <h2 id="orden">Ejecutar, después priorizar, después documentar</h2>
+      <p>
+        Lo intuitivo sería escribir los casos y después correrlos. El IQL invierte el orden porque
+        el set de regresión persistente se decide por retorno, y el retorno solo se conoce después
+        de haber probado. La secuencia cruza la frontera de fase: empieza en el Early-Game y termina
+        en el Mid-Game.
+      </p>
+      <ol class="steps">
+        <li>
+          <strong>Step 3 · Early-Game: Pruebas Exploratorias Tempranas</strong>
+          <p>
+            Smoke de Go/No-Go, después Trifuerza. Los hallazgos se clasifican y se reportan en el
+            momento.
+          </p>
+        </li>
+        <li>
+          <strong>Step 4 · Early-Game: Priorización Risk-Based</strong>
+          <p>Cada escenario recibe su veredicto de ROI: Candidate, Manual o Deferred.</p>
+        </li>
+        <li>
+          <strong>Step 5 · Mid-Game: Documentación Asíncrona de Test Cases</strong>
+          <p>
+            Solo los Candidate y Manual se formalizan en el TMS, y siempre después de ejecutar y
+            reportar. Detalle en <a href="mid-game.html#steps">Mid-Game</a>.
+          </p>
+        </li>
+      </ol>
+
+      <h2 id="workflow-us">El workflow de la User Story en Jira</h2>
+      <p>
+        El Early-Game toma la historia en el backlog y la deja aprobada o con bugs reportados. El
+        diagrama muestra el ciclo completo en la instancia real de Jira, con los nombres de estado
+        exactos. Los cuatro steps de la fase caen en su primer tramo.
+      </p>
+      <figure>
+        <div class="frame scroll on-dark">
+          <img
+            src="../../assets/iql/jira-user-story.svg"
+            alt="Ciclo de vida de una historia de usuario en Jira"
+          />
+        </div>
+        <figcaption>
+          Los trece estados de una historia, agrupados en refinamiento, desarrollo, QA y cierre. Un
+          defecto encontrado en pruebas la bloquea y la devuelve a desarrollo.
+          <a href="../../assets/iql/jira-user-story.svg" target="_blank" rel="noopener"
+            >Ver a tamaño completo</a
+          >.
+        </figcaption>
+      </figure>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Etapa</th>
+              <th>Estados</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1 · Refinamiento</td>
+              <td>Backlog → Shift-Left QA → Estimation</td>
+            </tr>
+            <tr>
+              <td>2 · Desarrollo</td>
+              <td>Ready For Dev → In Progress → In Review</td>
+            </tr>
+            <tr>
+              <td>3 · QA</td>
+              <td>
+                Ready For QA → In Test → QA Approved, con desvío a BLOCKED si se reporta un defecto
+              </td>
+            </tr>
+            <tr>
+              <td>4 · Cierre</td>
+              <td>Ready For Release → Deployed to Production</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <details>
+        <summary>Transiciones que el diagrama omite (13 de 27)</summary>
+        <ul>
+          <li>Casi toda etapa vuelve a la anterior con <code>back</code> (6 transiciones).</li>
+          <li>
+            <code>Ready to Estimate</code>: Backlog salta a Estimation sin pasar por Shift-Left QA.
+          </li>
+          <li><code>needs quality</code>: Estimation vuelve a Shift-Left QA.</li>
+          <li><code>Pushed</code>: In Progress salta a Ready For QA.</li>
+          <li><code>back to dev</code>: BLOCKED vuelve a Ready For Dev.</li>
+          <li><code>Recover</code>: una historia ABORTED vuelve a Ready For Dev.</li>
+          <li>
+            <code>Ready For Dev</code>, <code>Ready For QA</code> y ABORTED son globales: se llega a
+            ellos desde cualquier estado.
+          </li>
+        </ul>
+      </details>
+
+      <h2 id="enfoques">Enfoques y herramientas de la fase</h2>
+      <dl class="defs">
+        <dt>Shift-Left</dt>
+        <dd>
+          Mover las actividades de calidad más temprano, antes de que exista código que romper.
+        </dd>
+        <dt>BDD</dt>
+        <dd>Especificación colaborativa en escenarios Given-When-Then, escritos con el equipo.</dd>
+        <dt>Risk-Based</dt>
+        <dd>Priorizar por impacto y probabilidad de fallo en lugar de cubrirlo todo por igual.</dd>
+      </dl>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Herramienta</th>
+              <th>Para qué en esta fase</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Jira (o tracker equivalente)</td>
+              <td>
+                El tablero donde vive la historia, sus subtareas de QA y el campo que guarda el ATP.
+              </td>
+            </tr>
+            <tr>
+              <td>Confluence (o wiki del equipo)</td>
+              <td>El contexto de la épica del que sale el análisis.</td>
+            </tr>
+            <tr>
+              <td>Cliente de API (Postman, Bruno, curl)</td>
+              <td>Recorrer la API antes de que exista una pantalla que probar.</td>
+            </tr>
+            <tr>
+              <td>Harness agéntico (Claude Code, OpenCode, Codex)</td>
+              <td>Leer la épica, cruzar historias hermanas y redactar escenarios.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="en-este-repo">En este repo</h2>
+      <p>Cada stage del Early-Game tiene un skill dueño en <code>.agents/skills/</code>:</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Stage</th>
+              <th>Skill</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Shift-Left</td>
+              <td><code>/shift-left-testing</code></td>
+            </tr>
+            <tr>
+              <td>Planning, Execution, Reporting</td>
+              <td><code>/sprint-testing</code></td>
+            </tr>
+            <tr>
+              <td>Documentation (step 4 en adelante)</td>
+              <td><code>/test-documentation</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        El Definition of Done y el contrato de cada stage están en
+        <code>.agents/skills/agentic-qa-core/references/stage-gates.md</code>. Cómo encaja todo el
+        IQL con el repo se cuenta en <a href="este-repo.html">El IQL en este repo</a>.
+      </p>
+
+      <div class="cards">
+        <a class="card" href="iql.html">
+          <span class="badge">Volver</span>
+          <h3>El IQL completo</h3>
+          <p>Las tres fases, los ocho stages y el bucle completo.</p>
+        </a>
+        <a class="card" href="mid-game.html">
+          <span class="badge accent">Siguiente</span>
+          <h3>Mid-Game</h3>
+          <p>Detección, steps 5-9: documentación por ROI y automatización.</p>
+        </a>
+      </div>
+
+      <footer class="doc-footer">
+        Fuente:
+        <a href="https://www.upexgalaxy.com/metodologia/early-game" target="_blank" rel="noopener"
+          >upexgalaxy.com/metodologia/early-game</a
+        >. Relacionadas: <a href="iql.html">IQL</a> · <a href="mid-game.html">Mid-Game</a> ·
+        <a href="late-game.html">Late-Game</a> · <a href="este-repo.html">El IQL en este repo</a>.
+      </footer>
+    </article>
+  </body>
+</html>

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Setup</title>
+    <meta
+      name="description"
+      content="Guías para conectar el repo con Jira y Xray, con la base de datos (DBHub) y con la API (OpenAPI)."
+    />
+    <meta name="docs-section-title" content="Setup" />
+    <meta name="docs-order" content="20" />
+    <link rel="stylesheet" href="../../assets/docs.css" />
+    <script src="../../assets/docs.js"></script>
+  </head>
+  <body>
+    <article class="doc">
+      <header class="doc-header">
+        <nav class="breadcrumbs"><span>Core</span><span>Setup</span></nav>
+        <h1>Setup</h1>
+        <p class="lede">
+          Tres conexiones que el repo necesita para trabajar con datos reales: el tracker, la base
+          de datos y la API. Cada guía dice qué configurar, cómo comprobarlo y qué hacer cuando
+          falla.
+        </p>
+      </header>
+
+      <div class="cards">
+        <a class="card" href="jira-xray.html">
+          <span class="badge accent">Tracker + TMS</span>
+          <h3>Jira y Xray</h3>
+          <p>
+            Proyecto, work types, campos, workflows y credenciales de Xray Cloud. Los catálogos
+            locales salen de aquí.
+          </p>
+        </a>
+        <a class="card" href="dbhub.html">
+          <span class="badge accent">MCP</span>
+          <h3>DBHub</h3>
+          <p>
+            La base de datos como herramienta del agente: <code>dbhub.toml</code>, el server
+            <code>dbhub</code> y cómo validar datos con SQL.
+          </p>
+        </a>
+        <a class="card" href="openapi.html">
+          <span class="badge accent">MCP</span>
+          <h3>OpenAPI</h3>
+          <p>
+            El contrato de la API para descubrir endpoints y schemas. Las requests autenticadas van
+            por <code>curl</code>, no por el MCP.
+          </p>
+        </a>
+      </div>
+
+      <div class="callout">
+        <span class="callout-title">Antes de estas guías</span>
+        <p>
+          La instalación base (<code>bun run setup</code>, el archivo <code>.env</code> y el
+          arranque del agente) está en <a href="../empezar-aqui.html">Empezar aquí</a>.
+        </p>
+      </div>
+    </article>
+  </body>
+</html>

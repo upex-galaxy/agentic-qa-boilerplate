@@ -1,0 +1,706 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mid-Game</title>
+    <meta
+      name="description"
+      content="Fase de detección del IQL (steps 5-9, QA Automation Engineer): los stages Documentation y Automation, el gate de ROI, el orden set-first TC → ATS → ATP → ATR y las capas de KATA con @atc."
+    />
+    <meta name="docs-order" content="30" />
+    <link rel="stylesheet" href="../../assets/docs.css" />
+    <script src="../../assets/docs.js"></script>
+  </head>
+  <body>
+    <article class="doc wide">
+      <header class="doc-header">
+        <nav class="breadcrumbs">
+          <span>Core</span><span>Metodología</span><span>Mid-Game</span>
+        </nav>
+        <h1>Mid-Game: detección</h1>
+        <p class="lede">
+          La segunda fase del IQL cubre los steps 5 a 9 y la protagoniza el QA Automation Engineer.
+          Su pregunta es «¿el software cumple con los requerimientos?». Aquí se decide qué casos
+          merecen persistir y cuáles de ellos se automatizan, para detectar defectos antes del
+          release.
+        </p>
+        <div class="meta-row">
+          <span class="badge accent">Fase 2 de 3</span><span class="badge">Steps 5-9</span
+          ><span class="badge">QA Automation Engineer</span>
+        </div>
+      </header>
+
+      <div class="callout">
+        <span class="callout-title">Fuente oficial</span>
+        <p>
+          Esta página resume la sub-página
+          <a href="https://www.upexgalaxy.com/metodologia/mid-game" target="_blank" rel="noopener"
+            >upexgalaxy.com/metodologia/mid-game</a
+          >. Si algo de aquí no coincide con el sitio, manda el sitio. La versión en inglés está en
+          <a href="https://www.upexgalaxy.com/en/methodology" target="_blank" rel="noopener"
+            >upexgalaxy.com/en/methodology</a
+          >.
+        </p>
+      </div>
+
+      <nav class="toc">
+        <strong>En esta página</strong>
+        <ol>
+          <li><a href="#la-fase">La fase en una tabla</a></li>
+          <li><a href="#stages">Los stages de esta fase</a></li>
+          <li><a href="#gate-roi">El gate de ROI</a></li>
+          <li><a href="#steps">Los 5 steps del Mid-Game</a></li>
+          <li><a href="#set-first">Los casos primero, el plan después</a></li>
+          <li><a href="#kata">KATA y el decorador @atc</a></li>
+          <li><a href="#piramide">Dónde poner el esfuerzo</a></li>
+          <li><a href="#enfoques">Enfoques y herramientas</a></li>
+          <li><a href="#en-este-repo">En este repo</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="la-fase">La fase en una tabla</h2>
+      <div class="table-wrap">
+        <table>
+          <tbody>
+            <tr>
+              <th>Pregunta</th>
+              <td>«¿El software cumple con los requerimientos?»</td>
+            </tr>
+            <tr>
+              <th>Enfoque</th>
+              <td>Detección: encontrar defectos antes del release con testing estructurado</td>
+            </tr>
+            <tr>
+              <th>Rol protagonista</th>
+              <td>QA Automation Engineer</td>
+            </tr>
+            <tr>
+              <th>Alcance</th>
+              <td>Steps 5-9</td>
+            </tr>
+            <tr>
+              <th>Enfoques integrados</th>
+              <td>Continuous Testing, Agile Testing, AI-Driven</td>
+            </tr>
+            <tr>
+              <th>Herramientas</th>
+              <td>Playwright, GitHub Actions (o CI equivalente), Docker, Xray</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="stages">Los stages de esta fase</h2>
+      <p>
+        Los dos stages del Mid-Game ocurren en el cierre y release del sprint, con nivel L3 ·
+        Continuous Detection. Documentation empieza en el Early-Game (step 4) y termina aquí.
+        Automation es el único stage del IQL con verificación separada obligatoria.
+      </p>
+
+      <h3 id="stage-documentation">Documentation</h3>
+      <p>
+        Sobre comportamiento ya validado, cada escenario recibe exactamente un veredicto y solo se
+        persisten los que demostraron valor de regresión. La mayoría tiene que caer en Deferred.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <tbody>
+            <tr>
+              <th>Etapas</th>
+              <td>TMLC 3rd, TMLC 4th, TALC 1st (steps 4, 5 y 6)</td>
+            </tr>
+            <tr>
+              <th>El agente hace</th>
+              <td>
+                Deriva los escenarios por técnica, calcula el ROI y propone Candidate, Manual o
+                Deferred, exactamente uno por escenario. Persiste en el TMS solo los que valen para
+                regresión, con la cascada de enlaces armada y el ATS enlazado a la historia.
+              </td>
+            </tr>
+            <tr>
+              <th>La persona firma</th>
+              <td>
+                Cada veredicto de ROI, la épica de regresión y el Test Set de feature. El veredicto
+                no se delega: define la suite de los próximos años.
+              </td>
+            </tr>
+            <tr>
+              <th>Evidencia exigida</th>
+              <td>
+                Score de ROI por escenario con su justificación, y la alarma disparada si más de la
+                mitad cae en Candidate o Manual (señal de que el filtro no se aplicó).
+              </td>
+            </tr>
+            <tr>
+              <th>Autonomía</th>
+              <td>2 de 5</td>
+            </tr>
+            <tr>
+              <th>Verificador separado</th>
+              <td>Recomendado (un segundo agente)</td>
+            </tr>
+            <tr>
+              <th>Roles</th>
+              <td>QA Analyst, QA Lead · Executor, Verifier</td>
+            </tr>
+            <tr>
+              <th>Salidas</th>
+              <td>
+                TC / ATC persistidos en el TMS; veredicto de ROI por escenario; TS de feature
+                (opcional)
+              </td>
+            </tr>
+            <tr>
+              <th>Transiciones en Jira</th>
+              <td>
+                TC: Draft → In Design (<em>start design</em>)<br />
+                TC: In Design → READY (<em>ready to run</em>)<br />
+                TC: READY → In Review (<em>automation review</em>)<br />
+                TC: In Review → Candidate (<em>approve to automate</em>)<br />
+                TC: READY → MANUAL (<em>for manual</em>)
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="stage-automation">Automation</h3>
+      <p>
+        Solo entran los Candidate. Primero el plan, después el código, y tres verificadores en verde
+        antes del pull request.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <tbody>
+            <tr>
+              <th>Etapas</th>
+              <td>TALC 2nd, TALC 3rd, TALC 4th (steps 7, 8 y 9)</td>
+            </tr>
+            <tr>
+              <th>El agente hace</th>
+              <td>
+                Escribe el plan (especificación y plan de automatización), implementa sobre la
+                arquitectura del Implementation Standard con el decorador que ata cada método a su
+                caso, corre los tres verificadores y abre el pull request.
+              </td>
+            </tr>
+            <tr>
+              <th>La persona firma</th>
+              <td>
+                Aprueba el plan antes de que se escriba una línea de código y aprueba el merge. Al
+                tercer intento fallido decide si se sigue o se para.
+              </td>
+            </tr>
+            <tr>
+              <th>Evidencia exigida</th>
+              <td>
+                Tests en verde, tipos y lint limpios, cada decorador resolviendo a un ticket real y
+                el manifiesto fresco.
+              </td>
+            </tr>
+            <tr>
+              <th>Autonomía</th>
+              <td>De 2 a 3, con techo dentro del plan aprobado</td>
+            </tr>
+            <tr>
+              <th>Verificador separado</th>
+              <td>Obligatorio: <code>pr-review-lead</code> y <code>judgment-day</code></td>
+            </tr>
+            <tr>
+              <th>Roles</th>
+              <td>QA Automation Engineer, QA Lead · Executor, Verifier</td>
+            </tr>
+            <tr>
+              <th>Salidas</th>
+              <td>Métodos automatizados con su decorador de trazabilidad; pull request revisado</td>
+            </tr>
+            <tr>
+              <th>Transiciones en Jira</th>
+              <td>
+                TC: Candidate → In Automation (<em>start automation</em>)<br />
+                TC: In Automation → Pull Request (<em>create PR</em>)<br />
+                TC: Pull Request → AUTOMATED (<em>merged</em>)
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="gate-roi">El gate de ROI: Candidate, Manual o Deferred</h2>
+      <p>
+        El veredicto de ROI se decide en el step 4, sobre escenarios que ya se ejecutaron y se
+        reportaron. Solo lo que demostró valor de regresión llega al TMS.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Veredicto</th>
+              <th>Qué pasa con el escenario</th>
+              <th>Estado del TC en Jira</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="badge green">Candidate</span></td>
+              <td>Regresión automatizada. Pasa al TALC y se implementa con Playwright.</td>
+              <td>In Review → Candidate (<em>approve to automate</em>)</td>
+            </tr>
+            <tr>
+              <td><span class="badge">Manual</span></td>
+              <td>Regresión manual. Es terminal: no se automatiza.</td>
+              <td>READY → MANUAL (<em>for manual</em>)</td>
+            </tr>
+            <tr>
+              <td><span class="badge warn">Deferred</span></td>
+              <td>Fuera de la regresión. Queda en el reporte de priorización.</td>
+              <td>No se crea TC</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout warn">
+        <span class="callout-title">La alarma del filtro</span>
+        <p>
+          Si más de la mitad de los escenarios cae en Candidate o Manual, el filtro no se aplicó y
+          se vuelve a correr la fase de descarte. Una suite crece sana cuando la mayoría de lo
+          explorado no se persiste. Para este stage se recomienda un verificador separado.
+        </p>
+      </div>
+      <p>
+        Veredicto y estado comparten nombre (Candidate y MANUAL en el TC, Deferred en el Bug), pero
+        el veredicto es la decisión de ROI y el estado es dónde está el ticket.
+      </p>
+
+      <h2 id="steps">Los 5 steps del Mid-Game</h2>
+      <p>
+        El Mid-Game cierra el TMLC (Test Manual Life Cycle) con su 4ª etapa y recorre entero el TALC
+        (Test Automation Life Cycle): Evaluación, Automatización, Verificación CI y PR Review.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Step</th>
+              <th>Etapa</th>
+              <th>Qué se hace</th>
+              <th>Entregable</th>
+              <th>Transición del TC</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>5. Documentación Asíncrona de Test Cases</strong></td>
+              <td>TMLC 4th</td>
+              <td>Formalizar en el TMS los TC de cada escenario Candidate o Manual.</td>
+              <td>Backlog de TCs de alto valor, agrupados en el ATS de la historia</td>
+              <td>Draft → In Design → READY</td>
+            </tr>
+            <tr>
+              <td><strong>6. Evaluación de TCs para Automatización</strong></td>
+              <td>TALC 1st</td>
+              <td>
+                Revisar los TCs recién documentados: cuáles se automatizan y cuáles quedan manuales.
+              </td>
+              <td>TCs aprobados para automatizar (Candidate) o marcados como Manual</td>
+              <td>READY → In Review → Candidate, o READY → MANUAL</td>
+            </tr>
+            <tr>
+              <td><strong>7. Automatización de los candidatos</strong></td>
+              <td>TALC 2nd</td>
+              <td>
+                Implementar los Candidate con Playwright sobre KATA, con <code>@atc</code> en cada
+                método.
+              </td>
+              <td>Casos implementados en el repo, con PR creado</td>
+              <td>Candidate → In Automation</td>
+            </tr>
+            <tr>
+              <td><strong>8. Verificación de la suite en CI</strong></td>
+              <td>TALC 3rd</td>
+              <td>Validar los ATCs automatizados en la pipeline de CI.</td>
+              <td>ATCs estables en CI sin flakiness, con reportes de trazabilidad</td>
+              <td>(el sitio no indica ninguna)</td>
+            </tr>
+            <tr>
+              <td><strong>9. Revisión del Pull Request</strong></td>
+              <td>TALC 4th</td>
+              <td>Crear el PR para revisión y aprobación de los ATCs.</td>
+              <td>PR mergeado, ATCs integrados en CI/CD</td>
+              <td>In Automation → Pull Request → AUTOMATED</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="step-5">Step 5 depende de la modalidad del TMS</h3>
+      <p>
+        El verbo del step 5 cambia con la modalidad. En <code>jira-native</code> aquí se
+        <strong>crean</strong> los TC, porque un issue Test nativo ya es documentación y por eso
+        espera al gate de ROI. En <code>jira-xray</code> (la instancia de UPEX) los Test existen
+        desde Planning y aquí se <strong>enriquecen y promueven</strong>: Gherkin rico, label
+        <code>regression-candidate</code>, Test Set de la feature y Regression Test Plan. En los dos
+        casos la documentación es asíncrona a propósito: va después de ejecutar y reportar, nunca
+        antes.
+      </p>
+      <p>
+        El TC es el caso individual y vive en el TMS. Un ATC es lo que un TC es cuando nace de un
+        criterio de aceptación. Los casos de la historia se agrupan en su ATS (Acceptance Test Set),
+        obligatorio incluso con un solo caso, porque la cobertura la da el enlace del ATS a la
+        historia.
+      </p>
+
+      <h3 id="herramientas-steps">Herramientas por step</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Herramienta</th>
+              <th>Tipo</th>
+              <th>Nota</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>KATA</td>
+              <td><span class="badge green">Recommended</span></td>
+              <td>
+                Hace trazable cada ATC a su historia (<code>@atc('KEY')</code>) y es lo que los
+                skills saben operar. Sobre un framework que el cliente conserva se aplican sus
+                invariantes (capas, inyección de dependencias, decoradores) con
+                <code>/adapt-framework</code>, sin reescribirlo.
+              </td>
+            </tr>
+            <tr>
+              <td>Playwright</td>
+              <td><span class="badge green">Recommended</span></td>
+              <td>
+                El default al automatizar desde cero. No es obligatorio: un stack maduro (Cypress,
+                WebdriverIO) se evalúa al inicio y se conserva, se adapta o se migra por etapas.
+              </td>
+            </tr>
+            <tr>
+              <td>Docker</td>
+              <td><span class="badge green">Recommended</span></td>
+              <td>
+                Reproducibilidad de la corrida en CI con la imagen oficial de Playwright. Si el CI
+                ya trae runners con navegadores, se adapta.
+              </td>
+            </tr>
+            <tr>
+              <td>Xray</td>
+              <td><span class="badge accent">Adaptable</span></td>
+              <td>
+                La modalidad con la que opera UPEX (<code>jira-xray</code>). El boilerplate arranca
+                en <code>jira-native</code> (<code>tms_cli: null</code>), también soportada. Otro
+                TMS (TestRail, Zephyr) se evalúa como adaptación.
+              </td>
+            </tr>
+            <tr>
+              <td>Harness agéntico</td>
+              <td><span class="badge accent">Adaptable</span></td>
+              <td>Claude Code, OpenCode o Codex. El método vive en los skills, no en el agente.</td>
+            </tr>
+            <tr>
+              <td>GitHub Actions (o CI equivalente)</td>
+              <td><span class="badge">Client-controlled</span></td>
+              <td>
+                El estándar exige que los ATCs corran en cada PR. El pipeline de referencia del
+                boilerplate está escrito para GitHub Actions.
+              </td>
+            </tr>
+            <tr>
+              <td>GitHub / GitLab, Jira, Slack / Teams</td>
+              <td><span class="badge">Client-controlled</span></td>
+              <td>Repositorio y PRs, tracker y canal de avisos: los trae el cliente.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="set-first">Los casos primero, el plan después</h2>
+      <p>
+        El set de casos de la historia se crea antes que su plan y que su ejecución, porque los dos
+        derivan su lista de él. Y la cobertura en Jira la da el enlace del set a la historia, no el
+        del plan. El orden set-first es <strong>TC → ATS → ATP → ATR</strong>, y el diagrama muestra
+        cómo lo aplica <code>/sprint-testing</code> en la modalidad <code>jira-xray</code>.
+      </p>
+      <figure>
+        <div class="frame scroll on-dark">
+          <img
+            src="../../assets/iql/sprint-testing.svg"
+            alt="Los pasos del QA Analyst en el sprint"
+          />
+        </div>
+        <figcaption>
+          Los tres stages de <code>/sprint-testing</code> y el orden exacto de la planificación.
+          <a href="../../assets/iql/sprint-testing.svg" target="_blank" rel="noopener"
+            >Ver a tamaño completo</a
+          >.
+        </figcaption>
+      </figure>
+      <ol class="steps">
+        <li>
+          <strong>Crear los Test (TC) de la historia</strong>
+          <p>Al detalle ejecutable.</p>
+        </li>
+        <li>
+          <strong>Crear el ATS con todos ellos</strong>
+          <p>Título <code>ATS: {STORY-KEY}: {TITLE}</code>.</p>
+        </li>
+        <li>
+          <strong>Enlazar el ATS a la historia</strong>
+          <p>Enlace <em>Test · is tested by</em>. Es la única arista que da cobertura.</p>
+        </li>
+        <li>
+          <strong>Recién ahí, el ATP</strong>
+          <p>Se crea desde el custom field de la historia. Su lista de casos deriva del ATS.</p>
+        </li>
+        <li>
+          <strong>El ATR, con su Test Environment</strong>
+          <p>Sin entorno no pasa el Definition of Done. Su lista también deriva del ATS.</p>
+        </li>
+        <li>
+          <strong>Execution: smoke primero, después exploración</strong>
+          <p>
+            Go/No-Go del entorno y luego la Trifuerza UI · API · DB, más allá de lo planificado.
+          </p>
+        </li>
+        <li>
+          <strong>Reporting: completar el ATR y comentar</strong>
+          <p>
+            Resultado por caso, comentario de QA y transición del ticket, con defectos si los hubo.
+          </p>
+        </li>
+      </ol>
+
+      <h2 id="kata">KATA (Komponent Action Test Architecture)</h2>
+      <p>
+        El step 7 implementa los casos candidatos sobre una arquitectura por capas: cuatro capas
+        nombradas, más Steps como capa opcional, con una sola dirección de dependencia. Una capa
+        puede usar las de abajo y nunca al revés. Dos advertencias: las letras del acrónimo no son
+        las capas, y el decorador <code>@atc</code> no crea un artefacto nuevo. Nombra la
+        representación en código del mismo caso que ya existía en el gestor de pruebas.
+      </p>
+      <figure>
+        <div class="frame scroll on-dark">
+          <img
+            src="../../assets/iql/test-automation.svg"
+            alt="Los pasos del QA Automation y las capas de KATA"
+          />
+        </div>
+        <figcaption>
+          Los steps 6 a 9 (las etapas del TALC) y las capas de KATA donde se implementan.
+          <a href="../../assets/iql/test-automation.svg" target="_blank" rel="noopener"
+            >Ver a tamaño completo</a
+          >.
+        </figcaption>
+      </figure>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Capa</th>
+              <th>Nombre</th>
+              <th>Ejemplo</th>
+              <th>Qué contiene</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>(consumidor)</td>
+              <td>Test files</td>
+              <td></td>
+              <td>Orquestan ATCs en escenarios y consumen los Fixtures. No son una capa.</td>
+            </tr>
+            <tr>
+              <td>L4</td>
+              <td>Fixtures</td>
+              <td><code>*Fixture.ts</code></td>
+              <td>Punto de inyección de dependencias hacia el archivo de test.</td>
+            </tr>
+            <tr>
+              <td>L3.5 (opcional)</td>
+              <td>Steps</td>
+              <td><code>loginAndSeedCart.step.ts</code></td>
+              <td>Cadenas de precondición reutilizables. No llevan <code>@atc</code>.</td>
+            </tr>
+            <tr>
+              <td>L3</td>
+              <td>Componentes de dominio</td>
+              <td><code>UsersApi</code>, <code>LoginPage</code></td>
+              <td>
+                Aquí, y solo aquí, viven los métodos con el decorador <code>@atc('KEY')</code>.
+              </td>
+            </tr>
+            <tr>
+              <td>L2</td>
+              <td>Base</td>
+              <td><code>ApiBase.ts</code> · <code>UiBase.ts</code></td>
+              <td>Helpers HTTP y helpers de Playwright.</td>
+            </tr>
+            <tr>
+              <td>L1</td>
+              <td>TestContext</td>
+              <td><code>TestContext.ts</code></td>
+              <td>Config, logger, faker y entorno. Agnóstico de API y de UI.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Contar los archivos de test como una capa más es el origen de los conteos de cinco y seis
+        capas que circulan. Un ejemplo de decorador es <code>@atc('PROJ-101')</code>: ata el método
+        a su caso en Jira.
+      </p>
+
+      <h2 id="piramide">Dónde conviene poner el esfuerzo</h2>
+      <p>
+        Automatizar todo al nivel de interfaz es la forma más cara de tener una suite frágil. La
+        pirámide reparte el esfuerzo: mucha prueba barata abajo, poca prueba cara arriba y, en el
+        medio, lo que verifica que las piezas se hablen.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Nivel</th>
+              <th>Proporción</th>
+              <th>Qué verifica</th>
+              <th>Ejemplos</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>E2E UI Tests</td>
+              <td>10%</td>
+              <td>
+                El flujo completo desde la interfaz, como lo haría una persona. Los más lentos y los
+                que más cuesta mantener.
+              </td>
+              <td>Login, compra de punta a punta, registro de usuario</td>
+            </tr>
+            <tr>
+              <td>Integration / Service Tests</td>
+              <td>20%</td>
+              <td>
+                Cómo hablan entre sí componentes y servicios, sin pasar por la interfaz. Velocidad
+                media, buena cobertura.
+              </td>
+              <td>Integración de APIs, operaciones contra la base, comunicación entre servicios</td>
+            </tr>
+            <tr>
+              <td>Unit Tests</td>
+              <td>70%</td>
+              <td>
+                Funciones y componentes aislados. Los escribe quien desarrolla y corren en segundos.
+              </td>
+              <td>Validación de funciones, componentes aislados, lógica de negocio</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="enfoques">Enfoques y herramientas de la fase</h2>
+      <dl class="defs">
+        <dt>Continuous Testing</dt>
+        <dd>Testing automatizado integrado en la pipeline, que corre con cada cambio.</dd>
+        <dt>Agile Testing</dt>
+        <dd>Ciclos de prueba que caben dentro del sprint y no lo empujan hacia adelante.</dd>
+        <dt>AI-Driven</dt>
+        <dd>IA aplicada a acelerar el análisis, la documentación y la cobertura.</dd>
+      </dl>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Herramienta</th>
+              <th>Para qué en esta fase</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Playwright</td>
+              <td>El runner de los casos automatizados, base de la arquitectura KATA.</td>
+            </tr>
+            <tr>
+              <td>GitHub Actions (o CI equivalente)</td>
+              <td>
+                La pipeline donde la suite corre en cada cambio y se comprueba que no sea flaky.
+              </td>
+            </tr>
+            <tr>
+              <td>Docker</td>
+              <td>El entorno reproducible: la suite corre igual en la máquina del QA que en CI.</td>
+            </tr>
+            <tr>
+              <td>Xray</td>
+              <td>
+                El TMS donde el caso vive, cambia de estado y se agrupa en el ATS de su historia.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="en-este-repo">En este repo</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Stage</th>
+              <th>Skill</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Documentation (steps 4-6)</td>
+              <td><code>/test-documentation</code></td>
+            </tr>
+            <tr>
+              <td>Automation (steps 7-9)</td>
+              <td>
+                <code>/test-automation</code>, con <code>/pr-review-lead</code> y
+                <code>/judgment-day</code> como verificadores
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        La frontera entre los dos stages es el veredicto estampado con <em>approve to automate</em>
+        (In Review → Candidate). El registro de componentes y ATCs que existen es
+        <code>kata-manifest.json</code>, en la raíz del repo, y el DoD de cada stage está en
+        <code>.agents/skills/agentic-qa-core/references/stage-gates.md</code>. Más detalle en
+        <a href="este-repo.html">El IQL en este repo</a>.
+      </p>
+
+      <div class="cards">
+        <a class="card" href="early-game.html">
+          <span class="badge">Anterior</span>
+          <h3>Early-Game</h3>
+          <p>Prevención, steps 1-4: análisis, planning y exploración.</p>
+        </a>
+        <a class="card" href="iql.html">
+          <span class="badge">Volver</span>
+          <h3>El IQL completo</h3>
+          <p>Las tres fases, los ocho stages y el bucle completo.</p>
+        </a>
+        <a class="card" href="late-game.html">
+          <span class="badge accent">Siguiente</span>
+          <h3>Late-Game</h3>
+          <p>Observación, steps 10-15: regresión y producción.</p>
+        </a>
+      </div>
+
+      <footer class="doc-footer">
+        Fuente:
+        <a href="https://www.upexgalaxy.com/metodologia/mid-game" target="_blank" rel="noopener"
+          >upexgalaxy.com/metodologia/mid-game</a
+        >. Relacionadas: <a href="iql.html">IQL</a> · <a href="early-game.html">Early-Game</a> ·
+        <a href="late-game.html">Late-Game</a> · <a href="este-repo.html">El IQL en este repo</a>.
+      </footer>
+    </article>
+  </body>
+</html>

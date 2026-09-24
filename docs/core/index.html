@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Boilerplate</title>
+    <meta
+      name="description"
+      content="La documentación que trae el boilerplate: empezar, setup, metodología, exploración y la personalidad de la IA."
+    />
+    <meta name="docs-section-title" content="Boilerplate" />
+    <meta name="docs-order" content="10" />
+    <link rel="stylesheet" href="../assets/docs.css" />
+    <script src="../assets/docs.js"></script>
+  </head>
+  <body>
+    <article class="doc">
+      <header class="doc-header">
+        <nav class="breadcrumbs"><span>Core</span></nav>
+        <h1>Documentación del boilerplate</h1>
+        <p class="lede">
+          Todo lo que está bajo <code>docs/core/</code> lo trae el boilerplate y se actualiza con
+          <code>bun run up</code>. Las páginas de tu proyecto van en cualquier otra carpeta de
+          <code>docs/</code> y aparecen solas en el menú.
+        </p>
+      </header>
+
+      <div class="cards">
+        <a class="card" href="empezar-aqui.html">
+          <span class="badge accent">Primer paso</span>
+          <h3>Empezar aquí</h3>
+          <p>Instalación, el ciclo de trabajo y la guía rápida de skills y scripts.</p>
+        </a>
+        <a class="card" href="setup/index.html">
+          <h3>Setup</h3>
+          <p>Jira y Xray, DBHub y OpenAPI.</p>
+        </a>
+        <a class="card" href="metodologia/index.html">
+          <h3>Metodología</h3>
+          <p>El IQL y cómo lo implementa este repo.</p>
+        </a>
+        <a class="card" href="exploracion/index.html">
+          <h3>Exploración</h3>
+          <p>Postman y el cookbook de SQL.</p>
+        </a>
+        <a class="card" href="fundamentos/index.html">
+          <h3>Fundamentos agénticos</h3>
+          <p>Cómo se trabaja con agentes de IA.</p>
+        </a>
+        <a class="card" href="personalidad.html">
+          <h3>Personalidad de la IA</h3>
+          <p>Cómo habla y razona el agente en este repo.</p>
+        </a>
+      </div>
+
+      <h2 id="agregar-paginas">Agregar páginas propias</h2>
+      <ol class="steps">
+        <li>
+          <strong>Crea una carpeta fuera de <code>core/</code></strong>
+          <p>
+            Por ejemplo <code>docs/&lt;equipo&gt;/</code>. El updater nunca escribe fuera de
+            <code>core/</code>.
+          </p>
+        </li>
+        <li>
+          <strong>Copia una página como punto de partida</strong>
+          <p>
+            Cada página es un HTML con <code>&lt;title&gt;</code> y
+            <code>&lt;meta name="description"&gt;</code>, que enlaza
+            <code>docs/assets/docs.css</code> y <code>docs/assets/docs.js</code>.
+          </p>
+        </li>
+        <li>
+          <strong>Recarga el portal</strong>
+          <p>
+            <code>bun run docs</code> arma el índice en cada recarga. El orden sale de
+            <code>&lt;meta name="docs-order"&gt;</code>, y un <code>index.html</code> con
+            <code>&lt;meta name="docs-section-title"&gt;</code> le da nombre a la carpeta.
+          </p>
+        </li>
+      </ol>
+    </article>
+  </body>
+</html>

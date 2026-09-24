@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cookbook SQL</title>
+    <meta
+      name="description"
+      content="Validar datos con SQL a través de DBHub: huérfanos, duplicados, totales, timestamps, integridad referencial y comparaciones antes/después de una acción."
+    />
+    <meta name="docs-order" content="20" />
+    <link rel="stylesheet" href="../../assets/docs.css" />
+    <script src="../../assets/docs.js"></script>
+  </head>
+  <body>
+    <article class="doc">
+      <header class="doc-header">
+        <nav class="breadcrumbs">
+          <span>Core</span><span>Exploración</span><span>Cookbook SQL</span>
+        </nav>
+        <h1>Cookbook SQL: validar datos en la base</h1>
+        <p class="lede">
+          Queries listas para adaptar que responden si una acción dejó la base de datos como debía.
+          Es la pierna DB de la exploración UI / API / DB, y corre a través de DBHub.
+        </p>
+        <div class="meta-row">
+          <span class="badge accent">Exploración</span><span class="badge">DB</span>
+        </div>
+      </header>
+
+      <div class="callout tip">
+        <span class="callout-title">Fuente canónica</span>
+        <p>
+          El agente lee este mismo cookbook en
+          <code>.agents/skills/agentic-qa-core/references/db-testing-doctrine.md</code>. Esta página
+          es la versión tutorial para personas y no debe separarse de ese archivo: si cambias una
+          query o una regla en uno, actualiza el otro.
+        </p>
+      </div>
+
+      <nav class="toc">
+        <strong>En esta página</strong>
+        <ol>
+          <li><a href="#por-que">Por qué mirar la base</a></li>
+          <li><a href="#conexion">Conexión y herramientas</a></li>
+          <li><a href="#dialectos">Dialectos</a></li>
+          <li><a href="#cinco-validaciones">Cinco cosas que validar</a></li>
+          <li><a href="#huerfanos">Huérfanos</a></li>
+          <li><a href="#duplicados">Duplicados</a></li>
+          <li><a href="#totales">Totales que no cuadran</a></li>
+          <li><a href="#timestamps">Timestamps</a></li>
+          <li><a href="#antes-despues">Antes y después de una acción</a></li>
+          <li><a href="#estrategias">Cuatro estrategias</a></li>
+          <li><a href="#por-nivel">Qué validar según el nivel de test</a></li>
+          <li><a href="#checklist">Checklist</a></li>
+          <li><a href="#nunca">Lo que no se hace</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="por-que">Por qué mirar la base</h2>
+      <p>
+        Una API puede responder <code>201 Created</code> y guardar mal los datos. Estos son casos
+        que solo se ven con una query:
+      </p>
+      <pre data-lang="text"><code>Response de la API: 201 Created
+{ "message": "Order created successfully", "order_id": "ord_123" }
+
+Lo que hay en la base:
+- order_items está vacío
+- total vale 0 cuando debería valer 150
+- user_id es NULL</code></pre>
+      <p>
+        En la exploración de un ticket, la UI muestra lo que ve el usuario, la API muestra el
+        contrato y la base muestra lo que realmente quedó guardado. Esta página cubre la tercera
+        parte. La parte API está en <a href="postman.html">Postman</a> y en
+        <a href="../setup/openapi.html">OpenAPI</a>.
+      </p>
+
+      <h2 id="conexion">Conexión y herramientas</h2>
+      <p>
+        El agente consulta la base a través del MCP de DBHub. La configuración
+        (<code>dbhub.toml</code>, las seis variables <code>DBHUB_*</code> de <code>.env</code> y
+        cómo diagnosticar una conexión que falla) está en <a href="../setup/dbhub.html">DBHub</a>.
+      </p>
+      <p>
+        DBHub nombra sus tools como <code>{tool}_{source_id}</code>. El repo trae una sola fuente,
+        <code>primary</code>, así que el agente tiene dos:
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Tool</th>
+              <th>Para qué</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>search_objects_primary</code></td>
+              <td>Descubrir schemas, tablas y columnas antes de escribir la query.</td>
+            </tr>
+            <tr>
+              <td><code>execute_sql_primary</code></td>
+              <td>Ejecutar la query.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        En la práctica le pides al agente algo como "acabo de crear una orden, revisa que el total
+        coincida con sus items" y él arma y corre la query. Las recetas de abajo sirven para que
+        sepas qué pedir y para leer lo que te devuelve. Para validar alcanza un usuario de solo
+        lectura (<code>SELECT</code>).
+      </p>
+
+      <h2 id="dialectos">Dialectos</h2>
+      <p>
+        Las queries de esta página son de Postgres. <code>DBHUB_TYPE</code> en <code>.env</code>
+        te dice en qué motor estás; estas son las diferencias que más aparecen:
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Qué</th>
+              <th>Postgres</th>
+              <th>MySQL</th>
+              <th>SQL Server</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Hace un minuto</td>
+              <td><code>NOW() - INTERVAL '1 minute'</code></td>
+              <td><code>NOW() - INTERVAL 1 MINUTE</code></td>
+              <td><code>DATEADD(minute, -1, SYSDATETIME())</code></td>
+            </tr>
+            <tr>
+              <td>Limitar filas</td>
+              <td><code>LIMIT n</code></td>
+              <td><code>LIMIT n</code></td>
+              <td><code>TOP n</code></td>
+            </tr>
+            <tr>
+              <td>Parámetro</td>
+              <td><code>$1</code></td>
+              <td><code>?</code></td>
+              <td><code>@p1</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="cinco-validaciones">Cinco cosas que validar</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>Pregunta</th>
+              <th>Resultado esperado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Existencia</td>
+              <td>¿Se creó la fila?</td>
+              <td><code>SELECT COUNT(*) FROM users WHERE email = $1</code> devuelve 1</td>
+            </tr>
+            <tr>
+              <td>Valores</td>
+              <td>¿El valor guardado es correcto?</td>
+              <td>El total guardado es igual a <code>SUM(price * quantity)</code> de sus items</td>
+            </tr>
+            <tr>
+              <td>Integridad</td>
+              <td>¿Las relaciones se sostienen?</td>
+              <td>Cero huérfanos</td>
+            </tr>
+            <tr>
+              <td>Timestamps</td>
+              <td>¿Las fechas son plausibles?</td>
+              <td>
+                <code>created_at</code> dentro del último minuto;
+                <code>updated_at &gt;= created_at</code>
+              </td>
+            </tr>
+            <tr>
+              <td>Side effects</td>
+              <td>¿Corrieron triggers y cascades?</td>
+              <td>Tras borrar un usuario, cero filas en sus tablas dependientes</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Existencia de un usuario recién registrado y de los items de una orden:</p>
+      <pre data-lang="sql"><code>SELECT COUNT(*) FROM users WHERE email = 'test@example.com';
+-- Esperado: 1
+
+SELECT COUNT(*) FROM order_items WHERE order_id = 'ord_123';
+-- Esperado: mayor que 0</code></pre>
+      <p>
+        Side effects: después de borrar el usuario <code>usr_123</code> desde la UI o la API,
+        ninguna tabla dependiente debería conservar filas suyas (si el schema declara
+        <code>ON DELETE CASCADE</code> o la aplicación limpia por su cuenta):
+      </p>
+      <pre
+        data-lang="sql"
+      ><code>SELECT COUNT(*) FROM orders        WHERE user_id = 'usr_123';  -- Esperado: 0
+SELECT COUNT(*) FROM sessions      WHERE user_id = 'usr_123';  -- Esperado: 0
+SELECT COUNT(*) FROM notifications WHERE user_id = 'usr_123';  -- Esperado: 0</code></pre>
+
+      <h2 id="huerfanos">Huérfanos (foreign keys rotas)</h2>
+      <p>Items que apuntan a una orden que ya no existe:</p>
+      <pre data-lang="sql"><code>SELECT oi.*
+FROM order_items oi
+LEFT JOIN orders o ON oi.order_id = o.id
+WHERE o.id IS NULL;
+-- Esperado: 0 filas</code></pre>
+      <div class="callout warn">
+        <span class="callout-title">Usa LEFT JOIN, no NOT IN</span>
+        <p>
+          <code>WHERE order_id NOT IN (SELECT id FROM orders)</code> parece equivalente, pero si la
+          subquery devuelve algún <code>NULL</code>, <code>NOT IN</code> no devuelve ninguna fila.
+          La query sale vacía y parece que no hay huérfanos.
+        </p>
+      </div>
+
+      <h2 id="duplicados">Duplicados</h2>
+      <pre data-lang="sql"><code>-- Emails repetidos
+SELECT email, COUNT(*)
+FROM users
+GROUP BY email
+HAVING COUNT(*) &gt; 1;
+
+-- Mismo usuario, mismo día, mismo total (típico de un doble clic en "Pagar")
+SELECT user_id, CAST(created_at AS DATE), total, COUNT(*)
+FROM orders
+GROUP BY user_id, CAST(created_at AS DATE), total
+HAVING COUNT(*) &gt; 1;</code></pre>
+
+      <h2 id="totales">Totales que no cuadran</h2>
+      <p>Órdenes cuyo total guardado no coincide con la suma de sus items:</p>
+      <pre data-lang="sql"><code>SELECT o.id, o.total, SUM(oi.price * oi.quantity) AS calculated
+FROM orders o
+JOIN order_items oi ON o.id = oi.order_id
+GROUP BY o.id, o.total
+HAVING o.total &lt;&gt; SUM(oi.price * oi.quantity);</code></pre>
+      <p>Y un descuento aplicado sobre una orden puntual:</p>
+      <pre data-lang="sql"><code>SELECT subtotal, discount_amount, total,
+       subtotal - discount_amount AS expected_total
+FROM orders
+WHERE id = 'ord_123';
+-- Esperado: total = expected_total</code></pre>
+      <p>
+        Si el dinero está en columnas de punto flotante, la igualdad exacta falla por redondeo.
+        Compara con una tolerancia o castea al tipo decimal de la columna.
+      </p>
+
+      <h2 id="timestamps">Timestamps</h2>
+      <pre
+        data-lang="sql"
+      ><code>SELECT * FROM users    WHERE created_at &gt; NOW();          -- en el futuro
+SELECT * FROM products WHERE updated_at &lt; created_at;    -- actualizado antes de crearse
+SELECT * FROM orders   WHERE created_at IS NULL;         -- falta donde es obligatorio
+
+-- ¿Se creó hace menos de un minuto?
+SELECT * FROM users
+WHERE email = 'test@example.com'
+  AND created_at &gt; NOW() - INTERVAL '1 minute';
+-- Esperado: 1 fila</code></pre>
+      <p>
+        El reloj del servidor de la aplicación y el de la base pueden diferir por segundos. Si una
+        ventana de "último minuto" no encuentra la fila, amplíala antes de reportar un bug.
+      </p>
+
+      <h2 id="antes-despues">Antes y después de una acción</h2>
+      <p>
+        La receta más útil durante la exploración: lees un valor, haces la acción por UI o API y lo
+        vuelves a leer. El assert es sobre la diferencia.
+      </p>
+      <ol class="steps">
+        <li>
+          <strong>Antes</strong>
+          <pre data-lang="sql"><code>SELECT stock FROM products WHERE id = 'prod_123';
+-- Anota el valor, por ejemplo 40</code></pre>
+        </li>
+        <li>
+          <strong>Acción</strong>
+          <p>Crea desde la UI o la API una orden que compre 5 unidades de <code>prod_123</code>.</p>
+        </li>
+        <li>
+          <strong>Después</strong>
+          <pre data-lang="sql"><code>SELECT stock FROM products WHERE id = 'prod_123';
+-- Esperado: 35 (40 - 5)</code></pre>
+        </li>
+      </ol>
+
+      <h2 id="estrategias">Cuatro estrategias</h2>
+      <dl class="defs">
+        <dt>Snapshot antes / después</dt>
+        <dd>La receta de arriba: leer, actuar, leer, comparar el delta.</dd>
+        <dt>Comparar contra la fuente de verdad</dt>
+        <dd>
+          Recalcular lo que la fila debería tener (suma de items, subtotal menos descuento) y
+          compararlo con lo guardado.
+        </dd>
+        <dt>Restricciones de negocio</dt>
+        <dd>
+          Buscar filas que no deberían existir. El resultado esperado es cero:
+          <pre
+            data-lang="sql"
+          ><code>SELECT COUNT(*) FROM wallets WHERE balance &lt; 0;  -- Esperado: 0</code></pre>
+        </dd>
+        <dt>Cruce entre tablas</dt>
+        <dd>
+          Varias tablas deben coincidir después de una acción (orden, items, inventario,
+          notificación). Por ejemplo, ninguna orden activa sin items:
+          <pre data-lang="sql"><code>SELECT o.id
+FROM orders o
+LEFT JOIN order_items oi ON o.id = oi.order_id
+WHERE o.status &lt;&gt; 'cancelled'
+GROUP BY o.id
+HAVING COUNT(oi.id) = 0;
+-- Esperado: 0 filas</code></pre>
+        </dd>
+      </dl>
+
+      <h2 id="por-nivel">Qué validar según el nivel de test</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Nivel</th>
+              <th>Qué mirar en la base</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Integración (API)</td>
+              <td>
+                La API guardó lo que devolvió; los side effects corrieron; una llamada fallida hizo
+                rollback.
+              </td>
+            </tr>
+            <tr>
+              <td>E2E (UI)</td>
+              <td>El flujo completo dejó las filas esperadas en cada tabla que toca.</td>
+            </tr>
+            <tr>
+              <td>Nivel DB</td>
+              <td>
+                Los triggers se disparan, las constraints rechazan datos malos, los defaults se
+                aplican.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="checklist">Checklist</h2>
+      <pre data-lang="text"><code>[ ] Las filas existen en las tablas correctas
+[ ] Valores numéricos correctos (totales, cantidades)
+[ ] Foreign keys válidas, sin huérfanos
+[ ] Sin duplicados inesperados
+[ ] Timestamps plausibles
+[ ] Las restricciones de negocio se cumplen
+[ ] Side effects (triggers, cascades) ejecutados
+[ ] Transacciones confirmadas o revertidas según lo esperado</code></pre>
+
+      <h2 id="nunca">Lo que no se hace</h2>
+      <div class="callout danger">
+        <span class="callout-title">Nunca</span>
+        <p>
+          No corras <code>UPDATE</code> ni <code>DELETE</code> en un ambiente compartido para
+          "arreglar" datos de prueba sin el OK de quien lo administra; crea los datos por la API o
+          con un fixture. No pegues un connection string con password en un comando, un artefacto o
+          el chat. Y antes de reportar una diferencia de datos como bug, descarta lag de replicación
+          y diferencias de reloj.
+        </p>
+      </div>
+
+      <footer class="doc-footer">
+        Relacionado: <a href="../setup/dbhub.html">DBHub</a> (conexión y troubleshooting) ·
+        <a href="postman.html">Postman</a> · <a href="index.html">Exploración</a>. Fuente canónica
+        para el agente:
+        <code>.agents/skills/agentic-qa-core/references/db-testing-doctrine.md</code>.
+      </footer>
+    </article>
+  </body>
+</html>

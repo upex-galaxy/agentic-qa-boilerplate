@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenAPI</title>
+    <meta
+      name="description"
+      content="El MCP de OpenAPI para leer el contrato de la API, bun run api:login para el token y curl para las requests autenticadas."
+    />
+    <meta name="docs-order" content="30" />
+    <link rel="stylesheet" href="../../assets/docs.css" />
+    <script src="../../assets/docs.js"></script>
+  </head>
+  <body>
+    <article class="doc">
+      <header class="doc-header">
+        <nav class="breadcrumbs"><span>Core</span><span>Setup</span><span>OpenAPI</span></nav>
+        <h1>OpenAPI: el contrato de la API al alcance del agente</h1>
+        <p class="lede">
+          Cómo conectar la especificación OpenAPI de tu backend para que el agente descubra
+          endpoints y schemas, y cómo se ejecutan las requests autenticadas, que van por otro
+          camino.
+        </p>
+        <div class="meta-row">
+          <span class="badge accent">Setup</span><span class="badge">MCP</span>
+        </div>
+      </header>
+
+      <nav class="toc">
+        <strong>En esta página</strong>
+        <ol>
+          <li><a href="#regla">La regla: el MCP solo lee</a></li>
+          <li><a href="#configurar">Configurar el MCP</a></li>
+          <li><a href="#herramientas">Las tres herramientas</a></li>
+          <li><a href="#token">Obtener el token</a></li>
+          <li><a href="#curl">Ejecutar con curl</a></li>
+          <li><a href="#expiracion">Cuando el token expira</a></li>
+          <li><a href="#drift">Schema de dev, entorno de staging</a></li>
+          <li><a href="#tipos">Tipos para los tests automatizados</a></li>
+          <li><a href="#que-usar">Qué herramienta para qué</a></li>
+          <li><a href="#problemas">Problemas frecuentes</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="regla">La regla: el MCP solo lee</h2>
+      <p>
+        El MCP de OpenAPI (<code>@ivotoby/openapi-mcp-server</code>) sirve para descubrir qué
+        endpoints existen y qué piden y devuelven. En este repo
+        <strong>no ejecuta requests autenticadas</strong>. Para eso hay dos piezas más, cada una con
+        un solo trabajo:
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Paso</th>
+              <th>Herramienta</th>
+              <th>Resultado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1. Leer el schema</td>
+              <td>
+                MCP de OpenAPI: <code>list-api-endpoints</code>,
+                <code>get-api-endpoint-schema</code>
+              </td>
+              <td>Endpoints, parámetros, body y respuesta esperada</td>
+            </tr>
+            <tr>
+              <td>2. Obtener el token</td>
+              <td><code>bun run api:login</code></td>
+              <td>El token queda en <code>.auth/tokens.env</code></td>
+            </tr>
+            <tr>
+              <td>3. Ejecutar</td>
+              <td><code>curl</code> con el token</td>
+              <td>La respuesta real del entorno bajo prueba</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        El MCP no tiene un modo de solo lectura, así que la protección es otra: no recibe ninguna
+        credencial. Si alguien intenta ejecutar con él, la API responde 401, y ese 401 es la señal
+        de usar curl. Mantener el token fuera del MCP evita además dos problemas conocidos: un
+        header fijo no se refresca cuando el token caduca, y choca con un parámetro
+        <code>Authorization</code> declarado en el spec (<code
+          >Cannot override authentication header</code
+        >).
+      </p>
+      <div class="callout">
+        <span class="callout-title">Fuente canónica</span>
+        <p>
+          La IA lee <code>.agents/skills/agentic-qa-core/references/api-testing-doctrine.md</code>.
+          Esta página es la guía para personas.
+        </p>
+      </div>
+
+      <h2 id="configurar">Configurar el MCP</h2>
+      <p>
+        El server <code>openapi</code> ya está declarado en <code>.mcp.json</code>,
+        <code>opencode.jsonc</code> y <code>.codex/config.toml</code>. Así queda en
+        <code>.mcp.json</code>:
+      </p>
+      <pre data-lang="json"><code>"openapi": {
+  "command": "bunx",
+  "args": ["-y", "@ivotoby/openapi-mcp-server@1.16.1", "--tools", "dynamic"],
+  "env": {
+    "API_BASE_URL": "${API_BASE_URL}",
+    "OPENAPI_SPEC_PATH": "${OPENAPI_SPEC_PATH}"
+  }
+}</code></pre>
+      <p>
+        No tiene <code>API_HEADERS</code> ni token, y no debe tenerlos. Lo único que configuras son
+        dos variables en <code>.env</code>:
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Variable</th>
+              <th>Qué es</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>API_BASE_URL</code></td>
+              <td>
+                La URL base del backend bajo prueba. La usa el agente en curl y es también la base
+                del MCP.
+              </td>
+            </tr>
+            <tr>
+              <td><code>OPENAPI_SPEC_PATH</code></td>
+              <td>
+                De dónde lee el MCP el schema. Puede ser un archivo local (por ejemplo
+                <code>./api/openapi.json</code>, que descarga <code>bun run api:sync</code>) o una
+                URL viva, como la ruta de OpenAPI que sirve tu backend al levantarlo en local
+                (<code>http://localhost:3000/api/openapi</code>).
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Como con cualquier MCP, las variables se leen al arrancar la sesión. Lanza el agente con
+        <code>bun run claude</code>, <code>bun run opencode</code> o <code>bun run codex</code>, y
+        reinícialo si cambias alguna de las dos.
+      </p>
+      <p>
+        Para comprobar que funciona, pregunta al agente qué endpoints tiene la API. Debería llamar a
+        <code>list-api-endpoints</code> y devolver la lista.
+      </p>
+
+      <h2 id="herramientas">Las tres herramientas</h2>
+      <p>
+        Con <code>--tools dynamic</code> el MCP no crea una herramienta por endpoint. Expone
+        exactamente tres herramientas genéricas:
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Herramienta</th>
+              <th>Uso en este repo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>list-api-endpoints</code></td>
+              <td>Sí: listar los endpoints disponibles</td>
+            </tr>
+            <tr>
+              <td><code>get-api-endpoint-schema</code></td>
+              <td>Sí: leer parámetros, body y respuesta de un endpoint</td>
+            </tr>
+            <tr>
+              <td><code>invoke-api-endpoint</code></td>
+              <td>No. Existe porque el paquete la trae, pero las requests van por curl</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="token">Obtener el token</h2>
+      <p>
+        <code>bun run api:login</code> solo obtiene el token. Se autentica con las credenciales del
+        entorno y rol que le pidas (las lee de <code>.env</code>, por ejemplo
+        <code>STAGING_USER_EMAIL</code> y <code>STAGING_USER_PASSWORD</code>) y guarda el resultado
+        en disco:
+      </p>
+      <pre
+        data-lang="bash"
+      ><code>bun run api:login                       # entorno activo (TEST_ENV), rol user
+bun run api:login staging               # entorno explícito
+bun run api:login staging --role admin  # otro rol
+bun run api:login staging --profile W1  # juego de tokens aislado en .auth/profiles/W1/
+bun run api:login --help                # opciones, rutas y variables que necesita</code></pre>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Archivo</th>
+              <th>Qué guarda</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>.auth/tokens.env</code></td>
+              <td>
+                Una línea por rol y entorno, lista para <code>source</code>:
+                <code>export API_TOKEN_&lt;ROLE&gt;_&lt;ENV&gt;='...'</code>
+              </td>
+            </tr>
+            <tr>
+              <td><code>.auth/tokens.json</code></td>
+              <td>
+                Metadatos por <code>&lt;ROLE&gt;_&lt;ENV&gt;</code>: token, tipo,
+                <code>expiresIn</code> y <code>createdAt</code>
+              </td>
+            </tr>
+            <tr>
+              <td><code>.auth/api-state.json</code></td>
+              <td>
+                El estado que usa la fixture de API de Playwright. No lo toca el flujo de curl
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        La variable del token va en mayúsculas: <code>API_TOKEN_ADMIN_STAGING</code>,
+        <code>API_TOKEN_USER_LOCAL</code>. Varios roles y entornos conviven en el mismo archivo.
+        Todo <code>.auth/</code> está en <code>.gitignore</code>, nada se escribe en
+        <code>.env</code> y no hace falta reiniciar la sesión después del login.
+      </p>
+      <p>
+        Si tu backend se autentica de otra forma, el archivo que se adapta es
+        <code>scripts/api-login.project.ts</code>. El resto de la CLI vive en
+        <code>scripts/lib/api-login-core.ts</code> y llega con las actualizaciones del repo.
+      </p>
+
+      <h2 id="curl">Ejecutar con curl</h2>
+      <p>
+        Cada llamada Bash del agente abre una shell nueva, así que el token no sobrevive de una
+        llamada a otra. Se hace <code>source</code> del archivo en la misma llamada que el curl:
+      </p>
+      <pre data-lang="bash"><code>source .auth/tokens.env &amp;&amp; \
+curl -s -H "Authorization: Bearer $API_TOKEN_ADMIN_STAGING" \
+  "$API_BASE_URL/products"</code></pre>
+      <p>
+        Para probar aislamiento entre roles (por ejemplo, que un usuario no vea datos de otro
+        tenant) basta con usar variables distintas del mismo archivo:
+        <code>$API_TOKEN_ADMIN_STAGING</code> frente a <code>$API_TOKEN_USER_STAGING</code>.
+      </p>
+      <div class="callout tip">
+        <span class="callout-title">En Windows</span>
+        <p>
+          <code>source</code> no existe en <code>cmd</code> ni en PowerShell, y PowerShell no lee el
+          formato <code>export VAR='...'</code>. Fuera de una shell POSIX, toma el token de
+          <code>.auth/tokens.json</code> y llama a <code>curl.exe</code> con su nombre completo: en
+          Windows PowerShell 5.1, <code>curl</code> a secas es un alias de
+          <code>Invoke-WebRequest</code>, no entiende <code>-H</code> y el error parece de
+          autenticación. <code>bun run api:login</code> imprime el siguiente paso correcto para tu
+          plataforma.
+        </p>
+      </div>
+
+      <h2 id="expiracion">Cuando el token expira</h2>
+      <p>
+        Antes de reutilizar un token, mira si sigue vigente: <code>createdAt</code> más
+        <code>expiresIn</code> en <code>.auth/tokens.json</code>.
+      </p>
+      <pre
+        data-lang="bash"
+      ><code>jq -r '.ADMIN_STAGING | (.createdAt + " +" + (.expiresIn|tostring) + "s")' .auth/tokens.json</code></pre>
+      <p>
+        Si ya pasó, o una request devuelve 401, vuelve a ejecutar
+        <code>bun run api:login &lt;env&gt; --role &lt;role&gt;</code> y repite. Un 401 por token
+        caducado no es un bug.
+      </p>
+      <div class="callout danger">
+        <span class="callout-title">Nunca edites <code>.mcp.json</code> para renovar un token</span>
+        <p>
+          Tampoco <code>opencode.jsonc</code> ni <code>.codex/config.toml</code>. El MCP no tiene
+          credenciales a propósito. Un JWT caducado se renueva con <code>bun run api:login</code>,
+          que reescribe <code>.auth/tokens.env</code>, y con nada más. No pegues un token en un
+          comando, un artefacto, un commit ni en el chat.
+        </p>
+      </div>
+
+      <h2 id="drift">Schema de dev, entorno de staging</h2>
+      <p>
+        El schema que lee el MCP suele ser el de dev, la versión más reciente. El entorno que estás
+        probando (staging, por ejemplo) puede ir por detrás, así que un endpoint o un campo que
+        aparece en el schema quizá todavía no existe en ese servidor. Ante un 4xx inesperado, un
+        campo que falta o una respuesta con otra forma, sospecha primero de esta diferencia y
+        compruébalo contra el entorno real antes de reportar un bug.
+      </p>
+
+      <h2 id="tipos">Tipos para los tests automatizados</h2>
+      <p>
+        <code>bun run api:sync</code> descarga el spec (de una URL, de un repo de GitHub o de un
+        archivo local) y genera los tipos TypeScript en <code>api/openapi-types.ts</code>. Las
+        facades de <code>api/schemas/</code> los reexportan para que los tests los importen.
+      </p>
+      <pre
+        data-lang="bash"
+      ><code>bun run api:sync                                          # interactivo
+bun run api:sync --url http://localhost:3000/api/openapi  # desde una URL
+bun run api:sync --file ./path/to/spec.json               # desde un archivo local
+bun run api:sync --config                                 # con la configuración guardada</code></pre>
+      <p>
+        Los tipos se comprueban al compilar, no en ejecución: el repo no tiene validador de schema
+        en runtime (ni Zod ni Ajv). Un tipo detecta un test que lee un campo que el contrato no
+        tiene, pero no detecta una API que devuelve otra forma. La forma que te importa se valida
+        con asserts explícitos en el test.
+      </p>
+
+      <h2 id="que-usar">Qué herramienta para qué</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Necesidad</th>
+              <th>Herramienta</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Explorar endpoints y schemas</td>
+              <td>MCP de OpenAPI (solo lectura)</td>
+            </tr>
+            <tr>
+              <td>Requests exploratorias o manuales</td>
+              <td><code>bun run api:login</code> + curl</td>
+            </tr>
+            <tr>
+              <td>Colecciones y exploración visual</td>
+              <td><a href="../exploracion/postman.html">Postman</a></td>
+            </tr>
+            <tr>
+              <td>Suite de tests automatizados y CI</td>
+              <td><code>ApiBase</code> de KATA</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Los patrones de API testing con KATA están en
+        <code>.agents/skills/test-automation/references/api-patterns.md</code>.
+      </p>
+
+      <h2 id="problemas">Problemas frecuentes</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Síntoma</th>
+              <th>Qué revisar</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>El MCP no puede cargar el spec</td>
+              <td>
+                Que <code>OPENAPI_SPEC_PATH</code> apunte a algo que exista. Si es una URL, ábrela
+                en el navegador; si pide autenticación, descarga el spec con
+                <code>bun run api:sync</code> y apunta al archivo local.
+              </td>
+            </tr>
+            <tr>
+              <td>Spec inválido</td>
+              <td>
+                Que sea JSON o YAML válido. Puedes validarlo en
+                <a href="https://editor.swagger.io/" target="_blank" rel="noopener"
+                  >editor.swagger.io</a
+                >.
+              </td>
+            </tr>
+            <tr>
+              <td><code>list-api-endpoints</code> devuelve una lista vacía</td>
+              <td>Que el spec declare operaciones reales y no solo schemas.</td>
+            </tr>
+            <tr>
+              <td>401 al usar <code>invoke-api-endpoint</code></td>
+              <td>Es lo esperado: el MCP no tiene credencial. Ejecuta con curl.</td>
+            </tr>
+            <tr>
+              <td>401 en curl</td>
+              <td>
+                Token caducado o de otro entorno. Revisa <code>.auth/tokens.json</code> y vuelve a
+                ejecutar <code>bun run api:login</code>.
+              </td>
+            </tr>
+            <tr>
+              <td>La variable del token llega vacía</td>
+              <td>
+                Que el <code>source .auth/tokens.env</code> esté en la misma llamada que el curl y
+                que el nombre coincida con rol y entorno.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <footer class="doc-footer">
+        <p>
+          Relacionado: <a href="index.html">Setup</a> · <a href="dbhub.html">DBHub</a> ·
+          <a href="../exploracion/postman.html">Postman</a>.
+        </p>
+        <p>
+          Fuente canónica:
+          <code>.agents/skills/agentic-qa-core/references/api-testing-doctrine.md</code>.
+        </p>
+      </footer>
+    </article>
+  </body>
+</html>

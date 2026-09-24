@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Observation</title>
+    <meta
+      name="description"
+      content="El stage de producción del IQL: canary, A/B, RUM, chaos engineering y feedback loop, con SLOs, error budget y las métricas del Late-Game. Declarado, sin skill todavía en este repo."
+    />
+    <meta name="docs-order" content="50" />
+    <link rel="stylesheet" href="../../assets/docs.css" />
+    <script src="../../assets/docs.js"></script>
+  </head>
+  <body>
+    <article class="doc">
+      <header class="doc-header">
+        <nav class="breadcrumbs">
+          <span>Core</span><span>Metodología</span><span>Observation</span>
+        </nav>
+        <h1>Observation: la calidad en producción</h1>
+        <p class="lede">
+          El octavo stage del IQL responde "¿cómo se comporta en el mundo real?". Esta página
+          explica qué observa, quién decide qué, con qué métricas se mide y qué parte puedes cubrir
+          hoy con este repo.
+        </p>
+        <div class="meta-row">
+          <span class="badge accent">Late-Game</span
+          ><span class="badge">L4 · Production Observation</span
+          ><span class="badge warn">Sin skill</span>
+        </div>
+      </header>
+
+      <div class="callout warn">
+        <span class="callout-title">Stage declarado, sin skill todavía</span>
+        <p>
+          El IQL declara Observation como parte del ciclo, pero este repo no tiene ninguna skill que
+          lo ejecute. Nada en <code>.agents/skills/</code> vigila producción hoy, y
+          <code>.agents/skills/agentic-qa-core/references/stage-gates.md</code> lo deja sin
+          checklist de Definition of Done a propósito: un checklist vacío parecería un gate que un
+          orquestador puede tildar. Lee esta página como el mapa de lo que el método pide para
+          producción.
+        </p>
+      </div>
+
+      <nav class="toc">
+        <strong>En esta página</strong>
+        <ol>
+          <li><a href="#que-es">Qué es</a></li>
+          <li><a href="#contrato">El contrato agéntico</a></li>
+          <li><a href="#rutina">La rutina agéntica</a></li>
+          <li><a href="#steps">Los cinco steps</a></li>
+          <li><a href="#slo">SLO y error budget</a></li>
+          <li><a href="#metricas">Métricas</a></li>
+          <li><a href="#madurez">Hasta dónde llegar</a></li>
+          <li><a href="#herramientas">Herramientas</a></li>
+          <li><a href="#hoy">Qué puedes hacer hoy con este repo</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="que-es">Qué es</h2>
+      <p>
+        Observation es el último stage del <a href="late-game.html">Late-Game</a>, la fase en la que
+        QA trabaja junto a DevOps y SRE. Viene después de Regression: el release ya salió y ahora
+        importa lo que pasa con usuarios reales. Agrupa los steps 11 a 15 del IQL. El step 10
+        (mantenimiento continuo y regresión) pertenece al stage Regression, que sí tiene skill.
+      </p>
+      <p>
+        Su función en el método es cerrar el ciclo. Lo que se aprende en producción vuelve al
+        análisis del siguiente Shift-Left, y vuelve por un mecanismo con nombre: el error budget y
+        la escape rate. Si ningún número regresa al step 1, el último step es un final y no un
+        retorno.
+      </p>
+
+      <h2 id="contrato">El contrato agéntico</h2>
+      <p>
+        Como todo stage, Observation declara qué hace el agente y qué firma la persona. Esta fila
+        está en la tabla de contratos de <code>stage-gates.md</code>:
+      </p>
+      <div class="table-wrap">
+        <table>
+          <tbody>
+            <tr>
+              <th>El agente hace</th>
+              <td>
+                Vigila las señales que el producto ya emite (objetivos de servicio, error budget,
+                monitoreo de usuarios reales, cohortes de canary), abre ítems en el backlog cuando
+                una señal se sale de rango y devuelve lo aprendido al siguiente Shift-Left.
+              </td>
+            </tr>
+            <tr>
+              <th>La persona firma</th>
+              <td>
+                Los SLOs y la política de error budget, y la decisión de detener releases. Ningún
+                umbral se hereda de un benchmark ajeno.
+              </td>
+            </tr>
+            <tr>
+              <th>Evidencia exigida</th>
+              <td>
+                Métricas del propio producto contra los targets que ese producto declaró. Los
+                benchmarks de la industria sirven de referencia, nunca de objetivo.
+              </td>
+            </tr>
+            <tr>
+              <th>Autonomía</th>
+              <td>
+                3 en la escala 0-5 (decide dentro de límites declarados y escala fuera de ellos)
+              </td>
+            </tr>
+            <tr>
+              <th>Verificador separado</th>
+              <td>No aplica todavía</td>
+            </tr>
+            <tr>
+              <th>Skill dueña</th>
+              <td>Ninguna. La unidad operativa sería una rutina agéntica.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="rutina">La rutina agéntica</h2>
+      <p>
+        Hay stages que no caben en una sesión: nadie se sienta a mirar producción todo el día. Para
+        eso el IQL define la rutina agéntica, una corrida que arranca sola (por horario o por un
+        disparo) y cuyo producto es evidencia con un destinatario. Tiene cuatro partes:
+      </p>
+      <ol class="steps">
+        <li>
+          <strong>Disparador</strong>
+          <p>
+            Qué la despierta: un horario, un push, un umbral cruzado. Tiene que ser explícito y
+            único. Sin disparador con nombre, es un script que alguien corre a mano.
+          </p>
+        </li>
+        <li>
+          <strong>Permisos acotados</strong>
+          <p>
+            Qué puede leer y qué puede escribir, y nada más. No hereda la confianza general del
+            agente.
+          </p>
+        </li>
+        <li>
+          <strong>Evidencia</strong>
+          <p>
+            Qué deja al terminar, salga bien o mal: el comando, la salida, el artefacto. Sin
+            evidencia reproducible no hay conclusión, aunque nadie la mire.
+          </p>
+        </li>
+        <li>
+          <strong>Reporte</strong>
+          <p>
+            A quién le habla y por qué canal. Una rutina que no le reporta a una persona es una
+            alarma apagada.
+          </p>
+        </li>
+      </ol>
+
+      <h2 id="steps">Los cinco steps</h2>
+      <p>
+        El sitio oficial los marca como "panorama": se enseñan como mapa de la industria y hoja de
+        ruta, no como práctica que se opera contra un entorno productivo real. Cada uno exige algo
+        del entorno antes de tener sentido. El número de adopción sugerido indica en qué orden
+        conviene incorporarlos.
+      </p>
+
+      <h3 id="canary">Step 11: Canary release monitoring</h3>
+      <p>
+        La feature nueva sale primero para un porcentaje chico de usuarios. Se comparan las métricas
+        de esa cohorte con las del resto y, con esos datos, se decide si se amplía el rollout o se
+        hace rollback. El aporte de QA es definir qué señales miran la cohorte (errores, latencia,
+        conversión del flujo nuevo) y con qué umbral se corta.
+      </p>
+      <p>
+        <strong>Requiere</strong> despliegue progresivo (canary o feature flags) con métricas por
+        cohorte. Adopción sugerida: nº 4.
+      </p>
+
+      <h3 id="ab">Step 12: A/B testing</h3>
+      <p>
+        Dos versiones de una funcionalidad conviven y se mide cuál funciona mejor con usuarios
+        reales. El experimento necesita una hipótesis clara y una métrica de éxito definida antes de
+        empezar, y el resultado se analiza con criterio estadístico, no a ojo.
+      </p>
+      <p>
+        <strong>Requiere</strong> feature flags y analítica de producto. Adopción sugerida: nº 5.
+      </p>
+
+      <h3 id="rum">Step 13: Real User Monitoring (RUM)</h3>
+      <p>
+        Se instrumenta la aplicación para capturar el rendimiento que viven los usuarios reales:
+        Core Web Vitals, errores del lado del cliente, diferencias por dispositivo o región. Las
+        alertas avisan cuando algo se degrada. Es la fuente de buena parte del MTTD.
+      </p>
+      <p><strong>Requiere</strong> error tracking y RUM en producción. Adopción sugerida: nº 2.</p>
+
+      <h3 id="chaos">Step 14: Chaos engineering</h3>
+      <p>
+        Se introducen fallas controladas (un servicio caído, latencia agregada, una dependencia que
+        no responde) para comprobar que el sistema se recupera como se espera. Cada experimento
+        parte de una hipótesis de resiliencia y empieza por servicios no críticos. Lo que falla se
+        documenta como debilidad de arquitectura.
+      </p>
+      <p>
+        <strong>Requiere</strong> arquitectura distribuida, SLOs definidos y un equipo SRE. Adopción
+        sugerida: nº 6, la última.
+      </p>
+
+      <h3 id="feedback">Step 15: Feedback loop</h3>
+      <p>
+        Se juntan el feedback de soporte, las reseñas y las métricas de producción, y se convierten
+        en trabajo: ACs actualizados, ítems nuevos en el backlog, riesgos que el siguiente
+        Shift-Left tiene que mirar. Es el step que convierte el ciclo en bucle.
+      </p>
+      <p>
+        <strong>Requiere</strong> al menos una fuente de producción (RUM o alertas) y un ritual que
+        devuelva lo aprendido al step 1. Adopción sugerida: nº 3.
+      </p>
+
+      <h2 id="slo">SLO y error budget</h2>
+      <dl class="defs">
+        <dt>SLO (Service Level Objective)</dt>
+        <dd>
+          El objetivo de servicio que el equipo se compromete a cumplir, por ejemplo "99.9% de las
+          requests responden sin error en el mes". Lo define la persona, no el agente, y se elige
+          según la criticidad del producto: un banco y una app interna de RRHH no necesitan el
+          mismo.
+        </dd>
+        <dt>Error budget</dt>
+        <dd>
+          Lo que el SLO deja de margen. Con un SLO de 99.9%, el presupuesto es el 0.1% restante.
+          Mientras quede presupuesto, el equipo puede seguir liberando; cuando se consume, la
+          política de error budget dice qué pasa (por ejemplo, frenar releases hasta estabilizar).
+          Esa política también la firma una persona.
+        </dd>
+        <dt>Escape rate</dt>
+        <dd>
+          Bugs encontrados en producción sobre el total de bugs del período. Mide lo que el método
+          promete: que el defecto se encuentre antes de llegar al usuario.
+        </dd>
+      </dl>
+      <p>
+        Juntos, error budget y escape rate son el mecanismo de retorno: le dicen al siguiente ciclo
+        dónde tiene que invertir análisis.
+      </p>
+
+      <h2 id="metricas">Métricas</h2>
+      <p>
+        Las fases anteriores se evalúan por lo que producen: un plan, un caso, un PR. Esta se evalúa
+        por lo que pasa en producción cuando nadie está mirando. Los valores de la tabla son
+        benchmarks de referencia del sitio oficial, no objetivos universales: cada producto declara
+        los suyos según criticidad, baseline, arquitectura y negocio.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Métrica</th>
+              <th>Qué mide</th>
+              <th>Benchmark de referencia</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>MTTD</strong> (Mean Time To Detect)</td>
+              <td>Cuánto tarda el equipo en enterarse de que algo se rompió en producción</td>
+              <td>&lt; 5 minutos</td>
+            </tr>
+            <tr>
+              <td><strong>MTTR</strong> (Mean Time To Resolution)</td>
+              <td>Cuánto tarda en resolverse una vez detectado</td>
+              <td>&lt; 30 minutos</td>
+            </tr>
+            <tr>
+              <td><strong>Error rate</strong></td>
+              <td>Porcentaje de requests que terminan en error (5xx)</td>
+              <td>&lt; 0.1%</td>
+            </tr>
+            <tr>
+              <td><strong>CSAT</strong></td>
+              <td>Satisfacción declarada por los usuarios; mide la percepción, no el sistema</td>
+              <td>&gt; 4.5/5</td>
+            </tr>
+            <tr>
+              <td><strong>SLO compliance</strong></td>
+              <td>Porción del tiempo en que se cumplen los objetivos de servicio</td>
+              <td>&gt; 99.9%</td>
+            </tr>
+            <tr>
+              <td><strong>Performance score</strong></td>
+              <td>Rendimiento percibido según Core Web Vitals</td>
+              <td>&gt; 90/100</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>El IQL suma métricas que miden al propio método:</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Métrica</th>
+              <th>Qué dice</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Change failure rate</strong></td>
+              <td>
+                Porcentaje de despliegues que terminan en incidente, rollback o hotfix (métrica
+                DORA)
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Escape rate</strong></td>
+              <td>Bugs de producción sobre el total de bugs del período</td>
+            </tr>
+            <tr>
+              <td><strong>Ratio Deferred</strong></td>
+              <td>
+                Qué porción de escenarios deja fuera de la regresión el gate de ROI. Si más de la
+                mitad cae en Candidate o Manual, el filtro no se aplicó.
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Flaky rate</strong></td>
+              <td>
+                Tests que cambian de resultado sin que cambie el código, sobre el total de la suite
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Lead time AC → ATP</strong> (opcional)</td>
+              <td>
+                Tiempo entre el criterio de aceptación y su plan escrito; mide si el Shift-Left
+                llega a tiempo
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="madurez">Hasta dónde llegar</h2>
+      <p>
+        Esta fase no se adopta entera. Cada nivel de madurez pide algo del entorno, y Observation es
+        el último:
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Nivel</th>
+              <th>Steps</th>
+              <th>Requiere</th>
+              <th>Resultado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>L1 · Prevention</td>
+              <td>1, 2</td>
+              <td>Backlog en un tracker y QA en el refinamiento</td>
+              <td>Historias mejor definidas</td>
+            </tr>
+            <tr>
+              <td>L2 · Early Detection</td>
+              <td>3, 4</td>
+              <td>Un ambiente de prueba antes del merge</td>
+              <td>Feedback antes del PR</td>
+            </tr>
+            <tr>
+              <td>L3 · Continuous Detection</td>
+              <td>5 a 10</td>
+              <td>Repositorio con PRs y CI en cada PR</td>
+              <td>Regresión confiable en CI</td>
+            </tr>
+            <tr>
+              <td><strong>L4 · Production Observation</strong></td>
+              <td>11 a 15</td>
+              <td>
+                Observabilidad en producción; despliegue progresivo para canary y A/B; SLOs y
+                cultura SRE para chaos
+              </td>
+              <td>Producción alimentando la estrategia</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="herramientas">Herramientas</h2>
+      <p>
+        El IQL define qué observar; la herramienta la pone el entorno. Casi todo en esta fase lo
+        trae el cliente, y se trabaja con lo que ya tiene:
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Necesidad</th>
+              <th>Ejemplos</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Error tracking y tableros de métricas</td>
+              <td>Sentry, Grafana, Datadog</td>
+            </tr>
+            <tr>
+              <td>Despliegue progresivo</td>
+              <td>Feature flags, rollout por porcentaje</td>
+            </tr>
+            <tr>
+              <td>Carga y rendimiento contra el sistema real</td>
+              <td>k6 (solo cuando performance entra como riesgo desde el análisis)</td>
+            </tr>
+            <tr>
+              <td>Disponibilidad medida desde afuera</td>
+              <td>UptimeRobot o cualquier monitor de uptime</td>
+            </tr>
+            <tr>
+              <td>Chaos</td>
+              <td>Gremlin, Litmus, scripts propios</td>
+            </tr>
+            <tr>
+              <td>Feedback loop</td>
+              <td>El tracker del equipo (Jira), Slack o Teams</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="hoy">Qué puedes hacer hoy con este repo</h2>
+      <p>
+        No hay skill de Observation, pero sí hay piezas del ciclo que ya conectan con producción:
+      </p>
+      <ul>
+        <li>
+          <strong>Regression</strong> cubre el step 10: <code>/regression-testing</code> corre la
+          suite, clasifica fallas y emite GO / CAUTION / NO-GO. Es el prerrequisito de todo lo
+          demás.
+        </li>
+        <li>
+          <strong>Reportar lo que aparece en producción.</strong> Según
+          <code>.agents/skills/agentic-qa-core/references/defect-management-doctrine.md</code>, un
+          problema en una feature que ya está viva por encima de Staging es un Bug, y se registra
+          con la misma doctrina que cualquier otro defecto: severidad, components y el Epic
+          <code>QA Defect Management</code>.
+        </li>
+        <li>
+          <strong>Cerrar el bucle a mano.</strong> Lo que aprendas de producción entra como ítem de
+          backlog y lo toma el siguiente <code>/shift-left-testing</code>, que es donde el método
+          espera que vuelva.
+        </li>
+      </ul>
+      <p>
+        Lo que falta es la rutina que vigile las señales por su cuenta. Hasta que exista, esa
+        vigilancia es trabajo humano con las herramientas del equipo.
+      </p>
+
+      <details>
+        <summary>Sobre el documento anterior de Late-Game</summary>
+        <p>
+          El repo conserva <code>docs/methodology/late-game-testing.md</code>, de la época TAUS.
+          Está marcado como legado: presenta los steps 10 a 15 como un solo bloque y nombra
+          herramientas fijas. Hoy el step 10 es parte de Regression, los steps 11 a 15 forman
+          Observation y las herramientas dependen de lo que ya use el cliente. Si ese archivo y esta
+          página no coinciden, manda la capa viva (<code>stage-gates.md</code> y las skills).
+        </p>
+      </details>
+
+      <footer class="doc-footer">
+        Relacionado: <a href="late-game.html">Late-Game</a> ·
+        <a href="este-repo.html">Este repo y el IQL</a> · sitio oficial:
+        <a href="https://www.upexgalaxy.com/metodologia/late-game" target="_blank" rel="noopener"
+          >upexgalaxy.com/metodologia/late-game</a
+        >. Fuente canónica del contrato:
+        <code>.agents/skills/agentic-qa-core/references/stage-gates.md</code>.
+      </footer>
+    </article>
+  </body>
+</html>

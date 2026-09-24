@@ -1,0 +1,1799 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Empezar aquí</title>
+    <meta
+      name="description"
+      content="Instalación, ciclo de vida en cinco fases, skills, MCPs, Engram y la chuleta de comandos y scripts del boilerplate de QA agéntico."
+    />
+    <meta name="docs-order" content="10" />
+    <link rel="stylesheet" href="../assets/docs.css" />
+    <script src="../assets/docs.js"></script>
+  </head>
+  <body>
+    <article class="doc wide">
+      <header class="doc-header">
+        <nav class="breadcrumbs"><span>Core</span><span>Empezar aquí</span></nav>
+        <h1>Empezar aquí</h1>
+        <p class="lede">
+          Cómo instalar el repo, qué hace cada pieza y qué ejecutar en cada momento: desde el primer
+          <code>bun run setup</code> hasta el veredicto de regresión de un release.
+        </p>
+        <div class="meta-row">
+          <span class="badge accent">Onboarding</span>
+          <span class="badge">Playwright + KATA + TypeScript</span>
+        </div>
+      </header>
+
+      <nav class="toc">
+        <strong>En esta página</strong>
+        <ol>
+          <li><a href="#la-idea">La idea en dos minutos</a></li>
+          <li><a href="#instalacion">Instalación</a></li>
+          <li><a href="#credenciales">Credenciales y arranque del agente</a></li>
+          <li><a href="#ciclo-de-vida">El ciclo de vida: cinco fases</a></li>
+          <li><a href="#caminos">Elige tu camino</a></li>
+          <li><a href="#piezas-confusas">Tres piezas que se confunden</a></li>
+          <li><a href="#circuitos">Cómo se conecta todo: tres circuitos</a></li>
+          <li><a href="#mcps">Los seis MCPs</a></li>
+          <li><a href="#engram">Engram: memoria entre sesiones</a></li>
+          <li><a href="#chuleta">Chuleta: quiero X, ejecuto Y</a></li>
+          <li><a href="#skills">Catálogo de skills</a></li>
+          <li><a href="#comandos-scripts">Comandos y scripts</a></li>
+          <li><a href="#decks">Decks visuales</a></li>
+          <li><a href="#siguientes-pasos">Siguientes pasos</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="la-idea">La idea en dos minutos</h2>
+      <p>
+        Este repositorio es una máquina de QA que trabaja con un agente de IA. Tú traes el proyecto
+        bajo prueba (el <em>target</em>: un frontend, un backend o ambos) y el boilerplate pone las
+        instrucciones, la capa de conocimiento y las herramientas que el agente usa para planificar
+        pruebas, ejecutarlas, reportar bugs, automatizar y emitir un veredicto de release. Entre
+        cada etapa hay un checkpoint humano: el agente propone y tú apruebas.
+      </p>
+      <p>Todo lo que puedes invocar pertenece a una de tres categorías:</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>Qué es</th>
+              <th>Dónde vive</th>
+              <th>Quién lo invoca</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Skill</strong></td>
+              <td>
+                Instrucciones en markdown que guían al agente por tareas largas de varias fases
+                (subagentes, decisiones, referencias).
+              </td>
+              <td>
+                <code>.agents/skills/&lt;nombre&gt;/SKILL.md</code> + <code>references/</code>
+              </td>
+              <td>
+                El agente la activa cuando tu mensaje coincide con sus triggers. También puedes
+                forzarla con <code>/nombre-del-skill</code>.
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Comando</strong></td>
+              <td>
+                Alias generado: elige un skill y un modo, y le pasa tus argumentos. No tiene
+                workflow propio.
+              </td>
+              <td>
+                <code>.agents/compatibility/command-aliases.json</code>, que genera
+                <code>.claude/commands/</code> y <code>.opencode/commands/</code>
+              </td>
+              <td>Tú, escribiendo <code>/&lt;nombre&gt;</code>. No se activa solo.</td>
+            </tr>
+            <tr>
+              <td><strong>Script</strong></td>
+              <td>CLI en TypeScript que corre en la terminal.</td>
+              <td>
+                <code>scripts/*.ts</code> y <code>cli/*.ts</code>, declarados en
+                <code>package.json</code>
+              </td>
+              <td>Tú, con <code>bun run &lt;script&gt;</code>.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Las tres comparten el mismo combustible: las variables de <code>.agents/project.yaml</code>
+        (nombre del proyecto, URLs por entorno, clave de Jira) y los catálogos de Jira en
+        <code>.agents/</code>. El agente los lee al empezar la sesión y resuelve los placeholders
+        <code>{{VAR}}</code> antes de actuar.
+      </p>
+      <div class="callout tip">
+        <span class="callout-title">Con quién hablas</span>
+        <p>
+          El agente tiene una personalidad definida: un QA senior que reporta a un Project Manager,
+          escueto, con respuestas que empiezan por el valor y un menú de temas para profundizar. Si
+          algo de su estilo te sorprende, lee <a href="personalidad.html">Personalidad</a>.
+        </p>
+      </div>
+
+      <h2 id="instalacion">Instalación</h2>
+
+      <h3 id="prerequisitos">Prerequisitos</h3>
+      <p>
+        El instalador se diagnostica solo y te dice qué falta, pero ahorras una vuelta si instalas
+        antes lo que bloquea.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Herramienta</th>
+              <th>Versión</th>
+              <th>Si falta</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Bun</strong></td>
+              <td><code>&gt;= 1.0.0</code></td>
+              <td>Bloquea. El preflight de <code>bun run setup</code> sale con código 1.</td>
+            </tr>
+            <tr>
+              <td><strong>Un agente</strong>: Claude Code, OpenCode o Codex (CLI o Desktop)</td>
+              <td>última</td>
+              <td>Bloquea. Sin ninguno de los tres, el paso de selección de agentes corta.</td>
+            </tr>
+            <tr>
+              <td><code>git</code> y <code>tar</code></td>
+              <td>cualquiera</td>
+              <td>
+                Bloquea el scaffolder (<code>git init</code>, extraer el tarball) y los hooks.
+              </td>
+            </tr>
+            <tr>
+              <td><code>node</code></td>
+              <td><code>&gt;= 18</code></td>
+              <td>Lo exige el doctor del scaffolder.</td>
+            </tr>
+            <tr>
+              <td><strong>gentle-ai</strong></td>
+              <td><code>&gt;= 1.26.5</code></td>
+              <td>
+                Aviso. Sin él no se instala Engram (memoria entre sesiones); el resto funciona.
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <code>gh</code>, <code>acli</code>, <code>playwright-cli</code>, <code>jq</code>,
+                <code>resend</code>, <code>rg</code>
+              </td>
+              <td>cualquiera</td>
+              <td>
+                Aviso. Cada uno lo necesita un skill concreto; puedes instalarlos cuando ese skill
+                te lo pida.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        En Windows funcionan PowerShell y cmd sin WSL. Instala Bun con
+        <code>powershell -c "irm bun.sh/install.ps1 | iex"</code>, no con <code>npm i -g bun</code>.
+      </p>
+
+      <h3 id="tres-caminos">Tres formas de empezar</h3>
+      <div class="cards">
+        <div class="card">
+          <span class="badge green">Recomendado</span>
+          <h3>Scaffolder de npm</h3>
+          <p>
+            <code>bunx create-agentic-qa@latest &lt;nombre-del-repo&gt;</code> descarga el último
+            <code>main</code> sin historial, renombra el proyecto, hace <code>git init</code>, corre
+            <code>bun install</code> y te pasa a <code>bun run setup</code>.
+          </p>
+        </div>
+        <div class="card">
+          <span class="badge">GitHub primero</span>
+          <h3>"Use this template"</h3>
+          <p>
+            Creas el repo desde la web de GitHub, lo clonas y ejecutas
+            <code>bun install</code> y <code>bun run setup</code>. Hereda el historial del
+            boilerplate y el renombrado lo haces a mano.
+          </p>
+        </div>
+        <div class="card">
+          <span class="badge warn">Solo contribuidores</span>
+          <h3>Clon manual</h3>
+          <p>
+            Para trabajar en el boilerplate mismo (skills, instalador, scripts). Si vas a probar tu
+            propio producto, usa el scaffolder.
+          </p>
+        </div>
+      </div>
+      <pre data-lang="bash"><code># Camino recomendado
+bunx create-agentic-qa@latest mi-proyecto-qa
+cd mi-proyecto-qa
+
+# Camino "Use this template" (después de crear el repo en GitHub)
+git clone https://github.com/&lt;tu-org&gt;/&lt;tu-repo&gt;.git
+cd &lt;tu-repo&gt;
+bun install
+bun run setup</code></pre>
+      <p>
+        Si usas la plantilla de GitHub, renombra el proyecto en
+        <code>package.json</code> (<code>name</code>) y en <code>.agents/project.yaml</code>
+        (<code>project.project_name</code>).
+      </p>
+
+      <h3 id="setup">Qué hace <code>bun run setup</code></h3>
+      <p>
+        Es idempotente: cada paso guarda una marca en <code>.template/installer.state.json</code> y
+        una segunda ejecución salta lo que ya terminó.
+      </p>
+      <ol class="steps">
+        <li>
+          <strong>Detección</strong>
+          <p>
+            Comprueba Bun y las dependencias, detecta gentle-ai y te deja elegir qué harness
+            configurar: Claude Code, OpenCode o Codex.
+          </p>
+        </li>
+        <li>
+          <strong>Instalación</strong>
+          <p>
+            <code>bun install</code>, los navegadores de Playwright (<code>bun run pw:install</code
+            >, unos 300 MB de Chromium), Engram con
+            <code>gentle-ai install --preset minimal</code> y los skills de la comunidad con
+            <code>bunx skills add</code>.
+          </p>
+        </li>
+        <li>
+          <strong>Configuración</strong>
+          <p>
+            Pide las credenciales que usan los MCPs y las guarda en <code>.env</code>. Ofrece
+            <code>direnv allow</code> y, si quieres, crea el repo en GitHub con <code>gh</code>.
+          </p>
+        </li>
+        <li>
+          <strong>Verificación</strong>
+          <p>
+            Imprime una tabla con los CLIs externos: cuáles están y cómo instalar los que faltan.
+          </p>
+        </li>
+        <li>
+          <strong>Configuración inicial</strong>
+          <p>
+            Rellena <code>.agents/project.yaml</code> (<code>agents:setup</code>), autentica
+            <code>acli</code>, sincroniza los catálogos de Jira (tu workspace, el estándar de
+            UPEX-Galaxy o saltarlo) y valida con <code>jira:check</code>. Al final genera las
+            credenciales por harness (ver la sección siguiente).
+          </p>
+        </li>
+      </ol>
+      <p>
+        Comprueba el resultado en cualquier momento con <code>bun run setup:doctor</code> (añade
+        <code>--json</code> si lo va a leer un agente). Lista las variables pendientes con la URL
+        donde se genera cada token.
+      </p>
+      <div class="callout warn">
+        <span class="callout-title">Antes del primer push: la estrategia de git</span>
+        <p>
+          El scaffold trae <code>solo-main</code> como estrategia por defecto, marcada como
+          heredada. Pídele al agente "set up our git strategy" para que
+          <code>/git-flow-master</code> la defina contigo. Mientras no lo hagas, el hook
+          <code>pre-push</code> falla con un mensaje que te manda aquí. Es la señal de que falta ese
+          paso.
+        </p>
+      </div>
+      <p>
+        Las conexiones con datos reales (Jira y Xray, la base de datos, la API) tienen su propia
+        guía en <a href="setup/index.html">Setup</a>.
+      </p>
+
+      <h2 id="credenciales">Credenciales y arranque del agente</h2>
+      <p>
+        Copia <code>.env.example</code> a <code>.env</code> (el instalador lo hace por ti) y rellena
+        los valores. <code>.env</code> está en <code>.gitignore</code> y es la única fuente de
+        verdad de los secretos. Hay dos archivos que se parecen y no hacen lo mismo:
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th><code>.env</code></th>
+              <th><code>.agents/project.yaml</code></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Contiene</td>
+              <td>Secretos y configuración del runtime de tests y de los MCPs.</td>
+              <td>Identidad del proyecto y variables <code>{{VAR}}</code> para el agente.</td>
+            </tr>
+            <tr>
+              <td>Ejemplos</td>
+              <td>
+                <code>LOCAL_USER_EMAIL</code>, <code>ATLASSIAN_API_TOKEN</code>,
+                <code>TAVILY_API_KEY</code>, <code>XRAY_CLIENT_SECRET</code>
+              </td>
+              <td>
+                <code>project.project_name</code>, URLs por entorno,
+                <code>issue_tracker.atlassian_url</code>
+              </td>
+            </tr>
+            <tr>
+              <td>¿Secretos?</td>
+              <td>Sí</td>
+              <td>No, debe poder commitearse</td>
+            </tr>
+            <tr>
+              <td>¿En git?</td>
+              <td>No. Se versiona la plantilla <code>.env.example</code>.</td>
+              <td>Sí</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        La URL del sitio de Atlassian no va en <code>.env</code>: vive solo en
+        <code>.agents/project.yaml</code> y se lee con <code>bun run --silent jira:url</code>. Una
+        copia vieja en el entorno reconstruía la caché desde un Jira muerto sin avisar, por eso se
+        sacó de ahí.
+      </p>
+
+      <!-- env-model: re-check after fix/onboarding-first-run merges -->
+      <h3 id="modelo-env">Cómo llega cada credencial a cada harness</h3>
+      <p>
+        Un harness lee su configuración y arranca los servidores MCP antes de que corra cualquier
+        hook, así que la credencial tiene que estar en un sitio que el harness lea al arrancar. Cada
+        uno lee un sitio distinto:
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Harness</th>
+              <th>De dónde lee las credenciales</th>
+              <th>Quién lo escribe</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Claude Code</td>
+              <td>
+                El bloque <code>env</code> de <code>.claude/settings.local.json</code> (gitignored).
+              </td>
+              <td><code>bun run harness:env</code>, a partir de <code>.env</code>.</td>
+            </tr>
+            <tr>
+              <td>OpenCode</td>
+              <td>
+                Archivos en <code>.auth/opencode/</code>, referenciados desde
+                <code>opencode.jsonc</code> con <code>{file:...}</code>.
+              </td>
+              <td><code>bun run harness:env</code>, a partir de <code>.env</code>.</td>
+            </tr>
+            <tr>
+              <td>Codex</td>
+              <td>El entorno del proceso.</td>
+              <td>
+                Tú, al lanzarlo con <code>bun run codex</code>, o direnv con el
+                <code>.envrc</code> del repo.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        <code>harness:env</code> solo copia las variables que algún MCP usa, nunca el
+        <code>.env</code> entero, y no imprime valores. <code>bun run harness:env:check</code> te
+        dice si <code>.env</code> y esos archivos se desincronizaron.
+      </p>
+      <ol class="steps">
+        <li>
+          <strong>Rellena <code>.env</code></strong>
+          <p>
+            Con los valores que te pidió el instalador o los que faltan según
+            <code>setup:doctor</code>.
+          </p>
+        </li>
+        <li>
+          <strong>Ejecuta <code>bun run harness:env</code></strong>
+          <p>Regenera las credenciales de Claude Code y OpenCode.</p>
+        </li>
+        <li>
+          <strong>Reinicia el agente</strong>
+          <p>
+            Las variables se leen cuando arrancan los servidores MCP. Una sesión abierta no ve los
+            cambios.
+          </p>
+        </li>
+      </ol>
+      <pre data-lang="bash"><code>bun run claude     # Claude Code
+bun run opencode   # OpenCode
+bun run codex      # Codex CLI (Codex Desktop usa la misma config del repo)</code></pre>
+      <p>
+        Cada wrapper es <code>dotenv -o -e .env -- &lt;binario&gt;</code>. El <code>-o</code> hace
+        que <code>.env</code> gane sobre una variable heredada de la shell; si lanzas el binario a
+        pelo, un valor viejo del entorno puede tapar el del archivo.
+      </p>
+      <div class="callout danger">
+        <span class="callout-title">Un 401 es la señal</span>
+        <p>
+          Si falta una variable, Claude Code y OpenCode no fallan al arrancar: el MCP muere en su
+          primera llamada autenticada y parece una herramienta rota. Codex es el único que falla al
+          arrancar nombrando el servidor. Ante un 401/403 o un fallo raro de un MCP: arregla
+          <code>.env</code>, ejecuta <code>bun run harness:env</code> y reinicia la sesión.
+        </p>
+      </div>
+
+      <h2 id="ciclo-de-vida">El ciclo de vida: cinco fases</h2>
+      <p>
+        Cada fase tiene un disparador, un resultado concreto y una frecuencia. Avanzas cuando existe
+        el resultado de la anterior, y vuelves a Mantenimiento cuando la documentación se aleja de
+        la realidad.
+      </p>
+      <pre
+        data-lang="text"
+      ><code>  una vez por repo           una vez por target              continuo        cuando hay drift
++-----------------+   +---------------+   +-----------+   +-------------+   +---------------+
+| 0 Bootstrap     |--&gt;| 1 Discovery   |--&gt;| 2 Adapt   |--&gt;| 3 QA diario |&lt;--| 4 Mantenim.   |
+| bun run setup   |   | /project-     |   | /adapt-   |   | 7 stages    |--&gt;| sync + maps   |
+|                 |   |  discovery    |   |  framework|   | con skill   |   |               |
++-----------------+   +---------------+   +-----------+   +-------------+   +---------------+</code></pre>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Fase</th>
+              <th>Disparador</th>
+              <th>Produce</th>
+              <th>Cuándo repetir</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>0 · Bootstrap</strong></td>
+              <td>
+                <code>bun run setup</code>, luego <code>.env</code> y
+                <code>bun run harness:env</code>
+              </td>
+              <td>
+                Dependencias, Engram, skills de la comunidad, MCPs cableados,
+                <code>.agents/project.yaml</code> relleno y los catálogos de Jira
+                (<code>jira-fields.json</code>, <code>jira-workflows.json</code>).
+              </td>
+              <td>Clon nuevo o entorno reseteado.</td>
+            </tr>
+            <tr>
+              <td><strong>1 · Discovery</strong></td>
+              <td>
+                <code>/project-discovery</code> con la ruta del repo target o la descripción del
+                stack
+              </td>
+              <td>
+                <code>.context/</code>: PRD, SRS, glosario, mapas de datos, features y API, y el
+                master test plan. Cuatro fases: Constitution, Architecture, Infrastructure,
+                Specification.
+              </td>
+              <td>Target nuevo o cambio grande de arquitectura.</td>
+            </tr>
+            <tr>
+              <td><strong>2 · Adapt</strong></td>
+              <td><code>/adapt-framework</code>, siempre después de Discovery</td>
+              <td>
+                <code>tests/components/</code>, fixtures, <code>config/variables.ts</code> y
+                <code>api/schemas/</code> adaptados al stack y al modelo de auth del target.
+              </td>
+              <td>Cambio de auth o de stack. Es idempotente: solo retoca lo que sigue genérico.</td>
+            </tr>
+            <tr>
+              <td><strong>3 · QA diario</strong></td>
+              <td>El skill dueño del stage en el que estás (tabla siguiente)</td>
+              <td>
+                ATP, ATR, ATS, bugs, test cases en el TMS, tests automatizados, veredictos de
+                regresión.
+              </td>
+              <td>Cada sprint, cada ticket.</td>
+            </tr>
+            <tr>
+              <td><strong>4 · Mantenimiento</strong></td>
+              <td>
+                <code>.context/</code>, <code>AGENTS.md</code> o <code>.agents/</code> ya no
+                reflejan el producto
+              </td>
+              <td>
+                Docs sincronizados (<code>/sync-ai-memory</code>), mapas regenerados
+                (<code>/business-*-map</code>, <code>/master-test-plan</code>), catálogos de Jira al
+                día (<code>jira:sync-*</code>, <code>jira:check</code>, <code>vars:check</code>) y
+                el framework actualizado con <code>bun run up</code>.
+              </td>
+              <td>Cuando aparece el drift. Trátalo como un warning del compilador.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="stages-iql">La fase 3 son los stages del IQL</h3>
+      <p>
+        El QA diario sigue los ocho stages del IQL (Integrated Quality Lifecycle). Siete tienen un
+        skill que los ejecuta; Observation está declarado pero todavía no tiene skill. La
+        metodología completa está en <a href="metodologia/iql.html">IQL</a> y cómo la implementa
+        este repo, en <a href="metodologia/este-repo.html">El IQL en este repo</a>.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Stage</th>
+              <th>Momento</th>
+              <th>Skill</th>
+              <th>Resultado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Shift-Left</td>
+              <td>antes del sprint (en lote)</td>
+              <td><code>/shift-left-testing</code></td>
+              <td>ACs refinados y ATP previo al sprint en el campo de la historia</td>
+            </tr>
+            <tr>
+              <td>Planning</td>
+              <td>en el sprint</td>
+              <td rowspan="3"><code>/sprint-testing</code></td>
+              <td>ATP (Test Plan), ATS y test cases</td>
+            </tr>
+            <tr>
+              <td>Execution</td>
+              <td>en el sprint</td>
+              <td>Exploración UI · API · DB</td>
+            </tr>
+            <tr>
+              <td>Reporting</td>
+              <td>en el sprint</td>
+              <td>ATR, comentario de QA y bugs</td>
+            </tr>
+            <tr>
+              <td>Documentation</td>
+              <td>después del sprint</td>
+              <td><code>/test-documentation</code></td>
+              <td>Test cases en el TMS con veredicto de ROI: Candidate, Manual o Deferred</td>
+            </tr>
+            <tr>
+              <td>Automation</td>
+              <td>después del sprint</td>
+              <td><code>/test-automation</code></td>
+              <td>Tests KATA con Plan, Code y Review</td>
+            </tr>
+            <tr>
+              <td>Regression</td>
+              <td>después del sprint</td>
+              <td><code>/regression-testing</code></td>
+              <td>Fallos clasificados y veredicto GO, CAUTION o NO-GO</td>
+            </tr>
+            <tr>
+              <td>Observation</td>
+              <td>producción</td>
+              <td><em>ninguno todavía</em></td>
+              <td>Declarado, no implementado</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="caminos">Elige tu camino</h2>
+      <p>
+        En la vida de un proyecto pasas por todos, en orden, a medida que una feature madura. En una
+        sesión concreta eliges uno y dejas que el skill conduzca.
+      </p>
+      <div class="cards">
+        <div class="card">
+          <span class="badge accent">Antes del sprint</span>
+          <h3>/shift-left-testing</h3>
+          <p>
+            Historias en Backlog con ACs flojos. Refina en lote, deja preguntas para PO y Dev,
+            escribe el ATP en el campo de la historia y mueve el estado
+            <code>backlog → shift_left_qa → estimation</code>. La feature aún no existe: no hay
+            ejecución.
+          </p>
+        </div>
+        <div class="card">
+          <span class="badge accent">Manual</span>
+          <h3>/sprint-testing</h3>
+          <p>
+            Ticket en "Ready For QA" o un retest de bug. Planifica, explora UI, API y DB, y reporta
+            ATP, ATR, ATS y bugs en el TMS. Si la historia pasó por Shift-Left hace menos de 30
+            días, se salta parte de la planificación.
+          </p>
+        </div>
+        <div class="card">
+          <span class="badge accent">Codificar</span>
+          <h3>/test-documentation, luego /test-automation</h3>
+          <p>
+            El test case pasó el filtro de ROI, el AC es estable y la automatización llega a la
+            superficie. Se documenta en el TMS y se convierte en un test KATA de la suite de
+            regresión.
+          </p>
+        </div>
+        <div class="card">
+          <span class="badge accent">Release</span>
+          <h3>/regression-testing</h3>
+          <p>
+            Corrida nocturna o previa a un release sobre la suite existente. Clasifica cada fallo
+            (REGRESSION, FLAKY, KNOWN, ENVIRONMENT, NEW TEST) y emite el veredicto.
+          </p>
+        </div>
+      </div>
+      <div class="callout">
+        <span class="callout-title">Evolucionar el framework no es un camino de QA</span>
+        <p>
+          Cambios en las bases KATA, fixtures, <code>cli/</code>, <code>scripts/</code> o
+          <code>api/schemas/</code> van por <code>/framework-development</code>, que tiene su propio
+          Plan, Code, Verify y Archive. Nunca por los cuatro skills de testing.
+        </p>
+      </div>
+
+      <h2 id="piezas-confusas">Tres piezas que se confunden</h2>
+      <p>
+        Tienen nombres parecidos y verbos que se solapan ("adaptar", "sincronizar", "refrescar").
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Pieza</th>
+              <th>Cuándo</th>
+              <th>Qué toca</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>/adapt-framework</code></td>
+              <td>Una vez por target, después de <code>/project-discovery</code>.</td>
+              <td>
+                El código de tests de <em>este</em> repo (<code>tests/components/</code>,
+                <code>config/</code>, <code>api/schemas/</code>). Nunca el target. Analiza sin
+                escribir, presenta un plan y espera tu aprobación.
+              </td>
+            </tr>
+            <tr>
+              <td><code>sync-ai-context</code> (alias <code>/sync-ai-memory</code>)</td>
+              <td>Cuando los docs para la IA ya no reflejan el repo.</td>
+              <td>
+                <code>AGENTS.md</code>, <code>README.md</code> y el resto de docs críticos, contra
+                los skills, los alias, <code>.context/</code> y <code>package.json</code>. No toca
+                la memoria de Engram.
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <code>project-context</code> (alias <code>/business-*-map</code>,
+                <code>/master-test-plan</code>)
+              </td>
+              <td>Cuando el producto cambia: entidades, features, endpoints, riesgos.</td>
+              <td>
+                Los mapas de <code>.context/business/</code> y
+                <code>.context/master-test-plan.md</code>. En modo UPDATE muestra el diff y espera
+                aprobación.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        <code>agentic-qa-core</code> tiene un papel pasivo: guarda la doctrina compartida (plantilla
+        de briefing, patrones de dispatch, test design, gestión de defectos) que los skills de
+        workflow cargan cuando la necesitan. Nunca lo invocas tú.
+      </p>
+
+      <h2 id="circuitos">Cómo se conecta todo: tres circuitos</h2>
+
+      <h3 id="circuito-variables">Circuito 1: variables</h3>
+      <pre data-lang="text"><code>bun run agents:setup --escribe--&gt; .agents/project.yaml
+                                        |
+                                        | el agente lo lee una vez por sesión
+                                        v
+skills, comandos y plantillas con {{PROJECT_KEY}}, {{WEB_URL}}, {{jira.*}}
+                                        |
+                                        v
+        valores reales antes de cada llamada a una herramienta</code></pre>
+      <dl class="defs">
+        <dt><code>{{VAR_NAME}}</code></dt>
+        <dd>Variable estática de <code>.agents/project.yaml</code>, global o por entorno.</dd>
+        <dt><code>&lt;&lt;VAR_NAME&gt;&gt;</code></dt>
+        <dd>
+          Variable de sesión que calcula el skill en tiempo de ejecución (por ejemplo
+          <code>&lt;&lt;ISSUE_KEY&gt;&gt;</code> a partir de la rama de git). Nunca se guarda.
+        </dd>
+        <dt><code>{{jira.&lt;slug&gt;}}</code></dt>
+        <dd>
+          Custom field portable de Jira. Se resuelve con <code>.agents/jira-required.yaml</code> y
+          el catálogo <code>.agents/jira-fields.json</code>.
+        </dd>
+        <dt>
+          <code>{{jira.work_type.*}}</code>, <code>{{jira.status.*}}</code>,
+          <code>{{jira.transition.*}}</code>
+        </dt>
+        <dd>
+          Referencias portables a tipos de issue, estados y transiciones, contra
+          <code>.agents/jira-workflows.json</code>.
+        </dd>
+      </dl>
+      <p>
+        <code>bun run vars:check</code> comprueba que todos los placeholders siguen resolviendo. El
+        contrato completo está en <code>.agents/README.md</code>.
+      </p>
+
+      <h3 id="circuito-orquestacion">Circuito 2: orquestación con subagentes</h3>
+      <pre data-lang="text"><code>skill de workflow (/sprint-testing, /regression-testing, ...)
+   | escribe un briefing de 7 componentes
+   v
+subagente (contexto limpio)
+   | carga el skill de la herramienta
+   v
+/acli · /xray-cli · /playwright-cli · MCPs  --&gt;  ejecuta y reporta</code></pre>
+      <p>
+        La conversación principal coordina y los subagentes hacen la lectura pesada. Cada briefing
+        lleva siete partes: objetivo, docs de contexto, estándares del proyecto, skills a cargar,
+        instrucciones exactas, formato del reporte y reglas. Los estándares salen ya resumidos de
+        <code>.agents/skills/REGISTRY.md</code> (lo genera <code>bun run skills:registry</code>),
+        así el subagente no relee cada <code>SKILL.md</code>. La plantilla está en
+        <code>.agents/skills/agentic-qa-core/references/briefing-template.md</code>.
+      </p>
+      <p>
+        Antes de trabajar, los skills de testing y <code>/framework-development</code> pasan un
+        chequeo de preparación: herramientas que faltan, MCPs caídos, tokens vencidos o un framework
+        sin adaptar se detectan al principio y no a mitad de la corrida
+        (<code>.agents/skills/agentic-qa-core/references/preflight-gate.md</code>).
+      </p>
+      <p>
+        Existe un segundo ejecutor opcional, el worker supervisado: una sesión persistente con la
+        que sigues hablando, coordinada por <code>/orca-orchestration</code>. Solo aparece si el
+        binario <code>orca</code> está instalado y su runtime responde.
+      </p>
+
+      <h3 id="circuito-cli">Circuito 3: auto-carga de skills por CLI</h3>
+      <p>
+        Antes de ejecutar un binario, el agente carga el skill que sabe usarlo (flags, auth,
+        paginación, errores). La fuente es <code>AGENTS.md</code> §6.5.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Binario</th>
+              <th>Skill que se carga antes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>gh</code></td>
+              <td><code>/git-flow-master</code> (cuando es trabajo de git o PR)</td>
+            </tr>
+            <tr>
+              <td><code>acli</code>, <code>jq</code></td>
+              <td><code>/acli</code></td>
+            </tr>
+            <tr>
+              <td><code>bun xray</code></td>
+              <td><code>/xray-cli</code></td>
+            </tr>
+            <tr>
+              <td><code>playwright-cli</code></td>
+              <td><code>/playwright-cli</code> + <code>/playwright-best-practices</code></td>
+            </tr>
+            <tr>
+              <td><code>bunx allure</code></td>
+              <td><code>/regression-testing</code> + <code>/test-automation</code></td>
+            </tr>
+            <tr>
+              <td><code>supabase</code>, <code>wrangler</code>, <code>vercel</code></td>
+              <td><code>/regression-testing</code> (hosting privado de reportes)</td>
+            </tr>
+            <tr>
+              <td><code>resend</code></td>
+              <td><code>/resend-cli</code></td>
+            </tr>
+            <tr>
+              <td><code>orca</code></td>
+              <td><code>/orca-orchestration</code></td>
+            </tr>
+            <tr>
+              <td><code>bun</code></td>
+              <td><code>/bun</code> (skill de la comunidad, nivel usuario)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="mcps">Los seis MCPs</h2>
+      <p>
+        Los declara <code>.mcp.json</code> y existen igual en <code>opencode.jsonc</code> y
+        <code>.codex/config.toml</code>. La regla general: primero el CLI (gasta menos tokens) y el
+        MCP como respaldo, salvo donde el MCP es la herramienta principal.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>MCP</th>
+              <th>Para qué</th>
+              <th>Variables en <code>.env</code></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>context7</code></td>
+              <td>
+                Documentación oficial y versionada de librerías, frameworks y CLIs. Obligatorio
+                antes que la búsqueda web para dudas de docs.
+              </td>
+              <td>ninguna</td>
+            </tr>
+            <tr>
+              <td><code>tavily</code></td>
+              <td>Búsqueda web: errores, soluciones de la comunidad, investigación general.</td>
+              <td><code>TAVILY_API_KEY</code></td>
+            </tr>
+            <tr>
+              <td><code>playwright</code></td>
+              <td>Automatización de navegador. Respaldo de <code>/playwright-cli</code>.</td>
+              <td>ninguna</td>
+            </tr>
+            <tr>
+              <td><code>dbhub</code></td>
+              <td>
+                Consultas SQL para validar datos. Necesita que edites <code>dbhub.toml</code> (<a
+                  href="setup/dbhub.html"
+                  >guía</a
+                >).
+              </td>
+              <td>
+                <code>DBHUB_TYPE</code>, <code>DBHUB_HOST</code>, <code>DBHUB_PORT</code>,
+                <code>DBHUB_DATABASE</code>, <code>DBHUB_USER</code>, <code>DBHUB_PASSWORD</code>
+              </td>
+            </tr>
+            <tr>
+              <td><code>openapi</code></td>
+              <td>
+                Solo lectura del contrato de la API: endpoints y schemas. Las requests autenticadas
+                van por <code>curl</code> con el token de <code>bun run api:login</code> (<a
+                  href="setup/openapi.html"
+                  >guía</a
+                >).
+              </td>
+              <td><code>API_BASE_URL</code>, <code>OPENAPI_SPEC_PATH</code></td>
+            </tr>
+            <tr>
+              <td><code>postman</code></td>
+              <td>Colecciones de Postman; respaldo para pruebas de API.</td>
+              <td><code>POSTMAN_API_KEY</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        El MCP de Atlassian no está entre los seis: es opt-in y se documenta en
+        <code>.agents/skills/agentic-qa-core/references/mcp-atlassian-optin.md</code>. Jira y Xray
+        se manejan con <code>acli</code> y <code>bun xray</code> (<a href="setup/jira-xray.html"
+          >guía</a
+        >).
+      </p>
+
+      <h2 id="engram">Engram: memoria entre sesiones</h2>
+      <p>
+        Engram es un servidor MCP que guarda memoria estructurada y sobrevive a sesiones y
+        compactaciones. Lo instala <code>bun run setup</code> con
+        <code>gentle-ai install --preset minimal</code>, a nivel de usuario, fuera del repo. Ese
+        preset instala solo Engram: los skills SDD de gentle-ai no vienen, porque los skills de
+        workflow ya cubren Plan, Code y Verify.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Qué hace el agente</th>
+              <th>Cuándo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Guarda (<code>mem_save</code>)</td>
+              <td>
+                Sin que se lo pidas, tras una decisión de diseño, un bug resuelto (con su causa
+                raíz), una convención nueva o una sorpresa del proyecto.
+              </td>
+            </tr>
+            <tr>
+              <td>Busca (<code>mem_search</code>)</td>
+              <td>
+                Cuando dices "recuerda", "qué hicimos", "cómo resolvimos", o mencionas trabajo
+                anterior, en cualquier idioma.
+              </td>
+            </tr>
+            <tr>
+              <td>Resume (<code>mem_session_summary</code>)</td>
+              <td>
+                Al cerrar la sesión: objetivo, hallazgos, lo hecho, próximos pasos y archivos. Es la
+                semilla de la siguiente sesión.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Si saltas gentle-ai, todo sigue funcionando, pero cada sesión empieza sin memoria.</p>
+
+      <h2 id="chuleta">Chuleta: quiero X, ejecuto Y</h2>
+      <p>
+        Todo lo de esta tabla existe hoy como skill, comando o script de <code>package.json</code>.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Quiero...</th>
+              <th>Ejecuto...</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Un tour guiado del repo</td>
+              <td><code>/agentic-qa-onboard</code></td>
+            </tr>
+            <tr>
+              <td>Abrir este portal de documentación</td>
+              <td><code>bun run docs</code></td>
+            </tr>
+            <tr>
+              <td>Abrir esta página directamente</td>
+              <td><code>bun run onboarding</code></td>
+            </tr>
+            <tr>
+              <td>Instalar o reparar la instalación</td>
+              <td><code>bun run setup</code></td>
+            </tr>
+            <tr>
+              <td>Saber qué falta configurar</td>
+              <td><code>bun run setup:doctor</code></td>
+            </tr>
+            <tr>
+              <td>Poner credenciales en <code>.env</code> o subirlas a GitHub Actions</td>
+              <td><code>bun run setup --variables</code></td>
+            </tr>
+            <tr>
+              <td>
+                Regenerar las credenciales de Claude Code y OpenCode tras cambiar <code>.env</code>
+              </td>
+              <td><code>bun run harness:env</code>, luego reiniciar el agente</td>
+            </tr>
+            <tr>
+              <td>Rellenar <code>.agents/project.yaml</code></td>
+              <td><code>bun run agents:setup</code></td>
+            </tr>
+            <tr>
+              <td>Empezar con un target nuevo</td>
+              <td><code>/project-discovery</code>, luego <code>/adapt-framework</code></td>
+            </tr>
+            <tr>
+              <td>Refinar historias del backlog</td>
+              <td><code>/shift-left-testing</code></td>
+            </tr>
+            <tr>
+              <td>Probar un ticket o todo un sprint</td>
+              <td><code>/sprint-testing</code> con la clave o el número de sprint</td>
+            </tr>
+            <tr>
+              <td>Documentar tests en Jira/Xray con ROI</td>
+              <td><code>/test-documentation</code></td>
+            </tr>
+            <tr>
+              <td>Escribir un test E2E o de API</td>
+              <td><code>/test-automation</code></td>
+            </tr>
+            <tr>
+              <td>Correr regresión y decidir el release</td>
+              <td><code>/regression-testing</code></td>
+            </tr>
+            <tr>
+              <td>Anotar una captura de un bug visual</td>
+              <td>"anota este bug" (<code>bug-screenshot-annotation</code>)</td>
+            </tr>
+            <tr>
+              <td>Traer un issue de Jira con todos sus campos</td>
+              <td><code>bun run jira:sync-issues get &lt;KEY&gt; --include-comments</code></td>
+            </tr>
+            <tr>
+              <td>Reconstruir la caché local de Jira</td>
+              <td><code>bun run context:hydrate</code></td>
+            </tr>
+            <tr>
+              <td>Ver el mapa de cobertura y los huecos</td>
+              <td><code>bun run tests:map</code></td>
+            </tr>
+            <tr>
+              <td>Catalogar campos, workflows o tipos de link de Jira</td>
+              <td>
+                <code>bun run jira:sync-fields</code> · <code>jira:sync-workflows</code> ·
+                <code>jira:sync-link-types</code>
+              </td>
+            </tr>
+            <tr>
+              <td>Verificar Jira contra el manifiesto</td>
+              <td><code>bun run jira:check</code></td>
+            </tr>
+            <tr>
+              <td>Validar los placeholders <code>{{VAR}}</code> y <code>{{jira.*}}</code></td>
+              <td><code>bun run vars:check</code></td>
+            </tr>
+            <tr>
+              <td>Validar <code>.env</code> para el <code>TEST_ENV</code> activo</td>
+              <td><code>bun run test:env:check</code></td>
+            </tr>
+            <tr>
+              <td>Traer los tipos de la API desde OpenAPI</td>
+              <td><code>bun run api:sync</code></td>
+            </tr>
+            <tr>
+              <td>Obtener un token para probar la API con curl</td>
+              <td><code>bun run api:login</code></td>
+            </tr>
+            <tr>
+              <td>Refrescar los mapas de negocio o el master test plan</td>
+              <td>
+                <code>/business-data-map</code> · <code>/business-feature-map</code> ·
+                <code>/business-api-map</code> · <code>/master-test-plan</code>
+              </td>
+            </tr>
+            <tr>
+              <td>Sincronizar los docs de la IA tras un cambio</td>
+              <td><code>/sync-ai-memory</code></td>
+            </tr>
+            <tr>
+              <td>Reparar la trazabilidad US, ATP, ATR y TC</td>
+              <td><code>/fix-traceability</code></td>
+            </tr>
+            <tr>
+              <td>Explicar en lenguaje llano qué hacen los tests</td>
+              <td><code>/break-down-tests</code></td>
+            </tr>
+            <tr>
+              <td>Commit, push, PR o resolver un conflicto</td>
+              <td><code>/git-flow-master</code> (se activa solo)</td>
+            </tr>
+            <tr>
+              <td>Revisar un PR de automatización</td>
+              <td>"revisa este PR" (<code>pr-review-lead</code>)</td>
+            </tr>
+            <tr>
+              <td>Una revisión adversarial con dos jueces</td>
+              <td><code>/judgment-day</code></td>
+            </tr>
+            <tr>
+              <td>Pasar la sesión a otra nueva porque el contexto se llena</td>
+              <td><code>/session-handoff</code></td>
+            </tr>
+            <tr>
+              <td>Paralelizar el sprint en varias sesiones</td>
+              <td><code>/orca-orchestration</code></td>
+            </tr>
+            <tr>
+              <td>Traer las novedades del boilerplate</td>
+              <td><code>bun run up</code></td>
+            </tr>
+            <tr>
+              <td>Pasar todos los chequeos del repo</td>
+              <td><code>bun run repo:check</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="skills">Catálogo de skills</h2>
+      <p>
+        La tabla de skills de <code>AGENTS.md</code> §5 tiene hoy 24 entradas: 21 viven en
+        <code>.agents/skills/</code> (20 propias y <code>judgment-day</code>, vendorizado de
+        gentle-ai) y 3 son de la comunidad y las instala <code>bun run setup</code> a nivel de
+        proyecto. Además hay skills de usuario (<code>skill-creator</code>, <code>mkd</code>,
+        <code>bun</code> y otros) que el agente solo carga si le das permiso.
+      </p>
+
+      <h3 id="skills-workflow">Workflow: los stages del pipeline</h3>
+      <div class="cards">
+        <div class="card">
+          <span class="badge accent">Shift-Left</span>
+          <h3>shift-left-testing</h3>
+          <p>
+            Refinamiento previo al sprint sobre un lote de historias: ACs, huecos, ATP temprano y
+            etiqueta <code>shift-left-reviewed</code>.
+          </p>
+        </div>
+        <div class="card">
+          <span class="badge accent">Planning · Execution · Reporting</span>
+          <h3>sprint-testing</h3>
+          <p>
+            QA manual por issue o por sprint entero. Produce ATP, ATS, ATR, comentario de QA y bugs.
+          </p>
+        </div>
+        <div class="card">
+          <span class="badge accent">Documentation</span>
+          <h3>test-documentation</h3>
+          <p>
+            Test cases en el TMS con puntuación de ROI y veredicto Candidate, Manual o Deferred.
+          </p>
+        </div>
+        <div class="card">
+          <span class="badge accent">Automation</span>
+          <h3>test-automation</h3>
+          <p>Plan, Code y Review sobre KATA, Playwright y TypeScript.</p>
+        </div>
+        <div class="card">
+          <span class="badge accent">Regression</span>
+          <h3>regression-testing</h3>
+          <p>
+            Regresión, smoke o sanity por CI, clasificación de fallos y veredicto GO, CAUTION o
+            NO-GO.
+          </p>
+        </div>
+        <div class="card">
+          <span class="badge">Framework</span>
+          <h3>framework-development</h3>
+          <p>
+            Evolución del boilerplate: bases KATA, fixtures, <code>cli/</code>,
+            <code>scripts/</code>. No es para tickets.
+          </p>
+        </div>
+      </div>
+
+      <h3 id="skills-setup-contexto">Setup y contexto del proyecto</h3>
+      <div class="cards">
+        <div class="card">
+          <span class="badge green">Onboarding</span>
+          <h3>agentic-qa-onboard</h3>
+          <p>
+            Tour de orientación y mostrador para quien está perdido: explica en lenguaje llano y
+            ofrece abrir el deck de cada skill.
+          </p>
+        </div>
+        <div class="card">
+          <span class="badge">Generador</span>
+          <h3>project-discovery</h3>
+          <p>
+            Ingeniería inversa del target en cuatro fases. Genera PRD, SRS, glosario y
+            <code>.context/</code>.
+          </p>
+        </div>
+        <div class="card">
+          <span class="badge">Adaptación</span>
+          <h3>adapt-framework</h3>
+          <p>
+            Adapta KATA al stack del target: analiza sin escribir, propone un plan y solo lo aplica
+            con tu aprobación. Idempotente.
+          </p>
+        </div>
+        <div class="card">
+          <span class="badge">Contexto</span>
+          <h3>project-context</h3>
+          <p>
+            Regenera los mapas de datos, features y API y el master test plan, por modo o todos en
+            orden.
+          </p>
+        </div>
+        <div class="card">
+          <span class="badge">Contexto</span>
+          <h3>sync-ai-context</h3>
+          <p>
+            Sincroniza los docs críticos para la IA con las instrucciones, skills, alias y
+            <code>package.json</code>.
+          </p>
+        </div>
+        <div class="card">
+          <span class="badge">Jira</span>
+          <h3>jira-administration</h3>
+          <p>Administración de Jira en dos modos sellados: components y migración de instancia.</p>
+        </div>
+      </div>
+
+      <h3 id="skills-herramientas">Herramientas y soporte</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Skill</th>
+              <th>Origen</th>
+              <th>Para qué</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>agentic-qa-core</code></td>
+              <td>propio</td>
+              <td>Doctrina compartida que citan los demás skills. No se invoca.</td>
+            </tr>
+            <tr>
+              <td><code>acli</code></td>
+              <td>propio</td>
+              <td>Jira Cloud y Confluence desde la terminal.</td>
+            </tr>
+            <tr>
+              <td><code>xray-cli</code></td>
+              <td>propio</td>
+              <td>
+                Xray Cloud con <code>bun xray</code>: tests, ejecuciones, planes, importación de
+                resultados.
+              </td>
+            </tr>
+            <tr>
+              <td><code>git-flow-master</code></td>
+              <td>propio</td>
+              <td>Git de punta a punta; detecta la estrategia de ramas y se adapta.</td>
+            </tr>
+            <tr>
+              <td><code>bug-screenshot-annotation</code></td>
+              <td>propio</td>
+              <td>Anota capturas de bugs con círculos, flechas y notas, renderizado en local.</td>
+            </tr>
+            <tr>
+              <td><code>pr-review-lead</code></td>
+              <td>propio</td>
+              <td>Revisión de un PR de automatización contra la doctrina KATA, con citas.</td>
+            </tr>
+            <tr>
+              <td><code>session-handoff</code></td>
+              <td>propio</td>
+              <td>
+                Compacta la sesión y la continúa en una nueva, mismo harness y mismo worktree.
+              </td>
+            </tr>
+            <tr>
+              <td><code>orca-orchestration</code></td>
+              <td>propio</td>
+              <td>
+                Varias sesiones supervisadas a la vez. Opcional: requiere el binario
+                <code>orca</code>.
+              </td>
+            </tr>
+            <tr>
+              <td><code>judgment-day</code></td>
+              <td>vendorizado (gentle-ai)</td>
+              <td>Revisión con dos jueces ciegos en paralelo. Nunca se activa solo.</td>
+            </tr>
+            <tr>
+              <td><code>playwright-cli</code></td>
+              <td>comunidad</td>
+              <td>Navegador por CLI: capturas, traces, video, mocks.</td>
+            </tr>
+            <tr>
+              <td><code>playwright-best-practices</code></td>
+              <td>comunidad</td>
+              <td>Referencia de patrones: flakiness, POM, accesibilidad, fixtures.</td>
+            </tr>
+            <tr>
+              <td><code>resend-cli</code></td>
+              <td>comunidad</td>
+              <td>Pruebas de flujos de email con Resend.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="comandos-scripts">Comandos y scripts</h2>
+
+      <h3 id="comandos">Comandos (alias)</h3>
+      <p>
+        Diez alias, definidos en <code>.agents/compatibility/command-aliases.json</code>. Los
+        archivos de <code>.claude/commands/</code> y <code>.opencode/commands/</code> los genera
+        <code>bun run agents:compat</code>; no se editan a mano. Codex no tiene comandos: ahí
+        invocas el skill directamente.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Comando</th>
+              <th>Skill y modo</th>
+              <th>Qué hace</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>/adapt-framework</code></td>
+              <td><code>adapt-framework</code> · adapt</td>
+              <td>Adapta KATA al target.</td>
+            </tr>
+            <tr>
+              <td><code>/sync-ai-memory</code></td>
+              <td><code>sync-ai-context</code> · sync</td>
+              <td>Sincroniza los docs para la IA.</td>
+            </tr>
+            <tr>
+              <td><code>/business-data-map</code></td>
+              <td><code>project-context</code> · data</td>
+              <td>Entidades, flujos y máquinas de estado.</td>
+            </tr>
+            <tr>
+              <td><code>/business-feature-map</code></td>
+              <td><code>project-context</code> · features</td>
+              <td>Catálogo de features, matriz CRUD, integraciones.</td>
+            </tr>
+            <tr>
+              <td><code>/business-api-map</code></td>
+              <td><code>project-context</code> · api</td>
+              <td>Modelo de auth y endpoints críticos.</td>
+            </tr>
+            <tr>
+              <td><code>/master-test-plan</code></td>
+              <td><code>project-context</code> · test-plan</td>
+              <td>Qué probar y por qué.</td>
+            </tr>
+            <tr>
+              <td><code>/break-down-tests</code></td>
+              <td><code>test-automation</code> · explain</td>
+              <td>Explica tests automatizados en lenguaje llano. Solo lectura.</td>
+            </tr>
+            <tr>
+              <td><code>/fix-traceability</code></td>
+              <td><code>test-documentation</code> · repair-traceability</td>
+              <td>Repara los links US, ATP, ATR y TC en el TMS.</td>
+            </tr>
+            <tr>
+              <td><code>/jira-components</code></td>
+              <td><code>jira-administration</code> · components</td>
+              <td>Gestiona los components de Jira.</td>
+            </tr>
+            <tr>
+              <td><code>/jira-instance-migration</code></td>
+              <td><code>jira-administration</code> · instance-migration</td>
+              <td>Apunta el repo a otra instancia de Jira.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="scripts">Scripts de <code>package.json</code></h3>
+      <p>
+        Se ejecutan con <code>bun run &lt;nombre&gt;</code>. Agrupados por uso; la lista es la de
+        <code>package.json</code>, sin añadidos.
+      </p>
+
+      <details open>
+        <summary>Instalación, entorno y agentes</summary>
+        <div class="table-wrap">
+          <table>
+            <tbody>
+              <tr>
+                <td><code>setup</code></td>
+                <td>
+                  Preflight y el instalador interactivo. <code>--variables</code> abre el menú de
+                  credenciales.
+                </td>
+              </tr>
+              <tr>
+                <td><code>setup:doctor</code></td>
+                <td>
+                  Diagnóstico de solo lectura: variables, dependencias, navegadores, MCPs, confianza
+                  de Codex.
+                </td>
+              </tr>
+              <tr>
+                <td><code>harness:env</code> · <code>harness:env:check</code></td>
+                <td>
+                  Genera o verifica las credenciales por harness a partir de <code>.env</code>.
+                </td>
+              </tr>
+              <tr>
+                <td><code>agents:setup</code></td>
+                <td>Asistente que rellena <code>.agents/project.yaml</code>.</td>
+              </tr>
+              <tr>
+                <td><code>claude</code> · <code>opencode</code> · <code>codex</code></td>
+                <td>Lanzan el agente con <code>.env</code> cargado.</td>
+              </tr>
+              <tr>
+                <td><code>pw:install</code></td>
+                <td>Instala Chromium con sus dependencias de sistema.</td>
+              </tr>
+              <tr>
+                <td><code>up</code></td>
+                <td>Actualiza el proyecto con las novedades del boilerplate.</td>
+              </tr>
+              <tr>
+                <td><code>worktree:provision</code></td>
+                <td>
+                  Prepara un worktree nuevo con lo que git no copia: <code>.env</code>,
+                  <code>.auth/</code>, <code>node_modules/</code> y skills de la comunidad.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details>
+        <summary>Documentación</summary>
+        <div class="table-wrap">
+          <table>
+            <tbody>
+              <tr>
+                <td><code>docs</code></td>
+                <td>Sirve este portal en local y lo abre en el navegador.</td>
+              </tr>
+              <tr>
+                <td><code>onboarding</code></td>
+                <td>El mismo servidor, abierto en esta página.</td>
+              </tr>
+              <tr>
+                <td><code>docs:build</code></td>
+                <td>Regenera el manifiesto del portal.</td>
+              </tr>
+              <tr>
+                <td><code>docs:check</code></td>
+                <td>Busca links rotos y rutas inexistentes en <code>docs/</code>.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details>
+        <summary>Jira, Xray y caché local</summary>
+        <div class="table-wrap">
+          <table>
+            <tbody>
+              <tr>
+                <td><code>jira:check</code></td>
+                <td>Verifica el workspace contra <code>.agents/jira-required.yaml</code>.</td>
+              </tr>
+              <tr>
+                <td><code>jira:baseline</code></td>
+                <td>
+                  Avisa si el manifiesto declara menos work types que el de upstream. Nunca bloquea.
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <code>jira:sync-fields</code> · <code>jira:sync-workflows</code> ·
+                  <code>jira:sync-link-types</code>
+                </td>
+                <td>Catalogan custom fields, estados y transiciones, y tipos de link.</td>
+              </tr>
+              <tr>
+                <td><code>jira:components</code></td>
+                <td>Reconcilia los components del proyecto de Jira con un plan.</td>
+              </tr>
+              <tr>
+                <td><code>jira:sync-issues</code></td>
+                <td>
+                  Trae issues a <code>.context/PBI/</code>: <code>pull</code>,
+                  <code>get &lt;KEY&gt;</code>, <code>jql "&lt;query&gt;"</code>.
+                </td>
+              </tr>
+              <tr>
+                <td><code>context:hydrate</code></td>
+                <td>Reconstruye toda la caché de <code>.context/PBI/</code> con comentarios.</td>
+              </tr>
+              <tr>
+                <td><code>jira:url</code></td>
+                <td>
+                  Imprime la URL de Atlassian del proyecto (<code>--slug</code> para el host).
+                </td>
+              </tr>
+              <tr>
+                <td><code>xray</code></td>
+                <td>El CLI de Xray (<code>bun xray</code>).</td>
+              </tr>
+              <tr>
+                <td><code>test:sync</code></td>
+                <td>
+                  Después de <code>bun run test</code>, escribe los resultados de los ATCs en Jira o
+                  Xray (con <code>AUTO_SYNC=true</code>).
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details>
+        <summary>Tests y reportes</summary>
+        <div class="table-wrap">
+          <table>
+            <tbody>
+              <tr>
+                <td><code>test</code></td>
+                <td>Toda la suite de Playwright.</td>
+              </tr>
+              <tr>
+                <td><code>test:e2e</code> · <code>test:integration</code></td>
+                <td>Un solo proyecto: E2E o integración.</td>
+              </tr>
+              <tr>
+                <td><code>test:smoke</code></td>
+                <td>
+                  Los proyectos <code>smoke-ui</code> y <code>smoke-api</code>: los tests
+                  <code>@critical</code> de E2E e integración.
+                </td>
+              </tr>
+              <tr>
+                <td><code>test:ui</code> · <code>test:headed</code> · <code>test:debug</code></td>
+                <td>Modo UI, con navegador visible o con el inspector.</td>
+              </tr>
+              <tr>
+                <td><code>test:last-failed</code> · <code>test:retries</code></td>
+                <td>Repetir lo que falló o correr con dos reintentos.</td>
+              </tr>
+              <tr>
+                <td><code>test:report</code> · <code>test:clean</code></td>
+                <td>Abrir el reporte de Playwright o borrar resultados y reportes.</td>
+              </tr>
+              <tr>
+                <td><code>test:env:check</code></td>
+                <td>Valida <code>.env</code> para el <code>TEST_ENV</code> activo.</td>
+              </tr>
+              <tr>
+                <td><code>tests:map</code></td>
+                <td>Mapa de cobertura Epic, Story y Test en HTML, sin llamar a Jira.</td>
+              </tr>
+              <tr>
+                <td><code>allure:run</code> · <code>allure:agent</code></td>
+                <td>Corren <code>bun test</code> bajo Allure.</td>
+              </tr>
+              <tr>
+                <td>
+                  <code>allure:generate</code> · <code>allure:open</code> ·
+                  <code>allure:watch</code>
+                </td>
+                <td>Generar, abrir o vigilar el reporte de Allure.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details>
+        <summary>API y KATA</summary>
+        <div class="table-wrap">
+          <table>
+            <tbody>
+              <tr>
+                <td><code>api:sync</code></td>
+                <td>Trae el spec OpenAPI y regenera los tipos de <code>api/schemas/</code>.</td>
+              </tr>
+              <tr>
+                <td>
+                  <code>api:login</code> · <code>api:login:local</code> ·
+                  <code>api:login:staging</code>
+                </td>
+                <td>
+                  Autentica y deja el token en <code>.auth/tokens.env</code> para usar con curl.
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <code>kata:manifest</code> · <code>kata:manifest:check</code> ·
+                  <code>kata:manifest:watch</code>
+                </td>
+                <td>
+                  Regenera, valida o vigila <code>kata-manifest.json</code>, el registro de
+                  componentes y ATCs.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details>
+        <summary>Calidad del repo</summary>
+        <div class="table-wrap">
+          <table>
+            <tbody>
+              <tr>
+                <td><code>repo:check</code> · <code>repo:fix</code></td>
+                <td>Todos los chequeos en cadena, o su versión que corrige lo que puede.</td>
+              </tr>
+              <tr>
+                <td><code>format:check</code> · <code>format:fix</code></td>
+                <td>Prettier sobre JSON, YAML, CSS y HTML.</td>
+              </tr>
+              <tr>
+                <td><code>lint:check</code> · <code>lint:fix</code></td>
+                <td>ESLint.</td>
+              </tr>
+              <tr>
+                <td><code>types:check</code></td>
+                <td>TypeScript sin emitir.</td>
+              </tr>
+              <tr>
+                <td><code>vars:check</code></td>
+                <td>Placeholders <code>{{VAR}}</code> y <code>{{jira.*}}</code>.</td>
+              </tr>
+              <tr>
+                <td><code>vars:env:check</code></td>
+                <td>Variables del proceso contra <code>.env</code>.</td>
+              </tr>
+              <tr>
+                <td><code>vars:schema</code> · <code>vars:schema:check</code></td>
+                <td>Genera o valida el schema tipado de las variables de entorno.</td>
+              </tr>
+              <tr>
+                <td>
+                  <code>skills:check</code> · <code>skills:registry</code> ·
+                  <code>skills:registry:check</code> · <code>skills:evals</code>
+                </td>
+                <td>Lint de skills, el registro <code>REGISTRY.md</code> y las evals.</td>
+              </tr>
+              <tr>
+                <td><code>agents:compat</code> · <code>agents:compat:check</code></td>
+                <td>
+                  Genera o valida los archivos por harness (shim, alias, wrappers, hooks, paridad de
+                  MCPs).
+                </td>
+              </tr>
+              <tr>
+                <td><code>agents:schema</code> · <code>agents:schema:check</code></td>
+                <td>El schema de <code>.agents/project.yaml</code>.</td>
+              </tr>
+              <tr>
+                <td><code>git:policy</code></td>
+                <td>Compara la política de git declarada con la del host.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+      <p>
+        Además está <code>prepare</code>, que instala los hooks de Husky al hacer
+        <code>bun install</code>. No hay un script <code>env</code>: para cargar
+        <code>.env</code> en tu shell actual usa
+        <code>set -a; source .env; set +a</code> directamente en la terminal.
+      </p>
+
+      <h2 id="decks">Decks visuales</h2>
+      <p>
+        Presentaciones en español (términos técnicos en inglés) que recorren cada skill paso a paso.
+        Están publicadas en GitHub Pages porque los proyectos creados con el scaffolder no traen los
+        archivos. <code>/agentic-qa-onboard</code> puede abrirte el que corresponda.
+      </p>
+      <div class="cards">
+        <a
+          class="card"
+          href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/shift-left-testing/how-it-works.es.html"
+          target="_blank"
+          rel="noopener"
+        >
+          <span class="badge accent">Shift-Left</span>
+          <h3>shift-left-testing</h3>
+          <p>El refinamiento previo al sprint, paso a paso.</p>
+        </a>
+        <a
+          class="card"
+          href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/sprint-testing/how-it-works.es.html"
+          target="_blank"
+          rel="noopener"
+        >
+          <span class="badge accent">Sprint</span>
+          <h3>sprint-testing</h3>
+          <p>QA manual por ticket, de punta a punta.</p>
+        </a>
+        <a
+          class="card"
+          href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/test-documentation/how-it-works.es.html"
+          target="_blank"
+          rel="noopener"
+        >
+          <span class="badge accent">Documentation</span>
+          <h3>test-documentation</h3>
+          <p>Test cases en el TMS y priorización por ROI.</p>
+        </a>
+        <a
+          class="card"
+          href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/test-automation/how-it-works.es.html"
+          target="_blank"
+          rel="noopener"
+        >
+          <span class="badge accent">Automation</span>
+          <h3>test-automation</h3>
+          <p>KATA y Playwright: Plan, Code y Review.</p>
+        </a>
+        <a
+          class="card"
+          href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/regression-testing/how-it-works.es.html"
+          target="_blank"
+          rel="noopener"
+        >
+          <span class="badge accent">Regression</span>
+          <h3>regression-testing</h3>
+          <p>Suites en CI y el veredicto GO, CAUTION o NO-GO.</p>
+        </a>
+        <a
+          class="card"
+          href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/xray-cli/how-it-works.es.html"
+          target="_blank"
+          rel="noopener"
+        >
+          <span class="badge">TMS</span>
+          <h3>xray-cli</h3>
+          <p>El workflow de Xray: Test, Plan, Execution e importaciones.</p>
+        </a>
+        <a
+          class="card"
+          href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/orca-orchestration/how-it-works.es.html"
+          target="_blank"
+          rel="noopener"
+        >
+          <span class="badge">Orquestación</span>
+          <h3>orca-orchestration</h3>
+          <p>Un conductor y una flota de workers supervisados.</p>
+        </a>
+        <a
+          class="card"
+          href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/agentic-qa-core/skills-io-flow.es.html"
+          target="_blank"
+          rel="noopener"
+        >
+          <span class="badge green">Transversal</span>
+          <h3>Entradas y salidas de cada skill</h3>
+          <p>Qué lee, qué carga y qué produce cada fase del pipeline.</p>
+        </a>
+        <a
+          class="card"
+          href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/agentic-qa-core/naming-conventions.es.html"
+          target="_blank"
+          rel="noopener"
+        >
+          <span class="badge green">Transversal</span>
+          <h3>Convenciones de nombres</h3>
+          <p>Cómo se nombran artefactos, tests, ramas e IDs.</p>
+        </a>
+      </div>
+      <p>
+        El catálogo completo, con los decks de oficio de cada skill y la KATA Academy, está en la
+        <a
+          href="https://upex-galaxy.github.io/agentic-qa-boilerplate/"
+          target="_blank"
+          rel="noopener"
+          >portada del sitio</a
+        >.
+      </p>
+
+      <h2 id="siguientes-pasos">Siguientes pasos</h2>
+      <div class="cards">
+        <div class="card">
+          <span class="badge accent">Setup</span>
+          <h3><a href="setup/index.html">Conectar Jira, la base de datos y la API</a></h3>
+          <p>
+            Las tres guías: <a href="setup/jira-xray.html">Jira y Xray</a>,
+            <a href="setup/dbhub.html">DBHub</a> y <a href="setup/openapi.html">OpenAPI</a>.
+          </p>
+        </div>
+        <a class="card" href="metodologia/iql.html">
+          <span class="badge accent">Metodología</span>
+          <h3>El IQL</h3>
+          <p>Las fases, los ocho stages y los artefactos que conectan el trabajo de QA.</p>
+        </a>
+        <a class="card" href="exploracion/index.html">
+          <span class="badge accent">Exploración</span>
+          <h3>Explorar UI, API y base de datos</h3>
+          <p>Técnicas y recetas para la fase de Execution.</p>
+        </a>
+        <a class="card" href="personalidad.html">
+          <span class="badge">Agente</span>
+          <h3>Personalidad</h3>
+          <p>Cómo habla el agente y cómo cambiar su registro.</p>
+        </a>
+      </div>
+
+      <footer class="doc-footer">
+        Fuentes canónicas: <code>README.md</code>, <code>INSTALLER.md</code>,
+        <code>AGENTS.md</code> (§3 a §6), <code>package.json</code>, <code>.env.example</code> y
+        <code>scripts/harness-env.ts</code>.
+      </footer>
+    </article>
+  </body>
+</html>

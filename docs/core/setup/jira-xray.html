@@ -1,0 +1,889 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Jira y Xray</title>
+    <meta
+      name="description"
+      content="Cómo preparar Jira Cloud y Xray Cloud para este repo: work types, workflows, credenciales, catálogos locales y la CLI de Xray."
+    />
+    <meta name="docs-order" content="10" />
+    <link rel="stylesheet" href="../../assets/docs.css" />
+    <script src="../../assets/docs.js"></script>
+  </head>
+  <body>
+    <article class="doc wide">
+      <header class="doc-header">
+        <nav class="breadcrumbs"><span>Core</span><span>Setup</span><span>Jira y Xray</span></nav>
+        <h1>Jira y Xray: el tracker y el TMS del repo</h1>
+        <p class="lede">
+          Qué configurar en Jira Cloud y en Xray Cloud para que los skills puedan crear tests,
+          planes y ejecuciones, y cómo el repo guarda una copia local de tu configuración para no
+          adivinar ids ni nombres de estados.
+        </p>
+        <div class="meta-row">
+          <span class="badge accent">Setup</span><span class="badge">Jira Cloud</span
+          ><span class="badge">Xray Cloud</span>
+        </div>
+      </header>
+
+      <nav class="toc">
+        <strong>En esta página</strong>
+        <ol>
+          <li><a href="#alcance">Alcance y modalidades</a></li>
+          <li><a href="#antes-de-empezar">Antes de empezar</a></li>
+          <li><a href="#instalar-xray">Instalar Xray y añadir sus work types</a></li>
+          <li><a href="#workflows">Workflows</a></li>
+          <li><a href="#test-repository">Test Repository</a></li>
+          <li>
+            <a href="#credenciales">Credenciales y <code>.env</code></a>
+          </li>
+          <li>
+            <a href="#catalogos">Catálogos locales y <code>jira:check</code></a>
+          </li>
+          <li><a href="#cli-xray">La CLI de Xray</a></li>
+          <li><a href="#primer-plan">Primer Test Plan y Test Execution</a></li>
+          <li><a href="#validacion">Validación final</a></li>
+          <li><a href="#problemas">Problemas frecuentes</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="alcance">Alcance y modalidades</h2>
+      <p>
+        Este repo trabaja con <strong>Jira Cloud</strong> y <strong>Xray Cloud</strong>. Jira guarda
+        las historias, los bugs y los work types de QA; Xray añade los tipos de issue de test
+        management (Test, Test Plan, Test Execution, Test Set y Precondition) y el registro de cada
+        ejecución. Las versiones Server y Data Center no están soportadas: la CLI de Xray y los
+        scripts de sincronización hablan solo con las APIs de Cloud.
+      </p>
+      <p>
+        Hay una segunda modalidad para proyectos sin licencia de Xray, llamada
+        <em>jira-native</em>. En ella el ATP y el ATR viven en custom fields de la historia y los
+        test cases son un work type <code>Test</code> propio. Esta guía cubre la modalidad con Xray;
+        la configuración de jira-native está en
+        <code>.agents/skills/test-documentation/references/jira-setup.md</code> (sección 3).
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Concepto</th>
+              <th>Qué es</th>
+              <th>Valores</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Test Type</td>
+              <td>Cómo está escrito el test</td>
+              <td><code>Manual</code>, <code>Cucumber</code>, <code>Generic</code></td>
+            </tr>
+            <tr>
+              <td>Estado del Test</td>
+              <td>Dónde está el test case en su workflow de Jira</td>
+              <td>
+                Draft, In Design, READY, MANUAL, In Review, Candidate, In Automation, Pull Request,
+                AUTOMATED, DEPRECATED
+              </td>
+            </tr>
+            <tr>
+              <td>Execution Status</td>
+              <td>
+                Resultado de un Test Run dentro de una Test Execution. Se reinicia en cada
+                ejecución.
+              </td>
+              <td>
+                <code>TODO</code>, <code>EXECUTING</code>, <code>PASS</code>, <code>FAIL</code>,
+                <code>ABORTED</code>, <code>BLOCKED</code>
+              </td>
+            </tr>
+            <tr>
+              <td>Requirement</td>
+              <td>Un issue que los tests pueden cubrir</td>
+              <td>Story, Epic y, si quieres, Bug</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        La diferencia entre el estado del Test y el Execution Status es la confusión más común. El
+        detalle está en <code>.agents/skills/test-documentation/references/xray-platform.md</code>.
+      </p>
+
+      <h2 id="antes-de-empezar">Antes de empezar</h2>
+      <ul>
+        <li>
+          Un sitio de Jira Cloud y permisos de administrador de Jira (los necesitas para issue type
+          schemes, screens y workflows).
+        </li>
+        <li>Una licencia de Xray Cloud, de prueba o de pago.</li>
+        <li>
+          La lista de módulos de tu producto (Auth, Checkout, Billing...). La usarás para las
+          carpetas del Test Repository y para los components.
+        </li>
+        <li>
+          El repo instalado con <code>bun run setup</code> y un <code>.env</code> creado a partir de
+          <code>.env.example</code>.
+        </li>
+      </ul>
+      <p>Reserva entre dos y cuatro horas si partes de un proyecto vacío.</p>
+
+      <h2 id="instalar-xray">Instalar Xray y añadir sus work types</h2>
+      <ol class="steps">
+        <li>
+          <strong>Instala la app</strong>
+          <p>
+            En Jira, abre <strong>Settings</strong> (engranaje) &gt; <strong>Apps</strong> &gt;
+            <strong>Find new apps</strong>, busca "Xray Test Management" y pulsa
+            <strong>Get it now</strong>. Activa la licencia o el trial cuando te lo pida.
+          </p>
+        </li>
+        <li>
+          <strong>Comprueba la instalación</strong>
+          <p>
+            Deben aparecer cinco tipos de issue nuevos (Test, Precondition, Test Set, Test Execution
+            y Test Plan), una sección de Xray en <strong>Settings</strong> &gt;
+            <strong>Apps</strong> y los paneles de Xray dentro de los issues.
+          </p>
+        </li>
+        <li>
+          <strong>Añade los tipos al proyecto</strong>
+          <p>
+            En <strong>Project settings</strong> &gt; <strong>Issue types</strong>, usa
+            <strong>Actions</strong> &gt; <strong>Add Xray Issue Types</strong> y marca los cinco.
+          </p>
+        </li>
+        <li>
+          <strong>Activa la cobertura de requisitos</strong>
+          <p>
+            En <strong>Project settings</strong> &gt; <strong>Apps</strong> &gt;
+            <strong>Xray Settings</strong> &gt; <strong>Test Coverage</strong>, marca Story y Epic
+            como issues cubribles (Bug es opcional). En la configuración global de Xray,
+            <strong>Issue Type Mapping</strong>, deja Story y Epic como requirement types y Bug como
+            defect type.
+          </p>
+        </li>
+        <li>
+          <strong>Revisa los Test Types</strong>
+          <p>
+            Xray trae <code>Manual</code> (pasos que ejecuta una persona),
+            <code>Cucumber</code> (Gherkin) y <code>Generic</code> (una referencia sin estructura,
+            la que usan los tests automatizados con Playwright). Con esos tres alcanza; no hace
+            falta crear tipos propios.
+          </p>
+        </li>
+      </ol>
+
+      <h2 id="workflows">Workflows</h2>
+      <p>
+        Los skills mueven los issues de estado por su nombre de transición, así que el workflow de
+        tu proyecto tiene que existir antes de la primera sesión. Los tres diagramas son los
+        workflows de la instancia de referencia de la metodología IQL: historia, test case y bug. Si
+        tu proyecto usa otros nombres, no pasa nada; el repo los descubre con
+        <code>bun run jira:sync-workflows</code> (lo ves en
+        <a href="#catalogos">Catálogos locales</a>).
+      </p>
+
+      <h3 id="workflow-historia">Historia de usuario</h3>
+      <figure>
+        <div class="frame scroll on-dark">
+          <img
+            src="../../assets/iql/jira-user-story.svg"
+            alt="Ciclo de vida de una historia de usuario en Jira"
+          />
+        </div>
+        <figcaption>
+          Trece estados en cuatro etapas: refinamiento, desarrollo, QA y cierre. Un defecto
+          reportado en pruebas bloquea la historia y la devuelve a desarrollo.
+          <a href="../../assets/iql/jira-user-story.svg" target="_blank" rel="noopener"
+            >Ver a tamaño completo</a
+          >
+        </figcaption>
+      </figure>
+
+      <h3 id="workflow-test">Test case</h3>
+      <figure>
+        <div class="frame scroll on-dark">
+          <img
+            src="../../assets/iql/jira-test.svg"
+            alt="Ciclo de vida de un caso de prueba en Jira"
+          />
+        </div>
+        <figcaption>
+          Diez estados en tres zonas: diseño, automatización y desenlace. Desde READY el caso se
+          queda manual o entra a revisión de automatización.
+          <a href="../../assets/iql/jira-test.svg" target="_blank" rel="noopener"
+            >Ver a tamaño completo</a
+          >
+        </figcaption>
+      </figure>
+
+      <p>
+        El workflow del Test es el que más vas a tocar a mano, así que aquí van sus estados y
+        transiciones tal como están en el catálogo del repo
+        (<code>.agents/jira-workflows.json</code>, clave <code>test_case</code>). Los nombres de
+        transición van en minúscula, copiados letra por letra.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Estado</th>
+              <th>Categoría en Jira</th>
+              <th>Significado</th>
+              <th>Etapa IQL</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Draft</td>
+              <td>To Do</td>
+              <td>Recién creado, se está escribiendo</td>
+              <td>TMLC</td>
+            </tr>
+            <tr>
+              <td>In Design</td>
+              <td>In Progress</td>
+              <td>Se escriben pasos, datos y resultado esperado</td>
+              <td>TMLC</td>
+            </tr>
+            <tr>
+              <td>READY</td>
+              <td>Done</td>
+              <td>Documentado, listo para ejecutar o revisar</td>
+              <td>TMLC</td>
+            </tr>
+            <tr>
+              <td>MANUAL</td>
+              <td>Done</td>
+              <td>Se queda manual</td>
+              <td>TMLC</td>
+            </tr>
+            <tr>
+              <td>In Review</td>
+              <td>In Progress</td>
+              <td>Se evalúa el ROI de automatizarlo</td>
+              <td>TALC</td>
+            </tr>
+            <tr>
+              <td>Candidate</td>
+              <td>To Do</td>
+              <td>Aprobado para automatizar, en backlog</td>
+              <td>TALC</td>
+            </tr>
+            <tr>
+              <td>In Automation</td>
+              <td>In Progress</td>
+              <td>Se está escribiendo el script</td>
+              <td>TALC</td>
+            </tr>
+            <tr>
+              <td>Pull Request</td>
+              <td>In Progress</td>
+              <td>Código enviado, esperando merge</td>
+              <td>TALC</td>
+            </tr>
+            <tr>
+              <td>AUTOMATED</td>
+              <td>Done</td>
+              <td>Automatizado y dentro de la suite de regresión</td>
+              <td>TALC</td>
+            </tr>
+            <tr>
+              <td>DEPRECATED</td>
+              <td>Done</td>
+              <td>Ya no es válido</td>
+              <td>Cualquiera</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        No inventes estados: <code>Approved</code> y <code>Automating</code> no forman parte de este
+        workflow.
+      </p>
+
+      <details>
+        <summary>Todas las transiciones del Test (24)</summary>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Desde</th>
+                <th>Hacia</th>
+                <th>Transición</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Draft</td>
+                <td>In Design</td>
+                <td><code>start design</code></td>
+              </tr>
+              <tr>
+                <td>Draft</td>
+                <td>In Review</td>
+                <td><code>automation review</code></td>
+              </tr>
+              <tr>
+                <td>In Design</td>
+                <td>READY</td>
+                <td><code>ready to run</code></td>
+              </tr>
+              <tr>
+                <td>In Design</td>
+                <td>Draft</td>
+                <td><code>back</code></td>
+              </tr>
+              <tr>
+                <td>READY</td>
+                <td>MANUAL</td>
+                <td><code>for manual</code></td>
+              </tr>
+              <tr>
+                <td>READY</td>
+                <td>In Review</td>
+                <td><code>automation review</code></td>
+              </tr>
+              <tr>
+                <td>READY</td>
+                <td>In Design</td>
+                <td><code>back</code></td>
+              </tr>
+              <tr>
+                <td>In Review</td>
+                <td>Candidate</td>
+                <td><code>approve to automate</code></td>
+              </tr>
+              <tr>
+                <td>In Review</td>
+                <td>READY</td>
+                <td><code>back</code></td>
+              </tr>
+              <tr>
+                <td>Candidate</td>
+                <td>In Automation</td>
+                <td><code>start automation</code></td>
+              </tr>
+              <tr>
+                <td>Candidate</td>
+                <td>MANUAL</td>
+                <td><code>manual execution</code></td>
+              </tr>
+              <tr>
+                <td>Candidate</td>
+                <td>In Review</td>
+                <td><code>back</code></td>
+              </tr>
+              <tr>
+                <td>In Automation</td>
+                <td>Pull Request</td>
+                <td><code>create PR</code></td>
+              </tr>
+              <tr>
+                <td>In Automation</td>
+                <td>Candidate</td>
+                <td><code>back</code></td>
+              </tr>
+              <tr>
+                <td>Pull Request</td>
+                <td>AUTOMATED</td>
+                <td><code>merged</code></td>
+              </tr>
+              <tr>
+                <td>Pull Request</td>
+                <td>In Automation</td>
+                <td><code>back</code></td>
+              </tr>
+              <tr>
+                <td>MANUAL</td>
+                <td>In Review</td>
+                <td><code>automation review</code></td>
+              </tr>
+              <tr>
+                <td>MANUAL</td>
+                <td>Candidate</td>
+                <td><code>for automation</code></td>
+              </tr>
+              <tr>
+                <td>MANUAL</td>
+                <td>AUTOMATED</td>
+                <td><code>automated</code></td>
+              </tr>
+              <tr>
+                <td>AUTOMATED</td>
+                <td>Pull Request</td>
+                <td><code>Fix</code></td>
+              </tr>
+              <tr>
+                <td>AUTOMATED</td>
+                <td>MANUAL</td>
+                <td><code>manual execution</code></td>
+              </tr>
+              <tr>
+                <td>DEPRECATED</td>
+                <td>Draft</td>
+                <td><code>recover</code></td>
+              </tr>
+              <tr>
+                <td>Cualquiera</td>
+                <td>DEPRECATED</td>
+                <td><code>Deprecated</code></td>
+              </tr>
+              <tr>
+                <td>(creación)</td>
+                <td>Draft</td>
+                <td><code>Create</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <h3 id="workflow-bug">Bug</h3>
+      <figure>
+        <div class="frame scroll on-dark">
+          <img src="../../assets/iql/jira-bug.svg" alt="Ciclo de vida de un bug en Jira" />
+        </div>
+        <figcaption>
+          Once estados. De los seis caminos que salen de Open, cuatro cierran el bug sin tocar
+          código, uno lo aplaza a Deferred y uno entra al ciclo de arreglo.
+          <a href="../../assets/iql/jira-bug.svg" target="_blank" rel="noopener"
+            >Ver a tamaño completo</a
+          >
+        </figcaption>
+      </figure>
+
+      <p>Para crear el workflow del Test en tu sitio:</p>
+      <ol class="steps">
+        <li>
+          <strong>Crea el workflow</strong>
+          <p>
+            <strong>Settings</strong> &gt; <strong>Issues</strong> &gt;
+            <strong>Workflows</strong> &gt; <strong>Add workflow</strong>, con los estados y
+            transiciones de las tablas de arriba.
+          </p>
+        </li>
+        <li>
+          <strong>Asígnalo al work type Test</strong>
+          <p>
+            En <strong>Workflow schemes</strong>, asocia el workflow al tipo Test y asigna el scheme
+            a tu proyecto.
+          </p>
+        </li>
+        <li>
+          <strong>Descárgalo al repo</strong>
+          <p>
+            Ejecuta <code>bun run jira:sync-workflows</code> para que el catálogo local refleje lo
+            que acabas de crear.
+          </p>
+        </li>
+      </ol>
+
+      <h2 id="test-repository">Test Repository</h2>
+      <p>
+        El Test Repository es el árbol de carpetas de Xray para ordenar los tests. Lo abres desde el
+        proyecto, en <strong>Tests</strong> &gt; <strong>Test Repository</strong>. Crea una carpeta
+        por módulo del producto y subcarpetas por funcionalidad (clic derecho sobre la raíz &gt;
+        <strong>Create folder</strong>). Los tests existentes se mueven arrastrándolos o con las
+        acciones masivas.
+      </p>
+      <pre data-lang="text"><code>Test Repository
+├── Auth
+│   ├── Login
+│   ├── Logout
+│   └── Password Reset
+├── Bookings
+│   ├── Create Booking
+│   └── Cancel Booking
+├── Invoices
+│   └── Export Invoice
+└── Smoke Tests
+    └── Critical Paths</code></pre>
+
+      <h2 id="credenciales">Credenciales y <code>.env</code></h2>
+      <p>Necesitas dos juegos de credenciales, las dos para Cloud:</p>
+      <dl class="defs">
+        <dt>Token de Atlassian</dt>
+        <dd>
+          Lo usan <code>acli</code>, la CLI de Xray para las funciones de Jira y los scripts
+          <code>jira:*</code>. Se crea en
+          <a
+            href="https://id.atlassian.com/manage-profile/security/api-tokens"
+            target="_blank"
+            rel="noopener"
+            >id.atlassian.com</a
+          >.
+        </dd>
+        <dt>API key de Xray</dt>
+        <dd>
+          Un par Client ID y Client Secret. Se crea en <strong>Settings</strong> &gt;
+          <strong>Apps</strong> &gt; <strong>Xray</strong> &gt; <strong>API Keys</strong> &gt;
+          <strong>Create API Key</strong>. Dale un nombre que diga para qué es, por ejemplo "QA
+          Automation - CI". Copia los dos valores en el momento: el secret no se vuelve a mostrar.
+        </dd>
+      </dl>
+      <p>Después rellena estas variables en tu <code>.env</code>:</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Variable</th>
+              <th>Para qué</th>
+              <th>¿Obligatoria?</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>ATLASSIAN_EMAIL</code></td>
+              <td>Email de tu cuenta de Atlassian</td>
+              <td>Sí</td>
+            </tr>
+            <tr>
+              <td><code>ATLASSIAN_API_TOKEN</code></td>
+              <td>Token de la API de Atlassian</td>
+              <td>Sí</td>
+            </tr>
+            <tr>
+              <td><code>XRAY_CLIENT_ID</code></td>
+              <td>Client ID de la API key de Xray</td>
+              <td>Sí, con Xray</td>
+            </tr>
+            <tr>
+              <td><code>XRAY_CLIENT_SECRET</code></td>
+              <td>Client Secret de la API key de Xray</td>
+              <td>Sí, con Xray</td>
+            </tr>
+            <tr>
+              <td><code>XRAY_PROJECT_KEY</code></td>
+              <td>Proyecto para la sincronización local de Xray. Ningún workflow de CI la lee</td>
+              <td>Opcional</td>
+            </tr>
+            <tr>
+              <td><code>AUTO_SYNC</code></td>
+              <td>
+                Interruptor del write-back de resultados. En <code>false</code> la corrida no
+                escribe nada en Xray
+              </td>
+              <td>Opcional (por defecto <code>false</code>)</td>
+            </tr>
+            <tr>
+              <td><code>STP_EXECUTION_KEY</code></td>
+              <td>
+                La Test Execution donde se importan los resultados: la RTR de la regresión o la STR
+                de cierre de sprint. Nunca la clave de un Test Plan
+              </td>
+              <td>Sí, para el write-back</td>
+            </tr>
+            <tr>
+              <td><code>RTP_KEY</code></td>
+              <td>Clave del Regression Test Plan, solo para el fallback local</td>
+              <td>Opcional</td>
+            </tr>
+            <tr>
+              <td><code>JIRA_PROJECT_KEY</code></td>
+              <td>
+                Sustituye la clave de proyecto de <code>.agents/project.yaml</code> en una corrida
+              </td>
+              <td>Opcional</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-title">La URL del sitio no va en <code>.env</code></span>
+        <p>
+          El host de Atlassian vive en <code>.agents/project.yaml</code>, clave
+          <code>issue_tracker.atlassian_url</code>, y en ningún otro sitio local. Lo configuras con
+          <code>bun run agents:setup</code> y lo consultas con
+          <code>bun run --silent jira:url</code>. Una copia vieja en una variable de entorno puede
+          apuntar los scripts a un sitio muerto sin dar ningún error; por eso no existe
+          <code>ATLASSIAN_URL</code> en <code>.env.example</code>.
+        </p>
+      </div>
+      <p>
+        La lista completa y comentada está en <code>.env.example</code>. <code>AUTO_SYNC</code>,
+        <code>XRAY_CLIENT_ID</code>, <code>XRAY_CLIENT_SECRET</code> y
+        <code>STP_EXECUTION_KEY</code> también son secrets de CI: los sube a GitHub Actions
+        <code>bun run setup --variables</code>.
+      </p>
+
+      <h2 id="catalogos">Catálogos locales y <code>jira:check</code></h2>
+      <p>
+        Cada sitio de Jira da ids distintos a sus custom fields y nombres distintos a sus estados.
+        Para que los skills funcionen en cualquier sitio, el repo descarga esa información a
+        archivos JSON en <code>.agents/</code> y los skills la referencian por slug (<code
+          >{{jira.acceptance_test_plan}}</code
+        >
+        en vez de <code>customfield_10123</code>). Estos archivos se generan; no los edites a mano.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Comando</th>
+              <th>Genera</th>
+              <th>Qué contiene</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>bun run jira:sync-fields</code></td>
+              <td><code>.agents/jira-fields.json</code></td>
+              <td>
+                Todos los custom fields del sitio, con su id, tipo y opciones. Usa
+                <code>--force</code> para sobrescribir un catálogo existente, por ejemplo después de
+                crear un campo nuevo.
+              </td>
+            </tr>
+            <tr>
+              <td><code>bun run jira:sync-workflows</code></td>
+              <td><code>.agents/jira-workflows.json</code></td>
+              <td>
+                Para cada work type declarado en <code>.agents/jira-required.yaml</code>: su
+                workflow, sus estados y sus transiciones. Solo cataloga los work types que el
+                manifiesto declara.
+              </td>
+            </tr>
+            <tr>
+              <td><code>bun run jira:sync-link-types</code></td>
+              <td><code>.agents/jira-link-types.json</code></td>
+              <td>
+                Los tipos de enlace entre issues (<code>tests / is tested by</code>,
+                <code>blocks / is blocked by</code>...). Se ejecuta a mano, rara vez.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        El manifiesto <code>.agents/jira-required.yaml</code> es lo que la metodología espera
+        encontrar en tu sitio: campos obligatorios y opcionales, tipos de enlace y work types.
+        <code>bun run jira:check</code> compara ese manifiesto con los catálogos:
+      </p>
+      <ul>
+        <li>
+          Cada campo obligatorio existe en <code>jira-fields.json</code> (si falta, es error y el
+          comando sale con código 1), tiene el tipo esperado y, si es de opciones, tiene todas las
+          opciones declaradas.
+        </li>
+        <li>
+          Los campos opcionales que faltan solo se informan; nunca cambian el código de salida.
+        </li>
+        <li>Cada work type declarado aparece en <code>jira-workflows.json</code>.</li>
+        <li>
+          Los tipos de enlace se validan si existe <code>jira-link-types.json</code>; si no, el
+          check queda en DEFERRED y sigue en verde.
+        </li>
+        <li>
+          Con <code>--live</code> compara además el catálogo de workflows con lo que Jira responde
+          ahora mismo. Sirve para detectar un catálogo que quedó viejo. Solo emite avisos.
+        </li>
+      </ul>
+      <p>
+        <code>bun run jira:baseline</code> es un aviso aparte: te dice si tu manifiesto declara
+        menos work types que la versión upstream. Un manifiesto incompleto produce un
+        <code>jira-workflows.json</code> incompleto sin avisar, y las transiciones de los tipos que
+        faltan dejan de resolverse. Nunca bloquea: omitir un work type puede ser una decisión
+        legítima.
+      </p>
+      <pre data-lang="bash"><code>bun run jira:sync-fields
+bun run jira:sync-workflows
+bun run jira:sync-link-types
+bun run jira:check</code></pre>
+
+      <h2 id="cli-xray">La CLI de Xray</h2>
+      <p>
+        El repo trae su propia CLI de Xray en <code>cli/xray/</code>, que se ejecuta como
+        <code>bun xray</code>. El skill <code>/xray-cli</code> tiene la sintaxis completa y
+        <code>bun xray --help</code> muestra la versión actual. Estos son los comandos que usas
+        durante el setup:
+      </p>
+      <pre
+        data-lang="bash"
+      ><code># Autenticación (lee XRAY_CLIENT_ID y XRAY_CLIENT_SECRET del entorno)
+bun xray auth login
+bun xray auth status
+bun xray auth logout
+
+# Tests
+bun xray test list --project PROJ --limit 20
+bun xray test get PROJ-101
+bun xray test create --project PROJ --summary "Verify login with valid credentials" --type Manual --labels "e2e,auth"
+bun xray test add-step --test &lt;issue-id&gt; --action "..." --result "..."
+bun xray test enrich --project PROJ
+
+# Test Executions
+bun xray exec list
+bun xray exec create --project PROJ --summary "RTR: staging-2026-09-24: Regression Testing" --environment staging
+bun xray exec add-tests --execution &lt;issue-id&gt; --tests &lt;id1,id2&gt;
+
+# Importar resultados, siempre en una ejecución explícita
+bun xray import junit --file test-results/junit.xml --execution PROJ-194
+
+# Test Plans
+bun xray plan list
+bun xray plan get PROJ-300</code></pre>
+      <div class="callout tip">
+        <span class="callout-title">Dos detalles que ahorran tiempo</span>
+        <p>
+          <code>test create</code> no guarda pasos manuales: Xray Cloud los descarta. Añádelos
+          después, uno por llamada, con <code>test add-step</code>. Y pasa siempre
+          <code>--execution</code> a <code>import junit</code>: sin él, cada corrida crea una Test
+          Execution nueva que la API de importación no puede colgar después del epic "QA Test
+          Artifacts".
+        </p>
+      </div>
+      <p>
+        <code>test enrich</code> completa la copia local de <code>.context/PBI</code> con las
+        Preconditions y la pertenencia a Test Sets, que la API REST de Jira no expone.
+      </p>
+
+      <h2 id="primer-plan">Primer Test Plan y Test Execution</h2>
+      <ol class="steps">
+        <li>
+          <strong>Configura los Test Environments</strong>
+          <p>
+            En <strong>Settings</strong> &gt; <strong>Apps</strong> &gt; <strong>Xray</strong> &gt;
+            <strong>Test Environments</strong>, añade los entornos del repo: <code>local</code>,
+            <code>qa</code>, <code>staging</code> y <code>production</code>. Usa exactamente esos
+            nombres, sin abreviaturas.
+          </p>
+        </li>
+        <li>
+          <strong>Crea el Test Plan</strong>
+          <p>
+            <strong>Create</strong> &gt; tipo <strong>Test Plan</strong>, con un summary claro, la
+            fix version si la usas y el objetivo del plan en la descripción.
+          </p>
+        </li>
+        <li>
+          <strong>Añade tests al plan</strong>
+          <p>
+            Desde la sección <strong>Tests</strong> del plan, <strong>Add Tests</strong>: puedes
+            buscarlos uno a uno, traer un Test Set entero o una carpeta del Test Repository.
+          </p>
+        </li>
+        <li>
+          <strong>Crea la Test Execution</strong>
+          <p>
+            Desde el plan, <strong>Create Test Execution</strong>, eligiendo el Test Environment
+            (por ejemplo <code>staging</code>) y la revisión o build. Los tests del plan entran
+            solos.
+          </p>
+        </li>
+      </ol>
+      <p>
+        En el día a día no harás esto a mano: los skills crean los planes y las ejecuciones con sus
+        convenciones de nombre (ATP, STP, RTP, ATR, STR, RTR) y los cuelgan del epic de QA que
+        corresponde. Hacerlo una vez sirve para comprobar que permisos y configuración están bien.
+      </p>
+
+      <h2 id="validacion">Validación final</h2>
+      <ul>
+        <li>Los cinco tipos de Xray aparecen en el proyecto.</li>
+        <li>
+          Los Test Types <code>Manual</code>, <code>Cucumber</code> y <code>Generic</code> están
+          disponibles.
+        </li>
+        <li>
+          El workflow del Test está asignado y la transición <code>start design</code> aparece en un
+          Test en Draft.
+        </li>
+        <li>La cobertura de requisitos está activa para Story y Epic.</li>
+        <li>Puedes crear un enlace <code>is tested by</code> desde un Test a una historia.</li>
+        <li>
+          <code>bun xray auth status</code> responde autenticado y
+          <code>bun xray test list --project PROJ</code> devuelve datos.
+        </li>
+        <li><code>bun run jira:check</code> termina sin errores.</li>
+      </ul>
+      <p>
+        Para una prueba de punta a punta: crea un test <code>Generic</code>, añádelo a un plan,
+        ejecuta Playwright con el reporter JUnit e importa el resultado con
+        <code>bun xray import junit --file test-results/junit.xml --execution &lt;KEY&gt;</code>. La
+        Test Execution debe mostrar el resultado.
+      </p>
+
+      <h2 id="problemas">Problemas frecuentes</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Síntoma</th>
+              <th>Qué revisar</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>No se ven los paneles de Xray</td>
+              <td>Que el issue type scheme del proyecto incluya los tipos de Xray.</td>
+            </tr>
+            <tr>
+              <td>No puedes añadir tests a un plan</td>
+              <td>
+                Que los tests existan y que tengas permisos sobre el plan. Xray rechaza cambios de
+                membresía en un Test Plan asignado a otra persona.
+              </td>
+            </tr>
+            <tr>
+              <td>La API responde 401</td>
+              <td>
+                Las credenciales de <code>.env</code>. Si las cambias, reinicia la sesión del
+                agente: las variables se leen al arrancar.
+              </td>
+            </tr>
+            <tr>
+              <td>La API responde 404</td>
+              <td>
+                Que la clave del proyecto y las de los issues existan en el sitio configurado (<code
+                  >bun run --silent jira:url</code
+                >).
+              </td>
+            </tr>
+            <tr>
+              <td>La cobertura no aparece</td>
+              <td>Que Test Coverage esté activado para ese tipo de issue.</td>
+            </tr>
+            <tr>
+              <td>Un skill no encuentra una transición</td>
+              <td>
+                Que el catálogo esté al día: <code>bun run jira:sync-workflows</code> y luego
+                <code>bun run jira:check --live</code>.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="jql">JQL útiles</h3>
+      <pre data-lang="sql"><code># Tests automatizados
+project = PROJ AND issuetype = Test AND status = AUTOMATED
+
+# Candidatos a automatizar
+project = PROJ AND issuetype = Test AND status = Candidate
+
+# Tests por etiqueta
+project = PROJ AND issuetype = Test AND labels in (regression, smoke)</code></pre>
+
+      <footer class="doc-footer">
+        <p>
+          Relacionado: <a href="index.html">Setup</a> · <a href="dbhub.html">DBHub</a> ·
+          <a href="openapi.html">OpenAPI</a>.
+        </p>
+        <p>
+          Fuentes que lee la IA:
+          <code>.agents/skills/test-documentation/references/jira-setup.md</code>,
+          <code>.agents/skills/test-documentation/references/xray-platform.md</code>,
+          <code>.agents/jira-required.yaml</code>. Documentación oficial:
+          <a href="https://docs.getxray.app/display/XRAYCLOUD" target="_blank" rel="noopener"
+            >Xray Cloud</a
+          >.
+        </p>
+      </footer>
+    </article>
+  </body>
+</html>

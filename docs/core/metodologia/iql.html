@@ -1,0 +1,1268 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>IQL</title>
+    <meta
+      name="description"
+      content="Resumen del Integrated Quality Lifecycle: 3 fases, 8 stages, 15 steps, 5 ciclos y 4 altitudes, con el contrato agéntico de cada stage, las modalidades y la escalera de artefactos."
+    />
+    <meta name="docs-order" content="10" />
+    <link rel="stylesheet" href="../../assets/docs.css" />
+    <script src="../../assets/docs.js"></script>
+  </head>
+  <body>
+    <article class="doc wide">
+      <header class="doc-header">
+        <nav class="breadcrumbs"><span>Core</span><span>Metodología</span><span>IQL</span></nav>
+        <h1>IQL: Integrated Quality Lifecycle</h1>
+        <p class="lede">
+          La metodología de calidad de UPEX y la que sigue este repo. Lleva el trabajo de QA en una
+          sola línea desde el requerimiento hasta producción, en lugar de dejar el testing como una
+          fase separada al final. Esta página resume el método completo y te manda a la página de
+          cada fase cuando necesitas el detalle.
+        </p>
+        <div class="meta-row">
+          <span class="badge accent">Metodología</span><span class="badge">3 fases</span
+          ><span class="badge">8 stages</span><span class="badge">15 steps</span
+          ><span class="badge">5 ciclos</span><span class="badge">4 altitudes</span>
+        </div>
+      </header>
+
+      <div class="callout">
+        <span class="callout-title">Fuente canónica</span>
+        <p>
+          El sitio oficial define el método:
+          <a href="https://www.upexgalaxy.com/metodologia" target="_blank" rel="noopener"
+            >upexgalaxy.com/metodologia</a
+          >
+          (español) y
+          <a href="https://www.upexgalaxy.com/en/methodology" target="_blank" rel="noopener"
+            >upexgalaxy.com/en/methodology</a
+          >
+          (inglés). Esta página es el resumen para quien trabaja en este repo. Si algo de aquí
+          contradice al sitio, manda el sitio.
+        </p>
+      </div>
+
+      <nav class="toc">
+        <strong>En esta página</strong>
+        <ol>
+          <li><a href="#de-un-vistazo">El IQL de un vistazo</a></li>
+          <li><a href="#fases">Las tres fases</a></li>
+          <li><a href="#bloques">Los cuatro bloques de madurez</a></li>
+          <li><a href="#bucle">El bucle completo</a></li>
+          <li><a href="#principios">Principios e invariantes</a></li>
+          <li><a href="#stages">Los 8 stages y su contrato agéntico</a></li>
+          <li><a href="#steps">Los 15 steps</a></li>
+          <li><a href="#ciclos">Los ciclos internos</a></li>
+          <li><a href="#modalidades">Dos modalidades: jira-native y jira-xray</a></li>
+          <li><a href="#artefactos">La escalera de artefactos</a></li>
+          <li><a href="#roles">Analyst + Automation Engineer</a></li>
+          <li><a href="#stlc">STLC contra IQL</a></li>
+          <li><a href="#enfoques">Los enfoques que integra</a></li>
+          <li><a href="#trifuerza">La Trifuerza</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="de-un-vistazo">El IQL de un vistazo</h2>
+      <p>
+        El método se describe con cuatro números. Cada uno responde a una pregunta distinta, y
+        conviene no mezclarlos:
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Unidad</th>
+              <th>Cuántas</th>
+              <th>Qué es</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Fases</td>
+              <td>3</td>
+              <td>Early-Game (prevención), Mid-Game (detección) y Late-Game (observación).</td>
+            </tr>
+            <tr>
+              <td>Stages</td>
+              <td>8</td>
+              <td>
+                Lo que se ejecuta y se gatea. Cada stage tiene nombre, nunca número, y una skill
+                dueña (salvo Observation).
+              </td>
+            </tr>
+            <tr>
+              <td>Steps</td>
+              <td>15</td>
+              <td>El desglose de los stages. Van numerados del 1 al 15.</td>
+            </tr>
+            <tr>
+              <td>Ciclos</td>
+              <td>5</td>
+              <td>TMLC, TALC, SDC, BLC y PLC: los ciclos que corren por dentro.</td>
+            </tr>
+            <tr>
+              <td>Altitudes</td>
+              <td>4</td>
+              <td>
+                Producto, Feature, Sprint e Historia. Cada altitud tiene su plan (MTP, FTP, STP,
+                ATP).
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        El lugar de la IA en el método cabe en una frase que el sitio deja en inglés:
+        <strong>Agent executes. Evidence proves. Human owns the decision.</strong> El agente ejecuta
+        las skills, la evidencia respalda cada conclusión y la persona decide qué se prioriza, qué
+        se automatiza y qué se aprueba.
+      </p>
+
+      <h2 id="fases">Las tres fases</h2>
+      <p>
+        Cada fase tiene un rango de steps, un rol protagonista y una pregunta de fondo. El detalle
+        de cada una está en su propia página.
+      </p>
+      <div class="cards">
+        <a class="card" href="early-game.html">
+          <span class="badge accent">Fase 1 · Prevención</span>
+          <h3>Early-Game</h3>
+          <p>
+            Steps 1-4. Protagonista: QA Analyst. Pregunta: «Construyámoslo bien desde el principio».
+            Análisis de la historia, exploración temprana y priorización por riesgo.
+          </p>
+        </a>
+        <a class="card" href="mid-game.html">
+          <span class="badge accent">Fase 2 · Detección</span>
+          <h3>Mid-Game</h3>
+          <p>
+            Steps 5-9. Protagonista: QA Automation Engineer. Pregunta: «¿El software cumple con los
+            requerimientos?». Documentación de casos, gate de ROI y automatización.
+          </p>
+        </a>
+        <a class="card" href="late-game.html">
+          <span class="badge accent">Fase 3 · Observación</span>
+          <h3>Late-Game</h3>
+          <p>
+            Steps 10-15. Protagonista: QA + DevOps. Pregunta: «¿Cómo se comporta en el mundo real?».
+            Regresión, release y señales de producción.
+          </p>
+        </a>
+      </div>
+
+      <h2 id="bloques">Los cuatro bloques de madurez</h2>
+      <p>
+        El método también se lee en cuatro bloques. Cada uno ataca un problema concreto y deja un
+        resultado. Son los mismos cuatro niveles de madurez (L1 a L4) con los que un equipo decide
+        hasta dónde implementar.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Bloque</th>
+              <th>Problema que ataca</th>
+              <th>Resultado</th>
+              <th>Stages</th>
+              <th>Steps</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>L1 · Prevention</strong></td>
+              <td>
+                Los defectos más caros nacen en historias ambiguas, antes de que exista código.
+              </td>
+              <td>
+                Historias con criterios verificables y un plan de aceptación por historia antes de
+                que arranque el sprint.
+              </td>
+              <td>Shift-Left, Planning</td>
+              <td>1, 2</td>
+            </tr>
+            <tr>
+              <td><strong>L2 · Early Detection</strong></td>
+              <td>Un bug encontrado después del merge cuesta el retrabajo de todo el equipo.</td>
+              <td>
+                Feedback al desarrollador antes del pull request, con evidencia real y bugs
+                priorizados por riesgo.
+              </td>
+              <td>Execution, Reporting, Documentation</td>
+              <td>3, 4</td>
+            </tr>
+            <tr>
+              <td><strong>L3 · Continuous Detection</strong></td>
+              <td>
+                Repositorios de casos que nadie mantiene y suites automatizadas en las que nadie
+                confía.
+              </td>
+              <td>
+                Regresión confiable en CI: solo se documenta y automatiza lo que demostró valor, y
+                corre en cada pull request.
+              </td>
+              <td>Documentation, Automation, Regression</td>
+              <td>5-10</td>
+            </tr>
+            <tr>
+              <td><strong>L4 · Production Observation</strong></td>
+              <td>Lo que pasa en producción no vuelve al backlog.</td>
+              <td>
+                Las métricas reales de producción deciden qué observar, qué probar y qué mejorar en
+                el siguiente ciclo.
+              </td>
+              <td>Observation</td>
+              <td>11-15</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout tip">
+        <span class="callout-title">Hasta dónde llegar</span>
+        <p>
+          El IQL define qué observar y qué mejorar. El nivel de madurez del equipo fija hasta dónde
+          se implementa el Late-Game, y los targets concretos los pone cada producto.
+        </p>
+      </div>
+
+      <h2 id="bucle">El bucle completo</h2>
+      <p>
+        El ciclo vuelve sobre sí mismo. Los 8 stages se agrupan en cuatro momentos (antes del
+        sprint, dentro del sprint, cierre y release, producción) y alrededor están los eventos del
+        SDLC que producen artefactos sin ser stages. El diagrama dibuja tres flechas de vuelta que
+        un modelo lineal no tiene: el defecto que reabre la ejecución (defecto, fix, retest), el
+        NO-GO de la regresión que devuelve el release a la automatización, y las señales de
+        producción que alimentan el Shift-Left siguiente.
+      </p>
+      <figure>
+        <div class="frame scroll on-dark">
+          <img
+            src="../../assets/iql/iql-loop.svg"
+            alt="El bucle del Integrated Quality Lifecycle, stage por stage"
+          />
+        </div>
+        <figcaption>
+          Los 8 stages en 4 momentos, con la skill dueña y el nivel de cada uno.
+          <a href="../../assets/iql/iql-loop.svg" target="_blank" rel="noopener"
+            >Ver a tamaño completo</a
+          >
+        </figcaption>
+      </figure>
+      <p>
+        La vuelta de producción al análisis tiene un mecanismo con nombre: el error budget, la
+        escape rate y la change failure rate. Si ningún número vuelve al step 1, el último step es
+        un final y el bucle se corta.
+      </p>
+
+      <h2 id="principios">Principios e invariantes</h2>
+      <p>
+        Lo que no cambia aunque cambien el stack, el tracker o el cliente. El sitio les da un
+        identificador corto a cada uno; aquí van con su idea central.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Principio</th>
+              <th>Qué dice</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>La coreografía es el aporte</td>
+              <td>
+                Shift-Left, risk-based, CI y observabilidad ya existían. El IQL aporta el orden:
+                entender, planificar, explorar, aprender, priorizar por riesgo y ROI, documentar lo
+                que merece vivir, automatizar lo que lo merece, integrarlo a CI, observar producción
+                y retroalimentar.
+              </td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>Ejecutar primero, documentar después</td>
+              <td>
+                Antes del sprint ya existen el análisis, el FTP y el ATP. Se explora contra ese plan
+                y, con evidencia real, se decide qué escenarios se vuelven casos persistentes.
+              </td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>Todo se prioriza por riesgo</td>
+              <td>
+                Qué historias se exploran primero, qué atributos de calidad aplican y qué casos se
+                documentan. Nada entra a la suite por costumbre.
+              </td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td>Un caso se persiste por su ROI</td>
+              <td>
+                Solo se persiste y automatiza lo que demostró valor de regresión. El veredicto
+                (Candidate, Manual, Deferred) se decide en el step 4 y se estampa en el 6.
+              </td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td>El manual alimenta al automatizado</td>
+              <td>
+                El QA Analyst produce candidatos que entran directo al ciclo del QA Automation
+                Engineer. Esa costura TMLC ↔ TALC es la I de Integrated.
+              </td>
+            </tr>
+            <tr>
+              <td>6</td>
+              <td>Cada step deja un artefacto y un gate</td>
+              <td>
+                MTP, FTP, STP/STR, ATP/ATS/ATR y el ATC. Los gates son las transiciones del tracker:
+                sin artefacto no hay paso siguiente.
+              </td>
+            </tr>
+            <tr>
+              <td>7</td>
+              <td>El step 2 sincroniza con el SDLC</td>
+              <td>
+                Es el período en que desarrollo construye y QA trabaja en paralelo. Cuenta entre los
+                15 para que el ciclo se lea completo, y se dibuja distinto.
+              </td>
+            </tr>
+            <tr>
+              <td>8</td>
+              <td>El IQL absorbe al STLC</td>
+              <td>
+                Es un operating model de Software Quality Engineering que mete las actividades del
+                STLC dentro del SDLC y las extiende hasta producción.
+              </td>
+            </tr>
+            <tr>
+              <td>9</td>
+              <td>La madurez fija hasta dónde</td>
+              <td>El nivel de madurez decide cuánto Late-Game se implementa.</td>
+            </tr>
+            <tr>
+              <td>10</td>
+              <td>El agente ejecuta, la persona decide</td>
+              <td>Agent executes. Evidence proves. Human owns the decision.</td>
+            </tr>
+            <tr>
+              <td>11</td>
+              <td>Quien verifica no es quien ejecutó</td>
+              <td>
+                Otro agente revisa, en contexto limpio y contra el artefacto original: los
+                veredictos de ROI contra el ATR, el código contra el plan aprobado.
+              </td>
+            </tr>
+            <tr>
+              <td>12</td>
+              <td>Al agente también se lo mide</td>
+              <td>
+                Cada stage tiene su golden set (un ATP de referencia, un veredicto de ROI de
+                referencia, una clasificación de fallas de referencia) y sus evals. Sin eso no hay
+                cómo justificar subirle autonomía.
+              </td>
+            </tr>
+            <tr>
+              <td>13</td>
+              <td>Es un bucle, no una fila</td>
+              <td>Producción vuelve al step 1 a través del error budget y la escape rate.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="costuras">Las tres costuras de la I</h3>
+      <ol class="steps">
+        <li>
+          <strong>Humano ↔ agente ↔ evidencia</strong>
+          <p>
+            Cada stage las cose con su contrato: qué hace el agente, qué firma la persona y qué
+            evidencia exige el gate. Esta costura es la que hace agéntico al método.
+          </p>
+        </li>
+        <li>
+          <strong>TMLC ↔ TALC</strong>
+          <p>
+            Los candidatos del QA Analyst alimentan al QA Automation Engineer, y el gate de ROI
+            decide cuáles pasan. Es la costura original del método.
+          </p>
+        </li>
+        <li>
+          <strong>STLC dentro del SDLC</strong>
+          <p>
+            Las actividades del STLC se reparten por el SDLC y llegan hasta producción. El step 2 es
+            el punto donde las dos líneas se sincronizan.
+          </p>
+        </li>
+      </ol>
+
+      <h3 id="modo-light">Modo light y lo que nunca se colapsa</h3>
+      <p>
+        Algunos gates se pueden colapsar en un sprint concreto. Lo decide el QA Lead, por escrito en
+        el STP, y la decisión no se hereda al sprint siguiente. Cada gate colapsado deja un ítem de
+        deuda en el backlog con su condición y su fecha; sin esa nota, el gate se perdió.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Gate colapsable</th>
+              <th>Condición</th>
+              <th>Costo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>El ATP como ítem Test Plan del stage Planning</td>
+              <td>
+                El ATP existe en el campo <code>acceptance_test_plan</code> y el sprint ya tiene
+                STP.
+              </td>
+              <td>La historia no aparece en el panel de cobertura hasta que se cree el ítem.</td>
+            </tr>
+            <tr>
+              <td>La promoción de casos al Test Set de feature</td>
+              <td>La feature tiene una sola historia viva, o el TS ya existe.</td>
+              <td>El smoke de la feature se arma a mano el sprint siguiente.</td>
+            </tr>
+            <tr>
+              <td>El verificador de los veredictos de ROI</td>
+              <td>Menos de cinco escenarios y ninguno en Candidate.</td>
+              <td>La alarma de más del 50% en Candidate o Manual pierde su control.</td>
+            </tr>
+            <tr>
+              <td>El histórico de cinco corridas para declarar FLAKY</td>
+              <td>
+                La falla se reproduce a mano y el reporte la registra como INSUFFICIENT HISTORY.
+              </td>
+              <td>Una regresión real puede archivarse como flaky.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout warn">
+        <span class="callout-title">Nunca se colapsa</span>
+        <p>
+          El ATR con su Test Environment declarado. El acuerdo humano explícito antes de filear cada
+          bug. La aprobación del plan de automatización antes de escribir código. La aprobación
+          humana del merge.
+        </p>
+      </div>
+
+      <h2 id="stages">Los 8 stages y su contrato agéntico</h2>
+      <p>
+        El stage es lo que se ejecuta y lo que se gatea. Cada uno declara qué hace el agente, qué
+        firma la persona, qué evidencia exige y con cuánta autonomía corre, en una escala de 0 a 5.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Stage</th>
+              <th>Momento</th>
+              <th>Fase</th>
+              <th>Nivel</th>
+              <th>Skill dueña</th>
+              <th>Steps</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Shift-Left</strong></td>
+              <td>Antes del sprint</td>
+              <td>Early-Game</td>
+              <td>L1</td>
+              <td><code>shift-left-testing</code></td>
+              <td>1 (mitad pre-sprint)</td>
+            </tr>
+            <tr>
+              <td><strong>Planning</strong></td>
+              <td>Dentro del sprint</td>
+              <td>Early-Game</td>
+              <td>L1</td>
+              <td><code>sprint-testing</code></td>
+              <td>1 (mitad in-sprint)</td>
+            </tr>
+            <tr>
+              <td><strong>Execution</strong></td>
+              <td>Dentro del sprint</td>
+              <td>Early-Game</td>
+              <td>L2</td>
+              <td><code>sprint-testing</code></td>
+              <td>3 (ejecución)</td>
+            </tr>
+            <tr>
+              <td><strong>Reporting</strong></td>
+              <td>Dentro del sprint</td>
+              <td>Early-Game</td>
+              <td>L2</td>
+              <td><code>sprint-testing</code></td>
+              <td>3 (registro)</td>
+            </tr>
+            <tr>
+              <td><strong>Documentation</strong></td>
+              <td>Cierre y release</td>
+              <td>Early-Game, Mid-Game</td>
+              <td>L3</td>
+              <td><code>test-documentation</code></td>
+              <td>4, 5, 6</td>
+            </tr>
+            <tr>
+              <td><strong>Automation</strong></td>
+              <td>Cierre y release</td>
+              <td>Mid-Game</td>
+              <td>L3</td>
+              <td><code>test-automation</code></td>
+              <td>7, 8, 9</td>
+            </tr>
+            <tr>
+              <td><strong>Regression</strong></td>
+              <td>Cierre y release</td>
+              <td>Late-Game</td>
+              <td>L3</td>
+              <td><code>regression-testing</code></td>
+              <td>10</td>
+            </tr>
+            <tr>
+              <td><strong>Observation</strong></td>
+              <td>Producción</td>
+              <td>Late-Game</td>
+              <td>L4</td>
+              <td>Ninguna todavía (rutina agéntica)</td>
+              <td>11-15</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="contrato">El contrato de cada stage</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Stage</th>
+              <th>El agente hace</th>
+              <th>La persona firma</th>
+              <th>Autonomía</th>
+              <th>Verificador separado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Shift-Left</strong></td>
+              <td>
+                Reescribe los criterios en Given/When/Then con datos concretos, redacta los gaps
+                como preguntas al PO o al dev, escribe el ATP en el campo de la historia y aplica el
+                Test-Design Checklist. No crea ninguna entidad en el TMS.
+              </td>
+              <td>
+                El lote de historias y el resumen por historia. Contesta los gaps. La historia nunca
+                pasa de <code>Estimation</code>.
+              </td>
+              <td>2</td>
+              <td>No hace falta</td>
+            </tr>
+            <tr>
+              <td><strong>Planning</strong></td>
+              <td>
+                Crea el ATS primero y de ahí deriva el ATP y el ATR vacío. Deriva los casos según la
+                modalidad, decide por triage, veto y risk-score qué superficies UI/API/DB entran, y
+                crea o encuentra el STP y el FTP.
+              </td>
+              <td>La explicación de la historia: el agente explica qué entendió y espera el OK.</td>
+              <td>2</td>
+              <td>No hace falta</td>
+            </tr>
+            <tr>
+              <td><strong>Execution</strong></td>
+              <td>
+                Corre el smoke como Go/No-Go, ejecuta lo planificado y explora más allá por UI, API
+                y DB. Propone cada hallazgo clasificado (Bug, Defect o Improvement) con su
+                severidad.
+              </td>
+              <td>
+                El triage y el fileo de cada hallazgo. Recalibra a mano toda severidad de seguridad
+                o autenticación.
+              </td>
+              <td>3</td>
+              <td>No hace falta</td>
+            </tr>
+            <tr>
+              <td><strong>Reporting</strong></td>
+              <td>
+                Llena el ATR caso por caso, escribe el comentario de QA, resuelve los enlaces y
+                anota el follow-up de regresión.
+              </td>
+              <td>La transición: el sign-off de la historia o el reporte del defecto.</td>
+              <td>2</td>
+              <td>No hace falta</td>
+            </tr>
+            <tr>
+              <td><strong>Documentation</strong></td>
+              <td>
+                Deriva escenarios por técnica, calcula el ROI y propone exactamente un veredicto por
+                escenario (Candidate, Manual o Deferred). Persiste solo los que valen para
+                regresión.
+              </td>
+              <td>Cada veredicto de ROI, la épica de regresión y el Test Set de feature.</td>
+              <td>2</td>
+              <td>Recomendado (un segundo agente)</td>
+            </tr>
+            <tr>
+              <td><strong>Automation</strong></td>
+              <td>
+                Escribe el plan, implementa sobre KATA con el decorador <code>@atc</code>, corre los
+                tres verificadores (tests, tipos, lint) y abre el pull request.
+              </td>
+              <td>
+                El plan antes de la primera línea de código, el merge, y la decisión de seguir o
+                parar al tercer intento fallido.
+              </td>
+              <td>2 → 3 dentro del plan aprobado</td>
+              <td>Obligatorio (<code>pr-review-lead</code> o <code>judgment-day</code>)</td>
+            </tr>
+            <tr>
+              <td><strong>Regression</strong></td>
+              <td>
+                Ejecuta la suite, clasifica cada falla (REGRESSION, FLAKY, KNOWN, ENVIRONMENT o NEW
+                TEST), calcula pass-rate y tendencia, propone GO, CAUTION o NO-GO y arma el STR.
+              </td>
+              <td>Todo CAUTION. Nunca deja que se invente el número de sprint.</td>
+              <td>3</td>
+              <td>No hace falta</td>
+            </tr>
+            <tr>
+              <td><strong>Observation</strong></td>
+              <td>
+                Vigila objetivos de servicio, error budget, monitoreo de usuarios reales y cohortes
+                de canary. Abre ítems al backlog cuando una señal sale de rango.
+              </td>
+              <td>
+                Los objetivos de servicio, la política de error budget y cuándo se detiene un
+                release.
+              </td>
+              <td>3</td>
+              <td>No aplica todavía</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        La evidencia que exige cada gate, las transiciones de Jira y el detalle de cada stage están
+        en las páginas de fase (<a href="early-game.html">Early-Game</a>,
+        <a href="mid-game.html">Mid-Game</a>, <a href="late-game.html">Late-Game</a>) y en
+        <a href="observation.html">Observation</a>. En el repo, el contrato vive en
+        <code>.agents/skills/agentic-qa-core/references/stage-gates.md</code>.
+      </p>
+
+      <h3 id="eventos-sdlc">Eventos del SDLC que no son stages</h3>
+      <p>Cuatro momentos producen artefactos sin ser un stage del método:</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Evento</th>
+              <th>Artefacto</th>
+              <th>Cuándo</th>
+              <th>Quién lo produce</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Onboarding del producto</td>
+              <td>MTP</td>
+              <td>Una vez por producto</td>
+              <td><code>/master-test-plan</code></td>
+            </tr>
+            <tr>
+              <td>Apertura de sprint</td>
+              <td>STP</td>
+              <td>En el primer ticket del sprint</td>
+              <td><code>/sprint-testing</code> (find-or-create)</td>
+            </tr>
+            <tr>
+              <td>Desarrollo e implementación</td>
+              <td>Ninguno</td>
+              <td>In-sprint (step 2)</td>
+              <td>El equipo de desarrollo</td>
+            </tr>
+            <tr>
+              <td>Cierre de sprint</td>
+              <td>STR</td>
+              <td>Post-sprint</td>
+              <td>
+                <code>/sprint-testing</code> o <code>/regression-testing</code>, el primero que
+                llegue
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Si el tracker del cliente no tiene el work type de plan, el evento del STP se saltea con una
+        nota declarada, nunca en silencio. El STR tampoco suma los ATR: los ATR se leen junto a él.
+      </p>
+
+      <h2 id="steps">Los 15 steps</h2>
+      <p>
+        Los steps son el desglose de los stages. Dos detalles para leer la tabla: el step 1 y el 3
+        se reparten entre dos stages cada uno, y el step 2 es el único que no pertenece a ningún
+        stage porque es trabajo de desarrollo.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Step</th>
+              <th>Nombre</th>
+              <th>Fase</th>
+              <th>Ciclo / etapa</th>
+              <th>Stage</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>Análisis de Requerimientos</td>
+              <td>Early-Game</td>
+              <td>TMLC 1st</td>
+              <td>Shift-Left + Planning</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>Desarrollo e Implementación</td>
+              <td>Early-Game</td>
+              <td>Sincronización con el SDLC</td>
+              <td>Ninguno</td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>Pruebas Exploratorias Tempranas</td>
+              <td>Early-Game</td>
+              <td>TMLC 2nd</td>
+              <td>Execution + Reporting</td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td>Priorización Risk-Based</td>
+              <td>Early-Game</td>
+              <td>TMLC 3rd</td>
+              <td>Documentation (Prioritize)</td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td>Documentación Asíncrona de Test Cases</td>
+              <td>Mid-Game</td>
+              <td>TMLC 4th</td>
+              <td>Documentation (Document)</td>
+            </tr>
+            <tr>
+              <td>6</td>
+              <td>Evaluación de TCs para Automatización</td>
+              <td>Mid-Game</td>
+              <td>TALC 1st</td>
+              <td>Frontera Documentation / Automation</td>
+            </tr>
+            <tr>
+              <td>7</td>
+              <td>Automatización de los candidatos</td>
+              <td>Mid-Game</td>
+              <td>TALC 2nd</td>
+              <td>Automation</td>
+            </tr>
+            <tr>
+              <td>8</td>
+              <td>Verificación de la suite en CI</td>
+              <td>Mid-Game</td>
+              <td>TALC 3rd</td>
+              <td>Automation</td>
+            </tr>
+            <tr>
+              <td>9</td>
+              <td>Revisión del Pull Request</td>
+              <td>Mid-Game</td>
+              <td>TALC 4th</td>
+              <td>Automation</td>
+            </tr>
+            <tr>
+              <td>10</td>
+              <td>Continuous Maintenance</td>
+              <td>Late-Game</td>
+              <td>Production Ops</td>
+              <td>Regression</td>
+            </tr>
+            <tr>
+              <td>11</td>
+              <td>Canary Release Monitoring</td>
+              <td>Late-Game</td>
+              <td>Shift-Right</td>
+              <td>Observation</td>
+            </tr>
+            <tr>
+              <td>12</td>
+              <td>A/B Testing</td>
+              <td>Late-Game</td>
+              <td>Experimentation</td>
+              <td>Observation</td>
+            </tr>
+            <tr>
+              <td>13</td>
+              <td>Real User Monitoring (RUM)</td>
+              <td>Late-Game</td>
+              <td>Observability</td>
+              <td>Observation</td>
+            </tr>
+            <tr>
+              <td>14</td>
+              <td>Chaos Engineering</td>
+              <td>Late-Game</td>
+              <td>Resilience</td>
+              <td>Observation</td>
+            </tr>
+            <tr>
+              <td>15</td>
+              <td>Feedback Loop</td>
+              <td>Late-Game</td>
+              <td>Continuous Learning</td>
+              <td>Observation</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        El sitio marca los steps 11 a 15 como «Panorama»: están declarados, pero el boilerplate no
+        cubre Shift-Right y ninguna skill los ejecuta hoy.
+      </p>
+
+      <h2 id="ciclos">Los ciclos internos</h2>
+      <p>
+        Dentro del IQL corren cinco ciclos. Dos son nombres pedagógicos de UPEX para agrupar steps;
+        en este repo el trabajo se organiza por stages. Los otros tres son máquinas de estado del
+        tracker, o lo serán.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Ciclo</th>
+              <th>Nombre</th>
+              <th>Qué recorre</th>
+              <th>Tipo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>TMLC</strong></td>
+              <td>Test Manual Life Cycle</td>
+              <td>
+                4 etapas: análisis (step 1), exploración (3), priorización (4), documentación (5).
+              </td>
+              <td>Pedagógico</td>
+            </tr>
+            <tr>
+              <td><strong>TALC</strong></td>
+              <td>Test Automation Life Cycle</td>
+              <td>
+                4 etapas: evaluación (step 6), automatización (7), verificación en CI (8), revisión
+                del PR (9).
+              </td>
+              <td>Pedagógico</td>
+            </tr>
+            <tr>
+              <td><strong>SDC</strong></td>
+              <td>Story Development Cycle</td>
+              <td>
+                El workflow de la User Story: 13 estados y 27 transiciones. Shift-Left vive entre
+                Backlog y Estimation; Execution y Reporting, entre In Test y QA Approved.
+              </td>
+              <td>Workflow real de Jira</td>
+            </tr>
+            <tr>
+              <td><strong>BLC</strong></td>
+              <td>Bug Life Cycle</td>
+              <td>
+                El workflow del hallazgo, compartido por Bug, Defect e Improvement: 11 estados y 15
+                transiciones.
+              </td>
+              <td>Workflow real de Jira</td>
+            </tr>
+            <tr>
+              <td><strong>PLC</strong></td>
+              <td>Production Lifecycle</td>
+              <td>Señal, ítem, decisión y retorno al análisis. Su stage es Observation.</td>
+              <td>Declarado y vacío hasta que exista la skill</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Mapa de los nombres pedagógicos a los stages: TMLC 1st es Shift-Left y Planning; TMLC 2nd es
+        Execution y Reporting; TMLC 3rd y 4th son Documentation; TALC 1st es la frontera entre
+        Documentation y Automation; TALC 2nd a 4th son Automation. Los estados del SDC y del BLC
+        salen de <code>.agents/jira-workflows.json</code>.
+      </p>
+      <div class="callout">
+        <span class="callout-title">Tres nombres que se repiten a propósito</span>
+        <p>
+          Candidate y MANUAL son estados del Test Case y también veredictos de ROI. Deferred es un
+          veredicto de ROI y también un estado terminal del Bug. El veredicto y el estado comparten
+          nombre, pero son cosas distintas.
+        </p>
+      </div>
+
+      <h2 id="modalidades">Dos modalidades: jira-native y jira-xray</h2>
+      <p>
+        La modalidad decide cuándo un Test Case se vuelve work item del TMS. Cambia con la
+        herramienta; el método es el mismo. La modalidad se resuelve por sondeo: si no hay Xray
+        configurado (<code>tms_cli: null</code>), el repo cae en <code>jira-native</code>. La
+        instancia de UPEX trabaja en <code>jira-xray</code>.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th><code>jira-native</code> (default)</th>
+              <th><code>jira-xray</code></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>En Planning</td>
+              <td>Solo outlines dentro del ATP.</td>
+              <td>
+                Los casos se crean y se ejecutan, porque en Xray el issue Test es la unidad de
+                ejecución.
+              </td>
+            </tr>
+            <tr>
+              <td>En Documentation</td>
+              <td>
+                Se crean los Test para los escenarios Candidate o Manual. Un issue Test nativo ya es
+                documentación, así que espera al gate de ROI.
+              </td>
+              <td>
+                Los Test existentes se enriquecen y los regression-worthy se promueven al Regression
+                Test Plan. El resto queda como artefacto de sprint.
+              </td>
+            </tr>
+            <tr>
+              <td>Steps donde cambia el trabajo</td>
+              <td>4, 5</td>
+              <td>3, 4, 5</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout tip">
+        <span class="callout-title">El invariante</span>
+        <p>
+          En las dos modalidades, el set de regresión persistente se decide por ROI en
+          Documentation. Nunca se asume en Planning.
+        </p>
+      </div>
+
+      <h2 id="artefactos">La escalera de artefactos</h2>
+      <p>
+        La planificación sube por cuatro altitudes: producto, feature, sprint e historia. El primer
+        token del nombre dice la altitud y si el artefacto es plan o resultado: en la sigla, la P
+        marca un plan (Plan) y la R, una corrida (Results).
+      </p>
+      <pre data-lang="text"><code>{ACRONYM}: {scope-id}: {descriptor}
+
+ATP: PROJ-123: Apply discount at checkout
+STR: Sprint#30: Regression Testing</code></pre>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Sigla</th>
+              <th>Nombre</th>
+              <th>Altitud</th>
+              <th>Tipo</th>
+              <th>Cardinalidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>MTP</strong></td>
+              <td>Master Test Plan</td>
+              <td>Producto</td>
+              <td>Plan (Epic <code>QA Master Test Plan</code> + archivo local)</td>
+              <td>1 por producto</td>
+            </tr>
+            <tr>
+              <td><strong>FTP</strong></td>
+              <td>Feature Test Plan</td>
+              <td>Feature (Epic)</td>
+              <td>Plan, documento vivo que se refina a lo largo de la épica</td>
+              <td>1 por feature</td>
+            </tr>
+            <tr>
+              <td><strong>STP</strong></td>
+              <td>Sprint Test Plan</td>
+              <td>Sprint</td>
+              <td>Plan</td>
+              <td>1 por sprint</td>
+            </tr>
+            <tr>
+              <td><strong>STR</strong></td>
+              <td>Sprint Test Results</td>
+              <td>Sprint</td>
+              <td>Results, cierra el STP</td>
+              <td>1 por sprint</td>
+            </tr>
+            <tr>
+              <td><strong>ATP</strong></td>
+              <td>Acceptance Test Plan</td>
+              <td>Historia</td>
+              <td>Plan. Pre-sprint vive solo en el campo de la historia</td>
+              <td>1 por historia</td>
+            </tr>
+            <tr>
+              <td><strong>ATS</strong></td>
+              <td>Acceptance Test Set</td>
+              <td>Historia</td>
+              <td>Cobertura (Test Set). Se crea primero</td>
+              <td>1 por historia, obligatorio aunque tenga un solo caso</td>
+            </tr>
+            <tr>
+              <td><strong>ATR</strong></td>
+              <td>Acceptance Test Results</td>
+              <td>Historia</td>
+              <td>Results, siempre con Test Environment</td>
+              <td>1 corrida («Story Testing»)</td>
+            </tr>
+            <tr>
+              <td><strong>TC / ATC</strong></td>
+              <td>Test Case / Acceptance Test Case</td>
+              <td>Caso</td>
+              <td>Capa TMS. Un ATC es un TC que nace de un criterio de aceptación</td>
+              <td>Los que haga falta</td>
+            </tr>
+            <tr>
+              <td><strong>TS</strong></td>
+              <td>Test Set</td>
+              <td>Feature o módulo</td>
+              <td>Agrupación opcional para smoke o regresión</td>
+              <td>Opcional</td>
+            </tr>
+            <tr>
+              <td><strong>RTP</strong></td>
+              <td>Regression Test Plan</td>
+              <td>Producto (regresión)</td>
+              <td>Plan sin estado terminal, vive mientras viva el producto</td>
+              <td>1 por proyecto o por módulo</td>
+            </tr>
+            <tr>
+              <td><strong>RTR</strong></td>
+              <td>Regression Test Results</td>
+              <td>Producto (regresión)</td>
+              <td>Results</td>
+              <td>1 por veredicto de regresión</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        La A de ATC es de Acceptance, nunca de Automated. Cuando el caso se automatiza, el decorador
+        <code>@atc('PROJ-101')</code> nombra su representación en código: es el mismo ATC. RTP y RTR
+        vienen de la convención de este repo
+        (<code>.agents/skills/agentic-qa-core/references/planning-ladder.md</code>); el sitio
+        oficial nombra la escalera de MTP a ATR.
+      </p>
+
+      <h3 id="cobertura">La cascada de cobertura</h3>
+      <p>
+        El ATS se crea antes que el ATP y el ATR porque los dos derivan de él su lista de casos. Su
+        enlace a la historia es el único que llena el panel de cobertura: una historia enlazada solo
+        a su plan y a su ejecución se lee UNCOVERED, con cero casos.
+      </p>
+      <figure>
+        <div class="frame scroll on-dark">
+          <img
+            src="../../assets/iql/test-management.svg"
+            alt="La cascada de cobertura de un Test Case"
+          />
+        </div>
+        <figcaption>
+          Los tres caminos de un caso hasta su historia: TC → ATS → Story (da cobertura), TC → ATP →
+          Story (solo trazabilidad) y TC → Story directo (último recurso).
+          <a href="../../assets/iql/test-management.svg" target="_blank" rel="noopener"
+            >Ver a tamaño completo</a
+          >
+        </figcaption>
+      </figure>
+
+      <h2 id="roles">El modelo Analyst + Automation Engineer</h2>
+      <p>
+        El IQL reparte el trabajo entre dos roles que avanzan en paralelo y de forma asíncrona. El
+        sitio lo explica con una nave de LEGO:
+      </p>
+      <dl class="defs">
+        <dt>QA Analyst (Ana)</dt>
+        <dd>
+          Antes de tocar una pieza, escribe las reglas que hacen buena a la nave: dos alas que no se
+          caen, una puerta que abre y cierra, un botón rojo que hace «¡Bip-Boop!». Es el Early-Game:
+          análisis, exploración y la decisión de qué merece quedarse.
+        </dd>
+        <dt>QA Automation Engineer (Leo)</dt>
+        <dd>
+          Mientras otros construyen, arma robots que verifican cada regla solos. Cuando la nave está
+          lista, los robots la revisan en un minuto y dicen qué arreglar. Es el Mid-Game:
+          automatización, CI y pull request.
+        </dd>
+      </dl>
+      <p>
+        Después, Ana mira cómo juegan los amigos y usa lo que ve para escribir mejores reglas. Esa
+        vuelta es el Late-Game alimentando el siguiente ciclo. El punto de entrega entre los dos
+        roles es la salida del step 5 hacia el step 6.
+      </p>
+
+      <h2 id="stlc">STLC contra IQL</h2>
+      <p>
+        El STLC clásico trata el testing como una etapa con principio y fin, y arranca cuando el
+        código ya existe. El IQL conserva esas actividades y las reparte por todo el SDLC, desde el
+        requerimiento hasta producción.
+      </p>
+      <figure>
+        <div class="frame scroll on-dark">
+          <img
+            src="../../assets/iql/stlc-vs-iql.svg"
+            alt="El STLC clásico contra el IQL sobre el eje del SDLC"
+          />
+        </div>
+        <figcaption>
+          Tres carriles sobre el mismo eje del SDLC. Los conectores cruzados muestran la inversión
+          de ejecutar y documentar.
+          <a href="../../assets/iql/stlc-vs-iql.svg" target="_blank" rel="noopener"
+            >Ver a tamaño completo</a
+          >
+        </figcaption>
+      </figure>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Cambio</th>
+              <th>STLC clásico</th>
+              <th>IQL</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Orden de ejecutar y documentar</td>
+              <td>Test Case Development (03) antes de Test Execution (05).</td>
+              <td>
+                Explora en el step 3 y documenta en el step 5, sabiendo ya qué casos valen la pena.
+                Es el cambio de mayor peso.
+              </td>
+            </tr>
+            <tr>
+              <td>Shift-left</td>
+              <td>Nada antes de la codificación.</td>
+              <td>El plan de pruebas participa desde requerimientos y diseño.</td>
+            </tr>
+            <tr>
+              <td>Durante la codificación</td>
+              <td>Sin actividad de QA.</td>
+              <td>
+                QA acompaña a desarrollo y puede probar incluso en localhost. Es opcional: lo normal
+                sigue siendo esperar el despliegue.
+              </td>
+            </tr>
+            <tr>
+              <td>Ejecución del plan</td>
+              <td>Guion rígido, paso a paso.</td>
+              <td>Exploratoria: lo que indica el plan más lo que aparezca en el camino.</td>
+            </tr>
+            <tr>
+              <td>Regresión y automatización</td>
+              <td>No aparecen contempladas.</td>
+              <td>El step 6 decide qué se automatiza con la ejecución ya hecha como insumo.</td>
+            </tr>
+            <tr>
+              <td>Producción</td>
+              <td>El ciclo cierra en Test Cycle Closure.</td>
+              <td>El step 10 nace en el despliegue y los steps 11-15 viven en mantenimiento.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="enfoques">Los enfoques que integra</h2>
+      <p>
+        El sitio lista ocho enfoques de testing que el IQL integra. Ninguno es invento de UPEX: lo
+        que el IQL agrega es el orden (en qué fase se aplica cada uno, con qué entregable y quién lo
+        ejecuta). El único que corre en las tres fases es <strong>AI-Driven Testing</strong>:
+        agentes que analizan, generan y mantienen el trabajo de calidad. Ejecutar, observar y juzgar
+        si algo es un defecto sigue siendo tarea del QA, que firma la clasificación final. La lista
+        completa de los ocho está en la
+        <a href="https://www.upexgalaxy.com/metodologia" target="_blank" rel="noopener"
+          >página oficial</a
+        >.
+      </p>
+
+      <h2 id="trifuerza">La Trifuerza</h2>
+      <p>
+        La Trifuerza (antes llamada Tridente) es el modelo de exploración del stage Execution: las
+        tres capas que recorres para validar una feature. También es el conocimiento mínimo que UPEX
+        le pide a un QA.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Capa</th>
+              <th>Nombre</th>
+              <th>Qué valida</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>UI</td>
+              <td>System Testing (E2E / frontend)</td>
+              <td>El flujo completo desde la interfaz.</td>
+            </tr>
+            <tr>
+              <td>API</td>
+              <td>Logic Layer Testing (backend)</td>
+              <td>La lógica de negocio.</td>
+            </tr>
+            <tr>
+              <td>DB</td>
+              <td>Data Layer Testing</td>
+              <td>La capa de datos.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        El orden importa: primero el smoke valida el entorno, después la Trifuerza valida la
+        feature. Saltarse el smoke es el anti-patrón clásico.
+      </p>
+
+      <footer class="doc-footer">
+        <p>
+          Fuente canónica:
+          <a href="https://www.upexgalaxy.com/metodologia" target="_blank" rel="noopener"
+            >upexgalaxy.com/metodologia</a
+          >
+          ·
+          <a href="https://www.upexgalaxy.com/en/methodology" target="_blank" rel="noopener"
+            >upexgalaxy.com/en/methodology</a
+          >
+        </p>
+        <p>
+          Sigue con: <a href="early-game.html">Early-Game</a> ·
+          <a href="mid-game.html">Mid-Game</a> · <a href="late-game.html">Late-Game</a> ·
+          <a href="observation.html">Observation</a> ·
+          <a href="este-repo.html">El IQL en este repo</a>
+        </p>
+      </footer>
+    </article>
+  </body>
+</html>

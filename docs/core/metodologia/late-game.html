@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Late-Game</title>
+    <meta
+      name="description"
+      content="Fase de observación del IQL (steps 10-15, QA + DevOps): el stage Regression con su clasificación de fallas y el veredicto GO / CAUTION / NO-GO, los 6 steps, el nivel de madurez y las métricas de producción."
+    />
+    <meta name="docs-order" content="40" />
+    <link rel="stylesheet" href="../../assets/docs.css" />
+    <script src="../../assets/docs.js"></script>
+  </head>
+  <body>
+    <article class="doc">
+      <header class="doc-header">
+        <nav class="breadcrumbs">
+          <span>Core</span><span>Metodología</span><span>Late-Game</span>
+        </nav>
+        <h1>Late-Game: observación</h1>
+        <p class="lede">
+          La tercera fase del IQL cubre los steps 10 a 15 y la comparten QA y DevOps. Su pregunta es
+          «¿cómo se comporta en el mundo real?»: la regresión decide si el release sale, y después
+          producción se vigila y alimenta el siguiente ciclo.
+        </p>
+        <div class="meta-row">
+          <span class="badge accent">Fase 3 de 3</span><span class="badge">Steps 10-15</span
+          ><span class="badge">QA + DevOps</span>
+        </div>
+      </header>
+
+      <div class="callout">
+        <span class="callout-title">Fuente oficial</span>
+        <p>
+          Esta página resume la sub-página
+          <a href="https://www.upexgalaxy.com/metodologia/late-game" target="_blank" rel="noopener"
+            >upexgalaxy.com/metodologia/late-game</a
+          >. Si algo de aquí no coincide con el sitio, manda el sitio. La versión en inglés está en
+          <a href="https://www.upexgalaxy.com/en/methodology" target="_blank" rel="noopener"
+            >upexgalaxy.com/en/methodology</a
+          >.
+        </p>
+      </div>
+
+      <nav class="toc">
+        <strong>En esta página</strong>
+        <ol>
+          <li><a href="#la-fase">La fase en una tabla</a></li>
+          <li><a href="#stage-regression">El stage Regression</a></li>
+          <li><a href="#stage-observation">El stage Observation</a></li>
+          <li><a href="#steps">Los 6 steps del Late-Game</a></li>
+          <li><a href="#madurez">Hasta dónde llegar</a></li>
+          <li><a href="#metricas">Las métricas</a></li>
+          <li><a href="#enfoques">Enfoques y herramientas</a></li>
+          <li><a href="#en-este-repo">En este repo</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="la-fase">La fase en una tabla</h2>
+      <div class="table-wrap">
+        <table>
+          <tbody>
+            <tr>
+              <th>Pregunta</th>
+              <td>«¿Cómo se comporta en el mundo real?»</td>
+            </tr>
+            <tr>
+              <th>Enfoque</th>
+              <td>Observación: monitorear y asegurar la confiabilidad en producción</td>
+            </tr>
+            <tr>
+              <th>Rol protagonista</th>
+              <td>QA + DevOps</td>
+            </tr>
+            <tr>
+              <th>Alcance</th>
+              <td>Steps 10-15</td>
+            </tr>
+            <tr>
+              <th>Enfoques integrados</th>
+              <td>Shift-Right, Chaos Engineering, Production Monitoring, AI Ops</td>
+            </tr>
+            <tr>
+              <th>Herramientas</th>
+              <td>
+                Sentry / Grafana / Datadog, despliegue progresivo / feature flags, k6, UptimeRobot
+                (o monitor de disponibilidad)
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="stage-regression">El stage Regression</h2>
+      <p>
+        La suite corre y toda falla se clasifica: ninguna queda como «se rompió». De ahí salen el
+        veredicto de release y el STR del sprint. Ocurre en el cierre y release, con nivel L3 ·
+        Continuous Detection, y contiene un solo step, el 10.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <tbody>
+            <tr>
+              <th>El agente hace</th>
+              <td>
+                Ejecuta la suite, clasifica cada falla (REGRESSION, FLAKY, KNOWN, ENVIRONMENT o NEW
+                TEST), calcula pass-rate y tendencia sin truncar, propone GO, CAUTION o NO-GO y arma
+                el STR.
+              </td>
+            </tr>
+            <tr>
+              <th>La persona firma</th>
+              <td>
+                Decide todo CAUTION. Y nunca deja que el número de sprint se invente: si no está, se
+                pregunta.
+              </td>
+            </tr>
+            <tr>
+              <th>Evidencia exigida</th>
+              <td>
+                Reporte de la corrida con la clasificación de cada falla, histórico de al menos
+                cinco corridas para poder declarar FLAKY (con menos se declara histórico
+                insuficiente) y el STR enlazado al STP.
+              </td>
+            </tr>
+            <tr>
+              <th>Autonomía</th>
+              <td>3 de 5</td>
+            </tr>
+            <tr>
+              <th>Verificador separado</th>
+              <td>No hace falta</td>
+            </tr>
+            <tr>
+              <th>Roles</th>
+              <td>QA Automation Engineer, QA Lead · Executor, Guardian</td>
+            </tr>
+            <tr>
+              <th>Salidas</th>
+              <td>
+                STR; reporte de regresión con la clasificación de cada falla; veredicto GO / CAUTION
+                / NO-GO
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="clases-de-falla">Las cinco clases de falla</h3>
+      <p>
+        El sitio oficial nombra las cinco clases. La columna de la derecha es cómo las trata el
+        skill <code>/regression-testing</code> de este repo
+        (<code>.agents/skills/regression-testing/SKILL.md</code>).
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Clase</th>
+              <th>Qué hace el skill con ella</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="badge warn">REGRESSION</span></td>
+              <td>Bloquea el release, se filea un Bug o Defect en Jira y se asigna.</td>
+            </tr>
+            <tr>
+              <td><span class="badge">FLAKY</span></td>
+              <td>
+                Se agenda su estabilización y no bloquea. No se crea bug. Declararla exige al menos
+                cinco corridas de histórico.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="badge">KNOWN</span></td>
+              <td>Se documenta contra el ticket existente, no bloquea y no se crea bug nuevo.</td>
+            </tr>
+            <tr>
+              <td><span class="badge">ENVIRONMENT</span></td>
+              <td>Se vuelve a correr tras revisar la infraestructura. No se crea bug.</td>
+            </tr>
+            <tr>
+              <td><span class="badge">NEW TEST</span></td>
+              <td>
+                Verificación manual: si es un defecto real del producto se filea; si no, se acepta o
+                se corrige el test.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Con la clasificación, el pass-rate y la tendencia, el agente propone uno de tres veredictos:
+        <span class="badge green">GO</span>, <span class="badge warn">CAUTION</span> o
+        <span class="badge">NO-GO</span>. Un CAUTION siempre lo decide una persona.
+      </p>
+
+      <h2 id="stage-observation">El stage Observation</h2>
+      <p>
+        Observation es el stage de producción (L4 · Production Observation) y agrupa los steps 11 a
+        15. Todavía no tiene skill: su unidad operativa es la rutina agéntica, una ejecución que
+        corre sola, en horario o por disparo, y deja evidencia con destinatario. Por eso el sitio lo
+        declara <em>panorama</em>: se enseña como vista de la industria y hoja de ruta, no como
+        práctica operada contra producción. El agente vigila las señales que el producto ya emite y
+        abre ítems al backlog cuando una se sale de rango; la persona define los objetivos de
+        servicio y decide cuándo se detiene un release.
+      </p>
+      <p>
+        El contrato completo, las cuatro piezas de una rutina agéntica y los detalles de cada step
+        están en <a href="observation.html">Observation</a>.
+      </p>
+
+      <h2 id="steps">Los 6 steps del Late-Game</h2>
+      <p>
+        El step 10 es regresión y lo cubre el boilerplate. Del 11 al 15 son Shift-Right, están
+        marcados como panorama y el boilerplate no los cubre. Cada step pide un prerrequisito del
+        entorno y tiene un orden de adopción sugerido.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Step</th>
+              <th>Qué se hace</th>
+              <th>Entregable</th>
+              <th>Prerrequisito</th>
+              <th>Adopción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>10. Continuous Maintenance</strong><br />Production Ops</td>
+              <td>
+                Asegurar que la aplicación esté estable para el lanzamiento y siga así después del
+                despliegue. La regresión del sprint se planifica en el STP y su ejecución se
+                registra en el STR. Actividades: regression suite, smoke testing, test maintenance.
+              </td>
+              <td>US desplegada a producción con confianza + STR del sprint</td>
+              <td>CI verde con una suite de regresión que corre en cada PR</td>
+              <td>nº 1</td>
+            </tr>
+            <tr>
+              <td><strong>11. Canary Release Monitoring</strong><br />Shift-Right</td>
+              <td>
+                Desplegar funcionalidades nuevas a un porcentaje pequeño de usuarios y monitorear
+                cómo se comportan.
+              </td>
+              <td>Validación segura con riesgo mínimo</td>
+              <td>Despliegue progresivo (canary o feature flags) con métricas por cohorte</td>
+              <td>nº 4</td>
+            </tr>
+            <tr>
+              <td><strong>12. A/B Testing</strong><br />Experimentation</td>
+              <td>
+                Probar versiones distintas de una funcionalidad para optimizar la experiencia.
+              </td>
+              <td>Decisiones basadas en datos de usuarios reales</td>
+              <td>Feature flags y analítica de producto</td>
+              <td>nº 5</td>
+            </tr>
+            <tr>
+              <td><strong>13. Real User Monitoring (RUM)</strong><br />Observability</td>
+              <td>
+                Monitorear la experiencia real de los usuarios para identificar problemas de
+                performance. Métricas: Core Web Vitals, MTTD, MTTR.
+              </td>
+              <td>Visibilidad completa de la UX real</td>
+              <td>Error tracking y RUM (Core Web Vitals) en producción</td>
+              <td>nº 2</td>
+            </tr>
+            <tr>
+              <td><strong>14. Chaos Engineering</strong><br />Resilience</td>
+              <td>
+                Introducir fallas controladas en producción para validar la resistencia del sistema.
+              </td>
+              <td>Sistema con recovery validado</td>
+              <td>Arquitectura distribuida, SLOs definidos y equipo SRE</td>
+              <td>nº 6</td>
+            </tr>
+            <tr>
+              <td><strong>15. Feedback Loop</strong><br />Continuous Learning</td>
+              <td>
+                Analizar el feedback de usuarios y las métricas de producción para alimentar el
+                siguiente ciclo del Early-Game.
+              </td>
+              <td>Mejora continua del producto</td>
+              <td>
+                Al menos una fuente de producción (RUM o alertas) y un ritual que devuelva lo
+                aprendido al step 1
+              </td>
+              <td>nº 3</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Herramientas por step: el 10 usa Playwright, Xray y GitHub Actions (o CI equivalente). Del
+        11 al 15 aparecen Sentry / Grafana / Datadog, despliegue progresivo / feature flags, k6,
+        UptimeRobot, herramientas de chaos (Gremlin, Litmus, scripts propios), Jira y Slack / Teams.
+        Casi todas las trae el cliente: el IQL define qué observar y el entorno define con qué. k6
+        entra solo cuando el atributo performance aparece por riesgo en el step 1.
+      </p>
+
+      <h2 id="madurez">Hasta dónde llegar lo fija la madurez</h2>
+      <p>
+        Esta fase no se adopta entera. Cada step pide un prerrequisito del entorno, y el nivel de
+        madurez del equipo dice cuáles tienen sentido hoy. Los steps del Late-Game están en L3 (el
+        step 10) y en L4 (del 11 al 15).
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Nivel</th>
+              <th>Steps</th>
+              <th>Requiere</th>
+              <th>Resultado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>L1 · Prevention</td>
+              <td>1, 2</td>
+              <td>Backlog en un tracker y QA sentado en el refinamiento</td>
+              <td>Historias mejor definidas</td>
+            </tr>
+            <tr>
+              <td>L2 · Early Detection</td>
+              <td>3, 4</td>
+              <td>Un ambiente de prueba anterior al merge (QA o staging)</td>
+              <td>Feedback antes del PR</td>
+            </tr>
+            <tr>
+              <td><strong>L3 · Continuous Detection</strong></td>
+              <td>5-10</td>
+              <td>Repositorio con pull requests y un CI que corra en cada PR</td>
+              <td>Regresión confiable en CI</td>
+            </tr>
+            <tr>
+              <td><strong>L4 · Production Observation</strong></td>
+              <td>11-15</td>
+              <td>
+                Observabilidad en producción; despliegue progresivo para canary y A/B; SLOs y
+                cultura SRE para chaos
+              </td>
+              <td>Producción alimentando la estrategia</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="metricas">Las métricas</h2>
+      <p>
+        Las fases anteriores se evalúan por lo que producen: un plan, un caso, un PR mergeado. Esta
+        se evalúa por lo que pasa en producción cuando nadie está mirando, y eso solo se sabe con
+        números y con un objetivo declarado de antemano.
+      </p>
+
+      <h3 id="seis-metricas">Las 6 métricas del Late-Game</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Métrica</th>
+              <th>Qué mide</th>
+              <th>Benchmark de referencia</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>MTTD</strong> (Mean Time To Detect)</td>
+              <td>
+                Cuánto tarda el equipo en enterarse de que algo se rompió en producción. Todo lo que
+                pasa antes de detectarlo es impacto que nadie contiene.
+              </td>
+              <td>&lt; 5 minutos</td>
+            </tr>
+            <tr>
+              <td><strong>MTTR</strong> (Mean Time To Resolution)</td>
+              <td>
+                Cuánto tarda en resolverse un problema una vez detectado. Es la mitad del incidente
+                que se acorta con proceso.
+              </td>
+              <td>&lt; 30 minutos</td>
+            </tr>
+            <tr>
+              <td><strong>Error Rate</strong></td>
+              <td>
+                Porcentaje de peticiones que terminan en error. Se mueve antes que cualquier queja.
+              </td>
+              <td>&lt; 0.1%</td>
+            </tr>
+            <tr>
+              <td><strong>CSAT</strong> (Customer Satisfaction Score)</td>
+              <td>
+                La satisfacción declarada por quienes usan el producto. Mide la percepción del
+                sistema, no el sistema.
+              </td>
+              <td>&gt; 4.5/5</td>
+            </tr>
+            <tr>
+              <td><strong>SLO Compliance</strong></td>
+              <td>
+                Qué porción del tiempo se cumplen los objetivos de servicio comprometidos. Pone la
+                disponibilidad en un número negociable.
+              </td>
+              <td>&gt; 99.9%</td>
+            </tr>
+            <tr>
+              <td><strong>Performance Score</strong> (Core Web Vitals)</td>
+              <td>
+                El rendimiento percibido, con las métricas web de Google. Afecta posicionamiento y
+                conversión.
+              </td>
+              <td>&gt; 90/100</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout warn">
+        <span class="callout-title">Son referencia, no objetivo</span>
+        <p>
+          Los valores son benchmarks de ejemplo. Un banco y una app interna de RRHH no necesitan el
+          mismo SLO: cada implementación declara sus propios targets según criticidad, baseline,
+          arquitectura y negocio.
+        </p>
+      </div>
+
+      <h3 id="metricas-del-metodo">Las métricas del método</h3>
+      <dl class="defs">
+        <dt>Change failure rate</dt>
+        <dd>
+          Porcentaje de despliegues que terminan en incidente, rollback o hotfix. Es la métrica DORA
+          que dice si el método sostiene la velocidad o solo la empuja.
+        </dd>
+        <dt>Escape rate</dt>
+        <dd>
+          Bugs encontrados en producción sobre el total de bugs del período. Mide lo que el método
+          promete: que el defecto se encuentre antes.
+        </dd>
+        <dt>Ratio Deferred</dt>
+        <dd>
+          Porción de escenarios que el gate de ROI deja fuera de la regresión. Si más de la mitad
+          cae en Candidate o Manual, el filtro no se aplicó y se vuelve a correr la fase de
+          descarte.
+        </dd>
+        <dt>Flaky rate</dt>
+        <dd>
+          Tests que cambian de resultado sin que cambie el código, sobre el total de la suite.
+          Decide si el equipo le cree a la regresión.
+        </dd>
+        <dt>Lead time AC → ATP (opcional)</dt>
+        <dd>
+          Cuánto tarda una historia con criterios en tener su plan de aceptación. Mide si el
+          Shift-Left llega a tiempo.
+        </dd>
+      </dl>
+
+      <h2 id="enfoques">Enfoques y herramientas de la fase</h2>
+      <dl class="defs">
+        <dt>Shift-Right</dt>
+        <dd>Extender la validación hacia producción, donde el sistema recibe usuarios reales.</dd>
+        <dt>Chaos Engineering</dt>
+        <dd>Fallas controladas para validar la resiliencia antes de que el fallo llegue solo.</dd>
+        <dt>Production Monitoring</dt>
+        <dd>Observabilidad continua del sistema en producción para detectar anomalías temprano.</dd>
+        <dt>AI Ops</dt>
+        <dd>IA sobre la telemetría: análisis predictivo y detección de anomalías.</dd>
+      </dl>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Herramienta</th>
+              <th>Para qué en esta fase</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Sentry / Grafana / Datadog</td>
+              <td>
+                Errores de producción con su traza y tableros de métricas. De ahí salen el Error
+                Rate y buena parte del MTTD.
+              </td>
+            </tr>
+            <tr>
+              <td>Despliegue progresivo / feature flags</td>
+              <td>Lo que permite mirar una cohorte antes que a todo el mundo.</td>
+            </tr>
+            <tr>
+              <td>k6</td>
+              <td>Carga y rendimiento contra el sistema real, no contra una maqueta.</td>
+            </tr>
+            <tr>
+              <td>UptimeRobot (o monitor de disponibilidad)</td>
+              <td>
+                Disponibilidad medida desde afuera: el chequeo que sostiene el objetivo de servicio.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="en-este-repo">En este repo</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Stage</th>
+              <th>Skill</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Regression (step 10)</td>
+              <td>
+                <code>/regression-testing</code>: corre la suite en CI, clasifica y emite el
+                veredicto
+              </td>
+            </tr>
+            <tr>
+              <td>Observation (steps 11-15)</td>
+              <td>Ninguno todavía. El stage está declarado y no implementado.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        El checklist del stage Regression en
+        <code>.agents/skills/agentic-qa-core/references/stage-gates.md</code> pide además, por cada
+        corrida, un RTR (Test Execution) enlazado al RTP. Observation no tiene checklist a
+        propósito, para que ningún orquestador crea que hay un gate verificable. El resto del mapa
+        está en <a href="este-repo.html">El IQL en este repo</a>.
+      </p>
+
+      <div class="cards">
+        <a class="card" href="mid-game.html">
+          <span class="badge">Anterior</span>
+          <h3>Mid-Game</h3>
+          <p>Detección, steps 5-9: documentación por ROI y automatización.</p>
+        </a>
+        <a class="card" href="iql.html">
+          <span class="badge">Volver</span>
+          <h3>El IQL completo</h3>
+          <p>Las tres fases, los ocho stages y el bucle completo.</p>
+        </a>
+        <a class="card" href="observation.html">
+          <span class="badge accent">Siguiente</span>
+          <h3>Observation</h3>
+          <p>El stage de producción y la rutina agéntica, en detalle.</p>
+        </a>
+      </div>
+
+      <footer class="doc-footer">
+        Fuente:
+        <a href="https://www.upexgalaxy.com/metodologia/late-game" target="_blank" rel="noopener"
+          >upexgalaxy.com/metodologia/late-game</a
+        >. Relacionadas: <a href="iql.html">IQL</a> · <a href="early-game.html">Early-Game</a> ·
+        <a href="mid-game.html">Mid-Game</a> · <a href="observation.html">Observation</a> ·
+        <a href="este-repo.html">El IQL en este repo</a>.
+      </footer>
+    </article>
+  </body>
+</html>

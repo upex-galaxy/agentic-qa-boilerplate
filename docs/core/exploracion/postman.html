@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Postman</title>
+    <meta
+      name="description"
+      content="Exploración manual de APIs con Postman (colecciones, environments, variables, auth y scripts), cómo correr colecciones en CI con el Postman CLI o Newman, y el lugar del Postman MCP en el repo."
+    />
+    <meta name="docs-order" content="10" />
+    <link rel="stylesheet" href="../../assets/docs.css" />
+    <script src="../../assets/docs.js"></script>
+  </head>
+  <body>
+    <article class="doc">
+      <header class="doc-header">
+        <nav class="breadcrumbs"><span>Core</span><span>Exploración</span><span>Postman</span></nav>
+        <h1>Postman para explorar una API</h1>
+        <p class="lede">
+          Cómo organizar requests en Postman mientras exploras una API, cómo convertir esas requests
+          en checks que corren en CI y qué papel tiene Postman frente a las herramientas que usa el
+          agente.
+        </p>
+        <div class="meta-row">
+          <span class="badge accent">Exploración</span><span class="badge">API</span>
+        </div>
+      </header>
+
+      <nav class="toc">
+        <strong>En esta página</strong>
+        <ol>
+          <li><a href="#donde-encaja">Dónde encaja Postman en este repo</a></li>
+          <li><a href="#estructura">Workspace, collection y folders</a></li>
+          <li><a href="#environments">Environments y variables</a></li>
+          <li><a href="#auth">Autenticación</a></li>
+          <li><a href="#scripts">Scripts y tests</a></li>
+          <li><a href="#runner">Correr la colección entera</a></li>
+          <li><a href="#ci">Postman en CI: Postman CLI y Newman</a></li>
+          <li><a href="#mcp">El Postman MCP del repo</a></li>
+          <li><a href="#buenas-practicas">Buenas prácticas</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="donde-encaja">Dónde encaja Postman en este repo</h2>
+      <p>
+        Postman es tu herramienta de exploración manual: guardas requests, las agrupas, les pones
+        variables y les agregas asserts pequeños. El agente trabaja distinto. Para la pierna API de
+        la exploración, el repo le da tres herramientas con un trabajo cada una, y Postman queda
+        como fallback.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Paso</th>
+              <th>Herramienta</th>
+              <th>Para qué</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Leer el contrato</td>
+              <td>OpenAPI MCP (solo lectura)</td>
+              <td>Descubrir endpoints y schemas de request y response.</td>
+            </tr>
+            <tr>
+              <td>Obtener un token</td>
+              <td><code>bun run api:login</code></td>
+              <td>Escribe el token en <code>.auth/tokens.env</code>, nunca en un MCP.</td>
+            </tr>
+            <tr>
+              <td>Ejecutar requests autenticadas</td>
+              <td><code>curl</code></td>
+              <td>La ejecución real, con el token del paso anterior.</td>
+            </tr>
+            <tr>
+              <td>Fallback</td>
+              <td>Postman (MCP o la app)</td>
+              <td>Cuando el camino principal no sirve para el caso.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Ese reparto es la fila <code>[API_TOOL]</code> de la tabla de resolución de herramientas en
+        <code>AGENTS.md</code> (§6). El detalle del camino principal está en
+        <a href="../setup/openapi.html">OpenAPI</a>. Esta página cubre Postman como lo usa una
+        persona: la app para explorar y el CLI para correr colecciones en un pipeline.
+      </p>
+
+      <h2 id="estructura">Workspace, collection y folders</h2>
+      <p>
+        Un workspace agrupa colecciones y environments de un proyecto. Dentro, una collection guarda
+        las requests, y los folders las ordenan por dominio o por orden de ejecución.
+      </p>
+      <pre data-lang="text"><code>Workspace: Mi Proyecto API
+  Collection: Mi Proyecto API
+    Auth/
+      Login
+      Refresh Token
+    Users/
+      Get Users
+      Update Profile
+    Orders/
+      List Orders
+      Create Order</code></pre>
+      <ol class="steps">
+        <li>
+          <strong>Crea el workspace</strong>
+          <p>Workspaces &gt; Create Workspace. Elige Personal o Team según quién va a usarlo.</p>
+        </li>
+        <li>
+          <strong>Crea la collection</strong>
+          <p>Collections &gt; New collection. Un nombre por API, no por ticket.</p>
+        </li>
+        <li>
+          <strong>Agrega folders y requests</strong>
+          <p>
+            Nombra cada request por lo que prueba: <code>Create Order (happy path)</code>,
+            <code>Get Orders - filtro por fecha</code>. Un nombre como <code>test1</code> no le dice
+            nada a quien abra la colección después.
+          </p>
+        </li>
+      </ol>
+
+      <h2 id="environments">Environments y variables</h2>
+      <p>
+        Un environment es un juego de variables por ambiente (<code>local</code>,
+        <code>staging</code>, ...). Cambias de ambiente con un selector y las mismas requests
+        apuntan a otro servidor.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Variable</th>
+              <th>Valor de ejemplo</th>
+              <th>Quién la llena</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>base_url</code></td>
+              <td><code>https://api.example.com</code></td>
+              <td>Tú, una vez por environment</td>
+            </tr>
+            <tr>
+              <td><code>api_url</code></td>
+              <td><code>{{base_url}}/api</code></td>
+              <td>Tú (se arma a partir de otra variable)</td>
+            </tr>
+            <tr>
+              <td><code>test_email</code></td>
+              <td><code>qa@example.com</code></td>
+              <td>Tú</td>
+            </tr>
+            <tr>
+              <td><code>test_password</code></td>
+              <td>(el valor de tu <code>.env</code>)</td>
+              <td>Tú, solo en tu máquina</td>
+            </tr>
+            <tr>
+              <td><code>access_token</code></td>
+              <td>(vacío)</td>
+              <td>El script del request de login</td>
+            </tr>
+            <tr>
+              <td><code>user_id</code></td>
+              <td>(vacío)</td>
+              <td>El script del request de login</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="alcances">Alcances de variables</h3>
+      <p>Postman tiene tres alcances que usas desde los scripts:</p>
+      <pre data-lang="javascript"><code>// Environment: cambia con el ambiente seleccionado
+pm.environment.set('key', 'value');
+pm.environment.get('key');
+
+// Collection: compartida por todas las requests de la colección
+pm.collectionVariables.set('key', 'value');
+
+// Global: compartida entre colecciones del workspace
+pm.globals.set('key', 'value');</code></pre>
+
+      <h3 id="dinamicas">Variables dinámicas</h3>
+      <p>Para datos de prueba que no deben repetirse, Postman genera valores en cada envío:</p>
+      <pre data-lang="json"><code>{
+  "id": "{{$guid}}",
+  "timestamp": "{{$timestamp}}",
+  "random": "{{$randomInt}}",
+  "email": "{{$randomEmail}}",
+  "name": "{{$randomFullName}}"
+}</code></pre>
+
+      <h3 id="encadenar">Encadenar requests</h3>
+      <p>
+        Una request guarda un valor de su response y la siguiente lo usa en la URL o el body. En el
+        script post-response de la request A:
+      </p>
+      <pre data-lang="javascript"><code>const response = pm.response.json();
+pm.environment.set('product_id', response.id);</code></pre>
+      <p>Y la URL de la request B: <code>{{api_url}}/products/{{product_id}}</code>.</p>
+
+      <h2 id="auth">Autenticación</h2>
+      <p>
+        El patrón más simple: un request <code>Login</code> que guarda el token en el environment, y
+        el resto de requests lo manda como Bearer.
+      </p>
+      <p><code>POST {{base_url}}/auth/login</code> con body raw JSON:</p>
+      <pre data-lang="json"><code>{
+  "email": "{{test_email}}",
+  "password": "{{test_password}}"
+}</code></pre>
+      <p>Script post-response del login:</p>
+      <pre data-lang="javascript"><code>pm.test('Login exitoso', function () {
+  pm.response.to.have.status(200);
+});
+
+const response = pm.response.json();
+pm.environment.set('access_token', response.access_token);
+pm.environment.set('user_id', response.user.id);</code></pre>
+      <p>
+        En la pestaña Authorization de la collection elige Bearer Token con el valor
+        <code>{{access_token}}</code>, y deja cada request en "Inherit auth from parent". Así no
+        repites el header en cada request. Los nombres de campo (<code>access_token</code>,
+        <code>user.id</code>) dependen de tu API: revísalos en el schema antes de copiar el script.
+      </p>
+      <div class="callout warn">
+        <span class="callout-title">Credenciales</span>
+        <p>
+          Las credenciales de prueba viven en <code>.env</code>. No las escribas en un environment
+          que se sincroniza con un workspace de equipo ni en un JSON exportado que vaya a git.
+          Exporta el environment con esos valores vacíos y que cada persona los complete en su
+          máquina.
+        </p>
+      </div>
+
+      <h2 id="scripts">Scripts y tests</h2>
+      <p>
+        Cada request tiene dos scripts. El pre-request corre antes de enviar y sirve para preparar
+        datos o avisar de un problema. El post-response corre al recibir la respuesta y ahí van los
+        asserts con <code>pm.test</code>. En versiones anteriores de la app el post-response estaba
+        en una pestaña llamada Tests.
+      </p>
+
+      <h3 id="pre-request">Pre-request: avisar si el token venció</h3>
+      <pre data-lang="javascript"><code>const token = pm.environment.get('access_token');
+
+if (!token) {
+  console.warn('No hay token. Ejecuta Login primero.');
+} else {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    if (Date.now() &gt; payload.exp * 1000) {
+      console.warn('Token expirado. Ejecuta Refresh Token.');
+    }
+  } catch (e) {
+    // El token no es un JWT: no hay fecha que revisar
+  }
+}</code></pre>
+
+      <h3 id="asserts">Post-response: status, estructura y valores</h3>
+      <pre data-lang="javascript"><code>pm.test('Status 201 Created', function () {
+  pm.response.to.have.status(201);
+});
+
+pm.test('Estructura correcta', function () {
+  const r = pm.response.json();
+  pm.expect(r).to.have.property('id');
+  pm.expect(r.price).to.be.a('number');
+  pm.expect(r.tags).to.be.an('array');
+});
+
+pm.test('Valores válidos', function () {
+  const r = pm.response.json();
+  pm.expect(r.price).to.be.above(0);
+  pm.expect(r.status).to.be.oneOf(['active', 'pending', 'inactive']);
+});</code></pre>
+
+      <h3 id="json-schema">Validar contra un JSON Schema</h3>
+      <pre data-lang="javascript"><code>const schema = {
+  type: 'object',
+  required: ['id', 'name', 'price'],
+  properties: {
+    id: { type: 'string' },
+    name: { type: 'string' },
+    price: { type: 'number' },
+  },
+};
+
+pm.test('Schema válido', function () {
+  pm.response.to.have.jsonSchema(schema);
+});</code></pre>
+
+      <h3 id="permisos">Permisos</h3>
+      <p>
+        Dos casos que conviene tener en cualquier colección: la request sin token y la request a
+        datos de otro usuario.
+      </p>
+      <pre data-lang="javascript"><code>// Request sin header Authorization
+pm.test('Rechaza sin token', function () {
+  pm.response.to.have.status(401);
+});
+
+// Request con tu token pidiendo datos de otro usuario
+pm.test('No expone datos de otro usuario', function () {
+  if (pm.response.code === 403) return;
+  pm.response.to.have.status(200);
+  pm.expect(pm.response.json()).to.be.an('array').that.is.empty;
+});</code></pre>
+      <p>
+        Que la API responda 403 o una lista vacía depende de su diseño. Confírmalo con el equipo
+        antes de fijar el assert a uno de los dos.
+      </p>
+
+      <h2 id="runner">Correr la colección entera</h2>
+      <p>
+        El Collection Runner de la app ejecuta todas las requests en orden. Abre el menú de la
+        collection, elige Run, selecciona el environment y, si la API tiene rate limiting, agrega un
+        delay entre requests (100 ms suele alcanzar).
+      </p>
+      <p>El orden importa cuando las requests dependen unas de otras:</p>
+      <pre data-lang="text"><code>1. Auth/
+     Login               -&gt; guarda access_token
+2. Setup/
+     Get Products        -&gt; guarda product_id
+3. CRUD/
+     Create Order        -&gt; usa product_id, guarda new_order_id
+     Get Order
+     Update Order
+     Delete Order        -&gt; limpia lo que creó
+4. Permisos/
+     Access Other User Data</code></pre>
+
+      <h2 id="ci">Postman en CI: Postman CLI y Newman</h2>
+      <p>
+        Para correr una colección en un pipeline hay dos runners. El Postman CLI es el oficial de
+        Postman y el que recomendamos: se autentica con tu API key y puede correr una colección por
+        ID o desde un archivo exportado. Newman es el runner open source de siempre; sirve si no
+        quieres atar el pipeline a una cuenta de Postman.
+      </p>
+      <div class="callout">
+        <span class="callout-title">Lo que trae el repo</span>
+        <p>
+          El boilerplate no incluye colecciones ni un workflow de Postman. Los ejemplos de abajo son
+          el patrón para cuando tu equipo decida versionar una colección.
+        </p>
+      </div>
+
+      <h3 id="postman-cli">Postman CLI</h3>
+      <pre data-lang="bash"><code># Instalar (Linux / macOS)
+curl -o- "https://dl-cli.pstmn.io/install/unix.sh" | sh
+
+# Autenticarse con la API key
+postman login --with-api-key "$POSTMAN_API_KEY"
+
+# Correr una colección exportada con su environment
+postman collection run postman/collection.json -e postman/staging.environment.json
+
+# O por ID de colección, con reportes JUnit y HTML
+postman collection run &lt;collection-id&gt; -e &lt;environment-id&gt; \
+  -r cli,junit,html \
+  --reporter-junit-export reports/postman-junit.xml \
+  --reporter-html-export reports/postman.html</code></pre>
+      <p>En GitHub Actions, la API key va como secret del repositorio:</p>
+      <pre data-lang="yaml"><code>name: API Tests (Postman)
+
+on: [pull_request]
+
+jobs:
+  postman:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Postman CLI
+        run: curl -o- "https://dl-cli.pstmn.io/install/unix.sh" | sh
+
+      - name: Login
+        run: postman login --with-api-key ${{ secrets.POSTMAN_API_KEY }}
+
+      - name: Run collection
+        run: postman collection run postman/collection.json -e postman/staging.environment.json</code></pre>
+
+      <h3 id="newman">Newman</h3>
+      <pre data-lang="bash"><code>npm install -g newman
+
+newman run postman/collection.json \
+  -e postman/staging.environment.json \
+  -r cli,junit \
+  --reporter-junit-export reports/newman-junit.xml</code></pre>
+      <p>
+        Newman no necesita cuenta. El reporter HTML no viene incluido: se instala aparte
+        (<code>newman-reporter-html</code>) y se activa con <code>-r cli,html</code>.
+      </p>
+
+      <h2 id="mcp">El Postman MCP del repo</h2>
+      <p>
+        El repo declara un server MCP llamado <code>postman</code> en <code>.mcp.json</code> (y sus
+        equivalentes en <code>opencode.jsonc</code> y <code>.codex/config.toml</code>). Es el server
+        remoto de Postman, <code>https://mcp.postman.com/mcp</code>, y el agente se autentica con el
+        header <code>Authorization: Bearer ${POSTMAN_API_KEY}</code>.
+      </p>
+      <dl class="defs">
+        <dt>Credencial</dt>
+        <dd>
+          <code>POSTMAN_API_KEY</code> en <code>.env</code>. La generas en tu cuenta de Postman, en
+          la sección de API keys. La misma key sirve para <code>postman login</code>.
+        </dd>
+        <dt>Rol</dt>
+        <dd>
+          Fallback de <code>[API_TOOL]</code>. El agente la usa cuando la ruta principal (OpenAPI
+          MCP para el schema, <code>curl</code> para ejecutar) no cubre el caso, por ejemplo para
+          consultar o correr una colección que el equipo ya mantiene en Postman.
+        </dd>
+        <dt>Si falla</dt>
+        <dd>
+          Una key vacía no detiene el arranque del agente: el error aparece recién en la primera
+          llamada, como un 401. Revisa <code>POSTMAN_API_KEY</code> en <code>.env</code> y reinicia
+          la sesión del agente, porque las variables se leen al arrancar el MCP.
+        </dd>
+      </dl>
+
+      <h2 id="buenas-practicas">Buenas prácticas</h2>
+      <ul>
+        <li>
+          Variables en vez de valores fijos: <code>{{base_url}}/api/orders/{{order_id}}</code>, no
+          una URL de producción copiada.
+        </li>
+        <li>Documenta cada request (pestaña Documentation): qué prueba y qué datos necesita.</li>
+        <li>
+          Si versionas la colección, exporta en formato Collection v2.1 a una carpeta como
+          <code>postman/</code>, con un environment por ambiente y los secretos vacíos.
+        </li>
+        <li>
+          Las requests que crean datos terminan con otra que los borra, para que correr la colección
+          dos veces dé el mismo resultado.
+        </li>
+      </ul>
+
+      <footer class="doc-footer">
+        Relacionado: <a href="../setup/openapi.html">OpenAPI</a> (camino principal del agente) ·
+        <a href="sql-cookbook.html">Cookbook SQL</a> (la pierna DB de la exploración) ·
+        <a href="index.html">Exploración</a>. Fuente canónica para el agente:
+        <code>.agents/skills/agentic-qa-core/references/api-testing-doctrine.md</code>.
+        Documentación oficial:
+        <a href="https://learning.postman.com/" target="_blank" rel="noopener"
+          >Postman Learning Center</a
+        >.
+      </footer>
+    </article>
+  </body>
+</html>

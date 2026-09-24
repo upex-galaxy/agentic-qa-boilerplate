@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Exploración</title>
+    <meta
+      name="description"
+      content="Herramientas para explorar a mano la API y la base de datos: Postman y un cookbook de SQL."
+    />
+    <meta name="docs-section-title" content="Exploración" />
+    <meta name="docs-order" content="40" />
+    <link rel="stylesheet" href="../../assets/docs.css" />
+    <script src="../../assets/docs.js"></script>
+  </head>
+  <body>
+    <article class="doc">
+      <header class="doc-header">
+        <nav class="breadcrumbs"><span>Core</span><span>Exploración</span></nav>
+        <h1>Exploración</h1>
+        <p class="lede">
+          Durante la ejecución manual de un ticket se prueba la misma funcionalidad desde tres
+          lados: UI, API y base de datos. Estas guías cubren las dos últimas para quien las explora
+          a mano.
+        </p>
+      </header>
+
+      <div class="cards">
+        <a class="card" href="postman.html">
+          <span class="badge accent">API</span>
+          <h3>Postman</h3>
+          <p>Colecciones y environments para explorar la API, y cómo correrlas en CI.</p>
+        </a>
+        <a class="card" href="sql-cookbook.html">
+          <span class="badge accent">Base de datos</span>
+          <h3>Cookbook SQL</h3>
+          <p>Consultas para validar datos: huérfanos, duplicados, timestamps e integridad.</p>
+        </a>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-title">Para la UI</span>
+        <p>
+          La exploración de la interfaz la hace la IA con la skill <code>/playwright-cli</code>
+          (capturas, traces, video). No necesita guía aparte.
+        </p>
+      </div>
+    </article>
+  </body>
+</html>

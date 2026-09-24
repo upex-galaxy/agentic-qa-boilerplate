@@ -1,0 +1,1143 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Este repo y el IQL</title>
+    <meta
+      name="description"
+      content="Cómo este boilerplate implementa el IQL: los 8 stages y sus skills, la escalera de artefactos, dónde vive la doctrina, las integraciones, los MCPs y el árbol .context/PBI."
+    />
+    <meta name="docs-order" content="60" />
+    <link rel="stylesheet" href="../../assets/docs.css" />
+    <script src="../../assets/docs.js"></script>
+  </head>
+  <body>
+    <article class="doc wide">
+      <header class="doc-header">
+        <nav class="breadcrumbs">
+          <span>Core</span><span>Metodología</span><span>Este repo y el IQL</span>
+        </nav>
+        <h1>Este repo y el IQL: de la metodología al código</h1>
+        <p class="lede">
+          El IQL dice qué hay que hacer en cada momento del ciclo de calidad. Este repo es una
+          implementación concreta: qué skill ejecuta cada stage, qué artefactos deja en Jira, dónde
+          está escrita la doctrina y con qué herramientas habla el agente.
+        </p>
+        <div class="meta-row">
+          <span class="badge accent">Metodología</span><span class="badge">Implementación</span>
+        </div>
+      </header>
+
+      <nav class="toc">
+        <strong>En esta página</strong>
+        <ol>
+          <li><a href="#metodo-e-implementacion">Método e implementación</a></li>
+          <li><a href="#stages">Los 8 stages y quién los ejecuta</a></li>
+          <li><a href="#perfiles">Perfil manual y perfil agéntico</a></li>
+          <li><a href="#escalera">La escalera de artefactos</a></li>
+          <li><a href="#quality-gate">El quality gate: GO / CAUTION / NO-GO</a></li>
+          <li><a href="#doctrina">Dónde vive la doctrina</a></li>
+          <li><a href="#skills">Skills</a></li>
+          <li><a href="#comandos">Comandos</a></li>
+          <li><a href="#integraciones">Integraciones</a></li>
+          <li><a href="#mcps">MCPs</a></li>
+          <li>
+            <a href="#pbi">El árbol <code>.context/PBI/</code></a>
+          </li>
+        </ol>
+      </nav>
+
+      <h2 id="metodo-e-implementacion">Método e implementación</h2>
+      <p>
+        El <a href="iql.html">IQL (Integrated Quality Lifecycle)</a> es la metodología de UPEX: 15
+        steps agrupados en tres fases (<a href="early-game.html">Early-Game</a>,
+        <a href="mid-game.html">Mid-Game</a> y <a href="late-game.html">Late-Game</a>) y ocho stages
+        que se ejecutan y se gatean. La versión oficial está en
+        <a href="https://www.upexgalaxy.com/metodologia" target="_blank" rel="noopener"
+          >upexgalaxy.com/metodologia</a
+        >.
+      </p>
+      <p>
+        Este repo pone esa metodología a funcionar sobre Playwright, TypeScript y Bun. Cada stage
+        tiene una skill que lo ejecuta (salvo Observation), cada skill se detiene en checkpoints
+        donde una persona revisa y decide, y cada artefacto queda enlazado desde la historia de
+        usuario hasta la corrida de regresión que valida el release. El resumen del reparto: el
+        agente ejecuta, la evidencia prueba cada conclusión y la persona toma la decisión.
+      </p>
+
+      <h2 id="stages">Los 8 stages y quién los ejecuta</h2>
+      <p>
+        Los stages tienen nombre y nunca número. La numeración vieja chocaba con los steps del IQL,
+        así que hoy sobrevive en un solo lugar: la tabla de equivalencias de
+        <code>.agents/skills/agentic-qa-core/references/stage-gates.md</code>.
+      </p>
+
+      <figure>
+        <div class="frame scroll on-dark">
+          <img src="../../assets/iql/iql-loop.svg" alt="El bucle del IQL: 8 stages en 4 momentos" />
+        </div>
+        <figcaption>
+          Los ocho stages agrupados en cuatro momentos. Producción vuelve a alimentar el análisis
+          del ciclo siguiente.
+          <a href="../../assets/iql/iql-loop.svg" target="_blank" rel="noopener"
+            >Ver a tamaño completo</a
+          >
+        </figcaption>
+      </figure>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Stage</th>
+              <th>Momento</th>
+              <th>Skill dueña</th>
+              <th>Qué deja al terminar</th>
+              <th>Autonomía (0-5)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Shift-Left</strong></td>
+              <td>Pre-sprint, por lotes</td>
+              <td><code>shift-left-testing</code></td>
+              <td>
+                ACs reescritos, huecos convertidos en preguntas para PO y Dev, el ATP pre-sprint
+                escrito en el campo <code>{{jira.acceptance_test_plan}}</code>, las etiquetas
+                <code>shift-left-reviewed</code> y <code>shift-left-{YYYY-MM-DD}</code>, y la
+                historia movida a <code>estimation</code>
+              </td>
+              <td>2</td>
+            </tr>
+            <tr>
+              <td><strong>Planning</strong></td>
+              <td>En el sprint</td>
+              <td><code>sprint-testing</code></td>
+              <td>
+                ATS, ATP y ATR creados en ese orden, test cases derivados de los ACs y la decisión
+                de qué superficies (UI, API, DB) se prueban
+              </td>
+              <td>2</td>
+            </tr>
+            <tr>
+              <td><strong>Execution</strong></td>
+              <td>En el sprint</td>
+              <td><code>sprint-testing</code></td>
+              <td>
+                Smoke primero como Go/No-Go, exploración por UI, API y DB (la "trifuerza"),
+                evidencia en la carpeta <code>evidence/</code> y bugs propuestos con su severidad
+              </td>
+              <td>3</td>
+            </tr>
+            <tr>
+              <td><strong>Reporting</strong></td>
+              <td>En el sprint</td>
+              <td><code>sprint-testing</code></td>
+              <td>
+                ATR completo, comentario de QA en la historia, links de trazabilidad verificados
+              </td>
+              <td>2</td>
+            </tr>
+            <tr>
+              <td><strong>Documentation</strong></td>
+              <td>Post-sprint</td>
+              <td><code>test-documentation</code></td>
+              <td>
+                Veredicto de ROI por escenario (Candidate, Manual o Deferred); cada Candidate entra
+                al RTP con la etiqueta <code>regression-candidate</code>
+              </td>
+              <td>2</td>
+            </tr>
+            <tr>
+              <td><strong>Automation</strong></td>
+              <td>Post-sprint</td>
+              <td><code>test-automation</code></td>
+              <td>
+                <code>spec.md</code> y <code>automation-plan.md</code> aprobados, tests KATA con
+                <code>@atc</code>, verificación en contexto limpio y un PR
+              </td>
+              <td>2, y 3 dentro del plan aprobado</td>
+            </tr>
+            <tr>
+              <td><strong>Regression</strong></td>
+              <td>Post-sprint</td>
+              <td><code>regression-testing</code></td>
+              <td>
+                Cada falla clasificada, pass-rate y tendencia, veredicto GO / CAUTION / NO-GO y un
+                RTR por veredicto
+              </td>
+              <td>3 (4 en un GO limpio)</td>
+            </tr>
+            <tr>
+              <td><strong>Observation</strong></td>
+              <td>Producción</td>
+              <td><em>ninguna todavía</em></td>
+              <td>
+                Declarado: señales de producción (SLO, error budget, RUM, canary) convertidas en
+                ítems de backlog que reabren el siguiente Shift-Left
+              </td>
+              <td>3 (declarada)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-title">Observation está declarado, no implementado</span>
+        <p>
+          Ninguna skill de <code>.agents/skills/</code> lo ejecuta hoy. Su unidad operativa sería
+          una rutina agéntica (una corrida recurrente o autónoma, no una skill que alguien invoca),
+          y por eso no tiene checklist de Definition of Done: un checklist vacío parecería un gate
+          implementado. Se nombra para que el ciclo no termine en Regression. El detalle está en
+          <a href="observation.html">Observation</a>.
+        </p>
+      </div>
+
+      <p>Dos piezas quedan fuera de la tabla a propósito:</p>
+      <dl class="defs">
+        <dt>Onboarding</dt>
+        <dd>
+          Se hace una vez por proyecto. <code>project-discovery</code> genera la base de
+          <code>.context/</code> por ingeniería inversa, <code>project-context</code> produce los
+          mapas de negocio y el master test plan, y <code>adapt-framework</code> conecta KATA con el
+          stack del proyecto.
+        </dd>
+        <dt>Sprint close</dt>
+        <dd>
+          Es el borde del lote, no un stage. Ahí se cierran el STP y el STR del sprint, y lo hace
+          quien llegue primero: Reporting o Regression. Tiene su propio bloque de DoD.
+        </dd>
+      </dl>
+      <p>
+        Cada stage tiene además un contrato agéntico: qué hace el agente, qué firma la persona, qué
+        evidencia tiene que sobrevivir, cuánta autonomía tiene y si hace falta un verificador
+        separado. Ningún stage pasa de 3 en la escala de autonomía. Automation, el único que llega a
+        3 dentro de su plan, es también el único con verificador obligatorio (<code
+          >/pr-review-lead</code
+        >
+        o <code>/judgment-day</code> en contexto limpio).
+      </p>
+
+      <h2 id="perfiles">Perfil manual y perfil agéntico</h2>
+      <p>
+        El método no cambia cuando cambia quien ejecuta. Los gates están escritos contra artefactos
+        observables, no contra quién los produjo.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Perfil</th>
+              <th>Quién ejecuta</th>
+              <th>Quién decide</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Manual</strong></td>
+              <td>Un QA, a mano</td>
+              <td>El mismo QA</td>
+            </tr>
+            <tr>
+              <td><strong>Agéntico</strong></td>
+              <td>Una skill bajo el modelo de orquestación</td>
+              <td>Una persona en cada checkpoint, según el contrato del stage</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        En los dos perfiles son idénticos la secuencia de stages, los checklists, la escalera de
+        artefactos, los links de trazabilidad y la vara de evidencia para GO/NO-GO. Un equipo sin IA
+        corre el mismo ciclo. Un agente que no cumple un gate no puede saltarlo por ser agente, y
+        una persona que lo salta se saltó el mismo gate. Lo que el perfil agéntico compra es
+        velocidad y consistencia en el trabajo mecánico; la mitad de decidir sigue siendo humana.
+      </p>
+      <p>
+        El agente trabaja como centro de comando: despacha subagentes para leer, ejecutar y
+        verificar, y cada uno reporta antes de avanzar. Para trabajo que no cabe en un turno (una
+        historia completa, un módulo) existe un segundo ejecutor opcional, el worker supervisado,
+        coordinado por la skill <code>orca-orchestration</code>. Si el runtime de orquestación no
+        está instalado, las skills no lo mencionan y el trabajo sigue por subagentes.
+      </p>
+
+      <h2 id="escalera">La escalera de artefactos</h2>
+      <p>
+        Cada plan y cada corrida es un ítem propio de Jira con un título que dice su altura en el
+        primer token: <code>{ACRONYM}: {scope}: {desc}</code>. El ítem es la forma preferida; el
+        custom field de la historia queda como fallback. La excepción es el ATP pre-sprint, que vive
+        solo en el campo hasta que Planning crea el Test Plan a partir de él. La norma ratificada
+        está en <code>.agents/skills/agentic-qa-core/references/planning-ladder.md</code>.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Altura</th>
+              <th>Plan</th>
+              <th>Corrida</th>
+              <th>Cuántos</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Producto</td>
+              <td>
+                <strong>MTP</strong> Master Test Plan: el Epic <code>QA Master Test Plan</code> más
+                <code>.context/master-test-plan.md</code>
+              </td>
+              <td>(no tiene)</td>
+              <td>1 por proyecto</td>
+            </tr>
+            <tr>
+              <td>Feature</td>
+              <td><strong>FTP</strong> Feature Test Plan</td>
+              <td>(no tiene)</td>
+              <td>1 por feature Epic</td>
+            </tr>
+            <tr>
+              <td>Sprint</td>
+              <td><strong>STP</strong> Sprint Test Plan</td>
+              <td>
+                <strong>STR</strong> Sprint Test Results, p. ej.
+                <code>STR: Sprint#30: Regression Testing</code>
+              </td>
+              <td>1 por sprint</td>
+            </tr>
+            <tr>
+              <td>Historia</td>
+              <td><strong>ATP</strong> Acceptance Test Plan</td>
+              <td>
+                <strong>ATR</strong> Acceptance Test Results (<code
+                  >ATR: {STORY-KEY}: Story Testing</code
+                >)
+              </td>
+              <td>1 por historia</td>
+            </tr>
+            <tr>
+              <td>Regresión</td>
+              <td><strong>RTP</strong> Regression Test Plan (vive siempre, nunca se completa)</td>
+              <td><strong>RTR</strong> Regression Test Results</td>
+              <td>1 RTP por proyecto o módulo; 1 RTR por veredicto</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Debajo de la escalera están el <strong>ATS</strong> (Acceptance Test Set, uno por historia,
+        <code>ATS: {STORY-KEY}: {story title}</code>), cuyo link a la historia es el que da
+        cobertura en Xray, y los <strong>TC</strong> (issues de tipo Test). Un Test Set a nivel
+        feature (<code>TS:</code>) es opcional.
+      </p>
+      <p>Cada artefacto tiene un solo hogar, definido en tres ejes:</p>
+      <pre data-lang="text"><code>parent        -&gt;  Epic de proceso QA   (qué balde lo registra)
+issue link    -&gt;  alcance probado      (historia, feature Epic o sprint)
+components    -&gt;  módulo del producto  (qué parte del producto toca)</code></pre>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Epic de proceso QA</th>
+              <th>Qué cuelga de él</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>QA Master Test Plan</code></td>
+              <td>Todos los Test Plan: FTP, STP, ATP, RTP</td>
+            </tr>
+            <tr>
+              <td><code>QA Test Repository</code></td>
+              <td>Todos los Test (test cases)</td>
+            </tr>
+            <tr>
+              <td><code>QA Test Artifacts</code></td>
+              <td>Test Executions (STR, ATR, RTR), Preconditions y Test Sets (ATS, TS)</td>
+            </tr>
+            <tr>
+              <td><code>QA Defect Management</code></td>
+              <td>Bugs, Defects e Improvements</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Nunca se cuelga un artefacto de QA de un Epic de producto. La relación con la historia va
+        por issue link.
+      </p>
+
+      <h3 id="ciclo-de-vida">Ciclo de vida de cada artefacto</h3>
+      <p>
+        Crear un artefacto no alcanza. Un ATP congelado en <code>Planning</code> o un ATR en
+        <code>ACTIVE</code> después de que el stage cerró le dicen al equipo que el trabajo no se
+        hizo. Por eso cada stage es dueño del estado de lo que creó, y
+        <code>.agents/skills/agentic-qa-core/references/artifact-lifecycle.md</code> define para
+        cada artefacto dónde nace, quién lo mueve y dónde termina. Otras reglas del mismo archivo:
+      </p>
+      <ul>
+        <li>
+          El <code>assignee</code> se pone en el momento de crear. Xray rechaza editar la membresía
+          de un Test Plan que no es tuyo.
+        </li>
+        <li>
+          Si un slug de transición no existe en el proyecto, el agente lista las transiciones
+          reales, te propone la más parecida en una sola pregunta y recomienda
+          <code>bun run jira:sync-workflows</code>. Nunca adivina un id ni se salta el paso en
+          silencio.
+        </li>
+        <li>
+          Cada stage cierra con el verificador liviano: artefactos, links, estados, assignee, parent
+          y components, campos escritos, checkpoint de progreso y footer de sesión, cada línea con
+          un SÍ o un N/A explícito.
+        </li>
+      </ul>
+
+      <h2 id="quality-gate">El quality gate: GO / CAUTION / NO-GO</h2>
+      <p>
+        El veredicto de release lo emite <code>regression-testing</code> con un puntaje ponderado
+        (máximo 9) a partir de cuatro factores: pass rate, regresiones, tests críticos y tests
+        flaky.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Puntaje</th>
+              <th>Veredicto</th>
+              <th>Qué pasa</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>7 o más</td>
+              <td><span class="badge green">GO</span></td>
+              <td>Release aprobado</td>
+            </tr>
+            <tr>
+              <td>4 a 6</td>
+              <td><span class="badge warn">CAUTION</span></td>
+              <td>Revisión manual y riesgos aceptados documentados; la persona decide</td>
+            </tr>
+            <tr>
+              <td>Menos de 4</td>
+              <td><span class="badge">NO-GO</span></td>
+              <td>Release bloqueado: se arreglan las regresiones y se vuelve a correr</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Hay vetos que ignoran el puntaje: nunca hay GO automático si falla un test
+        <code>@critical</code>, si existe una regresión de severidad alta o crítica, o si el pass
+        rate está por debajo de 90%. Cada falla se clasifica como REGRESSION, FLAKY, KNOWN,
+        ENVIRONMENT o NEW TEST, y la palabra FLAKY solo se permite con al menos cinco corridas de
+        historial.
+      </p>
+
+      <h2 id="doctrina">Dónde vive la doctrina</h2>
+      <p>
+        El modelo de trabajo no se improvisa por sesión. Está escrito en pocos lugares y las skills
+        lo citan en vez de copiarlo.
+      </p>
+      <dl class="defs">
+        <dt><code>AGENTS.md</code></dt>
+        <dd>
+          La memoria del agente, cargada en cada sesión: reglas críticas (§1), capa de
+          comportamiento (§2, espejo humano en
+          <a href="../personalidad.html">Personalidad de la IA</a>), modo de orquestación (§3), mapa
+          de qué cargar por tarea (§4), registro de skills y MCPs (§5) y resolución de herramientas
+          (§6).
+        </dd>
+        <dt><code>.agents/skills/REGISTRY.md</code></dt>
+        <dd>
+          Las reglas compactas de cada skill, que se inyectan en la sección "Project Standards" de
+          cada briefing a un subagente.
+        </dd>
+        <dt><code>## Subagent Dispatch Strategy</code></dt>
+        <dd>
+          Una sección dentro de cada skill de workflow que dice qué pasos se delegan y con qué
+          patrón (Single, Sequential, Parallel, Background).
+        </dd>
+        <dt><code>.agents/skills/agentic-qa-core/references/</code></dt>
+        <dd>La biblioteca compartida de doctrina. Estos son sus archivos:</dd>
+      </dl>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Archivo</th>
+              <th>De qué trata</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>stage-gates.md</code></td>
+              <td>
+                Los 8 stages, el Definition of Done de cada uno y el contrato agéntico (autonomía,
+                firma humana, evidencia, verificador)
+              </td>
+            </tr>
+            <tr>
+              <td><code>artifact-lifecycle.md</code></td>
+              <td>
+                En qué estado nace cada artefacto, quién lo mueve, dónde termina, y el protocolo
+                cuando falta una transición
+              </td>
+            </tr>
+            <tr>
+              <td><code>planning-ladder.md</code></td>
+              <td>
+                La escalera MTP / FTP / STP / ATP / RTP con sus corridas y los cuatro Epics de
+                proceso QA
+              </td>
+            </tr>
+            <tr>
+              <td><code>test-design-doctrine.md</code></td>
+              <td>
+                Cómo derivar casos desde los ACs: el AC es el piso, no el techo; un AC da varios
+                casos por defecto; técnicas EP, BVA, transición de estados, tablas de decisión,
+                pairwise y error guessing
+              </td>
+            </tr>
+            <tr>
+              <td><code>defect-management-doctrine.md</code></td>
+              <td>
+                Bug, Defect o Improvement según la etapa de la feature, QA assignee, components
+                obligatorios, campos y prioridad derivada de la severidad
+              </td>
+            </tr>
+            <tr>
+              <td><code>decision-elicitation-doctrine.md</code></td>
+              <td>
+                Cómo pedirle a una persona que decida: pregunta simple o deck de decisiones
+                <code>mkd</code>, y cómo leer la respuesta
+              </td>
+            </tr>
+            <tr>
+              <td><code>traceability-linking.md</code></td>
+              <td>Los links reales de Jira que sostienen la trazabilidad y cómo verificarlos</td>
+            </tr>
+            <tr>
+              <td><code>api-testing-doctrine.md</code></td>
+              <td>
+                La maniobra de API: OpenAPI MCP solo para leer el schema,
+                <code>bun run api:login</code> para el token y <code>curl</code> para ejecutar
+              </td>
+            </tr>
+            <tr>
+              <td><code>db-testing-doctrine.md</code></td>
+              <td>
+                DBHub como herramienta de base de datos, las queries de validación y el
+                troubleshooting
+              </td>
+            </tr>
+            <tr>
+              <td><code>mcp-atlassian-optin.md</code></td>
+              <td>
+                Cómo activar el MCP de Atlassian (opcional) y el contrato de paridad entre hosts
+              </td>
+            </tr>
+            <tr>
+              <td><code>acli-integration.md</code></td>
+              <td>Qué slug, estado, campo y modalidad mandarle a <code>acli</code> en este repo</td>
+            </tr>
+            <tr>
+              <td><code>jira-publishing-gotchas.md</code></td>
+              <td>Los casos de Markdown a ADF que terminan en un HTTP 400 al publicar en Jira</td>
+            </tr>
+            <tr>
+              <td><code>briefing-template.md</code></td>
+              <td>El briefing de 7 componentes que lleva cada despacho a un subagente</td>
+            </tr>
+            <tr>
+              <td><code>dispatch-patterns.md</code></td>
+              <td>Cuándo usar Single, Sequential, Parallel o Background</td>
+            </tr>
+            <tr>
+              <td><code>orchestration-doctrine.md</code></td>
+              <td>
+                Copia cacheable del modo de orquestación de <code>AGENTS.md</code> para subagentes
+              </td>
+            </tr>
+            <tr>
+              <td><code>behavioral-layer.md</code></td>
+              <td>
+                Copia de la capa de comportamiento (§2) para subagentes que le hablan directo al
+                usuario
+              </td>
+            </tr>
+            <tr>
+              <td><code>preflight-gate.md</code></td>
+              <td>Revisar herramientas, MCPs y credenciales antes de empezar el trabajo real</td>
+            </tr>
+            <tr>
+              <td><code>session-management.md</code></td>
+              <td>
+                Persistencia del plan en <code>.session/</code>, checkpoints por stage y retomar
+                tras una interrupción
+              </td>
+            </tr>
+            <tr>
+              <td><code>session-footer-contract.md</code></td>
+              <td>
+                El cierre de sesión en el chat: evidencia capturada, herramientas usadas y niveles
+                de la pirámide tocados
+              </td>
+            </tr>
+            <tr>
+              <td><code>evidence-conventions.md</code></td>
+              <td>Dónde va cada archivo producido al probar y cómo se nombra</td>
+            </tr>
+            <tr>
+              <td><code>adr-doctrine.md</code></td>
+              <td>Cuándo una decisión de arquitectura de tests merece un ADR y cómo se escribe</td>
+            </tr>
+            <tr>
+              <td><code>skill-composition-strategy.md</code></td>
+              <td>Los tiers T1 a T4 de skills y cómo se componen</td>
+            </tr>
+            <tr>
+              <td><code>skill-resolver.md</code></td>
+              <td>
+                Cómo se resuelven en tiempo de ejecución las skills componibles vía el registry
+              </td>
+            </tr>
+            <tr>
+              <td><code>skill-scaffold.md</code></td>
+              <td>El contrato con el que nace toda skill nueva del repo</td>
+            </tr>
+            <tr>
+              <td><code>skill-refinement-protocol.md</code></td>
+              <td>Cómo una sesión propone una lección para una skill en vez de editarla directo</td>
+            </tr>
+            <tr>
+              <td><code>upstream-feedback.md</code></td>
+              <td>Cómo reportar un problema de una skill contra el boilerplate</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="skills">Skills</h2>
+      <p>
+        Una skill es una capacidad del agente guardada en <code>.agents/skills/</code> (compartida
+        por Claude Code, OpenCode y Codex). Se activa cuando lo que pides coincide con su
+        descripción, o la invocas por nombre. Las tres marcadas como "comunidad" las instala
+        <code>cli/install.ts</code> a nivel de proyecto y no están versionadas en el repo.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Skill</th>
+              <th>Cómo se activa</th>
+              <th>Para qué sirve</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>agentic-qa-core</code></td>
+              <td>Sola, citada por otras skills</td>
+              <td>Biblioteca de doctrina compartida (la tabla de arriba). No ejecuta workflows.</td>
+            </tr>
+            <tr>
+              <td><code>agentic-qa-onboard</code></td>
+              <td>
+                <code>/agentic-qa-onboard</code>, "es mi primera vez", "no entiendo cómo funciona"
+              </td>
+              <td>
+                Tour de orientación y mesa de ayuda: explica en lenguaje simple y ofrece abrir el
+                deck visual de cada skill
+              </td>
+            </tr>
+            <tr>
+              <td><code>framework-development</code></td>
+              <td><code>/framework-development</code></td>
+              <td>
+                Evolucionar el boilerplate en sí (bases KATA, fixtures, <code>cli/</code>,
+                <code>scripts/</code>). No es para QA por ticket.
+              </td>
+            </tr>
+            <tr>
+              <td><code>project-discovery</code></td>
+              <td><code>/project-discovery</code>, "onboard this repo"</td>
+              <td>
+                Discovery en 4 fases por ingeniería inversa: PRD, SRS, glosario y
+                <code>.context/</code>
+              </td>
+            </tr>
+            <tr>
+              <td><code>project-context</code></td>
+              <td>
+                <code>/business-data-map</code>, <code>/master-test-plan</code> y los demás alias
+              </td>
+              <td>
+                Regenera mapas de datos, features y API, y el master test plan; pide aprobación
+                antes de sobrescribir
+              </td>
+            </tr>
+            <tr>
+              <td><code>sync-ai-context</code></td>
+              <td><code>/sync-ai-memory</code></td>
+              <td>
+                Sincroniza los documentos que lee la IA con las instrucciones, skills y
+                <code>package.json</code> actuales
+              </td>
+            </tr>
+            <tr>
+              <td><code>adapt-framework</code></td>
+              <td><code>/adapt-framework</code></td>
+              <td>
+                Adapta KATA al stack del proyecto: análisis y plan sin escribir, y solo después de
+                tu aprobación, cambios
+              </td>
+            </tr>
+            <tr>
+              <td><code>jira-administration</code></td>
+              <td><code>/jira-components</code>, <code>/jira-instance-migration</code></td>
+              <td>
+                Components de Jira y migración de instancia, siempre con análisis previo y
+                aprobación explícita
+              </td>
+            </tr>
+            <tr>
+              <td><code>shift-left-testing</code></td>
+              <td>
+                <code>/shift-left-testing</code>, "groom the backlog", "refina estas historias"
+              </td>
+              <td>
+                Stage Shift-Left: refina ACs de un lote de historias antes del sprint y escribe el
+                ATP en el campo
+              </td>
+            </tr>
+            <tr>
+              <td><code>sprint-testing</code></td>
+              <td><code>/sprint-testing</code>, "prueba este ticket", "procesa el sprint N"</td>
+              <td>
+                Stages Planning, Execution y Reporting, por issue o para todo un sprint (el estado
+                del sprint vive en el STP de Jira)
+              </td>
+            </tr>
+            <tr>
+              <td><code>test-documentation</code></td>
+              <td><code>/test-documentation</code>, "documenta los tests", "ROI"</td>
+              <td>
+                Stage Documentation: documentación en el TMS y veredicto Candidate / Manual /
+                Deferred
+              </td>
+            </tr>
+            <tr>
+              <td><code>test-automation</code></td>
+              <td><code>/test-automation</code>, "automatiza", "E2E test"</td>
+              <td>Stage Automation: Plan, Code y Review sobre KATA, Playwright y TypeScript</td>
+            </tr>
+            <tr>
+              <td><code>regression-testing</code></td>
+              <td><code>/regression-testing</code>, "corre la regresión", "GO/NO-GO"</td>
+              <td>
+                Stage Regression: suites por CI, clasificación de fallas y veredicto de release
+              </td>
+            </tr>
+            <tr>
+              <td><code>playwright-cli</code> (comunidad)</td>
+              <td><code>/playwright-cli</code></td>
+              <td>
+                Navegador por CLI: screenshots, tracing, video, sesiones y mocking de requests
+              </td>
+            </tr>
+            <tr>
+              <td><code>playwright-best-practices</code> (comunidad)</td>
+              <td>
+                <code>/playwright-best-practices</code>, se carga junto a
+                <code>/test-automation</code>
+              </td>
+              <td>
+                Referencia: tests flaky, POM, accesibilidad, auth, fixtures, tags, performance
+              </td>
+            </tr>
+            <tr>
+              <td><code>bug-screenshot-annotation</code></td>
+              <td>"anota este bug", "marca la captura"</td>
+              <td>
+                Convierte un screenshot en evidencia anotada (círculos, flechas, notas) renderizada
+                100% en local
+              </td>
+            </tr>
+            <tr>
+              <td><code>resend-cli</code> (comunidad)</td>
+              <td><code>/resend-cli</code></td>
+              <td>Testing de emails con Resend</td>
+            </tr>
+            <tr>
+              <td><code>xray-cli</code></td>
+              <td><code>/xray-cli</code></td>
+              <td>
+                Gestión de tests en Xray Cloud: tests, ejecuciones, planes, importación de
+                resultados
+              </td>
+            </tr>
+            <tr>
+              <td><code>acli</code></td>
+              <td><code>/acli</code></td>
+              <td>
+                CLI oficial de Atlassian: operaciones de Jira (y del TMS en modalidad jira-native)
+              </td>
+            </tr>
+            <tr>
+              <td><code>git-flow-master</code></td>
+              <td>Sola, ante cualquier intención de git o PR</td>
+              <td>
+                Branch, commit, push, PR y conflictos, según la estrategia declarada en
+                <code>.agents/project.yaml</code>
+              </td>
+            </tr>
+            <tr>
+              <td><code>orca-orchestration</code></td>
+              <td><code>/orca-orchestration</code>, "orquestar", "lanza workers"</td>
+              <td>
+                Coordina varias sesiones persistentes (una por historia o módulo). Opcional: si no
+                está el runtime, no aparece.
+              </td>
+            </tr>
+            <tr>
+              <td><code>session-handoff</code></td>
+              <td><code>/session-handoff</code>, "hagamos el handoff"</td>
+              <td>
+                Compacta la sesión en un archivo de traspaso y lanza la sesión sucesora en el mismo
+                worktree
+              </td>
+            </tr>
+            <tr>
+              <td><code>judgment-day</code></td>
+              <td><code>/judgment-day</code>, "juzgar", "dual review"</td>
+              <td>
+                Revisión adversarial con dos jueces a ciegas en paralelo; nunca se invoca sola
+              </td>
+            </tr>
+            <tr>
+              <td><code>pr-review-lead</code></td>
+              <td>"revisa este PR"</td>
+              <td>
+                Revisión de un PR de automatización como QA Lead, cada hallazgo apoyado en doctrina
+                o en una línea de código; no publica nada sin tu OK final
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="comandos">Comandos</h2>
+      <p>
+        Los comandos <code>/nombre</code> son alias de transporte: eligen una skill y un modo y le
+        pasan tus argumentos. No tienen workflow propio. La fuente única es
+        <code>.agents/compatibility/command-aliases.json</code> y los wrappers de Claude Code y
+        OpenCode se generan con <code>bun run agents:compat</code>. Codex no tiene comandos: ahí
+        invocas la skill directamente.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Comando</th>
+              <th>Skill y modo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>/adapt-framework</code></td>
+              <td><code>adapt-framework</code>, modo <code>adapt</code></td>
+            </tr>
+            <tr>
+              <td><code>/sync-ai-memory</code></td>
+              <td><code>sync-ai-context</code>, modo <code>sync</code></td>
+            </tr>
+            <tr>
+              <td><code>/business-data-map</code></td>
+              <td><code>project-context</code>, modo <code>data</code></td>
+            </tr>
+            <tr>
+              <td><code>/business-feature-map</code></td>
+              <td><code>project-context</code>, modo <code>features</code></td>
+            </tr>
+            <tr>
+              <td><code>/business-api-map</code></td>
+              <td><code>project-context</code>, modo <code>api</code></td>
+            </tr>
+            <tr>
+              <td><code>/master-test-plan</code></td>
+              <td><code>project-context</code>, modo <code>test-plan</code></td>
+            </tr>
+            <tr>
+              <td><code>/break-down-tests</code></td>
+              <td><code>test-automation</code>, modo <code>explain</code> (solo lectura)</td>
+            </tr>
+            <tr>
+              <td><code>/fix-traceability</code></td>
+              <td><code>test-documentation</code>, modo <code>repair-traceability</code></td>
+            </tr>
+            <tr>
+              <td><code>/jira-instance-migration</code></td>
+              <td><code>jira-administration</code>, modo <code>instance-migration</code></td>
+            </tr>
+            <tr>
+              <td><code>/jira-components</code></td>
+              <td><code>jira-administration</code>, modo <code>components</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="integraciones">Integraciones</h2>
+      <p>
+        Las skills nunca nombran una herramienta concreta. Escriben una etiqueta como
+        <code>[DB_TOOL]</code> y la tabla de resolución de <code>AGENTS.md</code> (§6) decide qué
+        herramienta es. Si cambias la fila, cambias el backend sin tocar ninguna skill. La regla
+        general: primero la CLI (gasta menos tokens) y el MCP como fallback.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Etiqueta</th>
+              <th>Dominio</th>
+              <th>Principal</th>
+              <th>Fallback</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>[ISSUE_TRACKER_TOOL]</code></td>
+              <td>Jira: historias, bugs, epics</td>
+              <td><code>/acli</code></td>
+              <td>MCP de Atlassian (opcional, ver <code>mcp-atlassian-optin.md</code>)</td>
+            </tr>
+            <tr>
+              <td><code>[TMS_TOOL]</code></td>
+              <td>Gestión de tests</td>
+              <td>
+                <code>/xray-cli</code> en modalidad jira-xray; <code>/acli</code> en jira-native
+              </td>
+              <td>MCP de Atlassian (opcional)</td>
+            </tr>
+            <tr>
+              <td><code>[AUTOMATION_TOOL]</code></td>
+              <td>Navegador</td>
+              <td><code>/playwright-cli</code></td>
+              <td>MCP de Playwright</td>
+            </tr>
+            <tr>
+              <td><code>[DB_TOOL]</code></td>
+              <td>Base de datos</td>
+              <td>MCP de DBHub</td>
+              <td>MCP de Supabase o SQL directo</td>
+            </tr>
+            <tr>
+              <td><code>[API_TOOL]</code></td>
+              <td>Testing de API</td>
+              <td>
+                Leer el schema: MCP de OpenAPI (solo lectura). Ejecutar: <code>curl</code> con el
+                token de <code>bun run api:login</code>
+              </td>
+              <td>
+                Postman: MCP <code>postman</code> declarado en <code>.mcp.json</code>, con
+                <code>POSTMAN_API_KEY</code> en <code>.env</code>
+              </td>
+            </tr>
+            <tr>
+              <td><code>[DOCS_TOOL]</code></td>
+              <td>Documentación oficial de librerías, SDKs y CLIs</td>
+              <td>MCP de Context7</td>
+              <td>Búsqueda web del harness, como último recurso</td>
+            </tr>
+            <tr>
+              <td><code>[WEB_SEARCH_TOOL]</code></td>
+              <td>Búsqueda web, soluciones de la comunidad</td>
+              <td>MCP de Tavily</td>
+              <td>Búsqueda web del harness, como último recurso</td>
+            </tr>
+            <tr>
+              <td><code>[ORCHESTRATION_TOOL]</code></td>
+              <td>Varias sesiones persistentes</td>
+              <td><code>/orca-orchestration</code></td>
+              <td>Subagentes, más las líneas de lanzamiento que pegas a mano</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        La modalidad del TMS se decide una vez por proyecto. En <strong>jira-xray</strong>, ATP y
+        ATR son Test Plan y Test Execution de Xray. En <strong>jira-native</strong> (sin Xray) viven
+        en custom fields de la historia y comentarios, y los test cases son issues de tipo Test. Las
+        guías de conexión están en <a href="../setup/jira-xray.html">Jira y Xray</a>,
+        <a href="../setup/dbhub.html">DBHub</a>, <a href="../setup/openapi.html">OpenAPI</a> y
+        <a href="../exploracion/postman.html">Postman</a>.
+      </p>
+
+      <h2 id="mcps">MCPs</h2>
+      <p>
+        Un MCP (Model Context Protocol) es un puente entre el agente y un sistema vivo. El conjunto
+        canónico es lo que declara <code>.mcp.json</code> (Claude Code). El mismo conjunto existe en
+        <code>opencode.jsonc</code> y en <code>.codex/config.toml</code>, cada uno en su formato, y
+        <code>bun run agents:compat:check</code> falla si un server aparece en un host y no en otro.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Server</th>
+              <th>Para qué</th>
+              <th>Variables en <code>.env</code></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>context7</code></td>
+              <td>Documentación oficial y versionada de librerías ("cómo se usa X")</td>
+              <td>ninguna</td>
+            </tr>
+            <tr>
+              <td><code>tavily</code></td>
+              <td>Búsqueda web y soluciones de la comunidad ("cómo resuelvo X")</td>
+              <td><code>TAVILY_API_KEY</code></td>
+            </tr>
+            <tr>
+              <td><code>playwright</code></td>
+              <td>Automatización de navegador, fallback de <code>/playwright-cli</code></td>
+              <td>ninguna</td>
+            </tr>
+            <tr>
+              <td><code>dbhub</code></td>
+              <td>Queries y validación de datos (configurado en <code>dbhub.toml</code>)</td>
+              <td>
+                <code>DBHUB_TYPE</code>, <code>DBHUB_HOST</code>, <code>DBHUB_PORT</code>,
+                <code>DBHUB_DATABASE</code>, <code>DBHUB_USER</code>, <code>DBHUB_PASSWORD</code>
+              </td>
+            </tr>
+            <tr>
+              <td><code>openapi</code></td>
+              <td>Leer endpoints y schemas de la API (solo lectura)</td>
+              <td><code>API_BASE_URL</code>, <code>OPENAPI_SPEC_PATH</code></td>
+            </tr>
+            <tr>
+              <td><code>postman</code></td>
+              <td>Colecciones de Postman, fallback de <code>[API_TOOL]</code></td>
+              <td><code>POSTMAN_API_KEY</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout danger">
+        <span class="callout-title">Si falla una credencial, se detiene</span>
+        <p>
+          En Claude Code, OpenCode y DBHub una variable vacía no da error al arrancar: el server
+          muere después, en su primera llamada autenticada, y un 401 o 403 es la señal. Solo Codex
+          avisa al arrancar. Ante una falla así el agente no busca atajos: te dice qué variable
+          falta, te pide corregir <code>.env</code> y reiniciar la sesión, porque las variables se
+          leen una sola vez cuando arranca el MCP.
+        </p>
+      </div>
+
+      <h2 id="pbi">El árbol <code>.context/PBI/</code></h2>
+      <p>
+        <code>.context/PBI/</code> es una caché local de Jira, ignorada por git. La genera
+        <code>scripts/sync-jira-issues.ts</code> y la reconstruyes entera con
+        <code>bun run context:hydrate</code>. Jira es la fuente de verdad: los archivos
+        sincronizados nunca se escriben a mano. Se regenera en cada sync, así que versionarla solo
+        produciría conflictos entre sesiones que sincronizaron en momentos distintos. Un módulo es
+        un Epic (1:1).
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Tier</th>
+              <th>Fuente de verdad</th>
+              <th>¿En git?</th>
+              <th>Cómo se recupera</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="badge accent">SYNC</span></td>
+              <td>Jira</td>
+              <td>No</td>
+              <td><code>bun run context:hydrate</code></td>
+            </tr>
+            <tr>
+              <td><span class="badge green">COMMIT</span></td>
+              <td>Este repo</td>
+              <td>Sí</td>
+              <td>git</td>
+            </tr>
+            <tr>
+              <td><span class="badge warn">LOCAL</span></td>
+              <td>Nada durable</td>
+              <td>No</td>
+              <td>No se recupera: es descartable</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <pre data-lang="text"><code>.context/PBI/
+  README.md                                   [COMMIT] reglas de tiers
+  templates/                                  [COMMIT] esqueletos
+  epic-tree.md                                [SYNC]   índice maestro
+  epics/EPIC-&lt;KEY&gt;-&lt;slug&gt;/
+    epic.md                                   [SYNC]
+    module-context.md                         [SYNC]   sección '## Module Context (QA)' del Epic
+    feature-implementation-plan.md            [SYNC]
+    feature-test-plan.md                      [SYNC]
+    test-specs/                               [COMMIT] planes de automatización, junto al código
+      ROADMAP.md  PROGRESS.md
+      &lt;ID&gt;/ spec.md  automation-plan.md  atc/*.md
+    stories/STORY-&lt;KEY&gt;-&lt;slug&gt;/
+      story.md  acceptance-criteria.md  business-rules.md ...   [SYNC]
+      acceptance-test-plan.md  acceptance-test-results.md       [SYNC]
+      comments.md                             [SYNC]   con --include-comments
+      test-cases/                             [SYNC]   los Test enlazados a la historia
+      defects/                                [SYNC]
+      context.md                              [LOCAL]  notas sobre el repo
+      evidence/                               [LOCAL]  screenshots
+  epics/_orphans/                             [SYNC]   historias sin Epic y tests huérfanos
+  qa-artifacts/_index.md                      [SYNC]   registro de los Epics de proceso QA
+  bugs/  improvements/  tech-stories/  tech-debts/  defects/    [SYNC]
+  test-plans/  test-executions/  test-sets/  preconditions/     [SYNC]</code></pre>
+      <p>Tres reglas para trabajar con esta caché:</p>
+      <ul>
+        <li>
+          Para leer el detalle de un issue (custom fields, ACs, ATP, ATR, comentarios) usa
+          <code>bun run jira:sync-issues get &lt;KEY&gt; --include-comments</code> y lee el
+          <code>.md</code> generado. <code>acli view</code> devuelve null en los custom fields.
+        </li>
+        <li>
+          Cada Test aparece una sola vez, bajo la historia que cubre. Uno sin camino a ninguna
+          historia cae en <code>epics/_orphans/tests/</code>, que funciona como lista de pendientes
+          de trazabilidad.
+        </li>
+        <li>
+          Un archivo <code>[LOCAL]</code> existe solo en la máquina que lo creó. Si otra máquina
+          necesita ese contenido, va a Jira.
+        </li>
+      </ul>
+      <p>
+        Fuera de <code>PBI/</code> viven los artefactos de proyecto: los mapas en
+        <code>.context/business/</code>, <code>.context/master-test-plan.md</code> y las decisiones
+        de arquitectura de tests en <code>.context/ADR/</code>. El estado de sesión va en
+        <code>.session/</code>, para que un re-sync no lo pise. Para ver qué está cubierto sin
+        llamar a Jira, <code>bun run tests:map</code> genera un mapa de cobertura en HTML.
+      </p>
+
+      <footer class="doc-footer">
+        Relacionado: <a href="iql.html">El IQL</a> · <a href="observation.html">Observation</a> ·
+        <a href="../personalidad.html">Personalidad de la IA</a> · sitio oficial:
+        <a href="https://www.upexgalaxy.com/metodologia" target="_blank" rel="noopener"
+          >upexgalaxy.com/metodologia</a
+        >. Fuentes canónicas: <code>AGENTS.md</code>,
+        <code>.agents/skills/agentic-qa-core/references/stage-gates.md</code>,
+        <code>.agents/skills/agentic-qa-core/references/planning-ladder.md</code>,
+        <code>.agents/skills/agentic-qa-core/references/artifact-lifecycle.md</code>.
+      </footer>
+    </article>
+  </body>
+</html>

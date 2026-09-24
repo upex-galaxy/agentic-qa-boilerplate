@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DBHub</title>
+    <meta
+      name="description"
+      content="Cómo conectar la base de datos del proyecto al agente con el MCP de DBHub: dbhub.toml, las variables DBHUB_*, las herramientas y los errores de conexión."
+    />
+    <meta name="docs-order" content="20" />
+    <link rel="stylesheet" href="../../assets/docs.css" />
+    <script src="../../assets/docs.js"></script>
+  </head>
+  <body>
+    <article class="doc">
+      <header class="doc-header">
+        <nav class="breadcrumbs"><span>Core</span><span>Setup</span><span>DBHub</span></nav>
+        <h1>DBHub: la base de datos como herramienta del agente</h1>
+        <p class="lede">
+          Con DBHub el agente puede leer tablas y ejecutar SQL durante una sesión de testing. Esta
+          guía explica qué archivo configurar, qué variables rellenar y cómo diagnosticar una
+          conexión que falla.
+        </p>
+        <div class="meta-row">
+          <span class="badge accent">Setup</span><span class="badge">MCP</span>
+        </div>
+      </header>
+
+      <nav class="toc">
+        <strong>En esta página</strong>
+        <ol>
+          <li><a href="#que-es">Qué es</a></li>
+          <li><a href="#piezas">Las tres piezas</a></li>
+          <li><a href="#configurar">Configurarlo paso a paso</a></li>
+          <li><a href="#herramientas">Herramientas que recibe el agente</a></li>
+          <li><a href="#usuario-sql">Un usuario de base de datos para QA</a></li>
+          <li><a href="#varias-bases">Más de una base de datos</a></li>
+          <li><a href="#problemas">Problemas de conexión</a></li>
+          <li><a href="#seguridad">Reglas de seguridad</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="que-es">Qué es</h2>
+      <p>
+        DBHub (<code>@bytebase/dbhub</code>) es un servidor MCP que conecta el agente con una base
+        de datos. En este repo es la herramienta principal para la pata de datos del testing: la
+        tercera comprobación de <code>/sprint-testing</code> después de UI y API, la búsqueda de
+        datos de prueba y la evidencia de un bug cuando lo que prueba el fallo es una fila y no una
+        captura de pantalla.
+      </p>
+      <div class="callout">
+        <span class="callout-title">Fuente canónica</span>
+        <p>
+          La IA lee <code>.agents/skills/agentic-qa-core/references/db-testing-doctrine.md</code>.
+          Esta página es la guía para personas; si alguna vez no coinciden, manda la doctrina.
+        </p>
+      </div>
+      <p>
+        Motores soportados, según el valor de <code>DBHUB_TYPE</code>: <code>postgres</code>,
+        <code>mysql</code>, <code>mariadb</code>, <code>sqlserver</code> y <code>sqlite</code>.
+      </p>
+
+      <h2 id="piezas">Las tres piezas</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Pieza</th>
+              <th>Dónde</th>
+              <th>Qué tiene</th>
+              <th>¿Se commitea?</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Configuración</td>
+              <td><code>dbhub.toml</code> (raíz del repo)</td>
+              <td>
+                Un bloque <code>[[sources]]</code> con <code>id = "primary"</code> y cada valor de
+                conexión como placeholder <code>${DBHUB_*}</code>
+              </td>
+              <td>Sí, no contiene secretos</td>
+            </tr>
+            <tr>
+              <td>Credenciales</td>
+              <td><code>.env</code></td>
+              <td>Las seis variables <code>DBHUB_*</code> con los valores reales</td>
+              <td>Nunca</td>
+            </tr>
+            <tr>
+              <td>Servidor MCP</td>
+              <td>
+                <code>.mcp.json</code>, <code>opencode.jsonc</code>, <code>.codex/config.toml</code>
+              </td>
+              <td>
+                El server <code>dbhub</code>, que arranca
+                <code>@bytebase/dbhub@1.2.1 --config dbhub.toml</code> y le pasa las seis variables
+              </td>
+              <td>Sí, ya viene declarado</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>El archivo que trae el repo es este:</p>
+      <pre data-lang="toml"><code>[[sources]]
+id = "primary"
+type = "${DBHUB_TYPE}"
+host = "${DBHUB_HOST}"
+port = "${DBHUB_PORT}"
+database = "${DBHUB_DATABASE}"
+user = "${DBHUB_USER}"
+password = "${DBHUB_PASSWORD}"
+sslmode = "require"</code></pre>
+      <p>
+        La sustitución de <code>${...}</code> la hace el propio <code>dbhub</code>, con el entorno
+        del proceso que lo lanzó. Por eso cada harness declara las seis variables en su bloque del
+        MCP: <code>env</code> en <code>.mcp.json</code> (Claude Code), <code>environment</code> con
+        archivos <code>{file:.auth/opencode/...}</code> en <code>opencode.jsonc</code> (OpenCode) y
+        <code>env_vars</code> en <code>.codex/config.toml</code> (Codex).
+      </p>
+
+      <h2 id="configurar">Configurarlo paso a paso</h2>
+      <ol class="steps">
+        <li>
+          <strong>Rellena las variables en <code>.env</code></strong>
+          <p>
+            Copia los nombres de <code>.env.example</code> y pon los valores de tu base de datos.
+          </p>
+          <pre
+            data-lang="bash"
+          ><code>DBHUB_TYPE=          # sqlserver | postgres | mysql | sqlite | mariadb
+DBHUB_HOST=
+DBHUB_PORT=          # 1433 sqlserver | 5432 postgres | 3306 mysql/mariadb
+DBHUB_DATABASE=
+DBHUB_USER=
+DBHUB_PASSWORD=</code></pre>
+        </li>
+        <li>
+          <strong>No toques <code>dbhub.toml</code> salvo que haga falta</strong>
+          <p>
+            No lo borres, no lo metas en <code>.gitignore</code> y no escribas un valor literal en
+            él. La única edición habitual es <code>sslmode</code>: el archivo trae
+            <code>require</code>, y una base de datos local sin TLS necesita cambiar esa línea en tu
+            copia del proyecto. El updater (<code>bun run up</code>) nunca sobrescribe este archivo.
+          </p>
+        </li>
+        <li>
+          <strong>Regenera las credenciales por harness</strong>
+          <p>
+            <code>bun run harness:env</code> copia las credenciales de <code>.env</code> a los
+            archivos que leen los harness al arrancar: el bloque <code>env</code> de
+            <code>.claude/settings.local.json</code> y los archivos de <code>.auth/opencode/</code>.
+            Así el MCP recibe las variables aunque abras el harness desde la app de escritorio.
+            Codex sigue dependiendo del wrapper del paso siguiente.
+            <code>bun run harness:env:check</code> te dice si <code>.env</code> y esos archivos
+            están desalineados. Ninguno de los dos imprime valores, solo nombres.
+          </p>
+        </li>
+        <li>
+          <strong>Arranca el agente con el wrapper</strong>
+          <p>
+            Lanza la sesión con <code>bun run claude</code>, <code>bun run opencode</code> o
+            <code>bun run codex</code>. El wrapper carga <code>.env</code> y hace que gane sobre
+            cualquier variable heredada de tu shell. Si cambias <code>.env</code> con la sesión
+            abierta, reiníciala: el MCP recibe las variables una sola vez, al arrancar.
+          </p>
+        </li>
+        <li>
+          <strong>Comprueba la conexión</strong>
+          <p>
+            En Claude Code, <code>/mcp</code> lista los servidores; <code>dbhub</code> debe aparecer
+            como conectado. Después pide algo simple, por ejemplo "mira la base de datos y dime
+            cuántas tablas hay". Si el agente llama a <code>search_objects_primary</code> y devuelve
+            resultados, la conexión funciona.
+          </p>
+        </li>
+      </ol>
+
+      <div class="callout warn">
+        <span class="callout-title">Una variable vacía no avisa al arrancar</span>
+        <p>
+          Si falta una variable, <code>dbhub</code> no se detiene: sustituye el texto literal (por
+          ejemplo <code>${DBHUB_PASSWORD}</code>) y la conexión falla en la primera query, con un
+          error que parece de la base de datos. Ante cualquier fallo raro de DBHub, revisa primero
+          las <code>DBHUB_*</code> de <code>.env</code>, ejecuta <code>bun run harness:env</code> y
+          reinicia la sesión.
+        </p>
+      </div>
+
+      <h2 id="herramientas">Herramientas que recibe el agente</h2>
+      <p>
+        DBHub nombra sus herramientas como <code>{herramienta}_{id de la fuente}</code>. Como
+        <code>dbhub.toml</code> trae una sola fuente con <code>id = "primary"</code>, el agente ve
+        dos:
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Herramienta</th>
+              <th>Para qué</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>search_objects_primary</code></td>
+              <td>Explorar schemas, tablas y columnas antes de escribir una query</td>
+            </tr>
+            <tr>
+              <td><code>execute_sql_primary</code></td>
+              <td>Ejecutar la query</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Qué validar con ellas (existencia de filas, valores, huérfanos, duplicados, timestamps) y
+        las queries de ejemplo están en el
+        <a href="../exploracion/sql-cookbook.html">SQL cookbook</a>.
+      </p>
+
+      <h2 id="usuario-sql">Un usuario de base de datos para QA</h2>
+      <p>
+        Para validar datos basta con <code>SELECT</code>. Pide permisos de escritura solo en un
+        entorno que no sea producción y solo si un test necesita sembrar datos directamente. Si tu
+        equipo ya tiene un usuario compartido, pide las credenciales por el gestor de contraseñas.
+        Si hay que crear uno, estos son los mínimos por motor (cambia
+        <code>&lt;password&gt;</code> por una contraseña generada, nunca la escribas en el repo):
+      </p>
+      <details>
+        <summary>PostgreSQL</summary>
+        <pre data-lang="sql"><code>CREATE USER qa_automation WITH PASSWORD '&lt;password&gt;';
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO qa_automation;
+-- Solo si hace falta sembrar datos, fuera de producción:
+-- GRANT INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO qa_automation;</code></pre>
+      </details>
+      <details>
+        <summary>SQL Server</summary>
+        <pre data-lang="sql"><code>CREATE USER [qa_automation] WITH PASSWORD = '&lt;password&gt;';
+ALTER ROLE db_datareader ADD MEMBER [qa_automation];
+-- Solo si hace falta sembrar datos, fuera de producción:
+-- ALTER ROLE db_datawriter ADD MEMBER [qa_automation];</code></pre>
+      </details>
+      <details>
+        <summary>MySQL / MariaDB</summary>
+        <pre data-lang="sql"><code>CREATE USER 'qa_automation'@'%' IDENTIFIED BY '&lt;password&gt;';
+GRANT SELECT ON tu_base_de_datos.* TO 'qa_automation'@'%';
+-- Solo si hace falta sembrar datos, fuera de producción:
+-- GRANT INSERT, UPDATE, DELETE ON tu_base_de_datos.* TO 'qa_automation'@'%';
+FLUSH PRIVILEGES;</code></pre>
+      </details>
+
+      <h2 id="varias-bases">Más de una base de datos</h2>
+      <p>
+        Añade otro bloque <code>[[sources]]</code> a <code>dbhub.toml</code> con un
+        <code>id</code> distinto y sus propias variables en <code>.env</code>. El sufijo del id es
+        lo único que distingue las herramientas: una fuente con <code>id = "reporting"</code> añade
+        <code>execute_sql_reporting</code> junto a <code>execute_sql_primary</code>.
+      </p>
+      <pre data-lang="toml"><code>[[sources]]
+id = "reporting"
+type = "${REPORTING_DB_TYPE}"
+host = "${REPORTING_DB_HOST}"
+port = "${REPORTING_DB_PORT}"
+database = "${REPORTING_DB_DATABASE}"
+user = "${REPORTING_DB_USER}"
+password = "${REPORTING_DB_PASSWORD}"
+sslmode = "require"</code></pre>
+      <p>
+        Los nombres <code>REPORTING_DB_*</code> son un ejemplo. Sean cuales sean, tienen que llegar
+        al proceso del MCP, así que decláralos también en el bloque <code>dbhub</code> de los tres
+        archivos de harness, igual que las seis <code>DBHUB_*</code>.
+      </p>
+
+      <h2 id="problemas">Problemas de conexión</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Síntoma</th>
+              <th>Causa probable</th>
+              <th>Qué revisar</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>Connection refused</code> o no conecta al host</td>
+              <td>La base no está levantada, el puerto es otro o un firewall bloquea tu IP</td>
+              <td>
+                <code>DBHUB_HOST</code> y <code>DBHUB_PORT</code>; en Postgres,
+                <code>pg_isready -h &lt;host&gt; -p &lt;port&gt;</code>; que tu IP esté en la lista
+                permitida del servidor
+              </td>
+            </tr>
+            <tr>
+              <td><code>password authentication failed</code> o <code>Login failed</code></td>
+              <td>
+                Usuario o contraseña incorrectos, o llegó al servidor el texto literal
+                <code>${DBHUB_PASSWORD}</code>
+              </td>
+              <td>
+                Las <code>DBHUB_*</code> de <code>.env</code>, luego
+                <code>bun run harness:env</code> y reiniciar la sesión
+              </td>
+            </tr>
+            <tr>
+              <td><code>Cannot open database</code></td>
+              <td>El nombre de la base no coincide</td>
+              <td>
+                <code>DBHUB_DATABASE</code>; en algunos motores el nombre distingue mayúsculas
+              </td>
+            </tr>
+            <tr>
+              <td>Errores de SSL o <code>Server requires encryption</code></td>
+              <td>El servidor y <code>sslmode</code> no coinciden</td>
+              <td>
+                El repo trae <code>sslmode = "require"</code>; una base local sin TLS necesita
+                cambiar esa línea
+              </td>
+            </tr>
+            <tr>
+              <td><code>too many connections</code></td>
+              <td>Varias sesiones en paralelo que no cierran conexiones</td>
+              <td>Menos workers en paralelo, o un pooler</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="seguridad">Reglas de seguridad</h2>
+      <ul>
+        <li>
+          Nunca pegues un connection string con contraseña en un comando, un artefacto o el chat.
+        </li>
+        <li>
+          Nunca ejecutes <code>UPDATE</code> o <code>DELETE</code> en un entorno compartido para
+          "arreglar" datos de prueba sin el OK del dueño. Siembra por la API o con una fixture.
+        </li>
+        <li>
+          Antes de reportar un dato incorrecto como bug, descarta retraso de replicación o
+          diferencias de reloj entre servidores.
+        </li>
+        <li>Usa un usuario de solo lectura por defecto y rota su contraseña.</li>
+      </ul>
+
+      <footer class="doc-footer">
+        <p>
+          Relacionado: <a href="index.html">Setup</a> · <a href="openapi.html">OpenAPI</a> ·
+          <a href="../exploracion/sql-cookbook.html">SQL cookbook</a>.
+        </p>
+        <p>
+          Fuente canónica:
+          <code>.agents/skills/agentic-qa-core/references/db-testing-doctrine.md</code>.
+        </p>
+      </footer>
+    </article>
+  </body>
+</html>
