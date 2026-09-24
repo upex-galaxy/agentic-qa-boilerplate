@@ -162,7 +162,7 @@ What it does:
 2. Rewrites `package.json` name + `.agents/project.yaml` `project.name`.
 3. Initializes a fresh `git init -b main` with an initial commit.
 4. Runs `bun install`.
-5. Hands off to `bun run setup` — gentle-ai, 19 committed skills, community skills, the MCP servers `.mcp.json` declares, `.env`, direnv autoload, optional `gh repo create`.
+5. Hands off to `bun run setup` — gentle-ai, 21 committed skills, community skills, the MCP servers `.mcp.json` declares, `.env`, direnv autoload, optional `gh repo create`.
 
 Useful flags (full list in [`packages/create-agentic-qa/README.md`](packages/create-agentic-qa/README.md)):
 
@@ -476,7 +476,7 @@ bun run test:smoke         # smoke / @critical tests
 │   ├── README.md                 # Variable conventions reference
 │   ├── compatibility/            # command-aliases.json — source for every generated slash-command wrapper
 │   ├── hooks/                    # personality-reinject.mjs — one emitter, three harness adapters
-│   └── skills/                   # THE skill store (19 committed) — read by all three harnesses
+│   └── skills/                   # THE skill store (21 committed) — read by all three harnesses
 │       ├── agentic-qa-core/      # Foundation: passive reference host (briefing template, dispatch patterns, orchestration doctrine)
 │       ├── project-discovery/    # Onboarding + context generation
 │       ├── sprint-testing/       # Planning + execution + reporting
@@ -975,7 +975,7 @@ This repo runs on **Claude Code, OpenCode, and Codex (CLI + Desktop)**. There is
 | **MCP** | `.mcp.json` | `opencode.jsonc` | `.codex/config.toml` |
 
 - **Instructions.** `AGENTS.md` is the only instruction body. OpenCode and Codex load it natively; Claude Code loads `CLAUDE.md`, which is exactly `@AGENTS.md` plus one newline: a documented import rather than a symlink, so it survives a Windows checkout. Operational prose in the shim is structural drift, and `/sync-ai-memory` stops rather than propagating it.
-- **Skills.** All 19 skills live committed in `.agents/skills/`, and the project-level community skills install into the same store. OpenCode and Codex read it directly; Claude Code reaches it through `.claude/skills`, a POSIX symlink (Windows junction) that is generated and gitignored: never committed, never hand-edited. Each skill still declares `compatibility: [claude-code, copilot, cursor, codex, opencode]` per the [agentskills.io](https://agentskills.io) spec, and hosts without slash triggers auto-activate from the same `description` field.
+- **Skills.** All 21 skills live committed in `.agents/skills/`, and the project-level community skills install into the same store. OpenCode and Codex read it directly; Claude Code reaches it through `.claude/skills`, a POSIX symlink (Windows junction) that is generated and gitignored: never committed, never hand-edited. Each skill still declares `compatibility: [claude-code, copilot, cursor, codex, opencode]` per the [agentskills.io](https://agentskills.io) spec, and hosts without slash triggers auto-activate from the same `description` field.
 - **Commands.** The 10 slash commands are transport, not workflow: generated from `.agents/compatibility/command-aliases.json`, 7 lines each. A wrapper that grows a body fails the check as `contains workflow prose`.
 - **Hook.** `.agents/hooks/personality-reinject.mjs` holds the contract text once. Claude and Codex run it as a command hook; OpenCode imports the constant from a thin plugin.
 - **MCP.** Every server declared in `.mcp.json` must exist in the other two configs with the same `.env` dependencies. Parity is checked semantically: each native format (JSON / JSONC / TOML) is normalized into a common shape, then compared on the `.env` variables each server depends on and on its literal settings, so a server missing from one host, or present in one host only, is a failure. The six the boilerplate ships (`context7`, `tavily`, `playwright`, `dbhub`, `openapi`, `postman`) additionally get a strict per-host shape check when declared; a downstream project with a different set passes on the generic check alone. Codex cannot expand `${VAR}`, so its adapter names every secret by variable (`bearer_token_env_var` for the two HTTP servers, `env_vars` for `openapi`).
