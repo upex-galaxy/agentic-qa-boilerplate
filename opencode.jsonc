@@ -5,6 +5,12 @@
   // mode 0600. Those files are GENERATED from .env by `bun run harness:env`, and
   // `bun run setup:doctor` fails when they and .env disagree.
   //
+  // Only LOCAL servers with project-scope values live here (dbhub, openapi) plus
+  // the two that need no key (context7, playwright). Remote servers whose only
+  // project-side content was an API key (web search, Postman) are connected at
+  // harness level instead: ~/.config/opencode/opencode.json for OpenCode. Skills
+  // resolve them by capability, whatever the prefix (AGENTS.md §6).
+  //
   // WHY {file:} AND NOT {env:}. {env:VAR} resolves from the OpenCode PROCESS
   // environment, which only exists when OpenCode was launched from a shell that
   // had it — so `bun run opencode` works and a desktop or natively-launched
@@ -47,14 +53,6 @@
       "type": "local",
       "command": ["bunx", "-y", "@upstash/context7-mcp@4.0.3"],
       "enabled": true
-    },
-    "tavily": {
-      "type": "remote",
-      "url": "https://mcp.tavily.com/mcp/",
-      "enabled": true,
-      "headers": {
-        "Authorization": "Bearer {file:.auth/opencode/TAVILY_API_KEY}"
-      }
     },
     "playwright": {
       "type": "local",
@@ -104,14 +102,6 @@
       "environment": {
         "API_BASE_URL": "{file:.auth/opencode/API_BASE_URL}",
         "OPENAPI_SPEC_PATH": "{file:.auth/opencode/OPENAPI_SPEC_PATH}"
-      }
-    },
-    "postman": {
-      "type": "remote",
-      "url": "https://mcp.postman.com/mcp",
-      "enabled": true,
-      "headers": {
-        "Authorization": "Bearer {file:.auth/opencode/POSTMAN_API_KEY}"
       }
     }
   },

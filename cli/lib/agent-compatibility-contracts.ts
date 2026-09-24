@@ -11,8 +11,12 @@
  *
  * The MCP server SET is project-declared: whatever `.mcp.json` lists is what
  * the other two hosts must list (see PARITY RULE). Only the per-host SHAPE of
- * the six servers this boilerplate ships is pinned here (`KNOWN_MCP_IDS`), so
- * a downstream project that drops `postman` or adds `supabase` still passes.
+ * the servers this boilerplate ships is pinned here (`KNOWN_MCP_IDS`), so a
+ * downstream project that keeps a server upstream dropped, or adds `supabase`,
+ * still passes. Remote servers whose only project-side content was an API key
+ * (web search, Postman) left the shipped set with ADR-0005: they run at
+ * harness level and skills resolve them by capability. A project that still
+ * declares one gets the generic cross-host check, nothing stricter.
  *
  * Import-closed: only Node builtins and `cli/lib` siblings (see the header of
  * `agent-compatibility.ts` for why `cli/` must never import a sibling
@@ -30,11 +34,9 @@ import { join, relative, resolve } from 'node:path';
  */
 export const KNOWN_MCP_IDS = [
   'context7',
-  'tavily',
   'playwright',
   'dbhub',
   'openapi',
-  'postman',
 ] as const;
 
 /**
@@ -103,13 +105,12 @@ interface JsonObject {
  *
  * `transport`, `command` and `args` are NOT compared generically, because Codex
  * cannot expand `${VAR}` inside `args` and a host may legitimately reach the
- * same server another way. For the six servers this boilerplate ships they
- * are pinned per host in `EXPECTED_MCP` instead, and that strict shape check
- * runs only when the project declares the server. Today the six share one
- * shape on every host (the two HTTP servers carry the key as a bearer token
- * on every host, so Codex needs no adaptation), but the table is keyed per
- * host so a Codex-specific shape can diverge later without touching the
- * generic check.
+ * same server another way. For the servers this boilerplate ships
+ * (`KNOWN_MCP_IDS`) they are pinned per host in `EXPECTED_MCP` instead, and
+ * that strict shape check runs only when the project declares the server.
+ * Today they share one shape on every host, but the table is keyed per host
+ * so a Codex-specific shape can diverge later without touching the generic
+ * check.
  *
  * Whatever the spelling, the `.env` names each server depends on are identical
  * across the three hosts. That is what the cross-host check enforces.
@@ -142,11 +143,6 @@ const server = canonical;
 
 const EVERY_HOST: Record<KnownMcpId, NormalizedMcpServer> = {
   context7: server({ transport: 'stdio', command: 'bunx', args: ['-y', '@upstash/context7-mcp@4.0.3'] }),
-  tavily: server({
-    transport: 'http',
-    url: 'https://mcp.tavily.com/mcp/',
-    dependsOn: ['TAVILY_API_KEY'],
-  }),
   playwright: server({
     transport: 'stdio',
     command: 'bunx',
@@ -178,11 +174,6 @@ const EVERY_HOST: Record<KnownMcpId, NormalizedMcpServer> = {
     command: 'bunx',
     args: ['-y', '@ivotoby/openapi-mcp-server@1.16.1', '--tools', 'dynamic'],
     dependsOn: ['API_BASE_URL', 'OPENAPI_SPEC_PATH'],
-  }),
-  postman: server({
-    transport: 'http',
-    url: 'https://mcp.postman.com/mcp',
-    dependsOn: ['POSTMAN_API_KEY'],
   }),
 };
 
@@ -310,8 +301,8 @@ function stripTrailingCommas(source: string): string {
  * OpenCode's `{file:<path>/<VAR>}` form, which substitutes a FILE'S CONTENTS.
  *
  * It belongs here because it is a DEPENDENCY, not a literal.
- * `{file:.auth/opencode/TAVILY_API_KEY}` says the server needs TAVILY_API_KEY
- * exactly as `{env:TAVILY_API_KEY}` does; only the delivery route differs, and
+ * `{file:.auth/opencode/DBHUB_HOST}` says the server needs DBHUB_HOST
+ * exactly as `{env:DBHUB_HOST}` does; only the delivery route differs, and
  * `scripts/harness-env.ts` generates those files from `.env`. This checker exists
  * to assert SEMANTIC parity across the three hosts, so reading the file form as
  * an opaque literal reported the hosts as disagreeing when they agree. Teaching

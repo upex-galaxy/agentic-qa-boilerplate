@@ -124,11 +124,6 @@
         "purpose": "Library documentation MCP — fetches official current docs for any library."
       },
       {
-        "name": "tavily",
-        "envVars": ["TAVILY_API_KEY"],
-        "purpose": "Web search MCP — used by skills that need fresh community / docs lookups."
-      },
-      {
         "name": "playwright",
         "envVars": [],
         "purpose": "Playwright MCP — browser automation and DOM inspection for E2E test exploration."
@@ -149,11 +144,6 @@
         "name": "openapi",
         "envVars": ["API_BASE_URL", "OPENAPI_SPEC_PATH"],
         "purpose": "OpenAPI MCP — explore API endpoints and contract testing from the agent."
-      },
-      {
-        "name": "postman",
-        "envVars": ["POSTMAN_API_KEY"],
-        "purpose": "Postman MCP — API collection management and request testing."
       }
     ],
     "envFiles": [
