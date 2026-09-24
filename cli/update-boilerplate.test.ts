@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 import { afterEach, describe, expect, test } from 'bun:test';
 
-import { validateComponentRegistry } from './lib/updater-core.ts';
+import { componentOwnedPaths, isRepoOnlyPath, validateComponentRegistry } from './lib/updater-core.ts';
 import { COMPONENTS, GATE_SCRIPTS, gatesSummaryLine, parseArgs, resolveProtectedWatchlist, runGate, summarizeGates } from './update-boilerplate.ts';
 
 const temporaryRoots: string[] = [];
@@ -48,6 +48,21 @@ describe('component registry', () => {
     for (const p of ['.agents/skills', '.agents/compatibility', '.agents/hooks', '.claude/commands', '.opencode/commands', '.opencode/plugins', '.codex', '.husky']) {
       expect(paths).toContain(p);
     }
+  });
+
+  test('docs syncs only its shipped half; every other path under docs/ is project-owned', () => {
+    const docs = COMPONENTS.find(c => c.name === 'docs');
+    expect(docs?.paths).not.toContain('docs');
+    for (const p of ['docs/core', 'docs/assets', 'docs/index.html', 'docs/README.md', 'docs/.gitignore']) {
+      expect(docs?.paths).toContain(p);
+    }
+    const owned = COMPONENTS.flatMap(c => componentOwnedPaths(c));
+    for (const projectPage of ['docs/team/runbook.html', 'docs/manifest.json', 'docs/coreutils/x.html']) {
+      expect(isRepoOnlyPath(projectPage, owned)).toBe(false);
+    }
+    expect(isRepoOnlyPath('docs/core/setup/dbhub.html', owned)).toBe(true);
+    // Retired pages stay listed so their upstream deletion reaches older projects.
+    expect(isRepoOnlyPath('docs/setup/mcp-dbhub.md', owned)).toBe(true);
   });
 });
 

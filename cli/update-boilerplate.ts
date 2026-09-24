@@ -116,6 +116,30 @@ const ENV_SCHEMA_FILES = ['.env.schema', '.env.core.schema'];
 const CODEX_FRAMEWORK_FILES = ['hooks.json'];
 const CLAUDE_ROOT_CONFIG_FILES = ['settings.json'];
 
+// `docs/` is the human documentation site. The boilerplate owns ONLY its
+// shipped half: `docs/core/**` (the pages), `docs/assets/**` (shared css/js and
+// diagrams), the portal `docs/index.html`, `docs/README.md` and the
+// `docs/.gitignore` that keeps the generated `manifest.json` out of git. Every
+// other path under `docs/` is project-owned: the sync never writes it, and an
+// uncommitted page there never trips the dirty-tree guard.
+//
+// DOCS_LEGACY_PATHS are the Markdown pages and folders the relaunch retired.
+// They stay in the component's paths only so their upstream DELETION still
+// reaches a project that synced them earlier (classified `deleted-upstream`,
+// offered, never forced). Nothing upstream lives there any more.
+const DOCS_SHIPPED_PATHS = ['docs/core', 'docs/assets', 'docs/index.html', 'docs/README.md', 'docs/.gitignore'];
+const DOCS_LEGACY_PATHS = [
+  'docs/onboarding.html',
+  'docs/agentic-quality-engineering.md',
+  'docs/ai-personality.md',
+  'docs/architectures',
+  'docs/methodology',
+  'docs/mcp',
+  'docs/setup',
+  'docs/testing',
+  'docs/workflows',
+];
+
 /** Canonical cross-harness skill source. Claude consumes it through an alias. */
 const SKILLS_CANONICAL_DIR = '.agents/skills';
 
@@ -149,7 +173,7 @@ export const COMPONENTS: Component[] = [
   // in 8.2: they are project MCP registries, watchlisted and never synced.
   { name: 'agent-root-config', type: 'file-list', paths: ['.claude'], files: CLAUDE_ROOT_CONFIG_FILES, bootstrapOnly: true },
   { name: 'scripts', type: 'directory', paths: ['scripts'] },
-  { name: 'docs', type: 'directory', paths: ['docs'] },
+  { name: 'docs', type: 'directory', paths: [...DOCS_SHIPPED_PATHS, ...DOCS_LEGACY_PATHS] },
   { name: 'cli', type: 'directory', paths: ['cli'] },
   { name: 'vscode', type: 'directory', paths: ['.vscode'] },
   // `.husky/pre-commit` and `.husky/pre-push` are on PROTECTED_WATCHLIST (the
