@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Agentic testing</title>
+    <meta
+      name="description"
+      content="El ciclo de stages del repo visto desde la IA: qué hace el agente, qué firma la persona, qué evidencia queda, la escala de autonomía 0-5, el verificador light, el lifecycle de artefactos y la doctrina de diseño de tests."
+    />
+    <meta name="docs-order" content="50" />
+    <link rel="stylesheet" href="../../assets/docs.css" />
+    <script src="../../assets/docs.js"></script>
+    <style>
+      .diagram svg {
+        width: 100%;
+        height: auto;
+        display: block;
+        color: var(--text);
+      }
+    </style>
+  </head>
+  <body>
+    <article class="doc">
+      <header class="doc-header">
+        <nav class="breadcrumbs">
+          <span>Core</span><span>Fundamentos agénticos</span><span>Agentic testing</span>
+        </nav>
+        <h1>Agentic testing: el ciclo de QA visto desde el agente</h1>
+        <p class="lede">
+          Cuando un agente ejecuta el trabajo de QA, hace falta decir por escrito qué puede decidir
+          solo, qué tiene que firmar una persona y qué evidencia debe quedar. Esta página explica
+          ese contrato, cómo se cierra cada stage y las reglas de diseño de tests que el agente
+          sigue.
+        </p>
+        <div class="meta-row">
+          <span class="badge accent">Fundamentos agénticos</span><span class="badge">8 stages</span
+          ><span class="badge">Autonomía 0-5</span>
+        </div>
+      </header>
+
+      <nav class="toc">
+        <strong>En esta página</strong>
+        <ol>
+          <li><a href="#contrato">El contrato de cada stage</a></li>
+          <li><a href="#autonomia">Autonomía 0-5 y el techo en 3</a></li>
+          <li><a href="#verificador">El verificador light</a></li>
+          <li><a href="#lifecycle">Lifecycle de artefactos</a></li>
+          <li><a href="#fallback">Cuando el status no está mapeado</a></li>
+          <li><a href="#diseno">Doctrina de diseño de tests</a></li>
+          <li><a href="#este-repo">Así lo hace este repo</a></li>
+          <li><a href="#errores">Errores comunes</a></li>
+          <li><a href="#profundizar">Para profundizar</a></li>
+        </ol>
+      </nav>
+
+      <div class="callout">
+        <span class="callout-title">Qué no repite esta página</span>
+        <p>
+          La tabla de stages, skills y artefactos del repo vive en
+          <a href="../metodologia/este-repo.html">Metodología en este repo</a>. Aquí se explica el
+          porqué de ese diseño desde el punto de vista del agente.
+        </p>
+      </div>
+
+      <h2 id="contrato">El contrato de cada stage</h2>
+      <p>
+        Un tester humano cierra un ticket cuando siente que terminó. Un agente no tiene ese
+        criterio, y si se lo dejas a él va a cerrar en cuanto su subagente devuelva algo. Por eso el
+        repo define dos cosas para cada stage. La primera es el Definition of Done: una lista de
+        condiciones observables (un archivo existe, un link resuelve, una línea tiene SÍ o un N/A
+        con motivo). La segunda es el contrato agéntico, que responde cinco preguntas: qué hace el
+        agente, qué firma la persona, qué evidencia debe sobrevivir, cuánta autonomía tiene el
+        agente y si otro agente revisa al primero.
+      </p>
+      <p>
+        El pipeline tiene ocho stages con nombre: Shift-Left, Planning, Execution, Reporting,
+        Documentation, Automation, Regression y Observation. Observation está declarado pero no
+        tiene skill ni checklist, y así lo dice el propio archivo: una checklist vacía parecería un
+        gate que alguien podría marcar. El cierre de sprint tampoco es un stage; es el límite del
+        lote donde se cierran el STP y el STR.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Stage</th>
+              <th>La persona firma</th>
+              <th>Verificador separado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Shift-Left</strong></td>
+              <td>El lote de historias candidatas y el resumen por historia</td>
+              <td>Ninguno: el PO o Dev que refina la historia ya revisa</td>
+            </tr>
+            <tr>
+              <td><strong>Planning</strong></td>
+              <td>El checkpoint donde el agente explica la historia y espera</td>
+              <td>Ninguno</td>
+            </tr>
+            <tr>
+              <td><strong>Execution</strong></td>
+              <td>
+                El triage y el registro de cada bug; cualquier ajuste de severidad en seguridad
+              </td>
+              <td>Ninguno</td>
+            </tr>
+            <tr>
+              <td><strong>Reporting</strong></td>
+              <td>
+                La transición del workflow (<code>qa_sign_off</code> o <code>defect_reported</code>)
+              </td>
+              <td>Ninguno</td>
+            </tr>
+            <tr>
+              <td><strong>Documentation</strong></td>
+              <td>Cada veredicto de ROI, el epic de regresión y el Test Set</td>
+              <td>Recomendado</td>
+            </tr>
+            <tr>
+              <td><strong>Automation</strong></td>
+              <td>
+                El plan antes de escribir una línea de código, el merge, la tercera vuelta de
+                revisión
+              </td>
+              <td>Obligatorio, en contexto limpio</td>
+            </tr>
+            <tr>
+              <td><strong>Regression</strong></td>
+              <td>El veredicto CAUTION</td>
+              <td>Ninguno</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Fíjate en que la persona casi nunca firma el trabajo operativo. Firma decisiones: qué entra,
+        qué se registra como bug, qué merece automatizarse, cuándo se libera. El agente redacta,
+        ejecuta y enlaza.
+      </p>
+
+      <h2 id="autonomia">Autonomía 0-5 y el techo en 3</h2>
+      <p>
+        La escala tiene seis niveles. En 0 la persona hace el trabajo; en 1 aprueba cada acción; en
+        2 aprueba un plan o un lote; en 3 el agente decide dentro de límites escritos y escala lo
+        que queda fuera; en 4 la supervisión es por monitoreo; en 5 no hay intervención humana de
+        rutina. El repo fija que ningún stage pasa de 3, y esa es la decisión detrás de que las
+        skills no corran de punta a punta sin nadie mirando.
+      </p>
+
+      <figure>
+        <div class="frame diagram">
+          <svg viewBox="0 0 760 260" role="img" aria-labelledby="aut-title aut-desc">
+            <title id="aut-title">Autonomía por stage en la escala 0-5</title>
+            <desc id="aut-desc">
+              Barras por stage. Shift-Left, Planning, Reporting y Documentation en 2. Execution en
+              3. Automation pasa de 2 a 3 dentro del plan aprobado. Regression en 3, con 4 solo para
+              un GO limpio. Observation en 3 pero sin skill. Una línea punteada marca el techo en 3.
+            </desc>
+            <g font-family="var(--font-sans)" font-size="11" style="fill: var(--text-2)">
+              <text x="40" y="204" text-anchor="end">0</text>
+              <text x="40" y="174" text-anchor="end">1</text>
+              <text x="40" y="144" text-anchor="end">2</text>
+              <text x="40" y="114" text-anchor="end">3</text>
+              <text x="40" y="84" text-anchor="end">4</text>
+              <text x="40" y="54" text-anchor="end">5</text>
+            </g>
+            <line
+              x1="52"
+              y1="200"
+              x2="745"
+              y2="200"
+              stroke-width="1.5"
+              style="stroke: var(--border-strong)"
+            />
+            <g stroke-width="1.5" style="fill: var(--accent-soft); stroke: var(--accent)">
+              <rect x="77" y="140" width="50" height="60" rx="4" />
+              <rect x="162" y="140" width="50" height="60" rx="4" />
+              <rect x="247" y="110" width="50" height="90" rx="4" />
+              <rect x="332" y="140" width="50" height="60" rx="4" />
+              <rect x="417" y="140" width="50" height="60" rx="4" />
+              <rect x="502" y="140" width="50" height="60" rx="4" />
+              <rect x="587" y="110" width="50" height="90" rx="4" />
+            </g>
+            <g fill="none" stroke-width="1.5" stroke-dasharray="4 3" style="stroke: var(--accent)">
+              <rect x="502" y="110" width="50" height="30" rx="4" />
+              <rect x="587" y="80" width="50" height="30" rx="4" />
+              <rect x="672" y="110" width="50" height="90" rx="4" />
+            </g>
+            <line
+              x1="52"
+              y1="110"
+              x2="745"
+              y2="110"
+              stroke-width="1.5"
+              stroke-dasharray="6 4"
+              style="stroke: var(--orange)"
+            />
+            <text
+              x="745"
+              y="102"
+              text-anchor="end"
+              font-family="var(--font-sans)"
+              font-size="11"
+              style="fill: var(--orange)"
+            >
+              techo del pipeline: 3
+            </text>
+            <g
+              font-family="var(--font-sans)"
+              font-size="10"
+              text-anchor="middle"
+              style="fill: var(--text-2)"
+            >
+              <text x="527" y="128">plan</text>
+              <text x="612" y="98">GO</text>
+            </g>
+            <g
+              font-family="var(--font-sans)"
+              font-size="11"
+              fill="currentColor"
+              text-anchor="middle"
+            >
+              <text x="102" y="220">Shift-Left</text>
+              <text x="187" y="220">Planning</text>
+              <text x="272" y="220">Execution</text>
+              <text x="357" y="220">Reporting</text>
+              <text x="442" y="220">Documentation</text>
+              <text x="527" y="220">Automation</text>
+              <text x="612" y="220">Regression</text>
+              <text x="697" y="220">Observation</text>
+            </g>
+            <text
+              x="697"
+              y="236"
+              text-anchor="middle"
+              font-family="var(--font-sans)"
+              font-size="10"
+              style="fill: var(--text-2)"
+            >
+              sin skill
+            </text>
+            <text
+              x="527"
+              y="236"
+              text-anchor="middle"
+              font-family="var(--font-sans)"
+              font-size="10"
+              style="fill: var(--text-2)"
+            >
+              verificador obligatorio
+            </text>
+          </svg>
+        </div>
+        <figcaption>
+          Nivel de autonomía por stage según el contrato. Lo punteado es condicional: Automation
+          sube a 3 solo dentro del plan aprobado, Regression marca 4 únicamente para un GO limpio, y
+          Observation no tiene skill que lo ejecute.
+        </figcaption>
+      </figure>
+
+      <p>
+        La excepción de Regression está escrita tal cual en la fuente: el contrato le asigna 3, y 4
+        para un GO limpio, aunque la misma página diga que ningún stage pasa de 3. Tómalo como que
+        un GO sin fallos puede avanzar sin que nadie lo apruebe, mientras que CAUTION siempre lo
+        firma una persona.
+      </p>
+      <p>
+        Cada stage se gobierna por dos caminos. El feedforward condiciona el trabajo antes de que
+        ocurra: la skill con sus referencias, las reglas compactas que viajan en el briefing y el
+        plan aprobado primero (el ATP, <code>spec.md</code>, <code>automation-plan.md</code>). El
+        feedback corrige después: las checklists, los gates ejecutables, la suite de regresión y el
+        verificador separado. Automation es el único stage que llega a 3 y también el único con
+        verificador obligatorio. Más margen al entrar se paga con un control más duro al salir.
+      </p>
+
+      <h2 id="verificador">El verificador light al cerrar cada stage</h2>
+      <p>
+        Un DoD puede quedar marcado mientras el artefacto sigue en el status donde Jira lo dejó al
+        crearlo. El verificador light existe para atrapar lo que se saltó en silencio. Son ocho
+        líneas y el agente las responde con lo que ya hizo en el stage, más una sola lectura extra
+        (un <code>Get Issue</code> sobre la clave principal) para confirmar el status.
+      </p>
+      <pre data-lang="text"><code>Light stage verifier: &lt;Stage&gt;
+[ ] Artifacts exist: cada artefacto del stage, por KEY
+[ ] Links present
+[ ] Statuses: cada artefacto en su status esperado (transición disparada o motivo)
+[ ] Assignee puesto en cada artefacto CREADO en el stage
+[ ] Parent = el epic de proceso QA correcto; components puestos
+[ ] Jira fields / comments escritos (el cuerpo llegó, no solo el item)
+[ ] progress.md checkpoint agregado
+[ ] Session footer impreso en el chat</code></pre>
+      <p>
+        Cada línea lleva SÍ o un N/A con su motivo. Una línea en blanco es un verificador fallido, y
+        cualquier NO deja el stage en NEEDS REVISION. Esto se apoya en la regla 16 de
+        <code>AGENTS.md</code>: un código de éxito describe la llamada y no el resultado. Un
+        <code>ok: true</code> o un id devuelto prueban que la petición estaba bien formada. Para
+        saber que la transición ocurrió, el agente vuelve a leer el status del issue.
+      </p>
+
+      <h2 id="lifecycle">Lifecycle de artefactos</h2>
+      <p>
+        Un artefacto creado y nunca movido no se distingue de uno que nadie trabajó. Antes de que
+        existiera esta regla, pasaba en todos los proyectos: ATP congelados en
+        <code>Planning</code>, Test Sets en <code>Designing</code>, Test Executions en
+        <code>ACTIVE</code>. La causa era que el harness no declaraba lifecycle para esos tipos de
+        trabajo. Hoy cada fila dice dónde nace el artefacto, qué stage lo mueve y dónde termina.
+      </p>
+
+      <figure>
+        <div class="frame diagram">
+          <svg viewBox="0 0 760 180" role="img" aria-labelledby="atp-title atp-desc">
+            <title id="atp-title">Lifecycle de un ATP</title>
+            <desc id="atp-desc">
+              El ATP nace en planning al crearse en el stage Planning. Al terminar Planning pasa a
+              ready con la transición designed. Al terminar Reporting pasa a completed con la
+              transición complete. Si nadie lo mueve, queda congelado en planning.
+            </desc>
+            <defs>
+              <marker
+                id="atp-arrow"
+                viewBox="0 0 10 10"
+                refX="9"
+                refY="5"
+                markerWidth="7"
+                markerHeight="7"
+                orient="auto"
+              >
+                <path d="M0,0 L10,5 L0,10 z" style="fill: var(--accent)" />
+              </marker>
+            </defs>
+            <g font-family="var(--font-sans)" text-anchor="middle">
+              <rect
+                x="30"
+                y="40"
+                width="160"
+                height="56"
+                rx="8"
+                stroke-width="1.5"
+                style="fill: var(--surface-2); stroke: var(--border-strong)"
+              />
+              <text x="110" y="66" font-size="14" fill="currentColor">planning</text>
+              <text x="110" y="84" font-size="10" style="fill: var(--text-2)">
+                creado en Planning
+              </text>
+
+              <rect
+                x="300"
+                y="40"
+                width="160"
+                height="56"
+                rx="8"
+                stroke-width="1.5"
+                style="fill: var(--accent-soft); stroke: var(--accent)"
+              />
+              <text x="380" y="66" font-size="14" fill="currentColor">ready</text>
+              <text x="380" y="84" font-size="10" style="fill: var(--text-2)">plan diseñado</text>
+
+              <rect
+                x="570"
+                y="40"
+                width="160"
+                height="56"
+                rx="8"
+                stroke-width="1.5"
+                style="fill: var(--green-soft); stroke: var(--green)"
+              />
+              <text x="650" y="66" font-size="14" fill="currentColor">completed</text>
+              <text x="650" y="84" font-size="10" style="fill: var(--text-2)">terminal</text>
+
+              <text x="245" y="30" font-size="11" style="fill: var(--accent)">designed</text>
+              <text x="245" y="112" font-size="10" style="fill: var(--text-2)">
+                fin de Planning
+              </text>
+              <text x="515" y="30" font-size="11" style="fill: var(--accent)">complete</text>
+              <text x="515" y="112" font-size="10" style="fill: var(--text-2)">
+                fin de Reporting
+              </text>
+
+              <text x="110" y="150" font-size="11" style="fill: var(--red)">
+                si nadie lo mueve, el equipo lee:
+              </text>
+              <text x="110" y="166" font-size="11" style="fill: var(--red)">
+                "el plan nunca se diseñó"
+              </text>
+            </g>
+            <line
+              x1="190"
+              y1="68"
+              x2="296"
+              y2="68"
+              stroke-width="1.5"
+              marker-end="url(#atp-arrow)"
+              style="stroke: var(--accent)"
+            />
+            <line
+              x1="460"
+              y1="68"
+              x2="566"
+              y2="68"
+              stroke-width="1.5"
+              marker-end="url(#atp-arrow)"
+              style="stroke: var(--accent)"
+            />
+            <line
+              x1="110"
+              y1="96"
+              x2="110"
+              y2="134"
+              stroke-width="1.2"
+              stroke-dasharray="3 3"
+              style="stroke: var(--red)"
+            />
+          </svg>
+        </div>
+        <figcaption>
+          Un ejemplo de la tabla de lifecycle. El RTP, en cambio, se queda en
+          <code>ready</code> para siempre porque es un plan de larga vida, y una Precondition se
+          queda en <code>active</code> porque su workflow no tiene transiciones.
+        </figcaption>
+      </figure>
+
+      <p>
+        Dos reglas acompañan la tabla. El <code>assignee</code> se pone al crear: Xray rechaza
+        editar la membresía de un Test Plan que no es tuyo, y el bloqueo aparece mucho después. Y el
+        parent es siempre un epic de proceso QA (por ejemplo, QA Defect Management para bugs), nunca
+        un epic de producto. La historia de origen se enlaza con un issue link y el módulo afectado
+        va en components.
+      </p>
+
+      <h2 id="fallback">Cuando el status no está mapeado</h2>
+      <p>
+        Cada proyecto nombra sus status a su manera. Si el slug de transición que el agente necesita
+        no existe en el catálogo del proyecto, el protocolo es este:
+      </p>
+      <ol class="steps">
+        <li>
+          <strong>Resolver el slug</strong>
+          <p>
+            Si aparece en <code>.agents/jira-workflows.json</code>, el agente dispara la transición
+            por id y sigue.
+          </p>
+        </li>
+        <li>
+          <strong>Listar las transiciones reales</strong>
+          <p>Si no aparece, pide a Jira las transiciones disponibles desde el status actual.</p>
+        </li>
+        <li>
+          <strong>Hacer una sola pregunta</strong>
+          <p>
+            Propone el candidato más parecido según una tabla de sinónimos (por ejemplo, "In QA"
+            para
+            <code>in_test</code>) y espera tu respuesta: sí, elegir otro o saltar.
+          </p>
+        </li>
+        <li>
+          <strong>Ejecutar con el id vivo y recomendar el resync</strong>
+          <p>
+            Registra la transición en el checkpoint y te sugiere
+            <code>bun run jira:sync-workflows</code> seguido de <code>bun run jira:check</code>,
+            para que la próxima sesión la resuelva en el paso 1.
+          </p>
+        </li>
+      </ol>
+      <p>
+        Un salto que tú elegiste queda como N/A con motivo en el verificador. Un salto que nadie vio
+        es exactamente el defecto que este protocolo evita. Si la transición existe pero Jira la
+        rechaza por un validador de campos, el agente reporta el error textual y no reintenta a
+        ciegas.
+      </p>
+
+      <h2 id="diseno">Doctrina de diseño de tests</h2>
+      <p>
+        Un modelo de lenguaje tiende a generar un caso por criterio de aceptación y reportar "100%
+        de ACs verificados". La doctrina del repo corrige ese sesgo con cinco principios. Los que
+        más cambian el resultado son tres. Los ACs son el piso: la cobertura real es conformidad con
+        los ACs más riesgo fuera de ellos (límites, errores, estados, anomalías). Un criterio
+        describe una condición y un test case la explora con datos concretos. Y la relación es 1:N:
+        por defecto el agente deriva varios casos por AC, y solo colapsa a uno cuando el AC es
+        trivialmente atómico y lo justifica por escrito.
+      </p>
+      <p>Cada técnica formal tiene su disparador:</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Técnica</th>
+              <th>Se dispara cuando</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Equivalence Partitioning</td>
+              <td>Siempre; es el punto de partida</td>
+            </tr>
+            <tr>
+              <td>Boundary Value Analysis</td>
+              <td>
+                Hay un rango o límite, y también sobre el valor derivado si la función redondea o
+                trunca
+              </td>
+            </tr>
+            <tr>
+              <td>State-Transition</td>
+              <td>La entidad tiene estados, incluidas las transiciones inválidas</td>
+            </tr>
+            <tr>
+              <td>Decision Table</td>
+              <td>Interactúan 2 o más condiciones</td>
+            </tr>
+            <tr>
+              <td>Pairwise</td>
+              <td>Hay 3 o más factores combinables</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Los stages de planificación cierran con la Test-Design Checklist, donde cada técnica recibe
+        SÍ o un N/A declarado ("sin rangos en este AC, BVA N/A"). Lo mismo aplica a los defectos: el
+        tipo se decide por la etapa de vida de la feature y no por el ambiente donde apareció. Un
+        fallo en una feature que todavía no llegó a producción es un Defect aunque lo veas en
+        <code>qa</code>; en una feature ya liberada es un Bug; si ningún AC se rompió y el hallazgo
+        vino de un test más allá del AC, es una Improvement.
+      </p>
+
+      <h2 id="este-repo">Así lo hace este repo</h2>
+      <p>
+        Todo lo anterior sale de archivos que el agente carga antes de actuar. Si quieres verificar
+        una regla, léela en la fuente:
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Archivo</th>
+              <th>Qué define</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>.agents/skills/agentic-qa-core/references/stage-gates.md</code></td>
+              <td>
+                Los 8 stages, el contrato por stage, la escala de autonomía, las checklists DoD y el
+                status que cada stage debe dejar
+              </td>
+            </tr>
+            <tr>
+              <td><code>.agents/skills/agentic-qa-core/references/artifact-lifecycle.md</code></td>
+              <td>
+                La tabla de lifecycle (§1), el assignee al crear (§2), el fallback de status no
+                mapeado (§4) y el verificador light (§5)
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <code>.agents/skills/agentic-qa-core/references/test-design-doctrine.md</code>
+              </td>
+              <td>Los cinco principios, las técnicas por disparador y la Test-Design Checklist</td>
+            </tr>
+            <tr>
+              <td>
+                <code>.agents/skills/agentic-qa-core/references/defect-management-doctrine.md</code>
+              </td>
+              <td>
+                Bug, Defect o Improvement; QA Assignee; components; los tres ejes de parenting
+              </td>
+            </tr>
+            <tr>
+              <td><code>.agents/skills/shift-left-testing/SKILL.md</code></td>
+              <td>Shift-Left</td>
+            </tr>
+            <tr>
+              <td><code>.agents/skills/sprint-testing/SKILL.md</code></td>
+              <td>Planning, Execution y Reporting</td>
+            </tr>
+            <tr>
+              <td><code>.agents/skills/test-documentation/SKILL.md</code></td>
+              <td>Documentation</td>
+            </tr>
+            <tr>
+              <td><code>.agents/skills/test-automation/SKILL.md</code></td>
+              <td>Automation</td>
+            </tr>
+            <tr>
+              <td><code>.agents/skills/regression-testing/SKILL.md</code></td>
+              <td>Regression</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Los gates ejecutables del feedback son scripts reales de <code>package.json</code>:
+        <code>bun run test</code>, <code>bun run types:check</code> y
+        <code>bun run lint:check</code>, en ese orden. Para ver qué skill posee cada stage, qué
+        artefactos deja y cómo se calcula el veredicto GO / CAUTION / NO-GO, consulta
+        <a href="../metodologia/este-repo.html">Metodología en este repo</a>.
+      </p>
+
+      <div class="callout warn" id="errores">
+        <span class="callout-title">Errores comunes</span>
+        <ul>
+          <li>
+            Reportar "% de ACs verificados" como si fuera cobertura. Ese número es el piso; falta
+            decir qué se probó por encima.
+          </li>
+          <li>
+            Confiar en un código de éxito sin leer de vuelta. Un id devuelto no prueba que el cuerpo
+            del ATR llegó ni que el issue cambió de status.
+          </li>
+          <li>
+            Dejar artefactos en el status en que se crearon. Un ATR en <code>active</code> después
+            de Reporting le dice al equipo que la corrida sigue abierta.
+          </li>
+          <li>
+            Adivinar un id de transición o editar a mano <code>.agents/jira-workflows.json</code>.
+            El archivo se genera; el camino es preguntar y resincronizar.
+          </li>
+          <li>Dejar líneas del verificador en blanco. Un N/A sin motivo cuenta como fallo.</li>
+        </ul>
+      </div>
+
+      <h2 id="profundizar">Para profundizar</h2>
+      <ul>
+        <li>
+          <a
+            href="https://istqb.org/certifications/certified-tester-foundation-level-ctfl-v4-0"
+            target="_blank"
+            rel="noopener"
+            >ISTQB Certified Tester Foundation Level v4.0</a
+          >: el syllabus define Equivalence Partitioning, BVA, Decision Tables y State-Transition,
+          las mismas técnicas que usa la doctrina.
+        </li>
+        <li>
+          <a href="https://playwright.dev/docs/test-agents" target="_blank" rel="noopener"
+            >Playwright Test Agents</a
+          >: los agentes planner, generator y healer de Playwright, con sus planes en Markdown
+          versionados junto al código.
+        </li>
+        <li>
+          <a href="https://arxiv.org/abs/2307.07221" target="_blank" rel="noopener"
+            >Software Testing with Large Language Models: Survey, Landscape, and Vision</a
+          >
+          (Wang et al., arXiv 2307.07221): revisión de cómo se usan los LLM en generación de tests,
+          inputs y depuración.
+        </li>
+        <li>
+          <a
+            href="https://martinfowler.com/articles/exploring-gen-ai/humans-and-agents.html"
+            target="_blank"
+            rel="noopener"
+            >Humans and Agents in Software Engineering Loops</a
+          >
+          (martinfowler.com): la diferencia entre revisar cada salida del agente y diseñar el
+          harness que la controla.
+        </li>
+        <li>
+          <a
+            href="https://testing.googleblog.com/2016/05/flaky-tests-at-google-and-how-we.html"
+            target="_blank"
+            rel="noopener"
+            >Flaky Tests at Google and How We Mitigate Them</a
+          >
+          (Google Testing Blog): por qué clasificar un fallo como flaky exige historial y no una
+          sola corrida.
+        </li>
+      </ul>
+
+      <footer class="doc-footer">
+        Páginas relacionadas: <a href="index.html">Fundamentos agénticos</a> ·
+        <a href="harness.html">Harness</a> · <a href="orquestacion.html">Orquestación</a> ·
+        <a href="../metodologia/este-repo.html">Metodología en este repo</a>. Fuente canónica:
+        <code>.agents/skills/agentic-qa-core/references/stage-gates.md</code>.
+      </footer>
+    </article>
+  </body>
+</html>
