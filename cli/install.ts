@@ -379,6 +379,12 @@ export const PROJECT_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [
   // external CLI verified in step 11 — see AGENTS.md §6.5 CLI→Skill auto-load.
   // Project-level because email provider choice varies per project.
   { package: 'https://github.com/resend/resend-skills', skill: 'resend-cli' },
+  // skill-creator (Anthropic): the builder of every skill this repo scaffolds.
+  // Project-level since the context-skills layer: `/framework-development`
+  // (when the change IS a skill) and `project-context` mode `context-skill`
+  // (a consumer's `<aspect>-context`) both scaffold through it, so a clone
+  // without it would silently skip the description pass and the test prompts.
+  { package: 'https://github.com/anthropics/skills', skill: 'skill-creator' },
 ];
 
 /**
@@ -390,7 +396,6 @@ export const PROJECT_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [
  * generation. bun is the runtime used across all projects.
  */
 const USER_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [
-  { package: 'https://github.com/anthropics/skills', skill: 'skill-creator' },
   { package: 'https://github.com/vercel-labs/skills', skill: 'find-skills' },
   { package: 'https://github.com/xixu-me/skills', skill: 'github-actions-docs' },
   { package: 'https://github.com/lewislulu/html-ppt-skill', skill: 'html-ppt' },

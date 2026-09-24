@@ -390,7 +390,7 @@ This adds 10 SDD skills (`sdd-init/explore/propose/spec/design/tasks/apply/verif
 
 Independent of gentle-ai, the installer also runs the official Anthropic `bunx skills add` CLI to fetch community skills from upstream repos. Two lists, both defined as `const` arrays in `cli/install.ts`:
 
-### Project-level (3 skills)
+### Project-level
 
 Installed into `.agents/skills/` via `bunx skills add` (project mode) — the same canonical store as the committed skills, so all three harnesses see them without a second copy. Not committed — `cli/install.ts` re-fetches them on every install so we always pick up upstream fixes. They are critical to the QA stack and must travel with every clone of the repo.
 
@@ -399,14 +399,14 @@ Installed into `.agents/skills/` via `bunx skills add` (project mode) — the sa
 | `playwright-cli`            | `microsoft/playwright-cli`                     | Browser automation CLI used by `/sprint-testing` and `/test-automation` as the primary `[AUTOMATION_TOOL]`.                                            |
 | `playwright-best-practices` | `currents-dev/playwright-best-practices-skill` | Patterns / anti-flaky / axe-core / fixtures reference. Auto-loaded by `/test-automation` during the Code phase.                                        |
 | `resend-cli`                | `resend/resend-skills`                         | Resend email testing CLI. Pairs with the `resend` external binary verified in step 11. Project-level because email provider choice varies per project. |
+| `skill-creator`             | `anthropics/skills`                            | The builder of every skill this repo scaffolds (`/framework-development` when the change IS a skill, `project-context` mode `context-skill` for a project's `<aspect>-context`). Project-level so no clone scaffolds without it. |
 
-### User-level (global, 7 skills)
+### User-level (global)
 
 Installed with `bunx skills add <package> [--skill <name>] --global --yes` and useful across most projects regardless of stack.
 
 | Slug                  | Source                     | Why user-level                                                                       |
 | --------------------- | -------------------------- | ------------------------------------------------------------------------------------ |
-| `skill-creator`       | `anthropics/skills`        | Author/edit skills — useful in any repo                                              |
 | `find-skills`         | `vercel-labs/skills`       | Discover installable skills — universal                                              |
 | `github-actions-docs` | `xixu-me/skills`           | GitHub Actions workflow reference — universal                                        |
 | `brainstorming`       | `obra/superpowers`         | Pre-implementation ideation (framework features, test design edge cases) — universal |
