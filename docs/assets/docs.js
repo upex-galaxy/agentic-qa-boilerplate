@@ -91,8 +91,10 @@
           const text = code.textContent.replace(/Copia(r|do)$/, '');
           const done = function () {
             btn.textContent = 'Copiado';
+            btn.setAttribute('data-done', '');
             setTimeout(() => {
               btn.textContent = 'Copiar';
+              btn.removeAttribute('data-done');
             }, 1400);
           };
           if (navigator.clipboard) {
