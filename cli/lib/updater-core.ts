@@ -100,6 +100,33 @@ export function isRepoOnlyPath(filePath: string, prefixes: string[]): boolean {
 }
 
 /**
+ * Context skills a consumer authors (`<aspect>-context/`, the judgment layer
+ * over its own `.context/` maps) are PROJECT-LOCAL by construction: the sync
+ * never delivers, overwrites or deletes one, even on the day upstream ships a
+ * same-slug directory as an example. Two families keep syncing as before: the
+ * one context skill upstream owns (`iql-context`), and the workflow skills
+ * whose slugs predate the `-context` suffix rule (`project-context`,
+ * `sync-ai-context`), the same names `scripts/lint-skills.ts` grandfathers in
+ * KIND_SUFFIX_EXEMPT; `cli/` is import-closed, so the set is repeated here
+ * and a test keeps the two in step.
+ */
+export const CONTEXT_SKILL_SUFFIX = '-context';
+export const UPSTREAM_CONTEXT_SUFFIX_SKILLS: ReadonlySet<string> = new Set(['iql-context', 'project-context', 'sync-ai-context']);
+
+/**
+ * True for any path inside `<skillsDir>/<slug>/` where `slug` ends in
+ * `-context` and is not one upstream owns. Segment-aware and separator-agnostic.
+ */
+export function isProjectLocalSkillPath(relPath: string, skillsDir = '.agents/skills'): boolean {
+  const p = relPath.replace(/\\/g, '/');
+  const root = skillsDir.replace(/\\/g, '/').replace(/\/+$/, '');
+  if (!p.startsWith(`${root}/`)) { return false; }
+  const slug = p.slice(root.length + 1).split('/')[0] ?? '';
+  if (slug === '' || !slug.endsWith(CONTEXT_SKILL_SUFFIX)) { return false; }
+  return !UPSTREAM_CONTEXT_SUFFIX_SKILLS.has(slug);
+}
+
+/**
  * Recursive count of plain files under a directory. Returns 0 when the dir is missing.
  */
 export function countFilesInDir(dir: string): number {
@@ -748,7 +775,11 @@ export function computeDelta(
   // conflicts during `--auto` runs.
   const componentIndex = new Map<string, number>();
   components.forEach((c, idx) => { componentIndex.set(c.name, idx); });
-  return dedupeDeltaByPath(delta, components, componentIndex, logger);
+  // A consumer's `<aspect>-context/` is never in play: not delivered, not
+  // overwritten, and never a `deleted-upstream` candidate that `--force` would
+  // remove the day upstream drops an example of the same name.
+  const withoutProjectLocal = delta.filter(e => !isProjectLocalSkillPath(e.path));
+  return dedupeDeltaByPath(withoutProjectLocal, components, componentIndex, logger);
 }
 
 // ============================================================================
@@ -1202,6 +1233,7 @@ export function isWithinWriteSurface(
   const p = relPath.replace(/\\/g, '/');
   const never = new Set([...(cfg.excludePaths ?? []), ...cfg.bootstrapOnlyPaths].map(x => x.replace(/\\/g, '/')));
   if (never.has(p) || isRepoOnlyPath(p, cfg.repoOnlyPaths ?? [])) { return false; }
+  if (isProjectLocalSkillPath(p)) { return false; } // a consumer's `<aspect>-context/`: never written by the sync
   const exact = new Set<string>([
     ...cfg.ignoreFiles.map(ig => ig.path),
     ...(cfg.packageJsonSpecs ?? []).map(spec => spec.path),
@@ -2136,6 +2168,7 @@ function collectComponentRelPaths(component: Component, templateDir: string): st
           if (item.isDirectory()) { walk(full); }
           else {
             const rel = full.slice(templateDir.length + 1).replace(/\\/g, '/');
+            if (isProjectLocalSkillPath(rel)) { continue; } // upstream never delivers a consumer's context skill
             out.push(rel);
           }
         }
