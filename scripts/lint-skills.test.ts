@@ -313,3 +313,38 @@ describe('lint-skills MCP capabilities (metadata.requires_capabilities)', () => 
     expect(exitCode).toBe(0);
   });
 });
+
+describe('lint-skills STALE-PATH on `.context/` (kind-scoped)', () => {
+  const deadMap = 'Read `.context/business/business-data-map.md` before every rule.';
+  const cacheCite = 'The Jira mirror lives in `.context/PBI/epics/EPIC-1-x/story.md`.';
+  const committedDead = 'See `.context/ADR/ADR-9999-nope.md` for the decision.';
+
+  test('a context skill citing a map that does not exist is a STALE-PATH error', () => {
+    const { exitCode, output } = runLint(fixture({ listCommunityInAgentsMd: true, extraSkills: [{ slug: 'acme-context', kind: 'context', body: deadMap }] }));
+
+    expect(output).toContain('[acme-context] STALE-PATH: `.context/business/business-data-map.md`');
+    expect(output).toContain('a context skill cites a map that exists');
+    expect(exitCode).toBe(1);
+  });
+
+  test('the same generator-output cite inside a workflow skill passes (written per project, absent here)', () => {
+    const { exitCode, output } = runLint(fixture({ listCommunityInAgentsMd: true, extraSkills: [{ slug: 'acme-flow', kind: 'workflow', body: deadMap }] }));
+
+    expect(output).not.toContain('STALE-PATH:');
+    expect(exitCode).toBe(0);
+  });
+
+  test('the gitignored `.context/PBI/` cache is exempt even inside a context skill', () => {
+    const { exitCode, output } = runLint(fixture({ listCommunityInAgentsMd: true, extraSkills: [{ slug: 'acme-context', kind: 'context', body: cacheCite }] }));
+
+    expect(output).not.toContain('STALE-PATH:');
+    expect(exitCode).toBe(0);
+  });
+
+  test('a committed `.context/` path no generator owns must exist for every skill', () => {
+    const { exitCode, output } = runLint(fixture({ listCommunityInAgentsMd: true, extraSkills: [{ slug: 'acme-flow', kind: 'workflow', body: committedDead }] }));
+
+    expect(output).toContain('[acme-flow] STALE-PATH: `.context/ADR/ADR-9999-nope.md`');
+    expect(exitCode).toBe(1);
+  });
+});

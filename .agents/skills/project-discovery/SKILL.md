@@ -261,7 +261,15 @@ Discovery complete. `/project-discovery` has populated:
 It runs data -> features -> api -> test-plan in dependency order and can be re-run whenever project context becomes stale.
 
 After it completes, invoke `adapt-framework` to wire KATA against the target stack.
+
+**Context skills this project could carry** (proposed, not created — `project-context` mode `context-skill <aspect>` creates each one through `skill-creator`, once the map it sits over exists):
+- `data-context` over `.context/business/business-data-map.md` — <one line: the judgment a session needs to read that map right, or "no candidate yet">
+- `api-context` over `.context/business/business-api-map.md` — <one line, or "no candidate yet">
+- `infra-context` over `.context/SRS/` + `.context/infrastructure/` — <one line, or "no candidate yet">
+- <any other aspect the discovery surfaced> — <one line>
 ```
+
+Fill each proposal line from what the phases actually found: a soft-delete convention, a derived field, an auth edge case, an environment-only behaviour. A proposal is one sentence naming the judgment, never a file: the facts stay in the map, and the skill is born later, over an approved map, with dated rules. "No candidate yet" is a valid line.
 
 Do not auto-chain the handoff inside this session. Context generation needs its own token budget and approval lifecycle.
 
@@ -381,7 +389,7 @@ Larger templates (full PRD sections, KATA component skeletons, `.context/infrast
 - **Phase 4 (backlog mapping, templates)** -> read `references/phase-4-specification.md`.
 - **Generating or refreshing business maps and master test plan** -> NOT this skill. Invoke the matching `project-context` mode.
 - **API endpoint sync** -> `bun run api:sync` for technical types; `project-context` mode `api` for business narrative.
-- **User asks about IQL methodology** -> point them to the official site (https://upexgalaxy.com/metodologia ES, https://upexgalaxy.com/en/methodology EN) for the narrative and to `agentic-qa-core/references/stage-gates.md` for the enforced per-stage contract. This skill carries no IQL reference of its own.
+- **User asks about IQL methodology** -> `iql-context` (the methodology index: it cites the official site https://upexgalaxy.com/metodologia for the narrative and `agentic-qa-core/references/stage-gates.md` for the enforced per-stage contract). This skill carries no IQL reference of its own.
 - **Code exploration (grep, read files)** -> use built-in tools. If the user wants a browser-driven exploration instead (UI-first discovery), load `/playwright-cli` skill.
 - **Issue-tracker operations (Phase 4)** -> resolve `[ISSUE_TRACKER_TOOL]` via AGENTS.md Tool Resolution. For Jira, load `/acli` skill (primary) or fall back to the Atlassian MCP. If the project also uses Xray for TMS, load `/xray-cli` additionally.
 - **Database inspection** -> resolve `[DB_TOOL]`; read-only queries only during discovery.

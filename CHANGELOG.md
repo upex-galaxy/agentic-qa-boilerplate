@@ -16,6 +16,46 @@ below names which one it applies to:
 
 ## Unreleased — Boilerplate
 
+### Added
+- **Context skills layer + `iql-context`.** A `metadata.kind: context` skill holds judgment
+  over ONE aspect and cites `.context/` facts without restating them. Upstream ships exactly
+  one, `iql-context` (`.agents/skills/iql-context/`): the methodology index (eight named
+  stages, the artifact ladder incl. RTP / RTR, the invariants, the agentic contract) with a
+  citation per row to `agentic-qa-core/references/*` and to the official site; web-only
+  structure (phases, the fifteen steps, the internal cycles, the eight approaches, light
+  mode, roles and guardrails, method metrics) lives in its `references/`. Two adaptation
+  seams: `qa.methodology` in `.agents/project.yaml` (values; schema-diffed, insert-only on
+  `bun run up`) and the bootstrap-only `references/project-overrides.md` (prose, delivered
+  once, never overwritten). The web-vs-repo disagreements are listed in the implementation
+  report and in the skill's `references/gotchas.md`, not resolved.
+- **Updater guard for project-local context skills.** Any `.agents/skills/<slug>-context/`
+  other than the ones upstream owns (`iql-context`, plus the grandfathered workflow slugs
+  `project-context`, `sync-ai-context`) is never delivered, overwritten or deleted by
+  `bun run up`, even if upstream ships a same-slug example (`isProjectLocalSkillPath`,
+  `cli/lib/updater-core.ts`; a test keeps the set in step with the lint's
+  `KIND_SUFFIX_EXEMPT`).
+- **`skill-creator` promoted to T3** (`PROJECT_LEVEL_SKILLS` in `cli/install.ts`,
+  gitignored under `.agents/skills/`): it is always the builder when this repo scaffolds a
+  skill (`/framework-development`, `project-context` mode `context-skill`).
+
+### Changed
+- **STALE-PATH now covers `.context/`, kind-scoped** (`scripts/lint-skills.ts`): inside a
+  `metadata.kind: context` skill every `.context/` cite must exist (only the gitignored
+  `.context/PBI/` mirror is exempt); in every other skill the generator outputs
+  (`CONTEXT_GENERATED_PREFIXES`, named by generator) are exempt in both directions because
+  they do not exist in the boilerplate checkout. Deviation from the literal deck wording
+  (D7-B "add `.context/` for every skill"), approved by the conductor after measuring that
+  the literal rule would have failed dozens of legitimate citations.
+- `project-discovery` PROPOSES the context skills a fresh repo could carry at its close
+  (one line per aspect, never a file); `project-context` mode `context-skill` CREATES them
+  through `skill-creator`; the map-regenerating modes (`data`, `features`, `api`,
+  `test-plan`) offer, when done, to run `context-skill` in UPDATE for the skill over that
+  map. The Skill Resolver injects into a briefing only the context skills whose aspect the
+  dispatch touches (`skill-resolver.md`).
+- The re-crawl of upexgalaxy.com/metodologia (2026-09-24) expanded the eight approach tabs
+  and every collapsed accordion the first capture missed; the raw scrape is session
+  material under `.session/spikes/iql-web/`, not committed.
+
 ### Changed
 - `docs/` is now a human HTML site. `bun run docs` serves it locally (portal with a
   sidebar built from each page's `<title>` and meta description, search, deep links,

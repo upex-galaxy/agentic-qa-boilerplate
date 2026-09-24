@@ -1794,6 +1794,13 @@ async function main(): Promise<void> {
       // entry) — carry every upstream improvement, so nothing forces a project
       // to re-adapt to get them.
       'scripts/api-login.project.ts',
+      // The project-owned overlay of the shipped `iql-context` skill: local
+      // rules and exceptions to the methodology index. The skill body and its
+      // other references keep syncing; this file is delivered once when
+      // missing, then never touched (D6 of the context-skills deck). A
+      // consumer's own `<aspect>-context/` skills need no entry: they are
+      // project-local by construction (`isProjectLocalSkillPath`).
+      '.agents/skills/iql-context/references/project-overrides.md',
       ...watchlist.map(e => e.path),
     ],
     // Files inside a synced component that must NEVER be delivered or

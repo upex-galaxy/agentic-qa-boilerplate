@@ -184,6 +184,7 @@ MANDATORY. List anything you could not verify:
 - Add a `> Last verified against OpenAPI on YYYY-MM-DD` line at the top of the output so future runs detect staleness at a glance.
 - In UPDATE mode: show the diff summary and wait for explicit confirmation.
 - Report: auth tiers documented, journeys traced, services behind the API, integrations mapped, discovery gaps.
+- If `.agents/skills/api-context/` exists: offer to run `project-context` mode `context-skill api` in UPDATE now (the map just changed). If it does not exist: name the option once, do not scaffold it here.
 
 ---
 

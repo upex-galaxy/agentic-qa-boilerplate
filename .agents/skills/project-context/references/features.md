@@ -195,3 +195,4 @@ MANDATORY. List features that:
 - Update `AGENTS.md` with a reference if not already present. `CLAUDE.md` remains the one-line compatibility shim.
 - In UPDATE mode: show diff summary, wait for confirmation.
 - Report: total features, features by status, CRUD coverage, integrations found, discovery gaps.
+- If a project-owned context skill sits over this map (the project names the aspect; there is no shipped default for features): offer to run `project-context` mode `context-skill <aspect>` in UPDATE now. Otherwise name the option once.

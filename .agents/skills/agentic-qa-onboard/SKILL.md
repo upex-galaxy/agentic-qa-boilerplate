@@ -340,6 +340,7 @@ Verify your config with `bun run vars:check` (should report 0 errors when fully 
 | `xray-cli`           | `/xray-cli`            | Xray Cloud TMS CLI                                                             |
 | `git-flow-master`    | (auto on git intents)  | End-to-end Git operator (branch, commit, push, PR, conflict, chained-PR)       |
 | `orca-orchestration` | "orchestrate", "fleet", "one session per story", "orquestar" | One conductor coordinating a fleet of persistent worker sessions (one per story / module / failure cluster). Optional and silent when no orchestration runtime is installed. Each workflow skill keeps owning the WHAT; this one owns the HOW |
+| `iql-context`        | (auto, kind `context`: "why is the process shaped this way", "what is a stage / phase / altitude") | The methodology index: stages, artifact ladder, invariants, agentic contract, each with its citation. Knowledge only, never runs a stage. Adapted per project through `qa.methodology` + `references/project-overrides.md`. A project adds its own `<aspect>-context` skills (`project-context` mode `context-skill`); those never sync from upstream |
 | `judgment-day`       | `/judgment-day`, `juzgar` | Vendored from gentle-ai (Apache-2.0). Adversarial dual-judge review (2 blind judges in parallel, fix loop, re-judge). Optional gate cited by `/test-automation` Phase 3 + `/git-flow-master` pre-PR. |
 
 ---
@@ -360,7 +361,7 @@ Full details in [`INSTALLER.md`](../../../INSTALLER.md).
 
 ## Community skills installed at user level
 
-`bun run setup` also runs `bunx skills add --global` for 6 cross-project skills (the last row of the table below is NOT one of them — the orchestration binary installs it, not `setup`):
+`bun run setup` also runs `bunx skills add --global` for 5 cross-project skills (the last row of the table below is NOT one of them — the orchestration binary installs it, not `setup`):
 
 **Every installed skill needs a LOADER, or it should not be installed.** An install that no flow
 ever reaches is tokens spent on a capability nobody invokes — and the failure is silent, because an
@@ -369,7 +370,6 @@ skill and the moment that loads this one, or says plainly that only a human invo
 
 | Skill | Source | Loaded by / when |
 | --- | --- | --- |
-| `skill-creator` | anthropics/skills | `/framework-development` when the change IS a skill, and `project-context` mode `context-skill` for a consumer's SUT context skill. Both scaffold from `agentic-qa-core/references/skill-scaffold.md` and load this one (T4: ask first) ONLY for the test prompts and the description optimizer; the scaffold works without it |
 | `find-skills` | vercel-labs/skills | **automatic, last resort.** `agentic-qa-core/references/skill-composition-strategy.md` §11.2: scan T1+T2, then installed T3+T4, and only if a task domain still has no match does any flow invoke this — then asks before installing |
 | `github-actions-docs` | xixu-me/skills | `/framework-development` and `/regression-testing` when EDITING or diagnosing `.github/workflows/**` (both name it; reading a workflow does not need it) |
 | `html-ppt` | lewislulu/html-ppt-skill | **user-invoked only.** `packages/decks/` is hand-authored; this is for a one-off deck outside that tree |
@@ -377,7 +377,7 @@ skill and the moment that loads this one, or says plainly that only a human invo
 | `mkd` | upex-galaxy/agentic-user-skills | any flow that reaches the decision threshold in `agentic-qa-core/references/decision-elicitation-doctrine.md` (>3 decisions, or one dense one) |
 | `orchestration.orchestrator_skills` | the orchestration binary | `/orca-orchestration`, ALONGSIDE it — the vendor owns the command grammar, the repo skill owns when and what |
 
-Plus 3 project-level community skills installed into `.agents/skills/` (not committed): `playwright-cli`, `playwright-best-practices`, `resend-cli`. See `cli/install.ts` `PROJECT_LEVEL_SKILLS` and `USER_LEVEL_SKILLS` arrays.
+Plus 4 project-level community skills installed into `.agents/skills/` (not committed): `playwright-cli`, `playwright-best-practices`, `resend-cli`, and `skill-creator`. The last one is the builder of every skill this repo scaffolds: `/framework-development` loads it when the change IS a skill, and `project-context` mode `context-skill` loads it for a consumer's `<aspect>-context`; both scaffold from `agentic-qa-core/references/skill-scaffold.md`. See `cli/install.ts` `PROJECT_LEVEL_SKILLS` and `USER_LEVEL_SKILLS` arrays.
 
 ---
 

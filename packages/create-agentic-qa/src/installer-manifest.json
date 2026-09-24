@@ -61,7 +61,7 @@
       ]
     },
     "communityProjectSkills": {
-      "count": 3,
+      "count": 4,
       "items": [
         {
           "name": "playwright-cli",
@@ -77,17 +77,17 @@
           "name": "resend-cli",
           "purpose": "Transactional email development with Resend.",
           "source": "https://github.com/resend/resend-skills"
-        }
-      ]
-    },
-    "communityUserSkills": {
-      "count": 7,
-      "items": [
+        },
         {
           "name": "skill-creator",
           "purpose": "Create, modify, and evaluate Claude Code skills.",
           "source": "https://github.com/anthropics/skills"
-        },
+        }
+      ]
+    },
+    "communityUserSkills": {
+      "count": 5,
+      "items": [
         {
           "name": "find-skills",
           "purpose": "Discover and search available skills.",
@@ -97,11 +97,6 @@
           "name": "github-actions-docs",
           "purpose": "GitHub Actions documentation and workflow patterns.",
           "source": "https://github.com/xixu-me/skills"
-        },
-        {
-          "name": "brainstorming",
-          "purpose": "Structured brainstorming and ideation techniques.",
-          "source": "https://github.com/obra/superpowers"
         },
         {
           "name": "html-ppt",
@@ -115,7 +110,7 @@
         },
         {
           "name": "mkd",
-          "purpose": "Community skill: mkd (Make Decision) — decision-deck UI the AI drives via a spec JSON",
+          "purpose": "Community skill: mkd",
           "source": "https://github.com/upex-galaxy/agentic-user-skills"
         }
       ]
@@ -140,7 +135,14 @@
       },
       {
         "name": "dbhub",
-        "envVars": ["DBHUB_HOST", "DBHUB_DATABASE", "DBHUB_USER", "DBHUB_PASSWORD"],
+        "envVars": [
+          "DBHUB_TYPE",
+          "DBHUB_HOST",
+          "DBHUB_PORT",
+          "DBHUB_DATABASE",
+          "DBHUB_USER",
+          "DBHUB_PASSWORD"
+        ],
         "purpose": "DBHub MCP — direct DB queries and schema introspection for test data validation."
       },
       {
@@ -243,6 +245,11 @@
       "installHint": "https://github.com/cli/cli#installation"
     },
     {
+      "name": "rg",
+      "reason": "Must be installed manually. Run: brew install ripgrep   # or: apt install ripgrep · winget install BurntSushi.ripgrep.MSVC",
+      "installHint": "https://github.com/BurntSushi/ripgrep#installation"
+    },
+    {
       "name": "acli",
       "reason": "Must be installed manually using your OS package manager.",
       "installHint": "https://developer.atlassian.com/cloud/acli/guides/install-acli/"
@@ -261,6 +268,16 @@
       "name": "resend",
       "reason": "Must be installed manually using your OS package manager.",
       "installHint": "https://resend.com/docs/cli"
+    },
+    {
+      "name": "varlock",
+      "reason": "Must be installed manually. Run: brew install dmno-dev/tap/varlock   # macOS. Linux: curl -sSfL https://varlock.dev/install.sh | sh -s · Windows: npm i -g varlock",
+      "installHint": "https://varlock.dev/getting-started/installation"
+    },
+    {
+      "name": "orca",
+      "reason": "Must be installed manually. Run: brew install --cask stablyai/orca/orca   # macOS. Windows/Linux: download from https://www.onorca.dev/docs/install",
+      "installHint": "https://www.onorca.dev/docs/cli/overview"
     }
   ]
 }
