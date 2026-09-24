@@ -64,7 +64,7 @@ Keep the feature plan **feature-level**: no per-story test cases, no test data v
 ## Nomenclature — FTP (item-first)
 
 The feature altitude is this doc's home altitude, so its artifact is named here per the
-ratified QA Planning Ladder (`docs/qa-standard/planning-ladder-proposal.md`). Grammar:
+ratified QA Planning Ladder (`.agents/skills/agentic-qa-core/references/planning-ladder.md`). Grammar:
 `{ACRONYM}: {scope-id}: {descriptor}`.
 
 | Artifact | Jira work type | Title pattern | Example | Parent Epic (axis 1) | Scope link (axis 2) |

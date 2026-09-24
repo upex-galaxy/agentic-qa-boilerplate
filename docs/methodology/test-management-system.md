@@ -10,7 +10,7 @@
 > below may not exist in the instance — never write one from memory, read the catalogs. Where this
 > file and the live layer disagree, the live layer wins.
 > Lee en su lugar: `docs/agentic-quality-engineering.md` (stages y contrato agéntico) y
-> `docs/qa-standard/planning-ladder-proposal.md` (escalera de artefactos ratificada).
+> `.agents/skills/agentic-qa-core/references/planning-ladder.md` (escalera de artefactos ratificada).
 
 ## Aligned with the Integrated Quality Lifecycle (IQL) Methodology
 

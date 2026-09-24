@@ -337,7 +337,7 @@ const FOLDER_PREFIX: Record<string, string> = {
 // Ladder-aware filenames
 //
 // The ratified title grammar is `{ACRONYM}: {scope}: {desc}`
-// (docs/qa-standard/planning-ladder-proposal.md §3), so altitude is legible in
+// (.agents/skills/agentic-qa-core/references/planning-ladder.md §3), so altitude is legible in
 // the first token of a Jira title. The filename mirrors that signal: one `ls`
 // of `test-plans/` then shows the ladder state (FTP / STP / RTP / ATP) at a glance
 // instead of a wall of identical `TESTPLAN-` files.

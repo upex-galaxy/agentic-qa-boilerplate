@@ -11,7 +11,7 @@
 
 ## Context
 
-The planning ladder ratified on 2026-06-26 and amended on 2026-08-21 and 2026-09-15 (`docs/qa-standard/planning-ladder-proposal.md`) gives every altitude a Plan and, above the Master rung, a Runner: STP has the STR, ATP has the ATR. The 2026-09-15 amendment added the RTP, the long-lived Regression Test Plan that `/test-documentation` fills by promotion, and left its Runner cell empty with the note "the STR runs it". ADR-0001 recorded that ladder in its own table (Master, Feature, Sprint, Story) before the RTP existed. A spike on 2026-09-22 (`.session/spikes/rtr/plan.md`, read-only, every fact cited from the checkout) established that the empty cell is a real gap, for five reasons that hold together:
+The planning ladder ratified on 2026-06-26 and amended on 2026-08-21 and 2026-09-15 (`.agents/skills/agentic-qa-core/references/planning-ladder.md`) gives every altitude a Plan and, above the Master rung, a Runner: STP has the STR, ATP has the ATR. The 2026-09-15 amendment added the RTP, the long-lived Regression Test Plan that `/test-documentation` fills by promotion, and left its Runner cell empty with the note "the STR runs it". ADR-0001 recorded that ladder in its own table (Master, Feature, Sprint, Story) before the RTP existed. A spike on 2026-09-22 (`.session/spikes/rtr/plan.md`, read-only, every fact cited from the checkout) established that the empty cell is a real gap, for five reasons that hold together:
 
 1. **The STR is the wrong altitude for a regression run.** Doctrine defines the STR as a per-sprint recap, born at sprint close, closed after the sprint's verdict (`artifact-lifecycle.md` §1). The regression suite is a nightly, pre-release run (`regression-testing/SKILL.md`). A recap of one sprint cannot be the record of a run that happens fifteen times inside that sprint and keeps happening after it.
 
@@ -110,7 +110,7 @@ Two constraints shape the decision. The catalog must not grow: `test_execution` 
 ## References
 
 - `.session/spikes/rtr/plan.md`: the 2026-09-22 read-only spike (twelve student claims verified, the RTR shape, the `STP → RTP` rejection, the full ladder after the change, the six decisions). A session artifact, gitignored.
-- `docs/qa-standard/planning-ladder-proposal.md`: the ratified ladder, the title grammar (§3), the 2026-09-15 RTP amendment and the 2026-09-23 RTR amendment
+- `.agents/skills/agentic-qa-core/references/planning-ladder.md`: the ratified ladder, the title grammar (§3), the 2026-09-15 RTP amendment and the 2026-09-23 RTR amendment
 - `.context/ADR/ADR-0001-artifact-ladder-local-cache.md`: the local cache mirrors the title grammar; extended here by reference
 - `.agents/skills/agentic-qa-core/references/artifact-lifecycle.md`: the RTR row (§1), assignee at create (§2), parenting (§3)
 - `.agents/skills/agentic-qa-core/references/traceability-linking.md`: the results-side no-roll-up rule and the `testPlan` field note (§3)

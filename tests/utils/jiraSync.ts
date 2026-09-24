@@ -271,7 +271,7 @@ async function syncToXray(results: Record<string, AtcResult[]>): Promise<SyncRes
       : {
           info: {
             project: projectKey,
-            // {ACRONYM}: {scope-id}: {descriptor}: docs/qa-standard/planning-ladder-proposal.md
+            // {ACRONYM}: {scope-id}: {descriptor}: .agents/skills/agentic-qa-core/references/planning-ladder.md
             summary: `RTR: Build#${env.buildId}: Regression Testing`,
             description:
               `Automated test execution via KATA Architecture\nEnvironment: ${env.current}\n\n`

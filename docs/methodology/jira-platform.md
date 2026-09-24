@@ -10,11 +10,11 @@
 > below may not exist in the instance — never write one from memory, read the catalogs. Where this
 > file and the live layer disagree, the live layer wins.
 > Lee en su lugar: `docs/agentic-quality-engineering.md` (stages y contrato agéntico) y
-> `docs/qa-standard/planning-ladder-proposal.md` (escalera de artefactos ratificada).
+> `.agents/skills/agentic-qa-core/references/planning-ladder.md` (escalera de artefactos ratificada).
 
 > **Purpose**: Complete reference for Jira/Xray integration in QA Automation (IQL-Aligned)
 > **Last Updated**: February 2026
-> **Methodology**: Integrated Quality Lifecycle (IQL) — this document describes the IQL approach to Jira/Xray usage from the TAUS era; see `docs/agentic-quality-engineering.md` and `docs/qa-standard/planning-ladder-proposal.md` for the current reference.
+> **Methodology**: Integrated Quality Lifecycle (IQL) — this document describes the IQL approach to Jira/Xray usage from the TAUS era; see `docs/agentic-quality-engineering.md` and `.agents/skills/agentic-qa-core/references/planning-ladder.md` for the current reference.
 > **Related**: `cli/xray/index.ts` (CLI tool), `tests/utils/jiraSync.ts` (Sync utility)
 
 ---

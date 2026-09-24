@@ -206,7 +206,7 @@ MANDATORY. List anything you could not ground in evidence:
 
 ## Jira mirror — the MTP Epic
 
-Runs AFTER `.context/master-test-plan.md` is written (in UPDATE mode: after the user confirmed the overwrite). The file is the real plan; the Epic is its Jira anchor in the planning ladder (MTP altitude — see `docs/qa-standard/planning-ladder-proposal.md`). Load `/acli` before any `[ISSUE_TRACKER_TOOL]` call.
+Runs AFTER `.context/master-test-plan.md` is written (in UPDATE mode: after the user confirmed the overwrite). The file is the real plan; the Epic is its Jira anchor in the planning ladder (MTP altitude — see `.agents/skills/agentic-qa-core/references/planning-ladder.md`). Load `/acli` before any `[ISSUE_TRACKER_TOOL]` call.
 
 ### Step 1 — Find-or-create the Epic
 

@@ -67,7 +67,7 @@ The rungs above a Story — **FTP** (feature), **STP** / **STR** (sprint), **RTP
 
 **Discovery goes through the QA-process Epics.** An unfiltered `pull` sweeps the children of the four QA buckets (`QA Master Test Plan`, `QA Test Artifacts`, `QA Test Repository`, `QA Defect Management`), resolved exactly as `qa-artifacts/_index.md` resolves them: the `QA-Artifact` label, then the cached `qa.qa_epics.*.key` in `.agents/project.yaml`, then the `QA ` name prefix. No new configuration — the Epics already *are* the index. The sweep only takes what nothing else owns (Test Plans, Test Executions, Test Sets, Preconditions); Bugs, Defects, Improvements and Tests keep their existing owners so no artifact is written twice. A project with no QA-process Epics runs zero extra queries. Skip it with `pull --no-qa-artifacts`.
 
-**Filenames mirror the Jira title grammar.** The ratified grammar is `{ACRONYM}: {scope}: {desc}` (`docs/qa-standard/planning-ladder-proposal.md` §3), so the file takes the acronym from the title:
+**Filenames mirror the Jira title grammar.** The ratified grammar is `{ACRONYM}: {scope}: {desc}` (`.agents/skills/agentic-qa-core/references/planning-ladder.md` §3), so the file takes the acronym from the title:
 
 | Dir | Conforming title | File |
 | --- | ---------------- | ---- |
