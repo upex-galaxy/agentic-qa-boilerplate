@@ -22,26 +22,40 @@
         --topbar-h: 52px;
       }
 
-      html,
-      body {
+      html {
         height: 100%;
       }
 
-      /* The shell always fills the window: dynamic-viewport units first, the
-         classic ones as the fallback, so a tall window never shows a blank band
-         under the sidebar and a narrow one never lets the pane spill past the
-         right edge. The sidebar and the page scroll on their own. */
+      /*
+       * The shell always fills the window and only its two panes scroll.
+       *
+       * Every direct child of <body> is placed in a NAMED area, and the grid
+       * has exactly one explicit row that takes all the free space. Any other
+       * child (a <script>, a node a browser extension appends, a button a shared
+       * script injects) lands in an implicit track of 0px and changes nothing.
+       * Without this, one stray in-flow child creates an implicit auto row that
+       * takes half of the free space: the shell then ends where the tree ends
+       * and a blank band fills the rest of the window (owner's DevTools,
+       * 2026-09-24: body 911px, main 655px, second row 256px).
+       *
+       * Height is the dynamic viewport (100dvh) with 100vh as the fallback.
+       */
       body {
         display: grid;
         grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+        grid-template-rows: minmax(0, 1fr);
+        grid-template-areas: 'nav page';
+        grid-auto-rows: 0;
+        grid-auto-columns: 0;
         width: 100%;
         max-width: 100vw;
-        min-height: 100vh;
-        min-height: 100dvh;
+        height: 100vh;
+        height: 100dvh;
         overflow: hidden;
       }
 
       .sidebar {
+        grid-area: nav;
         display: flex;
         flex-direction: column;
         width: var(--sidebar-w);
@@ -331,6 +345,7 @@
       }
 
       main {
+        grid-area: page;
         position: relative;
         min-width: 0;
         min-height: 0;
@@ -365,9 +380,14 @@
         body {
           grid-template-columns: minmax(0, 1fr);
           grid-template-rows: var(--topbar-h) minmax(0, 1fr);
+          grid-template-areas:
+            'bar'
+            'page';
         }
 
+        /* The drawer and its backdrop are fixed, so they take no track. */
         .topbar {
+          grid-area: bar;
           display: flex;
           align-items: center;
           gap: 10px;
