@@ -57,7 +57,7 @@ Environments > Create Environment > "Development"
 | `access_token` | _(vacío)_ | Se llena automáticamente |
 | `user_id` | _(vacío)_ | Se llena automáticamente |
 | `test_email` | `qa@example.com` | Email de usuario de test |
-| `test_password` | `SecurePass123!` | Password de usuario de test |
+| `test_password` | _(from `.env`)_ | Password de usuario de test |
 
 ### 3. Crear Collection
 
