@@ -531,18 +531,21 @@ async function detectEnvVarDrift(
   runFacts.envNewKeys = newKeys; // the parity report lists them as an `env` finding
   if (newKeys.length === 0) { return; }
 
-  // Flag which of the new keys the manifest marks required RIGHT NOW (given
-  // the target's current env), so the warning can lead with those.
+  // Tag each new key by SCOPE (ADR-0005): only a CORE var the manifest marks
+  // required right now earns `(requerida)`; a tooling or project var is
+  // `(opcional, <scope>)`, because the framework never requires those and the
+  // code that reads one fails by name at its point of use.
   const envSnapshot = process.env as Record<string, string>;
-  const requiredNew = newKeys.filter((k) => {
+  const tag = (k: string): string => {
     const spec = VAR_MANIFEST.find(s => s.name === k);
-    return spec ? requiredNow(spec, envSnapshot) : false;
-  });
+    if (!spec) { return ''; }
+    if (spec.scope === 'core' && requiredNow(spec, envSnapshot)) { return pc.yellow(' (requerida)'); }
+    return pc.dim(` (opcional, ${spec.scope})`);
+  };
 
   sink.warn(`El upstream agregó ${newKeys.length} variable(s) de entorno que tu .env no tiene:`);
   for (const k of newKeys) {
-    const isReq = requiredNew.includes(k);
-    sink.warn(`  - ${k}${isReq ? pc.yellow(' (requerida)') : ''}`);
+    sink.warn(`  - ${k}${tag(k)}`);
   }
 
   // CI / non-interactive: print only — never prompt, never touch remote (D3).

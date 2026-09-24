@@ -118,7 +118,7 @@ Triage itself is never parallelized across sessions: one conductor reads the run
 | `[TMS_TOOL]` (result sync) | OPTIONAL | Only when `.agents/project.yaml` `testing.tms_cli` is set: Phase 1 creates the RTR before the trigger, Phase 3 posts the verdict on it and closes it. jira-xray → `/xray-cli` + `XRAY_*`. |
 | `[ISSUE_TRACKER_TOOL]` (file regression issues) | OPTIONAL | Only on NO-GO / CAUTION-with-regressions, to file issues. Load `/acli` then. |
 
-Test-user creds, OpenAPI/`API_TOKEN`, DBHub and Playwright browsers live **inside the CI runner**, not the orchestrator — this skill does not exercise them locally, so they are out of scope for this gate. After the gate clears (all REQUIRED GREEN), continue to Phase 0 below.
+Test-user creds, OpenAPI / API token, DBHub and Playwright browsers live **inside the CI runner**, not the orchestrator — this skill does not exercise them locally, so they are out of scope for this gate. After the gate clears (all REQUIRED GREEN), continue to Phase 0 below.
 
 ---
 

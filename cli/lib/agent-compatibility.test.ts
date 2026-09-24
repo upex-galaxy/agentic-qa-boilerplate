@@ -195,9 +195,13 @@ function codexPayload(sessionId: string, prompt: string): string {
 // ---------------------------------------------------------------------------
 
 /** The set this boilerplate ships (and the strict per-host shapes cover). */
-const BOILERPLATE_IDS = ['context7', 'tavily', 'playwright', 'dbhub', 'openapi', 'postman'];
-/** A downstream set: no `dbhub`, no `postman`, plus a server the contract has no shape for. */
-const PROJECT_IDS = ['context7', 'tavily', 'playwright', 'openapi', 'supabase'];
+const BOILERPLATE_IDS = ['context7', 'playwright', 'dbhub', 'openapi'];
+/**
+ * A downstream set: no `dbhub`, plus servers the contract has no shape for
+ * (`tavily` and `postman` left the shipped set with ADR-0005 and are now what a
+ * project that keeps them looks like; `supabase` never had one).
+ */
+const PROJECT_IDS = ['context7', 'tavily', 'playwright', 'openapi', 'postman', 'supabase'];
 
 const MCP_SERVERS: Record<string, unknown> = {
   context7: { command: 'bunx', args: ['-y', '@upstash/context7-mcp@4.0.3'] },
@@ -800,20 +804,21 @@ describe('MCP semantic parity', () => {
   test('a bearer header on Claude and OpenCode is the same dependency Codex names by variable', () => {
     // `.mcp.json` / `opencode.jsonc` carry `Authorization: Bearer ${VAR}`;
     // Codex carries `bearer_token_env_var = "VAR"`. Same `.env` name, no error.
-    const root = contractFixture();
+    const root = contractFixture(undefined, PROJECT_IDS);
     expect(validateMcpParity(root)).toEqual([]);
 
     const config = readFileSync(join(root, '.codex/config.toml'), 'utf8')
       .replace('bearer_token_env_var = "POSTMAN_API_KEY"', 'bearer_token_env_var = "POSTMAN_TOKEN"');
     writeFileSync(join(root, '.codex/config.toml'), config);
 
+    // `postman` is a project-declared server (no pinned shape), so the generic
+    // cross-host env contract is what catches the rename.
     const errors = validateMcpParity(root);
-    expect(errors.some(error => error.includes('codex MCP postman mismatch') && error.includes('POSTMAN_TOKEN'))).toBe(true);
-    expect(errors.some(error => error.includes('MCP postman env contract differs between claude and codex'))).toBe(true);
+    expect(errors.some(error => error.includes('MCP postman env contract differs between claude and codex') && error.includes('POSTMAN_TOKEN'))).toBe(true);
   });
 
   test('reports a missing Tavily server', () => {
-    const root = contractFixture();
+    const root = contractFixture(undefined, PROJECT_IDS);
     const configPath = join(root, '.codex/config.toml');
     const config = readFileSync(configPath, 'utf8').replace(
       /\n\[mcp_servers\.tavily\][\s\S]*?(?=\n\[mcp_servers\.)/,
@@ -846,7 +851,7 @@ describe('MCP semantic parity', () => {
     // `{file:.auth/opencode/<VAR>}` pointer, because `{env:}` resolves only from a
     // process environment a desktop launch does not have. That is the SAME .env
     // dependency by a different route, so parity must still hold.
-    const root = contractFixture();
+    const root = contractFixture(undefined, PROJECT_IDS);
     const configPath = join(root, 'opencode.jsonc');
     writeFileSync(configPath, readFileSync(configPath, 'utf8')
       .replace('{env:POSTMAN_API_KEY}', '{file:.auth/opencode/POSTMAN_API_KEY}')
@@ -856,13 +861,13 @@ describe('MCP semantic parity', () => {
   });
 
   test('a renamed {file:dir/VAR} still fails parity, so the form is checked and not merely tolerated', () => {
-    const root = contractFixture();
+    const root = contractFixture(undefined, PROJECT_IDS);
     const configPath = join(root, 'opencode.jsonc');
     writeFileSync(configPath, readFileSync(configPath, 'utf8')
       .replace('{env:POSTMAN_API_KEY}', '{file:.auth/opencode/POSTMAN_TOKEN}'));
 
     expect(validateMcpParity(root).some(error =>
-      error.includes('opencode MCP postman mismatch') && error.includes('POSTMAN_TOKEN'))).toBe(true);
+      error.includes('MCP postman env contract differs between claude and opencode') && error.includes('POSTMAN_TOKEN'))).toBe(true);
   });
 
   test('a {file:} path whose final segment is NOT all-caps stays a literal', () => {
@@ -883,12 +888,12 @@ describe('MCP semantic parity', () => {
   });
 
   test('reports an environment-variable mismatch', () => {
-    const root = contractFixture();
+    const root = contractFixture(undefined, PROJECT_IDS);
     const configPath = join(root, 'opencode.jsonc');
     const config = readFileSync(configPath, 'utf8').replace('{env:POSTMAN_API_KEY}', '{env:POSTMAN_TOKEN}');
     writeFileSync(configPath, config);
 
-    expect(validateMcpParity(root).some(error => error.includes('opencode MCP postman mismatch') && error.includes('POSTMAN_TOKEN'))).toBe(true);
+    expect(validateMcpParity(root).some(error => error.includes('MCP postman env contract differs between claude and opencode') && error.includes('POSTMAN_TOKEN'))).toBe(true);
   });
 
   test('reports a forwarded variable that Codex renamed', () => {
@@ -934,10 +939,10 @@ describe('project-declared MCP set', () => {
 
   test('reports a server that only OpenCode carries', () => {
     const root = contractFixture(undefined, PROJECT_IDS);
-    write(root, 'opencode.jsonc', opencodeJsonc([...PROJECT_IDS, 'postman']));
+    write(root, 'opencode.jsonc', opencodeJsonc([...PROJECT_IDS, 'dbhub']));
 
     expect(validateMcpParity(root)).toEqual([
-      'MCP postman present in opencode only: declare it in .mcp.json or remove it from opencode.jsonc',
+      'MCP dbhub present in opencode only: declare it in .mcp.json or remove it from opencode.jsonc',
     ]);
   });
 

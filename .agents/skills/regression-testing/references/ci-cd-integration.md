@@ -71,7 +71,7 @@ jobs:
 
 Key points:
 - No test execution on PRs — actual suite runs live in the scheduled `regression.yml` / `smoke.yml` and the manual `sanity.yml`.
-- Credentials are the env-prefixed pair for the selected `TEST_ENV` (`STAGING_USER_EMAIL` / `STAGING_USER_PASSWORD`), needed only so `test:env:check` and config resolution pass. URLs are NOT secrets — they resolve from `.agents/project.yaml` via `config/variables.ts`.
+- The env-prefixed pair for the selected `TEST_ENV` (`STAGING_USER_EMAIL` / `STAGING_USER_PASSWORD`) is OPTIONAL here: `test:env:check` validates shape only and the env schema requires no project credential, so a fork PR with no secrets passes. URLs are NOT secrets — they resolve from `.agents/project.yaml` via `config/variables.ts`.
 - `bunx playwright test --list` catches broken imports and type errors in specs without spending CI minutes on browsers.
 
 ---

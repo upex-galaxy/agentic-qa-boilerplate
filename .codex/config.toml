@@ -3,6 +3,9 @@
 # The MCP inventory below is the Codex-format adapter of the servers that
 # .mcp.json and opencode.jsonc also declare; `bun run agents:compat:check`
 # compares the three semantically, so a server added to one host only fails.
+# Remote servers whose only project-side content was an API key (web search,
+# Postman) are not here: connect them at user level (`codex mcp add`, which
+# writes ~/.codex/config.toml); skills resolve them by capability.
 
 [shell_environment_policy]
 inherit = "core"
@@ -14,11 +17,6 @@ args = [
   "-y",
   "@upstash/context7-mcp@4.0.3",
 ]
-
-[mcp_servers.tavily]
-url = "https://mcp.tavily.com/mcp/"
-bearer_token_env_var = "TAVILY_API_KEY"
-enabled = true
 
 [mcp_servers.dbhub]
 command = "bunx"
@@ -72,8 +70,3 @@ args = [
   "--viewport-size",
   "1920x1080",
 ]
-
-[mcp_servers.postman]
-url = "https://mcp.postman.com/mcp"
-bearer_token_env_var = "POSTMAN_API_KEY"
-enabled = true

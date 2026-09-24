@@ -193,7 +193,7 @@ Phase 3 — Handoff
 | Business context files | REQUIRED | `.context/business/*` + `.context/master-test-plan.md` — refinement without them produces low-value questions. Missing → hand off to `/project-discovery`. |
 | Candidate Story list | REQUIRED | Explicit IDs (args) or a backlog JQL. Confirm size with the user before Phase 1. |
 
-Env reachability, test-user creds, DBHub, OpenAPI/`API_TOKEN`, Playwright and `resend` are **N/A** here — shift-left never executes against a running system. After the gate clears (all REQUIRED GREEN), continue to Phase 0 below.
+Env reachability, test-user creds, DBHub, OpenAPI / API token, Playwright and `resend` are **N/A** here — shift-left never executes against a running system. After the gate clears (all REQUIRED GREEN), continue to Phase 0 below.
 
 ---
 

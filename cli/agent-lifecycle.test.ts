@@ -159,8 +159,9 @@ describe('installer Codex lifecycle', () => {
   test('discovers Codex MCP environment contracts and exposes launch guidance', async () => {
     // The six DBHUB_* arrive through `env_vars` on the dbhub server: Codex
     // inherits only `core`, so anything dbhub.toml interpolates has to be
-    // forwarded by name. All six are in INSTALLER_DEFERRED_VARS, so the
+    // forwarded by name. Every one of these is project-scoped, so the
     // installer defers them to `bun run setup:doctor` instead of prompting.
+    // No remote server's key appears: those servers run at harness level.
     expect(await discoverRequiredEnvVars(['codex'], REPO_ROOT)).toEqual([
       'API_BASE_URL',
       'DBHUB_DATABASE',
@@ -170,8 +171,6 @@ describe('installer Codex lifecycle', () => {
       'DBHUB_TYPE',
       'DBHUB_USER',
       'OPENAPI_SPEC_PATH',
-      'POSTMAN_API_KEY',
-      'TAVILY_API_KEY',
     ]);
     expect(launchCommandsForAgents(['claude-code', 'opencode', 'codex']))
       .toEqual(['bun claude', 'bun opencode', 'bun codex']);

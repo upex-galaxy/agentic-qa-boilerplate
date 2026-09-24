@@ -37,7 +37,7 @@
           <li><a href="#scripts">Scripts y tests</a></li>
           <li><a href="#runner">Correr la colección entera</a></li>
           <li><a href="#ci">Postman en CI: Postman CLI y Newman</a></li>
-          <li><a href="#mcp">El Postman MCP del repo</a></li>
+          <li><a href="#mcp">El Postman MCP, a nivel del harness</a></li>
           <li><a href="#buenas-practicas">Buenas prácticas</a></li>
         </ol>
       </nav>
@@ -398,30 +398,39 @@ newman run postman/collection.json \
         (<code>newman-reporter-html</code>) y se activa con <code>-r cli,html</code>.
       </p>
 
-      <h2 id="mcp">El Postman MCP del repo</h2>
+      <h2 id="mcp">El Postman MCP, a nivel del harness</h2>
       <p>
-        El repo declara un server MCP llamado <code>postman</code> en <code>.mcp.json</code> (y sus
-        equivalentes en <code>opencode.jsonc</code> y <code>.codex/config.toml</code>). Es el server
-        remoto de Postman, <code>https://mcp.postman.com/mcp</code>, y el agente se autentica con el
-        header <code>Authorization: Bearer ${POSTMAN_API_KEY}</code>.
+        Postman publica un server MCP remoto, <code>https://mcp.postman.com/mcp</code>, que se
+        autentica con tu API key. El repo ya no lo declara en <code>.mcp.json</code> ni en sus
+        equivalentes: un server remoto cuyo único contenido del lado del proyecto era una clave es
+        asunto del harness, no del repo. Lo conectas una vez por máquina y el agente lo resuelve por
+        capacidad, sea cual sea el prefijo con el que aparezcan sus herramientas.
       </p>
       <dl class="defs">
-        <dt>Credencial</dt>
+        <dt>Cómo conectarlo</dt>
         <dd>
-          <code>POSTMAN_API_KEY</code> en <code>.env</code>. La generas en tu cuenta de Postman, en
-          la sección de API keys. La misma key sirve para <code>postman login</code>.
+          Claude Code: un server de usuario (<code>claude mcp add --scope user</code>) o un conector
+          desde claude.ai. OpenCode: la config global <code>~/.config/opencode/opencode.json</code>.
+          Codex:
+          <code
+            >codex mcp add postman --url https://mcp.postman.com/mcp --bearer-token-env-var
+            POSTMAN_API_KEY</code
+          >. La misma key sirve para <code>postman login</code>. Detalle por harness en
+          <a href="../variables-de-entorno.html#mcps">Variables de entorno</a>.
         </dd>
         <dt>Rol</dt>
         <dd>
-          Fallback de <code>[API_TOOL]</code>. El agente la usa cuando la ruta principal (OpenAPI
+          Fallback de <code>[API_TOOL]</code>. El agente lo usa cuando la ruta principal (OpenAPI
           MCP para el schema, <code>curl</code> para ejecutar) no cubre el caso, por ejemplo para
           consultar o correr una colección que el equipo ya mantiene en Postman.
         </dd>
         <dt>Si falla</dt>
         <dd>
           Una key vacía no detiene el arranque del agente: el error aparece recién en la primera
-          llamada, como un 401. Revisa <code>POSTMAN_API_KEY</code> en <code>.env</code> y reinicia
-          la sesión del agente, porque las variables se leen al arrancar el MCP.
+          llamada, como un 401. Revisa la credencial donde la conectaste (el harness, no
+          <code>.env</code>) y reinicia la sesión del agente, porque las variables se leen al
+          arrancar el MCP. <code>bun run setup:doctor</code> te dice si tu config de usuario declara
+          el server; un conector de claude.ai no deja archivo y lo reporta como no detectable.
         </dd>
       </dl>
 

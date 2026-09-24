@@ -187,9 +187,10 @@
       <h2 id="token">Obtener el token</h2>
       <p>
         <code>bun run api:login</code> solo obtiene el token. Se autentica con las credenciales del
-        entorno y rol que le pidas (las lee de <code>.env</code>, por ejemplo
-        <code>STAGING_USER_EMAIL</code> y <code>STAGING_USER_PASSWORD</code>) y guarda el resultado
-        en disco:
+        entorno y rol que le pidas (las lee de <code>.env</code> con los nombres que declara
+        <code>config/variables.ts</code>, por ejemplo <code>STAGING_USER_EMAIL</code> y
+        <code>STAGING_USER_PASSWORD</code>; si faltan, falla nombrándolas) y guarda el resultado en
+        disco:
       </p>
       <pre
         data-lang="bash"

@@ -940,8 +940,8 @@ components    -&gt;  módulo del producto  (qué parte del producto toca)</code>
                 token de <code>bun run api:login</code>
               </td>
               <td>
-                Postman: MCP <code>postman</code> declarado en <code>.mcp.json</code>, con
-                <code>POSTMAN_API_KEY</code> en <code>.env</code>
+                Postman: un MCP que conectas a nivel del harness (no vive en
+                <code>.mcp.json</code>)
               </td>
             </tr>
             <tr>
@@ -953,7 +953,10 @@ components    -&gt;  módulo del producto  (qué parte del producto toca)</code>
             <tr>
               <td><code>[WEB_SEARCH_TOOL]</code></td>
               <td>Búsqueda web, soluciones de la comunidad</td>
-              <td>MCP de Tavily</td>
+              <td>
+                Un MCP de búsqueda web conectado a nivel del harness (capacidad
+                <code>web-search</code>)
+              </td>
               <td>Búsqueda web del harness, como último recurso</td>
             </tr>
             <tr>
@@ -980,6 +983,12 @@ components    -&gt;  módulo del producto  (qué parte del producto toca)</code>
         canónico es lo que declara <code>.mcp.json</code> (Claude Code). El mismo conjunto existe en
         <code>opencode.jsonc</code> y en <code>.codex/config.toml</code>, cada uno en su formato, y
         <code>bun run agents:compat:check</code> falla si un server aparece en un host y no en otro.
+        Solo viven ahí los servers locales que leen valores del proyecto y los que no necesitan
+        clave; los remotos cuyo único contenido era una API key (búsqueda web, Postman) se conectan
+        a nivel del harness y los skills los resuelven por capacidad (<a
+          href="../variables-de-entorno.html#mcps"
+          >cómo</a
+        >).
       </p>
       <div class="table-wrap">
         <table>
@@ -995,11 +1004,6 @@ components    -&gt;  módulo del producto  (qué parte del producto toca)</code>
               <td><code>context7</code></td>
               <td>Documentación oficial y versionada de librerías ("cómo se usa X")</td>
               <td>ninguna</td>
-            </tr>
-            <tr>
-              <td><code>tavily</code></td>
-              <td>Búsqueda web y soluciones de la comunidad ("cómo resuelvo X")</td>
-              <td><code>TAVILY_API_KEY</code></td>
             </tr>
             <tr>
               <td><code>playwright</code></td>
@@ -1018,11 +1022,6 @@ components    -&gt;  módulo del producto  (qué parte del producto toca)</code>
               <td><code>openapi</code></td>
               <td>Leer endpoints y schemas de la API (solo lectura)</td>
               <td><code>API_BASE_URL</code>, <code>OPENAPI_SPEC_PATH</code></td>
-            </tr>
-            <tr>
-              <td><code>postman</code></td>
-              <td>Colecciones de Postman, fallback de <code>[API_TOOL]</code></td>
-              <td><code>POSTMAN_API_KEY</code></td>
             </tr>
           </tbody>
         </table>

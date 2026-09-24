@@ -36,13 +36,13 @@
  * the argv wrapper that imports FROM here.
  */
 
-import type { VarSpec } from './variables-manifest.ts';
+import type { VarScope, VarSpec } from './variables-manifest.ts';
 import { spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-import { validateVarManifest, valueSourceOf, VAR_MANIFEST } from './variables-manifest.ts';
+import { validateVarManifest, valueSourceOf, VAR_MANIFEST, VAR_SCOPES } from './variables-manifest.ts';
 
 // ----------------------------------------------------------------------------
 // Constants
@@ -103,6 +103,34 @@ export const RUNTIME_KNOBS: readonly RuntimeKnob[] = [
 ];
 
 // ----------------------------------------------------------------------------
+// Retired keys: declared so an older .env still validates
+// ----------------------------------------------------------------------------
+
+/**
+ * Keys the manifest no longer knows but an adopting repo's `.env` may still
+ * carry, copied from an older template. varlock fails an UNDECLARED key that
+ * is present and EMPTY (env-secrets probe), so retiring a key from the manifest
+ * without declaring it here would break every downstream `.env` the day it
+ * synced the new schema. Each stays declared, optional and sensitive, under a
+ * banner that says to delete the line; the doctor warns when one is set.
+ *
+ * `since` is the date the key left the manifest; `reason` is one sentence a
+ * human reads in the schema comment.
+ */
+export interface RetiredKey {
+  name: string
+  since: string
+  reason: string
+}
+
+export const RETIRED_KEYS: readonly RetiredKey[] = [
+  { name: 'TAVILY_API_KEY', since: '2026-09-24', reason: 'web search runs at harness level now (a connector or a user-scope MCP); nothing in the repo reads it.' },
+  { name: 'POSTMAN_API_KEY', since: '2026-09-24', reason: 'the Postman MCP runs at harness level now; nothing in the repo reads it.' },
+  { name: 'RESEND_API_KEY', since: '2026-09-24', reason: 'the resend CLI logs in on its own (resend login); nothing in the repo reads it.' },
+  { name: 'API_TOKEN', since: '2026-09-24', reason: 'legacy; bun run api:login writes the curl token to .auth/tokens.env.' },
+];
+
+// ----------------------------------------------------------------------------
 // Generation
 // ----------------------------------------------------------------------------
 
@@ -127,8 +155,13 @@ function quoteArg(value: string): string {
  * ONLY when its key is `TEST_ENV`, which is what `@currentEnv=$TEST_ENV`
  * in `.env.schema` switches on; any other key has no env-spec equivalent and
  * the item is emitted optional with the clause kept in its description.
+ *
+ * Only a CORE item can be required (ADR-0005). A project or tooling item is
+ * always emitted optional, whatever its `required` says: the manifest
+ * validator rejects the combination anyway, and this is the second lock.
  */
 export function schemaRequiredDecorator(spec: VarSpec): string | null {
+  if (spec.scope !== 'core') { return null; }
   const required = spec.schema?.required ?? spec.required;
   if (required === true) { return '@required'; }
   if (required === false) { return null; }
@@ -148,6 +181,7 @@ function decoratorLine(parts: Array<string | null>): string | null {
 function renderManifestItem(spec: VarSpec): string[] {
   const lines: string[] = [];
   lines.push(`# ${safeText(spec.note)}`);
+  lines.push(`# Used by: ${safeText(spec.usedBy)}${spec.featureGate !== undefined ? ` (only when the ${spec.featureGate} switch is on)` : ''}`);
   if (spec.obtainHint !== undefined && spec.obtainHint.trim() !== '') {
     lines.push(`# Obtain: ${safeText(spec.obtainHint)}`);
   }
@@ -194,12 +228,18 @@ function envFileSpecs(manifest: readonly VarSpec[]): VarSpec[] {
 export function generateCoreSchema(
   manifest: readonly VarSpec[] = VAR_MANIFEST,
   knobs: readonly RuntimeKnob[] = RUNTIME_KNOBS,
+  retired: readonly RetiredKey[] = RETIRED_KEYS,
 ): string {
   validateVarManifest(manifest);
   const manifestNames = new Set(manifest.map(s => s.name));
   for (const knob of knobs) {
     if (manifestNames.has(knob.name)) {
       throw new Error(`Runtime knob '${knob.name}' is also a manifest variable; declare it once.`);
+    }
+  }
+  for (const key of retired) {
+    if (manifestNames.has(key.name) || knobs.some(k => k.name === key.name)) {
+      throw new Error(`Retired key '${key.name}' is still declared elsewhere; retire it or declare it, not both.`);
     }
   }
 
@@ -225,13 +265,37 @@ export function generateCoreSchema(
   ];
 
   const body: string[] = [];
-  body.push('# ----------------------------------------------------------------------------');
-  body.push(`# Variables routed by the installer (${SCHEMA_SOURCE}). Order = manifest order.`);
-  body.push('# ----------------------------------------------------------------------------');
-  body.push('');
-  for (const spec of envFileSpecs(manifest)) {
-    body.push(...renderManifestItem(spec));
+  const banner: Record<VarScope, string[]> = {
+    core: [
+      '# FRAMEWORK (scope: core). What the boilerplate itself reads. The only item',
+      '# varlock refuses to run without is TEST_ENV, and it has a default; the rest',
+      '# sit behind a feature switch and are validated by the code path behind it.',
+    ],
+    tooling: [
+      '# TOOLING (scope: tooling, optional). Tools that can get their credential',
+      '# elsewhere: a CI-only notifier, the private report portal. Never a blocker.',
+    ],
+    project: [
+      '# PROJECT-UNDER-TEST (scope: project, optional). Typed EXAMPLES: the login,',
+      '# the database and the API of the app you test. Rename or delete them when',
+      '# you adapt the framework; the consumer that reads one fails by name. To',
+      '# require one in YOUR project, re-declare it in .env.schema with @required:',
+      '# an importing file may strengthen any item except TEST_ENV.',
+    ],
+  };
+  const specs = envFileSpecs(manifest);
+  for (const scope of VAR_SCOPES) {
+    const inScope = specs.filter(s => s.scope === scope);
+    if (inScope.length === 0) { continue; }
+    body.push('# ----------------------------------------------------------------------------');
+    body.push(...banner[scope]);
+    body.push(`# Source: ${SCHEMA_SOURCE}. Order = manifest order.`);
+    body.push('# ----------------------------------------------------------------------------');
     body.push('');
+    for (const spec of inScope) {
+      body.push(...renderManifestItem(spec));
+      body.push('');
+    }
   }
   body.push('# ----------------------------------------------------------------------------');
   body.push('# Optional runtime knobs. Never collected by the installer; the runtime reads');
@@ -241,6 +305,19 @@ export function generateCoreSchema(
   for (const knob of knobs) {
     body.push(...renderKnob(knob));
     body.push('');
+  }
+  if (retired.length > 0) {
+    body.push('# ----------------------------------------------------------------------------');
+    body.push('# RETIRED keys. Nothing reads them any more. Declared (optional) only so a .env');
+    body.push('# copied from an older template still validates: delete the line from yours.');
+    body.push('# ----------------------------------------------------------------------------');
+    body.push('');
+    for (const key of retired) {
+      body.push(`# Retired ${key.since}: ${safeText(key.reason)}`);
+      body.push('# @sensitive');
+      body.push(`${key.name}=`);
+      body.push('');
+    }
   }
 
   return `${[...header, ...body].join('\n').replace(/\n+$/, '')}\n`;
@@ -284,6 +361,11 @@ export function projectSchemaTemplate(): string {
     '#   # Admin user for the back-office flows',
     '#   # @required=forEnv(staging) @type=email',
     '#   STAGING_ADMIN_EMAIL=',
+    '#',
+    '# An item the core file declares OPTIONAL can be re-declared here with a',
+    '# stronger decorator (e.g. STAGING_USER_EMAIL with @required=forEnv(staging));',
+    '# the project declaration wins. The one exception is TEST_ENV: @currentEnv',
+    '# resolves it early and varlock refuses a second declaration of it.',
     '# ----------------------------------------------------------------------------',
     '',
   ].join('\n');
@@ -419,6 +501,7 @@ export function loadSchemaPairThroughVarlock(root: string, currentEnv: string = 
     const env: NodeJS.ProcessEnv = { ...process.env };
     for (const spec of VAR_MANIFEST) { delete env[spec.name]; }
     for (const knob of RUNTIME_KNOBS) { delete env[knob.name]; }
+    for (const key of RETIRED_KEYS) { delete env[key.name]; }
 
     // `bunx` resolves the project's pinned devDependency from the CWD's
     // node_modules; the scratch dir has none, so point it at the repo root by

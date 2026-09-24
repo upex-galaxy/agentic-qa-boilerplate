@@ -23,6 +23,7 @@ import {
   placeholderFor,
   PROJECT_SCHEMA_FILE,
   projectSchemaTemplate,
+  RETIRED_KEYS,
   RUNTIME_KNOBS,
   schemaRequiredDecorator,
   seedProjectSchema,
@@ -36,6 +37,8 @@ function spec(overrides: Partial<VarSpec> & { name: string }): VarSpec {
   return {
     destinations: ['local'],
     secret: false,
+    scope: 'core',
+    usedBy: 'a consumer',
     required: false,
     critical: false,
     obtainHint: 'somewhere',
@@ -58,6 +61,10 @@ describe('schemaRequiredDecorator', () => {
     expect(schemaRequiredDecorator(spec({ name: 'A', required: true, critical: true, schema: { required: false } }))).toBeNull();
     expect(schemaRequiredDecorator(spec({ name: 'A', required: false, schema: { required: { ifEnv: 'TEST_ENV=local' } } }))).toBe('@required=forEnv(local)');
   });
+  test('a non-core item is never required, whatever its fields say (ADR-0005 second lock)', () => {
+    expect(schemaRequiredDecorator(spec({ name: 'A', scope: 'project', required: true }))).toBeNull();
+    expect(schemaRequiredDecorator(spec({ name: 'A', scope: 'tooling', schema: { required: { ifEnv: 'TEST_ENV=local' } } }))).toBeNull();
+  });
 });
 
 describe('generateCoreSchema', () => {
@@ -70,13 +77,22 @@ describe('generateCoreSchema', () => {
     expect(a.endsWith('\n\n')).toBe(false);
   });
 
-  test('declares every env-file manifest var and every runtime knob exactly once, never ATLASSIAN_URL', () => {
+  test('declares every env-file manifest var, every runtime knob and every retired key exactly once, never ATLASSIAN_URL', () => {
     const text = generateCoreSchema();
     const declared = text.split('\n').filter(l => /^[A-Z][A-Z0-9_]*=/.test(l)).map(l => l.slice(0, l.indexOf('=')));
     for (const s of envFileVars()) { expect(declared.filter(k => k === s.name)).toHaveLength(1); }
     for (const k of RUNTIME_KNOBS) { expect(declared.filter(x => x === k.name)).toHaveLength(1); }
+    for (const k of RETIRED_KEYS) { expect(declared.filter(x => x === k.name)).toHaveLength(1); }
     expect(declared).not.toContain('ATLASSIAN_URL');
-    expect(declared).toHaveLength(envFileVars().length + RUNTIME_KNOBS.length);
+    expect(declared).toHaveLength(envFileVars().length + RUNTIME_KNOBS.length + RETIRED_KEYS.length);
+  });
+
+  test('a retired key is declared optional and sensitive, and rejected when still declared elsewhere', () => {
+    // An older .env carrying `TAVILY_API_KEY=` (empty) must keep validating:
+    // varlock fails an undeclared key that is present and empty.
+    const text = generateCoreSchema([spec({ name: 'A' })], [], [{ name: 'OLD_KEY', since: '2026-01-01', reason: 'gone' }]);
+    expect(text).toContain('# Retired 2026-01-01: gone\n# @sensitive\nOLD_KEY=\n');
+    expect(() => generateCoreSchema([spec({ name: 'A' })], [], [{ name: 'A', since: 'x', reason: 'dup' }])).toThrow(/retire it or declare it/);
   });
 
   test('maps the manifest to decorators the way VarSchemaHints documents', () => {
@@ -92,11 +108,27 @@ describe('generateCoreSchema', () => {
     expect(text).toContain('# @type=url @example="http://localhost:3000"\nAPI_BASE_URL=\n');
   });
 
+  test('groups items under one banner per scope, core first, and names the consumer', () => {
+    const text = generateCoreSchema([
+      spec({ name: 'P_ONE', scope: 'project', usedBy: 'the app login' }),
+      spec({ name: 'C_ONE', scope: 'core', usedBy: 'the runner', featureGate: 'auto-sync' }),
+      spec({ name: 'T_ONE', scope: 'tooling', usedBy: 'a notifier' }),
+    ], []);
+    const at = (needle: string): number => text.indexOf(needle);
+    expect(at('FRAMEWORK (scope: core)')).toBeGreaterThan(-1);
+    expect(at('FRAMEWORK (scope: core)')).toBeLessThan(at('C_ONE='));
+    expect(at('C_ONE=')).toBeLessThan(at('TOOLING (scope: tooling'));
+    expect(at('T_ONE=')).toBeLessThan(at('PROJECT-UNDER-TEST (scope: project'));
+    expect(at('PROJECT-UNDER-TEST (scope: project')).toBeLessThan(at('P_ONE='));
+    expect(text).toContain('# Used by: the runner (only when the auto-sync switch is on)\n');
+    expect(text).toContain('# Used by: the app login\n');
+  });
+
   test('free text cannot smuggle a decorator or a line break into the schema', () => {
     const text = generateCoreSchema([
       spec({ name: 'A', note: 'contact ops@example.test\nsecond line', obtainHint: '@required is not a hint' }),
     ], [{ name: 'K', docs: 'knob @sensitive text' }]);
-    expect(text).toContain('# contact ops(at)example.test second line\n# Obtain: (at)required is not a hint\nA=\n');
+    expect(text).toContain('# contact ops(at)example.test second line\n# Used by: a consumer\n# Obtain: (at)required is not a hint\nA=\n');
     expect(text).toContain('# knob (at)sensitive text\nK=\n');
   });
 
@@ -121,10 +153,23 @@ describe('placeholders', () => {
     expect(placeholderFor(undefined, true).length).toBeGreaterThan(20);
   });
   test('placeholderEnv covers exactly what is required under the env', () => {
-    const local = placeholderEnv('local');
-    expect(Object.keys(local).sort()).toEqual(['LOCAL_USER_EMAIL', 'LOCAL_USER_PASSWORD', 'TEST_ENV']);
-    const staging = placeholderEnv('staging');
-    expect(Object.keys(staging).sort()).toEqual(['STAGING_USER_EMAIL', 'STAGING_USER_PASSWORD', 'TEST_ENV']);
+    // A synthetic manifest with a conditional core item: the helper still
+    // understands forEnv, even though the real manifest no longer emits one.
+    const manifest = [
+      spec({ name: 'TEST_ENV', required: true }),
+      spec({ name: 'LOCAL_ONLY', required: { ifEnv: 'TEST_ENV=local' } }),
+      spec({ name: 'STAGING_ONLY', required: { ifEnv: 'TEST_ENV=staging' } }),
+      spec({ name: 'OPTIONAL' }),
+    ];
+    expect(Object.keys(placeholderEnv('local', manifest)).sort()).toEqual(['LOCAL_ONLY', 'TEST_ENV']);
+    expect(Object.keys(placeholderEnv('staging', manifest)).sort()).toEqual(['STAGING_ONLY', 'TEST_ENV']);
+  });
+
+  test('the real manifest needs nothing but TEST_ENV under any env', () => {
+    // The framework requires only what it owns (ADR-0005): a project's
+    // test-user pair is an optional typed example, never a required item.
+    expect(Object.keys(placeholderEnv('local'))).toEqual(['TEST_ENV']);
+    expect(Object.keys(placeholderEnv('staging'))).toEqual(['TEST_ENV']);
   });
 });
 
@@ -179,9 +224,11 @@ describe('the committed pair loads through the pinned varlock', () => {
     }
   });
 
-  test('VAR_MANIFEST and the placeholder set agree on what staging needs', () => {
-    // Guard for the negative test above: if the manifest ever stops requiring
-    // staging credentials, that test would pass for the wrong reason.
-    expect(VAR_MANIFEST.some(s => s.name === 'STAGING_USER_PASSWORD' && schemaRequiredDecorator(s) === '@required=forEnv(staging)')).toBe(true);
+  test('the real manifest carries no conditional @required (project credentials are optional)', () => {
+    // ADR-0005: a test-user pair is the project's, so the synced schema never
+    // marks it required for an environment. A missing one fails by name at the
+    // point of use (config.testUser), not at varlock load.
+    const conditional = VAR_MANIFEST.filter(s => schemaRequiredDecorator(s)?.startsWith('@required=forEnv') === true).map(s => s.name);
+    expect(conditional).toEqual([]);
   });
 });

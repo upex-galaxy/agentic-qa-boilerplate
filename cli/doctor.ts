@@ -28,18 +28,20 @@
  */
 
 import type { CompatibilityCheck, CompatibilityErrorGroup } from './lib/agent-compatibility.ts';
+import type { HarnessLevelVerdict } from './lib/harness-level-mcps.ts';
+import type { GateContext, VarSpec } from './lib/variables-manifest.ts';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
-import { homedir } from 'node:os';
-import { join, resolve } from 'node:path';
 
+import { homedir } from 'node:os';
+
+import { join, resolve } from 'node:path';
 import {
   declaredMcpIds,
   validateHookCompatibility,
   validateMcpParity,
 } from './lib/agent-compatibility-contracts.ts';
-
 import {
   checkAgentCompatibility,
   commandWrapperCounts,
@@ -52,7 +54,7 @@ import {
   formatInstanceMismatchWarning,
   resolveAtlassianInstance,
 } from './lib/atlassian-instance.ts';
-import { CORE_SCHEMA_FILE, PROJECT_SCHEMA_FILE } from './lib/env-schema.ts';
+import { CORE_SCHEMA_FILE, PROJECT_SCHEMA_FILE, RETIRED_KEYS } from './lib/env-schema.ts';
 // Canonical variable manifest (source of truth — D1). Imports only `node:fs`,
 // so it is safe to load statically here without breaking the dependency-free
 // `--preflight` contract (no third-party deps pulled in).
@@ -61,8 +63,9 @@ import {
   CLAUDE_LOCAL_SETTINGS,
   OPENCODE_SECRET_DIR,
 } from './lib/harness-env.ts';
+import { harnessLevelMcpReport } from './lib/harness-level-mcps.ts';
 import { playwrightBrowsersInstalled } from './lib/playwright-cache.ts';
-import { requiredNow, varsFor } from './lib/variables-manifest.ts';
+import { gateIsOn, varsFor } from './lib/variables-manifest.ts';
 
 // `tui` pulls third-party deps (boxen/cli-table3/figures/picocolors). It is
 // imported lazily inside main() so `--preflight` loads only node built-ins and
@@ -92,18 +95,20 @@ const MIN_NODE_MAJOR = 18;
 //
 // Source of truth = `VAR_MANIFEST` (D1) via `varsFor('local')` — resolved at the
 // point of use in `runDoctor` rather than a separate hand-maintained list (which
-// used to drift from the installer). DBHub vars live in the manifest but are
-// surfaced separately/manually (edit `dbhub.toml`), so they are filtered out at
-// the call site; `VAR_HINTS` provides the per-var help text for reported vars.
+// used to drift from the installer). Every `.env`-routed var is reported with
+// its SCOPE and its consumer; `VAR_HINTS` adds a where-to-get-it pointer and
+// falls back to the manifest's own `obtainHint`.
 //
-// `requiredNow(spec, env)` decides required-vs-optional given the current
-// TEST_ENV (e.g. STAGING_USER_* is required only when TEST_ENV=staging). Vars
-// that are not required-now are still reported (set/missing) but do NOT block.
+// Exit code policy (ADR-0005): the doctor exits 1 for NO credential of any
+// scope. A missing CORE var behind a switch that is ON is a WARNING (it does
+// not flip `status`); a missing project / tooling var is an informational row.
+// Only a core var that is unconditionally required with no default could block,
+// and today none exists: TEST_ENV has a default.
 
 const VAR_HINTS: Record<string, { hint: string, where: string }> = {
   TEST_ENV: {
     hint: 'Default test environment for the runner',
-    where: 'Valid: local | staging',
+    where: 'The names config/variables.ts declares (envDataMap)',
   },
   LOCAL_USER_EMAIL: {
     hint: 'Email for the local test user',
@@ -121,14 +126,6 @@ const VAR_HINTS: Record<string, { hint: string, where: string }> = {
     hint: 'Password for the staging test user',
     where: 'A test account in your staging environment',
   },
-  TAVILY_API_KEY: {
-    hint: 'Tavily web-search MCP API key',
-    where: 'https://app.tavily.com/  →  account  →  API keys',
-  },
-  RESEND_API_KEY: {
-    hint: 'Resend API key (email-flow tests + resend CLI auth)',
-    where: 'https://resend.com/api-keys  (docs: https://resend.com/docs/api-reference/introduction)',
-  },
   ATLASSIAN_EMAIL: {
     hint: 'Email used to log in to Atlassian',
     where: 'Your Atlassian account email',
@@ -145,14 +142,6 @@ const VAR_HINTS: Record<string, { hint: string, where: string }> = {
     hint: 'Path or URL to the OpenAPI/Swagger spec (project-bound)',
     where: 'e.g. https://api.yourapp.com/openapi.json (or a local file path)',
   },
-  API_TOKEN: {
-    hint: 'Legacy/optional — the OpenAPI MCP is now schema-read-only and does NOT use this. `bun run api:login` writes the curl token to .auth/tokens.env instead',
-    where: 'Not required; run `bun run api:login` to mint a token for curl-based API testing',
-  },
-  POSTMAN_API_KEY: {
-    hint: 'Postman API key for Postman MCP (project-bound — only needed if you use Postman collections)',
-    where: 'https://postman.com  →  account settings  →  API keys',
-  },
 };
 
 // ----------------------------------------------------------------------------
@@ -160,6 +149,43 @@ const VAR_HINTS: Record<string, { hint: string, where: string }> = {
 // ----------------------------------------------------------------------------
 
 type PendingActionType = 'credential' | 'shell_hook' | 'system_install' | 'shell_command';
+
+/**
+ * One `.env`-routed variable, with the scope that decides how its absence is
+ * reported (ADR-0005). `verdict` is what the row says; `gate_on` is whether
+ * the feature behind a gated var is switched on right now (null = no gate).
+ */
+export interface EnvVarRow {
+  name: string
+  status: 'set' | 'missing'
+  scope: VarSpec['scope']
+  feature_gate: VarSpec['featureGate'] | null
+  gate_on: boolean | null
+  used_by: string
+  verdict: EnvVarVerdict
+}
+
+export type EnvVarVerdict = 'set' | 'missing-required' | 'missing-gated' | 'missing-optional';
+
+/**
+ * Pure classifier behind the Env vars table and the pending / warning lists.
+ *
+ *   - `missing-required`  a CORE var, no gate (or gate on), `required: true`,
+ *                         no default: the only verdict that may block. Today no
+ *                         manifest entry reaches it.
+ *   - `missing-gated`     a CORE var whose switch is ON (Jira host set, Xray
+ *                         sync on): a WARNING, never `needs-action`.
+ *   - `missing-optional`  everything else: a project example, a tooling var,
+ *                         or a core var whose switch is off. Informational.
+ */
+export function envVarVerdict(spec: VarSpec, isSet: boolean, ctx: GateContext): EnvVarVerdict {
+  if (isSet) { return 'set'; }
+  if (spec.scope !== 'core') { return 'missing-optional'; }
+  const on = gateIsOn(spec, ctx);
+  if (!on) { return 'missing-optional'; }
+  if (spec.featureGate !== undefined) { return 'missing-gated'; }
+  return spec.required === true && spec.defaultValue === undefined ? 'missing-required' : 'missing-optional';
+}
 
 interface PendingAction {
   type: PendingActionType
@@ -234,6 +260,8 @@ interface DoctorReport {
   is_tty: boolean
   env_file_exists: boolean
   env_vars: Record<string, 'set' | 'missing'>
+  /** The same variables with scope, gate and consumer: the table the human report prints. */
+  env_var_scopes: EnvVarRow[]
   /**
    * The Atlassian site host, resolved from `.agents/project.yaml`. Reported
    * apart from `env_vars` because it is NOT an env var — listing it there would
@@ -284,6 +312,13 @@ interface DoctorReport {
    * `errors` carries varlock's own diagnostic lines, item NAMES only.
    */
   env_schema: EnvSchemaDiagnostic
+  /**
+   * MCP servers this boilerplate no longer commits because they run at harness
+   * level (web search, Postman): whether this machine's user-level configs
+   * declare them. `not detectable` is honest ignorance (a claude.ai connector
+   * writes no file), never a failure. Reporting only.
+   */
+  harness_level_mcps: { verdicts: HarnessLevelVerdict[], sources: string[] }
   pending_actions: PendingAction[]
   /**
    * OPTIONAL items, reported and never blocking: they do not turn `status` to
@@ -796,6 +831,7 @@ export async function runDoctor(): Promise<DoctorReport> {
     is_tty: Boolean(process.stdin.isTTY),
     env_file_exists: existsSync(ENV_PATH),
     env_vars: {},
+    env_var_scopes: [],
     atlassian_host: { status: 'missing' },
     mcp_json_exists: existsSync(MCP_PATH),
     opencode_jsonc_exists: existsSync(OPENCODE_PATH),
@@ -807,6 +843,7 @@ export async function runDoctor(): Promise<DoctorReport> {
     harness_env: harnessEnvDiagnostic(),
     project_schema: projectSchemaDiagnostic(),
     env_schema: envSchemaDiagnostic(),
+    harness_level_mcps: harnessLevelMcpReport(),
     pending_actions: [],
     warnings: [],
   };
@@ -820,25 +857,44 @@ export async function runDoctor(): Promise<DoctorReport> {
     });
   }
 
-  // env vars — manifest-driven (D1). Every reported var is set/missing; only
-  // vars that are required GIVEN the current env (`requiredNow` resolves the
-  // `{ ifEnv: 'TEST_ENV=staging' }` clauses) push a blocking credential action.
+  // env vars — manifest-driven (D1), classified by scope (ADR-0005). Every
+  // `.env`-routed var is a row with its scope, gate and consumer. Only
+  // `missing-required` (a core var with no gate, no default) can block, and no
+  // manifest entry reaches it today; a core var whose switch is on becomes a
+  // WARNING; a project or tooling var is informational. DBHUB_* rows are
+  // included: they are project examples like any other, and hiding them made a
+  // dbhub that would not connect look like a database problem.
   const envValues = report.env_file_exists
     ? parseEnvFile(await readFile(ENV_PATH, 'utf8'))
     : {};
-  const localSpecs = varsFor('local').filter(spec => !spec.name.startsWith('DBHUB_'));
-  for (const spec of localSpecs) {
+  let atlassianHostSet = false;
+  try { atlassianHostSet = resolveAtlassianInstance().baseUrl.length > 0; }
+  catch { atlassianHostSet = false; }
+  const gateCtx: GateContext = { env: envValues, atlassianHostSet };
+  for (const spec of varsFor('local')) {
     const v = spec.name;
     const value = envValues[v];
     const isSet = value !== undefined && value.trim().length > 0;
+    const verdict = envVarVerdict(spec, isSet, gateCtx);
     report.env_vars[v] = isSet ? 'set' : 'missing';
-    if (!isSet && requiredNow(spec, envValues)) {
-      report.pending_actions.push({
-        type: 'credential',
-        target: v,
-        hint: VAR_HINTS[v]?.hint ?? `Required env var: ${v}`,
-        where: VAR_HINTS[v]?.where,
-      });
+    report.env_var_scopes.push({
+      name: v,
+      status: isSet ? 'set' : 'missing',
+      scope: spec.scope,
+      feature_gate: spec.featureGate ?? null,
+      gate_on: spec.featureGate === undefined ? null : gateIsOn(spec, gateCtx),
+      used_by: spec.usedBy,
+      verdict,
+    });
+    const action: PendingAction = {
+      type: 'credential',
+      target: v,
+      hint: VAR_HINTS[v]?.hint ?? spec.obtainHint ?? spec.note,
+      where: VAR_HINTS[v]?.where ?? spec.obtainHint,
+    };
+    if (verdict === 'missing-required') { report.pending_actions.push(action); }
+    else if (verdict === 'missing-gated') {
+      report.warnings.push({ ...action, hint: `${action.hint} (the ${spec.featureGate} switch is on, so the code behind it will fail by name without this)` });
     }
   }
 
@@ -895,6 +951,17 @@ export async function runDoctor(): Promise<DoctorReport> {
       + '       host lives in .agents/project.yaml -> issue_tracker.atlassian_url.\n'
       + '       Move any unique value into the ATLASSIAN_* counterpart and delete the legacy line.',
     );
+  }
+  // Keys the manifest retired (web search / Postman moved to harness level, the
+  // resend CLI logs in on its own, the legacy API token). The schema still
+  // declares them so the line validates; the value is simply never read.
+  const retiredPresent = RETIRED_KEYS.filter(k => envValues[k.name] !== undefined).map(k => k.name);
+  if (retiredPresent.length > 0) {
+    report.warnings.push({
+      type: 'shell_command',
+      target: `delete from .env: ${retiredPresent.join(', ')}`,
+      hint: 'Nothing in the repo reads these any more. Web search and Postman are MCP servers you connect at harness level (see the doctor section below); the resend CLI keeps its own login; the curl token lives in .auth/tokens.env. The line still validates, it just does nothing.',
+    });
   }
 
   // Jira manifest baseline - is this project's `work_types:` set behind upstream's?
@@ -1089,14 +1156,42 @@ function printHuman(report: DoctorReport): void {
   checks.push(['Atlassian host (.agents/project.yaml)', hostRow]);
   process.stdout.write(`${tui.table(['Check', 'Status'], checks)}\n`);
 
-  // Env vars as a table
-  tui.section('Env vars');
-  const envRows = Object.entries(report.env_vars).map(([k, v]) => [
-    k,
-    v === 'set' ? tui.statusIcon('ok') : tui.statusIcon('fail'),
-    v === 'set' ? 'set' : 'missing',
+  // Env vars as a table, by scope (ADR-0005). A FAIL icon is reserved for the
+  // one verdict that blocks; a gated core var whose switch is on is a warning;
+  // everything else missing is information with its scope and consumer.
+  tui.section('Env vars (scope decides who validates: core = framework, tooling = elsewhere, project = your app)');
+  const icons: Record<EnvVarVerdict, string> = {
+    'set': tui.statusIcon('ok'),
+    'missing-required': tui.statusIcon('fail'),
+    'missing-gated': tui.statusIcon('warn'),
+    'missing-optional': tui.statusIcon('info'),
+  };
+  const labels: Record<EnvVarVerdict, string> = {
+    'set': 'set',
+    'missing-required': 'missing (required)',
+    'missing-gated': 'missing (switch on)',
+    'missing-optional': 'missing (optional)',
+  };
+  const envRows = report.env_var_scopes.map(row => [
+    row.name,
+    icons[row.verdict],
+    labels[row.verdict],
+    row.scope,
+    row.feature_gate === null ? '-' : `${row.feature_gate}: ${row.gate_on ? 'on' : 'off'}`,
+    row.used_by,
   ]);
-  process.stdout.write(`${tui.table(['Variable', 'Status', 'Value'], envRows)}\n`);
+  process.stdout.write(`${tui.table(['Variable', 'Status', 'Value', 'Scope', 'Gate', 'Used by'], envRows)}\n`);
+
+  // Servers that left the project config because they run at harness level.
+  // Its own section and never a check row: a claude.ai connector is invisible
+  // to a file read, so "not detectable" must never look like "missing".
+  tui.section('MCP servers provided at harness level (not in .mcp.json by design)');
+  for (const verdict of report.harness_level_mcps.verdicts) {
+    const icon = tui.statusIcon(verdict.state === 'provided elsewhere' ? 'ok' : 'info');
+    process.stdout.write(`  ${icon} ${verdict.id}${verdict.capability ? ` (${verdict.capability})` : ''}: ${verdict.state}${verdict.hosts.length > 0 ? ` (${verdict.hosts.join(', ')})` : ''}\n`);
+    process.stdout.write(`    ${verdict.detail}\n`);
+  }
+  process.stdout.write(`  read: ${report.harness_level_mcps.sources.length > 0 ? report.harness_level_mcps.sources.join(', ') : '(no user-level config found)'}\n\n`);
 
   // Per-harness credential surfaces. Its own section because it is per-VARIABLE
   // and per-surface, which a single check row cannot carry: an exit code says

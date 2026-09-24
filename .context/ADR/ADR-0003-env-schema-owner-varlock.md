@@ -5,7 +5,7 @@
 - **Deciders:** framework owner (boilerplate maintainer); drafted by `/framework-development` from the env-secrets SPIKE (D1-D7 approved 2026-09-23)
 - **Tags:** env, secrets, validation, ci, updater
 - **Supersedes:** —
-- **Superseded by:** —
+- **Superseded by:** ADR-0005, for §Decision bullet 3 only (the schema's `@required` contract). The layout, the pin and the pair-load gate stand.
 
 ---
 

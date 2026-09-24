@@ -113,15 +113,15 @@ naming the server and the host.
 - **It compares `.env` dependencies, not argument spelling.** The three hosts cannot write a
   secret the same way: `${VAR}` in Claude, `{file:.auth/opencode/VAR}` in OpenCode, a name in
   `env_vars` / `bearer_token_env_var` in Codex. What must match is the SET of `.env` variables
-  each host depends on, plus the literal settings. So `tavily` as an HTTP header in Claude and
-  as `bearer_token_env_var = "TAVILY_API_KEY"` in Codex is parity, not drift.
+  each host depends on, plus the literal settings. So a remote server carrying its key as an
+  HTTP header in Claude and as `bearer_token_env_var` in Codex is parity, not drift.
 - **Why Codex never gets `${VAR}`.** Codex passes placeholders inside `args` or
   `[mcp_servers.X.env]` to the server as literal text; a `${DBHUB_HOST}` there reaches dbhub as
   the string `${DBHUB_HOST}` and fails on connect like a bad credential. The only way in is by
   name, so the check rejects a placeholder inside a Codex `env` table.
-- **The six shipped servers get a stricter shape check** (`context7`, `tavily`, `playwright`,
-  `dbhub`, `openapi`, `postman`) when declared. Any other server, `atlassian` included, gets the
-  generic comparison only, so a project may add or drop servers freely.
+- **The shipped servers get a stricter shape check** (the ids in `KNOWN_MCP_IDS`,
+  `cli/lib/agent-compatibility-contracts.ts`) when declared. Any other server, `atlassian`
+  included, gets the generic comparison only, so a project may add or drop servers freely.
 - **Failure is silent on three hosts** (AGENTS.md Critical Rule #10): an unset variable becomes
   a literal or an empty string and the server dies on its first authenticated call. A 401/403
   from `atlassian` means check `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` in `.env`, run

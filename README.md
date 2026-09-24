@@ -94,16 +94,15 @@ These are **not optional** for the workflow — each one is required by a specif
 
 > **Windows users**: skip direnv. The `bun run claude` / `bun run opencode` / `bun run codex` wrappers already load `.env` cross-platform with zero setup, and Claude Code / OpenCode read the surfaces `bun run harness:env` generates. direnv on PowerShell needs version 2.37+ and is officially experimental; Git Bash works but at that point the wrapper is simpler. The installer will offer the direnv hook; just decline it.
 
-### MCP credentials (`.env` keys)
+### Variables and MCP credentials (`.env` keys)
 
-Each harness has its own MCP config — `.mcp.json` (Claude Code), `opencode.jsonc` (OpenCode), `.codex/config.toml` (Codex) — and all three ship with credential placeholders that read from `.env`. Seven keys are required for the 6 canonical MCPs:
+Each harness has its own MCP config — `.mcp.json` (Claude Code), `opencode.jsonc` (OpenCode), `.codex/config.toml` (Codex) — and all three ship with placeholders that read from `.env`. Every variable the repo knows carries a scope in `cli/lib/variables-manifest.ts` (the source of truth; human guide: `docs/core/variables-de-entorno.html`):
 
-```
-TAVILY_API_KEY
-ATLASSIAN_EMAIL · ATLASSIAN_API_TOKEN
-API_BASE_URL · OPENAPI_SPEC_PATH · API_TOKEN
-POSTMAN_API_KEY
-```
+- **framework** (`core`): what the boilerplate reads. `TEST_ENV` has a default; the Atlassian pair is needed once the Jira host is set in `.agents/project.yaml`.
+- **tooling**: CI-only secrets (Slack, the private report portal). MCP servers that can run at harness level (web search, Postman) and CLI logins (`acli`, `resend`) are NOT `.env` keys at all: connect them once per machine and the skills resolve them by capability.
+- **project-under-test**: your app's login, database and API (`<ENV>_USER_*`, `DBHUB_*`, `API_BASE_URL`, `OPENAPI_SPEC_PATH`). Typed examples; rename or delete them when you adapt the framework.
+
+Nothing blocks install, update or `setup:doctor`: a value is validated by the code that reads it, with a named error (ADR-0005).
 
 **The Atlassian site host is not one of them.** It lives in `.agents/project.yaml` -> `issue_tracker.atlassian_url` and is read with `bun run --silent jira:url` (`--slug` for the bare host `acli --site` wants). It was pulled out of `.env` because a stale copy inherited from the parent shell silently shadowed the file — `jira:sync-issues` rebuilt the local PBI cache from a dead Jira site and exited 0, and the Jira-Direct TMS provider would have written results there. A hostname is not a secret, and it is project identity, so it belongs in a versioned file that shows up in a diff.
 
@@ -346,7 +345,7 @@ Edit `.env` with your project values:
 # Environment selector (valid: local, staging)
 TEST_ENV=local
 
-# Test User Credentials (only the current TEST_ENV is required)
+# Test User Credentials (project examples: never required up front; config.testUser fails by name when a test reads an empty pair)
 LOCAL_USER_EMAIL=
 LOCAL_USER_PASSWORD=
 STAGING_USER_EMAIL=your-test-user@example.com
@@ -700,15 +699,15 @@ The `.template/boilerplate.lock.json` file is committable: commit it so your tea
 | `sanity.yml`     | Manual         | Run tests by grep pattern   |
 | `regression.yml` | Daily midnight | Full test suite             |
 
-### Environment Secrets Required
+### Environment Secrets
 
-Required (only the credentials matching your active `TEST_ENV` are validated):
+The framework requires nothing but `TEST_ENV` (it has a default). The test-user pair is a project-under-test example: the suite workflows inject it as secrets, and `config.testUser` fails with a named error the first time a test reads an empty pair. Nothing validates it up front, so a fork PR with no secrets still builds.
 
 ```yaml
 # Environment selection
 TEST_ENV                    # local | staging
 
-# Test User Credentials (required for the active TEST_ENV)
+# Test User Credentials (project examples, read by config.testUser at the point of use)
 LOCAL_USER_EMAIL
 LOCAL_USER_PASSWORD
 STAGING_USER_EMAIL

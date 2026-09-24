@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-09-24T21:23:29.058Z`
+> Generated: `2026-09-24T22:22:14.727Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -92,7 +92,7 @@ Skills indexed: 22
 - WHEN opening a deck: prefer the published GitHub Pages URL over the local file, because a project scaffolded from this boilerplate may not carry the HTML. Use the local copy only offline or on explicit request.
 - DO: route a brand-new project through the ordered 4-phase setup path (foundation → Jira catalogs → discovery + adapt → git Strategy Setup). The joining-an-adapted-project checklist covers phase 1 only and is not a substitute.
 - DO NOT: state a Jira status or transition from memory. `.agents/jira-workflows.json` is authoritative — if a status is not in there, it does not exist in the instance.
-- DO: point library-docs questions at Context7 and troubleshooting at Tavily; ticket WRITES at `/acli`, and detailed ticket READS (custom fields, ACs, ATP/ATR, comments) at the Jira sync script, whose synced `.md` is what you read.
+- DO: point library-docs questions at Context7 and troubleshooting at the `web-search` capability (a harness-level server); ticket WRITES at `/acli`, and detailed ticket READS (custom fields, ACs, ATP/ATR, comments) at the Jira sync script, whose synced `.md` is what you read.
 - DO NOT: suggest swapping the stack. Playwright + KATA + Allure + TypeScript + bun is locked, and KATA is Playwright-specific — a project needing another runner should not start from this boilerplate.
 
 **Read full SKILL.md when**: walking the full 4-phase new-project setup, listing env vars or MCPs in detail, or answering which deck covers a given topic.

@@ -165,17 +165,19 @@ Missing per-skill CLIs do not exit the installer. Install them lazily when the o
 | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `direnv` | Optional. Exports `.env` into your shell on `cd`, which only Codex (it reads the process environment) and shell-exported CLI vars (`acli`, `curl`, `bun xray`) need. Claude Code and OpenCode do not: `bun run harness:env` writes their credentials into `.claude/settings.local.json` and `.auth/opencode/*`. Without direnv, `bun run codex` (powered by `dotenv-cli`, already a project devDep) loads `.env` the same way. | `cli/doctor.ts` (`detectDirenv`) reports `direnv.installed`, `version`, `envrc_allowed`, `hook_in_rc` as warnings, never as needs-action. The installer offers `direnv allow` + a shell-hook nudge. **Windows users**: skip — PowerShell support is experimental (direnv 2.37+); Git Bash works but the wrapper is simpler. The installer offers the prompt anyway; decline freely. |
 
-### MCP credentials — 7 env vars filled into `.env`
+### Variables — what goes into `.env`, by scope
 
-`cli/lib/variables-manifest.ts` declares the `VAR_MANIFEST` that `cli/doctor.ts` reads (via `varsFor('local')`) — the vars consumed by the 6 canonical MCPs plus the ATLASSIAN_* family used by acli + scripts/sync-jira-*.ts. Missing keys do not block setup, but every `bun run setup:doctor` will list them under `pending_actions` with the canonical `where` URL (token-generation page) until they are filled.
+`cli/lib/variables-manifest.ts` declares the `VAR_MANIFEST` that the installer, `cli/doctor.ts` and the updater read. Every entry carries a `scope` (ADR-0005), and the scope decides how its absence is reported: never as a blocker.
 
 ```
-TAVILY_API_KEY                                  → https://app.tavily.com/ → API keys
-ATLASSIAN_EMAIL, ATLASSIAN_API_TOKEN → https://id.atlassian.com/manage-profile/security/api-tokens
-(the site host is not a .env var — set it with `bun run agents:setup`)
-API_BASE_URL, OPENAPI_SPEC_PATH, API_TOKEN      → your backend admin / API portal
-POSTMAN_API_KEY                                 → https://postman.com → settings → API keys
+core      ATLASSIAN_EMAIL, ATLASSIAN_API_TOKEN → https://id.atlassian.com/manage-profile/security/api-tokens
+          (offered at day-0, skip is fine; needed once the Jira host is set with `bun run agents:setup`)
+project   API_BASE_URL, OPENAPI_SPEC_PATH, DBHUB_*, <ENV>_USER_* → your backend / database / test accounts
+          (examples: rename or delete when you adapt the framework)
+tooling   CI-only secrets (Slack, private report portal) → GitHub Actions, pushed by `setup --variables --remote`
 ```
+
+Not in `.env` at all: MCP servers that run at harness level (web search, Postman; connect them once per machine, see the installer's closing guidance) and CLI logins (`acli auth login`, `resend login`).
 
 ### Where to verify your status
 
@@ -209,27 +211,28 @@ Exit code: `0` when everything is green, `1` when any pending action remains. JS
   "platform": "linux",
   "shell": "/usr/bin/bash",
   "is_tty": true,
-  "env_vars": { "TAVILY_API_KEY": "set", "POSTMAN_API_KEY": "missing", ... },
+  "env_vars": { "ATLASSIAN_EMAIL": "set", "API_BASE_URL": "missing", ... },
+  "env_var_scopes": [ { "name": "API_BASE_URL", "status": "missing", "scope": "project", "feature_gate": null, "gate_on": null, "used_by": "openapi MCP request base; curl execution after bun run api:login", "verdict": "missing-optional" }, ... ],
+  "harness_level_mcps": { "verdicts": [ { "id": "tavily", "capability": "web-search", "state": "not detectable", "hosts": [], "detail": "..." } ], "sources": [] },
   "direnv": { "installed": true, "version": "2.25.2", "envrc_allowed": true, "hook_in_rc": true, "rc_file": "/home/user/.bashrc" },
   "pending_actions": [
-    { "type": "credential", "target": "POSTMAN_API_KEY", "hint": "Postman API key for Postman MCP", "where": "https://postman.com → settings → API keys" },
     { "type": "shell_hook", "target": "~/.bashrc", "hint": "Add direnv hook ...", "where": "eval \"$(direnv hook bash)\"" }
   ]
 }
 ```
 
-`pending_actions[].type` is one of: `credential` · `shell_hook` · `system_install` · `shell_command`. The AI iterates the list and picks the right tool per type:
+`pending_actions[].type` is one of: `credential` · `shell_hook` · `system_install` · `shell_command`. A `credential` entry appears in `pending_actions` only for a core variable with no default and no feature switch (none today); a core credential behind a switch that is on lands in `warnings` instead, and project / tooling variables are rows in `env_var_scopes`, never actions. The AI iterates the list and picks the right tool per type:
 
 | type             | Who handles it | How                                                                                                                             |
 | ---------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `credential`     | **User**       | AI asks the user for the value in chat (e.g. "paste your Tavily key from https://app.tavily.com"). Then AI writes it to `.env`. |
+| `credential`     | **User**       | AI asks the user for the value in chat (e.g. "paste your Atlassian API token from the `where` URL"). Then AI writes it to `.env`. |
 | `shell_hook`     | **AI**         | AI appends the `where` line to the `target` rc file with its Edit/Bash tool. Trivial.                                           |
 | `system_install` | **User**       | AI shows the `where` command; the user runs it (brew/winget/apt may prompt for admin password).                                 |
 | `shell_command`  | **AI**         | AI runs the `target` command via Bash.                                                                                          |
 
 ### What an AI **cannot** do (hard limits)
 
-- **Generate API tokens** — Tavily / Atlassian / Postman / OpenAPI keys all require an interactive web login + 2FA. The user creates and pastes them; the AI never sees the generation flow.
+- **Generate API tokens** — Atlassian, Xray and every harness-level MCP key require an interactive web login + 2FA. The user creates and pastes them; the AI never sees the generation flow.
 - **Decide business config** — e.g. `TEST_ENV=local` vs `staging`, which modules to automate first, etc. The AI suggests; the user decides.
 - **Execute privileged installs cleanly** — `brew install`, `winget install`, `apt install` may show a sudo/admin prompt that lives outside the agent's terminal. The AI runs the command but the user clicks "allow".
 
@@ -239,7 +242,6 @@ The installer auto-detects no-TTY (an agent invoking it without a terminal) and 
 
 ```bash
 INSTALL_AGENTS=claude-code,opencode,codex \
-  TAVILY_API_KEY=tvly-... \
   ATLASSIAN_EMAIL=... \
   ATLASSIAN_API_TOKEN=... \
   bun run setup --non-interactive
@@ -438,7 +440,7 @@ The installer configures whichever of **Claude Code, OpenCode, and Codex** you s
 - **Skills.** All 19 committed skills live in `.agents/skills/`, and the community project-level skills install into the same store. Claude Code reaches that tree through `.claude/skills`, a POSIX symlink (Windows junction) that is generated and gitignored: never committed, never hand-edited.
 - **Commands.** The 10 slash commands carry no workflow body. Both wrapper sets are 7-line files generated from `.agents/compatibility/command-aliases.json`; each names a target skill plus a mode and forwards `$ARGUMENTS`. Codex skips the wrapper layer and invokes the skill directly.
 - **Hook.** `.agents/hooks/personality-reinject.mjs` holds the contract text once. Claude and Codex run it as a command hook; OpenCode imports the constant from a thin plugin.
-- **MCP.** The canonical server set is whatever `.mcp.json` declares (`context7`, `tavily`, `playwright`, `dbhub`, `openapi`, `postman` out of the box); every server there must exist in the other two configs. Parity is checked semantically: each native format is normalized before comparison and matched on the `.env` variables each server depends on and on its literal settings, so a server missing from one host, or present in one host only, is a failure. The six boilerplate-known ids additionally get a strict per-host shape check when the project declares them; any other server gets the generic check only, so a downstream project may add or drop servers freely. Codex cannot expand `${VAR}`, so `.codex/config.toml` names every secret by variable (`bearer_token_env_var`, `env_vars`). The opt-in Atlassian MCP block for all three hosts, and the parity contract in full, live in `.agents/skills/agentic-qa-core/references/mcp-atlassian-optin.md`; Gemini CLI has no adapter.
+- **MCP.** The canonical server set is whatever `.mcp.json` declares (the local servers plus the two that need no key; web search and Postman run at harness level, see `cli/lib/harness-level-mcps.ts`); every server there must exist in the other two configs. Parity is checked semantically: each native format is normalized before comparison and matched on the `.env` variables each server depends on and on its literal settings, so a server missing from one host, or present in one host only, is a failure. The six boilerplate-known ids additionally get a strict per-host shape check when the project declares them; any other server gets the generic check only, so a downstream project may add or drop servers freely. Codex cannot expand `${VAR}`, so `.codex/config.toml` names every secret by variable (`bearer_token_env_var`, `env_vars`). The opt-in Atlassian MCP block for all three hosts, and the parity contract in full, live in `.agents/skills/agentic-qa-core/references/mcp-atlassian-optin.md`; Gemini CLI has no adapter.
 
 ### Regenerating and verifying
 

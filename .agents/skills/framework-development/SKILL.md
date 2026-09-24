@@ -101,7 +101,7 @@ Phase 2 Code is sequential per task batch by default, and a change that fits one
 | Playwright browsers | SCOPE — touching fixtures / KATA bases / tests | Verify of a fixture or base-class change runs the suite, which needs chromium (`bun run pw:install`). |
 | `/github-actions-docs` + `/playwright-best-practices` | OPTIONAL | Injected per dispatch when the change touches CI YAML or fixtures/tests (already noted in the briefing skeleton). |
 
-Active env, test-user creds, OpenAPI/`API_TOKEN`, DBHub, issue-tracker, TMS and `resend` are **N/A** — framework evolution is meta-work on this repo. After the gate clears (all REQUIRED GREEN), continue to Phase 0 below.
+Active env, test-user creds, OpenAPI / API token, DBHub, issue-tracker, TMS and `resend` are **N/A** — framework evolution is meta-work on this repo. After the gate clears (all REQUIRED GREEN), continue to Phase 0 below.
 
 ---
 

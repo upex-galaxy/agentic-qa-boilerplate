@@ -129,7 +129,7 @@ This skill is compliant with the doctrine in `AGENTS.md` §"Orchestration Mode (
 | TMS modality + `[TMS_TOOL]` | REQUIRED | The whole Phase 0 gate. jira-xray → `/xray-cli` loaded + `XRAY_*` creds set + Xray issue types present. jira-native → `/acli` covers it. Resolve before Phase 1; ask only if all auto-checks fail. |
 | Source repos readable | OPTIONAL | Phase 1 source-code validation reads backend/frontend code, not a running env — no live-env or DB/API/browser probe needed. |
 
-Active env, test-user creds, DBHub, OpenAPI/`API_TOKEN`, Playwright, `resend` and `kata-manifest.json` (an automation-only concern owned by `/test-automation`) are **N/A** — documentation never hits a live system nor writes test code. After the gate clears (all REQUIRED GREEN), continue to Phase -1 below.
+Active env, test-user creds, DBHub, OpenAPI / API token, Playwright, `resend` and `kata-manifest.json` (an automation-only concern owned by `/test-automation`) are **N/A** — documentation never hits a live system nor writes test code. After the gate clears (all REQUIRED GREEN), continue to Phase -1 below.
 
 ---
 

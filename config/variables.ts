@@ -41,14 +41,21 @@ export type Environment = 'local' | 'staging'; // Add more when needed (e.g., 'p
 // Test-User Credentials (variables from .env)
 // Which variable holds which environment's credentials is project vocabulary,
 // so the read stays here rather than in the synced core.
-// After validation, current environment credentials are guaranteed to exist.
+//
+// Nothing validates these up front: not the installer, not the doctor, not the
+// env schema, not `test:env:check`. The framework has no opinion on whether
+// your app has a login. The one consumer that needs a value is `config.testUser`
+// below, which throws a NAMED error the moment something reads it while the
+// pair for the active environment is empty. The two auth setups in
+// `tests/setup/` read it at t=0, so a missing credential is the first line of
+// the run instead of an app-side login failure.
 // ============================================
 
 const {
-  LOCAL_USER_EMAIL, // Required if TEST_ENV=local
-  LOCAL_USER_PASSWORD, // Required if TEST_ENV=local
-  STAGING_USER_EMAIL, // Required if TEST_ENV=staging
-  STAGING_USER_PASSWORD, // Required if TEST_ENV=staging
+  LOCAL_USER_EMAIL, // Used when TEST_ENV=local
+  LOCAL_USER_PASSWORD, // Used when TEST_ENV=local
+  STAGING_USER_EMAIL, // Used when TEST_ENV=staging
+  STAGING_USER_PASSWORD, // Used when TEST_ENV=staging
 } = process.env;
 
 const userCredentialsMap: Record<Environment, { email: string, password: string }> = {
@@ -60,6 +67,15 @@ const userCredentialsMap: Record<Environment, { email: string, password: string 
     email: STAGING_USER_EMAIL ?? '',
     password: STAGING_USER_PASSWORD ?? '',
   },
+};
+
+/**
+ * The names `.env` uses for each environment's pair, for the error message
+ * only. Keep in step with the destructuring above when you rename them.
+ */
+const userCredentialVarNames: Record<Environment, { email: string, password: string }> = {
+  local: { email: 'LOCAL_USER_EMAIL', password: 'LOCAL_USER_PASSWORD' },
+  staging: { email: 'STAGING_USER_EMAIL', password: 'STAGING_USER_PASSWORD' },
 };
 
 // ============================================
@@ -92,7 +108,44 @@ const envDataMap: Record<
     user: userCredentialsMap.staging,
   },
 };
-const envData = envDataMap[env.current];
+// The point of use for TEST_ENV. A value this file does not declare used to
+// crash on `undefined.base` a few lines down; now it says which variable, which
+// value, and which names this project accepts.
+function resolveEnvData(): (typeof envDataMap)[Environment] {
+  const data: (typeof envDataMap)[Environment] | undefined = envDataMap[env.current];
+  if (data === undefined) {
+    throw new Error(
+      `TEST_ENV=${String(env.current)} names an environment this project does not declare. `
+      + `Valid values (config/variables.ts envDataMap): ${Object.keys(envDataMap).join(', ')}. `
+      + 'Add the environment there (and to the Environment type) or fix TEST_ENV in .env.',
+    );
+  }
+  return data;
+}
+const envData = resolveEnvData();
+
+/**
+ * The active environment's test user, read at the point of use.
+ *
+ * Throws a NAMED error when either half is empty, so an unset credential fails
+ * on the first read (the `ui-setup` / `api-setup` projects, or `bun run
+ * api:login`) with the variable names, instead of surfacing later as a login
+ * rejected by the app under test. A project whose app has no login never reads
+ * this and never sees the error: remove the setup projects from
+ * `playwright.config.ts` and `testUser` is simply never touched.
+ */
+function readTestUser(): { email: string, password: string } {
+  const user = envData.user;
+  if (user.email !== '' && user.password !== '') { return user; }
+  const names = userCredentialVarNames[env.current];
+  const missing = [user.email === '' ? names.email : null, user.password === '' ? names.password : null]
+    .filter((n): n is string => n !== null);
+  throw new Error(
+    `Test user for TEST_ENV=${env.current} is not set: ${missing.join(', ')} `
+    + '(declared in config/variables.ts, values in .env). '
+    + 'No login in your app? Remove the ui-setup / api-setup projects from playwright.config.ts.',
+  );
+}
 
 // ============================================
 // Main Configuration Object
@@ -114,8 +167,10 @@ export const config = {
     apiStatePath: '.auth/api-state.json',
   },
 
-  // Test User (configure in .env)
-  testUser: envData.user,
+  // Test User (configure in .env). A getter: validated on first read, by name.
+  get testUser(): { email: string, password: string } {
+    return readTestUser();
+  },
 
   // TMS / Browser / Reporting — synced (config/variables.core.ts)
   tms: TMS_CONFIG,
