@@ -32,7 +32,7 @@ describe('lint-docs', () => {
   test('reports a dead markdown link, a dead href and a missing root path', () => {
     write('docs/README.md', 'See [gone](./methodology/gone.md).\n\n`docs/nope/file.md`');
     write('docs/index.html', '<a href="core/missing.html">x</a>');
-    const findings = lintDocs(root).findings;
+    const findings = lintDocs(root).findings.filter(f => f.kind !== 'meta');
     expect(findings.map(f => `${f.file}:${f.line}:${f.kind}:${f.target}`)).toEqual([
       'docs/README.md:1:link:./methodology/gone.md',
       'docs/README.md:3:path:docs/nope/file.md',
@@ -67,5 +67,19 @@ describe('lint-docs', () => {
     write('.agents/README.md', '');
     write('README.md', '`.agents/compatibility/command-aliases.project.json`');
     expect(lintDocs(root).findings).toEqual([]);
+  });
+
+  test('requires a title and a description on shipped pages, warns on project pages', () => {
+    const head = '<head><title>Setup</title><meta name="description" content="Guides." /></head>';
+    write('docs/core/setup/index.html', head);
+    write('docs/core/setup/bare.html', '<head><title> </title></head><p>x</p>');
+    write('docs/team/notes.html', '<head><meta name="description" content="" /></head>');
+    const findings = lintDocs(root).findings;
+    expect(findings.map(f => `${f.severity}:${f.file}:${f.target}`)).toEqual([
+      'error:docs/core/setup/bare.html:<title>',
+      'error:docs/core/setup/bare.html:<meta name="description">',
+      'warning:docs/team/notes.html:<title>',
+      'warning:docs/team/notes.html:<meta name="description">',
+    ]);
   });
 });

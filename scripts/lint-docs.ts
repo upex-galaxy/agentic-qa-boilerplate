@@ -9,7 +9,11 @@
  *     resolve to an existing file or directory, relative to the file that
  *     holds it;
  *   - an inline-code path (`` `docs/…` ``, `<code>docs/…</code>`) that starts
- *     with a known repo root does not exist, resolved from the repo root.
+ *     with a known repo root does not exist, resolved from the repo root;
+ *   - an HTML page under `docs/` lacks a `<title>` or a
+ *     `<meta name="description">` (the site's sidebar and search read both).
+ *     That is an error for the pages the boilerplate ships (`docs/core/**` and
+ *     the portal `docs/index.html`) and a warning for project-owned pages.
  *
  * External URLs, `mailto:` / `tel:` / `data:` / `javascript:`, bare anchors
  * and template placeholders are ignored; a `#fragment` or `?query` is stripped
@@ -40,8 +44,33 @@ export const KNOWN_ROOTS = ['docs/', '.agents/', 'scripts/', 'cli/', 'tests/', '
 export interface DocFinding {
   file: string
   line: number
-  kind: 'link' | 'path'
+  kind: 'link' | 'path' | 'meta'
   target: string
+  /** Only `meta` findings on project-owned pages are warnings; everything else fails the gate. */
+  severity?: 'error' | 'warning'
+}
+
+/** Pages the boilerplate ships: a missing title or description there is an error, not a warning. */
+export function isShippedDocPage(rel: string): boolean {
+  return rel === 'docs/index.html' || rel.startsWith('docs/core/');
+}
+
+/** Title and description checks for one HTML page under `docs/`. */
+export function lintDocMeta(rel: string, html: string): DocFinding[] {
+  if (!rel.startsWith('docs/') || !rel.endsWith('.html')) { return []; }
+  const head = html.split(/<\/head>/i)[0];
+  const severity = isShippedDocPage(rel) ? 'error' : 'warning';
+  const findings: DocFinding[] = [];
+  const title = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(head);
+  if (!title || title[1].trim() === '') {
+    findings.push({ file: rel, line: 1, kind: 'meta', target: '<title>', severity });
+  }
+  const description = (head.match(/<meta\s[^>]*>/gi) ?? []).find(tag => /\sname\s*=\s*["']description["']/i.test(tag));
+  const content = description ? /\scontent\s*=\s*["']([^"']*)["']/i.exec(description) : null;
+  if (!content || content[1].trim() === '') {
+    findings.push({ file: rel, line: 1, kind: 'meta', target: '<meta name="description">', severity });
+  }
+  return findings;
 }
 
 /** Documented optional files: described in prose, created by the project when it wants them. */
@@ -148,6 +177,7 @@ export function lintDocFile(root: string, file: string): DocFinding[] {
       }
     }
   }
+  findings.push(...lintDocMeta(rel, raw));
   return findings;
 }
 
@@ -166,11 +196,12 @@ function gitIgnored(root: string, paths: string[]): Set<string> {
 export function lintDocs(root: string): { files: number, findings: DocFinding[] } {
   const files = collectDocFiles(root);
   const raw = files.flatMap(file => lintDocFile(root, file));
+  const refs = raw.filter(f => f.kind !== 'meta');
   const resolvedOf = (f: DocFinding): string => f.kind === 'path'
     ? stripSuffix(f.target).replace(/:\d+(?:-\d+)?$/, '')
     : relativePosix(root, resolve(root, dirname(f.file), decodeURIComponent(stripSuffix(f.target))));
-  const ignored = gitIgnored(root, [...new Set(raw.map(resolvedOf))]);
-  const findings = raw.filter(f => !ignored.has(resolvedOf(f)));
+  const ignored = gitIgnored(root, [...new Set(refs.map(resolvedOf))]);
+  const findings = raw.filter(f => f.kind === 'meta' || !ignored.has(resolvedOf(f)));
   return { files: files.length, findings };
 }
 
@@ -178,13 +209,19 @@ if (import.meta.main) {
   const root = process.cwd();
   if (!statSync(root).isDirectory()) { process.exit(2); }
   const { files, findings } = lintDocs(root);
-  if (findings.length === 0) {
+  const label = (f: DocFinding): string => f.kind === 'link' ? 'dead link' : f.kind === 'path' ? 'missing path' : 'missing';
+  const warnings = findings.filter(f => f.severity === 'warning');
+  const errors = findings.filter(f => f.severity !== 'warning');
+  for (const f of warnings) {
+    console.warn(`  ! ${f.file}:${f.line}  ${label(f)}  ${f.target} (project page: warning)`);
+  }
+  if (errors.length === 0) {
     console.log(`✓ docs:check passed (${files} files, no dead links or paths)`);
     process.exit(0);
   }
-  console.error(`✗ docs:check found ${findings.length} dead reference(s) in ${files} files:\n`);
-  for (const f of findings) {
-    console.error(`  ${f.file}:${f.line}  ${f.kind === 'link' ? 'dead link' : 'missing path'}  ${f.target}`);
+  console.error(`✗ docs:check found ${errors.length} problem(s) in ${files} files:\n`);
+  for (const f of errors) {
+    console.error(`  ${f.file}:${f.line}  ${label(f)}  ${f.target}`);
   }
   process.exit(1);
 }

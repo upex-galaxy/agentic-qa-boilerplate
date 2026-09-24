@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Documentación · Agentic QA Boilerplate</title>
+    <meta
+      name="description"
+      content="Portal de la documentación humana del repo: empezar, setup, metodología IQL, exploración y las páginas propias del proyecto."
+    />
+    <link rel="stylesheet" href="assets/docs.css" />
+    <script src="assets/docs.js"></script>
+    <style>
+      html,
+      body {
+        height: 100%;
+      }
+
+      body {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        overflow: hidden;
+      }
+
+      .sidebar {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        border-right: 1px solid var(--border);
+        background: var(--bg-soft);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 18px 18px 12px;
+        color: var(--text);
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+
+      .brand a {
+        color: inherit;
+      }
+
+      .brand small {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 500;
+      }
+
+      .logo {
+        display: grid;
+        width: 30px;
+        height: 30px;
+        flex: none;
+        place-items: center;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #7aa2f7, #bb9af7 55%, #7dcfff);
+        color: #16161e;
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .search {
+        position: relative;
+        padding: 4px 14px 12px;
+      }
+
+      .search input {
+        width: 100%;
+        padding: 8px 34px 8px 12px;
+        border: 1px solid var(--border-strong);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--text);
+        font: 14px var(--font-sans);
+        outline: none;
+      }
+
+      .search input:focus {
+        border-color: var(--accent);
+      }
+
+      .search kbd {
+        position: absolute;
+        top: 11px;
+        right: 22px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .tree {
+        flex: 1;
+        min-height: 0;
+        padding: 4px 8px 16px;
+        overflow-y: auto;
+        font-size: 14px;
+      }
+
+      .tree ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .tree ul ul {
+        margin-left: 12px;
+        padding-left: 8px;
+        border-left: 1px solid var(--border);
+      }
+
+      .tree li + li {
+        margin-top: 1px;
+      }
+
+      .tree .row {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .tree .twisty {
+        display: grid;
+        width: 20px;
+        height: 24px;
+        flex: none;
+        place-items: center;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: var(--muted);
+        font-size: 10px;
+        cursor: pointer;
+        transition: transform 0.15s;
+      }
+
+      .tree li.collapsed > .row .twisty {
+        transform: rotate(-90deg);
+      }
+
+      .tree li.collapsed > ul {
+        display: none;
+      }
+
+      .tree a,
+      .tree .label {
+        display: block;
+        flex: 1;
+        padding: 4px 8px;
+        border: 0;
+        border-radius: 6px;
+        color: var(--text-2);
+        line-height: 1.4;
+      }
+
+      .tree .folder > .row a,
+      .tree .folder > .row .label {
+        color: var(--text);
+        font-weight: 600;
+      }
+
+      .tree .label {
+        cursor: pointer;
+      }
+
+      .tree a:hover {
+        background: var(--surface-2);
+        color: var(--text);
+      }
+
+      .tree a.active {
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-weight: 600;
+      }
+
+      .tree .page {
+        padding-left: 24px;
+      }
+
+      .tree .empty {
+        padding: 12px;
+        color: var(--muted);
+      }
+
+      .sidebar-foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 10px 14px;
+        border-top: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .icon-btn {
+        display: grid;
+        width: 32px;
+        height: 32px;
+        place-items: center;
+        border: 1px solid var(--border-strong);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--text-2);
+        font-size: 15px;
+        cursor: pointer;
+      }
+
+      main {
+        position: relative;
+        min-width: 0;
+        min-height: 0;
+      }
+
+      main iframe {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border: 0;
+        background: var(--bg);
+      }
+
+      .topbar {
+        display: none;
+      }
+
+      .notice {
+        max-width: 640px;
+        margin: 80px auto;
+        padding: 0 24px;
+      }
+
+      @media (max-width: 860px) {
+        body {
+          grid-template-columns: 1fr;
+          grid-template-rows: auto 1fr;
+        }
+
+        .topbar {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 8px 12px;
+          border-bottom: 1px solid var(--border);
+          background: var(--bg-soft);
+          font-weight: 600;
+        }
+
+        .topbar .current {
+          overflow: hidden;
+          font-size: 14px;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .sidebar {
+          position: fixed;
+          top: 0;
+          bottom: 0;
+          left: 0;
+          z-index: 20;
+          width: min(320px, 86vw);
+          transform: translateX(-100%);
+          transition: transform 0.2s;
+          box-shadow: var(--shadow);
+        }
+
+        body.nav-open .sidebar {
+          transform: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="topbar">
+      <button class="icon-btn" id="menu" type="button" aria-label="Abrir navegación">☰</button>
+      <span class="current" id="current-title">Documentación</span>
+    </div>
+    <aside class="sidebar" aria-label="Navegación de la documentación">
+      <div class="brand">
+        <span class="logo">QA</span>
+        <a href="#/">Agentic QA<small>Documentación</small></a>
+      </div>
+      <div class="search">
+        <input
+          id="search"
+          type="search"
+          placeholder="Buscar páginas"
+          autocomplete="off"
+          aria-label="Buscar páginas"
+        />
+        <kbd>/</kbd>
+      </div>
+      <nav class="tree" id="tree"><div class="empty">Cargando…</div></nav>
+      <div class="sidebar-foot">
+        <span>bun run docs</span>
+        <button class="icon-btn" id="theme" type="button" aria-label="Cambiar tema claro/oscuro">
+          ☾
+        </button>
+      </div>
+    </aside>
+    <main>
+      <iframe id="frame" title="Página de la documentación"></iframe>
+    </main>
+    <script>
+      (function () {
+        var KEY = 'docs-theme';
+        var HOME = 'core/empezar-aqui.html';
+        var root = document.documentElement;
+        var frame = document.getElementById('frame');
+        var treeEl = document.getElementById('tree');
+        var search = document.getElementById('search');
+        var themeBtn = document.getElementById('theme');
+        var titleEl = document.getElementById('current-title');
+        var pages = [];
+        var links = {};
+
+        function theme() {
+          var explicit = root.getAttribute('data-theme');
+          if (explicit) return explicit;
+          return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+
+        function syncFrameTheme() {
+          try {
+            var doc = frame.contentDocument;
+            if (!doc) return;
+            doc.documentElement.setAttribute('data-theme', theme());
+            doc.documentElement.classList.add('in-portal');
+          } catch (e) {
+            /* cross-origin page: leave it alone */
+          }
+        }
+
+        function paintThemeBtn() {
+          themeBtn.textContent = theme() === 'dark' ? '☀' : '☾';
+        }
+
+        themeBtn.addEventListener('click', function () {
+          var next = theme() === 'dark' ? 'light' : 'dark';
+          root.setAttribute('data-theme', next);
+          try {
+            localStorage.setItem(KEY, next);
+          } catch (e) {}
+          paintThemeBtn();
+          syncFrameTheme();
+        });
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () {
+          paintThemeBtn();
+          syncFrameTheme();
+        });
+        paintThemeBtn();
+
+        function el(tag, cls, text) {
+          var node = document.createElement(tag);
+          if (cls) node.className = cls;
+          if (text) node.textContent = text;
+          return node;
+        }
+
+        function pageLink(path, title, description) {
+          var a = el('a', null, title);
+          a.href = '#/' + path;
+          if (description) a.title = description;
+          links[path] = a;
+          pages.push({ path: path, title: title, description: description || '', a: a });
+          return a;
+        }
+
+        function render(nodes, parent) {
+          var ul = el('ul');
+          nodes.forEach(function (node) {
+            var li = el('li', node.type);
+            if (node.type === 'folder') {
+              var row = el('div', 'row');
+              var twisty = el('button', 'twisty', '▾');
+              twisty.type = 'button';
+              twisty.setAttribute('aria-label', 'Plegar ' + node.title);
+              twisty.addEventListener('click', function () {
+                li.classList.toggle('collapsed');
+              });
+              row.appendChild(twisty);
+              if (node.index) {
+                row.appendChild(pageLink(node.index, node.title, node.description));
+              } else {
+                var label = el('span', 'label', node.title);
+                label.addEventListener('click', function () {
+                  li.classList.toggle('collapsed');
+                });
+                row.appendChild(label);
+              }
+              li.appendChild(row);
+              render(node.children, li);
+              li.dataset.folder = node.path;
+            } else {
+              li.appendChild(pageLink(node.path, node.title, node.description));
+            }
+            ul.appendChild(li);
+          });
+          parent.appendChild(ul);
+        }
+
+        function currentPath() {
+          var hash = decodeURIComponent(location.hash.replace(/^#\/?/, ''));
+          return hash || null;
+        }
+
+        function show(path) {
+          var target = path || (links[HOME] ? HOME : pages.length ? pages[0].path : null);
+          if (!target) return;
+          Object.keys(links).forEach(function (key) {
+            links[key].classList.toggle('active', key === target);
+          });
+          var active = links[target];
+          if (active) {
+            var li = active.closest('li');
+            while (li) {
+              li.classList.remove('collapsed');
+              li = li.parentElement && li.parentElement.closest('li');
+            }
+            titleEl.textContent = active.textContent;
+          }
+          var wanted = new URL(target, location.href).href;
+          if (frame.src !== wanted) frame.src = target;
+          document.body.classList.remove('nav-open');
+        }
+
+        frame.addEventListener('load', function () {
+          syncFrameTheme();
+          try {
+            var loc = frame.contentWindow.location;
+            var base = location.pathname.replace(/[^/]*$/, '');
+            var rel = loc.pathname.indexOf(base) === 0 ? loc.pathname.slice(base.length) : null;
+            if (frame.contentDocument.title) document.title = frame.contentDocument.title;
+            if (rel && rel !== currentPath()) {
+              history.replaceState(null, '', '#/' + rel);
+              show(rel);
+            }
+          } catch (e) {}
+        });
+
+        window.addEventListener('hashchange', function () {
+          show(currentPath());
+        });
+
+        search.addEventListener('input', function () {
+          var q = search.value.trim().toLowerCase();
+          pages.forEach(function (p) {
+            var hay = (p.title + ' ' + p.description + ' ' + p.path).toLowerCase();
+            p.a.dataset.hit = !q || hay.indexOf(q) >= 0 ? '1' : '0';
+            var li = p.a.closest('li');
+            if (!li.classList.contains('folder'))
+              li.style.display = p.a.dataset.hit === '1' ? '' : 'none';
+          });
+          // Deepest folders first (reverse document order), so a parent sees its children's result.
+          var folders = treeEl.querySelectorAll('li.folder');
+          for (var i = folders.length - 1; i >= 0; i--) {
+            var f = folders[i];
+            var own = f.querySelector(':scope > .row a');
+            var ownHit = own && own.dataset.hit === '1';
+            var childVisible = Array.prototype.some.call(
+              f.querySelectorAll(':scope > ul > li'),
+              function (child) {
+                return child.style.display !== 'none';
+              }
+            );
+            f.style.display = !q || ownHit || childVisible ? '' : 'none';
+            if (q) f.classList.remove('collapsed');
+          }
+        });
+
+        document.addEventListener('keydown', function (e) {
+          if (e.key === '/' && document.activeElement !== search) {
+            e.preventDefault();
+            search.focus();
+          }
+          if (e.key === 'Escape' && document.activeElement === search) {
+            search.value = '';
+            search.dispatchEvent(new Event('input'));
+            search.blur();
+          }
+        });
+
+        document.getElementById('menu').addEventListener('click', function () {
+          document.body.classList.toggle('nav-open');
+        });
+
+        fetch('manifest.json', { cache: 'no-store' })
+          .then(function (res) {
+            if (!res.ok) throw new Error(res.status);
+            return res.json();
+          })
+          .then(function (manifest) {
+            treeEl.textContent = '';
+            if (!manifest.children.length) {
+              treeEl.appendChild(el('div', 'empty', 'No hay páginas todavía.'));
+              return;
+            }
+            render(manifest.children, treeEl);
+            show(currentPath());
+          })
+          .catch(function () {
+            treeEl.textContent = '';
+            treeEl.appendChild(el('div', 'empty', 'Sin índice.'));
+            var doc = frame.contentDocument;
+            doc.open();
+            doc.write(
+              '<link rel="stylesheet" href="assets/docs.css"><div class="notice"><h1>Falta el índice</h1>' +
+                '<p>Esta página necesita <code>manifest.json</code>. Abre la documentación con ' +
+                '<code>bun run docs</code> desde la raíz del repo, o genera el archivo con ' +
+                '<code>bun run docs:build</code>.</p></div>'
+            );
+            doc.close();
+            syncFrameTheme();
+          });
+      })();
+    </script>
+  </body>
+</html>
