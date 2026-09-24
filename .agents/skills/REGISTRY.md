@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-09-24T19:47:14.148Z`
+> Generated: `2026-09-24T21:23:29.058Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -8,7 +8,7 @@ This file is the per-session compact-rules cache for the Skill Resolver protocol
 The orchestrator copies one or more `## Skill: <slug>` blocks below into every subagent briefing under `## Project Standards (auto-resolved)`.
 Subagents trust those compact rules and only read the full SKILL.md when explicitly instructed.
 
-Skills indexed: 21
+Skills indexed: 22
 
 ---
 ## Skill: acli
@@ -139,7 +139,7 @@ Skills indexed: 21
 - DO NOT: refactor `cli/install.ts` without exercising the full install flow on a clean clone. Verification on an already-installed repo proves nothing, and the installer is the one surface where a bug ships silently to every new user.
 - WHEN the chosen approach reshapes test architecture (KATA layers, a fixture API, the runner, the isolation/parallelization model, the OpenAPI/type pipeline) AND is hard to reverse: record an ADR under `.context/ADR/` after plan approval and before coding, drafted `Proposed` for the human to accept. ADRs are append-only — supersede, never rewrite.
 - DO: verify with all four checks (test, types, lint, skills) and treat any non-zero exit as REJECT — present retry / skip-and-document / abort, never auto-fix. A skill that itself broke (a wrong step, a missing verifier, a stale rule) is reported upstream per `../agentic-qa-core/references/upstream-feedback.md`: drafted and redacted locally, filed only on explicit OK, verified with `gh issue view`.
-- WHEN the change IS a skill (a new or restructured `.agents/skills/<slug>/`): scaffold it per `../agentic-qa-core/references/skill-scaffold.md` (frontmatter incl. `metadata.kind`, per-kind files and sections, Definition of Done). `skill-creator` (T4, ask before loading) is loaded only for the test prompts and the description optimizer; the scaffold works without it. Consumer SUT context skills are NOT this skill's job: `project-context` mode `context-skill` owns them.
+- WHEN the change IS a skill (a new or restructured `.agents/skills/<slug>/`): scaffold it per `../agentic-qa-core/references/skill-scaffold.md` (frontmatter incl. `metadata.kind`, per-kind files and sections, Definition of Done). `skill-creator` (T3, installed at project level) is ALWAYS the builder: load it for the draft, the test prompts, the evals and the description pass; the scaffold contract stays this repo's. Missing on the machine → scaffold from the reference's template and say so. Consumer SUT context skills are NOT this skill's job: `project-context` mode `context-skill` owns them.
 - DO NOT: let a subagent write `progress.md`; it is orchestrator-only. Code subagents return one-line summaries per task, and the orchestrator does not read their diffs.
 - DO: archive the session directory only after all four verifiers pass. On REJECT it stays in place so the run can be debugged or resumed.
 
@@ -173,6 +173,26 @@ Skills indexed: 21
 **Read full SKILL.md when**: running Strategy Setup, resolving a specific conflict type, picking a base branch or branch prefix for an unfamiliar strategy, or setting up an isolated worktree.
 
 > Source: `.agents/skills/git-flow-master/SKILL.md` · phase: `implementation` · kind: `workflow` · extraction strategy: A
+
+---
+
+## Skill: iql-context
+
+**Purpose**: The methodology index of this repo: how the IQL (Integrated Quality Lifecycle) is structured, why the QA process runs as eight named stag...
+
+**Compact Rules**:
+- DO: answer "why is the process shaped this way" from the index below, then point at the canonical reference for the procedure; never restate a DoD, a transition table or a link catalog that a reference already owns.
+- DO: name stages by word (Shift-Left, Planning, Execution, Reporting, Documentation, Automation, Regression, Observation), never by number; a numbered "Stage N" in an older doc resolves through `agentic-qa-core/references/stage-gates.md`.
+- DO: read `.agents/project.yaml` → `qa.methodology` before saying which stages a project runs or how strict its gates are; the shipped values are a default, not a decision.
+- DO: read `references/project-overrides.md` for the project's own rules and exceptions; they win over this index for THAT project, and only there.
+- DO NOT: resolve a web-vs-repo disagreement on your own. The repo's executable doctrine (`agentic-qa-core/references/*`) is what the skills enforce; the website is the public narrative. State both readings and cite both.
+- DO NOT: treat this skill as SUT knowledge. Entities, endpoints, infra and Jira content live in `.context/` maps and the project's `<aspect>-context` skills.
+- DO NOT: edit this SKILL.md or its synced references in a consumer project; propose a refinement per `agentic-qa-core/references/skill-refinement-protocol.md` (project-owned prose goes in `references/project-overrides.md`).
+- WHEN a question is about ONE aspect (phases and steps, the agentic contract, the eight approaches, the thirteen invariants): load only that reference from §"References".
+
+**Read full SKILL.md when**: building a briefing that must explain the methodology to a subagent, answering "why" questions about the ladder or the stages, or checking which invariant a proposed shortcut violates.
+
+> Source: `.agents/skills/iql-context/SKILL.md` · phase: `unknown` · kind: `context` · extraction strategy: A
 
 ---
 

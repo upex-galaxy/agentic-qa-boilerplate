@@ -114,3 +114,4 @@ Write `.context/business/business-data-map.md` with this structure:
 - Update `AGENTS.md` with a reference to the generated file if not already present. `CLAUDE.md` remains the one-line compatibility shim.
 - In UPDATE mode: show the diff summary and wait for explicit confirmation.
 - Report: entities documented, flows traced, state machines found, integrations mapped, discovery gaps.
+- If `.agents/skills/data-context/` exists: offer to run `project-context` mode `context-skill data` in UPDATE now (the map just changed; its judgment layer may carry a rule the new map contradicts). If it does not exist: name the option once, do not scaffold it here.

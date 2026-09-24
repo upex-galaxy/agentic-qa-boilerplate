@@ -248,3 +248,4 @@ Ensure a `relates to` link from the MTP Epic to each sibling (resolve by name fr
   - Discovery gaps open: N
   - MTP Epic: {key} (created | updated) — mirror refreshed, sibling links ensured (note any missing sibling)
 - If §1.2 warned, remind the user to run `project-context` mode `features` and re-run mode `test-plan`.
+- If a project-owned context skill sits over the master test plan (the project names the aspect): offer to run `project-context` mode `context-skill <aspect>` in UPDATE now. The methodology index itself (`iql-context`) is shipped upstream and is NOT updated from a map: a local rule goes to its `references/project-overrides.md`.
