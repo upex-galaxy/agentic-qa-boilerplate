@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Prompting</title>
+    <meta
+      name="description"
+      content="Cómo escribir instrucciones para un agente: tarea clara, contexto, restricciones, ejemplos y formato de salida; few-shot contra zero-shot, cuándo pedir razonamiento y por qué los prompts se versionan como código."
+    />
+    <meta name="docs-order" content="10" />
+    <link rel="stylesheet" href="../../assets/docs.css" />
+    <script src="../../assets/docs.js"></script>
+    <style>
+      .prompt-svg {
+        width: 100%;
+        height: auto;
+        color: var(--text);
+      }
+      .prompt-svg text {
+        font-family: var(--font-sans);
+      }
+    </style>
+  </head>
+  <body>
+    <article class="doc">
+      <header class="doc-header">
+        <nav class="breadcrumbs">
+          <span>Core</span><span>Fundamentos agénticos</span><span>Prompting</span>
+        </nav>
+        <h1>Prompting: escribir instrucciones que un modelo pueda seguir</h1>
+        <p class="lede">
+          Un prompt es la especificación de una tarea para alguien que no estuvo en la reunión. Esta
+          página reúne las técnicas que más cambian el resultado y muestra cómo las aplica este repo
+          en sus archivos de instrucciones, sus skills y sus briefings a subagentes.
+        </p>
+        <div class="meta-row">
+          <span class="badge accent">Fundamentos</span><span class="badge">Prompting</span>
+        </div>
+      </header>
+
+      <nav class="toc">
+        <strong>En esta página</strong>
+        <ol>
+          <li><a href="#anatomia">Anatomía de un prompt</a></li>
+          <li><a href="#instrucciones">Instrucciones claras y restricciones</a></li>
+          <li><a href="#ejemplos">Few-shot contra zero-shot</a></li>
+          <li><a href="#razonamiento">Chain of thought: cuándo sí y cuándo no</a></li>
+          <li><a href="#formato">Formato de salida</a></li>
+          <li><a href="#como-codigo">Prompts como código versionado</a></li>
+          <li><a href="#este-repo">Así lo hace este repo</a></li>
+          <li><a href="#errores">Errores comunes</a></li>
+          <li><a href="#profundizar">Para profundizar</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="anatomia">Anatomía de un prompt</h2>
+      <p>
+        Un modelo de lenguaje no conoce tu proyecto, tu equipo ni lo que decidiste ayer. Todo lo que
+        necesita para hacer bien la tarea tiene que estar en el texto que recibe, o en archivos que
+        ese texto le diga que lea. Por eso conviene pensar el prompt en partes. No todas aparecen
+        siempre, pero cuando falta una suele notarse en la respuesta.
+      </p>
+
+      <figure>
+        <div class="frame">
+          <svg
+            class="prompt-svg"
+            role="img"
+            viewBox="0 0 720 330"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-labelledby="anat-title anat-desc"
+          >
+            <title id="anat-title">Anatomía de un prompt</title>
+            <desc id="anat-desc">
+              Seis bloques apilados dentro de un prompt: rol, contexto, tarea, restricciones,
+              ejemplos y formato de salida. Una flecha lleva el prompt al modelo y otra lleva al
+              resultado, que se compara contra el formato pedido.
+            </desc>
+            <rect
+              x="10"
+              y="10"
+              width="330"
+              height="310"
+              rx="10"
+              fill="none"
+              stroke-width="1.5"
+              stroke-dasharray="5 4"
+              style="stroke: var(--border-strong)"
+            />
+            <text x="26" y="34" font-size="13" style="fill: var(--text-2)">prompt</text>
+            <g font-size="14" fill="currentColor">
+              <rect
+                x="30"
+                y="48"
+                width="290"
+                height="36"
+                rx="6"
+                style="fill: var(--surface-2); stroke: var(--border-strong)"
+              />
+              <text x="44" y="71">Rol · quién responde y para quién</text>
+              <rect
+                x="30"
+                y="92"
+                width="290"
+                height="36"
+                rx="6"
+                style="fill: var(--surface-2); stroke: var(--border-strong)"
+              />
+              <text x="44" y="115">Contexto · datos, archivos, antecedentes</text>
+              <rect
+                x="30"
+                y="136"
+                width="290"
+                height="36"
+                rx="6"
+                stroke-width="1.5"
+                style="fill: var(--accent-soft); stroke: var(--accent)"
+              />
+              <text x="44" y="159" font-weight="600">Tarea · un objetivo verificable</text>
+              <rect
+                x="30"
+                y="180"
+                width="290"
+                height="36"
+                rx="6"
+                style="fill: var(--surface-2); stroke: var(--border-strong)"
+              />
+              <text x="44" y="203">Restricciones · qué no hacer, límites</text>
+              <rect
+                x="30"
+                y="224"
+                width="290"
+                height="36"
+                rx="6"
+                style="fill: var(--surface-2); stroke: var(--border-strong)"
+              />
+              <text x="44" y="247">Ejemplos · entrada y salida esperada</text>
+              <rect
+                x="30"
+                y="268"
+                width="290"
+                height="36"
+                rx="6"
+                style="fill: var(--surface-2); stroke: var(--border-strong)"
+              />
+              <text x="44" y="291">Formato de salida · forma exacta</text>
+            </g>
+            <defs>
+              <marker
+                id="anat-arrow"
+                viewBox="0 0 10 10"
+                refX="9"
+                refY="5"
+                markerWidth="8"
+                markerHeight="8"
+                orient="auto"
+              >
+                <path d="M0,0 L10,5 L0,10 z" style="fill: var(--text-2)" />
+              </marker>
+            </defs>
+            <line
+              x1="345"
+              y1="165"
+              x2="418"
+              y2="165"
+              stroke-width="2"
+              marker-end="url(#anat-arrow)"
+              style="stroke: var(--text-2)"
+            />
+            <rect
+              x="424"
+              y="130"
+              width="110"
+              height="70"
+              rx="10"
+              fill="none"
+              stroke-width="2"
+              style="stroke: var(--accent)"
+            />
+            <text
+              x="479"
+              y="170"
+              font-size="15"
+              text-anchor="middle"
+              fill="currentColor"
+              font-weight="600"
+            >
+              Modelo
+            </text>
+            <line
+              x1="538"
+              y1="165"
+              x2="590"
+              y2="165"
+              stroke-width="2"
+              marker-end="url(#anat-arrow)"
+              style="stroke: var(--text-2)"
+            />
+            <rect
+              x="596"
+              y="130"
+              width="114"
+              height="70"
+              rx="10"
+              style="fill: var(--surface-2); stroke: var(--border-strong)"
+            />
+            <text x="653" y="162" font-size="14" text-anchor="middle" fill="currentColor">
+              Resultado
+            </text>
+            <text x="653" y="182" font-size="12" text-anchor="middle" style="fill: var(--text-2)">
+              se valida
+            </text>
+            <path
+              d="M653 204 C653 300, 400 318, 326 288"
+              fill="none"
+              stroke-width="1.5"
+              stroke-dasharray="4 4"
+              marker-end="url(#anat-arrow)"
+              style="stroke: var(--text-2)"
+            />
+            <text x="520" y="262" font-size="12" style="fill: var(--text-2)">
+              ¿cumple el formato?
+            </text>
+          </svg>
+        </div>
+        <figcaption>
+          La tarea es el único bloque obligatorio. Los demás existen para que el modelo no tenga que
+          adivinar, y el formato de salida cierra el ciclo porque te da algo que puedes comprobar.
+        </figcaption>
+      </figure>
+
+      <h2 id="instrucciones">Instrucciones claras y restricciones</h2>
+      <p>
+        La prueba más útil es la del colega nuevo: si le dieras el mismo texto a una persona
+        competente que no conoce el proyecto, ¿podría hacer la tarea sin preguntarte nada? Si la
+        respuesta es no, al modelo le falta lo mismo que a esa persona.
+      </p>
+      <p>
+        Las instrucciones funcionan mejor cuando dicen <strong>qué resultado</strong> esperas y cómo
+        sabrás que está bien. «Revisa este test» deja al modelo eligiendo el alcance. «Revisa si
+        este test comprueba el caso de sesión expirada y dime qué assertion falta» tiene un criterio
+        de éxito. Explica también el porqué de una regla: un modelo que sabe que las credenciales
+        van en <code>.env</code> para que no terminen en un commit generaliza mejor que uno que solo
+        leyó «no hardcodees contraseñas».
+      </p>
+      <p>
+        Las restricciones marcan los bordes: qué archivos no tocar, qué herramientas usar, qué
+        idioma. Formúlalas en positivo cuando puedas («responde en español») y reserva las
+        prohibiciones para lo que tiene costo real si se rompe. Una lista de veinte «NUNCA» en
+        mayúsculas diluye las dos que importan.
+      </p>
+
+      <h2 id="ejemplos">Few-shot contra zero-shot</h2>
+      <dl class="defs">
+        <dt>Zero-shot</dt>
+        <dd>Solo instrucciones, sin ejemplos. Alcanza para tareas comunes con una salida obvia.</dd>
+        <dt>Few-shot</dt>
+        <dd>
+          Instrucciones más dos a cinco pares de entrada y salida. Sirve cuando el formato, el tono
+          o el criterio son difíciles de describir con palabras.
+        </dd>
+      </dl>
+      <p>
+        Los ejemplos pesan más que las instrucciones: el modelo tiende a copiar su largo, su
+        estructura y hasta sus errores. Por eso tienen que ser variados (un caso feliz, uno con
+        error, uno en el límite) y consistentes con lo que pides en el texto. Si el ejemplo dice una
+        cosa y la instrucción otra, casi siempre gana el ejemplo. En QA esto aparece al pedir test
+        cases con un formato fijo: dos casos bien escritos enseñan más que un párrafo describiendo
+        columnas.
+      </p>
+
+      <h2 id="razonamiento">Chain of thought: cuándo sí y cuándo no</h2>
+      <p>
+        Pedirle al modelo que razone paso a paso antes de responder mejora los resultados en tareas
+        de varios pasos: cálculos, decisiones con varias condiciones que interactúan, diagnóstico de
+        una falla a partir de un log. El trabajo intermedio queda escrito y el modelo lo usa para
+        llegar a la conclusión. También te deja auditar cómo llegó ahí.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Pide razonamiento</th>
+              <th>No hace falta</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Clasificar un defecto según varias reglas (severidad, etapa del feature)</td>
+              <td>Extraer un campo de un JSON</td>
+            </tr>
+            <tr>
+              <td>Decidir qué técnica de diseño de pruebas aplica a un criterio</td>
+              <td>Traducir o reformatear un texto</td>
+            </tr>
+            <tr>
+              <td>Encontrar la causa de un test intermitente</td>
+              <td>Responder con una etiqueta de una lista cerrada</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        En tareas simples el razonamiento suma latencia y tokens sin mejorar nada. Muchos modelos
+        actuales ya razonan internamente por su cuenta; en ese caso una instrucción general («piensa
+        bien el problema antes de responder») suele rendir más que dictarle los pasos uno por uno.
+      </p>
+
+      <h2 id="formato">Formato de salida</h2>
+      <p>
+        Si otra herramienta o persona va a consumir la respuesta, pide la forma exacta: un objeto
+        JSON con campos nombrados, una tabla con columnas fijas, un bloque de código sin prosa
+        alrededor. Separar las partes del prompt con encabezados o etiquetas
+        (<code>&lt;contexto&gt;</code>,
+        <code>&lt;tarea&gt;</code>) ayuda al modelo a distinguir los datos de las instrucciones,
+        sobre todo cuando pegas documentos largos. Y el formato de la salida tiende a imitar al del
+        prompt: un prompt lleno de viñetas produce respuestas en viñetas.
+      </p>
+
+      <h2 id="como-codigo">Prompts como código versionado</h2>
+      <p>
+        Un prompt que se usa más de una vez es código. Vive en un archivo, pasa por control de
+        versiones y cambia con commits que explican el motivo. Así puedes responder qué instrucción
+        tenía el agente cuando produjo un resultado raro, y volver atrás si una edición empeoró las
+        cosas.
+      </p>
+      <ol class="steps">
+        <li>
+          <strong>Escribe</strong>
+          <p>La instrucción vive en un archivo del repo, no en el historial de un chat.</p>
+        </li>
+        <li>
+          <strong>Prueba</strong>
+          <p>Casos con prompts de entrada y el comportamiento esperado, igual que un test.</p>
+        </li>
+        <li>
+          <strong>Valida</strong>
+          <p>
+            Un linter comprueba lo que se puede comprobar sin el modelo: referencias, estructura,
+            variables.
+          </p>
+        </li>
+        <li>
+          <strong>Revisa y versiona</strong>
+          <p>El cambio entra con un commit y se puede revertir.</p>
+        </li>
+      </ol>
+      <p>
+        Sin ese ciclo, cada mejora es anecdótica. Con él, un cambio de redacción se trata como
+        cualquier otro cambio de comportamiento.
+      </p>
+
+      <h2 id="este-repo">Así lo hace este repo</h2>
+      <p>
+        Casi todo lo que el agente sabe de este proyecto está escrito en archivos versionados. Estas
+        son las piezas y la técnica que aplica cada una.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Pieza</th>
+              <th>Dónde</th>
+              <th>Técnica</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Archivo de instrucciones</td>
+              <td>
+                <code>AGENTS.md</code> (Claude Code lo lee a través de <code>CLAUDE.md</code>, que
+                solo contiene <code>@AGENTS.md</code>)
+              </td>
+              <td>Rol, reglas y restricciones que se cargan en cada sesión</td>
+            </tr>
+            <tr>
+              <td>Skills</td>
+              <td>
+                <code>.agents/skills/sprint-testing/SKILL.md</code>,
+                <code>.agents/skills/test-automation/SKILL.md</code>
+              </td>
+              <td>Instrucciones por tarea que se cargan solo cuando hacen falta</td>
+            </tr>
+            <tr>
+              <td>Briefing a subagentes</td>
+              <td><code>.agents/skills/agentic-qa-core/references/briefing-template.md</code></td>
+              <td>Plantilla fija con formato de salida obligatorio</td>
+            </tr>
+            <tr>
+              <td>Variables y pseudocódigo</td>
+              <td><code>.agents/README.md</code>, <code>.agents/project.yaml</code></td>
+              <td>Separar la instrucción de los datos del proyecto</td>
+            </tr>
+            <tr>
+              <td>Evals de activación</td>
+              <td><code>.agents/skills/sprint-testing/evals/evals.json</code></td>
+              <td>Casos de prueba del propio prompt</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="repo-skills">Skills: la descripción decide cuándo se cargan</h3>
+      <p>
+        Cada <code>SKILL.md</code> abre con un frontmatter YAML. El campo
+        <code>description</code> es lo que el agente lee para decidir si la skill aplica, así que
+        funciona como un prompt de clasificación. La de <code>sprint-testing</code> dice qué hace,
+        enumera frases disparadoras después de <code>Triggers on:</code> («test this ticket»,
+        «retest this bug») y termina con <code>Do NOT use for:</code>, que manda la documentación en
+        TMS a <code>test-documentation</code> y la automatización a <code>test-automation</code>.
+        Los contraejemplos son tan explícitos como los ejemplos.
+      </p>
+      <p>
+        Algunas skills agregan <code>compact_rules</code>: reglas cortas que
+        <code>scripts/build-skill-registry.ts</code> copia sin cambios a
+        <code>.agents/skills/REGISTRY.md</code> (se regenera con
+        <code>bun run skills:registry</code>). Es la versión resumida de la skill para cuando un
+        subagente necesita las convenciones sin leer el archivo completo.
+      </p>
+
+      <h3 id="repo-briefing">El briefing de 7 componentes</h3>
+      <p>
+        Cuando el agente principal delega trabajo, el briefing tiene siete partes fijas: objetivo en
+        una oración, documentos de contexto con rutas absolutas, estándares del proyecto sacados de
+        <code>REGISTRY.md</code>, skills a cargar, instrucciones numeradas, formato del reporte y
+        reglas. Es la anatomía del diagrama de arriba convertida en plantilla. La plantilla pide que
+        el reporte sea un JSON con campos nombrados o una lista con encabezados, y desaconseja la
+        prosa libre, porque el orquestador tiene que leer y combinar varios reportes.
+      </p>
+
+      <h3 id="repo-variables">Pseudocódigo y variables</h3>
+      <p>
+        Las skills no escriben el comando concreto de Jira ni la URL del entorno. Escriben
+        <code>[ISSUE_TRACKER_TOOL]</code> o <code>[AUTOMATION_TOOL]</code>, y la sección 6 de
+        <code>AGENTS.md</code> resuelve cada etiqueta a una herramienta (<code>/acli</code>,
+        <code>/playwright-cli</code>) con su alternativa. Los valores del proyecto usan
+        <code>{{PROJECT_KEY}}</code> o <code>{{WEB_URL}}</code>, que salen de
+        <code>.agents/project.yaml</code>; los de sesión usan
+        <code>&lt;&lt;ISSUE_KEY&gt;&gt;</code>. La misma skill sirve en cualquier proyecto, y
+        <code>bun run vars:check</code> falla si una skill referencia una variable que no está
+        declarada.
+      </p>
+
+      <h3 id="repo-pruebas">Probar los prompts</h3>
+      <p>
+        Nueve skills tienen una carpeta <code>evals/</code> con prompts de ejemplo, el
+        comportamiento esperado y una polaridad (<code>positive</code> si la skill debería
+        activarse, <code>negative</code> si no). <code>bun run skills:evals</code> valida la
+        estructura de esos casos. Todavía no ejecuta un modelo, así que confirma que los casos están
+        bien formados, no que la skill se active de verdad; el propio script lo aclara en su
+        cabecera.
+      </p>
+      <p>
+        Hay además un hook, <code>.agents/hooks/personality-reinject.mjs</code>, que vuelve a
+        inyectar el contrato de estilo de <code>AGENTS.md</code> en cada turno para que no se diluya
+        en sesiones largas. Es la respuesta del repo a un problema conocido: una instrucción del
+        principio pierde peso a medida que la conversación crece. El detalle de ese tema está en
+        <a href="context.html">Contexto</a>.
+      </p>
+
+      <h2 id="errores">Errores comunes</h2>
+      <div class="callout warn">
+        <span class="callout-title">Errores comunes</span>
+        <ul>
+          <li>
+            Asumir contexto compartido. «Arregla lo de ayer» no significa nada para una sesión
+            nueva.
+          </li>
+          <li>Ejemplos que contradicen la instrucción. El modelo copia el ejemplo.</li>
+          <li>
+            Gritar todo. Si diez reglas están en mayúsculas, ninguna sobresale, y el modelo puede
+            aplicarlas con un celo que no querías.
+          </li>
+          <li>
+            Pedir razonamiento paso a paso para extraer un dato. Pagas latencia y no ganas
+            precisión.
+          </li>
+          <li>Dejar el formato de salida abierto cuando un script va a leer la respuesta.</li>
+          <li>
+            Editar un prompt compartido sin probarlo. Un cambio que mejora un caso puede romper
+            otros tres; los evals existen para verlo antes.
+          </li>
+          <li>
+            Pegar el mismo bloque de instrucciones en varios archivos. Cuando cambie, solo vas a
+            actualizar una copia.
+          </li>
+        </ul>
+      </div>
+
+      <h2 id="profundizar">Para profundizar</h2>
+      <ul>
+        <li>
+          <a
+            href="https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/overview"
+            target="_blank"
+            rel="noopener"
+            >Prompt engineering overview</a
+          >
+          (Anthropic). Empieza por definir criterios de éxito y evals antes de tocar el prompt.
+        </li>
+        <li>
+          <a
+            href="https://developers.openai.com/api/docs/guides/prompt-engineering"
+            target="_blank"
+            rel="noopener"
+            >Prompt engineering</a
+          >
+          (OpenAI). Guía de la API con estrategias de instrucciones, ejemplos y formato.
+        </li>
+        <li>
+          <a
+            href="https://ai.google.dev/gemini-api/docs/prompting-strategies"
+            target="_blank"
+            rel="noopener"
+            >Prompt design strategies</a
+          >
+          (Google, Gemini API). Instrucciones claras, few-shot y uso de delimitadores.
+        </li>
+        <li>
+          <a href="https://arxiv.org/abs/2005.14165" target="_blank" rel="noopener"
+            >Language Models are Few-Shot Learners</a
+          >
+          (Brown et al., 2020). El paper que popularizó el aprendizaje con ejemplos dentro del
+          prompt.
+        </li>
+        <li>
+          <a href="https://arxiv.org/abs/2201.11903" target="_blank" rel="noopener"
+            >Chain-of-Thought Prompting Elicits Reasoning in Large Language Models</a
+          >
+          (Wei et al., 2022). Ejemplos con pasos intermedios en tareas de razonamiento.
+        </li>
+        <li>
+          <a href="https://arxiv.org/abs/2205.11916" target="_blank" rel="noopener"
+            >Large Language Models are Zero-Shot Reasoners</a
+          >
+          (Kojima et al., 2022). Razonamiento paso a paso sin ejemplos.
+        </li>
+      </ul>
+
+      <footer class="doc-footer">
+        Relacionadas: <a href="index.html">Fundamentos agénticos</a> ·
+        <a href="context.html">Contexto</a> · <a href="harness.html">Harness</a> ·
+        <a href="orquestacion.html">Orquestación</a> ·
+        <a href="../metodologia/este-repo.html">Este repo y el IQL</a>. Fuentes canónicas:
+        <code>AGENTS.md</code>,
+        <code>.agents/skills/agentic-qa-core/references/briefing-template.md</code>,
+        <code>.agents/README.md</code>.
+      </footer>
+    </article>
+  </body>
+</html>
