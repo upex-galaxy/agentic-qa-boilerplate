@@ -1,0 +1,669 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Context engineering</title>
+    <meta
+      name="description"
+      content="La ventana de contexto como presupuesto: qué se carga siempre, qué bajo demanda y qué vive fuera, con lazy loading de skills, compact rules, memoria persistente, handoffs y cachés locales."
+    />
+    <meta name="docs-order" content="20" />
+    <link rel="stylesheet" href="../../assets/docs.css" />
+    <script src="../../assets/docs.js"></script>
+    <style>
+      .ctx-svg {
+        width: 100%;
+        height: auto;
+        color: var(--text);
+        font-family: var(--font-sans);
+      }
+    </style>
+  </head>
+  <body>
+    <article class="doc">
+      <header class="doc-header">
+        <nav class="breadcrumbs">
+          <span>Core</span><span>Fundamentos agénticos</span><span>Context engineering</span>
+        </nav>
+        <h1>Context engineering: qué ve el agente y cuándo</h1>
+        <p class="lede">
+          Un agente solo sabe lo que tiene en su ventana de contexto en ese momento. Esta página
+          explica cómo tratar esa ventana como un presupuesto, qué conviene cargar siempre, qué
+          traer bajo demanda y qué guardar fuera, y cómo lo resuelve este repo.
+        </p>
+        <div class="meta-row">
+          <span class="badge accent">Fundamentos</span><span class="badge">Contexto</span
+          ><span class="badge">Memoria</span>
+        </div>
+      </header>
+
+      <nav class="toc">
+        <strong>En esta página</strong>
+        <ol>
+          <li><a href="#presupuesto">La ventana es un presupuesto</a></li>
+          <li><a href="#tres-zonas">Tres zonas: siempre, bajo demanda, fuera</a></li>
+          <li><a href="#lazy-loading">Lazy loading y compact rules</a></li>
+          <li><a href="#memoria">Memoria, resúmenes y handoffs</a></li>
+          <li><a href="#contaminacion">Contaminación y drift</a></li>
+          <li><a href="#este-repo">Así lo hace este repo</a></li>
+          <li><a href="#errores">Errores comunes</a></li>
+          <li><a href="#profundizar">Para profundizar</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="presupuesto">La ventana es un presupuesto</h2>
+      <p>
+        El modelo no recuerda la conversación de ayer ni el archivo que leyó hace dos sesiones. Cada
+        vez que responde, trabaja con un único bloque de texto: instrucciones del sistema,
+        descripciones de herramientas, mensajes previos, resultados de comandos y archivos leídos.
+        Ese bloque es la <strong>ventana de contexto</strong>, y tiene un límite.
+      </p>
+      <p>
+        El límite en tokens es la parte fácil de ver. La otra es menos obvia: la calidad baja antes
+        de llegar al tope. El estudio <em>Lost in the Middle</em> mostró que los modelos encuentran
+        mejor un dato cuando está al principio o al final de un texto largo que cuando queda en el
+        medio, y el informe <em>Context Rot</em> de Chroma midió que el rendimiento cae a medida que
+        crece la entrada, incluso en tareas simples. Por eso Anthropic describe el contexto como un
+        recurso finito con rendimientos decrecientes: cada token de más compite por la atención del
+        modelo con los tokens que sí importan.
+      </p>
+      <p>
+        Context engineering es el trabajo de decidir qué entra en esa ventana en cada paso. El
+        prompting se ocupa de cómo redactar una instrucción (lo cubre
+        <a href="prompting.html">Prompting</a>). Aquí la pregunta es otra: de todo lo que el agente
+        podría leer, ¿qué necesita ahora, qué puede esperar y qué debería vivir en disco?
+      </p>
+
+      <h2 id="tres-zonas">Tres zonas: siempre, bajo demanda, fuera</h2>
+      <p>
+        Una forma práctica de pensarlo es repartir el conocimiento en tres zonas según cuándo llega
+        a la ventana.
+      </p>
+
+      <figure>
+        <div class="frame">
+          <svg
+            class="ctx-svg"
+            viewBox="0 0 720 330"
+            role="img"
+            aria-labelledby="zonas-title zonas-desc"
+          >
+            <title id="zonas-title">La ventana de contexto como presupuesto</title>
+            <desc id="zonas-desc">
+              Tres zonas. Dentro de la ventana, una franja pequeña siempre cargada con AGENTS.md y
+              las descripciones de skills, y una franja bajo demanda con compact rules, SKILL.md y
+              references. Fuera de la ventana, la caché .context, la memoria Engram y los archivos
+              de sesión y handoffs, que entran solo cuando un paso los pide.
+            </desc>
+            <defs>
+              <marker
+                id="ctx-arrow"
+                viewBox="0 0 10 10"
+                refX="9"
+                refY="5"
+                markerWidth="7"
+                markerHeight="7"
+                orient="auto-start-reverse"
+              >
+                <path d="M0,0 L10,5 L0,10 z" style="fill: var(--accent)" />
+              </marker>
+            </defs>
+            <rect
+              x="20"
+              y="30"
+              width="410"
+              height="280"
+              rx="12"
+              fill="none"
+              stroke-width="2"
+              style="stroke: var(--border-strong)"
+            />
+            <text x="36" y="22" font-size="13" font-weight="700" fill="currentColor">
+              Ventana de contexto (presupuesto finito)
+            </text>
+            <rect
+              x="36"
+              y="46"
+              width="378"
+              height="74"
+              rx="8"
+              style="fill: var(--accent-soft); stroke: var(--accent)"
+            />
+            <text x="50" y="68" font-size="13" font-weight="700" style="fill: var(--accent)">
+              Siempre cargado
+            </text>
+            <text x="50" y="88" font-size="12" fill="currentColor">
+              AGENTS.md (reglas y mapa de carga)
+            </text>
+            <text x="50" y="106" font-size="12" fill="currentColor">
+              name + description de cada skill
+            </text>
+            <rect
+              x="36"
+              y="134"
+              width="378"
+              height="120"
+              rx="8"
+              stroke-dasharray="5 4"
+              style="fill: var(--surface-2); stroke: var(--border-strong)"
+            />
+            <text x="50" y="156" font-size="13" font-weight="700" fill="currentColor">
+              Bajo demanda (según la tarea)
+            </text>
+            <text x="50" y="178" font-size="12" style="fill: var(--text-2)">
+              compact rules del REGISTRY en el briefing
+            </text>
+            <text x="50" y="198" font-size="12" style="fill: var(--text-2)">
+              SKILL.md de la skill que se activó
+            </text>
+            <text x="50" y="218" font-size="12" style="fill: var(--text-2)">
+              una reference concreta de esa skill
+            </text>
+            <text x="50" y="238" font-size="12" style="fill: var(--text-2)">
+              archivos del ticket y del código
+            </text>
+            <text x="50" y="290" font-size="12" style="fill: var(--text-2)">
+              libre para razonar y para los resultados
+            </text>
+            <rect
+              x="490"
+              y="30"
+              width="210"
+              height="280"
+              rx="12"
+              fill="none"
+              stroke-width="2"
+              stroke-dasharray="3 5"
+              style="stroke: var(--border)"
+            />
+            <text x="506" y="22" font-size="13" font-weight="700" fill="currentColor">
+              Fuera de la ventana
+            </text>
+            <rect
+              x="506"
+              y="50"
+              width="178"
+              height="60"
+              rx="8"
+              style="fill: var(--bg-soft); stroke: var(--border)"
+            />
+            <text x="518" y="74" font-size="12" font-weight="700" fill="currentColor">
+              .context/
+            </text>
+            <text x="518" y="94" font-size="11" style="fill: var(--text-2)">
+              caché de Jira y mapas
+            </text>
+            <rect
+              x="506"
+              y="130"
+              width="178"
+              height="60"
+              rx="8"
+              style="fill: var(--bg-soft); stroke: var(--border)"
+            />
+            <text x="518" y="154" font-size="12" font-weight="700" fill="currentColor">Engram</text>
+            <text x="518" y="174" font-size="11" style="fill: var(--text-2)">
+              memoria entre sesiones
+            </text>
+            <rect
+              x="506"
+              y="210"
+              width="178"
+              height="80"
+              rx="8"
+              style="fill: var(--bg-soft); stroke: var(--border)"
+            />
+            <text x="518" y="234" font-size="12" font-weight="700" fill="currentColor">
+              .session/
+            </text>
+            <text x="518" y="254" font-size="11" style="fill: var(--text-2)">plan, progress y</text>
+            <text x="518" y="272" font-size="11" style="fill: var(--text-2)">handoffs</text>
+            <line
+              x1="500"
+              y1="170"
+              x2="420"
+              y2="190"
+              stroke-width="2"
+              marker-end="url(#ctx-arrow)"
+              style="stroke: var(--accent)"
+            />
+            <text x="436" y="160" font-size="11" style="fill: var(--accent)">se lee</text>
+            <text x="436" y="174" font-size="11" style="fill: var(--accent)">al pedirlo</text>
+          </svg>
+        </div>
+        <figcaption>
+          La franja fija es pequeña a propósito. Todo lo demás llega cuando un paso lo necesita.
+        </figcaption>
+      </figure>
+
+      <dl class="defs">
+        <dt>Siempre cargado</dt>
+        <dd>
+          Lo mínimo para orientarse: reglas que no admiten excepción, el mapa de qué cargar para
+          cada tipo de tarea y el nombre y la descripción de cada skill. Cada línea aquí se paga en
+          todas las sesiones, así que tiene que ganarse el lugar.
+        </dd>
+        <dt>Bajo demanda</dt>
+        <dd>
+          El procedimiento detallado de una skill, sus references y los archivos del ticket. Entran
+          cuando la tarea los pide y sobran cuando la tarea cambia.
+        </dd>
+        <dt>Fuera</dt>
+        <dd>
+          Hechos regenerables, historia de trabajo y estado de sesiones largas. Viven en disco o en
+          una memoria externa y el agente los consulta con una lectura concreta.
+        </dd>
+      </dl>
+
+      <h2 id="lazy-loading">Lazy loading y compact rules</h2>
+      <p>
+        Las Agent Skills se diseñaron alrededor de esta idea, que Anthropic llama
+        <em>progressive disclosure</em>. Al arrancar, el agente solo conoce el <code>name</code> y
+        la <code>description</code> de cada skill. Si una tarea encaja con esa descripción, lee el
+        <code>SKILL.md</code> completo. Si el <code>SKILL.md</code> remite a un archivo de
+        referencia, lo abre en ese momento y no antes. Una skill puede tener cientos de páginas de
+        material sin costar nada mientras nadie la usa.
+      </p>
+      <p>
+        Esto cambia cómo se escribe una skill. La descripción es lo que el modelo compara con la
+        tarea, así que tiene que nombrar los disparadores reales. El cuerpo lleva el flujo y las
+        reglas. El detalle largo (tablas de campos, sintaxis de CLI, casos borde) va a
+        <code>references/</code>, con una línea en el cuerpo que diga cuándo abrirlo.
+      </p>
+      <p>
+        Las <strong>compact rules</strong> son un escalón intermedio pensado para subagentes. Cuando
+        el agente principal delega una tarea, podría pedirle al subagente que lea tres
+        <code>SKILL.md</code> enteros. En cambio, le pega en el briefing un bloque de 5 a 15 reglas
+        por skill (DO, DO NOT, WHEN) y una línea que dice cuándo hace falta leer el archivo
+        completo. El subagente trabaja con un resumen verificado y el costo por encargo baja mucho
+        cuando varias skills se solapan.
+      </p>
+
+      <svg
+        class="ctx-svg"
+        viewBox="0 0 720 120"
+        role="img"
+        aria-labelledby="escalera-title escalera-desc"
+      >
+        <title id="escalera-title">Escalera de carga</title>
+        <desc id="escalera-desc">
+          Cuatro peldaños de izquierda a derecha, cada uno más detallado y menos frecuente:
+          AGENTS.md, compact rules del REGISTRY, SKILL.md y references.
+        </desc>
+        <defs>
+          <marker
+            id="ladder-arrow"
+            viewBox="0 0 10 10"
+            refX="9"
+            refY="5"
+            markerWidth="7"
+            markerHeight="7"
+            orient="auto"
+          >
+            <path d="M0,0 L10,5 L0,10 z" style="fill: var(--border-strong)" />
+          </marker>
+        </defs>
+        <rect
+          x="10"
+          y="60"
+          width="150"
+          height="46"
+          rx="8"
+          style="fill: var(--accent-soft); stroke: var(--accent)"
+        />
+        <text
+          x="85"
+          y="88"
+          font-size="13"
+          font-weight="700"
+          text-anchor="middle"
+          style="fill: var(--accent)"
+        >
+          AGENTS.md
+        </text>
+        <rect
+          x="190"
+          y="44"
+          width="150"
+          height="62"
+          rx="8"
+          style="fill: var(--surface-2); stroke: var(--border-strong)"
+        />
+        <text
+          x="265"
+          y="72"
+          font-size="13"
+          font-weight="700"
+          text-anchor="middle"
+          fill="currentColor"
+        >
+          compact rules
+        </text>
+        <text x="265" y="92" font-size="11" text-anchor="middle" style="fill: var(--text-2)">
+          REGISTRY.md
+        </text>
+        <rect
+          x="370"
+          y="28"
+          width="150"
+          height="78"
+          rx="8"
+          style="fill: var(--surface-2); stroke: var(--border-strong)"
+        />
+        <text
+          x="445"
+          y="64"
+          font-size="13"
+          font-weight="700"
+          text-anchor="middle"
+          fill="currentColor"
+        >
+          SKILL.md
+        </text>
+        <text x="445" y="84" font-size="11" text-anchor="middle" style="fill: var(--text-2)">
+          skill activada
+        </text>
+        <rect
+          x="550"
+          y="12"
+          width="160"
+          height="94"
+          rx="8"
+          style="fill: var(--surface-2); stroke: var(--border-strong)"
+        />
+        <text
+          x="630"
+          y="56"
+          font-size="13"
+          font-weight="700"
+          text-anchor="middle"
+          fill="currentColor"
+        >
+          references/
+        </text>
+        <text x="630" y="76" font-size="11" text-anchor="middle" style="fill: var(--text-2)">
+          solo la que toca
+        </text>
+        <line
+          x1="162"
+          y1="83"
+          x2="186"
+          y2="83"
+          stroke-width="2"
+          marker-end="url(#ladder-arrow)"
+          style="stroke: var(--border-strong)"
+        />
+        <line
+          x1="342"
+          y1="75"
+          x2="366"
+          y2="75"
+          stroke-width="2"
+          marker-end="url(#ladder-arrow)"
+          style="stroke: var(--border-strong)"
+        />
+        <line
+          x1="522"
+          y1="67"
+          x2="546"
+          y2="67"
+          stroke-width="2"
+          marker-end="url(#ladder-arrow)"
+          style="stroke: var(--border-strong)"
+        />
+        <text x="10" y="20" font-size="11" style="fill: var(--text-2)">
+          más frecuente, menos detalle
+        </text>
+        <text x="10" y="36" font-size="11" style="fill: var(--text-2)">
+          → menos frecuente, más detalle
+        </text>
+      </svg>
+
+      <h2 id="memoria">Memoria, resúmenes y handoffs</h2>
+      <p>
+        Una tarea larga no cabe en una sola ventana. Hay tres herramientas para que el trabajo
+        sobreviva al límite, y cada una resuelve un problema diferente.
+      </p>
+      <p>
+        La <strong>compaction</strong> la hace el harness: cuando la conversación se acerca al tope,
+        resume lo anterior y sigue con el resumen. Es cómoda y automática, pero el resumen lo decide
+        un modelo que no sabe qué va a necesitar el paso siguiente, y lo que se pierde no vuelve.
+      </p>
+      <p>
+        Las <strong>notas estructuradas</strong> son archivos que el propio agente escribe mientras
+        trabaja: un plan, un registro de avance, una lista de decisiones. Si la sesión se corta, la
+        siguiente lee esos archivos y retoma. La ventaja es que están en disco, tienen una ruta y
+        cualquiera puede leerlas, humano o agente.
+      </p>
+      <p>
+        La <strong>memoria persistente</strong> guarda lo que tiene valor más allá de una tarea: una
+        decisión de arquitectura, la causa raíz de un bug, una preferencia del equipo. Se consulta
+        con una búsqueda cuando el tema vuelve a aparecer, semanas después.
+      </p>
+      <p>
+        Un <strong>handoff</strong> combina lo anterior a propósito. En lugar de dejar que el
+        harness comprima, la sesión que termina escribe un documento pensado para su sucesora: qué
+        estaba haciendo, qué archivos importan, qué falta y qué no debe repetirse. La sesión nueva
+        arranca con la ventana limpia y con exactamente lo que necesita.
+      </p>
+
+      <h2 id="contaminacion">Contaminación y drift</h2>
+      <p>Dos problemas estropean un contexto que en tamaño parece sano.</p>
+      <p>
+        La <strong>contaminación</strong> es texto que está en la ventana y no ayuda: la salida
+        completa de un comando de 2000 líneas, cinco archivos leídos para encontrar una función, un
+        intento fallido que el modelo sigue teniendo delante. Ese ruido distrae y además empuja las
+        instrucciones importantes hacia el medio, donde se atienden peor. Las defensas son simples:
+        filtrar salidas antes de leerlas, delegar la exploración pesada a un subagente que devuelve
+        solo la conclusión (ver <a href="orquestacion.html">Subagentes y orquestación</a>) y empezar
+        una sesión nueva cuando la tarea cambia de tema.
+      </p>
+      <p>
+        El <strong>drift</strong> aparece cuando una copia en el contexto deja de coincidir con la
+        fuente. Un documento cita un script que se renombró, un resumen describe un campo que ya no
+        existe, una caché local tiene el ticket de hace una semana. El agente actúa con confianza
+        sobre un dato viejo. La defensa es tener una sola fuente para cada hecho, leerla en el
+        momento y poner gates que detecten la copia desactualizada antes de que llegue a un commit
+        (ver <a href="harness.html">Harness engineering</a>).
+      </p>
+
+      <h2 id="este-repo">Así lo hace este repo</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Idea</th>
+              <th>Dónde vive</th>
+              <th>Cómo se aplica</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Franja fija mínima</td>
+              <td><code>AGENTS.md</code></td>
+              <td>
+                Se carga en cada sesión (Claude Code lo lee a través de <code>CLAUDE.md</code>, que
+                solo importa <code>@AGENTS.md</code>). Su propia cabecera manda el detalle a las
+                <code>references/</code> de cada skill, y la sección 4 es una tabla de tarea → skill
+                → contexto que se lee antes de responder.
+              </td>
+            </tr>
+            <tr>
+              <td>Compact rules</td>
+              <td>
+                <code>.agents/skills/REGISTRY.md</code>,
+                <code>.agents/skills/agentic-qa-core/references/skill-resolver.md</code>
+              </td>
+              <td>
+                <code>scripts/build-skill-registry.ts</code> genera un bloque por skill. Strategy A
+                toma la sección <code>## Compact Rules</code> del <code>SKILL.md</code> tal cual
+                (hasta 15 reglas); Strategy B raspa las primeras viñetas y marca el bloque como de
+                baja confianza. Si el frontmatter trae <code>compact_rules:</code>, se usa literal.
+                El briefing pega como máximo 5 skills.
+              </td>
+            </tr>
+            <tr>
+              <td>Un modo, una reference</td>
+              <td><code>.agents/skills/project-context/SKILL.md</code></td>
+              <td>
+                Cada ejecución resuelve un solo modo y carga solo la reference de ese modo. El modo
+                <code>context-skill</code> crea una skill de criterio sobre un mapa de
+                <code>.context/</code>: cita las rutas y nunca copia su contenido
+                (<code>.agents/skills/project-context/references/context-skill.md</code>).
+              </td>
+            </tr>
+            <tr>
+              <td>Hecho contra criterio</td>
+              <td><code>.agents/skills/agentic-qa-core/references/skill-scaffold.md</code></td>
+              <td>
+                Tres preguntas deciden dónde va cada dato: si un comando lo regenera, va a
+                <code>.context/</code>; si dos sesiones lo escribirían distinto, es criterio y va a
+                la skill; si tiene que aparecer sin que nadie lo pida, también va a la skill.
+              </td>
+            </tr>
+            <tr>
+              <td>Caché local con niveles</td>
+              <td><code>.context/PBI/</code>, <code>scripts/sync-jira-issues.ts</code></td>
+              <td>
+                Cada archivo es <code>[SYNC]</code> (espejo de Jira, gitignored, se reconstruye con
+                <code>bun run context:hydrate</code>), <code>[COMMIT]</code> (versionado, como
+                <code>test-specs/</code>) o <code>[LOCAL]</code> (desechable, nada puede depender de
+                él). Un <code>[SYNC]</code> nunca se escribe a mano.
+              </td>
+            </tr>
+            <tr>
+              <td>Notas estructuradas</td>
+              <td>
+                <code>.agents/skills/agentic-qa-core/references/session-management.md</code>
+              </td>
+              <td>
+                Las skills largas escriben <code>plan.md</code> y <code>progress.md</code> en
+                <code>.session/&lt;skill&gt;/&lt;scope&gt;/</code>. La Phase 0 lee el progreso y
+                ofrece retomar, reiniciar o abortar. El diseño es file-first: la reanudación
+                funciona aunque Engram no esté disponible.
+              </td>
+            </tr>
+            <tr>
+              <td>Memoria persistente</td>
+              <td>Engram (sección 12 de <code>AGENTS.md</code>)</td>
+              <td>
+                <code>mem_save</code> después de cada decisión, bug corregido o hallazgo no obvio, y
+                <code>mem_session_summary</code> antes de cerrar la sesión.
+              </td>
+            </tr>
+            <tr>
+              <td>Handoff</td>
+              <td>
+                <code>.agents/skills/session-handoff/SKILL.md</code>,
+                <code>.agents/skills/session-handoff/references/capture-contract.md</code>
+              </td>
+              <td>
+                Escribe <code>.session/handoffs/&lt;session-name&gt;-handoff-NN.md</code> y lanza la
+                sucesora en el mismo worktree y el mismo harness. Lo dispara la persona cuando ve
+                que la ventana se llena.
+              </td>
+            </tr>
+            <tr>
+              <td>Contra el drift</td>
+              <td><code>AGENTS.md</code> y <code>package.json</code></td>
+              <td>
+                La regla 11 prohíbe citar comandos de memoria: se lee
+                <code>package.json</code> antes de nombrar un script.
+                <code>bun run skills:registry:check</code> falla si el REGISTRY quedó viejo respecto
+                de las skills.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        El resultado práctico: una sesión de QA arranca con <code>AGENTS.md</code> y las
+        descripciones de skills, carga <code>/sprint-testing</code> cuando le piden probar un
+        ticket, sincroniza ese ticket a <code>.context/PBI/</code> y lee solo los archivos de esa
+        historia. Si delega, el subagente recibe compact rules en lugar de skills completas. Para
+        ver el ciclo entero en contexto, revisa
+        <a href="../metodologia/este-repo.html">el IQL en este repo</a>.
+      </p>
+
+      <div class="callout warn" id="errores">
+        <span class="callout-title">Errores comunes</span>
+        <ul>
+          <li>
+            Meter en <code>AGENTS.md</code> un procedimiento que solo usa una skill. Se paga en cada
+            sesión y diluye las reglas que sí importan. Va a la skill o a una reference.
+          </li>
+          <li>
+            Leer un archivo entero para sacar una línea, o volcar la salida completa de un comando.
+            Filtra primero con <code>grep</code>, <code>head</code> o un subagente.
+          </li>
+          <li>
+            Editar a mano un archivo <code>[SYNC]</code> de <code>.context/PBI/</code>. El próximo
+            sync lo pisa. El cambio va a Jira y luego se sincroniza.
+          </li>
+          <li>
+            Hacer depender un paso de un archivo <code>[LOCAL]</code>. En otra máquina no existe y
+            el paso se degrada sin avisar.
+          </li>
+          <li>
+            Copiar en una skill la tabla de un mapa de <code>.context/</code>. Quedan dos fuentes y
+            una va a envejecer.
+          </li>
+          <li>
+            Confiar en la compaction para una tarea de horas. Escribe plan y progreso en disco, o
+            haz un handoff, antes de que el harness decida qué olvidar.
+          </li>
+        </ul>
+      </div>
+
+      <h2 id="profundizar">Para profundizar</h2>
+      <ul>
+        <li>
+          <a
+            href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents"
+            target="_blank"
+            rel="noopener"
+            >Effective context engineering for AI agents</a
+          >
+          (Anthropic Engineering): el contexto como recurso finito, compaction, notas estructuradas
+          y arquitecturas con subagentes.
+        </li>
+        <li>
+          <a
+            href="https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills"
+            target="_blank"
+            rel="noopener"
+            >Equipping agents for the real world with Agent Skills</a
+          >
+          (Anthropic Engineering): progressive disclosure en tres niveles, de la descripción a las
+          references.
+        </li>
+        <li>
+          <a href="https://aclanthology.org/2024.tacl-1.9" target="_blank" rel="noopener"
+            >Lost in the Middle: How Language Models Use Long Contexts</a
+          >
+          (Liu et al., TACL 2024): por qué la posición de un dato dentro de un texto largo cambia si
+          el modelo lo usa.
+        </li>
+        <li>
+          <a href="https://research.trychroma.com/context-rot" target="_blank" rel="noopener"
+            >Context Rot: How Increasing Input Tokens Impacts LLM Performance</a
+          >
+          (Chroma Research): mediciones de cómo cae el rendimiento al crecer la entrada, con
+          distractores y tareas simples.
+        </li>
+      </ul>
+
+      <footer class="doc-footer">
+        <p>
+          Fuentes en el repo: <code>AGENTS.md</code> (secciones 3, 4, 9 y 12),
+          <code>.agents/skills/agentic-qa-core/references/skill-resolver.md</code>,
+          <code>.agents/skills/agentic-qa-core/references/session-management.md</code>. Páginas
+          relacionadas: <a href="prompting.html">Prompting</a>,
+          <a href="harness.html">Harness engineering</a>,
+          <a href="orquestacion.html">Subagentes y orquestación</a>.
+        </p>
+      </footer>
+    </article>
+  </body>
+</html>
