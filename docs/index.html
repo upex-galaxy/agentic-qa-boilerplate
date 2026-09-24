@@ -9,23 +9,61 @@
       name="description"
       content="Portal de la documentación humana del repo: empezar, setup, metodología IQL, exploración y las páginas propias del proyecto."
     />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%233352b3'/%3E%3Ctext x='16' y='21' text-anchor='middle' font-family='system-ui,sans-serif' font-size='13' font-weight='700' fill='white'%3EQA%3C/text%3E%3C/svg%3E"
+    />
     <link rel="stylesheet" href="assets/docs.css" />
     <script src="assets/docs.js"></script>
     <style>
-      html,
-      body {
+      /*
+       * The shell is a two-column grid: a sidebar of FIXED width and the
+       * content pane. The width is a token, never the tree's content, so
+       * folding or unfolding folders can never move or resize the page.
+       */
+      :root {
+        --sidebar-w: 288px;
+        --topbar-h: 52px;
+      }
+
+      html {
         height: 100%;
       }
 
+      /*
+       * The shell always fills the window and only its two panes scroll.
+       *
+       * Every direct child of <body> is placed in a NAMED area, and the grid
+       * has exactly one explicit row that takes all the free space. Any other
+       * child (a <script>, a node a browser extension appends, a button a shared
+       * script injects) lands in an implicit track of 0px and changes nothing.
+       * Without this, one stray in-flow child creates an implicit auto row that
+       * takes half of the free space: the shell then ends where the tree ends
+       * and a blank band fills the rest of the window (owner's DevTools,
+       * 2026-09-24: body 911px, main 655px, second row 256px).
+       *
+       * Height is the dynamic viewport (100dvh) with 100vh as the fallback.
+       */
       body {
         display: grid;
-        grid-template-columns: 300px 1fr;
+        grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+        grid-template-rows: minmax(0, 1fr);
+        grid-template-areas: 'nav page';
+        grid-auto-rows: 0;
+        grid-auto-columns: 0;
+        width: 100%;
+        max-width: 100vw;
+        height: 100vh;
+        height: 100dvh;
         overflow: hidden;
       }
 
       .sidebar {
+        grid-area: nav;
         display: flex;
         flex-direction: column;
+        width: var(--sidebar-w);
+        min-width: var(--sidebar-w);
         min-height: 0;
         border-right: 1px solid var(--border);
         background: var(--bg-soft);
@@ -35,62 +73,102 @@
         display: flex;
         align-items: center;
         gap: 10px;
-        padding: 18px 18px 12px;
+        padding: 18px 16px 12px;
         color: var(--text);
         font-weight: 700;
         letter-spacing: -0.01em;
       }
 
       .brand a {
+        display: block;
+        flex: 1;
+        min-width: 0;
         color: inherit;
+        text-decoration: none;
+        line-height: 1.2;
       }
 
       .brand small {
         display: block;
+        margin-top: 2px;
         color: var(--muted);
-        font-size: 12px;
+        font-size: 0.75rem;
         font-weight: 500;
+        letter-spacing: 0.02em;
       }
 
       .logo {
         display: grid;
-        width: 30px;
-        height: 30px;
+        width: 32px;
+        height: 32px;
         flex: none;
         place-items: center;
-        border-radius: 8px;
-        background: linear-gradient(135deg, #7aa2f7, #bb9af7 55%, #7dcfff);
-        color: #16161e;
-        font-size: 13px;
+        border-radius: 9px;
+        background: var(--accent);
+        color: #fff;
+        font-size: 0.8125rem;
         font-weight: 800;
+        letter-spacing: 0.02em;
+        box-shadow: var(--shadow-sm);
       }
 
       .search {
         position: relative;
-        padding: 4px 14px 12px;
+        padding: 4px 12px 10px;
       }
 
       .search input {
         width: 100%;
-        padding: 8px 34px 8px 12px;
+        height: 36px;
+        padding: 0 38px 0 34px;
         border: 1px solid var(--border-strong);
-        border-radius: 8px;
+        border-radius: var(--radius-sm);
         background: var(--surface);
         color: var(--text);
-        font: 14px var(--font-sans);
+        font: 0.875rem var(--font-sans);
         outline: none;
+        transition:
+          border-color var(--dur-fast) var(--ease-out),
+          box-shadow var(--dur-fast) var(--ease-out);
       }
 
-      .search input:focus {
+      .search input::placeholder {
+        color: var(--muted);
+      }
+
+      .search input:focus,
+      .search input:focus-visible {
         border-color: var(--accent);
+        outline: none;
+        box-shadow: 0 0 0 3px var(--accent-soft);
+      }
+
+      .search input::-webkit-search-cancel-button {
+        display: none;
+      }
+
+      .search svg {
+        position: absolute;
+        top: 14px;
+        left: 22px;
+        width: 15px;
+        height: 15px;
+        color: var(--muted);
+        pointer-events: none;
       }
 
       .search kbd {
         position: absolute;
-        top: 11px;
+        top: 12px;
         right: 22px;
-        color: var(--muted);
-        font-size: 11px;
+        padding: 0 6px;
+        color: var(--text-2);
+        font-size: 0.75rem;
+        line-height: 18px;
+      }
+
+      .search input:focus ~ kbd {
+        display: none;
       }
 
       .tree {
@@ -98,7 +176,9 @@
         min-height: 0;
         padding: 4px 8px 16px;
         overflow-y: auto;
-        font-size: 14px;
+        overscroll-behavior: contain;
+        font-size: 0.875rem;
+        scrollbar-width: thin;
       }
 
       .tree ul {
@@ -108,37 +188,69 @@
       }
 
       .tree ul ul {
-        margin-left: 12px;
-        padding-left: 8px;
+        margin-left: 14px;
+        padding-left: 6px;
         border-left: 1px solid var(--border);
+      }
+
+      .tree li {
+        margin: 0;
       }
 
       .tree li + li {
         margin-top: 1px;
       }
 
-      .tree .row {
+      .tree a,
+      .tree .folder-btn {
         display: flex;
         align-items: center;
-        gap: 4px;
+        gap: 6px;
+        width: 100%;
+        min-height: 30px;
+        margin: 0;
+        padding: 4px 8px;
+        border: 0;
+        border-radius: var(--radius-sm);
+        background: none;
+        color: var(--text-2);
+        font: inherit;
+        line-height: 1.4;
+        text-align: left;
+        text-decoration: none;
+        cursor: pointer;
+        transition:
+          background-color var(--dur-fast) var(--ease-out),
+          color var(--dur-fast) var(--ease-out);
+      }
+
+      .tree a:hover,
+      .tree .folder-btn:hover {
+        background: var(--surface-2);
+        color: var(--text);
+      }
+
+      .tree .folder-btn {
+        color: var(--text);
+        font-weight: 600;
       }
 
       .tree .twisty {
         display: grid;
-        width: 20px;
-        height: 24px;
+        width: 16px;
+        height: 16px;
         flex: none;
         place-items: center;
-        padding: 0;
-        border: 0;
-        background: none;
         color: var(--muted);
-        font-size: 10px;
-        cursor: pointer;
-        transition: transform 0.15s;
+        transition: transform var(--dur) var(--ease-out);
       }
 
-      .tree li.collapsed > .row .twisty {
+      .tree .twisty svg {
+        width: 10px;
+        height: 10px;
+      }
+
+      .tree li.collapsed > .folder-btn .twisty {
         transform: rotate(-90deg);
       }
 
@@ -146,30 +258,22 @@
         display: none;
       }
 
-      .tree a,
-      .tree .label {
-        display: block;
-        flex: 1;
-        padding: 4px 8px;
-        border: 0;
-        border-radius: 6px;
-        color: var(--text-2);
-        line-height: 1.4;
+      .tree a.page {
+        position: relative;
+        padding-left: 30px;
       }
 
-      .tree .folder > .row a,
-      .tree .folder > .row .label {
-        color: var(--text);
-        font-weight: 600;
-      }
-
-      .tree .label {
-        cursor: pointer;
-      }
-
-      .tree a:hover {
-        background: var(--surface-2);
-        color: var(--text);
+      .tree a.page::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 14px;
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--border-strong);
+        transform: translateY(-50%);
+        transition: background-color var(--dur-fast) var(--ease-out);
       }
 
       .tree a.active {
@@ -178,13 +282,23 @@
         font-weight: 600;
       }
 
-      .tree .page {
-        padding-left: 24px;
+      .tree a.active::before {
+        background: var(--accent);
       }
 
       .tree .empty {
+        margin: 8px 4px;
         padding: 12px;
+        border: 1px dashed var(--border-strong);
+        border-radius: var(--radius-sm);
         color: var(--muted);
+        font-size: 0.8125rem;
+        text-align: center;
+      }
+
+      .tree .empty strong {
+        color: var(--text-2);
+        font-weight: 600;
       }
 
       .sidebar-foot {
@@ -192,68 +306,107 @@
         align-items: center;
         justify-content: space-between;
         gap: 8px;
-        padding: 10px 14px;
+        padding: 10px 12px 10px 16px;
         border-top: 1px solid var(--border);
         color: var(--muted);
-        font-size: 12px;
+        font-size: 0.75rem;
+      }
+
+      .sidebar-foot code {
+        border: 0;
+        background: none;
+        padding: 0;
+        color: var(--muted);
       }
 
       .icon-btn {
         display: grid;
-        width: 32px;
-        height: 32px;
+        width: 36px;
+        height: 36px;
+        flex: none;
         place-items: center;
+        padding: 0;
         border: 1px solid var(--border-strong);
-        border-radius: 8px;
+        border-radius: var(--radius-sm);
         background: var(--surface);
         color: var(--text-2);
-        font-size: 15px;
+        font: inherit;
         cursor: pointer;
+        transition:
+          color var(--dur-fast) var(--ease-out),
+          border-color var(--dur-fast) var(--ease-out),
+          background-color var(--dur-fast) var(--ease-out);
+      }
+
+      .icon-btn svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      .icon-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
       }
 
       main {
+        grid-area: page;
         position: relative;
         min-width: 0;
         min-height: 0;
+        overflow: hidden;
       }
 
       main iframe {
         display: block;
         width: 100%;
+        max-width: 100%;
         height: 100%;
+        min-height: 100%;
         border: 0;
         background: var(--bg);
       }
 
-      .topbar {
+      .topbar,
+      .backdrop,
+      #nav-close {
         display: none;
       }
 
-      .notice {
-        max-width: 640px;
-        margin: 80px auto;
-        padding: 0 24px;
+      /* Narrow desktop and split-screen windows keep the sidebar, a bit slimmer. */
+      @media (max-width: 1024px) {
+        :root {
+          --sidebar-w: 248px;
+        }
       }
 
-      @media (max-width: 860px) {
+      /* Phones and narrow panels: the sidebar becomes a drawer. */
+      @media (max-width: 760px) {
         body {
-          grid-template-columns: 1fr;
-          grid-template-rows: auto 1fr;
+          grid-template-columns: minmax(0, 1fr);
+          grid-template-rows: var(--topbar-h) minmax(0, 1fr);
+          grid-template-areas:
+            'bar'
+            'page';
         }
 
+        /* The drawer and its backdrop are fixed, so they take no track. */
         .topbar {
+          grid-area: bar;
           display: flex;
           align-items: center;
           gap: 10px;
-          padding: 8px 12px;
+          height: var(--topbar-h);
+          padding: 0 12px;
           border-bottom: 1px solid var(--border);
           background: var(--bg-soft);
           font-weight: 600;
         }
 
         .topbar .current {
+          flex: 1;
+          min-width: 0;
           overflow: hidden;
-          font-size: 14px;
+          font-size: 0.9375rem;
           text-overflow: ellipsis;
           white-space: nowrap;
         }
@@ -263,30 +416,103 @@
           top: 0;
           bottom: 0;
           left: 0;
-          z-index: 20;
+          z-index: 30;
           width: min(320px, 86vw);
+          min-width: 0;
           transform: translateX(-100%);
-          transition: transform 0.2s;
-          box-shadow: var(--shadow);
+          transition: transform var(--dur-slow) var(--ease-out);
+          box-shadow: none;
+        }
+
+        .tree a,
+        .tree .folder-btn {
+          min-height: 40px;
+        }
+
+        .backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: 20;
+          display: block;
+          background: rgba(16, 18, 30, 0.45);
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity var(--dur-slow) var(--ease-out);
+        }
+
+        #nav-close {
+          display: grid;
         }
 
         body.nav-open .sidebar {
           transform: none;
+          box-shadow: var(--shadow-lg);
+        }
+
+        body.nav-open .backdrop {
+          opacity: 1;
+          pointer-events: auto;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .sidebar,
+        .backdrop {
+          transition: none;
         }
       }
     </style>
   </head>
   <body>
     <div class="topbar">
-      <button class="icon-btn" id="menu" type="button" aria-label="Abrir navegación">☰</button>
+      <button
+        class="icon-btn"
+        id="menu"
+        type="button"
+        aria-label="Abrir navegación"
+        aria-controls="sidebar"
+        aria-expanded="false"
+      >
+        <svg
+          viewBox="0 0 20 20"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          aria-hidden="true"
+        >
+          <path d="M3 5h14M3 10h14M3 15h14" stroke-linecap="round" />
+        </svg>
+      </button>
       <span class="current" id="current-title">Documentación</span>
     </div>
-    <aside class="sidebar" aria-label="Navegación de la documentación">
+    <div class="backdrop" id="backdrop"></div>
+    <aside class="sidebar" id="sidebar" aria-label="Navegación de la documentación">
       <div class="brand">
-        <span class="logo">QA</span>
+        <span class="logo" aria-hidden="true">QA</span>
         <a href="#/">Agentic QA<small>Documentación</small></a>
+        <button class="icon-btn" id="nav-close" type="button" aria-label="Cerrar navegación">
+          <svg
+            viewBox="0 0 20 20"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            aria-hidden="true"
+          >
+            <path d="M5 5l10 10M15 5L5 15" stroke-linecap="round" />
+          </svg>
+        </button>
       </div>
       <div class="search">
+        <svg
+          viewBox="0 0 20 20"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          aria-hidden="true"
+        >
+          <circle cx="8.5" cy="8.5" r="5.5" />
+          <path d="M13 13l4 4" stroke-linecap="round" />
+        </svg>
         <input
           id="search"
           type="search"
@@ -294,13 +520,31 @@
           autocomplete="off"
           aria-label="Buscar páginas"
         />
-        <kbd>/</kbd>
+        <kbd aria-hidden="true">/</kbd>
       </div>
       <nav class="tree" id="tree"><div class="empty">Cargando…</div></nav>
       <div class="sidebar-foot">
-        <span>bun run docs</span>
+        <code>bun run docs</code>
         <button class="icon-btn" id="theme" type="button" aria-label="Cambiar tema claro/oscuro">
-          ☾
+          <svg
+            viewBox="0 0 20 20"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            aria-hidden="true"
+          >
+            <path
+              class="ic-moon"
+              d="M15.5 12.5A6 6 0 0 1 7.5 4.5a6.5 6.5 0 1 0 8 8z"
+              stroke-linejoin="round"
+            />
+            <g class="ic-sun" stroke-linecap="round">
+              <circle cx="10" cy="10" r="3.2" />
+              <path
+                d="M10 2.5v2M10 15.5v2M2.5 10h2M15.5 10h2M4.7 4.7l1.4 1.4M13.9 13.9l1.4 1.4M4.7 15.3l1.4-1.4M13.9 6.1l1.4-1.4"
+              />
+            </g>
+          </svg>
         </button>
       </div>
     </aside>
@@ -310,15 +554,21 @@
     <script>
       (function () {
         var KEY = 'docs-theme';
+        var TREE_KEY = 'docs-tree';
         var HOME = 'core/empezar-aqui.html';
         var root = document.documentElement;
+        var body = document.body;
         var frame = document.getElementById('frame');
         var treeEl = document.getElementById('tree');
         var search = document.getElementById('search');
         var themeBtn = document.getElementById('theme');
+        var menuBtn = document.getElementById('menu');
         var titleEl = document.getElementById('current-title');
         var pages = [];
         var links = {};
+        var folders = {};
+
+        /* ---------- theme ---------- */
 
         function theme() {
           var explicit = root.getAttribute('data-theme');
@@ -338,7 +588,13 @@
         }
 
         function paintThemeBtn() {
-          themeBtn.textContent = theme() === 'dark' ? '☀' : '☾';
+          var dark = theme() === 'dark';
+          themeBtn.querySelector('.ic-moon').style.display = dark ? 'none' : '';
+          themeBtn.querySelector('.ic-sun').style.display = dark ? '' : 'none';
+          themeBtn.setAttribute(
+            'aria-label',
+            dark ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'
+          );
         }
 
         themeBtn.addEventListener('click', function () {
@@ -356,6 +612,26 @@
         });
         paintThemeBtn();
 
+        /* ---------- drawer (phones) ---------- */
+
+        function setDrawer(open) {
+          body.classList.toggle('nav-open', open);
+          menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+
+        menuBtn.addEventListener('click', function () {
+          setDrawer(!body.classList.contains('nav-open'));
+        });
+        document.getElementById('nav-close').addEventListener('click', function () {
+          setDrawer(false);
+          menuBtn.focus();
+        });
+        document.getElementById('backdrop').addEventListener('click', function () {
+          setDrawer(false);
+        });
+
+        /* ---------- tree ---------- */
+
         function el(tag, cls, text) {
           var node = document.createElement(tag);
           if (cls) node.className = cls;
@@ -363,8 +639,42 @@
           return node;
         }
 
-        function pageLink(path, title, description) {
-          var a = el('a', null, title);
+        function chevron() {
+          var span = el('span', 'twisty');
+          span.innerHTML =
+            '<svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">' +
+            '<path d="M2 3.5l3 3 3-3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+          return span;
+        }
+
+        function readCollapsed() {
+          try {
+            return JSON.parse(localStorage.getItem(TREE_KEY) || '{}') || {};
+          } catch (e) {
+            return {};
+          }
+        }
+
+        function saveCollapsed() {
+          var state = {};
+          Object.keys(folders).forEach(function (path) {
+            if (folders[path].classList.contains('collapsed')) state[path] = 1;
+          });
+          try {
+            localStorage.setItem(TREE_KEY, JSON.stringify(state));
+          } catch (e) {}
+        }
+
+        function setFolder(li, collapsed) {
+          li.classList.toggle('collapsed', collapsed);
+          li.querySelector(':scope > .folder-btn').setAttribute(
+            'aria-expanded',
+            collapsed ? 'false' : 'true'
+          );
+        }
+
+        function pageLink(path, title, description, cls) {
+          var a = el('a', cls || 'page', title);
           a.href = '#/' + path;
           if (description) a.title = description;
           links[path] = a;
@@ -372,31 +682,37 @@
           return a;
         }
 
-        function render(nodes, parent) {
+        function render(nodes, parent, collapsedState) {
           var ul = el('ul');
           nodes.forEach(function (node) {
             var li = el('li', node.type);
             if (node.type === 'folder') {
-              var row = el('div', 'row');
-              var twisty = el('button', 'twisty', '▾');
-              twisty.type = 'button';
-              twisty.setAttribute('aria-label', 'Plegar ' + node.title);
-              twisty.addEventListener('click', function () {
-                li.classList.toggle('collapsed');
+              // The folder name only folds and unfolds: it never navigates, so the
+              // content pane stays where it is. The folder's own page, when it has
+              // one, is the first entry inside.
+              var btn = el('button', 'folder-btn');
+              btn.type = 'button';
+              btn.appendChild(chevron());
+              btn.appendChild(el('span', null, node.title));
+              if (node.description) btn.title = node.description;
+              btn.addEventListener('click', function () {
+                setFolder(li, !li.classList.contains('collapsed'));
+                saveCollapsed();
               });
-              row.appendChild(twisty);
-              if (node.index) {
-                row.appendChild(pageLink(node.index, node.title, node.description));
-              } else {
-                var label = el('span', 'label', node.title);
-                label.addEventListener('click', function () {
-                  li.classList.toggle('collapsed');
-                });
-                row.appendChild(label);
-              }
-              li.appendChild(row);
-              render(node.children, li);
+              li.appendChild(btn);
               li.dataset.folder = node.path;
+              folders[node.path] = li;
+              var children = node.children.slice();
+              if (node.index) {
+                children.unshift({
+                  type: 'page',
+                  path: node.index,
+                  title: 'Visión general',
+                  description: node.description,
+                });
+              }
+              render(children, li, collapsedState);
+              setFolder(li, !!collapsedState[node.path]);
             } else {
               li.appendChild(pageLink(node.path, node.title, node.description));
             }
@@ -405,90 +721,198 @@
           parent.appendChild(ul);
         }
 
-        function currentPath() {
-          var hash = decodeURIComponent(location.hash.replace(/^#\/?/, ''));
-          return hash || null;
+        /* ---------- routing ---------- */
+
+        function currentRoute() {
+          var raw = decodeURIComponent(location.hash.replace(/^#\/?/, ''));
+          if (!raw) return { path: null, section: '' };
+          var i = raw.indexOf('#');
+          return i < 0
+            ? { path: raw, section: '' }
+            : { path: raw.slice(0, i), section: raw.slice(i + 1) };
         }
 
-        function show(path) {
+        function notFound(path) {
+          Object.keys(links).forEach(function (key) {
+            links[key].classList.remove('active');
+          });
+          titleEl.textContent = 'Página no encontrada';
+          document.title = 'Página no encontrada · Documentación';
+          var safe = String(path).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+          });
+          frame.srcdoc =
+            '<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Página no encontrada</title>' +
+            '<link rel="stylesheet" href="assets/docs.css"></head><body><div class="notice">' +
+            '<h1>Esa página no está en el índice</h1>' +
+            '<p><code>' +
+            safe +
+            '</code> no existe o cambió de nombre. Elige una página en la navegación o vuelve a ' +
+            '<a href="#/' +
+            HOME +
+            '" target="_top">Empezar aquí</a>.</p></div></body></html>';
+          setDrawer(false);
+        }
+
+        function show(route) {
+          var path = route.path;
           var target = path || (links[HOME] ? HOME : pages.length ? pages[0].path : null);
           if (!target) return;
+          if (!links[target]) {
+            notFound(target);
+            return;
+          }
           Object.keys(links).forEach(function (key) {
             links[key].classList.toggle('active', key === target);
           });
           var active = links[target];
-          if (active) {
-            var li = active.closest('li');
-            while (li) {
-              li.classList.remove('collapsed');
-              li = li.parentElement && li.parentElement.closest('li');
-            }
-            titleEl.textContent = active.textContent;
+          var li = active.closest('li');
+          while (li) {
+            if (li.classList.contains('folder')) setFolder(li, false);
+            li = li.parentElement && li.parentElement.closest('li');
           }
-          var wanted = new URL(target, location.href).href;
-          if (frame.src !== wanted) frame.src = target;
-          document.body.classList.remove('nav-open');
+          saveCollapsed();
+          titleEl.textContent = active.textContent;
+          if (active.classList.contains('page') && active.textContent === 'Visión general') {
+            var folderLi = active.closest('li.folder');
+            var name = folderLi && folderLi.querySelector(':scope > .folder-btn span:last-child');
+            if (name) titleEl.textContent = name.textContent;
+          }
+          var src = target + (route.section ? '#' + route.section : '');
+          var wanted = new URL(src, location.href).href;
+          var current = null;
+          try {
+            current = frame.contentWindow.location.href;
+          } catch (e) {}
+          if (frame.hasAttribute('srcdoc')) {
+            frame.removeAttribute('srcdoc');
+            current = null;
+          }
+          if (current !== wanted) {
+            if (current && current.split('#')[0] === wanted.split('#')[0]) {
+              // Same page, other section: move inside the frame, no reload.
+              try {
+                frame.contentWindow.location.hash = route.section ? '#' + route.section : '';
+              } catch (e) {
+                frame.src = src;
+              }
+            } else {
+              frame.src = src;
+            }
+          }
+          setDrawer(false);
+        }
+
+        function frameRoute() {
+          try {
+            var loc = frame.contentWindow.location;
+            if (loc.protocol === 'about:') return null;
+            var base = location.pathname.replace(/[^/]*$/, '');
+            var rel = loc.pathname.indexOf(base) === 0 ? loc.pathname.slice(base.length) : null;
+            if (!rel) return null;
+            return { path: rel, section: loc.hash.replace(/^#/, '') };
+          } catch (e) {
+            return null;
+          }
+        }
+
+        function mirrorFrameRoute() {
+          var r = frameRoute();
+          if (!r) return;
+          var here = currentRoute();
+          if (r.path !== here.path || r.section !== here.section) {
+            history.replaceState(null, '', '#/' + r.path + (r.section ? '#' + r.section : ''));
+            if (r.path !== here.path) show(r);
+          }
         }
 
         frame.addEventListener('load', function () {
           syncFrameTheme();
           try {
-            var loc = frame.contentWindow.location;
-            var base = location.pathname.replace(/[^/]*$/, '');
-            var rel = loc.pathname.indexOf(base) === 0 ? loc.pathname.slice(base.length) : null;
-            if (frame.contentDocument.title) document.title = frame.contentDocument.title;
-            if (rel && rel !== currentPath()) {
-              history.replaceState(null, '', '#/' + rel);
-              show(rel);
+            if (frame.contentDocument.title && !frame.hasAttribute('srcdoc')) {
+              document.title = frame.contentDocument.title + ' · Documentación';
             }
+            mirrorFrameRoute();
+            // Keyboard shortcuts keep working while focus is inside the page.
+            frame.contentDocument.addEventListener('keydown', shortcuts);
+            frame.contentWindow.addEventListener('hashchange', mirrorFrameRoute);
           } catch (e) {}
         });
 
         window.addEventListener('hashchange', function () {
-          show(currentPath());
+          show(currentRoute());
         });
 
-        search.addEventListener('input', function () {
+        /* ---------- search ---------- */
+
+        var emptyNode = null;
+
+        function filter() {
           var q = search.value.trim().toLowerCase();
+          var visible = 0;
           pages.forEach(function (p) {
             var hay = (p.title + ' ' + p.description + ' ' + p.path).toLowerCase();
-            p.a.dataset.hit = !q || hay.indexOf(q) >= 0 ? '1' : '0';
-            var li = p.a.closest('li');
-            if (!li.classList.contains('folder'))
-              li.style.display = p.a.dataset.hit === '1' ? '' : 'none';
+            var hit = !q || hay.indexOf(q) >= 0;
+            p.a.closest('li').style.display = hit ? '' : 'none';
+            if (hit) visible++;
           });
           // Deepest folders first (reverse document order), so a parent sees its children's result.
-          var folders = treeEl.querySelectorAll('li.folder');
-          for (var i = folders.length - 1; i >= 0; i--) {
-            var f = folders[i];
-            var own = f.querySelector(':scope > .row a');
-            var ownHit = own && own.dataset.hit === '1';
+          var all = treeEl.querySelectorAll('li.folder');
+          for (var i = all.length - 1; i >= 0; i--) {
+            var f = all[i];
             var childVisible = Array.prototype.some.call(
               f.querySelectorAll(':scope > ul > li'),
               function (child) {
                 return child.style.display !== 'none';
               }
             );
-            f.style.display = !q || ownHit || childVisible ? '' : 'none';
+            f.style.display = !q || childVisible ? '' : 'none';
             if (q) f.classList.remove('collapsed');
+            else setFolder(f, !!readCollapsed()[f.dataset.folder]);
           }
-        });
+          if (emptyNode) {
+            emptyNode.remove();
+            emptyNode = null;
+          }
+          if (q && visible === 0) {
+            emptyNode = el('div', 'empty');
+            emptyNode.appendChild(document.createTextNode('Sin resultados para '));
+            emptyNode.appendChild(el('strong', null, '«' + search.value.trim() + '»'));
+            treeEl.appendChild(emptyNode);
+          }
+        }
 
-        document.addEventListener('keydown', function (e) {
-          if (e.key === '/' && document.activeElement !== search) {
+        search.addEventListener('input', filter);
+
+        function shortcuts(e) {
+          var doc = e.target && e.target.ownerDocument;
+          var active = doc ? doc.activeElement : null;
+          var typing =
+            active &&
+            (active.tagName === 'INPUT' ||
+              active.tagName === 'TEXTAREA' ||
+              active.isContentEditable);
+          if (e.key === '/' && active !== search && !typing) {
             e.preventDefault();
+            setDrawer(window.matchMedia('(max-width: 760px)').matches);
             search.focus();
+            search.select();
           }
-          if (e.key === 'Escape' && document.activeElement === search) {
-            search.value = '';
-            search.dispatchEvent(new Event('input'));
-            search.blur();
+          if (e.key === 'Escape') {
+            if (active === search) {
+              search.value = '';
+              filter();
+              search.blur();
+            } else if (body.classList.contains('nav-open')) {
+              setDrawer(false);
+              menuBtn.focus();
+            }
           }
-        });
+        }
 
-        document.getElementById('menu').addEventListener('click', function () {
-          document.body.classList.toggle('nav-open');
-        });
+        document.addEventListener('keydown', shortcuts);
+
+        /* ---------- boot ---------- */
 
         fetch('manifest.json', { cache: 'no-store' })
           .then(function (res) {
@@ -501,22 +925,19 @@
               treeEl.appendChild(el('div', 'empty', 'No hay páginas todavía.'));
               return;
             }
-            render(manifest.children, treeEl);
-            show(currentPath());
+            render(manifest.children, treeEl, readCollapsed());
+            show(currentRoute());
           })
           .catch(function () {
             treeEl.textContent = '';
             treeEl.appendChild(el('div', 'empty', 'Sin índice.'));
-            var doc = frame.contentDocument;
-            doc.open();
-            doc.write(
-              '<link rel="stylesheet" href="assets/docs.css"><div class="notice"><h1>Falta el índice</h1>' +
-                '<p>Esta página necesita <code>manifest.json</code>. Abre la documentación con ' +
-                '<code>bun run docs</code> desde la raíz del repo, o genera el archivo con ' +
-                '<code>bun run docs:build</code>.</p></div>'
-            );
-            doc.close();
-            syncFrameTheme();
+            frame.srcdoc =
+              '<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Falta el índice</title>' +
+              '<link rel="stylesheet" href="assets/docs.css"></head><body><div class="notice">' +
+              '<h1>Falta el índice</h1>' +
+              '<p>Esta página necesita <code>manifest.json</code>. Abre la documentación con ' +
+              '<code>bun run docs</code> desde la raíz del repo, o genera el archivo con ' +
+              '<code>bun run docs:build</code>.</p></div></body></html>';
           });
       })();
     </script>

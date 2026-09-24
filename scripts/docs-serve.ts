@@ -106,6 +106,36 @@ function mimeFor(path: string): string | undefined {
   return dot < 0 ? undefined : MIME[path.slice(dot).toLowerCase()];
 }
 
+/**
+ * A 404 the reader can act on: an HTML request gets a page styled like the
+ * site (same stylesheet, same theme), with a link back to the portal. Assets
+ * keep the plain text body, and both stay a real 404 for scripts and tests.
+ */
+function notFound(pathname: string): Response {
+  const isPage = pathname.endsWith('/') || /\.html?$/i.test(pathname) || !/\.[a-z0-9]+$/i.test(pathname);
+  if (!isPage) { return new Response('Not found', { status: 404 }); }
+  const safe = pathname.replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', '\'': '&#39;' })[ch] ?? ch);
+  const html = `<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Página no encontrada</title>
+    <link rel="stylesheet" href="/assets/docs.css" />
+    <script src="/assets/docs.js"></script>
+  </head>
+  <body>
+    <div class="notice">
+      <h1>Esa página no existe</h1>
+      <p><code>${safe}</code> no está en <code>docs/</code>. Puede haber cambiado de nombre o de carpeta.</p>
+      <p><a href="/">Volver al portal de la documentación</a></p>
+    </div>
+  </body>
+</html>
+`;
+  return new Response(html, { status: 404, headers: { 'Content-Type': MIME['.html'], 'Cache-Control': 'no-store' } });
+}
+
 /** Request handler for a docs directory. Exported for the unit test. */
 export function createDocsHandler(docsDir: string): (req: Request) => Promise<Response> {
   const docsAbs = resolve(docsDir);
@@ -133,7 +163,7 @@ export function createDocsHandler(docsDir: string): (req: Request) => Promise<Re
     if (decoded.endsWith('/')) { candidate = join(candidate, 'index.html'); }
     const file = Bun.file(candidate);
     if (!existsSync(candidate) || !(await file.exists())) {
-      return new Response('Not found', { status: 404 });
+      return notFound(decoded);
     }
     const headers: Record<string, string> = { 'Cache-Control': 'no-store' };
     const type = mimeFor(candidate);

@@ -61,4 +61,20 @@ describe('createDocsHandler', () => {
     expect((await get('/core/missing.html')).status).toBe(404);
     expect((await get('/..%2f..%2fetc%2fpasswd')).status).toBe(403);
   });
+
+  test('a missing page gets a styled HTML 404, a missing asset a plain one', async () => {
+    const page = await get('/core/missing.html');
+    expect(page.status).toBe(404);
+    expect(page.headers.get('content-type')).toContain('text/html');
+    const html = await page.text();
+    expect(html).toContain('assets/docs.css');
+    expect(html).toContain('core/missing.html');
+    expect(html).not.toContain('<script>alert');
+    const asset = await get('/assets/missing.css');
+    expect(asset.status).toBe(404);
+    expect(asset.headers.get('content-type')).toBeNull();
+    expect(await asset.text()).toBe('Not found');
+    const injected = await get('/core/%3Cscript%3Ealert(1)%3C%2Fscript%3E.html');
+    expect(await injected.text()).not.toContain('<script>alert');
+  });
 });

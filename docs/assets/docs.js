@@ -6,19 +6,32 @@
  *
  *   - theme: stored choice (localStorage 'docs-theme') or the system preference;
  *     inside the portal (docs/index.html) the shell sets the theme instead
- *   - a floating toggle button on standalone pages
+ *   - a floating toggle button on standalone pages only: never on the shell
+ *     (it declares <html class="in-portal">) and never inside its iframe
  *   - a copy button on every <pre>
  *   - a '#' anchor on every h2/h3 that has an id
  */
 (function () {
   const KEY = 'docs-theme';
   const root = document.documentElement;
-  let inPortal = false;
-  try {
-    inPortal = window.self !== window.top && window.parent.location.pathname !== undefined;
-  }
-  catch {
-    inPortal = false;
+  /*
+   * "In the portal" is decided ONCE, before anything is appended:
+   *   - the shell itself (docs/index.html) declares <html class="in-portal">,
+   *     so it is recognised even though it is the top window;
+   *   - a page inside the shell's iframe is recognised by not being the top
+   *     window (window.parent is same-origin, so the read cannot throw, but a
+   *     sandboxed embed could: then it is a standalone page).
+   * The floating theme button only ever exists on a standalone page. A stray
+   * button in the shell's <body> would become a grid item there.
+   */
+  let inPortal = root.classList.contains('in-portal');
+  if (!inPortal) {
+    try {
+      inPortal = window.self !== window.top && window.parent.location.pathname !== undefined;
+    }
+    catch {
+      inPortal = false;
+    }
   }
   if (inPortal) {
     root.classList.add('in-portal');
@@ -91,8 +104,10 @@
           const text = code.textContent.replace(/Copia(r|do)$/, '');
           const done = function () {
             btn.textContent = 'Copiado';
+            btn.setAttribute('data-done', '');
             setTimeout(() => {
               btn.textContent = 'Copiar';
+              btn.removeAttribute('data-done');
             }, 1400);
           };
           if (navigator.clipboard) {
