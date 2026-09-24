@@ -73,10 +73,8 @@ La metodología de testing está basada en **IQL (Integrated Quality Lifecycle)*
 
 | Documento | Descripción | Estado |
 |-----------|-------------|--------|
-| [authentication.md](./testing/api/authentication.md) | Patrones de autenticación de APIs | ✅ Disponible |
-| [contract-testing.md](./testing/api/contract-testing.md) | Contract testing con OpenAPI/Zod | ✅ Disponible |
-| [devtools-testing.md](./testing/api/devtools-testing.md) | Testing manual con DevTools | ✅ Disponible |
 | [postman-testing.md](./testing/api/postman-testing.md) | Testing con Postman | ✅ Disponible |
+| [api-testing-doctrine.md](../.agents/skills/agentic-qa-core/references/api-testing-doctrine.md) | Maniobra canónica: schema por OpenAPI MCP, token con `bun run api:login`, ejecución con curl | ✅ Disponible |
 
 ### [Database Testing](./testing/database/)
 

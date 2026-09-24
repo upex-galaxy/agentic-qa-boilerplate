@@ -523,9 +523,7 @@ project/
 
 ## Próximos Pasos
 
-- [devtools-testing.md](./devtools-testing.md) - Capturar requests del browser
-- [authentication.md](./authentication.md) - Patrones de autenticación
-- [fundamentals.md](./fundamentals.md) - Conceptos de API testing
+- [api-testing-doctrine.md](../../../.agents/skills/agentic-qa-core/references/api-testing-doctrine.md) - Autenticación, schema y ejecución de requests en este repo
 
 ---
 
