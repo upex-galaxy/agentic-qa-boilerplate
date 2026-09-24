@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Agentic development</title>
+    <meta
+      name="description"
+      content="Cómo evoluciona un harness agéntico como este repo: skills como unidad de cambio, propuestas de refinamiento con OK humano, evals y gates, el updater con paridad, feedback hacia upstream y ADRs."
+    />
+    <meta name="docs-order" content="60" />
+    <link rel="stylesheet" href="../../assets/docs.css" />
+    <script src="../../assets/docs.js"></script>
+    <style>
+      .loop-svg {
+        width: 100%;
+        height: auto;
+        color: var(--text);
+      }
+    </style>
+  </head>
+  <body>
+    <article class="doc wide">
+      <header class="doc-header">
+        <nav class="breadcrumbs">
+          <span>Core</span><span>Fundamentos agénticos</span><span>Agentic development</span>
+        </nav>
+        <h1>Agentic development: cómo evoluciona un harness</h1>
+        <p class="lede">
+          Un repo que trabaja con agentes también tiene que mejorar con el uso. Esta página explica
+          cómo cambia este boilerplate: qué se edita cuando una sesión aprende algo, cómo se
+          comprueba que el cambio no rompió nada y cómo llega ese cambio a los proyectos que lo
+          consumen.
+        </p>
+        <div class="meta-row">
+          <span class="badge accent">Fundamentos</span><span class="badge">Skills</span
+          ><span class="badge">Evals</span><span class="badge">Updater</span
+          ><span class="badge">ADR</span>
+        </div>
+      </header>
+
+      <nav class="toc">
+        <strong>En esta página</strong>
+        <ol>
+          <li><a href="#unidad-de-cambio">La skill como unidad de cambio</a></li>
+          <li><a href="#bucle">El bucle de mejora</a></li>
+          <li><a href="#medir">Cómo se mide un cambio</a></li>
+          <li><a href="#propagar">Cómo llega a los proyectos consumidores</a></li>
+          <li><a href="#decisiones">Decisiones que no se re-discuten: ADRs</a></li>
+          <li><a href="#este-repo">Así lo hace este repo</a></li>
+          <li><a href="#errores">Errores comunes</a></li>
+          <li><a href="#profundizar">Para profundizar</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="unidad-de-cambio">La skill como unidad de cambio</h2>
+      <p>
+        En un proyecto de software normal, lo que cambia es el código. En un harness agéntico cambia
+        también la forma en que el agente trabaja, y esa forma vive en texto: instrucciones,
+        referencias, tablas de gotchas. En este repo ese texto está organizado en skills, una
+        carpeta por flujo de trabajo bajo <code>.agents/skills/</code>. Cada skill tiene un
+        <code>SKILL.md</code> con su frontmatter (nombre, descripción que el harness usa para
+        activarla, <code>metadata.kind</code>) y una carpeta <code>references/</code> con el detalle
+        que se carga solo cuando hace falta.
+      </p>
+      <p>
+        Tratar la skill como unidad de cambio tiene una consecuencia práctica. Una lección mal
+        escrita en una skill se carga en todas las sesiones futuras que la activen, se copia a los
+        briefings de cada subagente a través del registry y, si la skill viene de upstream, viaja a
+        cada proyecto consumidor en el próximo update. Un recuerdo equivocado en la memoria de una
+        sesión se olvida. Una regla equivocada en una skill se distribuye. Por eso el repo pone más
+        filtros en el camino hacia una skill que en el camino hacia una nota.
+      </p>
+      <p>
+        Tampoco todo lo que una sesión aprende merece estar en una skill. El protocolo de
+        refinamiento exige cuatro condiciones a la vez: que la lección siga siendo cierta el próximo
+        sprint, que ningún comando pueda regenerarla desde una fuente de verdad, que cambie lo que
+        el agente hace la próxima vez y que esté pagada con una fecha, una sesión y algo medido. Si
+        falla alguna, va a la memoria de sesión (Engram) o a <code>.context/</code>, donde un
+        comando la vuelve a generar.
+      </p>
+
+      <h2 id="bucle">El bucle de mejora</h2>
+      <p>
+        El recorrido completo tiene ocho pasos. Empieza con una fricción concreta en una sesión real
+        y termina con esa misma fricción resuelta en un proyecto que nunca la vio. La mitad inferior
+        del dibujo ocurre fuera de este repo, en los proyectos que se crearon a partir de él.
+      </p>
+
+      <figure>
+        <div class="frame">
+          <svg
+            class="loop-svg"
+            role="img"
+            viewBox="0 0 780 300"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-labelledby="loop-title loop-desc"
+          >
+            <title id="loop-title">El bucle de mejora de un harness agéntico</title>
+            <desc id="loop-desc">
+              Ocho pasos en ciclo. Arriba, en el repo upstream: una fricción en una sesión, la
+              propuesta en refinements.md, el OK humano por entrada y la edición de la skill con sus
+              gates. Abajo, de derecha a izquierda: el commit en upstream, bun run up con el reporte
+              de paridad, el proyecto consumidor y el issue skill-feedback que vuelve al principio.
+            </desc>
+            <defs>
+              <marker
+                id="arrow"
+                viewBox="0 0 10 10"
+                refX="9"
+                refY="5"
+                markerWidth="7"
+                markerHeight="7"
+                orient="auto-start-reverse"
+              >
+                <path d="M0,0 L10,5 L0,10 z" style="fill: var(--text-2)" />
+              </marker>
+            </defs>
+            <text x="20" y="22" style="fill: var(--text-2); font-size: 12px">
+              Repo upstream (este boilerplate)
+            </text>
+            <text x="20" y="292" style="fill: var(--text-2); font-size: 12px">
+              Proyectos consumidores
+            </text>
+            <line
+              x1="10"
+              y1="150"
+              x2="770"
+              y2="150"
+              style="stroke: var(--border-strong); stroke-dasharray: 4 5"
+            />
+            <g style="font-size: 13px">
+              <rect
+                x="20"
+                y="40"
+                width="165"
+                height="62"
+                rx="8"
+                style="fill: var(--surface); stroke: var(--accent); stroke-width: 2"
+              />
+              <text x="102" y="66" text-anchor="middle" style="fill: currentColor">
+                1. Fricción
+              </text>
+              <text x="102" y="86" text-anchor="middle" style="fill: var(--text-2)">
+                en una sesión real
+              </text>
+
+              <rect
+                x="210"
+                y="40"
+                width="165"
+                height="62"
+                rx="8"
+                style="fill: var(--surface); stroke: var(--border-strong)"
+              />
+              <text x="292" y="66" text-anchor="middle" style="fill: currentColor">
+                2. Propuesta
+              </text>
+              <text x="292" y="86" text-anchor="middle" style="fill: var(--text-2)">
+                refinements.md
+              </text>
+
+              <rect
+                x="400"
+                y="40"
+                width="165"
+                height="62"
+                rx="8"
+                style="fill: var(--surface); stroke: var(--border-strong)"
+              />
+              <text x="482" y="66" text-anchor="middle" style="fill: currentColor">
+                3. OK humano
+              </text>
+              <text x="482" y="86" text-anchor="middle" style="fill: var(--text-2)">
+                apply / drop por entrada
+              </text>
+
+              <rect
+                x="590"
+                y="40"
+                width="165"
+                height="62"
+                rx="8"
+                style="fill: var(--surface); stroke: var(--border-strong)"
+              />
+              <text x="672" y="66" text-anchor="middle" style="fill: currentColor">
+                4. Edición + gates
+              </text>
+              <text x="672" y="86" text-anchor="middle" style="fill: var(--text-2)">
+                skills:check, evals
+              </text>
+
+              <rect
+                x="590"
+                y="200"
+                width="165"
+                height="62"
+                rx="8"
+                style="fill: var(--surface); stroke: var(--border-strong)"
+              />
+              <text x="672" y="226" text-anchor="middle" style="fill: currentColor">
+                5. Commit upstream
+              </text>
+              <text x="672" y="246" text-anchor="middle" style="fill: var(--text-2)">
+                ADR si es arquitectura
+              </text>
+
+              <rect
+                x="400"
+                y="200"
+                width="165"
+                height="62"
+                rx="8"
+                style="fill: var(--surface); stroke: var(--border-strong)"
+              />
+              <text x="482" y="226" text-anchor="middle" style="fill: currentColor">
+                6. bun run up
+              </text>
+              <text x="482" y="246" text-anchor="middle" style="fill: var(--text-2)">
+                sync + reporte de paridad
+              </text>
+
+              <rect
+                x="210"
+                y="200"
+                width="165"
+                height="62"
+                rx="8"
+                style="fill: var(--surface); stroke: var(--border-strong)"
+              />
+              <text x="292" y="226" text-anchor="middle" style="fill: currentColor">
+                7. Proyecto
+              </text>
+              <text x="292" y="246" text-anchor="middle" style="fill: var(--text-2)">
+                usa la skill nueva
+              </text>
+
+              <rect
+                x="20"
+                y="200"
+                width="165"
+                height="62"
+                rx="8"
+                style="fill: var(--surface); stroke: var(--accent); stroke-width: 2"
+              />
+              <text x="102" y="226" text-anchor="middle" style="fill: currentColor">
+                8. Feedback
+              </text>
+              <text x="102" y="246" text-anchor="middle" style="fill: var(--text-2)">
+                issue skill-feedback
+              </text>
+            </g>
+            <g style="stroke: var(--text-2); stroke-width: 1.6; fill: none">
+              <line x1="185" y1="71" x2="208" y2="71" marker-end="url(#arrow)" />
+              <line x1="375" y1="71" x2="398" y2="71" marker-end="url(#arrow)" />
+              <line x1="565" y1="71" x2="588" y2="71" marker-end="url(#arrow)" />
+              <line x1="672" y1="102" x2="672" y2="198" marker-end="url(#arrow)" />
+              <line x1="590" y1="231" x2="567" y2="231" marker-end="url(#arrow)" />
+              <line x1="400" y1="231" x2="377" y2="231" marker-end="url(#arrow)" />
+              <line x1="210" y1="231" x2="187" y2="231" marker-end="url(#arrow)" />
+              <line
+                x1="102"
+                y1="200"
+                x2="102"
+                y2="104"
+                marker-end="url(#arrow)"
+                style="stroke: var(--accent)"
+              />
+            </g>
+          </svg>
+        </div>
+        <figcaption>
+          Los pasos 1 a 5 ocurren en el boilerplate. Del 6 al 8 ocurren en cada proyecto consumidor,
+          y la flecha del 8 al 1 cruza de vuelta la línea punteada.
+        </figcaption>
+      </figure>
+
+      <p>
+        Lo que el dibujo no muestra es dónde se frena cada paso. Una sesión nunca edita una skill en
+        caliente: escribe una propuesta en su propia carpeta de sesión y guarda la misma lección en
+        Engram por si esa carpeta se borra. El dueño del repo lee las propuestas y decide entrada
+        por entrada. Una propuesta sin medición se descarta en esa revisión, aunque suene razonable.
+      </p>
+
+      <h2 id="medir">Cómo se mide un cambio</h2>
+      <p>
+        Medir una skill tiene dos preguntas distintas. La primera es si se activa cuando debe y se
+        queda quieta cuando no. La segunda es si, una vez activa, el agente hace lo correcto. Este
+        repo cubre bien la estructura alrededor de ambas y tiene la segunda todavía abierta, y
+        conviene saberlo antes de fiarse de un check verde.
+      </p>
+      <dl class="defs">
+        <dt>Evals de activación</dt>
+        <dd>
+          Nueve skills tienen un <code>evals/evals.json</code> con casos positivos y negativos: un
+          prompt, si la skill debería activarse y qué comportamiento se espera. Hoy suman 66 casos.
+          <code>bun run skills:evals</code> los descubre y valida su forma (JSON válido, prompt no
+          vacío, polaridad declarada, ids únicos, la skill esperada existe). No invoca ningún
+          modelo, así que un resultado verde solo dice que los casos están bien escritos. Si la
+          skill se activa de verdad con esos prompts sigue sin medirse, y el propio script lo deja
+          anotado como trabajo pendiente.
+        </dd>
+        <dt>Gates estáticos</dt>
+        <dd>
+          <code>bun run skills:check</code> ejecuta el lint de skills: frontmatter, vocabulario de
+          <code>metadata.kind</code>, rutas citadas que ya no existen, secciones obligatorias según
+          el tipo de skill. Forma parte de <code>bun run repo:check</code> junto con los tipos, el
+          lint, el contrato de compatibilidad entre harnesses y el manifiesto KATA.
+        </dd>
+        <dt>Registry</dt>
+        <dd>
+          <code>bun run skills:registry</code> reconstruye <code>.agents/skills/REGISTRY.md</code>,
+          que reúne las compact rules de cada skill. Los subagentes reciben esas reglas en su
+          briefing en lugar de leer el <code>SKILL.md</code> entero. Si alguien edita una regla y
+          olvida regenerar, <code>skills:registry:check</code> lo detecta en el commit.
+        </dd>
+      </dl>
+      <p>
+        La guía de Anthropic sobre autoría de skills recomienda escribir las evaluaciones antes que
+        la documentación y medir contra una línea base sin la skill. Este repo tiene la mitad
+        estructural de ese consejo automatizada en CI (<code>skills:evals</code> corre en el
+        workflow de build) y la mitad que exige un modelo real queda para cuando haya un grader
+        conectado.
+      </p>
+
+      <h2 id="propagar">Cómo llega a los proyectos consumidores</h2>
+      <p>
+        Un proyecto creado desde este boilerplate recibe las mejoras con <code>bun run up</code>,
+        que ejecuta <code>cli/update-boilerplate.ts</code>. El updater sincroniza por componentes y
+        nunca pisa los archivos que son identidad del proyecto: <code>AGENTS.md</code>, las
+        configuraciones de MCP de cada harness, los hooks de husky,
+        <code>.agents/project.yaml</code> y cualquier ruta que el proyecto declare en
+        <code>updater.protected_paths</code>.
+      </p>
+      <p>
+        Cuando upstream y el proyecto no coinciden en un archivo protegido, el updater no decide
+        solo. Cierra con una tabla por superficie y un único prompt de paridad, que guarda en un
+        archivo de un solo uso (<code>parity-plan.md</code>, ignorado por git) dentro del proyecto.
+        Cada fila trae su evidencia (encabezados, claves, servidores MCP) y pide una decisión:
+        conservar la versión del proyecto, tomar la de upstream o fusionar. El agente presenta la
+        tabla, espera la respuesta fila por fila y solo aplica lo elegido. Después vuelve a correr
+        tests, tipos y lint.
+      </p>
+      <p>
+        El camino de vuelta también está escrito. Si en un proyecto consumidor una skill de upstream
+        falla, la sesión no la edita ahí, porque el siguiente update sobrescribiría el cambio.
+        Redacta un issue con la plantilla <code>skill-feedback</code>, le quita las claves de Jira y
+        los hosts del proyecto, y lo muestra al dueño. Solo con su OK se publica con
+        <code>gh issue create</code>, y después se verifica leyendo el issue de vuelta.
+      </p>
+
+      <h2 id="decisiones">Decisiones que no se re-discuten: ADRs</h2>
+      <p>
+        Algunas decisiones cuestan mucho de revertir: el runner de tests, el modelo de fixtures,
+        cómo se aíslan los datos, cómo se autentican los tests. Si quedan solo en un plan archivado,
+        la próxima sesión las vuelve a discutir o las rompe sin saberlo. Para eso existen los
+        Architecture Decision Records en <code>.context/ADR/</code>, con el formato que popularizó
+        Michael Nygard: contexto, decisión, alternativas descartadas y consecuencias.
+      </p>
+      <p>
+        La doctrina del repo pide que la decisión pase dos filtros antes de merecer un ADR: que sea
+        arquitectura de tests y que sea difícil de revertir. Un fix de un test flaky o el nombre de
+        un spec no califican. Los ADR son append-only, así que una decisión nueva reemplaza a la
+        vieja con un ADR que la marca como superseded, y nadie borra la anterior.
+      </p>
+
+      <h2 id="este-repo">Así lo hace este repo</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Pieza</th>
+              <th>Dónde vive</th>
+              <th>Qué hace</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Pipeline de cambios al framework</td>
+              <td><code>.agents/skills/framework-development/SKILL.md</code></td>
+              <td>
+                Plan, Code, Verify y Archive. Verify corre en paralelo <code>test</code>,
+                <code>types:check</code>, <code>lint:check</code> y <code>skills:check</code>; si
+                falla uno, no hay archivo ni commit.
+              </td>
+            </tr>
+            <tr>
+              <td>Contrato de una skill nueva</td>
+              <td><code>.agents/skills/agentic-qa-core/references/skill-scaffold.md</code></td>
+              <td>
+                Frontmatter obligatorio, secciones por tipo (context, workflow, utility, core) y el
+                formato medido de <code>references/gotchas.md</code>.
+              </td>
+            </tr>
+            <tr>
+              <td>Propuestas de refinamiento</td>
+              <td>
+                <code>.agents/skills/agentic-qa-core/references/skill-refinement-protocol.md</code>
+              </td>
+              <td>
+                Las cuatro condiciones, el esquema de cada bloque de propuesta y la matriz de dónde
+                se aplica según quién es dueño de la skill.
+              </td>
+            </tr>
+            <tr>
+              <td>Feedback hacia upstream</td>
+              <td><code>.agents/skills/agentic-qa-core/references/upstream-feedback.md</code></td>
+              <td>
+                Resolución del repo destino, redacción del borrador, OK del dueño y verificación.
+              </td>
+            </tr>
+            <tr>
+              <td>Runner de evals</td>
+              <td><code>scripts/run-skill-evals.ts</code> (<code>bun run skills:evals</code>)</td>
+              <td>
+                Validación estructural de los 66 casos de activación. No llama a ningún modelo.
+              </td>
+            </tr>
+            <tr>
+              <td>Lint de skills y registry</td>
+              <td>
+                <code>scripts/lint-skills.ts</code>, <code>scripts/build-skill-registry.ts</code>
+              </td>
+              <td>
+                <code>skills:check</code>, <code>skills:registry</code> y
+                <code>skills:registry:check</code>.
+              </td>
+            </tr>
+            <tr>
+              <td>Updater con paridad</td>
+              <td>
+                <code>cli/update-boilerplate.ts</code>, <code>cli/lib/updater-parity.ts</code>
+              </td>
+              <td>Sync por componentes, tabla por superficie y prompt de paridad.</td>
+            </tr>
+            <tr>
+              <td>Doctrina de ADR</td>
+              <td><code>.agents/skills/agentic-qa-core/references/adr-doctrine.md</code></td>
+              <td>
+                Los dos filtros, la regla de promoción desde un plan y el procedimiento de autoría.
+                La plantilla vive en <code>.context/ADR/README.md</code>.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Hoy <code>.context/ADR/</code> tiene cuatro decisiones registradas: la caché local de la
+        escalera de artefactos (ADR-0001), el registro de corridas de regresión (ADR-0002), el dueño
+        del esquema de variables de entorno (ADR-0003) y las decisiones de nombres (ADR-0004), más
+        la plantilla <code>ADR-NNNN-template.md</code>.
+      </p>
+
+      <h2 id="errores">Errores comunes</h2>
+      <div class="callout warn">
+        <span class="callout-title">Lo que más se repite</span>
+        <p>
+          Editar una skill de upstream dentro de un proyecto consumidor. Funciona hasta el próximo
+          <code>bun run up</code>, que la sobrescribe y deja una copia en <code>.backups/</code>.
+          Abre un issue <code>skill-feedback</code>, o declara la ruta en
+          <code>updater.protected_paths</code> sabiendo que dejas de recibir los arreglos de ese
+          archivo.
+        </p>
+        <p>
+          Leer <code>skills:evals</code> en verde como prueba de que las skills se activan bien.
+          Solo valida la forma de los casos.
+        </p>
+        <p>
+          Guardar en una skill un dato que un comando puede regenerar, como un endpoint o un nombre
+          de estado de Jira. Se queda viejo en silencio. Ese dato va en <code>.context/</code>.
+        </p>
+        <p>
+          Aceptar "take upstream" en una fila de paridad que menciona claves o servidores que solo
+          tiene el proyecto. Esa opción borra contenido del proyecto; en esos casos la fila sugiere
+          fusionar.
+        </p>
+        <p>
+          Editar una compact rule y no regenerar el registry. Los subagentes siguen recibiendo la
+          regla anterior hasta que alguien corra <code>bun run skills:registry</code>.
+        </p>
+      </div>
+
+      <h2 id="profundizar">Para profundizar</h2>
+      <ul>
+        <li>
+          <a
+            href="https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices"
+            target="_blank"
+            rel="noopener"
+            >Skill authoring best practices</a
+          >
+          (Anthropic). Descripciones que activan bien, divulgación progresiva y evaluaciones antes
+          que documentación.
+        </li>
+        <li>
+          <a
+            href="https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills"
+            target="_blank"
+            rel="noopener"
+            >Equipping agents for the real world with Agent Skills</a
+          >
+          (Anthropic Engineering). Por qué las skills son carpetas con instrucciones, scripts y
+          recursos que se cargan por demanda.
+        </li>
+        <li>
+          <a
+            href="https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents"
+            target="_blank"
+            rel="noopener"
+            >Demystifying evals for AI agents</a
+          >
+          (Anthropic Engineering). Tipos de graders, tareas sacadas de fallos reales y la
+          recomendación de leer los transcripts.
+        </li>
+        <li>
+          <a
+            href="https://www.cognitect.com/blog/2011/11/15/documenting-architecture-decisions"
+            target="_blank"
+            rel="noopener"
+            >Documenting Architecture Decisions</a
+          >
+          (Michael Nygard, 2011). El artículo original del formato ADR.
+        </li>
+        <li>
+          <a href="https://adr.github.io" target="_blank" rel="noopener">adr.github.io</a>.
+          Plantillas, herramientas y bibliografía sobre ADRs.
+        </li>
+      </ul>
+
+      <footer class="doc-footer">
+        Páginas relacionadas: <a href="harness.html">Harness</a>,
+        <a href="context.html">Contexto</a>, <a href="agentic-testing.html">Agentic testing</a> y el
+        <a href="index.html">índice de Fundamentos agénticos</a>. Fuentes canónicas: las referencias
+        de <code>.agents/skills/agentic-qa-core/references/</code> citadas arriba y la sección 4.5
+        de <code>AGENTS.md</code>.
+      </footer>
+    </article>
+  </body>
+</html>
