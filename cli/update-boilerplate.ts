@@ -1797,7 +1797,6 @@ async function main(): Promise<void> {
     // `.context/ADR/` needs no entry here: `.context` is not a synced component,
     // so ADRs only ever travel through the scaffold tarball, which prunes them.
     repoOnlyPaths: [
-      'docs/qa-standard',
       'docs/reports',
     ],
     // Watchlist files are NOT synced — included in the sparse clone only so

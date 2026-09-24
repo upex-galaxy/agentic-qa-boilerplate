@@ -111,7 +111,9 @@ Documentation only. No behaviour change in tests, CLI, scripts or the installer.
   detail — it mandates a `staging` branch that does not exist on `origin`.
 - **`docs/qa-standard/` self-contradictions closed.** The planning ladder is
   titled a ratified Standard instead of a Proposal (filename kept: it is cited by
-  path). `naming-gaps-backlog.md` rows 4, 8, 9 and 10 now print the conventions
+  path; both files have since moved: the ladder to
+  `.agents/skills/agentic-qa-core/references/planning-ladder.md`, the backlog to
+  `.context/ADR/ADR-0004-naming-decisions.md`). `naming-gaps-backlog.md` rows 4, 8, 9 and 10 now print the conventions
   its own ratification deltas chose, not the ones they rejected.
 - **`REGISTRY.md` regenerated** so the per-session compact-rules cache is not
   served from a two-week-old timestamp.

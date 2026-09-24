@@ -345,13 +345,10 @@ const TEMPLATE_EXCLUDES = [
   // "already populated" on first install).
   '.agents/jira-fields.json',
   '.agents/jira-workflows.json',
-  // The boilerplate's own QA-standard design material (proposals, naming-gap
-  // backlogs). Framework documentation travels; our working notes about evolving
-  // the framework do not. Mirrored in `repoOnlyPaths` (cli/update-boilerplate.ts)
-  // so `bun run up` cannot re-deliver what this prunes.
-  'docs/qa-standard',
-  // Worker and audit reports about evolving the boilerplate. Same reasoning as
-  // qa-standard: our working notes, not framework the consumer inherits.
+  // The boilerplate's own worker and audit reports. Framework documentation
+  // travels; our working notes about evolving the framework do not. Mirrored in
+  // `repoOnlyPaths` (cli/update-boilerplate.ts) so `bun run up` cannot
+  // re-deliver what this prunes.
   'docs/reports',
 ] as const;
 

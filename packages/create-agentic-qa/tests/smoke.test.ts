@@ -310,21 +310,9 @@ describe('pruneBootstrapExcludes', () => {
     expect(existsSync(join(dir, 'keep.txt'))).toBe(true);
   });
 
-  // Our design material about evolving the framework is not framework the
+  // Our working notes about evolving the framework are not framework the
   // consumer inherits. Mirrored by `repoOnlyPaths` so `bun run up` cannot
   // re-deliver what this prunes.
-  test('removes the boilerplate qa-standard docs but keeps the rest of docs/', async () => {
-    mkdirSync(join(dir, 'docs', 'qa-standard'), { recursive: true });
-    writeFileSync(join(dir, 'docs', 'qa-standard', 'planning-ladder-proposal.md'), '# Proposal');
-    mkdirSync(join(dir, 'docs', 'methodology'), { recursive: true });
-    writeFileSync(join(dir, 'docs', 'methodology', 'kata-fundamentals.md'), '# KATA');
-
-    await pruneBootstrapExcludes(dir);
-
-    expect(existsSync(join(dir, 'docs', 'qa-standard'))).toBe(false);
-    expect(existsSync(join(dir, 'docs', 'methodology', 'kata-fundamentals.md'))).toBe(true);
-  });
-
   test('removes the boilerplate docs/reports but keeps the rest of docs/', async () => {
     mkdirSync(join(dir, 'docs', 'reports'), { recursive: true });
     writeFileSync(join(dir, 'docs', 'reports', '2026-01-01-report.md'), '# Report');

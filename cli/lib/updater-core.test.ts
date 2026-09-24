@@ -535,7 +535,7 @@ describe('isWithinWriteSurface (the dirty-tree guard blocks only on paths the sy
     packageJsonSpecs: [{ path: 'package.json', sections: ['scripts'] }],
     deprecatedFiles: [],
     excludePaths: ['.agents/skills/REGISTRY.md'],
-    repoOnlyPaths: ['docs/qa-standard'],
+    repoOnlyPaths: ['docs/reports'],
     bootstrapOnlyPaths: ['.husky/pre-push', '.agents/project.yaml', 'scripts/lint-skills.ts'],
   };
 
@@ -557,7 +557,7 @@ describe('isWithinWriteSurface (the dirty-tree guard blocks only on paths the sy
     expect(isWithinWriteSurface(cfg, '.agents/project.yaml')).toBe(false);
     expect(isWithinWriteSurface(cfg, '.codex/config.toml')).toBe(false);
     expect(isWithinWriteSurface(cfg, '.agents/skills/REGISTRY.md')).toBe(false);
-    expect(isWithinWriteSurface(cfg, 'docs/qa-standard/x.md')).toBe(false);
+    expect(isWithinWriteSurface(cfg, 'docs/reports/x.md')).toBe(false);
     // Segment-aware: `.husky` never swallows `.husky-old`.
     expect(isWithinWriteSurface(cfg, '.husky-old/pre-push')).toBe(false);
   });
@@ -691,22 +691,22 @@ describe('cli lock cursor after a self-update', () => {
 });
 
 describe('isRepoOnlyPath', () => {
-  const prefixes = ['docs/qa-standard'];
+  const prefixes = ['docs/reports'];
 
   test('matches the prefix itself', () => {
-    expect(isRepoOnlyPath('docs/qa-standard', prefixes)).toBe(true);
+    expect(isRepoOnlyPath('docs/reports', prefixes)).toBe(true);
   });
 
   test('matches anything beneath the prefix', () => {
-    expect(isRepoOnlyPath('docs/qa-standard/planning-ladder-proposal.md', prefixes)).toBe(true);
-    expect(isRepoOnlyPath('docs/qa-standard/nested/deep.md', prefixes)).toBe(true);
+    expect(isRepoOnlyPath('docs/reports/2026-01-01-report.md', prefixes)).toBe(true);
+    expect(isRepoOnlyPath('docs/reports/nested/deep.md', prefixes)).toBe(true);
   });
 
   test('leaves siblings alone', () => {
     // The bug this guards: a naive startsWith would swallow all three.
-    expect(isRepoOnlyPath('docs/qa-standards/x.md', prefixes)).toBe(false);
-    expect(isRepoOnlyPath('docs/qa-standard-archive/x.md', prefixes)).toBe(false);
-    expect(isRepoOnlyPath('docs/qa-standardish.md', prefixes)).toBe(false);
+    expect(isRepoOnlyPath('docs/reportsx/x.md', prefixes)).toBe(false);
+    expect(isRepoOnlyPath('docs/reports-archive/x.md', prefixes)).toBe(false);
+    expect(isRepoOnlyPath('docs/reportsish.md', prefixes)).toBe(false);
   });
 
   test('leaves unrelated paths alone', () => {
@@ -719,12 +719,12 @@ describe('isRepoOnlyPath', () => {
   });
 
   test('normalizes backslashes on both sides', () => {
-    expect(isRepoOnlyPath('docs\\qa-standard\\x.md', prefixes)).toBe(true);
-    expect(isRepoOnlyPath('docs/qa-standard/x.md', ['docs\\qa-standard'])).toBe(true);
+    expect(isRepoOnlyPath('docs\\reports\\x.md', prefixes)).toBe(true);
+    expect(isRepoOnlyPath('docs/reports/x.md', ['docs\\reports'])).toBe(true);
   });
 
   test('tolerates a trailing slash in the configured prefix', () => {
-    expect(isRepoOnlyPath('docs/qa-standard/x.md', ['docs/qa-standard/'])).toBe(true);
+    expect(isRepoOnlyPath('docs/reports/x.md', ['docs/reports/'])).toBe(true);
   });
 
   test('an empty prefix never matches, so a stray entry cannot blank the sync', () => {
@@ -733,6 +733,6 @@ describe('isRepoOnlyPath', () => {
   });
 
   test('no prefixes configured means nothing is filtered', () => {
-    expect(isRepoOnlyPath('docs/qa-standard/x.md', [])).toBe(false);
+    expect(isRepoOnlyPath('docs/reports/x.md', [])).toBe(false);
   });
 });
