@@ -30,11 +30,11 @@ The map MUST exist. Missing → run the owning mode first; never scaffold a cont
 
 ## Output
 
-`.agents/skills/<aspect>-context/SKILL.md` from the template in `skill-scaffold.md` §4 with `metadata.kind: context`, plus `references/gotchas.md` (measured genre, empty table allowed at creation). Optional, only when `skill-creator` is present and the user accepts loading it (T4, ask first): a description pass and three test prompts under `evals/evals.json`.
+`.agents/skills/<aspect>-context/SKILL.md` from the template in `skill-scaffold.md` §4 with `metadata.kind: context`, plus `references/gotchas.md` (measured genre, empty table allowed at creation). Build it THROUGH `skill-creator` (T3, installed at project level; load it silently): its draft loop, a description pass and three test prompts under `evals/evals.json`. If the install is missing on this machine, scaffold from the template and say so in the report; never skip the skill silently.
 
 ## Validation gate
 
-- `bun run skills:check` → `KIND-SUFFIX` and `STALE-PATH` green
+- `bun run skills:check` → `KIND-SUFFIX` and `STALE-PATH` green. STALE-PATH is STRICT for a context skill: every `.context/` path it cites must exist on disk (only `.context/PBI/` is exempt), which is why the map must exist first
 - `bun run skills:registry` → the new block appears in `REGISTRY.md`
 - `AGENTS.md` §5 row added by the project (T1), naming the loader: the workflow skills that touch the aspect (`sprint-testing`, `test-automation` for `data` / `api`)
 - The skill body contains no sentence that is also in the map (spot-check three rules)
@@ -44,3 +44,7 @@ The map MUST exist. Missing → run the owning mode first; never scaffold a cont
 - Copy a table, an entity list or an endpoint list from the map into the skill.
 - Ship a SUT context skill upstream: it is project-owned by construction.
 - Auto-apply a refinement: `skill-refinement-protocol.md` governs every later edit.
+
+## After a map is regenerated (the UPDATE reminder)
+
+The modes that regenerate a map (`data`, `features`, `api`, `test-plan`) end by offering to run THIS mode in UPDATE for the skill that sits over that map, when one exists. The facts just changed and a human is already looking at a diff, so that is the one moment a review of the judgment layer is cheap. UPDATE appends dated rules and never rewrites an existing one; a rule the new map contradicts is moved to the gotchas' "No longer true" section, not deleted.

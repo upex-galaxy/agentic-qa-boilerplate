@@ -1,6 +1,6 @@
 import type { Component, SyncStateV6, SyncStateV7 } from './updater-types.ts';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 
 import { dirname, join } from 'node:path';
@@ -16,6 +16,7 @@ import {
   foreignDirtyPaths,
   isBootstrapOnlyFile,
   isLocalTemplateSource,
+  isProjectLocalSkillPath,
   isRepoOnlyPath,
   isWithinWriteSurface,
   LAST_APPLY_FILE,
@@ -30,6 +31,7 @@ import {
   UPDATER_OWNED_PATHS_ENV,
   UPDATER_SELF_UPDATED_ENV,
   UPDATER_UPSTREAM_DIR_ENV,
+  UPSTREAM_CONTEXT_SUFFIX_SKILLS,
   writeLastApply,
 } from './updater-core.ts';
 
@@ -548,6 +550,11 @@ describe('isWithinWriteSurface (the dirty-tree guard blocks only on paths the sy
     expect(isWithinWriteSurface(cfg, '.agents\\skills\\acli\\SKILL.md')).toBe(true);
   });
 
+  test('a consumer\'s `<aspect>-context/` skill is outside; upstream\'s `iql-context` is inside', () => {
+    expect(isWithinWriteSurface(cfg, '.agents/skills/data-context/SKILL.md')).toBe(false);
+    expect(isWithinWriteSurface(cfg, '.agents/skills/iql-context/SKILL.md')).toBe(true);
+  });
+
   test('project code, protected paths, bootstrap-only components, excluded and repo-only paths are outside', () => {
     expect(isWithinWriteSurface(cfg, 'tests/e2e/login.spec.ts')).toBe(false);
     expect(isWithinWriteSurface(cfg, 'tests/components/pages/login.page.ts')).toBe(false);
@@ -734,5 +741,59 @@ describe('isRepoOnlyPath', () => {
 
   test('no prefixes configured means nothing is filtered', () => {
     expect(isRepoOnlyPath('docs/reports/x.md', [])).toBe(false);
+  });
+});
+
+describe('project-local context skills (a consumer\'s `<aspect>-context/` is never synced)', () => {
+  test('isProjectLocalSkillPath: any `-context` slug under the skills dir, except the ones upstream owns', () => {
+    expect(isProjectLocalSkillPath('.agents/skills/data-context/SKILL.md')).toBe(true);
+    expect(isProjectLocalSkillPath('.agents/skills/api-context/references/gotchas.md')).toBe(true);
+    expect(isProjectLocalSkillPath('.agents\\skills\\data-context\\SKILL.md')).toBe(true);
+    expect(isProjectLocalSkillPath('.agents/skills/iql-context/SKILL.md')).toBe(false);
+    expect(isProjectLocalSkillPath('.agents/skills/project-context/SKILL.md')).toBe(false);
+    expect(isProjectLocalSkillPath('.agents/skills/sync-ai-context/references/sync.md')).toBe(false);
+    expect(isProjectLocalSkillPath('.agents/skills/acli/SKILL.md')).toBe(false);
+    // Segment-aware: the suffix binds the SLUG, not a deeper directory or a sibling store.
+    expect(isProjectLocalSkillPath('.agents/skills/acli/references/data-context/x.md')).toBe(false);
+    expect(isProjectLocalSkillPath('.agents/skills-context/x.md')).toBe(false);
+    expect(isProjectLocalSkillPath('tests/data-context/x.ts')).toBe(false);
+  });
+
+  test('the upstream set matches the `-context` slugs scripts/lint-skills.ts grandfathers (cli/ is import-closed, so this is the seam)', () => {
+    const lint = readFileSync(join(import.meta.dir, '..', '..', 'scripts', 'lint-skills.ts'), 'utf8');
+    const m = /const KIND_SUFFIX_EXEMPT = new Set<string>\(\[([^\]]+)\]\)/.exec(lint);
+    expect(m).not.toBeNull();
+    const exempt = [...m![1].matchAll(/'([^']+)'/g)].map(x => x[1]).filter(slug => slug.endsWith('-context'));
+    for (const slug of exempt) { expect(UPSTREAM_CONTEXT_SUFFIX_SKILLS.has(slug)).toBe(true); }
+    expect(UPSTREAM_CONTEXT_SUFFIX_SKILLS.has('iql-context')).toBe(true);
+  });
+
+  test('the upstream walk skips a same-slug context skill, and a delete upstream never reaches the consumer copy', () => {
+    const SKILLS: Component = { name: 'skills', type: 'directory', paths: ['.agents/skills'] };
+    const template = temporaryRoot();
+    git(template, ['init', '--quiet', '--initial-branch=main']);
+    git(template, ['config', 'user.email', 'test@example.com']);
+    git(template, ['config', 'user.name', 'test']);
+    write(template, '.agents/skills/iql-context/SKILL.md', 'iql v1\n');
+    write(template, '.agents/skills/api-context/SKILL.md', 'an example upstream should never ship, but might\n');
+    git(template, ['add', '-A']);
+    git(template, ['commit', '--quiet', '-m', 'lock']);
+    const lock = git(template, ['rev-parse', 'HEAD']).trim();
+    git(template, ['rm', '--quiet', '-r', '.agents/skills/api-context']);
+    write(template, '.agents/skills/iql-context/SKILL.md', 'iql v2\n');
+    git(template, ['add', '-A']);
+    git(template, ['commit', '--quiet', '-m', 'head']);
+
+    const local = temporaryRoot();
+    write(local, '.agents/skills/iql-context/SKILL.md', 'iql v1\n');
+    write(local, '.agents/skills/api-context/SKILL.md', 'the consumer\'s own judgment layer\n');
+
+    const reconciled = reconcileComponentsByContent(template, [SKILLS], local, []);
+    expect(reconciled.map(e => e.path)).toEqual(['.agents/skills/iql-context/SKILL.md']);
+
+    const state: SyncStateV6 = { schemaVersion: 6, lastSync: '', templateCommit: lock, cliVersion: '8.1', syncedComponents: [], variableSystemVersion: 1, perComponentCommit: { skills: lock } };
+    const delta = computeDelta(template, [SKILLS], state, local, []);
+    expect(delta.map(e => e.path)).toEqual(['.agents/skills/iql-context/SKILL.md']);
+    expect(delta.some(e => e.classification === 'deleted-upstream')).toBe(false);
   });
 });

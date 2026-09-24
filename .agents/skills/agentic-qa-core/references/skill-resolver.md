@@ -87,7 +87,8 @@ Heuristic, applied per dispatch in order of priority:
 2. **User-named slugs.** If the user says "use sprint-development for this", the orchestrator includes `sprint-development` even if no skill is loaded.
 3. **Name-match heuristic on the Goal + Context.** The orchestrator scans the dispatch's `Goal` and `Context docs` paths for known skill slugs. Match → include. (E.g. a goal that says "scaffold the bootstrap" includes `project-bootstrap`.)
 4. **Phase-match.** Each SKILL.md frontmatter declares `phase:` (`bootstrap`, `foundation`, `implementation`, etc.). If the orchestrator's current workflow phase matches the briefing's intent, include skills with that phase.
-5. **Cap at 5 skills per briefing.** Beyond five, the briefing becomes too noisy. The orchestrator picks the top 5 by relevance and lists the rest under "Other skills available — load on demand:".
+5. **Context skills: only the aspect the dispatch touches.** A `metadata.kind: context` skill (slug `<aspect>-context`) is injected when the dispatch's Goal, Context docs or touched files name its aspect: a task that writes API tests or reads `.context/business/business-api-map.md` gets `api-context`; one that seeds or asserts on data gets `data-context`; one that must explain or apply the methodology gets `iql-context`. Never all of them: the resolver is a token-saving protocol, and a subagent that touches one aspect pays for one. The relevance call is the orchestrator's, so a dispatch that names no aspect gets no context skill; when in doubt, name the aspect in the Goal.
+6. **Cap at 5 skills per briefing.** Beyond five, the briefing becomes too noisy. The orchestrator picks the top 5 by relevance and lists the rest under "Other skills available — load on demand:".
 
 Skills NOT matched are simply not pasted. The subagent can still load any skill at runtime if the registered rules are insufficient.
 

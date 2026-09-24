@@ -84,6 +84,27 @@ qa:
     defect_epic:
       name: QA Defect Management # convention name; the `QA ` prefix marks a process epic, not product
       key: null # discovered/created at runtime, then cached here (e.g. PROJ-123)
+  # How THIS project runs the IQL. Read by the shipped `iql-context` skill (the methodology
+  # index) and, through it, by every workflow skill that asks "which stages does this project
+  # run and how strict are its gates". The skill body syncs verbatim from upstream; these
+  # VALUES are the first of its two adaptation seams (the second is the project-owned prose
+  # overlay `.agents/skills/iql-context/references/project-overrides.md`, delivered once,
+  # never overwritten). Read directly by skills (not {{VAR}} tokens) → skipped by vars:check.
+  methodology:
+    # Stages this project actually runs, by NAME (never by number), from the ladder in
+    # .agents/skills/agentic-qa-core/references/stage-gates.md. Remove a stage the team has
+    # consciously not adopted; its owning skill then declines the work with a stated note.
+    stages: [shift-left, planning, execution, reporting, documentation, automation, regression]
+    # Gate strictness: `strict` runs every DoD as written; `light` allows the collapsible gates
+    # named on the official methodology site (ATP item, feature Test Set promotion, ROI
+    # verifier, FLAKY history), one sprint at a time, written in the STP, with a debt item per
+    # collapse. The never-collapsed gates (ATR Test Environment, human OK before filing a bug,
+    # plan approval before automation code, human merge approval) hold in both.
+    gate_mode: strict
+    # Execution profile the agentic contract assumes: `agentic` (an agent executes the skills
+    # under the guardrails and the human decides at the declared points) or `manual` (a person
+    # runs each stage; the human gates still apply). Documentation only: no skill branches on it.
+    execution_profile: agentic
 
 # Git workflow for THIS project — the SOURCE OF TRUTH read by the git-flow-master skill
 # before any git/gh operation. Ships `strategy: solo-main` as an inherited DEFAULT, not a

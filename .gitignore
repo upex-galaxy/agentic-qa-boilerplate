@@ -205,7 +205,7 @@ dbhub.local.toml
 .agents/skills/*-workspace/
 
 # ===== T3 community skills (re-fetched, never committed) =====
-# These three are installed into .agents/skills/ by cli/install.ts
+# These are installed into .agents/skills/ by cli/install.ts
 # (PROJECT_LEVEL_SKILLS) and re-fetched from upstream on every install.
 # Committing them would turn the installer's re-fetch into merge conflicts
 # against the committed copies — so they are deliberately ignored. Keep this
@@ -213,6 +213,7 @@ dbhub.local.toml
 .agents/skills/playwright-cli/
 .agents/skills/playwright-best-practices/
 .agents/skills/resend-cli/
+.agents/skills/skill-creator/
 
 # ===== refcheck per-dev config (local-only) =====
 .refcheckrc.toml

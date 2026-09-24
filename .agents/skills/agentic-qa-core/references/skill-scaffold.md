@@ -1,6 +1,6 @@
 # Skill Scaffold — the contract every new T1 skill is born with
 
-> Cited by: `/framework-development` (boilerplate skills: the change IS a skill) and `project-context` mode `context-skill` (consumer SUT context skills). `skill-creator` (T4, ask-before-load) is loaded for the halves it is good at, the test prompts and the description optimizer; the scaffold below works WITHOUT it.
+> Cited by: `/framework-development` (boilerplate skills: the change IS a skill) and `project-context` mode `context-skill` (consumer SUT context skills). `skill-creator` (T3, installed at project level by `cli/install.ts`) is ALWAYS the builder: both entry points load it for the draft, the test prompts, the evals and the description pass; the CONTRACT below is this repo's and `skill-creator` does not own it. On a machine where the install is missing, the scaffold still works from the template in §4, and the run says so.
 > Axes and kinds: `skill-composition-strategy.md` §2b. Lint: `scripts/lint-skills.ts`.
 
 ---
@@ -48,9 +48,13 @@ Ask about each piece of knowledge:
 | A test-architecture decision | `.context/ADR/` |
 | The repo's own methodology (index + invariants) | `iql-context` (shipped upstream) |
 
-**Hard rule: a `-context` skill CITES `.context/` paths, it does not copy them.** A context skill that restates a `.context/` fact is a second source of truth and fails review. (The `.context/` prefix is NOT in the STALE-PATH lint on purpose: 23 legitimate citations in this repo point at files `project-discovery` generates per project, measured 2026-09-23.)
+**Hard rule: a `-context` skill CITES `.context/` paths, it does not copy them.** A context skill that restates a `.context/` fact is a second source of truth and fails review. The STALE-PATH check (`scripts/lint-skills.ts`) enforces the citing half with a kind-scoped rule: inside a `metadata.kind: context` skill every `.context/` cite must exist on disk (the map is born before the skill; only the gitignored `.context/PBI/` mirror is exempt), while in every other skill the outputs the generators write per project (`project-discovery`, the `project-context` maps, the skill reports) are exempt in both directions, because they do not exist in the boilerplate checkout. The "does not copy" half stays a review rule.
 
-**Ownership rule:** SUT context skills (`data-context`, `api-context`, `infra-context`, ...) are project-owned and NEVER shipped upstream. The `skills` component syncs the whole `.agents/skills/` directory, and a same-slug directory upstream would overwrite the project's. Upstream ships templates and `iql-context` only.
+**Ownership rule:** SUT context skills (`data-context`, `api-context`, `infra-context`, ...) are project-owned and NEVER shipped upstream. The updater enforces it: any `.agents/skills/<slug>-context/` other than the ones upstream owns (`iql-context`, plus the grandfathered workflow slugs `project-context` and `sync-ai-context`) is project-local by construction, never delivered, overwritten or deleted by `bun run up`, even if upstream ever ships a same-slug example (`isProjectLocalSkillPath` in `cli/lib/updater-core.ts`). Upstream ships `iql-context` only; its `references/project-overrides.md` is bootstrap-only (delivered once, then project-owned).
+
+**Who proposes, who creates:** `project-discovery` PROPOSES the context skills a fresh repo could carry, at its close, from the maps it just produced (one line per aspect, never a file). `project-context` mode `context-skill` CREATES them, always through `skill-creator`, and the modes that regenerate a map (`data`, `features`, `api`, `test-plan`) offer, when done, to run `context-skill` in UPDATE for the skill that sits over that map. UPDATE appends dated rules; it never rewrites one.
+
+**Who loads them:** a context skill triggers by its `description` in the main thread. In a subagent briefing the Skill Resolver injects only the context skills whose ASPECT the dispatch touches (`skill-resolver.md` §"How the orchestrator picks relevant skills"), never all of them.
 
 ## 4 · Minimal `SKILL.md` for a context skill
 

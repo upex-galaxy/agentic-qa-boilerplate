@@ -1,0 +1,40 @@
+{
+  "skill_name": "iql-context",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Quick one before I write the sprint retro: why does our QA process create a Test Set for every story even when there's only one test case? Feels like ceremony. Where is that rule coming from?",
+      "expected_output": "Loads iql-context, answers from the index: Set-first, the ATS is mandatory even with one TC because ATS -> Story is the only edge that fills Jira's coverage panel (ATP -> Story and ATR -> Story are administrative). Cites the site anchor #artefactos / diagramas/gestion-de-tests and the repo doctrine agentic-qa-core/references/traceability-linking.md §3. Does not run any stage.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "estoy armando un onboarding para un QA nuevo, explicame que es eso de Early-Game / Mid-Game / Late-Game y como se mapea a los skills que tenemos en el repo (no quiero que corra nada, solo entender)",
+      "expected_output": "Loads iql-context and its references/phases-steps-cycles.md: the three phases group steps not stages; maps each stage to its owning skill (shift-left-testing, sprint-testing, test-documentation, test-automation, regression-testing; Observation has none). Answers in Spanish, cites the phase pages and agentic-qa-core/references/stage-gates.md. Does not invoke a workflow skill.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "The site says Regression autonomy is 3 but a teammate says our skill can decide a GO on its own. Which one is right for this repo?",
+      "expected_output": "Loads iql-context, applies the rule 'the repo's executable doctrine wins, cite both': quotes the repo contract table in agentic-qa-core/references/stage-gates.md (its wording for Regression, with the clean-GO condition) and the site card, and points at references/gotchas.md. Does not resolve the disagreement by editing anything.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Test PROJ-412 for me: the new bulk-export button on the orders page. I need the ATP, exploration and the ATR.",
+      "expected_output": "Should NOT trigger as the handler: this is in-sprint manual QA owned by /sprint-testing. iql-context may be cited by that skill for a 'why' question but never runs a stage.",
+      "should_trigger": false,
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "What are the soft-delete rules on the orders table? A count query in my test is returning more rows than the UI shows.",
+      "expected_output": "Should NOT trigger: SUT knowledge belongs to .context/business/business-data-map.md and the project's data-context skill, not to the methodology index.",
+      "should_trigger": false,
+      "files": []
+    }
+  ]
+}

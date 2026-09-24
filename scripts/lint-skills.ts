@@ -57,7 +57,15 @@
  *      Known gitignored artifacts + illustrative example paths are exempted
  *      via STALE_PATH_ALLOWED; the example components `/adapt-framework`
  *      deletes are exempted via EXAMPLE_ARTIFACTS, so a skill body that cites
- *      one passes here AND in an adapted repo. ERROR severity.
+ *      one passes here AND in an adapted repo. `.context/` is checked too,
+ *      with a kind-scoped rule: inside a `metadata.kind: context` skill every
+ *      `.context/` cite must exist (a context skill citing a dead map is the
+ *      failure mode the check exists for; only the gitignored Jira cache
+ *      `.context/PBI/` is exempt), while in every other skill the outputs the
+ *      generators write per project (CONTEXT_GENERATED_PREFIXES: discovery,
+ *      the business maps, the master test plan, skill reports) are exempt in
+ *      both directions, because they do not exist in the boilerplate checkout.
+ *      ERROR severity.
  *
  *   9. DUPLICATE-TIER — a skill slug appearing in more than one of
  *      PROJECT_LEVEL_SKILLS, USER_LEVEL_SKILLS is an install conflict.
@@ -690,7 +698,41 @@ function stripFencedCodeBlocks(md: string): string {
 }
 
 const INLINE_CODE_PATH
-  = /`((?:\.claude\/skills|scripts|cli|\.agents|tests|api)\/[\w./-]+)`/g;
+  = /`((?:\.claude\/skills|scripts|cli|\.agents|tests|api|\.context)\/[\w./-]+)`/g;
+
+/**
+ * `.context/` paths a generator writes per project, named by the generator
+ * that owns them. None of these exist in the boilerplate checkout (the
+ * committed `.context/` tree holds only the ADRs, the README files, the PBI
+ * templates and the example maps), yet the workflow skills cite them
+ * legitimately, so outside a context skill they are exempt in BOTH directions,
+ * present or absent, exactly like EXAMPLE_ARTIFACTS. Inside a
+ * `metadata.kind: context` skill the exemption does NOT apply: the scaffold
+ * requires the map to exist before the skill is born, so a cite that does not
+ * resolve there is the dead-map citation this check is for. `.context/PBI/`
+ * stays exempt everywhere: it is the gitignored Jira mirror.
+ */
+const CONTEXT_GENERATED_PREFIXES: ReadonlyArray<{ prefix: string, generator: string }> = [
+  { prefix: '.context/PBI/', generator: 'scripts/sync-jira-issues.ts (gitignored Jira mirror)' },
+  { prefix: '.context/business/', generator: 'project-discovery Phase 1 + project-context data / features / api' },
+  { prefix: '.context/PRD/', generator: 'project-discovery Phase 2' },
+  { prefix: '.context/SRS/', generator: 'project-discovery Phase 2' },
+  { prefix: '.context/infrastructure/', generator: 'project-discovery Phase 3' },
+  { prefix: '.context/reports/', generator: 'skill-owned reports (adapt-framework, jira-administration, regression-testing)' },
+  { prefix: '.context/regression-history/', generator: 'regression-testing' },
+  { prefix: '.context/project-config.md', generator: 'project-discovery Phase 1' },
+  { prefix: '.context/risk-assessment.md', generator: 'project-discovery Phase 1' },
+  { prefix: '.context/master-test-plan.md', generator: 'project-context test-plan' },
+];
+
+/** The only `.context/` prefix a context skill may cite without it resolving on disk. */
+const CONTEXT_CACHE_PREFIX = '.context/PBI/';
+
+function isGeneratedContextPath(path: string, strictContext: boolean): boolean {
+  if (path.startsWith(CONTEXT_CACHE_PREFIX)) { return true; }
+  if (strictContext) { return false; }
+  return CONTEXT_GENERATED_PREFIXES.some(({ prefix }) => path === prefix || path.startsWith(prefix));
+}
 
 /**
  * Relative `./file.md` citations, which `INLINE_CODE_PATH` cannot see because it
@@ -726,6 +768,9 @@ const STALE_PATH_ALLOWED = new Set<string>([
   'tests/data/mocks/auth/login/POST.200.json',
   'tests/data/mocks/users/POST.201.json',
   'tests/data/mocks/users/create/POST.400.json',
+  // pr-review-lead probes an EXTERNAL repo for this path (a doctrine tree the
+  // target may carry); it is never expected to exist in this checkout.
+  '.context/guidelines/tae/kata-architecture.md',
 ]);
 
 /**
@@ -763,12 +808,18 @@ function isExampleArtifact(path: string): boolean {
   return EXAMPLE_ARTIFACTS.some(p => path === p || path.startsWith(`${p}/`));
 }
 
+/**
+ * `strictContext` is true for a `metadata.kind: context` skill: its `.context/`
+ * cites must resolve on disk (only the gitignored `.context/PBI/` cache is
+ * exempt). Every other skill gets the generator-output exemption.
+ */
 function checkStalePaths(
   skillSlug: string,
   skillDir: string,
   body: string,
   repoRoot: string,
   sourceFile: string,
+  strictContext = false,
 ): Violation[] {
   const result: Violation[] = [];
   const stripped = stripFencedCodeBlocks(body);
@@ -779,8 +830,10 @@ function checkStalePaths(
     // Skip absolute paths.
     if (path.startsWith('/')) { continue; }
     if (path.endsWith('/')) { continue; } // directory-shape illustration, not a file ref
+    if (path.endsWith('/...')) { continue; } // elided-tree illustration (`.context/...`), not a file ref
     if (STALE_PATH_ALLOWED.has(path)) { continue; } // gitignored artifact / intentional example
     if (isExampleArtifact(path)) { continue; } // shipped here, deleted once adapted
+    if (path.startsWith('.context/') && isGeneratedContextPath(path, strictContext)) { continue; } // written per project by a generator
     // Skill-dir-first resolution: shorthand like `scripts/foo.ts` inside a skill
     // body should resolve against the skill's own directory; fall back to repo
     // root for paths that are genuinely repo-rooted (e.g. `.agents/skills/...`).
@@ -789,7 +842,9 @@ function checkStalePaths(
     result.push({
       severity: 'ERROR',
       scope: skillSlug,
-      msg: `STALE-PATH: \`${path}\` referenced in ${sourceFile} body does not exist on disk`,
+      msg: strictContext && path.startsWith('.context/')
+        ? `STALE-PATH: \`${path}\` referenced in ${sourceFile} body does not exist on disk — a context skill cites a map that exists (generate it first, or cite the right path); only \`${CONTEXT_CACHE_PREFIX}\` is exempt`
+        : `STALE-PATH: \`${path}\` referenced in ${sourceFile} body does not exist on disk`,
     });
   }
 
@@ -1277,7 +1332,9 @@ function main(): void {
 
   // Check 8: STALE-PATH — SKILL.md bodies + each skill's references/*.md
   for (const skill of t1Skills) {
-    violations.push(...checkStalePaths(skill.slug, skill.skillDir, skill.body, REPO_ROOT, 'SKILL.md'));
+    // A context skill's `.context/` cites are strict: the map must exist.
+    const strictContext = skill.frontmatter?.kind === 'context';
+    violations.push(...checkStalePaths(skill.slug, skill.skillDir, skill.body, REPO_ROOT, 'SKILL.md', strictContext));
     const refsDir = join(skill.skillDir, 'references');
     if (!existsSync(refsDir)) { continue; }
     for (const ref of readdirSync(refsDir)) {
@@ -1285,7 +1342,7 @@ function main(): void {
       let refText: string;
       try { refText = readFileSync(join(refsDir, ref), 'utf8'); }
       catch { continue; }
-      violations.push(...checkStalePaths(skill.slug, skill.skillDir, refText, REPO_ROOT, `references/${ref}`));
+      violations.push(...checkStalePaths(skill.slug, skill.skillDir, refText, REPO_ROOT, `references/${ref}`, strictContext));
     }
   }
 
