@@ -411,9 +411,8 @@ GROUP BY o.id;
 
 ## Próximos Pasos
 
-1. **Conectarse a DB:** [connection-db.md](./connection-db.md) - Configurar conexiones
-2. **Setup MCP:** [../../setup/mcp-dbhub.md](../../setup/mcp-dbhub.md) - Habilitar DB en AI assistant
-3. **API vs DB Testing:** [fundamentals.md](./fundamentals.md) - Cuándo usar cada approach
+1. **Setup MCP:** [../../setup/mcp-dbhub.md](../../setup/mcp-dbhub.md) - Habilitar DB en AI assistant
+2. **Doctrina DB (conexión, troubleshooting, cookbook):** [db-testing-doctrine.md](../../../.agents/skills/agentic-qa-core/references/db-testing-doctrine.md)
 
 ---
 

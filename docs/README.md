@@ -80,7 +80,8 @@ La metodología de testing está basada en **IQL (Integrated Quality Lifecycle)*
 
 | Documento | Descripción | Estado |
 |-----------|-------------|--------|
-| [fundamentals.md](./testing/database/fundamentals.md) | Conceptos API vs DB testing | ✅ Disponible |
+| [data-validation-testing.md](./testing/database/data-validation-testing.md) | Validación de datos en DB | ✅ Disponible |
+| [db-testing-doctrine.md](../.agents/skills/agentic-qa-core/references/db-testing-doctrine.md) | Maniobra canónica: DBHub MCP, `dbhub.toml`, cookbook de queries, troubleshooting | ✅ Disponible |
 
 ### [Test Automation](./testing/automation/)
 
