@@ -85,28 +85,46 @@ Until that override exists on a machine, a native worker launches in whatever mo
 per-agent default gives it, which is the trap gotcha G27 describes. Neither the repo nor a teammate's
 machine can tell whether you did it, which is the whole problem with a non-versionable setting.
 
-### 3.2 · direnv, so a supervised worker has credentials
+### 3.2 · Credentials for a supervised worker: the harness surfaces, and direnv only for Codex
 
-A launch line can export variables; the native launch cannot, because it has no argv. What it has is
-Orca's **interactive shell**, and that is the whole seam: with direnv installed and hooked into that
-shell, an `.envrc` that sources the repo's env file fires when the worker's terminal opens, and the
-worker starts with credentials. Measured 2026-09-17: a direct probe showed
-`direnv: export +ATLASSIAN_API_TOKEN +ATLASSIAN_EMAIL …` and then the probe variable reading `SET`.
+A launch line can export variables; the native launch cannot, because it has no argv. That used to
+make direnv the only seam. It no longer is: `bun run harness:env` derives from `.env` a per-harness
+credential surface that a worker reads with NO shell involved.
 
-Without direnv, the same command produces a supervised worker with NO credentials **and nothing
-reports it**. It fails much later, at its first authenticated call, with an error that reads like a
-broken tool (gotcha G45).
+- **Claude Code workers** read the `env` block of `.claude/settings.local.json`. On macOS/Linux the
+  file is resolved from the MAIN checkout's root, so every worktree inherits it with no action
+  (measured on Claude Code 2.1.278: a session launched inside a worktree gave its MCP child the main
+  checkout's value; the worktree's own copy was ignored).
+- **OpenCode workers** read `.auth/opencode/<VAR>` through `{file:}` references in `opencode.jsonc`,
+  relative to the worktree. `bun run worktree:provision` copies `.auth/` from the primary (mode
+  `0600`), and `bun install` creates empty placeholders on a fresh clone so the config still loads.
+- **Codex workers** are the only ones still on the shell: `.codex/config.toml` NAMES variables and
+  reads them from the process environment at connect time. So does anything inside a worker that
+  reads a shell-exported variable (`acli`, `curl`, `bun xray`). For those, direnv in Orca's
+  **interactive shell** is the seam: with it installed and hooked, an `.envrc` that sources the repo's
+  env file fires when the worker's terminal opens. Measured 2026-09-17: a direct probe showed
+  `direnv: export +ATLASSIAN_API_TOKEN +ATLASSIAN_EMAIL …` and then the probe variable reading `SET`.
+
+Without direnv, a Codex worker (or a shell-exported CLI inside any worker) has NO credentials **and
+nothing reports it**. It fails much later, at its first authenticated call, with an error that reads
+like a broken tool (gotcha G45).
 
 ```bash
-command -v direnv                                # the hook must be installed AND hooked into the shell
+bun run harness:env                              # after every .env change; then restart the agent session
+command -v direnv                                # Codex workers / shell-exported vars only: installed AND hooked
 cat .envrc                                       # must source the repo's env file; never commit secrets here
 direnv allow                                     # once per checkout, per machine
 ```
 
+`bun run worktree:provision` runs `direnv allow <worktree>` for you, but only when direnv is
+installed AND the primary checkout's `.envrc` is already allowed, and it prints what it did (or why it
+skipped). It never approves an `.envrc` on a machine that never approved the primary.
+
 Two rules that follow from this being per-machine and invisible:
 
 - The conductor **verifies credentials on the worker's screen** before sending it any work
-  (`references/coordinator-playbook.md` §1 step 5). Readiness is not capability.
+  (`references/coordinator-playbook.md` §1 step 5), whichever surface they came from. Readiness is
+  not capability.
 - `.envrc` is a per-machine convenience, not a repo contract. Nothing in this repo may depend on it
   existing: the custom-argv line loads the env file through the repo's own wrapper instead, and that
   is why the human-paste path needs none of this.
@@ -153,8 +171,10 @@ find out during a real fleet, and record it in `references/gotchas.md`.
 [ ] Settings -> Agents: `claude` default args include `--permission-mode auto`
     (prerequisite of the SUPERVISED native launch; a pasted custom-argv line needs nothing)
 [ ] other agents: their documented equivalent, verified, not guessed
+[ ] `bun run harness:env` run after the last `.env` change (Claude and OpenCode workers read the
+    generated surfaces; no direnv needed for them)
 [ ] direnv installed, hooked into the shell, `.envrc` sources the env file, `direnv allow` run
-    (the only way a native worker gets credentials; verify on the worker's screen at launch)
+    (Codex workers and shell-exported CLI vars only; verify on the worker's screen at launch)
 [ ] repo setup script set to `bun run worktree:provision`, policy run-by-default
 [ ] (optional) phone paired
 [ ] a single test worker launched and released end to end BEFORE a real fleet
