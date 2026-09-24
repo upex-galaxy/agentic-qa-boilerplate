@@ -18,6 +18,7 @@ import {
   check,
   CLAUDE_LOCAL_SETTINGS,
   claudeSettingsRoot,
+  ensureOpencodePlaceholders,
   generate,
   OPENCODE_CONFIG,
   OPENCODE_SECRET_DIR,
@@ -384,6 +385,67 @@ describe('emitter B — .auth/opencode + opencode.jsonc', () => {
     // declaration, or the next run deletes the value files it just wrote.
     expect(buildAllowlist(root).opencode).toEqual(['DBHUB_HOST', 'TAVILY_API_KEY']);
     expect(generate(root).opencode.removed).toEqual([]);
+  });
+});
+
+describe('ensureOpencodePlaceholders — the fresh-clone guarantee', () => {
+  /** A COMMITTED config after the generator has run: `{file:}` references, no `.env` anywhere. */
+  function scaffoldFreshClone(root: string): void {
+    write(root, OPENCODE_CONFIG, [
+      '{',
+      '  // Comment naming {file:.auth/opencode/VAR} — noise, not a variable.',
+      '  "mcp": {',
+      `    "tavily": { "headers": { "Authorization": "Bearer ${opencodeFileRef('TAVILY_API_KEY')}" } },`,
+      `    "dbhub": { "environment": { "DBHUB_HOST": "${opencodeFileRef('DBHUB_HOST')}" } }`,
+      '  }',
+      '}',
+      '',
+    ].join('\n'));
+  }
+
+  test('creates an EMPTY file for every {file:} reference, because a MISSING target invalidates the whole config', () => {
+    const root = makeRoot();
+    scaffoldFreshClone(root);
+    const result = ensureOpencodePlaceholders(root);
+    expect(result.created).toEqual(['DBHUB_HOST', 'TAVILY_API_KEY']);
+    expect(result.kept).toEqual([]);
+    expect(result.created).not.toContain('VAR');
+    expect(readFileSync(join(root, OPENCODE_SECRET_DIR, 'TAVILY_API_KEY'), 'utf8')).toBe('');
+    expect(existsSync(join(root, '.env'))).toBe(false);
+  });
+
+  test('never overwrites an existing file: it may hold a real credential', () => {
+    const root = makeRoot();
+    scaffoldFreshClone(root);
+    write(root, `${OPENCODE_SECRET_DIR}/TAVILY_API_KEY`, 'real-value-literal');
+    const result = ensureOpencodePlaceholders(root);
+    expect(result.kept).toEqual(['TAVILY_API_KEY']);
+    expect(result.created).toEqual(['DBHUB_HOST']);
+    expect(readFileSync(join(root, OPENCODE_SECRET_DIR, 'TAVILY_API_KEY'), 'utf8')).toBe('real-value-literal');
+  });
+
+  test('is idempotent: a second run creates nothing', () => {
+    const root = makeRoot();
+    scaffoldFreshClone(root);
+    ensureOpencodePlaceholders(root);
+    const again = ensureOpencodePlaceholders(root);
+    expect(again.created).toEqual([]);
+    expect(again.kept).toEqual(['DBHUB_HOST', 'TAVILY_API_KEY']);
+  });
+
+  test('writes at mode 0600, like every other value file', () => {
+    if (process.platform === 'win32') { return; }
+    const root = makeRoot();
+    scaffoldFreshClone(root);
+    ensureOpencodePlaceholders(root);
+    expect(statSync(join(root, OPENCODE_SECRET_DIR, 'TAVILY_API_KEY')).mode & 0o777).toBe(0o600);
+  });
+
+  test('does nothing, and says nothing broke, when there is no opencode.jsonc', () => {
+    const root = makeRoot();
+    const result = ensureOpencodePlaceholders(root);
+    expect(result).toEqual({ created: [], kept: [] });
+    expect(existsSync(join(root, OPENCODE_SECRET_DIR))).toBe(false);
   });
 });
 
