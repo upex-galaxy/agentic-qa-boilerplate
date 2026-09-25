@@ -637,7 +637,7 @@ const AGENTS_MD_H3 = /^### (.+)$/;
  * Detects whether an H2 heading line belongs to §5 (Skills registry).
  * Matches headings that start with "5." or are exactly "5" followed by
  * optional punctuation/whitespace, e.g.:
- *   "5. SKILLS + COMMANDS + MCPs REGISTRY"
+ *   "5. SKILLS + MODES + MCPs REGISTRY"
  *   "5 Skills"
  */
 function isSection5Heading(heading: string): boolean {
