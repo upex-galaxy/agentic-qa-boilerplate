@@ -3,7 +3,7 @@
 > **Purpose**: Explain the context engineering strategy for AI-driven test automation. Top-level reference alongside `README.md`, `AGENTS.md`, and `INSTALLER.md`.
 > **Audience**: Humans learning the system + AI when needing to understand "why".
 > **Related**: `AGENTS.md` contains the operational context loaded each session. It is the only instruction body in the repo; `CLAUDE.md` is a one-line shim (`@AGENTS.md`) that Claude Code follows to reach it. Operational prose belongs in `AGENTS.md` — never in the shim. See §2.1 below.
-> **Sync**: This file is in scope of `/sync-ai-memory` — re-run it whenever the context architecture changes.
+> **Sync**: This file is in scope of `sync-ai-context` — re-run it whenever the context architecture changes.
 
 ---
 
@@ -19,7 +19,7 @@
 | **Progressive Loading** | Start with summary, load details on demand |
 | **Context Relevance** | Different tasks need different context |
 | **Single Source of Truth** | One place for each type of information |
-| **Tool-Agnostic Context** | `.agents/` holds the shared substrate — instructions, skills, hook emitter, alias manifest — consumed by every supported harness. Harness-specific directories (`.claude/`, `.opencode/`, `.codex/`) hold only thin adapters and generated artifacts, never a second copy of the content. |
+| **Tool-Agnostic Context** | `.agents/` holds the shared substrate — instructions, skills, hook emitter — consumed by every supported harness. Harness-specific directories (`.claude/`, `.opencode/`, `.codex/`) hold only thin adapters and generated artifacts, never a second copy of the content. |
 
 ---
 
@@ -34,7 +34,6 @@ agentic-qa-boilerplate/
 ├── .agents/
 │   ├── project.yaml        → Tool-agnostic project + Jira config (any harness reads this)
 │   ├── skills/             → Workflow skills (task instructions + references) — 19, committed
-│   ├── compatibility/      → Slash-command alias manifest (source for every wrapper)
 │   └── hooks/              → Shared personality-reinject emitter (one file, three adapters)
 ├── .context/               → Documentation THAT the AI reads (context)
 ├── docs/                   → Human documentation site (`bun run docs`)
@@ -53,7 +52,7 @@ agentic-qa-boilerplate/
 
 ### 2.1 Host harnesses: one source, three consumers
 
-The repo runs on **Claude Code, OpenCode, and Codex (CLI + Desktop)**. There is exactly one copy of every instruction and every skill. Where the harnesses genuinely differ — MCP file format, hook API, whether slash commands exist at all — each keeps a thin versioned adapter. Nothing is duplicated.
+The repo runs on **Claude Code, OpenCode, and Codex (CLI + Desktop)**. There is exactly one copy of every instruction and every skill. Where the harnesses genuinely differ — MCP file format, hook API, how a skill is invoked — each keeps a thin versioned adapter. Nothing is duplicated.
 
 > Visual walkthrough: [**Una fuente, tres harnesses**](https://upex-galaxy.github.io/agentic-qa-boilerplate/harnesses.es.html) (Spanish, published page with diagrams).
 
@@ -61,15 +60,15 @@ The repo runs on **Claude Code, OpenCode, and Codex (CLI + Desktop)**. There is 
 |---------|-------------|----------|---------------------|
 | **Instructions** | `CLAUDE.md` → `@AGENTS.md` **[generated shim]** | `AGENTS.md` (native) | `AGENTS.md` (native) |
 | **Skills** | `.claude/skills` **[generated alias]** | `.agents/skills/` (native) | `.agents/skills/` (native) |
-| **Commands** | `.claude/commands/*.md` **[generated]** | `.opencode/commands/*.md` **[generated]** | none — invoke the skill directly |
+| **Commands** | none: `/<skill> <mode>` through `.claude/skills` | none: name the skill and the mode in prose | none: name the skill and the mode in prose |
 | **Hook** | `.claude/settings.json` → `UserPromptSubmit` | `.opencode/plugins/personality-reinject.js` | `.codex/hooks.json` → `UserPromptSubmit` |
 | **MCP** | `.mcp.json` | `opencode.jsonc` | `.codex/config.toml` |
 
-**Instructions.** `AGENTS.md` is the only instruction body. OpenCode and Codex load it natively. Claude Code loads `CLAUDE.md`, which is exactly `@AGENTS.md` plus one newline — a documented import rather than a symlink, so it survives a Windows checkout. Writing operational prose into `CLAUDE.md` is structural drift, and `/sync-ai-memory` stops rather than propagating it.
+**Instructions.** `AGENTS.md` is the only instruction body. OpenCode and Codex load it natively. Claude Code loads `CLAUDE.md`, which is exactly `@AGENTS.md` plus one newline — a documented import rather than a symlink, so it survives a Windows checkout. Writing operational prose into `CLAUDE.md` is structural drift, and `sync-ai-context` stops rather than propagating it.
 
 **Skills.** All 19 skills live committed under `.agents/skills/`. OpenCode and Codex discover that directory natively. Claude Code reaches the same tree through `.claude/skills`, a POSIX symlink (Windows junction) that is **generated and gitignored** — never committed, never hand-edited.
 
-**Commands.** The 10 slash commands carry no workflow body. `.claude/commands/*.md` and `.opencode/commands/*.md` are 7-line wrappers generated from `.agents/compatibility/command-aliases.json`, overlaid by the optional project manifest `command-aliases.project.json`; each names a target skill plus a mode and forwards `$ARGUMENTS` unchanged. Codex has no wrapper layer: it invokes the skill directly. A wrapper that grows a body fails the compatibility check as `contains workflow prose`; a wrapper file no manifest produced fails by name.
+**Commands.** No harness gets command files. A skill is invoked by its own name plus a mode: when the first token of `$ARGUMENTS` matches one of its modes, that token is the mode and the rest is forwarded; with no match, the skill asks. Claude Code: `/<skill> <mode>` through `.claude/skills` (for example `/project-context data`). OpenCode and Codex: name the skill and the mode in prose. Each multi-mode skill lists its modes in its `## Mode routing` section; `.agents/skills/REGISTRY.md` lists the skills.
 
 **Hook.** `.agents/hooks/personality-reinject.mjs` holds the contract text once. Claude and Codex run it as a command hook; OpenCode imports the constant from a thin plugin. The contract is enforced by `cli/lib/agent-compatibility-contracts.ts`: no absolute personal paths, no duplicated hook file, OpenCode must mutate `output.system` in place.
 
@@ -81,11 +80,10 @@ The repo runs on **Claude Code, OpenCode, and Codex (CLI + Desktop)**. There is 
 |--------------------|------------|------------|
 | `CLAUDE.md` (one-line `@AGENTS.md` shim) | `AGENTS.md` | `bun run agents:compat` |
 | `.claude/skills` (POSIX symlink / Windows junction) | `.agents/skills/` | `bun run agents:compat` |
-| One Claude + one OpenCode wrapper per alias (10 upstream, plus any project-declared) | `.agents/compatibility/command-aliases.json`, overlaid by the optional `command-aliases.project.json` | `bun run agents:compat` |
 
-`bun run agents:compat:check` validates the whole contract (shim bytes, alias target, both wrapper sets byte-for-byte against the merged manifest, hook adapters, MCP parity), prints the alias status line on every run and groups errors per surface. It runs inside `bun run repo:check`, in the pre-push hook, and conditionally in pre-commit.
+`bun run agents:compat:check` validates the whole contract (shim bytes, alias target, no project command named like a skill, hook adapters, MCP parity), prints the alias status line on every run and groups errors per surface. It runs inside `bun run repo:check`, in the pre-push hook, and conditionally in pre-commit.
 
-**Project-owned commands and the updater.** A project declares its own slash commands in `.agents/compatibility/command-aliases.project.json` (same schema, optional, never synced): upstream aliases first, overlay overrides by `alias` name or adds, `wrapperHosts` from upstream. A wrapper file no manifest produced fails the check by name instead of being ignored. `bun run up` (8.2) closes with one "Estado por superficie" table (10 rows) and ONE parity prompt saved to `.agents/prompts/parity-plan.md`: numbered rows with evidence, one per path, each awaiting `keep project | take upstream | merge` before the AI edits anything; `take upstream` is suggested only where the project lacks the content entirely, and every `merge` on a watched file says what to port and what to keep. `--strict` turns a blocking parity finding into exit 1; an aborted run prints `Abortado.` and exits 1; `.claude/settings.json`, `.codex/` and the husky hooks ship once when missing and then sit on the protected watchlist next to `AGENTS.md`, `.mcp.json`, `opencode.jsonc` and `.codex/config.toml`, never overwritten. A project extends that watchlist through `updater.protected_paths` in `.agents/project.yaml`. On the migration run the `.claude/skills` alias waits for the migration commit (`bun run agents:compat` creates it).
+**Project-owned commands and the updater.** A project's own slash commands are plain harness command files it edits by hand (`.claude/commands/`, `.opencode/commands/`). The old overlay `.agents/compatibility/command-aliases.project.json` is inert: nothing reads it, and `bun run up` names it once in an informational row. A command named like a repo skill would hide that skill's instructions, so `agents:compat:check` fails on it and `bun run agents:compat` (also run by `bun run up` and `bun run setup`) moves it to `.backups/shadowing-commands/<same path>`, gitignored and recoverable. `bun run up` (8.2) closes with one "Estado por superficie" table (one row per surface, `SURFACE_ORDER` in `cli/lib/updater-parity.ts`) and ONE parity prompt saved to `.agents/prompts/parity-plan.md`: numbered rows with evidence, one per path, each awaiting `keep project | take upstream | merge` before the AI edits anything; `take upstream` is suggested only where the project lacks the content entirely, and every `merge` on a watched file says what to port and what to keep. `--strict` turns a blocking parity finding into exit 1; an aborted run prints `Abortado.` and exits 1; `.claude/settings.json`, `.codex/` and the husky hooks ship once when missing and then sit on the protected watchlist next to `AGENTS.md`, `.mcp.json`, `opencode.jsonc` and `.codex/config.toml`, never overwritten. A project extends that watchlist through `updater.protected_paths` in `.agents/project.yaml`. On the migration run the `.claude/skills` alias waits for the migration commit (`bun run agents:compat` creates it).
 
 **Two harness-specific facts worth knowing.** Codex loads project `.codex/` config and hooks only in a repository marked trusted, and `bun run setup:doctor` reports that trust separately because it is runtime state no file read can verify. Codex Desktop consumes the same repository config as the CLI — no second convention, no extra directory.
 
@@ -148,13 +146,13 @@ Two systems, two consumers, two lifecycles. Use the right substrate for the righ
 │                                 rebuild: `bun run context:hydrate` · committed exceptions: README.md,
 │                                 templates/, epics/*/test-specs/ (see .context/PBI/README.md)
 │
-├── business/                   → Business maps (command-generated)
-│   ├── business-data-map.md       → System flows + entities        (/business-data-map)
-│   ├── business-feature-map.md    → Feature catalog + CRUD matrix  (/business-feature-map)
-│   └── business-api-map.md        → Auth model + critical API      (/business-api-map)
+├── business/                   → Business maps (`project-context`)
+│   ├── business-data-map.md       → System flows + entities        (project-context data)
+│   ├── business-feature-map.md    → Feature catalog + CRUD matrix  (project-context features)
+│   └── business-api-map.md        → Auth model + critical API      (project-context api)
 │
 ├── reports/                   → Run artifacts: regression reports, GO/NO-GO verdicts, analysis output
-└── master-test-plan.md        → What to test and why                (/master-test-plan)
+└── master-test-plan.md        → What to test and why                (project-context test-plan)
 ```
 
 > **TMS configuration**: modality (Xray vs Jira-native) is derived from `.agents/project.yaml` `testing.tms_cli`. Regression Epic and label taxonomy are auto-discovered live by `/test-documentation` Phase 0 + Preflight. Jira/Xray setup lives in `docs/core/setup/jira-xray.html`; the IQL methodology narrative is the official site, https://upexgalaxy.com/metodologia.
@@ -170,16 +168,16 @@ Nineteen skills, all committed here. OpenCode and Codex read this directory dire
 ├── agentic-qa-core/         → Foundation: passive reference host (briefing template, dispatch patterns, orchestration doctrine, skill-composition strategy, Skill Resolver protocol). Cited on demand by workflow skills.
 ├── agentic-qa-onboard/      → First-time orientation tour: stack + 6-stage pipeline + MCPs. Hands off to the right downstream skill.
 ├── framework-development/   → Framework-evolution orchestrator for the boilerplate itself (KATA bases, fixtures, cli/, scripts/, api/schemas/ pipeline). Self-contained Plan → Code → Verify → Archive pipeline. NOT for per-ticket QA.
-├── project-discovery/       → 4-phase reverse-engineering, generates `.context/` artifacts. README/`AGENTS.md` upkeep is `/sync-ai-memory`. Foundation files (`AGENTS.md`, `.agents/`, `scripts/`) ship with the boilerplate and are not generated per project.
+├── project-discovery/       → 4-phase reverse-engineering, generates `.context/` artifacts. README/`AGENTS.md` upkeep is `sync-ai-context`. Foundation files (`AGENTS.md`, `.agents/`, `scripts/`) ship with the boilerplate and are not generated per project.
 ├── shift-left-testing/      → Stage 0: pre-sprint AC refinement on a batch of backlog Stories. Refines ACs, surfaces gaps, drafts ATP, transitions backlog → shift_left_qa → estimation. Adds label shift-left-reviewed so /sprint-testing Stage 1 can short-circuit later.
 ├── sprint-testing/          → In-sprint QA (planning + execution + reporting, per ticket)
 ├── test-documentation/      → TMS documentation + test prioritization
 ├── test-automation/         → KATA test planning + coding + review
 ├── regression-testing/      → Regression execution + GO/NO-GO
-├── project-context/         → Regenerates the business data / feature / API maps and the master test plan (modes behind the legacy `/business-*-map` and `/master-test-plan` aliases).
+├── project-context/         → Regenerates the business data / feature / API maps and the master test plan, one mode per artifact (`/project-context data` on Claude Code).
 ├── adapt-framework/         → Idempotent KATA adaptation: no-write analysis and plan first, mutation only after explicit approval.
 ├── jira-administration/     → Components reconciliation + Atlassian instance migration, each sealed behind read-first analysis.
-├── sync-ai-context/         → Synchronizes the AI-critical repo docs against the canonical instructions, skills, aliases and `package.json`.
+├── sync-ai-context/         → Synchronizes the AI-critical repo docs against the canonical instructions, skills, context and `package.json`.
 ├── git-flow-master/         → End-to-end Git operator: branch / commit / push / PR / conflict / chained-PR. Auto-detects branching strategy.
 ├── pr-review-lead/          → QA Lead review of a PR's test-automation work against KATA doctrine, every finding grounded in a citation.
 ├── bug-screenshot-annotation/ → Turns a raw bug screenshot into annotated evidence, rendered 100% locally.
@@ -198,7 +196,7 @@ Nineteen skills, all committed here. OpenCode and Codex read this directory dire
 - `agentic-qa-core` - Passive reference host cited by other skills (no direct invocation)
 - `/test-automation` - KATA test writing pipeline
 - `/sprint-testing` - End-to-end in-sprint QA
-- `/project-discovery` - Generates `.context/` artifacts; pair with `/sync-ai-memory` for README / `AGENTS.md` upkeep
+- `/project-discovery` - Generates `.context/` artifacts; pair with `sync-ai-context` for README / `AGENTS.md` upkeep
 - `/framework-development` - Evolves the boilerplate itself (KATA bases, fixtures, cli/, scripts/)
 
 ### docs/ - Human Documentation
@@ -245,7 +243,6 @@ These files have stable names and locations. Reference them confidently:
 |--------------|---------|
 | `AGENTS.md` | Project memory, loaded every session — the only instruction body |
 | `CLAUDE.md` | One-line shim (`@AGENTS.md`) so Claude Code reaches `AGENTS.md`. Never holds prose of its own |
-| `.agents/compatibility/command-aliases.json` | Manifest behind every generated slash-command wrapper (`bun run agents:compat`) |
 | `.agents/hooks/personality-reinject.mjs` | Shared hook emitter; the three harness adapters call into it |
 | `.agents/project.yaml` | Tool-agnostic project variables (`{{VAR}}` source of truth) |
 | `.agents/jira-required.yaml` | Manifest of Jira custom fields the methodology requires |
@@ -279,13 +276,13 @@ Phase 4: Specification   → Connect to backlog
 
 ### Context Generators
 
-After discovery, run these commands (orchestrated by `/project-discovery` or invoked individually — they are independent commands, not sub-skills):
+After discovery, run these `project-context` modes (orchestrated by `/project-discovery` or invoked one by one; each mode is independent):
 
 ```
-/business-data-map          → .context/business/business-data-map.md
-/business-feature-map       → .context/business/business-feature-map.md
-/business-api-map           → .context/business/business-api-map.md
-/master-test-plan           → .context/master-test-plan.md
+/project-context data       → .context/business/business-data-map.md
+/project-context features   → .context/business/business-feature-map.md
+/project-context api        → .context/business/business-api-map.md
+/project-context test-plan  → .context/master-test-plan.md
 bun run api:sync            → api/schemas/ (TypeScript types from OpenAPI)
 ```
 
@@ -321,7 +318,7 @@ The orchestration doctrine has three shared assets, all hosted by `agentic-qa-co
 
 Each workflow skill (`shift-left-testing`, `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `framework-development`) declares **its own dispatch points** in a `## Subagent Dispatch Strategy` section of its `SKILL.md`. That table maps each stage to its dispatch pattern and subagent role, so the AI knows up-front when to delegate and how to brief.
 
-Reference / utility / generator skills (`agentic-qa-core`, `acli`, `xray-cli`, `playwright-cli`, `project-discovery`, `adapt-framework`, the `business-*-map` and helper commands) are exempt from the dispatch-table requirement — they execute synchronously in-line.
+Reference / utility / generator skills (`agentic-qa-core`, `acli`, `xray-cli`, `playwright-cli`, `project-discovery`, `adapt-framework`, `project-context` and the other generator skills) are exempt from the dispatch-table requirement — they execute synchronously in-line.
 
 ---
 
@@ -376,12 +373,12 @@ Reference / utility / generator skills (`agentic-qa-core`, `acli`, `xray-cli`, `
 - New CLI tools added
 - Testing decisions documented
 
-Never write the update into `CLAUDE.md`: it is a generated one-line shim, and `/sync-ai-memory` refuses to propagate prose from it.
+Never write the update into `CLAUDE.md`: it is a generated one-line shim, and `sync-ai-context` refuses to propagate prose from it.
 
 ### When to Update the Harness Adapters
 
-- **New slash command (boilerplate)** → add the entry to `.agents/compatibility/command-aliases.json`, then `bun run agents:compat`. Never hand-write a wrapper under `.claude/commands/` or `.opencode/commands/`
-- **New slash command (a downstream project)** → declare it in `.agents/compatibility/command-aliases.project.json` (same schema; never synced by `bun run up`), then `bun run agents:compat`. A wrapper file neither manifest produced fails `agents:compat:check` by name
+- **New invocation (boilerplate)** → add a mode to the owning skill's `## Mode routing` section. There is no command layer to generate
+- **Project-owned command (a downstream project)** → a plain file under `.claude/commands/` or `.opencode/commands/`, edited by hand. One named like a repo skill fails `agents:compat:check`, and `bun run agents:compat` moves it to `.backups/shadowing-commands/`
 - **New MCP server** → declare it in `.mcp.json` first, then mirror it in `opencode.jsonc` and `.codex/config.toml` with the same `.env` dependencies (Codex: `env_vars` / `bearer_token_env_var`, never `${VAR}`). `agents:compat:check` names the server and the host that lacks it
 - **New or renamed skill** → create it under `.agents/skills/`. Nothing else to do: OpenCode and Codex read it directly, Claude Code sees it through the generated alias
 - **Hook contract text changes** → edit `.agents/hooks/personality-reinject.mjs` only. The three adapters call into it and stay untouched

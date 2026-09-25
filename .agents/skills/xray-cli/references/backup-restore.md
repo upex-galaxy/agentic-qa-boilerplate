@@ -215,7 +215,7 @@ captured but not diffed (numeric IDs differ per site).
 > [migration-runbook.md](migration-runbook.md) — credential inventory + backup →
 > prove prerequisites → auth source → `export --all` → auth dest → **configure
 > Xray per project (manual UI gate)** → `preflight` → dry-run → `restore --sync`
-> → verify → `/jira-instance-migration`. The condensed version:
+> → verify → `/jira-administration instance-migration`. The condensed version:
 
 ```bash
 # 0. BEFORE any auth login: inventory creds and have the USER back up the cached config
@@ -245,7 +245,7 @@ bun xray test list --project PROJ --limit 300
 bun xray exec list --project PROJ --limit 100
 
 # 6. Repoint the repo: custom-field IDs were reassigned by the move
-/jira-instance-migration
+/jira-administration instance-migration
 ```
 
 If keys were **not** preserved (different project key on destination), drop `--sync` and restore in create mode, then use the emitted `key-mapping-*.csv`.

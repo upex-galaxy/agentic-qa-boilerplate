@@ -1,6 +1,6 @@
 ---
 name: sync-ai-context
-description: "Synchronize AI-critical repository documents against current context, package scripts, skills, aliases, and project identity. Use for sync AI context, sync AI memory docs, refresh repository instructions, sync-ai-memory, or documentation drift. Preserves human prose and stable policy sections; patches only verified drift."
+description: "Synchronize AI-critical repository documents against current context, package scripts, skills, modes, and project identity. Use for sync AI context, sync AI memory docs, refresh repository instructions, sync-ai-memory, or documentation drift. Preserves human prose and stable policy sections; patches only verified drift."
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 complementary_categories: [meta-skill]

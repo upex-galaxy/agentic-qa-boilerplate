@@ -12,8 +12,8 @@ Derive the target application's functional modules from its source, compare them
 **Inputs**: `$ARGUMENTS` — optionally the Jira project key and/or the path to the target application's source. Both may be omitted; Phase 1 resolves them (`{{PROJECT_KEY}}` from `.agents/project.yaml`, the target repo from the session or by asking).
 
 ```
-/jira-components                       # -> resolve key + target repo, then run the 4 phases
-/jira-components BK ../bunkai          # -> explicit key + target source
+/jira-administration components                 # -> resolve key + target repo, then run the 4 phases
+/jira-administration components BK ../bunkai    # -> explicit key + target source
 ```
 
 Doctrine: `.agents/skills/agentic-qa-core/references/defect-management-doctrine.md` Part 3 — one component = one functional module of the running application, derived from the app's real surface, not from the planning taxonomy. This mode is how that convention gets materialized in a project's Components module.
@@ -26,7 +26,7 @@ Doctrine: `.agents/skills/agentic-qa-core/references/defect-management-doctrine.
 
 Why the flow is plan-driven at all (from the script's own header): deriving modules from a codebase is a judgement call — which routes collapse into one module, what the product's own vocabulary is — so the AI authors a plan, a human approves it, and the script only executes what the approved plan says. Autodetection would skip the one step that makes the result reviewable before it reaches a production Jira.
 
-`acli` cannot create, rename, or delete components — which is why the script speaks the REST API directly and why this command drives the script rather than `[ISSUE_TRACKER_TOOL]`.
+`acli` cannot create, rename, or delete components — which is why the script speaks the REST API directly and why this mode drives the script rather than `[ISSUE_TRACKER_TOOL]`.
 
 **Prerequisites**: `ATLASSIAN_EMAIL` + `ATLASSIAN_API_TOKEN` in `.env`, host resolved from `.agents/project.yaml` (`issue_tracker.atlassian_url`, env fallback). Missing credentials = STOP per Critical Rule #10 — name the variable, point at `.env.example`, no workaround.
 
@@ -53,7 +53,7 @@ Read the project's Epics and Stories (`bun run jira:sync-issues pull --dry-run`,
 
 A component may be declared **ahead of the code** — see the doctrine, Part 3. A feature in refinement has Stories, ACs and often Tests before it has a route, and every one of them needs a component. Waiting for the code means that work stays uncomponented exactly while planning metrics would be useful, and it produces the failure this step exists to prevent: an issue that fits no component, discovered when someone tries to file it.
 
-Forward-declaring is cheap and safe. `create` is additive, `rename` re-labels without touching a single issue assignment, and the command is re-run as the map evolves — so a module that ships under a different name is a rename, and one that never ships is one unused row.
+Forward-declaring is cheap and safe. `create` is additive, `rename` re-labels without touching a single issue assignment, and the mode is re-run as the map evolves — so a module that ships under a different name is a rename, and one that never ships is one unused row.
 
 ### 1c — Present the proposal
 

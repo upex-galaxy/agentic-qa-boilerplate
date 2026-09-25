@@ -123,7 +123,7 @@ Jira is the source of truth: the ATP lives in the `{{jira.acceptance_test_plan}}
     Test Plan issue from this field and refines it into the executable superset.
 ```
 
-`fix-traceability` checks the `{{jira.acceptance_test_plan}}` field, or this `## Acceptance Test Plan (ATP)` fallback comment when the field is absent.
+`test-documentation` mode `repair-traceability` checks the `{{jira.acceptance_test_plan}}` field, or this `## Acceptance Test Plan (ATP)` fallback comment when the field is absent.
 
 Mention rule: include `@PO_HANDLE` and `@DEV_LEAD_HANDLE` in the comment IF those handles are available in `.agents/project.yaml`. Otherwise omit — mention-spam is worse than no mention.
 
@@ -368,7 +368,7 @@ Each step is idempotent:
 ## Gotchas
 
 1. **Description append, never overwrite.** Read first, append second.
-2. **The comment is a pointer, not a mirror.** When `{{jira.acceptance_test_plan}}` exists, the handoff comment only points to the field — never paste the full body. The full body goes in the comment ONLY in fallback mode (field absent). `fix-traceability` checks the field, or the fallback comment when the field is absent.
+2. **The comment is a pointer, not a mirror.** When `{{jira.acceptance_test_plan}}` exists, the handoff comment only points to the field — never paste the full body. The full body goes in the comment ONLY in fallback mode (field absent). `test-documentation` mode `repair-traceability` checks the field, or the fallback comment when the field is absent.
 3. **Transition guardrail.** STOP at `estimation`. Stories past that point keep the refinement (description + field + comment + labels) but skip transition.
 4. **No TMS items pre-sprint.** This protocol never creates the Test Plan issue — `/sprint-testing` Stage 1 creates it from the `{{jira.acceptance_test_plan}}` field content. If an older session already left a pre-sprint Test Plan on the Story, leave it, note it in the per-Story log, and let Stage 1 reconcile.
 5. **Mention discipline.** Only mention PO/Dev-lead handles that are explicitly listed in `.agents/project.yaml`. No guessing.

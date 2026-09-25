@@ -16,7 +16,31 @@ below names which one it applies to:
 
 ## Unreleased — Boilerplate
 
+### Removed (updater 8.5, BREAKING)
+- **Command aliases retired in one release.** The alias manifest
+  (`.agents/compatibility/command-aliases.json`) and every generated wrapper under
+  `.claude/commands/` and `.opencode/commands/` are gone, and so are the updater's
+  `commands` component, the `Commands` row of the parity table, the wrapper checks of
+  `agents:compat:check` and the wrapper line of `setup:doctor`. A skill is invoked by its
+  name plus a mode on every harness: `/project-context data` on Claude Code, "load
+  `project-context`, mode `data`" on OpenCode and Codex. OpenCode users lose the slash
+  shortcuts and invoke in prose. `bun run up` removes the retired files downstream through
+  `deprecatedFiles` (no backup: they carried no workflow). A consumer lock that still holds
+  the `commands` cursor is ignored, never an abort.
+- **The project alias overlay is inert.** `.agents/compatibility/command-aliases.project.json`
+  is no longer read or delivered; the updater names it once in an informational row, and
+  the command files a project declared there stay as plain harness commands it edits by hand.
+
 ### Added
+- **A command that shadows a skill is refused.** A project command whose name equals a repo
+  skill would replace the skill's instructions with its own body, so `agents:compat:check`
+  fails on it and `bun run agents:compat` (also run by `bun run up` and `bun run setup`)
+  moves it to `.backups/shadowing-commands/<same path>`. The updater reports each move as
+  an informational row.
+- **First token of `$ARGUMENTS` is the mode.** `project-context`, `jira-administration`,
+  `test-automation`, `test-documentation` and `sprint-testing` state it in their Compact
+  Rules: a first token that matches a mode IS the mode and the rest is forwarded;
+  otherwise the skill asks (or applies its declared default).
 - **Context skills layer + `iql-context`.** A `metadata.kind: context` skill holds judgment
   over ONE aspect and cites `.context/` facts without restating them. Upstream ships exactly
   one, `iql-context` (`.agents/skills/iql-context/`): the methodology index (eight named

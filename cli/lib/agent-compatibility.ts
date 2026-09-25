@@ -1,6 +1,6 @@
 /**
  * @fileoverview Cross-harness compatibility engine — Claude skills alias,
- * generated command wrappers, hook adapters and MCP parity.
+ * hook adapters and MCP parity.
  *
  * WHY THIS LIVES IN `cli/lib/` AND NOT IN `scripts/`:
  * `cli/` is the updater's self-update component (`selfUpdateComponent: 'cli'`).
@@ -35,8 +35,7 @@ export const CLAUDE_INSTRUCTIONS_SHIM = '@AGENTS.md\n';
  * is a file a downstream project can delete, and under `core.autocrlf=true`
  * git then hands back `\r\n`. Without this, the shim comparison THROWS —
  * taking down `agents:compat`, `agents:compat:check`, `repo:check` and the
- * pre-push hook at once — and every generated wrapper reads as stale, so the
- * repair rewrites all of them on every run and the tree never comes clean.
+ * pre-push hook at once.
  * `updater-harness-migration.ts` already keeps a loose comparison for exactly
  * this reason; this is the same defence, stated once.
  */
@@ -47,16 +46,23 @@ export function normalizeNewlines(text: string): string {
 /** OS-generated files that never count as skill content. */
 export const OS_METADATA_FILES = new Set(['.DS_Store', 'Thumbs.db', 'desktop.ini']);
 export const POSIX_CLAUDE_SKILLS_TARGET = '../.agents/skills';
-export const COMMAND_ALIAS_MANIFEST = '.agents/compatibility/command-aliases.json';
 /**
- * Optional project overlay, same schema as the upstream manifest. Never synced
- * by `bun run up` (bootstrap-only): a downstream project declares its own slash
- * commands here, so they survive every update and never collide with upstream
- * edits to `command-aliases.json`. Merge rule: upstream aliases first, then the
- * overlay overrides by `alias` name and may add new ones. `wrapperHosts` always
- * come from the upstream manifest.
+ * The harness command directories (Claude Code, OpenCode). The boilerplate
+ * ships no command files: a skill is invoked by its own name plus a mode. What
+ * a project keeps here is its own, with one exception the check refuses: a
+ * command whose name equals a repo skill. Claude Code registers both under the
+ * same slash name, and the command body wins, so the AI would follow the
+ * command's instructions instead of the skill's.
  */
-export const COMMAND_ALIAS_PROJECT_MANIFEST = '.agents/compatibility/command-aliases.project.json';
+export const HARNESS_COMMAND_DIRS = ['.claude/commands', '.opencode/commands'] as const;
+/** Where `removeShadowingCommands` moves a shadowing command (gitignored by the `.backups*` rule). */
+export const SHADOWING_COMMANDS_BACKUP_DIR = '.backups/shadowing-commands';
+/**
+ * The retired alias overlay. Nothing reads it any more; the updater names it
+ * once (informational) so a project knows its declared commands are now plain
+ * harness command files it edits by hand.
+ */
+export const RETIRED_COMMAND_ALIAS_OVERLAY = '.agents/compatibility/command-aliases.project.json';
 /** The check's message when `.claude/skills` does not exist and nothing says it should not yet. */
 export const SKILLS_ALIAS_MISSING_ERROR = 'Claude skills alias missing: .claude/skills';
 /**
@@ -68,46 +74,6 @@ export const SKILLS_ALIAS_MISSING_ERROR = 'Claude skills alias missing: .claude/
  * the alias and removes it.
  */
 export const SKILLS_ALIAS_DEFERRED_MARKER = '.template/upstream-sha/claude-skills-alias.deferred';
-
-const WRAPPER_HOSTS = [
-  { id: 'claude', directory: '.claude/commands' },
-  { id: 'opencode', directory: '.opencode/commands' },
-] as const;
-
-interface CommandAlias {
-  alias: string
-  skill: string
-  mode: string
-  description: string
-  argumentHint: string
-  forwardArguments: true
-  mutability: 'read-only' | 'local-write' | 'local-write-after-approval' | 'external-write-after-approval' | 'external-and-local-write-after-approval'
-}
-
-interface CommandAliasManifest {
-  version: 1
-  wrapperHosts: Array<(typeof WRAPPER_HOSTS)[number]['id']>
-  aliases: CommandAlias[]
-}
-
-/** The overlay may omit `wrapperHosts`; when present it is ignored (upstream owns it). */
-interface CommandAliasOverlay {
-  version: 1
-  wrapperHosts?: CommandAliasManifest['wrapperHosts']
-  aliases: CommandAlias[]
-}
-
-export interface MergedCommandAlias extends CommandAlias {
-  /** Which manifest the winning definition came from. */
-  source: 'upstream' | 'project'
-}
-
-export interface MergedCommandAliases {
-  wrapperHosts: CommandAliasManifest['wrapperHosts']
-  aliases: MergedCommandAlias[]
-  /** True when `.agents/compatibility/command-aliases.project.json` exists. */
-  overlayPresent: boolean
-}
 
 export interface CompatibilityPaths {
   root: string
@@ -132,14 +98,14 @@ export interface CompatibilityCheck {
 }
 
 /** The surface a compatibility error belongs to, so a report can group them. */
-export type CompatibilityErrorGroup = 'alias' | 'wrappers' | 'hooks' | 'mcp' | 'lint' | 'instructions';
+export type CompatibilityErrorGroup = 'alias' | 'commands' | 'hooks' | 'mcp' | 'lint' | 'instructions';
 
-export const COMPATIBILITY_GROUP_ORDER: CompatibilityErrorGroup[] = ['instructions', 'alias', 'wrappers', 'hooks', 'mcp', 'lint'];
+export const COMPATIBILITY_GROUP_ORDER: CompatibilityErrorGroup[] = ['instructions', 'alias', 'commands', 'hooks', 'mcp', 'lint'];
 
 export const COMPATIBILITY_GROUP_LABEL: Record<CompatibilityErrorGroup, string> = {
   instructions: 'Instructions (AGENTS.md + CLAUDE.md shim, canonical skills)',
   alias: 'Claude skills alias (.claude/skills)',
-  wrappers: 'Command wrappers (.claude/commands, .opencode/commands)',
+  commands: 'Commands shadowing a skill (.claude/commands, .opencode/commands)',
   hooks: 'Hook adapters',
   mcp: 'MCP parity (.mcp.json, opencode.jsonc, .codex/config.toml)',
   lint: 'Lint config wiring (eslint.config.js <- eslint.config.base.js)',
@@ -148,7 +114,7 @@ export const COMPATIBILITY_GROUP_LABEL: Record<CompatibilityErrorGroup, string> 
 /** Classify one error message by its wording (the messages are ours). */
 export function compatibilityErrorGroup(message: string): CompatibilityErrorGroup {
   if (/\bMCP\b/.test(message)) { return 'mcp'; }
-  if (/command wrapper|command alias/i.test(message)) { return 'wrappers'; }
+  if (/command shadows skill/i.test(message)) { return 'commands'; }
   if (/skills alias|\.claude\/skills/i.test(message)) { return 'alias'; }
   if (/hook/i.test(message)) { return 'hooks'; }
   // A synced block that the project-owned consumer never wired: the rule is
@@ -312,164 +278,76 @@ function assertCanonicalSources(paths: CompatibilityPaths): void {
   }
 }
 
-function commandWrapper(alias: CommandAlias): string {
-  return `---\ndescription: ${alias.description}\nargument-hint: ${alias.argumentHint}\n---\n\nInvoke skill \`${alias.skill}\` in mode \`${alias.mode}\`.\nForward \`$ARGUMENTS\` unchanged.\n`;
+/** Slugs of the repo skills: every `.agents/skills/<slug>/` that holds a `SKILL.md`. */
+function repoSkillSlugs(canonicalSkills: string): Set<string> {
+  let entries: string[];
+  try { entries = readdirSync(canonicalSkills); }
+  catch { return new Set(); }
+  return new Set(entries.filter(entry => existsSync(join(canonicalSkills, entry, 'SKILL.md'))));
 }
 
-function readCommandAliasManifest(root: string): CommandAliasManifest {
-  const manifestPath = join(root, COMMAND_ALIAS_MANIFEST);
-  if (!existsSync(manifestPath)) {
-    throw new Error(`Command alias manifest missing: ${COMMAND_ALIAS_MANIFEST}`);
-  }
-
-  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as CommandAliasManifest;
-  if (manifest.version !== 1 || !Array.isArray(manifest.aliases)) {
-    throw new Error('Command alias manifest must have version 1 and an aliases array.');
-  }
-  return manifest;
-}
-
-function readCommandAliasOverlay(root: string): CommandAliasOverlay | null {
-  const overlayPath = join(root, COMMAND_ALIAS_PROJECT_MANIFEST);
-  if (!existsSync(overlayPath)) { return null; }
-
-  const overlay = JSON.parse(readFileSync(overlayPath, 'utf8')) as CommandAliasOverlay;
-  if (overlay.version !== 1 || !Array.isArray(overlay.aliases)) {
-    throw new Error(`Project command alias overlay must have version 1 and an aliases array: ${COMMAND_ALIAS_PROJECT_MANIFEST}`);
-  }
-  return overlay;
-}
-
-/**
- * Upstream manifest merged with the optional project overlay. Order is
- * upstream first, so an overlay entry with the same `alias` replaces the
- * upstream definition in place and a new alias lands at the end.
- */
-export function mergedCommandAliases(root = process.cwd()): MergedCommandAliases {
-  const resolvedRoot = resolve(root);
-  const upstream = readCommandAliasManifest(resolvedRoot);
-  const overlay = readCommandAliasOverlay(resolvedRoot);
-
-  const merged = new Map<string, MergedCommandAlias>();
-  for (const alias of upstream.aliases) {
-    merged.set(alias.alias, { ...alias, source: 'upstream' });
-  }
-  for (const alias of overlay?.aliases ?? []) {
-    merged.set(alias.alias, { ...alias, source: 'project' });
-  }
-  return {
-    wrapperHosts: upstream.wrapperHosts,
-    aliases: [...merged.values()],
-    overlayPresent: overlay !== null,
-  };
-}
-
-/**
- * Wrapper files under the host command directories that no manifest produced,
- * as repo-relative paths. Never deleted by the repair: a project either declares
- * the alias in the overlay or removes the file itself.
- */
-export function undeclaredCommandWrappers(root = process.cwd()): string[] {
-  const resolvedRoot = resolve(root);
-  const declared = new Set(mergedCommandAliases(resolvedRoot).aliases.map(alias => `${alias.alias}.md`));
-  const extra: string[] = [];
-  for (const host of WRAPPER_HOSTS) {
-    const directory = join(resolvedRoot, host.directory);
+/** Every `*.md` under one command directory, recursively (Claude namespaces subdirectories, the name is still the file's). */
+function commandFiles(root: string, directory: string): string[] {
+  const out: string[] = [];
+  const walk = (relDir: string): void => {
     let entries: string[];
-    try { entries = readdirSync(directory); }
-    catch { continue; }
+    try { entries = readdirSync(join(root, relDir)); }
+    catch { return; }
     for (const entry of entries.sort()) {
-      if (OS_METADATA_FILES.has(entry) || !entry.endsWith('.md') || declared.has(entry)) { continue; }
-      const stats = lstatIfPresent(join(directory, entry));
-      if (stats === null || !stats.isFile()) { continue; }
-      extra.push(`${host.directory}/${entry}`);
+      if (OS_METADATA_FILES.has(entry)) { continue; }
+      const rel = `${relDir}/${entry}`;
+      const stats = lstatIfPresent(join(root, rel));
+      if (stats === null) { continue; }
+      if (stats.isDirectory()) { walk(rel); }
+      else if (entry.endsWith('.md')) { out.push(rel); }
     }
-  }
-  return extra;
-}
-
-export function validateCommandAliases(root: string): string[] {
-  const errors: string[] = [];
-  let manifest: MergedCommandAliases;
-  try {
-    manifest = mergedCommandAliases(root);
-  }
-  catch (error) {
-    return [error instanceof Error ? error.message : String(error)];
-  }
-
-  const expectedHosts = WRAPPER_HOSTS.map(host => host.id);
-  if (JSON.stringify(manifest.wrapperHosts) !== JSON.stringify(expectedHosts)) {
-    errors.push(`Command alias wrapperHosts must be exactly: ${expectedHosts.join(', ')}`);
-  }
-
-  const aliases = new Set<string>();
-  for (const alias of manifest.aliases) {
-    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(alias.alias)) {
-      errors.push(`Invalid command alias: ${alias.alias}`);
-      continue;
-    }
-    if (aliases.has(alias.alias)) {
-      errors.push(`Duplicate command alias: ${alias.alias}`);
-      continue;
-    }
-    aliases.add(alias.alias);
-
-    if (alias.forwardArguments !== true) {
-      errors.push(`Command alias must forward arguments: ${alias.alias}`);
-    }
-
-    const skillPath = join(root, '.agents', 'skills', alias.skill, 'SKILL.md');
-    if (!existsSync(skillPath)) {
-      errors.push(`Command alias target skill missing: ${alias.alias} -> ${alias.skill}`);
-      continue;
-    }
-    const skill = readFileSync(skillPath, 'utf8');
-    if (!skill.includes(`name: ${alias.skill}`)) {
-      errors.push(`Command alias target has mismatched skill name: ${alias.skill}`);
-    }
-    if (!skill.includes(`\`${alias.mode}\``)) {
-      errors.push(`Command alias target mode missing: ${alias.alias} -> ${alias.skill}:${alias.mode}`);
-    }
-
-    const expected = commandWrapper(alias);
-    for (const host of WRAPPER_HOSTS) {
-      const wrapperPath = join(root, host.directory, `${alias.alias}.md`);
-      if (!existsSync(wrapperPath)) {
-        errors.push(`${host.id} command wrapper missing: ${relative(root, wrapperPath)}`);
-        continue;
-      }
-      const actual = normalizeNewlines(readFileSync(wrapperPath, 'utf8'));
-      if (actual !== expected) {
-        const copiedWorkflow = actual.split('\n').length > expected.split('\n').length + 2;
-        errors.push(`${host.id} command wrapper ${copiedWorkflow ? 'contains workflow prose' : 'is stale'}: ${relative(root, wrapperPath)}`);
-      }
-    }
-  }
-
-  for (const wrapper of undeclaredCommandWrappers(root)) {
-    errors.push(`Command wrapper not declared in any manifest: ${wrapper}; add it to ${COMMAND_ALIAS_PROJECT_MANIFEST} or delete it`);
-  }
-
-  return errors;
-}
-
-export function commandWrapperCounts(root = process.cwd()): {
-  expected: number
-  claude: number
-  opencode: number
-} {
-  const resolvedRoot = resolve(root);
-  const manifest = mergedCommandAliases(resolvedRoot);
-  const aliases = new Set(manifest.aliases.map(alias => `${alias.alias}.md`));
-  const count = (directory: string): number => [...aliases]
-    .filter(name => existsSync(join(resolvedRoot, directory, name)))
-    .length;
-  return {
-    expected: aliases.size,
-    claude: count('.claude/commands'),
-    opencode: count('.opencode/commands'),
   };
+  walk(directory);
+  return out;
+}
+
+/**
+ * Harness command files whose name equals a repo skill, as repo-relative paths
+ * with the skill they shadow. A same-name command replaces the skill's
+ * instructions with its own body on Claude Code, and on OpenCode it offers a
+ * second, divergent entry point: either way the AI stops reading the skill.
+ */
+export function commandsShadowingSkills(root = process.cwd()): Array<{ path: string, skill: string }> {
+  const paths = compatibilityPaths(root);
+  const skills = repoSkillSlugs(paths.canonicalSkills);
+  if (skills.size === 0) { return []; }
+  const shadowing: Array<{ path: string, skill: string }> = [];
+  for (const directory of HARNESS_COMMAND_DIRS) {
+    for (const file of commandFiles(paths.root, directory)) {
+      const name = file.slice(file.lastIndexOf('/') + 1, -'.md'.length);
+      if (skills.has(name)) { shadowing.push({ path: file, skill: name }); }
+    }
+  }
+  return shadowing;
+}
+
+function validateNoShadowingCommands(root: string): string[] {
+  return commandsShadowingSkills(root).map(({ path, skill }) =>
+    `Command shadows skill ${skill}: ${path}; a command with a skill's name hides the skill's instructions (\`bun run agents:compat\` moves it to ${SHADOWING_COMMANDS_BACKUP_DIR}/)`);
+}
+
+/**
+ * Move every command that shadows a skill to `SHADOWING_COMMANDS_BACKUP_DIR`,
+ * keeping its repo-relative path, and return what moved. A move, never a
+ * delete: the file is the project's, and its body may hold something worth
+ * porting into the skill. An existing backup of the same path is overwritten.
+ */
+export function removeShadowingCommands(root = process.cwd()): string[] {
+  const resolvedRoot = resolve(root);
+  const moved: string[] = [];
+  for (const { path } of commandsShadowingSkills(resolvedRoot)) {
+    const backup = join(resolvedRoot, SHADOWING_COMMANDS_BACKUP_DIR, path);
+    mkdirSync(join(backup, '..'), { recursive: true });
+    writeFileSync(backup, readFileSync(join(resolvedRoot, path)));
+    unlinkSync(join(resolvedRoot, path));
+    moved.push(path);
+  }
+  return moved;
 }
 
 export function claudeSkillsAliasPlan(
@@ -484,25 +362,6 @@ export function claudeSkillsAliasPlan(
   };
 }
 
-export function repairCommandWrappers(root = process.cwd()): number {
-  const resolvedRoot = resolve(root);
-  const manifest = mergedCommandAliases(resolvedRoot);
-  let written = 0;
-  for (const host of WRAPPER_HOSTS) {
-    const directory = join(resolvedRoot, host.directory);
-    mkdirSync(directory, { recursive: true });
-    for (const alias of manifest.aliases) {
-      const path = join(directory, `${alias.alias}.md`);
-      const expected = commandWrapper(alias);
-      if (!existsSync(path) || normalizeNewlines(readFileSync(path, 'utf8')) !== expected) {
-        writeFileSync(path, expected);
-        written++;
-      }
-    }
-  }
-  return written;
-}
-
 export function checkAgentCompatibility(
   root = process.cwd(),
   platform: NodeJS.Platform = process.platform,
@@ -514,7 +373,7 @@ export function checkAgentCompatibility(
 
   try {
     assertCanonicalSources(paths);
-    errors.push(...validateCommandAliases(paths.root));
+    errors.push(...validateNoShadowingCommands(paths.root));
     errors.push(...validateHookCompatibility(paths.root));
     errors.push(...validateMcpParity(paths.root));
     errors.push(...validateEslintBlockWiring(paths.root));
@@ -556,15 +415,16 @@ export function checkAgentCompatibility(
 export interface AgentSurfaceRepair {
   /** Null when the alias was deferred (see `deferSkillsAlias`). */
   alias: AliasStatus | null
-  /** Null when the manifest is absent (the wrappers cannot be rendered yet). */
-  wrappersWritten: number | null
+  /** Commands that shadowed a skill, moved to `SHADOWING_COMMANDS_BACKUP_DIR` by this repair. */
+  shadowingCommandsMoved: string[]
   check: CompatibilityCheck
   aliasDeferred: boolean
 }
 
 /**
  * What `bun run up` does after every apply, and `bun run agents:compat` on
- * demand: render the wrappers, repair the alias, run the check.
+ * demand: repair the alias, move any command that shadows a skill out of the
+ * way, run the check.
  *
  * `deferSkillsAlias` is for the run in which the cross-harness migration just
  * unindexed a committed `.claude/skills/` tree: those deletions are staged, and
@@ -590,9 +450,9 @@ export function repairAgentSurfaces(
   else {
     alias = repairClaudeSkillsAlias(resolvedRoot, platform);
   }
-  const wrappersWritten = existsSync(join(resolvedRoot, COMMAND_ALIAS_MANIFEST)) ? repairCommandWrappers(resolvedRoot) : null;
+  const shadowingCommandsMoved = removeShadowingCommands(resolvedRoot);
   const check = checkAgentCompatibility(resolvedRoot, platform);
-  return { alias, wrappersWritten, check, aliasDeferred: options.deferSkillsAlias === true };
+  return { alias, shadowingCommandsMoved, check, aliasDeferred: options.deferSkillsAlias === true };
 }
 
 export function repairClaudeSkillsAlias(

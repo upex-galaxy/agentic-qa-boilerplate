@@ -73,8 +73,9 @@ import { dirname, join, resolve } from 'node:path';
 import { checkbox, password } from '@inquirer/prompts';
 import {
   checkAgentCompatibility,
+  removeShadowingCommands,
   repairClaudeSkillsAlias,
-  repairCommandWrappers,
+  SHADOWING_COMMANDS_BACKUP_DIR,
 } from './lib/agent-compatibility.ts';
 import {
   resolveAtlassianInstance,
@@ -1971,14 +1972,14 @@ function describeAgentDetection(detected: AgentDetection): string {
 export function repairRepositoryCompatibility(
   root = REPO_ROOT,
   platform: NodeJS.Platform = process.platform,
-): { alias: ReturnType<typeof repairClaudeSkillsAlias>, wrappersWritten: number } {
+): { alias: ReturnType<typeof repairClaudeSkillsAlias>, shadowingCommandsMoved: string[] } {
   const alias = repairClaudeSkillsAlias(root, platform);
-  const wrappersWritten = repairCommandWrappers(root);
+  const shadowingCommandsMoved = removeShadowingCommands(root);
   const check = checkAgentCompatibility(root, platform);
   if (!check.ok) {
     throw new Error(`Agent compatibility repair incomplete:\n${check.errors.join('\n')}`);
   }
-  return { alias, wrappersWritten };
+  return { alias, shadowingCommandsMoved };
 }
 
 // ============================================================================
@@ -3018,7 +3019,7 @@ async function main(): Promise<void> {
     await installCommunitySkills(agents, state, 'project', syncForceKeys);
     await installCommunitySkills(agents, state, 'global', syncForceKeys);
     const compatibility = repairRepositoryCompatibility();
-    log.success(`Repository compatibility ready (${compatibility.wrappersWritten} wrapper updates; Claude alias ${compatibility.alias.status}).`);
+    log.success(`Repository compatibility ready (Claude alias ${compatibility.alias.status}${compatibility.shadowingCommandsMoved.length > 0 ? `; moved ${compatibility.shadowingCommandsMoved.join(', ')} to ${SHADOWING_COMMANDS_BACKUP_DIR}/ because each shadowed a skill` : ''}).`);
     await writeInstallState(state);
     log.success(`Community skills synced to: ${agents.join(', ')}.`);
     process.exit(0);
@@ -3158,7 +3159,7 @@ async function main(): Promise<void> {
   }
 
   const compatibility = repairRepositoryCompatibility();
-  log.success(`Repository compatibility ready (${compatibility.wrappersWritten} wrapper updates; Claude alias ${compatibility.alias.status}).`);
+  log.success(`Repository compatibility ready (Claude alias ${compatibility.alias.status}${compatibility.shadowingCommandsMoved.length > 0 ? `; moved ${compatibility.shadowingCommandsMoved.join(', ')} to ${SHADOWING_COMMANDS_BACKUP_DIR}/ because each shadowed a skill` : ''}).`);
 
   // ── PHASE 3 — CONFIGURATION ──────────────────────────────────────────────
   tui.phaseHeader(3, 'CONFIGURATION');

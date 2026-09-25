@@ -56,7 +56,7 @@ Does .context/business/business-api-map.md exist?
 
 ## Dependency gates
 
-Both context-file gates are **soft** — this command produces value even in sparse repos; missing inputs become Discovery Gaps, not hard stops.
+Both context-file gates are **soft** — this mode produces value even in sparse repos; missing inputs become Discovery Gaps, not hard stops.
 
 - **`business-data-map.md` missing** → warn the user ("journeys will be weaker without entity context"), proceed, log the limitation in §Discovery Gaps.
 - **`business-feature-map.md` missing** → warn the user ("journey selection will rely on code scan alone"), proceed, log the limitation in §Discovery Gaps.
@@ -190,7 +190,7 @@ MANDATORY. List anything you could not verify:
 
 ## What is NOT in this plan
 
-This command does one thing: narrate the **business-level API story**. Everything below is delegated — do not expand scope.
+This mode does one thing: narrate the **business-level API story**. Everything below is delegated — do not expand scope.
 
 | Out of scope | Owner |
 |--------------|-------|

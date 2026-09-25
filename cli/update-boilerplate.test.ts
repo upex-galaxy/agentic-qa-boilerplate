@@ -1,11 +1,11 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { afterEach, describe, expect, test } from 'bun:test';
 
-import { componentOwnedPaths, isRepoOnlyPath, validateComponentRegistry } from './lib/updater-core.ts';
-import { COMPONENTS, GATE_SCRIPTS, gatesSummaryLine, parseArgs, resolveProtectedWatchlist, runGate, summarizeGates } from './update-boilerplate.ts';
+import { cleanupDeprecated, componentOwnedPaths, isRepoOnlyPath, validateComponentRegistry } from './lib/updater-core.ts';
+import { COMPONENTS, GATE_SCRIPTS, gatesSummaryLine, parseArgs, resolveProtectedWatchlist, RETIRED_COMMAND_WRAPPERS, runGate, summarizeGates } from './update-boilerplate.ts';
 
 const temporaryRoots: string[] = [];
 
@@ -30,8 +30,8 @@ describe('component registry', () => {
   test('.claude/settings.json ships once (bootstrap-only) and stays out of every directory component', () => {
     const rootConfig = COMPONENTS.find(c => c.name === 'agent-root-config');
     expect(rootConfig).toMatchObject({ type: 'file-list', paths: ['.claude'], files: ['settings.json'], bootstrapOnly: true });
-    // `.claude` itself is never a directory component: `commands` owns
-    // `.claude/commands`, the alias `.claude/skills` is generated.
+    // `.claude` itself is never a directory component: `.claude/commands` is
+    // the project's own, the alias `.claude/skills` is generated.
     expect(COMPONENTS.filter(c => c.type !== 'file-list').flatMap(c => c.paths)).not.toContain('.claude');
     // The MCP registries and the CLAUDE.md shim left the sync in 8.2.
     const rootFiles = COMPONENTS.filter(c => c.type === 'file-list').flatMap(c => c.files ?? []);
@@ -45,9 +45,43 @@ describe('component registry', () => {
     expect(COMPONENTS.find(c => c.name === 'codex-config')).toMatchObject({ type: 'directory', paths: ['.codex'], bootstrapOnly: true, frameworkFiles: ['hooks.json'] });
     expect(COMPONENTS.find(c => c.name === 'skills')).toMatchObject({ type: 'directory', paths: ['.agents/skills'] });
     const paths = COMPONENTS.flatMap(c => c.paths);
-    for (const p of ['.agents/skills', '.agents/compatibility', '.agents/hooks', '.claude/commands', '.opencode/commands', '.opencode/plugins', '.codex', '.husky']) {
+    for (const p of ['.agents/skills', '.agents/hooks', '.opencode/plugins', '.codex', '.husky']) {
       expect(paths).toContain(p);
     }
+  });
+
+  test('the retired command aliases leave the sync and are removed downstream, the project\'s own commands stay', () => {
+    const paths = COMPONENTS.flatMap(c => c.paths);
+    for (const p of ['.agents/compatibility', '.claude/commands', '.opencode/commands']) {
+      expect(paths).not.toContain(p);
+    }
+    expect(COMPONENTS.find(c => c.name === 'commands')).toBeUndefined();
+
+    const retired = RETIRED_COMMAND_WRAPPERS.map(d => d.path);
+    expect(retired).toContain('.agents/compatibility/command-aliases.json');
+    expect(retired).toContain('.claude/commands/business-data-map.md');
+    expect(retired).toContain('.opencode/commands/business-data-map.md');
+    // Same alias set on both hosts: one wrapper per host per alias.
+    const byHost = (dir: string): string[] => retired.filter(p => p.startsWith(`${dir}/`)).map(p => p.slice(dir.length + 1)).sort();
+    expect(byHost('.claude/commands')).toEqual(byHost('.opencode/commands'));
+    expect(retired).not.toContain('.agents/compatibility/command-aliases.project.json');
+    for (const d of RETIRED_COMMAND_WRAPPERS) {
+      expect(d.reason).toContain('invoke the skill by name plus its mode');
+      expect(d.deprecatedSince).not.toBe('');
+    }
+
+    const root = temporaryRoot();
+    for (const d of RETIRED_COMMAND_WRAPPERS) {
+      mkdirSync(join(root, d.path, '..'), { recursive: true });
+      writeFileSync(join(root, d.path), 'wrapper\n');
+    }
+    mkdirSync(join(root, '.claude/commands'), { recursive: true });
+    writeFileSync(join(root, '.claude/commands/acme-deploy.md'), 'the project\'s own\n');
+    const cfg = { deprecatedFiles: RETIRED_COMMAND_WRAPPERS } as Parameters<typeof cleanupDeprecated>[0];
+    expect(cleanupDeprecated(cfg, root, true)).toBe(RETIRED_COMMAND_WRAPPERS.length);
+    expect(cleanupDeprecated(cfg, root, false)).toBe(RETIRED_COMMAND_WRAPPERS.length);
+    expect(cleanupDeprecated(cfg, root, false)).toBe(0);
+    expect(existsSync(join(root, '.claude/commands/acme-deploy.md'))).toBe(true);
   });
 
   test('docs syncs only its shipped half; every other path under docs/ is project-owned', () => {

@@ -123,7 +123,7 @@ Parent stays the MTP Epic for all Plans regardless of roll-up.
 
 | Altitude | Plan | Runner | Jira work type | When / who | Cardinality |
 |---|---|---|---|---|---|
-| **Product** | **MTP** Master Test Plan | — | **Epic** (+ local file) | `/master-test-plan` produces BOTH the real file (`.context/master-test-plan.md`) AND the `QA Master Test Plan` Epic with mirror description + cross-links to the 3 sibling QA Epics | 1 per project |
+| **Product** | **MTP** Master Test Plan | — | **Epic** (+ local file) | `project-context` mode `test-plan` produces BOTH the real file (`.context/master-test-plan.md`) AND the `QA Master Test Plan` Epic with mirror description + cross-links to the 3 sibling QA Epics | 1 per project |
 | **Feature / Epic** | **FTP** Feature Test Plan | — (FTR cut: it duplicated the STR) | Test Plan | find-or-create/update when `/sprint-testing` loads the Story's Epic context (`feature-test-planning`); consumed as context from then on. Item-first; Epic field `feature_test_plan` = fallback | 1 per feature |
 | **Sprint** | **STP** Sprint Test Plan | **STR** Sprint Test Results | Test Plan → Test Execution | **STP** created at sprint START — find-or-create in the Session Start of the FIRST sprint ticket in `/sprint-testing` (fallback: `/regression-testing` creates it when running suites); a LIVING planner updated per tested ticket, closed at sprint end. **STR** created at sprint CLOSE as the recap of all results (`/sprint-testing` batch-close or `/regression-testing` — first to arrive creates it, the other completes it) | 1 per sprint (term: "Regression Testing"; "Sprint" comes from the `Sprint#{N}` scope-id) |
 | **User Story** | **ATP** Acceptance Test Plan | **ATR** Acceptance Test Results | Test Plan → Test Execution | pre-sprint the ATP lives ONLY in `{{jira.acceptance_test_plan}}` (authored by `/shift-left-testing`); the Test Plan ITEM is born in sprint-testing S1 from that field. ATR item created in S1, filled in S3 | ATP 1 per Story · ATR 1 run ("Story Testing") |
@@ -233,7 +233,7 @@ run/coverage engine on top.
 
 - **ATS added** — per-Story Acceptance Test Set, mandatory, third canonical Story artifact (ATC/ATP/ATR/ATS family). Set-first in Stage 1; its `tests` link to the Story is the coverage backbone.
 - **FTR and PRC cut** — FTR duplicated the STR; Precondition stays an entity but needs no ladder acronym.
-- **Producers assigned** — MTP: `/master-test-plan` (file + Epic). FTP: `feature-test-planning` in `/sprint-testing`, item-first. STP: sprint-start find-or-create (`/sprint-testing` Session Start of the first ticket; `/regression-testing` fallback). STR: sprint-close recap (first-to-arrive creates).
+- **Producers assigned** — MTP: `project-context` mode `test-plan` (file + Epic). FTP: `feature-test-planning` in `/sprint-testing`, item-first. STP: sprint-start find-or-create (`/sprint-testing` Session Start of the first ticket; `/regression-testing` fallback). STR: sprint-close recap (first-to-arrive creates).
 - **ATP field-first pre-sprint (D5)** — the "ATP DRAFT" identity is dead; pre-sprint the ATP lives only in `{{jira.acceptance_test_plan}}`, the item is born in `/sprint-testing` Stage 1.
 
 ### Amendment — RTP ratified 2026-09-15

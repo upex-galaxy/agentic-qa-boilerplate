@@ -449,7 +449,7 @@ Load `/xray-cli` skill for the concrete CLI syntax.
 
 #### Modality jira-native (no Xray) — first-class: same containers, no run engine
 
-This branch is the **degraded fallback** (Test Plan / Test Execution work types unavailable). ATP/ATR live on the Story itself — no separate issues. Use the custom field IDs from `test-documentation/references/jira-setup.md`: `{{jira.acceptance_test_plan}}` for ATP and `{{jira.acceptance_test_results}}` for ATR. Each field is the source of truth; a `## <label>` comment is posted ONLY as a fallback when the field is absent on the instance. `fix-traceability` checks the field, or the fallback comment when the field is absent.
+This branch is the **degraded fallback** (Test Plan / Test Execution work types unavailable). ATP/ATR live on the Story itself — no separate issues. Use the custom field IDs from `test-documentation/references/jira-setup.md`: `{{jira.acceptance_test_plan}}` for ATP and `{{jira.acceptance_test_results}}` for ATR. Each field is the source of truth; a `## <label>` comment is posted ONLY as a fallback when the field is absent on the instance. `test-documentation` mode `repair-traceability` checks the field, or the fallback comment when the field is absent.
 
 ```
 [ISSUE_TRACKER_TOOL] Update Issue:
@@ -478,7 +478,7 @@ Load `/acli` skill for the concrete Jira CLI syntax.
 
 Post the full ATP body as a notification comment with mentions for @PO, @Dev, @QA per project convention. Include an Action Required checklist (review ambiguities, answer critical questions, confirm edge-case behavior, validate parametrization strategy).
 
-In Modality jira-native, when `{{jira.acceptance_test_plan}}` is absent the structured `## Acceptance Test Plan (ATP)` fallback comment carries the ATP content — that is what `fix-traceability` checks later.
+In Modality jira-native, when `{{jira.acceptance_test_plan}}` is absent the structured `## Acceptance Test Plan (ATP)` fallback comment carries the ATP content — that is what `test-documentation` mode `repair-traceability` checks later.
 
 ### Materialize the local cache (from sync, never hand-written)
 

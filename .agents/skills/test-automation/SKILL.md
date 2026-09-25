@@ -57,6 +57,7 @@ Requires `agentic-qa-core`. Loads on demand:
 - ATC = atomic mini-flow; NEVER calls another ATC. Reusable chains → a Steps module.
 - Max 2 positional params (3+ → object param). Locators inline (extract only at 2+ uses). Imports via aliases (`@api/`, `@schemas/`, `@utils/`) — no relative imports.
 - Public methods fail fast; utilities silent-fail (return null). Validate against `kata-manifest.json` before adding components/ATCs (anti-duplication gate).
+- Mode from `$ARGUMENTS`: a first token matching a mode in Mode routing (`explain`, `automate`) IS the mode and the rest is forwarded; otherwise `automate` for plain automation work, ASK when it could be either.
 - Before any step that uses a declared MCP capability (`metadata.requires_capabilities`: `db`, `api-schema`, `browser`), run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8: resolve by tool-name suffix, and when no available tool provides it STOP and name the capability + how to enable it, never a silent fallback.
 
 **Read full SKILL.md when**: writing KATA component code, choosing fixtures for a hybrid flow, or applying the Phase 3 review checklist.
@@ -65,9 +66,9 @@ Requires `agentic-qa-core`. Loads on demand:
 
 ## Mode routing
 
-Resolve mode before any readiness preflight or session workflow.
+Resolve mode before any readiness preflight or session workflow. When the first token of `$ARGUMENTS` matches a mode below, that token IS the mode and the rest is forwarded to it unchanged (`/test-automation explain tests/e2e/login.spec.ts`). Otherwise the rules below apply: the default mode for plain automation work, ASK when the request is ambiguous.
 
-- `explain`: selected by the legacy `break-down-tests` alias or an explicit request to explain existing automated tests. Forward `$ARGUMENTS` unchanged, load only `references/explain-tests.md`, produce its read-only report, then stop. Do not create session state, run Plan -> Code -> Review, edit tests, regenerate `kata-manifest.json`, or call Jira/TMS.
+- `explain`: selected by a first token `explain`, by the `break-down-tests` trigger phrase, or by an explicit request to explain existing automated tests. Forward the remaining `$ARGUMENTS` unchanged, load only `references/explain-tests.md`, produce its read-only report, then stop. Do not create session state, run Plan -> Code -> Review, edit tests, regenerate `kata-manifest.json`, or call Jira/TMS.
 - `automate` (default): all normal KATA planning, coding, and review triggers. Continue with the workflow below.
 
 If the invocation could mean either explanation or implementation, ask which outcome is wanted. Never infer implementation from a read-only explanation request.

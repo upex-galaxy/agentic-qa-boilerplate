@@ -20,6 +20,7 @@ compact_rules: |
   - `components` (native, MANDATORY) = the affected product module/Epic, must pre-exist in the Jira Components module (Part 3).
   - Three-axis model: **parent** = QA Defect Management process epic (`qa.qa_epics.defect_epic`, found-or-created — NEVER a product/dev epic, NEVER the Story); **issue link** = the source Story (traceability); **components** = product module (Part 4).
   - `priority` (native) is auto-derived from `{{jira.severity}}` (critica→Highest, mayor→High, moderada→Medium, menor→Low, trivial→Lowest); override with a 1-line justification (Part 5.1).
+  - Mode from `$ARGUMENTS`: a first token naming a mode (`single-issue`, `sprint-wide`) IS the mode and the rest is forwarded; otherwise ASK the mode question, never infer it.
   - Three stages, always in order: Stage 1 Planning → Stage 2 Execution → Stage 3 Reporting. Hand off Stages 4/5/6 to `test-documentation` / `test-automation` / `regression-testing`.
   - Jira is source of truth. Read tickets via `bun run jira:sync-issues get <KEY> --include-comments`, then the synced `.md`. NEVER `acli workitem view` for custom fields (returns `null`).
   - Bugs run the veto + triage + risk-score decision tree BEFORE any ATP is written.
@@ -93,6 +94,7 @@ Requires `agentic-qa-core`. Loads on demand:
 
 **Sprint-testing operational rules:**
 
+- Mode from `$ARGUMENTS`: a first token naming a mode (`single-issue`, `sprint-wide`) IS the mode and the rest is forwarded; otherwise ASK the mode question, never infer it.
 - Three stages, always in order: Stage 1 Planning → Stage 2 Execution → Stage 3 Reporting. Hand off Stages 4/5/6 to `test-documentation` / `test-automation` / `regression-testing`.
 - Jira is source of truth. Read tickets via `bun run jira:sync-issues get <KEY> --include-comments`, then the synced `.md`. NEVER `acli workitem view` for custom fields (returns `null`).
 - Bugs run the veto + triage + risk-score decision tree BEFORE any ATP is written.
@@ -182,7 +184,7 @@ Session Start asks this explicitly, in one question, before anything else:
 
 > Run **the whole sprint's QA backlog** (`sprint-wide`), or **one issue from it** (`single-issue`)?
 
-A sprint number in the invocation is a strong hint, not an answer — "QA sprint 12" can mean either. Ask, then apply:
+A sprint number in the invocation is a strong hint, not an answer — "QA sprint 12" can mean either. The one explicit answer is a first token of `$ARGUMENTS` that names the mode (`/sprint-testing sprint-wide 12`, `/sprint-testing single-issue UPEX-123`): that token IS the mode, the rest is forwarded, and the question is skipped. Otherwise ask, then apply:
 
 | Answer | Sprint session pair | STP | Per-issue sub-scopes |
 |---|---|---|---|
@@ -553,7 +555,7 @@ Run the same 4 dispatches; the Stage 1 briefing additionally applies the veto + 
 | Formalize TCs in Jira/Xray, calculate ROI, decide Candidate / Manual / Deferred | `test-documentation` | Stage 4. This skill produces the inputs (outlines + execution evidence); `test-documentation` produces the formal regression backlog — creating `Test` work items (jira-native) or creating/promoting them into the Regression Test Plan (jira-xray), regression-worthy scenarios only. |
 | Write the automated test code (KATA Page / Api + test file) | `test-automation` | Stage 5. Plan -> Code -> Review pipeline. |
 | Run the regression or smoke suite in CI and emit a GO/NO-GO verdict | `regression-testing` | Stage 6. This skill's Stage 2 smoke is local-manual, not the CI suite. |
-| Generate `business-data-map.md`, `business-feature-map.md`, `business-api-map.md`, `master-test-plan.md` | `project-discovery` (or the individual `/business-*-map` and `/master-test-plan` commands) | Sprint-testing consumes these; it does not create them. |
+| Generate `business-data-map.md`, `business-feature-map.md`, `business-api-map.md`, `master-test-plan.md` | `project-discovery` (or the individual `project-context` modes `data` / `features` / `api` and `test-plan`) | Sprint-testing consumes these; it does not create them. |
 
 If Session Start reports that any of the project-wide context files are missing, stop and hand off to `project-discovery` (or the relevant command). Do not continue without them.
 

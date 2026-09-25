@@ -149,7 +149,7 @@ Read these files to understand the system:
 .context/master-test-plan.md                # testing guide (what to test and why)
 ```
 
-These provide business flows, feature inventory, API contracts + authentication model, and the test strategy. If ALL four files are missing, stop and hand off to the `project-discovery` skill (or invoke the individual `/business-*-map` + `/master-test-plan` commands). Sprint-testing cannot plan without them.
+These provide business flows, feature inventory, API contracts + authentication model, and the test strategy. If ALL four files are missing, stop and hand off to the `project-discovery` skill (or invoke the individual `project-context` modes `data` / `features` / `api` + `test-plan`). Sprint-testing cannot plan without them.
 
 ### Step 4 — Module context (3-level hierarchy)
 

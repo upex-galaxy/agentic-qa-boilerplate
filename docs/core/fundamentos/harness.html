@@ -421,14 +421,18 @@
         empuja al prompt de sistema.
       </p>
 
-      <h3 id="aliases">Aliases de comandos</h3>
+      <h3 id="aliases">Una skill, un modo</h3>
       <p>
-        <code>.agents/compatibility/command-aliases.json</code> declara los comandos como
-        <code>/business-api-map</code> o <code>/break-down-tests</code>: cada entrada apunta a una
-        skill y un modo. <code>bun run agents:compat</code> genera a partir de ahí los wrappers de
-        <code>.claude/commands/</code> y <code>.opencode/commands/</code>. Un proyecto puede sumar
-        los suyos en un overlay opcional, <code>command-aliases.project.json</code>, que este repo
-        no trae.
+        No hay archivos de comando. Una skill se invoca por su nombre más un modo: en Claude Code,
+        <code>/project-context api</code> o <code>/test-automation explain &lt;target&gt;</code>; en
+        OpenCode y Codex, nombrando la skill y el modo en prosa. El primer token de
+        <code>$ARGUMENTS</code> que coincide con un modo es el modo, y el resto se reenvía; si
+        ninguno coincide, la skill pregunta.
+      </p>
+      <p>
+        Un comando del proyecto con el mismo nombre que una skill la taparía, así que
+        <code>agents:compat:check</code> lo rechaza y <code>bun run agents:compat</code> lo mueve a
+        <code>.backups/shadowing-commands/</code>, donde se puede recuperar.
       </p>
 
       <h3 id="cadena">La cadena de <code>repo:check</code></h3>
@@ -468,8 +472,9 @@
               <td><code>agents:compat:check</code></td>
               <td><code>scripts/agent-compatibility.ts</code></td>
               <td>
-                El shim de <code>CLAUDE.md</code>, el alias de skills, los wrappers byte a byte, los
-                adaptadores de hooks y la paridad de servidores MCP entre los tres formatos
+                El shim de <code>CLAUDE.md</code>, el alias de skills, los comandos del proyecto que
+                tapan una skill, los adaptadores de hooks y la paridad de servidores MCP entre los
+                tres formatos
               </td>
             </tr>
             <tr>
@@ -502,11 +507,9 @@
       <div class="callout warn" id="errores">
         <span class="callout-title">Errores comunes</span>
         <p>
-          <strong>Editar un archivo generado.</strong> <code>CLAUDE.md</code>,
-          <code>.claude/commands/*.md</code>, <code>.opencode/commands/*.md</code> y
+          <strong>Editar un archivo generado.</strong> <code>CLAUDE.md</code> y
           <code>.agents/skills/REGISTRY.md</code> son salida de scripts. Escribir reglas en
-          <code>CLAUDE.md</code> rompe <code>agents:compat:check</code>; un wrapper con cuerpo falla
-          como <code>contains workflow prose</code>. Edita la fuente y corre
+          <code>CLAUDE.md</code> rompe <code>agents:compat:check</code>. Edita la fuente y corre
           <code>bun run agents:compat</code> o <code>bun run skills:registry</code>.
         </p>
         <p>

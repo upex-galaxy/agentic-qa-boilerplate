@@ -1,6 +1,6 @@
 ---
 name: agentic-qa-core
-description: "Foundation skill that hosts shared references cited by other workflow skills (briefing template, dispatch patterns, orchestration doctrine, skill composition strategy). Loaded on demand by any skill that declares `agentic-qa-core` in its Dependencies block. Do NOT use for: syncing AI-critical docs (use `/sync-ai-memory`), adapting KATA tests (use `/adapt-framework`), or onboarding the target project (use `/project-discovery`)."
+description: "Foundation skill that hosts shared references cited by other workflow skills (briefing template, dispatch patterns, orchestration doctrine, skill composition strategy). Loaded on demand by any skill that declares `agentic-qa-core` in its Dependencies block. Do NOT use for: syncing AI-critical docs (use `/sync-ai-context`), adapting KATA tests (use `/adapt-framework`), or onboarding the target project (use `/project-discovery`)."
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 complementary_categories: [meta-skill]
@@ -128,7 +128,7 @@ If a downstream user has only the skills and not the rest of the repo, the suppo
 - Create or modify `.context/` files (that belongs to `/project-discovery`).
 - Generate or scaffold tests, fixtures, or KATA components (that belongs to `/adapt-framework` and `/test-automation`).
 - Adapt the framework to a specific stack (that belongs to `/adapt-framework`).
-- Sync AI-critical documents or project-specific facts in `AGENTS.md` (that belongs to `/sync-ai-memory`).
+- Sync AI-critical documents or project-specific facts in `AGENTS.md` (that belongs to `/sync-ai-context`).
 - Sync OpenAPI / API schemas (that's `bun run api:sync`).
 
 For framework evolution (changes to KATA bases, fixtures, `cli/`, `scripts/`, `api/schemas/` pipeline), see `/framework-development`.

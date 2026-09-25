@@ -12,8 +12,8 @@ Repoint this repository at a new Atlassian instance and regenerate everything th
 **Inputs**: `$ARGUMENTS` — the source instance and the target instance, in that order. Both may be omitted; Phase 0 resolves them.
 
 ```
-/jira-instance-migration oldsite.atlassian.net newsite.atlassian.net
-/jira-instance-migration                         # -> Phase 0 detects and asks
+/jira-administration instance-migration oldsite.atlassian.net newsite.atlassian.net
+/jira-administration instance-migration                         # -> Phase 0 detects and asks
 ```
 
 ---
@@ -22,7 +22,7 @@ Repoint this repository at a new Atlassian instance and regenerate everything th
 
 A site migration reassigns custom-field IDs instead of preserving them. The old ID usually still exists on the new instance, pointing at a **different field**. So the failure mode is not a 404 — it is a `200 OK` that writes your data into the wrong field, silently, forever.
 
-That is why this command has two halves. Repointing the URL is the easy half. Regenerating the `.agents/` catalogs is the half that prevents silent corruption.
+That is why this mode has two halves. Repointing the URL is the easy half. Regenerating the `.agents/` catalogs is the half that prevents silent corruption.
 
 A second silent failure sits alongside it: `.env` and the `acli` session are independent. Change one and not the other, and REST calls hit the new instance while `acli` keeps reading the old one, with no error to tell you.
 
@@ -70,7 +70,7 @@ Normalize both to the bare host (`site.atlassian.net`, no scheme, no trailing sl
   output=HTTP status
 ```
 
-Anything other than `200` stops the command.
+Anything other than `200` stops the mode.
 
 ---
 
@@ -296,7 +296,7 @@ grep -rnE '(TRANSITION|STATUS|LINK_?TYPE)[A-Z_]*\s*[=:]\s*"?[0-9]{2,}' \
 
 These resolve through `.agents/jira-workflows.json` (`{{jira.transition.<work_type>.<slug>}}`, `{{jira.<work_type>.<status>}}`) and `.agents/jira-link-types.json`. A literal number is the same latent bug wearing different clothes.
 
-**Also sweep the override channel.** Projects often expose an env var or config constant that PINS a field ID, as an escape hatch over the catalog (`*_FIELD`, `*_FIELD_ID`, `*_CUSTOM_FIELD`). A pinned value survives the catalog regeneration untouched and keeps pointing at the old instance — the exact silent-write bug this command exists to prevent, reintroduced through the back door:
+**Also sweep the override channel.** Projects often expose an env var or config constant that PINS a field ID, as an escape hatch over the catalog (`*_FIELD`, `*_FIELD_ID`, `*_CUSTOM_FIELD`). A pinned value survives the catalog regeneration untouched and keeps pointing at the old instance — the exact silent-write bug this mode exists to prevent, reintroduced through the back door:
 
 ```bash
 grep -rniE '(FIELD|CUSTOMFIELD)(_ID)?\s*[=:]\s*.?customfield_[0-9]{4,}' \

@@ -6,7 +6,7 @@
 
 A committed instruction or doc describes the repo the way a contract describes a system: by naming the parts and who owns them, not by copying the current readings off the dashboard. Any sentence whose truth depends on the current contents of another file, of the tracker, or of an external tool is a **volatile fact**, and a volatile fact in committed prose is a bug with a fuse: it is correct the day it is written, wrong a few weeks later, and read every session by an agent that has no way to tell the two states apart.
 
-The cost is paid twice. Once when a session trusts the stale value: a count of aliases that makes the AI stop looking after that many, a line number that now points at a blank line, a measured token size that justifies a posture the numbers no longer support. And again when a careful session notices the drift and spends a turn reporting it instead of working.
+The cost is paid twice. Once when a session trusts the stale value: a count of skills that makes the AI stop looking after that many, a line number that now points at a blank line, a measured token size that justifies a posture the numbers no longer support. And again when a careful session notices the drift and spends a turn reporting it instead of working.
 
 The fix is always the same shape: **replace the value with the name of its owner.** The reader resolves the pointer at read time, so the prose is correct for as long as the owner exists, and when the owner moves, the STALE-PATH check in `scripts/lint-skills.ts` or the path check in `scripts/lint-docs.ts` catches the dead pointer, which no lint can do for a stale number.
 
@@ -15,7 +15,7 @@ The fix is always the same shape: **replace the value with the name of its owner
 | Category | The test | Owner to name instead |
 |---|---|---|
 | **Count** | Would a routine commit change this number? | The file or command that counts: `REGISTRY.md`, `kata-manifest.json`, `package.json`, `bun run tests:map` |
-| **Enumeration** | Does another file already own this list? | That file: `.mcp.json`, `.agents/compatibility/command-aliases.json`, `.agents/jira-required.yaml`, `REGISTRY.md`, a constant in code |
+| **Enumeration** | Does another file already own this list? | That file: `.mcp.json`, `.agents/skills/`, `.agents/jira-required.yaml`, `REGISTRY.md`, a constant in code |
 | **file:line** | Would an unrelated edit above it shift the line? | The file plus a symbol or a heading |
 | **Current-state claim** | Does the sentence carry "today", a date, a version, a measurement, or a live ticket number? <!-- volatile-ok: names the word it forbids --> | The behaviour without the qualifier; the dated figure goes to an ADR |
 | **Edit-history narration** | Does it tell the reader what the text used to say? | The current behaviour only; the history goes to an ADR or the commit |
@@ -32,12 +32,12 @@ edit-history   "since 8.4 the updater does X"          -> "the updater does X" (
 
 ## 3. What is stable, and therefore fine
 
-Names that change only by an explicit decision are the vocabulary of the repo, not its state: the IQL stage names, the KATA layer names, a Critical Rule number, the name of a file or a command, "three hosts". A stable fact passes all five tests. When in doubt, ask whether a routine commit (a new skill, a new alias, a synced catalog, a regenerated registry) could falsify the sentence without anyone meaning to change it. If yes, it is volatile.
+Names that change only by an explicit decision are the vocabulary of the repo, not its state: the IQL stage names, the KATA layer names, a Critical Rule number, the name of a file or a command, "three hosts". A stable fact passes all five tests. When in doubt, ask whether a routine commit (a new skill, a new skill mode, a synced catalog, a regenerated registry) could falsify the sentence without anyone meaning to change it. If yes, it is volatile.
 
 ## 4. Exemptions: where a snapshot is the point
 
 - **Gitignored files and `.session/**`**: nobody else reads them.
-- **Generated artifacts**: the tooling rewrites them (`REGISTRY.md`, `kata-manifest.json`, `.agents/project.schema.yaml`, the command wrappers).
+- **Generated artifacts**: the tooling rewrites them (`REGISTRY.md`, `kata-manifest.json`, `.agents/project.schema.yaml`).
 - **ADRs, changelogs and dated reports**: a number "at the time" stays true forever because the date is part of the claim.
 - **Test fixtures and code constants**: they ARE the value.
 - **Example output inside a fenced block or a `<pre>`**: a fake `4/7 PASSED` teaches a format, it does not describe the suite.

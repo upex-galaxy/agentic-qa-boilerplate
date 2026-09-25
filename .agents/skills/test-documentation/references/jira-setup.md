@@ -7,7 +7,7 @@ Configuration checklist for Jira projects used by this boilerplate. Covers both 
 
 Which modality is active is resolved by `test-documentation/SKILL.md` §Phase 0. Run the applicable section(s) once per project as part of `/project-discovery` onboarding.
 
-Skills that depend on this setup: `sprint-testing`, `test-documentation`, `regression-testing`, `fix-traceability`.
+Skills that depend on this setup: `sprint-testing`, `test-documentation` (including mode `repair-traceability`), `regression-testing`.
 
 > **Before publishing rich-text bodies to Jira fields configured below** (ATP, ATR, Test Case body, Test Plan body), read `../../agentic-qa-core/references/jira-publishing-gotchas.md` — covers the two ADF conversion gotchas (`md-to-adf` mark collision + MCP batched custom-field rejection) that silently fail HTTP 400.
 

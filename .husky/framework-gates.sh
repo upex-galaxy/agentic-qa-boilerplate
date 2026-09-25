@@ -90,15 +90,16 @@ framework_gates_pre_commit() {
   fi
 
   # cross-harness compatibility gate — only runs when staged files affect it.
-  # Covers the generated Claude skills alias, the command wrappers, the three hook
-  # adapters and MCP parity across the three host configs. Everything it guards is
-  # generated or mirrored, so a hand-edit is invisible to every other check.
-  if echo "$_fg_staged" | grep -qE '^(\.agents/compatibility/|\.agents/hooks/|\.claude/commands/|\.opencode/commands/|\.opencode/plugins/|\.codex/|\.claude/settings\.json$|\.mcp\.json$|opencode\.jsonc$|cli/lib/agent-compatibility.*\.ts$|scripts/agent-compatibility.*\.ts$)'; then
+  # Covers the generated Claude skills alias, a harness command that shadows a
+  # skill, the three hook adapters and MCP parity across the three host configs.
+  # Everything it guards is generated or mirrored, so a hand-edit is invisible to
+  # every other check.
+  if echo "$_fg_staged" | grep -qE '^(\.agents/hooks/|\.claude/commands/|\.opencode/commands/|\.opencode/plugins/|\.codex/|\.claude/settings\.json$|\.mcp\.json$|opencode\.jsonc$|cli/lib/agent-compatibility.*\.ts$|scripts/agent-compatibility.*\.ts$)'; then
     bun run agents:compat:check || {
       echo ""
       echo "❌ Cross-harness compatibility is out of contract. Fix:"
-      echo "   bun run agents:compat   # regenerates wrappers + repairs the Claude skills alias"
-      echo "   then re-stage whatever it rewrote under .claude/commands/ and .opencode/commands/"
+      echo "   bun run agents:compat   # repairs the Claude skills alias, moves a command that shadows a skill to .backups/"
+      echo "   then stage the deletion of any command it moved"
       exit 1
     }
   fi
@@ -124,12 +125,12 @@ framework_gates_pre_commit() {
 #                                have changed the registry without pre-commit catching it.
 #   - kata:manifest:check        unconditional safety net — same rationale as the registry.
 #   - agents:compat:check        unconditional safety net for the cross-harness contract:
-#                                the generated `.claude/skills` alias, the command wrappers
-#                                against `.agents/compatibility/command-aliases.json`,
+#                                the generated `.claude/skills` alias, no harness command
+#                                named like a skill (it would hide the skill's instructions),
 #                                the three hook adapters, MCP parity for every server, and that eslint.config.js wires every block the synced base exports
 #                                declared in .mcp.json across `.mcp.json` / `opencode.jsonc`
 #                                / `.codex/config.toml`. All of it is generated or mirrored,
-#                                so nothing else notices when a wrapper is hand-edited or an
+#                                so nothing else notices when a command shadows a skill or an
 #                                MCP is added to one host only.
 #                                Fix is always `bun run agents:compat` (regenerates + repairs).
 #   - git:policy verify          declared git_strategy vs the host's enforced ruleset —

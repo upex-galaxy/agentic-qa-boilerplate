@@ -635,7 +635,7 @@ bun xray backup preflight --dir .backups
 > [references/migration-runbook.md](references/migration-runbook.md) — credential
 > inventory + backup → prove prerequisites → auth source → `export --all` → auth
 > dest → **configure Xray per project (manual UI gate)** → `preflight` →
-> `restore --sync` → verify → `/jira-instance-migration`. Do not improvise the
+> `restore --sync` → verify → `/jira-administration instance-migration`. Do not improvise the
 > order: step 0 exists because `auth login` overwrites the only on-disk copy of
 > the source credentials.
 
@@ -662,7 +662,7 @@ bun xray backup preflight --dir .backups
 > **A site move also breaks the repo's Jira custom-field catalogs.** Field IDs are
 > reassigned, and an old ID usually resolves to a *different* field on the new
 > site — a silent `200 OK` writing into the wrong place. Finish any cross-site
-> migration by running `/jira-instance-migration`.
+> migration by running `/jira-administration instance-migration`.
 
 ## Environment Variables
 
