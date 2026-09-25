@@ -20,7 +20,7 @@
  *     dated measurement, "since <version>", a tool version). Fenced blocks,
  *     `<pre>`, `<code class="block">`, `<script>` and `<style>` are skipped; a
  *     line marked `volatile-ok: <reason>` is kept. Severity per family in
- *     `VOLATILE_SEVERITY` (WARN until the cleanup residue is zero).
+ *     `VOLATILE_SEVERITY` (both families fail the gate).
  *
  * External URLs, `mailto:` / `tel:` / `data:` / `javascript:`, bare anchors
  * and template placeholders are ignored; a `#fragment` or `?query` is stripped
@@ -55,14 +55,14 @@ export interface DocFinding {
   line: number
   kind: 'link' | 'path' | 'meta' | 'file-line' | 'current-state'
   target: string
-  /** `meta` findings on project-owned pages and volatile findings at their WARN stage are warnings; everything else fails the gate. */
+  /** Only `meta` findings on project-owned pages are warnings; everything else fails the gate. */
   severity?: 'error' | 'warning'
 }
 
-/** Severity of the two volatile-facts families; promoted to `error` once the residue is zero or allowlisted. */
+/** Severity of the two volatile-facts families: both fail the gate (a `volatile-ok: <reason>` line or a `volatile-ok-file:` ledger is the only way to keep one). */
 export const VOLATILE_SEVERITY: Record<VolatileKind, 'error' | 'warning'> = {
-  'FILE-LINE': 'warning',
-  'CURRENT-STATE': 'warning',
+  'FILE-LINE': 'error',
+  'CURRENT-STATE': 'error',
 };
 
 /** Volatile-facts findings for one file (Critical Rule #17). Exported for the unit test. */

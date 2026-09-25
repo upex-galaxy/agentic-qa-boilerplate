@@ -196,13 +196,13 @@ const KNOWN_CATEGORIES = new Set([
 const KNOWN_KINDS = new Set(['context', 'workflow', 'utility', 'core']);
 
 /**
- * Severity of the two volatile-facts checks (20-21). They land as WARN while
- * the hand-applied cleanup runs and are promoted once the residue is zero or
- * allowlisted with a reason; the promotion is this one edit.
+ * Severity of the two volatile-facts checks (20-21). Both are ERROR: the
+ * hand-applied cleanup left no residue outside a `volatile-ok: <reason>` line
+ * or a `volatile-ok-file: <reason>` dated ledger, so a new hit is a regression.
  */
 const VOLATILE_SEVERITY: Record<VolatileKind, Severity> = {
-  'FILE-LINE': 'WARN',
-  'CURRENT-STATE': 'WARN',
+  'FILE-LINE': 'ERROR',
+  'CURRENT-STATE': 'ERROR',
 };
 
 /**

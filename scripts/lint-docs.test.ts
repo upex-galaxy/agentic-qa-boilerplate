@@ -83,24 +83,24 @@ describe('lint-docs', () => {
     ]);
   });
 
-  test('a path:line citation is a FILE-LINE warning, not a missing path', () => {
+  test('a path:line citation is a FILE-LINE error, not a missing path', () => {
     write('scripts/tool.ts', '');
     write('docs/README.md', 'See `scripts/tool.ts:12` for the shape.');
     const findings = lintDocs(root).findings;
     expect(findings.map(f => `${f.severity}:${f.file}:${f.line}:${f.kind}:${f.target}`)).toEqual([
-      'warning:docs/README.md:1:file-line:scripts/tool.ts:12',
+      'error:docs/README.md:1:file-line:scripts/tool.ts:12',
     ]);
   });
 
-  test('a claim about the present is a CURRENT-STATE warning in markdown and HTML prose', () => {
+  test('a claim about the present is a CURRENT-STATE error in markdown and HTML prose', () => {
     write('README.md', 'The store holds ten skills today.\nMeasured 2026-09-17 on a live project.');
     const head = '<head><title>Setup</title><meta name="description" content="Guides." /></head>';
     write('docs/core/setup/index.html', `${head}<p>El catálogo tiene hoy 24 entradas.</p>`);
     const findings = lintDocs(root).findings;
     expect(findings.map(f => `${f.severity}:${f.file}:${f.line}:${f.kind}:${f.target}`)).toEqual([
-      'warning:README.md:1:current-state:today',
-      'warning:README.md:2:current-state:Measured 2026-09-17',
-      'warning:docs/core/setup/index.html:1:current-state:hoy',
+      'error:README.md:1:current-state:today',
+      'error:README.md:2:current-state:Measured 2026-09-17',
+      'error:docs/core/setup/index.html:1:current-state:hoy',
     ]);
   });
 

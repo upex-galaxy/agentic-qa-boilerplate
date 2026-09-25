@@ -351,10 +351,11 @@ describe('lint-skills STALE-PATH on `.context/` (kind-scoped)', () => {
 
 describe('lint-skills volatile facts (Critical Rule #17, checks 20-21)', () => {
   test('a path:line citation and a dated claim in a T1 body are FILE-LINE / CURRENT-STATE findings', () => {
-    const { output } = runLint(fixture({ listCommunityInAgentsMd: true, extraSkills: [{ slug: 'acme-flow', kind: 'workflow', body: 'See `cli/install.ts:403` for the probe.\nMeasured 2026-09-17 on a live project.' }] }));
+    const { exitCode, output } = runLint(fixture({ listCommunityInAgentsMd: true, extraSkills: [{ slug: 'acme-flow', kind: 'workflow', body: 'See `cli/install.ts:403` for the probe.\nMeasured 2026-09-17 on a live project.' }] }));
 
-    expect(output).toContain('[.agents/skills/acme-flow/SKILL.md] FILE-LINE: `cli/install.ts:403`');
-    expect(output).toContain('[.agents/skills/acme-flow/SKILL.md] CURRENT-STATE: `Measured 2026-09-17`');
+    expect(output).toContain('[ERROR]\x1B[0m [.agents/skills/acme-flow/SKILL.md] FILE-LINE: `cli/install.ts:403`');
+    expect(output).toContain('[ERROR]\x1B[0m [.agents/skills/acme-flow/SKILL.md] CURRENT-STATE: `Measured 2026-09-17`');
+    expect(exitCode).toBe(1);
   });
 
   test('AGENTS.md is scanned too, and a fenced block or a volatile-ok line is not', () => {
