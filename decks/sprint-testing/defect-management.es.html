@@ -600,7 +600,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div>
     <p class="kicker">el dato que responde</p>
     <div class="bigstat"><span class="grad">40 / 40</span></div>
-    <h3>En ShopFlow, las <b>40 incidencias</b> tienen <span class="mono">Components</span> — y cada campo del estándar — relleno. La data no solo existe: <b>responde cada pregunta de calidad</b>. Lo que rellenas con disciplina hoy es lo que el dashboard sabe medir mañana.</h3>
+    <h3>En ShopFlow, las <b>40 incidencias</b> tienen <span class="mono">Components</span> — y cada campo del estándar — relleno. La data no solo existe: <b>responde cada pregunta de calidad</b>. Lo que rellenas con disciplina ahora es lo que el dashboard sabe medir mañana.</h3>
   </div>
   <div class="notes">Arranca con la tesis: gestionar defectos no es abrir tickets, es generar datos que respondan preguntas. ShopFlow rellena el 100% de sus campos → el dashboard ve todo. Volveremos a este equipo modelo en la parte 3.</div>
 </section>
@@ -762,7 +762,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div>
     <p class="part-no">PARTE 02</p>
     <h1 class="h1">El Estándar de Calidad<br><span class="grad">Un Workflow, los Mismos Campos</span></h1>
-    <p class="lede">Las tres incidencias comparten <b>exactamente</b> el mismo esquema de workflow y los mismos campos. Reportar disciplinadamente hoy es lo que habilita medir mañana.</p>
+    <p class="lede">Las tres incidencias comparten <b>exactamente</b> el mismo esquema de workflow y los mismos campos. Reportar disciplinadamente ahora es lo que habilita medir mañana.</p>
   </div>
   <div class="notes">Aclarar que esto es un estándar de gestión reusable — una recomendación, no una ley universal. Pero es un estándar probado y consistente que cualquier equipo puede adoptar en Jira.</div>
 </section>
@@ -772,12 +772,12 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <p class="kicker">hallazgo del esquema real</p>
   <h2 class="h2" data-anim="fade-up">Bug, Defect e Improvement → Mismo Esquema</h2>
   <div class="grid g3 mt-m">
-    <div class="card card-accent"><h4>Bug <span class="dim2 mono">#10021</span></h4><p class="dim">11 estados · 15 transiciones</p></div>
-    <div class="card card-accent"><h4>Defect <span class="dim2 mono">#10023</span></h4><p class="dim">11 estados · 15 transiciones</p></div>
-    <div class="card card-accent"><h4>Improvement <span class="dim2 mono">#10022</span></h4><p class="dim">11 estados · 15 transiciones</p></div>
+    <div class="card card-accent"><h4>Bug</h4><p class="dim">workflow compartido</p></div>
+    <div class="card card-accent"><h4>Defect</h4><p class="dim">workflow compartido</p></div>
+    <div class="card card-accent"><h4>Improvement</h4><p class="dim">workflow compartido</p></div>
   </div>
-  <div class="callout mt-l"><h4>Idénticos byte por byte</h4><p>Mismos estados (Open, In Progress, In Review, Ready For QA, Closed…), mismas transiciones, mismos campos para rellenar. Cambias el <i>work type</i>, no la mecánica. Esto es deliberado: un solo modelo mental para gestionar las tres.</p></div>
-  <div class="notes">Verificado en .agents/jira-workflows.json: los tres comparten el mismo workflow_scheme. Para el equipo significa cero curva de aprendizaje extra al pasar de uno a otro.</div>
+  <div class="callout mt-l"><h4>Idénticos byte por byte</h4><p>Mismos estados (por ejemplo Open, In Progress…; el catálogo es <span class="mono">.agents/jira-workflows.json</span>), mismas transiciones, mismos campos para rellenar. Cambias el <i>work type</i>, no la mecánica. Esto es deliberado: un solo modelo mental para gestionar las tres.</p></div>
+  <div class="notes">Fuente: .agents/jira-workflows.json: los tres comparten el mismo workflow_scheme. Para el equipo significa cero curva de aprendizaje extra al pasar de uno a otro.</div>
 </section>
 
 <!-- 14. LIFECYCLE -->
@@ -797,13 +797,13 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="card card-soft"><h4 class="mono" style="font-size:15px">ReTest Passed</h4><p class="dim">Ready For QA → Closed. QA verifica el fix (terminal de éxito).</p></div>
   </div>
   <div class="callout warn mt-m"><h4>Atajos y regresos cableados</h4><p><span class="mono">Hard pushed</span> salta el review (In Progress → Ready For QA). <span class="mono">back</span> reabre un Closed a Ready For QA cuando una regresión se cuela tras el sign-off.</p></div>
-  <div class="notes">Este es el camino principal. Los colores: gris=new, ámbar=indeterminate (trabajo en curso), verde=done. La categoría del estado importa para las métricas (parte 3).</div>
+  <div class="notes">Workflow del estándar; el catálogo real es .agents/jira-workflows.json. Este es el camino principal. Los colores: gris=new, ámbar=indeterminate (trabajo en curso), verde=done. La categoría del estado importa para las métricas (parte 3).</div>
 </section>
 
 <!-- 15. TRIAGE -->
 <section class="slide" data-title="Triage">
   <p class="kicker">la decisión más importante</p>
-  <h2 class="h2" data-anim="fade-up">Triage desde <span class="mono" style="font-size:.7em">Open</span> — 6 Caminos</h2>
+  <h2 class="h2" data-anim="fade-up">Triage desde <span class="mono" style="font-size:.7em">Open</span> — los caminos del estándar</h2>
   <p class="lede mt-s">Open es el hub de triage. No todo reporte se arregla — la mitad del valor de gestión está en clasificar bien lo que <b>no</b> es un fix.</p>
   <div class="triage">
     <div class="tnode"><div class="tt">start fixing → In Progress</div><div class="ts"><b>Es real.</b> El dev lo toma y arranca el fix.</div></div>
@@ -813,7 +813,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="tnode"><div class="tt">is not a Bug → Enhancement</div><div class="ts"><b>Reclasificación.</b> Era requerimiento → mejora. Terminal.</div></div>
     <div class="tnode"><div class="tt">defer → Deferred</div><div class="ts"><b>Pospuesto.</b> Aceptado pero no ahora. Reanudable.</div></div>
   </div>
-  <div class="notes">El triage es donde un Bug puede volverse Improvement (is not a Bug → Enhancement). Las cuatro salidas terminales (Duplicated, REJECTED, CNR, Enhancement) son "ruido" que las métricas de calidad-de-reporte deben vigilar.</div>
+  <div class="notes">Caminos del estándar; el set vivo es .agents/jira-workflows.json. El triage es donde un Bug puede volverse Improvement (is not a Bug → Enhancement). Las cuatro salidas terminales (Duplicated, REJECTED, CNR, Enhancement) son "ruido" que las métricas de calidad-de-reporte deben vigilar.</div>
 </section>
 
 <!-- 16. TERMINAL STATES -->
@@ -832,7 +832,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <tr><td><b>ABORTED</b></td><td><span class="tag ok">done</span></td><td>Abandonado sin fix</td><td>Descartado</td></tr>
     </tbody>
   </table>
-  <div class="notes">La categoría (new / indeterminate / done) es lo que Jira usa para colorear y para los gadgets. Duplicated+REJECTED+CNR juntos = la tasa de "ruido" — una métrica de calidad del proceso de reporte.</div>
+  <div class="notes">Snapshot del estándar; categorías reales en .agents/jira-workflows.json. La categoría (new / indeterminate / done) es lo que Jira usa para colorear y para los gadgets. Duplicated+REJECTED+CNR juntos = la tasa de "ruido" — una métrica de calidad del proceso de reporte.</div>
 </section>
 
 <!-- 17. FIELDS -->
@@ -865,7 +865,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     </div>
   </div>
   <div class="callout mt-m"><h4>Regla de oro</h4><p>Cada campo que dejas vacío es una pregunta que el dashboard <b>no podrá responder</b>. La disciplina al reportar ES la materia prima de la métrica.</p></div>
-  <div class="notes">Estos campos salen de .agents/jira-required.yaml (sección bug/defect). El summary sigue el patrón Épica:Componente:Síntoma — que ya es agrupable. Conecta con Components en la siguiente.</div>
+  <div class="notes">Estos campos salen de .agents/jira-required.yaml (sección bug/defect): ese archivo es el catálogo vivo, la slide muestra la agrupación pedagógica. El summary sigue el patrón Épica:Componente:Síntoma — que ya es agrupable. Conecta con Components en la siguiente.</div>
 </section>
 
 <!-- 18. SEVERITY / PRIORITY -->
@@ -895,14 +895,14 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <h4>Error Type — el síntoma</h4>
       <p class="dim mb-s">Se infiere al reportar, desde el comportamiento observado.</p>
       <div class="row wrap" style="gap:8px">
-        <span class="tag">functional</span><span class="tag">visual</span><span class="tag">content</span><span class="tag">performance</span><span class="tag">crash</span><span class="tag">data</span><span class="tag">integration</span><span class="tag">security</span>
+        <span class="tag">functional</span><span class="tag">visual</span><span class="dim" style="font-size:12px">ejemplo · opciones en <span class="mono">.agents/jira-fields.json</span> (error_type)</span>
       </div>
     </div>
     <div class="card card-accent">
       <h4>Root Cause — la causa</h4>
       <p class="dim mb-s">Se fija <b>después</b> del fix, en el post-mortem.</p>
       <div class="row wrap" style="gap:8px">
-        <span class="tag">code_error</span><span class="tag">config_env_error</span><span class="tag">data_error</span><span class="tag">environment_error</span><span class="tag">integration_error</span><span class="tag">requirement_error</span><span class="tag">third_party_error</span><span class="tag">working_as_designed</span>
+        <span class="tag">code_error</span><span class="tag">requirement_error</span><span class="dim" style="font-size:12px">ejemplo · opciones en <span class="mono">.agents/jira-fields.json</span> (root_cause)</span>
       </div>
     </div>
   </div>
@@ -1024,7 +1024,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="barrow"><span class="bl">Error Type</span><span class="bt" style="width:100%"></span><span class="bn">100%</span></div>
     <div class="barrow"><span class="bl">Resolution</span><span class="bt" style="width:98%"></span><span class="bn">98%</span></div>
   </div>
-  <div class="callout mt-m"><h4>El diagnóstico</h4><p>ShopFlow rellena <b>cada campo del estándar</b> en las 40 incidencias → las 8 preguntas de la parte 3 tienen respuesta, sin ningún slice "sin asignar". El principio se cumple, pero al revés: <i>lo que no rellenas no lo puedes medir</i> — y aquí no quedó nada vacío. La disciplina al reportar HOY es la métrica fiable de MAÑANA.</p></div>
+  <div class="callout mt-m"><h4>El diagnóstico</h4><p>ShopFlow rellena <b>cada campo del estándar</b> en las 40 incidencias → las 8 preguntas de la parte 3 tienen respuesta, sin ningún slice "sin asignar". El principio se cumple, pero al revés: <i>lo que no rellenas no lo puedes medir</i> — y aquí no quedó nada vacío. La disciplina al reportar AHORA es la métrica fiable de MAÑANA.</p></div>
   <div class="notes">Aquí el equipo modelo: cobertura completa. Severity, Components y Error Type al 100% → toda gráfica se dibuja entera, sin porción muted. El único campo que no llega al 100% es Resolution (98%), porque hay incidencias aún abiertas — eso es esperado, no una brecha de higiene.</div>
 </section>
 
@@ -1402,7 +1402,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <li><b>Primero la pregunta, luego la métrica</b> — nunca el dashboard por el dashboard.</li>
     </ul>
   </div>
-  <div class="notes">El checklist operativo. Cada punto es una palanca directa sobre la calidad de las métricas posteriores. La disciplina al reportar HOY es la métrica fiable de MAÑANA.</div>
+  <div class="notes">El checklist operativo. Cada punto es una palanca directa sobre la calidad de las métricas posteriores. La disciplina al reportar AHORA es la métrica fiable de MAÑANA.</div>
 </section>
 
 <!-- 33. TAKEAWAYS -->

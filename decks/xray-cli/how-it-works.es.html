@@ -643,7 +643,7 @@ $ bun xray run evidence-list --id &lt;runId&gt;
 $ bun xray run evidence-rm --id &lt;runId&gt; --filename error.png
 $ bun xray run defect --id &lt;runId&gt; --issues DEMO-456,DEMO-789</div>
     <div class="grid g2 mt-m" style="gap:24px">
-      <div class="card"><p class="lbl">Límite de 20 MB</p><p class="small mt-s">Xray Cloud rechaza requests &gt;20 MB. El CLI auto-trocea los <span class="mono">--dir</span> en lotes de ~15 MB; un archivo suelto de 30 MB sí se rechaza — comprímelo o divídelo antes.</p></div>
+      <div class="card"><p class="lbl">Límite de 20 MB</p><p class="small mt-s">Xray Cloud rechaza requests &gt;20 MB. El CLI auto-trocea los <span class="mono">--dir</span> en lotes por debajo del límite (el tamaño del lote está en <span class="mono">references/</span> del skill); un archivo suelto de 30 MB sí se rechaza — comprímelo o divídelo antes.</p></div>
       <div class="card card-accent"><p class="lbl">Craft · el bug nace en la corrida</p><p class="small mt-s">El defecto se enlaza al <b>Test Run</b>, no al Test abstracto: un mismo Test puede tener 0 bugs en una corrida y 1 en otra. Nunca empujes runs a TCs con veredicto <span class="mono">to_be_automated=no</span> <span class="dim">(anti-patrón X7)</span>.</p></div>
     </div>
     <div class="notes">La carpeta evidence/ del PBI local (.context/PBI/.../evidence/) se sube entera con --dir. evidence-rm acepta --evidence &lt;id&gt; o --filename.</div>
@@ -720,7 +720,7 @@ $ bun xray backup restore --file demo-backup.json --project NEW_PROJ --dry-run
 $ bun xray backup restore --file demo-backup.json --project PROJ --sync          # site→site, claves preservadas
 $ bun xray backup restore --file demo-backup.json --project PROJ --map-keys mappings.csv</div>
     <div class="grid g2 mt-m" style="gap:24px">
-      <div class="card"><p class="lbl">Schema v2.0</p><p class="small mt-s">Footprint completo: tests, preconditions, plans, sets y folders; executions + run statuses opt-in (<span class="mono">--include-runs</span>). Los backups v1.0 restauran igual.</p></div>
+      <div class="card"><p class="lbl">Schema del backup</p><p class="small mt-s">Footprint completo: tests, preconditions, plans, sets y folders; executions + run statuses opt-in (<span class="mono">--include-runs</span>). Los backups de schemas anteriores restauran igual (versión vigente: <span class="mono">references/backup-restore.md</span>).</p></div>
       <div class="card card-accent"><p class="lbl" style="color:var(--bad)">Gotcha cross-site</p><p class="small mt-s">GraphQL usa <b>issueId numérico</b>, re-asignado por site; la migración preserva la <b>KEY</b> → usa siempre <span class="mono">--sync</span> site→site, y re-corre <span class="mono">auth login</span> entre export y restore.</p></div>
     </div>
     <p class="small dim mt-s"><b>Runbook completo</b> (<span class="mono">references/migration-runbook.md</span>): auth source → <span class="mono">export --all</span> → auth dest → <span class="mono">preflight</span> → corregir config → <span class="mono">restore --sync</span>.</p>
@@ -741,7 +741,7 @@ $ bun xray backup restore --file demo-backup.json --project PROJ --map-keys mapp
       <tr><td style="padding:9px 16px"><b class="mono">X6</b></td><td style="padding:10px 16px" class="small">Nunca mezclar modalidades jira-xray y jira-native en la misma fase — se resuelve una vez en Phase 0.</td></tr>
       <tr><td style="padding:9px 16px"><b class="mono">X7</b></td><td style="padding:10px 16px" class="small">Nunca empujar runs automatizados a TCs con veredicto Manual terminal (<span class="mono">to_be_automated=no</span>).</td></tr>
     </table>
-    <div class="notes">Los siete anti-patrones del SKILL.md, tal cual. X1/X6 protegen la arquitectura de skills; X2-X5 protegen los datos; X7 protege el reporting Candidate/Manual/Deferred.</div>
+    <div class="notes">Los anti-patrones del SKILL.md, tal cual. X1/X6 protegen la arquitectura de skills; X2-X5 protegen los datos; X7 protege el reporting Candidate/Manual/Deferred.</div>
   </section>
 
   <!-- 17. CIERRE -->
@@ -766,7 +766,7 @@ $ bun xray backup restore --file demo-backup.json --project PROJ --map-keys mapp
       <p class="lbl">Artefactos que deja el skill</p>
       <p class="small mt-s"><span class="tag tag-story">Test Set</span> = ATS · <span class="tag tag-plan">Test Plan</span> = ATP · <span class="tag tag-exec">Test Execution</span> = ATR · <span class="tag tag-test">Test</span> + steps = TCs · Runs con evidencia y <span class="tag tag-bug">defectos</span> enlazados · backups en <span class="mono">.backups/*.json</span> · config en <span class="mono">~/.xray-cli/</span>.</p>
     </div>
-    <p class="small dim mt-m">Referencias: <span class="mono">references/backup-restore.md · migration-runbook.md · graphql-api.md · test-types.md</span></p>
+    <p class="small dim mt-m">Referencias: ver <span class="mono">references/</span> del skill</p>
     <div class="notes">Fin del recorrido. El mapa del slide 2 resume todo: gate de modalidad → auth → especificar → planificar → ejecutar → reportar, con sync/backup/MCP como caminos adyacentes.</div>
   </section>
 

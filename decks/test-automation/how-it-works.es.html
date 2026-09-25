@@ -627,7 +627,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 <span class="p">$</span> <span class="c">bun allure:agent</span>                                          <span class="cmt"># opcional: reporte markdown por bloque @atc</span></pre>
     </div>
     <p class="small dim2 mt-s">Dispatch Sequential: un subagente de Code por unidad de scope (module: 1 por TC · ticket: 1 total). Cada uno carga <span class="mono">/playwright-best-practices</span> junto a esta skill; retorna archivos cambiados + resumen — el orquestador nunca lee diffs.</p>
-    <div class="notes">Checkpoint en progress.md tras cada subagente de Code — el resume a mitad de lote salta lo ya codificado. Allure 3 vive como devDep: bunx allure resuelve local, sin instalar global.</div>
+    <div class="notes">Checkpoint en progress.md tras cada subagente de Code — el resume a mitad de lote salta lo ya codificado. Allure vive como devDep (versión en package.json): bunx allure resuelve local, sin instalar global.</div>
   </section>
 
   <!-- 11 · CRAFT · CAPAS KATA -->
@@ -642,7 +642,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="layer"><span class="lx">L4</span><div><h4>Fixtures — <span class="mono">TestFixture, ApiFixture, UiFixture</span></h4><p>Inyección de dependencias. Los tests piden el fixture y reciben los componentes. Los Steps no tienen fixture: se importan e instancian directo.</p></div></div>
     </div>
     <div class="callout"><h4>Los consumidores no son una capa</h4><p><span class="mono">tests/e2e/**</span> y <span class="mono">tests/integration/**</span> orquestan ATCs en escenarios y validan FLUJOS: <b>consumen</b> los Fixtures (L4), no son una quinta capa. Son <b>cuatro capas nombradas, más Steps opcional</b>.</p></div>
-    <div class="callout"><h4>Dos reglas duras</h4><p>Una capa superior usa una inferior — <b>nunca al revés</b>. Imports SIEMPRE por alias (<span class="mono">@api/ @ui/ @utils/ @variables @TestContext @schemas/</span>) — el lint rechaza los relativos (<span class="mono">../../../</span>).</p></div>
+    <div class="callout"><h4>Dos reglas duras</h4><p>Una capa superior usa una inferior — <b>nunca al revés</b>. Imports SIEMPRE por alias (los de <span class="mono">tsconfig.base.json</span>, p. ej. <span class="mono">@api/ @ui/</span>) — el lint rechaza los relativos (<span class="mono">../../../</span>).</p></div>
     <div class="notes">Aplanar capas es rechazo automático en Review (anti-pattern T3). La separación permite que helpers HTTP, helpers UI y utilidades agnósticas tengan un solo hogar cada uno.</div>
   </section>
 

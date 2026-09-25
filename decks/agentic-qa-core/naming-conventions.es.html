@@ -165,9 +165,8 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
   <p class="lede">Cada artefacto de prueba en este framework tiene una forma de nombre exacta. Esta es la única fuente de verdad — desde un test case en el TMS hasta un componente KATA, una rama, una carpeta. Aprende la forma una vez; lee la intención de cualquier artefacto de un vistazo.</p>
   <div class="row mt-l" style="gap:10px;flex-wrap:wrap">
     <span class="chip"><span class="dot"></span>7 capas</span>
-    <span class="chip" style="--ac:#a78bfa"><span class="dot"></span>30+ artefactos</span>
-    <span class="chip" style="--ac:#fbbf24"><span class="dot"></span>12 convenciones ratificadas</span>
-    <span class="chip" style="--ac:#a3e635"><span class="dot"></span>0 contradicciones</span>
+    <span class="chip" style="--ac:#a78bfa"><span class="dot"></span>todos los artefactos del pipeline</span>
+    <span class="chip" style="--ac:#fbbf24"><span class="dot"></span>convenciones ratificadas</span>
   </div>
   <p class="dim3 mono mt-l" style="font-size:12px">Vive en <b>.agents/skills/agentic-qa-core/</b> — el skill base global.</p>
 </section>
@@ -520,14 +519,14 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
       <div class="tmpl sm" style="--ac:#60a5fa"><span class="t-pre">{{PROJECT_KEY}}-{n}</span></div>
       <div class="ex mt-s">PROJ-123 · GX-101</div>
     </div>
-    <div class="card"><h4>Test Status <span class="dim3" style="font-size:12px">ciclo de workflow</span></h4>
+    <div class="card"><h4>Test Status <span class="dim3" style="font-size:12px">ciclo de workflow · snapshot de .agents/jira-workflows.json</span></h4>
       <p class="mono dim" style="font-size:12.5px;line-height:1.7">Draft → In Design → READY → <span style="color:#60a5fa">MANUAL</span> / In Review → Candidate → In Automation → Pull Request → <span style="color:#34d399">AUTOMATED</span> · DEPRECATED</p>
     </div>
     <div class="card"><h4>Execution Status <span class="dim3" style="font-size:12px">por corrida — campo distinto</span></h4>
       <p class="mono" style="font-size:12.5px;line-height:1.8"><span style="color:#9aa3b4">TODO</span> · <span style="color:#60a5fa">EXECUTING</span> · <span style="color:#34d399">PASS</span> · <span style="color:#f87171">FAIL</span> · <span style="color:#fb923c">ABORTED</span> · <span style="color:#fbbf24">BLOCKED</span></p>
     </div>
   </div>
-  <div class="row mt-m" style="gap:8px;flex-wrap:wrap"><span class="dim3 mono" style="font-size:12px">labels:</span>
+  <div class="row mt-m" style="gap:8px;flex-wrap:wrap"><span class="dim3 mono" style="font-size:12px">labels (catálogo: .agents/jira-required.yaml):</span>
     <span class="tag">smoke</span><span class="tag">regression</span><span class="tag">e2e</span><span class="tag">integration</span><span class="tag">functional</span><span class="tag">automation-candidate</span><span class="tag">manual-only</span><span class="tag">automated</span></div>
   <div class="callout mt-m" style="--ac:#60a5fa;padding:10px 14px"><p style="margin:0" class="dim">Esta capa es <b>agnóstica del gestor</b> — Jira es el ejemplo de referencia; las mismas formas aplican a cualquier issue tracker (estados, labels, títulos de calidad).</p></div>
   <p class="mt-s"><span class="src">tms-conventions.md · reporting-templates.md · defect-management-doctrine.md</span></p>
@@ -577,11 +576,11 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
 
 <!-- 15 · Divisor GAPS -->
 <section class="slide" style="--ac:#fbbf24" data-t="Auditoría de cobertura">
-  <p class="kick">Auditoría de cobertura · las 12 convenciones ahora ratificadas</p>
+  <p class="kick">Auditoría de cobertura · las convenciones ratificadas</p>
   <h1>Las <span class="grad">convenciones ratificadas</span></h1>
-  <p class="lede">Doce artefactos que solo tenían un nombre implícito o indefinido ahora son convenciones ratificadas — escritas en los references de los skills y aplicadas por convención.</p>
+  <p class="lede">Artefactos que solo tenían un nombre implícito o indefinido pasaron a ser convenciones ratificadas — escritas en los references de los skills y aplicadas por convención.</p>
   <div class="row mt-m" style="gap:10px;flex-wrap:wrap">
-    <span class="chip" style="--ac:#fbbf24"><span class="dot"></span>12 ratificadas</span>
+    <span class="chip" style="--ac:#fbbf24"><span class="dot"></span>ratificadas</span>
     <span class="chip" style="--ac:#a3e635"><span class="dot"></span>ahora canon</span>
     <span class="chip" style="--ac:#f472b6"><span class="dot"></span>lint a futuro</span>
   </div>
@@ -613,7 +612,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
     <div class="gap"><h4>11 · Variables Gherkin</h4><p class="dim" style="font-size:13.5px">Estilo de placeholder implícito.</p><span class="prop">{snake_case} → {user_id}, {order_amount}</span></div>
     <div class="gap"><h4>12 · Marcador de test bloqueado</h4><p class="dim" style="font-size:13.5px">Tests bloqueados por bug se taggean inconsistente.</p><span class="prop">@blocked:{BUG-KEY} + test.fail()</span></div>
   </div>
-  <div class="callout mt-m" style="--ac:#a3e635;padding:11px 14px"><p style="margin:0" class="dim">Las 12 están ratificadas — ahora canon en los references de los skills. Siguiente: enforcement por lint (opcional).</p></div>
+  <div class="callout mt-m" style="--ac:#a3e635;padding:11px 14px"><p style="margin:0" class="dim">Todas están ratificadas: canon en los references de los skills.</p></div>
 </section>
 
 <!-- WF · Workflow de Story -->
@@ -668,7 +667,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
 </svg>
   </div>
   <p class="wf-take">El camino feliz va Backlog → Shift-Left QA → Estimation → Ready For Dev → In Progress → In Review → Ready For QA → In Test → QA Approved → Ready For Release → Deployed to Production.</p>
-  <p class="notes"><b>Notas.</b> El camino feliz es la espina de izquierda a derecha en las dos filas. Bucles principales: "back" retorna en casi cada etapa, "needs quality" devuelve Estimation a Shift-Left QA, y la rama BLOCKED (defect reported → Fix defect / back to dev) atiende defectos hallados en pruebas. Los globales Create / Ready For Dev / Ready For QA / ABORTED aplican desde cualquier estado; Recover devuelve una historia ABORTED a Ready For Dev.</p>
+  <p class="notes"><b>Notas.</b> Snapshot de .agents/jira-workflows.json (regenerar con bun run jira:sync-workflows). El camino feliz es la espina de izquierda a derecha en las dos filas. Bucles principales: "back" retorna en casi cada etapa, "needs quality" devuelve Estimation a Shift-Left QA, y la rama BLOCKED (defect reported → Fix defect / back to dev) atiende defectos hallados en pruebas. Los globales Create / Ready For Dev / Ready For QA / ABORTED aplican desde cualquier estado; Recover devuelve una historia ABORTED a Ready For Dev.</p>
 </section>
 
 <!-- WF · Bug / Defect / Improvement -->
@@ -710,7 +709,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
 </svg>
   </div>
   <p class="wf-take">El camino feliz va Open → In Progress → In Review → Ready For QA → Closed; desde Open, el triage se bifurca a CNR / Deferred / Duplicated / REJECTED / Enhancement.</p>
-  <p class="notes"><b>Notas.</b> Bug, Defect e Improvement comparten UN workflow byte-idéntico. El camino feliz es la espina superior. El triage se abre desde Open (is CNR / defer / is duplicated / is WAD / is not a Bug); Deferred puede reanudar la corrección. Bucles: Hard pushed salta la revisión, "back" reabre un ítem Closed para re-test, y Re-Open (global) reabre cualquier ítem resuelto.</p>
+  <p class="notes"><b>Notas.</b> Snapshot de .agents/jira-workflows.json (regenerar con bun run jira:sync-workflows). Bug, Defect e Improvement comparten UN workflow byte-idéntico. El camino feliz es la espina superior. El triage se abre desde Open (is CNR / defer / is duplicated / is WAD / is not a Bug); Deferred puede reanudar la corrección. Bucles: Hard pushed salta la revisión, "back" reabre un ítem Closed para re-test, y Re-Open (global) reabre cualquier ítem resuelto.</p>
 </section>
 
 <!-- WF · Workflow de Test -->
@@ -761,7 +760,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
 </svg>
   </div>
   <p class="wf-take">El camino de automatización va Draft → In Design → READY → In Review → Candidate → In Automation → Pull Request → AUTOMATED; la rama MANUAL puede reingresar a automatización.</p>
-  <p class="notes"><b>Notas.</b> El camino feliz de automatización es la espina de izquierda a derecha en las dos filas. MANUAL es el hub: un caso puede enviarse a manual (desde READY / Candidate / AUTOMATED) y reingresar a automatización (automated / for automation / automation review). Bucles: "back" baja la cadena en cada etapa, Fix devuelve AUTOMATED a Pull Request. Deprecated (global) retira cualquier caso; recover devuelve DEPRECATED a Draft.</p>
+  <p class="notes"><b>Notas.</b> Snapshot de .agents/jira-workflows.json (regenerar con bun run jira:sync-workflows). El camino feliz de automatización es la espina de izquierda a derecha en las dos filas. MANUAL es el hub: un caso puede enviarse a manual (desde READY / Candidate / AUTOMATED) y reingresar a automatización (automated / for automation / automation review). Bucles: "back" baja la cadena en cada etapa, Fix devuelve AUTOMATED a Pull Request. Deprecated (global) retira cualquier caso; recover devuelve DEPRECATED a Draft.</p>
 </section>
 
 <!-- D · AXIOMAS -->
@@ -826,7 +825,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
   <div class="grid g3 mt-m">
     <div class="card lyr" style="--ac:#22d3ee"><h4>Dónde vive</h4><p class="dim">Este deck vive en <span class="mono">agentic-qa-core</span> — el skill global citado por cada workflow. La fuente en prosa son los <span class="mono">references/</span> de los skills.</p></div>
     <div class="card lyr" style="--ac:#a78bfa"><h4>Cuándo cambia</h4><p class="dim">Edita los <span class="mono">references/*.md</span> canónicos, regenera <span class="mono">REGISTRY.md</span>, y luego refresca este deck (EN + ES) para que el códice nunca derive.</p></div>
-    <div class="card lyr" style="--ac:#fbbf24"><h4>Qué sigue</h4><p class="dim">Todos los huecos ratificados. Siguiente: reglas de lint opcionales para hacerlos cumplir.</p></div>
+    <div class="card lyr" style="--ac:#fbbf24"><h4>Qué sigue</h4><p class="dim">Todos los huecos ratificados; el detalle vive en los references de los skills.</p></div>
   </div>
   <p class="dim3 mono mt-l" style="font-size:12px">should = caso · Validate = grupo · prefijo = Story · @atc = clave Jira · @integration ≠ @api</p>
 </section>

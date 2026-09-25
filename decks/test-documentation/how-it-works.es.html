@@ -833,7 +833,7 @@ Component Value = ROI × (1 + 0.2 × N)
   <h2 class="h2" data-anim="fade-up">El hilo principal decide; los subagentes escriben</h2>
   <div class="grid g3 mt-m anim-stagger-list">
     <div class="card"><h4>Inline (orquestador)</h4><p class="small dim">Fases -1, 0, 1 y 2: resume, modalidad, análisis y veredictos viven en el hilo principal — planificar y decidir no se delega.</p><span class="tag mt-s">criterio</span></div>
-    <div class="card"><h4>Paralelo (Fase 3, N &gt; 10)</h4><p class="small dim">Chunks de ~5-10 TCs por subagente, <b>cap = 10 subagentes</b> (Jira/Xray throttlean ~10 writes/seg → 429s). Cada subagente carga <span class="mono">/xray-cli</span> o <span class="mono">/acli</span>. N ≤ 10 → inline.</p><span class="tag mt-s">fan-out</span></div>
+    <div class="card"><h4>Paralelo (Fase 3, N &gt; 10)</h4><p class="small dim">Chunks de ~5-10 TCs por subagente, <b>cap = 10 subagentes</b> (Jira/Xray throttlean y devuelven 429; el cap está en SKILL.md §Subagent Dispatch). Cada subagente carga <span class="mono">/xray-cli</span> o <span class="mono">/acli</span>. N ≤ 10 → inline.</p><span class="tag mt-s">fan-out</span></div>
     <div class="card"><h4>Error protocol</h4><p class="small dim">Fallo de subagente → <b>STOP</b>, reporta el estado parcial (qué TCs aterrizaron, cuáles no, con keys/errores) y ofrece <b>retry / skip / abort</b>. Sin auto-fix, sin rollback.</p><span class="tag mt-s">seguridad</span></div>
   </div>
   <table class="dtable tight">

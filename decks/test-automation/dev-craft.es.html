@@ -238,12 +238,12 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
     <div class="kicker" data-anim="fade-up">Sesión 5 · QA Engineering</div>
     <h1 data-anim="fade-up" style="animation-delay:.1s">Dev <span class="grad-text">Craft</span> 🛠️</h1>
     <p data-anim="fade-up" style="animation-delay:.2s;max-width:660px;font-size:clamp(1.05rem,1.8vw,1.35rem)">
-      Tu suite vive solo en tu laptop — para el equipo, <b>no existe</b>.<br>Hoy: terminal con soltura, Git sin miedo y tu primer <b>Pull Request</b>.</p>
+      Tu suite vive solo en tu laptop — para el equipo, <b>no existe</b>.<br>En esta sesión: terminal con soltura, Git sin miedo y tu primer <b>Pull Request</b>.</p>
     <div class="cover-chips" data-anim="fade-up" style="animation-delay:.32s">
       <span class="pill">terminal</span><span class="pill">package.json</span><span class="pill">git</span><span class="pill">GitHub + PR</span><span class="pill">2 simuladores 🎮</span><span class="pill">4 misiones 🎯</span>
     </div>
   </div>
-  <div class="notes"><p>Sesión 6 de la serie (deck 5). El gap silencioso: saben escribir tests pero no compartirlos como profesionales. Hoy hay 2 terminales SIMULADAS dentro del deck (practican git sin riesgo) + misiones reales sobre su proyecto del lab. Prerrequisito: proyecto mi-dojo-lab funcionando. Duración: 90-120 min.</p></div>
+  <div class="notes"><p>Sesión 6 de la serie (deck 5). El gap silencioso: saben escribir tests pero no compartirlos como profesionales. En esta sesión hay 2 terminales SIMULADAS dentro del deck (practican git sin riesgo) + misiones reales sobre su proyecto del lab. Prerrequisito: proyecto mi-dojo-lab funcionando. Duración: 90-120 min.</p></div>
 </section>
 
 <!-- 2 · Por qué -->
@@ -256,14 +256,14 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
       <div class="card" style="margin-top:.9rem"><div class="ico">🤝</div><h3>El QA Engineer real</h3><p>Tu suite entra al repo del equipo <b>por Pull Request</b>, con revisión, igual que el código de los devs. Mismo flujo, mismos estándares.</p></div>
     </div>
     <div data-anim="fade-up" style="animation-delay:.3s">
-      <div class="card hl"><h3>🗺️ El plan de hoy</h3>
+      <div class="card hl"><h3>🗺️ El plan de la sesión</h3>
         <p style="font-family:var(--font-mono);font-size:.88rem;line-height:2.1">
         Acto 1 → terminal sin miedo<br>
         Acto 2 → package.json y scripts<br>
         Acto 3 → Git local 🎮 (simulador + real)<br>
         Acto 4 → GitHub + tu primer PR 🎮<br>
         Boss → tu suite del lab, publicada</p></div>
-      <div class="callout info" style="margin-top:.9rem"><span class="co-ico">🎮</span><p>Hoy estrenamos <b>terminales simuladas</b> dentro del deck: practicas los comandos aquí (imposible romper nada) y DESPUÉS los corres de verdad.</p></div>
+      <div class="callout info" style="margin-top:.9rem"><span class="co-ico">🎮</span><p>En esta sesión estrenamos <b>terminales simuladas</b> dentro del deck: practicas los comandos aquí (imposible romper nada) y DESPUÉS los corres de verdad.</p></div>
     </div>
   </div>
   <div class="notes"><p>Motivación con dolor real: pregunta quién ha perdido trabajo por no tener respaldo. El paralelo de identidad importa: entregar por PR es lo que distingue al QA Engineer del tester que automatiza por su cuenta — entras al flujo de ingeniería del equipo. El simulador baja la ansiedad de los que le temen a la terminal.</p></div>
@@ -333,7 +333,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
     <span class="tk-s">"test:ui"</span>: <span class="tk-s">"playwright test --ui"</span>
   },
   <span class="tk-s">"devDependencies"</span>: {
-    <span class="tk-s">"@playwright/test"</span>: <span class="tk-s">"^1.52.0"</span>
+    <span class="tk-s">"@playwright/test"</span>: <span class="tk-s">"^1.x"</span>
   }
 }</pre>
       </div>
@@ -479,7 +479,7 @@ git config --global user.email "tu@email.com"</pre><p style="margin-top:.3rem">U
     </div>
     <div class="m-crit">✅ <span><b>Criterio de éxito:</b> <code style="color:var(--cyan)">git log --oneline</code> muestra tu commit inicial, y <code style="color:var(--cyan)">git status</code> NO lista node_modules.</span></div>
   </div>
-  <div class="notes"><p>Del sandbox a la realidad. El config de identidad detendrá a la mayoría (primera vez con git) — la pista lo resuelve. Verificación del gitignore vía git status: hábito de comprobar, no asumir. Si alguien ya commiteó node_modules: borra .git completo y reinicia la misión — más simple que enseñar a deshacer hoy.</p></div>
+  <div class="notes"><p>Del sandbox a la realidad. El config de identidad detendrá a la mayoría (primera vez con git) — la pista lo resuelve. Verificación del gitignore vía git status: hábito de comprobar, no asumir. Si alguien ya commiteó node_modules: borra .git completo y reinicia la misión — más simple que enseñar a deshacer en esta sesión.</p></div>
 </section>
 
 <!-- 12 · QUIZ 2 -->
@@ -569,7 +569,7 @@ git config --global user.email "tu@email.com"</pre><p style="margin-top:.3rem">U
     <div class="cols" style="gap:1.2rem">
       <div>
         <p style="font-size:.9rem;line-height:1.85;margin:.2rem 0">
-        1. Repo en GitHub conectado (slide 13)<br>
+        1. Repo en GitHub conectado (slide «GitHub: tu historia, en la nube»)<br>
         2. Crea una rama para una mejora pequeña (un test nuevo, un script, el POM de otra página):</p>
         <div class="cmd"><span class="ps">$</span><span class="ct">git checkout -b test/mi-mejora</span><span class="copy">📋</span></div>
         <p style="font-size:.9rem;margin:.4rem 0">3. Haz el cambio → add → commit → push:</p>
@@ -578,7 +578,7 @@ git config --global user.email "tu@email.com"</pre><p style="margin-top:.3rem">U
       </div>
       <div>
         <details class="m-hint"><summary>Pista: sin gh CLI</summary><div class="hint-body"><p>Tras el push, GitHub imprime una URL "Create a pull request" en la propia terminal — ábrela. O en la web del repo: botón "Compare & pull request".</p></div></details>
-        <details class="m-hint"><summary>Pista: ¿y quién me lo aprueba?</summary><div class="hint-body"><p>Hoy: revísalo tú (mira el diff con ojos de reviewer — ¿entenderías este cambio sin contexto?) y dale merge. En equipo real, un colega aprueba. Si están en pareja: ¡revísense mutuamente! Eso es code review real.</p></div></details>
+        <details class="m-hint"><summary>Pista: ¿y quién me lo aprueba?</summary><div class="hint-body"><p>En este ejercicio: revísalo tú (mira el diff con ojos de reviewer — ¿entenderías este cambio sin contexto?) y dale merge. En equipo real, un colega aprueba. Si están en pareja: ¡revísense mutuamente! Eso es code review real.</p></div></details>
       </div>
     </div>
     <div class="m-crit">✅ <span><b>Criterio de éxito:</b> URL de un PR tuyo, mergeado, en tu repo de GitHub. Guárdala — es tu primera entrega con flujo profesional.</span></div>
