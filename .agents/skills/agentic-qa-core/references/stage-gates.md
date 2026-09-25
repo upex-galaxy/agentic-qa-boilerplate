@@ -51,13 +51,12 @@ through it.
 | **Documentation** | `test-documentation` | post-sprint | L3 — Continuous Detection | (Stage 4) |
 | **Automation** | `test-automation` | post-sprint | L3 — Continuous Detection | (Stage 5) |
 | **Regression** | `regression-testing` | post-sprint | L3 — Continuous Detection | (Stage 6) |
-| **Observation** | *none yet* | production | L4 — Production Observation | (never had one) |
+| **Observation** | *no owning skill* | production | L4 — Production Observation | (never had one) |
 
 **Observation is declared, not implemented.** It has **no skill**; its operating
 unit is an **agentic routine** (a recurring or autonomous run, not a user-invoked
 skill), and its capability level is **L4**. It is named here so the pipeline is
-honest about where it currently stops: nothing under `.agents/skills/` executes it
-today. It deliberately carries **no DoD checklist** below — an empty checklist
+honest about where it stops: no skill under `.agents/skills/` owns it. It deliberately carries **no DoD checklist** below — an empty checklist
 would read as an implemented gate that an orchestrator could tick.
 
 **Sprint close is not a stage.** It is the batch boundary where the sprint-altitude
@@ -312,7 +311,7 @@ Review:
 ### Observation — no checklist
 
 Intentionally empty. Observation has no owning skill and no DoD; its operating
-unit is an agentic routine that does not exist in this repo yet. Writing a
+unit is an agentic routine, not a skill. Writing a
 checklist here would hand an orchestrator a gate it cannot actually verify.
 
 ---

@@ -14,7 +14,7 @@
 
 Every output MUST include a `## Discovery Gaps` section if a field could not be verified (e.g., workflow states are assumed, no access to create-meta).
 
-> **Hands off `.context/PBI/README.md` and `templates/`.** `README.md` is a `[COMMIT]` framework document holding the tier doctrine and gitignore ladder for the whole PBI tree — overwriting it destroys framework doctrine, so Phase 4 NEVER writes it. `templates/` (`PROGRESS-template.md`, `ROADMAP-template.md`, `module-context-template.md`) ships committed with the framework and is not authored per-project either. Phase 4's only write target is `ACCESS.md`, regenerated on every re-run of discovery.
+> **Hands off `.context/PBI/README.md` and `templates/`.** `README.md` is a `[COMMIT]` framework document holding the tier doctrine and gitignore ladder for the whole PBI tree — overwriting it destroys framework doctrine, so Phase 4 NEVER writes it. `templates/` (the skeletons under `.context/PBI/templates/`) ships committed with the framework and is not authored per-project either. Phase 4's only write target is `ACCESS.md`, regenerated on every re-run of discovery.
 
 ---
 
@@ -125,7 +125,7 @@ Document the four canonical QA queries. Resolve to the tracker's query language.
 | Current sprint ready for QA | `project = {{PROJECT_KEY}} AND sprint in openSprints() AND status = "{{jira.status.story.ready_for_qa}}"` | `State = 'Ready for Test' AND [System.IterationPath] = @CurrentIteration` |
 | All open bugs | `project = {{PROJECT_KEY}} AND type = Bug AND resolution = Unresolved ORDER BY priority DESC` | `Work Item Type = 'Bug' AND State <> 'Closed'` |
 | My testing tasks | `project = {{PROJECT_KEY}} AND status = "{{jira.status.story.in_test}}" AND assignee = currentUser()` | `State = 'Testing' AND [System.AssignedTo] = @Me` |
-| Recently updated | `project = {{PROJECT_KEY}} AND updated >= -1d ORDER BY updated DESC` | `[Changed Date] > @Today - 1` |
+| Recently updated | `project = {{PROJECT_KEY}} AND updated >= -1d ORDER BY updated DESC` | `[Changed Date] > @Today - 1` | <!-- volatile-ok: @Today is a WIQL macro, not a claim -->
 
 Also record the `[ISSUE_TRACKER_TOOL]` pseudocode equivalents so other skills can reuse them.
 
@@ -151,9 +151,7 @@ Produce with these sections, in order:
 |-- README.md                 # [COMMIT] framework-owned — tier doctrine + gitignore ladder; Phase 4 NEVER writes it
 |-- ACCESS.md                 # Phase 4 output — backlog access recipe + common queries
 |-- templates/                # [COMMIT] framework skeletons — shipped with the repo, NOT Phase-4 outputs
-|   |-- PROGRESS-template.md
-|   |-- ROADMAP-template.md
-|   `-- module-context-template.md
+|   `-- <the skeletons shipped with the repo>
 `-- epics/                    # synced from Jira by /sprint-testing — read-only cache, NOT created here
     `-- EPIC-{{PROJECT_KEY}}-100-<slug>/
         `-- stories/

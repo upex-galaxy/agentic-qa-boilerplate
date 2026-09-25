@@ -10,7 +10,7 @@ metadata:
 
 # Session Handoff
 
-A handoff is **context transplanted, not context summarized**. The successor is not a reader being briefed on someone else's work; it IS this session, with a new window. Everything it needs to act must be on disk, addressable, and true at the moment it reads.
+A handoff is **context transplanted, not context summarized**. The successor is not a reader being briefed on someone else's work; it IS this session, with a new window. Everything it needs to act must be on disk, addressable, and true when it reads.
 
 The skill is small on purpose. The heavy artifact is the markdown it produces, and the whole contract lives in `.agents/skills/session-handoff/references/capture-contract.md`.
 
@@ -34,7 +34,7 @@ Whether any harness can trigger this automatically is answered, with citations, 
 
 Write one when any of these is true:
 
-- the context window is past the owner's threshold (~500k tokens unless the owner names a different one; it is a per-owner judgement about where this model starts degrading, not project configuration, so it stays in the conversation and not in a yaml key)
+- the context window is past the owner's threshold (~500k tokens unless the owner names a different one; it is a per-owner judgement about where this model starts degrading, not project configuration, so it stays in the conversation and not in a yaml key) <!-- volatile-ok: owner-stated judgement threshold, explicitly not config -->
 - the session is about to end with work still in flight
 - the session is about to do something that will itself consume a large slice of the window (a big harvest, a long file read) and the remaining budget will not cover the work after it
 - the owner asks

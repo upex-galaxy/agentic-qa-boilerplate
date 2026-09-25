@@ -3,8 +3,8 @@
 > Loaded by: any session that sends anything to another session — conductor, worker, helper.
 > The shortest reference in this skill and the one whose violation costs the most, because the
 > failure is silent in BOTH directions and the receipt says `ok`.
-> Established 2026-09-21, after an exchange in which two sessions — both of which had just finished
-> WRITING the rule — broke it repeatedly within the hour and lost content each way. A rule its own
+> Established after an exchange in which two sessions — both of which had just finished
+> WRITING the rule — broke it repeatedly within the hour and lost content each way (G64, G66). A rule its own
 > authors violate immediately after writing it is a placement problem, not a comprehension one:
 > hence a channel ASSIGNMENT (hard rule 4) instead of advice about brief length.
 
@@ -19,16 +19,17 @@ doctrine and swaps the commands. On this repo they resolve to `{{MESSAGE_VERB}} 
 
 | Channel | What it carries | Integrity |
 |---|---|---|
-| **`{{MESSAGE_VERB}} send`** (the mailbox) | **every message between sessions**: status, questions, answers, decisions, escalations | **byte-intact.** Measured 2026-09-21, orca 1.4.190: three messages read back at exactly 126, 896 and 30 bytes (G66) |
+| **`{{MESSAGE_VERB}} send`** (the mailbox) | **every message between sessions**: status, questions, answers, decisions, escalations | **byte-intact** (G66) |
 | **a file plus a one-line pointer** | **anything longer than a couple of sentences**: briefs, reports, scope agreements, evidence, anything with a table | perfect, and re-readable later, which a message is not |
 | **`{{TERMINAL_VERB}} send`** | **driving a terminal**: commands, CLI calls, harness slash-commands, keystrokes | **lossy.** Truncates silently, keeps only the TAIL, reports success anyway (G60, G64) |
 
 **The test**: if a human would READ it, it does not go through `{{TERMINAL_VERB}} send`. If a shell
 or a TUI would EXECUTE it, that is exactly what the verb is for.
 
-**The vendor stubs, for the same reason.** `orchestration.orchestrator_skills` measure about 2k tokens for the
-pair (4150 and 3862 bytes, 2026-09-22) and load alongside this skill. The figure is here rather than
-in `project.yaml` because a config file should carry the setting, not the lab notebook.
+**The vendor stubs, for the same reason.** `orchestration.orchestrator_skills` are small and load
+alongside this skill. The measurement behind that lives in ADR-0006, not here and not in
+`project.yaml`: a config file carries the setting and a doctrine file carries the rule, and neither
+carries the lab notebook.
 
 The corollary that surprises people: the mailbox is not the unreliable channel. A session that meets
 one truncated `terminal send` and concludes "messaging between agents is unreliable" starts avoiding
@@ -53,7 +54,7 @@ So the rule is not "never a prompt through `terminal send`". It is:
 Which is the same discipline anyway: the handoff opens with `/<workflow-skill> <KEY> fleet worker`,
 names the brief by absolute path, carries the no-stopping sentence, and stops. Everything else the
 worker needs is in the brief, in a file, because a long prompt through this verb arrives as its last
-fragment (G60: 2399 bytes sent, points 1 and 2 of 3 lost).
+fragment (G60).
 
 ---
 
@@ -69,8 +70,8 @@ The half of the rule usually left unwritten, and the reason anyone reaches for t
   is the class of work the verb exists for.
 - **Reloading the session's plugin and skill surface mid-flight**, so a long-running worker picks up
   a skill edited after it started — which is exactly what a fleet developing its own skills looks
-  like. **On Claude Code the command is `/reload-plugins`** (verified 2026-09-21 on this machine by
-  the operator: it printed `Reloaded: 7 plugins · 62 skills …`). **The other harnesses' equivalents
+  like. **On Claude Code the command is `/reload-plugins`** (verified on this machine by
+  the operator: it prints a `Reloaded: …` line with the plugin and skill totals). **The other harnesses' equivalents
   are UNVERIFIED**: confirm the exact string on the machine before putting it in a brief. Naming a
   command that does not exist is the invented-identifier failure, and it costs a worker a stall.
 - **Interrupting a worker**, then verifying on the rendered screen — there is no native pause/resume.

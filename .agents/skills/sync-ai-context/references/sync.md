@@ -211,16 +211,16 @@ Different files have different sections that must never be rewritten. Apply the 
 - Any prose block the user added that is not a facts table
 - Section order and top-level headings
 
-**`AGENTS.md` (canonical instructions — priority §0–§11 structure as of the structural refactor):**
+**`AGENTS.md` (canonical instructions — the structural check: every `##` heading and every numbered Critical Rule present on `main` is still present):**
 - §0 Preamble ("THIS IS NOT A README")
 - §1 CRITICAL RULES — ALWAYS APPLY (every rule, caveman-compressed — the count grows; never hardcode it)
-- §2 BEHAVIORAL LAYER — HOW AI REASONS (4 UPPERCASE principles)
+- §2 BEHAVIORAL LAYER — HOW AI REASONS (UPPERCASE principles)
 - §3 ORCHESTRATION MODE — PERMANENTLY ACTIVE (7-component briefing, execution patterns)
 - §4 CONTEXT LOADING MAP — TASK → WHAT TO LOAD (preserve table SHAPE; rows may be patched)
-- §5 SKILLS + COMMANDS + MCPs REGISTRY (3 tables — patched for command name changes via Step 4.5; updated manually when the skill/command set evolves)
+- §5 SKILLS + COMMANDS + MCPs REGISTRY (its tables — patched for command name changes via Step 4.5; updated manually when the skill/command set evolves)
 - §6 TOOL RESOLUTION ([TAG_TOOL] pseudocode table + MANDATORY load-skill-first rule)
 - §7 PROJECT VARIABLES — POINTER (pointer-only to `.agents/README.md` + `.agents/project.yaml`; never inline project values here)
-- §8 AI BEHAVIOR DURING TESTING (4 numbered behaviors)
+- §8 AI BEHAVIOR DURING TESTING (numbered behaviors)
 - §9 LOCAL CONTEXT (PBI folder layout)
 - §10 KATA QUICK-REFERENCE (layer diagram + pointer to `test-automation/references/`)
 - §11 GIT WORKFLOW — POINTERS (auto-loads `/git-flow-master`)
@@ -334,11 +334,11 @@ Sync the **Available scripts** section against `package.json` — do not invent 
 
 This step focuses on `AGENTS.md`. It receives a deeper sync than other supplementary files because §5 Registry and §4 Context Loading Map are derived from disk state. They MUST stay in lockstep with `.agents/skills/`, `.agents/compatibility/command-aliases.json`, and `package.json`.
 
-**Important boundary**: `sync-ai-context` PATCHES facts inside the priority §0–§11 structure of `AGENTS.md`; it does NOT restructure. If §-numbering, section names, or section order have drifted from the §0–§11 contract, STOP and surface the structural drift. Never put those sections in `CLAUDE.md`.
+**Important boundary**: `sync-ai-context` PATCHES facts inside the top-level § structure of `AGENTS.md`; it does NOT restructure. If a `##` heading or a numbered Critical Rule present on `main` is missing, or section names or order have drifted, STOP and surface the structural drift. Never put those sections in `CLAUDE.md`.
 
 **Do not**:
 
-- Reorder, rename, add, or remove top-level sections (§0–§11).
+- Reorder, rename, add, or remove top-level sections (the § sections as they appear in `AGENTS.md`).
 - Rewrite prose the user wrote (especially §1 Critical Rules, §2 Behavioral Layer, §10 KATA Quick-Reference narrative).
 - "Improve" formatting, collapse tables you think are redundant, or merge sections.
 - Re-inline project values that are now externalized to `.agents/project.yaml` (project name, env URLs, project key, MCP server names, Jira URL).
@@ -347,17 +347,17 @@ This step focuses on `AGENTS.md`. It receives a deeper sync than other supplemen
 **Sections to refresh (facts inside fixed structure):**
 
 - **§4 CONTEXT LOADING MAP** — verify each row's "Load skill" cell points to a skill that exists on disk under `.agents/skills/`. Add a row if a new workflow skill was added; remove a row if a workflow skill was deleted. Trigger-phrase prose stays untouched.
-- **§5 SKILLS + COMMANDS + MCPs REGISTRY** — three tables synced from disk:
+- **§5 SKILLS + COMMANDS + MCPs REGISTRY** — tables synced from disk:
   - Skills table: one row per directory under `.agents/skills/` (one-line trigger + purpose from each `SKILL.md` description).
   - Compatibility aliases table: one row per entry in `.agents/compatibility/command-aliases.json`. `.claude/commands/` and `.opencode/commands/` are generated wrappers and must match the manifest; they never own workflow prose.
   - MCPs table: rows match the configured MCPs in `.mcp.json` (or `opencode.jsonc`).
 - **§7 PROJECT VARIABLES — POINTER** — verify the pointer text still references the correct files (`.agents/README.md`, `.agents/project.yaml`). If `.agents/` was renamed or removed, patch the pointer. NEVER inline project values here.
 
-**Sections to preserve verbatim** (per the §0–§11 preserve-list in Step 3):
+**Sections to preserve verbatim** (per the preserve-list in Step 3):
 
 - §0 Preamble
 - §1 CRITICAL RULES — ALWAYS APPLY (ALL rules, whatever the current count, including #11 "SCRIPTS = READ `package.json` DIRECTLY")
-- §2 BEHAVIORAL LAYER (4 principles, scope notes)
+- §2 BEHAVIORAL LAYER (principles, scope notes)
 - §3 ORCHESTRATION MODE — PERMANENTLY ACTIVE (7-component briefing, execution patterns, exempt-skill list)
 - §6 TOOL RESOLUTION (resolution table + MANDATORY load-skill-first rule)
 - §8 AI BEHAVIOR DURING TESTING
@@ -466,7 +466,7 @@ After writing all files, report per-target outcome and any redactions.
 
 ## Compression tooling — caveman-compress
 
-When this skill rewrites memory documents (`AGENTS.md`, `CONTEXT.md`, README sections it owns, onboarding HTML, or owned docs pages), prefer running `caveman-compress <file>` BEFORE writing the new content if caveman is installed user-level. Never run it on the `CLAUDE.md` shim. caveman-compress preserves code blocks, URLs, and paths byte-for-byte while compressing prose ~46% on average. Re-runs are idempotent.
+When this skill rewrites memory documents (`AGENTS.md`, `CONTEXT.md`, README sections it owns, onboarding HTML, or owned docs pages), prefer running `caveman-compress <file>` BEFORE writing the new content if caveman is installed user-level. Never run it on the `CLAUDE.md` shim. caveman-compress preserves code blocks, URLs, and paths byte-for-byte while compressing prose substantially. Re-runs are idempotent.
 
 - Trigger: when the output is destined to be written to disk as a memory file.
 - Skip when: the file is human-facing primary documentation that must stay verbose (e.g. CONTRIBUTING.md tutorial sections, INSTALLER.md, README.md user-facing intro).

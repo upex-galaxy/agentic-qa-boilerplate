@@ -7,7 +7,7 @@
 ```
  SCHEMA + QUERY               CONFIG                       CREDENTIALS
  --------------               ------                       -----------
- DBHub MCP  [DB_TOOL]         dbhub.toml (committed)       .env  DBHUB_* (six vars)
+ DBHub MCP  [DB_TOOL]         dbhub.toml (committed)       .env  DBHUB_* (see .env.example)
   search_objects_primary       [[sources]] id = "primary"   -> declared on the MCP layer
   execute_sql_primary          ${DBHUB_*} interpolation        of all three hosts
 ```
@@ -32,8 +32,7 @@ A project that adds a second `[[sources]]` block with `id = "reporting"` gets
   placeholder. Never put a literal password in it and never gitignore it: the file is shared
   config, the values are not.
 - **`dbhub` itself does the interpolation**, from the environment of the process it was spawned
-  in, so the six variables (`DBHUB_TYPE`, `DBHUB_HOST`, `DBHUB_PORT`, `DBHUB_DATABASE`,
-  `DBHUB_USER`, `DBHUB_PASSWORD`) must reach that process. That is why all three hosts declare
+  in, so the `DBHUB_*` variables `.env.example` declares must reach that process. That is why all three hosts declare
   them on the MCP layer: `env` in `.mcp.json`, `environment` with `{file:.auth/opencode/VAR}`
   in `opencode.jsonc`, `env_vars` in `.codex/config.toml`. Parity is checked
   (`mcp-atlassian-optin.md`, MCP parity contract).
@@ -147,7 +146,7 @@ a miss a bug.
 | `Connection refused` | database not running, wrong port, firewall | `DBHUB_HOST` / `DBHUB_PORT`; `pg_isready -h <host> -p <port>` on Postgres |
 | `password authentication failed` / login failed | wrong password or user, or a literal `${DBHUB_PASSWORD}` reached the server | the `DBHUB_*` values in `.env`, then `bun run harness:env` and restart |
 | `too many connections` | parallel sessions not closing connections | fewer parallel workers; a pooler |
-| `SSL connection is required` / SSL errors | server and `sslmode` disagree | `dbhub.toml` ships `sslmode = "require"`; a local database without TLS needs that line changed in the project's copy |
+| `SSL connection is required` / SSL errors | server and `sslmode` disagree | check the `sslmode` value in `dbhub.toml`; a local database without TLS needs that line changed in the project's copy |
 
 ## Anti-patterns (NEVER)
 

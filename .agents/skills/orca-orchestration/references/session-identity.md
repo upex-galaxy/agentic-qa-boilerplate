@@ -43,14 +43,14 @@ they answer "which of the six" and nothing else. No AI attribution of any kind i
 | resume by name | `claude --resume <term>` opens a filtered picker; direct resolution **(unverified)** | not supported | first class: `codex resume <name-or-id>` |
 | transcripts | `~/.claude/projects/<slug>/<uuid>.jsonl` | `opencode export [id]` | under `$CODEX_HOME/sessions/` |
 
-Claude Code flags confirmed on this machine against CLI 2.1.275: `-n, --name`, `--model`,
+Claude Code flags this skill relies on (confirm with `claude --help` before writing a launch line): `-n, --name`, `--model`,
 `--effort` (`low`, `medium`, `high`, `xhigh`, `max`), `--permission-mode` (`acceptEdits`, `auto`,
 `bypassPermissions`, `manual`, `dontAsk`, `plan`), `-r, --resume`, `--session-id`, `--fork-session`.
 Note the asymmetry worth remembering: the permission-mode flag REJECTS an invalid value, while the
 effort flag does not — an invalid effort starts the session on the default and tells nobody (gotcha
 G28).
 
-OpenCode flags confirmed on this machine: `-m, --model`, `-c, --continue`, `-s, --session`,
+OpenCode flags this skill relies on (confirm with `opencode --help`): `-m, --model`, `-c, --continue`, `-s, --session`,
 `--fork`, `--prompt`, `--agent`, `--auto` (auto-approve permissions not explicitly denied), `--mini`.
 There is no name flag and no effort flag, so an OpenCode worker is named by renaming itself in its
 first turn.

@@ -24,7 +24,7 @@ describe('lint-docs', () => {
   test('passes when every relative link and root path resolves', () => {
     write('docs/setup/guide.md', '# Guide');
     write('scripts/tool.ts', '');
-    write('docs/README.md', '[guide](./setup/guide.md#install) and `scripts/tool.ts` and `scripts/tool.ts:12`');
+    write('docs/README.md', '[guide](./setup/guide.md#install) and `scripts/tool.ts`');
     write('README.md', '<a href="docs/README.md">docs</a>');
     expect(lintDocs(root).findings).toEqual([]);
   });
@@ -81,5 +81,33 @@ describe('lint-docs', () => {
       'warning:docs/team/notes.html:<title>',
       'warning:docs/team/notes.html:<meta name="description">',
     ]);
+  });
+
+  test('a path:line citation is a FILE-LINE error, not a missing path', () => {
+    write('scripts/tool.ts', '');
+    write('docs/README.md', 'See `scripts/tool.ts:12` for the shape.');
+    const findings = lintDocs(root).findings;
+    expect(findings.map(f => `${f.severity}:${f.file}:${f.line}:${f.kind}:${f.target}`)).toEqual([
+      'error:docs/README.md:1:file-line:scripts/tool.ts:12',
+    ]);
+  });
+
+  test('a claim about the present is a CURRENT-STATE error in markdown and HTML prose', () => {
+    write('README.md', 'The store holds ten skills today.\nMeasured 2026-09-17 on a live project.');
+    const head = '<head><title>Setup</title><meta name="description" content="Guides." /></head>';
+    write('docs/core/setup/index.html', `${head}<p>El catálogo tiene hoy 24 entradas.</p>`);
+    const findings = lintDocs(root).findings;
+    expect(findings.map(f => `${f.severity}:${f.file}:${f.line}:${f.kind}:${f.target}`)).toEqual([
+      'error:README.md:1:current-state:today',
+      'error:README.md:2:current-state:Measured 2026-09-17',
+      'error:docs/core/setup/index.html:1:current-state:hoy',
+    ]);
+  });
+
+  test('fenced code, <pre>, <code class="block"> and a volatile-ok line are not volatile findings', () => {
+    write('README.md', ['```', 'x.ts:12 today', '```', 'Teaching the word today <!-- volatile-ok: teaching example -->'].join('\n'));
+    const head = '<head><title>Setup</title><meta name="description" content="Guides." /></head>';
+    write('docs/core/setup/index.html', `${head}<pre>at spec.ts:12 today</pre><code class="block">hoy</code>`);
+    expect(lintDocs(root).findings).toEqual([]);
   });
 });

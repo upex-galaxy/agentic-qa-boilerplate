@@ -14,6 +14,13 @@
  *     `<meta name="description">` (the site's sidebar and search read both).
  *     That is an error for the pages the boilerplate ships (`docs/core/**` and
  *     the portal `docs/index.html`) and a warning for project-owned pages.
+ *   - the prose carries a volatile fact of one of the two regex-visible
+ *     families of Critical Rule #17: a `path.ext:N` citation (`FILE-LINE`) or a
+ *     claim about the present (`CURRENT-STATE`: "today", "as of <year>", a
+ *     dated measurement, "since <version>", a tool version). Fenced blocks,
+ *     `<pre>`, `<code class="block">`, `<script>` and `<style>` are skipped; a
+ *     line marked `volatile-ok: <reason>` is kept. Severity per family in
+ *     `VOLATILE_SEVERITY` (both families fail the gate).
  *
  * External URLs, `mailto:` / `tel:` / `data:` / `javascript:`, bare anchors
  * and template placeholders are ignored; a `#fragment` or `?query` is stripped
@@ -34,9 +41,11 @@
  * Usage: bun scripts/lint-docs.ts   (exit 1 on any finding)
  */
 
+import type { VolatileKind } from './lib/volatile-facts.ts';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { relativePosix, toPosix } from './lib/posix-path.ts';
+import { isVolatileExemptPath, scanVolatile, volatileRemedy } from './lib/volatile-facts.ts';
 
 /** Repo roots an inline-code path must start with to be checked. */
 export const KNOWN_ROOTS = ['docs/', '.agents/', 'scripts/', 'cli/', 'tests/', 'config/', 'packages/'] as const;
@@ -44,10 +53,31 @@ export const KNOWN_ROOTS = ['docs/', '.agents/', 'scripts/', 'cli/', 'tests/', '
 export interface DocFinding {
   file: string
   line: number
-  kind: 'link' | 'path' | 'meta'
+  kind: 'link' | 'path' | 'meta' | 'file-line' | 'current-state'
   target: string
   /** Only `meta` findings on project-owned pages are warnings; everything else fails the gate. */
   severity?: 'error' | 'warning'
+}
+
+/** Severity of the two volatile-facts families: both fail the gate (a `volatile-ok: <reason>` line or a `volatile-ok-file:` ledger is the only way to keep one). */
+export const VOLATILE_SEVERITY: Record<VolatileKind, 'error' | 'warning'> = {
+  'FILE-LINE': 'error',
+  'CURRENT-STATE': 'error',
+};
+
+/** Volatile-facts findings for one file (Critical Rule #17). Exported for the unit test. */
+export function lintDocVolatile(rel: string, raw: string): DocFinding[] {
+  if (isVolatileExemptPath(rel)) { return []; }
+  const findings: DocFinding[] = [];
+  const seen = new Set<string>();
+  for (const hit of scanVolatile(raw, { html: rel.endsWith('.html') })) {
+    const key = `${hit.line}:${hit.kind}`;
+    if (seen.has(key)) { continue; }
+    seen.add(key);
+    const kind = hit.kind === 'FILE-LINE' ? 'file-line' : 'current-state';
+    findings.push({ file: rel, line: hit.line, kind, target: hit.match, severity: VOLATILE_SEVERITY[hit.kind] });
+  }
+  return findings;
 }
 
 /** Pages the boilerplate ships: a missing title or description there is an error, not a warning. */
@@ -178,6 +208,7 @@ export function lintDocFile(root: string, file: string): DocFinding[] {
     }
   }
   findings.push(...lintDocMeta(rel, raw));
+  findings.push(...lintDocVolatile(rel, raw));
   return findings;
 }
 
@@ -196,12 +227,13 @@ function gitIgnored(root: string, paths: string[]): Set<string> {
 export function lintDocs(root: string): { files: number, findings: DocFinding[] } {
   const files = collectDocFiles(root);
   const raw = files.flatMap(file => lintDocFile(root, file));
-  const refs = raw.filter(f => f.kind !== 'meta');
+  const isRef = (f: DocFinding): boolean => f.kind === 'link' || f.kind === 'path';
+  const refs = raw.filter(isRef);
   const resolvedOf = (f: DocFinding): string => f.kind === 'path'
     ? stripSuffix(f.target).replace(/:\d+(?:-\d+)?$/, '')
     : relativePosix(root, resolve(root, dirname(f.file), decodeURIComponent(stripSuffix(f.target))));
   const ignored = gitIgnored(root, [...new Set(refs.map(resolvedOf))]);
-  const findings = raw.filter(f => f.kind === 'meta' || !ignored.has(resolvedOf(f)));
+  const findings = raw.filter(f => !isRef(f) || !ignored.has(resolvedOf(f)));
   return { files: files.length, findings };
 }
 
@@ -209,14 +241,26 @@ if (import.meta.main) {
   const root = process.cwd();
   if (!statSync(root).isDirectory()) { process.exit(2); }
   const { files, findings } = lintDocs(root);
-  const label = (f: DocFinding): string => f.kind === 'link' ? 'dead link' : f.kind === 'path' ? 'missing path' : 'missing';
+  const label = (f: DocFinding): string => {
+    switch (f.kind) {
+      case 'link': return 'dead link';
+      case 'path': return 'missing path';
+      case 'file-line': return 'FILE-LINE';
+      case 'current-state': return 'CURRENT-STATE';
+      default: return 'missing';
+    }
+  };
+  const note = (f: DocFinding): string => f.kind === 'meta'
+    ? '(project page: warning)'
+    : f.kind === 'file-line' ? `(${volatileRemedy('FILE-LINE')})` : f.kind === 'current-state' ? `(${volatileRemedy('CURRENT-STATE')})` : '';
   const warnings = findings.filter(f => f.severity === 'warning');
   const errors = findings.filter(f => f.severity !== 'warning');
   for (const f of warnings) {
-    console.warn(`  ! ${f.file}:${f.line}  ${label(f)}  ${f.target} (project page: warning)`);
+    console.warn(`  ! ${f.file}:${f.line}  ${label(f)}  ${f.target} ${note(f)}`);
   }
   if (errors.length === 0) {
-    console.log(`✓ docs:check passed (${files} files, no dead links or paths)`);
+    const tail = warnings.length > 0 ? `, ${warnings.length} warning(s)` : '';
+    console.log(`✓ docs:check passed (${files} files, no dead links or paths${tail})`);
     process.exit(0);
   }
   console.error(`✗ docs:check found ${errors.length} problem(s) in ${files} files:\n`);

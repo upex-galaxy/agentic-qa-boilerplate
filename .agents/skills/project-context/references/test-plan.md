@@ -147,7 +147,7 @@ Only the state machines with financial, legal, or operational impact. Skip cosme
 Crons, webhooks, DB triggers that fail without visible UI feedback. Per process:
 - What it does and which flow depends on it
 - What breaks if it misses a run, runs twice, or runs out of order
-- How failure is detected today (logs? alerts? none?)
+- How failure is detected (logs? alerts? none?)
 - Recommended QA strategy (synthetic probe, log assertion, scheduled audit)
 
 This section is usually the most undertested area of a system.

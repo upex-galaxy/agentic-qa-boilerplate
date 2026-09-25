@@ -130,7 +130,7 @@ never universal objectives; each implementation declares its own in `implementat
 | SLO compliance | above 99.9% |
 | Core Web Vitals performance score | above 90 of 100 |
 
-| Method metric (site) | What it measures (site) | Repo today |
+| Method metric (site) | What it measures (site) | Repo |
 |---|---|---|
 | Change failure rate | Share of deployments ending in incident, rollback or hotfix; the DORA metric that says whether the method sustains velocity or only pushes it. | not measured |
 | Escape rate | Bugs found in production over all bugs of the period; the one thing the method promises, that the defect is found earlier. | not measured |
@@ -182,5 +182,5 @@ dónde llegar"): L1 Prevention needs a backlog in a tracker and QA in refinement
 needs a pre-merge test environment; L3 Continuous Detection needs pull requests and a CI that runs
 per PR; L4 Production Observation needs production observability, progressive delivery for canary
 and A/B, and SLOs plus an SRE culture for chaos. The level says which of these routines and metrics
-make sense today; repo twin for the levels: the Capability column of
+make sense at that level; repo twin for the levels: the Capability column of
 `agentic-qa-core/references/stage-gates.md`.

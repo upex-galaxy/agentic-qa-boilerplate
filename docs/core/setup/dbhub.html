@@ -85,7 +85,7 @@
             <tr>
               <td>Credenciales</td>
               <td><code>.env</code></td>
-              <td>Las seis variables <code>DBHUB_*</code> con los valores reales</td>
+              <td>Las variables <code>DBHUB_*</code> con los valores reales</td>
               <td>Nunca</td>
             </tr>
             <tr>
@@ -94,8 +94,8 @@
                 <code>.mcp.json</code>, <code>opencode.jsonc</code>, <code>.codex/config.toml</code>
               </td>
               <td>
-                El server <code>dbhub</code>, que arranca
-                <code>@bytebase/dbhub@1.2.1 --config dbhub.toml</code> y le pasa las seis variables
+                El server <code>dbhub</code>, que arranca <code>dbhub --config dbhub.toml</code> (la
+                versión está fijada en <code>.mcp.json</code>) y le pasa esas variables
               </td>
               <td>Sí, ya viene declarado</td>
             </tr>
@@ -114,8 +114,8 @@ password = "${DBHUB_PASSWORD}"
 sslmode = "require"</code></pre>
       <p>
         La sustitución de <code>${...}</code> la hace el propio <code>dbhub</code>, con el entorno
-        del proceso que lo lanzó. Por eso cada harness declara las seis variables en su bloque del
-        MCP: <code>env</code> en <code>.mcp.json</code> (Claude Code), <code>environment</code> con
+        del proceso que lo lanzó. Por eso cada harness declara esas variables en su bloque del MCP:
+        <code>env</code> en <code>.mcp.json</code> (Claude Code), <code>environment</code> con
         archivos <code>{file:.auth/opencode/...}</code> en <code>opencode.jsonc</code> (OpenCode) y
         <code>env_vars</code> en <code>.codex/config.toml</code> (Codex).
       </p>
@@ -270,7 +270,7 @@ sslmode = "require"</code></pre>
       <p>
         Los nombres <code>REPORTING_DB_*</code> son un ejemplo. Sean cuales sean, tienen que llegar
         al proceso del MCP, así que decláralos también en el bloque <code>dbhub</code> de los tres
-        archivos de harness, igual que las seis <code>DBHUB_*</code>.
+        archivos de harness, igual que las <code>DBHUB_*</code>.
       </p>
 
       <h2 id="problemas">Problemas de conexión</h2>

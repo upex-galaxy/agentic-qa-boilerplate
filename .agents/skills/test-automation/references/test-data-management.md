@@ -74,13 +74,7 @@ DataFactory.createUser();
 
 ### Seeded generators (baseline)
 
-| Method | Returns | Purpose |
-|--------|---------|---------|
-| `createUser(overrides?)` | `TestUser` | Full user payload (email, password, name, first/last) |
-| `createCredentials(overrides?)` | `TestCredentials` | Email + password only (for login) |
-| `createTestId(prefix?)` | `string` | Unique identifier for tagging/tracing |
-| `createProduct(overrides?)` | `TestProduct` | Product domain payload |
-| `createOrder(overrides?)` | `TestOrder` | Order domain payload |
+The baseline generators, their return types and their purpose: read `tests/data/DataFactory.ts`.
 
 Types live in `tests/data/types.ts`:
 
@@ -359,7 +353,7 @@ Commit `tests/data/fixtures/` and `tests/data/uploads/`. Gitignore `tests/data/d
 
 ## 11. Isolation & parallelism
 
-The shipped config runs a single worker (`playwright.config.ts: workers: 1`), but uniqueness still matters — for reruns against the same environment and for the future parallelism upgrade. DataFactory guarantees it by combining a prefix, an epoch-ms timestamp, and a 6-char random suffix:
+Even with a single worker (see `workers` in `playwright.config.ts`), uniqueness still matters — for reruns against the same environment and for the future parallelism upgrade. DataFactory guarantees it by combining a prefix, an epoch-ms timestamp, and a 6-char random suffix:
 
 ```
 Email:   test.john.x7k2m9@example.com

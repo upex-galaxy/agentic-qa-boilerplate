@@ -60,7 +60,7 @@ The persisted source of truth for **this repository's** git workflow lives as th
 
 ## `updater` (block inside `project.yaml`)
 
-`bun run up` never overwrites the files on its protected watchlist (`AGENTS.md`, `.agents/project.yaml`, `.agents/jira-required.yaml`, `tsconfig.json`, `eslint.config.js`, `allurerc.mjs`, `playwright.config.ts`, `config/variables.ts`, the KATA bases under `tests/components/`, `scripts/api-login.ts`, the CI workflows under `.github/workflows/`, `.mcp.json`, `opencode.jsonc`, `.codex/config.toml`, `.claude/settings.json`, `.husky/pre-commit`, `.husky/pre-push`): a watched file inside a synced component is delivered once when missing, then it is project-owned, and when upstream's copy changes the parity report shows a drift row with evidence (keys, headings or hunks) instead of touching it. The `updater:` block lets a project extend that list.
+`bun run up` never overwrites the files on its protected watchlist (`PROTECTED_WATCHLIST` in `cli/update-boilerplate.ts`; `AGENTS.md` and `.agents/project.yaml` are two of them, and `bun run up --dry-run` prints the rest): a watched file inside a synced component is delivered once when missing, then it is project-owned, and when upstream's copy changes the parity report shows a drift row with evidence (keys, headings or hunks) instead of touching it. The `updater:` block lets a project extend that list.
 
 ```yaml
 updater:
@@ -116,13 +116,13 @@ orchestration:
 
 **`message_verb` and `terminal_verb` are NOT interchangeable, and that pair is the point.** The test: if a HUMAN would read it, it does not go through `terminal_verb`; if a shell or a TUI would EXECUTE it, that is what the verb is for. One structural exception: a supervised worker's FIRST prompt must go through `terminal_verb`, because the native launch has no argv — keep it short and pointing at a file. Full doctrine, measurements and the reverse-direction rules: `orca-orchestration/references/channel-discipline.md`.
 
-**Naming the orchestrator here is what lets a skill stop hardcoding it.** A project on a different orchestrator keeps the whole doctrine and swaps five values.
+**Naming the orchestrator here is what lets a skill stop hardcoding it.** A project on a different orchestrator keeps the whole doctrine and swaps the values of the `orchestration:` block.
 
 **An explicit user instruction in the conductor session always overrides these defaults for that run** — they are the fallback only when the user says nothing (e.g. "launch 6 workers" beats `max_workers: 4` for that dispatch). `bun run vars:check` reports any leaf as `DECLARED_BUT_UNUSED` until a skill or doc references it by name; that warning does not fail the check.
 
 ## Variable syntax conventions
 
-Three syntaxes coexist across skills, commands and docs. Each resolves from a different place:
+Three families of syntax coexist across skills, commands and docs (`{{VAR}}`, `<<VAR>>`, `{{jira.*}}`), and the table below shows the several shapes each one takes. Each resolves from a different place:
 
 | Syntax | Meaning | Resolves from | Validated by |
 |---|---|---|---|
@@ -139,7 +139,7 @@ The `{{…}}` vs `<<…>>` distinction is intentional: it removes the previous a
 
 ### Active environment
 
-`project.yaml` has a top-level `environments:` map (defaults: `local` + `staging`; you can add `production`, `qa`, `dev`, `uat`, etc.). Each environment declares the same four leaves: `web_url`, `api_url`, `db_mcp`, `api_mcp`. Skills don't hardcode "staging" or "local" anywhere — they reference the bare form (`{{WEB_URL}}` etc.) and the AI resolves it against the **active environment** for the current session:
+`project.yaml` has a top-level `environments:` map (defaults: `local` + `staging`; you can add `production`, `qa`, `dev`, `uat`, etc.). Each environment declares the same leaves, listed under `environments:` in `project.yaml`. Skills don't hardcode "staging" or "local" anywhere — they reference the bare form (`{{WEB_URL}}` etc.) and the AI resolves it against the **active environment** for the current session:
 
 1. If the user explicitly chose an env this session ("run regression against production"), use that.
 2. Otherwise fall back to `testing.default_env` from `project.yaml`.
@@ -169,7 +169,7 @@ When you clone this boilerplate into a new project:
 1. Copy `.env.example` to `.env` and fill in:
    - `LOCAL_USER_EMAIL` / `STAGING_USER_EMAIL` and the matching passwords (test users).
    - `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` (get a token at <https://id.atlassian.com/manage-profile/security/api-tokens>). The Atlassian **site URL** does not go here — it is `issue_tracker.atlassian_url` in `.agents/project.yaml`, the source of truth, because a stale copy in `.env` silently shadowed the real value. Confirm with `bun run --silent jira:url`.
-2. Run `bun run agents:setup` to walk through the project variables interactively. The CLI walks the flat sections (project, backend, frontend, database, issue_tracker, testing) first, then asks which environments your project has (default: `local` + `staging`; you can add `production`, `dev`, `qa`, `uat`, etc.) and prompts for the four env-scoped vars (`web_url`, `api_url`, `db_mcp`, `api_mcp`) in each. It validates `testing.default_env` against the env list, shows the `# TODO:` description and example for every field, and writes back to `.agents/project.yaml` preserving comments. Alternative: edit `.agents/project.yaml` by hand.
+2. Run `bun run agents:setup` to walk through the project variables interactively. The CLI walks the flat sections (project, backend, frontend, database, issue_tracker, testing) first, then asks which environments your project has (default: `local` + `staging`; you can add `production`, `dev`, `qa`, `uat`, etc.) and prompts for the env-scoped vars (the leaves under `environments:` in `project.yaml`) in each. It validates `testing.default_env` against the env list, shows the `# TODO:` description and example for every field, and writes back to `.agents/project.yaml` preserving comments. Alternative: edit `.agents/project.yaml` by hand.
 3. Run `bun run jira:sync-fields` to discover your Jira workspace's custom fields. Writes `.agents/jira-fields.json` (~100-150 fields typical). Resolves slug collisions deterministically — see `--allow-collisions` if you hit one.
 4. Run `bun run jira:sync-workflows` to discover your Jira workspace's workflow statuses + transitions for every `work_type` declared in `jira-required.yaml`. Writes `.agents/jira-workflows.json`. Interactive on first run (prompts when a canonical slug doesn't auto-resolve to a workflow's real status / transition); idempotent on subsequent runs unless you pass `--force`.
 5. Run `bun run jira:check` to validate your Jira against the methodology's required-fields **and** required-`work_types` manifest. Address any output:
@@ -223,10 +223,10 @@ When the methodology evolves and needs a brand-new custom field that doesn't exi
 
 ### 5.4 Adding a new required Jira `work_type` / status / transition
 
-When the methodology evolves and needs a brand-new canonical status or transition (or a new `work_type` altogether) on top of the existing `story` / `bug` / `test_case`:
+When the methodology evolves and needs a brand-new canonical status or transition (or a new `work_type` altogether) on top of the work types already declared in `jira-required.yaml`:
 
 1. Decide the canonical slug (lowercase, underscores, descriptive — e.g. `ready_for_qa`, `qa_sign_off`, `re_open`). Slugs are **agnostic** — they describe the methodology, not your Jira's literal status names.
-2. Add an entry to `jira-required.yaml` under `work_types.<work_type>.required_statuses.<slug>` (or `…required_transitions.<slug>`) with a 1-line `description:`. For transitions, also declare `from:` and `to:` (use the canonical status slugs, NOT literal Jira names; if it's a global transition, use `from: any`). For a brand-new `work_type`, mirror the shape of the existing `story` / `bug` / `test_case` entries (`jira_issue_type`, `description`, `required_statuses`, `required_transitions`, `used_by`).
+2. Add an entry to `jira-required.yaml` under `work_types.<work_type>.required_statuses.<slug>` (or `…required_transitions.<slug>`) with a 1-line `description:`. For transitions, also declare `from:` and `to:` (use the canonical status slugs, NOT literal Jira names; if it's a global transition, use `from: any`). For a brand-new `work_type`, mirror the shape of an existing `work_types` entry (`jira_issue_type`, `description`, `required_statuses`, `required_transitions`, `used_by`).
 3. Reference `{{jira.status.<work_type>.<slug>}}` (or `{{jira.transition.<work_type>.<slug>}}` / `{{jira.work_type.<slug>}}`) in your skill markdown.
 4. Run `bun run vars:check` — must pass (proves the slug is declared in the manifest).
 5. Run `bun run jira:sync-workflows --force` to remap the catalog. The script auto-resolves slugs that match the workspace's actual status / transition names; if the new canonical slug doesn't auto-resolve, the script prompts interactively to map it to one of the workflow's real statuses / transitions.
@@ -239,9 +239,9 @@ When the methodology evolves and needs a brand-new canonical status or transitio
 |---|---|
 | `bun run jira:sync-fields` | Discover Jira custom fields → write `jira-fields.json`. Flags: `--force` (overwrite), `--allow-collisions` (suffix slug duplicates), `--dry-run`, `--verbose`, `--json`. |
 | `bun run jira:sync-workflows` | Discover Jira workflows (statuses + transitions per `work_type`) → write `jira-workflows.json`. Interactive on first run for slugs that don't auto-resolve. Flags: `--force` (re-prompt for already-mapped slugs), `--allow-collisions`, `--dry-run`, `--verbose`, `--json`, `--help`. |
-| `bun run jira:sync-issues` | Pull Jira issues into `.context/PBI/` markdown files (content sync, not metadata). Registry-driven by `jira-required.yaml` → `work_types:`. **Default `pull` scope = Epics + Stories + Bugs** (+ optional types via `--types` / `JIRA_SYNC_TYPES`). Coverable types (Story, Bug, Defect, Improvement, Tech Story, Tech Debt) each get their OWN folder with body md + `acceptance-test-plan.md` (ATP) + `acceptance-test-results.md` (ATR) + `test-executions/` + nested `defects/`; ATP/ATR from a linked Xray Test Plan/Execution description override the Story custom-field copy. Subcommands: `get <KEY> --include-comments` (single issue — ALL custom fields + comments), `jql "<query>"` (batch), `status`, `pull bugs`/`defects`/`improvements`/`tests`, `pull` (flags: `--epic <KEY>`, `--story <KEY>`, `--sprint <active\|current\|closed\|>=N\|7,8,10>`, `--types <csv>`, `--no-defects`, `--project <KEY>`, `--include-comments`, `--dry-run`, `--json`). Env defaults: `JIRA_SYNC_OUTPUT`, `JIRA_SYNC_SPRINTS`, `JIRA_SYNC_TYPES` (precedence: flag > env var > default; `--project` > `JIRA_PROJECT_KEY` > `.agents/project.yaml` `project_key`). `get` / `jql` are the canonical detailed-content read path (replacing `acli view`, which returns null for `customfield_*`). |
+| `bun run jira:sync-issues` | Pull Jira issues into `.context/PBI/` markdown files (content sync, not metadata). Registry-driven by `jira-required.yaml` → `work_types:`. **Default `pull` scope = the work types declared `sync: default` in `jira-required.yaml`** (+ optional types via `--types` / `JIRA_SYNC_TYPES`). Coverable types (the work types declared `coverable: true`) each get their OWN folder with body md + `acceptance-test-plan.md` (ATP) + `acceptance-test-results.md` (ATR) + `test-executions/` + nested `defects/`; ATP/ATR from a linked Xray Test Plan/Execution description override the Story custom-field copy. Subcommands: `get <KEY> --include-comments` (single issue — ALL custom fields + comments), `jql "<query>"` (batch), `status`, `pull bugs`/`defects`/`improvements`/`tests`, `pull` (flags: `--epic <KEY>`, `--story <KEY>`, `--sprint <active\|current\|closed\|>=N\|7,8,10>`, `--types <csv>`, `--no-defects`, `--project <KEY>`, `--include-comments`, `--dry-run`, `--json`). Env defaults: `JIRA_SYNC_OUTPUT`, `JIRA_SYNC_SPRINTS`, `JIRA_SYNC_TYPES` (precedence: flag > env var > default; `--project` > `JIRA_PROJECT_KEY` > `.agents/project.yaml` `project_key`). `get` / `jql` are the canonical detailed-content read path (replacing `acli view`, which returns null for `customfield_*`). |
 | `bun run jira:check` | Compare `jira-required.yaml` vs `jira-fields.json` (custom fields) AND vs `jira-workflows.json` (work types, statuses, transitions) → setup report. Flags: `--json` (machine-readable), `--verbose` (include OK rows), `--help`. Exits 1 if any required field, `work_type`, status or transition is missing or mismatched. |
-| `bun run vars:check` | Validate every `{{VAR}}`, `{{jira.<slug>}}`, `{{jira.<slug>.<option>}}`, `{{jira.work_type.*}}`, `{{jira.status.*}}` and `{{jira.transition.*}}` reference across `.claude/`, `.agents/skills/`, `templates/`, `.context/`, `AGENTS.md`. Exits 1 if any are undeclared. |
+| `bun run vars:check` | Validate every `{{VAR}}`, `{{jira.<slug>}}`, `{{jira.<slug>.<option>}}`, `{{jira.work_type.*}}`, `{{jira.status.*}}` and `{{jira.transition.*}}` reference across the roots `scripts/lint-vars.ts` scans. Exits 1 if any are undeclared. |
 | `bun run agents:setup` | Interactive CLI to fill / edit `.agents/project.yaml`. Flags: `--non-interactive` (env-driven for CI), `--dry-run`, `--reset`, `--help`. |
 
 ## Troubleshooting

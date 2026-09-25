@@ -2,8 +2,8 @@
 
 > **Purpose**: switch a project's CI Allure reports from public GitHub Pages to
 > the PRIVATE, auth-walled **Test Report Portal**
-> ([upex-test-report-portal](https://github.com/upex-galaxy/upex-test-report-portal),
-> v2). Reports become reachable only after login, bytes live in a private
+> ([upex-test-report-portal](https://github.com/upex-galaxy/upex-test-report-portal)).
+> Reports become reachable only after login, bytes live in a private
 > Cloudflare R2 bucket, trends/retention keep working, and the portal indexes
 > every run by environment/strategy.
 >
@@ -33,7 +33,7 @@ CI (this repo)                                  Portal (deployed once per org)
 - The publish step in `regression.yml` / `smoke.yml` / `sanity.yml` is already
   dual-mode: portal **iff the `PORTAL_URL` secret exists**, else public Pages.
 - Publisher: `scripts/ci/publish-allure-portal.ts` (synced downstream by
-  `bun run update`). Retention is server-side (portal cron).
+  `bun run up`). Retention is server-side (portal cron).
 - In portal mode gh-pages is unused: after verification, disable Pages
   serving (Settings → Pages → Source: None); deleting the gh-pages branch
   requires explicit user confirmation (Critical Rule #6).
@@ -48,7 +48,7 @@ gh secret list | grep -E "PORTAL_URL|PORTAL_PROJECT|PORTAL_API_KEY|R2_"   # repo
 
 | Probe result | Meaning | Action |
 |---|---|---|
-| All 7 secrets present | **This repo is fully wired** | Nothing to install. Offer: verify (Part C), rotate key, or change retention. |
+| Every secret in the Part B table present | **This repo is fully wired** | Nothing to install. Offer: verify (Part C), rotate key, or change retention. |
 | Some secrets present | Partial/broken wiring | Diff against the Part B table, fill only the missing ones. |
 | No secrets, but user/org has a portal (ask; also check Engram `mem_search "portal URL"`) | Part A done previously | `curl -s -o /dev/null -w "%{http_code}" <PORTAL_URL>/api/metrics` → `401` = portal alive and walled → skip to Part B. |
 | No secrets, no portal | Fresh install | Run Part A → Part B → Part C. |
@@ -86,7 +86,7 @@ Ask the human for (offer `! <command>` where interactive):
    generate. Or run `! supabase login` (browser handshake). Export as
    `SUPABASE_ACCESS_TOKEN`.
 2. **Cloudflare**: account with **R2 enabled** (R2 → activate; asks for a
-   payment method even though the free 10 GB tier is $0) + a **user API token**
+   payment method even on the free tier; check the vendor's current tiers) + a **user API token**
    with permission **API Tokens: Edit** (dashboard → My Profile → API Tokens).
    Export as `CF_MASTER_TOKEN`. Alternative: `! wrangler login`.
 3. **Vercel**: `! vercel login` (or a token from vercel.com/account/tokens →
@@ -108,8 +108,8 @@ supabase projects api-keys --project-ref <REF>       # collect keys
 
 Collect: `NEXT_PUBLIC_SUPABASE_URL=https://<REF>.supabase.co`, the
 **publishable** key (`sb_publishable_...` → `NEXT_PUBLIC_SUPABASE_ANON_KEY`)
-and the **secret** key (`sb_secret_...` → `SUPABASE_SERVICE_KEY`). New
-Supabase projects no longer issue legacy `anon`/`service_role` JWTs — the
+and the **secret** key (`sb_secret_...` → `SUPABASE_SERVICE_KEY`). Check
+the vendor's current key model: where a project issues no legacy `anon`/`service_role` JWTs, the
 `sb_*` keys are drop-in replacements.
 
 ### A2 — R2 bucket + scoped S3 credentials (AI)
@@ -218,7 +218,7 @@ portal root → login page renders; login with admin credentials → dashboard.
 |---|---|---|
 | `Missing required environment variable: PORTAL_*` in CI | Secret not set | Part B step 2 |
 | `401 Invalid credentials` on history/runs | Wrong `PORTAL_API_KEY` / slug mismatch | Re-run create-project (rotates key), update secret |
-| `400 reportPrefix must be ...` | Publisher/portal contract drift | `bun run update` in the consuming repo |
+| `400 reportPrefix must be ...` | Publisher/portal contract drift | `bun run up` in the consuming repo |
 | Report iframe 404s assets | Sync hit wrong bucket/prefix | Check `R2_BUCKET` secret + CI log line `r2://...` |
 | `aws s3 ls` in A2 fails with 403 | Token policy not scoped to the bucket / wrong secret derivation | Recreate token; secret = SHA-256 of the token VALUE, not the id |
 | OAuth login rejects a valid teammate | Domain missing in `AUTHORIZED_EMAIL_DOMAINS` | Add + redeploy |

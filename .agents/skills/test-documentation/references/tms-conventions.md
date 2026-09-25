@@ -88,7 +88,7 @@ All Plans and Runs follow one **unified grammar** — the QA planning ladder:
 {ACRONYM}: {scope-id}: {descriptor}
 ```
 
-- **ACRONYM** — `FTP` · `STP` · `ATP` · `RTP` (Plans) · `STR` · `ATR` (Runs — FTR retired: feature results are read from the per-Story ATRs and reviewed at sprint close next to the STR; the results side has NO aggregation edge) · `ATS` (Acceptance Test Set, per-Story — mandatory) · `TS` (feature-level Test Set — optional grouping) · `ReTest` (bug re-test Run). A reader / JQL sees altitude + plan-vs-run in the first token, and Plan pairs with Run visually.
+- **ACRONYM** — `FTP` · `STP` · `ATP` · `RTP` (Plans) · `STR` · `ATR` (Runs — no FTR rung: feature results are read from the per-Story ATRs and reviewed at sprint close next to the STR; the results side has NO aggregation edge) · `ATS` (Acceptance Test Set, per-Story — mandatory) · `TS` (feature-level Test Set — optional grouping) · `ReTest` (bug re-test Run). A reader / JQL sees altitude + plan-vs-run in the first token, and Plan pairs with Run visually.
 - **scope-id** — the key of the thing under test at that altitude: feature-Epic key, `Sprint#{N}`, Story key, or the project key / module for the product-altitude RTP.
 - **descriptor** — human-readable; embeds the testing term where required (`Story Testing`, `Feature Testing`, `Regression Testing`).
 
@@ -163,7 +163,7 @@ These are **two independent fields** with two independent lifecycles. Mixing the
 | Value | Icon | Meaning | Next action |
 |-------|------|---------|-------------|
 | `TODO` | gray | Not yet executed in this run | Execute or skip |
-| `EXECUTING` | blue | Currently running | Wait for completion |
+| `EXECUTING` | blue | Run in progress | Wait for completion |
 | `PASS` | green | Passed in this run | Keep in regression |
 | `FAIL` | red | Failed in this run | Investigate / file bug |
 | `ABORTED` | orange | Execution stopped (crash, timeout, user-abort) | Review environment, retry |
@@ -171,7 +171,7 @@ These are **two independent fields** with two independent lifecycles. Mixing the
 
 **What this means for reporting**:
 
-- "TC is `AUTOMATED`" (workflow) is compatible with "last Test Run was `FAIL`" (run). The TC is live in CI, but it failed today.
+- "TC is `AUTOMATED`" (workflow) is compatible with "last Test Run was `FAIL`" (run). The TC is live in CI, but its last run failed.
 - ATR's "PASSED / FAILED / PASSED WITH ISSUES" rollup comes from the **Execution Status** across all TCs in the ATR, not from the Test Status.
 - A TC in `Draft` (workflow) never has an Execution Status — it has not been executed yet.
 - When the legacy / current skill says "Test Status: NOT RUN / PASSED / FAILED", that refers to the **Execution Status** field in Jira-native mode (where there is no separate Test Run entity); in Xray mode, the equivalent lives on the Test Run and `NOT RUN` maps to `TODO`.
@@ -180,7 +180,7 @@ These are **two independent fields** with two independent lifecycles. Mixing the
 
 ## 5. Workflow state machine
 
-> **Substrate reference — AUTHORITATIVE**: `.agents/jira-workflows.json` (`work_types.test_case`) is the source of truth for every status and transition name below; a status absent from that file does not exist in the instance (`Approved`, `Automating`, `Merge Request` are common inventions and none of them exist). Names below are copied from the canonical UPEX Jira workflow declared in `.agents/jira-workflows.json` (see `.agents/jira-required.yaml` `work_types.test_case` for the methodology's required slugs). Skills resolve these via `{{jira.status.test_case.<slug>}}` and `{{jira.transition.test_case.<slug>}}`. If your project's Jira renames any state or transition, run `bun run jira:sync-workflows` to refresh the substrate so slug -> literal-name mapping stays correct.
+> **Substrate reference — AUTHORITATIVE**: `.agents/jira-workflows.json` (`work_types.test_case`) is the source of truth for every status and transition name below; a status absent from that file does not exist in the instance (`Approved`, `Automating`, `Merge Request` are common inventions and none of them exist). Names below are copied from the workflow declared in `.agents/jira-workflows.json` (see `.agents/jira-required.yaml` `work_types.test_case` for the methodology's required slugs). Skills resolve these via `{{jira.status.test_case.<slug>}}` and `{{jira.transition.test_case.<slug>}}`. If your project's Jira renames any state or transition, run `bun run jira:sync-workflows` to refresh the substrate so slug -> literal-name mapping stays correct.
 
 ### The full lifecycle
 
@@ -484,13 +484,12 @@ Component Value = Base ROI x (1 + 0.2 x N)
 
 where `N` = number of E2E flows that reuse the TC. A moderate-ROI atomic like `authenticateSuccessfully` can cross out of the defer bands purely through reuse (base ROI 2.0, reused in 3+ flows: `2.0 x 1.6 = 3.2` -> Automate with caution).
 
-**`N` is a qualitative heuristic, not a measurement.** Nothing tracks it: `kata-manifest.json` registers Components and ATCs but records no call-sites, and no other tool in this repo counts how many E2E flows consume a given TC. So the formula above is an **illustration of the shape of the bonus**, not an arithmetic you can look up. Rules:
+**`N` is a qualitative heuristic, not a measurement.** Nothing in this repo is declared to track it. So the formula above is an **illustration of the shape of the bonus**, not an arithmetic you can look up. Rules:
 
-1. **Estimate `N` qualitatively** from the ATP and the feature map — how many documented flows plausibly pass through this step — never from a grep or a manifest field that does not exist.
+1. **Estimate `N` qualitatively** from the ATP and the feature map — how many documented flows plausibly pass through this step — never from a grep.
 2. **Cap the bonus at `N = 3`** (max multiplier `x1.6`). An estimate you cannot verify must not be able to triple a score.
 3. **Record the estimate in the ROI comment** alongside the five factors, e.g. `Reuse: N~3 (estimated from ATP: login, checkout, profile-edit). Bonus x1.6.` An unrecorded bonus is an unauditable one.
 
-> Future work: a manifest field (e.g. ATC call-site counts emitted by `bun run kata:manifest`) would make `N` measurable and let this bonus drop the cap.
 
 ### Phase 0 filter (applied BEFORE ROI)
 
@@ -619,7 +618,7 @@ If none exists, ask the user before creating:
   issueType: Epic
   title: "QA Test Repository"   # configured name qa.qa_epics.test_repository_epic.name
   description: "Container epic for all {{PROJECT_KEY}} regression tests."
-  labels: QA-Artifact, regression, qa   # QA-Artifact is mandatory on QA-process epics; `test-repository` is retired as an identity label
+  labels: QA-Artifact, regression, qa   # QA-Artifact is mandatory on QA-process epics
 ```
 
 Typical structure:

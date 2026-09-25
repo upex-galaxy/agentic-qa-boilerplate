@@ -195,8 +195,8 @@
           />
         </div>
         <figcaption>
-          Trece estados en cuatro etapas: refinamiento, desarrollo, QA y cierre. Un defecto
-          reportado en pruebas bloquea la historia y la devuelve a desarrollo.
+          Los estados, en cuatro etapas: refinamiento, desarrollo, QA y cierre. Un defecto reportado
+          en pruebas bloquea la historia y la devuelve a desarrollo.
           <a href="../../assets/iql/jira-user-story.svg" target="_blank" rel="noopener"
             >Ver a tamaño completo</a
           >
@@ -212,7 +212,7 @@
           />
         </div>
         <figcaption>
-          Diez estados en tres zonas: diseño, automatización y desenlace. Desde READY el caso se
+          Los estados, en tres zonas: diseño, automatización y desenlace. Desde READY el caso se
           queda manual o entra a revisión de automatización.
           <a href="../../assets/iql/jira-test.svg" target="_blank" rel="noopener"
             >Ver a tamaño completo</a
@@ -305,142 +305,11 @@
         workflow.
       </p>
 
-      <details>
-        <summary>Todas las transiciones del Test (24)</summary>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Desde</th>
-                <th>Hacia</th>
-                <th>Transición</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Draft</td>
-                <td>In Design</td>
-                <td><code>start design</code></td>
-              </tr>
-              <tr>
-                <td>Draft</td>
-                <td>In Review</td>
-                <td><code>automation review</code></td>
-              </tr>
-              <tr>
-                <td>In Design</td>
-                <td>READY</td>
-                <td><code>ready to run</code></td>
-              </tr>
-              <tr>
-                <td>In Design</td>
-                <td>Draft</td>
-                <td><code>back</code></td>
-              </tr>
-              <tr>
-                <td>READY</td>
-                <td>MANUAL</td>
-                <td><code>for manual</code></td>
-              </tr>
-              <tr>
-                <td>READY</td>
-                <td>In Review</td>
-                <td><code>automation review</code></td>
-              </tr>
-              <tr>
-                <td>READY</td>
-                <td>In Design</td>
-                <td><code>back</code></td>
-              </tr>
-              <tr>
-                <td>In Review</td>
-                <td>Candidate</td>
-                <td><code>approve to automate</code></td>
-              </tr>
-              <tr>
-                <td>In Review</td>
-                <td>READY</td>
-                <td><code>back</code></td>
-              </tr>
-              <tr>
-                <td>Candidate</td>
-                <td>In Automation</td>
-                <td><code>start automation</code></td>
-              </tr>
-              <tr>
-                <td>Candidate</td>
-                <td>MANUAL</td>
-                <td><code>manual execution</code></td>
-              </tr>
-              <tr>
-                <td>Candidate</td>
-                <td>In Review</td>
-                <td><code>back</code></td>
-              </tr>
-              <tr>
-                <td>In Automation</td>
-                <td>Pull Request</td>
-                <td><code>create PR</code></td>
-              </tr>
-              <tr>
-                <td>In Automation</td>
-                <td>Candidate</td>
-                <td><code>back</code></td>
-              </tr>
-              <tr>
-                <td>Pull Request</td>
-                <td>AUTOMATED</td>
-                <td><code>merged</code></td>
-              </tr>
-              <tr>
-                <td>Pull Request</td>
-                <td>In Automation</td>
-                <td><code>back</code></td>
-              </tr>
-              <tr>
-                <td>MANUAL</td>
-                <td>In Review</td>
-                <td><code>automation review</code></td>
-              </tr>
-              <tr>
-                <td>MANUAL</td>
-                <td>Candidate</td>
-                <td><code>for automation</code></td>
-              </tr>
-              <tr>
-                <td>MANUAL</td>
-                <td>AUTOMATED</td>
-                <td><code>automated</code></td>
-              </tr>
-              <tr>
-                <td>AUTOMATED</td>
-                <td>Pull Request</td>
-                <td><code>Fix</code></td>
-              </tr>
-              <tr>
-                <td>AUTOMATED</td>
-                <td>MANUAL</td>
-                <td><code>manual execution</code></td>
-              </tr>
-              <tr>
-                <td>DEPRECATED</td>
-                <td>Draft</td>
-                <td><code>recover</code></td>
-              </tr>
-              <tr>
-                <td>Cualquiera</td>
-                <td>DEPRECATED</td>
-                <td><code>Deprecated</code></td>
-              </tr>
-              <tr>
-                <td>(creación)</td>
-                <td>Draft</td>
-                <td><code>Create</code></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </details>
+      <p>
+        Todas las transiciones del Test, con su origen y su destino, están en
+        <code>.agents/jira-workflows.json</code> (clave <code>test_case</code>); el catálogo se
+        regenera con <code>bun run jira:sync-workflows</code>.
+      </p>
 
       <h3 id="workflow-bug">Bug</h3>
       <figure>
@@ -448,8 +317,8 @@
           <img src="../../assets/iql/jira-bug.svg" alt="Ciclo de vida de un bug en Jira" />
         </div>
         <figcaption>
-          Once estados. De los seis caminos que salen de Open, cuatro cierran el bug sin tocar
-          código, uno lo aplaza a Deferred y uno entra al ciclo de arreglo.
+          De los caminos que salen de Open, varios cierran el bug sin tocar código, uno lo aplaza a
+          Deferred y uno entra al ciclo de arreglo.
           <a href="../../assets/iql/jira-bug.svg" target="_blank" rel="noopener"
             >Ver a tamaño completo</a
           >
@@ -605,10 +474,9 @@
         </p>
       </div>
       <p>
-        La lista completa y comentada está en <code>.env.example</code>. <code>AUTO_SYNC</code>,
-        <code>XRAY_CLIENT_ID</code>, <code>XRAY_CLIENT_SECRET</code> y
-        <code>STP_EXECUTION_KEY</code> también son secrets de CI: los sube a GitHub Actions
-        <code>bun run setup --variables</code>.
+        La lista completa y comentada está en <code>.env.example</code>. Las que tienen destino
+        <code>github</code> en <code>cli/lib/variables-manifest.ts</code> también son secrets de CI:
+        las sube a GitHub Actions <code>bun run setup --variables</code>.
       </p>
 
       <h2 id="catalogos">Catálogos locales y <code>jira:check</code></h2>

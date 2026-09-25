@@ -1,12 +1,12 @@
 # Session Footer Contract (shared, chat-facing)
 
-> Cited by: the 6 workflow skills (`shift-left-testing`, `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `framework-development`). Reference/utility skills are exempt (they run inside a workflow session that already honors this).
+> Cited by: every skill marked `metadata.stage_owner: true` in its frontmatter. Reference/utility skills are exempt (they run inside a workflow session that already honors this).
 
 Chat-facing reporting contract: two things the AI must surface to the human operator **without being asked**, every session, in every workflow skill. Neither block goes into a Jira comment, ATR body, or any ticket-facing artifact — those keep their own templates and voice; this contract governs the terminal/chat conversation only.
 
 **Gate:** if you are about to tell the user a session/flow is done and you haven't printed the two blocks below, stop — you're not actually done reporting.
 
-**Why it exists (real precedent, sibling project, 2026-07-06/07):** after a full sprint-testing run, the operator had to explicitly ask for the annotated bug screenshot's relative path to open it, and separately ask which tools and testing levels were actually applied — a business-outcome summary alone didn't make that legible. Both questions are cheap to pre-empt and expensive to keep re-asking; hence a standing contract instead of a one-off answer.
+**Why it exists (real precedent on a sibling project; see ADR-0006):** after a full sprint-testing run, the operator had to explicitly ask for the annotated bug screenshot's relative path to open it, and separately ask which tools and testing levels were actually applied — a business-outcome summary alone didn't make that legible. Both questions are cheap to pre-empt and expensive to keep re-asking; hence a standing contract instead of a one-off answer.
 
 ---
 
@@ -14,7 +14,7 @@ Chat-facing reporting contract: two things the AI must surface to the human oper
 
 Two trigger points; **both** apply:
 
-**1a. At the moment, not deferred.** The instant a screenshot/annotation is captured and relevant, state its **repo-relative** path in chat in that same turn. Extra weight on annotated bug images — the human's next move is almost always "attach that to the bug", so the path must be sitting right there ready to copy.
+**1a. Immediately, not deferred.** The instant a screenshot/annotation is captured and relevant, state its **repo-relative** path in chat in that same turn. Extra weight on annotated bug images — the human's next move is almost always "attach that to the bug", so the path must be sitting right there ready to copy.
 
 **1b. Consolidated at session close.** The final chat report of ANY completed workflow session includes the full list of every screenshot/annotation the session captured. Bug annotations lead the list.
 

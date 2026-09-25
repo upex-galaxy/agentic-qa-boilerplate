@@ -444,12 +444,11 @@
 
       <h3 id="repo-pruebas">Probar los prompts</h3>
       <p>
-        Nueve skills tienen una carpeta <code>evals/</code> con prompts de ejemplo, el
-        comportamiento esperado y una polaridad (<code>positive</code> si la skill debería
-        activarse, <code>negative</code> si no). <code>bun run skills:evals</code> valida la
-        estructura de esos casos. Todavía no ejecuta un modelo, así que confirma que los casos están
-        bien formados, no que la skill se active de verdad; el propio script lo aclara en su
-        cabecera.
+        Las skills con carpeta <code>evals/</code> traen prompts de ejemplo, el comportamiento
+        esperado y una polaridad (<code>positive</code> si la skill debería activarse,
+        <code>negative</code> si no). <code>bun run skills:evals</code> valida la estructura de esos
+        casos. Todavía no ejecuta un modelo, así que confirma que los casos están bien formados, no
+        que la skill se active de verdad; el propio script lo aclara en su cabecera.
       </p>
       <p>
         Hay además un hook, <code>.agents/hooks/personality-reinject.mjs</code>, que vuelve a

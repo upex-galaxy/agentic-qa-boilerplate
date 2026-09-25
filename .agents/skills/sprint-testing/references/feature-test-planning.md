@@ -25,7 +25,7 @@ Two properties follow from the feature altitude. Both change how the plan is use
 
 **The FTP is living, not frozen.** It is authored once per epic and then refined continuously across it. Every story that ships teaches the team something the plan did not know — an integration boundary that turned out to be real, a risk that never materialized, an answer the PO finally gave. Fold that back into the plan (see Gotcha 6, "Regeneration"). A feature plan that has not moved since the first story of a long epic is stale, not stable.
 
-**Analyze the sibling stories, not just the one in hand.** When a tester picks up a story, the unit of analysis is the epic, not the ticket: read the siblings that already shipped, the ones currently in development, and the ones that are only defined and not yet built. That full-feature picture is what makes the per-story ATPs good — it surfaces shared preconditions, cross-story state, and regression surface that a single-story reading cannot see. The sibling list comes free from the JQL child-story query in "Inputs required".
+**Analyze the sibling stories, not just the one in hand.** When a tester picks up a story, the unit of analysis is the epic, not the ticket: read the siblings that already shipped, the ones in development, and the ones that are only defined and not yet built. That full-feature picture is what makes the per-story ATPs good — it surfaces shared preconditions, cross-story state, and regression surface that a single-story reading cannot see. The sibling list comes free from the JQL child-story query in "Inputs required".
 
 ---
 
@@ -78,7 +78,7 @@ ratified QA Planning Ladder (`.agents/skills/agentic-qa-core/references/planning
 - **Lifecycle.** Find-or-created/updated whenever this skill loads the Epic's context;
   CONSUMED as context thereafter (see "A living document" above).
 - **Cardinality.** FTP = **1 per feature**.
-- **No FTR.** The Feature Test Results rung is **RETIRED from the ladder** — feature results are
+- **No FTR.** There is no Feature Test Results rung in the ladder — feature results are
   read from the per-story ATRs directly and REVIEWED together at sprint close alongside the sprint
   recap Execution `STR: Sprint#{N}: Regression Testing` (created at sprint close by the batch-close
   recap or `/regression-testing`, whichever arrives first). There is **no structural aggregation**
@@ -310,8 +310,7 @@ A compact FTP body from this repo's own sample module (Epic `UPEX-100`, cached a
 `.context/PBI/epics/EPIC-UPEX-100-authentication/`). It is the automation-leaning subset a
 small, single-story feature needs, not the full 7-section Full-scope plan: read it for tone and
 granularity, not as a template. The selectors table is there because the module is already
-automated; a pre-automation FTP would stop at section 4. Formerly
-docs/testing/automation/feature-test-plan-example.md.
+automated; a pre-automation FTP would stop at section 4.
 
 ### FTP: UPEX-100: Authentication
 
@@ -390,7 +389,4 @@ Login Flow (UI):
 #### See Also
 
 - Test specs: `.context/PBI/epics/EPIC-UPEX-100-authentication/test-specs/`
-- Component (API): `tests/components/api/AuthApi.ts`
-- Component (UI): `tests/components/ui/LoginPage.ts`
-- Test file (integration): `tests/integration/auth/user-session.test.ts`
-- Test file (e2e): `tests/e2e/dashboard/dashboard.test.ts`
+- Components and test files: the Auth entries in `kata-manifest.json`

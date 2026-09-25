@@ -255,7 +255,7 @@ ul.plain b{color:var(--t1)}
 <span class="f2">FASE 2 · Refinamiento</span>  ⟲ loop  <span class="ar">dev (INVEST) ⇄ qa (shift-left-testing)</span>
       │
       ▼
-<span class="f3">FASE 3 · Implementación</span>       <span class="ar">dev-boilerplate · sprint-development (5 stages)</span>
+<span class="f3">FASE 3 · Implementación</span>       <span class="ar">dev-boilerplate · sprint-development</span>
       │
       ▼
 <span class="f4">FASE 4 · Testing</span>              <span class="ar">qa-boilerplate</span>
@@ -267,7 +267,7 @@ ul.plain b{color:var(--t1)}
       ▼
 <span class="f4">FASE 5 · Producción</span>           <span class="ar">Observation · L4</span>
       └─ rutina agéntica, sin skill  <span class="ar">SLOs · error budget · realimenta el próximo shift-left</span></div>
-      <p class="lede" style="margin-top:.6rem"><b>Observation está declarado, no implementado</b>: hoy nada bajo <code>.agents/skills/</code> lo ejecuta. Aparece acá para que el mapa no mienta sobre dónde termina el sistema.</p>
+      <p class="lede" style="margin-top:.6rem"><b>Observation está declarado, no implementado</b>: sin skill propio (ver <code>.agents/skills/</code> para el estado). Aparece acá para que el mapa no mienta sobre dónde termina el sistema.</p>
 
       <div class="legend">
         <div class="lg k-dep"><span class="io-k">skills</span>qué skills y references carga la tarea</div>
@@ -379,7 +379,7 @@ ul.plain b{color:var(--t1)}
     <article class="pane" id="p3" style="--ac:#fb923c">
       <p class="kick">fase 3 · repo dev-boilerplate</p>
       <h2>Implementación <span class="grad">sprint-development</span></h2>
-      <p class="lede">Mega-orquestador de 5 stages. Las references <code>adr-doctrine.md</code> y <code>session-management.md</code> viven en <code>agentic-dev-core/references/</code>.</p>
+      <p class="lede">Mega-orquestador por stages. Las references <code>adr-doctrine.md</code> y <code>session-management.md</code> viven en <code>agentic-dev-core/references/</code>.</p>
 
       <div class="proc">
         <div class="proc-hd"><span class="pid">S1</span><h3>Planning</h3><span class="repo dev">dev</span></div>

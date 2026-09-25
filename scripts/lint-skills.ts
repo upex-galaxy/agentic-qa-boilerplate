@@ -11,7 +11,7 @@
  *         (gitignored, fetched at install time, NOT committed)
  *   T4  — community user-level, declared in cli/install.ts:USER_LEVEL_SKILLS
  *
- * Nineteen checks are run; each violation is printed prefixed with the relevant
+ * The checks below are run; each violation is printed prefixed with the relevant
  * skill or array name. Exit code 0 = pass (no ERROR violations), 1 = at least
  * one ERROR violation. WARN and INFO are reported but do not cause non-zero exit.
  *
@@ -127,13 +127,34 @@
  *      of kind `core` is skipped: it hosts the doctrine that describes the
  *      tags and never uses them. WARN severity.
  *
+ *  20. FILE-LINE — a `path.ext:N` / `:N-M` / `#LN` citation in the prose of any
+ *      committed markdown under .agents/ (community skills and generated
+ *      aggregates excluded) or in AGENTS.md, outside fenced blocks and the
+ *      frontmatter. A line number shifts on any edit above it; cite the file
+ *      plus a symbol or a heading. Per-line escape: `volatile-ok: <reason>`.
+ *      Severity: VOLATILE_SEVERITY (Critical Rule #17; canon
+ *      agentic-qa-core/references/volatile-facts.md).
+ *
+ *  21. CURRENT-STATE — a claim about the present in the same prose: "today",
+ *      "currently", "as of <year>", a dated "measured / verified", "since
+ *      <version>", a measured token or byte size, a tool version after a tool
+ *      name, and the Spanish equivalents. Same exclusions and escape hatch.
+ *      Severity: VOLATILE_SEVERITY.
+ *
+ *  22. STAGE-OWNER-DISPATCH — a SKILL.md whose frontmatter declares
+ *      `metadata.stage_owner: true` (the stage-owning workflow skills, the set
+ *      AGENTS.md §3 used to enumerate by hand) must carry a
+ *      `## Subagent Dispatch Strategy` section. ERROR severity.
+ *
  * Usage: bun run scripts/lint-skills.ts   (or: bun run skills:check)
  */
 
+import type { VolatileKind } from './lib/volatile-facts';
 import { existsSync, lstatSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { dirname, join } from 'node:path';
 
+import { dirname, join } from 'node:path';
 import { relativePosix } from './lib/posix-path';
+import { isVolatileExemptPath, scanVolatile, volatileRemedy } from './lib/volatile-facts';
 
 // -----------------------------------------------------------------------------
 // Constants
@@ -173,6 +194,16 @@ const KNOWN_CATEGORIES = new Set([
  * (domain): a skill is exactly one of these. Checks 15-17.
  */
 const KNOWN_KINDS = new Set(['context', 'workflow', 'utility', 'core']);
+
+/**
+ * Severity of the two volatile-facts checks (20-21). Both are ERROR: the
+ * hand-applied cleanup left no residue outside a `volatile-ok: <reason>` line
+ * or a `volatile-ok-file: <reason>` dated ledger, so a new hit is a regression.
+ */
+const VOLATILE_SEVERITY: Record<VolatileKind, Severity> = {
+  'FILE-LINE': 'ERROR',
+  'CURRENT-STATE': 'ERROR',
+};
 
 /**
  * Slugs exempt from KIND-SUFFIX (check 17), in both directions. Every entry
@@ -345,6 +376,8 @@ interface SkillFrontmatter {
   categoriesField: CategoriesField
   /** `metadata.kind` (purpose axis); undefined when the nested key is absent. */
   kind?: string
+  /** `metadata.stage_owner: true` marks a stage-owning workflow skill (AGENTS.md §3 compliance). */
+  stageOwner: boolean
   /** `metadata.requires_capabilities` (MCP capabilities); undefined when the nested key is absent. */
   requiresCapabilities?: string[]
   raw: string
@@ -418,15 +451,17 @@ function parseFrontmatter(content: string): SkillFrontmatter | null {
   // `metadata` is the extension point the Agent Skills frontmatter spec allows,
   // so `kind` is never read from the top level.
   let kind: string | undefined;
+  let stageOwner = false;
   let requiresCapabilities: string[] | undefined;
   const metadataMatch = block.match(/^metadata:[ \t]*\n((?:[ \t]+\S[^\n]*\n?)+)/m);
   if (metadataMatch) {
     const kindMatch = metadataMatch[1].match(/^[ \t]+kind:[ \t]*["']?([\w-]+)["']?/m);
     if (kindMatch) { kind = kindMatch[1]; }
+    stageOwner = /^[ \t]+stage_owner:[ \t]*true\b/m.test(metadataMatch[1]);
     requiresCapabilities = parseNestedList(metadataMatch[1], 'requires_capabilities');
   }
 
-  return { name, categoriesField, kind, requiresCapabilities, raw: block };
+  return { name, categoriesField, kind, stageOwner, requiresCapabilities, raw: block };
 }
 
 /**
@@ -596,6 +631,7 @@ interface AgentsMdSkillEntry {
 
 const AGENTS_MD_SKILL_ROW = /^\|\s*`([\w-]+)`\s*\|/;
 const AGENTS_MD_H2 = /^## (.+)$/;
+const AGENTS_MD_H3 = /^### (.+)$/;
 
 /**
  * Detects whether an H2 heading line belongs to §5 (Skills registry).
@@ -621,6 +657,9 @@ function parseAgentsMdSkillsRegistry(agentsMdPath: string): {
   // the regex from matching table rows in other sections (e.g., §11 git-branches
   // table which has | `main` | and | `staging` | rows).
   let inSection5 = false;
+  // §5 also hosts the alias and capability tables; only the `### Skills` H3
+  // (or a §5 with no H3 at all) carries skill rows.
+  let inSkillsTable = true;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -628,10 +667,16 @@ function parseAgentsMdSkillsRegistry(agentsMdPath: string): {
     const h2Match = line.match(AGENTS_MD_H2);
     if (h2Match) {
       inSection5 = isSection5Heading(h2Match[1]);
+      inSkillsTable = true;
+      continue;
+    }
+    const h3Match = line.match(AGENTS_MD_H3);
+    if (h3Match) {
+      inSkillsTable = /^skills\b/i.test(h3Match[1].trim());
       continue;
     }
 
-    if (!inSection5) { continue; }
+    if (!inSection5 || !inSkillsTable) { continue; }
 
     const rowMatch = line.match(AGENTS_MD_SKILL_ROW);
     if (rowMatch) {
@@ -907,6 +952,16 @@ function checkDuplicateTier(
 // Checks 11–12 — session-management contract
 // -----------------------------------------------------------------------------
 
+/** Check 22: a skill flagged `metadata.stage_owner: true` must carry the dispatch section AGENTS.md §3 demands. */
+function checkStageOwnerDispatch(slug: string, stageOwner: boolean, body: string): Violation[] {
+  if (!stageOwner || /^## Subagent Dispatch Strategy\b/m.test(body)) { return []; }
+  return [{
+    severity: 'ERROR',
+    scope: slug,
+    msg: 'STAGE-OWNER-DISPATCH: frontmatter declares `metadata.stage_owner: true` but the body has no `## Subagent Dispatch Strategy` section (AGENTS.md §3 workflow skill compliance)',
+  }];
+}
+
 function checkSessionBanner(slug: string, body: string): Violation[] {
   if (!(slug in SESSION_RETROFITTED_SKILLS)) { return []; }
   if (body.includes(SESSION_BANNER_PREFIX)) { return []; }
@@ -1043,6 +1098,53 @@ function gatherAllSkillMarkdown(): string[] {
     if (!rel.includes('/') && SKILL_AGGREGATE_FILES.has(rel)) { return false; }
     return true;
   });
+}
+
+/**
+ * Every committed markdown file under `.agents/` that the project authors:
+ * community skill bodies (T3 / T4 tiers, real directories or symlinks) and the
+ * generated aggregates (`REGISTRY.md`, `.agents/prompts/`) are skipped.
+ */
+function gatherVolatileTargets(communitySlugs: ReadonlySet<string>): string[] {
+  const out: string[] = [];
+  const agentsDir = join(REPO_ROOT, '.agents');
+  const walk = (dir: string): void => {
+    for (const e of readdirSync(dir)) {
+      const full = join(dir, e);
+      if (lstatSync(full).isSymbolicLink()) { continue; }
+      const st = statSync(full);
+      if (st.isDirectory()) {
+        if (dir === agentsDir && e === 'prompts') { continue; }
+        if (dir === SKILLS_DIR && communitySlugs.has(e)) { continue; }
+        walk(full);
+      }
+      else if (e.endsWith('.md')) {
+        const rel = relativePosix(SKILLS_DIR, full);
+        if (!rel.includes('/') && SKILL_AGGREGATE_FILES.has(rel)) { continue; }
+        out.push(full);
+      }
+    }
+  };
+  if (existsSync(agentsDir)) { walk(agentsDir); }
+  if (existsSync(AGENTS_MD)) { out.push(AGENTS_MD); }
+  return out.filter(f => !isVolatileExemptPath(relativePosix(REPO_ROOT, f)));
+}
+
+/** Checks 20-21: FILE-LINE + CURRENT-STATE over the prose of the files above. */
+function checkVolatileFacts(files: string[]): void {
+  for (const file of files) {
+    let text: string;
+    try { text = readFileSync(file, 'utf8'); }
+    catch { continue; }
+    const rel = relativePosix(REPO_ROOT, file);
+    const seen = new Set<string>();
+    for (const hit of scanVolatile(text, { html: false })) {
+      const key = `${hit.line}:${hit.kind}`;
+      if (seen.has(key)) { continue; }
+      seen.add(key);
+      violation(VOLATILE_SEVERITY[hit.kind], rel, `${hit.kind}: \`${hit.match}\` (line ${hit.line}) — ${volatileRemedy(hit.kind)}`);
+    }
+  }
 }
 
 interface GrepFinding { file: string, line: number, text: string, match: string }
@@ -1353,6 +1455,7 @@ function main(): void {
   for (const skill of t1Skills) {
     violations.push(...checkSessionBanner(skill.slug, skill.body));
     violations.push(...checkSessionPhase0(skill.slug, skill.body));
+    violations.push(...checkStageOwnerDispatch(skill.slug, skill.frontmatter?.stageOwner ?? false, skill.body));
   }
   violations.push(...checkSessionScopes(REPO_ROOT));
 
@@ -1360,6 +1463,9 @@ function main(): void {
   const skillFiles = gatherAllSkillMarkdown();
   checkSkillHardcodedCfid(skillFiles);
   checkSkillLiteralTools(skillFiles);
+
+  // Checks 20-21: volatile facts (Critical Rule #17) over .agents/**/*.md + AGENTS.md.
+  checkVolatileFacts(gatherVolatileTargets(new Set([...t3Slugs, ...t4Slugs])));
 
   // ---- Report ----
   const communityNote = committedCommunity.size > 0
@@ -1386,6 +1492,9 @@ function main(): void {
     'KIND-SUFFIX (slug suffix `-context` / `-cli` / `-tool` / `-app` vs declared kind, both directions)',
     'CAPABILITY-VOCAB (`metadata.requires_capabilities` outside web-search / library-docs / db / api-schema / browser)',
     'CAPABILITY-UNDECLARED (resolution tag in SKILL.md body without the matching declaration; WARN)',
+    `FILE-LINE (path:line citation in .agents/**/*.md + AGENTS.md prose; ${VOLATILE_SEVERITY['FILE-LINE']})`,
+    `CURRENT-STATE (today / as of / dated measurement / since <version> / tool version in the same prose; ${VOLATILE_SEVERITY['CURRENT-STATE']})`,
+    'STAGE-OWNER-DISPATCH (`metadata.stage_owner: true` without a `## Subagent Dispatch Strategy` section)',
   ];
 
   if (violations.length === 0) {

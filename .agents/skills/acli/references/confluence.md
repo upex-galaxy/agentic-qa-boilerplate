@@ -1,6 +1,6 @@
 # Confluence Cloud (`acli confluence`)
 
-Confluence surface added in `acli` v1.x. Coverage as of v1.3.18:
+Confluence surface. Coverage (confirm with `acli confluence <group> --help`):
 
 | Group   | Subcommands                                       | Completeness                                       |
 | ------- | ------------------------------------------------- | -------------------------------------------------- |

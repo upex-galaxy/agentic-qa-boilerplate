@@ -6,6 +6,8 @@ compatibility: [claude-code, copilot, cursor, codex, opencode]
 complementary_categories: [framework-evolution, meta-skill]
 metadata:
   kind: workflow
+  stage_owner: true
+
 ---
 
 # Framework Development — Evolve the QA Boilerplate
@@ -198,7 +200,7 @@ Dispatch: **Parallel** — four Verifier subagents in the same `<function_calls>
 | V3       | `bun run lint:check`   | exit code, summary   |
 | V4       | `bun run skills:check` | exit code, ERROR/WARN/INFO counts |
 
-`skills:check` is included because framework changes routinely touch `.agents/skills/framework-development/`, `agentic-qa-core/references/`, `AGENTS.md`, and `cli/install.ts` — every one of those surfaces is read by `scripts/lint-skills.ts` and gated by 10 named checks (tier coherence, anti-leak, stale-path, duplicate-tier, etc.). The other three commands never see this surface; adding the fourth verifier costs one parallel slot and prevents an entire failure class.
+`skills:check` is included because framework changes routinely touch `.agents/skills/framework-development/`, `agentic-qa-core/references/`, `AGENTS.md`, and `cli/install.ts` — every one of those surfaces is read by `scripts/lint-skills.ts` and gated by the named checks it declares (tier coherence, anti-leak, stale-path, duplicate-tier, etc.). The other three commands never see this surface; adding the fourth verifier costs one parallel slot and prevents an entire failure class.
 
 After all four return, the orchestrator inline-aggregates:
 
@@ -240,7 +242,7 @@ Archive is a "close-the-loop" step, not "ship-the-code". Code is shipped by `/gi
 ## References
 
 - `references/kata-invariants.md` — INVARIANT vs EXTENSIBLE rules for the 4 KATA layers, fixture selection, ATC identity, DRY scope, import aliases, public-method contract, extension points, evolution checklist, out-of-scope surfaces, and §10 ALLOWED / FORBIDDEN path tables. Required reading before any Plan or Code subagent that touches `tests/components/`, `api/schemas/`, or fixtures.
-- `../agentic-qa-core/references/skill-composition-strategy.md` — T1/T2/T3/T4 tier model, category vocabulary, validation rules. The §4 anti-leak contract is informational here: framework-development no longer chains SDD by default; §4 governs users who manually install SDD and explicitly request the SDD ceremony.
+- `../agentic-qa-core/references/skill-composition-strategy.md` — T1/T2/T3/T4 tier model, category vocabulary, validation rules. The §4 anti-leak contract is informational here: framework-development does not chain SDD by default; §4 governs users who manually install SDD and explicitly request the SDD ceremony.
 - `../agentic-qa-core/references/briefing-template.md` — 7-component briefing examples per pattern.
 - `../agentic-qa-core/references/dispatch-patterns.md` — Single / Sequential / Parallel / Background decision guide.
 - `../agentic-qa-core/references/orchestration-doctrine.md` — failure protocol, ASK-on-error rule, no auto-fix.

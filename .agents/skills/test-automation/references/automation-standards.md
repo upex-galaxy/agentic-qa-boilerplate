@@ -676,7 +676,7 @@ bun run lint:fix    # Auto-fix issues
 
 ### Type Checking
 
-TypeScript with relaxed mode (no `experimentalDecorators`):
+TypeScript, decorator mode per `tsconfig.base.json`:
 
 ```bash
 bun run types:check  # tsc --noEmit

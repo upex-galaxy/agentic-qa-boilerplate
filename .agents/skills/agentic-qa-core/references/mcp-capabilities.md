@@ -1,6 +1,6 @@
 # MCP Capabilities: Declare by Capability, Resolve by Suffix
 
-> Cited by `AGENTS.md` Critical Rule #10, §5 (MCP table) and §6 (tool resolution), by `./preflight-gate.md` §8 (the point-of-use check), and by every skill whose frontmatter declares `metadata.requires_capabilities`. The vocabulary below is mirrored in `scripts/lint-skills.ts` (`KNOWN_CAPABILITIES`, check 18): change both or the gate fails by name.
+> Cited by `AGENTS.md` Critical Rule #10, §5 (MCP table) and §6 (tool resolution), by `./preflight-gate.md` §8 (the point-of-use check), and by every skill whose frontmatter declares `metadata.requires_capabilities`. The vocabulary below is mirrored in `scripts/lint-skills.ts` (`KNOWN_CAPABILITIES`, the `CAPABILITY-VOCAB` check): change both or the gate fails by name.
 
 ## 1. Why capabilities, not servers
 
@@ -20,7 +20,7 @@ A tool name has two halves: `mcp__<server>__<tool>`. The **prefix** is the serve
 | `api-schema` | `list-api-endpoints`, `get-api-endpoint-schema` (the server also ships `invoke-api-endpoint`; never use it, execution is curl's job) | committed `openapi` (project-scope `OPENAPI_SPEC_PATH`, `API_BASE_URL`) | `[API_TOOL]` schema-read leg only (`./api-testing-doctrine.md`) |
 | `browser` | `browser_*` (`browser_navigate`, `browser_snapshot`, `browser_click`, `browser_take_screenshot`, ...) | committed `playwright` (no key) | `[AUTOMATION_TOOL]` fallback when `/playwright-cli` is not the right instrument |
 
-Only LOCAL servers with project-scope values, plus the two that need no key, are committed in the project MCP files. A remote server whose only project-side content is an API key (web search, Postman) is the harness's business: connected once per machine, resolved here by suffix (ADR-0005). The Postman server has no capability name yet because no skill instructs its use; add one here AND in `KNOWN_CAPABILITIES` the day a skill needs it; the lint rejects an undeclared name on purpose.
+Only LOCAL servers with project-scope values, plus the two that need no key, are committed in the project MCP files. A remote server whose only project-side content is an API key (web search, Postman) is the harness's business: connected once per machine, resolved here by suffix (ADR-0005). A server no skill instructs gets no capability name; add one here AND in `KNOWN_CAPABILITIES` the day a skill needs it; the lint rejects an undeclared name on purpose.
 
 ## 3. Declaring a requirement (skill authors)
 
@@ -32,7 +32,7 @@ metadata:
   requires_capabilities: [db, api-schema, browser]
 ```
 
-**Correspondence rule.** A skill declares a capability when its `SKILL.md` or a reference INSTRUCTS the AI to use it (a `[DB_TOOL]` / `[API_TOOL]` / `[AUTOMATION_TOOL]` / `[DOCS_TOOL]` / `[WEB_SEARCH_TOOL]` step, or the tool names above). Naming a server in a table, an env-var checklist or an "N/A here" sentence is not use. Nothing declared goes unused; nothing used goes undeclared. `scripts/lint-skills.ts` check 18 (`CAPABILITY-VOCAB`, ERROR) rejects a name outside §2; check 19 (`CAPABILITY-UNDECLARED`, WARN) flags a `SKILL.md` body that carries one of the five resolution tags without declaring the matching capability. That heuristic reads the `SKILL.md` body only (not `references/`), so a tag in a legend table trips it: treat the WARN as "declare it or drop the row", never as noise to silence in the script.
+**Correspondence rule.** A skill declares a capability when its `SKILL.md` or a reference INSTRUCTS the AI to use it (a `[DB_TOOL]` / `[API_TOOL]` / `[AUTOMATION_TOOL]` / `[DOCS_TOOL]` / `[WEB_SEARCH_TOOL]` step, or the tool names above). Naming a server in a table, an env-var checklist or an "N/A here" sentence is not use. Nothing declared goes unused; nothing used goes undeclared. The `CAPABILITY-VOCAB` check in `scripts/lint-skills.ts` (ERROR) rejects a name outside §2; `CAPABILITY-UNDECLARED` (WARN) flags a `SKILL.md` body that carries one of the `[…_TOOL]` resolution tags for a capability in §2 without declaring the matching capability. That heuristic reads the `SKILL.md` body only (not `references/`), so a tag in a legend table trips it: treat the WARN as "declare it or drop the row", never as noise to silence in the script.
 
 Each declaring skill cites the point-of-use procedure with one line in its Compact Rules or its preflight section; the procedure itself lives ONLY in `./preflight-gate.md` §8.
 

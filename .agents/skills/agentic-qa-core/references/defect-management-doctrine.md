@@ -22,7 +22,7 @@ decisions: what type, what fields, who owns it, where it hangs.**
 ## Part 1 — Issue-type classification (Bug vs Defect vs Improvement)
 
 Choosing the issue type is **mandatory and happens BEFORE filing**. The three
-types share one Jira workflow (`UPEX BUG/DEFECT LIFE CYCLE`) but mean different
+types share one workflow (see `.agents/jira-workflows.json`) but mean different
 things. Misclassification corrupts every downstream metric (defect-escape rate,
 pre-release containment, enhancement backlog).
 
@@ -136,7 +136,7 @@ issue has its own QA owner; clobbering it destroys accountability and metrics.
 The never-overwrite rule protects `qa_assignee` from the harness. It does not
 protect the native `assignee` from **Jira itself**: a workflow transition may
 carry an *assign* post-function that the transition catalog does not show.
-Measured 2026-09-17 on a live project: `start_testing` and `qa_sign_off` each
+Measured on a live project (see ADR-0006): `start_testing` and `qa_sign_off` each
 silently moved a Story's `assignee` from the developer to the QA engineer who
 fired the transition. On a project whose doctrine keeps the two owners distinct
 — this one — QA sign-off quietly took delivery ownership off the dev on every
@@ -304,7 +304,7 @@ the relevant process epic by the configured name:
 1. **Exists** → parent the new issue to it **and cache its key** into
    `.agents/project.yaml` `qa.qa_epics.<epic>.key` when that leaf is still
    `null` (or holds a stale key). Discovery without cache-back is the measured
-   failure: 2026-09-17, all four Epics existed in Jira while every `key` was
+   failure (see ADR-0006): all four Epics existed in Jira while every `key` was
    `null`, so each session re-discovered them — or read the `null` as "absent"
    and proposed creating duplicates of Epics that were already there. The cache
    is the whole point of the leaf; leaving it `null` after a successful lookup
@@ -323,7 +323,9 @@ the relevant process epic by the configured name:
 
 Filling the report richly is not optional polish — these fields *are* the
 defect-management metrics (JQL filters, dashboards, escape/containment rates).
-A report that skips them is incomplete.
+A report that skips them is incomplete. The table is the doctrine per slug;
+the authoritative matrix an instance enforces is `required:` per work type in
+`.agents/jira-required.yaml`, so when the two disagree, fix the yaml, never the table.
 
 | Field | Slug / native | Required | Source |
 |---|---|---|---|
@@ -354,13 +356,13 @@ field.
 one-line justification when business urgency diverges from technical severity
 (e.g. a `trivial`-severity typo in the landing hero may warrant `High` priority).
 
-| Severity (`{{jira.severity}}`) | Priority (native) |
+| Severity (`{{jira.severity}}`, option slugs declared in `.agents/jira-required.yaml`) | Priority (native) |
 |---|---|
-| `critica` | Highest |
-| `mayor` | High |
-| `moderada` | Medium |
-| `menor` | Low |
-| `trivial` | Lowest |
+| `{{jira.severity.critica}}` | Highest |
+| `{{jira.severity.mayor}}` | High |
+| `{{jira.severity.moderada}}` | Medium |
+| `{{jira.severity.menor}}` | Low |
+| `{{jira.severity.trivial}}` | Lowest |
 
 ---
 

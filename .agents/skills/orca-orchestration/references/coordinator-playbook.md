@@ -4,9 +4,8 @@
 > Grammar source: LOAD the stubs in `orchestration.orchestrator_skills` (`.agents/project.yaml`)
 > alongside this skill, then ask the binary only for a DEEP topic a stub points at. This file
 > carries the ORDER, the repo-specific decisions and the traps — not the vendor reference.
-> Every command below was checked against the live schema (`orca agent-context --json`,
-> app version 1.4.190, 2026-09-17). Re-check with `orca agent-context --json` before trusting a
-> flag on a newer version.
+> Every command below was checked against the live schema (`orca agent-context --json`).
+> Re-check with `orca agent-context --json` after any upgrade before trusting a flag.
 
 ---
 
@@ -55,8 +54,8 @@ orca orchestration task-create --display-name '<KEY>' --spec '/<workflow-skill> 
 #     --display-name is the worker row's label in the app; without it the row shows the spec's first
 #       line. Read it back as `.display_name` (snake_case; `.title` does not exist, G49).
 #     --deps <json_array> exists but the element shape is undocumented: do not use it yet (G8)
-#     Measured cost of a thin spec: a worker ran seven of its nine steps on a one-line framing
-#     before the brief reached it, and three of its commits carried the harness-derived session
+#     Measured cost of a thin spec (G58): a worker ran most of its steps on a one-line framing
+#     before the brief reached it, and its commits carried the harness-derived session
 #     label instead of the fleet one — unfixable once pushed (Critical Rule #6).
 
 # 3 · placement
@@ -135,11 +134,11 @@ orca worktree rm --worktree id:<repoId>::<path> --force --json </dev/null && git
 
 **`</dev/null` on every scripted call.** The binary reads stdin when stdin is attached, and inside a
 loop or a background shell that read never returns: the command hangs with no output, which is
-indistinguishable from slow work. Measured 2026-09-04: a loop creating 18 tasks blocked on the FIRST
-call for over three minutes; with `</dev/null` all 18 finished in seconds.
+indistinguishable from slow work. Measured (G4): a loop creating tasks blocked on the FIRST call for
+minutes; with `</dev/null` every call finished in seconds.
 
 **Steps 3-4-5-6 are ONE indivisible operation.** Splitting them is how a worker ends up sitting
-idle: it happened twice on 2026-09-02, once for five hours.
+idle: it has happened, once for hours (G32).
 
 ---
 
@@ -276,8 +275,8 @@ launch and at every round boundary, not only at the end.
 - **An unacknowledged batch replays forever and hides everything behind it.** Delivery is FIFO: while
   a batch is unacknowledged, `check` keeps returning that same batch and newer messages queue behind
   it, invisible. Worse: because the mailbox already counted as having unread mail, **the runtime does
-  not emit a new notice** (it notifies on empty → non-empty). Measured 2026-09-14: an ack inside a
-  compound command exited non-zero, nobody checked, and four messages piled up for hours.
+  not emit a new notice** (it notifies on empty → non-empty). Measured (G2): an ack inside a
+  compound command exited non-zero, nobody checked, and messages piled up for hours.
 - **Never build a monitor.** The runtime injects a notice into the conductor's session when mail
   arrives. A homemade monitor competes with that notice, can null it, arrives late by construction,
   and triggers on echoes — the conductor's own messages are visible on the worker's screen, so a

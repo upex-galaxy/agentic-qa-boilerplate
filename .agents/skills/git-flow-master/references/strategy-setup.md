@@ -145,7 +145,7 @@ Once branches are materialized and decisions captured, persist in this order:
    - `policy` — `direct_push_to_protected` / `admin_bypass` / `require_pr_reviews`, captured from Q4 (applies to every strategy; defaults are per-strategy).
    - `branch_prefixes` — `precedence` + naming patterns (carry the defaults unless the user overrides).
    - `description` — the one-paragraph human summary of the flow for this repo.
-   - `meta.created` — today's date; bump `meta.setup_version` on a re-run that changes the schema.
+   - `meta.created` — the date of the run; bump `meta.setup_version` on a re-run that changes the schema.
    Per-strategy field values: `references/branching-strategies.md` → "git_strategy field rules (per strategy)".
 2. **Set up local tracking** for any newly-ensured branch (`git branch --set-upstream-to=origin/<branch> <branch>` or `git checkout -b <branch> origin/<branch>`), so later operations don't re-detect.
 

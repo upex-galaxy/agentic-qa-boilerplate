@@ -35,7 +35,7 @@ a system temp directory (it triggers a permission prompt on some harnesses).
 | 1 | **Goal** | unchanged: one sentence |
 | 2 | **Context docs** | ABSOLUTE paths into the PRIMARY checkout. A relative path resolves against a cwd the worker may not share, and a path inside the worker's own worktree may not exist there at all |
 | 3 | **Project Standards (auto-resolved)** | unchanged: compact rules pasted from the generated skill registry. A worker trusts them and does not re-read the full SKILL.md unless told to |
-| 4 | **Skills to load** | the domain skill by trigger, `orca-orchestration` in WORKER mode, AND the stubs in `orchestration.orchestrator_skills` (the vendor command grammar — load them, they are ~2k tokens for the pair and skipping them is what produces invented flags) |
+| 4 | **Skills to load** | the domain skill by trigger, `orca-orchestration` in WORKER mode, AND the stubs in `orchestration.orchestrator_skills` (the vendor command grammar — load them, they are small and skipping them is what produces invented flags) |
 | 5 | **Exact instructions** | numbered, each naming its tool or skill action, and each verifiable |
 | 6 | **Report format** | two destinations now: the long report FILE, and the `worker_done` message that points at it |
 | 7 | **Rules** | the relevant Critical Rules, plus the fleet prohibitions below |
@@ -82,8 +82,9 @@ a system temp directory (it triggers a permission prompt on some harnesses).
 
    **Continuation, in writing**: run every stage without returning to the prompt until `worker_done`
    is sent; a stage boundary is not a checkpoint. It belongs here AND in the launch prompt, because
-   as a file pointer the same sentence reads as reference material — two of three workers in one
-   fleet stopped mid-work on briefs that already said it. The prompt is what makes it an instruction.
+   as a file pointer the same sentence reads as reference material — measured on a real fleet
+   (G58): workers stopped mid-work on briefs that already said it. The prompt is what makes it an
+   instruction.
 
    **The mandatory `ask`**: name it explicitly — when the worker's own measurement contradicts a
    conductor instruction, it stops and asks with both readings and its evidence. Never silent
@@ -178,6 +179,6 @@ Then send worker_done exactly once, outcome succeeded|failed, with --files-modif
 | no file-ownership list in a same-checkout fleet | two workers edit one file and one of them loses the work |
 | no explicit heartbeat prohibition | the worker obeys its injected preamble and wakes the conductor every few minutes |
 | claims listed in the brief while the protocol says "wait for the grant" | the worker cannot tell which document governs and stalls on a claim that was never disputed. Measured |
-| the continuation rule only in the brief, never in the prompt | the worker reads it as reference material and stops at the first stage boundary anyway. Measured on two of three workers |
+| the continuation rule only in the brief, never in the prompt | the worker reads it as reference material and stops at the first stage boundary anyway. Measured on a real fleet (G58) |
 | a launch prompt containing `"` or `<` / `>` | the shell mangles the line; the terminal reports success and nothing ran |
 | "report when you are done" with no path and no shape | a prose report the conductor cannot diff, aggregate or hand to the next wave |

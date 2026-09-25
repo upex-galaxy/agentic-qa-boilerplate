@@ -148,7 +148,7 @@ bun xray backup restore --file backup.json --project NEW_PROJ              # exe
 
 ### Mode 2 — Sync-by-key (the migration path)
 
-Use when the Jira project was already migrated to the target site **with keys preserved** (e.g. UPEXGALAXY67 → 69). The Test/Precondition/Plan/Set/Execution issues already exist; sync re-pushes the Xray payload onto them by resolving each key → destination `issueId` via Jira REST.
+Use when the Jira project was already migrated to the target site **with keys preserved** (e.g. `<SITE>67` → `<SITE>69`). The Test/Precondition/Plan/Set/Execution issues already exist; sync re-pushes the Xray payload onto them by resolving each key → destination `issueId` via Jira REST.
 
 ```bash
 bun xray backup restore --file backup.json --project SAME_KEY --sync
@@ -264,7 +264,7 @@ If keys were **not** preserved (different project key on destination), drop `--s
 |---|---|
 | Sync creates duplicates instead of updating | Target Jira creds missing → key→id resolution returned null → fell back to create. Configure `--jira-*` / `.env`. |
 | `test list` prints `(N total, showing 0)`; `test get <KEY>` says `Test not found` | Xray is installed but the **project is not configured** on that site. Configure Miscellaneous / Test Coverage / Defect Mapping / Test Environments in the UI, then re-index. Preflight does NOT catch this. |
-| Post-restore counts look lower than the backup | The list commands default to **20 rows** and truncate silently while the header shows the true total. Re-check with `--limit` above the expected count, and read the `(N total)` header. |
+| Post-restore counts look lower than the backup | The list commands default to a small `--limit` (see `cli/xray`) and truncate silently while the header shows the true total. Re-check with `--limit` above the expected count, and read the `(N total)` header. |
 | Dry-run says `Would create ...` under `--sync` | Real signal: that key did not resolve on the destination, so the restore WOULD duplicate it. Check the key exists there and that `auth status` shows the destination Jira URL. |
 | Restore was interrupted (timeout, Ctrl-C) | Safe to re-run. `--sync` resolves by `originalKey` and updates in place; the repeat converges with `0 created`. Background projects above ~50 runs. |
 | `Nothing to sync for <KEY>` on many tests | Not a failure. Those source tests carry no steps/gherkin/definition. Verify with `jq '[.tests[] \| select((.steps//[])\|length > 0)] \| length'` on the backup. |

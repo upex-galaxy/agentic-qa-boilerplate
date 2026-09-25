@@ -1,16 +1,13 @@
 # The installer — what `bun run setup` configures
 
 > **Audience**: QA engineers cloning `agentic-qa-boilerplate` for the first time, or anyone wanting to understand what `bun run setup` configures (gentle-ai, community skills, MCPs, local skills) and what is optional.
-> **Read time**: 8 minutes.
-> **Status**: updated 2026-08-23 — 5-phase TUI flow, step idempotency, GitHub repo step, three-harness selection (Claude Code / OpenCode / Codex).
->
-> This document is the **contract that `cli/install.ts` implements**. The four layers of the workstation — gentle-ai (Engram only, minimal preset), community skills via `bunx skills`, locally committed workflow skills (including the vendored `judgment-day`), and the 6 canonical MCPs — are documented below in that order.
+> This document is the **contract that `cli/install.ts` implements**. The four layers of the workstation — gentle-ai (Engram only, minimal preset), community skills via `bunx skills`, locally committed workflow skills (including the vendored `judgment-day`), and the MCP servers `.mcp.json` declares — are documented below in that order.
 
 ---
 
-## 5-phase install flow
+## Install flow
 
-`bun run setup` runs in 5 named phases. Each phase is labelled in the terminal output. The installer is **idempotent**: every step writes a timestamp to `.template/installer.state.json` on success, and re-runs skip completed steps automatically.
+`bun run setup` runs in named phases. Each phase is labelled in the terminal output. The installer is **idempotent**: every step writes a timestamp to `.template/installer.state.json` on success, and re-runs skip completed steps automatically.
 
 ### Phase 1 — DETECTION
 
@@ -31,9 +28,9 @@ Codex Desktop needs no separate entry: it consumes the same repository configura
 Downloads and installs all software dependencies:
 
 - `bun install` — project Node/Bun packages including `@playwright/test`
-- `bun run pw:install` — Playwright browser binaries (~300 MB Chromium)
+- `bun run pw:install` — Playwright browser binaries (Chromium)
 - `gentle-ai install --preset minimal` — Engram persistent memory only (one batched call per agent). SDD-* and foundation skills are NOT installed — see [What `gentle-ai install` adds](#what-gentle-ai-install-adds) below.
-- `bunx skills add` — project-level skills (`playwright-cli`, `playwright-best-practices`, `resend-cli`) and user-level skills (7 cross-project utilities)
+- `bunx skills add` — project-level skills (`PROJECT_LEVEL_SKILLS` in `cli/install.ts`) and user-level skills (`USER_LEVEL_SKILLS`, cross-project utilities)
 
 ### Phase 3 — CONFIGURATION
 
@@ -48,7 +45,7 @@ Wires runtime configuration:
 
 Validates the environment is usable:
 
-- External CLI table — `which`-checks all 7 CLIs (`bun`, `gh`, `rg`, `acli`, `playwright-cli`, `jq`, `resend`) and prints a status table with purpose and install hint for missing entries
+- External CLI table — `which`-checks every entry of `EXTERNAL_CLIS` in `cli/install.ts` and prints a status table with purpose and install hint for missing entries
 - State persistence — writes updated `.template/installer.state.json`
 
 ### Phase 5 — INITIAL CONFIGURATION
@@ -58,7 +55,7 @@ Interactive post-install configuration steps. Skipped automatically when no TTY 
 - `agents:setup` — populates `.agents/project.yaml` with project identity, Jira URL, environments
 - `acli` auth probe — collects `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` into `.env` and the site host into `.agents/project.yaml` if missing, then runs `acli jira auth login` (stdin-piped token, `--site` from `bun run jira:url --slug`)
 - **Jira catalogs sync (Step 13)** — one prompt picks the catalog source for the whole project, then syncs custom fields + workflow statuses/transitions accordingly:
-  - **My own Jira workspace** — runs the Jira auth loop (up to 5 attempts), then `jira:sync-fields --force` + `jira:sync-workflows --force`. **Requires Jira `Administer` permission** (global or project-scoped); without it the scripts exit 0 and the step records `state.postInstall.jiraSync* = "skipped-no-admin"`.
+  - **My own Jira workspace** — runs the Jira auth loop, then `jira:sync-fields --force` + `jira:sync-workflows --force`. **Requires Jira `Administer` permission** (global or project-scoped); without it the scripts exit 0 and the step records `state.postInstall.jiraSync* = "skipped-no-admin"`.
   - **UPEX-Galaxy standard** — `jira:sync-fields --upex --force` + `jira:sync-workflows --upex --force` + `jira:sync-link-types --upex`, downloading the reference catalogs from `upex-galaxy/agentic-qa-boilerplate@main` (no admin, no Jira API — just GitHub raw).
   - **Skip for now** — leaves the catalogs unconfigured.
 
@@ -94,7 +91,7 @@ Every step writes an ISO timestamp to `state.steps[<key>]` in `.template/install
 | `INSTALL_FORCE_ALL=1`         | Same as `--force`                                   |
 | `INSTALL_FORCE_<UPPER_KEY>=1` | Same as `--force-step` (dashes become underscores)  |
 
-Step keys that participate in idempotency (each writes an ISO timestamp on success): `5-deps-install`, `6-playwright`, `8-skills-gentle-ai`, `9-skills-community-project`, `9-skills-community-global`, `12-api-bootstrap`, `13-github-repo`. Phase 1 detection steps (`1-repo-verify`, `2-gentle-ai-detect`, `3-gentle-ai-install`, `4-agent-detect`) and Phase 4 verification/persistence (`10-mcp-env`, `11-verify-clis`, `14-state-write`) always re-run since they probe live state. Phase 5 post-install steps (`agents:setup`, `acli:auth`, `jira:sync-fields`, `jira:sync-workflows`, `jira:check`) track status under `state.postInstall.*` rather than `state.steps`.
+The step keys are listed in the header comment of `cli/install.ts`. The install steps write an ISO timestamp on success and are skipped on re-run; the Phase 1 detection steps and the Phase 4 verification / persistence steps always re-run since they probe live state. Phase 5 post-install steps (`agents:setup`, `acli:auth`, `jira:sync-fields`, `jira:sync-workflows`, `jira:check`) track status under `state.postInstall.*` rather than `state.steps`.
 
 ---
 
@@ -106,11 +103,11 @@ The installer is self-diagnosing: every stage prints the exact install URL or co
 
 | Tool                                                                               | Min version | Enforced at                                 | Message you see on failure                                                                      |
 | ---------------------------------------------------------------------------------- | ----------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| **Bun**                                                                            | `>= 1.0.0`  | `bun run setup:doctor --preflight` (Step 0) | `✗ Preflight failed · Bun X.Y.Z is too old (need >= 1.0.0) · Fix: bun upgrade`                  |
-| **`node` (the real binary)**: hooks run `node .agents/hooks/personality-reinject.mjs` | `>= 18`     | Scaffolder doctor (`packages/…/doctor.ts`) + `bun run setup:doctor --preflight` (Step 0) | `node >= 18 · not found on PATH — install node >= 18: https://nodejs.org`                       |
+| **Bun**                                                                            | the floor the preflight enforces | `bun run setup:doctor --preflight` (Step 0) | `✗ Preflight failed · Bun X.Y.Z is too old (need >= <min>) · Fix: bun upgrade`                  |
+| **`node` (the real binary)**: hooks run `node .agents/hooks/personality-reinject.mjs` | `MIN_NODE_MAJOR` in `cli/doctor.ts` | Scaffolder doctor (`packages/…/doctor.ts`) + `bun run setup:doctor --preflight` (Step 0) | `node >= <min> · not found on PATH — install node >= <min>: https://nodejs.org`                       |
 | **`node_modules/@inquirer/prompts`** (proxy for `bun install`)                     | —           | Preflight (Step 0)                          | `✗ Preflight failed · Missing node_modules/@inquirer/prompts · Fix: bun install`                |
 | **Agent** — Claude Code (`~/.claude/`), OpenCode (`~/.config/opencode/`) **or** Codex (`codex` on PATH, or `.codex/config.toml` in the repo) | latest      | Step 4 (agent selection)                    | `✗ No agent executable or Codex repository configuration detected.` followed by all three docs URLs |
-| `git`                                                                              | any         | Scaffolder (`runners.ts:23`) + Husky hooks  | `ENVIRONMENT · git is required but not found on PATH. · Install: https://git-scm.com/downloads` |
+| `git`                                                                              | any         | Scaffolder (`packages/create-agentic-qa/src/runners.ts`) + Husky hooks  | `ENVIRONMENT · git is required but not found on PATH. · Install: https://git-scm.com/downloads` |
 | `tar`                                                                              | any         | Scaffolder (`download.ts`)                  | `ENVIRONMENT · \`tar\` not found on PATH.`                                                      |
 
 The agent check is the gotcha that bites first-timers most often: a missing `gh` or `acli` just yields a warning later, but zero detected agents hard-stops Step 4. Install at least one of Claude Code, OpenCode, or Codex first, then run `bun run setup`.
@@ -128,17 +125,17 @@ Under WSL, keep the project on the Linux filesystem (`~/projects/...`). On a `/m
 
 | Tool          | Min version | Enforced at                   | What happens on miss                                                                                                                                                                                                                                                                                                                                                                                                        |
 | ------------- | ----------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **gentle-ai** | `>= 1.26.5` | `install.ts:500-545` (Step 2) | Prints `gentle-ai not detected on PATH.` then offers two paths: (a) show install commands (`brew install gentle-ai` on macOS, `go install github.com/Gentleman-Programming/gentle-ai/cmd/gentle-ai@latest` on Linux) and exit, or (b) continue without gentle-ai. Older-than-min version triggers `gentle-ai X.Y.Z is older than required 1.26.5. Upgrade with: gentle-ai update` and the setup continues with the warning. |
+| **gentle-ai** | `MIN_GENTLE_AI_VERSION` in `cli/install.ts` | `detectGentleAi` in `cli/install.ts` (Step 2) | Prints `gentle-ai not detected on PATH.` then offers two paths: (a) show install commands (`brew install gentle-ai` on macOS, `go install github.com/Gentleman-Programming/gentle-ai/cmd/gentle-ai@latest` on Linux) and exit, or (b) continue without gentle-ai. Older-than-min version triggers `gentle-ai X.Y.Z is older than required <min>. Upgrade with: gentle-ai update` and the setup continues with the warning. |
 
-If you skip gentle-ai, Engram persistent memory is NOT installed (no cross-session memory). The locally committed QA workflow skills (`/shift-left-testing`, `/sprint-testing`, `/test-automation`, `/test-documentation`, `/regression-testing`, `/agentic-qa-core`, vendored `/judgment-day`) keep working, and the 6 canonical MCPs are still configured.
+If you skip gentle-ai, Engram persistent memory is NOT installed (no cross-session memory). The committed skills keep working, and the MCP servers `.mcp.json` declares are still configured.
 
 ### Per-skill CLIs — lazy-required, non-blocking at setup
 
 These CLIs are **not optional** for the workflow — each one is consumed by a specific skill (`gh` for `/git-flow-master` + `/regression-testing`, `acli` for `/acli` + `/shift-left-testing` + `/sprint-testing` + `/test-documentation`, `playwright-cli` for `/playwright-cli`, `resend` for `/resend-cli`, `jq` for `acli ... --json | jq ...` pipelines). The installer cannot guess which skills you will run, so it ships them as **lazy-required**: a missing binary surfaces as a warning during Step 10 but never blocks setup. Install them up front if you plan to use the whole stack, or on-demand when the owning skill surfaces a missing-binary error.
 
-The check itself is a **PATH probe** (`which <name>` on POSIX, `where <name>` on Windows — see `install.ts:403`). Presence only — no version compare, no auto-install.
+The check itself is a **PATH probe** (`which <name>` on POSIX, `where <name>` on Windows — see `verifyExternalClis` in `cli/install.ts`). Presence only — no version compare, no auto-install.
 
-`install.ts` Step 10 (`verifyExternalClis`) iterates the `EXTERNAL_CLIS` array (`install.ts:185`) and prints a per-CLI status table:
+`install.ts` Step 10 (`verifyExternalClis`) iterates the `EXTERNAL_CLIS` array in `cli/install.ts` and prints a per-CLI status table:
 
 ```text
 CLI              Status      Purpose
@@ -192,7 +189,7 @@ Not in `.env` at all: MCP servers that run at harness level (web search, Postman
 
 ## Running setup from an AI agent
 
-Most users today ask an AI (Claude Code, OpenCode, Codex, …) to drive the setup instead of running it by hand. The installer is built for both flows; the AI path uses a few specific entry points:
+Most users ask an AI (Claude Code, OpenCode, Codex, …) to drive the setup instead of running it by hand. The installer is built for both flows; the AI path uses a few specific entry points:
 
 ### `bun run setup:doctor` — read-only health check
 
@@ -221,7 +218,7 @@ Exit code: `0` when everything is green, `1` when any pending action remains. JS
 }
 ```
 
-`pending_actions[].type` is one of: `credential` · `shell_hook` · `system_install` · `shell_command`. A `credential` entry appears in `pending_actions` only for a core variable with no default and no feature switch (none today); a core credential behind a switch that is on lands in `warnings` instead, and project / tooling variables are rows in `env_var_scopes`, never actions. The AI iterates the list and picks the right tool per type:
+`pending_actions[].type` is one of: `credential` · `shell_hook` · `system_install` · `shell_command`. A `credential` entry appears in `pending_actions` only for a core variable with no default and no feature switch (the manifest decides which); a core credential behind a switch that is on lands in `warnings` instead, and project / tooling variables are rows in `env_var_scopes`, never actions. The AI iterates the list and picks the right tool per type:
 
 | type             | Who handles it | How                                                                                                                             |
 | ---------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------- |
@@ -278,7 +275,7 @@ Then `bun run setup:doctor --json` to confirm.
 
 ## Launching the agent after setup
 
-`.env` is the single source of credentials, but no harness reads it directly. Claude Code reads the `env` block of `.claude/settings.local.json`; OpenCode reads `.auth/opencode/<VAR>` files via `{file:}`; Codex reads the process environment (`bun run codex` or direnv). `bun run harness:env` derives the first two from `.env`, and `bun run setup:doctor` reports drift. After filling `.env`: run `bun run harness:env`, then restart the agent session (MCP servers read credentials at startup). `bun run setup` finishes with two ways to launch, both of which put MCP env vars (e.g. `TAVILY_API_KEY`, `ATLASSIAN_API_TOKEN`) into the process environment Codex and the shell CLIs read:
+`.env` is the single source of credentials, but no harness reads it directly. Claude Code reads the `env` block of `.claude/settings.local.json`; OpenCode reads `.auth/opencode/<VAR>` files via `{file:}`; Codex reads the process environment (`bun run codex` or direnv). `bun run harness:env` derives the first two from `.env`, and `bun run setup:doctor` reports drift. After filling `.env`: run `bun run harness:env`, then restart the agent session (MCP servers read credentials at startup). `bun run setup` finishes with two ways to launch, both of which put MCP env vars (e.g. `ATLASSIAN_API_TOKEN`) into the process environment Codex and the shell CLIs read:
 
 | Method                                              | Platform                                                                                      | One-time setup                                                                                                                                          | Usage                                                 |
 | --------------------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
@@ -315,9 +312,8 @@ Two community tools change how the agent talks and how the terminal looks. Both 
 
 A user-level skill that compresses agent output by ~65-75% by talking like caveman: drop articles, fillers, and pleasantries; keep technical substance exact. Code, commits, PRs, and security warnings always render in normal English (built-in boundary).
 
-- Levels: `lite` | `full` (this repo's default) | `ultra` | `wenyan`
+- Levels: the ones the plugin documents; this repo's default is `full`
 - Reverse triggers (any of these returns the agent to verbose mode): `normal mode`, `habla normal`, `stop caveman`, `speak normally`, `be verbose`, `más detallado`
-- Requires Node >= 18
 
 Install with `--no-hooks`:
 
@@ -352,7 +348,7 @@ This repo uses gentle-ai exclusively for **Engram persistent memory**. We invoke
 
 **Rationale**: this is a QA repo. Our workflow skills (`/sprint-testing`, `/test-automation`, `/test-documentation`, `/regression-testing`) already cover Plan → Code → Verify natively. SDD ceremony was designed for software-design workflows (specs, archives, strict TDD) that don't apply to authoring E2E/API tests. Adding them at install time would create overlap and confusion. Adversarial review is covered by the vendored `judgment-day` skill committed under `.agents/skills/judgment-day/` — no upstream dependency.
 
-The integration is **not strict**. If you choose to skip gentle-ai, the repo still works: workflow skills committed locally keep functioning, and the 6 canonical MCPs are still configured. What you lose is persistent cross-session memory (engram).
+The integration is **not strict**. If you choose to skip gentle-ai, the repo still works: workflow skills committed locally keep functioning, and the MCP servers `.mcp.json` declares are still configured. What you lose is persistent cross-session memory (engram).
 
 ---
 
@@ -374,7 +370,7 @@ That's it for the minimal preset. No SDD-* skills, no `skill-registry`, no `judg
 
 ### Re-run safety
 
-Re-runs are safe: gentle-ai snapshots existing config files before overwriting (compressed tar.gz, deduped, last 5 retained). They DO re-apply, they don't skip. There is no `--yes` flag (gentle-ai's `install` subcommand uses Go's stdlib `flag` package and exposes only `--agent(s)`, `--component(s)`, `--skill(s)`, `--persona`, `--preset`, `--sdd-mode`, `--dry-run`). Internal prompts auto-default when stdin is not a TTY.
+Re-runs are safe: gentle-ai snapshots existing config files before overwriting. They DO re-apply, they don't skip. There is no `--yes` flag on `install` (`gentle-ai install --help` lists the flags it exposes). Internal prompts auto-default when stdin is not a TTY.
 
 ### Want the SDD suite? Install manually
 
@@ -384,7 +380,7 @@ The minimal preset is sufficient for every shipped workflow skill — `/framewor
 gentle-ai install --agent <agent> --components engram,sdd
 ```
 
-This adds 10 SDD skills (`sdd-init/explore/propose/spec/design/tasks/apply/verify/archive/onboard`) + the `_shared/` runtime + 9 slash commands + the SDD orchestrator injection. Restart your agent after install so the new skills appear in the system-reminder list.
+This adds the SDD suite: its skills, the shared runtime, its slash commands and the SDD orchestrator injection (the gentle-ai docs list them). Restart your agent after install so the new skills appear in the system-reminder list.
 
 ---
 
@@ -396,25 +392,13 @@ Independent of gentle-ai, the installer also runs the official Anthropic `bunx s
 
 Installed into `.agents/skills/` via `bunx skills add` (project mode) — the same canonical store as the committed skills, so all three harnesses see them without a second copy. Not committed — `cli/install.ts` re-fetches them on every install so we always pick up upstream fixes. They are critical to the QA stack and must travel with every clone of the repo.
 
-| Slug                        | Source                                         | Why project-level                                                                                                                                      |
-| --------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `playwright-cli`            | `microsoft/playwright-cli`                     | Browser automation CLI used by `/sprint-testing` and `/test-automation` as the primary `[AUTOMATION_TOOL]`.                                            |
-| `playwright-best-practices` | `currents-dev/playwright-best-practices-skill` | Patterns / anti-flaky / axe-core / fixtures reference. Auto-loaded by `/test-automation` during the Code phase.                                        |
-| `resend-cli`                | `resend/resend-skills`                         | Resend email testing CLI. Pairs with the `resend` external binary verified in step 11. Project-level because email provider choice varies per project. |
-| `skill-creator`             | `anthropics/skills`                            | The builder of every skill this repo scaffolds (`/framework-development` when the change IS a skill, `project-context` mode `context-skill` for a project's `<aspect>-context`). Project-level so no clone scaffolds without it. |
+The list is `PROJECT_LEVEL_SKILLS` in `cli/install.ts`; each entry carries its source package and the reason it travels with the project (the browser CLI the `[AUTOMATION_TOOL]` resolves to, the Playwright reference, the email CLI, the skill builder).
 
 ### User-level (global)
 
 Installed with `bunx skills add <package> [--skill <name>] --global --yes` and useful across most projects regardless of stack.
 
-| Slug                  | Source                     | Why user-level                                                                       |
-| --------------------- | -------------------------- | ------------------------------------------------------------------------------------ |
-| `find-skills`         | `vercel-labs/skills`       | Discover installable skills — universal                                              |
-| `github-actions-docs` | `xixu-me/skills`           | GitHub Actions workflow reference — universal                                        |
-| `brainstorming`       | `obra/superpowers`         | Pre-implementation ideation (framework features, test design edge cases) — universal |
-| `html-ppt`            | `lewislulu/html-ppt-skill` | HTML presentations for sprint planning / retro / demo decks — universal              |
-| `bun`                 | `bun.sh/docs`              | Bun runtime reference — universal across every project that uses bun                 |
-| `mkd`                 | `upex-galaxy/agentic-user-skills` | Make Decision: decision-deck browser UI the AI drives via a spec JSON (justified options, recommended pick, copy-JSON contract) — universal |
+The list is `USER_LEVEL_SKILLS` in `cli/install.ts`; each entry carries its source package and the reason it is universal rather than project-bound.
 
 ### Skipping or re-running
 
@@ -437,10 +421,10 @@ The installer configures whichever of **Claude Code, OpenCode, and Codex** you s
 | **MCP** | `.mcp.json` | `opencode.jsonc` | `.codex/config.toml` |
 
 - **Instructions.** `AGENTS.md` is the only instruction body. OpenCode and Codex load it natively; Claude Code loads `CLAUDE.md`, which is exactly `@AGENTS.md` plus one newline. A documented import rather than a symlink, so it survives a Windows checkout.
-- **Skills.** All 19 committed skills live in `.agents/skills/`, and the community project-level skills install into the same store. Claude Code reaches that tree through `.claude/skills`, a POSIX symlink (Windows junction) that is generated and gitignored: never committed, never hand-edited.
-- **Commands.** The 10 slash commands carry no workflow body. Both wrapper sets are 7-line files generated from `.agents/compatibility/command-aliases.json`; each names a target skill plus a mode and forwards `$ARGUMENTS`. Codex skips the wrapper layer and invokes the skill directly.
+- **Skills.** Every committed skill lives in `.agents/skills/`, and the community project-level skills install into the same store. Claude Code reaches that tree through `.claude/skills`, a POSIX symlink (Windows junction) that is generated and gitignored: never committed, never hand-edited.
+- **Commands.** The slash commands carry no workflow body. Both wrapper sets are generated from `.agents/compatibility/command-aliases.json`; each names a target skill plus a mode and forwards `$ARGUMENTS`. Codex skips the wrapper layer and invokes the skill directly.
 - **Hook.** `.agents/hooks/personality-reinject.mjs` holds the contract text once. Claude and Codex run it as a command hook; OpenCode imports the constant from a thin plugin.
-- **MCP.** The canonical server set is whatever `.mcp.json` declares (the local servers plus the two that need no key; web search and Postman run at harness level, see `cli/lib/harness-level-mcps.ts`); every server there must exist in the other two configs. Parity is checked semantically: each native format is normalized before comparison and matched on the `.env` variables each server depends on and on its literal settings, so a server missing from one host, or present in one host only, is a failure. The six boilerplate-known ids additionally get a strict per-host shape check when the project declares them; any other server gets the generic check only, so a downstream project may add or drop servers freely. Codex cannot expand `${VAR}`, so `.codex/config.toml` names every secret by variable (`bearer_token_env_var`, `env_vars`). The opt-in Atlassian MCP block for all three hosts, and the parity contract in full, live in `.agents/skills/agentic-qa-core/references/mcp-atlassian-optin.md`; Gemini CLI has no adapter.
+- **MCP.** The canonical server set is whatever `.mcp.json` declares (web search and Postman run at harness level, see `cli/lib/harness-level-mcps.ts`); every server there must exist in the other two configs. Parity is checked semantically: each native format is normalized before comparison and matched on the `.env` variables each server depends on and on its literal settings, so a server missing from one host, or present in one host only, is a failure. The boilerplate-known ids (`KNOWN_MCP_IDS` in `cli/lib/agent-compatibility-contracts.ts`) additionally get a strict per-host shape check when the project declares them; any other server gets the generic check only, so a downstream project may add or drop servers freely. Codex cannot expand `${VAR}`, so `.codex/config.toml` names every secret by variable (`bearer_token_env_var`, `env_vars`). The opt-in Atlassian MCP block for all three hosts, and the parity contract in full, live in `.agents/skills/agentic-qa-core/references/mcp-atlassian-optin.md`.
 
 ### Regenerating and verifying
 
@@ -450,7 +434,7 @@ Bold `[generated]` cells above are output. Edit the source, then regenerate:
 |--------------------|------------|------------|
 | `CLAUDE.md` (one-line `@AGENTS.md` shim) | `AGENTS.md` | `bun run agents:compat` |
 | `.claude/skills` (POSIX symlink / Windows junction) | `.agents/skills/` | `bun run agents:compat` |
-| One Claude + one OpenCode wrapper per alias (10 upstream, plus any project-declared) | `.agents/compatibility/command-aliases.json`, overlaid by the optional `command-aliases.project.json` | `bun run agents:compat` |
+| One Claude + one OpenCode wrapper per alias (upstream plus any project-declared) | `.agents/compatibility/command-aliases.json`, overlaid by the optional `command-aliases.project.json` | `bun run agents:compat` |
 
 A project that needs its own slash commands declares them in `.agents/compatibility/command-aliases.project.json` (same schema as the upstream manifest; optional; bootstrap-only, so `bun run up` never overwrites it). The engine reads the upstream aliases first, then the overlay: same `alias` replaces, new `alias` adds, `wrapperHosts` always come from upstream. A wrapper file that neither manifest produced is reported by name (`Command wrapper not declared in any manifest: <path>; add it to .agents/compatibility/command-aliases.project.json or delete it`) and never deleted by the repair.
 
@@ -468,19 +452,19 @@ After that one update, the project works in Claude Code, OpenCode and Codex from
 
 ### What every `bun run up` reports
 
-The run ends with a single "Estado por superficie" table: one row each for Instrucciones y config, Skills, Comandos, Hooks, MCP, Env, Componentes, package.json, Git and Verificación (10 rows), with an ok or warn glyph. Below it comes ONE parity prompt, printed and saved to `.agents/prompts/parity-plan.md` (gitignored, single-use; `--dry-run` prints it and does not save it). Each row of the prompt names a surface, a file and concrete evidence: headings added, removed or changed in a watched file plus hunk counts, a server declared in `.mcp.json` but missing from a host, a wrapper file no manifest produced, a skill archived under `.template/pre-agents-migration/` because of a name collision, a component held back, an env key that drifted. The prompt tells the AI to present that table and WAIT for a decision per row (`keep project | take upstream | merge`) before editing, then apply only the chosen rows and run tests, types and lint.
+The run ends with a single "Estado por superficie" table: one row per surface, with an ok or warn glyph. Below it comes ONE parity prompt, printed and saved to `.agents/prompts/parity-plan.md` (gitignored, single-use; `--dry-run` prints it and does not save it). Each row of the prompt names a surface, a file and concrete evidence: headings added, removed or changed in a watched file plus hunk counts, a server declared in `.mcp.json` but missing from a host, a wrapper file no manifest produced, a skill archived under `.template/pre-agents-migration/` because of a name collision, a component held back, an env key that drifted. The prompt tells the AI to present that table and WAIT for a decision per row (`keep project | take upstream | merge`) before editing, then apply only the chosen rows and run tests, types and lint.
 
-Two flags and one watchlist shape that report. `--strict` exits 1 when the run ends with a blocking parity finding (a broken compat contract: alias, wrappers, hooks, MCP), for CI; without it the run warns and exits 0, and drift on a protected file never blocks. `.claude/settings.json`, `.codex/` and the husky hooks are delivered once when the project lacks them (bootstrap-only) and otherwise sit on the protected watchlist next to `AGENTS.md`, `.mcp.json`, `opencode.jsonc`, `.codex/config.toml`, `allurerc.mjs`, `playwright.config.ts`, the KATA bases and the CI workflows: the updater never overwrites them, so project permissions, servers and hook edits survive, and any drift from upstream appears as a prompt row (a stale hook command is still caught by `agents:compat:check`). Every row is one path: a stray wrapper is a single `add to overlay` row, and a watched file that also breaks a compat contract is one blocking row with both pieces of evidence. A run that applies nothing leaves the tree byte-identical (`git status` clean, the lock untouched). An aborted run, whatever the cause (dirty tree, corrupt lock, failed clone, declined migration or self-update), ends with `Abortado.` and exit 1 rather than a success line.
+Two flags and one watchlist shape that report. `--strict` exits 1 when the run ends with a blocking parity finding (a broken compat contract: alias, wrappers, hooks, MCP), for CI; without it the run warns and exits 0, and drift on a protected file never blocks. `.claude/settings.json`, `.codex/` and the husky hooks are delivered once when the project lacks them (bootstrap-only) and otherwise sit on the protected watchlist (`PROTECTED_WATCHLIST` in `cli/update-boilerplate.ts`: `AGENTS.md`, `.mcp.json` and the rest): the updater never overwrites them, so project permissions, servers and hook edits survive, and any drift from upstream appears as a prompt row (a stale hook command is still caught by `agents:compat:check`). Every row is one path: a stray wrapper is a single `add to overlay` row, and a watched file that also breaks a compat contract is one blocking row with both pieces of evidence. A run that applies nothing leaves the tree byte-identical (`git status` clean, the lock untouched). An aborted run, whatever the cause (dirty tree, corrupt lock, failed clone, declined migration or self-update), ends with `Abortado.` and exit 1 rather than a success line.
 
 One more thing on the migration run itself: the `.claude/skills` alias is NOT created in that invocation. The migration unindexes the committed `.claude/skills/*` tree, and git refuses to rewrite index entries behind a symlink, so an alias created right away would break `lint-staged` on the very commit that records the migration. The run prints the next step and repeats it in the closing box: commit the migration, then `bun run agents:compat` creates the alias. The compat check treats the missing alias as expected while that commit is pending (a re-run before it keeps deferring); every other contract is still enforced.
 
-### What updater 8.2 adds
+### What the updater guarantees
 
-`CLI_VERSION` 7.0 -> 8.2 in one jump, so the changes the dev boilerplate shipped in two live-run cycles land here together:
+Behaviour by area; the release history behind it is recorded in `.context/ADR/ADR-0006-forensic-measurements-ledger.md`.
 
 - **Never a destructive default.** `take upstream` is suggested only where the project lacks the content entirely. A row naming project-only servers, keys, headings or edits suggests `merge`; an `opencode.jsonc` holding project servers reads "only here: ... declare them in `.mcp.json` and `.codex/config.toml`, or remove them", still blocking, never "take upstream". Every `merge` on a watched file says what to port and what to keep (`port upstream additions only: <keys>; keep project-only key(s): <keys>`; `keep project` when only the project has extra keys; `take upstream` only when upstream added keys and nothing else differs).
 - **`--dry-run` previews with the new updater.** When upstream carries a newer `cli/`, the preview does not write it: the fetched updater runs from the upstream clone against the project (same flags, same cwd) and shows its migration plan, component preview and parity table. Nothing is written and the prompt is not saved. Without a terminal on stdin and no `--auto` / `--interactive`, the run assumes `--auto` and prints one notice instead of hanging.
-- **Post-sync gates.** After the apply, the project's `types:check`, `lint:check` and `kata:manifest:check` run (120 s each; a gate that does not finish is skipped with a note; a script that does not exist is skipped; `--no-gates` disables them). A failure becomes a "Verificación" row with the exit code, the first error lines and which of the failing files this run applied, plus a `Gates:` line in the closing box. Informational only: never an abort, never blocking under `--strict`.
+- **Post-sync gates.** After the apply, the project's `types:check`, `lint:check` and `kata:manifest:check` run (each under a timeout; a gate that does not finish is skipped with a note; a script that does not exist is skipped; `--no-gates` disables them). A failure becomes a "Verificación" row with the exit code, the first error lines and which of the failing files this run applied, plus a `Gates:` line in the closing box. Informational only: never an abort, never blocking under `--strict`.
 - **`package.json` rows and overwritten edits.** Every key kept at the project's value while upstream differs is one `package.json` row, with both values in the saved file. A synced file the project had edited (3-way against the lock cursor) and the run overwrote gets a `merge` row naming its `.backups/` copy and the hunk count.
 - **Re-run safety.** The run records what it wrote in `.template/last-apply.json` (gitignored, sha256 per path). The next dirty-tree guard exempts a recorded path whose hash still matches, so `bun run up --auto` twice in a row, without committing in between, proceeds as a no-op. An unrelated dirty synced path, or a synced file edited by hand since, still aborts, naming `Commit sugerido` and the prompt path.
 - **Converging rows for project-customized synced files.** `.husky/pre-commit` and `.husky/pre-push` are on the protected watchlist (project gates live there): delivered once when missing, never overwritten, one drift row per upstream change with the hunks as evidence. The rest of `.husky/` (the `_/` helpers) keeps syncing.
@@ -489,26 +473,18 @@ One more thing on the migration run itself: the `.claude/skills` alias is NOT cr
 - **Host-agnostic `cli/**`.** `cli/updater-host-types.test.ts` compiles `cli/**` with a required `NODE_ENV` on `ProcessEnv` on every `bun test`, so the synced tests never break under a host that augments `ProcessEnv`.
 - **`UPEX_TEMPLATE_REPO`.** Points the updater at a fork (`OWNER/REPO`, via `gh`) or a local clone (absolute path or `file://`, via `git`, no `gh` session), which is how an unpublished branch is tested against a consumer.
 
-### What updater 8.4 adds
-
-`CLI_VERSION` 8.3 -> 8.4, ported from the dev boilerplate. Five polish items.
-
-- **Self-update cursor unstuck from a 7.x parent.** A project's first self-update from a 7.x parent predates `UPEX_UPDATER_SELF_UPDATED`: that code re-execs the child on `UPEX_UPDATER_REEXEC=1` alone, with no signal that `cli/` was just written at upstream HEAD, so the lock cursor for that component never advanced. The re-exec child now checks for itself: it compares every file the self-update component owns against upstream by blob SHA and settles the cursor there when they all match, same effect as the env signal.
-- **Punctuation-insensitive heading comparison.** The parity report's markdown heading diff now normalizes separators before comparing: `## Setup — Config` and `## Setup: Config` read as the same heading instead of firing a spurious added/removed pair. Whitespace is collapsed too, so a stray double space never causes a false mismatch.
-- **Skills registry regenerated after parity.** `REGISTRY.md` now rebuilds after the parity hook runs, not before, so it reflects `.agents/skills/` as every hook left it, parity included. A skill row reporting a project edit overwritten now ends with `run bun run skills:registry`, since the registry the sync just wrote was built from the upstream content the overwrite applied, not the project's edit. The KATA manifest hook keeps its own place ahead of the gates.
-- **Silently seeded watched files.** A watched file with no marker yet, whose upstream copy provably has not changed since the project's own lock cursor, is seeded silently too now, same treatment as a freshly declared `updater.protected_paths` path but for a different reason: first-run noise on a migrated repo, or a project running per-file marker tracking for the first time, not a new upstream change to review.
-- **`Gates: omitidas (...)` line.** A run that skips the gates entirely (`--no-gates`, or nothing applied) now says so in the closing box instead of dropping the `Gates:` line: `Gates: omitidas (--no-gates)` or `Gates: omitidas (sin cambios)`.
-
-### What updater 8.3 adds
-
-`CLI_VERSION` 8.2 -> 8.3, ported from the dev boilerplate. Two of the six items were born in this repo's 8.2 port and came back upstream; the other four are polish from two more live runs.
+- **Self-update cursor without the env signal.** When the parent re-execs the child with no signal that `cli/` was just written at upstream HEAD, the re-exec child checks for itself: it compares every file the self-update component owns against upstream by blob SHA and settles the cursor there when they all match, same effect as the env signal.
+- **Punctuation-insensitive heading comparison.** The parity report's markdown heading diff normalizes separators before comparing: `## Setup — Config` and `## Setup: Config` read as the same heading instead of firing a spurious added/removed pair. Whitespace is collapsed too, so a stray double space never causes a false mismatch.
+- **Skills registry regenerated after parity.** `REGISTRY.md` rebuilds after the parity hook runs, not before, so it reflects `.agents/skills/` as every hook left it, parity included. A skill row reporting a project edit overwritten ends with `run bun run skills:registry`, since the registry the sync just wrote was built from the upstream content the overwrite applied, not the project's edit. The KATA manifest hook keeps its own place ahead of the gates.
+- **Silently seeded watched files.** A watched file with no marker yet, whose upstream copy provably has not changed since the project's own lock cursor, is seeded silently too, same treatment as a freshly declared `updater.protected_paths` path but for a different reason: first-run noise on a migrated repo, or a project running per-file marker tracking for the first time, not a new upstream change to review.
+- **`Gates: omitidas (...)` line.** A run that skips the gates entirely (`--no-gates`, or nothing applied) says so in the closing box instead of dropping the `Gates:` line: `Gates: omitidas (--no-gates)` or `Gates: omitidas (sin cambios)`.
 
 - **Guard scope.** The dirty-tree guard blocks only on uncommitted work the sync would overwrite: a synced component file, an ignore file, `package.json`, a deprecated file. Dirt anywhere else (`tests/`, KATA code, a protected or bootstrap-only file) is listed as `N ruta(s) con cambios sin commitear fuera de lo que este updater escribe; no bloquean` and never aborts `--auto`.
-- **No overwritten-edit row for a path upstream added after the lock cursor.** A file with no base copy at the cursor cannot be told apart from one that arrived another way (a migrated Claude-era repo had every moved skill in that state); unknown is never reported as an edit.
-- **`.context/PBI/` still tracked in git.** One Componentes row (`N tracked path(s) still in git ...; migration recipe saved to .agents/prompts/pbi-cache-migration.md`); the recipe (tag, `git rm --cached`, commit, resync, push-to-Jira pass) lives in that gitignored file, never in the terminal. `--dry-run` shows the row without writing the file; the 8.2 file name `pbi-cache-migration-prompt.md` is removed when the recipe is written.
+- **No overwritten-edit row for a path upstream added after the lock cursor.** A file with no base copy at the cursor cannot be told apart from one that arrived another way ; unknown is never reported as an edit.
+- **`.context/PBI/` still tracked in git.** One Componentes row (`N tracked path(s) still in git ...; migration recipe saved to .agents/prompts/pbi-cache-migration.md`); the recipe (tag, `git rm --cached`, commit, resync, push-to-Jira pass) lives in that gitignored file, never in the terminal. `--dry-run` shows the row without writing the file.
 - **A freshly protected path gets no residual row.** A path just declared in `updater.protected_paths` has its upstream marker seeded silently (one `sin fila esta vez` note); its drift row fires on the next upstream change.
 - **The `cli` lock cursor advances after a self-update.** The parent hands the sha it refreshed `cli/` to through `UPEX_UPDATER_SELF_UPDATED`; the re-exec child, which finds nothing left to sync there, settles the component at that sha instead of leaving `cli@<scaffold sha>` in the lock.
-- **MCP registries are compared per server.** `.mcp.json`, `opencode.jsonc` and `.codex/config.toml` rows name the server and the fields that differ (`context7: args differ`, `supabase: env keys differ`), at most three servers named, the rest counted, instead of `same keys and values` when only a nested field changed.
+- **MCP registries are compared per server.** `.mcp.json`, `opencode.jsonc` and `.codex/config.toml` rows name the server and the fields that differ (`context7: args differ`, `supabase: env keys differ`), the first few servers named, the rest counted, instead of `same keys and values` when only a nested field changed.
 
 ---
 
@@ -516,46 +492,19 @@ One more thing on the migration run itself: the `.claude/skills` alias is NOT cr
 
 Skills that are workflow-specific to this boilerplate live in `.agents/skills/` and are committed to the repo. They install with the clone — no external installer required. All three harnesses read that one directory (§ Multi-harness layout above).
 
-| Skill                   | Trigger                                  | Why it stays local                                                                                                                                                                                                             |
-| ----------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `agentic-qa-core`       | (auto, cited by other skills)            | Foundation: passive reference host for briefing template, dispatch patterns, orchestration doctrine, skill-composition strategy                                                                                                |
-| `agentic-qa-onboard`    | `/agentic-qa-onboard`                    | First-time orientation tour (this is the entry point for new contributors)                                                                                                                                                     |
-| `project-discovery`     | `/project-discovery`                     | 4-phase reverse-engineering of a target project (Constitution → Specification)                                                                                                                                                 |
-| `shift-left-testing`    | `/shift-left-testing`                    | Stage 0: pre-sprint AC refinement on a batch of backlog Stories. Authors the pre-sprint ATP (outline maturity) into the `{{jira.acceptance_test_plan}}` field, surfaces gaps, transitions `backlog → shift_left_qa → estimation`. |
-| `sprint-testing`        | `/sprint-testing`                        | Stages 1-3: per-ticket manual QA loop (planning, execution, reporting). Short-circuits Phases 1-3 when the Story carries label `shift-left-reviewed` <30 days old.                                                             |
-| `test-documentation`    | `/test-documentation`                    | Stage 4: TMS test-case authoring + ROI prioritization (Jira/Xray bridge)                                                                                                                                                       |
-| `test-automation`       | `/test-automation`                       | Stage 5: KATA + Playwright + TS test authoring (plan → code → review)                                                                                                                                                          |
-| `regression-testing`    | `/regression-testing`                    | Stage 6: CI suite execution, failure classification, GO/NO-GO verdict                                                                                                                                                          |
-| `framework-development` | `/framework-development`                 | Gateway for evolving the boilerplate itself (KATA bases, fixtures, `cli/`, `scripts/`, `api/schemas/` pipeline). NOT for per-ticket QA. Self-contained Plan → Code → Verify → Archive pipeline; runs under the minimal preset. |
-| `acli`                  | `/acli`                                  | Atlassian CLI wrapper for Jira/Confluence terminal work                                                                                                                                                                        |
-| `xray-cli`              | `/xray-cli`                              | Xray Cloud TMS CLI (test creation, executions, JUnit/Cucumber import)                                                                                                                                                          |
-| `adapt-framework`       | `/adapt-framework`                       | Idempotent KATA adaptation: no-write analysis and plan first, mutation only after explicit approval                                                                                                                             |
-| `project-context`       | `project-context` (+ legacy aliases)     | Regenerates the business data / feature / API maps and the master test plan through isolated modes                                                                                                                             |
-| `sync-ai-context`       | `sync-ai-context` (+ `/sync-ai-memory`)  | Synchronizes the AI-critical repo docs against the canonical instructions, skills, aliases, `.context/` and `package.json`                                                                                                      |
-| `jira-administration`   | legacy `/jira-components`, `/jira-instance-migration` | Components reconciliation + Atlassian instance migration, each sealed behind read-first analysis and approval                                                                                                       |
-| `pr-review-lead`        | `pr-review-lead`, "review this PR"       | QA Lead review of a PR's test-automation work against KATA doctrine; never posts to GitHub without explicit final OK                                                                                                            |
-| `bug-screenshot-annotation` | "annotate bug screenshot", "anota este bug" | Turns a raw bug screenshot into annotated QA evidence, rendered 100% locally. Loaded inline by `/sprint-testing` Stage 2                                                                                                |
-| `git-flow-master`       | (auto on git intents)                    | End-to-end Git operator (branch, commit, push, PR, conflict, chained-PR)                                                                                                                                                       |
-| `judgment-day`          | `/judgment-day`, `juzgar`, `dual review` | T2 vendored (gentle-ai, Apache-2.0). Adversarial dual-judge review (2 blind judges in parallel, fix loop, re-judge). Cited as optional gate by `/test-automation` Phase 3 + `/git-flow-master` pre-PR. Never auto-invoked.     |
+The catalogue is `.agents/skills/REGISTRY.md` (generated by `bun run skills:registry`: one row per committed skill with its trigger and purpose); `AGENTS.md` §5 carries the same table for the agent.
 
-These skills evolve with the repo and are versioned in git. The split is intentional: gentle-ai owns persistent memory (Engram); this repo owns the **vertical** workflow (specific to the QA stages 1-6 pipeline) plus a small set of vendored helpers (`judgment-day`).
+These skills evolve with the repo and are versioned in git. The split is intentional: gentle-ai owns persistent memory (Engram); this repo owns the **vertical** workflow (specific to the IQL stages) plus a small set of vendored helpers (`judgment-day`).
 
 ### Slash commands are transport, not workflow
 
-Ten legacy slash commands survive as thin aliases onto the skills above. Each entry in `.agents/compatibility/command-aliases.json` names a target skill plus a mode; the generated wrapper only selects and forwards `$ARGUMENTS`. `agents:compat:check` rejects an alias whose target skill or declared mode does not exist. Project-owned commands go in the overlay `.agents/compatibility/command-aliases.project.json` (see Regenerating and verifying above), never into the upstream manifest.
+The legacy slash commands survive as thin aliases onto the skills above. Each entry in `.agents/compatibility/command-aliases.json` names a target skill plus a mode; the generated wrapper only selects and forwards `$ARGUMENTS`. `agents:compat:check` rejects an alias whose target skill or declared mode does not exist. Project-owned commands go in the overlay `.agents/compatibility/command-aliases.project.json` (see Regenerating and verifying above), never into the upstream manifest.
+
+One example row; the full list, with each alias's purpose in its `description`, is the manifest:
 
 | Command | Target skill | Mode |
 |---------|--------------|------|
-| `/adapt-framework` | `adapt-framework` | `adapt` |
-| `/break-down-tests` | `test-automation` | `explain` |
 | `/business-data-map` | `project-context` | `data` |
-| `/business-feature-map` | `project-context` | `features` |
-| `/business-api-map` | `project-context` | `api` |
-| `/master-test-plan` | `project-context` | `test-plan` |
-| `/fix-traceability` | `test-documentation` | `repair-traceability` |
-| `/jira-components` | `jira-administration` | `components` |
-| `/jira-instance-migration` | `jira-administration` | `instance-migration` |
-| `/sync-ai-memory` | `sync-ai-context` | `sync` |
 
 On Codex there are no wrappers at all — invoke the target skill and its mode directly.
 
@@ -563,7 +512,7 @@ On Codex there are no wrappers at all — invoke the target skill and its mode d
 
 ## Keeping the framework up to date — `.template/boilerplate.lock.json`
 
-After the first time you run `bun run up`, the CLI creates `.template/boilerplate.lock.json` at the project root. This file tracks the last upstream-template git SHA for each synced component (`.agents/skills/`, `.agents/compatibility/`, `.claude/commands/` + `.opencode/commands/`, `.codex/`, `scripts/`, `cli/`, `.husky/`, etc.). It is safe, and recommended, to **commit this file**: your team and CI workflows need it to know which template version each component is on. Subsequent `bun run up` runs read the stored SHAs to compute precise per-file deltas, so only genuinely changed files are surfaced. What each run reports, which files are protected, and the 8.2 flags (`--strict`, `--no-gates`, `--dry-run` with the new updater, `updater.protected_paths`) are described under [What every `bun run up` reports](#what-every-bun-run-up-reports) and in the README section [Keeping your project in sync](README.md#keeping-your-project-in-sync-with-the-boilerplate).
+After the first time you run `bun run up`, the CLI creates `.template/boilerplate.lock.json` at the project root. This file tracks the last upstream-template git SHA for each synced component (`.agents/skills/`, `.agents/compatibility/`, `.claude/commands/` + `.opencode/commands/`, `.codex/`, `scripts/`, `cli/`, `.husky/`, etc.). It is safe, and recommended, to **commit this file**: your team and CI workflows need it to know which template version each component is on. Subsequent `bun run up` runs read the stored SHAs to compute precise per-file deltas, so only genuinely changed files are surfaced. What each run reports, which files are protected, and the flags (`--strict`, `--no-gates`, `--dry-run` with the new updater, `updater.protected_paths`) are described under [What every `bun run up` reports](#what-every-bun-run-up-reports) and in the README section [Keeping your project in sync](README.md#keeping-your-project-in-sync-with-the-boilerplate).
 
 **Requirement**: `git ≥ 2.25` must be on your `$PATH` (required for sparse-checkout with `--filter=blob:none`). Run `git --version` to check; upgrade instructions are printed by the CLI if the version is too old.
 
@@ -571,17 +520,9 @@ After the first time you run `bun run up`, the CLI creates `.template/boilerplat
 
 ## External CLIs (verified, not auto-installed)
 
-The installer's step 10 (`verifyExternalClis`) runs a PATH probe — `which <binary>` on POSIX, `where <binary>` on Windows — for six command-line tools that other parts of the QA workflow depend on. This is a **presence-only** check: no version compare, no auto-install. If any are missing, the installer **prints the suggested install command and the official docs URL — but does not run anything**. System-level CLIs touch user permissions (Homebrew taps, apt, curl piped into bash, winget) and are not portable cross-platform, so auto-installing them without consent would be invasive. The user installs them manually following the docs URL.
+The installer's step 10 (`verifyExternalClis`) runs a PATH probe — `which <binary>` on POSIX, `where <binary>` on Windows — for the command-line tools that other parts of the QA workflow depend on. This is a **presence-only** check: no version compare, no auto-install. If any are missing, the installer **prints the suggested install command and the official docs URL — but does not run anything**. System-level CLIs touch user permissions (Homebrew taps, apt, curl piped into bash, winget) and are not portable cross-platform, so auto-installing them without consent would be invasive. The user installs them manually following the docs URL.
 
-| CLI              | Powers in this repo                                                                                      | Install (cross-platform)            | Official docs                                                                                         |
-| ---------------- | -------------------------------------------------------------------------------------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `bun`            | Runtime for every script (`bun run setup`, `bun xray`, `bun run test`)                                   | See official docs                   | [bun.com](https://bun.com/)                                                                           |
-| `gh`             | GitHub PR / Actions workflows from `/git-flow-master`, `/regression-testing`                             | See official docs                   | [github.com/cli/cli#installation](https://github.com/cli/cli#installation)                            |
-| `acli`           | Jira/Confluence from terminal (`/acli`, `/shift-left-testing`, `/sprint-testing`, `/test-documentation`) | See official docs                   | [developer.atlassian.com/cloud/acli](https://developer.atlassian.com/cloud/acli/guides/install-acli/) |
-| `playwright-cli` | Agent-driven browser automation (`/playwright-cli` skill)                                                | `bun add -g @playwright/cli@latest` | [playwright.dev/agent-cli](https://playwright.dev/agent-cli/introduction)                             |
-| `resend`         | Email testing flows                                                                                      | See official docs                   | [resend.com/docs/cli](https://resend.com/docs/cli)                                                    |
-| `jq`             | JSON parsing in acli Jira pipelines (advanced `acli --json \| jq …`)                                     | See official docs                   | [jqlang.github.io/jq/download](https://jqlang.github.io/jq/download)                                  |
-| `rg`             | Repo search every agent leans on. Claude Code bundles its own; **OpenCode and Codex fall through to the system binary** | See official docs                   | [github.com/BurntSushi/ripgrep](https://github.com/BurntSushi/ripgrep#installation)                   |
+The list is `EXTERNAL_CLIS` in `cli/install.ts`; each entry carries what it powers in this repo, a cross-platform install hint when one exists and the official docs URL, and the installer prints that same table.
 
 > **Important — `playwright-cli` is NOT `@playwright/test`**: this is the agent-driven browser CLI from the `@playwright/cli` npm package, installed **globally**. It produces a binary literally named `playwright-cli` (not `playwright`). The `@playwright/test` library that ships as a devDependency in this repo is a separate thing — it powers the test runner (`bun run test`), not the `/playwright-cli` skill. Don't confuse them.
 
@@ -602,7 +543,7 @@ This is the most common point of confusion.
 
 ### When to reach for `/shift-left-testing`
 
-Pre-sprint, BEFORE the Story enters a sprint. The team grooms a batch of N backlog Stories (`Backlog` / `Shift-Left QA` / `Estimation` / `Ready For Dev` status) and wants QA to refine ACs, surface gaps + ambiguities + edge cases, and draft an ATP outline so PO + Dev lead can estimate cleanly. No execution — feature does not exist yet. Output: refined ACs in Jira, pre-sprint ATP (outline maturity) authored into the `{{jira.acceptance_test_plan}}` field (the Test Plan item is created later by `/sprint-testing` Stage 1), batch report to PO/Dev lead, transition `backlog → shift_left_qa → estimation`. Once each Story later reaches `Ready For QA`, `/sprint-testing` Stage 1 short-circuits Phases 1-3 (label `shift-left-reviewed` detected, <30 days old).
+Pre-sprint, BEFORE the Story enters a sprint. The team grooms a batch of N backlog Stories (`Backlog` / `Shift-Left QA` / `Estimation` / `Ready For Dev` status) and wants QA to refine ACs, surface gaps + ambiguities + edge cases, and draft an ATP outline so PO + Dev lead can estimate cleanly. No execution — feature does not exist yet. Output: refined ACs in Jira, pre-sprint ATP (outline maturity) authored into the `{{jira.acceptance_test_plan}}` field (the Test Plan item is created later by `/sprint-testing` Stage 1), batch report to PO/Dev lead, transition `backlog → shift_left_qa → estimation`. Once each Story later reaches `Ready For QA`, `/sprint-testing` Stage 1 short-circuits Phases 1-3 (label `shift-left-reviewed` detected within the freshness window the skill declares).
 
 Example: "groom UPEX-100, 101, 102, 103 before next sprint planning." Stories are in `Backlog`, ACs are sparse, you want a single batch session that produces refined ACs + PO/Dev question set + ATP outlines per Story.
 
@@ -616,7 +557,7 @@ Example: "Test UPEX-277 — empty states on the user-list filter." Ticket is `Re
 
 The right choice when the change is to the boilerplate's own infrastructure (KATA layers, fixtures, installer, OpenAPI sync pipeline, skill doctrine), not to a per-ticket test. Examples: "add a new `{ admin }` fixture", "refactor the OpenAPI sync to support v3.1 schemas", "modify `KataPageBase` to support shared selectors". This is internal QA infrastructure, not test authoring.
 
-`/framework-development` ships self-contained: Phase 0 (path self-check) → Phase 1 Plan (single subagent writes `.scratch/framework-changes/<change>/plan.md`) → Phase 2 Code (sequential per task batch) → Phase 3 Verify (4 parallel verifiers: `bun run test`, `types:check`, `lint:check`, `skills:check`) → Phase 4 Archive (inline). No SDD-\* skills required; runs under the minimal preset out of the box.
+`/framework-development` ships self-contained: Phase 0 (path self-check) → Phase 1 Plan (single subagent writes `.scratch/framework-changes/<change>/plan.md`) → Phase 2 Code (sequential per task batch) → Phase 3 Verify (the parallel verifiers the skill lists) → Phase 4 Archive (inline). No SDD-\* skills required; runs under the minimal preset out of the box.
 
 ---
 
@@ -642,13 +583,13 @@ The right choice when the change is to the boilerplate's own infrastructure (KAT
 If you prefer not to use gentle-ai, the installer accepts a "skip" choice. To make it permanent:
 
 1. Edit `.template/installer.state.json` and set `"gentleAi": { "status": "skipped" }`.
-2. Re-run `bun run setup`. The installer detects the skipped state and only configures the 6 canonical MCPs.
+2. Re-run `bun run setup`. The installer detects the skipped state and only configures the MCP servers `.mcp.json` declares.
 
 What you lose:
 
 - **Persistent memory (Engram)** — no cross-session recall, no `mem_save` / `mem_search`. Each session starts blind.
 
-What you keep: every workflow skill committed in this repo (`/sprint-testing`, `/test-documentation`, `/test-automation`, `/regression-testing`, `/agentic-qa-core`, `/agentic-qa-onboard`, `/playwright-cli`, `/acli`, `/xray-cli`, `/project-discovery`, `/git-flow-master`, vendored `/judgment-day`) and the 6 canonical MCPs (Context7, Tavily, Playwright, DBHub, OpenAPI, Postman). The Atlassian MCP is opt-in: `.agents/skills/agentic-qa-core/references/mcp-atlassian-optin.md` has the block for each host. The repo is fully usable without gentle-ai — the integration is additive.
+What you keep: every skill committed in this repo and every MCP server `.mcp.json` declares. The Atlassian MCP is opt-in: `.agents/skills/agentic-qa-core/references/mcp-atlassian-optin.md` has the block for each host. The repo is fully usable without gentle-ai — the integration is additive.
 
 ---
 
@@ -662,4 +603,4 @@ What you keep: every workflow skill committed in this repo (`/sprint-testing`, `
 
 ---
 
-> **You are here**: What `bun run setup` configures. **Read time**: 10 min. **Next**: `bun run setup:doctor` to verify, or [`README.md`](README.md) to navigate.
+> **You are here**: What `bun run setup` configures. **Next**: `bun run setup:doctor` to verify, or [`README.md`](README.md) to navigate.

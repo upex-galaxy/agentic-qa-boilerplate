@@ -13,7 +13,7 @@
 | `sprint-testing` sprint-wide (N issues) | **fleet in the SAME checkout**, one worker per issue (or per 2-3 tightly coupled issues) | per-worker browser session / profile / output dir, per-issue session sub-scope, writes go to the tracker | it writes no code. The state of record lives in the tracker plus the session scope, so a worktree per issue is pure cost: setup time, disk, provisioning surface, and N times the dependency install |
 | `shift-left-testing` batch | same checkout, one worker per story | tracker only | same reasoning, even more so: the output is refined criteria and an early test plan |
 | `test-automation` batch | **hybrid by component**: one Orca worktree per worker, one worker per MODULE; stories that share a module run SEQUENTIALLY inside that worker | own checkout, own branch, own PR | it writes code. Two sessions in one checkout collide on the git index even when they never touch the same file. And multiple test cases in one module share pages / APIs / fixtures, so two workers on one module produce merge conflicts in the fixture files by construction |
-| `framework-development` waves | same checkout (`solo-main`) with **explicit file ownership per worker** and pathspec-scoped commits; OR a worktree per wave when two workers must touch the same module | the `File ownership` list in each worker brief | measured on 2026-09-15: four workers, 24 commits, one git-index collision that produced the pathspec-commit rule |
+| `framework-development` waves | same checkout (`solo-main`) with **explicit file ownership per worker** and pathspec-scoped commits; OR a worktree per wave when two workers must touch the same module | the `File ownership` list in each worker brief | measured (G43): a same-checkout fleet hit one git-index collision, which produced the pathspec-commit rule |
 | `regression-testing` triage | conductor reads CI; one worker per real failure CLUSTER, each in a worktree | own checkout per cluster | every fix is code. Cluster first: three failures with one root cause is ONE worker, not three |
 | `project-discovery` / `project-context` | **not a fleet**: one-shot subagents | — | these are reads. A subagent returns a map inside the turn and costs nothing to clean up |
 | unattended routines | scheduled automation over an EXISTING workspace | `references/automations.md` | a fresh workspace per run loses the out-of-git state the routine reads |
@@ -109,6 +109,7 @@ checklist: `git-flow-master/references/worktrees.md`.
   "Wave 1, round 2". **A round is concurrency; a wave is a tracker-status bucket.** Never reuse one
   word for the other.
 - The real ceiling is usually not context but the tracker and TMS rate limits, plus how many reports
-  one conductor can actually process in a turn. Four is the shipped default for a reason.
+  one conductor can actually process in a turn. The shipped default in `.agents/project.yaml` →
+  `orchestration.max_workers` is deliberately small.
 - An ad-hoc single-issue job (a retest, one urgent fix) runs as N=1, outside the rounds, and still
   counts against the cap while it is live.

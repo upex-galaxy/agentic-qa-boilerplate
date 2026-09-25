@@ -82,7 +82,7 @@ Acceptance is per-field and needs a reason. It is the yaml-native replacement fo
 
 **`CODEOWNERS`.** The tool derives `require_code_owner_review` from whether the file exists rather than reading it from yaml. Turning that flag on without the file produces a requirement **nobody outside the bypass list can ever satisfy** — the merge is refused, and the only way through is a bypass, which is strictly worse than no rule. `verify` reports that combination as drift with a named remedy.
 
-**Organisation-level rulesets.** `GET /orgs/{org}/rulesets` returns `403 Upgrade to GitHub Team` on a Free plan, so the unit of configuration here is the repository. A team that later gets org rulesets should treat this tool as the per-repo layer beneath them.
+**Organisation-level rulesets.** Org-level rulesets may be unavailable on the repo's plan (`GET /orgs/{org}/rulesets` answers `403` there), so the unit of configuration here is the repository. A team that later gets org rulesets should treat this tool as the per-repo layer beneath them.
 
 **Classic branch protection.** `verify` READS it, because a `404` on `branches/{b}/protection` means "not configured through that mechanism", never "unprotected". `apply` never writes it: mixing both mechanisms on one branch produces a union nobody can reason about.
 
@@ -96,7 +96,7 @@ Acceptance is per-field and needs a reason. It is the yaml-native replacement fo
 - removes the `pull_request` rule entirely (direct pushes become possible);
 - lowers `required_approving_review_count`;
 - turns off `require_code_owner_review`;
-- permits a merge method the host currently forbids.
+- permits a merge method the host forbids.
 
 A tool that can silently open `main` is a worse problem than the drift it fixes. The flag exists because some of these are legitimate and intended — turning off an unsatisfiable code-owner requirement, for instance — but each one has to be asked for.
 

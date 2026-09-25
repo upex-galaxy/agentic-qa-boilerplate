@@ -3,10 +3,10 @@
 > One-time setup that makes the Allure reports your CI already pushes to
 > `gh-pages` actually reachable in a browser. The regression / smoke / sanity
 > workflows shipped with this boilerplate publish to the `gh-pages` branch out
-> of the box via `scripts/ci/publish-allure-pages.ts` (Allure 3, same
+> of the box via `scripts/ci/publish-allure-pages.ts` (Allure, same
 > `allurerc.mjs` as local runs: the Awesome report served directly with its
 > Report | Graphs | Timeline modes, trend history per env/suite, latest-run
-> redirect, last-10-runs retention) — but GitHub does NOT serve that branch
+> redirect, `--keep` retention) — but GitHub does NOT serve that branch
 > until Pages is explicitly enabled on the repo. This reference is the full
 > maneuver, learned the hard way on the boilerplate repo itself.
 
@@ -36,7 +36,7 @@ outdated public report.
 | --- | --- | --- |
 | gh CLI authenticated | `gh auth status` | fails → stop, ask user to `gh auth login` |
 | gh-pages branch exists on origin | `git ls-remote --heads origin gh-pages` | empty → run a suite first (any Allure deploy creates it) |
-| Repo visibility | `gh repo view --json visibility` | `PRIVATE` + free plan → Pages requires a paid plan; surface to user |
+| Repo visibility | `gh repo view --json visibility` | `PRIVATE` → check GitHub's current Pages plan rules; surface to user |
 | Pages state | `gh api repos/{owner}/{repo}/pages` | `404` means NOT enabled → proceed with setup |
 
 ## Step 1 — Enable Pages serving the gh-pages branch
@@ -78,7 +78,7 @@ curl -s -o /dev/null -w "%{http_code}" https://{owner}.github.io/{repo}/{env}/re
 Two independent growth vectors, two controls:
 
 1. **Working tree** — already controlled: `scripts/ci/publish-allure-pages.ts`
-   prunes to the last 10 run dirs per env/suite (`--keep`, adjustable in each
+   prunes run dirs per env/suite to the `--keep` default it declares (adjustable in each
    workflow). Screenshots/videos live inside each report and rotate with it;
    `history.jsonl` (trend data) persists independently and stays small.
 2. **Git history** — NOT controlled by run pruning: every deploy commit keeps
@@ -98,7 +98,7 @@ Two independent growth vectors, two controls:
 - Whether the squash job was installed (recommended: yes).
 - Reminder: on public repos the reports are public — screenshots may leak
   UI/data of the app under test; confirm the team is OK with that or keep the
-  repo private (Pages on private repos needs a paid plan).
+  repo private (check GitHub's current Pages plan rules).
 - If the team needs reports behind a login instead, switch to the PRIVATE
   Test Report Portal mode — runbook: `references/private-hosting-setup.md`
   (the suite workflows are already dual-mode; only secrets are wired).
