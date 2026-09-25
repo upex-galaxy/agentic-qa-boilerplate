@@ -23,6 +23,10 @@ describe('volatile-facts FILE-LINE', () => {
     expect(tags(md(text))).toEqual(['8:FILE-LINE:y.ts:2']);
   });
 
+  test('volatile-ok-file in the header silences the whole file (a dated ledger by design)', () => {
+    expect(md('# Ledger\n\n> volatile-ok-file: dated ledger, every row carries its date.\n\nMeasured 2026-09-17: `x.ts:12` today.')).toEqual([]);
+  });
+
   test('volatile-ok on the same line silences it', () => {
     expect(md('Example of the bad form: `x.ts:12` <!-- volatile-ok: teaching example -->')).toEqual([]);
   });

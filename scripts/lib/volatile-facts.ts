@@ -14,8 +14,10 @@
  *
  * Both checks skip what the canon exempts: fenced code blocks, `<pre>`,
  * `<code class="block">`, `<script>` / `<style>` bodies, the YAML frontmatter,
- * and any line that carries the escape hatch `volatile-ok: <reason>`. The
- * caller decides the file set (ADRs and `.session/**` are never handed in);
+ * and any line that carries the escape hatch `volatile-ok: <reason>`; a file
+ * whose header carries `volatile-ok-file: <reason>` (a dated ledger by design)
+ * is skipped whole. The caller decides the file set (ADRs and `.session/**`
+ * are never handed in);
  * `isVolatileExemptPath` is the shared answer for the two prefixes.
  *
  * Canon: .agents/skills/agentic-qa-core/references/volatile-facts.md
@@ -33,6 +35,14 @@ export interface VolatileHit {
 
 /** The per-line escape hatch. The reason after the colon is mandatory by doctrine, not by regex. */
 export const VOLATILE_OK = /volatile-ok:/;
+
+/**
+ * The file-level escape hatch, for a dated ledger BY DESIGN (canon §4: every
+ * row carries its own date and version, rows move out when they stop being
+ * true). It must sit in the first lines of the file, with a reason.
+ */
+export const VOLATILE_OK_FILE = /volatile-ok-file:/;
+const FILE_MARKER_WINDOW = 12;
 
 /** `foo.ts:12`, `foo.md:3-9`, `foo.ts#L12`. The extension list is what this repo cites in prose. */
 export const FILE_LINE_PATTERN
@@ -95,6 +105,7 @@ export function proseOnly(text: string, options: { html: boolean }): string {
  */
 export function scanVolatile(text: string, options: { html: boolean }): VolatileHit[] {
   const raw = text.split('\n');
+  if (raw.slice(0, FILE_MARKER_WINDOW).some(line => VOLATILE_OK_FILE.test(line))) { return []; }
   const prose = proseOnly(text, options).split('\n');
   const hits: VolatileHit[] = [];
   for (let i = 0; i < prose.length; i++) {
