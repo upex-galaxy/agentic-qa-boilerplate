@@ -478,12 +478,11 @@ components    -&gt;  módulo del producto  (qué parte del producto toca)</code>
 
       <h2 id="comandos">Comandos</h2>
       <p>
-        Los comandos <code>/nombre</code> son alias de transporte: eligen una skill y un modo y le
-        pasan tus argumentos. No tienen workflow propio. La fuente única es
-        <code>.agents/compatibility/command-aliases.json</code> y los wrappers de Claude Code y
-        OpenCode se generan con <code>bun run agents:compat</code>. Codex no tiene comandos: ahí
-        invocas la skill directamente. El manifest lista cada alias con su skill, su modo y su
-        propósito en <code>description</code>.
+        No hay archivos de comando: una skill se invoca por su nombre más un modo. En Claude Code es
+        <code>/project-context test-plan</code>; en OpenCode y Codex nombras la skill y el modo en
+        prosa. El primer token de tus argumentos que coincide con un modo es el modo y el resto se
+        le pasa a la skill; si ninguno coincide, la skill pregunta. Los modos de cada skill están en
+        su <code>SKILL.md</code>.
       </p>
 
       <h2 id="integraciones">Integraciones</h2>

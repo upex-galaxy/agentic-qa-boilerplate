@@ -82,16 +82,16 @@
               </td>
             </tr>
             <tr>
-              <td><strong>Comando</strong></td>
+              <td><strong>Modo</strong></td>
               <td>
-                Alias generado: elige un skill y un modo, y le pasa tus argumentos. No tiene
-                workflow propio.
+                Una variante de un skill que tiene varias (por ejemplo <code>data</code> en
+                <code>project-context</code>). No es un archivo aparte: no hay archivos de comando.
               </td>
+              <td>La sección de modos del <code>SKILL.md</code> de ese skill</td>
               <td>
-                <code>.agents/compatibility/command-aliases.json</code>, que genera
-                <code>.claude/commands/</code> y <code>.opencode/commands/</code>
+                Tú, con <code>/&lt;skill&gt; &lt;modo&gt;</code> en Claude Code, o nombrando skill y
+                modo en prosa en OpenCode y Codex. Sin modo reconocible, el skill pregunta.
               </td>
-              <td>Tú, escribiendo <code>/&lt;nombre&gt;</code>. No se activa solo.</td>
             </tr>
             <tr>
               <td><strong>Script</strong></td>
@@ -526,10 +526,13 @@ bun run codex      # Codex CLI (Codex Desktop usa la misma config del repo)</cod
                 reflejan el producto
               </td>
               <td>
-                Docs sincronizados (<code>/sync-ai-memory</code>), mapas regenerados
-                (<code>/business-*-map</code>, <code>/master-test-plan</code>), catálogos de Jira al
-                día (<code>jira:sync-*</code>, <code>jira:check</code>, <code>vars:check</code>) y
-                el framework actualizado con <code>bun run up</code>.
+                Docs sincronizados (<code>/sync-ai-context</code>), mapas regenerados (<code
+                  >project-context</code
+                >
+                modos <code>data</code> / <code>features</code> / <code>api</code> y
+                <code>test-plan</code>), catálogos de Jira al día (<code>jira:sync-*</code>,
+                <code>jira:check</code>, <code>vars:check</code>) y el framework actualizado con
+                <code>bun run up</code>.
               </td>
               <td>Cuando aparece el drift. Trátalo como un warning del compilador.</td>
             </tr>
@@ -681,18 +684,18 @@ bun run codex      # Codex CLI (Codex Desktop usa la misma config del repo)</cod
               </td>
             </tr>
             <tr>
-              <td><code>sync-ai-context</code> (alias <code>/sync-ai-memory</code>)</td>
+              <td><code>sync-ai-context</code></td>
               <td>Cuando los docs para la IA ya no reflejan el repo.</td>
               <td>
                 <code>AGENTS.md</code>, <code>README.md</code> y el resto de docs críticos, contra
-                los skills, los alias, <code>.context/</code> y <code>package.json</code>. No toca
-                la memoria de Engram.
+                los skills, <code>.context/</code> y <code>package.json</code>. No toca la memoria
+                de Engram.
               </td>
             </tr>
             <tr>
               <td>
-                <code>project-context</code> (alias <code>/business-*-map</code>,
-                <code>/master-test-plan</code>)
+                <code>project-context</code> (modos <code>data</code>, <code>features</code>,
+                <code>api</code> y <code>test-plan</code>)
               </td>
               <td>Cuando el producto cambia: entidades, features, endpoints, riesgos.</td>
               <td>
@@ -854,7 +857,10 @@ subagente (contexto limpio)
       <p>Si saltas gentle-ai, todo sigue funcionando, pero cada sesión empieza sin memoria.</p>
 
       <h2 id="chuleta">Chuleta: quiero X, ejecuto Y</h2>
-      <p>Todo lo de esta tabla existe como skill, comando o script de <code>package.json</code>.</p>
+      <p>
+        Todo lo de esta tabla existe como skill (con su modo, si tiene varios) o script de
+        <code>package.json</code>.
+      </p>
       <div class="table-wrap">
         <table>
           <thead>
@@ -971,21 +977,21 @@ subagente (contexto limpio)
             <tr>
               <td>Refrescar los mapas de negocio o el master test plan</td>
               <td>
-                <code>/business-data-map</code> · <code>/business-feature-map</code> ·
-                <code>/business-api-map</code> · <code>/master-test-plan</code>
+                <code>/project-context data</code> · <code>/project-context features</code> ·
+                <code>/project-context api</code> · <code>/project-context test-plan</code>
               </td>
             </tr>
             <tr>
               <td>Sincronizar los docs de la IA tras un cambio</td>
-              <td><code>/sync-ai-memory</code></td>
+              <td><code>/sync-ai-context</code></td>
             </tr>
             <tr>
               <td>Reparar la trazabilidad US, ATP, ATR y TC</td>
-              <td><code>/fix-traceability</code></td>
+              <td><code>/test-documentation repair-traceability</code></td>
             </tr>
             <tr>
               <td>Explicar en lenguaje llano qué hacen los tests</td>
-              <td><code>/break-down-tests</code></td>
+              <td><code>/test-automation explain &lt;target&gt;</code></td>
             </tr>
             <tr>
               <td>Commit, push, PR o resolver un conflicto</td>
@@ -1088,31 +1094,32 @@ subagente (contexto limpio)
 
       <h2 id="comandos-scripts">Comandos y scripts</h2>
 
-      <h3 id="comandos">Comandos (alias)</h3>
+      <h3 id="comandos">Skill y modo</h3>
       <p>
-        Los alias están definidos en <code>.agents/compatibility/command-aliases.json</code>. Los
-        archivos de <code>.claude/commands/</code> y <code>.opencode/commands/</code> los genera
-        <code>bun run agents:compat</code>; no se editan a mano. Codex no tiene comandos: ahí
-        invocas el skill directamente.
+        No hay archivos de comando. Un skill se invoca por su nombre más un modo: en Claude Code,
+        <code>/project-context data</code>; en OpenCode y Codex, en prosa ("carga
+        <code>project-context</code>, modo <code>data</code>"). El primer token de tus argumentos
+        que coincide con un modo es el modo; el resto se le pasa al skill. Si ninguno coincide, el
+        skill pregunta.
       </p>
       <p>
-        Una fila de ejemplo; el resto, con su propósito en <code>description</code>, está en ese
-        manifest y en el overlay opcional <code>command-aliases.project.json</code>.
+        Una fila de ejemplo; los modos de cada skill están en su <code>SKILL.md</code> y el catálogo
+        en <code>.agents/skills/REGISTRY.md</code>.
       </p>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Comando</th>
+              <th>Invocación</th>
               <th>Skill y modo</th>
               <th>Qué hace</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td><code>/adapt-framework</code></td>
-              <td><code>adapt-framework</code> · adapt</td>
-              <td>Adapta KATA al target.</td>
+              <td><code>/project-context data</code></td>
+              <td><code>project-context</code> · data</td>
+              <td>Regenera <code>.context/business/business-data-map.md</code>.</td>
             </tr>
           </tbody>
         </table>

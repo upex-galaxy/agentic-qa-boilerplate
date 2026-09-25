@@ -702,8 +702,8 @@
             <div class="t">store para todas las skills</div>
           </div>
           <div class="stat">
-            <div class="n">1</div>
-            <div class="t">wrapper por alias y por host, generados</div>
+            <div class="n">0</div>
+            <div class="t">archivos de comando: skill + modo</div>
           </div>
           <div class="stat">
             <div class="n">3</div>
@@ -1084,16 +1084,16 @@
                 <tr>
                   <td class="rowlabel">Comandos</td>
                   <td>
-                    <span class="chip gen">generado</span><br /><code>.claude/commands/*.md</code>
-                    <span class="cellsub">wrappers de pocas líneas, generados</span>
-                  </td>
-                  <td>
-                    <span class="chip gen">generado</span><br /><code>.opencode/commands/*.md</code>
-                    <span class="cellsub">wrappers de pocas líneas, generados</span>
+                    <span class="chip none">ninguno</span>
+                    <span class="cellsub">skill + modo: <code>/project-context data</code></span>
                   </td>
                   <td>
                     <span class="chip none">ninguno</span>
-                    <span class="cellsub">invoca la skill directamente</span>
+                    <span class="cellsub">skill y modo, en prosa</span>
+                  </td>
+                  <td>
+                    <span class="chip none">ninguno</span>
+                    <span class="cellsub">skill y modo, en prosa</span>
                   </td>
                 </tr>
                 <tr>
@@ -1134,8 +1134,8 @@
               <h3>Los adaptadores son delgados a propósito</h3>
               <p>
                 Solo dos superficies tienen adaptador real: el hook y el MCP. Ahí los harnesses
-                difieren en la API, no en la intención. Las otras tres son la misma fuente vista
-                desde tres lugares.
+                difieren en la API, no en la intención. Instrucciones y skills son la misma fuente
+                vista desde tres lugares, y archivos de comando no hay.
               </p>
             </div>
           </div>
@@ -1158,7 +1158,7 @@
               <svg
                 viewBox="0 0 720 350"
                 role="img"
-                aria-label="El directorio .agents es la fuente versionada; bun run agents:compat genera el alias de skills y los wrappers de comandos; bun run agents:compat:check compara esas salidas contra la fuente"
+                aria-label="El directorio .agents es la fuente versionada; bun run agents:compat genera el alias de skills y mueve a .backups/shadowing-commands un comando del proyecto que tape una skill; bun run agents:compat:check verifica esas salidas contra la fuente"
               >
                 <defs>
                   <marker
@@ -1276,21 +1276,9 @@
                   font-size="11"
                   fill="#9aa6b2"
                 >
-                  compatibility/
-                </text>
-                <text x="40" y="158" font-family="Inter, sans-serif" font-size="10" fill="#6e7681">
-                  command-aliases.json · un alias por entrada
-                </text>
-                <text
-                  x="40"
-                  y="190"
-                  font-family="JetBrains Mono, monospace"
-                  font-size="11"
-                  fill="#9aa6b2"
-                >
                   hooks/
                 </text>
-                <text x="40" y="206" font-family="Inter, sans-serif" font-size="10" fill="#6e7681">
+                <text x="40" y="158" font-family="Inter, sans-serif" font-size="10" fill="#6e7681">
                   personality-reinject.mjs
                 </text>
                 <text x="40" y="230" font-family="Inter, sans-serif" font-size="10" fill="#3fb950">
@@ -1356,13 +1344,6 @@
                   stroke-width="1.5"
                   marker-end="url(#d2g)"
                 />
-                <polyline
-                  points="460,140 482,140 482,220 496,220"
-                  fill="none"
-                  stroke="#ffa657"
-                  stroke-width="1.5"
-                  marker-end="url(#d2g)"
-                />
 
                 <rect
                   x="500"
@@ -1403,41 +1384,17 @@
                   x="514"
                   y="136"
                   font-family="JetBrains Mono, monospace"
-                  font-size="11"
+                  font-size="10"
                   fill="#e6edf3"
                 >
-                  .claude/commands/
+                  .backups/shadowing-commands/
                 </text>
                 <text x="514" y="152" font-family="Inter, sans-serif" font-size="10" fill="#6e7681">
-                  wrappers de pocas líneas, generados
-                </text>
-
-                <rect
-                  x="500"
-                  y="194"
-                  width="196"
-                  height="52"
-                  rx="10"
-                  fill="#161b22"
-                  stroke="#ffa657"
-                  stroke-width="1.5"
-                  stroke-dasharray="5 4"
-                />
-                <text
-                  x="514"
-                  y="216"
-                  font-family="JetBrains Mono, monospace"
-                  font-size="11"
-                  fill="#e6edf3"
-                >
-                  .opencode/commands/
-                </text>
-                <text x="514" y="232" font-family="Inter, sans-serif" font-size="10" fill="#6e7681">
-                  wrappers de pocas líneas, generados
+                  comando que tapaba una skill, movido
                 </text>
 
                 <polyline
-                  points="598,246 598,278 470,278 470,296"
+                  points="598,166 598,278 470,278 470,296"
                   fill="none"
                   stroke="#3fb950"
                   stroke-width="1.5"
@@ -1460,7 +1417,7 @@
                   font-size="10.5"
                   fill="#3fb950"
                 >
-                  compara byte a byte
+                  verifica contra la fuente
                 </text>
 
                 <rect
@@ -1490,8 +1447,8 @@
             </div>
             <figcaption>
               La fuente sale una vez del lado izquierdo y vuelve a entrar por abajo como
-              verificación. Un wrapper editado a mano no sobrevive a ese ciclo: la comparación es
-              contra el manifiesto, no contra la última versión que alguien guardó.
+              verificación. Una salida editada a mano no sobrevive a ese ciclo: la comparación es
+              contra la fuente, no contra la última versión que alguien guardó.
             </figcaption>
           </figure>
 
@@ -1509,13 +1466,6 @@
                   <td class="rowlabel"><code>.claude/skills</code></td>
                   <td>
                     <code>.agents/skills/</code><span class="cellsub">symlink o junction</span>
-                  </td>
-                  <td><code>bun run agents:compat</code></td>
-                </tr>
-                <tr>
-                  <td class="rowlabel">Wrappers Claude + OpenCode</td>
-                  <td>
-                    <code>.agents/compatibility/command-aliases.json</code>
                   </td>
                   <td><code>bun run agents:compat</code></td>
                 </tr>
@@ -1543,12 +1493,13 @@
       <section id="comandos">
         <div class="wrap">
           <div class="kicker">Comandos</div>
-          <h2>Los slash commands son transporte, no workflow</h2>
+          <h2>Una skill, un modo</h2>
           <p class="lede">
             Antes cada comando llevaba el workflow entero escrito adentro.
             <code>adapt-framework</code> solo tenía 590 líneas. Eso era instrucción duplicada que
             ningún harness fuera de Claude podía descubrir, y que se desincronizaba de su skill en
-            cuanto alguien editaba una de las dos copias.
+            cuanto alguien editaba una de las dos copias. Ahora no queda ni el archivo: invocás la
+            skill por su nombre y le decís el modo.
           </p>
 
           <div class="delta">
@@ -1561,61 +1512,51 @@
             </div>
             <div class="bar-row">
               <div class="bar-label">
-                <span>Wrappers que los reemplazan</span>
-                <b>un puñado de líneas por wrapper</b>
+                <span>Archivos de comando que quedan</span>
+                <b>ninguno</b>
               </div>
               <div class="bar-track"><div class="bar-fill new"></div></div>
             </div>
           </div>
 
-          <p>
-            Los nombres sobreviven como alias. El wrapper solo selecciona skill y modo, y reenvía
-            <code>$ARGUMENTS</code> sin tocarlo. Este es un archivo completo, no un fragmento:
-          </p>
+          <p>La forma es la misma en los tres harnesses. Cambia solo cómo la escribís:</p>
 
           <pre
             class="code"
-          ><span class="c"># .claude/commands/business-data-map.md — el archivo entero</span>
-<span class="c">---</span>
-<span class="k">description:</span> Generate or refresh the business data and flow map.
-<span class="k">argument-hint:</span> [project-path]
-<span class="c">---</span>
+          ><span class="c"># Claude Code: el slash de la skill, el modo como primer argumento</span>
+<b>/project-context</b> <span class="k">data</span>
+<b>/test-automation</b> <span class="k">explain</span> &lt;target&gt;
 
-Invoke skill <b>`project-context`</b> in mode <b>`data`</b>.
-Forward `$ARGUMENTS` unchanged.</pre>
+<span class="c"># OpenCode y Codex: lo mismo, en prosa</span>
+carga <b>project-context</b>, modo <span class="k">data</span></pre>
+
+          <p>
+            La regla del primer token: el primer token de <code>$ARGUMENTS</code> que coincide con
+            un modo de la skill <em>es</em> el modo, y el resto se reenvía sin tocar. Si ninguno
+            coincide, la skill pregunta antes de hacer nada.
+          </p>
 
           <div class="tbl">
             <table>
               <thead>
                 <tr>
-                  <th>Alias</th>
-                  <th>Skill destino</th>
+                  <th>Invocación</th>
+                  <th>Skill</th>
                   <th>Modo</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td class="rowlabel"><code>/adapt-framework</code></td>
-                  <td><code>adapt-framework</code></td>
-                  <td><code>adapt</code></td>
-                </tr>
-                <tr>
-                  <td class="rowlabel"><code>/break-down-tests</code></td>
+                  <td class="rowlabel"><code>/test-automation explain &lt;target&gt;</code></td>
                   <td><code>test-automation</code></td>
                   <td><code>explain</code><span class="cellsub">sellado, solo lectura</span></td>
-                </tr>
-                <tr>
-                  <td class="rowlabel"><code>/business-data-map</code></td>
-                  <td><code>project-context</code></td>
-                  <td><code>data</code></td>
                 </tr>
                 <tr>
                   <td class="rowlabel">…</td>
                   <td colspan="2">
                     <span class="cellsub"
-                      >tres ejemplos; la lista completa es
-                      <code>.agents/compatibility/command-aliases.json</code> más el overlay
-                      <code>command-aliases.project.json</code></span
+                      >los modos de cada skill están en su <code>SKILL.md</code>; el catálogo es
+                      <code>.agents/skills/REGISTRY.md</code></span
                     >
                   </td>
                 </tr>
@@ -1625,18 +1566,19 @@ Forward `$ARGUMENTS` unchanged.</pre>
 
           <div class="grid2">
             <div class="card">
-              <h3>Codex no usa wrappers</h3>
+              <h3>Nada que mantener por host</h3>
               <p>
-                No hay una tercera copia de los wrappers. Codex invoca la skill directamente, que es
-                exactamente lo que el wrapper hace por vos en los otros dos.
+                Claude Code llega a la skill por su slash, a través de <code>.claude/skills</code>.
+                OpenCode y Codex la cargan por nombre. En ninguno hay un archivo intermedio que se
+                pueda desincronizar.
               </p>
             </div>
             <div class="card">
-              <h3>La verificación no es cosmética</h3>
+              <h3>Un comando no tapa una skill</h3>
               <p>
-                <code>agents:compat:check</code> rechaza un alias cuya skill destino no exista o
-                cuyo modo no esté declarado. Y a un wrapper al que le crece un cuerpo lo falla con
-                el mensaje <code>contains workflow prose</code>.
+                Un comando del proyecto con el mismo nombre que una skill la taparía.
+                <code>agents:compat:check</code> lo rechaza y <code>bun run agents:compat</code> lo
+                mueve a <code>.backups/shadowing-commands/</code>, donde se puede recuperar.
               </p>
             </div>
           </div>
