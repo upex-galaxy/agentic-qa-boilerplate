@@ -139,7 +139,7 @@
           <tbody>
             <tr>
               <td><strong>Bun</strong></td>
-              <td><code>&gt;= 1.0.0</code></td>
+              <td>la mínima que exige el preflight de <code>bun run setup</code></td>
               <td>Bloquea. El preflight de <code>bun run setup</code> sale con código 1.</td>
             </tr>
             <tr>
@@ -156,7 +156,10 @@
             </tr>
             <tr>
               <td><code>node</code></td>
-              <td><code>&gt;= 18</code></td>
+              <td>
+                la mínima que exige el preflight (<code>MIN_NODE_MAJOR</code> en
+                <code>cli/doctor.ts</code>)
+              </td>
               <td>
                 Los hooks ejecutan <code>node .agents/hooks/personality-reinject.mjs</code>. Lo
                 comprueban el doctor del scaffolder y el preflight de <code>bun run setup</code>.
@@ -164,7 +167,10 @@
             </tr>
             <tr>
               <td><strong>gentle-ai</strong></td>
-              <td><code>&gt;= 1.26.5</code></td>
+              <td>
+                la mínima que exige <code>bun run setup</code> (<code>MIN_GENTLE_AI_VERSION</code>
+                en <code>cli/install.ts</code>)
+              </td>
               <td>
                 Aviso. Sin él no se instala Engram (memoria entre sesiones); el resto funciona.
               </td>
@@ -249,9 +255,8 @@ bun run setup</code></pre>
           <strong>Instalación</strong>
           <p>
             <code>bun install</code>, los navegadores de Playwright (<code>bun run pw:install</code
-            >, unos 300 MB de Chromium), Engram con
-            <code>gentle-ai install --preset minimal</code> y los skills de la comunidad con
-            <code>bunx skills add</code>.
+            >), Engram con <code>gentle-ai install --preset minimal</code> y los skills de la
+            comunidad con <code>bunx skills add</code>.
           </p>
         </li>
         <li>
@@ -456,7 +461,7 @@ bun run codex      # Codex CLI (Codex Desktop usa la misma config del repo)</cod
       ><code>  una vez por repo           una vez por target              continuo        cuando hay drift
 +-----------------+   +---------------+   +-----------+   +-------------+   +---------------+
 | 0 Bootstrap     |--&gt;| 1 Discovery   |--&gt;| 2 Adapt   |--&gt;| 3 QA diario |&lt;--| 4 Mantenim.   |
-| bun run setup   |   | /project-     |   | /adapt-   |   | 7 stages    |--&gt;| sync + maps   |
+| bun run setup   |   | /project-     |   | /adapt-   |   | stages IQL  |--&gt;| sync + maps   |
 |                 |   |  discovery    |   |  framework|   | con skill   |   |               |
 +-----------------+   +---------------+   +-----------+   +-------------+   +---------------+</code></pre>
       <div class="table-wrap">
@@ -534,10 +539,10 @@ bun run codex      # Codex CLI (Codex Desktop usa la misma config del repo)</cod
 
       <h3 id="stages-iql">La fase 3 son los stages del IQL</h3>
       <p>
-        El QA diario sigue los ocho stages del IQL (Integrated Quality Lifecycle). Siete tienen un
-        skill que los ejecuta; Observation está declarado pero todavía no tiene skill. La
-        metodología completa está en <a href="metodologia/iql.html">IQL</a> y cómo la implementa
-        este repo, en <a href="metodologia/este-repo.html">El IQL en este repo</a>.
+        El QA diario sigue los ocho stages del IQL (Integrated Quality Lifecycle). Cada uno tiene un
+        skill que lo ejecuta, salvo Observation, que está declarado sin skill. La metodología
+        completa está en <a href="metodologia/iql.html">IQL</a> y cómo la implementa este repo, en
+        <a href="metodologia/este-repo.html">El IQL en este repo</a>.
       </p>
       <div class="table-wrap">
         <table>
@@ -774,57 +779,8 @@ subagente (contexto limpio)
       <h3 id="circuito-cli">Circuito 3: auto-carga de skills por CLI</h3>
       <p>
         Antes de ejecutar un binario, el agente carga el skill que sabe usarlo (flags, auth,
-        paginación, errores). La fuente es <code>AGENTS.md</code> §6.5.
+        paginación, errores). La tabla binario → skill vive en <code>AGENTS.md</code> §6.5.
       </p>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Binario</th>
-              <th>Skill que se carga antes</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><code>gh</code></td>
-              <td><code>/git-flow-master</code> (cuando es trabajo de git o PR)</td>
-            </tr>
-            <tr>
-              <td><code>acli</code>, <code>jq</code></td>
-              <td><code>/acli</code></td>
-            </tr>
-            <tr>
-              <td><code>bun xray</code></td>
-              <td><code>/xray-cli</code></td>
-            </tr>
-            <tr>
-              <td><code>playwright-cli</code></td>
-              <td><code>/playwright-cli</code> + <code>/playwright-best-practices</code></td>
-            </tr>
-            <tr>
-              <td><code>bunx allure</code></td>
-              <td><code>/regression-testing</code> + <code>/test-automation</code></td>
-            </tr>
-            <tr>
-              <td><code>supabase</code>, <code>wrangler</code>, <code>vercel</code></td>
-              <td><code>/regression-testing</code> (hosting privado de reportes)</td>
-            </tr>
-            <tr>
-              <td><code>resend</code></td>
-              <td><code>/resend-cli</code></td>
-            </tr>
-            <tr>
-              <td><code>orca</code></td>
-              <td><code>/orca-orchestration</code></td>
-            </tr>
-            <tr>
-              <td><code>bun</code></td>
-              <td><code>/bun</code> (skill de la comunidad, nivel usuario)</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
       <h2 id="mcps">Los MCPs del repo</h2>
       <p>
         Los declara <code>.mcp.json</code> y existen igual en <code>opencode.jsonc</code> y
@@ -833,56 +789,13 @@ subagente (contexto limpio)
         el CLI (gasta menos tokens) y el MCP como respaldo, salvo donde el MCP es la herramienta
         principal.
       </p>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>MCP</th>
-              <th>Para qué</th>
-              <th>Variables en <code>.env</code></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><code>context7</code></td>
-              <td>
-                Documentación oficial y versionada de librerías, frameworks y CLIs. Obligatorio
-                antes que la búsqueda web para dudas de docs.
-              </td>
-              <td>ninguna</td>
-            </tr>
-            <tr>
-              <td><code>playwright</code></td>
-              <td>Automatización de navegador. Respaldo de <code>/playwright-cli</code>.</td>
-              <td>ninguna</td>
-            </tr>
-            <tr>
-              <td><code>dbhub</code></td>
-              <td>
-                Consultas SQL para validar datos. Necesita que edites <code>dbhub.toml</code> (<a
-                  href="setup/dbhub.html"
-                  >guía</a
-                >).
-              </td>
-              <td>
-                <code>DBHUB_TYPE</code>, <code>DBHUB_HOST</code>, <code>DBHUB_PORT</code>,
-                <code>DBHUB_DATABASE</code>, <code>DBHUB_USER</code>, <code>DBHUB_PASSWORD</code>
-              </td>
-            </tr>
-            <tr>
-              <td><code>openapi</code></td>
-              <td>
-                Solo lectura del contrato de la API: endpoints y schemas. Las requests autenticadas
-                van por <code>curl</code> con el token de <code>bun run api:login</code> (<a
-                  href="setup/openapi.html"
-                  >guía</a
-                >).
-              </td>
-              <td><code>API_BASE_URL</code>, <code>OPENAPI_SPEC_PATH</code></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <p>
+        Qué hace cada uno y cuándo se usa está en la tabla de MCPs de <code>AGENTS.md</code> §5; las
+        variables que cada server necesita en <code>.env</code> las lista
+        <code>bun run setup:doctor</code> (y <code>.env.example</code> las comenta). Las guías de
+        <a href="setup/dbhub.html">DBHub</a> y <a href="setup/openapi.html">OpenAPI</a> explican los
+        que leen valores del proyecto.
+      </p>
       <p>
         La búsqueda web y Postman no están en <code>.mcp.json</code> a propósito: son servers
         remotos cuyo único contenido del lado del proyecto era una API key, así que se conectan una
@@ -941,9 +854,7 @@ subagente (contexto limpio)
       <p>Si saltas gentle-ai, todo sigue funcionando, pero cada sesión empieza sin memoria.</p>
 
       <h2 id="chuleta">Chuleta: quiero X, ejecuto Y</h2>
-      <p>
-        Todo lo de esta tabla existe hoy como skill, comando o script de <code>package.json</code>.
-      </p>
+      <p>Todo lo de esta tabla existe como skill, comando o script de <code>package.json</code>.</p>
       <div class="table-wrap">
         <table>
           <thead>
@@ -1110,11 +1021,12 @@ subagente (contexto limpio)
 
       <h2 id="skills">Catálogo de skills</h2>
       <p>
-        La tabla de skills de <code>AGENTS.md</code> §5 tiene hoy 24 entradas: 21 viven en
-        <code>.agents/skills/</code> (20 propias y <code>judgment-day</code>, vendorizado de
-        gentle-ai) y 3 son de la comunidad y las instala <code>bun run setup</code> a nivel de
-        proyecto. Además hay skills de usuario (<code>skill-creator</code>, <code>mkd</code>,
-        <code>bun</code> y otros) que el agente solo carga si le das permiso.
+        El catálogo es <code>.agents/skills/REGISTRY.md</code> (generado por
+        <code>bun run skills:registry</code>; <code>AGENTS.md</code> §5 tiene la misma tabla para el
+        agente). Hay tres tipos: propios del repo, vendorizados (como <code>judgment-day</code>, de
+        gentle-ai) y de la comunidad, que instala <code>bun run setup</code> a nivel de proyecto.
+        Además hay skills de usuario (la lista <code>USER_LEVEL_SKILLS</code> de
+        <code>cli/install.ts</code>) que el agente solo carga si le das permiso.
       </p>
 
       <h3 id="skills-workflow">Workflow: los stages del pipeline</h3>
@@ -1164,146 +1076,28 @@ subagente (contexto limpio)
         </div>
       </div>
 
-      <h3 id="skills-setup-contexto">Setup y contexto del proyecto</h3>
-      <div class="cards">
-        <div class="card">
-          <span class="badge green">Onboarding</span>
-          <h3>agentic-qa-onboard</h3>
-          <p>
-            Tour de orientación y mostrador para quien está perdido: explica en lenguaje llano y
-            ofrece abrir el deck de cada skill.
-          </p>
-        </div>
-        <div class="card">
-          <span class="badge">Generador</span>
-          <h3>project-discovery</h3>
-          <p>
-            Ingeniería inversa del target en cuatro fases. Genera PRD, SRS, glosario y
-            <code>.context/</code>.
-          </p>
-        </div>
-        <div class="card">
-          <span class="badge">Adaptación</span>
-          <h3>adapt-framework</h3>
-          <p>
-            Adapta KATA al stack del target: analiza sin escribir, propone un plan y solo lo aplica
-            con tu aprobación. Idempotente.
-          </p>
-        </div>
-        <div class="card">
-          <span class="badge">Contexto</span>
-          <h3>project-context</h3>
-          <p>
-            Regenera los mapas de datos, features y API y el master test plan, por modo o todos en
-            orden.
-          </p>
-        </div>
-        <div class="card">
-          <span class="badge">Contexto</span>
-          <h3>sync-ai-context</h3>
-          <p>
-            Sincroniza los docs críticos para la IA con las instrucciones, skills, alias y
-            <code>package.json</code>.
-          </p>
-        </div>
-        <div class="card">
-          <span class="badge">Jira</span>
-          <h3>jira-administration</h3>
-          <p>Administración de Jira en dos modos sellados: components y migración de instancia.</p>
-        </div>
-      </div>
-
-      <h3 id="skills-herramientas">Herramientas y soporte</h3>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Skill</th>
-              <th>Origen</th>
-              <th>Para qué</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><code>agentic-qa-core</code></td>
-              <td>propio</td>
-              <td>Doctrina compartida que citan los demás skills. No se invoca.</td>
-            </tr>
-            <tr>
-              <td><code>acli</code></td>
-              <td>propio</td>
-              <td>Jira Cloud y Confluence desde la terminal.</td>
-            </tr>
-            <tr>
-              <td><code>xray-cli</code></td>
-              <td>propio</td>
-              <td>
-                Xray Cloud con <code>bun xray</code>: tests, ejecuciones, planes, importación de
-                resultados.
-              </td>
-            </tr>
-            <tr>
-              <td><code>git-flow-master</code></td>
-              <td>propio</td>
-              <td>Git de punta a punta; detecta la estrategia de ramas y se adapta.</td>
-            </tr>
-            <tr>
-              <td><code>bug-screenshot-annotation</code></td>
-              <td>propio</td>
-              <td>Anota capturas de bugs con círculos, flechas y notas, renderizado en local.</td>
-            </tr>
-            <tr>
-              <td><code>pr-review-lead</code></td>
-              <td>propio</td>
-              <td>Revisión de un PR de automatización contra la doctrina KATA, con citas.</td>
-            </tr>
-            <tr>
-              <td><code>session-handoff</code></td>
-              <td>propio</td>
-              <td>
-                Compacta la sesión y la continúa en una nueva, mismo harness y mismo worktree.
-              </td>
-            </tr>
-            <tr>
-              <td><code>orca-orchestration</code></td>
-              <td>propio</td>
-              <td>
-                Varias sesiones supervisadas a la vez. Opcional: requiere el binario
-                <code>orca</code>.
-              </td>
-            </tr>
-            <tr>
-              <td><code>judgment-day</code></td>
-              <td>vendorizado (gentle-ai)</td>
-              <td>Revisión con dos jueces ciegos en paralelo. Nunca se activa solo.</td>
-            </tr>
-            <tr>
-              <td><code>playwright-cli</code></td>
-              <td>comunidad</td>
-              <td>Navegador por CLI: capturas, traces, video, mocks.</td>
-            </tr>
-            <tr>
-              <td><code>playwright-best-practices</code></td>
-              <td>comunidad</td>
-              <td>Referencia de patrones: flakiness, POM, accesibilidad, fixtures.</td>
-            </tr>
-            <tr>
-              <td><code>resend-cli</code></td>
-              <td>comunidad</td>
-              <td>Pruebas de flujos de email con Resend.</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <h3 id="skills-soporte">Setup, contexto, herramientas y soporte</h3>
+      <p>
+        El resto (onboarding, discovery, adaptación del framework, mapas de contexto, git,
+        administración de Jira, orquestación, revisión y los wrappers de CLI) son skills de soporte:
+        su fila en <code>.agents/skills/REGISTRY.md</code> dice cuándo se cargan y qué hacen. Las de
+        la comunidad las instala <code>bun run setup</code> (listas
+        <code>PROJECT_LEVEL_SKILLS</code> y <code>USER_LEVEL_SKILLS</code> en
+        <code>cli/install.ts</code>).
+      </p>
 
       <h2 id="comandos-scripts">Comandos y scripts</h2>
 
       <h3 id="comandos">Comandos (alias)</h3>
       <p>
-        Diez alias, definidos en <code>.agents/compatibility/command-aliases.json</code>. Los
+        Los alias están definidos en <code>.agents/compatibility/command-aliases.json</code>. Los
         archivos de <code>.claude/commands/</code> y <code>.opencode/commands/</code> los genera
         <code>bun run agents:compat</code>; no se editan a mano. Codex no tiene comandos: ahí
         invocas el skill directamente.
+      </p>
+      <p>
+        Una fila de ejemplo; el resto, con su propósito en <code>description</code>, está en ese
+        manifest y en el overlay opcional <code>command-aliases.project.json</code>.
       </p>
       <div class="table-wrap">
         <table>
@@ -1320,347 +1114,23 @@ subagente (contexto limpio)
               <td><code>adapt-framework</code> · adapt</td>
               <td>Adapta KATA al target.</td>
             </tr>
-            <tr>
-              <td><code>/sync-ai-memory</code></td>
-              <td><code>sync-ai-context</code> · sync</td>
-              <td>Sincroniza los docs para la IA.</td>
-            </tr>
-            <tr>
-              <td><code>/business-data-map</code></td>
-              <td><code>project-context</code> · data</td>
-              <td>Entidades, flujos y máquinas de estado.</td>
-            </tr>
-            <tr>
-              <td><code>/business-feature-map</code></td>
-              <td><code>project-context</code> · features</td>
-              <td>Catálogo de features, matriz CRUD, integraciones.</td>
-            </tr>
-            <tr>
-              <td><code>/business-api-map</code></td>
-              <td><code>project-context</code> · api</td>
-              <td>Modelo de auth y endpoints críticos.</td>
-            </tr>
-            <tr>
-              <td><code>/master-test-plan</code></td>
-              <td><code>project-context</code> · test-plan</td>
-              <td>Qué probar y por qué.</td>
-            </tr>
-            <tr>
-              <td><code>/break-down-tests</code></td>
-              <td><code>test-automation</code> · explain</td>
-              <td>Explica tests automatizados en lenguaje llano. Solo lectura.</td>
-            </tr>
-            <tr>
-              <td><code>/fix-traceability</code></td>
-              <td><code>test-documentation</code> · repair-traceability</td>
-              <td>Repara los links US, ATP, ATR y TC en el TMS.</td>
-            </tr>
-            <tr>
-              <td><code>/jira-components</code></td>
-              <td><code>jira-administration</code> · components</td>
-              <td>Gestiona los components de Jira.</td>
-            </tr>
-            <tr>
-              <td><code>/jira-instance-migration</code></td>
-              <td><code>jira-administration</code> · instance-migration</td>
-              <td>Apunta el repo a otra instancia de Jira.</td>
-            </tr>
           </tbody>
         </table>
       </div>
 
       <h3 id="scripts">Scripts de <code>package.json</code></h3>
       <p>
-        Se ejecutan con <code>bun run &lt;nombre&gt;</code>. Agrupados por uso; la lista es la de
-        <code>package.json</code>, sin añadidos.
+        Se ejecutan con <code>bun run &lt;nombre&gt;</code>. La lista vive en
+        <code>package.json</code> (regla 11 de <code>AGENTS.md</code>: se lee ahí, nunca de una
+        copia). Se reconocen por prefijo: instalación, entorno y agentes (<code>setup</code>,
+        <code>agents:*</code>, <code>harness:env</code>, los lanzadores por harness), documentación
+        (<code>docs*</code>), Jira, Xray y caché local (<code>jira:*</code>, <code>xray</code>,
+        <code>context:*</code>, <code>tests:map</code>), tests y reportes (<code>test*</code>,
+        <code>allure:*</code>), API y KATA (<code>api:*</code>, <code>kata:*</code>) y calidad del
+        repo (<code>lint:*</code>, <code>format:*</code>, <code>types:check</code>,
+        <code>vars:*</code>, <code>skills:*</code>, <code>repo:*</code>, <code>git:policy</code>).
       </p>
 
-      <details open>
-        <summary>Instalación, entorno y agentes</summary>
-        <div class="table-wrap">
-          <table>
-            <tbody>
-              <tr>
-                <td><code>setup</code></td>
-                <td>
-                  Preflight y el instalador interactivo. <code>--variables</code> abre el menú de
-                  credenciales.
-                </td>
-              </tr>
-              <tr>
-                <td><code>setup:doctor</code></td>
-                <td>
-                  Diagnóstico de solo lectura: variables, dependencias, navegadores, MCPs, confianza
-                  de Codex.
-                </td>
-              </tr>
-              <tr>
-                <td><code>harness:env</code> · <code>harness:env:check</code></td>
-                <td>
-                  Genera o verifica las credenciales por harness a partir de <code>.env</code>.
-                </td>
-              </tr>
-              <tr>
-                <td><code>agents:setup</code></td>
-                <td>Asistente que rellena <code>.agents/project.yaml</code>.</td>
-              </tr>
-              <tr>
-                <td><code>claude</code> · <code>opencode</code> · <code>codex</code></td>
-                <td>Lanzan el agente con <code>.env</code> cargado.</td>
-              </tr>
-              <tr>
-                <td><code>pw:install</code></td>
-                <td>Instala Chromium con sus dependencias de sistema.</td>
-              </tr>
-              <tr>
-                <td><code>up</code></td>
-                <td>Actualiza el proyecto con las novedades del boilerplate.</td>
-              </tr>
-              <tr>
-                <td><code>worktree:provision</code></td>
-                <td>
-                  Prepara un worktree nuevo con lo que git no copia: <code>.env</code>,
-                  <code>.auth/</code>, <code>node_modules/</code> y skills de la comunidad.
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </details>
-
-      <details>
-        <summary>Documentación</summary>
-        <div class="table-wrap">
-          <table>
-            <tbody>
-              <tr>
-                <td><code>docs</code></td>
-                <td>Sirve este portal en local y lo abre en el navegador.</td>
-              </tr>
-              <tr>
-                <td><code>onboarding</code></td>
-                <td>El mismo servidor, abierto en esta página.</td>
-              </tr>
-              <tr>
-                <td><code>docs:build</code></td>
-                <td>Regenera el manifiesto del portal.</td>
-              </tr>
-              <tr>
-                <td><code>docs:check</code></td>
-                <td>Busca links rotos y rutas inexistentes en <code>docs/</code>.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </details>
-
-      <details>
-        <summary>Jira, Xray y caché local</summary>
-        <div class="table-wrap">
-          <table>
-            <tbody>
-              <tr>
-                <td><code>jira:check</code></td>
-                <td>Verifica el workspace contra <code>.agents/jira-required.yaml</code>.</td>
-              </tr>
-              <tr>
-                <td><code>jira:baseline</code></td>
-                <td>
-                  Avisa si el manifiesto declara menos work types que el de upstream. Nunca bloquea.
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <code>jira:sync-fields</code> · <code>jira:sync-workflows</code> ·
-                  <code>jira:sync-link-types</code>
-                </td>
-                <td>Catalogan custom fields, estados y transiciones, y tipos de link.</td>
-              </tr>
-              <tr>
-                <td><code>jira:components</code></td>
-                <td>Reconcilia los components del proyecto de Jira con un plan.</td>
-              </tr>
-              <tr>
-                <td><code>jira:sync-issues</code></td>
-                <td>
-                  Trae issues a <code>.context/PBI/</code>: <code>pull</code>,
-                  <code>get &lt;KEY&gt;</code>, <code>jql "&lt;query&gt;"</code>.
-                </td>
-              </tr>
-              <tr>
-                <td><code>context:hydrate</code></td>
-                <td>Reconstruye toda la caché de <code>.context/PBI/</code> con comentarios.</td>
-              </tr>
-              <tr>
-                <td><code>jira:url</code></td>
-                <td>
-                  Imprime la URL de Atlassian del proyecto (<code>--slug</code> para el host).
-                </td>
-              </tr>
-              <tr>
-                <td><code>xray</code></td>
-                <td>El CLI de Xray (<code>bun xray</code>).</td>
-              </tr>
-              <tr>
-                <td><code>test:sync</code></td>
-                <td>
-                  Después de <code>bun run test</code>, escribe los resultados de los ATCs en Jira o
-                  Xray (con <code>AUTO_SYNC=true</code>).
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </details>
-
-      <details>
-        <summary>Tests y reportes</summary>
-        <div class="table-wrap">
-          <table>
-            <tbody>
-              <tr>
-                <td><code>test</code></td>
-                <td>Toda la suite de Playwright.</td>
-              </tr>
-              <tr>
-                <td><code>test:e2e</code> · <code>test:integration</code></td>
-                <td>Un solo proyecto: E2E o integración.</td>
-              </tr>
-              <tr>
-                <td><code>test:smoke</code></td>
-                <td>
-                  Los proyectos <code>smoke-ui</code> y <code>smoke-api</code>: los tests
-                  <code>@critical</code> de E2E e integración.
-                </td>
-              </tr>
-              <tr>
-                <td><code>test:ui</code> · <code>test:headed</code> · <code>test:debug</code></td>
-                <td>Modo UI, con navegador visible o con el inspector.</td>
-              </tr>
-              <tr>
-                <td><code>test:last-failed</code> · <code>test:retries</code></td>
-                <td>Repetir lo que falló o correr con dos reintentos.</td>
-              </tr>
-              <tr>
-                <td><code>test:report</code> · <code>test:clean</code></td>
-                <td>Abrir el reporte de Playwright o borrar resultados y reportes.</td>
-              </tr>
-              <tr>
-                <td><code>test:env:check</code></td>
-                <td>Valida <code>.env</code> para el <code>TEST_ENV</code> activo.</td>
-              </tr>
-              <tr>
-                <td><code>tests:map</code></td>
-                <td>Mapa de cobertura Epic, Story y Test en HTML, sin llamar a Jira.</td>
-              </tr>
-              <tr>
-                <td><code>allure:run</code> · <code>allure:agent</code></td>
-                <td>Corren <code>bun test</code> bajo Allure.</td>
-              </tr>
-              <tr>
-                <td>
-                  <code>allure:generate</code> · <code>allure:open</code> ·
-                  <code>allure:watch</code>
-                </td>
-                <td>Generar, abrir o vigilar el reporte de Allure.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </details>
-
-      <details>
-        <summary>API y KATA</summary>
-        <div class="table-wrap">
-          <table>
-            <tbody>
-              <tr>
-                <td><code>api:sync</code></td>
-                <td>Trae el spec OpenAPI y regenera los tipos de <code>api/schemas/</code>.</td>
-              </tr>
-              <tr>
-                <td>
-                  <code>api:login</code> · <code>api:login:local</code> ·
-                  <code>api:login:staging</code>
-                </td>
-                <td>
-                  Autentica y deja el token en <code>.auth/tokens.env</code> para usar con curl.
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <code>kata:manifest</code> · <code>kata:manifest:check</code> ·
-                  <code>kata:manifest:watch</code>
-                </td>
-                <td>
-                  Regenera, valida o vigila <code>kata-manifest.json</code>, el registro de
-                  componentes y ATCs.
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </details>
-
-      <details>
-        <summary>Calidad del repo</summary>
-        <div class="table-wrap">
-          <table>
-            <tbody>
-              <tr>
-                <td><code>repo:check</code> · <code>repo:fix</code></td>
-                <td>Todos los chequeos en cadena, o su versión que corrige lo que puede.</td>
-              </tr>
-              <tr>
-                <td><code>format:check</code> · <code>format:fix</code></td>
-                <td>Prettier sobre JSON, YAML, CSS y HTML.</td>
-              </tr>
-              <tr>
-                <td><code>lint:check</code> · <code>lint:fix</code></td>
-                <td>ESLint.</td>
-              </tr>
-              <tr>
-                <td><code>types:check</code></td>
-                <td>TypeScript sin emitir.</td>
-              </tr>
-              <tr>
-                <td><code>vars:check</code></td>
-                <td>Placeholders <code>{{VAR}}</code> y <code>{{jira.*}}</code>.</td>
-              </tr>
-              <tr>
-                <td><code>vars:env:check</code></td>
-                <td>Variables del proceso contra <code>.env</code>.</td>
-              </tr>
-              <tr>
-                <td><code>vars:schema</code> · <code>vars:schema:check</code></td>
-                <td>Genera o valida el schema tipado de las variables de entorno.</td>
-              </tr>
-              <tr>
-                <td>
-                  <code>skills:check</code> · <code>skills:registry</code> ·
-                  <code>skills:registry:check</code> · <code>skills:evals</code>
-                </td>
-                <td>Lint de skills, el registro <code>REGISTRY.md</code> y las evals.</td>
-              </tr>
-              <tr>
-                <td><code>agents:compat</code> · <code>agents:compat:check</code></td>
-                <td>
-                  Genera o valida los archivos por harness (shim, alias, wrappers, hooks, paridad de
-                  MCPs).
-                </td>
-              </tr>
-              <tr>
-                <td><code>agents:schema</code> · <code>agents:schema:check</code></td>
-                <td>El schema de <code>.agents/project.yaml</code>.</td>
-              </tr>
-              <tr>
-                <td><code>git:policy</code></td>
-                <td>Compara la política de git declarada con la del host.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </details>
       <p>
         Además está <code>prepare</code>, que instala los hooks de Husky al hacer
         <code>bun install</code>. No hay un script <code>env</code>: para cargar

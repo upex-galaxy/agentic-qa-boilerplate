@@ -102,11 +102,11 @@
       <p>
         El server <code>openapi</code> ya está declarado en <code>.mcp.json</code>,
         <code>opencode.jsonc</code> y <code>.codex/config.toml</code>. Así queda en
-        <code>.mcp.json</code>:
+        <code>.mcp.json</code> (la versión del paquete está fijada ahí):
       </p>
       <pre data-lang="json"><code>"openapi": {
   "command": "bunx",
-  "args": ["-y", "@ivotoby/openapi-mcp-server@1.16.1", "--tools", "dynamic"],
+  "args": ["-y", "@ivotoby/openapi-mcp-server", "--tools", "dynamic"],
   "env": {
     "API_BASE_URL": "${API_BASE_URL}",
     "OPENAPI_SPEC_PATH": "${OPENAPI_SPEC_PATH}"
@@ -314,10 +314,9 @@ bun run api:sync --url http://localhost:3000/api/openapi  # desde una URL
 bun run api:sync --file ./path/to/spec.json               # desde un archivo local
 bun run api:sync --config                                 # con la configuración guardada</code></pre>
       <p>
-        Los tipos se comprueban al compilar, no en ejecución: el repo no tiene validador de schema
-        en runtime (ni Zod ni Ajv). Un tipo detecta un test que lee un campo que el contrato no
-        tiene, pero no detecta una API que devuelve otra forma. La forma que te importa se valida
-        con asserts explícitos en el test.
+        Los tipos se comprueban al compilar, no en ejecución. Un tipo detecta un test que lee un
+        campo que el contrato no tiene, pero no detecta una API que devuelve otra forma. La forma
+        que te importa se valida con asserts explícitos en el test.
       </p>
 
       <h2 id="que-usar">Qué herramienta para qué</h2>

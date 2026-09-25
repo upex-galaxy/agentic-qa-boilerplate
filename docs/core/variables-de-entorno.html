@@ -400,9 +400,9 @@ bun run setup:doctor --json   # env_var_scopes[] y harness_level_mcps para un ag
         El camino recomendado para los valores sensibles es un gestor de secretos (1Password u otro
         proveedor que varlock resuelva en tiempo de carga) en lugar de un <code>.env</code> con
         valores en claro. Está planificado como la fase de proveedores del trabajo de secretos y
-        todavía no forma parte del repo: hoy los valores viven en <code>.env</code>. Cuando llegue,
-        los items marcados <code>@sensitive</code> en el esquema serán los que resuelva el
-        proveedor, sin cambiar los alcances de esta página.
+        todavía no forma parte del repo: los valores viven en <code>.env</code>. Cuando llegue, los
+        items marcados <code>@sensitive</code> en el esquema serán los que resuelva el proveedor,
+        sin cambiar los alcances de esta página.
       </p>
 
       <footer class="doc-footer">
