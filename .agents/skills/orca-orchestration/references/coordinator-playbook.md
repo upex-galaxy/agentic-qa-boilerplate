@@ -37,6 +37,8 @@ exactly one supervised launch, and it is the native one.
 # 1 · once per wave: create the Run (a namespace + a home inbox; it schedules nothing)
 orca orchestration run-create --objective "<what is being coordinated>" --json </dev/null
 #     save run_id + the coordinator handle into .session/orchestration/<slug>/run.md
+orca terminal rename --terminal "$ORCA_TERMINAL_HANDLE" --title "conductor · <slug>" --json </dev/null
+#     the conductor's own tab: the owner finds it among the workers by the same `<name> · <id>` shape
 
 # 2 · write the BRIEFS first, then one Task per worker, BEFORE launching anything.
 #     The spec is not a label. On the native path the runtime injects it as the worker's FIRST
@@ -45,9 +47,13 @@ orca orchestration run-create --objective "<what is being coordinated>" --json <
 #     sentence, and anything that has to be right from the first action — the session-title
 #     token and the no-stopping clause included. Which is why the briefs are written first:
 #     the spec cites them by path.
-orca orchestration task-create --spec '/<workflow-skill> <KEY> fleet worker. Read <ABS>/.session/orchestration/<slug>/COMMON.md then <ABS>/.session/orchestration/<slug>/W-<label>.md and execute your brief. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints. Channel: orca orchestration. No heartbeats.' --json </dev/null
-#     --task-title is accepted and DISCARDED (every task comes back with title null, G49):
-#     put the human-readable label in --spec and in roster.md
+orca orchestration task-create --display-name '<KEY>' --spec '/<workflow-skill> <KEY> fleet worker. Read <ABS>/.session/orchestration/<slug>/COMMON.md then <ABS>/.session/orchestration/<slug>/W-<label>.md and execute your brief. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints. Channel: orca orchestration. No heartbeats.' --json </dev/null
+#     <KEY> is the worker's ROSTER NAME, one value everywhere: the ticket key (or <KEY>-<slug>) for a
+#       ticket, a kebab slug for anything else (`volatile-impl`). It is the session name, the tab title
+#       prefix, the task display name and the `Session:` trailer. One token, no extra words between it
+#       and `fleet worker`, or the identity hook does not recognise it.
+#     --display-name is the worker row's label in the app; without it the row shows the spec's first
+#       line. Read it back as `.display_name` (snake_case; `.title` does not exist, G49).
 #     --deps <json_array> exists but the element shape is undocumented: do not use it yet (G8)
 #     Measured cost of a thin spec: a worker ran seven of its nine steps on a one-line framing
 #     before the brief reached it, and three of its commits carried the harness-derived session
@@ -67,6 +73,14 @@ orca orchestration worker-start --task <task_id> --worktree <current|id:<repoId>
   --agent <claude|codex|opencode> --model <full-model-id> --effort <level> --json </dev/null
 #     → the dispatch id and the worker's terminal handle: record BOTH in roster.md.
 #       (Lost them? worker-show --dispatch <id>, or terminal list --worktree <sel>.)
+
+# 4b · name the TAB, key first, id as suffix. The runtime titles every worker tab `worker-<task id>`
+#     and has no flag to change that (G71); this is the only verb that does, and it types nothing
+#     into the agent.
+orca terminal rename --terminal <handle> --title "<KEY> · task_<first 4 of the task id>" --json </dev/null
+#     The tab label lands only once the app window has opened that tab, and `terminal list` /
+#     `terminal show` report a different field, so they cannot confirm it (G72). Repeat the same
+#     rename in every liveness sweep (§5); confirm on the tab itself.
 #     --effort requires --model; neither combines with --terminal. --name names a NEW WORKTREE,
 #       not the session: there is no session-name flag on this path (see §1b).
 #     Prerequisites, both invisible from here: the agent's per-machine default arguments must carry
@@ -79,6 +93,10 @@ orca terminal read --terminal <handle> --screen --json </dev/null
 #     want: the agent's status footer (model, effort) AND evidence credentials loaded
 #     (an MCP tool listed as connected, a direnv export line on Codex, or the worker's own
 #     first probe). No credentials → fix the machine, do not dispatch work to it.
+#     Also the SESSION NAME in the status bar. Claude Code: the identity hook named it from the
+#     prompt token; the bar reads `<KEY>`. OpenCode and Codex have no hook that can: drive the TUI
+#     with `terminal send --enter --text '/rename <KEY>'` once the screen shows it ready, then read
+#     the bar back. A worker cannot run that command on itself, so never leave it to the brief.
 
 # 6 · send the prompt — the ONE verb that reaches a running session (G46).
 #     On the NATIVE path the spec already delivered this text, so step 6 is a reinforcement
@@ -90,9 +108,9 @@ orca terminal send --terminal <handle> --enter \
   --text '/sprint-testing <KEY> fleet worker. Read <ABS>/.session/orchestration/<slug>/COMMON.md then <ABS>/.session/orchestration/<slug>/W-<label>.md and execute your brief. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints. Channel: orca orchestration. No heartbeats.' \
   --json </dev/null
 #     The prompt MUST OPEN with `/<workflow-skill> <KEY> fleet worker`: that token is what the
-#     identity hook turns into the session title (there is no name flag here), and what the workflow
-#     skill reads to know it is a fleet worker. Everything after it is the brief pointer plus the
-#     continuation sentence.
+#     identity hook turns into the session name `<KEY>` on Claude Code (there is no name flag here),
+#     and what the workflow skill reads to know it is a fleet worker. Everything after it is the
+#     brief pointer plus the continuation sentence.
 #     On `agent_prompt_stalled`: the text is usually ALREADY queued. Read the screen or
 #     `worktree ps` before resending, or the worker gets the message twice (G52).
 
@@ -132,7 +150,7 @@ about each:
 
 | Given up | Consequence | Compensation |
 |---|---|---|
-| the session-name flag | the roster, the board card and the `Session:` commit trailer all key off the label | the prompt opens with `/<workflow-skill> <KEY> fleet worker`, and the identity hook titles the session from it (`references/session-identity.md` §2) |
+| the session-name flag, and any say over the tab title | the roster, the board card and the `Session:` commit trailer all key off the label, and the runtime titles the tab `worker-<task id>` (G71) | the prompt opens with `/<workflow-skill> <KEY> fleet worker` and the identity hook names a Claude Code session `<KEY>` from it; the conductor sends `/rename <KEY>` to the other harnesses (step 5) and renames the tab (step 4b). `references/session-identity.md` §2b |
 | environment variables in the launch line | a worker cannot be marked as a fleet worker by an exported variable | the brief and the prompt token carry it. `sprint-testing` detects worker mode from them, not from the environment |
 | the prompt in the launch itself | the worker starts idle at its prompt | step 6: `terminal send` immediately after readiness. Until it lands, the worker has nothing to do |
 | a launch line that also loads the env file | Claude and OpenCode workers read the surfaces `bun run harness:env` generated; a Codex worker, or any shell-exported variable, depends on the MACHINE having direnv, and nothing reports its absence | step 5: verify credentials on screen BEFORE dispatching work (G45) |
@@ -155,7 +173,7 @@ terminal it will drive by hand. On that path, and permanently:
 
 ```bash
 # unsupervised, by choice or because no native path is available on this machine
-orca terminal create --worktree <sel> --title "<KEY>-<slug>" --command '<launch.txt line, verbatim>' --json </dev/null
+orca terminal create --worktree <sel> --title "<KEY> · task_<first 4 of the task id>" --command '<launch.txt line, verbatim>' --json </dev/null
 orca terminal wait --terminal <handle> --for tui-idle --timeout-ms 180000 --json </dev/null
 orca orchestration dispatch --task <task_id> --to <handle> --json </dev/null             # → dispatch id, no injection
 orca orchestration dispatch-show --task <task_id> --preamble </dev/null > <ABS>/.session/orchestration/<slug>/preamble-<label>.md
@@ -316,6 +334,8 @@ fallback that also works with no runtime.
    which produces no message because the worker does not know it is stuck.
 5. Only then, the non-runtime fallback: grep the workflow's own blocked tokens in the session memory
    the workflow skill already writes, plus staleness (no progress line in more than ~20 minutes).
+6. Re-issue each live worker's tab rename from step 4b. It is idempotent, and a tab the app window
+   had not opened at launch only takes the label once it has (G72).
 
 ### Stalled is not idle, and the prompt line cannot tell them apart
 

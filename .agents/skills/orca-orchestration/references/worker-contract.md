@@ -132,15 +132,16 @@ agent, a model and an effort level, not a command line. Your name therefore come
 places:
 
 - **Claude Code** — from your first prompt. It opens with `/<workflow-skill> <KEY> fleet worker`, and
-  the repo's identity hook turns that into the session title. Nothing for you to do; do NOT rename
-  yourself, because a rename marks the name as human-set and freezes it.
-- **Any other harness, or a Claude Code worker whose first prompt did not carry the token** — the
-  brief instructs you to rename yourself in your FIRST turn with that harness's own rename command
-  (`/rename` is the documented form on Claude Code, OpenCode and Codex).
+  the repo's identity hook names the session `<KEY>`, your roster name. Nothing for you to do.
+- **OpenCode and Codex** — the conductor types `/rename <KEY>` into your terminal once you are
+  ready. Nothing for you to do either.
 
-A worker launched from a pasted line on the no-runtime path may already be named by that line's own
-name flag. Either way: use EXACTLY the label the brief gives you. The conductor's roster, the board
-card and the commit trailer all key off it, and a self-invented name breaks the resume path.
+You cannot rename yourself: `/rename` is user input, not a command you can run, so do not try, and
+do not treat a missing name as a blocker. Your tab title is also the conductor's job. A worker
+launched from a pasted line on the no-runtime path may already be named by that line's own name
+flag. Either way, the `Session:` trailer carries EXACTLY the label the brief gives you: the
+conductor's roster, the board card and the commit trailer all key off it, and a self-invented name
+breaks the resume path.
 
 ---
 

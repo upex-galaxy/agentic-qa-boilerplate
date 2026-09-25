@@ -68,16 +68,21 @@ worker: the native launch starts the agent itself and takes an agent, a model an
 **never a command line**, so there is no name flag to pass (`references/coordinator-playbook.md` §1b).
 
 The replacement is the prompt's fixed opening. A worker's first prompt begins with
-`/<workflow-skill> <KEY> fleet worker`, and the hook emitter turns that shape — a workflow trigger
-plus an issue key — into the session title, but only while no human has named the session. Two
-consequences that bite in practice:
+`/<skill> <KEY> fleet worker`, where `<KEY>` is the worker's roster name (a ticket key, `<KEY>-<slug>`,
+or a kebab slug such as `volatile-impl`). On Claude Code the hook emitter turns that token into the
+session name `<KEY>`, exactly, while no human has named the session; Claude Code records it with
+`nameSource: hook`, and the label rule in §3 reads it back verbatim. The runtime prepends its own
+preamble to that prompt, so the token is matched anywhere in it, never only at the start.
 
+- **One token, nothing between it and `fleet worker`.** `<KEY> SPIKE fleet worker` does not match,
+  and the session keeps the harness's generated title.
 - **Do not rename a Claude Code worker whose prompt carried the token.** A rename marks the name as
   human-set, and the emitter then leaves it alone forever, which is correct behaviour and not what
   you wanted.
-- **A worker whose first prompt did NOT carry the token stays unnamed**, and its brief must tell it
-  to rename itself to exactly the roster label in its first turn. Same instruction as for the
-  harnesses with no name flag at all.
+- **OpenCode and Codex have no hook that can set a name.** The conductor drives their TUI with
+  `/rename <KEY>` once the screen shows the worker ready (`references/coordinator-playbook.md` §1
+  step 5). **A worker cannot rename itself**: `/rename` is user input on all three harnesses, not a
+  command a model can run, so a brief that asks for it asks for nothing.
 
 The conductor reads the resulting label back off the screen rather than assuming it: the agent's
 status bar carries the session label together with the model and the effort level, and
@@ -93,7 +98,7 @@ One rule, applied in order, so two sessions never produce two different label fo
 
 | Case | Label |
 |---|---|
-| the user set the name explicitly (`nameSource == user`) | the name, as-is |
+| the user set the name explicitly (`nameSource == user`), or the identity hook set it from the fleet token (`nameSource == hook`) | the name, as-is |
 | the name was derived or auto-generated | `<name> (<first 8 chars of the id>)` |
 | only an id is available | the full id |
 | nothing is resolvable | `unknown` |
@@ -143,9 +148,13 @@ Whatever was only in the conductor's head is lost; whatever is in the card is re
 
 So at every launch and every stage boundary:
 
-- the terminal title is the session label (a worker launched from a pasted line with a name flag gets
-  this for free, since the name becomes the terminal title; on the supervised path set it explicitly
-  with the terminal-rename verb, or read back the title the hook set from the prompt);
+- the TAB title is `<KEY> · task_<first 4 of the task id>`: the roster name first, the id the
+  conductor addresses as a suffix. On the supervised path the runtime titles every worker tab
+  `worker-<task id>` and that label outranks whatever the harness paints, so the conductor sets it
+  with the terminal-rename verb right after the launch and again in every liveness sweep; it lands
+  only once the app window has opened the tab, and `terminal list` reads a different field, so it is
+  confirmed on the tab itself (gotchas G71, G72). On the custom-argv path the same title goes in
+  `terminal create --title`;
 - the board card's display name is the work key plus a short title — or, in a same-checkout fleet,
   the fleet's own display name, because the card is per-worktree there;
 - the board card's comment carries the recovery block: stage, session label, branch, and the absolute

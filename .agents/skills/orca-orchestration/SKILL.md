@@ -244,7 +244,7 @@ state is read:
 | plan | identical: same topology decision, same triage-time collision check, same rounds |
 | brief | identical: `COMMON.md` + `W-<label>.md` in the scope, cited by absolute path |
 | launch | the conductor prints `launch.txt` and the human opens N terminals and pastes N lines. This is the ONLY path where the launch line itself is the payload, which is why the file is still written unconditionally |
-| identity | the human sets the session name from the line's own name flag, or the worker renames itself |
+| identity | the line's own name flag names the session; where a harness has none, the human types `/rename <KEY>` once it is up (a worker cannot rename itself) |
 | state | the workflow's own blocked-state tokens plus the tracker, exactly as a single session already does |
 | questions | the worker writes the question in its report with options and a recommendation, and keeps going on what does not depend on the answer |
 | close | the human closes the terminals |
