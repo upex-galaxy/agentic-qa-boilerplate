@@ -1,6 +1,6 @@
 # HTML surfaces: opening a generated page inside the runtime
 
-Measured 2026-09-18 against orca 1.4.190, on the primary checkout of this repo.
+Measured on the primary checkout of this repo; re-verify after an upgrade.
 
 The runtime opens **browser tabs bound to a worktree**, not only terminals. A page opened that way sits
 next to the terminals that produced it, on the same card, reachable from the same board and the same
@@ -15,8 +15,8 @@ the coverage map from `bun run tests:map`, an Allure report, the how-it-works de
 
 ## The gate applies here exactly as everywhere else
 
-This is the FOURTH gated line a workflow skill may use (`references/launch-seam.md` §2.3), and it
-carries the same silence rule as the other three.
+This is one of the gated lines a workflow skill may use (`references/launch-seam.md` §2.3), and it
+carries the same silence rule as the others.
 
 | Gate state | What happens |
 |---|---|

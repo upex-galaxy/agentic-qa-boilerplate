@@ -30,8 +30,9 @@ issue_tracker:
   # cli/lib/atlassian-instance.ts). Inverse of project_key, on purpose: the host is
   # project identity, not a per-developer override, and it is the value that goes stale
   # after a site migration — a stale host silently overwrites .context/PBI/ and the
-  # .agents/*.json catalogs with another site's content. Keep it identical to .env's
-  # ATLASSIAN_URL; when they disagree the yaml wins and the scripts print a warning.
+  # .agents/*.json catalogs with another site's content. ATLASSIAN_URL is NOT a .env
+  # variable (AGENTS.md §7): if a stale copy is loose in the environment, the yaml wins
+  # and the scripts print a warning naming both values.
   atlassian_url: null # TODO: Atlassian site base URL (e.g. https://company.atlassian.net)
 
 testing:
@@ -139,7 +140,7 @@ git_strategy:
   policy: # how strictly protected branches are guarded (set by Strategy Setup Q4; defaults are safe)
     direct_push_to_protected: allowed # forbidden | confirm | allowed (solo-main = allowed)
     admin_bypass: true # normal flow here: the admin push credential auto-bypasses the ProtectPublic ruleset on every push (no flag needed). "Bypassed rule violations" is expected — never open a PR.
-    require_pr_reviews: 1 # VERIFIED 2026-08-18 against ruleset 16809531: required_approving_review_count = 1. Informational here, because this repo pushes directly and the admin credential bypasses the rule (see description) — but the number must still state what the host asks of anyone who does open a PR.
+    require_pr_reviews: 1 # required_approving_review_count on the host ruleset; reconciled by `bun run git:policy verify` (meta.policy_verified below). Informational here, because this repo pushes directly and the admin credential bypasses the rule (see description) — but the number must still state what the host asks of anyone who does open a PR.
     # Host divergences that are ACCEPTED, not drift. Each `field` names a `git:policy verify`
     # finding verbatim (`<branch>.<policy_field>`); verify moves matching findings from DRIFT
     # to ACCEPTED (exit 0) and warns when an entry no longer matches anything (stale entry).
@@ -207,7 +208,7 @@ orchestration:
   # skill owns WHEN and WHAT, these own the command grammar. They are small
   # enough to load rather than fetch on demand. Empty list = none installed;
   # the repo skill then asks the binary for its grammar.
-  # Measurements and dates: orca-orchestration/references/channel-discipline.md.
+  # Measurements and dates: .context/ADR/ADR-0006-forensic-measurements-ledger.md.
   orchestrator_skills: [orca-cli, orchestration]
 
 # Files `bun run up` must keep as THIS project's own. Read by `cli/update-boilerplate.ts`

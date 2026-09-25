@@ -372,7 +372,7 @@ Expected benign output:
 ### 7. Verify
 
 **Every verification command needs an explicit `--limit` above the expected
-count.** The list commands default to **20 rows** and truncate silently while the
+count.** The list commands default to a small `--limit` (see `cli/xray`) and truncate silently while the
 header still shows the true total. During a post-restore check this manufactures
 a convincing false data-loss alarm at the worst possible moment.
 
@@ -428,7 +428,7 @@ catalogs and no error to warn them.
 - **`--sync` needs destination Jira creds.** Without them, key to id resolution
   fails and restore falls back to CREATE (duplicates). Confirm `auth status`
   shows the destination Jira URL.
-- **List commands default to 20 rows** and truncate without warning. Always pass
+- **List commands default to a small `--limit` (see `cli/xray`)** and truncate without warning. Always pass
   `--limit` when counting or deciding.
 - **`0 created` is the signal to look for** in both the dry-run and the real run.
   A nonzero `created` under `--sync` means those keys did not resolve and were

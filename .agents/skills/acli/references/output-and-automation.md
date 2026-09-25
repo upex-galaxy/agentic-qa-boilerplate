@@ -280,9 +280,9 @@ sync-jira:
     paths: [changes.json]
 ```
 
-### Points-based rate limits (2026)
+### Points-based rate limits
 
-Atlassian is rolling out a per-organization point-based rate-limit scheme (65k–500k points/hour depending on plan tier, per-org bucket) for the REST API that `acli` calls under the hood. A batch edit over 3000 items can exhaust the hourly budget in one shot and produce 429s for the rest of the hour.
+Atlassian's point-based rate limits (per-organization buckets; see the vendor docs for the current buckets) apply to the REST API that `acli` calls under the hood. A batch edit over 3000 items can exhaust the hourly budget in one shot and produce 429s for the rest of the hour.
 
 Mitigation:
 

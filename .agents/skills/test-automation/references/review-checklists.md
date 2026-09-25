@@ -357,7 +357,7 @@ When every box is checked, the ticket is handed over to CI via the standard PR f
 
 ## Appendix · Legacy code cross-reference
 
-For PR comments that reference the legacy boilerplate's flat check IDs (`.prompts/stage-5-automation/review/*`). The current refactor split the 29+ flat checks into a shared list (`automation-standards.md` §10) plus deltas (this file). Use this table to resolve historical references.
+For PR comments that reference the legacy boilerplate's flat check IDs (`.prompts/stage-5-automation/review/*`). Those flat checks were split into a shared list (`automation-standards.md` §10) plus deltas (this file). Use this table to resolve historical references.
 
 | Legacy code | Scope | New location |
 |---|---|---|

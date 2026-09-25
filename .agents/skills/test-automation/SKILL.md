@@ -7,6 +7,8 @@ complementary_categories: [testing-e2e, testing-api, testing-component, automati
 metadata:
   kind: workflow
   requires_capabilities: [db, api-schema, browser]
+  stage_owner: true
+
 ---
 
 ## Forbidden invocations
@@ -146,7 +148,7 @@ Before picking the planning scope, run the session resume contract from `agentic
    - Surface to the user: last completed phase (Plan / Code / Review) + next phase + open Review findings if any.
    - Offer **resume / restart / abort**. On `restart`, archive to `.session/.archive/<YYYY-MM-DD>-test-automation-<scope>-aborted/` before proceeding.
 
-Phase 0 is inline (no subagent). It runs in <1 minute on a cold cache.
+Phase 0 is inline (no subagent).
 
 ---
 
@@ -200,7 +202,7 @@ Each phase has a gate. Do not start Code before the Plan is written and approved
 
 ### Phase 1 — Plan
 
-**MUST-load before any planning**: `kata-manifest.json` (root). It lists every Component and every ATC currently in the codebase. Use it to identify reuse, avoid duplicate `Page`/`Api` classes, and avoid minting an `@atc('PROJ-XXX')` ID that is already taken. This is enforced by Critical Rule #12 in `AGENTS.md` and by the husky pre-commit gate.
+**MUST-load before any planning**: `kata-manifest.json` (root). It lists every Component and every ATC in the codebase. Use it to identify reuse, avoid duplicate `Page`/`Api` classes, and avoid minting an `@atc('PROJ-XXX')` ID that is already taken. This is enforced by Critical Rule #12 in `AGENTS.md` and by the husky pre-commit gate.
 
 **Pre-flight checklist** (anti-duplication — run before writing the plan):
 
@@ -264,13 +266,13 @@ If any step fails, fix before moving to Review.
 
 #### AI-readable verification (optional, recommended)
 
-For the test you just wrote, run Allure 3 in **agent mode** to get a markdown report you can read directly without parsing HTML:
+For the test you just wrote, run Allure (`bunx allure`, version pinned in `package.json`) in **agent mode** to get a markdown report you can read directly without parsing HTML:
 
 ```bash
 bun allure:agent           # runs `bunx allure agent -- bun test`
 ```
 
-Allure 3 lives as a devDep — `bunx allure` resolves to the local `node_modules/.bin/allure`, no global install required. Use this when:
+Allure lives as a devDep — `bunx allure` resolves to the local `node_modules/.bin/allure`, no global install required. Use this when:
 
 - The Code subagent needs to confirm the test actually exercised the expected ATC (the markdown summary lists each `@atc('TICKET-ID')` block + its status).
 - You want a quick scope check before opening Phase 3 — Review.

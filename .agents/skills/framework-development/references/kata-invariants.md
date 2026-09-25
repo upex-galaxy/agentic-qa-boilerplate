@@ -98,7 +98,7 @@ scoped to `cli/**` and guards the updater's import closure); the two file sets a
 
 Three things a reader should know before citing it:
 
-- There is still **no `eslint-plugin-import`** in this repo. The rule is core ESLint. Do not
+- The rule is core ESLint (`no-restricted-imports`), not `eslint-plugin-import`. Do not
   attribute it to a plugin nobody installed — that was the previous version of this paragraph's
   mistake, in reverse.
 - **Dynamic `await import('./x')` is not caught.** The rule matches static import and export
@@ -111,26 +111,9 @@ Three things a reader should know before citing it:
 Review (`/pr-review-lead`) is no longer the only enforcement point, but it still owns the half a
 lint rule cannot judge: whether the alias chosen is the RIGHT one for the layer.
 
-The alias set actually declared in `tsconfig.base.json` `paths` (the authority — read it, do not
-trust a copy; `tsconfig.json` extends the base and declares no `paths` of its own):
-
-```
-"@/*"           -> ./*
-"@ui/*"         -> ./tests/components/ui/*
-"@api/*"        -> ./tests/components/api/*
-"@steps/*"      -> ./tests/components/steps/*
-"@utils/*"      -> ./tests/utils/*
-"@data/*"       -> ./tests/data/*
-"@variables"    -> ./config/variables.ts
-"@TestContext"  -> ./tests/components/TestContext.ts
-"@UiFixture"    -> ./tests/components/UiFixture.ts
-"@ApiFixture"   -> ./tests/components/ApiFixture.ts
-"@TestFixture"  -> ./tests/components/TestFixture.ts
-"@DataFactory"  -> ./tests/data/DataFactory.ts
-"@openapi"      -> ./api/openapi-types.ts (FACADE-ONLY consumer)
-"@schemas/*"    -> ./api/schemas/*
-"@schemas"      -> ./api/schemas/index.ts
-```
+The alias set is whatever `tsconfig.base.json` `paths` declares (the authority — read it, do not
+trust a copy; `tsconfig.json` extends the base and declares no `paths` of its own). `@openapi` is a
+FACADE-ONLY consumer.
 
 There is no `@config/*` and no `@components/*`: config is reached through `@variables`, and the
 component tree through the per-layer aliases (`@ui/*`, `@api/*`, `@steps/*`) or the named fixture /
@@ -238,7 +221,7 @@ These are POLICY tables, not INVARIANT rules. They can be amended additively wit
 | `package.json` deps + scripts                         | Dependency upgrades, script registry, engines. Not test specs in `tests/`.                                       |
 | `.agents/skills/agentic-qa-core/references/`          | Briefing template, dispatch patterns, orchestration doctrine, skill-composition-strategy.                        |
 | `.agents/skills/framework-development/`               | This skill itself — references, scripts, agents/.                                                                |
-| `.claude/commands/`                                   | Slash-command source (`/sync-ai-memory`, `/business-*-map`, `/master-test-plan`, etc.).                          |
+| `.agents/compatibility/command-aliases.json`          | Alias manifest; `.claude/commands/` and `.opencode/commands/` are GENERATED from it (`bun run agents:compat`), never hand-edited. |
 
 ### 10.2 FORBIDDEN paths (redirect map)
 

@@ -191,9 +191,9 @@ not aimless clicking. Charters complement — never replace — the systematic c
 
 A derived case is only real if the environment can be put into the state it needs. The
 recurring case is the **empty state**: "with no orders yet, the list shows the onboarding
-panel". On a shared staging account that has been used by the whole team for a year, zero
+panel". On a shared staging account that the whole team has been using for a long time, zero
 orders is unreachable, and the case quietly becomes untestable. The measured failure
-(2026-09-17) is not that it was skipped: it is that it was skipped **silently**, reported as
+(see ADR-0006) is not that it was skipped: it is that it was skipped **silently**, reported as
 covered, and the AC's own promise was never checked.
 
 Three legitimate outcomes, in order of preference:

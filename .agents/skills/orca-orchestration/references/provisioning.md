@@ -15,16 +15,16 @@ gap. It disguises itself as something else, and the worker then debugs the wrong
 |---|---|---|---|
 | `.env` | ignored | **silent on every host but Codex** (Critical Rule #10): `.mcp.json` uses `${VAR}` placeholders, and an unset `${VAR}` is passed through as the LITERAL string, so the server starts and dies on its first authenticated call (401/403), not at parse time. Any script needing credentials fails on missing variables. On Claude Code the worker reads the `env` block of `.claude/settings.local.json`, on OpenCode the `.auth/opencode/*` files: both come from `bun run harness:env`, see §1b | copy it from the primary checkout, mode `0600`. On the SUPERVISED path the file existing is not enough — see §1b |
 | the `.claude/skills` alias → `.agents/skills` | ignored | loud, on Claude Code only: `Skill` answers `Unknown skill`. OpenCode and Codex read `.agents/skills/` natively and do not need it | `bun run agents:compat` inside the worktree (it creates a POSIX symlink or a Windows junction) |
-| T3 community skills (`playwright-cli`, `playwright-best-practices`, `resend-cli`) | ignored by explicit `.gitignore` entries | loud, at load time: the skill simply is not there | copy the directories from the primary checkout, or re-run the installer |
+| the T3 community skills `cli/install.ts` installs | ignored by explicit `.gitignore` entries | loud, at load time: the skill simply is not there | copy the directories from the primary checkout, or re-run the installer |
 | `node_modules/` | ignored | loud **with the wrong message**: `Cannot find module`, which reads as a broken import | `bun install --frozen-lockfile` |
 | `.context/PBI/` (the tracker cache) | ignored | **silent**: the worker cannot see the synced story and quietly works from the ticket title alone | `bun run context:hydrate`, or a scoped per-issue sync named in the brief |
 | `.auth/` (tokens) | not committed, created at login | loud: authenticated API calls fail with 401 | the CONDUCTOR mints tokens before the round (`bun run api:login`, with a per-worker profile when workers must not share a token) and the worker only reads the file; copy mode `0600` |
 | `.session/` | ignored | the brief, the roster and the run files are simply absent inside the worktree | do NOT copy it. Cite ABSOLUTE paths into the PRIMARY checkout from the prompt. Anything written inside a worktree dies with it |
 
-**Present in a fresh worktree because they are committed**: `.mcp.json` (with its `${VAR}`
-placeholders, hence the `.env` dependency), `opencode.jsonc`, `.codex/config.toml`,
-`.claude/settings.json`, `.claude/commands/`, `.agents/project.yaml`, the Jira catalogs under
-`.agents/`, and every T1 skill under `.agents/skills/`.
+**Present in a fresh worktree because they are committed**: everything `git ls-files` lists, which
+includes the MCP config of each host (with its `${VAR}`-style placeholders, hence the `.env`
+dependency), `.agents/project.yaml`, the Jira catalogs under `.agents/`, and every T1 skill under
+`.agents/skills/`.
 
 ---
 
@@ -94,9 +94,9 @@ slow, and a scoped per-issue sync is often enough) and minting tokens (conductor
 
 ## 3 · Making it the Orca setup hook
 
-Today this repo's registered setup command installs dependencies only, which covers exactly one of
-the seven rows above. Pointing the hook at the provisioning script closes six of them automatically
-on every worktree the runtime creates.
+Read the registered setup command first (below): if it only installs dependencies, it covers one
+row of the table above. Pointing the hook at the provisioning script closes every repairable row
+automatically on every worktree the runtime creates.
 
 **This can only be changed from the app's UI.** The setting is not exposed by the CLI
 (`orca agent-context --json` has no command for it), so it cannot be scripted, cannot be versioned,

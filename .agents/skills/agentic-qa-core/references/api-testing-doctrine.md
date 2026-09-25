@@ -30,7 +30,7 @@ Agentic API testing has THREE distinct tools, each with ONE job. Mixing them is 
 
 The OpenAPI MCP (`@ivotoby/openapi-mcp-server`) is intentionally **not** used for execution:
 
-- It has **no schema-only mode** (`--tools` = `all | dynamic | explicit`; `dynamic` still ships an `invoke-api-endpoint` tool). The guard is that **no credential is injected into the MCP** — so any execution attempt hits the API unauthenticated and fails (401). That failure is the signal to use curl.
+- It has **no schema-only mode** (every `--tools` mode ships an `invoke-api-endpoint` tool). The guard is that **no credential is injected into the MCP** — so any execution attempt hits the API unauthenticated and fails (401). That failure is the signal to use curl.
 - Static `API_HEADERS` bearer injection **does not refresh** — an expiring token 401s mid-session.
 - If the spec declares an `Authorization` header parameter, it **collides** with an injected auth header and the call throws `Cannot override authentication header`.
 - Keeping the token out of the MCP also **removes the spawn-time restart requirement** (AGENTS.md Critical Rule #10 no longer bites for API auth — changing the token is picked up by the next curl immediately).
@@ -128,9 +128,9 @@ If `createdAt + expiresIn` is in the past (or a request returns `401`), re-mint 
 
 ## Types in automated tests: compile-time only
 
-Response and payload types come from the spec at BUILD time: `bun run api:sync` runs `openapi-typescript` and writes `api/openapi-types.ts`, and the facades under `api/schemas/` re-export from it. There is no runtime schema validator in this repo (no Zod, no Ajv): a type catches a test that reads a field the contract does not have, not an API that returns the wrong shape. Assert the shape you care about explicitly in the ATC. A doc or skill that says otherwise is stale.
+Response and payload types come from the spec at BUILD time: `bun run api:sync` runs `openapi-typescript` and writes `api/openapi-types.ts`, and the facades under `api/schemas/` re-export from it. Types are compile-time only; do not assume a runtime validator: a type catches a test that reads a field the contract does not have, not an API that returns the wrong shape. Assert the shape you care about explicitly in the ATC. A doc or skill that says otherwise is stale.
 
-The OpenAPI MCP runs with `--tools dynamic`, which exposes exactly three tools: `list-api-endpoints`, `get-api-endpoint-schema` and `invoke-api-endpoint`. Only the first two are used (Step 1).
+The OpenAPI MCP (its `--tools` mode is pinned in `.mcp.json`) exposes `list-api-endpoints`, `get-api-endpoint-schema` and `invoke-api-endpoint`; only the first two are used (Step 1).
 
 ---
 

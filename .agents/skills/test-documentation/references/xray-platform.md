@@ -77,11 +77,11 @@ See `tms-conventions.md` §IQL for the full treatment. One-liner here:
 - **Test Status** (Workflow on the Test issue): `Draft` / `In Design` / `READY` / `MANUAL` / `In Review` / `Candidate` / `In Automation` / `Pull Request` / `AUTOMATED` / `DEPRECATED` — exact names from `.agents/jira-workflows.json` (`work_types.test_case`), the authoritative source. Long-lived lifecycle.
 - **Execution Status** (per Test Run inside a Test Execution): `TODO` / `EXECUTING` / `PASS` / `FAIL` / `ABORTED` / `BLOCKED`. Per-run, resets each execution.
 
-These are different fields. `AUTOMATED` (Test Status) + `FAIL` (Execution Status of last run) is a valid, common combination — the TC is live in CI, and it failed today.
+These are different fields. `AUTOMATED` (Test Status) + `FAIL` (Execution Status of last run) is a valid, common combination — the TC is live in CI, and its last run failed.
 
 ### Test Plan roll-up: latest status wins
 
-A **Test Plan aggregates the LATEST status of each of its Tests, across every Execution.** `PROJ-101` passing in yesterday's ATR and failing in today's STR reads **FAIL** on the Plan; a re-run flips it back. The Plan owns no Test Run of its own.
+A **Test Plan aggregates the LATEST status of each of its Tests, across every Execution.** `PROJ-101` passing in an earlier ATR and failing in a later STR reads **FAIL** on the Plan; a re-run flips it back. The Plan owns no Test Run of its own.
 
 The consequence is the load-bearing part: **results are never written INTO a Test Plan** — its status is *derived*, not stored. So the plan-altitude items (**FTP / STP / ATP / RTP**) carry the **plan** (description) plus **human observations** (comments), and the Execution-altitude items (**ATR / STR**) carry the **results**: the per-Story ATRs as the sprint runs, then the closing regression days before sprint close, which adds ONE more Execution over the plan's Tests — that Execution is the **STR**. The STP's roll-up updates itself as they accumulate; nobody maintains it.
 
@@ -114,7 +114,7 @@ Backward: "Which requirement does this test verify?"
 | Covered & Not Executed | Tests exist but no runs yet (TODO) |
 | Not Covered | No tests linked to this requirement |
 
-**Which link fills this panel (live-verified 2026-08-21, `.session/artifact-ladder-refactor/scoping.md` §Verificación)**: only an `is tested by` edge from a **Test Set** (the Story's ATS) or a **direct Test↔Story link** counts as coverage. A Story linked `is tested by` to a Test Plan and a Test Execution — even ones holding all its Tests — shows **UNCOVERED, 0 tests**: ATP/ATR links are administrative traceability, not coverage. This is why the per-Story ATS is mandatory: its ATS→Story link is the coverage anchor.
+**Which link fills this panel (`xray-cli/SKILL.md` §Direction)**: only an `is tested by` edge from a **Test Set** (the Story's ATS) or a **direct Test↔Story link** counts as coverage. A Story linked `is tested by` to a Test Plan and a Test Execution — even ones holding all its Tests — shows **UNCOVERED, 0 tests**: ATP/ATR links are administrative traceability, not coverage. This is why the per-Story ATS is mandatory: its ATS→Story link is the coverage anchor.
 
 The QA completeness checklist in `tms-architecture.md` §Completeness criteria is the application of this view at the User Story level.
 

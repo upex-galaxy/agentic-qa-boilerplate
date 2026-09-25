@@ -12,7 +12,7 @@
 
 ## 1. Purpose + when to use
 
-Traceability linking turns QA intent into a queryable graph in Jira. Five touchpoints invoke it:
+Traceability linking turns QA intent into a queryable graph in Jira. These touchpoints invoke it:
 
 | Touchpoint              | Moment                                                          | Link created                                  |
 | ----------------------- | -------------------------------------------------------------- | --------------------------------------------- |
@@ -51,7 +51,7 @@ Then retry. This mirrors the catalog-or-die rule in `acli-integration.md` §Slug
 
 ## 3. QA link catalog
 
-All slugs below are present in the seeded `.agents/jira-link-types.json`. Resolve names via `{{jira.link_types.<slug>}}` — the literal column is illustrative only.
+Resolve every slug via `{{jira.link_types.<slug>}}`; an absent slug STOPs (§2). The literal column is illustrative only.
 
 | Slug               | Semantic (illustrative)            | Source → Target                                              | Outward (illustrative) | Inward (illustrative) | Required / Optional | When to create                                                                 |
 | ------------------ | ---------------------------------- | ----------------------------------------------------------- | ---------------------- | --------------------- | ------------------- | ------------------------------------------------------------------------------ |
@@ -203,7 +203,7 @@ Edge ownership in one line:
 
 **In Modality `jira-xray`, Test ↔ Test Set (ATS / `TS:`) membership is NOT a Jira issuelink.** Neither is Test ↔ Test Plan / Test Execution membership in an Xray-managed project. These are Xray-internal associations stored in Xray's own data model (`TC ∈ ATS`, `TC ∈ ATP`, `TC ∈ ATR`), not in Jira's `issuelinks`. They MUST be handled via **`/xray-cli`** (Xray GraphQL — `addTestsToTestSet` / `getTestSet` / enrichment), NEVER via `acli jira workitem link create`.
 
-**Explicit warning (Modality `jira-xray`)**: do NOT attempt to create membership with the (currently buggy) `"is part of test set"` link-type literal. It is not a real Jira link type in this workspace catalog, it bypasses the slug resolver (violating §2), and the Xray membership it appears to imply will not register. Test Set / Test Plan membership goes through `/xray-cli` only. The `test` issuelink in §3 covers container→Story COVERAGE — in this modality it does not and cannot express Test-Set MEMBERSHIP.
+**Explicit warning (Modality `jira-xray`)**: do NOT attempt to create membership with the `"is part of test set"` link-type literal. It is not a real Jira link type in this workspace catalog, it bypasses the slug resolver (violating §2), and the Xray membership it appears to imply will not register. Test Set / Test Plan membership goes through `/xray-cli` only. The `test` issuelink in §3 covers container→Story COVERAGE — in this modality it does not and cannot express Test-Set MEMBERSHIP.
 
 **jira-native carve-out (explicit — the rule above is xray-modality-only).** In Modality `jira-native` there is NO Xray layer, so membership has no GraphQL home: there, membership IS expressed as Jira issue links — `TC→ATS` links bind each TC into the per-Story ATS, and the `ATS→Story` link carries coverage. An instance without the Test Set work type has no ATS at all; membership degrades to direct `TC→Story` links (the cascade's last rung, §3). The "never a Jira link" prohibition therefore applies ONLY where the Xray layer exists.
 

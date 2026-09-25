@@ -224,7 +224,7 @@ Proceed to `phase-2-srs.md` once the gate is met.
 
 ## Phase 2 — PRD gotchas
 
-- **PRDs are discovery, not creation.** Do not re-scope the product. Describe what it does today; aspirational content goes in Discovery Gaps.
+- **PRDs are discovery, not creation.** Do not re-scope the product. Describe what it does as built; aspirational content goes in Discovery Gaps.
 - **Personas = roles.** In existing systems, personas are the roles the authorization code recognizes. Do not invent "Sarah the busy marketer" -- document "admin", "editor", "viewer" with their actual permissions.
 - **Journeys need step-level evidence.** Every step row needs a file path. If you cannot cite a file for a step, the step does not exist in the code; it is either a guess or a future feature -- flag accordingly.
 - **Feature IDs and the catalog live in `business-feature-map.md`.** Stable `FEAT-NNN` IDs, CRUD matrix, third-party integration call-site rule, feature-flag defaults — all of that is owned by `/business-feature-map`. PRD docs (summary, personas, journeys) link to it instead of re-listing features.

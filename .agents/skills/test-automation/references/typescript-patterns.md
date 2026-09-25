@@ -253,31 +253,7 @@ Always prefer `import type` for types that are only referenced in type positions
 
 ### Import aliases are mandatory
 
-No relative imports. Configure once in `tsconfig.json`:
-
-```json
-{
-  "compilerOptions": {
-    "paths": {
-      "@/*": ["./*"],
-      "@ui/*": ["./tests/components/ui/*"],
-      "@api/*": ["./tests/components/api/*"],
-      "@steps/*": ["./tests/components/steps/*"],
-      "@utils/*": ["./tests/utils/*"],
-      "@data/*": ["./tests/data/*"],
-      "@variables": ["./config/variables.ts"],
-      "@TestContext": ["./tests/components/TestContext.ts"],
-      "@UiFixture": ["./tests/components/UiFixture.ts"],
-      "@ApiFixture": ["./tests/components/ApiFixture.ts"],
-      "@TestFixture": ["./tests/components/TestFixture.ts"],
-      "@DataFactory": ["./tests/data/DataFactory.ts"],
-      "@openapi": ["./api/openapi-types.ts"],
-      "@schemas/*": ["./api/schemas/*"],
-      "@schemas": ["./api/schemas/index.ts"]
-    }
-  }
-}
-```
+No relative imports. The aliases are declared in `tsconfig.base.json` (synced); the project half is `tsconfig.json`.
 
 ```typescript
 // RIGHT
@@ -288,7 +264,7 @@ import { UsersApi } from '@api/UsersApi';
 import { config } from '../../../config/variables';
 ```
 
-Lint rejects relative imports: `KATA_IMPORT_ALIASES` in `eslint.config.base.js`, a core `no-restricted-imports` block scoped to `tests/**/*.ts` + `playwright.config.ts`. There is no `eslint-plugin-import` in this repo. Dynamic `await import('./x')` is outside the rule. Fix them — do not disable the rule.
+Lint rejects relative imports: `KATA_IMPORT_ALIASES` in `eslint.config.base.js`, a core `no-restricted-imports` block scoped to `tests/**/*.ts` + `playwright.config.ts`. Dynamic `await import('./x')` is outside the rule. Fix them — do not disable the rule.
 
 ---
 

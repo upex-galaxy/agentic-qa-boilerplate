@@ -1,10 +1,10 @@
 # Can a handoff trigger itself?
 
-Verified 2026-09-18 against Claude Code 2.1.276 and OpenCode 1.18.30 via official documentation and upstream source. Codex CLI was not installed on the verifying machine, so its findings come from upstream source only and are labelled accordingly.
+Verified 2026-09-18 against Claude Code 2.1.276 and OpenCode 1.18.30 via official documentation and upstream source. <!-- volatile-ok: dated research verdict by design; the date and versions are what a reader needs to decide whether to re-verify --> Codex CLI was not installed on the verifying machine, so its findings come from upstream source only and are labelled accordingly.
 
 ## Verdict: PARTIALLY FEASIBLE, and manual stays the primary trigger
 
-No harness hands the current context size to the agent. Two of the three expose it somewhere OUTSIDE the model loop, which means an automatic trigger is buildable but is **new wiring, not a field waiting to be read**. None of the repo's three hook adapters taps any of these mechanisms today.
+No harness hands the current context size to the agent. Two of the three expose it somewhere OUTSIDE the model loop, which means an automatic trigger is buildable but is **new wiring, not a field waiting to be read**. The hook adapters (`.agents/hooks/`) do not tap these mechanisms; check before assuming.
 
 The owner's position, recorded: manual is preferred (*"prefiero que el humano lo haga de manera manual"*). Treat everything below as the answer to "could we", not as a plan.
 
@@ -26,9 +26,9 @@ Sources: `https://code.claude.com/docs/en/hooks`, `https://code.claude.com/docs/
 
 ## The best available mechanism per harness, if it is ever built
 
-**Claude Code.** The status line is the only documented surface carrying a live percentage, and it is cheap: the harness re-renders it on its own cadence with no model call. A status-line command could read `context_window.used_percentage` and, beyond printing, drop a flag file that a later `UserPromptSubmit` hook notices. This repo configures no status line today.
+**Claude Code.** The status line is the only documented surface carrying a live percentage, and it is cheap: the harness re-renders it on its own cadence with no model call. A status-line command could read `context_window.used_percentage` and, beyond printing, drop a flag file that a later `UserPromptSubmit` hook notices. Check `.claude/settings.json` for a `statusLine` before building on this.
 
-**OpenCode.** Subscribe a plugin to `message.part.updated` and accumulate `tokens.input` / `tokens.output` off every `step-finish` part, at no extra cost. This repo's OpenCode adapter implements only the system transform, so this is a second hook.
+**OpenCode.** Subscribe a plugin to `message.part.updated` and accumulate `tokens.input` / `tokens.output` off every `step-finish` part, at no extra cost. Read `.opencode/plugins/personality-reinject.js` for what the adapter implements; this is a second hook.
 
 **Codex CLI.** Nothing exposes a live figure. The only usable signal is `PreCompact` itself, which arrives with no number attached and, by then, the window is already full.
 

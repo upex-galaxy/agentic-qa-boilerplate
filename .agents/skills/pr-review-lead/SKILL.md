@@ -80,7 +80,7 @@ Full lookup protocol (exact `gh api` commands for probing an external repo's doc
 ## Step 2 — Gather the PR
 
 - **This repo, current branch's PR**: `gh pr view`/`gh pr diff` against the working repo.
-- **External repo**: `gh pr view <N> --repo <owner>/<repo> --json ...` for metadata/commits/files, then per-file `gh api repos/<owner>/<repo>/pulls/<N>/files --paginate` for patches. Large PRs (`gh pr diff` errors past ~20k lines, a real limit you will hit) fall back to per-file patches via the same paginated `files` endpoint — never give up and skim the PR description instead of the code.
+- **External repo**: `gh pr view <N> --repo <owner>/<repo> --json ...` for metadata/commits/files, then per-file `gh api repos/<owner>/<repo>/pulls/<N>/files --paginate` for patches. Large PRs (`gh pr diff` errors on very large PRs with `PullRequest.diff too_large`) fall back to per-file patches via the same paginated `files` endpoint — never give up and skim the PR description instead of the code.
 - Distinguish real work from noise: a large diff is sometimes 95%+ an unrelated bulk sync/vendor-update commit. Check `commits[].messageHeadline` before assuming every line matters; call this out to the user rather than reviewing the noise commit line-by-line.
 
 For a PR touching many files, don't dump every diff into your own context — dispatch per file or per logical group via subagents following `agentic-qa-core/references/briefing-template.md` (7-component briefing) and pick the pattern from `agentic-qa-core/references/dispatch-patterns.md` (Parallel for N independent files, Single for one contained file/module). Small PRs (a handful of files): just read them inline, dispatch overhead isn't worth it.
@@ -132,7 +132,7 @@ This skill is not on AGENTS.md §3's mandatory-briefing list, but reuses the sam
 | Stage | Pattern | Subagent role |
 |---|---|---|
 | Probe external repo for its own doctrine (Step 1) | Single | one agent checks for `AGENTS.md`/`.agents/skills`/`.context`, reports what exists |
-| Fetch N independent file diffs (Step 2, large PR) | Parallel | one agent per file or small file-group, returns the patch + a one-line summary; cap at 10 per `dispatch-patterns.md` |
+| Fetch N independent file diffs (Step 2, large PR) | Parallel | one agent per file or small file-group, returns the patch + a one-line summary; cap per `dispatch-patterns.md` |
 | Analyze against doctrine (Step 3) | Single or inline | for small/medium PRs, do this inline — you already have the diffs and doctrine loaded; only dispatch if the PR is large enough that isolating the analysis pass protects your own context |
 
 Never dispatch a subagent to draft or post the final feedback (Steps 6-7) — those steps involve user-facing tone decisions and an externally-visible action, both of which stay with the orchestrator per `agentic-qa-core/references/orchestration-doctrine.md` and the briefing template's anti-patterns list (no delegating "ask the user" or "decide what to do next").

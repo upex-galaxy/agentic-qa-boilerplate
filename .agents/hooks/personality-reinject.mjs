@@ -50,7 +50,7 @@ export const IDENTITY_PREFIX = 'AGENT IDENTITY:';
  * cannot detect any other way in time.
  *
  * A harness reads its MCP config and spawns every MCP server BEFORE any hook
- * runs (measured: 3 of 3). So by the time you read this line those servers are
+ * runs (measured on all three harnesses). So by the time you read this line those servers are
  * already alive, already holding whatever credential they were given, and a
  * missing one shows up much later as an auth error that reads like a broken
  * tool. We cannot fix that session. We CAN stop the human from spending an hour

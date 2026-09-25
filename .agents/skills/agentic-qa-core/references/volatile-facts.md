@@ -4,7 +4,7 @@
 
 ## 1. The rule
 
-A committed instruction or doc describes the repo the way a contract describes a system: by naming the parts and who owns them, not by copying today's readings off the dashboard. Any sentence whose truth depends on the current contents of another file, of the tracker, or of an external tool is a **volatile fact**, and a volatile fact in committed prose is a bug with a fuse: it is correct the day it is written, wrong a few weeks later, and read every session by an agent that has no way to tell the two states apart.
+A committed instruction or doc describes the repo the way a contract describes a system: by naming the parts and who owns them, not by copying the current readings off the dashboard. Any sentence whose truth depends on the current contents of another file, of the tracker, or of an external tool is a **volatile fact**, and a volatile fact in committed prose is a bug with a fuse: it is correct the day it is written, wrong a few weeks later, and read every session by an agent that has no way to tell the two states apart.
 
 The cost is paid twice. Once when a session trusts the stale value: a count of aliases that makes the AI stop looking after that many, a line number that now points at a blank line, a measured token size that justifies a posture the numbers no longer support. And again when a careful session notices the drift and spends a turn reporting it instead of working.
 
@@ -17,7 +17,7 @@ The fix is always the same shape: **replace the value with the name of its owner
 | **Count** | Would a routine commit change this number? | The file or command that counts: `REGISTRY.md`, `kata-manifest.json`, `package.json`, `bun run tests:map` |
 | **Enumeration** | Does another file already own this list? | That file: `.mcp.json`, `.agents/compatibility/command-aliases.json`, `.agents/jira-required.yaml`, `REGISTRY.md`, a constant in code |
 | **file:line** | Would an unrelated edit above it shift the line? | The file plus a symbol or a heading |
-| **Current-state claim** | Does the sentence carry "today", a date, a version, a measurement, or a live ticket number? | The behaviour without the qualifier; the dated figure goes to an ADR |
+| **Current-state claim** | Does the sentence carry "today", a date, a version, a measurement, or a live ticket number? <!-- volatile-ok: names the word it forbids --> | The behaviour without the qualifier; the dated figure goes to an ADR |
 | **Edit-history narration** | Does it tell the reader what the text used to say? | The current behaviour only; the history goes to an ADR or the commit |
 
 Before and after, one per category (the left column is what the sweep found, the right column is the shape that survives):
@@ -58,8 +58,8 @@ User-facing decks and pages are committed too. They may show a current list or a
 Two families have a regex-visible shape, and the linters report them:
 
 - `FILE-LINE`: a path with a known extension followed by `:N`, `:N-M` or `#LN`, outside fenced blocks and `<pre>` / `<code class="block">`.
-- `CURRENT-STATE`: the dating vocabulary ("today", "currently", "as of <year>", "measured <date>", "since <version>", a `~Nk tokens` or `N bytes` measurement, a tool version after "as of" / "verified against", and the Spanish equivalents), outside the same blocks and outside the frontmatter `description`.
+- `CURRENT-STATE`: the dating vocabulary ("today", "currently", "as of <year>", "measured <date>", "since <version>", a `~Nk tokens` or `N bytes` measurement, a tool version after "as of" / "verified against", and the Spanish equivalents), outside the same blocks and outside the frontmatter `description`. <!-- volatile-ok: names the words it forbids -->
 
 Counts and enumerations have no regex shape: no pattern can tell a router table from a copied inventory. Those stay a review-time judgement, which is what this reference is for.
 
-A line that legitimately carries one of the two shapes (a worked example that must show the bad form, a teaching sentence about the word "today") is marked on the same line with `volatile-ok: <reason>`, as an HTML comment in HTML and Markdown (`<!-- volatile-ok: teaching example -->`). The reason is mandatory: an allowlist entry with no reason is the next stale fact.
+A line that legitimately carries one of the two shapes (a worked example that must show the bad form, a teaching sentence about a forbidden word) is marked on the same line with `volatile-ok: <reason>`, as an HTML comment in HTML and Markdown (`<!-- volatile-ok: teaching example -->`). A dated ledger by design (§4) carries `volatile-ok-file: <reason>` in its header and is skipped whole. The reason is mandatory in both forms: an allowlist entry with no reason is the next stale fact.

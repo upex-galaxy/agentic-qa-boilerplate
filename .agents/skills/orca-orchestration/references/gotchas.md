@@ -1,5 +1,7 @@
 # Measured Gotchas
 
+> volatile-ok-file: dated ledger by design (Rule #17 exemption); every row carries its own date and version and moves out when it stops being true.
+
 > Loaded by: the conductor, when something behaves strangely — and read once in full before the
 > first fleet on a new machine.
 > Every row was PAID FOR in a real session, in one of four repos, on the date given. None of it

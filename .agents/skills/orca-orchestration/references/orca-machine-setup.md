@@ -76,8 +76,9 @@ Two things to know before relying on it:
   Those are broader than what a worker needs. The auto-mode classifier belongs to Claude Code, not
   to the runtime, and that classifier is the thing worth keeping alive (gotcha G27).
 - For any agent other than `claude`, **consult that agent's own documentation** for its equivalent.
-  Verified on this machine: OpenCode exposes `--auto` (auto-approve permissions not explicitly
-  denied). For Codex, do not guess a flag — read its docs, then write the verified value here.
+  OpenCode exposes `--auto` (auto-approve permissions not explicitly denied); confirm it with
+  `opencode --help` on the machine. For Codex, do not guess a flag — read its docs, then write the
+  verified value here.
 - **(unverified)** the exact label of the settings section and the field, which may differ per app
   version. Read the screen, do not trust this sentence.
 
@@ -93,8 +94,8 @@ credential surface that a worker reads with NO shell involved.
 
 - **Claude Code workers** read the `env` block of `.claude/settings.local.json`. On macOS/Linux the
   file is resolved from the MAIN checkout's root, so every worktree inherits it with no action
-  (measured on Claude Code 2.1.278: a session launched inside a worktree gave its MCP child the main
-  checkout's value; the worktree's own copy was ignored).
+  (measured, G45 and ADR-0006: a session launched inside a worktree gave its MCP child the main
+  checkout's value; the worktree's own copy was ignored. Re-verify after a harness upgrade).
 - **OpenCode workers** read `.auth/opencode/<VAR>` through `{file:}` references in `opencode.jsonc`,
   relative to the worktree. `bun run worktree:provision` copies `.auth/` from the primary (mode
   `0600`), and `bun install` creates empty placeholders on a fresh clone so the config still loads.
@@ -102,7 +103,7 @@ credential surface that a worker reads with NO shell involved.
   reads them from the process environment at connect time. So does anything inside a worker that
   reads a shell-exported variable (`acli`, `curl`, `bun xray`). For those, direnv in Orca's
   **interactive shell** is the seam: with it installed and hooked, an `.envrc` that sources the repo's
-  env file fires when the worker's terminal opens. Measured 2026-09-17: a direct probe showed
+  env file fires when the worker's terminal opens. Measured (G45): a direct probe showed
   `direnv: export +ATLASSIAN_API_TOKEN +ATLASSIAN_EMAIL …` and then the probe variable reading `SET`.
 
 Without direnv, a Codex worker (or a shell-exported CLI inside any worker) has NO credentials **and
@@ -138,9 +139,9 @@ orca repo list --json </dev/null
 orca repo show --repo <selector> --json </dev/null     # read the CURRENT setup command + policy
 ```
 
-Today the registered setup command for this repo installs dependencies only, which covers exactly
-one of the seven gaps a fresh worktree has (`references/provisioning.md` §1). Point it at the
-provisioning script instead and six close automatically:
+Read the registered setup command (`orca repo show`, above): if it only installs dependencies, it
+covers one row of the gap table in `references/provisioning.md` §1. Point it at
+`bun run worktree:provision` instead and every repairable row closes automatically:
 
 - In the app: the repository's settings → the setup script field → `bun run worktree:provision`.
 - Keep the setup policy at run-by-default, so a newly created worktree provisions itself before the

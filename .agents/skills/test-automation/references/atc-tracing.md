@@ -165,7 +165,7 @@ A parameterised ATC that varies by input is still one ATC for TMS purposes — t
 
 ## 5. Sensitive parameter masking
 
-Both decorators mask argument values whose keys are in the `SENSITIVE_KEYS` set in `tests/utils/decorators.ts` (canonical keys: `password`, `token`, `secret`, `authorization`, `access_token`). See `api-patterns.md` for the canonical parameter-name rules that make masking work by default. To mask additional keys, add them to that set.
+Both decorators mask argument values whose keys are in the `SENSITIVE_KEYS` set in `tests/utils/decorators.ts`. See `api-patterns.md` for the canonical parameter-name rules that make masking work by default. To mask additional keys, add them to that set.
 
 ---
 
@@ -347,15 +347,7 @@ bun run kata:manifest:check        # CI-grade freshness check; exits 1 if kata-m
                                    # tests/components/, scripts/kata-manifest.ts, or kata-manifest.json.
 ```
 
-Scan roots (hard-coded):
-
-```
-tests/components/api/**/*.ts
-tests/components/ui/**/*.ts
-tests/components/steps/**/*.ts
-```
-
-Excluded files: `ApiBase.ts`, `UiBase.ts`, `TestContext.ts`, `TestFixture.ts`, `ApiFixture.ts`, `UiFixture.ts`, `index.ts`.
+Scan roots and excluded files: the `COMPONENT_PATHS` and `EXCLUDED_FILES` constants in `scripts/kata-manifest.ts`.
 
 Extraction pattern: `@atc\s*\(\s*['"]([^'"]+)['"]` — a literal string key is required. Template literals and computed IDs are not picked up.
 

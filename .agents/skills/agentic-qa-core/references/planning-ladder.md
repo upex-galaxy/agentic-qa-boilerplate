@@ -2,18 +2,8 @@
 
 > **This is ratified doctrine, not an open proposal.** The skills treat it as settled
 > (`agentic-qa-core/references/defect-management-doctrine.md`, `traceability-linking.md`), so do not
-> re-litigate the ladder from this file. It lived at docs/qa-standard/planning-ladder-proposal.md
-> until 2026-09-24, when the docs relaunch moved AI context out of `docs/` and dropped the
-> `-proposal` suffix; `git log --follow` walks the history across the move.
-
-> **Status**: core decisions **RATIFIED** by the user (2026-06-26) and most of §6 has **LANDED**:
-> the four QA-process Epics, the acronym grammar, ATP/ATR items and Test Set naming are live in
-> the skills' `references/*.md`, `.agents/project.yaml` (`qa.qa_epics`) and the docs.
-> **Amended 2026-08-21** (Session-A decisions, `.session/artifact-ladder-refactor/decisions.md`):
-> the **ATS** rung (per-Story Acceptance Test Set) is added, **FTR and PRC are cut** from the
-> ladder, FTP/STP/STR/MTP get real producers, and the ATP becomes **field-first pre-sprint**
-> (the Test Plan item is born in `/sprint-testing` Stage 1). Remaining gaps are code-side
-> (sync altitude-awareness, xray CLI coverage writes — Session B).
+> re-litigate the ladder from this file. The amendment history is §7 (Decision log);
+> `git log --follow` walks the file's own history.
 >
 > **Ratified decisions**: (A) MTP Epic = **`QA Master Test Plan`** · (B) Test Set keeps **`Validate`**
 > → `TS: {scope}: Validate {feature}` (feature-level only; the per-Story Set is the **ATS**) ·
@@ -33,7 +23,7 @@
 
 ## 0. Design goals (the justification, up front)
 
-1. **One grammar, every altitude.** Today the same Jira "Test Plan" work type is titled
+1. **One grammar, every altitude.** Before the standard, the same Jira "Test Plan" work type was titled
    three different ways (`Test Plan: PROJ-123`, `QA: TestPlan: Regression S50`,
    `<Strategy>: <ID>: <sum>`). A reader/JQL cannot tell altitude from the title. The
    proposal gives every Plan and Run a **3-letter acronym prefix** so altitude + plan-vs-run
@@ -49,23 +39,22 @@
 4. **The embedded "testing term" maps to the activity.** STR = *Sprint Regression Testing*,
    ATR = *Story Testing* — the run's title states which sprint-testing activity produced it.
 5. **Xray-agnostic.** Test Plan / Test Execution / Test Set / Precondition are native Jira
-   work types in the UPEX workspace whether or not Xray is installed. The standard therefore
+   work types wherever the instance provisions them (`.agents/jira-required.yaml` declares them), whether or not Xray is installed. The standard therefore
    does not branch on modality for *structure* — only Xray's run/coverage engine is optional.
 
 ---
 
 ## 1. The four QA-process Epics (extends the existing 3-axis model)
 
-The repo already defines two QA-process Epics in `.agents/project.yaml` under `qa.qa_epics`:
-**QA Defect Management** and **QA Test Repository**. This proposal adds two more so every
+The repo defines four QA-process Epics in `.agents/project.yaml` under `qa.qa_epics`, so every
 QA artifact type has a dedicated governance Epic.
 
-| QA-process Epic | `qa.qa_epics.<key>` | Holds (child work types) | Status |
-|---|---|---|---|
-| **QA Master Test Plan** (the MTP) | `master_test_plan_epic` | every **Test Plan** (FTP · STP · ATP · RTP) | NEW |
-| **QA Test Repository** | `test_repository_epic` | every **Test** (Test Case) | exists |
-| **QA Test Artifacts** | `test_artifacts_epic` | every **Test Execution** (STR · ATR · RTR), **Precondition**, **Test Set** (ATS · TS) | NEW |
-| **QA Defect Management** | `defect_epic` | every **Bug / Defect / Improvement** | exists |
+| QA-process Epic | `qa.qa_epics.<key>` | Holds (child work types) |
+|---|---|---|
+| **QA Master Test Plan** (the MTP) | `master_test_plan_epic` | every **Test Plan** (FTP · STP · ATP · RTP) |
+| **QA Test Repository** | `test_repository_epic` | every **Test** (Test Case) |
+| **QA Test Artifacts** | `test_artifacts_epic` | every **Test Execution** (STR · ATR · RTR), **Precondition**, **Test Set** (ATS · TS) |
+| **QA Defect Management** | `defect_epic` | every **Bug / Defect / Improvement** |
 
 **The `QA ` prefix is deliberate** (existing convention): a reader scanning the Epic list
 sees `QA …` and knows it is a *process* Epic, not a product feature. The MTP Epic therefore
@@ -122,9 +111,8 @@ components          ->  PRODUCT module     (what part of the product it touches)
 Optional **roll-up links** for coverage aggregation: ATP `is part of` FTP `is part of` STP.
 Parent stays the MTP Epic for all Plans regardless of roll-up.
 
-> **Coverage evidence (verified live, 2026-08-21 — see `.session/artifact-ladder-refactor/scoping.md`
-> §Verificación)**: the **ATS→Story** `Test` link (inward `is tested by`) is what fills the Xray
-> coverage panel — a Story linked to a Test Plan (16 tests) + Test Execution (16 tests) still
+> **Coverage evidence (live-verified; see ADR-0006)**: the **ATS→Story** `Test` link (inward `is tested by`) is what fills the Xray
+> coverage panel — a Story linked only to a Test Plan and a Test Execution, both populated, still
 > shows **UNCOVERED, 0 tests**. The ATP→Story and ATR→Story links are **administrative
 > traceability only**. Direct TC→Story links also provide coverage, but only as the last-resort
 > step of the resolution cascade (`TC → ATS → Story` → `TC → ATP → Story` → `TC → Story` → orphan).
@@ -200,7 +188,7 @@ Parent stays the MTP Epic for all Plans regardless of roll-up.
 
 **By excellence, every Plan and every Run is a real Jira issue** — a **Test Plan** item for
 FTP/STP/ATP/RTP and a **Test Execution** item for STR/ATR/RTR — in BOTH modalities (these are
-native Jira work types in the UPEX workspace, Xray-independent).
+native Jira work types wherever the instance provisions them, Xray-independent).
 
 **Fallback (degraded mode only):** ATP/ATR MAY live as custom fields on the User Story
 **only when** the Test Plan / Test Execution work types are unavailable in the instance and
@@ -219,9 +207,9 @@ run/coverage engine on top.
 
 ---
 
-## 5. What changes vs today (migration map)
+## 5. What changed (migration map)
 
-| Today | Becomes | Why |
+| Before the standard | Becomes | Why |
 |---|---|---|
 | `Test Plan: PROJ-123` (ATP, often a Story field) | `ATP: PROJ-123: {title}` (Test Plan item; field = fallback) | acronym grammar + items-first |
 | `Test Results: PROJ-123` (ATR field) | `ATR: PROJ-123: Story Testing` (Test Execution item) | acronym grammar + items-first + activity term |
@@ -230,22 +218,6 @@ run/coverage engine on top.
 | `Sanity: GX-101: Validate credit card payment` (Test Set) | `TS: GX-101: Validate credit card payment` | feature-level Test Sets group by feature/module, not strategy; `TS:` prefix replaces the strategy word |
 | `Suite: {STORY-KEY}` (per-Story Set) | `ATS: {STORY-KEY}: {story title}` | the `Suite:` prefix dies; the per-Story Set becomes the mandatory ATS coverage rung |
 | (nothing) FTP/STP/STR | new artifacts at Feature & Sprint altitude | fills the ladder gaps (FTR and PRC were cut: FTR duplicated the STR; Precondition needs no ladder acronym) |
-| `qa.qa_epics` = 2 epics | 4 epics (`+ master_test_plan_epic`, `+ test_artifacts_epic`) | every artifact type gets a home |
-
----
-
-## 6. Impacted surfaces (for the implementation pass, post-ratification)
-
-- `.agents/project.yaml` — add `qa.qa_epics.master_test_plan_epic` + `test_artifacts_epic`.
-- `agentic-qa-core/references/defect-management-doctrine.md` — Part 4 grows 2→4 QA epics.
-- `agentic-qa-core/references/traceability-linking.md` — Plan/Run item links, roll-up edges.
-- `test-documentation/references/tms-conventions.md` · `tms-architecture.md` · `jira-test-management.md` · `xray-platform.md` — naming + items-over-fields.
-- `sprint-testing/references/acceptance-test-planning.md` · `reporting-templates.md` · `SKILL.md` — ATP/ATR items, ATS Set-first order, FTP (feature-test-planning), Story Testing term.
-- `shift-left-testing/references/atp-outline-template.md` · `handoff-protocol.md` — pre-sprint ATP (field-first, outline maturity).
-- `regression-testing/SKILL.md` — STP/STR (Sprint Regression Testing).
-- `scripts/sync-jira-issues.ts` — Plan/Run as items; field-fallback precedence.
-- `packages/decks/agentic-qa-core/naming-conventions.es.html` — new "Planning Ladder" layer/slide.
-- `.agents/jira-required.yaml` / `jira-fields.json` — Test Plan / Test Execution / Test Set / Precondition work-type config.
 
 ---
 

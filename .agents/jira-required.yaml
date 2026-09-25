@@ -363,7 +363,7 @@ link_types:
       name: Blocking
       outward: blocks
       inward: is blocked by
-      description: Duplicate of Blocks in this workspace (separate id); fallback for blocks.
+      description: Alias of Blocks on instances that define both (separate id); fallback for blocks.
       fallback: blocks
       used_by: [sprint-testing]
 
@@ -868,8 +868,8 @@ work_types:
       Xray Test Execution — holds the ATR body in its description (role atr). Altitude guard
       (sync-jira-issues): only an Execution titled `ATR:*` / `ReTest:*` syncs as a Story's
       acceptance-test-results.md; `STR:*` / `RTR:*` / `FTR:*` Executions are skipped with an
-      info line (`FTR` is a legacy guard — the rung was cut, the skip stays for pre-migration
-      data). Unprefixed titles keep the legacy behavior (any linked Execution counts). Higher
+      info line (`FTR` stays in the skip list for pre-migration data). Unprefixed titles keep
+      the legacy behavior (any linked Execution counts). Higher
       altitudes still MATERIALIZE — the QA-process-epic sweep writes them to test-executions/
       as STR-/RTR-/ATR-<KEY>-<slug>.md (non-conforming titles fall back to TESTEXEC-).
     sync: discovery
@@ -916,8 +916,8 @@ work_types:
       Jira links in Modality jira-native) materialize under that issue's test-cases/.
       Feature-level `TS:*` Sets stay ignored by the cascade.
       `sync: discovery` — reachable by an explicit `get <KEY>` / `jql`, and swept from the QA
-      Test Artifacts epic, but never by a plain type sweep. It was `never` while the code wrote
-      it anyway on `get`: declaration and behavior now agree (`sync: never` is honored).
+      Test Artifacts epic, but never by a plain type sweep. Declaration and behavior agree: a
+      `sync: never` type is refused by the sync, so this one is declared `discovery`.
     sync: discovery
     local_dir: test-sets
     # Lifecycle: the Story's ATS is closed by /sprint-testing Reporting once its
@@ -935,7 +935,7 @@ work_types:
     description: |
       Xray Precondition — reusable test prerequisite. `sync: discovery` — reachable by an
       explicit `get <KEY>` / `jql`, and swept from the QA Test Artifacts epic, but never by a
-      plain type sweep. Was `never` while the code wrote it anyway on `get`; the two now agree.
+      plain type sweep. Declared `discovery` because the sync refuses to write a `sync: never` type.
     sync: discovery
     local_dir: preconditions
     # Lifecycle: none. The Precondition workflow exposes `create` and NOTHING else, so a
@@ -947,7 +947,7 @@ work_types:
   subtask:
     # `A | B | C` = ordered alternatives; the first one the project actually has
     # wins. The subtask level is named differently per instance: Jira's default is
-    # "Sub-task", the BK instance calls it "Task", a Spanish-localized instance
+    # "Sub-task", some instances call it "Task", a Spanish-localized instance
     # calls it "Subtarea". Declaring a single name made every other spelling a
     # silent skip in jira:sync-workflows — which is exactly why this work_type was
     # missing from the catalog while being declared right here. Add your own

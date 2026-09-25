@@ -15,7 +15,7 @@ metadata:
 
 - DO: confirm the project is in Modality jira-xray before invoking anything here; a jira-native project (no Xray plugin) routes to `/acli` instead. Modality is resolved once in `/test-documentation` Phase 0 and inherited downstream, never re-decided mid-flow.
 - DO NOT: call this CLI from a workflow skill. Workflow skills write `[TMS_TOOL]` pseudocode and load this skill; only this skill owns the literal syntax.
-- DO: pass an explicit `--limit` above the expected count on every list command — all of them default to 20 rows and truncate silently. Read the true count from the `(N total)` header, never by counting rows; a truncated read looks exactly like data loss.
+- DO: pass an explicit `--limit` above the expected count on every list command — all of them default to a small `--limit` (see `cli/xray`) and truncate silently. Read the true count from the `(N total)` header, never by counting rows; a truncated read looks exactly like data loss.
 - DO: capture the key of anything you create from the bare `KEY <PROJ-123>` line or from `--json`, never by scraping the decorated success line — a create whose key was not captured leaves an orphan artifact nothing downstream can link.
 - DO NOT: pass Manual steps inline when creating a test — Xray Cloud silently drops them. Create the test first, add one step per call, then verify the steps landed.
 - DO: pin every ATR execution to a Test Environment (value from `active_env`), so results stay comparable across runs. An execution that slipped through without one is repaired in place, not left.
@@ -135,9 +135,9 @@ bun xray test list --jql "project = DEMO AND labels = critical"
 > anything a human will read or link; the numeric id is what `add-step` and the
 > other Xray-internal mutations take, and every command here accepts either.
 
-> **Every `list` command defaults to `--limit 20` and truncates silently.**
+> **Every `list` command defaults to a small `--limit` (see `cli/xray`) and truncates silently.**
 > `test list`, `exec list`, `set list` and `plan list` all print the true total in
-> the header (`Tests (114 total, showing 20)`) while listing only 20 rows. If you
+> the header (`Tests (N total, showing M)`) while listing only the default page. If you
 > are counting, iterating, or deciding anything from the result, pass an explicit
 > `--limit` above the expected count and read the count from the `(N total)`
 > header, not by counting rows. This bites hardest during post-migration
@@ -241,7 +241,7 @@ convention instead:
 
 ```bash
 # Preferred: Cucumber Scenario Outline + Examples — parameters live in the Gherkin
-# (works today via --gherkin on create, or update-gherkin on an existing test)
+# (via --gherkin on create, or update-gherkin on an existing test)
 bun xray test create --project {{PROJECT_KEY}} --summary "Login matrix" --type Cucumber --gherkin "
 Feature: Login
   Scenario Outline: Login as <role>
@@ -350,7 +350,7 @@ bun xray run evidence-rm --id <runId> --evidence <evidenceId>
 bun xray run evidence-rm --id <runId> --filename error.png
 ```
 
-> **Body size limit**: Xray Cloud rejects requests larger than 20 MB. The CLI auto-chunks large `--dir` uploads into batches under that limit (using ~15 MB per batch to leave headroom for the GraphQL envelope), so a folder of 14 PNGs at 600 KB each ships in a single round trip while a folder with one 30 MB recording would be rejected — split or compress those before uploading.
+> **Body size limit**: Xray Cloud rejects requests larger than 20 MB. The CLI auto-chunks large `--dir` uploads into batches under that limit (chunk size and GraphQL-envelope headroom are constants in `cli/xray/lib/evidence.ts`), so a folder of small PNGs ships in a single round trip while a folder with one 30 MB recording would be rejected — split or compress those before uploading.
 
 ### Test Plans
 
@@ -452,17 +452,17 @@ literal Jira link-type name.
 
 State it as a **raw field name**, never as an outward/inward *description*. The
 descriptions ("tests" / "is tested by") can be read in either direction by a
-careful reader, and that is not a hypothetical: three agents once read the same
-sentence in opposite directions and one of them rewired live coverage links on
-the strength of it. A field name cannot be read two ways.
+careful reader, and that is not a hypothetical: agents have read the same
+sentence in opposite directions and rewired live coverage links on the strength
+of it. A field name cannot be read two ways.
 
 How it was established, so it is auditable rather than doctrinal: Xray Cloud
 GraphQL `getCoverableIssue(issueId).tests`, read-only, on a live Story carrying
-BOTH shapes over two disjoint sets of ten real Tests. Xray returned the ten
-under `inwardIssue` and none of the ten under `outwardIssue` — same Story, same
+BOTH shapes over two disjoint sets of real Tests. Xray returned one set under
+`inwardIssue` and none of the other under `outwardIssue` — same Story, same
 link type, same artifact type, so direction was the only variable. It
-reproduced across a project: 21 Stories wired the other way returned zero
-coverage against as many as 69 attached Tests.
+reproduced across a project; the figures are recorded in ADR-0006
+(`.context/ADR/ADR-0006-forensic-measurements-ledger.md`).
 
 **Verify against Xray's coverage, never against Jira's link semantics.** The
 check is `bun xray trace <STORY>` (below), or the Story's coverage panel. A Jira
@@ -480,9 +480,9 @@ bun xray link create {{PROJECT_KEY}}-110 {{PROJECT_KEY}}-42 --type test_design
 ```
 
 The confirmation line is rendered from the payload actually sent, and prints the
-raw shape the Story ends up with. Read it: an earlier version of this command
-described the link it *intended* while storing the other one, and every coverage
-link it created was inverted without a single visible error.
+raw shape the Story ends up with. Read it: a command that describes the link it
+*intends* while storing the other one inverts every coverage link it creates
+without a single visible error.
 
 #### Repairing an inverted link (`link delete`)
 
@@ -519,9 +519,9 @@ the id belongs to a different pair than you expected.
 `trace` is the read-only counterpart of `link create`: it verifies, in one call,
 every edge the three-edge check requires
 (`agentic-qa-core/references/traceability-linking.md` §10). It exists because
-the check used to be four separate reads that nobody ran in full — consumers
-verified the coverage edge alone and logged "traceability verified", leaving a
-Story whose ATP or ATR was unlinked with an incomplete audit trail.
+four separate reads are a check nobody runs in full — consumers verify the
+coverage edge alone and log "traceability verified", leaving a Story whose ATP
+or ATR is unlinked with an incomplete audit trail.
 
 It reports PASS/FAIL per edge:
 
@@ -556,9 +556,8 @@ workspace that renamed its `Test` type is matched by its own name.
 
 **Run the sweep, not only the per-Story check.** An inverted coverage link is
 invisible on one Story: the link is there, the panel is merely empty, and nothing
-reports it. It only reads as a problem in aggregate — on one measured project,
-21 of 43 linked Stories were wired the wrong way and one of them lost a fully
-populated 69-Test Set. A sweep prints one worklist and keeps going past a Story
+reports it. It only reads as a problem in aggregate — on one measured project
+roughly half the linked Stories were wired the wrong way (ADR-0006). A sweep prints one worklist and keeps going past a Story
 it cannot read, so a permission error on row 3 does not hide rows 4-40. With
 more than one key the `--json` output wraps the per-Story objects in
 `{ stories, unreadable, summary }`; a single key keeps the original shape.
@@ -757,7 +756,7 @@ bun xray set create --project {{PROJECT_KEY}} --summary "ATS: {{PROJECT_KEY}}-42
 # 2. Link the ATS to the Story — the PRIMARY link that fills the coverage panel.
 #    Artifact first, Story second: the Story must end up carrying
 #    `inwardIssue: {{PROJECT_KEY}}-180`, the only shape Xray counts.
-#    (live-verified: ATP->Story and ATR->Story links are administrative
+#    (ATP->Story and ATR->Story links are administrative
 #    traceability and contribute NOTHING to coverage). A direct TC->Story link
 #    is the only other link that covers, and it is a LAST RESORT — for an
 #    instance with no Test Set work type. Prefer the ATS.

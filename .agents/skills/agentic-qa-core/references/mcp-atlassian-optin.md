@@ -14,8 +14,8 @@ long-running server per session. Nothing in the skills requires it: `[ISSUE_TRAC
 ## The server
 
 `mcp-atlassian` is a Python package run through `uvx` (install `uv` first). Pin the version, the
-same way the committed configs pin every `bunx` package; `0.23.1` is the release current on
-2026-09-24, bump it deliberately.
+same way the committed configs pin every `bunx` package: pin the version you install
+(`uvx mcp-atlassian@<version>`; check PyPI for the release) and bump it deliberately.
 
 | Variable the server reads | Where the value comes from |
 |---|---|
