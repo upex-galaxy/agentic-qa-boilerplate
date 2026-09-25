@@ -289,7 +289,7 @@ table.cmp td code{color:var(--cyan);font-size:.92em}
       <span class="pill">JavaScript</span><span class="pill">TypeScript</span><span class="pill">Playwright</span><span class="pill">8 quizzes ⭐</span><span class="pill">playgrounds en vivo 🎮</span>
     </div>
   </div>
-  <div class="notes"><p>Bienvenida. Encuadre: hoy NO vamos a automatizar — hoy construimos las bases para que la próxima sesión escribamos scripts reales con Playwright. Menciona que hay quizzes con puntaje (esquina superior derecha) y zonas interactivas donde ellos participan. Pide que nadie se quede con dudas: el objetivo es entender CADA palabra del código.</p></div>
+  <div class="notes"><p>Bienvenida. Encuadre: en esta sesión NO vamos a automatizar — ahora construimos las bases para que la próxima sesión escribamos scripts reales con Playwright. Menciona que hay quizzes con puntaje (esquina superior derecha) y zonas interactivas donde ellos participan. Pide que nadie se quede con dudas: el objetivo es entender CADA palabra del código.</p></div>
 </section>
 
 <!-- 2 · Ya sabes programar -->
@@ -304,7 +304,7 @@ table.cmp td code{color:var(--cyan);font-size:.92em}
     <tr><td>Precondiciones</td><td>Setup / hooks</td></tr>
     <tr><td>Lo ejecuta un humano 🧍</td><td>Lo ejecuta la máquina 🤖 (miles de veces, sin café)</td></tr>
   </table>
-  <div class="callout" data-anim="fade-up"><span class="co-ico">💡</span><p><b>Un script es un test case que la máquina ejecuta por ti.</b> Hoy solo aprendemos el idioma para escribirlo.</p></div>
+  <div class="callout" data-anim="fade-up"><span class="co-ico">💡</span><p><b>Un script es un test case que la máquina ejecuta por ti.</b> En esta sesión solo aprendemos el idioma para escribirlo.</p></div>
   <div class="notes"><p>Mensaje anti-miedo: ellos YA piensan como programadores cuando escriben un test case — pasos ordenados, datos, resultado esperado. Programar es traducir eso a un idioma que la máquina entiende. Pregunta a la audiencia: "¿qué pasa si el paso 3 de tu test case es ambiguo?" — igual en código, la máquina necesita instrucciones exactas.</p></div>
 </section>
 
@@ -812,7 +812,7 @@ page.<span class="tk-f">click</span>(<span class="tk-s">"#login-btn"</span>);
       <div class="callout" style="margin-top:.9rem"><span class="co-ico">📜</span><p><b>Regla de oro Playwright:</b> casi toda acción lleva <code>await</code>. Olvidarlo = tests intermitentes (flaky).</p></div>
     </div>
   </div>
-  <div class="notes"><p>NO expliques promesas ni event loop — agujero negro innecesario hoy. El modelo mental del robot impaciente basta: la máquina es más rápida que la web y hay que frenarla. Regla mecánica: acción de Playwright → await adelante; función con awaits → async adelante. El 90% de tests flaky de principiante = un await olvidado.</p></div>
+  <div class="notes"><p>NO expliques promesas ni event loop — agujero negro innecesario en esta sesión. El modelo mental del robot impaciente basta: la máquina es más rápida que la web y hay que frenarla. Regla mecánica: acción de Playwright → await adelante; función con awaits → async adelante. El 90% de tests flaky de principiante = un await olvidado.</p></div>
 </section>
 
 <!-- 26 · QUIZ 6 -->
@@ -875,7 +875,7 @@ page.<span class="tk-f">click</span>(<span class="tk-s">"#login-btn"</span>);
     <tr><td>"el mensaje de bienvenida"</td><td><code>page.locator("#welcome")</code> — apunta al elemento, listo para verificar</td></tr>
   </table>
   <div class="callout info" data-anim="fade-up"><span class="co-ico">🕵️</span><p>Cada elemento de una página tiene "dirección": su <b>selector</b>. Encontrarla es destreza detective de QA — y la vas a practicar AHORA mismo.</p></div>
-  <div class="notes"><p>Concepto puente: el robot no ve píxeles, ve el árbol HTML, y el selector es la dirección postal del elemento. Hoy usamos ids (#email) por simplicidad; menciona que getByRole es la práctica profesional moderna y la verán en la sesión hands-on. Transición directa al playground de inspección.</p></div>
+  <div class="notes"><p>Concepto puente: el robot no ve píxeles, ve el árbol HTML, y el selector es la dirección postal del elemento. Aquí usamos ids (#email) por simplicidad; menciona que getByRole es la práctica profesional moderna y la verán en la sesión hands-on. Transición directa al playground de inspección.</p></div>
 </section>
 
 <!-- 29 · PLAYGROUND inspección -->
@@ -989,7 +989,7 @@ page.<span class="tk-f">click</span>(<span class="tk-s">"#login-btn"</span>);
         ↳ <span style="color:var(--yellow)">login.spec.ts</span> — en un archivo<br>
         ↳ <span style="color:var(--orange)">tests/</span> — en una carpeta<br>
         ↳ <span style="color:var(--red)">mi-proyecto/</span> — en un repositorio 🎉</p></div>
-      <p style="margin-top:1rem">Un repo es solo <b>carpetas y archivos organizados</b>. Nada de magia: cada nivel lo construiste hoy.</p>
+      <p style="margin-top:1rem">Un repo es solo <b>carpetas y archivos organizados</b>. Nada de magia: cada nivel lo construiste en esta sesión.</p>
     </div>
   </div>
   <div class="notes"><p>Cierre del arco del zoom-out: recorre la columna derecha de abajo hacia arriba o de arriba a abajo y muestra que CADA nivel lo construyeron en la sesión. Del árbol solo importan tres cosas: package.json (la cédula), tests/ (donde escriben) y config. node_modules se instala solo y no se toca. Spec = especificación: cada archivo .spec.ts especifica el comportamiento esperado de una feature.</p></div>
@@ -1054,10 +1054,10 @@ Running 1 test using 1 worker
   <p id="final-msg" data-anim="fade-up" style="animation-delay:.25s;max-width:560px"></p>
   <div class="cards c3" data-stagger style="margin-top:1.6rem;max-width:1000px">
     <div class="card"><div class="ico">1️⃣</div><h3>Instala el kit</h3><p>VS Code + Node.js. 10 minutos, gratis.</p></div>
-    <div class="card"><div class="ico">2️⃣</div><h3>Crea tu proyecto</h3><p><code class="pill">npm init playwright@latest</code><br>y el árbol de la slide 32 aparece solo.</p></div>
+    <div class="card"><div class="ico">2️⃣</div><h3>Crea tu proyecto</h3><p><code class="pill">npm init playwright@latest</code><br>y el árbol de la slide «Zoom final» aparece solo.</p></div>
     <div class="card hl"><div class="ico">3️⃣</div><h3>Sesión hands-on</h3><p>Escribimos tests reales <b>juntos</b>, contra una app de verdad. Trae tu laptop. 🚀</p></div>
   </div>
-  <p data-anim="fade-up" style="animation-delay:.5s;margin-top:1.4rem;color:var(--text-3);font-size:.95rem">Hoy: valores → variables → funciones → lógica → TypeScript → async → tu primer test. <b style="color:var(--text-2)">Ya hablas el idioma.</b></p>
+  <p data-anim="fade-up" style="animation-delay:.5s;margin-top:1.4rem;color:var(--text-3);font-size:.95rem">Esta sesión: valores → variables → funciones → lógica → TypeScript → async → tu primer test. <b style="color:var(--text-2)">Ya hablas el idioma.</b></p>
   <div class="notes"><p>Lee el puntaje grupal y celebra sin importar el número — el score mide participación, no aptitud. Cierra con el mapa del viaje completo en una frase. Anuncia fecha/formato de la sesión hands-on y los 2 prerequisitos (VS Code + Node instalados). Comparte este archivo HTML: los playgrounds funcionan offline y pueden re-practicar solos en casa.</p></div>
 </section>
 

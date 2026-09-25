@@ -26,7 +26,7 @@ Only `allowed-tools, compatibility, description, license, metadata, name` are sp
 | Kind | Slug suffix | Files | Body sections that must exist |
 |---|---|---|---|
 | **context** | `-context` (mandatory) | `SKILL.md`, `references/gotchas.md` | `## What this skill knows` (one aspect), `## Sources of truth` (the `.context/` paths it CITES), `## Rules` (judgment, each dated), `## Not here` (what belongs in `.context/` instead) |
-| **workflow** | none | `SKILL.md`, `references/`, `evals/evals.json` | the session banner + `## Phase 0` (register the slug in `SESSION_RETROFITTED_SKILLS`, `scripts/lint-skills.ts`, so checks 10-12 bind), `## Compact Rules`, `## Subagent Dispatch Strategy` (7-component briefing), a session-close step citing `session-footer-contract.md` and `skill-refinement-protocol.md`, a blocker path citing `upstream-feedback.md` |
+| **workflow** | none | `SKILL.md`, `references/`, `evals/evals.json` | the session banner + `## Phase 0` (register the slug in `SESSION_RETROFITTED_SKILLS`, `scripts/lint-skills.ts`, so the `SESSION-BANNER-MISSING`, `SESSION-PHASE-0-MISSING` and `SESSION-SCOPE-INVALID` checks bind), `## Compact Rules`, `## Subagent Dispatch Strategy` (7-component briefing), a session-close step citing `session-footer-contract.md` and `skill-refinement-protocol.md`, a blocker path citing `upstream-feedback.md` |
 | **utility** | `-cli` / `-tool` / `-app` (mandatory) | `SKILL.md` with `allowed-tools: Bash(<binary>:*)`, `references/gotchas.md` | `## Compact Rules`, the tool's grammar (verbs, flags, auth, errors), a §6.5 row in `AGENTS.md` if a Bash binary must auto-load it |
 | **core** | none | `SKILL.md` + `references/` | no write path of its own; other skills cite its references |
 

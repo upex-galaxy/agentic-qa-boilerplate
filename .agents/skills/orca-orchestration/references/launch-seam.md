@@ -66,8 +66,8 @@ for the real grammar. Only this skill spells out commands, because only this ski
 survive the supervised path, and a skill that assumes they do is writing a lie into its own doc:
 
 1. **An environment prefix does not reach a supervised worker.** There is no argv on the native
-   launch, so `FOO=bar <binary> …` has nowhere to live. Measured: the two variables the sprint fleet
-   used to mark a worker were empty in all three sessions even on the custom-argv path, because the
+   launch, so `FOO=bar <binary> …` has nowhere to live. Measured on a real fleet: the variables the
+   sprint fleet used to mark a worker were empty in every session even on the custom-argv path, because the
    prefix belongs to a shell the runtime did not keep. **Never detect fleet mode from an environment
    variable.** Detect it from the prompt token and the brief; an exported variable is at most a
    redundant signal on the human-paste path.
@@ -88,7 +88,7 @@ stage boundaries are not checkpoints. Channel: orca orchestration. No heartbeats
 - **The opening token is load-bearing.** `/<workflow-skill> <KEY> fleet worker` is what the identity
   hook reads to title the session (there is no name flag on the supervised path) and what the workflow
   skill reads to know it is running as a fleet worker.
-- **The continuation sentence is not decoration.** Two of three workers in the last fleet stopped at
+- **The continuation sentence is not decoration.** Workers on a measured fleet (G58) stopped at
   a stage boundary with work remaining, on briefs that said "no checkpoints": the instruction works
   when it arrives as the worker's own prompt and fails as a pointer to a file. It belongs in the
   prompt, in the brief, and in `COMMON.md`.
@@ -104,14 +104,14 @@ stage boundaries are not checkpoints. Channel: orca orchestration. No heartbeats
    fires on an unquoted `<`/`>`; once the whole prompt sits inside single quotes the shell never
    interprets them, so this rule does not ban those two characters.
 3. **Validate every line with a shell syntax check before anything is launched** (`sh -n` over the
-   file, or the equivalent for the shell the user actually runs). On 2026-09-04 five lines died at
-   once on a quoting error: the environment variables never exported, and the terminals looked
-   perfectly fine.
+   file, or the equivalent for the shell the user actually runs). Every line of a real fleet once
+   died at once on a quoting error (G30): the environment variables never exported, and the
+   terminals looked perfectly fine.
 
-### 2.3 · The three gated lines
+### 2.3 · The gated lines
 
-When the gate passes (`SKILL.md` §The gate), a workflow skill may do exactly four things, each one
-gated and each one silent when the gate fails:
+When the gate passes (`SKILL.md` §The gate), a workflow skill may do only the things listed here,
+each one gated and each one silent when the gate fails:
 
 1. **Hand the work to the launcher** instead of asking the human to paste it: one supervised worker
    per unit of work, then the same prompt delivered into it (§1, §2.1b). A conductor that wants an
@@ -138,9 +138,9 @@ this skill. A workflow skill never spells out a command for it.
 | mention it in the **ATR environment block** or any report of record | the artifact of record must read identically on every machine, forever |
 | include it in the **blocked-token sweep** | the sweep is the fallback that must work WITHOUT it |
 | **name it to the user when the gate fails** | state A is total silence. Not a hint, not a suggestion, not an aside. The install recommendation belongs to `orca-orchestration`, and fires only because the user ASKED for orchestration |
-| change what a single worker does | N=1 must remain today's behaviour byte for byte. Fleet mode adds a coordinator above the loop; it does not alter the loop |
+| change what a single worker does | N=1 must keep its existing behaviour byte for byte. Fleet mode adds a coordinator above the loop; it does not alter the loop |
 | paraphrase the prompt, on either path | see §1 and §2.1b: the prompt is the payload both paths share |
-| detect fleet mode from an environment variable | it does not survive either path. Measured empty in all three sessions of the last fleet (§2.1) |
+| detect fleet mode from an environment variable | it does not survive either path. Measured empty on a real fleet (§2.1) |
 
 **The test that settles any future edit**: would this line still make sense, unchanged, to a tester
 who has never heard of the orchestrator? If not, it belongs in this skill.

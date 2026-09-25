@@ -7,15 +7,15 @@ this directory verbatim into the site's `/decks/` path on every deploy.
 ## Why here and not in `.agents/skills/`?
 
 `packages/` is boilerplate-only: the `create-agentic-qa` scaffolder prunes it
-(`TEMPLATE_EXCLUDES`) and `bun run update` never syncs it. Keeping the decks here
-means consumer projects scaffolded from this template do NOT carry ~2.7 MB of
+(`TEMPLATE_EXCLUDES`) and `bun run up` never syncs it. Keeping the decks here
+means consumer projects scaffolded from this template do NOT carry the
 academic HTML — they browse the published site instead (the `agentic-qa-onboard`
 skill links to it).
 
-## Single home (phase 2 done)
+## Single home
 
 This directory is the ONLY home of the decks. The skill-side copies
-(`.agents/skills/<skill>/*.html`) were removed in phase 2 — do not reintroduce
+(`.agents/skills/<skill>/*.html`) were removed; do not reintroduce
 them. Edit decks here only; the published site is regenerated on push.
 
 ## Index — one directory per skill

@@ -94,7 +94,7 @@ Classify every hit into change / do-not-change, and **present the table to the u
 
 ### Does not change
 
-- **A vanity / alias domain** (an org-owned hostname that fronts Jira instead of the numbered or named instance slug). If one appears in the code, leave it: these normally redirect to whatever instance is currently active, which is exactly why already-published `/browse/` links survive a migration. **But the alias is invisible from the repo** — tell the user to confirm by hand that it now resolves to the target. If it still points at the source, every published link is broken and nothing in the codebase reveals it.
+- **A vanity / alias domain** (an org-owned hostname that fronts Jira instead of the numbered or named instance slug). If one appears in the code, leave it: these normally redirect to whatever instance is active at the time, which is exactly why already-published `/browse/` links survive a migration. **But the alias is invisible from the repo** — tell the user to confirm by hand that it now resolves to the target. If it still points at the source, every published link is broken and nothing in the codebase reveals it.
 - **Historical records** — sprint reports, retros, changelogs of closed work. Rewriting them falsifies the past.
 - **Code whose pattern already generalizes.** If the logic matches the instance with a regex rather than a literal (`/site\d+\.atlassian\.net/`), it already supports the target and only a comment names the source. Read the code before deciding; do not edit a pattern that already generalizes.
 - **Regenerable cache** — `.context/PBI/` is rebuilt by the sync, so occurrences there clear themselves.
@@ -183,7 +183,7 @@ Project issue type "Task" exists in <KEY> but is not declared in
 
 So a stale manifest declaring 3 work types regenerates a catalog with 3 work types, exits `0`, and reports success. The migration looks clean and the catalog is missing everything the manifest forgot to ask for. Same silent-success failure this whole command exists to prevent, entering through the input side.
 
-The manifest goes stale invisibly because **the boilerplate updater neither syncs it nor warns about it**: it sits in `bootstrapOnlyPaths` (so `bun run update` never overwrites the project's customizations) and is absent from the drift watchlist (so nothing reports that it has fallen behind). A project scaffolded from an older boilerplate can be many versions behind with zero signal.
+The manifest goes stale quietly because **the updater never overwrites it** (`bootstrapOnly`, so `bun run up` never touches the project's customizations) and reports structural gaps only as informational rows (`AGENTS.md` §4.5; `bun run jira:baseline` warns when it declares fewer work types than upstream's baseline). A project scaffolded from an older boilerplate can be many versions behind with only that warning as signal.
 
 Compare against upstream before regenerating:
 
@@ -217,7 +217,7 @@ Three behaviors to anticipate, and they differ per script — do not assume one 
 
 - **`jira:sync-fields` REQUIRES `--force`.** Its populated-catalog guard sits on the main path, so a plain re-run stops with `already populated. Re-run with --force to overwrite.` and exits `1`.
 - **`jira:sync-workflows` does NOT need `--force`, and should not get it.** Its identical-looking guard lives *inside* the `--upex` branch only, so the normal Jira path is idempotent. Adding `--force` re-prompts for already-mapped slugs and buys nothing. (In practice a canonical slug with exactly one candidate auto-resolves either way; prompts only appear on a collision or a no-match.)
-- **`jira:sync-link-types` has NO `--force` flag at all.** Its argument parser knows only `--dry-run`, `--json`, `--verbose`, `--help` and `--upex`, and has no `default:` case — so `--force` is silently swallowed rather than rejected. Passing it appears to work, which is exactly why it is worth not teaching.
+- **`jira:sync-link-types` has NO `--force` flag at all.** Its argument parser (check `--help`) has no `default:` case — so `--force` is silently swallowed rather than rejected. Passing it appears to work, which is exactly why it is worth not teaching.
 
 Plus one behavior shared with Phase 2:
 
@@ -342,5 +342,5 @@ Give the operator these, and flag the last three as needing a human:
 3. Catalog counts: fields, work types, link types, plus any missing required slug and any field left with empty options.
 4. At least one custom-field ID before/after, as proof the regeneration reached the new instance, **plus** the id-to-name verification result — "N ids checked against the live instance, 0 mismatches" is the claim worth making; "the diff was large" is not.
 5. **Manual check**: does the vanity/alias domain now resolve to the target? Not visible from the repo.
-6. **Manual check**: if the manifest was behind, whatever made it drift will make it drift again. The updater treats it as bootstrap-only and does not watch it for drift, so nothing will report the next gap either. Say so.
+6. **Manual check**: if the manifest was behind, whatever made it drift will make it drift again. The updater treats it as bootstrap-only and reports structural gaps only as informational rows (`bun run jira:baseline` warns on a truncated manifest, nothing blocks), so the next gap will be just as quiet. Say so.
 7. **Team broadcast**: everyone re-runs the `acli` login on their own machine — a stale session returns old-instance data with no error, which is the one failure mode nobody notices. If the team consumes the upstream reference catalog via `--upex`, add that nobody should run it until the upstream has published its post-migration catalogs.

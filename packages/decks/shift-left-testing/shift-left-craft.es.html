@@ -675,7 +675,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <tr><td><b>Ejecución</b></td><td><b>Ninguna</b> — la feature no existe aún</td><td>Smoke + UI/API/DB</td></tr>
     </tbody>
   </table>
-  <div class="callout mt-m"><h4>Reutilización deliberada</h4><p>~70% de la lógica de refinamiento ya vive en <span class="mono">acceptance-test-planning.md</span>. Shift-left la cita, no la duplica — y el trabajo hecho aquí se <b>reutiliza</b> in-sprint (no se repite).</p></div>
+  <div class="callout mt-m"><h4>Reutilización deliberada</h4><p>La mayor parte de la lógica de refinamiento ya vive en <span class="mono">acceptance-test-planning.md</span>. Shift-left la cita, no la duplica — y el trabajo hecho aquí se <b>reutiliza</b> in-sprint (no se repite).</p></div>
   <div class="notes">Misma metodología base, distinto momento y profundidad. Shift-left no ejecuta (la feature no existe). El output alimenta la estimación de PO.</div>
 </section>
 
@@ -714,7 +714,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <p class="kicker">qué califica</p>
   <h2 class="h2" data-anim="fade-up">Candidatos del Backlog</h2>
   <div class="terminal mt-s">
-    <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>JQL · candidatos</span></div>
+    <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>JQL · candidatos (statuses de ejemplo: los reales en .agents/jira-workflows.json)</span></div>
 <pre><span class="kw">project</span> = {{PROJECT_KEY}} <span class="kw">AND</span> issueType = Story
 <span class="kw">AND</span> status <span class="kw">in</span> (Backlog, <span class="str">"Shift-Left QA"</span>, Estimation, <span class="str">"Ready For Dev"</span>)
 <span class="kw">ORDER BY</span> priority DESC, created DESC
@@ -727,7 +727,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="card card-soft"><h4>Filtro de tipo (duro)</h4><p class="dim">Solo <b>Story</b>. Bug/Spike/Sub-task/Tech-debt → rechazo, con razón de una línea. Nunca drop silencioso.</p></div>
     <div class="card card-soft"><h4>Freshness de label</h4><p class="dim"><span class="mono">shift-left-reviewed</span> &lt;30 días → ya refinada (surfacear: ¿refrescar?). &gt;30 días → re-refinar (pudo derivar).</p></div>
   </div>
-  <div class="notes">Entry: 4 estados (backlog/shift-left-qa/estimation/ready-for-dev). Solo Stories. Las ya revisadas se surfacean, no se auto-saltan.</div>
+  <div class="notes">Entry: los estados de la JQL (backlog/shift-left-qa/estimation/ready-for-dev en el proyecto de ejemplo). Solo Stories. Las ya revisadas se surfacean, no se auto-saltan.</div>
 </section>
 
 <!-- 13. VETO TABLE -->
@@ -915,7 +915,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     </tbody>
   </table>
   <div class="callout mt-m"><h4>Pero solo si la Story no las responde ya</h4><p>Las universales NO se incluyen por defecto — se recorren cuando la Story las deja sin responder. El archivo de refinamiento es de alta señal, no exhaustivo.</p></div>
-  <div class="notes">Muestra de las 10 universales (verbatim). La columna "si no se responde" es el catálogo de consecuencias por gap. No auto-incluir: solo lo no respondido.</div>
+  <div class="notes">Muestra de las universales (verbatim, de refinement-questions.md). La columna "si no se responde" es el catálogo de consecuencias por gap. No auto-incluir: solo lo no respondido.</div>
 </section>
 
 <!-- 22. ARCHETYPE QUESTIONS -->
@@ -948,7 +948,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       </ul>
     </div>
   </div>
-  <div class="callout mt-m"><h4>El catálogo cubre 10 arquetipos</h4><p>Auth · Money · Search/List · State Machine · Integration · CRUD · Notification · RBAC · Performance · a11y/i18n — cada uno con ~10 preguntas asesinas y su modo de falla.</p></div>
+  <div class="callout mt-m"><h4>El catálogo cubre los arquetipos de <span class="mono">refinement-questions.md</span></h4><p>Auth · Money · Search/List · State Machine · Integration · CRUD · Notification · RBAC · Performance · a11y/i18n, entre otros — cada uno con sus preguntas asesinas y su modo de falla.</p></div>
   <div class="notes">Las preguntas más filosas por dominio (verbatim). A8 (403 vs 404 = information disclosure), M1 (precisión de moneda), SM3 (transición inválida) son ejemplos de oro.</div>
 </section>
 
@@ -1049,7 +1049,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       </ul>
     </div>
   </div>
-  <div class="callout mt-m"><h4>Status: "Refined — Awaiting PO Estimation"</h4><p>El ATP es <b>uno y real desde el día cero</b>: pre-sprint vive SOLO en el campo <span class="mono">acceptance_test_plan</span> (<b>field-first</b>) — <span class="mono">shift-left-refinement.md</span> es solo el <b>buffer local de staging</b>. Lo que cambia después no es la identidad sino la <b>madurez</b>: hoy outline (y con eso la Story ya es <b>estimable</b>); en sprint, <span class="mono">/sprint-testing</span> Planning crea el Test Plan item <span class="mono">"ATP: {STORY-KEY}: {título}"</span> DESDE ese campo y añade lo diferido (datos, parametrización, pasos) en el <b>superset ejecutable</b>.</p></div>
+  <div class="callout mt-m"><h4>Status: "Refined — Awaiting PO Estimation"</h4><p>El ATP es <b>uno y real desde el día cero</b>: pre-sprint vive SOLO en el campo <span class="mono">acceptance_test_plan</span> (<b>field-first</b>) — <span class="mono">shift-left-refinement.md</span> es solo el <b>buffer local de staging</b>. Lo que cambia después no es la identidad sino la <b>madurez</b>: pre-sprint, outline (y con eso la Story ya es <b>estimable</b>); en sprint, <span class="mono">/sprint-testing</span> Planning crea el Test Plan item <span class="mono">"ATP: {STORY-KEY}: {título}"</span> DESDE ese campo y añade lo diferido (datos, parametrización, pasos) en el <b>superset ejecutable</b>.</p></div>
   <div class="callout mt-m"><h4>Las dos modalidades TMS</h4><p>Esto aplica igual en <span class="mono">jira-native</span> (la modalidad default) y en <span class="mono">jira-xray</span>: ninguna de las dos crea el item Test Plan en esta etapa — pre-sprint solo existe el campo <span class="mono">acceptance_test_plan</span>.</p></div>
   <div class="notes">Un solo ATP por Story, field-first: shift-left lo autoría temprano en madurez outline dentro del campo acceptance_test_plan (nombres + cobertura, sin test data/parametrización/TCs); el Test Plan item nace en Planning desde ese campo, refinado al superset ejecutable. shift-left-refinement.md es solo el buffer local; los labels shift-left-reviewed + fecha marcan el pase pre-sprint. La estimación de cobertura SÍ va (alimenta a PO).</div>
 </section>
@@ -1215,11 +1215,11 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <h2 class="h2" data-anim="fade-up">Por Qué Cada Proyecto lo Necesita</h2>
   <div class="mgrid">
     <div class="mcard"><div class="mv grad">1×</div><div class="mk">costo en requisitos</div><div class="md">la fase más barata para matar un defecto — donde shift-left actúa</div></div>
-    <div class="mcard"><div class="mv grad">~70%</div><div class="mk">trabajo reutilizado</div><div class="md">la lógica de refinamiento se reusa in-sprint, no se repite</div></div>
+    <div class="mcard"><div class="mv grad">1 vez</div><div class="mk">trabajo reutilizado in-sprint</div><div class="md">la lógica de refinamiento se reusa in-sprint, no se repite</div></div>
     <div class="mcard"><div class="mv" style="color:var(--good)">0</div><div class="mk">preguntas forzadas</div><div class="md">solo riesgo real — una Story limpia sale limpia</div></div>
   </div>
   <div class="callout mt-m"><h4>No es solo para proyectos grandes</h4><p>Cualquier proyecto con requisitos tiene ambigüedades, huecos y ACs no testeables. Shift-left los convierte en preguntas baratas <b>antes</b> de que sean defectos caros. El ROI es estructural: horas de refinamiento vs semanas de retrabajo.</p></div>
-  <div class="notes">Cierre del POR QUÉ que pidió el usuario: el costo 1× vs 100×, la reutilización del 70%, y que aplica a todo proyecto (no solo grandes). El ROI es estructural.</div>
+  <div class="notes">Cierre del POR QUÉ que pidió el usuario: el costo 1× vs 100×, la reutilización in-sprint, y que aplica a todo proyecto (no solo grandes). El ROI es estructural.</div>
 </section>
 
 <!-- 36. TAKEAWAYS -->

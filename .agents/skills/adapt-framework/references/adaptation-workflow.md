@@ -120,7 +120,7 @@ In order: `.context/SRS/architecture.md`; `api/openapi-types.ts` (if generated) 
 
 ### 1.2 Read KATA references
 
-Load from `.agents/skills/test-automation/references/` (HOW-to lives here, not in this reference): `kata-architecture.md`, `automation-standards.md`, `api-patterns.md`, `e2e-patterns.md`, `data-testid-strategy.md`, `typescript-patterns.md`, `ci-integration.md`.
+Load from `.agents/skills/test-automation/references/` (HOW-to lives here, not in this reference): the references `test-automation/SKILL.md` lists.
 
 ### 1.3 Inspect template surface (do not modify yet)
 
@@ -135,10 +135,10 @@ tests/setup/{global,api-auth,ui-auth}.setup.ts
 api/schemas/{auth,example}.types.ts + index.ts                 ← example.types.ts DELETE
 config/variables.ts · config/validateTestEnv.ts · playwright.config.ts
 .agents/project.yaml · .env(.example) · .mcp.json · opencode.jsonc · dbhub.toml · allurerc.mjs
-.github/workflows/{regression,sanity,smoke,build}.yml · kata-manifest.json
+.github/workflows/*.yml · kata-manifest.json
 ```
 
-> **NOTE:** `AuthApi.ts` and `LoginPage.ts` are KEPT but still carry placeholder decorators — `@atc('PROJ-101')` / `@atc('PROJ-102')` on `AuthApi`, `@atc('PROJ-111')` / `@atc('PROJ-112')` on `LoginPage` — which get rewritten to `{{PROJECT_KEY}}` in Phase 5. Every id is DISTINCT on purpose: `kata:manifest:check` fails on a duplicate, because an id is the key the TMS and the teardown coverage report both group by. The boilerplate also ships instructional `UPEX-101` examples inside comments/JSDoc (`AuthApi.ts:10`, `tests/utils/decorators.ts`) — those are documentation, leave them.
+> **NOTE:** `AuthApi.ts` and `LoginPage.ts` are KEPT but still carry placeholder decorators — the shipped example ids (read them from `kata-manifest.json`) — which get rewritten to `{{PROJECT_KEY}}` in Phase 5. Every id is DISTINCT on purpose: `kata:manifest:check` fails on a duplicate, because an id is the key the TMS and the teardown coverage report both group by. The boilerplate also ships instructional `UPEX-101` examples inside comments/JSDoc (the JSDoc example in `AuthApi.ts`, `tests/utils/decorators.ts`) — those are documentation, leave them.
 
 ### 1.4 Decide auth strategy (decision tree)
 
@@ -163,7 +163,7 @@ Does the target API issue a token or a cookie?
 
 Session reuse always has the same shape: `global.setup → ui-auth.setup + api-auth.setup → .auth/*.json → tests`.
 
-> **Token refresh reality check:** `scripts/api-login.ts` **mints a fresh token per invocation** and writes `createdAt`/`expiresIn` to `.auth/api-state.json`. There is **NO auto-refresh-on-expiry** today — `TestFixture` reads the token if the file exists, with no staleness check. Do not tell the user the suite auto-refreshes. Record the real strategy from the questionnaire: either (a) accept per-run minting (default — re-run setup when stale), or (b) implement a staleness check (compare `createdAt + expiresIn` vs now) if the target's TTL is short. Note the choice in the plan. The same `api:login` run also writes `.auth/tokens.env` + `.auth/tokens.json` (keyed `<ROLE>_<ENV>`) for the **agentic curl API-testing flow** — same per-run-mint / no-auto-refresh reality (re-run `api:login` on a curl 401).
+> **Token refresh reality check:** `scripts/api-login.ts` **mints a fresh token per invocation** and writes `createdAt`/`expiresIn` to `.auth/api-state.json`. There is **NO auto-refresh-on-expiry** — `TestFixture` reads the token if the file exists, with no staleness check. Do not tell the user the suite auto-refreshes. Record the real strategy from the questionnaire: either (a) accept per-run minting (default — re-run setup when stale), or (b) implement a staleness check (compare `createdAt + expiresIn` vs now) if the target's TTL is short. Note the choice in the plan. The same `api:login` run also writes `.auth/tokens.env` + `.auth/tokens.json` (keyed `<ROLE>_<ENV>`) for the **agentic curl API-testing flow** — same per-run-mint / no-auto-refresh reality (re-run `api:login` on a curl 401).
 
 ### 1.5 Identify OpenAPI source
 
@@ -207,7 +207,7 @@ Ask only what context cannot reveal. Short, specific questions. Group and ask in
 
 **CI + reporting + docs**
 - TMS modality + `AUTO_SYNC`: Xray / Jira-native / none, and which GitHub Secrets you can set (these live outside the repo).
-- Allure report name (`allurerc.mjs`, currently `Agentic QA Boilerplate`).
+- Allure report name (`allurerc.mjs`, shipped as `Agentic QA Boilerplate`).
 - Is the `gh-pages` branch created and GitHub Pages enabled? (Workflows publish to `{owner}.github.io/{repo}/{env}/{type}/` — external repo config.) If not enabled and the user wants browsable reports, run the maneuver in `.agents/skills/regression-testing/references/github-pages-setup.md` (enable via `gh api`, first-build gotcha, history-squash job) during Phase 7.
 - After adaptation, hand off to `sync-ai-context` to scrub `upexgalaxy`/`UPEX`/`dojo` from README/CONTEXT/INSTALLER/docs, or leave for a separate pass?
 
@@ -273,9 +273,9 @@ Copy `.env.example` → `.env` if absent. Populate the **real key scheme** (no i
 - `auth.loginEndpoint`, `auth.tokenEndpoint`, `auth.meEndpoint`, `auth.tokenLifetimeSeconds` (real TTL).
 - If new environments are added, extend the `Environment` union type.
 
-### 3.4 Env-enum reconciliation (4-way drift)
+### 3.4 Env-enum reconciliation (multi-file drift)
 
-`local | staging` lives in **four** places that must agree. When the env list changes, update all four:
+`local | staging` lives in several places that must agree (the list below). When the env list changes, update every one of them:
 
 1. `config/variables.ts` → `Environment` type + `envDataMap` keys
 2. `.agents/project.yaml` → `environments.<env>` + `testing.default_env`
@@ -320,7 +320,7 @@ export type Create{Entity}Request  = Create{Entity}Path['requestBody']['content'
 export type Create{Entity}Response = Create{Entity}Path['responses']['201']['content']['application/json'];
 ```
 
-- Update `api/schemas/index.ts`: add the new facade re-export. (`index.ts` re-exports only `auth.types` by default — `example.types` is consumed by `ExampleApi.ts`, not re-exported here, so there is nothing to drop unless you added one.)
+- Update `api/schemas/index.ts`: add the new facade re-export. (check what `api/schemas/index.ts` re-exports — `example.types` is consumed by `ExampleApi.ts` directly, so there is nothing to drop there unless you added a re-export.)
 - Without OpenAPI: `curl` the real endpoints first, then hand-write interfaces that mirror the contract.
 
 ---
@@ -332,7 +332,7 @@ export type Create{Entity}Response = Create{Entity}Path['responses']['201']['con
 - `tests/components/api/AuthApi.ts` — real `endpoints.login`, payload shape, types from `@schemas/auth.types`. **Replace `@atc('PROJ-101')` / `@atc('PROJ-102')` with `@atc('{{PROJECT_KEY}}-NNN')`** (leave the instructional `UPEX-101` comment example alone).
 - `tests/components/ui/LoginPage.ts` — real locators (`getByTestId` / `getByRole`), tight assertions (URL change AND a post-login element). Replace its `PROJ-` ATC keys too.
 - `tests/components/api/ApiBase.ts` — modify `buildHeaders()` only if the auth header is non-standard.
-- **`scripts/api-login.project.ts` — the ONLY file to adapt for the agentic curl API-testing flow.** Adapt `buildAuthPayload()` (request body field names — `email` vs `username`, etc.) and `extractTokenFromResponse()` (response token field — `access_token` / `token` / `id_token`) to the target's login contract (same answers as §1.7 Auth), plus the optional `loginEndpoint` / `headers` / `environments` / `extraFlags` exports when the target needs them. Do NOT touch `scripts/api-login.ts` (10-line entry) or `scripts/lib/api-login-core.ts` (the CLI: args, `--role`, `--profile`, token storage, `--help`): `scripts/lib/api-login-core.ts` is synced, so `bun run up` keeps delivering upstream improvements there. `scripts/api-login.ts` itself is delivered once and never overwritten after that, same as this adapter file — a repo scaffolded before the core/adapter split still has its whole pre-split CLI at that path, so the updater never silently replaces it. A pre-split repo adopts the split by hand: replace `scripts/api-login.ts` with the current 10-line entry from the boilerplate, then this adapter file is the only one left to adapt. This is a **separate code path** from the Playwright setups above: `bun run api:login` powers the schema-read-only-MCP + curl maneuver (`.auth/tokens.env` → `curl`), per `agentic-qa-core/references/api-testing-doctrine.md`. If the target returns a different token shape and this is not adapted, `.auth/tokens.env` stays empty and every authenticated curl 401s — while the Playwright setups still pass, hiding the break.
+- **`scripts/api-login.project.ts` — the ONLY file to adapt for the agentic curl API-testing flow.** Adapt `buildAuthPayload()` (request body field names — `email` vs `username`, etc.) and `extractTokenFromResponse()` (response token field — `access_token` / `token` / `id_token`) to the target's login contract (same answers as §1.7 Auth), plus the optional `loginEndpoint` / `headers` / `environments` / `extraFlags` exports when the target needs them. Do NOT touch `scripts/api-login.ts` (the entry file) or `scripts/lib/api-login-core.ts` (the CLI: args, `--role`, `--profile`, token storage, `--help`): `scripts/lib/api-login-core.ts` is synced, so `bun run up` keeps delivering upstream improvements there. `scripts/api-login.ts` itself is delivered once and never overwritten after that, same as this adapter file — a repo scaffolded before the core/adapter split still has its whole pre-split CLI at that path, so the updater never silently replaces it. A pre-split repo adopts the split by hand: replace `scripts/api-login.ts` with the current `scripts/api-login.ts` entry from the boilerplate, then this adapter file is the only one left to adapt. This is a **separate code path** from the Playwright setups above: `bun run api:login` powers the schema-read-only-MCP + curl maneuver (`.auth/tokens.env` → `curl`), per `agentic-qa-core/references/api-testing-doctrine.md`. If the target returns a different token shape and this is not adapted, `.auth/tokens.env` stays empty and every authenticated curl 401s — while the Playwright setups still pass, hiding the break.
 
 ### 5.2 Adapt setups
 
@@ -404,11 +404,11 @@ After deleting `tests/{e2e,integration}/module-example/`, remove the now-dead `t
 
 ### 6.4 First smoke test
 
-Create `tests/e2e/{feature}/smoke.test.ts` (or `tests/integration/{feature}/` for API-only) tagged **`@critical`** — the repo-wide convention that `playwright.config.ts`'s smoke projects grep (`smoke-ui` and `smoke-api`, both `grep: /@critical/`) and the workflows run. **Do NOT tag `@smoke`** — `test:smoke` would select zero tests. Uses the new component through the fixture; asserts ≥1 domain operation end-to-end. No mocks against real auth.
+Create `tests/e2e/{feature}/smoke.test.ts` (or `tests/integration/{feature}/` for API-only) tagged **`@critical`** — the repo-wide convention that the smoke projects in `playwright.config.ts` grep (`@critical`) and the workflows run. **Do NOT tag `@smoke`** — `test:smoke` would select zero tests. Uses the new component through the fixture; asserts ≥1 domain operation end-to-end. No mocks against real auth.
 
 ### 6.5 Reconsider existing reference specs
 
-`tests/e2e/dashboard/dashboard.test.ts` (`UPEX-200`, `/api/auth/me`) and `tests/integration/auth/user-session.test.ts` (`UPEX-100`): replace the `UPEX-` keys with `{{PROJECT_KEY}}` and keep if the endpoints resolve to the real API, else delete.
+every shipped reference spec still carrying a `UPEX-` key (`grep -rn UPEX- tests/`): replace the `UPEX-` keys with `{{PROJECT_KEY}}` and keep if the endpoints resolve to the real API, else delete.
 
 ---
 
@@ -416,16 +416,16 @@ Create `tests/e2e/{feature}/smoke.test.ts` (or `tests/integration/{feature}/` fo
 
 ### 7.1 Regenerate the KATA manifest
 
-Deleting `Example*` and adding the entity makes `kata-manifest.json` stale (it still lists the eight shipped ids: `PROJ-101/102` on `AuthApi`, `111/112` on `LoginPage`, `121/122` on `ExampleApi`, `131/132` on `ExamplePage`). `.husky/pre-commit` blocks commits on a stale manifest (Rule #12).
+Deleting `Example*` and adding the entity makes `kata-manifest.json` stale (it still lists the shipped example ids). `.husky/pre-commit` blocks commits on a stale manifest (Rule #12).
 
 ```bash
 bun run kata:manifest          # regenerate
 bun run kata:manifest:check    # must exit 0
 ```
 
-### 7.2 Reconcile the 4 GitHub workflows
+### 7.2 Reconcile the GitHub workflows
 
-`.github/workflows/{regression,sanity,smoke,build}.yml`. Per workflow:
+Every suite workflow under `.github/workflows/` (the ones with a `workflow_dispatch.inputs.environment`). Per workflow:
 
 - `workflow_dispatch.inputs.environment.options` must equal the env list (§3.4).
 - Secret names (`secrets.<ENV>_USER_EMAIL` / `_PASSWORD`) must match the env-prefixed credential scheme.
@@ -439,7 +439,7 @@ bun run kata:manifest:check    # must exit 0
 
 ### 7.3 MCP registry — THREE-HARNESS sync (highest-risk surface)
 
-`.mcp.json` (Claude Code), `opencode.jsonc` (OpenCode), and `.codex/config.toml` (Codex CLI/Desktop) ship the **same** servers (`context7`, `tavily`, `playwright`, `dbhub`, `openapi`, `postman`). **Every semantic change must land in all three** with native syntax. Per `AGENTS.md` Rule #10, a missing or empty MCP variable is a HARD SESSION STOP, not a soft CI failure.
+`.mcp.json` (Claude Code), `opencode.jsonc` (OpenCode), and `.codex/config.toml` (Codex CLI/Desktop) ship the **same** server set (`.mcp.json` is canonical). **Every semantic change must land in all three** with native syntax. Per `AGENTS.md` Rule #10, a missing or empty MCP variable is a HARD SESSION STOP, not a soft CI failure.
 
 - `project.yaml` `environments.<env>.db_mcp` / `api_mcp` resolve to MCP **server names**. Default: point them at the existing `dbhub` / `openapi` servers. If the target needs per-env DB/API servers, add those entries to all three harness configs.
 - `openapi` server reads `API_BASE_URL` / `OPENAPI_SPEC_PATH` ONLY — it is **schema-read-only**, so do NOT inject `API_TOKEN` / `API_HEADERS` (authenticated requests run via curl using `.auth/tokens.env` from `bun run api:login`; canon: `agentic-qa-core/references/api-testing-doctrine.md`). If the target has **no API**, disable/remove the `openapi` entry in all three configs (else it spins against empty env and `[API_TOOL]` breaks).
@@ -490,7 +490,7 @@ Run every detection signal and print a per-subsystem **GENERIC / ADAPTED** table
 | Subsystem | ADAPTED signal (else GENERIC) |
 |-----------|-------------------------------|
 | project.yaml | `bun run vars:check` exits 0 **AND** `grep -c 'null #' .agents/project.yaml` == 0 |
-| ATC keys | `grep -rnE "^\s*@atc\('(PROJ\|UPEX)-" tests/components/` returns nothing (decorator lines only — excludes the `AuthApi.ts:10` comment + `decorators.ts` JSDoc) |
+| ATC keys | `grep -rnE "^\s*@atc\('(PROJ\|UPEX)-" tests/components/` returns nothing (decorator lines only — excludes the JSDoc example in `AuthApi.ts` + `decorators.ts` JSDoc) |
 | Example components | none of `ExampleApi.ts` / `ExamplePage.ts` / `ExampleSteps.ts` / `api/schemas/example.types.ts` exist |
 | Example specs | `tests/e2e/module-example/` + `tests/integration/module-example/` do not exist; no `testIgnore` `module-example` line in `playwright.config.ts` |
 | Example domain data | `grep -riE 'hotel\|booking' tests/data/` returns nothing **AND** `tests/data/fixtures/example.json` gone |
@@ -569,7 +569,7 @@ Done only when **every** box is true (all map to a Phase 9 signal):
 
 ## References
 
-- `.agents/skills/test-automation/references/{kata-architecture,automation-standards,api-patterns,e2e-patterns,data-testid-strategy,typescript-patterns,ci-integration}.md`
+- `.agents/skills/test-automation/references/` (the references `test-automation/SKILL.md` lists)
 - `project-discovery` (produces `.context/`), `project-context` (context enrichment), `sync-ai-context` (README/CONTEXT/INSTALLER/docs scrub)
 
 ---

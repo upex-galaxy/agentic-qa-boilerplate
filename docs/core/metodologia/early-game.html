@@ -541,9 +541,9 @@
               <td>Jira (o tracker equivalente)</td>
               <td><span class="badge">Client-controlled</span></td>
               <td>
-                El IQL exige un workflow con sus estados y transiciones. Hoy solo Jira está
-                implementado (<code>.agents/jira-workflows.json</code>); otro tracker es trabajo de
-                adaptación que se evalúa al inicio.
+                El IQL exige un workflow con sus estados y transiciones. Solo Jira está implementado
+                (<code>.agents/jira-workflows.json</code>); otro tracker es trabajo de adaptación
+                que se evalúa al inicio.
               </td>
             </tr>
             <tr>
@@ -712,7 +712,7 @@
           />
         </div>
         <figcaption>
-          Los trece estados de una historia, agrupados en refinamiento, desarrollo, QA y cierre. Un
+          Los estados de una historia, agrupados en refinamiento, desarrollo, QA y cierre. Un
           defecto encontrado en pruebas la bloquea y la devuelve a desarrollo.
           <a href="../../assets/iql/jira-user-story.svg" target="_blank" rel="noopener"
             >Ver a tamaño completo</a
@@ -750,9 +750,9 @@
         </table>
       </div>
       <details>
-        <summary>Transiciones que el diagrama omite (13 de 27)</summary>
+        <summary>Transiciones que el diagrama omite</summary>
         <ul>
-          <li>Casi toda etapa vuelve a la anterior con <code>back</code> (6 transiciones).</li>
+          <li>Casi toda etapa vuelve a la anterior con <code>back</code>.</li>
           <li>
             <code>Ready to Estimate</code>: Backlog salta a Estimation sin pasar por Shift-Left QA.
           </li>

@@ -19,7 +19,7 @@ Everything the official docs do not make obvious. Every item here is something t
 13. [Issue-type resolution is global](#issue-types)
 14. [Comment create accepts ADF via -F](#comment-adf)
 15. [Trace IDs and no verbose mode](#trace)
-16. [The 2026 point-based rate limits](#rate-limits)
+16. [Point-based rate limits](#rate-limits)
 17. [CI install `latest/` risk](#ci-install)
 18. [Naming convention: kebab-case is universal](#naming)
 19. [REST fallback checklist](#rest-fallback)
@@ -79,7 +79,7 @@ Two things to remember about the shape:
 
 This is asymmetric with `acli workitem create`, which **does** accept custom fields via `additionalAttributes`. Many users assume `edit` works the same way; it does not — and the failure is loud, not silent.
 
-**Fix — WORKAROUND via REST PUT** (the only working path as of v1.3.18).
+**Fix — WORKAROUND via REST PUT** (the only working path: `acli` has no native channel for it).
 
 Prerequisites: `ATLASSIAN_EMAIL` and `ATLASSIAN_API_TOKEN` are exported in the current shell. The host is NOT an env var — `bun run --silent jira:url` reads it from `.agents/project.yaml`.
 
@@ -123,7 +123,7 @@ curl -s -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
 
 ## <a id="no-admin"></a>6. No admin for workflows, issue types, priorities, resolutions, versions, components
 
-**The problem.** As of v1.3.18, `acli` has zero coverage for these admin/schema surfaces:
+**The problem.** `acli` has no coverage for these admin/schema surfaces (confirm with `acli jira --help`; the CLI ships ahead of its docs):
 
 | Surface                | `acli` coverage                                                        |
 | ---------------------- | ---------------------------------------------------------------------- |
@@ -170,7 +170,7 @@ POST /rest/api/3/field/{fieldId}/option
 
 ## <a id="sprint"></a>8. Sprint field cannot be set
 
-**The problem.** There is no working way to add a work item to a sprint via `acli`. Community attempts using `--from-json` with either a sprint ID or a sprint name fail ("Number value expected as the Sprint id", "failed to generate JSON"). Atlassian tracks this as `JRACLOUD-97107`.
+**The problem.** There is no working way to add a work item to a sprint via `acli`. Community attempts using `--from-json` with either a sprint ID or a sprint name fail ("Number value expected as the Sprint id", "failed to generate JSON"). Atlassian tracked this as `JRACLOUD-97107` when this was written.
 
 `acli jira sprint create / update / view / delete` do exist — you can manage the sprint container itself — but moving tickets in/out of one is REST-only.
 
@@ -277,9 +277,9 @@ It is no longer required for rich-text creation.
 
 **Fix.** Always capture stderr in logs. For single-command errors, one trace ID; for bulk, multiple IDs — one per failed item. When opening a support case, include every trace ID you saw.
 
-## <a id="rate-limits"></a>16. 2026 point-based rate limits
+## <a id="rate-limits"></a>16. Point-based rate limits
 
-**Coming change.** Atlassian is rolling out per-org point buckets (65k–500k points per hour depending on plan tier) across the REST API that `acli` calls under the hood. A batch `--jql`-scoped edit over thousands of items can burn the whole hourly budget in one shot and produce 429s for the rest of the hour.
+Atlassian's point-based rate limits (per-org point buckets; see the vendor docs for the current buckets) apply to the REST API that `acli` calls under the hood. A batch `--jql`-scoped edit over thousands of items can burn the whole hourly budget in one shot and produce 429s for the rest of the hour.
 
 **Fix.** For sweeping operations:
 
@@ -313,7 +313,7 @@ The flag _value_ may still use camelCase (e.g. CSV column header `projectKey` or
 
 ## <a id="rest-fallback"></a>19. When to fall back to REST
 
-`acli` does not (yet) cover:
+`acli` does not cover (confirm with `acli <path> --help` before falling back):
 
 - Adding work items to a sprint (`POST /rest/agile/1.0/sprint/{sprintId}/issue`)
 - Editing custom-field values on existing work items (`PUT /rest/api/3/issue/{key}` with `{"fields":{...}}`)
@@ -340,4 +340,4 @@ curl -s -H "Authorization: Basic $AUTH" -H "Content-Type: application/json" \
 
 ## Meta-gotcha: documentation dates
 
-Every command-reference page on `developer.atlassian.com/cloud/acli/` shows "Last updated" dates from 2024–2025. The CLI ships updates more often than the docs — when `acli --help` shows a flag that isn't in the online docs, the CLI is the source of truth. As of this writing the binary (v1.3.18) is meaningfully ahead of the public Reference docs in several groups: `board`, `sprint`, `filter`, `field` all have subcommands the docs omit.
+Every command-reference page on `developer.atlassian.com/cloud/acli/` shows "Last updated" dates from 2024–2025. The CLI ships updates more often than the docs — when `acli --help` shows a flag that isn't in the online docs, the CLI is the source of truth. The binary runs ahead of the public Reference docs in several groups (subcommands `--help` shows and the docs omit); trust `--help`.

@@ -69,14 +69,14 @@ Two signals, in this order, make a session a worker:
 | the token `fleet worker` next to a skill invocation and an issue key | the launch prompt | this session is a worker; that key is the single issue it owns |
 | `Label` · `Task` · `Dispatch` in the brief's `## Meta` | `sprint-<N>/<KEY>/brief.md` | which worker it is, and how it reports (§10) |
 
-**Environment variables are NOT a channel.** Measured 2026-09-17 (three-worker fleet, one repo): an env prefix written into a launch line did not survive the launcher, and all three sessions ran with both variables empty while behaving as workers only because the prompt said so. `PARALLEL_TESTING` / `PARALLEL_TICKET` therefore survive as an OPTIONAL redundant hint on the human-paste path (a pasted shell line does carry its own prefix) and nothing in this skill may depend on them. A session that sees the env vars but no `fleet worker` prompt and no brief is not a worker — the prompt and the brief are the only detection channel.
+**Environment variables are NOT a channel.** Measured on a real fleet (ADR-0006): an env prefix written into a launch line did not survive the launcher, and every session ran with both variables empty while behaving as workers only because the prompt said so. `PARALLEL_TESTING` / `PARALLEL_TICKET` therefore survive as an OPTIONAL redundant hint on the human-paste path (a pasted shell line does carry its own prefix) and nothing in this skill may depend on them. A session that sees the env vars but no `fleet worker` prompt and no brief is not a worker — the prompt and the brief are the only detection channel.
 
 A worker:
 
 - runs **single-issue** mode on the key in its prompt — it does NOT ask the mode question, because the prompt already answered it;
 - **runs to completion without returning to its prompt.** Stage boundaries are not checkpoints and are not places to stop and wait: the run ends when the done-report is sent (§10), and until then the worker keeps working. A worker that parks at its prompt after Stage 1 looks exactly like a crashed one to the conductor's liveness sweep;
 - runs **without checkpoints**: no "explain the story and WAIT for OK", no per-stage "brief the user and wait". Nobody is watching its terminal. The gates it would have asked a human become report content instead: the story explanation and every stage summary go into its report, and anything that genuinely needs a decision goes out as an `ask` (§10), not as a `AskUserQuestion` nobody will ever see;
-- **never skips the Readiness Preflight Gate**, and never skips the MCP probes inside it. This is the single most expensive shortcut a worker can take: a worker whose DB tool never answered produces a confident ATR with a missing trifuerza leg, and nothing downstream catches it. Measured on the source fleet (2026-09, sprint 19): 3 of 8 workers ran an entire issue with no DB connectivity;
+- **never skips the Readiness Preflight Gate**, and never skips the MCP probes inside it. This is the single most expensive shortcut a worker can take: a worker whose DB tool never answered produces a confident ATR with a missing trifuerza leg, and nothing downstream catches it. Measured on the source fleet (ADR-0006): several workers ran an entire issue with no DB connectivity;
 - creates **no sprint-altitude state**: no `sprint-<N>/plan.md`, no `sprint-<N>/progress.md`, no STP find-or-create, no STP comment. Its scope is `sprint-<N>/<KEY>/` and only that;
 - mints **no tokens** and runs **no bulk sync** (§2);
 - reports **once** when done, plus `ask` / `escalation` as needed, and then stops. No heartbeats — periodic "still alive" messages wake the conductor for nothing and are prohibited by the worker contract (`orca-orchestration/references/worker-contract.md`), which overrides any generic preamble the launcher injects;
@@ -150,7 +150,7 @@ Run: <run id — ONLY when this worker was launched without a supervised dispatc
 
 ## 5. `launch.txt` — always written, regenerated whole
 
-Address: `.session/sprint-testing/sprint-<N>/launch.txt`. One self-contained line per issue currently eligible.
+Address: `.session/sprint-testing/sprint-<N>/launch.txt`. One self-contained line per eligible issue.
 
 Rules:
 
@@ -158,11 +158,11 @@ Rules:
 2. **Byte-identical where it is pasted.** A human (or a launcher that takes a whole command line) gets *this exact line*; never paraphrase it. On the supervised path the transport opens the session itself with its own arguments and cannot accept a custom command line, so what travels there is the **prompt payload** of this line, delivered to the live session as its first message (`orca-orchestration/references/launch-seam.md` §2). The prompt is the part that must stay identical across both paths — it is what makes a session a worker (§3).
 3. **Regenerated whole** at every round boundary. Never patched line by line: issues that closed **drop out**, issues that arrived get appended. A stale line relaunches a finished issue.
 4. **Self-contained**: the harness invocation, the session name, the prompt, and (paste path only) the optional env prefix, in one line that works when pasted into a fresh terminal at the repo root. The prefix is a convenience for a pasted line — it does not reach a session the transport opened, so the prompt must carry everything the worker needs (§3).
-5. **No `"` and no `<` / `>` inside the prompt text.** Measured (2026-09-04, source fleet): a quote inside the prompt produced a shell parse error that killed five of five lines *and* silently dropped the env-var exports, so the workers ran as non-workers. Reword the prompt instead.
+5. **No `"` and no `<` / `>` inside the prompt text.** Measured on the source fleet (ADR-0006): a quote inside the prompt produced a shell parse error that killed every launch line *and* silently dropped the env-var exports, so the workers ran as non-workers. Reword the prompt instead.
 6. **Validate every line before launch** with a shell syntax check (`bash -n` on a file holding the lines; `zsh -n` where the user's shell is zsh). A line that does not parse is not launched.
 7. The harness invocation itself (binary, model / effort / permission / session-name flags per harness) and which launch path supervises are owned by `orca-orchestration/references/launch-seam.md`. This skill owns only the payload: the `sprint-testing` worker prompt.
 
-Shape (Claude Code; verified 2026-09-17 in this repo that `bun run claude -- <args>` forwards `<args>` verbatim through the `dotenv` wrapper):
+Shape (Claude Code; `bun run claude -- <args>` forwards `<args>` verbatim through the `dotenv` wrapper, see `package.json`):
 
 ```
 PARALLEL_TESTING=true PARALLEL_TICKET=UPEX-123 bun run claude -- <harness flags per launch-seam.md> -n "UPEX-123-checkout-tax" "/sprint-testing UPEX-123 fleet worker env: staging. Brief: <abs path to brief.md>. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints."
@@ -175,7 +175,7 @@ The quoted prompt is the payload. On the supervised path it is what the conducto
 ## 6. Rounds — `max_workers` inside a wave
 
 1. Take the current wave's `PENDING` rows in queue order (`sprint-orchestration.md` Part 1, `## Phase breakdown`).
-2. Fill a round up to `orchestration.max_workers` (default 4; an explicit user number wins). Two issues that would write the same fixture entity do NOT go in the same round — see §8.
+2. Fill a round up to `orchestration.max_workers` (an explicit user number wins). Two issues that would write the same fixture entity do NOT go in the same round — see §8.
 3. Assign each row an `Owner` = the worker label, and set its `Pattern` cell to `Fleet`.
 4. Launch the round, wait, process every report, close every worker, then form the next round. Do not trickle a replacement worker into a half-finished round: a round is the unit that gets a summary and a user checkpoint.
 5. The wave advances only when its rounds are exhausted. Wave ordering is unchanged.
@@ -290,7 +290,7 @@ Both of those surfaces are append-only, so a worker appending its own would be *
 
 `.playwright/cli.config.json` is **shared**, and a workflow step that has each ticket repoint its `outputDir` before capturing is last-writer-wins: worker 3's screenshots land in worker 1's ticket folder.
 
-**The shared config's `outputDir` stays neutral.** It ships pointing at a tool-owned directory, never at a ticket's evidence folder, and no session repoints it — not even the first one, because the value is committed and outlives the ticket. Measured 2026-09-17: a project whose committed config still pointed at one story's evidence folder cross-contaminated the first unqualified capture of all three workers in the round. A repo that finds a ticket path there fixes the config once (back to the tool-owned directory) rather than racing to overwrite it. Canon: `agentic-qa-core/references/evidence-conventions.md` §1 (Bucket A) + §5.
+**The shared config's `outputDir` stays neutral.** It ships pointing at a tool-owned directory, never at a ticket's evidence folder, and no session repoints it — not even the first one, because the value is committed and outlives the ticket. Measured on a real fleet (ADR-0006): a project whose committed config still pointed at one story's evidence folder cross-contaminated the first unqualified capture of every worker in the round. A repo that finds a ticket path there fixes the config once (back to the tool-owned directory) rather than racing to overwrite it. Canon: `agentic-qa-core/references/evidence-conventions.md` §1 (Bucket A) + §5.
 
 Two things must be per-worker, and neither one edits the shared file:
 
@@ -301,7 +301,7 @@ Two things must be per-worker, and neither one edits the shared file:
 
 The mechanics (which flag or env var the installed automation CLI reads for an alternate config, and the session identifier form) belong to the `/playwright-cli` skill — load it and use what that version documents. Two measured constraints carry over regardless: an alternate config **replaces** the default, it does not merge, so a per-worker config file must be complete; and `outputDir` never applies to `.png`, so every screenshot passes its full destination path anyway (`agentic-qa-core/references/evidence-conventions.md` §5).
 
-Each worker closes its browser sessions before reporting done. Ten orphaned browsers at 2.7 GB is a measured outcome, not a hypothetical.
+Each worker closes its browser sessions before reporting done. Orphaned browsers eating gigabytes is a measured outcome, not a hypothetical (ADR-0006).
 
 ---
 

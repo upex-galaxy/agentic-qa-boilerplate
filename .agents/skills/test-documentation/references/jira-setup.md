@@ -92,14 +92,14 @@ The skill writes into these fields when creating TCs. Add them to the Test issue
 | Labels | Multi-select (default) | Yes | `regression`, `smoke`, `e2e`, `automation-candidate`, etc. |
 | Components | Multi-select (default) | Yes | Affected product module — mandatory on every Test (defect-management doctrine Part 3) |
 | Epic Link | Epic picker | Yes | Points to the Regression Epic |
-| Test Status | Select (custom) | Yes | `NOT RUN` / `PASSED` / `FAILED` / `BLOCKED` — the Execution Status per `tms-conventions.md` §IQL |
+| Test Status | Select (custom) | Yes | the options `test_status.options` in `.agents/jira-required.yaml` declares — the Execution Status per `tms-conventions.md` §IQL |
 | Workflow Status | (workflow) | Yes | `Draft` / `In Design` / `READY` / … / `AUTOMATED` / `DEPRECATED` |
 | Automation Candidate | Checkbox (custom) | Yes | Boolean flag — redundant with labels but easier to filter |
 | Linked Issues | Links (default) | Yes | "is tested by" → Story, "is blocked by" → Bug |
 
 Create the two custom fields:
 
-1. Settings → Issues → Custom fields → Add field → Select List (single choice) → Name `Test Status` → Options `NOT RUN`, `PASSED`, `FAILED`, `BLOCKED`. Associate with the Test issue type.
+1. Settings → Issues → Custom fields → Add field → Select List (single choice) → Name `Test Status` → Options as `test_status.options` in `.agents/jira-required.yaml` declares them. Associate with the Test issue type.
 2. Add field → Checkbox → Name `Automation Candidate`. Associate with the Test issue type.
 
 After creating the fields, run `bun run jira:sync-fields --force` so the numeric IDs Jira assigned are auto-discovered into `.agents/jira-fields.json` under their slug. Reference them from skills via `{{jira.<slug>}}` — never paste the raw `customfield_NNNNN` ID into a skill or doc (workspace-portability rule, AGENTS.md §1.12).
@@ -136,7 +136,7 @@ Record the IDs in `.context/master-test-plan.md`:
 
 ### 3.4 Bug custom fields (UPEX reference, both modalities)
 
-The `sprint-testing/references/reporting-templates.md` §1.10 table lists the UPEX Galaxy workspace defaults for bug custom fields (Severity, Root Cause, Error Type, etc.). Re-create the equivalent fields in the project, or accept the skill's graceful degradation (bugs land with missing fields and a warning).
+The `sprint-testing/references/reporting-templates.md` §1.10 table lists the shipped bug custom fields (`.agents/jira-required.yaml`) (Severity, Root Cause, Error Type, etc.). Re-create the equivalent fields in the project, or accept the skill's graceful degradation (bugs land with missing fields and a warning).
 
 ### 3.5 Issue links
 

@@ -292,13 +292,13 @@
       <dl class="defs">
         <dt>Evals de activación</dt>
         <dd>
-          Nueve skills tienen un <code>evals/evals.json</code> con casos positivos y negativos: un
-          prompt, si la skill debería activarse y qué comportamiento se espera. Hoy suman 66 casos.
-          <code>bun run skills:evals</code> los descubre y valida su forma (JSON válido, prompt no
-          vacío, polaridad declarada, ids únicos, la skill esperada existe). No invoca ningún
-          modelo, así que un resultado verde solo dice que los casos están bien escritos. Si la
-          skill se activa de verdad con esos prompts sigue sin medirse, y el propio script lo deja
-          anotado como trabajo pendiente.
+          Las skills con <code>evals/evals.json</code> traen casos positivos y negativos: un prompt,
+          si la skill debería activarse y qué comportamiento se espera.
+          <code>bun run skills:evals</code> los descubre, los cuenta y valida su forma (JSON válido,
+          prompt no vacío, polaridad declarada, ids únicos, la skill esperada existe). No invoca
+          ningún modelo, así que un resultado verde solo dice que los casos están bien escritos. Si
+          la skill se activa de verdad con esos prompts sigue sin medirse, y el propio script lo
+          deja anotado como trabajo pendiente.
         </dd>
         <dt>Gates estáticos</dt>
         <dd>
@@ -318,9 +318,9 @@
       <p>
         La guía de Anthropic sobre autoría de skills recomienda escribir las evaluaciones antes que
         la documentación y medir contra una línea base sin la skill. Este repo tiene la mitad
-        estructural de ese consejo automatizada en CI (<code>skills:evals</code> corre en el
-        workflow de build) y la mitad que exige un modelo real queda para cuando haya un grader
-        conectado.
+        estructural de ese consejo automatizada en CI (<code>skills:evals</code> corre en
+        <code>.github/workflows/build.yml</code>) y la mitad que exige un modelo real queda para
+        cuando haya un grader conectado.
       </p>
 
       <h2 id="propagar">Cómo llega a los proyectos consumidores</h2>
@@ -412,9 +412,7 @@
             <tr>
               <td>Runner de evals</td>
               <td><code>scripts/run-skill-evals.ts</code> (<code>bun run skills:evals</code>)</td>
-              <td>
-                Validación estructural de los 66 casos de activación. No llama a ningún modelo.
-              </td>
+              <td>Validación estructural de los casos de activación. No llama a ningún modelo.</td>
             </tr>
             <tr>
               <td>Lint de skills y registry</td>
@@ -445,10 +443,8 @@
         </table>
       </div>
       <p>
-        Hoy <code>.context/ADR/</code> tiene cuatro decisiones registradas: la caché local de la
-        escalera de artefactos (ADR-0001), el registro de corridas de regresión (ADR-0002), el dueño
-        del esquema de variables de entorno (ADR-0003) y las decisiones de nombres (ADR-0004), más
-        la plantilla <code>ADR-NNNN-template.md</code>.
+        Las decisiones registradas están en <code>.context/ADR/</code>; el <code>README.md</code> de
+        esa carpeta las indexa y trae la plantilla <code>ADR-NNNN-template.md</code>.
       </p>
 
       <h2 id="errores">Errores comunes</h2>

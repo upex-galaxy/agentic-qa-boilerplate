@@ -740,7 +740,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <h2 class="h2">Cada workflow contesta <span class="grad">una pregunta</span> y gatea una decisión</h2>
     <div class="split wide">
       <table class="tbl tight mt-s">
-        <tr><th>Suite</th><th>Pregunta</th><th>Trigger</th><th>Alcance</th><th>Dura</th><th>Gatea</th></tr>
+        <tr><th>Suite</th><th>Pregunta</th><th>Trigger</th><th>Alcance</th><th>Dura (orden de magnitud)</th><th>Gatea</th></tr>
         <tr><td><b>build.yml</b></td><td>¿El <i>framework</i> compila y pasa lint?</td><td class="mono">pull_request → main</td><td>types · lint · evals · <code class="k">playwright test --list</code>. Cero tests ejecutados.</td><td>~3 min</td><td>el merge del PR</td></tr>
         <tr><td><b>smoke.yml</b></td><td>¿La app está viva tras el deploy?</td><td class="mono">cron 02:00 · manual</td><td>solo <code class="k">@critical</code> (proyectos smoke-ui + smoke-api)</td><td>2-5 min</td><td>«¿seguimos o avisamos?» post-deploy</td></tr>
         <tr><td><b>sanity.yml</b></td><td>¿Funciona ESTE cambio / feature?</td><td class="mono">solo manual, con inputs</td><td>un archivo, un <code class="k">--grep</code>, o e2e/integration</td><td>1-10 min</td><td>validar un test nuevo en CI antes del PR</td></tr>
@@ -767,7 +767,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <p class="kicker">suite 0: no prueba la app, prueba el repo de pruebas</p>
     <h2 class="h2"><span class="grad">build.yml</span>: el gate del Pull Request</h2>
     <div class="split eq">
-      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>build.yml</b> · L40-52, L62-79</span><span class="badge real">real</span></div>
+      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>build.yml</b> · steps Validate env schema (varlock) … TypeScript Check … Validate Playwright Config</span><span class="badge real">real</span></div>
 <pre class="sm"><span class="ln">40</span>      - <span class="key">name</span>: <span class="str">Validate env schema (varlock)</span>
 <span class="ln">41</span>        <span class="key">uses</span>: <span class="str">dmno-dev/varlock-action@v1.0.5</span>
 <span class="ln">42</span>        <span class="key">with</span>:
@@ -792,9 +792,9 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
         <ul class="blist" style="margin-top:0">
           <li><b>Contesta «¿este PR rompe el framework?».</b> Un test que no compila no falla: no existe. Por eso <code class="k">playwright test --list</code> es el step clave: compila cada spec sin ejecutarlo y sin credenciales de app.</li>
           <li><b>Mismo orden que la Rule #7 del repo:</b> tests (compilación) → types → lint. Lo que corrés en local antes de commitear, corre aquí antes de mergear. Sin sorpresas.</li>
-          <li><b>El gate de varlock (L40-44) va primero</b>, antes de <code class="k">bun install</code>: valida que el bloque <code class="k">env</code> del job cumpla <code class="k">.env.schema</code>. Un PR de fork no tiene secrets y muere aquí en 5 segundos, con un summary redactado en vez de un stack trace.</li>
+          <li><b>El step Validate env schema (varlock) va primero</b>, antes de <code class="k">bun install</code>: valida que el bloque <code class="k">env</code> del job cumpla <code class="k">.env.schema</code>. Un PR de fork no tiene secrets y muere aquí en 5 segundos, con un summary redactado en vez de un stack trace.</li>
           <li><b>Cancelable</b> (<code class="k">cancel-in-progress: true</code>): un push nuevo invalida al anterior y nada quedó publicado.</li>
-          <li><b>15 minutos de timeout</b>, el más corto de los cuatro: si tarda más, algo está mal en la máquina, no en el código.</li>
+          <li><b>El timeout más corto de las suites</b> (ver <code class="k">timeout-minutes</code> en build.yml): si tarda más, algo está mal en la máquina, no en el código.</li>
         </ul>
         <div class="callout warn mt-m"><h4>Lo que NO hace, a propósito</h4><p>No corre ni un test contra staging. Correr la suite en cada PR costaría minutos y credenciales por cada push (incluidos forks, que no las tienen) y mezclaría dos preguntas: «¿compila?» con «¿la app funciona?». La segunda se contesta con sanity, a demanda.</p></div>
       </div>
@@ -810,7 +810,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <h2 class="h2"><span class="grad">smoke.yml</span>: ¿la app está viva?</h2>
     <div class="split eq">
       <div>
-        <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>smoke.yml</b> L99-100 · <b>playwright.config.ts</b> proyectos smoke-*</span><span class="badge real">real</span></div>
+        <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>smoke.yml</b> step Run Smoke Tests (@critical) · <b>playwright.config.ts</b> proyectos smoke-*</span><span class="badge real">real</span></div>
 <pre class="sm"><span class="c"># smoke.yml</span>
 <span class="ln">99</span>      - <span class="key">name</span>: <span class="str">Run Smoke Tests (@critical) on <span class="ex">${{ env.TEST_ENV }}</span></span>
 <span class="ln">100</span>        <span class="key">run</span>: bun run test:smoke
@@ -831,7 +831,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
           <li><b>El tag decide el alcance.</b> Un test entra en smoke por llevar <code class="k">@critical</code> en su título, no por estar en una carpeta. El mismo tag alimenta el label <code class="k">suite</code> de Allure: una sola taxonomía para CI y reporte.</li>
           <li><b>Un job de suite, un job de reporte.</b> Sin integración-primero: los críticos de API y UI corren juntos porque el objetivo es velocidad, no diagnóstico.</li>
           <li><b>Cron a las 02:00 UTC</b>: después del deploy nocturno. También a mano tras cualquier deploy: «¿seguimos?».</li>
-          <li><b>Nunca escribe en la ejecución de regresión.</b> El secret <code class="k">STP_EXECUTION_KEY</code> no se lee aquí (L58-64): un smoke que importara al RTR voltearía Test Runs que pertenecen a un veredicto de regresión completo. Solo importa si le pasás una <code class="k">execution_key</code> explícita.</li>
+          <li><b>Nunca escribe en la ejecución de regresión.</b> El secret <code class="k">STP_EXECUTION_KEY</code> no se lee aquí (bloque <code class="k">env</code> del workflow): un smoke que importara al RTR voltearía Test Runs que pertenecen a un veredicto de regresión completo. Solo importa si le pasás una <code class="k">execution_key</code> explícita.</li>
           <li><b>Criterio de tamaño</b> (industria): smoke debería ser menos del 5% de la regresión y terminar en minutos. Si tu smoke tarda 20, es una regresión disfrazada.</li>
         </ul>
       </div>
@@ -846,7 +846,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <p class="kicker">suite 2: la única que siempre necesita que le digas qué</p>
     <h2 class="h2"><span class="grad">sanity.yml</span>: ¿funciona ESTE cambio?</h2>
     <div class="split">
-      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>sanity.yml</b> · L126-151</span><span class="badge real">real</span></div>
+      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>sanity.yml</b> · step Run Sanity Tests</span><span class="badge real">real</span></div>
 <pre class="sm"><span class="ln">126</span>      - <span class="key">name</span>: <span class="str">Run Sanity Tests on <span class="ex">${{ env.TEST_ENV }}</span></span>
 <span class="ln">127</span>        <span class="key">shell</span>: bash
 <span class="ln">128</span>        <span class="key">env</span>:
@@ -914,7 +914,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
         </div>
         <div class="trig-note"></div>
         <div class="trig-notes" hidden>
-          <div data-ev="s1"><b>Sanity con test_file.</b> Es exactamente su propósito declarado (L4-5: «Useful for validating new tests in CI before merging PRs»). No dispares la regresión para un archivo: 40 minutos para una respuesta que sanity da en 3.</div>
+          <div data-ev="s1"><b>Sanity con test_file.</b> Es exactamente su propósito declarado (el comentario de cabecera: «Useful for validating new tests in CI before merging PRs»). No dispares la regresión para un archivo: decenas de minutos para una respuesta que sanity da en unos pocos.</div>
           <div data-ev="s2"><b>Smoke.</b> La pregunta es «¿está viva?», no «¿está perfecta?». Solo @critical: login, el flujo de negocio principal, la API respondiendo. Si pasa, el equipo sigue; si no, nadie pierde la tarde probando sobre una app caída.</div>
           <div data-ev="s3"><b>Regression, vía el skill.</b> El veredicto necesita un run record (RTR) creado ANTES del trigger para que CI importe ahí. Lo hace <code class="k">/regression-testing</code>: crea el RTR, dispara con <code class="k">execution_key</code>, persiste el RUN_ID y luego clasifica. Deck how-it-works para el resto.</div>
           <div data-ev="s4"><b>Sanity con grep.</b> <code class="k">-f test_type=e2e -f grep="@checkout"</code> corre solo los tests etiquetados. Reporte en <code class="k">/staging/sanity/</code> (o el <code class="k">custom_allure_url</code> que elijas, p.ej. <code class="k">checkout-fix</code>).</div>
@@ -961,7 +961,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <div>
       <p class="part-no">Capítulo 07</p>
       <h1 class="h1"><span class="grad">regression.yml</span> a fondo</h1>
-      <p class="lede">520 líneas, cuatro jobs, y cada decisión con su comentario. El archivo más largo del repo es también el mejor documentado: vamos a leerlo como lo leería quien tiene que mantenerlo.</p>
+      <p class="lede">Cuatro jobs en <code class="k">regression.yml</code>, y cada decisión con su comentario. Es el workflow mejor documentado del repo: vamos a leerlo como lo leería quien tiene que mantenerlo.</p>
       <div class="goals"><span>por qué Integration antes que E2E</span><span>merge de resultados</span><span>publicación Allure con historia</span><span>una noche en línea de tiempo</span></div>
     </div>
     <div class="notes">Cap 7. regression.yml completo.</div>
@@ -980,10 +980,10 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
             <line x1="215" y1="60" x2="235" y2="120"/><line x1="235" y1="120" x2="490" y2="150"/>
             <text x="470" y="105">needs: [int, e2e]</text>
           </svg>
-          <div class="node q" data-j="int" style="left:0;top:20px"><div class="nm">IntegrationTests</div><div class="ds">bun run test:integration · L95-157</div><div class="st">queued</div></div>
-          <div class="node q" data-j="e2e" style="left:245px;top:20px"><div class="nm">E2ETests</div><div class="ds">bun run test:e2e · needs int · L164-247</div><div class="st">queued</div></div>
-          <div class="node q" data-j="allure" style="left:490px;top:0"><div class="nm">allure-report</div><div class="ds">fusiona + publica · L260-375</div><div class="st">queued</div></div>
-          <div class="node q" data-j="xray" style="left:490px;top:125px"><div class="nm">XrayImport</div><div class="ds">junit.xml → RTR · L394-475</div><div class="st">queued</div></div>
+          <div class="node q" data-j="int" style="left:0;top:20px"><div class="nm">IntegrationTests</div><div class="ds">bun run test:integration</div><div class="st">queued</div></div>
+          <div class="node q" data-j="e2e" style="left:245px;top:20px"><div class="nm">E2ETests</div><div class="ds">bun run test:e2e · needs int</div><div class="st">queued</div></div>
+          <div class="node q" data-j="allure" style="left:490px;top:0"><div class="nm">allure-report</div><div class="ds">fusiona + publica</div><div class="st">queued</div></div>
+          <div class="node q" data-j="xray" style="left:490px;top:125px"><div class="nm">XrayImport</div><div class="ds">junit.xml → RTR</div><div class="st">queued</div></div>
         </div>
         <div class="ctl mt-m"><button class="btn primary" id="jg-play">▶ noche normal</button><button class="btn" id="jg-fail">▶ la API falla</button><button class="btn sm" id="jg-reset">reset</button></div>
         <div class="small dim mt-s" id="jg-log" style="min-height:52px;line-height:1.4"></div>
@@ -1009,7 +1009,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <p class="kicker">un reporte por run, no uno por job</p>
     <h2 class="h2">Merge: <span class="grad">dos artifacts entran, un reporte sale</span></h2>
     <div class="split">
-      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>regression.yml</b> · L280-334</span><span class="badge real">real</span></div>
+      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>regression.yml</b> · steps Download … Allure Results, Merge Allure Results</span><span class="badge real">real</span></div>
 <pre class="sm"><span class="ln">280</span>      - <span class="key">name</span>: <span class="str">Download Integration Allure Results</span>
 <span class="ln">281</span>        <span class="key">uses</span>: <span class="str">actions/download-artifact@v4</span>
 <span class="ln">282</span>        <span class="key">with</span>:
@@ -1035,7 +1035,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
         <ul class="blist" style="margin-top:0">
           <li><b>Allure results son archivos sueltos</b> (un JSON por test, más attachments). Fusionar dos carpetas es copiar todo en una: <code class="k">cp -r</code>. Allure genera después UN reporte con las dos suites como <i>suites</i> distintas dentro.</li>
           <li><b><code class="k">continue-on-error</code> en cada descarga</b>: si E2E se saltó (porque Integration falló), su artifact no existe y la descarga fallaría. El reporte igual debe salir, con lo que haya.</li>
-          <li><b>El merged se vuelve a subir</b> como artifact propio (L328-334). Es el que el agente baja en <code class="k">/regression-testing</code> Fase 2 para analizar: <code class="k">gh run download &lt;RUN_ID&gt; -n merged-allure-results-staging</code>.</li>
+          <li><b>El merged se vuelve a subir</b> como artifact propio (step Upload Merged Allure Results). Es el que el agente baja en <code class="k">/regression-testing</code> Fase 2 para analizar: <code class="k">gh run download &lt;RUN_ID&gt; -n merged-allure-results-staging</code>.</li>
           <li><b>Una alternativa nativa</b>: <code class="k">download-artifact@v4</code> con <code class="k">pattern: '*-allure-results'</code> + <code class="k">merge-multiple: true</code> hace el merge en un step. El repo lo hace a mano para poder loguear qué faltó.</li>
         </ul>
         <div class="callout mt-m"><h4>Por qué un solo reporte</h4><p>El veredicto es sobre el producto, no sobre un job. Un PM que abre dos reportes tiene que sumar mentalmente; uno solo con la pestaña <b>Graphs</b> (pirámide de testing, severidades, tendencia) contesta solo. Y la historia de tendencias (<code class="k">history.jsonl</code>) se lleva por <code class="k">{env}/{suite}</code>: dos reportes serían dos historias.</p></div>
@@ -1051,7 +1051,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <p class="kicker">del artifact a una URL con historia</p>
     <h2 class="h2">Publicar: <span class="grad">gh-pages, tendencias y la URL predecible</span></h2>
     <div class="split">
-      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>regression.yml</b> · L272-278, L352-375</span><span class="badge real">real</span></div>
+      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>regression.yml</b> · steps Get Allure History, Build &amp; Publish Allure Report</span><span class="badge real">real</span></div>
 <pre class="sm"><span class="ln">272</span>      - <span class="key">name</span>: <span class="str">Get Allure History</span>
 <span class="ln">273</span>        <span class="key">uses</span>: <span class="str">actions/checkout@v4</span>
 <span class="ln">274</span>        <span class="key">with</span>:
@@ -1084,7 +1084,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
                     (se conservan los últimos 10, --keep 10)</pre></div>
         <ul class="blist mt-s">
           <li><b>Mismo generador que en local.</b> El job hace checkout completo del repo para usar <code class="k">allurerc.mjs</code> y el devDep <code class="k">allure</code>: lo que ves en <code class="k">bun allure:open</code> es byte a byte lo publicado. Un solo plugin (Awesome) → el <code class="k">index.html</code> ES el reporte, con Report | Graphs | Timeline.</li>
-          <li><b>La historia vive en gh-pages.</b> Sin el checkout de L272-278 cada reporte nacería sin pasado y los gráficos de tendencia estarían vacíos. Se restaura antes y se escribe después.</li>
+          <li><b>La historia vive en gh-pages.</b> Sin el step Get Allure History cada reporte nacería sin pasado y los gráficos de tendencia estarían vacíos. Se restaura antes y se escribe después.</li>
           <li><b>URL predecible</b>: <code class="k">https://upex-galaxy.github.io/agentic-qa-boilerplate/staging/regression/</code>. Solo existe si el job allure-report terminó: si falló, analizás desde el artifact.</li>
           <li><b>Modo privado opt-in</b>: con el secret <code class="k">PORTAL_URL</code> el reporte va a un portal con login (R2 + Vercel) en vez de a Pages. Runbook: <code class="k">regression-testing/references/private-hosting-setup.md</code>.</li>
           <li><b>gh-pages engorda</b> (un commit por deploy, blobs de screenshots para siempre): <code class="k">pages-squash.yml</code> la aplana a un commit el 1° de cada mes.</li>
@@ -1100,7 +1100,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <div class="body">
     <p class="kicker">línea de tiempo: pulsa ▶</p>
     <h2 class="h2">Una noche de regresión, <span class="grad">de 00:00 a 00:35</span></h2>
-    <div class="ctl mt-s"><button class="btn primary" id="tl-play">▶ reproducir la noche</button><span class="small dim2">tiempos ilustrativos dentro de los timeouts reales (30 + 60 + 10 min)</span></div>
+    <div class="ctl mt-s"><button class="btn primary" id="tl-play">▶ reproducir la noche</button><span class="small dim2">tiempos ilustrativos dentro de los <code class="k">timeout-minutes</code> de cada job</span></div>
     <div class="tl" id="tl">
       <div class="trow"><span class="lb">int</span><div class="track"></div><div class="bar" data-j="int" data-w="17%" style="left:0">IntegrationTests · 6 min</div></div>
       <div class="trow"><span class="lb">e2e</span><div class="track"></div><div class="bar b2" data-j="e2e" data-w="71%" style="left:17%">E2ETests · 25 min</div></div>
@@ -1110,9 +1110,9 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     </div>
     <div class="small dim log" id="tl-log" style="line-height:1.55"></div>
     <div class="cards c3 mt-m">
-      <div class="card acc"><h4>Lo que queda al final</h4><p>5 artifacts (10 días) · el reporte en <code class="k">/staging/regression/&lt;run&gt;/</code> (últimos 10) · el summary del run con el link · los Test Runs actualizados en el RTR de Xray.</p></div>
+      <div class="card acc"><h4>Lo que queda al final</h4><p>los artifacts de la tabla del Cap 7, con su retención · el reporte en <code class="k">/staging/regression/&lt;run&gt;/</code> (últimos 10) · el summary del run con el link · los Test Runs actualizados en el RTR de Xray.</p></div>
       <div class="card acc2"><h4>Lo que NO pasa solo</h4><p>Nadie clasifica los fallos ni emite GO / NO-GO: eso lo hace el agente con <code class="k">/regression-testing</code>, leyendo el merged y el <code class="k">--log-failed</code>. El CI produce evidencia; el veredicto es humano-asistido.</p></div>
-      <div class="card acc3"><h4>Lo que también podría pasar</h4><p>El job Slack está escrito y comentado (L477-520): un webhook con resultado por job y botones al run y al reporte. Descomentarlo es una decisión de equipo, no un cambio técnico.</p></div>
+      <div class="card acc3"><h4>Lo que también podría pasar</h4><p>El job Slack está escrito y comentado al final del archivo: un webhook con resultado por job y botones al run y al reporte. Descomentarlo es una decisión de equipo, no un cambio técnico.</p></div>
     </div>
     </div>
     <div class="notes">Timeline animado. Cierre del Cap 7: qué queda, qué no pasa solo (veredicto), qué podría (Slack comentado).</div>
@@ -1131,7 +1131,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
           <div class="opt" data-correct="1"><span class="mk">B</span><span>Se genera solo con los resultados de Integration: allure-report tiene <code class="k">if: always()</code> y la descarga de E2E lleva <code class="k">continue-on-error</code></span></div>
           <div class="opt"><span class="mk">C</span><span>Se genera con Integration y E2E: E2E corre igual</span></div>
         </div>
-        <div class="qexp"><b>Parcial pero existe.</b> E2ETests se salta (su <code class="k">needs</code> falló y no tiene <code class="k">always()</code>). allure-report sí arranca (<code class="k">if: always() &amp;&amp; …</code>, L264), la descarga de <code class="k">e2e-allure-results</code> falla sin romper el job (L292), el merge copia lo que hay y publica. El agente verá una suite sola y sabrá por qué.</div>
+        <div class="qexp"><b>Parcial pero existe.</b> E2ETests se salta (su <code class="k">needs</code> falló y no tiene <code class="k">always()</code>). allure-report sí arranca (<code class="k">if: always() &amp;&amp; …</code>), la descarga de <code class="k">e2e-allure-results</code> falla sin romper el job, el merge copia lo que hay y publica. El agente verá una suite sola y sabrá por qué.</div>
       </div>
       <div class="qitem">
         <div class="qq"><span class="qn">Q4</span><span>Es el primer run de la historia del repo. El step «Get Allure History» intenta hacer checkout de <code class="k">gh-pages</code>, que no existe. ¿Qué pasa?</span></div>
@@ -1140,7 +1140,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
           <div class="opt" data-correct="1"><span class="mk">B</span><span>El step falla pero el job sigue (<code class="k">continue-on-error: true</code>); el reporte nace sin historia y el script crea la rama</span></div>
           <div class="opt"><span class="mk">C</span><span>GitHub crea la rama automáticamente antes del checkout</span></div>
         </div>
-        <div class="qexp"><b>Sigue sin historia.</b> L278 marca el step como <code class="k">continue-on-error</code> justamente para el primer run. Los gráficos de tendencia aparecen del segundo reporte en adelante, cuando ya hay un <code class="k">history.jsonl</code> que restaurar. Es el mismo mecanismo que en local con <code class="k">.allure/history.jsonl</code>.</div>
+        <div class="qexp"><b>Sigue sin historia.</b> El step Get Allure History lleva <code class="k">continue-on-error</code> justamente para el primer run. Los gráficos de tendencia aparecen del segundo reporte en adelante, cuando ya hay un <code class="k">history.jsonl</code> que restaurar. Es el mismo mecanismo que en local con <code class="k">.allure/history.jsonl</code>.</div>
       </div>
     </div>
     </div>
@@ -1155,7 +1155,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
       <p class="lede">Dónde aparece cada cosa cuando el run termina, y cómo los resultados vuelven a Jira/Xray sin que nadie los copie a mano: el RTR, la <code class="k">execution_key</code> y la matriz de decisión que gobierna cada import.</p>
       <div class="goals"><span>Actions UI · artifacts · Allure · Playwright report · traces</span><span>RTR / STR · execution_key · AUTO_SYNC · TMS_PROVIDER</span></div>
     </div>
-    <div class="notes">Cap 8. El write-back tal como quedó tras #42 (RTR ladder).</div>
+    <div class="notes">Cap 8. El write-back tal como quedó tras la RTR ladder (ADR-0001).</div>
   </section>
 
   <!-- 17. DÓNDE MIRO QUÉ -->
@@ -1181,25 +1181,25 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
   <!-- 18. WRITE-BACK FLOW -->
   <section class="slide" data-title="El write-back al TMS">
     <div class="body">
-    <p class="kicker">lo que llegó con #42: un RTR por veredicto</p>
+    <p class="kicker">un RTR por veredicto</p>
     <h2 class="h2">Write-back: <span class="grad">el run record nace antes que el run</span></h2>
     <div class="flow">
       <div class="fn k"><div class="t">1 · /regression-testing crea el RTR</div><div class="d">Test Execution <code class="k">RTR: staging-2026-09-23: Regression Testing</code>, padre «QA Test Artifacts», <code class="k">testPlan</code> → RTP, environment + assignee al crear.</div><div class="r">ANTES del trigger</div></div><div class="fa">→</div>
       <div class="fn"><div class="t">2 · dispara con la key</div><div class="d"><code class="k">gh workflow run regression.yml -f environment=staging -f execution_key=UPEX-482</code></div><div class="r">workflow_dispatch input</div></div><div class="fa">→</div>
-      <div class="fn"><div class="t">3 · el workflow la recibe</div><div class="d"><code class="k">STP_EXECUTION_KEY: ${{ github.event.inputs.execution_key || secrets.STP_EXECUTION_KEY }}</code></div><div class="r">regression.yml L76 · input gana al secret</div></div><div class="fa">→</div>
+      <div class="fn"><div class="t">3 · el workflow la recibe</div><div class="d"><code class="k">STP_EXECUTION_KEY: ${{ github.event.inputs.execution_key || secrets.STP_EXECUTION_KEY }}</code></div><div class="r">regression.yml, env STP_EXECUTION_KEY · input gana al secret</div></div><div class="fa">→</div>
       <div class="fn"><div class="t">4 · Playwright deja junit.xml</div><div class="d">Reporter <code class="k">junit</code> → <code class="k">test-results/junit.xml</code> en cada job; subido como <code class="k">*-test-results</code>.</div><div class="r">playwright.config.ts</div></div><div class="fa">→</div>
-      <div class="fn g"><div class="t">5 · XrayImport importa</div><div class="d"><code class="k">bun xray import junit --file &lt;junit.xml&gt; --execution ${STP_EXECUTION_KEY}</code>, un import por job.</div><div class="r">L459-468</div></div><div class="fa">→</div>
+      <div class="fn g"><div class="t">5 · XrayImport importa</div><div class="d"><code class="k">bun xray import junit --file &lt;junit.xml&gt; --execution ${STP_EXECUTION_KEY}</code>, un import por job.</div><div class="r">job XrayImport</div></div><div class="fa">→</div>
       <div class="fn"><div class="t">6 · el agente cierra</div><div class="d">Comenta GO / CAUTION / NO-GO EN el RTR y lo transiciona a close. El RTP no se toca.</div><div class="r">Fase 3 del skill</div></div>
     </div>
     <div class="split eq mt-m">
       <ul class="blist" style="margin-top:0">
-        <li><b>Por qué antes.</b> El import de Xray solo escribe dentro de una Execution que ya existe. Si le das solo el proyecto, acuña una Execution nueva y sin padre en cada run (comentario L451-453). Crearla antes garantiza padre, plan y dueño.</li>
+        <li><b>Por qué antes.</b> El import de Xray solo escribe dentro de una Execution que ya existe. Si le das solo el proyecto, acuña una Execution nueva y sin padre en cada run (comentario del job XrayImport). Crearla antes garantiza padre, plan y dueño.</li>
         <li><b>Un RTR por veredicto.</b> Re-run por fallo de entorno antes del veredicto → misma key. Re-run después de un veredicto → RTR nuevo (<code class="k">#2</code>). Nunca se reabre uno cerrado.</li>
-        <li><b>El secret es el fallback del cron.</b> Un run programado no tiene inputs; <code class="k">STP_EXECUTION_KEY</code> como secret le da destino. El nombre quedó por compatibilidad; la semántica cambió (L66-76).</li>
+        <li><b>El secret es el fallback del cron.</b> Un run programado no tiene inputs; <code class="k">STP_EXECUTION_KEY</code> como secret le da destino. El nombre quedó por compatibilidad; la semántica cambió.</li>
       </ul>
       <ul class="blist" style="margin-top:0">
-        <li><b>Smoke y sanity no leen el secret</b> (smoke L58-64): importar el subconjunto @critical en el RTR voltearía Test Runs que pertenecen a un veredicto completo. Solo importan con key explícita.</li>
-        <li><b>Nunca la key del RTP/STP.</b> Un Test Plan deriva su estado de sus Executions; escribir en él es un error de modelo (L72-73).</li>
+        <li><b>Smoke y sanity no leen el secret</b> (bloque <code class="k">env</code> de smoke.yml): importar el subconjunto @critical en el RTR voltearía Test Runs que pertenecen a un veredicto completo. Solo importan con key explícita.</li>
+        <li><b>Nunca la key del RTP/STP.</b> Un Test Plan deriva su estado de sus Executions; escribir en él es un error de modelo.</li>
         <li><b>STR solo al cierre de sprint</b>: entonces la key es la del STR, con doble membresía STP + RTP. Un run regular nunca es el STR.</li>
       </ul>
     </div>
@@ -1220,15 +1220,15 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
           <select class="sel mt-s" id="wbm-prov" style="width:100%"><option value="xray">xray (Test Executions)</option><option value="jira">jira (status por Test issue)</option></select>
           <div class="tog on mt-m" id="wbm-key"><span class="sw"></span><span><b>execution_key</b> <span class="dim2">(input o secret)</span></span></div>
         </div>
-        <div class="callout mt-m"><h4>Tres interruptores, una idea</h4><p>Todo es <b>opt-in y no bloqueante</b>: un repo sin TMS ve un aviso, nunca un rojo. La suite es verde o roja por los tests; el write-back nunca cambia ese color (<code class="k">continue-on-error</code> en el import, L433).</p></div>
+        <div class="callout mt-m"><h4>Tres interruptores, una idea</h4><p>Todo es <b>opt-in y no bloqueante</b>: un repo sin TMS ve un aviso, nunca un rojo. La suite es verde o roja por los tests; el write-back nunca cambia ese color (<code class="k">continue-on-error</code> en el import).</p></div>
       </div>
       <div>
         <div class="steps-out" id="wbm-out"></div>
-        <p class="small dim2 mt-s">Las expresiones son las del archivo. Nota el detalle de diseño: en xray, los steps «Sync … to TMS» de cada job se saltan porque XrayImport ya sube el mismo junit (L130-132: «two imports of the same runs is a double-import, not a safety net»). El paso <code class="k">test:sync</code> lee <code class="k">reports/atc_results.json</code>, que KataReporter escribe al salir Playwright: por eso es un step separado y nunca un teardown (issue #27).</p>
+        <p class="small dim2 mt-s">Las expresiones son las del archivo. Nota el detalle de diseño: en xray, los steps «Sync … to TMS» de cada job se saltan porque XrayImport ya sube el mismo junit (comentario del step: «two imports of the same runs is a double-import, not a safety net»). El paso <code class="k">test:sync</code> lee <code class="k">reports/atc_results.json</code>, que KataReporter escribe al salir Playwright: por eso es un step separado y nunca un teardown.</p>
       </div>
     </div>
     </div>
-    <div class="notes">Matriz interactiva con los if reales. Opt-in y no bloqueante. Double-import evitado. atc_results.json post-proceso (issue #27).</div>
+    <div class="notes">Matriz interactiva con los if reales. Opt-in y no bloqueante. Double-import evitado. atc_results.json post-proceso.</div>
   </section>
 
   <!-- 20. QUIZ 8 -->
@@ -1244,20 +1244,20 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
           <div class="opt" data-correct="1"><span class="mk">B</span><span>Nada: smoke no lee el secret, y sin key el step de sync se salta a propósito</span></div>
           <div class="opt"><span class="mk">C</span><span>Xray crea una Test Execution nueva para el smoke</span></div>
         </div>
-        <div class="qexp"><b>Nada, por diseño.</b> smoke.yml L64 pone <code class="k">STP_EXECUTION_KEY: ${{ github.event.inputs.execution_key }}</code> sin fallback al secret, y el <code class="k">if</code> de L110 exige key cuando el proveedor es xray. Importar el @critical dentro del RTR voltearía Test Runs de un veredicto completo (comentario L58-63). C tampoco: el import sin destino se evita justamente porque acuñaría huérfanas.</div>
+        <div class="qexp"><b>Nada, por diseño.</b> smoke.yml pone <code class="k">STP_EXECUTION_KEY: ${{ github.event.inputs.execution_key }}</code> sin fallback al secret, y el <code class="k">if</code> del step Sync Results to TMS exige key cuando el proveedor es xray. Importar el @critical dentro del RTR voltearía Test Runs de un veredicto completo (comentario del bloque <code class="k">env</code>). C tampoco: el import sin destino se evita justamente porque acuñaría huérfanas.</div>
       </div>
       <div class="qitem">
-        <div class="qq"><span class="qn">Q6</span><span>La regresión del jueves dio NO-GO, se arregló el bug y hoy re-corrés. ¿Qué execution_key usás?</span></div>
+        <div class="qq"><span class="qn">Q6</span><span>La regresión del jueves dio NO-GO, se arregló el bug y ahora re-corrés. ¿Qué execution_key usás?</span></div>
         <div class="opts">
           <div class="opt"><span class="mk">A</span><span>La misma RTR del jueves: es la misma regresión</span></div>
           <div class="opt" data-correct="1"><span class="mk">B</span><span>Una RTR nueva (<code class="k">…#2</code>): el veredicto del jueves ya se escribió y cerró; nunca se reabre</span></div>
           <div class="opt"><span class="mk">C</span><span>La key del RTP, para que el plan se actualice</span></div>
         </div>
-        <div class="qexp"><b>Nueva, con #2.</b> Un RTR = un veredicto. El del jueves tiene su comentario NO-GO y está cerrado; escribir encima borraría la evidencia de la decisión. Solo un re-run por ENVIRONMENT <i>antes</i> del veredicto reutiliza la key. Y C es el error de modelo: un Test Plan nunca recibe imports (regression.yml L72-73).</div>
+        <div class="qexp"><b>Nueva, con #2.</b> Un RTR = un veredicto. El del jueves tiene su comentario NO-GO y está cerrado; escribir encima borraría la evidencia de la decisión. Solo un re-run por ENVIRONMENT <i>antes</i> del veredicto reutiliza la key. Y C es el error de modelo: un Test Plan nunca recibe imports (comentario del bloque <code class="k">env</code> de regression.yml).</div>
       </div>
     </div>
     </div>
-    <div class="notes">Q5: smoke sin key no importa (L58-64, L110). Q6: RTR nuevo tras veredicto; nunca RTP.</div>
+    <div class="notes">Q5: smoke sin key no importa. Q6: RTR nuevo tras veredicto; nunca RTP.</div>
   </section>
   <!-- 21. DIVIDER CAP 9 (NYI) -->
   <section class="slide chapter" data-title="Cap 9 · no implementado">
@@ -1265,7 +1265,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
       <span class="nyi">no implementado en este repo · diseño prospectivo</span>
       <p class="part-no">Capítulo 09</p>
       <h1 class="h1">Conectar las suites <span class="grad">al pipeline de desarrollo</span></h1>
-      <p class="lede">Hoy nuestras suites corren por reloj o por botón. El objetivo: que el deploy de la app a staging dispare las suites, y que producción <b>espere</b> a que pasen. GitHub ofrece tres mecanismos; ninguno está cableado aún. Todo YAML de este capítulo es ilustrativo.</p>
+      <p class="lede">Sin esta integración, nuestras suites corren por reloj o por botón. El objetivo: que el deploy de la app a staging dispare las suites, y que producción <b>espere</b> a que pasen. GitHub ofrece tres mecanismos; ninguno está cableado aún. Todo YAML de este capítulo es ilustrativo.</p>
       <div class="goals"><span><code class="k">repository_dispatch</code></span><span><code class="k">workflow_call</code></span><span><code class="k">deployment_status</code></span><span>el gate a producción</span></div>
     </div>
     <div class="notes">Cap 9: prospectivo. Cada slide lleva el banner. Fuentes: docs GitHub (events, reuse-workflows, deployments REST) + investigación (oneuptime Flux, qaskills, math-operations-e2e).</div>
@@ -1278,7 +1278,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <p class="kicker">el problema y las tres formas de resolverlo</p>
     <h2 class="h2">De «corre a las 00:00» a <span class="grad">«corre cuando la app se despliega»</span></h2>
     <div class="cards c3 mt-s">
-      <div class="card bad"><h4>Hoy</h4><p>La app despliega a staging a las 22:00; nuestra regresión corre a las 00:00. Si el deploy fue a las 00:30, probamos la versión vieja. Y producción no espera a nadie: el deploy a prod es una decisión humana sin gate automatizado de QA.</p></div>
+      <div class="card bad"><h4>Punto de partida</h4><p>La app despliega a staging a las 22:00 y nuestra regresión corre por cron a las 00:00 (horas ilustrativas; la real es el <code class="k">schedule</code> de regression.yml). Si el deploy fue a las 00:30, probamos la versión vieja. Y producción no espera a nadie: el deploy a prod es una decisión humana sin gate automatizado de QA.</p></div>
       <div class="card good"><h4>Objetivo</h4><p>Deploy a staging → smoke (inmediato) y regression o sanity del área → el resultado vuelve al commit de la app → <code class="k">deploy-production</code> solo arranca si el gate está verde, con un revisor humano vía <code class="k">environment: production</code>.</p></div>
       <div class="card warn"><h4>El obstáculo: dos repos</h4><p>El <code class="k">GITHUB_TOKEN</code> de un workflow no dispara nada en OTRO repo, y los eventos de la app ocurren en la app. Cruzar la frontera exige uno de los tres mecanismos, y un token con alcance (PAT fine-grained o GitHub App) en los dos primeros.</p></div>
     </div>
@@ -1290,7 +1290,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     </table>
     <p class="small dim2 mt-s">Regla de las docs que hace posible todo esto: los eventos provocados con <code class="k">GITHUB_TOKEN</code> no disparan otros workflows (anti-bucle) <b>salvo</b> <code class="k">workflow_dispatch</code> y <code class="k">repository_dispatch</code>. Por eso el segundo existe.</p>
     </div>
-    <div class="notes">Hoy vs objetivo. Obstáculo: dos repos. Tabla de 3 mecanismos con límites reales de docs (100 chars, 10 claves, inherit misma org, deployment_status local al repo).</div>
+    <div class="notes">Punto de partida vs objetivo. Obstáculo: dos repos. Tabla de 3 mecanismos con límites reales de docs (100 chars, 10 claves, inherit misma org, deployment_status local al repo).</div>
   </section>
 
   <!-- 23. GATE DESIGNER -->
@@ -1453,7 +1453,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
           <div class="opt" data-correct="1"><span class="mk">B</span><span><code class="k">env: GREP: ${{ github.event.inputs.grep }}</code> y en el run <code class="k">--grep="$GREP"</code>: el valor no participa en la generación del script</span></div>
           <div class="opt"><span class="mk">C</span><span>Pasarlo a un secret</span></div>
         </div>
-        <div class="qexp"><b>Variable intermedia.</b> Una expresión dentro de <code class="k">run:</code> se sustituye ANTES de que bash lea el script: un input con <code class="k">"; rm -rf …</code> se convierte en código. Con <code class="k">env:</code> el valor llega como variable de entorno y bash lo trata como dato. Es la recomendación literal de la guía de seguridad de GitHub, y el patrón que hoy aplica sanity.yml L126-151: inputs por env:, leídos entre comillas, sin eval.</div>
+        <div class="qexp"><b>Variable intermedia.</b> Una expresión dentro de <code class="k">run:</code> se sustituye ANTES de que bash lea el script: un input con <code class="k">"; rm -rf …</code> se convierte en código. Con <code class="k">env:</code> el valor llega como variable de entorno y bash lo trata como dato. Es la recomendación literal de la guía de seguridad de GitHub, y el patrón que aplica el step Run Sanity Tests de sanity.yml: inputs por env:, leídos entre comillas, sin eval.</div>
       </div>
       <div class="qitem">
         <div class="qq"><span class="qn">Q10</span><span>Terminaste el workflow, mergeaste y a la mañana no corrió. Revisás: el cron está bien, el archivo está en main. ¿Qué mirás primero?</span></div>
@@ -2620,18 +2620,18 @@ $$('.ifsim').forEach(function(box){
     function row(name, cond, runs, why){ lines.push('<div class="step-row '+(runs?'runs':'skips')+'"><span><span class="nm">'+name+'</span><span class="cond">'+cond+'</span></span><span>'+(runs?'corre':'se salta')+'</span></div>'+(why?'<div class="small dim2" style="margin:-2px 0 4px 4px">'+why+'</div>':''));  }
     // smoke/sanity step
     var s1 = auto && (prov!=='xray' || key);
-    row('Sync Results to TMS <span class="dim2">(smoke.yml L110 · sanity.yml L151)</span>', 'always() &amp;&amp; AUTO_SYNC==\'true\' &amp;&amp; (TMS_PROVIDER!=\'xray\' || STP_EXECUTION_KEY!=\'\')', s1,
+    row('Sync Results to TMS <span class="dim2">(smoke.yml · sanity.yml)</span>', 'always() &amp;&amp; AUTO_SYNC==\'true\' &amp;&amp; (TMS_PROVIDER!=\'xray\' || STP_EXECUTION_KEY!=\'\')', s1,
       !auto ? 'AUTO_SYNC apagado: nada llega al TMS. Es el interruptor maestro (secret AUTO_SYNC).' : (prov==='xray' && !key ? 'Modalidad xray sin execution_key: se salta a propósito. Un smoke no puede escribir dentro del RTR de la regresión.' : (prov==='xray' ? 'Xray + key explícita: importa los ATC runs dentro de ESA ejecución.' : 'jira-native: escribe un status por Test issue; no necesita key.')));
     // regression per-job sync
     var s2 = auto && prov!=='xray';
-    row('Sync Integration/E2E Results to TMS <span class="dim2">(regression.yml L134, L204)</span>', 'always() &amp;&amp; AUTO_SYNC==\'true\' &amp;&amp; TMS_PROVIDER!=\'xray\'', s2,
+    row('Sync Integration/E2E Results to TMS <span class="dim2">(regression.yml, un step por job)</span>', 'always() &amp;&amp; AUTO_SYNC==\'true\' &amp;&amp; TMS_PROVIDER!=\'xray\'', s2,
       prov==='xray' ? 'En xray se salta: el job XrayImport ya sube el junit.xml; dos importaciones = doble import, no red de seguridad.' : (auto ? 'jira-native: cada job escribe sus propios resultados.' : ''));
     // XrayImport job
     var jobRuns = prov==='xray';
     var imp = jobRuns && auto && key;
-    row('Job XrayImport <span class="dim2">(regression.yml L394-402)</span>', 'always() &amp;&amp; (vars.TMS_PROVIDER || \'xray\') == \'xray\'', jobRuns,
+    row('Job XrayImport <span class="dim2">(regression.yml)</span>', 'always() &amp;&amp; (vars.TMS_PROVIDER || \'xray\') == \'xray\'', jobRuns,
       jobRuns ? '' : 'jira-native: el job entero se salta EN SILENCIO (sin anotación): un proyecto sin Xray no debe ver ruido de Xray.');
-    if(jobRuns) row('&nbsp;&nbsp;↳ paso Import JUnit Results to Xray <span class="dim2">(L432-475)</span>', 'gates en bash: AUTO_SYNC · XRAY_CLIENT_* · STP_EXECUTION_KEY', imp,
+    if(jobRuns) row('&nbsp;&nbsp;↳ paso Import JUnit Results to Xray', 'gates en bash: AUTO_SYNC · XRAY_CLIENT_* · STP_EXECUTION_KEY', imp,
       !auto ? '::notice "Xray import skipped: AUTO_SYNC is not true" y exit 0 (nunca rojo).' : (!key ? '::warning "No execution key, so results were NOT imported". Importar sin destino acuñaría una Test Execution huérfana por run.' : 'bun xray import junit --execution &lt;RTR&gt; por cada junit.xml (integration + e2e).'));
     out.innerHTML = lines.join('');
   }

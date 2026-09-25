@@ -433,17 +433,10 @@
 
       <h3 id="cadena">La cadena de <code>repo:check</code></h3>
       <p>
-        <code>bun run repo:check</code> encadena, en este orden, los gates del repo (copiado de
-        <code>package.json</code>):
+        <code>bun run repo:check</code> encadena los gates del repo; la cadena exacta y su orden son
+        los del script <code>repo:check</code> en <code>package.json</code> (regla 11 de
+        <code>AGENTS.md</code>: se lee ahí, nunca de una copia).
       </p>
-      <pre
-        data-lang="bash"
-      ><code>bun run format:check &amp;&amp; bun run lint:check &amp;&amp; bun run types:check \
-  &amp;&amp; bun run vars:check &amp;&amp; bun run vars:schema:check \
-  &amp;&amp; bun run skills:check &amp;&amp; bun run skills:registry:check \
-  &amp;&amp; bun run docs:check &amp;&amp; bun run agents:compat:check \
-  &amp;&amp; bun run agents:schema:check &amp;&amp; bun run kata:manifest:check \
-  &amp;&amp; bun run vars:env:check &amp;&amp; bun run git:policy verify</code></pre>
       <p>Los que cuidan el harness en sí son estos:</p>
       <div class="table-wrap">
         <table>
@@ -499,12 +492,11 @@
         </table>
       </div>
       <p>
-        No todos corren en todos lados. El pre-push, definido en
-        <code>.husky/framework-gates.sh</code>, corre entre otros
-        <code>skills:registry:check</code> y <code>agents:compat:check</code>; el pre-commit corre
-        siempre <code>types:check</code>, <code>vars:check</code> y <code>skills:check</code>, y el
-        resto solo cuando el commit toca los archivos que vigilan. <code>repo:check</code> es la
-        pasada completa, la que conviene correr antes de abrir un PR.
+        No todos corren en todos lados. Qué corre en cada hook está en
+        <code>.husky/framework-gates.sh</code>: el pre-push corre un subconjunto amplio, el
+        pre-commit corre unos pocos siempre y el resto solo cuando el commit toca los archivos que
+        vigilan. <code>repo:check</code> es la pasada completa, la que conviene correr antes de
+        abrir un PR.
       </p>
 
       <div class="callout warn" id="errores">

@@ -274,10 +274,11 @@
       <p>
         Las <strong>compact rules</strong> son un escalón intermedio pensado para subagentes. Cuando
         el agente principal delega una tarea, podría pedirle al subagente que lea tres
-        <code>SKILL.md</code> enteros. En cambio, le pega en el briefing un bloque de 5 a 15 reglas
-        por skill (DO, DO NOT, WHEN) y una línea que dice cuándo hace falta leer el archivo
-        completo. El subagente trabaja con un resumen verificado y el costo por encargo baja mucho
-        cuando varias skills se solapan.
+        <code>SKILL.md</code> enteros. En cambio, le pega en el briefing un bloque acotado de reglas
+        por skill (DO, DO NOT, WHEN; los límites los fija
+        <code>scripts/build-skill-registry.ts</code>) y una línea que dice cuándo hace falta leer el
+        archivo completo. El subagente trabaja con un resumen verificado y el costo por encargo baja
+        mucho cuando varias skills se solapan.
       </p>
 
       <svg
@@ -498,9 +499,11 @@
               <td>
                 <code>scripts/build-skill-registry.ts</code> genera un bloque por skill. Strategy A
                 toma la sección <code>## Compact Rules</code> del <code>SKILL.md</code> tal cual
-                (hasta 15 reglas); Strategy B raspa las primeras viñetas y marca el bloque como de
-                baja confianza. Si el frontmatter trae <code>compact_rules:</code>, se usa literal.
-                El briefing pega como máximo 5 skills.
+                (hasta el límite <code>MAX_RULES</code>); Strategy B raspa las primeras viñetas y
+                marca el bloque como de baja confianza. Si el frontmatter trae
+                <code>compact_rules:</code>, se usa literal. El briefing pega un número acotado de
+                skills; el límite lo fija el protocolo del resolver
+                (<code>agentic-qa-core/references/skill-resolver.md</code>).
               </td>
             </tr>
             <tr>

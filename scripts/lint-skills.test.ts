@@ -348,3 +348,93 @@ describe('lint-skills STALE-PATH on `.context/` (kind-scoped)', () => {
     expect(exitCode).toBe(1);
   });
 });
+
+describe('lint-skills volatile facts (Critical Rule #17, checks 20-21)', () => {
+  test('a path:line citation and a dated claim in a T1 body are FILE-LINE / CURRENT-STATE findings', () => {
+    const { exitCode, output } = runLint(fixture({ listCommunityInAgentsMd: true, extraSkills: [{ slug: 'acme-flow', kind: 'workflow', body: 'See `cli/install.ts:403` for the probe.\nMeasured 2026-09-17 on a live project.' }] }));
+
+    expect(output).toContain('[ERROR]\x1B[0m [.agents/skills/acme-flow/SKILL.md] FILE-LINE: `cli/install.ts:403`');
+    expect(output).toContain('[ERROR]\x1B[0m [.agents/skills/acme-flow/SKILL.md] CURRENT-STATE: `Measured 2026-09-17`');
+    expect(exitCode).toBe(1);
+  });
+
+  test('AGENTS.md is scanned too, and a fenced block or a volatile-ok line is not', () => {
+    const root = fixture({ listCommunityInAgentsMd: true });
+    write(root, 'AGENTS.md', [
+      '# AGENTS.md',
+      '',
+      '## 5. SKILLS + COMMANDS + MCPs REGISTRY',
+      '',
+      '| Skill | Trigger | Purpose |',
+      '|---|---|---|',
+      ...T1_SKILLS.map(slug => `| \`${slug}\` | \`/${slug}\` | fixture |`),
+      '| `resend-cli` | `/resend-cli` | community, installed at PROJECT level |',
+      '',
+      '## 6. TOOL RESOLUTION',
+      '',
+      'Since 8.4 the updater prints a table.',
+      '```',
+      'inside a fence: scripts/x.ts:1 today',
+      '```',
+      'The bad form is `scripts/x.ts:1` <!-- volatile-ok: teaching example -->',
+      '',
+    ].join('\n'));
+    const { output } = runLint(root);
+
+    expect(output).toContain('[AGENTS.md] CURRENT-STATE: `Since 8.4`');
+    expect(output).not.toContain('FILE-LINE:');
+  });
+
+  test('a community skill body committed in the store and the generated registry are not scanned', () => {
+    const root = fixture({ listCommunityInAgentsMd: true });
+    write(root, '.agents/skills/resend-cli/SKILL.md', '# resend-cli\n\nSee `src/index.ts:10`, as of 2026.\n');
+    write(root, '.agents/skills/REGISTRY.md', 'Generated today from `x.ts:1`.\n');
+    const { output } = runLint(root);
+
+    expect(output).not.toContain('FILE-LINE:');
+    expect(output).not.toContain('CURRENT-STATE:');
+  });
+});
+
+describe('lint-skills stage owners (check 22) and the §5 table scope', () => {
+  test('a stage-owner skill without a Subagent Dispatch Strategy section is an error; with it, it passes', () => {
+    const root = fixture({ listCommunityInAgentsMd: true });
+    write(root, '.agents/skills/sprint-testing/SKILL.md', t1Skill('sprint-testing').replace('metadata:\n  kind: workflow\n', 'metadata:\n  kind: workflow\n  stage_owner: true\n'));
+    const bare = runLint(root);
+    expect(bare.output).toContain('[sprint-testing] STAGE-OWNER-DISPATCH:');
+    expect(bare.exitCode).toBe(1);
+
+    write(root, '.agents/skills/sprint-testing/SKILL.md', t1Skill('sprint-testing', '## Subagent Dispatch Strategy\n\nSingle.').replace('metadata:\n  kind: workflow\n', 'metadata:\n  kind: workflow\n  stage_owner: true\n'));
+    const ok = runLint(root);
+    expect(ok.output).not.toContain('STAGE-OWNER-DISPATCH:');
+    expect(ok.exitCode).toBe(0);
+  });
+
+  test('capability and alias tables under §5 are not read as skill rows', () => {
+    const root = fixture({ listCommunityInAgentsMd: true });
+    write(root, 'AGENTS.md', [
+      '# AGENTS.md',
+      '',
+      '## 5. SKILLS + COMMANDS + MCPs REGISTRY',
+      '',
+      '### Skills (lazy-loaded by trigger phrase)',
+      '',
+      '| Skill | Trigger | Purpose |',
+      '|---|---|---|',
+      ...T1_SKILLS.map(slug => `| \`${slug}\` | \`/${slug}\` | fixture |`),
+      '| `resend-cli` | `/resend-cli` | community, installed at PROJECT level |',
+      '',
+      '### MCPs (decision rules)',
+      '',
+      '| Capability | Use for | Rule |',
+      '|---|---|---|',
+      '| `browser` | E2E | fallback |',
+      '',
+      '## 6. TOOL RESOLUTION',
+      '',
+    ].join('\n'));
+    const { exitCode, output } = runLint(root);
+    expect(output).not.toContain('TIER-MISMATCH:');
+    expect(exitCode).toBe(0);
+  });
+});

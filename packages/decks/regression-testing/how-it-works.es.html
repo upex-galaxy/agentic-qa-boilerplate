@@ -442,7 +442,7 @@ table.tbl .mono{font-size:13px}
     <div class="row wrap mt-l" style="gap:11px">
       <span class="chip"><span class="dot" style="background:var(--accent)"></span><b>Regression</b> <span class="dim">(históricamente Stage 6)</span> · Smoke / Sanity</span>
       <span class="chip"><span class="dot" style="background:var(--good)"></span>Execute → Analyze → Report</span>
-      <span class="chip"><span class="dot" style="background:var(--accent-2)"></span>gh CLI · Allure 3 · /acli · /xray-cli</span>
+      <span class="chip"><span class="dot" style="background:var(--accent-2)"></span>gh CLI · Allure · /acli · /xray-cli</span>
     </div>
     <p class="small dim2 mt-l mono">→ avanzar · O overview · S presentador · N notas · F pantalla completa</p>
     <div class="notes">Deck del workflow del skill regression-testing. Tres fases en orden fijo: Execute → Analyze → Report. Nunca saltar el análisis; nunca clasificar sin leer los logs del fallo.</div>
@@ -455,7 +455,7 @@ table.tbl .mono{font-size:13px}
     <div class="wf">
       <div class="wf-row">
         <span class="wf-lbl alt">GATES</span>
-        <div class="wf-node gate"><b>Preflight Gate</b><small>gh auth · workflows · Secrets · Allure 3 · env</small></div>
+        <div class="wf-node gate"><b>Preflight Gate</b><small>gh auth · workflows · Secrets · Allure · env</small></div>
         <span class="wf-arr">→</span>
         <div class="wf-node gate"><b>Phase 0 · Resume check</b><small>.session/regression-testing/&lt;env&gt;-&lt;fecha&gt;/</small></div>
         <span class="wf-arr loop">⟲</span>
@@ -526,8 +526,8 @@ table.tbl .mono{font-size:13px}
         <tr><td><b>gh CLI autenticado</b></td><td><span class="tag ok">REQUIRED</span></td><td>Todo el pipeline vive en <span class="mono">gh</span>: trigger, watch, download. Sin auth → STOP, el usuario corre <span class="mono">gh auth login</span>.</td></tr>
         <tr><td><b>Workflow files</b></td><td><span class="tag ok">REQUIRED</span></td><td><span class="mono">.github/workflows/</span> debe tener el YAML de la suite elegida con sus inputs.</td></tr>
         <tr><td><b>GitHub Actions Secrets</b></td><td><span class="tag ok">REQUIRED</span></td><td>El runner usa <span class="mono">secrets.&lt;ENV&gt;_USER_EMAIL/_PASSWORD</span> + <span class="mono">XRAY_*</span>/<span class="mono">ATLASSIAN_*</span>. Verificar con <span class="mono">gh secret list</span> — el gap silencioso más común.</td></tr>
-        <tr><td><b>Allure 3 local</b></td><td><span class="tag ok">REQUIRED</span></td><td><span class="mono">bunx allure</span> resuelve (devDep, sin install global) + <span class="mono">allurerc.mjs</span> presente para <span class="mono">bun allure:agent</span>.</td></tr>
-        <tr><td><b>Env activo confirmado</b></td><td><span class="tag ok">REQUIRED</span></td><td>Confirmar el target antes de un run de 20–60 min (default: <span class="mono">staging</span>).</td></tr>
+        <tr><td><b>Allure local</b></td><td><span class="tag ok">REQUIRED</span></td><td><span class="mono">bunx allure</span> resuelve (devDep, versión en package.json, sin install global) + <span class="mono">allurerc.mjs</span> presente para <span class="mono">bun allure:agent</span>.</td></tr>
+        <tr><td><b>Env activo confirmado</b></td><td><span class="tag ok">REQUIRED</span></td><td>Confirmar el target antes de un run largo (default: <span class="mono">staging</span>).</td></tr>
         <tr><td><b>[TMS_TOOL] · [ISSUE_TRACKER_TOOL]</b></td><td><span class="tag wr">OPTIONAL</span></td><td><span class="mono">/xray-cli</span> solo si hay sync TMS; <span class="mono">/acli</span> solo si el veredicto obliga a abrir issues.</td></tr>
       </tbody>
     </table>
@@ -546,7 +546,7 @@ table.tbl .mono{font-size:13px}
       </div>
       <div class="card acc">
         <h4>El caso estrella: re-attach del RUN_ID</h4>
-        <p>Si el Monitor murió a mitad del watch pero <span class="mono">plan.md</span> ya capturó el <span class="mono">RUN_ID</span>, la skill se <b>re-engancha</b> al run vivo en lugar de re-disparar el CI — ahorra 20–60 min de reloj.</p>
+        <p>Si el Monitor murió a mitad del watch pero <span class="mono">plan.md</span> ya capturó el <span class="mono">RUN_ID</span>, la skill se <b>re-engancha</b> al run vivo en lugar de re-disparar el CI — ahorra decenas de minutos de reloj.</p>
       </div>
     </div>
     <div class="term mt-m">
@@ -563,7 +563,7 @@ table.tbl .mono{font-size:13px}
     <p class="kicker">fase 1 · execute — elegir la suite</p>
     <h2 class="h2">La suite equivocada da la señal equivocada</h2>
     <table class="tbl mt-m">
-      <thead><tr><th>Suite</th><th>Workflow</th><th>Duración</th><th>Usar cuando</th></tr></thead>
+      <thead><tr><th>Suite</th><th>Workflow</th><th>Duración (orden de magnitud)</th><th>Usar cuando</th></tr></thead>
       <tbody>
         <tr><td><b>regression</b></td><td class="mono">regression.yml</td><td>20–60 min</td><td>Validación pre-release, corrida nocturna completa</td></tr>
         <tr><td><b>smoke</b></td><td class="mono">smoke.yml</td><td>2–5 min</td><td>Health check post-deploy, solo tests <span class="mono">@critical</span></td></tr>
@@ -661,7 +661,7 @@ table.tbl .mono{font-size:13px}
         <div class="callout"><h4>El label suite deriva del tag</h4><p><span class="mono">@smoke/@regression/@e2e/@integration/@critical</span> es la única taxonomía: el <span class="mono">suite</span> que lees ES el scope que CI corrió. Nunca reconcilies contra otro set de labels.</p></div>
       </div>
     </div>
-    <div class="callout warn mt-m"><h4>Sin retries: el flake aflora como fallo</h4><p>Este repo corre con <span class="mono">retries: 0</span> en todas partes (<span class="mono">playwright.config.ts</span>) — doctrina anti-retry: un reintento solo enmascararía el flake. La flakiness aparece como fallo intermitente normal y la clasifica la regla de historial (&gt;20% en los últimos 10 runs), nunca un pass-on-retry. Si un proyecto downstream habilitó retries conscientemente, aplica el anti-patrón R3: expón el conteo de <span class="mono">retries</span> en el reporte, no solo el status final.</p></div>
+    <div class="callout warn mt-m"><h4>Sin retries: el flake aflora como fallo</h4><p>La política anti-retry es <span class="mono">retries: 0</span> (ver <span class="mono">playwright.config.ts</span>) — doctrina anti-retry: un reintento solo enmascararía el flake. La flakiness aparece como fallo intermitente normal y la clasifica la regla de historial (&gt;20% en los últimos 10 runs), nunca un pass-on-retry. Si un proyecto downstream habilitó retries conscientemente, aplica el anti-patrón R3: expón el conteo de <span class="mono">retries</span> en el reporte, no solo el status final.</p></div>
     <div class="notes">Los KNOWN-BLOCKED (tests @blocked:{BUG-KEY} deliberadamente aparcados tras un bug ya archivado) no son fallos de regresión: se excluyen del pass-rate que gatea y se reportan aparte con su BUG-KEY — así la decisión no se manipula en ningún sentido.</div>
   </section>
 
@@ -806,7 +806,7 @@ table.tbl .mono{font-size:13px}
       <div class="callout"><h4>El contrato de Regression</h4><p>El <b>agente</b> corre la suite, clasifica cada fallo, computa pass-rate y tendencia, emite GO / CAUTION / NO-GO y escribe el RTR (el STR solo en la corrida de cierre de sprint). La <b>persona</b> firma el veredicto CAUTION, y nunca deja que el agente invente el número de sprint. La <b>evidencia que sobrevive</b>: el reporte Allure, el RTR enlazado a su RTP, y la historia de corridas que autoriza la palabra FLAKY.</p></div>
       <div class="callout"><h4>Autonomía CSA <b>3</b>, y <b>4</b> para un GO limpio</h4><p>Decide dentro de límites declarados y escala fuera de ellos; con un GO sin fallos la supervisión es por monitoreo, no por aprobación. <b>Sin verificador separado</b>: el único stage que lo exige es Automation, que es también el único que sube su autonomía a 3 dentro de un plan aprobado. Ningún stage del pipeline pasa de 3.</p></div>
     </div>
-    <div class="callout mt-m"><h4>Y después del GO viene <b>Observation</b></h4><p>El pipeline no termina cuando la suite pasa. <b>Observation</b> es el octavo stage: producción, capacidad <b>L4</b>. No tiene skill — su unidad operativa es una <b>rutina agéntica</b> que vigila SLOs, error budget, RUM y señales de canary, abre items al backlog y alimenta el próximo Shift-Left. La persona firma los SLOs, la política de error budget y la decisión de frenar releases. Está <b>declarado, no implementado</b>: hoy nada bajo <span class="mono">.agents/skills/</span> lo ejecuta, y decirlo así es parte de la honestidad del método.</p></div>
+    <div class="callout mt-m"><h4>Y después del GO viene <b>Observation</b></h4><p>El pipeline no termina cuando la suite pasa. <b>Observation</b> es el octavo stage: producción, capacidad <b>L4</b>. No tiene skill — su unidad operativa es una <b>rutina agéntica</b> que vigila SLOs, error budget, RUM y señales de canary, abre items al backlog y alimenta el próximo Shift-Left. La persona firma los SLOs, la política de error budget y la decisión de frenar releases. Está <b>declarado, no implementado</b>: sin skill propio (el estado vive en <span class="mono">agentic-qa-core/references/stage-gates.md</span>), y decirlo así es parte de la honestidad del método.</p></div>
     <div class="notes">Fuente: agentic-qa-core/references/stage-gates.md — contrato agéntico por stage y escala CSA 0-5. El punto pedagógico: el DoD dice qué tiene que ser verdad; el contrato dice quién tuvo permiso de hacerlo. Un orquestador que avanza un stage sin honrar el contrato se salteó un gate exactamente igual que uno que tildó un DoD que no verificó. Y Observation existe para que nadie crea que el ciclo cierra en CI.</div>
   </section>
 

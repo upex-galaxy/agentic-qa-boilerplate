@@ -74,16 +74,16 @@ wake-up with nothing to do.
    every day, forever. Pass the workspace selector at creation.
 
 3. **Cost per wake-up is real and measurable.** An EMPTY run of an orchestrator routine (a sweep of
-   five channels plus a drive, with nothing to do) cost **USD 1.33 and 115 seconds** on a top-tier
-   model on 2026-09-13: ~5.5k output tokens, ~101k cache creation, ~353k cache reads, 14 turns.
+   the channels plus a drive, with nothing to do) still costs a full model turn, in money and in
+   minutes. The figure behind this rule is in ADR-0006
+   (`.context/ADR/ADR-0006-forensic-measurements-ledger.md`); the number to trust for a given
+   routine is its own run log. Measure once per routine before choosing a cadence.
 
-   | Cadence | Runs/day | Daily floor |
-   |---|---|---|
-   | hourly, ungated | 24 | ~USD 32 |
-   | hourly with a 3 h gate | 8 | ~USD 10.6 |
-   | **daily** | **1** | **~USD 1.33** |
+   The daily floor is a formula, not a table: **runs per day × the measured cost of one empty
+   wake-up**. Hourly and ungated pays it every hour; a shell gate divides it by the wake-ups it
+   skips; daily pays it once.
 
-   The decision taken on 2026-09-13 was to drop to daily and REMOVE the shell gate rather than tune
+   The decision this repo took was to drop to daily and REMOVE the shell gate rather than tune
    it: with one run a day, the gate's only job (avoiding useless wake-ups) stops being worth its own
    complexity. The price paid is latency — up to a full cadence between an answer and the action.
 

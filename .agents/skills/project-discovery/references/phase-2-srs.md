@@ -69,7 +69,7 @@ Every artifact MUST include a `## Discovery Gaps` section listing unverified cla
 
 ## 2. API contracts — delegated (not an SRS output)
 
-This skill no longer produces `.context/SRS/api-contracts.md`. The API contract has two canonical sources, owned by two different tools:
+This skill does not produce `.context/SRS/api-contracts.md`. The API contract has two canonical sources, owned by two different tools:
 
 | Angle | Owner | Output | When to use |
 |-------|-------|--------|-------------|

@@ -69,7 +69,7 @@
       <h2 id="stages">Los 8 stages y quién los ejecuta</h2>
       <p>
         Los stages tienen nombre y nunca número. La numeración vieja chocaba con los steps del IQL,
-        así que hoy sobrevive en un solo lugar: la tabla de equivalencias de
+        así que sobrevive en un solo lugar: la tabla de equivalencias de
         <code>.agents/skills/agentic-qa-core/references/stage-gates.md</code>.
       </p>
 
@@ -186,9 +186,9 @@
       <div class="callout warn">
         <span class="callout-title">Observation está declarado, no implementado</span>
         <p>
-          Ninguna skill de <code>.agents/skills/</code> lo ejecuta hoy. Su unidad operativa sería
-          una rutina agéntica (una corrida recurrente o autónoma, no una skill que alguien invoca),
-          y por eso no tiene checklist de Definition of Done: un checklist vacío parecería un gate
+          Ninguna skill de <code>.agents/skills/</code> lo ejecuta. Su unidad operativa sería una
+          rutina agéntica (una corrida recurrente o autónoma, no una skill que alguien invoca), y
+          por eso no tiene checklist de Definition of Done: un checklist vacío parecería un gate
           implementado. Se nombra para que el ciclo no termine en Regression. El detalle está en
           <a href="observation.html">Observation</a>.
         </p>
@@ -395,9 +395,9 @@ components    -&gt;  módulo del producto  (qué parte del producto toca)</code>
 
       <h2 id="quality-gate">El quality gate: GO / CAUTION / NO-GO</h2>
       <p>
-        El veredicto de release lo emite <code>regression-testing</code> con un puntaje ponderado
-        (máximo 9) a partir de cuatro factores: pass rate, regresiones, tests críticos y tests
-        flaky.
+        El veredicto de release lo emite <code>regression-testing</code> (los umbrales exactos son
+        los de su <code>SKILL.md</code>) con un puntaje ponderado (máximo 9) a partir de cuatro
+        factores: pass rate, regresiones, tests críticos y tests flaky.
       </p>
       <div class="table-wrap">
         <table>
@@ -460,372 +460,21 @@ components    -&gt;  módulo del producto  (qué parte del producto toca)</code>
           patrón (Single, Sequential, Parallel, Background).
         </dd>
         <dt><code>.agents/skills/agentic-qa-core/references/</code></dt>
-        <dd>La biblioteca compartida de doctrina. Estos son sus archivos:</dd>
+        <dd>
+          La biblioteca compartida de doctrina: un archivo por tema, y cada uno abre diciendo qué
+          regla lo cita. La lista es la de la carpeta (<code>ls</code>).
+        </dd>
       </dl>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Archivo</th>
-              <th>De qué trata</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><code>stage-gates.md</code></td>
-              <td>
-                Los 8 stages, el Definition of Done de cada uno y el contrato agéntico (autonomía,
-                firma humana, evidencia, verificador)
-              </td>
-            </tr>
-            <tr>
-              <td><code>artifact-lifecycle.md</code></td>
-              <td>
-                En qué estado nace cada artefacto, quién lo mueve, dónde termina, y el protocolo
-                cuando falta una transición
-              </td>
-            </tr>
-            <tr>
-              <td><code>planning-ladder.md</code></td>
-              <td>
-                La escalera MTP / FTP / STP / ATP / RTP con sus corridas y los cuatro Epics de
-                proceso QA
-              </td>
-            </tr>
-            <tr>
-              <td><code>test-design-doctrine.md</code></td>
-              <td>
-                Cómo derivar casos desde los ACs: el AC es el piso, no el techo; un AC da varios
-                casos por defecto; técnicas EP, BVA, transición de estados, tablas de decisión,
-                pairwise y error guessing
-              </td>
-            </tr>
-            <tr>
-              <td><code>defect-management-doctrine.md</code></td>
-              <td>
-                Bug, Defect o Improvement según la etapa de la feature, QA assignee, components
-                obligatorios, campos y prioridad derivada de la severidad
-              </td>
-            </tr>
-            <tr>
-              <td><code>decision-elicitation-doctrine.md</code></td>
-              <td>
-                Cómo pedirle a una persona que decida: pregunta simple o deck de decisiones
-                <code>mkd</code>, y cómo leer la respuesta
-              </td>
-            </tr>
-            <tr>
-              <td><code>traceability-linking.md</code></td>
-              <td>Los links reales de Jira que sostienen la trazabilidad y cómo verificarlos</td>
-            </tr>
-            <tr>
-              <td><code>api-testing-doctrine.md</code></td>
-              <td>
-                La maniobra de API: OpenAPI MCP solo para leer el schema,
-                <code>bun run api:login</code> para el token y <code>curl</code> para ejecutar
-              </td>
-            </tr>
-            <tr>
-              <td><code>db-testing-doctrine.md</code></td>
-              <td>
-                DBHub como herramienta de base de datos, las queries de validación y el
-                troubleshooting
-              </td>
-            </tr>
-            <tr>
-              <td><code>mcp-atlassian-optin.md</code></td>
-              <td>
-                Cómo activar el MCP de Atlassian (opcional) y el contrato de paridad entre hosts
-              </td>
-            </tr>
-            <tr>
-              <td><code>acli-integration.md</code></td>
-              <td>Qué slug, estado, campo y modalidad mandarle a <code>acli</code> en este repo</td>
-            </tr>
-            <tr>
-              <td><code>jira-publishing-gotchas.md</code></td>
-              <td>Los casos de Markdown a ADF que terminan en un HTTP 400 al publicar en Jira</td>
-            </tr>
-            <tr>
-              <td><code>briefing-template.md</code></td>
-              <td>El briefing de 7 componentes que lleva cada despacho a un subagente</td>
-            </tr>
-            <tr>
-              <td><code>dispatch-patterns.md</code></td>
-              <td>Cuándo usar Single, Sequential, Parallel o Background</td>
-            </tr>
-            <tr>
-              <td><code>orchestration-doctrine.md</code></td>
-              <td>
-                Copia cacheable del modo de orquestación de <code>AGENTS.md</code> para subagentes
-              </td>
-            </tr>
-            <tr>
-              <td><code>behavioral-layer.md</code></td>
-              <td>
-                Copia de la capa de comportamiento (§2) para subagentes que le hablan directo al
-                usuario
-              </td>
-            </tr>
-            <tr>
-              <td><code>preflight-gate.md</code></td>
-              <td>Revisar herramientas, MCPs y credenciales antes de empezar el trabajo real</td>
-            </tr>
-            <tr>
-              <td><code>session-management.md</code></td>
-              <td>
-                Persistencia del plan en <code>.session/</code>, checkpoints por stage y retomar
-                tras una interrupción
-              </td>
-            </tr>
-            <tr>
-              <td><code>session-footer-contract.md</code></td>
-              <td>
-                El cierre de sesión en el chat: evidencia capturada, herramientas usadas y niveles
-                de la pirámide tocados
-              </td>
-            </tr>
-            <tr>
-              <td><code>evidence-conventions.md</code></td>
-              <td>Dónde va cada archivo producido al probar y cómo se nombra</td>
-            </tr>
-            <tr>
-              <td><code>adr-doctrine.md</code></td>
-              <td>Cuándo una decisión de arquitectura de tests merece un ADR y cómo se escribe</td>
-            </tr>
-            <tr>
-              <td><code>skill-composition-strategy.md</code></td>
-              <td>Los tiers T1 a T4 de skills y cómo se componen</td>
-            </tr>
-            <tr>
-              <td><code>skill-resolver.md</code></td>
-              <td>
-                Cómo se resuelven en tiempo de ejecución las skills componibles vía el registry
-              </td>
-            </tr>
-            <tr>
-              <td><code>skill-scaffold.md</code></td>
-              <td>El contrato con el que nace toda skill nueva del repo</td>
-            </tr>
-            <tr>
-              <td><code>skill-refinement-protocol.md</code></td>
-              <td>Cómo una sesión propone una lección para una skill en vez de editarla directo</td>
-            </tr>
-            <tr>
-              <td><code>upstream-feedback.md</code></td>
-              <td>Cómo reportar un problema de una skill contra el boilerplate</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
 
       <h2 id="skills">Skills</h2>
       <p>
         Una skill es una capacidad del agente guardada en <code>.agents/skills/</code> (compartida
         por Claude Code, OpenCode y Codex). Se activa cuando lo que pides coincide con su
-        descripción, o la invocas por nombre. Las tres marcadas como "comunidad" las instala
-        <code>cli/install.ts</code> a nivel de proyecto y no están versionadas en el repo.
+        descripción, o la invocas por nombre. Las de la comunidad las instala
+        <code>cli/install.ts</code> a nivel de proyecto y no están versionadas en el repo. El
+        catálogo es <code>.agents/skills/REGISTRY.md</code> (generado por
+        <code>bun run skills:registry</code>; <code>AGENTS.md</code> §5 tiene la misma tabla).
       </p>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Skill</th>
-              <th>Cómo se activa</th>
-              <th>Para qué sirve</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><code>agentic-qa-core</code></td>
-              <td>Sola, citada por otras skills</td>
-              <td>Biblioteca de doctrina compartida (la tabla de arriba). No ejecuta workflows.</td>
-            </tr>
-            <tr>
-              <td><code>agentic-qa-onboard</code></td>
-              <td>
-                <code>/agentic-qa-onboard</code>, "es mi primera vez", "no entiendo cómo funciona"
-              </td>
-              <td>
-                Tour de orientación y mesa de ayuda: explica en lenguaje simple y ofrece abrir el
-                deck visual de cada skill
-              </td>
-            </tr>
-            <tr>
-              <td><code>framework-development</code></td>
-              <td><code>/framework-development</code></td>
-              <td>
-                Evolucionar el boilerplate en sí (bases KATA, fixtures, <code>cli/</code>,
-                <code>scripts/</code>). No es para QA por ticket.
-              </td>
-            </tr>
-            <tr>
-              <td><code>project-discovery</code></td>
-              <td><code>/project-discovery</code>, "onboard this repo"</td>
-              <td>
-                Discovery en 4 fases por ingeniería inversa: PRD, SRS, glosario y
-                <code>.context/</code>
-              </td>
-            </tr>
-            <tr>
-              <td><code>project-context</code></td>
-              <td>
-                <code>/business-data-map</code>, <code>/master-test-plan</code> y los demás alias
-              </td>
-              <td>
-                Regenera mapas de datos, features y API, y el master test plan; pide aprobación
-                antes de sobrescribir
-              </td>
-            </tr>
-            <tr>
-              <td><code>sync-ai-context</code></td>
-              <td><code>/sync-ai-memory</code></td>
-              <td>
-                Sincroniza los documentos que lee la IA con las instrucciones, skills y
-                <code>package.json</code> actuales
-              </td>
-            </tr>
-            <tr>
-              <td><code>adapt-framework</code></td>
-              <td><code>/adapt-framework</code></td>
-              <td>
-                Adapta KATA al stack del proyecto: análisis y plan sin escribir, y solo después de
-                tu aprobación, cambios
-              </td>
-            </tr>
-            <tr>
-              <td><code>jira-administration</code></td>
-              <td><code>/jira-components</code>, <code>/jira-instance-migration</code></td>
-              <td>
-                Components de Jira y migración de instancia, siempre con análisis previo y
-                aprobación explícita
-              </td>
-            </tr>
-            <tr>
-              <td><code>shift-left-testing</code></td>
-              <td>
-                <code>/shift-left-testing</code>, "groom the backlog", "refina estas historias"
-              </td>
-              <td>
-                Stage Shift-Left: refina ACs de un lote de historias antes del sprint y escribe el
-                ATP en el campo
-              </td>
-            </tr>
-            <tr>
-              <td><code>sprint-testing</code></td>
-              <td><code>/sprint-testing</code>, "prueba este ticket", "procesa el sprint N"</td>
-              <td>
-                Stages Planning, Execution y Reporting, por issue o para todo un sprint (el estado
-                del sprint vive en el STP de Jira)
-              </td>
-            </tr>
-            <tr>
-              <td><code>test-documentation</code></td>
-              <td><code>/test-documentation</code>, "documenta los tests", "ROI"</td>
-              <td>
-                Stage Documentation: documentación en el TMS y veredicto Candidate / Manual /
-                Deferred
-              </td>
-            </tr>
-            <tr>
-              <td><code>test-automation</code></td>
-              <td><code>/test-automation</code>, "automatiza", "E2E test"</td>
-              <td>Stage Automation: Plan, Code y Review sobre KATA, Playwright y TypeScript</td>
-            </tr>
-            <tr>
-              <td><code>regression-testing</code></td>
-              <td><code>/regression-testing</code>, "corre la regresión", "GO/NO-GO"</td>
-              <td>
-                Stage Regression: suites por CI, clasificación de fallas y veredicto de release
-              </td>
-            </tr>
-            <tr>
-              <td><code>playwright-cli</code> (comunidad)</td>
-              <td><code>/playwright-cli</code></td>
-              <td>
-                Navegador por CLI: screenshots, tracing, video, sesiones y mocking de requests
-              </td>
-            </tr>
-            <tr>
-              <td><code>playwright-best-practices</code> (comunidad)</td>
-              <td>
-                <code>/playwright-best-practices</code>, se carga junto a
-                <code>/test-automation</code>
-              </td>
-              <td>
-                Referencia: tests flaky, POM, accesibilidad, auth, fixtures, tags, performance
-              </td>
-            </tr>
-            <tr>
-              <td><code>bug-screenshot-annotation</code></td>
-              <td>"anota este bug", "marca la captura"</td>
-              <td>
-                Convierte un screenshot en evidencia anotada (círculos, flechas, notas) renderizada
-                100% en local
-              </td>
-            </tr>
-            <tr>
-              <td><code>resend-cli</code> (comunidad)</td>
-              <td><code>/resend-cli</code></td>
-              <td>Testing de emails con Resend</td>
-            </tr>
-            <tr>
-              <td><code>xray-cli</code></td>
-              <td><code>/xray-cli</code></td>
-              <td>
-                Gestión de tests en Xray Cloud: tests, ejecuciones, planes, importación de
-                resultados
-              </td>
-            </tr>
-            <tr>
-              <td><code>acli</code></td>
-              <td><code>/acli</code></td>
-              <td>
-                CLI oficial de Atlassian: operaciones de Jira (y del TMS en modalidad jira-native)
-              </td>
-            </tr>
-            <tr>
-              <td><code>git-flow-master</code></td>
-              <td>Sola, ante cualquier intención de git o PR</td>
-              <td>
-                Branch, commit, push, PR y conflictos, según la estrategia declarada en
-                <code>.agents/project.yaml</code>
-              </td>
-            </tr>
-            <tr>
-              <td><code>orca-orchestration</code></td>
-              <td><code>/orca-orchestration</code>, "orquestar", "lanza workers"</td>
-              <td>
-                Coordina varias sesiones persistentes (una por historia o módulo). Opcional: si no
-                está el runtime, no aparece.
-              </td>
-            </tr>
-            <tr>
-              <td><code>session-handoff</code></td>
-              <td><code>/session-handoff</code>, "hagamos el handoff"</td>
-              <td>
-                Compacta la sesión en un archivo de traspaso y lanza la sesión sucesora en el mismo
-                worktree
-              </td>
-            </tr>
-            <tr>
-              <td><code>judgment-day</code></td>
-              <td><code>/judgment-day</code>, "juzgar", "dual review"</td>
-              <td>
-                Revisión adversarial con dos jueces a ciegas en paralelo; nunca se invoca sola
-              </td>
-            </tr>
-            <tr>
-              <td><code>pr-review-lead</code></td>
-              <td>"revisa este PR"</td>
-              <td>
-                Revisión de un PR de automatización como QA Lead, cada hallazgo apoyado en doctrina
-                o en una línea de código; no publica nada sin tu OK final
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
 
       <h2 id="comandos">Comandos</h2>
       <p>
@@ -833,60 +482,9 @@ components    -&gt;  módulo del producto  (qué parte del producto toca)</code>
         pasan tus argumentos. No tienen workflow propio. La fuente única es
         <code>.agents/compatibility/command-aliases.json</code> y los wrappers de Claude Code y
         OpenCode se generan con <code>bun run agents:compat</code>. Codex no tiene comandos: ahí
-        invocas la skill directamente.
+        invocas la skill directamente. El manifest lista cada alias con su skill, su modo y su
+        propósito en <code>description</code>.
       </p>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Comando</th>
-              <th>Skill y modo</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><code>/adapt-framework</code></td>
-              <td><code>adapt-framework</code>, modo <code>adapt</code></td>
-            </tr>
-            <tr>
-              <td><code>/sync-ai-memory</code></td>
-              <td><code>sync-ai-context</code>, modo <code>sync</code></td>
-            </tr>
-            <tr>
-              <td><code>/business-data-map</code></td>
-              <td><code>project-context</code>, modo <code>data</code></td>
-            </tr>
-            <tr>
-              <td><code>/business-feature-map</code></td>
-              <td><code>project-context</code>, modo <code>features</code></td>
-            </tr>
-            <tr>
-              <td><code>/business-api-map</code></td>
-              <td><code>project-context</code>, modo <code>api</code></td>
-            </tr>
-            <tr>
-              <td><code>/master-test-plan</code></td>
-              <td><code>project-context</code>, modo <code>test-plan</code></td>
-            </tr>
-            <tr>
-              <td><code>/break-down-tests</code></td>
-              <td><code>test-automation</code>, modo <code>explain</code> (solo lectura)</td>
-            </tr>
-            <tr>
-              <td><code>/fix-traceability</code></td>
-              <td><code>test-documentation</code>, modo <code>repair-traceability</code></td>
-            </tr>
-            <tr>
-              <td><code>/jira-instance-migration</code></td>
-              <td><code>jira-administration</code>, modo <code>instance-migration</code></td>
-            </tr>
-            <tr>
-              <td><code>/jira-components</code></td>
-              <td><code>jira-administration</code>, modo <code>components</code></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
 
       <h2 id="integraciones">Integraciones</h2>
       <p>
@@ -913,67 +511,22 @@ components    -&gt;  módulo del producto  (qué parte del producto toca)</code>
               <td>MCP de Atlassian (opcional, ver <code>mcp-atlassian-optin.md</code>)</td>
             </tr>
             <tr>
-              <td><code>[TMS_TOOL]</code></td>
-              <td>Gestión de tests</td>
-              <td>
-                <code>/xray-cli</code> en modalidad jira-xray; <code>/acli</code> en jira-native
-              </td>
-              <td>MCP de Atlassian (opcional)</td>
-            </tr>
-            <tr>
               <td><code>[AUTOMATION_TOOL]</code></td>
               <td>Navegador</td>
               <td><code>/playwright-cli</code></td>
               <td>MCP de Playwright</td>
             </tr>
-            <tr>
-              <td><code>[DB_TOOL]</code></td>
-              <td>Base de datos</td>
-              <td>MCP de DBHub</td>
-              <td>MCP de Supabase o SQL directo</td>
-            </tr>
-            <tr>
-              <td><code>[API_TOOL]</code></td>
-              <td>Testing de API</td>
-              <td>
-                Leer el schema: MCP de OpenAPI (solo lectura). Ejecutar: <code>curl</code> con el
-                token de <code>bun run api:login</code>
-              </td>
-              <td>
-                Postman: un MCP que conectas a nivel del harness (no vive en
-                <code>.mcp.json</code>)
-              </td>
-            </tr>
-            <tr>
-              <td><code>[DOCS_TOOL]</code></td>
-              <td>Documentación oficial de librerías, SDKs y CLIs</td>
-              <td>MCP de Context7</td>
-              <td>Búsqueda web del harness, como último recurso</td>
-            </tr>
-            <tr>
-              <td><code>[WEB_SEARCH_TOOL]</code></td>
-              <td>Búsqueda web, soluciones de la comunidad</td>
-              <td>
-                Un MCP de búsqueda web conectado a nivel del harness (capacidad
-                <code>web-search</code>)
-              </td>
-              <td>Búsqueda web del harness, como último recurso</td>
-            </tr>
-            <tr>
-              <td><code>[ORCHESTRATION_TOOL]</code></td>
-              <td>Varias sesiones persistentes</td>
-              <td><code>/orca-orchestration</code></td>
-              <td>Subagentes, más las líneas de lanzamiento que pegas a mano</td>
-            </tr>
           </tbody>
         </table>
       </div>
       <p>
-        La modalidad del TMS se decide una vez por proyecto. En <strong>jira-xray</strong>, ATP y
-        ATR son Test Plan y Test Execution de Xray. En <strong>jira-native</strong> (sin Xray) viven
-        en custom fields de la historia y comentarios, y los test cases son issues de tipo Test. Las
-        guías de conexión están en <a href="../setup/jira-xray.html">Jira y Xray</a>,
-        <a href="../setup/dbhub.html">DBHub</a>, <a href="../setup/openapi.html">OpenAPI</a> y
+        Dos filas de ejemplo; la tabla completa, con todas las etiquetas, es la de
+        <code>AGENTS.md</code> §6. La modalidad del TMS se decide una vez por proyecto. En
+        <strong>jira-xray</strong>, ATP y ATR son Test Plan y Test Execution de Xray. En
+        <strong>jira-native</strong> (sin Xray) viven en custom fields de la historia y comentarios,
+        y los test cases son issues de tipo Test. Las guías de conexión están en
+        <a href="../setup/jira-xray.html">Jira y Xray</a>, <a href="../setup/dbhub.html">DBHub</a>,
+        <a href="../setup/openapi.html">OpenAPI</a> y
         <a href="../exploracion/postman.html">Postman</a>.
       </p>
 
@@ -990,52 +543,10 @@ components    -&gt;  módulo del producto  (qué parte del producto toca)</code>
           >cómo</a
         >).
       </p>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Server</th>
-              <th>Para qué</th>
-              <th>Variables en <code>.env</code></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><code>context7</code></td>
-              <td>Documentación oficial y versionada de librerías ("cómo se usa X")</td>
-              <td>ninguna</td>
-            </tr>
-            <tr>
-              <td><code>playwright</code></td>
-              <td>Automatización de navegador, fallback de <code>/playwright-cli</code></td>
-              <td>ninguna</td>
-            </tr>
-            <tr>
-              <td><code>dbhub</code></td>
-              <td>Queries y validación de datos (configurado en <code>dbhub.toml</code>)</td>
-              <td>
-                <code>DBHUB_TYPE</code>, <code>DBHUB_HOST</code>, <code>DBHUB_PORT</code>,
-                <code>DBHUB_DATABASE</code>, <code>DBHUB_USER</code>, <code>DBHUB_PASSWORD</code>
-              </td>
-            </tr>
-            <tr>
-              <td><code>openapi</code></td>
-              <td>Leer endpoints y schemas de la API (solo lectura)</td>
-              <td><code>API_BASE_URL</code>, <code>OPENAPI_SPEC_PATH</code></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="callout danger">
-        <span class="callout-title">Si falla una credencial, se detiene</span>
-        <p>
-          En Claude Code, OpenCode y DBHub una variable vacía no da error al arrancar: el server
-          muere después, en su primera llamada autenticada, y un 401 o 403 es la señal. Solo Codex
-          avisa al arrancar. Ante una falla así el agente no busca atajos: te dice qué variable
-          falta, te pide corregir <code>.env</code> y reiniciar la sesión, porque las variables se
-          leen una sola vez cuando arranca el MCP.
-        </p>
-      </div>
+      <p>
+        Qué hace cada server y cuándo se usa está en la tabla de MCPs de <code>AGENTS.md</code> §5;
+        las variables que necesita cada uno las lista <code>bun run setup:doctor</code>.
+      </p>
 
       <h2 id="pbi">El árbol <code>.context/PBI/</code></h2>
       <p>
@@ -1078,30 +589,10 @@ components    -&gt;  módulo del producto  (qué parte del producto toca)</code>
           </tbody>
         </table>
       </div>
-      <pre data-lang="text"><code>.context/PBI/
-  README.md                                   [COMMIT] reglas de tiers
-  templates/                                  [COMMIT] esqueletos
-  epic-tree.md                                [SYNC]   índice maestro
-  epics/EPIC-&lt;KEY&gt;-&lt;slug&gt;/
-    epic.md                                   [SYNC]
-    module-context.md                         [SYNC]   sección '## Module Context (QA)' del Epic
-    feature-implementation-plan.md            [SYNC]
-    feature-test-plan.md                      [SYNC]
-    test-specs/                               [COMMIT] planes de automatización, junto al código
-      ROADMAP.md  PROGRESS.md
-      &lt;ID&gt;/ spec.md  automation-plan.md  atc/*.md
-    stories/STORY-&lt;KEY&gt;-&lt;slug&gt;/
-      story.md  acceptance-criteria.md  business-rules.md ...   [SYNC]
-      acceptance-test-plan.md  acceptance-test-results.md       [SYNC]
-      comments.md                             [SYNC]   con --include-comments
-      test-cases/                             [SYNC]   los Test enlazados a la historia
-      defects/                                [SYNC]
-      context.md                              [LOCAL]  notas sobre el repo
-      evidence/                               [LOCAL]  screenshots
-  epics/_orphans/                             [SYNC]   historias sin Epic y tests huérfanos
-  qa-artifacts/_index.md                      [SYNC]   registro de los Epics de proceso QA
-  bugs/  improvements/  tech-stories/  tech-debts/  defects/    [SYNC]
-  test-plans/  test-executions/  test-sets/  preconditions/     [SYNC]</code></pre>
+      <p>
+        El árbol completo, con el tier de cada ruta, está en
+        <code>.context/PBI/README.md</code> (versionado) y en <code>AGENTS.md</code> §9.
+      </p>
       <p>Tres reglas para trabajar con esta caché:</p>
       <ul>
         <li>

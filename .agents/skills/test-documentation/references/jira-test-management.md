@@ -183,7 +183,7 @@ Related naming — the unified planning-ladder grammar `{ACRONYM}: {scope-id}: {
 
 ## 6. Workflow — states and transitions
 
-> **Substrate reference**: state and transition names below match the canonical UPEX Jira workflow declared in `.agents/jira-workflows.json` (see `.agents/jira-required.yaml` `work_types.test_case`). Skills resolve names via `{{jira.status.test_case.<slug>}}` and `{{jira.transition.test_case.<slug>}}`. Refresh with `bun run jira:sync-workflows` if your project renames any state.
+> **Substrate reference**: state and transition names below match the workflow declared in `.agents/jira-workflows.json` (see `.agents/jira-required.yaml` `work_types.test_case`). Skills resolve names via `{{jira.status.test_case.<slug>}}` and `{{jira.transition.test_case.<slug>}}`. Refresh with `bun run jira:sync-workflows` if your project renames any state.
 
 Both modes use the same state machine. Xray does not impose its own workflow; it respects the Jira workflow attached to the Test issue type.
 
@@ -386,7 +386,7 @@ Notes:
 
 ### Stage-4 promote + enrich — tool resolution map (Modality jira-xray)
 
-When `/test-documentation` Stage 4 promotes a sprint Xray Test into regression, resolve each operation to its tool via pseudocode — load `/xray-cli` for the exact command (HOW lives there, never here). The `[TMS_TOOL]` operations below were verified to exist before this map was written:
+When `/test-documentation` Stage 4 promotes a sprint Xray Test into regression, resolve each operation to its tool via pseudocode — load `/xray-cli` for the exact command (HOW lives there, never here). The `[TMS_TOOL]` operations below:
 
 | Promote / enrich op | Resolves via | Coverage |
 |---|---|---|
@@ -397,7 +397,7 @@ When `/test-documentation` Stage 4 promotes a sprint Xray Test into regression, 
 | Enrich **Manual** Test steps | `[TMS_TOOL]` | ✓ supported |
 | Enrich **Gherkin** / definition / change **test type** on an existing Test | `[TMS_TOOL]` | ✓ supported (update-gherkin / update-definition / update-type) |
 
-**Implication for our flow**: every Stage-4 promote + enrich op now resolves through a tool — `[TMS_TOOL]` for Test Set / Test Plan membership, step + Gherkin/definition/type enrichment; `[ISSUE_TRACKER_TOOL]` for the title and the labels on an existing Test. You may either author rich Gherkin at creation time or enrich an existing sprint Test in place during promotion — both paths are supported. Load `/xray-cli` for the exact command.
+**Implication for our flow**: every Stage-4 promote + enrich op resolves through a tool — `[TMS_TOOL]` for Test Set / Test Plan membership, step + Gherkin/definition/type enrichment; `[ISSUE_TRACKER_TOOL]` for the title and the labels on an existing Test. You may either author rich Gherkin at creation time or enrich an existing sprint Test in place during promotion — both paths are supported. Load `/xray-cli` for the exact command.
 
 **Order is load-bearing**: the title row runs **before** membership and label. A sprint Test carries a sprint-era summary; promoting it untouched is what leaves the RTP full of non-canonical titles. Re-derive → rewrite if different → verify → then add to the RTP and apply `regression-candidate`. Full rule: `SKILL.md` §"Title on promotion".
 

@@ -40,7 +40,7 @@ Act as a Senior QA Engineer preparing a testing session for a ticket (User Story
 ### Input
 
 - `TICKET-ID` (required) — e.g. `{{PROJECT_KEY}}-123`.
-- Environment — defaults to `{{DEFAULT_ENV}}` (staging); ask if ambiguous. For an ad-hoc URL not in `project.yaml` (broken staging, ephemeral preview deploy, hotfix branch URL), record it as a session override instead of editing config — see Step 6b + the `WEB_URL_OVERRIDE` / `API_URL_OVERRIDE` slot.
+- Environment — defaults to `{{DEFAULT_ENV}}`; ask if ambiguous. For an ad-hoc URL not in `project.yaml` (broken staging, ephemeral preview deploy, hotfix branch URL), record it as a session override instead of editing config — see Step 6b + the `WEB_URL_OVERRIDE` / `API_URL_OVERRIDE` slot.
 
 ### Step 0 — Environment + inbox preflight (reachability gate)
 
@@ -285,7 +285,7 @@ Context loaded / Code explored / Environment
 ```markdown
 ## Session Initialized: {{PROJECT_KEY}}-{number}
 - Ticket / Module / ACs count / Team Discussions count
-- Project context loaded (all 3 files)
+- Project context loaded
 - Module context: loaded or created
 - Story context.md created
 - Next step: US workflow section below OR Bug workflow section below
@@ -358,7 +358,7 @@ Actions:
 6. **ATS (jira-xray)**: create/update the Story's `ATS: {US_ID}: {story title}` (parent **QA Test Artifacts**, components inherited from the Story — mandatory) holding ALL the Story's TCs (Xray-internal membership); link **ATS→Story** via the `test` slug — THE coverage link (fills the coverage panel).
 7. **ATR with environment**: create the ATR Execution (`ATR: {STORY-KEY}: Story Testing`) ALWAYS carrying the Test Environment from `active_env` (**no ATR without environment** — hard gate). Derive the ATP's and the ATR's test lists FROM the ATS membership — never three independent id lists. Link ATP→Story and ATR→Story (administrative traceability; zero coverage). Link ATP -> ATR.
 8. Fill Test Analysis in the ATP (scope, risks, scenarios, variables, test data, AC gaps).
-9. Verify: run the **three-edge check** (`agentic-qa-core/references/traceability-linking.md` §Traceability verification: Link List on Story + ATP + ATR, or `bun xray trace {{PROJECT_KEY}}-{number}` once available) (traceability reads stay on `[ISSUE_TRACKER_TOOL]` / `[TMS_TOOL]`, not the sync).
+9. Verify: run the **three-edge check** (`agentic-qa-core/references/traceability-linking.md` §Traceability verification: Link List on Story + ATP + ATR, or `bun xray trace {{PROJECT_KEY}}-{number}`) (traceability reads stay on `[ISSUE_TRACKER_TOOL]` / `[TMS_TOOL]`, not the sync).
 10. **Statuses + ownership** (`agentic-qa-core/references/artifact-lifecycle.md` §1 + §2). Assignee = self on the ATP, the ATS, the ATR and every `Test`, set AT CREATE TIME (Xray refuses membership edits on a Plan the caller does not own). Then:
      - each `Test`: `{{jira.transition.test_case.start_design}}` -> `{{jira.transition.test_case.ready_to_run}}` = `{{jira.status.test_case.ready}}`, parented to the **QA Test Repository** epic.
      - ATP: `{{jira.transition.test_plan.designed}}` -> `{{jira.status.test_plan.ready}}`. **NOT `complete`** — the ATP is COMPLETED at Stage 3, once the ATR results are in.
@@ -383,7 +383,7 @@ Reference: `references/exploration-patterns.md`.
 
 Actions:
 
-0. **Mark ticket as actively testing** (substrate-driven, idempotent, non-blocking): resolve `{{jira.transition.<work_type>.start_testing}}` and `{{jira.status.<work_type>.in_test}}` from `.agents/jira-workflows.json`; transition `<TICKET_KEY>` to the in-test state if it is not already there. Skip cleanly when the substrate has no in-test state for the work type (e.g. Bugs in this boilerplate's default substrate). Detail in `sprint-orchestration.md` Briefing 3 Step 1.
+0. **Mark ticket as actively testing** (substrate-driven, idempotent, non-blocking): resolve `{{jira.transition.<work_type>.start_testing}}` and `{{jira.status.<work_type>.in_test}}` from `.agents/jira-workflows.json`; transition `<TICKET_KEY>` to the in-test state if it is not already there. Skip cleanly when the substrate has no in-test state for the work type (e.g. a work type whose workflow has no in-test status). Detail in `sprint-orchestration.md` Briefing 3 Step 1.
 1. **Smoke test (5-10 min, ALWAYS FIRST)**: verify basic functionality works, no blocking errors. Go (proceed) or No-Go (STOP and report).
 2. **Deep exploration** as applicable:
    - UI on `{{WEB_URL}}` via `[AUTOMATION_TOOL]`.

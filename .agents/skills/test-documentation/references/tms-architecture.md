@@ -1,6 +1,6 @@
 # TMS Architecture — Entity Model and Traceability
 
-Definitive reference for the four TMS entities, their fields, their links, and the order in which to create them. Read this when creating any artifact, validating traceability, or fixing broken links.
+Definitive reference for the TMS entities, their fields, their links, and the order in which to create them. Read this when creating any artifact, validating traceability, or fixing broken links.
 
 > **Before publishing any TMS entity body (Test / TestPlan / TestExecution / TestRun) to Jira rich-text fields**, read `../../agentic-qa-core/references/jira-publishing-gotchas.md` — covers the two ADF conversion gotchas (`md-to-adf` mark collision + MCP batched custom-field rejection) that silently fail HTTP 400.
 
@@ -55,7 +55,7 @@ Key consequences:
 | ID | Yes | `{{PROJECT_KEY}}-{n}` auto-assigned |
 | Title | Yes | |
 | Acceptance Criteria | Yes | Testable conditions |
-| Test Set link (ATS) | Yes (mandatory) | `is tested by` ATS — **the coverage-panel link** (live-verified: ATP/ATR links contribute zero coverage) |
+| Test Set link (ATS) | Yes (mandatory) | `is tested by` ATS — **the coverage-panel link** (ATP/ATR links contribute zero coverage; `xray-cli/SKILL.md` §Direction) |
 | Test Plan link (ATP) | Yes (once ATP exists) | `is tested by` ATP (administrative traceability, no coverage) |
 | Test Results link (ATR) | Yes (once ATR exists) | `is tested by` ATR (administrative traceability, no coverage) |
 | Test Cases links | Last resort only | TCs reach the Story THROUGH the ATS (primary) or ATP (secondary, placement-only); a direct Story↔TC link is the cascade's last resort when no ATS exists — the defect is a TC with NO path, not the direct link |
@@ -133,7 +133,7 @@ Key consequences:
 |                   v                        v                         |
 |                  [ TC-1, TC-2, TC-3, ... TC-N ]  <- all members of the ATS |
 |                                                                      |
-|   Coverage truth (live-verified): the ATS->Story `is tested by` link |
+|   Coverage truth (see xray-cli) : the ATS->Story `is tested by` link |
 |   is what fills the Xray coverage panel; the ATP->Story and          |
 |   ATR->Story links contribute ZERO coverage (administrative          |
 |   traceability only). TCs aggregate to the Story through the ATS.    |
@@ -184,7 +184,7 @@ Given any one of the five, you must be able to navigate to the other four. That 
 | **TC** | Test Result (ATR) | `is executed by` ATR (`test_execute`) | At creation |
 | **TC** | Acceptance Criterion | AC reference | At creation |
 
-**Coverage truth (live-verified 2026-08-21, `.session/artifact-ladder-refactor/scoping.md` §Verificación)**: the Xray coverage panel is filled ONLY by an `is tested by` link from a Test Set (the ATS) or a direct Test↔Story link — the ATP→Story and ATR→Story links contribute ZERO coverage. That is why the ATS is mandatory: it is the coverage backbone, while ATP/ATR links are administrative traceability.
+**Coverage truth (`xray-cli/SKILL.md` §Direction)**: the Xray coverage panel is filled ONLY by an `is tested by` link from a Test Set (the ATS) or a direct Test↔Story link — the ATP→Story and ATR→Story links contribute ZERO coverage. That is why the ATS is mandatory: it is the coverage backbone, while ATP/ATR links are administrative traceability.
 
 A TC is **NOT** linked to the User Story directly while an ATS exists — it reaches the Story through the ATS (membership + the ATS→Story link). The direct TC→Story link is the cascade's **last resort** (no ATS available — e.g. jira-native without the Test Set work type), not a defect; the defect is a TC with **no path at all**. A TC missing its ATS membership or its ATP/ATR links is broken — use `fix-traceability` to repair. **Under jira-xray, the Xray-internal attach (`plan add-tests` / `exec add-tests` / `set add-tests`) creates NO Jira links** — the `designs`/`executes` Jira edges MUST be created explicitly via `[ISSUE_TRACKER_TOOL]` (`/acli`). Jira-native carve-out: with a Test Set work type present, ATS membership IS expressed as TC→ATS issue links. (Slug-layer mechanics live in `agentic-qa-core/references/traceability-linking.md` §3/§9.)
 

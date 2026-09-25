@@ -59,7 +59,7 @@ Canonical reading order when starting cold on a discovery run. Read in order; st
 
 > **Orchestration & Session contracts**: this skill follows `agentic-qa-core/references/orchestration-doctrine.md` (mandatory subagent dispatch — main thread is command center) AND `agentic-qa-core/references/session-management.md` (Phase 0 resume check, plan-first persistence at `.session/<skill-slug>/<scope>/`, archive on completion). Phase 0 (resume check) and Phase 1 (plan write) are NOT optional.
 
-This skill is **project-scope**: no `<scope>` segment. Session state lives directly at `.session/project-discovery/{plan.md, progress.md}` per `agentic-qa-core/references/session-management.md` §3 + §9. This is the longest skill in the QA repo (1.5–4 hours, 4 hard-gate phases) and benefits most from per-phase checkpoints: if interrupted between Phase 2 (PRD/SRS) and Phase 3 (Infrastructure), resume reads `progress.md` and skips back to the first incomplete phase without re-prompting the user for already-confirmed scope.
+This skill is **project-scope**: no `<scope>` segment. Session state lives directly at `.session/project-discovery/{plan.md, progress.md}` per `agentic-qa-core/references/session-management.md` §3 + §9. This skill runs long (hours, four hard-gate phases) and benefits most from per-phase checkpoints: if interrupted between Phase 2 (PRD/SRS) and Phase 3 (Infrastructure), resume reads `progress.md` and skips back to the first incomplete phase without re-prompting the user for already-confirmed scope.
 
 This skill is compliant with the doctrine in `AGENTS.md` §"Orchestration Mode (Subagent Strategy)" and the session contract in `.agents/skills/agentic-qa-core/references/session-management.md`. Per-phase dispatch decisions live in `Pick the scope first` below: Fresh = heavy subagent delegation per phase; Boilerplate adoption = medium; Brownfield + Context refresh = main session only.
 
@@ -77,7 +77,7 @@ Before scope selection or any target-repo discovery, run the resume contract fro
    - Surface to the user: scope chosen, target repo, last completed phase, next phase, any open Discovery Gaps from the last entry.
    - Offer **resume / restart / abort**. On `restart`, archive to `.session/.archive/<YYYY-MM-DD>-project-discovery-aborted/` before proceeding.
 
-Resume is high-value here: Fresh onboarding (1.5–4h) crossing a session boundary without resume re-runs Phase 1 from scratch, re-prompting target paths the user already confirmed.
+Resume is high-value here: Fresh onboarding (hours) crossing a session boundary without resume re-runs Phase 1 from scratch, re-prompting target paths the user already confirmed.
 
 ---
 
@@ -288,7 +288,7 @@ Before the user invokes `adapt-framework`, verify every file below is on disk. M
 
 Handoff line to print to the user:
 
-> Discovery handoff complete. Run `project-context refresh-all`, then invoke `adapt-framework` when the six prerequisites are present.
+> Discovery handoff complete. Run `project-context refresh-all`, then invoke `adapt-framework` when every prerequisite above is present.
 
 ---
 

@@ -233,12 +233,12 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
     <div class="kicker" data-anim="fade-up">Sesión 4 · QA Engineering</div>
     <h1 data-anim="fade-up" style="animation-delay:.1s">Playwright <span class="grad-text">Pro</span> 🚀</h1>
     <p data-anim="fade-up" style="animation-delay:.2s;max-width:680px;font-size:clamp(1.05rem,1.8vw,1.35rem)">
-      Tu suite del Dojo Lab funciona… pero repite código y vive desordenada.<br>Hoy la conviertes en una <b>suite profesional</b>: hooks, POM real, fixtures y API testing.</p>
+      Tu suite del Dojo Lab funciona… pero repite código y vive desordenada.<br>Ahora la conviertes en una <b>suite profesional</b>: hooks, POM real, fixtures y API testing.</p>
     <div class="cover-chips" data-anim="fade-up" style="animation-delay:.32s">
       <span class="pill">describe + hooks</span><span class="pill">locators pro</span><span class="pill">POM real</span><span class="pill">fixtures</span><span class="pill">API testing</span><span class="pill">6 misiones 🎯</span>
     </div>
   </div>
-  <div class="notes"><p>Sesión 5 de la serie (deck 4). Prerrequisito duro: la suite del Dojo Lab I funcionando (5 specs verdes). Todo lo de hoy REFACTORIZA esa suite — quien no la tenga, que clone la de un compañero o complete M6 del lab primero. Formato híbrido: concepto corto → misión aplicada. Duración: 2-3 horas.</p></div>
+  <div class="notes"><p>Sesión 5 de la serie (deck 4). Prerrequisito duro: la suite del Dojo Lab I funcionando (5 specs verdes). Todo lo de esta sesión REFACTORIZA esa suite — quien no la tenga, que clone la de un compañero o complete M6 del lab primero. Formato híbrido: concepto corto → misión aplicada. Duración: 2-3 horas.</p></div>
 </section>
 
 <!-- 2 · El dolor actual -->
@@ -252,7 +252,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
       <div class="card" style="margin-top:.9rem"><div class="ico">🐌</div><h3>Síntoma 3: todo por UI</h3><p>Cada verificación pasa por el navegador — lento y frágil para cosas que la API responde en milisegundos.</p></div>
     </div>
     <div data-anim="fade-up" style="animation-delay:.3s">
-      <div class="card hl"><h3>🗺️ El plan de hoy</h3>
+      <div class="card hl"><h3>🗺️ El plan de la sesión</h3>
         <p style="font-family:var(--font-mono);font-size:.88rem;line-height:2.1">
         Acto 1 → <b>organiza</b>: describe + hooks<br>
         Acto 2 → <b>blinda</b>: locators semánticos<br>
@@ -260,10 +260,10 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
         Acto 4 → <b>inyecta</b>: fixtures propios<br>
         Acto 5 → <b>acelera</b>: API testing<br>
         Acto 6 → 🏆 suite reorganizada</p></div>
-      <div class="callout info" style="margin-top:.9rem"><span class="co-ico">🧬</span><p>Cada herramienta de hoy usa conceptos que YA dominas: hooks = funciones, POM = tu clase de Coding Classes, fixtures = el destructuring de <code>({ page })</code>.</p></div>
+      <div class="callout info" style="margin-top:.9rem"><span class="co-ico">🧬</span><p>Cada herramienta de esta sesión usa conceptos que YA dominas: hooks = funciones, POM = tu clase de Coding Classes, fixtures = el destructuring de <code>({ page })</code>.</p></div>
     </div>
   </div>
-  <div class="notes"><p>Abre la sesión con autocrítica de código propio — los 3 síntomas existen de verdad en sus suites del lab (compruébalo en vivo con la de alguien). El mensaje: no escribieron mal código; escribieron el primer borrador que todo profesional escribe. Hoy toca la segunda pasada, la que separa scripts de ingeniería.</p></div>
+  <div class="notes"><p>Abre la sesión con autocrítica de código propio — los 3 síntomas existen de verdad en sus suites del lab (compruébalo en vivo con la de alguien). El mensaje: no escribieron mal código; escribieron el primer borrador que todo profesional escribe. Ahora toca la segunda pasada, la que separa scripts de ingeniería.</p></div>
 </section>
 
 <!-- ================================================================ -->
@@ -558,7 +558,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
     <div class="cols" style="gap:1.2rem">
       <div>
         <p style="font-size:.9rem;line-height:1.9;margin:.2rem 0">
-        1. Crea la carpeta <code class="pill">pages/</code> y el archivo <code class="pill">login-page.ts</code> (modelo en slide 11 — tipéalo, no lo pegues: la memoria muscular importa)<br>
+        1. Crea la carpeta <code class="pill">pages/</code> y el archivo <code class="pill">login-page.ts</code> (modelo en la slide «Tu LoginPage… ahora de verdad» — tipéalo, no lo pegues: la memoria muscular importa)<br>
         2. Refactoriza login.spec.ts y login-invalid.spec.ts para usarlo<br>
         3. Verde de nuevo:</p>
         <div class="cmd"><span class="ps">$</span><span class="ct">npx playwright test login</span><span class="copy">📋</span></div>
@@ -639,7 +639,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
     <div class="cols" style="gap:1.2rem">
       <div>
         <p style="font-size:.9rem;line-height:1.9;margin:.2rem 0">
-        1. Crea <code class="pill">fixtures.ts</code> en la raíz (modelo en slide 15)<br>
+        1. Crea <code class="pill">fixtures.ts</code> en la raíz (modelo en la slide «Fixtures: crea tu propio ({ page })»)<br>
         2. En tus specs de login: cambia el import de <code class="pill">@playwright/test</code> por <code class="pill">../fixtures</code><br>
         3. Recibe <code class="pill">({ loginPage, page })</code> y borra el beforeEach que ya no necesitas<br>
         4. Verde de nuevo.</p>
@@ -794,7 +794,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
   <div class="kicker">Lo que acabas de construir</div>
   <h2 data-anim="fade-up" style="text-align:center">Tu carpeta ya <span class="grad-text">rima con KATA</span> 🥋</h2>
   <table class="cmp" data-stagger style="max-width:880px;margin:0 auto">
-    <tr><th>Lo tuyo (hoy)</th><th>KATA (el framework profesional)</th></tr>
+    <tr><th>Lo tuyo (esta sesión)</th><th>KATA (el framework profesional)</th></tr>
     <tr><td><code>pages/login-page.ts</code></td><td>Page Component (capa L3) — con ATCs registrados</td></tr>
     <tr><td><code>fixtures.ts</code> con <code>({ loginPage })</code></td><td>TestFixture (L4) — entrega <code>({ ui })</code>, <code>({ api })</code>, <code>({ test })</code></td></tr>
     <tr><td>Helpers repetidos en cada POM</td><td>UiBase / ApiBase (L2) — heredados con <code>extends</code></td></tr>
@@ -816,7 +816,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
     <div class="card"><div class="ico">🛠️</div><h3>Siguiente: Dev Craft</h3><p>Git, GitHub y tu primer PR — para que esta suite viva en equipo, no en tu laptop.</p></div>
     <div class="card hl"><div class="ico">🥋</div><h3>Después: KATA Bridge</h3><p>El último deck: cruzar de tu mini-framework al boilerplate profesional.</p></div>
   </div>
-  <div class="notes"><p>Logro de hoy en una frase: pasaron de "tengo tests" a "tengo un framework chiquito": organización (hooks), robustez (locators), encapsulamiento (POM), inyección (fixtures) y estrategia (API vs UI). Quedan 2 decks: Dev Craft (compartir vía git/PR) y KATA Bridge (el destino final). El progreso de misiones queda guardado en este archivo.</p></div>
+  <div class="notes"><p>Logro de la sesión en una frase: pasaron de "tengo tests" a "tengo un framework chiquito": organización (hooks), robustez (locators), encapsulamiento (POM), inyección (fixtures) y estrategia (API vs UI). Quedan 2 decks: Dev Craft (compartir vía git/PR) y KATA Bridge (el destino final). El progreso de misiones queda guardado en este archivo.</p></div>
 </section>
 
 <script>

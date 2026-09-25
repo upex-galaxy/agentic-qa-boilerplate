@@ -30,8 +30,8 @@ bun run claude -- --model <full-model-id> --effort high --permission-mode auto -
 
 # Per-issue brief, the sprint shape (one line, still self-contained). The environment variables are
 # OPTIONAL and redundant here: fleet mode is detected from the prompt token and the brief, because a
-# prefix reaches a native supervised worker never and was measured EMPTY in all three sessions of a
-# real fleet even on this path.
+# prefix reaches a native supervised worker never and was measured EMPTY on a real fleet even on
+# this path.
 bun run claude -- --model <full-model-id> --effort high --permission-mode auto -n "<KEY>-<slug>" '/sprint-testing <KEY> fleet worker. Read <ABS>/.session/sprint-testing/sprint-<N>/<KEY>/brief.md and execute it. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints. Channel: orca orchestration. No heartbeats.'
 
 # The SAME prompt, delivered on the supervised path (no argv, so no name flag and no prefix):
@@ -39,8 +39,9 @@ bun run claude -- --model <full-model-id> --effort high --permission-mode auto -
 #   2. read the screen:  status footer present AND credentials loaded (direnv), or fix the machine
 #   3. send the prompt:  [ORCHESTRATION_TOOL] terminal send, the text between the quotes above
 
-# OpenCode — verified flags: -m/--model, --agent, --prompt, --auto (auto-approve permissions not
-# explicitly denied), -s/--session, -c/--continue, --fork. There is NO name flag and NO effort flag,
+# OpenCode — flags per `opencode --help` on the machine (confirm before pasting): -m/--model, --agent,
+# --prompt, --auto (auto-approve permissions not explicitly denied), -s/--session, -c/--continue,
+# --fork. There is NO name flag and NO effort flag,
 # so the brief instructs the worker to rename itself to its label in its first turn.
 bun run opencode -- --model <provider/model> --auto --prompt '/<workflow-skill> <KEY> fleet worker. Read <ABS>/.session/orchestration/<slug>/COMMON.md then <ABS>/.session/orchestration/<slug>/W-<label>.md and execute your brief. First turn: rename this session to <KEY>-<slug>. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints. Channel: orca orchestration. No heartbeats.'
 

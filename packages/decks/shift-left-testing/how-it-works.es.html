@@ -541,7 +541,7 @@ h4,.h4{font-size:17px;color:var(--text-1)}
       <li><b>0.0 Resume check.</b> ¿Existe <code>progress.md</code> del batch? → ofrecer <b>resume / restart / abort</b>. Restart archiva lo anterior como <code>-aborted</code>.</li>
       <li><b>0.1 Modalidad TMS.</b> Probe de 4 pasos (A: Xray · B: Jira-native). Se persiste en <code>plan.md</code> §Inputs.</li>
       <li><b>0.2 Tool skills.</b> <code>/acli</code> siempre (escrituras + búsqueda trivial). Lecturas de detalle → <code>bun run jira:sync-issues</code>, nunca <code>acli view</code>.</li>
-      <li><b>0.3 Contexto.</b> 4 archivos <code>.context/</code> verificados; si falta uno → STOP → <b>/project-discovery</b>.</li>
+      <li><b>0.3 Contexto.</b> Los archivos <code>.context/</code> que exige el preflight (ver SKILL.md) verificados; si falta uno → STOP → <b>/project-discovery</b>.</li>
       <li><b>0.4 Candidatos.</b> IDs explícitos (UPEX-100,101,102) o JQL de backlog. Sweet spot 1-12; &gt;12 se divide en sesiones.</li>
       <li><b>0.5 Carpeta de sesión</b> + <code>plan.md</code> (Goal · Inputs · fases · riesgos) + primer entry en <code>progress.md</code>.</li>
     </ul>
@@ -612,7 +612,7 @@ h4,.h4{font-size:17px;color:var(--text-1)}
 <section class="slide" data-title="Phase 2 · Loop outline">
   <p class="kicker">phase 2 — refinement · un subagente por story, secuencial</p>
   <h2 class="h2" data-anim="fade-up">Refinement: el playbook, en <span class="grad">alcance outline</span></h2>
-  <p class="sm" style="max-width:100ch">Reuso deliberado: ~70% de la lógica vive en <code>sprint-testing/references/acceptance-test-planning.md</code> §Fases 1-3 — el subagente la cita y aplica el <b>delta shift-left</b>. Secuencial por diseño: presentas cada resumen al usuario antes de despachar la siguiente Story.</p>
+  <p class="sm" style="max-width:100ch">Reuso deliberado: la mayor parte de la lógica vive en <code>sprint-testing/references/acceptance-test-planning.md</code> §Fases 1-3 — el subagente la cita y aplica el <b>delta shift-left</b>. Secuencial por diseño: presentas cada resumen al usuario antes de despachar la siguiente Story.</p>
   <div class="vs">
     <div class="card good-side">
       <h3>Corre (alcance outline)</h3>
@@ -813,7 +813,7 @@ h4,.h4{font-size:17px;color:var(--text-1)}
     </table>
   </div>
   <p class="dim2 mt-m" style="font-size:13px">← → navegar · O overview · S presentador · N notas · F pantalla completa</p>
-  <div class="notes">Recuerda tres cosas: prevenir antes que detectar; el veto vence al score y la señal vence al volumen; un comando conduce las tres fases con un gate humano en cada paso de consecuencia. El label que pones hoy le ahorra trabajo al equipo el próximo sprint.</div>
+  <div class="notes">Recuerda tres cosas: prevenir antes que detectar; el veto vence al score y la señal vence al volumen; un comando conduce las tres fases con un gate humano en cada paso de consecuencia. El label que pones en el refinamiento le ahorra trabajo al equipo el próximo sprint.</div>
 </section>
 
   <div class="deck-footer"><span class="mono">/shift-left-testing · Shift-Left · Pre-sprint QA</span><span class="slide-number" data-current="1" data-total="13"></span></div>

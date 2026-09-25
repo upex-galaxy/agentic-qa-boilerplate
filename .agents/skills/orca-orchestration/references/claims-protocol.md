@@ -34,7 +34,7 @@ Three intents:
 
 ### Why `enumerate` exists
 
-Measured 2026-09-17: three workers minted three distinct API tokens under three isolated profiles,
+Measured on a real fleet: three workers minted three distinct API tokens under three isolated profiles,
 and one of them found that the account's own token-listing endpoint returns ALL of them. The
 isolation was real at the file level and absent at the API level. Nothing collided, nothing was
 mutated, and an assertion on "the account has N tokens" would have been wrong for all three of them

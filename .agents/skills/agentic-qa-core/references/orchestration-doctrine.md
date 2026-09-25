@@ -45,7 +45,7 @@ The conductor keeps using SUBAGENTS for its own reads and verifications — that
 
 **ERROR PROTOCOL**: On subagent error → STOP, report full context, DO NOT fix without approval, offer retry/skip/abort.
 
-**WORKFLOW SKILL COMPLIANCE**: `shift-left-testing`, `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `framework-development` MUST have a `## Subagent Dispatch Strategy` section using the 7-component briefing. Reference / utility / generator skills are EXEMPT (no dispatch table needed): `agentic-qa-core`, `agentic-qa-onboard`, `acli`, `xray-cli`, `playwright-cli`, `playwright-best-practices`, `project-discovery`, `project-context`, `sync-ai-context`, `adapt-framework`, `jira-administration`, `git-flow-master`.
+**WORKFLOW SKILL COMPLIANCE**: every skill marked `metadata.stage_owner: true` in its frontmatter MUST have a `## Subagent Dispatch Strategy` section using the 7-component briefing. Every other skill (reference / utility / generator) is EXEMPT (no dispatch table needed); the split mirrors `AGENTS.md` §3.
 
 **DEEP DETAIL** (further references):
 

@@ -695,13 +695,13 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <h1 class="cover-cmd anim-rise-in"><span class="sl">ci</span>-pipelines</h1>
     <p class="lede" style="max-width:60ch">Cómo GitHub Actions ejecuta nuestras suites sin que nadie apriete un botón: triggers, jobs, steps, runners, secrets, artifacts. Todo explicado sobre los workflows <b>reales</b> de este repo, línea por línea.</p>
     <div class="row wrap mt-l" style="gap:10px">
-      <span class="chip"><span class="dot" style="background:var(--accent)"></span><b>4 workflows reales</b> build · smoke · sanity · regression</span>
+      <span class="chip"><span class="dot" style="background:var(--accent)"></span><b>workflows reales</b> de .github/workflows/: build · smoke · sanity · regression</span>
       <span class="chip"><span class="dot" style="background:var(--good)"></span>5 capítulos · 10 quizzes · 8 simuladores</span>
       <span class="chip"><span class="dot" style="background:var(--accent-2)"></span>De cero a escribir tu propio <b>.yml</b></span>
     </div>
     <p class="small dim2 mt-l mono">→ avanzar · O overview · N notas · F pantalla completa · clic en los bloques interactivos</p>
     </div>
-    <div class="notes">Parte I del mini-curso de CI. Audiencia: testers que nunca abrieron un workflow. Todo YAML citado viene de .github/workflows/ en este repo, con número de línea. La Parte II cubre la estrategia de suites, el write-back al TMS y la integración con el pipeline de desarrollo.</div>
+    <div class="notes">Parte I del mini-curso de CI. Audiencia: testers que nunca abrieron un workflow. Todo YAML citado viene de .github/workflows/ en este repo (extractos: si el archivo y la slide difieren, manda el archivo). La Parte II cubre la estrategia de suites, el write-back al TMS y la integración con el pipeline de desarrollo.</div>
   </section>
 
   <!-- 2. MAPA DEL CURSO -->
@@ -733,7 +733,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
       <p class="lede">Integración Continua: cada cambio dispara una verificación automática en una máquina limpia. Para QA significa que la suite corre sola, siempre igual, y deja evidencia que nadie tiene que pedir.</p>
       <div class="goals"><span>Al terminar sabrás qué es un workflow, un job, un step y un runner</span><span>Y leerás <code class="k">build.yml</code> completo sin miedo</span></div>
     </div>
-    <div class="notes">Capítulo 1: vocabulario y anatomía. Usamos build.yml porque es el más corto (85 líneas) y no corre tests: solo valida el framework.</div>
+    <div class="notes">Capítulo 1: vocabulario y anatomía. Usamos build.yml porque es el más corto y no corre tests: solo valida el framework.</div>
   </section>
 
   <!-- 4. CI EN UNA FRASE -->
@@ -801,7 +801,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <p class="kicker">explorador: haz clic en cada bloque del YAML</p>
     <h2 class="h2">Anatomía de un workflow: <span class="grad">build.yml</span> completo</h2>
     <div class="split wide">
-      <div class="yaml yx tall" data-first="name"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>.github/workflows/build.yml</b> · L7-38, 59-79 (extracto)</span><span class="badge real">real</span></div>
+      <div class="yaml yx tall" data-first="name"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>.github/workflows/build.yml</b> · extracto</span><span class="badge real">real</span></div>
 <pre class="sm"><span class="row" data-x="name"><span class="ln">7</span><span class="key">name</span>: <span class="str">TestBuild Checks</span>
 <span class="ln">8</span><span class="key">run-name</span>: <span class="ex">${{ github.actor }}</span> triggered TestBuild Checks on <span class="ex">${{ github.ref_name }}</span></span>
 <span class="row" data-x="on"><span class="ln">10</span><span class="key">on</span>:
@@ -840,8 +840,8 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
           <div data-x="conc"><h4><span class="mono">concurrency</span> con cancelación</h4><p>Un solo build por rama (<code class="k">group: build-${{ github.ref }}</code>). Si haces push dos veces seguidas, el primer run <b>se cancela</b>: no publica nada, así que cancelarlo es gratis y ahorra minutos.</p><p>Compara con las suites: ellas usan <code class="k">cancel-in-progress: false</code> porque publican un reporte. Lo vemos en el Capítulo 4.</p><div class="hint">docs: control-workflow-concurrency</div></div>
           <div data-x="env"><h4><span class="mono">env:</span> variables para todos los jobs</h4><p>A nivel de workflow, <code class="k">env</code> define variables de entorno que heredan todos los jobs y steps. <code class="k">CI: true</code> es una convención que muchas herramientas leen (Playwright activa <code class="k">forbidOnly</code>, por ejemplo).</p><p>Las credenciales NO están escritas aquí: se leen de <code class="k">${{ secrets.X }}</code>, que GitHub inyecta enmascaradas. Copiar un valor de tu <code class="k">.env</code> al YAML es la falta más grave del curso.</p><div class="hint">docs: use-variables · use-secrets</div></div>
           <div data-x="job"><h4>el job <span class="mono">TestBuild</span></h4><p>La clave <code class="k">TestBuild</code> es el id (lo usa <code class="k">needs</code>); <code class="k">name</code> es lo que ves en la UI. <code class="k">runs-on: ubuntu-latest</code> pide una VM Linux de GitHub, limpia. <code class="k">timeout-minutes: 15</code> mata el job si se cuelga: sin él, el default es 360 minutos de factura.</p><div class="hint">docs: workflow-syntax → jobs.&lt;job_id&gt;</div></div>
-          <div data-x="uses"><h4>steps con <span class="mono">uses:</span> (acciones)</h4><p><code class="k">actions/checkout@v4</code> clona el repo en el runner (sin esto, la máquina está vacía). <code class="k">fetch-depth: 1</code> trae solo el último commit: más rápido. El siguiente step (L54-57, omitido aquí) es <code class="k">oven-sh/setup-bun@v2</code>, que instala Bun.</p><p><code class="k">@v4</code> es una etiqueta de versión mayor. Para máxima seguridad, GitHub recomienda fijar un <b>SHA de commit</b> completo en acciones de terceros: una etiqueta se puede mover, un SHA no.</p><div class="hint">docs: find-and-customize-actions · security/secure-use</div></div>
-          <div data-x="run"><h4>steps con <span class="mono">run:</span> (comandos)</h4><p>Cada <code class="k">run</code> es un comando de shell en el runner. Aquí corren los mismos scripts de <code class="k">package.json</code> que corres en local: <code class="k">lint:check</code> (y <code class="k">types:check</code> en L65-66, omitido por espacio). <code class="k">playwright test --list</code> compila todos los specs sin ejecutarlos: valida que la suite ES ejecutable.</p><p>Regla del repo: el YAML nunca inventa comandos. Llama a los scripts de <code class="k">package.json</code>, así local y CI hacen exactamente lo mismo.</p><div class="hint">Rule #11 de AGENTS.md: los scripts viven en package.json</div></div>
+          <div data-x="uses"><h4>steps con <span class="mono">uses:</span> (acciones)</h4><p><code class="k">actions/checkout@v4</code> clona el repo en el runner (sin esto, la máquina está vacía). <code class="k">fetch-depth: 1</code> trae solo el último commit: más rápido. El siguiente step (Setup Bun, omitido aquí) es <code class="k">oven-sh/setup-bun@v2</code>, que instala Bun.</p><p><code class="k">@v4</code> es una etiqueta de versión mayor. Para máxima seguridad, GitHub recomienda fijar un <b>SHA de commit</b> completo en acciones de terceros: una etiqueta se puede mover, un SHA no.</p><div class="hint">docs: find-and-customize-actions · security/secure-use</div></div>
+          <div data-x="run"><h4>steps con <span class="mono">run:</span> (comandos)</h4><p>Cada <code class="k">run</code> es un comando de shell en el runner. Aquí corren los mismos scripts de <code class="k">package.json</code> que corres en local: <code class="k">lint:check</code> (y <code class="k">types:check</code>, omitido por espacio). <code class="k">playwright test --list</code> compila todos los specs sin ejecutarlos: valida que la suite ES ejecutable.</p><p>Regla del repo: el YAML nunca inventa comandos. Llama a los scripts de <code class="k">package.json</code>, así local y CI hacen exactamente lo mismo.</p><div class="hint">Rule #11 de AGENTS.md: los scripts viven en package.json</div></div>
         </div>
       </div>
     </div>
@@ -886,7 +886,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
       <p class="lede">Un workflow no corre solo. Alguien o algo lo dispara: un PR, un reloj, un clic con parámetros, un evento de otro repo. La elección del trigger ES la estrategia.</p>
       <div class="goals"><span><code class="k">on:</code> con varios eventos</span><span><code class="k">workflow_dispatch</code> con inputs tipados</span><span>cron y sus trampas</span><span>contextos y expresiones <code class="k">${{ }}</code></span></div>
     </div>
-    <div class="notes">Capítulo 2. Los cuatro triggers que este repo usa hoy; los triggers externos (repository_dispatch, workflow_call, deployment_status) se dejan para la Parte II, Cap 9.</div>
+    <div class="notes">Capítulo 2. Los triggers que usan los workflows del repo; los triggers externos (repository_dispatch, workflow_call, deployment_status) se dejan para la Parte II, Cap 9.</div>
   </section>
 
   <!-- 9. SIMULADOR DE TRIGGERS -->
@@ -905,25 +905,25 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
       </div>
       <div>
         <div class="wfs">
-          <div class="wf" data-fires="pr"><div class="nm">build.yml</div><div class="ds"><code class="k">on: pull_request: branches: [main]</code> · L10-13</div><div class="why">Valida types + lint + compile de los specs en cada PR. No corre tests.</div></div>
-          <div class="wf" data-fires="cron2 dispatch"><div class="nm">smoke.yml</div><div class="ds"><code class="k">schedule</code> 02:00 · <code class="k">workflow_dispatch</code> · L11-33</div><div class="why">@critical contra staging. Con el botón podés elegir env, Allure y execution_key.</div></div>
-          <div class="wf" data-fires="dispatch"><div class="nm">sanity.yml</div><div class="ds">solo <code class="k">workflow_dispatch</code> · L11-54</div><div class="why">Nunca automático: siempre le decís QUÉ correr (grep, archivo, tipo).</div></div>
-          <div class="wf" data-fires="cron0 dispatch"><div class="nm">regression.yml</div><div class="ds"><code class="k">schedule</code> 00:00 · <code class="k">workflow_dispatch</code> · L11-38</div><div class="why">Integration + E2E completos. El único con input video_record.</div></div>
+          <div class="wf" data-fires="pr"><div class="nm">build.yml</div><div class="ds"><code class="k">on: pull_request: branches: [main]</code></div><div class="why">Valida types + lint + compile de los specs en cada PR. No corre tests.</div></div>
+          <div class="wf" data-fires="cron2 dispatch"><div class="nm">smoke.yml</div><div class="ds"><code class="k">schedule</code> 02:00 · <code class="k">workflow_dispatch</code></div><div class="why">@critical contra staging. Con el botón podés elegir env, Allure y execution_key.</div></div>
+          <div class="wf" data-fires="dispatch"><div class="nm">sanity.yml</div><div class="ds">solo <code class="k">workflow_dispatch</code></div><div class="why">Nunca automático: siempre le decís QUÉ correr (grep, archivo, tipo).</div></div>
+          <div class="wf" data-fires="cron0 dispatch"><div class="nm">regression.yml</div><div class="ds"><code class="k">schedule</code> 00:00 · <code class="k">workflow_dispatch</code></div><div class="why">Integration + E2E completos. El único con input video_record.</div></div>
           <div class="wf" data-fires="push dispatch day1"><div class="nm">pages.yml / squash</div><div class="ds"><code class="k">push</code> a main con <code class="k">paths</code> · <code class="k">dispatch</code> · squash mensual</div><div class="why">pages.yml publica el hub de docs solo si cambiaron packages/**. pages-squash.yml aplana gh-pages el 1° de cada mes.</div></div>
         </div>
         <div class="trig-note"></div>
         <div class="trig-notes" hidden>
           <div data-ev="pr">Solo <b>build.yml</b>. Ninguna suite corre en PR: el framework se valida, los tests no se ejecutan contra staging en cada push (costaría minutos y credenciales por cada PR, incluidos los de forks, que no tienen secrets). Correr una suite en PR es una decisión de la Parte II.</div>
-          <div data-ev="push">Solo <b>pages.yml</b>, y solo si el push tocó <code class="k">packages/kata-academy/**</code>, <code class="k">packages/pages-home/**</code>, <code class="k">packages/decks/**</code> o el propio workflow (L17-21). Un push que cambia un test no publica nada.</div>
-          <div data-ev="cron0">Solo <b>regression.yml</b>. Sin inputs (un cron no tiene formulario): <code class="k">TEST_ENV</code> cae en <code class="k">'staging'</code> por el <code class="k">||</code> de L50, y <code class="k">STP_EXECUTION_KEY</code> cae en el secret (L76). Dos horas antes que smoke para no pisarse.</div>
-          <div data-ev="cron2">Solo <b>smoke.yml</b>. Corre a las 02:00 UTC (L12): a esa hora el deploy nocturno de la app ya debería estar arriba. GitHub advierte que los crons se retrasan en la hora en punto bajo carga; por eso conviene repartirlos.</div>
+          <div data-ev="push">Solo <b>pages.yml</b>, y solo si el push tocó <code class="k">packages/kata-academy/**</code>, <code class="k">packages/pages-home/**</code>, <code class="k">packages/decks/**</code> o el propio workflow (la lista <code class="k">paths:</code> del workflow). Un push que cambia un test no publica nada.</div>
+          <div data-ev="cron0">Solo <b>regression.yml</b>. Sin inputs (un cron no tiene formulario): <code class="k">TEST_ENV</code> cae en <code class="k">'staging'</code> por el <code class="k">|| 'staging'</code> del bloque env, y <code class="k">STP_EXECUTION_KEY</code> cae en el secret. Dos horas antes que smoke para no pisarse.</div>
+          <div data-ev="cron2">Solo <b>smoke.yml</b>. Corre a las 02:00 UTC: a esa hora el deploy nocturno de la app ya debería estar arriba. GitHub advierte que los crons se retrasan en la hora en punto bajo carga; por eso conviene repartirlos.</div>
           <div data-ev="dispatch">Cualquiera de los cuatro que declare <code class="k">workflow_dispatch</code>, uno a la vez: vos elegís cuál en la UI (o con <code class="k">gh workflow run &lt;archivo&gt;</code>). El formulario se genera de los <code class="k">inputs</code>. build.yml NO tiene botón: solo PR.</div>
-          <div data-ev="day1">Solo <b>pages-squash.yml</b> (<code class="k">cron '0 4 1 * *'</code>, L16): reescribe gh-pages a un único commit para que la rama generada no crezca sin límite. Un cron de mantenimiento, no de testing.</div>
+          <div data-ev="day1">Solo <b>pages-squash.yml</b> (<code class="k">cron '0 4 1 * *'</code>): reescribe gh-pages a un único commit para que la rama generada no crezca sin límite. Un cron de mantenimiento, no de testing.</div>
         </div>
       </div>
     </div>
     </div>
-    <div class="notes">Simulador: 6 eventos vs 5 archivos. Idea clave: un evento puede disparar 0, 1 o varios workflows; cada archivo declara sus propios triggers en on:. PR no corre suites (decisión explícita).</div>
+    <div class="notes">Simulador: 6 eventos vs los archivos de .github/workflows/. Idea clave: un evento puede disparar 0, 1 o varios workflows; cada archivo declara sus propios triggers en on:. PR no corre suites (decisión explícita).</div>
   </section>
 
   <!-- 10. WORKFLOW_DISPATCH INPUTS -->
@@ -932,7 +932,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <p class="kicker">formulario: cambia los valores y mira el comando que genera</p>
     <h2 class="h2"><span class="grad">workflow_dispatch</span>: el botón con parámetros</h2>
     <div class="dform">
-      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>smoke.yml</b> · L14-33</span><span class="badge real">real</span></div>
+      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>smoke.yml</b> · extracto: inputs de workflow_dispatch</span><span class="badge real">real</span></div>
 <pre class="sm"><span class="ln">14</span>  <span class="key">workflow_dispatch</span>:
 <span class="ln">15</span>    <span class="key">inputs</span>:
 <span class="ln">16</span>      <span class="key">environment</span>:
@@ -967,8 +967,8 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
       </div>
     </div>
     <div class="row mt-s" style="gap:16px;align-items:flex-start">
-      <p class="small dim" style="margin:0;flex:1">Tipos válidos: <code class="k">choice</code>, <code class="k">boolean</code>, <code class="k">string</code>, <code class="k">number</code>, <code class="k">environment</code>. Máximo 25 inputs. Se leen con <code class="k">github.event.inputs.X</code> (todo llega como <b>string</b>) o con <code class="k">inputs.X</code> (conserva los booleanos). Por eso el repo compara <code class="k">generate_allure != 'false'</code> entre comillas (smoke.yml L161).</p>
-      <p class="small dim" style="margin:0;flex:1">El patrón <code class="k">${{ github.event.inputs.environment || 'staging' }}</code> (L8, L42, L77) es el <b>fallback para el cron</b>: un run programado no tiene inputs, la expresión devuelve vacío y el <code class="k">||</code> rescata el default. Sin ese <code class="k">||</code>, la regresión nocturna correría sin entorno.</p>
+      <p class="small dim" style="margin:0;flex:1">Tipos válidos: <code class="k">choice</code>, <code class="k">boolean</code>, <code class="k">string</code>, <code class="k">number</code>, <code class="k">environment</code>. Máximo 25 inputs. Se leen con <code class="k">github.event.inputs.X</code> (todo llega como <b>string</b>) o con <code class="k">inputs.X</code> (conserva los booleanos). Por eso el repo compara <code class="k">generate_allure != 'false'</code> entre comillas (el <code class="k">if</code> del job allure-report en smoke.yml).</p>
+      <p class="small dim" style="margin:0;flex:1">El patrón <code class="k">${{ github.event.inputs.environment || 'staging' }}</code> es el <b>fallback para el cron</b>: un run programado no tiene inputs, la expresión devuelve vacío y el <code class="k">||</code> rescata el default. Sin ese <code class="k">||</code>, la regresión nocturna correría sin entorno.</p>
     </div>
     </div>
     <div class="notes">Formulario vivo: los inputs generan la UI de GitHub y el comando gh equivalente. Dos gotchas: inputs llegan como string en github.event.inputs; el || 'staging' existe por el cron.</div>
@@ -981,7 +981,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <h2 class="h2"><span class="grad">schedule</span>: el reloj que nadie olvida</h2>
     <div class="split eq">
       <div>
-        <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>regression.yml</b> L11-12 · <b>smoke.yml</b> L11-12 · <b>pages-squash.yml</b> L15-16</span><span class="badge real">real</span></div>
+        <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">schedule: de <b>regression.yml</b> · <b>smoke.yml</b> · <b>pages-squash.yml</b></span><span class="badge real">real</span></div>
 <pre><span class="key">schedule</span>:
   - <span class="key">cron</span>: <span class="str">'0 0 * * *'</span> <span class="c"># Runs daily at midnight UTC   (regression)</span>
   - <span class="key">cron</span>: <span class="str">'0 2 * * *'</span> <span class="c"># Runs daily at 2:00 AM UTC    (smoke)</span>
@@ -1006,7 +1006,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
         <h4 style="margin:6px 0 4px;font-size:15px">Las cuatro trampas del cron (todas documentadas por GitHub)</h4>
         <ul class="blist">
           <li><b>Solo corre en la rama por defecto.</b> Un cron en tu feature branch no hace nada hasta que se mergea a <code class="k">main</code>.</li>
-          <li><b>No tiene inputs.</b> Por eso cada valor que depende de un input lleva su <code class="k">|| 'default'</code>. Y por eso <code class="k">execution_key</code> cae al secret <code class="k">STP_EXECUTION_KEY</code> en la regresión nocturna (regression.yml L76).</li>
+          <li><b>No tiene inputs.</b> Por eso cada valor que depende de un input lleva su <code class="k">|| 'default'</code>. Y por eso <code class="k">execution_key</code> cae al secret <code class="k">STP_EXECUTION_KEY</code> en la regresión nocturna.</li>
           <li><b>Se retrasa bajo carga.</b> Puede arrancar minutos tarde; en casos extremos, saltarse. No es un reloj suizo: es una cola.</li>
           <li><b>Se apaga solo.</b> En repos públicos, tras 60 días sin actividad GitHub desactiva los workflows programados. Un repo dormido deja de vigilar.</li>
         </ul>
@@ -1025,14 +1025,14 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <div class="split wide">
       <table class="tbl tight mt-s">
         <tr><th>Contexto</th><th>Qué contiene</th><th>Ejemplo real en el repo</th></tr>
-        <tr><td><b>github</b></td><td>Metadatos del run: quién, qué rama, qué evento, número de run.</td><td class="mono">${{ github.actor }} · github.ref_name · github.run_number (smoke L8, L231)</td></tr>
-        <tr><td><b>github.event</b></td><td>El payload del evento que disparó el run. Con dispatch, trae <code class="k">inputs</code>.</td><td class="mono">${{ github.event.inputs.environment || 'staging' }} (L42)</td></tr>
-        <tr><td><b>inputs</b></td><td>Los inputs tipados (booleanos siguen siendo booleanos). Sirve para dispatch y para <code class="k">workflow_call</code>.</td><td class="mono">${{ inputs.environment }} <span class="dim2">(no usado aún aquí)</span></td></tr>
-        <tr><td><b>secrets</b></td><td>Valores cifrados, enmascarados en logs. Solo en <code class="k">env</code>, <code class="k">with</code> e <code class="k">if</code> de step.</td><td class="mono">${{ secrets.XRAY_CLIENT_ID }} (regression L64)</td></tr>
-        <tr><td><b>vars</b></td><td>Configuración no secreta (repo / env / org). Legible en <code class="k">if</code> de <b>job</b>.</td><td class="mono">${{ vars.TMS_PROVIDER || 'xray' }} (regression L62, L402)</td></tr>
-        <tr><td><b>env</b></td><td>Las variables de entorno definidas con <code class="k">env:</code>. NO disponible en <code class="k">if</code> de job.</td><td class="mono">${{ env.TEST_ENV }} (smoke L99)</td></tr>
-        <tr><td><b>steps</b></td><td>Outputs de steps anteriores (mismo job) por su <code class="k">id</code>.</td><td class="mono">steps.check_allure.outputs.has_results (L197)</td></tr>
-        <tr><td><b>needs</b></td><td>Resultado y outputs de los jobs de los que dependés.</td><td class="mono">needs.SmokeTest.result <span class="dim2">(en el job Slack comentado, L252)</span></td></tr>
+        <tr><td><b>github</b></td><td>Metadatos del run: quién, qué rama, qué evento, número de run.</td><td class="mono">${{ github.actor }} · github.ref_name · github.run_number (smoke.yml)</td></tr>
+        <tr><td><b>github.event</b></td><td>El payload del evento que disparó el run. Con dispatch, trae <code class="k">inputs</code>.</td><td class="mono">${{ github.event.inputs.environment || 'staging' }} (bloque env)</td></tr>
+        <tr><td><b>inputs</b></td><td>Los inputs tipados (booleanos siguen siendo booleanos). Sirve para dispatch y para <code class="k">workflow_call</code>.</td><td class="mono">${{ inputs.environment }} <span class="dim2">(no usado en este repo)</span></td></tr>
+        <tr><td><b>secrets</b></td><td>Valores cifrados, enmascarados en logs. Solo en <code class="k">env</code>, <code class="k">with</code> e <code class="k">if</code> de step.</td><td class="mono">${{ secrets.XRAY_CLIENT_ID }} (regression.yml, bloque env)</td></tr>
+        <tr><td><b>vars</b></td><td>Configuración no secreta (repo / env / org). Legible en <code class="k">if</code> de <b>job</b>.</td><td class="mono">${{ vars.TMS_PROVIDER || 'xray' }} (regression.yml: bloque env y el if del job XrayImport)</td></tr>
+        <tr><td><b>env</b></td><td>Las variables de entorno definidas con <code class="k">env:</code>. NO disponible en <code class="k">if</code> de job.</td><td class="mono">${{ env.TEST_ENV }} (smoke.yml, step Run Smoke Tests)</td></tr>
+        <tr><td><b>steps</b></td><td>Outputs de steps anteriores (mismo job) por su <code class="k">id</code>.</td><td class="mono">steps.check_allure.outputs.has_results (smoke.yml, job allure-report)</td></tr>
+        <tr><td><b>needs</b></td><td>Resultado y outputs de los jobs de los que dependés.</td><td class="mono">needs.SmokeTest.result <span class="dim2">(en el job Slack comentado)</span></td></tr>
       </table>
       <div>
         <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">operadores que vas a usar</span><span class="badge ex">ejemplos</span></div>
@@ -1048,11 +1048,11 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
 
 <span class="c"># dentro de `if:` las llaves son opcionales</span>
 <span class="key">if</span>: always() &amp;&amp; env.AUTO_SYNC == 'true'</pre></div>
-        <div class="callout mt-m"><h4>La regla que rompe más workflows</h4><p>Un <code class="k">if:</code> a nivel de <b>job</b> puede leer <code class="k">github</code>, <code class="k">vars</code>, <code class="k">inputs</code> y <code class="k">needs</code>, pero <b>no</b> <code class="k">env</code> ni <code class="k">secrets</code>. Por eso <code class="k">TMS_PROVIDER</code> es una <i>variable</i> y no un secret, y por eso regression.yml L402 repite <code class="k">vars.TMS_PROVIDER</code> en vez de leer <code class="k">env.TMS_PROVIDER</code>. El comentario de L400-401 lo dice textual.</p></div>
+        <div class="callout mt-m"><h4>La regla que rompe más workflows</h4><p>Un <code class="k">if:</code> a nivel de <b>job</b> puede leer <code class="k">github</code>, <code class="k">vars</code>, <code class="k">inputs</code> y <code class="k">needs</code>, pero <b>no</b> <code class="k">env</code> ni <code class="k">secrets</code>. Por eso <code class="k">TMS_PROVIDER</code> es una <i>variable</i> y no un secret, y por eso el <code class="k">if</code> del job XrayImport de regression.yml repite <code class="k">vars.TMS_PROVIDER</code> en vez de leer <code class="k">env.TMS_PROVIDER</code>. El comentario justo encima lo dice textual.</p></div>
       </div>
     </div>
     </div>
-    <div class="notes">Tabla de contextos con ejemplos línea-exactos. La regla dorada: job-level if no lee env ni secrets → TMS_PROVIDER es var. Sacado del propio comentario del workflow.</div>
+    <div class="notes">Tabla de contextos con ejemplos del repo. La regla dorada: job-level if no lee env ni secrets → TMS_PROVIDER es var. Sacado del propio comentario del workflow.</div>
   </section>
 
   <!-- 13. QUIZ 2 -->
@@ -1077,7 +1077,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
           <div class="opt" data-correct="1"><span class="mk">B</span><span>No funciona: el <code class="k">if</code> de job no puede leer <code class="k">env</code>; hay que usar <code class="k">vars.TMS_PROVIDER</code></span></div>
           <div class="opt"><span class="mk">C</span><span>Funciona solo si TMS_PROVIDER es un secret</span></div>
         </div>
-        <div class="qexp"><b>vars, no env.</b> El contexto <code class="k">env</code> no existe cuando GitHub decide si arranca un job. Por eso regression.yml L402 escribe <code class="k">if: always() &amp;&amp; (vars.TMS_PROVIDER || 'xray') == 'xray'</code> y guarda el proveedor como <b>variable de repositorio</b>, que sí se puede leer ahí. Un secret tampoco serviría: <code class="k">secrets</code> también está vedado en el <code class="k">if</code> de job.</div>
+        <div class="qexp"><b>vars, no env.</b> El contexto <code class="k">env</code> no existe cuando GitHub decide si arranca un job. Por eso el job XrayImport de regression.yml escribe <code class="k">if: always() &amp;&amp; (vars.TMS_PROVIDER || 'xray') == 'xray'</code> y guarda el proveedor como <b>variable de repositorio</b>, que sí se puede leer ahí. Un secret tampoco serviría: <code class="k">secrets</code> también está vedado en el <code class="k">if</code> de job.</div>
       </div>
     </div>
     </div>
@@ -1108,10 +1108,10 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
             <line x1="215" y1="60" x2="235" y2="120"/><line x1="235" y1="120" x2="490" y2="150"/>
             <text x="470" y="105">needs: [int, e2e]</text>
           </svg>
-          <div class="node q" data-j="int" style="left:0;top:20px"><div class="nm">IntegrationTests</div><div class="ds">API sola · timeout 30 min · L95-98</div><div class="st">queued</div></div>
-          <div class="node q" data-j="e2e" style="left:245px;top:20px"><div class="nm">E2ETests</div><div class="ds"><code class="k">needs: IntegrationTests</code> · timeout 60 · L164-168</div><div class="st">queued</div></div>
-          <div class="node q" data-j="allure" style="left:490px;top:0"><div class="nm">allure-report</div><div class="ds"><code class="k">needs: [IntegrationTests, E2ETests]</code><br><code class="k">if: always() &amp;&amp; …</code> · L260-264</div><div class="st">queued</div></div>
-          <div class="node q" data-j="xray" style="left:490px;top:125px"><div class="nm">XrayImport</div><div class="ds"><code class="k">needs: [IntegrationTests, E2ETests]</code><br><code class="k">if: always() &amp;&amp; vars…</code> · L394-402</div><div class="st">queued</div></div>
+          <div class="node q" data-j="int" style="left:0;top:20px"><div class="nm">IntegrationTests</div><div class="ds">API sola · timeout 30 min</div><div class="st">queued</div></div>
+          <div class="node q" data-j="e2e" style="left:245px;top:20px"><div class="nm">E2ETests</div><div class="ds"><code class="k">needs: IntegrationTests</code> · timeout 60</div><div class="st">queued</div></div>
+          <div class="node q" data-j="allure" style="left:490px;top:0"><div class="nm">allure-report</div><div class="ds"><code class="k">needs: [IntegrationTests, E2ETests]</code><br><code class="k">if: always() &amp;&amp; …</code></div><div class="st">queued</div></div>
+          <div class="node q" data-j="xray" style="left:490px;top:125px"><div class="nm">XrayImport</div><div class="ds"><code class="k">needs: [IntegrationTests, E2ETests]</code><br><code class="k">if: always() &amp;&amp; vars…</code></div><div class="st">queued</div></div>
         </div>
         <div class="ctl mt-m"><button class="btn primary" id="jg-play">▶ noche normal</button><button class="btn" id="jg-fail">▶ la API falla</button><button class="btn sm" id="jg-reset">reset</button></div>
         <div class="small dim mt-s" id="jg-log" style="min-height:96px;line-height:1.5"></div>
@@ -1136,7 +1136,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <p class="kicker">los cinco steps que toda suite repite</p>
     <h2 class="h2">Steps: <span class="grad">uses</span> enchufa una action, <span class="grad">run</span> ejecuta un comando</h2>
     <div class="split">
-      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>smoke.yml</b> · L79-100 (idéntico en sanity y regression)</span><span class="badge real">real</span></div>
+      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>smoke.yml</b> · extracto: steps de setup (idéntico en sanity y regression)</span><span class="badge real">real</span></div>
 <pre class="sm"><span class="ln">79</span>    <span class="key">steps</span>:
 <span class="ln">80</span>      - <span class="key">name</span>: <span class="str">Checkout Repo</span>
 <span class="ln">81</span>        <span class="key">uses</span>: <span class="str">actions/checkout@v4</span>        <span class="c"># 1 · trae el código</span>
@@ -1168,7 +1168,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
       </div>
     </div>
     </div>
-    <div class="notes">Los 5 steps de setup. uses vs run. Orden secuencial. env:check temprano = fail fast. SHA pinning como recomendación de docs (el repo usa tags de versión mayor).</div>
+    <div class="notes">Los 5 steps de setup. uses vs run. Orden secuencial. env:check temprano = fail fast. SHA pinning como recomendación de docs.</div>
   </section>
 
   <!-- 17. IF SIMULATOR -->
@@ -1188,12 +1188,12 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
       <div>
         <div class="steps-out">
           <div class="step-row" data-if="none"><span><span class="nm">Run Smoke Tests</span><span class="cond">(sin if)</span></span><span class="st"></span></div>
-          <div class="step-row" data-if="always"><span><span class="nm">Sync Results to TMS</span><span class="cond">if: always() &amp;&amp; env.AUTO_SYNC == 'true' &amp;&amp; (…) · L110</span></span><span class="st"></span></div>
-          <div class="step-row" data-if="always"><span><span class="nm">Upload Allure Results</span><span class="cond">if: always() · L114</span></span><span class="st"></span></div>
-          <div class="step-row" data-if="always"><span><span class="nm">Upload Test Results</span><span class="cond">if: always() · L122</span></span><span class="st"></span></div>
-          <div class="step-row" data-if="failure"><span><span class="nm">Upload Failure Evidence</span><span class="cond">if: failure() · L130</span></span><span class="st"></span></div>
-          <div class="step-row" data-if="always"><span><span class="nm">Cleanup Workspace</span><span class="cond">if: always() · L140</span></span><span class="st"></span></div>
-          <div class="step-row" data-if="always"><span><span class="nm">job allure-report</span><span class="cond">if: always() &amp;&amp; github.event.inputs.generate_allure != 'false' · L161</span></span><span class="st"></span></div>
+          <div class="step-row" data-if="always"><span><span class="nm">Sync Results to TMS</span><span class="cond">if: always() &amp;&amp; env.AUTO_SYNC == 'true' &amp;&amp; (…)</span></span><span class="st"></span></div>
+          <div class="step-row" data-if="always"><span><span class="nm">Upload Allure Results</span><span class="cond">if: always()</span></span><span class="st"></span></div>
+          <div class="step-row" data-if="always"><span><span class="nm">Upload Test Results</span><span class="cond">if: always()</span></span><span class="st"></span></div>
+          <div class="step-row" data-if="failure"><span><span class="nm">Upload Failure Evidence</span><span class="cond">if: failure()</span></span><span class="st"></span></div>
+          <div class="step-row" data-if="always"><span><span class="nm">Cleanup Workspace</span><span class="cond">if: always()</span></span><span class="st"></span></div>
+          <div class="step-row" data-if="always"><span><span class="nm">job allure-report</span><span class="cond">if: always() &amp;&amp; github.event.inputs.generate_allure != 'false'</span></span><span class="st"></span></div>
         </div>
         <table class="tbl tight mt-m">
           <tr><th>Función</th><th>Devuelve true cuando…</th><th>Uso típico</th></tr>
@@ -1214,7 +1214,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <p class="kicker">cómo un step le habla al siguiente, y al humano</p>
     <h2 class="h2">$GITHUB_OUTPUT, $GITHUB_STEP_SUMMARY y <span class="grad">::warning</span></h2>
     <div class="split eq">
-      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>smoke.yml</b> · L184-204 y L233-234</span><span class="badge real">real</span></div>
+      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>smoke.yml</b> · extracto: job allure-report</span><span class="badge real">real</span></div>
 <pre class="sm"><span class="ln">184</span>      - <span class="key">name</span>: <span class="str">Check Allure Results</span>
 <span class="ln">185</span>        <span class="key">id</span>: check_allure                    <span class="c"># ← el id hace legibles sus outputs</span>
 <span class="ln">186</span>        <span class="key">shell</span>: bash
@@ -1235,10 +1235,10 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
       <div>
         <div class="cards c3">
           <div class="card acc"><h4>$GITHUB_OUTPUT</h4><p>Un archivo. Escribís <code class="k">clave=valor</code> y GitHub lo expone como <code class="k">steps.&lt;id&gt;.outputs.clave</code> para los steps siguientes. Para pasarlo a OTRO job, lo mapeás en <code class="k">jobs.X.outputs</code> y lo leés con <code class="k">needs.X.outputs.clave</code>.</p></div>
-          <div class="card acc2"><h4>$GITHUB_STEP_SUMMARY</h4><p>Markdown que aparece en la página del run, arriba de los logs. Aquí se escribe el link al reporte Allure: el PM no abre logs, abre el summary. regression.yml también escribe cuántos JUnit importó a Xray (L473-474).</p></div>
-          <div class="card acc3"><h4>::notice / ::warning</h4><p>Anotaciones visibles en la UI sin fallar el step. regression.yml L442 avisa «Xray import skipped» con <code class="k">::notice</code> y L455 con <code class="k">::warning</code> cuando falta la execution_key. El step sale con 0: informar no es fallar.</p></div>
+          <div class="card acc2"><h4>$GITHUB_STEP_SUMMARY</h4><p>Markdown que aparece en la página del run, arriba de los logs. Aquí se escribe el link al reporte Allure: el PM no abre logs, abre el summary. regression.yml también escribe cuántos JUnit importó a Xray.</p></div>
+          <div class="card acc3"><h4>::notice / ::warning</h4><p>Anotaciones visibles en la UI sin fallar el step. el step Import JUnit Results to Xray de regression.yml avisa «Xray import skipped» con <code class="k">::notice</code> y con <code class="k">::warning</code> cuando falta la execution_key. El step sale con 0: informar no es fallar.</p></div>
         </div>
-        <div class="callout good mt-m"><h4>El patrón «detectar → decidir → saltar» (L184-204)</h4><p>Un step barato comprueba si hay resultados y publica un output. Los siete steps siguientes llevan <code class="k">if: steps.check_allure.outputs.has_results == 'true'</code>. Si la suite no dejó nada (un run cancelado a los 10 segundos), el job no instala Bun ni genera un reporte vacío. Diseño defensivo con un booleano de texto.</p></div>
+        <div class="callout good mt-m"><h4>El patrón «detectar → decidir → saltar»</h4><p>Un step barato comprueba si hay resultados y publica un output. Los steps siguientes llevan <code class="k">if: steps.check_allure.outputs.has_results == 'true'</code>. Si la suite no dejó nada (un run cancelado a los 10 segundos), el job no instala Bun ni genera un reporte vacío. Diseño defensivo con un booleano de texto.</p></div>
         <p class="small dim2 mt-s"><code class="k">$GITHUB_ENV</code> es el primo: <code class="k">echo "VAR=valor" &gt;&gt; $GITHUB_ENV</code> crea una variable de entorno para los steps siguientes del mismo job.</p>
       </div>
     </div>
@@ -1268,7 +1268,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
           <div class="opt"><span class="mk">B</span><span>Con <code class="k">steps.check_allure</code>: los outputs de steps son globales</span></div>
           <div class="opt" data-correct="1"><span class="mk">C</span><span>Bajando el artifact con <code class="k">download-artifact</code>, o leyendo <code class="k">needs.SmokeTest.outputs.*</code> si el job los declaró</span></div>
         </div>
-        <div class="qexp"><b>Artifacts u outputs de job.</b> Runners distintos = discos distintos, así que A es imposible. <code class="k">steps.*</code> solo existe dentro del mismo job, así que B tampoco. smoke.yml usa la vía del artifact (L177-182) y luego comprueba localmente si llegó algo (L184-194).</div>
+        <div class="qexp"><b>Artifacts u outputs de job.</b> Runners distintos = discos distintos, así que A es imposible. <code class="k">steps.*</code> solo existe dentro del mismo job, así que B tampoco. smoke.yml usa la vía del artifact (step Download Smoke Test Artifacts) y luego comprueba localmente si llegó algo (step Check Allure Results).</div>
       </div>
     </div>
     </div>
@@ -1299,15 +1299,15 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
           <tr><td><b><code class="k">${{ vars.X }}</code></b></td><td>Configuración que cambia por repo/entorno pero <b>no es secreta</b></td><td>Se define en Settings → Variables. Legible en <code class="k">if</code> de job. Vacío si no existe.</td></tr>
           <tr><td><b><code class="k">${{ secrets.X }}</code></b></td><td>Credenciales</td><td>Cifrado, enmascarado en logs, <b>no llega a PRs de forks</b>, no legible en <code class="k">if</code> de job.</td></tr>
         </table>
-        <div class="callout warn mt-m"><h4><code class="k">environment: name:</code> = un cajón de secrets con reglas</h4><p>Cada job de suite declara <code class="k">environment: name: ${{ inputs.environment || 'staging' }}</code> (smoke L76-77). Eso desbloquea los secrets/vars definidos en ESE environment de GitHub y aplica sus <b>protection rules</b> (revisores obligatorios, espera). Así <code class="k">production</code> puede exigir un aprobador aunque el YAML sea el mismo.</p></div>
-        <p class="small dim2 mt-s">No existe un secret <code class="k">ATLASSIAN_URL</code> a propósito: el host se lee de <code class="k">.agents/project.yaml</code> (regression.yml L83-87). Una segunda copia de un valor es la copia que envejece.</p>
+        <div class="callout warn mt-m"><h4><code class="k">environment: name:</code> = un cajón de secrets con reglas</h4><p>Cada job de suite declara <code class="k">environment: name: ${{ inputs.environment || 'staging' }}</code>. Eso desbloquea los secrets/vars definidos en ESE environment de GitHub y aplica sus <b>protection rules</b> (revisores obligatorios, espera). Así <code class="k">production</code> puede exigir un aprobador aunque el YAML sea el mismo.</p></div>
+        <p class="small dim2 mt-s">No existe un secret <code class="k">ATLASSIAN_URL</code> a propósito: el host se lee de <code class="k">.agents/project.yaml</code>. Una segunda copia de un valor es la copia que envejece.</p>
       </div>
       <div class="items">
         <div class="it" data-correct="secret"><span class="nm">STAGING_USER_PASSWORD</span><span class="ch"><button class="btn sm" data-ans="env">env</button><button class="btn sm" data-ans="var">var</button><button class="btn sm" data-ans="secret">secret</button></span><div class="res" data-why="Credencial: cifrada y enmascarada. smoke.yml L47."></div></div>
         <div class="it" data-correct="var"><span class="nm">TMS_PROVIDER (xray | jira)</span><span class="ch"><button class="btn sm" data-ans="env">env</button><button class="btn sm" data-ans="var">var</button><button class="btn sm" data-ans="secret">secret</button></span><div class="res" data-why="Configuración no sensible que además debe leerse en un if de job: solo vars puede. regression.yml L58-62."></div></div>
         <div class="it" data-correct="env"><span class="nm">CI: true</span><span class="ch"><button class="btn sm" data-ans="env">env</button><button class="btn sm" data-ans="var">var</button><button class="btn sm" data-ans="secret">secret</button></span><div class="res" data-why="Constante universal del workflow; no cambia por repo ni por entorno. L41."></div></div>
         <div class="it" data-correct="secret"><span class="nm">XRAY_CLIENT_SECRET</span><span class="ch"><button class="btn sm" data-ans="env">env</button><button class="btn sm" data-ans="var">var</button><button class="btn sm" data-ans="secret">secret</button></span><div class="res" data-why="Es una credencial de API. Nombre lo dice. regression.yml L65."></div></div>
-        <div class="it" data-correct="secret"><span class="nm">AUTO_SYNC ('true' | 'false')</span><span class="ch"><button class="btn sm" data-ans="env">env</button><button class="btn sm" data-ans="var">var</button><button class="btn sm" data-ans="secret">secret</button></span><div class="res" data-why="Trampa: por su naturaleza sería una var, pero el repo lo guarda como SECRET (L63: secrets.AUTO_SYNC) y solo lo lee en if de STEP, donde secrets sí está permitido. Funciona; una var sería más honesta. Distingue «qué es» de «cómo está hoy»."></div></div>
+        <div class="it" data-correct="secret"><span class="nm">AUTO_SYNC ('true' | 'false')</span><span class="ch"><button class="btn sm" data-ans="env">env</button><button class="btn sm" data-ans="var">var</button><button class="btn sm" data-ans="secret">secret</button></span><div class="res" data-why="Trampa: por su naturaleza sería una var, pero el repo lo guarda como SECRET (secrets.AUTO_SYNC en el bloque env) y solo lo lee en if de STEP, donde secrets sí está permitido. Funciona; una var sería más honesta. Distingue «qué es» de «cómo está configurado»."></div></div>
         <div class="it" data-correct="env"><span class="nm">TEST_ENV: ${{ inputs.environment || 'staging' }}</span><span class="ch"><button class="btn sm" data-ans="env">env</button><button class="btn sm" data-ans="var">var</button><button class="btn sm" data-ans="secret">secret</button></span><div class="res" data-why="Es una variable de entorno del workflow calculada desde el input: env: con una expresión. L42."></div></div>
       </div>
     </div>
@@ -1322,7 +1322,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <h2 class="h2"><span class="grad">concurrency</span>: cancelar o encolar, según qué publica</h2>
     <div class="split eq">
       <div>
-        <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>build.yml</b> L15-19 vs <b>regression.yml</b> L40-46</span><span class="badge real">real</span></div>
+        <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">bloque concurrency: de <b>build.yml</b> vs <b>regression.yml</b></span><span class="badge real">real</span></div>
 <pre class="sm"><span class="c"># build.yml: valida, no publica</span>
 <span class="key">concurrency</span>:
   <span class="c"># One build per PR branch: a force-push supersedes the run already in flight.</span>
@@ -1351,9 +1351,9 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
           <li><b><code class="k">group</code> define quién compite.</b> Puede usar expresiones (<code class="k">github</code>, <code class="k">inputs</code>, <code class="k">vars</code>). <code class="k">build-${{ github.ref }}</code>: un grupo por rama. Los nombres no distinguen mayúsculas.</li>
           <li><b>Por defecto solo hay UN pending.</b> Si llegan #2 y #3 mientras #1 corre, #2 se cancela y queda #3. Con <code class="k">queue: max</code> podés encolar hasta 100, pero no combinado con <code class="k">cancel-in-progress: true</code>.</li>
           <li><b>FIFO.</b> Los pending arrancan en el orden en que empezaron a esperar.</li>
-          <li><b>Nivel workflow o nivel job.</b> Los cinco archivos lo declaran a nivel workflow; pages.yml usa un grupo fijo (<code class="k">pages-docs-hub</code>, L28) porque siempre publica al mismo sitio.</li>
+          <li><b>Nivel workflow o nivel job.</b> Todos los workflows lo declaran a nivel workflow; pages.yml usa un grupo fijo (<code class="k">pages-docs-hub</code>) porque siempre publica al mismo sitio.</li>
         </ul>
-        <div class="callout mt-m"><h4>La pregunta que decide</h4><p>«¿Este workflow deja algo publicado o compartido?» Si no (validar, lint, compilar): <b>cancelar</b>, es más barato. Si sí (reporte, deploy, rama gh-pages): <b>encolar</b>, porque cancelar a medias deja un estado que parece completo y no lo es. Cuatro de nuestros cinco archivos publican; solo build.yml cancela.</p></div>
+        <div class="callout mt-m"><h4>La pregunta que decide</h4><p>«¿Este workflow deja algo publicado o compartido?» Si no (validar, lint, compilar): <b>cancelar</b>, es más barato. Si sí (reporte, deploy, rama gh-pages): <b>encolar</b>, porque cancelar a medias deja un estado que parece completo y no lo es. Todos nuestros workflows publican salvo build.yml, que cancela.</p></div>
       </div>
     </div>
     </div>
@@ -1367,7 +1367,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <h2 class="h2"><span class="grad">permissions</span>: qué puede hacer GITHUB_TOKEN</h2>
     <div class="split eq">
       <div>
-        <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>pages.yml</b> · L24-25, L74-80</span><span class="badge real">real</span></div>
+        <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>pages.yml</b> · extracto</span><span class="badge real">real</span></div>
 <pre class="sm"><span class="ln">24</span><span class="key">permissions</span>:
 <span class="ln">25</span>  <span class="key">contents</span>: write        <span class="c"># puede hacer push (a gh-pages)</span>
 <span class="ln">…</span>
@@ -1415,7 +1415,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
           <div class="opt" data-correct="1"><span class="mk">B</span><span>Queda pending y arranca cuando el manual termine: mismo grupo, <code class="k">cancel-in-progress: false</code></span></div>
           <div class="opt"><span class="mk">C</span><span>Corren los dos en paralelo: son triggers distintos</span></div>
         </div>
-        <div class="qexp"><b>Encola.</b> Ambos runs son de la misma rama, así que caen en el grupo <code class="k">regression-refs/heads/main</code>. Con <code class="k">cancel-in-progress: false</code> el segundo espera. Si cancelara, el manual podría haber subido ya sus artifacts y allure-report publicaría un reporte parcial como si fuera la regresión completa (comentario L41-44).</div>
+        <div class="qexp"><b>Encola.</b> Ambos runs son de la misma rama, así que caen en el grupo <code class="k">regression-refs/heads/main</code>. Con <code class="k">cancel-in-progress: false</code> el segundo espera. Si cancelara, el manual podría haber subido ya sus artifacts y allure-report publicaría un reporte parcial como si fuera la regresión completa (el comentario del bloque <code class="k">concurrency</code>).</div>
       </div>
       <div class="qitem">
         <div class="qq"><span class="qn">Q8</span><span>Un PR llega desde un fork externo. build.yml corre. ¿Qué valor tiene <code class="k">${{ secrets.STAGING_USER_PASSWORD }}</code> dentro de ese run?</span></div>
@@ -1424,7 +1424,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
           <div class="opt" data-correct="1"><span class="mk">B</span><span>Vacío: los secrets no se pasan a workflows disparados por <code class="k">pull_request</code> desde forks</span></div>
           <div class="opt"><span class="mk">C</span><span>Enmascarado como <code class="k">***</code> pero funcional</span></div>
         </div>
-        <div class="qexp"><b>Vacío, por diseño.</b> Un fork podría modificar el YAML para imprimir el secret; por eso GitHub no lo entrega y además le da al token permisos de solo lectura. El propio build.yml lo anticipa: el comentario de L48-50 dice que un PR de fork «has no secrets and fails here», en el gate de varlock, exactamente como fallaría en <code class="k">test:env:check</code>.</div>
+        <div class="qexp"><b>Vacío, por diseño.</b> Un fork podría modificar el YAML para imprimir el secret; por eso GitHub no lo entrega y además le da al token permisos de solo lectura. El propio build.yml lo anticipa: el comentario del step de varlock dice que un PR de fork «has no secrets and fails here», en el gate de varlock, exactamente como fallaría en <code class="k">test:env:check</code>.</div>
       </div>
     </div>
     </div>
@@ -1447,7 +1447,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <p class="kicker">lo que sobrevive al runner</p>
     <h2 class="h2">Artifacts: <span class="grad">subir en un job, bajar en otro</span></h2>
     <div class="split eq">
-      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>smoke.yml</b> L113-137 (sube) · L177-182 (baja)</span><span class="badge real">real</span></div>
+      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>smoke.yml</b> · extracto: steps Upload … (sube) · Download Smoke Test Artifacts (baja)</span><span class="badge real">real</span></div>
 <pre class="sm"><span class="ln">113</span>      - <span class="key">name</span>: <span class="str">Upload Allure Results</span>
 <span class="ln">114</span>        <span class="key">if</span>: always()
 <span class="ln">115</span>        <span class="key">uses</span>: <span class="str">actions/upload-artifact@v4</span>
@@ -1480,16 +1480,17 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
           <tr><td class="mono">*-failure-evidence</td><td>test-results + playwright-report</td><td>failure()</td><td>triage del fallo, adjuntar al bug</td></tr>
           <tr><td class="mono">merged-allure-results-{env}</td><td>Integration + E2E fusionados</td><td>si hay resultados</td><td>análisis del agente (/regression-testing Fase 2)</td></tr>
         </table>
+        <p class="small dim2 mt-s">Snapshot: la lista viva son los steps <code class="k">Upload …</code> de cada workflow.</p>
         <ul class="blist mt-s">
           <li><b>Nombres únicos por run.</b> En v4 los artifacts son inmutables: dos uploads con el mismo nombre en el mismo run fallan. Por eso los prefijos <code class="k">smoke-</code>, <code class="k">sanity-</code>, <code class="k">integration-</code>, <code class="k">e2e-</code>.</li>
           <li><b><code class="k">retention-days: 10</code>.</b> Después, se borran. El máximo por defecto es 90 (ajustable en Settings). Regla R4 de <code class="k">/regression-testing</code>: bajá la evidencia de un build rojo antes de que expire.</li>
           <li><b><code class="k">continue-on-error: true</code> en la descarga.</b> Si la suite no llegó a subir nada, el job de reporte no debe morir por eso: sigue, y el step «Check Allure Results» decide.</li>
-          <li><b>El step Cleanup (L139-145)</b> borra node_modules y resultados. En un runner de GitHub es redundante (la VM muere igual); en un runner self-hosted evita que el disco se llene.</li>
+          <li><b>El step Cleanup Workspace</b> borra node_modules y resultados. En un runner de GitHub es redundante (la VM muere igual); en un runner self-hosted evita que el disco se llene.</li>
         </ul>
       </div>
     </div>
     </div>
-    <div class="notes">Artifacts: upload (always/failure), download en otro job (continue-on-error), tabla de los 5 tipos que producimos, inmutabilidad v4, retención.</div>
+    <div class="notes">Artifacts: upload (always/failure), download en otro job (continue-on-error), tabla de los tipos que producimos, inmutabilidad v4, retención.</div>
   </section>
 
   <!-- 27. ESQUELETO -->
@@ -1498,43 +1499,43 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <p class="kicker">explorador: el mismo esqueleto en smoke, sanity y regression</p>
     <h2 class="h2">El esqueleto de una suite, <span class="grad">bloque por bloque</span></h2>
     <div class="split wide">
-      <div class="yaml yx" data-first="hdr"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">plantilla destilada de <b>smoke.yml</b> (las líneas citadas son de ese archivo)</span><span class="badge ex">esquema</span></div>
-<pre class="sm"><span class="row" data-x="hdr"><span class="c"># ==== Purpose: qué pregunta contesta, cuándo corre ====   L1-5</span>
+      <div class="yaml yx" data-first="hdr"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">plantilla destilada de <b>smoke.yml</b> (cada bloque mapea a ese archivo)</span><span class="badge ex">esquema</span></div>
+<pre class="sm"><span class="row" data-x="hdr"><span class="c"># ==== Purpose: qué pregunta contesta, cuándo corre ====</span>
 <span class="key">name</span>: Smoke Tests
 <span class="key">run-name</span>: <span class="ex">${{ github.actor }}</span> triggered … on <span class="ex">${{ … || 'staging' }}</span></span>
 <span class="row" data-x="on"><span class="key">on</span>:
-  <span class="key">schedule</span>: [{ cron }]                                        <span class="c"># L11-12</span>
-  <span class="key">workflow_dispatch</span>: { environment, generate_allure, execution_key }   <span class="c"># L14-33</span></span>
-<span class="row" data-x="conc"><span class="key">concurrency</span>: { group: smoke-<span class="ex">${{ github.ref }}</span>, cancel-in-progress: false }   <span class="c"># L35-38</span></span>
-<span class="row" data-x="env"><span class="key">env</span>:                                                          <span class="c"># L40-69</span>
+  <span class="key">schedule</span>: [{ cron }]
+  <span class="key">workflow_dispatch</span>: { environment, generate_allure, execution_key }</span>
+<span class="row" data-x="conc"><span class="key">concurrency</span>: { group: smoke-<span class="ex">${{ github.ref }}</span>, cancel-in-progress: false }</span>
+<span class="row" data-x="env"><span class="key">env</span>:
   CI · TEST_ENV · &lt;ENV&gt;_USER_EMAIL/PASSWORD (secrets)
   TMS_PROVIDER (vars) · AUTO_SYNC · XRAY_CLIENT_* · STP_EXECUTION_KEY</span>
 <span class="row" data-x="job"><span class="key">jobs</span>:
-  <span class="key">SmokeTest</span>:                                                  <span class="c"># L72-77</span>
+  <span class="key">SmokeTest</span>:
     runs-on · timeout-minutes · environment: { name }</span>
 <span class="row" data-x="setup">    <span class="key">steps</span>:
-      checkout → setup-bun → bun install → test:env:check → pw:install   <span class="c"># L80-97</span></span>
-<span class="row" data-x="run">      - <span class="key">run</span>: bun run test:smoke                                 <span class="c"># L99-100</span>
-      - Sync Results to TMS   (if: always() &amp;&amp; AUTO_SYNC…)      <span class="c"># L109-111</span></span>
-<span class="row" data-x="up">      - Upload Allure Results / Test Results   (if: always())   <span class="c"># L113-127</span>
-      - Upload Failure Evidence                (if: failure())  <span class="c"># L129-137</span>
-      - Cleanup Workspace                      (if: always())   <span class="c"># L139-145</span></span>
-<span class="row" data-x="rep">  <span class="key">allure-report</span>:   needs: SmokeTest · if: always() &amp;&amp; …       <span class="c"># L157-235</span>
+      checkout → setup-bun → bun install → test:env:check → pw:install</span>
+<span class="row" data-x="run">      - <span class="key">run</span>: bun run test:smoke
+      - Sync Results to TMS   (if: always() &amp;&amp; AUTO_SYNC…)</span>
+<span class="row" data-x="up">      - Upload Allure Results / Test Results   (if: always())
+      - Upload Failure Evidence                (if: failure())
+      - Cleanup Workspace                      (if: always())</span>
+<span class="row" data-x="rep">  <span class="key">allure-report</span>:   needs: SmokeTest · if: always() &amp;&amp; …
     checkout · checkout gh-pages (history) · download · check → publish</span></pre></div>
       <div>
         <div class="yx-panel idle">Haz clic en un bloque →</div>
         <div class="yx-data" hidden>
           <div data-x="hdr"><h4>Cabecera: propósito, name, run-name</h4><p>El comentario de las primeras líneas dice qué pregunta contesta la suite («Daily health check running only @critical tagged tests»). Es la primera línea que lee quien abre el archivo en seis meses. <code class="k">run-name</code> con actor + entorno hace legible la lista de runs.</p></div>
-          <div data-x="on"><h4>Triggers: reloj + botón</h4><p>El cron da la rutina; el dispatch da el control manual con tres inputs que se repiten en las tres suites: <code class="k">environment</code>, <code class="k">generate_allure</code>, <code class="k">execution_key</code>. Sanity añade <code class="k">test_type</code>, <code class="k">grep</code>, <code class="k">test_file</code>; regression añade <code class="k">video_record</code>.</p></div>
+          <div data-x="on"><h4>Triggers: reloj + botón</h4><p>El cron da la rutina; el dispatch da el control manual con tres inputs que se repiten en las tres suites: <code class="k">environment</code>, <code class="k">generate_allure</code>, <code class="k">execution_key</code>. Sanity añade <code class="k">test_type</code>, <code class="k">grep</code>, <code class="k">test_file</code>; regression añade <code class="k">video_record</code> (la lista viva es el bloque <code class="k">inputs:</code> de cada workflow).</p></div>
           <div data-x="conc"><h4>Concurrencia: encolar</h4><p>Un grupo por suite y rama. <code class="k">cancel-in-progress: false</code> porque el job final publica a gh-pages y dos publicaciones solapadas se pisan.</p></div>
           <div data-x="env"><h4>Bloque env: identidad del run</h4><p>Qué entorno, qué credenciales (por prefijo de entorno: <code class="k">STAGING_USER_EMAIL</code>), qué proveedor de TMS y si la sincronización está activa. Todo lo sensible por <code class="k">secrets</code>, lo configurable por <code class="k">vars</code>, lo derivado por expresión.</p></div>
-          <div data-x="job"><h4>El job de la suite</h4><p><code class="k">runs-on: ubuntu-latest</code>, <code class="k">timeout-minutes</code> acorde al tamaño (30 smoke, 60 sanity/E2E), y <code class="k">environment: name:</code> igual al input, para heredar los secrets y reglas de ese environment de GitHub.</p></div>
+          <div data-x="job"><h4>El job de la suite</h4><p><code class="k">runs-on: ubuntu-latest</code>, <code class="k">timeout-minutes</code> acorde al tamaño de la suite, y <code class="k">environment: name:</code> igual al input, para heredar los secrets y reglas de ese environment de GitHub.</p></div>
           <div data-x="setup"><h4>Los cinco steps de setup</h4><p>Siempre los mismos, siempre en este orden: código → runtime → dependencias → validación de variables (falla temprano) → browsers. Copiar y pegar es correcto aquí: un job es una máquina nueva.</p></div>
           <div data-x="run"><h4>La suite y el write-back</h4><p>Un solo <code class="k">run</code> con el script de <code class="k">package.json</code>. Después, con <code class="k">always()</code>, el paso que escribe en el TMS: lee <code class="k">reports/atc_results.json</code>, que KataReporter escribe al salir Playwright (por eso es un step aparte y no parte del test). Detalle en la Parte II, Cap 8.</p></div>
-          <div data-x="up"><h4>Evidencia y limpieza</h4><p>Tres uploads con <code class="k">always()</code> (resultados) y uno con <code class="k">failure()</code> (evidencia extra). Nombres con el prefijo de la suite. Retención 10 días. Cleanup al final.</p></div>
+          <div data-x="up"><h4>Evidencia y limpieza</h4><p>Tres uploads con <code class="k">always()</code> (resultados) y uno con <code class="k">failure()</code> (evidencia extra). Nombres con el prefijo de la suite. Retención la que fije <code class="k">retention-days</code>. Cleanup al final.</p></div>
           <div data-x="rep"><h4>El job de reporte</h4><p>Otro runner: vuelve a hacer checkout (necesita <code class="k">allurerc.mjs</code> y el devDep <code class="k">allure</code>), baja la rama gh-pages para la <b>historia</b> de tendencias, baja el artifact, comprueba que hay resultados y publica con el mismo script que usás en local. Parte II, Cap 7.</p></div>
         </div>
-        <div class="callout good mt-m"><h4>Lo que acabás de aprender a leer</h4><p>Con estos nueve bloques leés <code class="k">smoke.yml</code> (254 líneas), <code class="k">sanity.yml</code> (305) y <code class="k">regression.yml</code> (520) de una pasada. La diferencia entre ellos no es el esqueleto: es <i>qué</i> corre el step central y <i>cuántos</i> jobs de suite hay antes del reporte. Eso es la Parte II.</p></div>
+        <div class="callout good mt-m"><h4>Lo que acabás de aprender a leer</h4><p>Con estos nueve bloques leés <code class="k">smoke.yml</code>, <code class="k">sanity.yml</code> y <code class="k">regression.yml</code> de una pasada. La diferencia entre ellos no es el esqueleto: es <i>qué</i> corre el step central y <i>cuántos</i> jobs de suite hay antes del reporte. Eso es la Parte II.</p></div>
       </div>
     </div>
     </div>
@@ -1577,10 +1578,10 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <h2 class="h2">Ya leés cualquiera de nuestros workflows. <span class="grad">Ahora, la estrategia.</span></h2>
     <div class="cards c3 mt-m" style="align-items:start">
       <div class="card acc"><h4>Lo que ya dominás</h4><p>Workflow → jobs → steps → runner. Triggers (<code class="k">pull_request</code>, <code class="k">schedule</code>, <code class="k">workflow_dispatch</code> con inputs). Contextos y el <code class="k">||</code> de fallback. <code class="k">needs</code>, <code class="k">uses</code>/<code class="k">run</code>, <code class="k">if: always()</code>. Secrets vs vars vs env. Concurrencia y permisos. Artifacts.</p></div>
-      <div class="card acc2"><h4>Parte II · Arquitectura</h4><p>Por qué cuatro suites y qué gatea cada una. <code class="k">regression.yml</code> a fondo (merge, Allure, gh-pages). Cómo se ven los resultados. El write-back RTR/STR al TMS. Cómo conectar estas suites al pipeline de la app (aún no implementado). Y el constructor de workflows para escribir el tuyo.</p><p class="mt-s"><a href="./ci-pipelines-architecture.es.html" class="mono">→ ci-pipelines-architecture.es.html</a></p></div>
+      <div class="card acc2"><h4>Parte II · Arquitectura</h4><p>Por qué cuatro suites y qué gatea cada una. <code class="k">regression.yml</code> a fondo (merge, Allure, gh-pages). Cómo se ven los resultados. El write-back RTR/STR al TMS. Cómo conectar estas suites al pipeline de la app. Y el constructor de workflows para escribir el tuyo.</p><p class="mt-s"><a href="./ci-pipelines-architecture.es.html" class="mono">→ ci-pipelines-architecture.es.html</a></p></div>
       <div class="card acc3"><h4>Fuentes para profundizar</h4><p>docs.github.com/en/actions: <i>workflow-syntax</i>, <i>events-that-trigger-workflows</i>, <i>contexts</i>, <i>control-workflow-concurrency</i>, <i>security/secure-use</i>. En el repo: <code class="k">.agents/skills/regression-testing/references/ci-cd-integration.md</code>. El análisis del run: <a href="./how-it-works.es.html" class="mono">how-it-works.es.html</a>.</p></div>
     </div>
-    <div class="callout mt-m"><h4>Un ejercicio antes de la Parte II</h4><p>Abrí <code class="k">.github/workflows/sanity.yml</code> en el repo. Sin mirar este deck, identificá: los 7 inputs, el grupo de concurrencia, qué steps llevan <code class="k">always()</code> y cuál lleva <code class="k">failure()</code>, y cómo el step «Run Sanity Tests» decide qué comando ejecutar. Si podés explicárselo a alguien, la Parte I está aprobada.</p></div>
+    <div class="callout mt-m"><h4>Un ejercicio antes de la Parte II</h4><p>Abrí <code class="k">.github/workflows/sanity.yml</code> en el repo. Sin mirar este deck, identificá: los inputs (y cuántos son), el grupo de concurrencia, qué steps llevan <code class="k">always()</code> y cuál lleva <code class="k">failure()</code>, y cómo el step «Run Sanity Tests» decide qué comando ejecutar. Si podés explicárselo a alguien, la Parte I está aprobada.</p></div>
     <p class="lede mt-m" style="font-size:17px">Un workflow es una receta que corre igual a las 3 AM que a las 3 PM. Tu trabajo es escribir la receta; el de GitHub, cocinarla.</p>
     </div>
     <div class="notes">Cierre Parte I. Recap, puente a Parte II, fuentes, ejercicio con sanity.yml.</div>
@@ -2720,18 +2721,18 @@ $$('.ifsim').forEach(function(box){
     function row(name, cond, runs, why){ lines.push('<div class="step-row '+(runs?'runs':'skips')+'"><span><span class="nm">'+name+'</span><span class="cond">'+cond+'</span></span><span>'+(runs?'corre':'se salta')+'</span></div>'+(why?'<div class="small dim2" style="margin:-2px 0 4px 4px">'+why+'</div>':''));  }
     // smoke/sanity step
     var s1 = auto && (prov!=='xray' || key);
-    row('Sync Results to TMS <span class="dim2">(smoke.yml L110 · sanity.yml L151)</span>', 'always() &amp;&amp; AUTO_SYNC==\'true\' &amp;&amp; (TMS_PROVIDER!=\'xray\' || STP_EXECUTION_KEY!=\'\')', s1,
+    row('Sync Results to TMS <span class="dim2">(smoke.yml · sanity.yml)</span>', 'always() &amp;&amp; AUTO_SYNC==\'true\' &amp;&amp; (TMS_PROVIDER!=\'xray\' || STP_EXECUTION_KEY!=\'\')', s1,
       !auto ? 'AUTO_SYNC apagado: nada llega al TMS. Es el interruptor maestro (secret AUTO_SYNC).' : (prov==='xray' && !key ? 'Modalidad xray sin execution_key: se salta a propósito. Un smoke no puede escribir dentro del RTR de la regresión.' : (prov==='xray' ? 'Xray + key explícita: importa los ATC runs dentro de ESA ejecución.' : 'jira-native: escribe un status por Test issue; no necesita key.')));
     // regression per-job sync
     var s2 = auto && prov!=='xray';
-    row('Sync Integration/E2E Results to TMS <span class="dim2">(regression.yml L134, L204)</span>', 'always() &amp;&amp; AUTO_SYNC==\'true\' &amp;&amp; TMS_PROVIDER!=\'xray\'', s2,
+    row('Sync Integration/E2E Results to TMS <span class="dim2">(regression.yml, un step por job)</span>', 'always() &amp;&amp; AUTO_SYNC==\'true\' &amp;&amp; TMS_PROVIDER!=\'xray\'', s2,
       prov==='xray' ? 'En xray se salta: el job XrayImport ya sube el junit.xml; dos importaciones = doble import, no red de seguridad.' : (auto ? 'jira-native: cada job escribe sus propios resultados.' : ''));
     // XrayImport job
     var jobRuns = prov==='xray';
     var imp = jobRuns && auto && key;
-    row('Job XrayImport <span class="dim2">(regression.yml L394-402)</span>', 'always() &amp;&amp; (vars.TMS_PROVIDER || \'xray\') == \'xray\'', jobRuns,
+    row('Job XrayImport <span class="dim2">(regression.yml)</span>', 'always() &amp;&amp; (vars.TMS_PROVIDER || \'xray\') == \'xray\'', jobRuns,
       jobRuns ? '' : 'jira-native: el job entero se salta EN SILENCIO (sin anotación): un proyecto sin Xray no debe ver ruido de Xray.');
-    if(jobRuns) row('&nbsp;&nbsp;↳ paso Import JUnit Results to Xray <span class="dim2">(L432-475)</span>', 'gates en bash: AUTO_SYNC · XRAY_CLIENT_* · STP_EXECUTION_KEY', imp,
+    if(jobRuns) row('&nbsp;&nbsp;↳ paso Import JUnit Results to Xray', 'gates en bash: AUTO_SYNC · XRAY_CLIENT_* · STP_EXECUTION_KEY', imp,
       !auto ? '::notice "Xray import skipped: AUTO_SYNC is not true" y exit 0 (nunca rojo).' : (!key ? '::warning "No execution key, so results were NOT imported". Importar sin destino acuñaría una Test Execution huérfana por run.' : 'bun xray import junit --execution &lt;RTR&gt; por cada junit.xml (integration + e2e).'));
     out.innerHTML = lines.join('');
   }

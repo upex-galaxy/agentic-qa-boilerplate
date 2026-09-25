@@ -8,9 +8,9 @@ Read this when configuring new workflows, modifying existing ones, debugging CI-
 
 | Trigger | Tests | Duration | Purpose |
 |---------|-------|----------|---------|
-| Pull request (`build.yml`) | Static checks + compile only — no test execution | 2-5 min | Block PRs that break the framework build |
-| Daily 00:00 UTC (`regression.yml`) | Full suite: integration + E2E, Allure report | 20-60 min | Regression + trend data |
-| Daily 02:00 UTC (`smoke.yml`) | `@critical` smoke projects (`smoke-ui` + `smoke-api`) | 2-5 min | Environment heartbeat |
+| Pull request (`build.yml`) | Static checks + compile only — no test execution | short | Block PRs that break the framework build |
+| Scheduled (`regression.yml`, see its `on.schedule`) | Full suite: integration + E2E, Allure report | long (read the last `gh run view` duration) | Regression + trend data |
+| Scheduled (`smoke.yml`, see its `on.schedule`) | `@critical` smoke projects (`smoke-ui` + `smoke-api`) | short | Environment heartbeat |
 | Manual (`sanity.yml`) | Targeted subset (`grep` \| `test_file`) | varies | Verify a fix or a suspect area |
 
 Do NOT run the full E2E suite on every PR — it is too slow and costly. Do NOT ignore flaky tests — fix them.
@@ -19,55 +19,13 @@ Do NOT run the full E2E suite on every PR — it is too slow and costly. Do NOT 
 
 ## 2. Workflow file layout
 
-The shipped workflows — read the real files, never quote them from memory (Critical Rule #11 applies to workflows just as much as scripts):
-
-```
-.github/workflows/
-├── build.yml            On: pull_request → main            → TestBuild checks: env check, types, lint, playwright --list (no test execution)
-├── regression.yml       On: schedule (daily 00:00 UTC) + workflow_dispatch → full regression (integration + e2e jobs, merged Allure report)
-├── smoke.yml            On: schedule (daily 02:00 UTC) + workflow_dispatch → @critical smoke suite
-├── sanity.yml           On: workflow_dispatch              → targeted run (grep | test_file inputs)
-├── pages.yml            On: push to main + workflow_dispatch → GitHub Pages docs hub deploy
-└── pages-squash.yml     On: schedule (monthly) + workflow_dispatch → squash Pages branch history
-```
-
-The three test workflows with `workflow_dispatch` (`regression`, `smoke`, `sanity`) are what the regression-testing skill triggers via `gh workflow run`. The two `pages-*` workflows are report/docs plumbing, not test suites.
+The shipped workflows — read the real files, never quote them from memory (Critical Rule #11 applies to workflows just as much as scripts): `ls .github/workflows/` lists them. The test workflows with `workflow_dispatch` are what the regression-testing skill triggers via `gh workflow run`; the `pages-*` workflows are report/docs plumbing, not test suites.
 
 ---
 
 ## 3. PR workflow — the shipped `build.yml` (framework validation, no test execution)
 
-The shipped PR gate deliberately runs NO tests. It validates that the framework compiles and passes static checks — a smoke test for the test framework itself:
-
-```yaml
-name: TestBuild Checks
-on:
-  pull_request:
-    branches:
-      - main
-
-env:
-  CI: true
-  TEST_ENV: 'staging'
-  STAGING_USER_EMAIL: ${{ secrets.STAGING_USER_EMAIL }}
-  STAGING_USER_PASSWORD: ${{ secrets.STAGING_USER_PASSWORD }}
-
-jobs:
-  TestBuild:
-    name: Framework Validation
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-      - uses: oven-sh/setup-bun@v2
-      - run: bun install
-      - run: bun run test:env:check     # validates env configuration
-      - run: bun run types:check
-      - run: bun run lint:check
-      - run: bunx playwright test --list   # compile check — lists tests without running them
-```
+The shipped PR gate deliberately runs NO tests. It validates that the framework compiles and passes static checks — a smoke test for the test framework itself. Read `.github/workflows/build.yml` for the exact steps.
 
 Key points:
 - No test execution on PRs — actual suite runs live in the scheduled `regression.yml` / `smoke.yml` and the manual `sanity.yml`.
@@ -108,7 +66,7 @@ regression.yml
 Key points:
 - Credentials are the env-prefixed pairs (`LOCAL_*` / `STAGING_*`) matching `config/variables.ts` — there are no `TEST_USER_*` secrets, and no URL secrets: `config.baseUrl` resolves from `.agents/project.yaml` by `TEST_ENV`.
 - TMS sync (Xray) runs off `AUTO_SYNC` + `XRAY_CLIENT_ID` / `XRAY_CLIENT_SECRET`; the Jira-Direct alternative uses `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` (present in the file, commented until enabled).
-- **There are two write-back legs, one per modality, and they never both fire.** On a jira-native project the `Sync Results to TMS` step inside each test job runs `bun run test:sync` after the Playwright process has exited (`reports/atc_results.json` is written by `KataReporter.onEnd()`, too late for anything inside the run — issue #27). On an Xray project that step is skipped and the `XrayImport` job below does the import instead.
+- **There are two write-back legs, one per modality, and they never both fire.** On a jira-native project the `Sync Results to TMS` step inside each test job runs `bun run test:sync` after the Playwright process has exited (`reports/atc_results.json` is written by `KataReporter.onEnd()`, too late for anything inside the run). On an Xray project that step is skipped and the `XrayImport` job below does the import instead.
 - **The Xray write-back leg is the `XrayImport` job**, gated on `TMS_PROVIDER` (a repo VARIABLE — a job-level `if:` can read `vars` but never `secrets`). It runs `if: always()` so a failing suite still reports its results, and `continue-on-error` so a TMS outage never turns a green suite red. `STP_EXECUTION_KEY` names **the Execution this run imports into**: the **RTR** (`RTR: {scope-id}: Regression Testing`, created by `/regression-testing` Phase 1 before the trigger) by default, the sprint-close **STR** when the run is the sprint close. Never a Test Plan (the STP or the RTP): a plan derives its status from its Executions and is never written into. The name is kept for downstream secrets; the semantics are the new ones.
 - **The `execution_key` `workflow_dispatch` input overrides the secret.** `env.STP_EXECUTION_KEY` resolves to `inputs.execution_key || secrets.STP_EXECUTION_KEY`, and that input is how `/regression-testing` passes the RTR it just created (`-f execution_key=<RTR-KEY>`). Regression, smoke and sanity all declare it.
 - **A scheduled nightly with no key skips the import with a warning.** A scheduled run has no dispatcher to mint an RTR, so `regression.yml` imports only when the secret is set. Two fixes: run the nightly through `/regression-testing` (one RTR per verdict, the intended path), or point the secret at a standing RTR for the period it covers. Neither the STP nor the RTP is ever a valid value.
@@ -133,51 +91,13 @@ Key points:
 - Uploads `sanity-playwright-report` + test-results artifacts; report publishing supports both the private Portal and GitHub Pages paths.
 - Same TMS rule as smoke: imports only with an explicit `execution_key`, never through the shared secret, so a one-file sanity run never flips Test Runs inside a regression execution.
 
-Neither shipped suite uses sharding or a multi-browser matrix today — the suite runs single-worker (see §6). The sharding recipes in §9 are the scaling path for a downstream project whose suite outgrows one runner.
+The shipped workflows run single-worker (read the `strategy:` block, if any; see §6). The sharding recipes in §9 are the scaling path for a downstream project whose suite outgrows one runner.
 
 ---
 
 ## 6. Playwright config for CI
 
-The shipped `playwright.config.ts` is the source of truth — read it, don't quote it from memory. The load-bearing choices:
-
-```typescript
-import { defineConfig, devices } from '@playwright/test';
-import { config, env } from './config/variables';
-
-export default defineConfig({
-  testDir: './tests',
-  testMatch: /.*\.test\.ts/,
-  fullyParallel: false,
-  forbidOnly: !!process.env.CI,   // Fail the build if someone committed test.only()
-
-  // KATA Recommendation: Avoid retries - tests should be deterministic
-  // If a test fails, investigate immediately rather than masking with retries
-  retries: 0,
-
-  // Single worker for now - increase when tests are stable and parallelizable
-  workers: 1,
-
-  reporter: [
-    ['./tests/KataReporter.ts'],   // rich terminal output, local + CI
-    ['html', { outputFolder: 'playwright-report', open: 'never' }],
-    ['json', { outputFile: 'test-results/results.json' }],
-    ['junit', { outputFile: 'test-results/junit.xml' }],
-    ['allure-playwright', { resultsDir: config.reporting.allureResultsDir, /* ... */ }],
-  ],
-  use: {
-    baseURL: config.baseUrl,   // resolved from .agents/project.yaml by TEST_ENV — never a BASE_URL env secret
-    trace: 'retain-on-failure', // flat: with `retries: 0`, `on-first-retry` never fires and a local failure yields no trace
-    screenshot: config.reporting.screenshotOnFailure ? 'only-on-failure' : 'off',
-    video: env.isCI && config.reporting.videoOnFailure ? 'retain-on-failure' : 'off',
-  },
-  projects: [
-    // global-setup → ui-setup  → e2e | smoke-ui  → global-teardown
-    //              → api-setup → integration | smoke-api
-    // (dependency-chained projects; see the real file for the full list, incl. sandbox)
-  ],
-});
-```
+The shipped `playwright.config.ts` is the source of truth — read it, don't quote it from memory. The load-bearing choices, as rules:
 
 Rules:
 - `forbidOnly` in CI — non-negotiable. Prevents test.only() slipping into main.
@@ -201,18 +121,7 @@ Rules:
 
 ## 7. package.json scripts
 
-**Read `package.json` directly before quoting any command** (Critical Rule #11) — script names drift, and this doc will not be updated in lockstep. The names CI leans on today:
-
-| Script | Role in CI |
-|--------|-----------|
-| `test` / `test:e2e` / `test:integration` | Full run / `e2e` project / `integration` project |
-| `test:smoke` | `smoke-ui` + `smoke-api` projects (`@critical` grep, one per surface) |
-| `test:env:check` | Validates env configuration before any suite runs |
-| `test:sync` | TMS results sync (`tests/utils/jiraSync.ts`) |
-| `lint:check` / `types:check` | Static gates in `build.yml` |
-| `pw:install` | `playwright install --with-deps chromium` |
-
-Exact commands, flags, and the rest of the script catalogue: open `package.json`.
+**Read `package.json` directly before quoting any command** (Critical Rule #11) — script names drift, and this doc will not be updated in lockstep. The script names CI leans on, their exact commands and flags, and the rest of the catalogue: open `package.json` and each workflow's `run:` steps.
 
 ---
 
@@ -238,7 +147,7 @@ Repository Settings → Secrets and variables → Actions → **Variables** tab:
 |----------|-------|
 | `TMS_PROVIDER` | `xray` (default when unset) / `jira` / `none`. It must be a VARIABLE because the `XrayImport` job gates on it in a job-level `if:`, and that context can read `vars` but never `secrets` |
 
-`bun run setup --variables` **cannot** push this one: that path only writes secrets (`cli/lib/variables-flow.ts` has no `gh variable set`). Set `TMS_PROVIDER` by hand in Settings → Secrets and variables → Actions → Variables.
+`bun run setup --variables` **cannot** push this one: that path only writes secrets (the variables flow pushes secrets only; check `cli/lib/variables-flow.ts`). Set `TMS_PROVIDER` by hand in Settings → Secrets and variables → Actions → Variables.
 
 There is **no `BASE_URL` / `API_BASE_URL` secret and no `TEST_USER_*` pair**: URLs are not secrets — they resolve from the versioned `.agents/project.yaml` through `config/variables.ts`, selected by `TEST_ENV`.
 
@@ -317,11 +226,11 @@ Result: no PR merges to `main` with red integration tests.
 Use `bunx playwright install --with-deps chromium`. The `--with-deps` flag installs system libraries.
 
 ### "Out of memory in CI"
-The shipped config already runs `workers: 1`. If a downstream project raised it, drop it back down — and shard at the workflow level (§9) instead of stacking workers on one runner.
+Read the `workers` value in `playwright.config.ts`. If a downstream project raised it, drop it back down — and shard at the workflow level (§9) instead of stacking workers on one runner.
 
 ### "Tests flaky in CI, pass locally"
 Two knobs, in order:
-1. Bump timeouts: the shipped config uses `timeout: 60000` with a 10s `expect` timeout — widen per-test with `test.slow()` before touching globals.
+1. Bump timeouts: read the `timeout` and `expect.timeout` values in `playwright.config.ts` — widen per-test with `test.slow()` before touching globals.
 2. Add explicit waits on navigations: `await page.waitForLoadState('networkidle')` (or, better, a deterministic `waitForResponse` on the request the page depends on).
 
 Do NOT reach for retries — the doctrine is `retries: 0` (a retry hides the flake; see §6). If the test still fails intermittently after real waits, it is genuinely flaky — surface it in the Analyze phase and schedule stabilization.
@@ -367,9 +276,9 @@ Race condition — `gh run list` queries before the run registers. Always `sleep
 
 ## 13. Monitoring the workflow run (Background dispatch)
 
-The CI run is long (20-60 min). Blocking the main thread on `gh run watch` is wasteful — we delegate to a Monitor subagent and continue with preparation work in the main thread. This section is the canonical reference for the dispatch declared in `regression-testing/SKILL.md` §"Subagent Dispatch Strategy" → "Wait/monitor `gh run watch`" row.
+The CI run is long (read the last `gh run view` duration). Blocking the main thread on `gh run watch` is wasteful — we delegate to a Monitor subagent and continue with preparation work in the main thread. This section is the canonical reference for the dispatch declared in `regression-testing/SKILL.md` §"Subagent Dispatch Strategy" → "Wait/monitor `gh run watch`" row.
 
-**When to use**: every time we trigger a regression workflow that takes >5 min. (For `smoke` (2-5 min) the dispatch overhead is borderline; classify by actual wall time, not workflow name.)
+**When to use**: every time we trigger a regression workflow that takes >5 min. (For a short `smoke` run the dispatch overhead is borderline; classify by actual wall time, not workflow name.)
 
 **Dispatch (Background pattern)**:
 

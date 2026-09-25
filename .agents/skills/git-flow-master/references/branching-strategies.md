@@ -148,7 +148,7 @@ git_strategy:
 
 **Shape**: Vincent Driessen's classic (2010). `main` (releases only) + `develop` (integration) + `feature/*` (off `develop`) + `release/*` (off `develop`, merge to `main`) + `hotfix/*` (off `main`).
 
-**Best for**: products with explicit, infrequent versioned releases (desktop apps, libraries with semver, embedded software). Mostly **legacy** today; Driessen himself notes most teams should prefer trunk-based or GitHub Flow.
+**Best for**: products with explicit, infrequent versioned releases (desktop apps, libraries with semver, embedded software). Mostly **legacy**; Driessen himself notes most teams should prefer trunk-based or GitHub Flow.
 
 **Detection signals**:
 
@@ -395,7 +395,7 @@ The chosen plan is a **contract** for execution. If the actual diff exceeds the 
 
 ## git_strategy field rules (per strategy)
 
-Strategy Setup (SKILL.md 3.6) no longer renders a prose runbook into `AGENTS.md` — it **populates the `git_strategy:` block in `.agents/project.yaml`** (in place, preserving the rest of the file), the single source of truth. This section is the authoritative reference for WHAT field VALUES each strategy writes into that block. The detailed operational HOW (release commands, hotfix commands, invariant prose) is NOT persisted anywhere — it lives in this catalogue (the per-strategy sections above) and in `references/sdet-integration-trunk.md`, read on demand. (The yaml snippets below show only the `git_strategy` block; everything nests under that key inside `.agents/project.yaml`.)
+Strategy Setup (SKILL.md 3.6) does not render a prose runbook into `AGENTS.md` — it **populates the `git_strategy:` block in `.agents/project.yaml`** (in place, preserving the rest of the file), the single source of truth. This section is the authoritative reference for WHAT field VALUES each strategy writes into that block. The detailed operational HOW (release commands, hotfix commands, invariant prose) is NOT persisted anywhere — it lives in this catalogue (the per-strategy sections above) and in `references/sdet-integration-trunk.md`, read on demand. (The yaml snippets below show only the `git_strategy` block; everything nests under that key inside `.agents/project.yaml`.)
 
 The conceptual blocks that the old runbook rendered now map to `git_strategy` fields:
 

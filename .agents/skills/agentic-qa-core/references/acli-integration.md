@@ -1,7 +1,7 @@
 # `acli` repo integration — agentic-qa-boilerplate
 
-> **Purpose**: Plug the tool-agnostic `acli` skill (`.agents/skills/acli/SKILL.md`) into the QA boilerplate's workflow doctrine, TMS modality model, slug catalog, and anti-patterns. The `acli/SKILL.md` itself is byte-identical between the QA and DEV boilerplates; everything QA-specific lives here so the tool surface stays single-source-of-truth.
-> **Use when**: Any QA workflow skill (`shift-left-testing`, `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `project-discovery`, `framework-development`) calls `[ISSUE_TRACKER_TOOL]` or `[TMS_TOOL]` and resolves it to `/acli`. Load this BEFORE invoking the tool — it answers *which slug, which status, which custom field, which modality* before `acli/SKILL.md` answers *how the binary works*.
+> **Purpose**: Plug the tool-agnostic `acli` skill (`.agents/skills/acli/SKILL.md`) into the QA boilerplate's workflow doctrine, TMS modality model, slug catalog, and anti-patterns. `acli/SKILL.md` stays shared, tool-agnostic content between the QA and DEV boilerplates. In the boilerplate source repos, changes must be synced into both copies. In derived repos, treat it as managed content that receives updates only through the updater; do not attempt cross-boilerplate maintenance. Everything QA-specific lives here so the tool surface stays single-source-of-truth.
+> **Use when**: Any QA workflow skill calls `[ISSUE_TRACKER_TOOL]` or `[TMS_TOOL]` and resolves it to `/acli`. Load this BEFORE invoking the tool — it answers *which slug, which status, which custom field, which modality* before `acli/SKILL.md` answers *how the binary works*.
 > **Companion references**: `acli/SKILL.md` (tool surface), `acli/references/*.md` (per-command deep refs), `agentic-qa-core/references/jira-publishing-gotchas.md` (ADF / MD converter edges — what breaks), `acli/references/adf-authoring-style.md` (ADF visual-formatting style — what reads well), `test-documentation/references/jira-setup.md` (TMS modality bootstrap), `.agents/jira-fields.json` + `.agents/jira-required.yaml` + `.agents/jira-workflows.json` (slug catalogs).
 
 ---
@@ -55,7 +55,7 @@ The command shapes live in `acli/SKILL.md` §Quick Start. The QA flow uses the s
 | Verify auth | `jira auth status` | None (same as generic). MUST run before any bulk mutation — see Q6 below. |
 | Fetch a story DETAIL (input for `/sprint-testing` Phase 1) | **NOT acli** → `bun run jira:sync-issues get <KEY> --include-comments` | `<KEY>` = `{{PROJECT_KEY}}-NNN`. Reads ACs / scope / ATP / comments from the synced `.md` files — `acli view` returns null for custom fields. See "Reads vs writes" above. |
 | Transition Ready For QA → In Test | `jira workitem transition --key <KEY> --status <STATUS>` | `<STATUS>` = `{{jira.status.story.in_test}}` |
-| Search QA work in flight (sprint dashboard) | `jira workitem search --jql <JQL> --paginate --json` | `<JQL>` = `project = {{PROJECT_KEY}} AND assignee = currentUser() AND status in ('Ready For QA','In Test','QA Approved')` |
+| Search QA work in flight (sprint dashboard) | `jira workitem search --jql <JQL> --paginate --json` | `<JQL>` = `project = {{PROJECT_KEY}} AND assignee = currentUser() AND status in ({{jira.status.story.ready_for_qa}}, {{jira.status.story.in_test}}, {{jira.status.story.qa_approved}})` (resolve the slugs to names before running) |
 | File a bug found mid-session | `jira workitem create --project <P> --type Bug --summary <S> --parent <PARENT>` | `<P>` = `{{PROJECT_KEY}}`; `<PARENT>` = parent Story key (`{{PROJECT_KEY}}-NNN`) |
 | Capture the key of what you just created | add `--json` to the create and read the `key` field | Applies to every create on both tools. NEVER scrape the human success line: `acli` decorates it, and `/xray-cli` prints colour codes around the key. In Modality `jira-xray` the `/xray-cli` creates also emit a bare `KEY <PROJ-123>` line for shell capture. A create whose key was not captured leaves an orphan artifact nothing downstream can link. |
 
@@ -67,14 +67,14 @@ Slug resolution rule: anything wrapped in `{{jira.<slug>}}` MUST be resolved aga
 
 These are repo-flavored companions to the tool-level anti-patterns T1-T4 in `acli/SKILL.md`. Both layers apply.
 
-- **Q1. NEVER invoke `acli` directly from workflow skills** (`shift-left-testing`, `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `project-discovery`, `framework-development`). Workflow skills cite `[ISSUE_TRACKER_TOOL]` / `[TMS_TOOL]` pseudo-code and load THIS file + `acli/SKILL.md` instead — methodology survives tool rotation only if the HOW lives behind the tag.
+- **Q1. NEVER invoke `acli` directly from any workflow skill.** Workflow skills cite `[ISSUE_TRACKER_TOOL]` / `[TMS_TOOL]` pseudo-code and load THIS file + `acli/SKILL.md` instead — methodology survives tool rotation only if the HOW lives behind the tag.
 - **Q2. NEVER hardcode project keys** (`UPEX`, `MYM`, `SQ`, etc.) in commands, JQL, or docs. Resolve via `{{PROJECT_KEY}}` from `.agents/project.yaml`. Hardcoding breaks portability across downstream consumers and re-installs of the boilerplate.
 - **Q3. NEVER mix Modality `jira-xray` and Modality `jira-native` operations on the same TMS entity.** `acli` owns generic Jira (`[ISSUE_TRACKER_TOOL]`) plus Modality `jira-native` TMS (Jira-native Test issues; ATP/ATR as **Test Plan / Test Execution items** by excellence, Story custom fields only as fallback). Modality `jira-xray` routes Test / Test Plan / Test Execution through `/xray-cli` — never via `acli workitem` against Xray-owned issue types.
 - **Q4. NEVER hardcode Jira `customfield_NNNNN` IDs** in skills, scripts, prompts, or AI output. Resolve via the slug catalog (`{{jira.<slug>}}` against `.agents/jira-required.yaml` + `.agents/jira-fields.json`). IDs differ per workspace; slugs travel. Regenerate the catalog with `bun run jira:sync-fields` if a field is missing.
 - **Q5. NEVER publish ADF rich text to Jira without first reading `agentic-qa-core/references/jira-publishing-gotchas.md`.** The MD→ADF converter at `acli/scripts/md-to-adf.ts` has one known mark-combination edge (inline `code` + `strong`/`em`), and the MCP variant of `[ISSUE_TRACKER_TOOL]` silently drops ADF conversion on batched custom-field updates. Both surface as HTTP 400 only at publish time. Pre-empt both. AND for any field whose content is naturally mappable (test steps → expected, results → status, multi-level preconditions), format it per `acli/references/adf-authoring-style.md` (tables / panels / nested lists) instead of flat prose — richness with purpose, never decoration; the field's hard-rule wins (mandated Gherkin stays fenced).
 - **Q6. NEVER read a custom field via `acli workitem view`.** `acli view` returns `null` for `customfield_*` (ACs, ATP, ATR, scope, business rules, bug fields). For ANY detailed read use `bun run jira:sync-issues get <KEY> [--include-comments]` / `jql "<query>"` and read the synced `.md` under `.context/PBI/`. `acli view`/`search` is allowed ONLY for trivial summary/status/key-list lookups. See "Reads vs writes" above.
 - **Q7. NEVER hand-write a Jira-mirrored file in `.context/PBI/`** (`story.md`, `epic.md`, `acceptance-*.md`, `implementation-plan.md`, `feature-*.md`, per-field files). Generate content → push to the Jira field (or `fallback:` comment) → run the sync → read the materialized file. Only NON-Jira files (`context.md`, `evidence/`, `test-specs/`, etc.) are hand-authored. The sync OVERWRITES `[SYNC]` files on every run (NO files are hard-protected — Jira is the source of truth; the sync overwrites every `[SYNC]` file every run).
-- **Q8. NEVER plan a QA field write around `acli workitem edit`.** Its editable surface is `summary` / `description` / `assignee` / `labels` / `type` and nothing else. Every field the QA workflow actually writes falls outside it: custom fields (ACs, ATP, ATR, severity, QA assignee) are hard-rejected with exit 1, and **components — mandatory on every quality issue per `agentic-qa-core/references/defect-management-doctrine.md` — have no flag at all**, so the edit reports success and silently leaves them as they were. Consequences for the flow: set components and every mandatory field AT CREATE TIME (a create takes them), and when an existing issue must be corrected, route the write through Jira REST `PUT` on the issue's `fields` — the turnkey recipe lives in `acli/SKILL.md` §WORKAROUND and `acli/references/workitem.md` §edit. Read the field back afterwards: the REST path also coerces silently. Measured on a live instance across a sprint's worth of writes.
+- **Q8. NEVER plan a QA field write around `acli workitem edit`.** Its editable surface (`acli jira workitem edit --help`) excludes custom fields and components. Every field the QA workflow actually writes falls outside it: custom fields (ACs, ATP, ATR, severity, QA assignee) are hard-rejected with exit 1, and **components — mandatory on every quality issue per `agentic-qa-core/references/defect-management-doctrine.md` — have no flag at all**, so the edit reports success and silently leaves them as they were. Consequences for the flow: set components and every mandatory field AT CREATE TIME (a create takes them), and when an existing issue must be corrected, route the write through Jira REST `PUT` on the issue's `fields` — the turnkey recipe lives in `acli/SKILL.md` §WORKAROUND and `acli/references/workitem.md` §edit. Read the field back afterwards: the REST path also coerces silently. Measured on a live instance across a sprint's worth of writes.
 
 ---
 
@@ -99,19 +99,7 @@ If a slug fails to resolve at runtime, STOP — do not fall back to a literal. R
 
 ## Composability — who loads this
 
-The following workflow skills load `agentic-qa-core/references/acli-integration.md` on demand (alongside `acli/SKILL.md`):
-
-| Skill | When this file is loaded |
-|---|---|
-| `shift-left-testing` | Backlog refinement: fetch Story ACs, transition to `shift_left_qa` / `estimation` |
-| `sprint-testing` | In-sprint QA: fetch ticket, transition through `in_testing` / `tested` / `closed`, file Bug under parent Story |
-| `test-documentation` | TMS docs: create Test / Test Plan / Test Execution issues (Modality `jira-native`), link to Stories |
-| `test-automation` | Stage 5: read implementation-plan + ACs from Story, comment automated-test status |
-| `regression-testing` | Stage 6: bulk-query Test issues by label, comment Test Execution results |
-| `project-discovery` | Reverse-engineering: inventory existing issue types, statuses, custom fields |
-| `framework-development` | When evolving the slug catalog or `.agents/jira-*` files themselves |
-
-Each of these skills declares `acli` + this integration file in their `## Dependencies` block.
+Every workflow skill that resolves `[ISSUE_TRACKER_TOOL]` / `[TMS_TOOL]` to `/acli` loads `agentic-qa-core/references/acli-integration.md` on demand (alongside `acli/SKILL.md`) and declares `acli` + this integration file in its `## Dependencies` block. The set of skills that do is whatever `.agents/skills/REGISTRY.md` (`bun run skills:registry`) lists with that dependency; this file does not keep a copy.
 
 ---
 

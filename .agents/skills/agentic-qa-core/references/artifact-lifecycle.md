@@ -22,9 +22,8 @@ the harness — the skills created the artifacts, wrote their bodies, linked the
 them where Jira's `Create` transition dropped them.
 
 The root cause was not prose: it was that the harness had **no declared lifecycle** for
-the TMS work types at all. `.agents/jira-required.yaml` declared statuses and transitions
-for `story`, `bug`, `test_case`, `epic`, `defect`, `improvement`, `tech_story` and
-`tech_debt`, and for nothing else — so no skill could reference a Test Plan / Test
+the TMS work types at all. `.agents/jira-required.yaml` declared lifecycles for the
+work items only, not for the TMS work types — so no skill could reference a Test Plan / Test
 Execution / Test Set / subtask transition even if its author had wanted to.
 
 ---
@@ -59,7 +58,7 @@ decides that, not the skill. Everything after that is the harness's job.
 
 **A row in this table is where the artifact must END UP, not a promise that the move is free.**
 A mapped, available transition can still be refused by the instance's own field validators —
-measured on the ATS `done` → `close` row, refused by five mandatory fields at once. That is
+measured on the ATS `done` → `close` row, refused by several project-specific mandatory-field validators at once. That is
 **§4.2**, not a reason to leave the artifact behind.
 
 ### 1.1 Three edges that do not exist — do not look for them
@@ -76,10 +75,8 @@ The catalog is the authority, and it says **no** to these. Route around them, ne
   `include_in_release` → `ready_for_release` → `released`, and the release team owns both.
   QA stops at `qa_approved`.
 
-Catalog-available but deliberately unused by any stage: `test_execution.reactive` and
-`test_set.error` (both re-open a closed container), `test_plan.planned` /
-`test_plan.ready_to_execute` (the `plan_automated` side path). A project that needs one may
-use it; no skill fires it on its own.
+Transitions the catalog lists but no stage fires (the ones that re-open a closed container, the
+automated-plan side path) are legitimate for a project to use; no skill fires them on its own.
 
 ---
 
@@ -105,7 +102,7 @@ someone else, **ask the user before reassigning** — do not take ownership sile
 an edit go through. If the user declines, report the edit as blocked with the owner named.
 
 **A transition can reassign the issue behind your back.** Some workflows carry an *assign*
-post-function that is invisible in the transition catalog. Measured 2026-09-17: on a work item,
+post-function that is invisible in the transition catalog. Measured on a live project (see ADR-0006): on a work item,
 both `start_testing` and `qa_sign_off` silently moved the native `assignee` from the developer
 to the QA engineer who fired them, on a project whose doctrine deliberately keeps the two
 owners distinct. So on any transition of a work item: read `assignee` before firing (the same
@@ -182,10 +179,9 @@ A match is a **suggestion to the user**, never an automatic choice. Present it, 
 
 §4 steps 2-5 cover a slug the catalog does **not** have. This covers the commoner case: the
 slug resolves, the transition is listed as available, and firing it returns a validation
-error. Measured 2026-09-17: closing a Test Set was refused by **five** mandatory-field
-validators at once (Test Analysis, VCR Estimation, Test Outline, automation type, regression
-flag) — none of them in the transition catalog, all of them added by the project's own screen
-configuration. A stage that reads that as "transition unavailable" strands the artifact in
+error. Measured on a live project (see ADR-0006): closing a Test Set was refused by several
+project-specific mandatory-field validators at once — none of them in the transition catalog,
+all of them added by the project's own screen configuration. A stage that reads that as "transition unavailable" strands the artifact in
 `designing` and still reports itself done.
 
 1. **Read the error in full.** A validator names the fields it wants. A *condition* failure
