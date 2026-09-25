@@ -12,14 +12,14 @@ import type { ProtectedWatchEntry } from './lib/updater-drift';
 import type { HarnessMigrationResult } from './lib/updater-harness-migration.ts';
 import type { GateResult, HeldBackComponent, ParityFinding, ParityReport } from './lib/updater-parity';
 import type { PbiCacheFact } from './lib/updater-pbi';
-import type { Component, ReportSink, RunSummary, UpdaterConfig } from './lib/updater-types';
+import type { Component, DeprecatedFile, ReportSink, RunSummary, UpdaterConfig } from './lib/updater-types';
 import { execSync, spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
 import pc from 'picocolors';
-import { checkAgentCompatibility, COMMAND_ALIAS_MANIFEST, repairAgentSurfaces, SKILLS_ALIAS_DEFERRED_MARKER } from './lib/agent-compatibility.ts';
+import { checkAgentCompatibility, repairAgentSurfaces, SHADOWING_COMMANDS_BACKUP_DIR, SKILLS_ALIAS_DEFERRED_MARKER } from './lib/agent-compatibility.ts';
 import { applyInsertions, planInsertions, projectDelta, SCHEMA_FILE, SCHEMA_SOURCE } from './lib/agents-schema.ts';
 import * as tui from './lib/tui';
 import {
@@ -64,7 +64,7 @@ import { parseDotEnvExampleKeys, requiredNow, VAR_MANIFEST } from './lib/variabl
 // --- CONFIGURATION ---
 // Not tied to the lock schema (`schemaVersion: 7` stays): it stamps the lock's
 // `cliVersion` and the ignore-file sentinel header, which is matched by prefix.
-const CLI_VERSION = '8.4';
+const CLI_VERSION = '8.5';
 // `UPEX_TEMPLATE_REPO` points the updater at another source: a fork, or a LOCAL
 // clone (absolute path / file:// URL, cloned with plain git, no gh session) to
 // exercise an unpublished boilerplate branch against a consumer repo.
@@ -151,25 +151,54 @@ const SKILLS_CANONICAL_DIR = '.agents/skills';
 //  - .agents/skills/REGISTRY.md: built by `bun run skills:registry` from the
 //    repo's own installed skill set, including local community skills.
 // `.claude/skills` (alias) is gitignored and never in upstream, so it needs no
-// entry; `.claude/commands` + `.opencode/commands` DO sync (component `commands`)
-// and are then re-rendered from `.agents/compatibility/command-aliases.json`.
+// entry. Upstream ships no command files: the retired alias wrappers are
+// removed through `deprecatedFiles` (RETIRED_COMMAND_WRAPPERS).
 const GENERATED_PATHS = ['CLAUDE.md', `${SKILLS_CANONICAL_DIR}/REGISTRY.md`];
+
+// The command-alias layer is retired: a skill is invoked by its own name plus a
+// mode (`/project-context data` on Claude Code, in prose on OpenCode and Codex).
+// These are the files upstream generated for it. `cleanupDeprecated` removes
+// them without a backup, which is right for wrappers that carried no workflow
+// (the compat contract rejected any body). A command the PROJECT
+// declared is not here and stays; one that carries a skill's name is moved
+// aside by the compat hook instead (`removeShadowingCommands`).
+const RETIRED_ALIAS_NAMES = [
+  'adapt-framework',
+  'break-down-tests',
+  'business-api-map',
+  'business-data-map',
+  'business-feature-map',
+  'fix-traceability',
+  'jira-components',
+  'jira-instance-migration',
+  'master-test-plan',
+  'sync-ai-memory',
+];
+const RETIRED_ALIAS_REASON = 'command aliases retired: invoke the skill by name plus its mode (AGENTS.md, section 5)';
+export const RETIRED_COMMAND_WRAPPERS: DeprecatedFile[] = [
+  { path: '.agents/compatibility/command-aliases.json', component: 'agent-compatibility', reason: RETIRED_ALIAS_REASON, deprecatedSince: '8.5' },
+  ...['.claude/commands', '.opencode/commands'].flatMap(dir => RETIRED_ALIAS_NAMES.map(name => ({
+    path: `${dir}/${name}.md`,
+    component: 'commands',
+    reason: RETIRED_ALIAS_REASON,
+    deprecatedSince: '8.5',
+  }))),
+];
 
 export const COMPONENTS: Component[] = [
   // `skills` stays its own component (not folded into `agent-compatibility` as
   // upstream dev does): `bun run up skills --skill a,b` narrows it by subdirectory.
   { name: 'skills', type: 'directory', paths: [SKILLS_CANONICAL_DIR] },
-  // Generated wrappers for both hosts. Synced so a consumer receives new aliases,
-  // then re-rendered from the manifest so a hand edit never survives a run.
-  { name: 'commands', type: 'directory', paths: ['.claude/commands', '.opencode/commands'] },
-  // One source, three harnesses: the hook emitter, the command-alias manifest
-  // and the OpenCode hook adapter. `.claude/skills` is NOT here: it is the
-  // generated alias, rebuilt by the afterApply compatibility hook.
-  { name: 'agent-compatibility', type: 'directory', paths: ['.agents/compatibility', '.agents/hooks', '.opencode/plugins'] },
+  // One source, three harnesses: the hook emitter and the OpenCode hook
+  // adapter. `.claude/skills` is NOT here: it is the generated alias, rebuilt
+  // by the afterApply compatibility hook. The `commands` component (the alias
+  // wrappers) is retired; a lock that still carries its cursor is harmless,
+  // because every walk iterates this list, never the lock's keys.
+  { name: 'agent-compatibility', type: 'directory', paths: ['.agents/hooks', '.opencode/plugins'] },
   { name: 'codex-config', type: 'directory', paths: ['.codex'], bootstrapOnly: true, frameworkFiles: CODEX_FRAMEWORK_FILES },
   // Delivered once when missing, then project-owned (watchlist). A file-list on
-  // the `.claude` root: `.claude/commands` belongs to `commands`, `.claude/skills`
-  // is the generated alias. `.mcp.json` and `opencode.jsonc` left this component
+  // the `.claude` root: `.claude/commands` is the project's own (never synced),
+  // `.claude/skills` is the generated alias. `.mcp.json` and `opencode.jsonc` left this component
   // in 8.2: they are project MCP registries, watchlisted and never synced.
   { name: 'agent-root-config', type: 'file-list', paths: ['.claude'], files: CLAUDE_ROOT_CONFIG_FILES, bootstrapOnly: true },
   { name: 'scripts', type: 'directory', paths: ['scripts'] },
@@ -284,14 +313,14 @@ PREFLIGHT CROSS-HARNESS (automatico, una sola vez, ANTES de sincronizar):
 
 SUPERFICIES GENERADAS (nunca se sincronizan ni se reportan como drift):
   CLAUDE.md (shim \`@AGENTS.md\`), .claude/skills (alias a .agents/skills),
-  .claude/commands/*.md y .opencode/commands/*.md (wrappers),
   .agents/skills/REGISTRY.md y kata-manifest.json. Tras cada sync se regeneran
   con la misma logica de \`bun run agents:compat\`, \`skills:registry\` y
   \`kata:manifest\`.
 
 REPORTE DE PARIDAD (al final de cada corrida, incluido --dry-run):
-  Una tabla "Estado por superficie" (10 filas: instrucciones y config, skills,
-  comandos, hooks, MCP, env, componentes, package.json, git, verificacion) y UN
+  Una tabla "Estado por superficie" (una fila por superficie: instrucciones y
+  config, skills, hooks, MCP, env, componentes, package.json, git,
+  verificacion) y UN
   prompt para tu IA con cada diferencia frente a upstream (archivo + evidencia:
   secciones, claves, servidores, hunks) para que decidas fila por fila: keep
   project | take upstream | merge. Se guarda en ${PARITY_PROMPT_PATH}
@@ -363,7 +392,7 @@ FLAGS:
                          prompt no se guarda)
   --strict               Sale con codigo 1 si el sync termina con un hallazgo
                          BLOQUEANTE de paridad (contrato de compatibilidad
-                         roto: alias, wrappers, hooks, MCP). Por defecto solo
+                         roto: alias, comandos, hooks, MCP). Por defecto solo
                          avisa y sale 0. El drift de archivos protegidos nunca
                          bloquea, salvo cuando su hunk upstream es requisito de
                          otro archivo de la misma release (la fila lo dice y
@@ -386,7 +415,7 @@ EJEMPLOS:
   bun up skills                          # Solo agent skills
   bun up skills --skill a,b,c            # Skills especificos
   bun up --list                          # Listar skills disponibles
-  bun up commands docs                   # Multiples componentes
+  bun up scripts docs                    # Multiples componentes
   bun up codex-config                    # Solo el adaptador de Codex
   bun up --auto                          # CI mode (seguro, preserva lo tuyo)
   bun up --force                         # Forzar todo del upstream (sin preguntar)
@@ -467,6 +496,8 @@ interface RunFacts {
   migrationPlanned: boolean
   /** The compat hook left `.claude/skills` for `bun run agents:compat` after the migration commit. */
   aliasDeferred: boolean
+  /** Project commands that shadowed a skill, moved aside by the compat hook this run. */
+  shadowingCommandsMoved: string[]
   /** Post-apply quality gates; empty when skipped. */
   gates: GateResult[]
   /** Why `gates` stayed empty this run: nothing to say when gates actually ran (even a fail leaves at least one `GateResult`). */
@@ -481,7 +512,7 @@ interface RunFacts {
   doctrineDebt: string | null
   parity: { findings: ParityFinding[], report: ParityReport } | null
 }
-const runFacts: RunFacts = { compat: null, envNewKeys: [], migration: null, migrationPlanned: false, aliasDeferred: false, gates: [], gatesSkippedReason: null, promptKept: false, pbiCache: null, allowListAdded: [], doctrineDebt: null, parity: null };
+const runFacts: RunFacts = { compat: null, envNewKeys: [], migration: null, migrationPlanned: false, aliasDeferred: false, shadowingCommandsMoved: [], gates: [], gatesSkippedReason: null, promptKept: false, pbiCache: null, allowListAdded: [], doctrineDebt: null, parity: null };
 
 // --- ENV-VAR DRIFT DETECTION (afterApply hook) ---
 //
@@ -636,8 +667,9 @@ function makeSkillsRegistryHook(sink: ReportSink): (summary: RunSummary) => Prom
 //
 // Same engine as `bun run agents:compat`, imported from `cli/lib` so it travels
 // with the self-updating `cli` component. Runs after EVERY apply, not only when
-// skills changed: the alias is gitignored (a fresh clone has none), the
-// wrappers are re-rendered from the manifest, and the check reports anything
+// skills changed: the alias is gitignored (a fresh clone has none), a project
+// command that shadows a skill is moved to SHADOWING_COMMANDS_BACKUP_DIR, and
+// the check reports anything
 // the sync could not fix (a protected `.claude/settings.json` still pointing at
 // the old hook, an MCP server added to one host only). Reports, never throws:
 // the sync already landed, and a failed contract is something the user fixes
@@ -675,19 +707,20 @@ export function makeAgentCompatibilityHook(
   return async (): Promise<void> => {
     const deferSkillsAlias = runFacts.migration?.applied === true || migrationCommitPending(root);
     sink.step(deferSkillsAlias
-      ? 'Regenerando wrappers de comandos (el alias .claude/skills espera al commit de la migración)…'
-      : 'Regenerando superficies de Claude/OpenCode/Codex (alias .claude/skills, wrappers de comandos)…');
+      ? 'Revisando superficies de Claude/OpenCode/Codex (el alias .claude/skills espera al commit de la migración)…'
+      : 'Regenerando superficies de Claude/OpenCode/Codex (alias .claude/skills)…');
     const repair = repairAgentSurfaces(root, { deferSkillsAlias });
     runFacts.compat = repair.check;
     runFacts.aliasDeferred = repair.aliasDeferred;
-    if (repair.wrappersWritten === null) {
-      sink.warn(`Sin ${COMMAND_ALIAS_MANIFEST}: los wrappers de comandos no se regeneraron (llega con el componente agent-compatibility).`);
+    runFacts.shadowingCommandsMoved = repair.shadowingCommandsMoved;
+    for (const moved of repair.shadowingCommandsMoved) {
+      sink.warn(`${moved} tenía el nombre de una skill y la ocultaba: movido a ${SHADOWING_COMMANDS_BACKUP_DIR}/${moved}.`);
     }
     if (repair.aliasDeferred) {
       sink.step(ALIAS_DEFERRED_NEXT_STEP);
     }
     if (repair.check.ok) {
-      sink.step(`Compatibilidad lista: alias ${repair.alias?.status ?? 'pendiente'}; ${repair.wrappersWritten ?? 0} wrapper(s) actualizado(s).`);
+      sink.step(`Compatibilidad lista: alias ${repair.alias?.status ?? 'pendiente'}.`);
       return;
     }
     sink.warn(`La compatibilidad agéntica quedó incompleta: ${repair.check.errors.length} contrato(s) roto(s). Detalle en la tabla de paridad al final (filas BLOCKING).`);
@@ -1160,8 +1193,8 @@ const PBI_MIGRATION_PROMPT_PATH = path.join('.agents', 'prompts', 'pbi-cache-mig
 //
 // Folds everything the run learned into ONE set of findings: watched files
 // that drifted (with sha markers so each upstream change nudges once), compat
-// errors (blocking), MCP set per host, skills the migration archived, wrappers
-// no manifest produced, components held back, env keys upstream added, the
+// errors (blocking), MCP set per host, skills the migration archived, the
+// retired alias overlay and any command moved aside, components held back, env keys upstream added, the
 // gates and the git_strategy provenance. Runs while the upstream clone is
 // still on disk. The rendered table + prompt are printed by main() AFTER
 // runUpdate returns, so they are the last thing on screen; the prompt (with
@@ -1360,6 +1393,7 @@ function makeParityHook(sink: ReportSink, priorLockSha: string, dryRun: boolean,
       packageJsonKept: summary.packageJsonKept ?? [],
       gates: runFacts.gates,
       pbiCache: runFacts.pbiCache,
+      shadowingCommandsMoved: runFacts.shadowingCommandsMoved,
     });
     const report = renderParityReport(findings, {
       templateRepo: TEMPLATE_REPO,
@@ -1778,7 +1812,7 @@ async function main(): Promise<void> {
     packageJsonSpecs: [
       { path: 'package.json', sections: ['scripts', 'devDependencies', 'dependencies', 'lint-staged'] },
     ],
-    deprecatedFiles: [],
+    deprecatedFiles: RETIRED_COMMAND_WRAPPERS,
     // Every watched path is project-owned inside a synced component too:
     // delivered once when missing, never overwritten (`.husky/pre-push`, a
     // path from `updater.protected_paths`). Paths no component owns are
@@ -1789,10 +1823,8 @@ async function main(): Promise<void> {
       '.agents/jira-workflows.json',
       '.agents/jira-link-types.json',
       '.agents/jira-required.yaml',
-      '.agents/compatibility/command-aliases.project.json',
       // The auth ADAPTER (buildAuthPayload / extractTokenFromResponse /
-      // environments). Same deal as the command-alias overlay: delivered when
-      // missing, then owned by the project. Its two synced neighbours —
+      // environments). Delivered when missing, then owned by the project. Its two synced neighbours —
       // scripts/lib/api-login-core.ts (the CLI) and scripts/api-login.ts (the
       // entry) — carry every upstream improvement, so nothing forces a project
       // to re-adapt to get them.
@@ -1857,7 +1889,7 @@ async function main(): Promise<void> {
           )
         : composeHooks(
             sink,
-            // Alias + wrappers first: a Claude Code session opened right after
+            // Alias first: a Claude Code session opened right after
             // the sync must already resolve skills through `.claude/skills`.
             makeAgentCompatibilityHook(sink),
             makeKataManifestHook(sink),
