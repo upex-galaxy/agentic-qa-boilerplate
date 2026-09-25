@@ -76,10 +76,19 @@ export const ORCA_CONTEXT_LINE = [
 ].join(' ');
 
 /**
- * A workflow skill plus an issue key in the first prompt names the session.
- * Matches unanchored, so it also accepts the native-path fleet-worker shape
- * (`/sprint-testing BK-123 fleet worker: …`): the workflow name and the key
- * still appear adjacent, only trailed by more prompt text.
+ * The fleet-worker token names the session after the roster label:
+ * `/<skill> <label> fleet worker` → `<label>`. Any skill slug qualifies (a
+ * fleet is not limited to the workflow skills) and the label is whatever the
+ * conductor wrote: a ticket key, `<KEY>-<slug>`, or a kebab slug. Unanchored,
+ * because on the supervised path the runtime prepends its own preamble to the
+ * prompt that carries the token.
+ */
+export const FLEET_PROMPT_PATTERN
+  = /(?:^|\s)\/([a-z][a-z0-9-]*)\s+([A-Za-z0-9][\w.-]{0,59})\s+fleet worker\b/;
+
+/**
+ * Outside a fleet, a workflow skill plus an issue key in the first prompt
+ * names the session `<KEY>-<workflow>`.
  */
 export const WORKFLOW_PROMPT_PATTERN
   = /(sprint-testing|test-automation|shift-left-testing|regression-testing|framework-development)\s+([A-Z][A-Z0-9]+-\d+)/;
@@ -201,12 +210,13 @@ function codexThreadName(sessionId, env, home) {
 }
 
 /**
- * User-set name → the name verbatim. Derived (or a name whose origin we cannot
- * establish) → `<name> (<id8>)`, so two auto-named sessions stay distinct. Only
- * an id → the full id. Nothing → `unknown`.
+ * User-set name, or one this hook set from a prompt token → the name verbatim.
+ * Derived (or a name whose origin we cannot establish) → `<name> (<id8>)`, so
+ * two auto-named sessions stay distinct. Only an id → the full id. Nothing →
+ * `unknown`.
  */
 export function sessionLabel({ sessionName = '', nameSource = 'none', sessionId = '' } = {}) {
-  if (sessionName && nameSource === 'user') { return sessionName; }
+  if (sessionName && (nameSource === 'user' || nameSource === 'hook')) { return sessionName; }
   if (sessionName && sessionId) { return `${sessionName} (${sessionId.slice(0, 8)})`; }
   if (sessionName) { return sessionName; }
   if (sessionId) { return sessionId; }
@@ -217,7 +227,8 @@ export function sessionLabel({ sessionName = '', nameSource = 'none', sessionId 
  * One resolution per prompt: harness, session id, session name and its origin,
  * the label the commit trailers use, and the worktree.
  *
- * `nameSource` is `user` | `derived` | `unknown` | `none`. `unknown` means a
+ * `nameSource` is `user` | `hook` | `derived` | `unknown` | `none`. `hook` is
+ * Claude Code's record of a title this emitter set. `unknown` means a
  * name exists but nothing tells us who set it (Claude Code's `session_title`
  * hook field, Codex's `thread_name`), which is exactly the case where the hook
  * must NOT overwrite the title.
@@ -236,7 +247,7 @@ export function resolveAgentIdentity(options = {}) {
       sessionId = sessionId || text(record.sessionId);
       if (text(record.name)) {
         sessionName = record.name;
-        nameSource = record.nameSource === 'user' ? 'user' : 'derived';
+        nameSource = record.nameSource === 'user' || record.nameSource === 'hook' ? record.nameSource : 'derived';
       }
     }
     if (!sessionName && text(hookInput.session_title)) {
@@ -344,11 +355,21 @@ function sanitizeTitle(value) {
 /**
  * A title only when no human named the session: `nameSource` `user` (a `/rename`
  * or `--name`) and `unknown` (a name of unverifiable origin) are both left
- * alone. An explicit `--name <value>` wins first, then the workflow +
- * issue-key shape, which yields `<KEY>-<workflow>`.
+ * alone. A name this hook set earlier (`hook`) may be replaced, because a
+ * re-engaged fleet terminal receives a new task with a new label. The
+ * fleet-worker token wins first and yields the label, then an explicit
+ * `--name <value>`, then the workflow + issue-key shape, `<KEY>-<workflow>`.
+ * A title equal to the current name is not re-emitted.
  */
 export function proposeSessionTitle({ prompt = '', identity = {} } = {}) {
   if (identity.nameSource === 'user' || identity.nameSource === 'unknown') { return ''; }
+  const title = titleFromPrompt(prompt);
+  return title === identity.sessionName ? '' : title;
+}
+
+function titleFromPrompt(prompt) {
+  const fleet = FLEET_PROMPT_PATTERN.exec(prompt);
+  if (fleet) { return sanitizeTitle(fleet[2]); }
   const explicit = EXPLICIT_NAME_PATTERN.exec(prompt);
   if (explicit) { return sanitizeTitle(explicit[1] ?? explicit[2] ?? ''); }
   const workflow = WORKFLOW_PROMPT_PATTERN.exec(prompt);

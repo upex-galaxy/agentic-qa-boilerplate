@@ -506,6 +506,18 @@ describe('agent identity', () => {
     expect(output.additionalContext).toContain('session=release-audit harness=claude-code');
   });
 
+  test('a name this hook set is read back verbatim as the session label', () => {
+    const run = runEmitter({
+      home: claudeHome('worker-naming', 'hook'),
+      env: CLAUDE_ENV,
+      input: claudePayload('continue with the next stage'),
+    });
+
+    const output = hookSpecificOutput(run.stdout);
+    expect(output.sessionTitle).toBeUndefined();
+    expect(output.additionalContext).toContain('session=worker-naming harness=claude-code');
+  });
+
   test('a prompt with no workflow and issue key leaves the title alone', () => {
     const run = runEmitter({
       home: claudeHome('agentic-qa-boilerplate-7', 'derived'),
@@ -559,6 +571,7 @@ describe('agent identity', () => {
   test('the session label follows the name-source ladder', () => {
     const sessionId = 'abcdef12-3456';
     expect(sessionLabel({ sessionName: 'nightly', nameSource: 'user', sessionId })).toBe('nightly');
+    expect(sessionLabel({ sessionName: 'nightly', nameSource: 'hook', sessionId })).toBe('nightly');
     expect(sessionLabel({ sessionName: 'nightly', nameSource: 'derived', sessionId })).toBe('nightly (abcdef12)');
     expect(sessionLabel({ sessionName: 'nightly', nameSource: 'unknown', sessionId })).toBe('nightly (abcdef12)');
     expect(sessionLabel({ sessionId })).toBe(sessionId);
@@ -580,12 +593,47 @@ describe('agent identity', () => {
     })).toBe('');
   });
 
-  test('the native-path fleet-worker prompt shape still derives a title', () => {
-    // H1: the worker's prompt MUST begin with `/<workflow> <KEY> fleet worker …`.
+  test('the fleet-worker token names the session after the roster label', () => {
+    // The worker's prompt opens with `/<skill> <label> fleet worker …`; the label is the name.
     expect(proposeSessionTitle({
       prompt: '/sprint-testing BK-123 fleet worker: run every stage without returning to the prompt.',
       identity: { nameSource: 'none' },
-    })).toBe('BK-123-sprint-testing');
+    })).toBe('BK-123');
+    expect(proposeSessionTitle({
+      prompt: '/sprint-testing BK-123-login fleet worker. Read the brief.',
+      identity: { nameSource: 'derived' },
+    })).toBe('BK-123-login');
+    // A kebab label and a skill outside the workflow list both qualify.
+    expect(proposeSessionTitle({
+      prompt: '/framework-development volatile-impl fleet worker. Read the brief.',
+      identity: { nameSource: 'derived' },
+    })).toBe('volatile-impl');
+    expect(proposeSessionTitle({
+      prompt: '/playwright-cli docs-audit fleet worker. Read the brief.',
+      identity: { nameSource: 'derived' },
+    })).toBe('docs-audit');
+  });
+
+  test('the fleet token is found after the runtime preamble', () => {
+    const preamble = 'You are working inside Orca, a multi-agent IDE.\n=== CLI COMMANDS ===\n  orca orchestration send --type worker_done\n=== TASK ===\n';
+    expect(proposeSessionTitle({
+      prompt: `${preamble}/framework-development worker-naming fleet worker. Read the brief.`,
+      identity: { nameSource: 'derived' },
+    })).toBe('worker-naming');
+  });
+
+  test('extra words between the label and the token leave the title alone', () => {
+    expect(proposeSessionTitle({
+      prompt: '/framework-development env-scopes SPIKE fleet worker. Read the brief.',
+      identity: { nameSource: 'derived' },
+    })).toBe('');
+  });
+
+  test('a hook-set name is replaced by a new label and never re-emitted unchanged', () => {
+    const prompt = '/framework-development context-c fleet worker. Read the brief.';
+    expect(proposeSessionTitle({ prompt, identity: { nameSource: 'hook', sessionName: 'context-c' } })).toBe('');
+    expect(proposeSessionTitle({ prompt, identity: { nameSource: 'hook', sessionName: 'context-b' } })).toBe('context-c');
+    expect(proposeSessionTitle({ prompt, identity: { nameSource: 'user', sessionName: 'mine' } })).toBe('');
   });
 
   test('orcaAvailable never spawns a process and tolerates an empty PATH', () => {
