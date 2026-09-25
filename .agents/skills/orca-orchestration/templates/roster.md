@@ -10,9 +10,9 @@
 
 | Label | Key | Task | Dispatch | Terminal | Worktree | Agent | Model | Session label | Resume | Cost | Status |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| W1 | <KEY> | `task_…` | `dispatch_…` | `term_…` | primary | claude | <full model id> | <KEY>-<slug> | `<harness resume command>` | <out tok / ctx at close> | in-flight |
-| W2 | <KEY> | `task_…` | — | `term_…` | <wt name> | claude | <full model id> | <KEY>-<slug> | `<harness resume command>` | — | waiting on claim |
-| W3 | <KEY> | `task_…` | `dispatch_…` | `term_…` | <wt name> | opencode | <provider/model> | <KEY>-<slug> | `<harness resume command>` | <out tok / ctx> | done, released |
+| W1 | <KEY> | `task_…` | `dispatch_…` | `term_…` | primary | claude | <full model id> | <KEY> | `<harness resume command>` | <out tok / ctx at close> | in-flight |
+| W2 | <KEY> | `task_…` | — | `term_…` | <wt name> | claude | <full model id> | <KEY> | `<harness resume command>` | — | waiting on claim |
+| W3 | <KEY> | `task_…` | `dispatch_…` | `term_…` | <wt name> | opencode | <provider/model> | <KEY> | `<harness resume command>` | <out tok / ctx> | done, released |
 
 `Cost` is filled from the worker's own status footer, read with a screen read **before** closing it:
 no command reports a session's usage and the number dies with the terminal (gotcha G54).

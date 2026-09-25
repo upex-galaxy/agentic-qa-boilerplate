@@ -54,13 +54,14 @@ for the real grammar. Only this skill spells out commands, because only this ski
 
   ```
   bun run claude -- --model <full-model-id> --effort <level> --permission-mode auto \
-    -n "<KEY>-<slug>" '<prompt>'
+    -n "<KEY>" '<prompt>'
   ```
 
   `bun run claude` forwards trailing arguments to the binary through the env-loading wrapper
   (verified: `bun run claude -- --version` prints the CLI version), and the wrapper is what makes the
-  env file win over an inherited variable. On a harness where the launcher cannot set a session name,
-  omit the flag and have the brief instruct the worker to rename itself in its first turn.
+  env file win over an inherited variable. `<KEY>` is the worker's roster name, the same token the
+  prompt opens with. On a harness where the launcher cannot set a session name, omit the flag: the
+  human types `/rename <KEY>` once the session is up, because a model cannot rename its own session.
 
 **This line is for a human, or for a terminal nobody will supervise.** Two things about it do not
 survive the supervised path, and a skill that assumes they do is writing a lie into its own doc:

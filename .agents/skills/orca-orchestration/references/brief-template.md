@@ -90,12 +90,12 @@ a system temp directory (it triggers a permission prompt on some harnesses).
    conductor instruction, it stops and asks with both readings and its evidence. Never silent
    compliance, never silent deviation.
 
-7. **Session label and rename** — the label the roster, the board card and the commit trailer all
-   key off. On the supervised path there is no name flag at all: on Claude Code the identity hook
-   titles the session from the prompt's `/<workflow-skill> <KEY> fleet worker` opening, so the brief
-   tells that worker NOT to rename itself (a rename freezes the name as human-set). Every other
-   harness, and any worker whose first prompt lacked the token, is instructed to rename itself in its
-   first turn to EXACTLY that label. Detail: `references/session-identity.md` §2b.
+7. **Session label** — the worker's roster name `<KEY>`, the one value the roster, the tab, the board
+   card and the commit trailer all key off. On the supervised path there is no name flag: on Claude
+   Code the identity hook names the session from the prompt's `/<workflow-skill> <KEY> fleet worker`
+   opening, and on OpenCode and Codex the conductor types `/rename <KEY>`. The brief never asks the
+   worker to rename itself: `/rename` is user input, and a model cannot run it. Detail:
+   `references/session-identity.md` §2b.
 
 8. **Trailer reminder** — the two forensic trailers as the last lines of every commit, and the
    reminder that they are forensics, not attribution, and that no AI attribution of any kind is
@@ -112,7 +112,7 @@ Read <ABS>/.session/orchestration/<slug>/COMMON.md first, then this file.
 
 Label: <label>   Task: <task_id>   Dispatch: <dispatch_id>
 [Run: <run_id>]                       # ONLY when launched without a dispatch
-Session label: <KEY>-<slug>           # rename yourself to this if your harness needs it
+Session label: <KEY>                  # set for you (hook or conductor); your `Session:` trailer
 Model / effort: <model> / <effort>
 Worktree: <primary | name>            # first trailer value
 

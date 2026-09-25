@@ -14,7 +14,7 @@ Read `<ABS>/.session/orchestration/<slug>/COMMON.md` first, then this file.
 | Task | `task_…` |
 | Dispatch | `dispatch_…` (omit if launched without one) |
 | Run | `run_…` — **ONLY** when launched WITHOUT a dispatch; with an active dispatch the recipient defaults to the owning Run, so this line invites an error |
-| Session label | <KEY>-<slug> — on Claude Code the identity hook sets it from your first prompt, so do NOT rename yourself (a rename freezes the name as human-set). On any other harness, or if your first prompt carried no `/<workflow-skill> <KEY> fleet worker` token, rename yourself to EXACTLY this in your first turn |
+| Session label | <KEY> — your roster name, the token your prompt opens with. It is set for you: on Claude Code the identity hook names the session from that token, on OpenCode and Codex the conductor types `/rename <KEY>`. Do not rename yourself (you cannot run `/rename`); carry this value in your `Session:` trailer |
 | Worktree | <primary \| name> — the first commit-trailer value |
 | Agent / model / effort | <agent> / <full model id> / <effort> |
 | Report path | `<ABS>/.session/orchestration/<slug>/reports/<label>.md` |
