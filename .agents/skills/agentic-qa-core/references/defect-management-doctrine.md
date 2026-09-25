@@ -188,7 +188,7 @@ JQL filters, and dashboards.
   *Components* admin module, not from the issue dropdown; Jira rejects unknown
   names. `acli` cannot create or edit them (`acli/SKILL.md` §Hard limits), so
   populating them is either an admin task or a REST operation — driven by
-  `scripts/sync-jira-components.ts` through the `/jira-components` command,
+  `scripts/sync-jira-components.ts` through `jira-administration` mode `components`,
   which is plan-based on purpose: the AI proposes the module map, a human
   approves it, and only the approved plan is written. Renaming (which preserves
   issue assignments) is a separate operation from creating.

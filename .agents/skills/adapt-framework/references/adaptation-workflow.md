@@ -79,7 +79,7 @@ Verify each by path. Treat a **placeholder/stub file as missing** (grep for `pla
 - [ ] `.context/PRD/` populated (≥ `README.md`) AND `.context/business/business-model.md` or `domain-glossary.md` present (non-stub)
 - [ ] `.context/SRS/architecture.md` present (non-stub)
 - [ ] `.context/infrastructure/backend.md` and `.context/infrastructure/frontend.md` present (non-stub)
-- [ ] `.context/business/business-data-map.md` present **and not** a `Run /business-data-map` placeholder
+- [ ] `.context/business/business-data-map.md` present **and not** a placeholder stub
 - [ ] API contract source resolvable — one of: `api/openapi-types.ts` already generated and non-stub, OR a reachable OpenAPI spec URL/file (synced in Phase 4), OR `.context/business/business-api-map.md` (business-angle fallback, accepted only if OpenAPI is unreachable)
 - [ ] `.env.example` exists; `.env` either exists or will be created from it in Phase 3
 

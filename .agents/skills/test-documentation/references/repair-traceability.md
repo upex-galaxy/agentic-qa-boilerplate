@@ -18,7 +18,7 @@ Repair broken TMS traceability between User Story, ATS, ATP, ATR, and Test Cases
 
 ## Traceability Model — the Cascade
 
-Coverage resolves through an ordered cascade. Each TC must be reachable from its Story by AT LEAST one rung; the command verifies rungs in order and repairs toward rung ①, never by mass direct links.
+Coverage resolves through an ordered cascade. Each TC must be reachable from its Story by AT LEAST one rung; the mode verifies rungs in order and repairs toward rung ①, never by mass direct links.
 
 ```
 ① TC ∈ ATS  ->  ATS --is tested by--> Story     (primary: fills the coverage panel)

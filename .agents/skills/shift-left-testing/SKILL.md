@@ -218,7 +218,7 @@ Env reachability, test-user creds, DBHub, OpenAPI / API token, Playwright and `r
    - `.context/business/business-api-map.md`
    - `.context/master-test-plan.md`
 
-   If any of these is missing, STOP and hand off to `project-discovery` (or the individual `/business-*-map` and `/master-test-plan` commands). Shift-left refinement without business context produces low-value PO/Dev questions and bloats the batch report.
+   If any of these is missing, STOP and hand off to `project-discovery` (or the individual `project-context` modes `data` / `features` / `api` and `test-plan`). Shift-left refinement without business context produces low-value PO/Dev questions and bloats the batch report.
 
 0.4 **Resolve the candidate Story list**. Two modes:
 
@@ -435,7 +435,7 @@ After the batch report lands, append the final progress entry `## Phase 3 — Ha
 8. **Sequential Phase 2.** One refinement subagent at a time, even if the user is impatient. Parallelism would prevent per-Story user OK and break the grooming cadence.
 9. **Transition guardrail.** Never advance beyond `{{jira.status.story.estimation}}`. PO/Dev lead owns `estimate -> ready_for_dev`. If a Story is already past `estimation` when the session starts, log a warning and SKIP the transition step — refinement still lands on Jira, but the workflow stays untouched.
 10. **Label hygiene.** Always add BOTH `shift-left-reviewed` AND `shift-left-{{YYYY-MM-DD}}`. The dated label lets `/sprint-testing` decide whether the refinement is still fresh (<30 days) and short-circuit, or whether to redo Phases 1-3.
-11. **Jira is canonical.** No git commit, no test branch. Local `shift-left-refinement.md` is a working artifact — gitignored under `.context/PBI/**`. The populated `{{jira.acceptance_test_plan}}` field (or its `## Acceptance Test Plan (ATP)` fallback comment when the field is absent) is the contract `fix-traceability` checks later.
+11. **Jira is canonical.** No git commit, no test branch. Local `shift-left-refinement.md` is a working artifact — gitignored under `.context/PBI/**`. The populated `{{jira.acceptance_test_plan}}` field (or its `## Acceptance Test Plan (ATP)` fallback comment when the field is absent) is the contract `test-documentation` mode `repair-traceability` checks later.
 12. **Language**: artifacts + Jira content always English. Mirror the user's language only in conversation (per AGENTS.md §1 Rule #14).
 13. **Session-footer contract (mandatory at close).** The final phase is not done until the two chat-facing blocks from `../agentic-qa-core/references/session-footer-contract.md` are printed: (1) consolidated screenshot list — repo-relative paths, verified on disk, bug annotations first — plus in-flow surfacing of every capture's path the instant it lands; (2) Session Footer listing skills/MCPs/CLIs actually used + testing levels touched, with explicit "none" entries for expected-but-untouched levels. Framing for this skill: execution. Multi-subagent sessions: each stage report carries the five footer fields (`skills_loaded`, `mcps_used`, `clis_used`, `testing_levels_touched`, `screenshots_captured`); the orchestrator compiles the footer ONCE at close. Chat only — never in a Jira comment or ATR body. Lessons noticed during the session are PROPOSED to `.session/<skill-slug>/<scope>/refinements.md` and never applied to a live skill, per `../agentic-qa-core/references/skill-refinement-protocol.md`; the footer's `Refinements proposed:` line counts them.
 14. **Subtask tracking is best-effort.** The `[QA] Shift-Left Review` subtask makes QA's pre-sprint work visible on the board and holds the exhaustive session annotations that would otherwise clutter the Story. If `.agents/jira-workflows.json` has no subtask work type (or the project disallows subtasks), warn once in the batch report and proceed — never block a refinement on subtask support.
@@ -450,7 +450,7 @@ After the batch report lands, append the final progress entry `## Phase 3 — Ha
 
 **L3.** NEVER mix Story refinement with bug retest in the same batch. `/shift-left-testing` accepts Stories only (Phase 1 type filter is a hard reject). Bugs are reactive — they have no upstream ACs to refine and belong to `/sprint-testing` instead.
 
-**L4.** NEVER hand-write the ATP body as raw ADF JSON. Author the body in Markdown locally (`shift-left-refinement.md`) and let `[ISSUE_TRACKER_TOOL]` convert via its md-to-ADF path on update. Hand-rolled ADF drifts from the field content that `fix-traceability` later validates.
+**L4.** NEVER hand-write the ATP body as raw ADF JSON. Author the body in Markdown locally (`shift-left-refinement.md`) and let `[ISSUE_TRACKER_TOOL]` convert via its md-to-ADF path on update. Hand-rolled ADF drifts from the field content that `test-documentation` mode `repair-traceability` later validates.
 
 **L5.** NEVER transition a Story to `estimation` without a populated ATP (the `{{jira.acceptance_test_plan}}` custom field in BOTH modalities; the `## Acceptance Test Plan (ATP)` fallback comment when the field is absent). The pre-sprint ATP is what makes the Story estimable — without it, Dev and PO guess scope and the shift-left effort delivers no signal.
 
@@ -471,7 +471,7 @@ After the batch report lands, append the final progress entry `## Phase 3 — Ha
 | Formal TC creation + ROI scoring after Story ships | `/test-documentation` | Stage 4 turns the outlines + refined ACs into formal Xray TCs (Modality jira-xray) or Jira Test issues (Modality jira-native) with ROI scoring. |
 | Automated test code | `/test-automation` | Stage 5. |
 | Regression suite execution | `/regression-testing` | Stage 6. |
-| Generate / refresh business + master test plan context | `/project-discovery` + `/business-*-map` + `/master-test-plan` | This skill consumes those; it does not create them. |
+| Generate / refresh business + master test plan context | `/project-discovery` + `project-context` modes `data` / `features` / `api` / `test-plan` | This skill consumes those; it does not create them. |
 | Adversarial dual-review of the refinement (optional) | `/judgment-day` | Useful when shift-left output goes to a high-risk Story. Not auto-invoked. |
 
 If Phase 0.3 reports any project-wide context file missing, STOP and hand off — refinement without business context produces vague PO questions and dilutes the batch report.

@@ -223,4 +223,4 @@ Use this catalog as a **rubric**, not a script. If the Story is already explicit
 2. **Don't ask for project-wide answers.** If `business-data-map.md` already defines the currency / state machine, cite it. PO has finite patience.
 3. **Critical vs Edge classification matters.** PO triages by criticality. Putting a U3 question (success path text) into "Critical Questions for PO" alongside an A1 (auth gate) signals lack of judgment.
 4. **Universal questions are not auto-included.** Walk them ONLY when the Story doesn't already answer them. The Refinement file is high-signal, not exhaustive.
-5. **This catalog is evergreen.** Add new archetypes when projects discover them (`/sync-ai-memory` workflow may surface candidates).
+5. **This catalog is evergreen.** Add new archetypes when projects discover them (the `sync-ai-context` workflow may surface candidates).

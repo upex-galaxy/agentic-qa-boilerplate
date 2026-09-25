@@ -414,7 +414,7 @@ A site move also **reassigns Jira custom-field IDs**. The old id usually still
 exists on the new instance pointing at a **different field**, so the failure mode
 is not a 404 but a `200 OK` writing your data into the wrong field, silently.
 
-Run `/jira-instance-migration` to repoint `.env`, `.agents/project.yaml` and the
+Run `/jira-administration instance-migration` to repoint `.env`, `.agents/project.yaml` and the
 machine-global `acli` session, and to regenerate the `.agents/` catalogs the move
 invalidated. An operator who follows only this Xray runbook is left with poisoned
 catalogs and no error to warn them.

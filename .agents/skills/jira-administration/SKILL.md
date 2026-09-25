@@ -12,9 +12,9 @@ metadata:
 
 ## Mode routing
 
-Choose exactly one mode and load only its reference.
+Choose exactly one mode and load only its reference: the first token of `$ARGUMENTS` when it names a mode below (`/jira-administration components BK ../bunkai`), otherwise ask. The former `jira-components` and `jira-instance-migration` command names survive as trigger phrases only.
 
-| Mode | Legacy alias / trigger | Reference |
+| Mode | Trigger phrases | Reference |
 |---|---|---|
 | `components` | `jira-components`, reconcile/sync Jira Components | `references/components.md` |
 | `instance-migration` | `jira-instance-migration`, changed/repoint Jira instance | `references/instance-migration.md` |
@@ -35,6 +35,6 @@ The sealed mutation contract. Binding on every run of either mode:
 - The Atlassian host lives in `.agents/project.yaml` → `issue_tracker.atlassian_url` and NOWHERE else locally. A stale `ATLASSIAN_URL` in `.env` or the process environment is contamination to DELETE, never to update — a second copy is what goes stale.
 - Template-repo carve-out: if `.agents/project.yaml` → `project.project_name` is `null`, the repo is an un-onboarded template. Leave `atlassian_url` and `project_key` `null`, say so in the report, and never manufacture a commit to hide the emptiness.
 - Run only the selected reference's verification steps. Never run the other mode's.
-- Forward `$ARGUMENTS` unchanged.
+- Mode from `$ARGUMENTS`: when its first token matches a mode in the Mode routing table, that token IS the mode and the rest is forwarded to it unchanged. No matching first token → ASK which mode.
 
 **Read full SKILL.md when**: the mode is ambiguous, a dry-run diff or migration audit looks wrong, or you need the selected reference's step-by-step phases and verification list.

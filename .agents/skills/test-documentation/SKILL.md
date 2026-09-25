@@ -19,6 +19,7 @@ compact_rules: |
   - TC identity = Precondition + Action + verifiable outcome. Naming (TC): `{US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]`; `Validate <feature>` is reserved for the GROUPING layer (Test Set summary / `describe()`). Reject `"Login test"`, `"Login - error"`, `"TC1: Test form"`.
   - ROI formula → one of three verdicts per TC: Candidate (feeds test-automation), Manual, Deferred. Prioritize by risk.
   - Cardinality: US→TC is 1:N; AC→TC is N:1 or N:M. Resolve TMS modality (Xray vs Jira-native) in Phase 0 before documenting.
+  - Mode from `$ARGUMENTS`: a first token matching a mode in Mode routing (`repair-traceability`, `document`) IS the mode and the rest is forwarded; otherwise `document` for plain documentation work, ASK when it could be either.
   - Bug-driven (GOLDEN RULE): not every bug is a regression TC, but a regression-worthy bug MUST end with a Test — REUSE the existing failed Test if it came from one, else CREATE one (both modalities). A non-qualifying bug is treated like a failed test → Deferred, no new Test.
   - ATS is MANDATORY per Story (`ATS: {US_ID}: {story title}`, even with a single TC): a `Test Set` holding ALL the Story's TCs, parented to the QA Test Artifacts epic, `components` INHERITED from the Story (mandatory — the components exemption applies ONLY to the optional feature-level `TS:` grouping sets).
   - Set-first creation order: find-or-create the ATS, ATP and ATR BEFORE the first TC (module-driven pre-creates the containers because parallel TC sharding needs the targets to exist); add each TC to the ATS, THEN derive the ATP's and the Execution's test lists FROM the ATS membership — never three independent id lists.
@@ -75,6 +76,7 @@ Requires `agentic-qa-core`. Loads on demand:
 - TC identity = Precondition + Action + verifiable outcome. Naming (TC): `{US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]`; `Validate <feature>` is reserved for the GROUPING layer (Test Set summary / `describe()`). Reject `"Login test"`, `"Login - error"`, `"TC1: Test form"`.
 - ROI formula → one of three verdicts per TC: Candidate (feeds test-automation), Manual, Deferred. Prioritize by risk.
 - Cardinality: US→TC is 1:N; AC→TC is N:1 or N:M. Resolve TMS modality (Xray vs Jira-native) in Phase 0 before documenting.
+- Mode from `$ARGUMENTS`: a first token matching a mode in Mode routing (`repair-traceability`, `document`) IS the mode and the rest is forwarded; otherwise `document` for plain documentation work, ASK when it could be either.
 - Bug-driven (GOLDEN RULE): not every bug is a regression TC, but a regression-worthy bug MUST end with a Test — REUSE the existing failed Test if it came from one, else CREATE one (both modalities). A non-qualifying bug is treated like a failed test → Deferred, no new Test.
 
 **Read full SKILL.md when**: resolving TMS modality, computing ROI, writing Gherkin, or wiring US-ATP-ATR-TC traceability links.
@@ -83,9 +85,9 @@ Requires `agentic-qa-core`. Loads on demand:
 
 ## Mode routing
 
-Resolve mode before the readiness preflight and Phase -1 session workflow.
+Resolve mode before the readiness preflight and Phase -1 session workflow. When the first token of `$ARGUMENTS` matches a mode below, that token IS the mode and the rest is forwarded to it unchanged (`/test-documentation repair-traceability UPEX-123`). Otherwise the rules below apply: the default mode for plain documentation work, ASK when the request is ambiguous.
 
-- `repair-traceability`: selected only by the legacy `fix-traceability` alias or an explicit request to repair a ticket's existing traceability. Forward `$ARGUMENTS` unchanged and load only `references/repair-traceability.md`. Preserve its sealed sequence: audit -> present plan -> explicit user approval -> apply -> verify. Do not start Analyze -> Prioritize -> Document, create unrelated test cases, or broaden the ticket scope.
+- `repair-traceability`: selected only by a first token `repair-traceability`, the `fix-traceability` trigger phrase, or an explicit request to repair a ticket's existing traceability. Forward the remaining `$ARGUMENTS` unchanged and load only `references/repair-traceability.md`. Preserve its sealed sequence: audit -> present plan -> explicit user approval -> apply -> verify. Do not start Analyze -> Prioritize -> Document, create unrelated test cases, or broaden the ticket scope.
 - `document` (default): normal TMS documentation, ROI, and Candidate/Manual/Deferred work. Continue with the workflow below.
 
 If the user has not supplied the ticket key required by `repair-traceability`, ask for it before any TMS call. Missing credentials remain a hard stop under `AGENTS.md` Critical Rule #10.
@@ -676,7 +678,7 @@ On Phase 3 partial failure (some chunks 429-rate-limited, some succeeded), archi
 - **ROI divisors matter**: Effort and Dependencies go in the denominator. A "critical flow" with Effort=5 and Dependencies=5 has low ROI by design — that is correct, not a bug in the formula.
 - **Prior-bug rule overrides ROI thresholds**: a scenario tied to a closed bug enters regression even at ROI 1.5-3.0. Source: `references/tms-conventions.md` §9 — Phase 0 filter Q2 ("prior bugs → prioritize even at moderate ROI") plus the `1.5-3.0` "Case by case" band.
 - **Cross-cutting is not a TC**: "Mobile responsive", "XSS prevention", "Performance" are never TCs on their own. They are validated inside other TCs or in an app-level suite.
-- **Linking order is not optional**: create the ATS, ATP and ATR BEFORE the first TC (Set-first — the ATS holds ALL the Story's TCs and the Plan/Execution test lists derive from its membership). If you create TCs first, you get orphaned references and `fix-traceability` is the only way out. This container-first order is an intended asymmetry with `/sprint-testing` Stage 1 (which creates TCs first and grows the ATS incrementally): module-driven Stage 4 pre-creates the targets because parallel TC-creation sharding needs them to exist.
+- **Linking order is not optional**: create the ATS, ATP and ATR BEFORE the first TC (Set-first — the ATS holds ALL the Story's TCs and the Plan/Execution test lists derive from its membership). If you create TCs first, you get orphaned references and mode `repair-traceability` is the only way out. This container-first order is an intended asymmetry with `/sprint-testing` Stage 1 (which creates TCs first and grows the ATS incrementally): module-driven Stage 4 pre-creates the targets because parallel TC-creation sharding needs them to exist.
 - **Xray requires two calls**: one `[TMS_TOOL] Create Test` (registers in Xray), then one `[ISSUE_TRACKER_TOOL] Update Issue` to paste the full Description. Skipping the second call leaves a TC with no readable documentation in Jira.
 - **Xray Manual steps are added AFTER create, never inline**: Xray Cloud **silently drops** steps passed to the create call. For a `type=Manual` Test, create it WITHOUT inline steps, then add each step one-by-one via `[TMS_TOOL] Add Test Step`; optionally verify with `[TMS_TOOL] Get Test`. Cucumber Tests are unaffected (Gherkin is a single field). Concrete CLI syntax lives in `/xray-cli`.
 - **Never hardcode UUIDs or emails** in Gherkin. Always use `{variable}` with a Variables table and a query showing how to obtain the real value at runtime.

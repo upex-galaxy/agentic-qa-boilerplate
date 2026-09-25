@@ -9,13 +9,13 @@
     {
       "name": "should-redirect-business-data-map-regeneration",
       "prompt": "Generate the business-data-map.md for this project. Look at the source code and the database.",
-      "expected_behavior": "Does NOT generate the map inside this skill and does NOT claim to own it. Redirects to `project-context` mode `data` (legacy alias `/business-data-map`), which is where the entity/flow/state-machine extraction lives. May state which discovery artifacts that mode depends on, and offer to run Phase 1 + Phase 3 first if `.context/` has no project-config or infrastructure yet. Does not reference a context-generators file: this skill has no such reference.",
+      "expected_behavior": "Does NOT generate the map inside this skill and does NOT claim to own it. Redirects to `project-context` mode `data` (`/project-context data`), which is where the entity/flow/state-machine extraction lives. May state which discovery artifacts that mode depends on, and offer to run Phase 1 + Phase 3 first if `.context/` has no project-config or infrastructure yet. Does not reference a context-generators file: this skill has no such reference.",
       "category": "positive"
     },
     {
       "name": "should-redirect-api-architecture-request",
       "prompt": "The api-architecture.md is stale. Regenerate it with the current endpoints.",
-      "expected_behavior": "Does NOT regenerate api-architecture.md inside this skill. Either declines (if invoked) or activates only to redirect: explains the split — `bun run api:sync` for technical endpoint sync (TypeScript types from OpenAPI) and `project-context` mode `api` (legacy alias `/business-api-map`) for the business angle (auth flows, critical paths). Does not point at a context-generators file: that reference no longer exists, and the deferral note now lives in this skill's SKILL.md routing table.",
+      "expected_behavior": "Does NOT regenerate api-architecture.md inside this skill. Either declines (if invoked) or activates only to redirect: explains the split — `bun run api:sync` for technical endpoint sync (TypeScript types from OpenAPI) and `project-context` mode `api` (`/project-context api`) for the business angle (auth flows, critical paths). Does not point at a context-generators file: that reference no longer exists, and the deferral note now lives in this skill's SKILL.md routing table.",
       "category": "positive"
     },
     {
