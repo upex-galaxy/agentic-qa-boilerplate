@@ -229,7 +229,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
     <div class="kicker" data-anim="fade-up">Lab práctico · QA Engineering</div>
     <h1 data-anim="fade-up" style="animation-delay:.1s">Dojo <span class="grad-text">Lab I</span> 🥷</h1>
     <p data-anim="fade-up" style="animation-delay:.2s;max-width:660px;font-size:clamp(1.05rem,1.8vw,1.35rem)">
-      Hoy no hay simuladores. Hoy tu código controla un <b>navegador real</b> contra una <b>app real</b>.<br>De cero a 5 tests verdes en tu máquina.</p>
+      Aquí no hay simuladores. Aquí tu código controla un <b>navegador real</b> contra una <b>app real</b>.<br>De cero a 5 tests verdes en tu máquina.</p>
     <div class="cover-chips" data-anim="fade-up" style="animation-delay:.32s">
       <span class="pill">7 misiones 🎯</span><span class="pill">codegen</span><span class="pill">UI mode</span><span class="pill">trace viewer</span><span class="pill">dojo.upexgalaxy.com</span>
     </div>
@@ -246,7 +246,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
     <div class="card"><div class="ico">✅</div><h3>Marca tu progreso</h3><p>Checkbox en cada misión. Se guarda en tu navegador: cierra y vuelve cuando quieras, tu avance sigue ahí.</p></div>
     <div class="card"><div class="ico">💡</div><h3>Pistas colapsables</h3><p>Atáscate primero, pide pista después. El atasco es parte del entrenamiento — en el trabajo real no hay slide con la respuesta.</p></div>
     <div class="card"><div class="ico">⌨️</div><h3>Laptop abierta</h3><p>Esto NO es para mirar. Cada misión se hace en TU terminal y TU editor, en paralelo.</p></div>
-    <div class="card"><div class="ico">🐢</div><h3>Ritmo propio</h3><p>Nadie se queda atrás: el archivo es tuyo para siempre. Lo que no termines hoy, lo terminas en casa.</p></div>
+    <div class="card"><div class="ico">🐢</div><h3>Ritmo propio</h3><p>Nadie se queda atrás: el archivo es tuyo para siempre. Lo que no termines en la sesión, lo terminas en casa.</p></div>
     <div class="card hl"><div class="ico">📚</div><h3>Prerrequisitos</h3><p>Coding Base ✓ y Coding Classes ✓ (o saber: variables, funciones, async/await, clases). Sin eso, primero esos decks.</p></div>
   </div>
   <div class="notes"><p>Establece el contrato del lab: trabajo activo, pistas solo tras intentar, criterio de éxito como juez (no tu opinión). El checkbox persistente baja la ansiedad de los lentos. Pide a todos abrir terminal AHORA — la transición mental de "ver slides" a "trabajar" ocurre en este momento.</p></div>
@@ -259,7 +259,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
   <div class="cols">
     <div data-stagger>
       <div class="card hl"><h3>🌐 dojo.upexgalaxy.com</h3><p>App real construida A PROPÓSITO para práctica de QA automation. Rompe lo que quieras — para eso existe.</p>
-        <p style="margin-top:.5rem"><span class="pill">Login / Registro</span><span class="pill">24 componentes UI</span><span class="pill">Dashboard kanban</span><span class="pill">API + docs</span></p></div>
+        <p style="margin-top:.5rem"><span class="pill">Login / Registro</span><span class="pill">Página de componentes UI</span><span class="pill">Dashboard kanban</span><span class="pill">API + docs</span></p></div>
       <div class="card" style="margin-top:.9rem"><h3>🔑 Credenciales demo</h3>
         <p style="font-family:var(--font-mono);font-size:.9rem">email: <b>testuser@upex.dev</b><br>password: <b>Test123!</b></p>
         <p style="margin-top:.4rem">También puedes registrar tu propio usuario — eso será uno de tus tests.</p></div>
@@ -299,13 +299,13 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
       <div>
         <div class="term"><div class="term-bar"><span class="dot" style="background:#f7768e"></span><span class="dot" style="background:#e0af68"></span><span class="dot" style="background:#9ece6a"></span></div>
         <pre><span class="t-cyan">$</span> node --version
-<span class="t-green">v22.16.0</span>   <span class="t-dim">← cualquier v18+ sirve</span>
+<span class="t-green">v22.16.0</span>   <span class="t-dim">← cualquier LTS vigente sirve</span>
 <span class="t-cyan">$</span> npm --version
 <span class="t-green">10.9.2</span></pre></div>
         <details class="m-hint"><summary>Pista: "command not found"</summary><div class="hint-body"><p>Cierra y reabre la terminal después de instalar (la terminal vieja no conoce programas nuevos). En Windows: usa la terminal de VS Code o PowerShell, no CMD viejo.</p></div></details>
       </div>
     </div>
-    <div class="m-crit">✅ <span><b>Criterio de éxito:</b> ambos comandos responden con un número de versión (Node v18 o superior).</span></div>
+    <div class="m-crit">✅ <span><b>Criterio de éxito:</b> ambos comandos responden con un número de versión (Node en una LTS vigente: el mínimo lo fija Playwright, ver playwright.dev).</span></div>
   </div>
   <div class="notes"><p>La misión más aburrida y la más traicionera: permisos de admin, antivirus corporativo, terminal sin refrescar. No avances hasta que TODOS tengan las dos versiones en pantalla. Explica qué es Node en una frase: "el motor que ejecuta JavaScript fuera del navegador — Playwright corre sobre él". npm viene incluido con Node.</p></div>
 </section>
@@ -323,7 +323,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
         <table class="cmp" style="font-size:.85rem">
           <tr><td>¿TypeScript o JavaScript?</td><td><b>TypeScript</b> ✓</td></tr>
           <tr><td>¿Carpeta de tests?</td><td><b>tests</b> (default)</td></tr>
-          <tr><td>¿GitHub Actions workflow?</td><td><b>false</b> (hoy no)</td></tr>
+          <tr><td>¿GitHub Actions workflow?</td><td><b>false</b> (en este lab no)</td></tr>
           <tr><td>¿Instalar browsers?</td><td><b>true</b> ✓ (tarda unos minutos)</td></tr>
         </table>
       </div>
@@ -335,10 +335,10 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
         <pre>Running 6 tests using 4 workers
 
   <span class="t-green">6 passed</span> <span class="t-dim">(8.3s)</span></pre></div>
-        <details class="m-hint"><summary>Pista: ¿qué acaba de pasar?</summary><div class="hint-body"><p>Corriste 6 tests de ejemplo (incluidos en el proyecto) contra playwright.dev en 3 navegadores — SIN abrir ninguna ventana. Playwright corre headless (invisible) por defecto: por eso es tan rápido.</p></div></details>
+        <details class="m-hint"><summary>Pista: ¿qué acaba de pasar?</summary><div class="hint-body"><p>Corriste los tests de ejemplo (incluidos en el proyecto) contra playwright.dev en 3 navegadores — SIN abrir ninguna ventana. Playwright corre headless (invisible) por defecto: por eso es tan rápido.</p></div></details>
       </div>
     </div>
-    <div class="m-crit">✅ <span><b>Criterio de éxito:</b> <code style="color:var(--cyan)">npx playwright test</code> termina con <b style="color:var(--green)">6 passed</b>.</span></div>
+    <div class="m-crit">✅ <span><b>Criterio de éxito:</b> <code style="color:var(--cyan)">npx playwright test</code> termina en verde (todos los tests de ejemplo <b style="color:var(--green)">passed</b>).</span></div>
   </div>
   <div class="notes"><p>npm init playwright = instalador oficial: descarga Playwright + navegadores (Chromium/Firefox/WebKit propios — no usa tu Chrome). La descarga de browsers tarda: lanza el comando y aprovecha para explicar mientras instala. El "6 passed" sin ventanas visibles sorprende — anticipa la explicación headless de la pista.</p></div>
 </section>
@@ -350,7 +350,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
   <div class="cols">
     <div class="tree" data-stagger>
       <div><span class="tr-dir">mi-dojo-lab/</span></div>
-      <div>├─ <span class="tr-file">package.json</span> <span class="tr-c">← la "cédula" (Coding Base, slide 32)</span></div>
+      <div>├─ <span class="tr-file">package.json</span> <span class="tr-c">← la "cédula" (Coding Base, slide «Zoom final»)</span></div>
       <div>├─ <span class="tr-file">playwright.config.ts</span> <span class="tr-c">← browsers, baseURL, timeouts</span></div>
       <div>├─ <span class="tr-dir">node_modules/</span> <span class="tr-c">← herramientas instaladas (no se toca)</span></div>
       <div>├─ <span class="tr-dir">tests/</span></div>
@@ -371,7 +371,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
       <p style="margin-top:.8rem;font-size:.95rem">Inventario de lo que reconoces: <code class="pill">import</code> ✓ <code class="pill">test()</code> ✓ <code class="pill">async ({ page })</code> ✓ <code class="pill">await</code> ✓ <code class="pill">expect</code> ✓ — <b>cero sorpresas</b>. Las dos sesiones anteriores fueron exactamente para este momento.</p>
     </div>
   </div>
-  <div class="notes"><p>Momento de cosecha: el árbol es el de Coding Base slide 32 y el spec se lee completo con lo aprendido. Pide a alguien que LEA el example.spec.ts en voz alta explicando cada línea — validación pública de que las bases están. Menciona playwright.config.ts sin profundizar: "ahí viven los 3 browsers del 6 passed; lo exploramos en Playwright Pro".</p></div>
+  <div class="notes"><p>Momento de cosecha: el árbol es el de la slide «Zoom final» de Coding Base y el spec se lee completo con lo aprendido. Pide a alguien que LEA el example.spec.ts en voz alta explicando cada línea — validación pública de que las bases están. Menciona playwright.config.ts sin profundizar: "ahí viven los 3 browsers del 6 passed; lo exploramos en Playwright Pro".</p></div>
 </section>
 
 <!-- ================================================================ -->
@@ -463,7 +463,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
     </div>
     <div class="m-crit">✅ <span><b>Criterio de éxito:</b> viste el navegador hacer login solo, y en UI mode recorriste la línea de tiempo paso a paso.</span></div>
   </div>
-  <div class="notes"><p>Headed produce la foto del lab: el navegador llenando el formulario solo — el momento que vinieron a buscar. UI mode es la herramienta de trabajo diaria #1: time-travel + locator picker (esa pestaña les resuelve "¿qué selector uso?" para la misión 6). Déjalos jugar 5 minutos: cada minuto en UI mode hoy ahorra horas después.</p></div>
+  <div class="notes"><p>Headed produce la foto del lab: el navegador llenando el formulario solo — el momento que vinieron a buscar. UI mode es la herramienta de trabajo diaria #1: time-travel + locator picker (esa pestaña les resuelve "¿qué selector uso?" para la misión 6). Déjalos jugar 5 minutos: cada minuto en UI mode ahora ahorra horas después.</p></div>
 </section>
 
 <!-- ================================================================ -->
@@ -514,7 +514,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
     </div>
     <div class="quiz-expl">💡 TimeoutError en un locator casi siempre = "busqué y no existe (con ese nombre, en esta página)". Primer reflejo: abrir UI mode o trace y MIRAR qué página había y cómo se llama el elemento realmente. Subir el timeout (opción C) solo hace que el error tarde más en aparecer — es esconder el problema bajo la alfombra.</div>
   </div>
-  <div class="notes"><p>La opción C es la mala práctica más común de los juniors: timeout arriba y a rezar. Mata esa intuición HOY: timeout largo no arregla locators rotos. El reflejo correcto: trace/UI mode → mirar la página real → corregir el locator. La opción A enseña a no escalar sin diagnosticar.</p></div>
+  <div class="notes"><p>La opción C es la mala práctica más común de los juniors: timeout arriba y a rezar. Mata esa intuición YA: timeout largo no arregla locators rotos. El reflejo correcto: trace/UI mode → mirar la página real → corregir el locator. La opción A enseña a no escalar sin diagnosticar.</p></div>
 </section>
 
 <!-- ================================================================ -->
@@ -579,7 +579,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
     <div class="card"><div class="ico">1️⃣</div><h3>Un test, un objetivo</h3><p>Título describe UN comportamiento verificable. Si necesitas "y" en el título, divide en dos tests.</p></div>
     <div class="card"><div class="ico">🔁</div><h3>Corre en cada cambio</h3><p>Escribe 3 líneas → corre. Feedback inmediato = errores chicos y fáciles. Escribir 50 líneas sin correr = arqueología de bugs.</p></div>
   </div>
-  <div class="notes"><p>Cuatro hábitos que separan juniors de profesionales desde el día 1. El anti-sleep es el más importante: auto-wait es LA ventaja de Playwright sobre Selenium viejo; cada waitForTimeout es una confesión de no entender qué se espera. getByRole conecta con la limpieza de codegen (slide 8). Imprime estos 4 en la memoria antes del trabajo libre de M6.</p></div>
+  <div class="notes"><p>Cuatro hábitos que separan juniors de profesionales desde el día 1. El anti-sleep es el más importante: auto-wait es LA ventaja de Playwright sobre Selenium viejo; cada waitForTimeout es una confesión de no entender qué se espera. getByRole conecta con la limpieza de codegen (slide «Del borrador al test digno»). Imprime estos 4 en la memoria antes del trabajo libre de M6.</p></div>
 </section>
 
 <!-- ================================================================ -->
@@ -608,7 +608,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
           ⏱️ Duración de cada test<br>
           📷 Click en cualquiera → pasos detallados<br>
           Este reporte es lo que un QA Engineer adjunta como <b>evidencia de ejecución</b></p></div>
-        <details class="m-hint"><summary>Pista: uno falla solo en WebKit/Firefox</summary><div class="hint-body"><p>Bienvenida/o a los bugs cross-browser — los mismos pasos, distinto motor. Mira el trace de ESE browser. Si no lo resuelves hoy, anótalo: es exactamente el tipo de hallazgo que un QA reporta.</p></div></details>
+        <details class="m-hint"><summary>Pista: uno falla solo en WebKit/Firefox</summary><div class="hint-body"><p>Bienvenida/o a los bugs cross-browser — los mismos pasos, distinto motor. Mira el trace de ESE browser. Si no lo resuelves en la sesión, anótalo: es exactamente el tipo de hallazgo que un QA reporta.</p></div></details>
       </div>
     </div>
     <div class="m-crit">✅ <span><b>Criterio de éxito:</b> reporte HTML mostrando tu suite completa en verde (15 passed = 5 specs × 3 browsers).</span></div>
@@ -620,7 +620,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
 <section class="slide" data-act="Acto 5 · Boss final" style="align-items:center">
   <div class="quiz" data-quiz="q2">
     <div class="quiz-tag">⭐ QUIZ 2 · El integrador</div>
-    <h3 class="quiz-q">Tu suite pasó 15/15 hoy. Mañana corre de nuevo SIN cambios de código… y un test falla. ¿Primera hipótesis profesional?</h3>
+    <h3 class="quiz-q">Tu suite pasó 15/15 el lunes. El martes corre de nuevo SIN cambios de código… y un test falla. ¿Primera hipótesis profesional?</h3>
     <div class="quiz-opts">
       <button class="opt"><span class="key">A</span><span>Playwright se corrompió — reinstalar todo</span></button>
       <button class="opt"><span class="key">B</span><span>Borrar ese test, total los otros 14 pasan</span></button>
@@ -642,7 +642,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
     <div class="card"><div class="ico">➕</div><h3>Reto extra</h3><p>Spec de logout + spec del kanban del dashboard (drag & drop: investígalo).</p></div>
     <div class="card hl"><div class="ico">🚀</div><h3>Próxima parada</h3><p><b>Playwright Pro</b>: hooks, fixtures, tu LoginPage (POM) conectada a tests reales, y API testing contra el dojo.</p></div>
   </div>
-  <div class="notes"><p>Lee el tablero de misiones en voz alta y celebra el progreso real (no todos llegan a 7/7 hoy — está diseñado así; el archivo persiste su avance). Logro de hoy en una frase: instalaron su entorno profesional y escribieron su primera suite real multi-browser contra una app de verdad. Recoge atascos comunes para ajustar la próxima sesión. Anuncia Playwright Pro: ahí el Page Object de Coding Classes conoce a Playwright real.</p></div>
+  <div class="notes"><p>Lee el tablero de misiones en voz alta y celebra el progreso real (no todos llegan a 7/7 en la sesión — está diseñado así; el archivo persiste su avance). Logro de la sesión en una frase: instalaron su entorno profesional y escribieron su primera suite real multi-browser contra una app de verdad. Recoge atascos comunes para ajustar la próxima sesión. Anuncia Playwright Pro: ahí el Page Object de Coding Classes conoce a Playwright real.</p></div>
 </section>
 
 <script>

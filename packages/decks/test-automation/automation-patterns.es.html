@@ -313,17 +313,17 @@ table.cmp td code{color:var(--cyan);font-size:.92em}
       <span class="pill">POM</span><span class="pill">Fixtures (DI)</span><span class="pill">Parallel workers</span><span class="pill">KATA</span><span class="pill">código real Playwright</span><span class="pill">6 quizzes ⭐</span>
     </div>
   </div>
-  <div class="notes"><p>Sesión de patrones. Prerequisito: ya saben clases, herencia y un Page Object básico (sesión Coding Classes). Hoy subimos un escalón: por qué existen los patrones, qué problema resuelve cada uno, y cómo se combinan en KATA — el framework real de este repo. Todo lo ejecutamos en vivo: live cells con JS real, un simulador de Page Object que mueve el cursor, un simulador de workers en paralelo, y un trazador de capas KATA. Que la sala TOQUE cada widget — la interacción es el punto.</p></div>
+  <div class="notes"><p>Sesión de patrones. Prerequisito: ya saben clases, herencia y un Page Object básico (sesión Coding Classes). En esta sesión subimos un escalón: por qué existen los patrones, qué problema resuelve cada uno, y cómo se combinan en KATA — el framework real de este repo. Todo lo ejecutamos en vivo: live cells con JS real, un simulador de Page Object que mueve el cursor, un simulador de workers en paralelo, y un trazador de capas KATA. Que la sala TOQUE cada widget — la interacción es el punto.</p></div>
 </section>
 
 <!-- 2 · Dónde estamos -->
 <section class="slide" data-act="Acto 0 · Por qué patrones">
-  <div class="kicker">El salto de hoy</div>
-  <h2 data-anim="fade-up">Ya escribes tests. <span class="grad-text">Hoy los conviertes en arquitectura.</span></h2>
+  <div class="kicker">El salto de esta sesión</div>
+  <h2 data-anim="fade-up">Ya escribes tests. <span class="grad-text">Ahora los conviertes en arquitectura.</span></h2>
   <div class="cols">
     <div data-stagger>
       <div class="card"><h3>✅ Lo que ya tienes</h3><p>JS moderno · clases + <code class="pill">extends</code> · un Page Object que envuelve una página · tu primer <code class="pill">test()</code> ejecutado.</p></div>
-      <div class="card hl" style="margin-top:.9rem"><h3>🎯 Lo que sumas hoy</h3><p>Los <b>4 patrones</b> que escalan de 5 a 5.000 tests sin que el proyecto colapse: <b>POM</b> a fondo · <b>Fixtures</b> · <b>Paralelización</b> · <b>KATA</b>.</p></div>
+      <div class="card hl" style="margin-top:.9rem"><h3>🎯 Lo que sumas en esta sesión</h3><p>Los <b>4 patrones</b> que escalan de 5 a 5.000 tests sin que el proyecto colapse: <b>POM</b> a fondo · <b>Fixtures</b> · <b>Paralelización</b> · <b>KATA</b>.</p></div>
     </div>
     <div data-anim="fade-up" style="animation-delay:.3s">
       <pre class="code big">
@@ -350,7 +350,7 @@ todo junto, a escala <span class="tk-c">→ KATA</span></pre>
       <button class="opt" data-ok="1"><span class="key">B</span><span>Una <code>class</code> que envuelve una página y guarda sus selectores + acciones en un solo lugar</span></button>
       <button class="opt"><span class="key">C</span><span>Una función que abre el navegador</span></button>
     </div>
-    <div class="quiz-expl">💡 Page Object Model (POM): una <code>class</code> donde viven los selectores y las acciones de UNA página. Los tests la usan sin tocar selectores. Hoy lo llevamos más lejos — y descubrimos que es solo el <b>primero</b> de cuatro patrones que se apilan.</div>
+    <div class="quiz-expl">💡 Page Object Model (POM): una <code>class</code> donde viven los selectores y las acciones de UNA página. Los tests la usan sin tocar selectores. Ahora lo llevamos más lejos — y descubrimos que es solo el <b>primero</b> de cuatro patrones que se apilan.</div>
   </div>
   <div class="notes"><p>Calentamiento que reactiva POM y fija el vocabulario. Si la sala falla esto masivamente, dedica 3 minutos a repasar el Page Object de la sesión anterior antes de seguir — el resto de la charla se apoya en este concepto. La explicación planta la semilla de "cuatro patrones apilados", que es el arco completo.</p></div>
 </section>
@@ -542,11 +542,11 @@ test("login con Page Object", async ({ page }) => {
     </div>
     <div data-stagger>
       <div class="card"><h3>🧩 El síntoma</h3><p>Construir objetos, navegar, autenticar — <b>antes</b> de cada test. Ruido que tapa lo que el test realmente prueba.</p></div>
-      <div class="card" style="margin-top:.8rem"><h3>🧹 ¿Y la limpieza?</h3><p>¿Quién cierra sesión, borra el usuario creado, resetea el estado <b>después</b>? Hoy: nadie, o copiado en cada test.</p></div>
+      <div class="card" style="margin-top:.8rem"><h3>🧹 ¿Y la limpieza?</h3><p>¿Quién cierra sesión, borra el usuario creado, resetea el estado <b>después</b>? Sin fixtures: nadie, o copiado en cada test.</p></div>
       <div class="card hl" style="margin-top:.8rem"><h3>💡 La idea</h3><p>Que alguien prepare el escenario <b>antes</b> y lo limpie <b>después</b>, y le entregue al test solo lo que pidió, listo para usar. Eso es una <b>Fixture</b>.</p></div>
     </div>
   </div>
-  <div class="notes"><p>El dolor de las fixtures tiene DOS caras: el setup repetido (arriba) y el teardown olvidado (limpieza). Subraya ambas — la limpieza es la que casi nadie hace bien a mano. La idea de fixture = "preparar antes + entregar + limpiar después" cubre las dos. Pista que ya conocen: ({ page }) YA es una fixture que Playwright les da preparada. Hoy aprenden a fabricar las suyas.</p></div>
+  <div class="notes"><p>El dolor de las fixtures tiene DOS caras: el setup repetido (arriba) y el teardown olvidado (limpieza). Subraya ambas — la limpieza es la que casi nadie hace bien a mano. La idea de fixture = "preparar antes + entregar + limpiar después" cubre las dos. Pista que ya conocen: ({ page }) YA es una fixture que Playwright les da preparada. Ahora aprenden a fabricar las suyas.</p></div>
 </section>
 
 <!-- 10 · ({ page }) ya es una fixture -->
@@ -566,7 +566,7 @@ test("login con Page Object", async ({ page }) => {
     <div data-stagger>
       <div class="card"><h3>📦 ¿Qué es una fixture?</h3><p>Un <b>recurso listo para usar</b> que el framework arma, te inyecta por nombre, y limpia solo. Inyección de Dependencias (DI) aplicada a tests.</p></div>
       <div class="card" style="margin-top:.8rem"><h3>🎁 Built-in de Playwright</h3><p><code class="pill">page</code> · <code class="pill">request</code> · <code class="pill">context</code> · <code class="pill">browser</code>. Pides por nombre lo que usas; lo demás ni se crea.</p></div>
-      <div class="card hl-g" style="margin-top:.8rem"><h3>🛠️ Lo nuevo de hoy</h3><p>Crear las <b>tuyas</b> con <code class="pill">test.extend</code>: una fixture <code class="pill">loginPage</code>, una <code class="pill">authedUser</code>… que lleguen ya preparadas a cada test.</p></div>
+      <div class="card hl-g" style="margin-top:.8rem"><h3>🛠️ Lo nuevo de esta sesión</h3><p>Crear las <b>tuyas</b> con <code class="pill">test.extend</code>: una fixture <code class="pill">loginPage</code>, una <code class="pill">authedUser</code>… que lleguen ya preparadas a cada test.</p></div>
     </div>
   </div>
   <div class="notes"><p>El "¡ahhh!" del acto: ({ page }) siempre fue una fixture. Define fixture en términos llanos: recurso listo, inyectado por nombre, auto-limpiado. Menciona el término técnico (Dependency Injection) una vez, sin enredarte — lo importante es la intuición. El destructuring ({ page }) que ya dominan es exactamente cómo se piden las fixtures: por nombre, desempacando solo lo necesario.</p></div>
@@ -793,7 +793,7 @@ npx playwright test --shard=<span class="tk-n">3</span>/<span class="tk-n">3</sp
     <div data-anim="fade-up" style="animation-delay:.2s">
       <h3>🐢 La postura honesta de este repo</h3>
       <pre class="code" style="font-size:clamp(.76rem,1.15vw,.93rem)">
-<span class="tk-c">// playwright.config.ts (real)</span>
+<span class="tk-c">// playwright.config.ts (la postura; el archivo manda)</span>
 fullyParallel: <span class="tk-k">false</span>,
 retries: <span class="tk-n">0</span>,
 <span class="tk-c">// "Single worker for now - increase</span>
@@ -802,7 +802,7 @@ workers: <span class="tk-n">1</span>,</pre>
       <div class="callout" style="margin-top:.8rem"><span class="co-ico">🎯</span><p>Primero <b>determinismo</b>, después velocidad. Con la suite joven se corre en serie para cazar dependencias ocultas; el paralelismo se sube cuando los tests ya son sólidos.</p></div>
     </div>
   </div>
-  <div class="notes"><p>Dos cierres del acto. Sharding: el siguiente nivel arriba de workers — distribuye entre MÁQUINAS de CI con --shard=i/n y fusiona reportes (blob report + merge-reports). Y la honestidad del repo: el playwright.config.ts REAL trae workers:1, fullyParallel:false, retries:0 con el comentario "increase when tests are stable". Es una decisión deliberada, no un olvido: primero garantizas que los tests son deterministas e independientes, y SOLO entonces subes workers. Enseña el principio: paralelizar tests frágiles multiplica la flakiness, no la velocidad útil.</p></div>
+  <div class="notes"><p>Dos cierres del acto. Sharding: el siguiente nivel arriba de workers — distribuye entre MÁQUINAS de CI con --shard=i/n y fusiona reportes (blob report + merge-reports). Y la honestidad del repo: el playwright.config.ts documenta la postura (serie hasta que la suite sea estable): léelo antes de la sesión. Es una decisión deliberada, no un olvido: primero garantizas que los tests son deterministas e independientes, y SOLO entonces subes workers. Enseña el principio: paralelizar tests frágiles multiplica la flakiness, no la velocidad útil.</p></div>
 </section>
 
 <!-- 19 · QUIZ 3 -->
@@ -899,7 +899,7 @@ workers: <span class="tk-n">1</span>,</pre>
       <div class="card" style="margin-top:.7rem"><h3>🧱 Atómica</h3><p>Una ATC <b>nunca</b> llama a otra ATC. ¿Cadenas reutilizables? Eso es un <b>Step</b> (capa 3.5).</p></div>
     </div>
   </div>
-  <div class="notes"><p>La ÚNICA pieza realmente nueva de KATA respecto a lo que ya saben: la ATC y el decorador @atc. Código real, adaptado del LoginPage del repo (PROJ-111, loginSuccessfully). Define ATC: caso de prueba completo (mini-flujo), no una interacción. El decorador @atc('TICKET') la liga a Jira 1:1 — trazabilidad. Reglas duras a mencionar sin agobiar: ATC atómica (no llama a otra ATC), aserciones fijas dentro / de negocio fuera (la regla del acto 1, ahora con nombre KATA). Un decorador es solo "un método con una etiqueta que añade comportamiento" — no te metas en la mecánica de decorators aquí.</p></div>
+  <div class="notes"><p>La ÚNICA pieza realmente nueva de KATA respecto a lo que ya saben: la ATC y el decorador @atc. Código adaptado de tests/components/ui/LoginPage.ts (ATC de login; los ids de ATC viven en kata-manifest.json). Define ATC: caso de prueba completo (mini-flujo), no una interacción. El decorador @atc('TICKET') la liga a Jira 1:1 — trazabilidad. Reglas duras a mencionar sin agobiar: ATC atómica (no llama a otra ATC), aserciones fijas dentro / de negocio fuera (la regla del acto 1, ahora con nombre KATA). Un decorador es solo "un método con una etiqueta que añade comportamiento" — no te metas en la mecánica de decorators aquí.</p></div>
 </section>
 
 <!-- 23 · STEPPER: trazar una ATC por las capas -->
@@ -1018,7 +1018,8 @@ tests/
     UiFixture.ts          <span class="tk-c">// L4</span>
   e2e/**                  <span class="tk-c">// tests UI (+API)</span>
   integration/**          <span class="tk-c">// tests API puros</span>
-playwright.config.ts      <span class="tk-c">// workers, projects</span></pre>
+playwright.config.ts      <span class="tk-c">// workers, projects</span>
+<span class="tk-c">// estructura de capas; los componentes reales, en kata-manifest.json</span></pre>
     </div>
     <div data-stagger>
       <div class="card hl"><h3>📍 Tu zona de trabajo</h3><p>El 90% del tiempo: escribir <b>ATCs</b> en <code class="pill">components/ui/</code> y <code class="pill">components/api/</code>, y orquestarlas en <code class="pill">e2e/</code> · <code class="pill">integration/</code>.</p></div>
@@ -1026,7 +1027,7 @@ playwright.config.ts      <span class="tk-c">// workers, projects</span></pre>
       <div class="card" style="margin-top:.8rem"><h3>📖 Para profundizar</h3><p>Skill <code class="pill">/test-automation</code> + <code class="pill">references/kata-architecture.md</code>: reglas completas de ATC, fixtures y Steps.</p></div>
     </div>
   </div>
-  <div class="notes"><p>Aterriza todo en la estructura REAL de carpetas del repo (verídica). Mensaje tranquilizador: las capas bajas ya están construidas en el boilerplate; el alumno trabaja sobre todo en componentes (ATCs) y tests. Punteros reales para seguir: la skill /test-automation y references/kata-architecture.md tienen las 10 reglas de ATC, la tabla de fixtures y el módulo Steps al detalle. Esta slide es el puente del aprendizaje a la práctica del lunes.</p></div>
+  <div class="notes"><p>Aterriza todo en la estructura REAL de carpetas del repo (verídica). Mensaje tranquilizador: las capas bajas ya están construidas en el boilerplate; el alumno trabaja sobre todo en componentes (ATCs) y tests. Punteros reales para seguir: la skill /test-automation y references/kata-architecture.md tienen las reglas de ATC (sección ATC Rules), la tabla de fixtures y el módulo Steps al detalle. Esta slide es el puente del aprendizaje a la práctica del lunes.</p></div>
 </section>
 
 <!-- 28 · Recap visual -->
@@ -1056,8 +1057,8 @@ playwright.config.ts      <span class="tk-c">// workers, projects</span></pre>
     <div class="card"><div class="ico">🧪</div><h3>Reto puente</h3><p>Abre <code class="pill">tests/components/ui/LoginPage.ts</code> del repo y ubica: capa, ATC, decorador <code class="pill">@atc</code>, aserciones fijas.</p></div>
     <div class="card hl"><div class="ico">🥷</div><h3>Próximo paso</h3><p>Escribe tu primera ATC real con <code class="pill">/test-automation</code> — Plan → Code → Review sobre KATA.</p></div>
   </div>
-  <p data-anim="fade-up" style="animation-delay:.5s;margin-top:1.3rem;color:var(--text-3);font-size:.93rem">Hoy: POM a fondo → Fixtures (<code>use()</code>) → Paralelización (workers) → <b style="color:var(--text-2)">KATA</b>. De script a arquitectura.</p>
-  <div class="notes"><p>Celebra el score y nombra el logro: hoy entendieron los cuatro patrones que sostienen cualquier framework profesional, vividos en vivo, no memorizados. Reto puente sin computadora: abrir el LoginPage.ts real e identificar cada concepto en código de producción. Próximo paso accionable: la skill /test-automation para escribir su primera ATC real. Comparte el archivo HTML — funciona offline para repasar.</p></div>
+  <p data-anim="fade-up" style="animation-delay:.5s;margin-top:1.3rem;color:var(--text-3);font-size:.93rem">Esta sesión: POM a fondo → Fixtures (<code>use()</code>) → Paralelización (workers) → <b style="color:var(--text-2)">KATA</b>. De script a arquitectura.</p>
+  <div class="notes"><p>Celebra el score y nombra el logro: en esta sesión entendieron los cuatro patrones que sostienen cualquier framework profesional, vividos en vivo, no memorizados. Reto puente sin computadora: abrir el LoginPage.ts real e identificar cada concepto en código de producción. Próximo paso accionable: la skill /test-automation para escribir su primera ATC real. Comparte el archivo HTML — funciona offline para repasar.</p></div>
 </section>
 
 <!-- 30 · Gracias -->

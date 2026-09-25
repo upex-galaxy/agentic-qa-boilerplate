@@ -698,16 +698,16 @@
             <div class="t">harnesses soportados</div>
           </div>
           <div class="stat">
-            <div class="n">19</div>
-            <div class="t">skills en un solo store</div>
+            <div class="n">1</div>
+            <div class="t">store para todas las skills</div>
           </div>
           <div class="stat">
-            <div class="n">20</div>
-            <div class="t">wrappers generados</div>
+            <div class="n">1</div>
+            <div class="t">wrapper por alias y por host, generados</div>
           </div>
           <div class="stat">
-            <div class="n">6</div>
-            <div class="t">MCPs con paridad</div>
+            <div class="n">3</div>
+            <div class="t">configs MCP en paridad</div>
           </div>
           <div class="stat">
             <div class="n">11 B</div>
@@ -1085,11 +1085,11 @@
                   <td class="rowlabel">Comandos</td>
                   <td>
                     <span class="chip gen">generado</span><br /><code>.claude/commands/*.md</code>
-                    <span class="cellsub">10 wrappers de 7 líneas</span>
+                    <span class="cellsub">wrappers de pocas líneas, generados</span>
                   </td>
                   <td>
                     <span class="chip gen">generado</span><br /><code>.opencode/commands/*.md</code>
-                    <span class="cellsub">10 wrappers de 7 líneas</span>
+                    <span class="cellsub">wrappers de pocas líneas, generados</span>
                   </td>
                   <td>
                     <span class="chip none">ninguno</span>
@@ -1147,9 +1147,10 @@
           <div class="kicker">Skills · regla dura</div>
           <h2>Lo generado nunca se edita a mano ni se commitea</h2>
           <p class="lede">
-            Hay un solo store de skills, <code>.agents/skills/</code>, versionado, con las 19 skills
-            adentro. Todo lo demás que un harness necesita ver son punteros hacia ahí. Si un puntero
-            se rompe, se regenera; nunca se parchea.
+            Hay un solo store de skills, <code>.agents/skills/</code>, versionado, con todas las
+            skills adentro (el índice es <code>.agents/skills/REGISTRY.md</code>). Todo lo demás que
+            un harness necesita ver son punteros hacia ahí. Si un puntero se rompe, se regenera;
+            nunca se parchea.
           </p>
 
           <figure>
@@ -1157,7 +1158,7 @@
               <svg
                 viewBox="0 0 720 350"
                 role="img"
-                aria-label="El directorio .agents es la fuente versionada; bun run agents:compat genera el alias de skills y los veinte wrappers de comandos; bun run agents:compat:check compara esas salidas contra la fuente"
+                aria-label="El directorio .agents es la fuente versionada; bun run agents:compat genera el alias de skills y los wrappers de comandos; bun run agents:compat:check compara esas salidas contra la fuente"
               >
                 <defs>
                   <marker
@@ -1266,7 +1267,7 @@
                   skills/
                 </text>
                 <text x="40" y="110" font-family="Inter, sans-serif" font-size="10" fill="#6e7681">
-                  19 skills · el store canónico
+                  todas las skills · el store canónico
                 </text>
                 <text
                   x="40"
@@ -1278,7 +1279,7 @@
                   compatibility/
                 </text>
                 <text x="40" y="158" font-family="Inter, sans-serif" font-size="10" fill="#6e7681">
-                  command-aliases.json · 10 entradas
+                  command-aliases.json · un alias por entrada
                 </text>
                 <text
                   x="40"
@@ -1408,7 +1409,7 @@
                   .claude/commands/
                 </text>
                 <text x="514" y="152" font-family="Inter, sans-serif" font-size="10" fill="#6e7681">
-                  10 wrappers de 7 líneas
+                  wrappers de pocas líneas, generados
                 </text>
 
                 <rect
@@ -1432,7 +1433,7 @@
                   .opencode/commands/
                 </text>
                 <text x="514" y="232" font-family="Inter, sans-serif" font-size="10" fill="#6e7681">
-                  10 wrappers de 7 líneas
+                  wrappers de pocas líneas, generados
                 </text>
 
                 <polyline
@@ -1512,7 +1513,7 @@
                   <td><code>bun run agents:compat</code></td>
                 </tr>
                 <tr>
-                  <td class="rowlabel">10 wrappers Claude + 10 OpenCode</td>
+                  <td class="rowlabel">Wrappers Claude + OpenCode</td>
                   <td>
                     <code>.agents/compatibility/command-aliases.json</code>
                   </td>
@@ -1553,7 +1554,7 @@
           <div class="delta">
             <div class="bar-row">
               <div class="bar-label">
-                <span>Workflow duplicado dentro de los diez comandos</span>
+                <span>Workflow duplicado dentro de los comandos</span>
                 <b>2 531 líneas</b>
               </div>
               <div class="bar-track"><div class="bar-fill old"></div></div>
@@ -1561,21 +1562,20 @@
             <div class="bar-row">
               <div class="bar-label">
                 <span>Wrappers que los reemplazan</span>
-                <b>41 líneas</b>
+                <b>un puñado de líneas por wrapper</b>
               </div>
               <div class="bar-track"><div class="bar-fill new"></div></div>
             </div>
           </div>
 
           <p>
-            Los diez nombres sobreviven como alias. El wrapper solo selecciona skill y modo, y
-            reenvía <code>$ARGUMENTS</code> sin tocarlo. Este es un archivo completo, no un
-            fragmento:
+            Los nombres sobreviven como alias. El wrapper solo selecciona skill y modo, y reenvía
+            <code>$ARGUMENTS</code> sin tocarlo. Este es un archivo completo, no un fragmento:
           </p>
 
           <pre
             class="code"
-          ><span class="c"># .claude/commands/business-data-map.md — las 7 líneas, enteras</span>
+          ><span class="c"># .claude/commands/business-data-map.md — el archivo entero</span>
 <span class="c">---</span>
 <span class="k">description:</span> Generate or refresh the business data and flow map.
 <span class="k">argument-hint:</span> [project-path]
@@ -1610,42 +1610,14 @@ Forward `$ARGUMENTS` unchanged.</pre>
                   <td><code>data</code></td>
                 </tr>
                 <tr>
-                  <td class="rowlabel"><code>/business-feature-map</code></td>
-                  <td><code>project-context</code></td>
-                  <td><code>features</code></td>
-                </tr>
-                <tr>
-                  <td class="rowlabel"><code>/business-api-map</code></td>
-                  <td><code>project-context</code></td>
-                  <td><code>api</code></td>
-                </tr>
-                <tr>
-                  <td class="rowlabel"><code>/master-test-plan</code></td>
-                  <td><code>project-context</code></td>
-                  <td><code>test-plan</code></td>
-                </tr>
-                <tr>
-                  <td class="rowlabel"><code>/fix-traceability</code></td>
-                  <td><code>test-documentation</code></td>
-                  <td>
-                    <code>repair-traceability</code>
-                    <span class="cellsub">conserva el gate de aprobación</span>
+                  <td class="rowlabel">…</td>
+                  <td colspan="2">
+                    <span class="cellsub"
+                      >tres ejemplos; la lista completa es
+                      <code>.agents/compatibility/command-aliases.json</code> más el overlay
+                      <code>command-aliases.project.json</code></span
+                    >
                   </td>
-                </tr>
-                <tr>
-                  <td class="rowlabel"><code>/jira-components</code></td>
-                  <td><code>jira-administration</code></td>
-                  <td><code>components</code></td>
-                </tr>
-                <tr>
-                  <td class="rowlabel"><code>/jira-instance-migration</code></td>
-                  <td><code>jira-administration</code></td>
-                  <td><code>instance-migration</code></td>
-                </tr>
-                <tr>
-                  <td class="rowlabel"><code>/sync-ai-memory</code></td>
-                  <td><code>sync-ai-context</code></td>
-                  <td><code>sync</code></td>
                 </tr>
               </tbody>
             </table>
@@ -1655,8 +1627,8 @@ Forward `$ARGUMENTS` unchanged.</pre>
             <div class="card">
               <h3>Codex no usa wrappers</h3>
               <p>
-                No hay una tercera copia de los diez archivos. Codex invoca la skill directamente,
-                que es exactamente lo que el wrapper hace por vos en los otros dos.
+                No hay una tercera copia de los wrappers. Codex invoca la skill directamente, que es
+                exactamente lo que el wrapper hace por vos en los otros dos.
               </p>
             </div>
             <div class="card">
@@ -1906,18 +1878,15 @@ Forward `$ARGUMENTS` unchanged.</pre>
       <section id="mcp">
         <div class="wrap">
           <div class="kicker">MCP</div>
-          <h2>Seis servidores, tres formatos, paridad semántica</h2>
+          <h2>Un solo set de servidores, tres formatos, paridad semántica</h2>
           <p class="lede">
-            Los seis servidores canónicos existen en las tres configuraciones. La comparación no
-            puede ser textual: los archivos ni siquiera comparten lenguaje.
+            Los servidores que declara <code>.mcp.json</code> existen en las tres configuraciones.
+            La comparación no puede ser textual: los archivos ni siquiera comparten lenguaje.
           </p>
           <div class="servers">
-            <span class="server">context7</span>
-            <span class="server">tavily</span>
-            <span class="server">playwright</span>
-            <span class="server">dbhub</span>
-            <span class="server">openapi</span>
-            <span class="server">postman</span>
+            <span class="server">.mcp.json</span>
+            <span class="server">opencode.jsonc</span>
+            <span class="server">.codex/config.toml</span>
           </div>
 
           <figure>
@@ -2139,7 +2108,7 @@ Forward `$ARGUMENTS` unchanged.</pre>
                   font-weight="700"
                   fill="#e6edf3"
                 >
-                  6 servidores × 3 hosts
+                  cada servidor × 3 hosts
                 </text>
                 <text x="518" y="122" font-family="Inter, sans-serif" font-size="10" fill="#9aa6b2">
                   agregarlo a uno solo
@@ -2151,7 +2120,7 @@ Forward `$ARGUMENTS` unchanged.</pre>
             </div>
             <figcaption>
               Sin el paso del medio, la comparación solo podría decir que los tres archivos son
-              distintos. Con él, dice si describen los mismos seis servidores.
+              distintos. Con él, dice si describen los mismos servidores.
             </figcaption>
           </figure>
         </div>
@@ -2528,7 +2497,7 @@ Forward `$ARGUMENTS` unchanged.</pre>
             </li>
             <li class="warn">
               <b>El junction de Windows está cubierto por tests unitarios</b> de construcción de
-              ruta y de comando. La verificación en una máquina Windows real sigue pendiente.
+              ruta y de comando, no por una corrida en una máquina Windows.
             </li>
             <li class="warn">
               <b>Codex necesita que el repositorio esté marcado como confiable.</b> La configuración
@@ -2559,8 +2528,9 @@ Forward `$ARGUMENTS` unchanged.</pre>
           <a href="https://github.com/upex-galaxy/agentic-qa-boilerplate">Repositorio en GitHub</a>
         </div>
         <p>
-          Todo lo descrito acá ya está en <code>main</code>. El contrato completo vive en
-          <code>AGENTS.md</code> §4.5, y se verifica con <code>bun run agents:compat:check</code>.
+          Todo lo descrito acá se integró en <code>main</code> en este release. El contrato completo
+          vive en <code>AGENTS.md</code> §4.5, y se verifica con
+          <code>bun run agents:compat:check</code>.
         </p>
       </div>
     </footer>

@@ -315,17 +315,17 @@ table.cmp td code{color:var(--cyan);font-size:.92em}
       <span class="pill">request fixture</span><span class="pill">status + body</span><span class="pill">schema</span><span class="pill">KATA · ApiBase</span><span class="pill">runner real</span><span class="pill">6 quizzes ⭐</span>
     </div>
   </div>
-  <div class="notes"><p>Sesión de API automation con Playwright. Prerequisito: ya entienden tests, clases y fixtures básicas (sesión Automation Patterns). Hoy bajamos del navegador a la capa HTTP: probar endpoints directo. Misma promesa pedagógica: primero el dolor, luego la herramienta. Todo en vivo — un runner que ejecuta JavaScript real contra una API falsa en memoria, un trazador del ciclo de vida de una request, un simulador que compara velocidad API vs UI, y un trazador de capas KATA. Que la sala TOQUE cada widget.</p></div>
+  <div class="notes"><p>Sesión de API automation con Playwright. Prerequisito: ya entienden tests, clases y fixtures básicas (sesión Automation Patterns). En esta sesión bajamos del navegador a la capa HTTP: probar endpoints directo. Misma promesa pedagógica: primero el dolor, luego la herramienta. Todo en vivo — un runner que ejecuta JavaScript real contra una API falsa en memoria, un trazador del ciclo de vida de una request, un simulador que compara velocidad API vs UI, y un trazador de capas KATA. Que la sala TOQUE cada widget.</p></div>
 </section>
 
 <!-- 2 · La pirámide de testing -->
 <section class="slide" data-act="Acto 0 · Por qué probar la API">
-  <div class="kicker">El salto de hoy</div>
+  <div class="kicker">El salto de esta sesión</div>
   <h2 data-anim="fade-up">Bajas un piso: <span class="grad-text">del navegador a la API</span> 🪜</h2>
   <div class="cols">
     <div data-stagger>
       <div class="card"><h3>✅ Lo que ya sabes</h3><p>Escribir un <code class="pill">test()</code> · Page Objects · fixtures con <code class="pill">use()</code>. Probar la app <b>por la pantalla</b>.</p></div>
-      <div class="card hl" style="margin-top:.9rem"><h3>🎯 Lo que sumas hoy</h3><p>Probar la app <b>por debajo de la pantalla</b>: golpear el endpoint HTTP directo. Más rápido, más estable, más barato.</p></div>
+      <div class="card hl" style="margin-top:.9rem"><h3>🎯 Lo que sumas en esta sesión</h3><p>Probar la app <b>por debajo de la pantalla</b>: golpear el endpoint HTTP directo. Más rápido, más estable, más barato.</p></div>
     </div>
     <div data-anim="fade-up" style="animation-delay:.3s">
       <pre class="code big">
@@ -352,7 +352,7 @@ table.cmp td code{color:var(--cyan);font-size:.92em}
       <button class="opt" data-ok="1"><span class="key">B</span><span>Un test que envía una <b>petición HTTP</b> a un endpoint y verifica la <b>respuesta</b> (status, body, headers)</span></button>
       <button class="opt"><span class="key">C</span><span>Un test que solo revisa el código fuente sin ejecutarlo</span></button>
     </div>
-    <div class="quiz-expl">💡 Un test de API habla con el backend en su idioma: <code>GET</code>, <code>POST</code>, <code>PUT</code>, <code>DELETE</code> sobre una URL, y comprueba lo que vuelve. Sin pantalla, sin clics — solo petición y respuesta. Hoy aprendemos a escribirlos con Playwright.</div>
+    <div class="quiz-expl">💡 Un test de API habla con el backend en su idioma: <code>GET</code>, <code>POST</code>, <code>PUT</code>, <code>DELETE</code> sobre una URL, y comprueba lo que vuelve. Sin pantalla, sin clics — solo petición y respuesta. Ahora aprendemos a escribirlos con Playwright.</div>
   </div>
   <div class="notes"><p>Calentamiento que fija el vocabulario: petición → respuesta. La opción A confunde API con E2E (el error más común al empezar). La C lo confunde con análisis estático. Si la sala duda, recálcales: API test = mandar una request HTTP y verificar la response. Es exactamente lo que hace Postman, pero automatizado y dentro de la suite.</p></div>
 </section>
@@ -797,7 +797,7 @@ if (errors.length === 0) {
 <!-- 18 · KATA = síntesis para API -->
 <section class="slide" data-act="Acto 4 · KATA para API">
   <div class="zoomline"><span>request</span><span>aserciones</span><span>schema · datos</span><span class="on">kata</span></div>
-  <h2 data-anim="fade-up">KATA: <span class="grad-text">todo lo de hoy, ordenado en capas</span> 🥋</h2>
+  <h2 data-anim="fade-up">KATA: <span class="grad-text">todo lo de esta sesión, ordenado en capas</span> 🥋</h2>
   <div class="cols">
     <div data-anim="slide-l">
       <p style="margin-bottom:.8rem">KATA (<b>Komponent Action Test Architecture</b>) no inventa nada: <b>organiza</b> el cliente, las aserciones y los datos en <b>cuatro capas nombradas, más Steps opcional</b> — TestContext, Base, Components de dominio y Fixtures — donde cada una <code class="pill">extends</code> la anterior. El lado API es idéntico al UI: solo cambia la base.</p>
@@ -989,7 +989,8 @@ tests/
   integration/**          <span class="tk-c">// tests API puros</span>
   e2e/**                  <span class="tk-c">// tests UI (+API)</span>
 api/schemas/              <span class="tk-c">// Zod desde OpenAPI</span>
-playwright.config.ts      <span class="tk-c">// baseURL, workers</span></pre>
+playwright.config.ts      <span class="tk-c">// baseURL, workers</span>
+<span class="tk-c">// estructura de capas: OrdersApi.ts es ilustrativo; los componentes reales, en kata-manifest.json</span></pre>
     </div>
     <div data-stagger>
       <div class="card hl"><h3>📍 Tu zona de trabajo</h3><p>El 90% del tiempo: escribir <b>ATCs</b> en <code class="pill">components/api/</code> y orquestarlas en <code class="pill">integration/</code>.</p></div>
@@ -1027,8 +1028,8 @@ playwright.config.ts      <span class="tk-c">// baseURL, workers</span></pre>
     <div class="card"><div class="ico">🧪</div><h3>Reto puente</h3><p>Abre <code class="pill">tests/components/api/</code> del repo y ubica: capa, ATC, decorador <code class="pill">@atc</code>, aserciones fijas, schema.</p></div>
     <div class="card hl"><div class="ico">🥷</div><h3>Próximo paso</h3><p>Escribe tu primera ATC de API real con <code class="pill">/test-automation</code> — Plan → Code → Review sobre KATA.</p></div>
   </div>
-  <p data-anim="fade-up" style="animation-delay:.5s;margin-top:1.3rem;color:var(--text-3);font-size:.93rem">Hoy: <code>request</code> → aserciones + schema → fixtures + faker → <b style="color:var(--text-2)">KATA</b>. De la pantalla al backend.</p>
-  <div class="notes"><p>Celebra el score y nombra el logro: hoy aprendieron a probar el backend directo — request, aserciones de contenido + schema, fixtures con auth y datos, y KATA para escalar. Todo vivido en vivo, no memorizado. Reto puente sin computadora: abrir un componente api real e identificar cada concepto en código de producción. Próximo paso accionable: la skill /test-automation para escribir su primera ATC de API. Comparte el HTML — funciona offline.</p></div>
+  <p data-anim="fade-up" style="animation-delay:.5s;margin-top:1.3rem;color:var(--text-3);font-size:.93rem">Esta sesión: <code>request</code> → aserciones + schema → fixtures + faker → <b style="color:var(--text-2)">KATA</b>. De la pantalla al backend.</p>
+  <div class="notes"><p>Celebra el score y nombra el logro: en esta sesión aprendieron a probar el backend directo — request, aserciones de contenido + schema, fixtures con auth y datos, y KATA para escalar. Todo vivido en vivo, no memorizado. Reto puente sin computadora: abrir un componente api real e identificar cada concepto en código de producción. Próximo paso accionable: la skill /test-automation para escribir su primera ATC de API. Comparte el HTML — funciona offline.</p></div>
 </section>
 
 <!-- 28 · Gracias -->

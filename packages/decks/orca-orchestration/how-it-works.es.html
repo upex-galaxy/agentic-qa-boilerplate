@@ -526,7 +526,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="k">Git</div><div>el del orquestador</div><div>el suyo (worktree) o compartido con file ownership explícito</div>
       <div class="k">Mejor para</div><div>leer, verificar, mapear; el briefing de 7 componentes</div><div>escribir e integrar solo; una historia completa; trabajo largo</div>
     </div>
-    <p class="small mt-m"><b>No compiten.</b> El conductor sigue usando subagentes para sus propias lecturas. En el dogfood, 7 subagentes del conductor costaron ~980.000 tokens contra ~180.000 de output observado en tres workers que hicieron tres pases completos de historia.</p>
+    <p class="small mt-m"><b>No compiten.</b> El conductor sigue usando subagentes para sus propias lecturas. En el dogfood (reporte del conductor), 7 subagentes del conductor costaron ~980.000 tokens contra ~180.000 de output observado en tres workers que hicieron tres pases completos de historia.</p>
     <div class="notes">El punto de esta diapositiva es desactivar el entusiasmo: orquestar no es mejor, es distinto. Y el coste medido dice que las lecturas del conductor fueron la parte cara, no el trabajo paralelo.</div>
   </section>
 
@@ -538,13 +538,13 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
    cuándo partir el trabajo · topología por actividad · provisioning · brief · gotchas medidos · phrasebook
         ^ apunta a v
 LAYER 2 · GRAMÁTICA + MÁQUINA  las guías que sirve el binario       (mailbox, Run, Task, ciclo del worker)
-   versionadas CON el binario. Los stubs de usuario llevan la gramática de comandos y se cargan junto a esta skill: ~2k tokens el par.
+   versionadas CON el binario. Los stubs de usuario llevan la gramática de comandos y se cargan junto a esta skill: baratos de cargar.
         ^ opera sobre v
 LAYER 1 · APP                 la app corriendo · runtime alcanzable · board · móvil</div>
     <div class="grid g3 mt-m">
       <div class="card"><p class="lbl">Regla de composición</p><p class="small mt-s">Si la guía del binario ya lo dice, aquí va un <b>puntero</b>, no una copia. Una copia se desincroniza en silencio en el próximo release.</p></div>
       <div class="card"><p class="lbl">Consecuencia para el gate</p><p class="small mt-s">Se evalúa sobre <b>binario + runtime</b>, nunca sobre "¿está instalado el skill del vendor?". Una máquina con binario y sin stubs es plenamente capaz.</p></div>
-      <div class="card card-accent"><p class="lbl">Consecuencia para el coste</p><p class="small mt-s">Los stubs del vendor miden ~2k tokens el par y SE CARGAN junto a la skill: saltárselos es lo que produce flags inventados. On-demand queda solo para los temas profundos que un stub apenas señda. Se piden justo antes de usarlas, y solo el rol que las necesita. El <b>worker no carga ninguna</b>: su preámbulo inyectado ya lleva su contrato.</p></div>
+      <div class="card card-accent"><p class="lbl">Consecuencia para el coste</p><p class="small mt-s">Los stubs del vendor son baratos y SE CARGAN junto a la skill: saltárselos es lo que produce flags inventados. On-demand queda solo para los temas profundos que un stub apenas señda. Se piden justo antes de usarlas, y solo el rol que las necesita. El <b>worker no carga ninguna</b>: su preámbulo inyectado ya lleva su contrato.</p></div>
     </div>
     <div class="notes">Aquí está la razón de que el SKILL.md sea corto: lo que vive en el repo es lo que ninguna guía del vendor tiene — nuestros gaps de provisioning, la topología por actividad, el brief, los gotchas medidos, la integración con git y el phrasebook del owner.</div>
   </section>
@@ -600,7 +600,7 @@ LAYER 1 · APP                 la app corriendo · runtime alcanzable · board �
   <!-- 7. EL CICLO DEL CONDUCTOR -->
   <section class="slide" data-title="Ciclo del conductor">
     <p class="kicker">Pasos 3-12 · el ciclo, en ese orden</p>
-    <h2 class="h2 md">Ocho pasos, y el orden <span class="grad">es ley</span></h2>
+    <h2 class="h2 md">Los pasos del playbook, y el orden <span class="grad">es ley</span></h2>
     <ul class="big tight mt-s">
       <li><b>1 · Gate.</b> Estado A o B → una línea y se continúa por el fallback.</li>
       <li><b>2 · Gramática AHORA, no antes.</b> Se le pide al binario su guía de orquestación justo antes del primer comando (y la de terminales/worktrees solo si se van a crear).</li>
@@ -612,7 +612,7 @@ LAYER 1 · APP                 la app corriendo · runtime alcanzable · board �
       <li><b>8 · Cosechar</b> <span class="mono">learnings.md</span> y <span class="mono">skill-improvements.md</span>, escribir <span class="mono">kickoff.md</span>, y reportar al owner.</li>
     </ul>
     <p class="small dim mt-m">El paso 5 es el que más incidentes produjo: <b>crear + lanzar + entregar el brief es una operación indivisible</b>. Dos incidentes distintos dejaron un worker ocioso durante horas porque el brief nunca llegó.</p>
-    <div class="notes">El paso 2 tiene una razón de coste invertida en 2026-09-22: los stubs son baratos (~2k el par) y se cargan; lo caro es el payload profundo del binario, que sigue siendo on-demand. El paso 7 tiene una razón de estabilidad: diez worktrees vivos tumbaron el runtime dos veces en una sesión.</div>
+    <div class="notes">El paso 2 tiene una razón de coste invertida en 2026-09-22: los stubs son baratos y se cargan; lo caro es el payload profundo del binario, que sigue siendo on-demand. El paso 7 tiene una razón de estabilidad: diez worktrees vivos tumbaron el runtime dos veces en una sesión (incidente del dogfood, con fecha en references/gotchas.md).</div>
   </section>
 
   <!-- 8. LANZAMIENTO -->
@@ -633,7 +633,7 @@ LAYER 1 · APP                 la app corriendo · runtime alcanzable · board �
         <p class="small mt-s">Por eso la detección de "modo worker" no vive en variables de entorno, sino en el <b>prompt</b> (el token <span class="mono">fleet worker</span>) más los campos del brief.</p>
       </div>
     </div>
-    <p class="small mt-m"><b>Prometer las dos cosas a la vez es lo que costó más caro.</b> En el dogfood ningún terminal de argv propio fue adoptado, los tres workers corrieron sin supervisión y el conductor pagó eso en empujones manuales: con tres workers y cuatro stages, hasta nueve intervenciones.</p>
+    <p class="small mt-m"><b>Prometer las dos cosas a la vez es lo que costó más caro.</b> En el dogfood (reporte del conductor) ningún terminal de argv propio fue adoptado, los tres workers corrieron sin supervisión y el conductor pagó eso en empujones manuales: con tres workers y cuatro stages, hasta nueve intervenciones.</p>
     <div class="notes">Regla de permisos: lanza en un modo de permisos automático, nunca en un modo "solo edits". Un modo solo-edits cubre ediciones de archivo pero no comandos, así que cada llamada a script espera a un humano que no está mirando. Un worker dejó cada mutación del tracker calculada y sin ejecutar.</div>
   </section>
 
@@ -719,7 +719,7 @@ LAYER 1 · APP                 la app corriendo · runtime alcanzable · board �
       <div class="card">
         <p class="lbl">Cómo se espera</p>
         <ul class="big tight mt-s">
-          <li><b>Esperas rodantes en primer plano de 540 s como máximo</b>, re-armadas con el ack en el mismo comando. Es el tope que impone el harness, no una preferencia.</li>
+          <li><b>Esperas rodantes en primer plano, por debajo del tope del harness</b>, re-armadas con el ack en el mismo comando. El tope lo impone el harness, no una preferencia: la ventana exacta está en references/gotchas.md (G51).</li>
           <li>Una espera más larga solo es un job en background <b>si el harness lo rastrea</b>.</li>
           <li>La señal principal de despertar es el aviso de correo del runtime.</li>
           <li><b>Un solo waiter.</b> Nunca un monitor casero: compite con el aviso, llega tarde por construcción y se dispara con los ecos de los propios mensajes del conductor.</li>
@@ -762,7 +762,7 @@ LAYER 1 · APP                 la app corriendo · runtime alcanzable · board �
   <section class="slide" data-title="Provisioning">
     <p class="kicker">Paso 5 · antes de lanzar, no después</p>
     <h2 class="h2 md">Un worktree nuevo <span class="grad">no</span> es un clon listo</h2>
-    <p class="small dim mt-s">Lo que está commiteado viaja solo (la configuración de MCP de los tres harnesses, los settings del harness). Lo que está gitignoreado no viaja, y cada hueco se disfraza de otro fallo.</p>
+    <p class="small dim mt-s">Lo que está commiteado viaja solo (la configuración de MCP de los tres harnesses, los settings del harness). Lo que está gitignoreado no viaja, y cada hueco se disfraza de otro fallo. La tabla es lo que cierra <span class="mono">bun run worktree:provision</span>; la lista viva la imprime su <span class="mono">--dry-run</span>.</p>
     <div class="grid g2 mt-m">
       <table class="tt sm">
         <thead><tr><th style="width:180px">Hueco</th><th>Cómo se cierra</th></tr></thead>
@@ -777,12 +777,12 @@ LAYER 1 · APP                 la app corriendo · runtime alcanzable · board �
         </tbody>
       </table>
       <div class="stack">
-        <div class="card card-accent"><p class="lbl">Un solo comando</p><p class="small mt-s"><span class="mono">bun run worktree:provision</span> hace los seis pasos, se niega a correr sobre el checkout primario, tiene <span class="mono">--dry-run</span> y sale con código distinto de cero ante cualquier fallo duro. También sirve como setup hook del runtime (eso se configura solo por UI, no es versionable).</p></div>
+        <div class="card card-accent"><p class="lbl">Un solo comando</p><p class="small mt-s"><span class="mono">bun run worktree:provision</span> hace todos los pasos de la tabla, se niega a correr sobre el checkout primario, tiene <span class="mono">--dry-run</span> y sale con código distinto de cero ante cualquier fallo duro. También sirve como setup hook del runtime (eso se configura solo por UI, no es versionable).</p></div>
         <div class="card"><p class="lbl">Auditoría de huérfanos antes de borrar</p><p class="small mt-s">Los archivos gitignoreados <b>mueren con el worktree</b>: <span class="mono">.env</span>, la evidencia de QA, el scope de <span class="mono">.session/</span>. Antes de borrar un worktree se listan y se copian fuera, o se enlazan los documentos durables al checkout primario.</p></div>
-        <div class="card"><p class="lbl">Dos límites físicos</p><p class="small mt-s">Un dev server y un browser por worktree, y toda sesión de automatización de browser se cierra antes de reportar: diez browsers headless huérfanos, ~2,7 GB, medidos.</p></div>
+        <div class="card"><p class="lbl">Dos límites físicos</p><p class="small mt-s">Un dev server y un browser por worktree, y toda sesión de automatización de browser se cierra antes de reportar: diez browsers headless huérfanos, ~2,7 GB, medidos en el dogfood (reporte del conductor).</p></div>
       </div>
     </div>
-    <div class="notes">El dogfood midió la otra cara: 8,6 GiB de disco libre (96% usado) en una máquina de 16 GB, con el runtime en 750 MB y varios procesos de agente entre 250 y 500 MB. El tope de 3 workers fue la decisión correcta; 4 no lo habría sido.</div>
+    <div class="notes">El dogfood (reporte del conductor) midió la otra cara: 8,6 GiB de disco libre (96% usado) en una máquina de 16 GB, con el runtime en 750 MB y varios procesos de agente entre 250 y 500 MB. El tope de 3 workers fue la decisión correcta; 4 no lo habría sido.</div>
   </section>
 
   <!-- 15. IDENTIDAD Y FORENSE -->
@@ -804,7 +804,7 @@ preamble; channel = orca orchestration, never SendMessage/AskUserQuestion.</div>
   <!-- 16. HARD RULES -->
   <section class="slide" data-title="Hard rules">
     <p class="kicker">Las reglas duras · cada una se pagó con un incidente</p>
-    <h2 class="h2 md">Catorce reglas, y estas <span class="grad">siete</span> son las que más dolieron</h2>
+    <h2 class="h2 md">Las reglas duras del SKILL.md, y <span class="grad">estas</span> son las que más dolieron</h2>
     <ul class="big tight mt-s">
       <li><b>Un worker terminado se cierra en el mismo turno.</b> Diez worktrees vivos tumbaron el runtime dos veces en una sesión.</li>
       <li><b>Provisiona el worktree ANTES de lanzar.</b> Un hueco de provisioning se disfraza de otro fallo.</li>
@@ -818,7 +818,7 @@ preamble; channel = orca orchestration, never SendMessage/AskUserQuestion.</div>
       <div class="card"><p class="lbl">Y una que no es del skill</p><p class="small mt-s">Los commits del worker llevan <b>cero atribución de IA</b> (Critical Rule #3) y los dos trailers forenses. En un fleet de mismo checkout, la Critical Rule #15 (nada de descartes globales de git) <b>cuenta doble</b>.</p></div>
       <div class="card card-accent"><p class="lbl">La que se descubrió cerrando</p><p class="small mt-s">El coste de un worker solo es visible en <b>su propia pantalla</b> y desaparece cuando el conductor cierra la terminal. Si quieres contabilidad de coste, <b>leer el footer es parte del ritual de cierre</b>. En el dogfood se perdieron los números de un worker por cerrarlo correcta y puntualmente.</p></div>
     </div>
-    <div class="notes">Las otras siete están en el SKILL.md. Ninguna es teórica: cada una tiene una fecha, un repo y un síntoma en references/gotchas.md.</div>
+    <div class="notes">El resto está en el SKILL.md. Ninguna es teórica: cada una tiene una fecha, un repo y un síntoma en references/gotchas.md.</div>
   </section>
 
   <!-- 17. EL FALLBACK -->
@@ -844,7 +844,7 @@ preamble; channel = orca orchestration, never SendMessage/AskUserQuestion.</div>
 
   <!-- 18. EL DOGFOOD -->
   <section class="slide" data-title="El dogfood">
-    <p class="kicker">Medido · un sprint real, tres workers en paralelo</p>
+    <p class="kicker">Dogfood, reporte del conductor · un sprint real, tres workers en paralelo</p>
     <h2 class="h2 md">32 minutos, <span class="grad">21 artefactos</span>, 9 hallazgos de calidad</h2>
     <div class="grid g4 mt-m">
       <div class="met"><div class="n">3</div><div class="u">historias probadas en paralelo, las más atascadas del backlog: 47, 47 y 46 días esperando QA</div></div>
@@ -862,7 +862,7 @@ preamble; channel = orca orchestration, never SendMessage/AskUserQuestion.</div>
 
   <!-- 19. LO QUE UNA SOLA SESIÓN NO ENCUENTRA -->
   <section class="slide" data-title="Qué encuentra una flota">
-    <p class="kicker">El argumento real · no es la hora ahorrada</p>
+    <p class="kicker">Dogfood, reporte del conductor · el argumento real no es la hora ahorrada</p>
     <h2 class="h2 md">Tres ángulos sobre el mismo entorno ven lo que <span class="grad">uno no ve</span></h2>
     <div class="grid g3 mt-m">
       <div class="card"><p class="lbl">Un claim en la doctrina que ya era falso</p><p class="small mt-s">Una afirmación obsoleta sobre los usuarios de prueba del proyecto, que habría debilitado <b>cada ATR</b> del sprint. La encontró un worker midiendo, no leyendo.</p></div>

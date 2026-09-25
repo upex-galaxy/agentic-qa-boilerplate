@@ -279,17 +279,17 @@ table.cmp td code{color:var(--cyan);font-size:.92em}
       <span class="pill">JS moderno</span><span class="pill">map / filter</span><span class="pill">class + extends</span><span class="pill">Page Object</span><span class="pill">6 quizzes ⭐</span>
     </div>
   </div>
-  <div class="notes"><p>Sesión 2 de la serie. Prerequisito: Coding Base (valores, variables, funciones, loops, objetos, async/await, anatomía de un test). Hoy: el código moderno que ven en specs reales + clases y herencia — EL concepto que toda arquitectura de automation usa. Final: construyen su primer Page Object y lo ven ejecutarse en vivo.</p></div>
+  <div class="notes"><p>Sesión 2 de la serie. Prerequisito: Coding Base (valores, variables, funciones, loops, objetos, async/await, anatomía de un test). Esta sesión: el código moderno que ven en specs reales + clases y herencia — EL concepto que toda arquitectura de automation usa. Final: construyen su primer Page Object y lo ven ejecutarse en vivo.</p></div>
 </section>
 
 <!-- 2 · Dónde estamos -->
 <section class="slide" data-act="Acto 0 · Recap">
   <div class="kicker">El viaje continúa</div>
-  <h2 data-anim="fade-up">Ya hablas el idioma. <span class="grad-text">Hoy aprendes a construir.</span></h2>
+  <h2 data-anim="fade-up">Ya hablas el idioma. <span class="grad-text">Ahora aprendes a construir.</span></h2>
   <div class="cols">
     <div data-stagger>
       <div class="card"><h3>✅ Coding Base (sesión 1)</h3><p>Valores · variables · operadores · funciones · if/else · loops · arrays · objetos · async/await · tu primer test ejecutado.</p></div>
-      <div class="card hl" style="margin-top:1rem"><h3>🎯 Coding Classes (hoy)</h3><p>JS moderno (el que ves en specs reales) → arrays con superpoderes → <b>clases y herencia</b> → tu primer <b>Page Object</b>.</p></div>
+      <div class="card hl" style="margin-top:1rem"><h3>🎯 Coding Classes (esta sesión)</h3><p>JS moderno (el que ves en specs reales) → arrays con superpoderes → <b>clases y herencia</b> → tu primer <b>Page Object</b>.</p></div>
     </div>
     <div data-anim="fade-up" style="animation-delay:.3s">
       <pre class="code big">
@@ -304,7 +304,7 @@ Page Object      <span class="tk-c">← hoy: una clase que envuelve una página<
 Framework KATA   <span class="tk-c">← próxima parada: el repo profesional</span></pre>
     </div>
   </div>
-  <div class="notes"><p>Recuerda la mecánica del zoom-out de la sesión 1: nada aparece de la nada. La función que dominan es el ladrillo; hoy lo apilan en clases; el Page Object es una clase con propósito de testing; KATA (el framework profesional) es Page Objects con esteroides. Hoy cierran el gap más grande del roadmap.</p></div>
+  <div class="notes"><p>Recuerda la mecánica del zoom-out de la sesión 1: nada aparece de la nada. La función que dominan es el ladrillo; ahora lo apilan en clases; el Page Object es una clase con propósito de testing; KATA (el framework profesional) es Page Objects con esteroides. En esta sesión cierran el gap más grande del roadmap.</p></div>
 </section>
 
 <!-- 3 · QUIZ 0 relámpago -->
@@ -319,7 +319,7 @@ Framework KATA   <span class="tk-c">← próxima parada: el repo profesional</sp
       <button class="opt" data-ok="1"><span class="key">B</span><span><code>creds.email</code> — el punto de toda la vida</span></button>
       <button class="opt"><span class="key">C</span><span><code>creds->email</code> — con flecha</span></button>
     </div>
-    <div class="quiz-expl">💡 El punto: "del objeto <code>creds</code>, dame <code>email</code>". Lo usaste 20 veces en la sesión 1 — y hoy lo vas a usar con <code>this</code>: <code>this.email</code> significa "de ESTA instancia, dame email". Guarda esa idea.</div>
+    <div class="quiz-expl">💡 El punto: "del objeto <code>creds</code>, dame <code>email</code>". Lo usaste 20 veces en la sesión 1 — y ahora lo vas a usar con <code>this</code>: <code>this.email</code> significa "de ESTA instancia, dame email". Guarda esa idea.</div>
   </div>
   <div class="notes"><p>Calentamiento con doble propósito: reactivar el conocimiento de objetos Y plantar la semilla de this (la explicación menciona this.email). Si la sala falla este quiz, dedica 5 minutos a repasar objetos de Coding Base antes de seguir — clases sin objetos claros no funcionan.</p></div>
 </section>
@@ -340,7 +340,7 @@ Framework KATA   <span class="tk-c">← próxima parada: el repo profesional</sp
       <p style="margin-top:.7rem;font-size:.95rem">Funciona, pero con 3+ variables se vuelve sopa de comillas y signos <code class="pill">+</code>.</p>
     </div>
     <div data-anim="fade-up" style="animation-delay:.2s">
-      <h3>😎 Desde hoy</h3>
+      <h3>😎 Desde ahora</h3>
       <pre class="code">
 <span class="tk-k">const</span> msg = <span class="tk-s">`Hola, ${name}! Tienes ${bugs} bugs`</span>;</pre>
       <p style="margin-top:.7rem;font-size:.95rem"><b>Backticks</b> <code class="pill">`</code> (no comillas) + <code class="pill">${...}</code> = hueco donde entra cualquier variable o expresión.</p>
@@ -374,7 +374,7 @@ Framework KATA   <span class="tk-c">← próxima parada: el repo profesional</sp
 <span class="tk-f">test</span>(<span class="tk-s">"login"</span>, <span class="tk-k">async</span> ({ page }) => {
   ...
 });</pre>
-        <p style="margin-top:.5rem">¡Tu test de la sesión 1 ERA una arrow function! Hoy por fin sabes leer cada símbolo.</p></div>
+        <p style="margin-top:.5rem">¡Tu test de la sesión 1 ERA una arrow function! Ahora por fin sabes leer cada símbolo.</p></div>
     </div>
   </div>
   <div class="notes"><p>El momento "¡ahhh!" del acto: el test() que escribieron en sesión 1 ya usaba arrow + async. La transformación en 3 pasos es el camino mental — muéstrala despacio. Para qué sirve la compacidad: pasarle funciones a map/filter (siguiente acto). No menciones diferencias de this entre function y arrow — ruido innecesario en este nivel.</p></div>
@@ -609,7 +609,7 @@ console.log(`Top bug hunter: ${top.name}`);
       <div class="card" style="margin-top:.75rem"><h3 style="color:var(--blue)">findBug()</h3><p>Un <b>método</b>: función que vive DENTRO de la clase y trabaja con los datos de <code class="pill">this</code>. Sin la palabra function.</p></div>
     </div>
   </div>
-  <div class="notes"><p>Cuatro piezas, una por tarjeta. this es LA dificultad — definición operativa: "el objeto concreto con el que se está trabajando ahora". No filosofar más: la siguiente slide fabrica instancias y la 16 lo muestra paso a paso en memoria. Detalle sintáctico: métodos sin la palabra function, sin comas entre ellos.</p></div>
+  <div class="notes"><p>Cuatro piezas, una por tarjeta. this es LA dificultad — definición operativa: "el objeto concreto con el que se está trabajando ahora". No filosofar más: la siguiente slide fabrica instancias y el visualizador de memoria lo muestra paso a paso. Detalle sintáctico: métodos sin la palabra function, sin comas entre ellos.</p></div>
 </section>
 
 <!-- 15 · new + instancias -->
@@ -815,7 +815,7 @@ console.log(ana.deleteProject()); // propio de Admin
 //       watch() => `${this.name} está mirando 👀` y pruébalo</textarea></div>
     <div class="lc-console"><div class="ln dim">▶ Presiona Ejecutar para ver la salida…</div></div>
   </div>
-  <div class="notes"><p>Aquí super aparece con su comentario inline. Experimento valioso en vivo: borrar la línea super(name) y ejecutar → "ReferenceError: Must call super constructor..." — el lenguaje OBLIGA a llamar al padre primero. El reto Viewer es deliberadamente simétrico al ejemplo de la slide 19: cierra el círculo del dolor → solución.</p></div>
+  <div class="notes"><p>Aquí super aparece con su comentario inline. Experimento valioso en vivo: borrar la línea super(name) y ejecutar → "ReferenceError: Must call super constructor..." — el lenguaje OBLIGA a llamar al padre primero. El reto Viewer es deliberadamente simétrico al ejemplo de la slide «Nuevo dolor: clases que se repiten»: cierra el círculo del dolor → solución.</p></div>
 </section>
 
 <!-- 22 · QUIZ 4 -->
@@ -885,7 +885,7 @@ console.log(ana.deleteProject()); // propio de Admin
     <div data-stagger>
       <div class="card"><h3>🎁 La jugada</h3><p>TODO lo que se puede hacer en la página de login, encapsulado en UNA clase. Los selectores viven aquí y solo aquí.</p></div>
       <div class="card" style="margin-top:.75rem"><h3>📺 constructor(page)</h3><p>Recibe el <code class="pill">page</code> de Playwright y lo guarda en <code class="pill">this.page</code> — el control remoto del navegador, ahora de la instancia.</p></div>
-      <div class="card" style="margin-top:.75rem"><h3>🧬 Todo lo de hoy, junto</h3><p>class ✓ · constructor ✓ · this ✓ · método async ✓ · await ✓. Cero conceptos nuevos — solo composición.</p></div>
+      <div class="card" style="margin-top:.75rem"><h3>🧬 Todo lo de esta sesión, junto</h3><p>class ✓ · constructor ✓ · this ✓ · método async ✓ · await ✓. Cero conceptos nuevos — solo composición.</p></div>
     </div>
   </div>
   <div class="notes"><p>Énfasis: NO hay nada nuevo en esta slide — es la clase de Tester con page adentro. this.page.fill = "del control remoto de ESTA instancia, llama fill". Nombre oficial: Page Object Model (POM), patrón estándar de la industria — suelta el término para que lo reconozcan en artículos y entrevistas.</p></div>
@@ -918,7 +918,7 @@ console.log(ana.deleteProject()); // propio de Admin
     </div>
   </div>
   <div class="callout" data-anim="fade-up"><span class="co-ico">🏆</span><p>El test ahora se lee como un test case manual: "crea la página de login, entra con estas credenciales, verifica la bienvenida". Y si <code>#login-btn</code> cambia → corriges <b>1 línea</b> dentro de LoginPage, no 50 tests.</p></div>
-  <div class="notes"><p>Doble victoria a destacar: legibilidad (el test se lee como su test case manual — círculo completo con la slide 2 de Coding Base) y mantenimiento (selector cambia → 1 solo lugar). La aserción se queda en el test a propósito: las acciones van al Page Object, los expect se quedan donde se decide pasa/falla. Esa división reaparece en KATA.</p></div>
+  <div class="notes"><p>Doble victoria a destacar: legibilidad (el test se lee como su test case manual — círculo completo con la slide «Ya sabes programar. Solo que en papel» de Coding Base) y mantenimiento (selector cambia → 1 solo lugar). La aserción se queda en el test a propósito: las acciones van al Page Object, los expect se quedan donde se decide pasa/falla. Esa división reaparece en KATA.</p></div>
 </section>
 
 <!-- 26 · PLAYGROUND simulador POM -->
@@ -1003,8 +1003,8 @@ test("login con Page Object", async ({ page }) => {
     <div class="arrow">↓ consumida por</div>
     <div class="consumer">login.spec.ts <span class="ly-note">consume el Fixture: no es una capa</span></div>
   </div>
-  <div class="callout" data-anim="fade-up" style="max-width:720px;margin:1.4rem auto 0"><span class="co-ico">🗺️</span><p>Las <b>cuatro capas</b> (TestContext → UiBase → LoginPage → TestFixture) son clases encadenadas por la herencia que acabas de dominar; el spec solo <b>consume</b> el Fixture, no es una capa más. Tu LoginPage de hoy es el corazón del framework profesional.</p></div>
-  <div class="notes"><p>Teaser, NO lección: no expliques cada capa — solo muestra que la estrella verde (la Page que construyeron HOY) es el centro del framework, y que el resto son las mismas dos herramientas de esta sesión (extends + fixtures/destructuring) aplicadas con más capas. El miedo a la arquitectura muere cuando reconocen las piezas. Próximos pasos del roadmap: práctica real con Playwright contra el dojo, luego el puente KATA completo.</p></div>
+  <div class="callout" data-anim="fade-up" style="max-width:720px;margin:1.4rem auto 0"><span class="co-ico">🗺️</span><p>Las <b>cuatro capas</b> (TestContext → UiBase → LoginPage → TestFixture) son clases encadenadas por la herencia que acabas de dominar; el spec solo <b>consume</b> el Fixture, no es una capa más. Tu LoginPage de esta sesión es el corazón del framework profesional.</p></div>
+  <div class="notes"><p>Teaser, NO lección: no expliques cada capa — solo muestra que la estrella verde (la Page que construyeron EN ESTA SESIÓN) es el centro del framework, y que el resto son las mismas dos herramientas de esta sesión (extends + fixtures/destructuring) aplicadas con más capas. El miedo a la arquitectura muere cuando reconocen las piezas. Próximos pasos del roadmap: práctica real con Playwright contra el dojo, luego el puente KATA completo.</p></div>
 </section>
 
 <!-- 29 · Cierre -->
@@ -1018,8 +1018,8 @@ test("login con Page Object", async ({ page }) => {
     <div class="card"><div class="ico">🧪</div><h3>Reto puente</h3><p>Escribe un <code class="pill">SignupPage</code> imaginario en papel: ¿qué métodos tendría? ¿qué selectores guardaría?</p></div>
     <div class="card hl"><div class="ico">🥷</div><h3>Próxima sesión</h3><p>Playwright real contra <b>UPEX Dojo</b>: instalas el kit y tus Page Objects controlan un navegador DE VERDAD. 🚀</p></div>
   </div>
-  <p data-anim="fade-up" style="animation-delay:.5s;margin-top:1.4rem;color:var(--text-3);font-size:.95rem">Hoy: JS moderno → map/filter/find → clases → this → herencia → <b style="color:var(--text-2)">tu primer Page Object</b>. El gap más grande del camino: cerrado.</p>
-  <div class="notes"><p>Celebra el score y nombra el logro exacto: hoy cruzaron la frontera entre "escribir scripts" y "construir arquitectura". El reto puente (SignupPage en papel) consolida sin computadora. Anuncia la sesión Dojo Lab: misma LoginPage, navegador real, app real (dojo.upexgalaxy.com). Comparte el archivo HTML.</p></div>
+  <p data-anim="fade-up" style="animation-delay:.5s;margin-top:1.4rem;color:var(--text-3);font-size:.95rem">Esta sesión: JS moderno → map/filter/find → clases → this → herencia → <b style="color:var(--text-2)">tu primer Page Object</b>. El gap más grande del camino: cerrado.</p>
+  <div class="notes"><p>Celebra el score y nombra el logro exacto: en esta sesión cruzaron la frontera entre "escribir scripts" y "construir arquitectura". El reto puente (SignupPage en papel) consolida sin computadora. Anuncia la sesión Dojo Lab: misma LoginPage, navegador real, app real (dojo.upexgalaxy.com). Comparte el archivo HTML.</p></div>
 </section>
 
 <script>
