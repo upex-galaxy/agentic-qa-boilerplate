@@ -1372,6 +1372,12 @@ function makeParityHook(sink: ReportSink, priorLockSha: string, dryRun: boolean,
       else {
         try { compatErrors = checkAgentCompatibility(cwd).errors; }
         catch (err) { compatErrors = [err instanceof Error ? err.message : String(err)]; }
+        // The real run deletes the retired alias wrappers (deprecatedFiles)
+        // BEFORE this check; the preview still has them on disk, and the one
+        // whose name is a skill (`adapt-framework`) would read as a command
+        // shadowing it. It is not: it is already on the removal list.
+        const retired = RETIRED_COMMAND_WRAPPERS.map(d => d.path);
+        compatErrors = compatErrors.filter(error => !retired.some(p => error.includes(`: ${p};`)));
       }
     }
     const findings = collectParityFindings({

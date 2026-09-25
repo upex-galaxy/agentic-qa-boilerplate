@@ -3411,10 +3411,9 @@ export async function runUpdate(
     appendBackupManifest(backupDir, [...applied.map(a => a.entry), ...skipped, ...failed.map(f => f.entry)], v6Shape, cfg.cliVersion);
   }
 
-  // Deprecated cleanup runs AFTER apply, BEFORE state write
-  if (!opts.dryRun) {
-    cleanupDeprecated(cfg, repoRoot, false, makeCoreLoggerFromSink(sink));
-  }
+  // Deprecated cleanup runs AFTER apply, BEFORE state write (and before the
+  // afterApply hooks). A dry-run lists what it would remove and writes nothing.
+  cleanupDeprecated(cfg, repoRoot, opts.dryRun, makeCoreLoggerFromSink(sink));
 
   // Compute advancement
   const advancement = computeComponentAdvancement(
