@@ -394,3 +394,46 @@ describe('lint-skills volatile facts (Critical Rule #17, checks 20-21)', () => {
     expect(output).not.toContain('CURRENT-STATE:');
   });
 });
+
+describe('lint-skills stage owners (check 22) and the §5 table scope', () => {
+  test('a stage-owner skill without a Subagent Dispatch Strategy section is an error; with it, it passes', () => {
+    const root = fixture({ listCommunityInAgentsMd: true });
+    write(root, '.agents/skills/sprint-testing/SKILL.md', t1Skill('sprint-testing').replace('metadata:\n  kind: workflow\n', 'metadata:\n  kind: workflow\n  stage_owner: true\n'));
+    const bare = runLint(root);
+    expect(bare.output).toContain('[sprint-testing] STAGE-OWNER-DISPATCH:');
+    expect(bare.exitCode).toBe(1);
+
+    write(root, '.agents/skills/sprint-testing/SKILL.md', t1Skill('sprint-testing', '## Subagent Dispatch Strategy\n\nSingle.').replace('metadata:\n  kind: workflow\n', 'metadata:\n  kind: workflow\n  stage_owner: true\n'));
+    const ok = runLint(root);
+    expect(ok.output).not.toContain('STAGE-OWNER-DISPATCH:');
+    expect(ok.exitCode).toBe(0);
+  });
+
+  test('capability and alias tables under §5 are not read as skill rows', () => {
+    const root = fixture({ listCommunityInAgentsMd: true });
+    write(root, 'AGENTS.md', [
+      '# AGENTS.md',
+      '',
+      '## 5. SKILLS + COMMANDS + MCPs REGISTRY',
+      '',
+      '### Skills (lazy-loaded by trigger phrase)',
+      '',
+      '| Skill | Trigger | Purpose |',
+      '|---|---|---|',
+      ...T1_SKILLS.map(slug => `| \`${slug}\` | \`/${slug}\` | fixture |`),
+      '| `resend-cli` | `/resend-cli` | community, installed at PROJECT level |',
+      '',
+      '### MCPs (decision rules)',
+      '',
+      '| Capability | Use for | Rule |',
+      '|---|---|---|',
+      '| `browser` | E2E | fallback |',
+      '',
+      '## 6. TOOL RESOLUTION',
+      '',
+    ].join('\n'));
+    const { exitCode, output } = runLint(root);
+    expect(output).not.toContain('TIER-MISMATCH:');
+    expect(exitCode).toBe(0);
+  });
+});

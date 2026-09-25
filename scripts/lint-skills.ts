@@ -141,6 +141,11 @@
  *      name, and the Spanish equivalents. Same exclusions and escape hatch.
  *      Severity: VOLATILE_SEVERITY.
  *
+ *  22. STAGE-OWNER-DISPATCH — a SKILL.md whose frontmatter declares
+ *      `metadata.stage_owner: true` (the stage-owning workflow skills, the set
+ *      AGENTS.md §3 used to enumerate by hand) must carry a
+ *      `## Subagent Dispatch Strategy` section. ERROR severity.
+ *
  * Usage: bun run scripts/lint-skills.ts   (or: bun run skills:check)
  */
 
@@ -371,6 +376,8 @@ interface SkillFrontmatter {
   categoriesField: CategoriesField
   /** `metadata.kind` (purpose axis); undefined when the nested key is absent. */
   kind?: string
+  /** `metadata.stage_owner: true` marks a stage-owning workflow skill (AGENTS.md §3 compliance). */
+  stageOwner: boolean
   /** `metadata.requires_capabilities` (MCP capabilities); undefined when the nested key is absent. */
   requiresCapabilities?: string[]
   raw: string
@@ -444,15 +451,17 @@ function parseFrontmatter(content: string): SkillFrontmatter | null {
   // `metadata` is the extension point the Agent Skills frontmatter spec allows,
   // so `kind` is never read from the top level.
   let kind: string | undefined;
+  let stageOwner = false;
   let requiresCapabilities: string[] | undefined;
   const metadataMatch = block.match(/^metadata:[ \t]*\n((?:[ \t]+\S[^\n]*\n?)+)/m);
   if (metadataMatch) {
     const kindMatch = metadataMatch[1].match(/^[ \t]+kind:[ \t]*["']?([\w-]+)["']?/m);
     if (kindMatch) { kind = kindMatch[1]; }
+    stageOwner = /^[ \t]+stage_owner:[ \t]*true\b/m.test(metadataMatch[1]);
     requiresCapabilities = parseNestedList(metadataMatch[1], 'requires_capabilities');
   }
 
-  return { name, categoriesField, kind, requiresCapabilities, raw: block };
+  return { name, categoriesField, kind, stageOwner, requiresCapabilities, raw: block };
 }
 
 /**
@@ -622,6 +631,7 @@ interface AgentsMdSkillEntry {
 
 const AGENTS_MD_SKILL_ROW = /^\|\s*`([\w-]+)`\s*\|/;
 const AGENTS_MD_H2 = /^## (.+)$/;
+const AGENTS_MD_H3 = /^### (.+)$/;
 
 /**
  * Detects whether an H2 heading line belongs to §5 (Skills registry).
@@ -647,6 +657,9 @@ function parseAgentsMdSkillsRegistry(agentsMdPath: string): {
   // the regex from matching table rows in other sections (e.g., §11 git-branches
   // table which has | `main` | and | `staging` | rows).
   let inSection5 = false;
+  // §5 also hosts the alias and capability tables; only the `### Skills` H3
+  // (or a §5 with no H3 at all) carries skill rows.
+  let inSkillsTable = true;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -654,10 +667,16 @@ function parseAgentsMdSkillsRegistry(agentsMdPath: string): {
     const h2Match = line.match(AGENTS_MD_H2);
     if (h2Match) {
       inSection5 = isSection5Heading(h2Match[1]);
+      inSkillsTable = true;
+      continue;
+    }
+    const h3Match = line.match(AGENTS_MD_H3);
+    if (h3Match) {
+      inSkillsTable = /^skills\b/i.test(h3Match[1].trim());
       continue;
     }
 
-    if (!inSection5) { continue; }
+    if (!inSection5 || !inSkillsTable) { continue; }
 
     const rowMatch = line.match(AGENTS_MD_SKILL_ROW);
     if (rowMatch) {
@@ -932,6 +951,16 @@ function checkDuplicateTier(
 // -----------------------------------------------------------------------------
 // Checks 11–12 — session-management contract
 // -----------------------------------------------------------------------------
+
+/** Check 22: a skill flagged `metadata.stage_owner: true` must carry the dispatch section AGENTS.md §3 demands. */
+function checkStageOwnerDispatch(slug: string, stageOwner: boolean, body: string): Violation[] {
+  if (!stageOwner || /^## Subagent Dispatch Strategy\b/m.test(body)) { return []; }
+  return [{
+    severity: 'ERROR',
+    scope: slug,
+    msg: 'STAGE-OWNER-DISPATCH: frontmatter declares `metadata.stage_owner: true` but the body has no `## Subagent Dispatch Strategy` section (AGENTS.md §3 workflow skill compliance)',
+  }];
+}
 
 function checkSessionBanner(slug: string, body: string): Violation[] {
   if (!(slug in SESSION_RETROFITTED_SKILLS)) { return []; }
@@ -1426,6 +1455,7 @@ function main(): void {
   for (const skill of t1Skills) {
     violations.push(...checkSessionBanner(skill.slug, skill.body));
     violations.push(...checkSessionPhase0(skill.slug, skill.body));
+    violations.push(...checkStageOwnerDispatch(skill.slug, skill.frontmatter?.stageOwner ?? false, skill.body));
   }
   violations.push(...checkSessionScopes(REPO_ROOT));
 
@@ -1464,6 +1494,7 @@ function main(): void {
     'CAPABILITY-UNDECLARED (resolution tag in SKILL.md body without the matching declaration; WARN)',
     `FILE-LINE (path:line citation in .agents/**/*.md + AGENTS.md prose; ${VOLATILE_SEVERITY['FILE-LINE']})`,
     `CURRENT-STATE (today / as of / dated measurement / since <version> / tool version in the same prose; ${VOLATILE_SEVERITY['CURRENT-STATE']})`,
+    'STAGE-OWNER-DISPATCH (`metadata.stage_owner: true` without a `## Subagent Dispatch Strategy` section)',
   ];
 
   if (violations.length === 0) {
