@@ -757,7 +757,7 @@ Component Value = ROI × (1 + 0.2 × N)
           <tr><td><b>Agrupación</b></td><td><span class="mono">TS: {EPIC|module}: Validate {feature}</span> — agrupador feature-level opcional (Test Set / <span class="mono">describe()</span>)</td></tr>
         </tbody>
       </table>
-      <div class="callout warn" style="margin-top:12px"><h4>Huérfano = TC sin NINGÚN camino a la Story</h4><p>Ni ATS, ni ATP, ni link directo → <span class="mono">/fix-traceability</span> verifica la cascade <span class="mono">TC→ATS→Story → TC→ATP→Story → TC→Story</span>. D7: un ATR nunca se enlaza a dos ATPs (1:1). Rechaza títulos «Login test», «Login - error», «TC1: Test form».</p></div>
+      <div class="callout warn" style="margin-top:12px"><h4>Huérfano = TC sin NINGÚN camino a la Story</h4><p>Ni ATS, ni ATP, ni link directo → <span class="mono">test-documentation</span> modo <span class="mono">repair-traceability</span> verifica la cascade <span class="mono">TC→ATS→Story → TC→ATP→Story → TC→Story</span>. D7: un ATR nunca se enlaza a dos ATPs (1:1). Rechaza títulos «Login test», «Login - error», «TC1: Test form».</p></div>
     </div>
   </div>
   <div class="notes">Coverage verificado live: SOLO el link ATS→Story (o los links directos Test↔Story) llenan el panel; los links ATP→Story y ATR→Story son trazabilidad administrativa. Cascade de resolución: TC→ATS→Story (primaria) → TC→ATP→Story (placement, no cubre panel) → TC→Story directo (last resort válido — el defecto es no tener ningún camino). En xray la membership es Xray-internal (GraphQL); en native se expresa como links TC→ATS.</div>
