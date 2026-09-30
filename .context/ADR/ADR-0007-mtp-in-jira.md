@@ -1,6 +1,6 @@
 # ADR-0007 — The Master Test Plan lives in Jira; the local file is a cache
 
-- **Status:** Proposed
+- **Status:** Accepted (by the owner, 2026-09-30)
 - **Date:** 2026-09-30
 - **Deciders:** framework owner (boilerplate maintainer); drafted by `/framework-development` from the context-c SPIKE (DC9, DC10 and DC11 approved 2026-09-30)
 - **Tags:** mtp, planning-ladder, sync, cache, jira
