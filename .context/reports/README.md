@@ -1,6 +1,6 @@
 # reports/ — generated output
 
-Everything in this directory is **generated**. Five different commands write here across six filename patterns, each owning its own. Nothing here is a source of truth: the command that produced a file rebuilds it.
+Everything in this directory is **generated**. Every file here is owned by the producer listed next to it in the table below. Nothing here is a source of truth: the command that produced a file rebuilds it.
 
 ## Tier
 
@@ -23,12 +23,13 @@ Verify with `git check-ignore -v .context/reports/<file>`.
 | `test-framework-adaptation-plan.md` | `/test-framework-adaptation` | Adaptation plan, written before the approval gate |
 | `jira-components-plan.json` | `/jira-administration` mode `components` | Component sync plan, written before the approval gate |
 | `test-map.html` | `bun run tests:map` | Coverage map rendered from the synced `.context/PBI/` tree |
+| `test-breakdown/{scope-slug}.json` + `.html` | `/test-automation explain` (JSON) + `bun run tests:explain:render` (HTML) | Plain-language breakdown of what the tests in one scope assert, with `file:line` for every assertion (slug rules: `test-automation/references/explain-tests.md`) |
 | `COVERAGE-MATRIX-{scope}.md` | `/test-documentation` | AC → scenario → TC → verdict grid for one documentation session |
 | `PRIORITIZATION-{scope}.md` | `/test-documentation` | ROI factors, score and Candidate / Manual / Deferred verdict per scenario |
 
 `{scope}` is the session scope — the same value as `.session/test-documentation/<scope>/`: a Jira key, a module slug, or `<YYYY-MM-DD>-adhoc`.
 
-Adding a sixth writer means adding a row here. A file in this directory whose producer is not listed is orphaned output.
+Adding a writer means adding a row here. A file in this directory whose producer is not listed is orphaned output.
 
 ## The sprint tracker that used to live here
 
