@@ -100,10 +100,10 @@ curl -s -H "Authorization: Bearer $API_TOKEN_ADMIN_STAGING" \
   "$API_BASE_URL/products"
 ```
 
-Set `API_BASE_URL` in the same call if it is not already exported (it comes from `.env`):
+Set `API_BASE_URL` in the same call if `.env` does not already export it. The value is the active environment's `{{API_URL}}` (`.agents/project.yaml` → `environments.<env>.api_url`), resolved before the command runs:
 
 ```bash
-source .auth/tokens.env && API_BASE_URL="https://dojo.upexgalaxy.com/api" && \
+source .auth/tokens.env && API_BASE_URL="{{API_URL}}" && \
 curl -s -X POST -H "Authorization: Bearer $API_TOKEN_USER_STAGING" \
   -H "Content-Type: application/json" \
   -d '{"name":"X"}' "$API_BASE_URL/products"
