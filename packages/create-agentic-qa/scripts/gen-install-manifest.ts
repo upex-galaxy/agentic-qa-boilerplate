@@ -68,7 +68,7 @@ const PURPOSES: Record<string, string> = {
   'atlassian': 'Jira / Confluence MCP — story, test case, and page operations from the agent.',
   'dbhub': 'DBHub MCP — direct DB queries and schema introspection for test data validation.',
   'openapi': 'OpenAPI MCP — explore API endpoints and contract testing from the agent.',
-  'playwright': 'Playwright MCP — browser automation and DOM inspection for E2E test exploration.',
+  'slack-aurora': 'Slack bot MCP — read channels, post and react from the agent (optional; token in .env).',
   'postman': 'Postman MCP — API collection management and request testing.',
 
   // Community project-level skills (PROJECT_LEVEL_SKILLS)

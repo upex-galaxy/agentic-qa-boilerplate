@@ -33,6 +33,7 @@ import {
   renderParityReport,
   RESOLVED_BY_APPLY_MARK,
   resolvedByApply,
+  retiredMcpNote,
   runVerdict,
   strictVerdict,
   structuralEvidence,
@@ -1235,6 +1236,32 @@ describe('the dry-run table marks what the apply step resolves by itself', () =>
     const real = buildParityPrompt([compat, drift], META);
     expect(real).not.toContain(RESOLVED_BY_APPLY_MARK);
     expect(real).toContain('Parity review after `bun run up` (upstream');
+  });
+});
+
+describe('retiredMcpNote', () => {
+  const upstream = JSON.stringify({ mcpServers: { context7: { command: 'bunx' } } });
+  test('names a retired server the project keeps, says why, and offers keep or remove', () => {
+    const project = JSON.stringify({ mcpServers: { context7: { command: 'bunx' }, playwright: { command: 'bunx' } } });
+    const note = retiredMcpNote('.mcp.json', project, upstream);
+    expect(note).not.toBeNull();
+    expect(note!.clause).toContain('upstream retired "playwright"');
+    expect(note!.note).toContain('/playwright-cli');
+    expect(note!.note).toContain('keep project');
+  });
+  test('silent when the project dropped it too, when upstream still has it, and on a non-MCP file', () => {
+    expect(retiredMcpNote('.mcp.json', upstream, upstream)).toBeNull();
+    const both = JSON.stringify({ mcpServers: { playwright: { command: 'bunx' } } });
+    expect(retiredMcpNote('.mcp.json', both, both)).toBeNull();
+    expect(retiredMcpNote('AGENTS.md', '# a', '# b')).toBeNull();
+  });
+  test('reads the Codex and OpenCode registries too', () => {
+    const codexProject = '[mcp_servers.playwright]\ncommand = "bunx"\n';
+    const codexUpstream = '[mcp_servers.context7]\ncommand = "bunx"\n';
+    expect(retiredMcpNote('.codex/config.toml', codexProject, codexUpstream)!.clause).toContain('playwright');
+    const ocProject = '{ "mcp": { "playwright": { "type": "local" } } }';
+    const ocUpstream = '{ "mcp": { "context7": { "type": "local" } } }';
+    expect(retiredMcpNote('opencode.jsonc', ocProject, ocUpstream)!.clause).toContain('playwright');
   });
 });
 

@@ -4,19 +4,14 @@
       "command": "bunx",
       "args": ["-y", "@upstash/context7-mcp@4.0.3"]
     },
-    "playwright": {
+    "slack-aurora": {
       "command": "bunx",
-      "args": [
-        "@playwright/mcp@0.0.79",
-        "--caps",
-        "vision,pdf,testing,tracing,tabs",
-        "--timeout-action",
-        "10000",
-        "--timeout-navigation",
-        "30000",
-        "--viewport-size",
-        "1920x1080"
-      ]
+      "args": ["-y", "slack-mcp-server@latest", "--transport", "stdio"],
+      "env": {
+        "SLACK_MCP_XOXP_TOKEN": "${SLACK_MCP_XOXP_TOKEN}",
+        "SLACK_MCP_ADD_MESSAGE_TOOL": "true",
+        "SLACK_MCP_REACTION_TOOL": "${SLACK_MCP_REACTION_TOOL}"
+      }
     },
     "dbhub": {
       "command": "bunx",

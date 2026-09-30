@@ -937,6 +937,41 @@ export function harnessLevelMcpNote(filePath: string, project: string, upstream:
   };
 }
 
+/**
+ * Local servers upstream once committed and then RETIRED outright (no
+ * harness-level replacement): the capability they served moved to a CLI.
+ * Keyed by server id; the value is the one-line reason the row prints.
+ */
+export const RETIRED_MCPS: Readonly<Record<string, string>> = {
+  playwright: 'browser automation is `/playwright-cli` only, and no skill resolves a browser MCP any more',
+};
+
+/**
+ * A downstream project's protected MCP file still declares a server upstream
+ * RETIRED (`RETIRED_MCPS`). Nothing overwrites the file; this note is how the
+ * project learns why the server left and that keeping it is a valid answer.
+ * Null when the project declares none of them or upstream still has them.
+ */
+export function retiredMcpNote(filePath: string, project: string, upstream: string): { clause: string, note: string } | null {
+  if (!Object.values(MCP_HOST_FILE).includes(filePath)) { return null; }
+  const mine = configEntries(project, filePath);
+  const theirs = configEntries(upstream, filePath);
+  if (!mine || !theirs) { return null; }
+  const registries = ['mcpServers', 'mcp', 'mcp_servers'];
+  const retired = Object.keys(RETIRED_MCPS).filter(id =>
+    registries.some(r => mine.has(`${r}.${id}`)) && !registries.some(r => theirs.has(`${r}.${id}`)));
+  if (retired.length === 0) { return null; }
+  return {
+    clause: `upstream retired ${listNames(retired)}: keep it here as a project-only server, or remove it`,
+    note: [
+      ...retired.map(id => `Upstream no longer commits ${listNames([id])}: ${RETIRED_MCPS[id]}.`),
+      'Two valid answers for this project:',
+      `  - keep project: the server stays a project-only entry in ${filePath} (and in the other two host files); agents:compat:check still compares it across hosts, just without a pinned shape.`,
+      '  - remove it from all three host files.',
+    ].join('\n'),
+  };
+}
+
 /** Evidence for a watched file, from its two copies plus the diff. */
 export function watchedFileEvidence(filePath: string, project: string, upstream: string, diff: string): WatchedFileEvidence {
   const stats = formatStats(diffStats(diff));
@@ -1198,6 +1233,8 @@ export function collectParityFindings(input: ParityInput): ParityFinding[] {
     // the row explains the move; the file is never overwritten.
     const harnessLevel = harnessLevelMcpNote(entry.path, project, upstream);
     if (harnessLevel !== null) { hookNotes.push(harnessLevel); }
+    const retired = retiredMcpNote(entry.path, project, upstream);
+    if (retired !== null) { hookNotes.push(retired); }
     drifted.set(entry.path, {
       surface: watchedSurface(entry.path, entry.source),
       path: entry.path,

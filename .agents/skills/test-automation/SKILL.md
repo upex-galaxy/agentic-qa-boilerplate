@@ -6,7 +6,7 @@ compatibility: [claude-code, copilot, cursor, codex, opencode]
 complementary_categories: [testing-e2e, testing-api, testing-component, automation-cli, accessibility]
 metadata:
   kind: workflow
-  requires_capabilities: [db, api-schema, browser]
+  requires_capabilities: [db, api-schema]
   stage_owner: true
 
 ---
@@ -58,7 +58,7 @@ Requires `agentic-qa-core`. Loads on demand:
 - Max 2 positional params (3+ → object param). Locators inline (extract only at 2+ uses). Imports via aliases (`@api/`, `@schemas/`, `@utils/`) — no relative imports.
 - Public methods fail fast; utilities silent-fail (return null). Validate against `kata-manifest.json` before adding components/ATCs (anti-duplication gate).
 - Mode from `$ARGUMENTS`: a first token matching a mode in Mode routing (`explain`, `automate`) IS the mode and the rest is forwarded; otherwise `automate` for plain automation work, ASK when it could be either.
-- Before any step that uses a declared MCP capability (`metadata.requires_capabilities`: `db`, `api-schema`, `browser`), run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8: resolve by tool-name suffix, and when no available tool provides it STOP and name the capability + how to enable it, never a silent fallback.
+- Before any step that uses a declared MCP capability (`metadata.requires_capabilities`: `db`, `api-schema`), run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8: resolve by tool-name suffix, and when no available tool provides it STOP and name the capability + how to enable it, never a silent fallback.
 
 **Read full SKILL.md when**: writing KATA component code, choosing fixtures for a hybrid flow, or applying the Phase 3 review checklist.
 
@@ -496,7 +496,7 @@ Not every invocation needs every reference. Load the specific file when the task
 - **Configuring Playwright, CI integration, projects, sharding** → `references/ci-integration.md`
 - **Session resume contract, plan.md/progress.md schemas, archive policy, Engram per-phase checkpoint** → `../agentic-qa-core/references/session-management.md` (Phase 0 + Phase 1 + Archive of this skill)
 
-Tool resolution: use `[AUTOMATION_TOOL]` for browser work (Playwright CLI or MCP — load `/playwright-cli` when available), `[API_TOOL]` for OpenAPI exploration, `[DB_TOOL]` for verifying test data in the database, `[TMS_TOOL]` for TMS sync (load `/xray-cli` when available), `[ISSUE_TRACKER_TOOL]` for ticket work. Split the issue-tracker access by operation: **detailed reads** of a Story (ACs, ATP, dev implementation-plan, custom fields) → `bun run jira:sync-issues get <KEY> --include-comments` (or `jql "<query>"`) then read the synced `.md` — NEVER `acli workitem view` for custom fields; **writes** (comment automated-test status back to the Story, transitions) → `/acli`; **trivial summary/status/key-list lookups** → `/acli` `workitem view`/`search` is fine. See `agentic-qa-core/references/acli-integration.md` §"Reads vs writes". Resolve tags via the project's AGENTS.md Tool Resolution table.
+Tool resolution: use `[AUTOMATION_TOOL]` for browser work (`/playwright-cli`, the only browser path), `[API_TOOL]` for OpenAPI exploration, `[DB_TOOL]` for verifying test data in the database, `[TMS_TOOL]` for TMS sync (load `/xray-cli` when available), `[ISSUE_TRACKER_TOOL]` for ticket work. Split the issue-tracker access by operation: **detailed reads** of a Story (ACs, ATP, dev implementation-plan, custom fields) → `bun run jira:sync-issues get <KEY> --include-comments` (or `jql "<query>"`) then read the synced `.md` — NEVER `acli workitem view` for custom fields; **writes** (comment automated-test status back to the Story, transitions) → `/acli`; **trivial summary/status/key-list lookups** → `/acli` `workitem view`/`search` is fine. See `agentic-qa-core/references/acli-integration.md` §"Reads vs writes". Resolve tags via the project's AGENTS.md Tool Resolution table.
 
 ---
 

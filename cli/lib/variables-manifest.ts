@@ -552,6 +552,37 @@ export const VAR_MANIFEST: VarSpec[] = [
     note: 'DBHub MCP password. Local only; sensitive.',
   },
 
+  // TOOLING scope, consumed by the local `slack-aurora` MCP (the Slack bot).
+  // The server reads exactly these two names, so every host forwards them by
+  // name. Validated at the point of use: a project without the bot leaves both
+  // empty and never calls a Slack tool. The reaction allowlist is workspace
+  // identity (channel ids), which is why it lives in `.env` and never in a
+  // committed MCP file.
+  {
+    name: 'SLACK_MCP_XOXP_TOKEN',
+    destinations: ['local'],
+    secret: true,
+    scope: 'tooling',
+    usedBy: 'slack-aurora MCP (Slack bot: read, post, react)',
+    required: false,
+    critical: false,
+    obtainHint: 'Slack app → OAuth & Permissions → the bot token (only if this project runs the Slack bot).',
+    note: 'Slack token for the slack-aurora MCP. Local only; sensitive.',
+    schema: { docs: 'https://github.com/korotovsky/slack-mcp-server' },
+  },
+  {
+    name: 'SLACK_MCP_REACTION_TOOL',
+    destinations: ['local'],
+    secret: false,
+    scope: 'tooling',
+    usedBy: 'slack-aurora MCP (enables reactions_add / reactions_remove)',
+    required: false,
+    critical: false,
+    obtainHint: 'comma-separated Slack channel ids the bot may react in, or true for all; empty = reactions off.',
+    note: 'Reaction-tool allowlist for the slack-aurora MCP. Local only; workspace channel ids never go in a committed file.',
+    schema: { example: 'C0123456789,C0987654321' },
+  },
+
   // --- Private report portal (TOOLING, CI-only, opt-in) ---
   // Read by `scripts/ci/publish-allure-portal.ts` through a named `requiredEnv`
   // throw, and only when the suite workflows find `PORTAL_URL` set: the

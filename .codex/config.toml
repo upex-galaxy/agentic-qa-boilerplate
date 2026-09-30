@@ -18,6 +18,27 @@ args = [
   "@upstash/context7-mcp@4.0.3",
 ]
 
+# The Slack bot MCP (Aurora). Both variables are forwarded by name from .env
+# (the server reads exactly these names); the reaction-channel allowlist is
+# workspace identity, so it lives in .env only and an empty value leaves the
+# reaction tools off. The one literal setting goes in the env table.
+[mcp_servers.slack-aurora]
+command = "bunx"
+enabled = true
+args = [
+  "-y",
+  "slack-mcp-server@latest",
+  "--transport",
+  "stdio",
+]
+env_vars = [
+  "SLACK_MCP_XOXP_TOKEN",
+  "SLACK_MCP_REACTION_TOOL",
+]
+
+[mcp_servers.slack-aurora.env]
+SLACK_MCP_ADD_MESSAGE_TOOL = "true"
+
 [mcp_servers.dbhub]
 command = "bunx"
 enabled = true
@@ -54,19 +75,4 @@ args = [
 env_vars = [
   "API_BASE_URL",
   "OPENAPI_SPEC_PATH",
-]
-
-[mcp_servers.playwright]
-command = "bunx"
-enabled = true
-args = [
-  "@playwright/mcp@0.0.79",
-  "--caps",
-  "vision,pdf,testing,tracing,tabs",
-  "--timeout-action",
-  "10000",
-  "--timeout-navigation",
-  "30000",
-  "--viewport-size",
-  "1920x1080",
 ]

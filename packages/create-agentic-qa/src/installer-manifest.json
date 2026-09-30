@@ -124,9 +124,9 @@
         "purpose": "Library documentation MCP — fetches official current docs for any library."
       },
       {
-        "name": "playwright",
+        "name": "slack-aurora",
         "envVars": [],
-        "purpose": "Playwright MCP — browser automation and DOM inspection for E2E test exploration."
+        "purpose": "Slack bot MCP — read channels, post and react from the agent (optional; token in .env)."
       },
       {
         "name": "dbhub",

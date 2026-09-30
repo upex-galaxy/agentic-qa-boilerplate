@@ -6,7 +6,7 @@ compatibility: [claude-code, copilot, cursor, codex, opencode]
 complementary_categories: [testing-e2e, testing-api, issue-tracker]
 metadata:
   kind: workflow
-  requires_capabilities: [db, api-schema, browser]
+  requires_capabilities: [db, api-schema]
   stage_owner: true
 # compact_rules is consumed VERBATIM by scripts/build-skill-registry.ts (frontmatter-first,
 # no truncation). Keep in sync with the binding doctrine below and in references/.
@@ -104,7 +104,7 @@ Requires `agentic-qa-core`. Loads on demand:
 - On any subagent failure: STOP, report partial state, offer retry / skip-stage / abort. No auto-fix, no auto-rollback.
 - Two modes, ASKED at Session Start, never inferred: **sprint-wide** (the whole sprint's QA backlog) or **single-issue** (one issue from it). Only `sprint-wide` creates the sprint session pair `.session/sprint-testing/sprint-<N>/{plan.md, progress.md}` and the STP; `single-issue` creates neither.
 - The sprint scope is a JQL query built from the work types declared `coverable: true` in `.agents/jira-required.yaml`, intersected with what `.agents/jira-workflows.json` says the instance actually has. Never a hardcoded issue-type list.
-- Before any step that uses a declared MCP capability (`metadata.requires_capabilities`: `db`, `api-schema`, `browser`), run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8: resolve by tool-name suffix, and when no available tool provides it STOP and name the capability + how to enable it, never a silent fallback.
+- Before any step that uses a declared MCP capability (`metadata.requires_capabilities`: `db`, `api-schema`), run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8: resolve by tool-name suffix, and when no available tool provides it STOP and name the capability + how to enable it, never a silent fallback.
 
 **Read full SKILL.md when**: starting a sprint cold, resuming a session, or handling a bug-triage / sprint-wide flow not covered by the rules above.
 
@@ -569,7 +569,7 @@ If Session Start reports that any of the project-wide context files are missing,
 | `[ISSUE_TRACKER_TOOL]` | `acli`, Atlassian MCP, or `{{ISSUE_TRACKER_CLI}}` | `AGENTS.md` Tool Resolution |
 
 > **Reads vs writes split** (per `agentic-qa-core/references/acli-integration.md` §"Reads vs writes"): **detailed reads** of an issue (custom fields, ACs, ATP/ATR, description, comments) use `bun run jira:sync-issues get <KEY> --include-comments` (or `jql "<query>"`) then read the synced `.md` — NEVER `acli workitem view` (returns `null` for custom fields). **Writes / transitions / links / bug creation / trivial summary-or-status lookups** stay on `[ISSUE_TRACKER_TOOL]` (`/acli`). **Traceability** (link graph Story↔ATP↔ATR↔TC, Xray run status) stays on `[TMS_TOOL]` / `/acli` / `/xray-cli` — do NOT migrate trace reads to the sync.
-| `[AUTOMATION_TOOL]` | playwright-cli skill or Playwright MCP | `AGENTS.md` Tool Resolution |
+| `[AUTOMATION_TOOL]` | playwright-cli skill (the only browser path) | `AGENTS.md` Tool Resolution |
 | `[DB_TOOL]` | DBHub MCP or Supabase MCP | `AGENTS.md` Tool Resolution |
 | `[API_TOOL]` | Schema read → OpenAPI MCP (read-only); execute → curl (token via `bun run api:login`) | `AGENTS.md` Tool Resolution + `agentic-qa-core/references/api-testing-doctrine.md` |
 | `[ORCHESTRATION_TOOL]` | the multi-session orchestration layer — used ONLY in fleet mode (sprint-wide, N>1 executors) | `orca-orchestration` (the tool owner; this skill names verbs, never commands) |

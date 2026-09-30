@@ -49,7 +49,6 @@
       "mcp__exa__*",
       "mcp__tavily__*",
       "mcp__atlassian__*",
-      "mcp__playwright__*",
       "mcp__dbhub__*",
       "mcp__openapi__*",
       "mcp__postman__*",

@@ -34,7 +34,7 @@ import { join, relative, resolve } from 'node:path';
  */
 export const KNOWN_MCP_IDS = [
   'context7',
-  'playwright',
+  'slack-aurora',
   'dbhub',
   'openapi',
 ] as const;
@@ -142,23 +142,18 @@ function canonical(shape: Pick<NormalizedMcpServer, 'transport'> & Partial<Norma
 const server = canonical;
 
 const EVERY_HOST: Record<KnownMcpId, NormalizedMcpServer> = {
-  context7: server({ transport: 'stdio', command: 'bunx', args: ['-y', '@upstash/context7-mcp@4.0.3'] }),
-  playwright: server({
+  'context7': server({ transport: 'stdio', command: 'bunx', args: ['-y', '@upstash/context7-mcp@4.0.3'] }),
+  'slack-aurora': server({
     transport: 'stdio',
     command: 'bunx',
-    args: [
-      '@playwright/mcp@0.0.79',
-      '--caps',
-      'vision,pdf,testing,tracing,tabs',
-      '--timeout-action',
-      '10000',
-      '--timeout-navigation',
-      '30000',
-      '--viewport-size',
-      '1920x1080',
-    ],
+    args: ['-y', 'slack-mcp-server@latest', '--transport', 'stdio'],
+    // The server reads these two names itself, so every host forwards them by
+    // name and `.env` is the only place they live: the reaction allowlist is a
+    // list of workspace channel ids, never a committed value.
+    dependsOn: ['SLACK_MCP_XOXP_TOKEN', 'SLACK_MCP_REACTION_TOOL'],
+    literalEnv: { SLACK_MCP_ADD_MESSAGE_TOOL: 'true' },
   }),
-  dbhub: server({
+  'dbhub': server({
     transport: 'stdio',
     command: 'bunx',
     args: ['-y', '@bytebase/dbhub@1.2.1', '--config', 'dbhub.toml'],
@@ -169,7 +164,7 @@ const EVERY_HOST: Record<KnownMcpId, NormalizedMcpServer> = {
     // when a variable is absent instead of failing at startup.
     dependsOn: ['DBHUB_DATABASE', 'DBHUB_HOST', 'DBHUB_PASSWORD', 'DBHUB_PORT', 'DBHUB_TYPE', 'DBHUB_USER'],
   }),
-  openapi: server({
+  'openapi': server({
     transport: 'stdio',
     command: 'bunx',
     args: ['-y', '@ivotoby/openapi-mcp-server@1.16.1', '--tools', 'dynamic'],
