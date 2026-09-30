@@ -21,15 +21,19 @@ import {
   applyInsertions,
   applySplices,
   checkSchema,
+  distinctiveValues,
   FILLED_ELSEWHERE,
   findIdentityLeaks,
   generateSchema,
   GENERIC_RULES,
+  IDENTITY_PATHS,
+  isIdentityPath,
   isSchemaOwner,
   locateLeaf,
   planInsertions,
   projectDelta,
   ruleFor,
+  SCHEMA_FILE,
   SCHEMA_SOURCE,
   schemaExemptions,
   schemaKeyPaths,
@@ -39,6 +43,33 @@ import {
 
 const REPO_ROOT = join(import.meta.dir, '..', '..');
 const realSource = (): string => readFileSync(join(REPO_ROOT, SCHEMA_SOURCE), 'utf8');
+const committedSchema = (): string => readFileSync(join(REPO_ROOT, SCHEMA_FILE), 'utf8');
+
+/**
+ * The real source with EVERY identity leaf filled the way a maintainer fills
+ * it: a concrete value, and the `TODO: ` prefix dropped from its comment.
+ * Values are distinct per leaf so a single survivor is attributable.
+ */
+function fillEveryIdentityLeaf(source: string): { text: string, values: string[] } {
+  const walk = yamlLeafWalk(source)!;
+  const containers = new Set(walk.containers);
+  const edits: Array<{ range: readonly [number, number], text: string }> = [];
+  const values: string[] = [];
+  let i = 0;
+  for (const path of walk.entries.keys()) {
+    if (containers.has(path) || !isIdentityPath(path)) { continue; }
+    const located = locateLeaf(source, path.split('.'))!;
+    const value = path.endsWith('.key') ? `LEAK-${900 + i}` : `https://leak-${i}.acme-corp.io`;
+    values.push(value);
+    edits.push({ range: located.value, text: value });
+    if (located.trailingComment) {
+      const comment = source.slice(...located.trailingComment);
+      edits.push({ range: located.trailingComment, text: comment.replace(/^#\s*TODO:\s*/, '# ') });
+    }
+    i += 1;
+  }
+  return { text: applySplices(source, edits), values };
+}
 
 const SAMPLE = `top:
   a: 1
@@ -302,6 +333,70 @@ describe('generateSchema, against the real .agents/project.yaml', () => {
   });
 });
 
+describe('identity is blanked, whatever this repo filled in', () => {
+  test('IDENTITY_PATHS matches segment by segment, * being one key name', () => {
+    expect(isIdentityPath('project.project_name')).toBe(true);
+    expect(isIdentityPath('environments.uat.web_url')).toBe(true);
+    expect(isIdentityPath('qa.qa_epics.defect_epic.key')).toBe(true);
+    expect(isIdentityPath('qa.qa_epics.defect_epic.name')).toBe(false);
+    expect(isIdentityPath('testing.tc_creation_stage')).toBe(false);
+    expect(isIdentityPath('environments.local')).toBe(false);
+  });
+
+  test('an identity leaf blanks even when filled', () => {
+    expect(ruleFor('issue_tracker.atlassian_url', 'https://acme.atlassian.net')).toBe('blank');
+  });
+
+  test('every pattern covers at least one leaf of the real file: a stale pattern is a silent no-op', () => {
+    const walk = yamlLeafWalk(realSource())!;
+    const leaves = [...walk.entries.keys()].filter(p => !walk.containers.includes(p));
+    for (const pattern of IDENTITY_PATHS) {
+      expect(leaves.some(p => isIdentityPath(p) && p.split('.').length === pattern.split('.').length)).toBe(true);
+    }
+  });
+
+  test('the real source generates the committed schema byte for byte', () => {
+    expect(generateSchema(realSource()).schema).toBe(committedSchema());
+  });
+
+  test('filling every identity leaf changes nothing in the schema, byte for byte', () => {
+    const { text, values } = fillEveryIdentityLeaf(realSource());
+    const result = generateSchema(text);
+    expect(result.error).toBeNull();
+    expect(result.schema).toBe(committedSchema());
+    for (const value of values) { expect(result.schema).not.toContain(value); }
+  });
+
+  test('the TODO prefix is restored, and a comment that never had one is left alone', () => {
+    const src = 'project:\n  project_name: Acme # Project name (e.g. MyProject)\nqa:\n  qa_epics:\n    defect_epic:\n      key: ACME-12 # discovered/created at runtime, then cached here (e.g. PROJ-123)\n';
+    const { schema, error } = generateSchema(src);
+    expect(error).toBeNull();
+    expect(schema).toContain('  project_name: null # TODO: Project name (e.g. MyProject)\n');
+    expect(schema).toContain('      key: null # discovered/created at runtime, then cached here (e.g. PROJ-123)\n');
+  });
+
+  test('a real Atlassian host no longer refuses generation: it is blanked first', () => {
+    const src = realSource().replace(/atlassian_url: [^#\n]*#/, 'atlassian_url: https://acme-corp.atlassian.net #');
+    const result = generateSchema(src);
+    expect(result.error).toBeNull();
+    expect(result.schema).not.toContain('acme-corp');
+  });
+});
+
+describe('the value-leak net under IDENTITY_PATHS', () => {
+  test('finds URLs, hosts, issue keys and out-of-repo paths; skips loopback and prose', () => {
+    const src = 'a: https://staging.acme.io\nb: acme.io\nc: ACME-7\nd: ../acme-api\ne: http://localhost:3000\nf: QA Defect Management\ng: bun xray\nh: \'{prefix}/{kebab-slug}\'\n';
+    expect(distinctiveValues(src).sort()).toEqual(['../acme-api', 'ACME-7', 'acme.io', 'https://staging.acme.io'].sort());
+  });
+
+  test('a filled key in a MIXED block that nobody declared still refuses generation', () => {
+    const src = realSource().replace('  tc_creation_stage: auto', '  tc_creation_stage: auto\n  sut_url: https://staging.acme.io # the SUT');
+    const result = generateSchema(src);
+    expect(result.error).toContain('identity leak');
+    expect(result.leaks.some(l => l.pattern.includes('https://staging.acme.io'))).toBe(true);
+  });
+});
+
 describe('checkSchema', () => {
   const source = realSource();
   const schema = generateSchema(source).schema;
@@ -471,7 +566,7 @@ describe('insertion', () => {
   // INSERT-ONLY is the promise that makes writing to a project's identity file
   // acceptable at all. Every existing leaf keeps its value, byte for byte.
   test('not one existing value changes', () => {
-    const old = stripBlock(source.replace('  project_key: null #', '  project_key: ACME #'), 'orchestration');
+    const old = stripBlock(source.replace(/ {2}project_key: [^#\n]*#/, '  project_key: ACME #'), 'orchestration');
     const before = yamlLeafWalk(old)!;
     const { text, error } = applyInsertions(old, planInsertions(old, schema, ['orchestration'], '8.5'));
     expect(error).toBeNull();
