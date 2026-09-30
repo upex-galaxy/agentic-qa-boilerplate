@@ -310,7 +310,7 @@ Examples:
 
 Anti-patterns: `Login test`, `Login - error`, `Test the form`, `Negative case`. Always describe behavior AND condition.
 
-**Note:** In Stage 4 `test-documentation` prepends `{US_ID}: TC#:` (always the User Story key, never the Test Set ID) to formalize these in Xray; Test Set membership is expressed via an issue link, not in the title. Do not add the prefix here — this is manual / shift-left, not formal TC.
+**Note:** In Stage 4 `test-documentation` prepends `{US_ID}: TC#:` (always the User Story key, never the Test Set ID) to formalize these in Xray; Test Set membership is a `TC→ATS` issue link in both modalities (plus the Xray-internal membership in jira-xray, `agentic-qa-core/references/traceability-linking.md` §9), never the title. Do not add the prefix here — this is manual / shift-left, not formal TC.
 
 ### Outline structure (per scenario)
 
@@ -414,9 +414,14 @@ ATP = `Test Plan` issue. ATR = `Test Execution` issue. ATS = `Test Set` issue �
   parentEpic: QA Test Artifacts
   components: {inherited from the Story — MANDATORY}
 
-[TMS_TOOL] Add Tests to TestSet:            # Xray-internal membership (GraphQL) — NEVER issue links
-  set: {ATS_KEY}                            # in this modality
+[TMS_TOOL] Add Tests to TestSet:            # Xray-internal membership (GraphQL) — creates NO Jira link
+  set: {ATS_KEY}
   tests: [ALL of the Story's TCs]
+
+[ISSUE_TRACKER_TOOL] Link Issues:           # ONE per member TC — the membership link, required in BOTH
+  linkType: {{jira.link_types.test.name}}   # modalities (`traceability-linking.md` §9): ATS is tested by TC
+  outward: {TC_KEY}
+  inward:  {ATS_KEY}
 
 [ISSUE_TRACKER_TOOL] Link Issues:
   linkType: {{jira.link_types.test.name}}   # Story is tested by ATS — THE coverage link: this is what

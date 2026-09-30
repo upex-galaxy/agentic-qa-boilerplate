@@ -84,8 +84,9 @@ QA Master Test Plan (Epic)
 QA Test Artifacts (Epic)
     |
     +-- Test Set: ATS: PROJ-101: Pay with credit card       (MANDATORY per Story —
-    |       +-- Test (TC1, TC2, ...)         ALL the Story's TCs; membership = Xray-internal,
-    |                                        prefix stays {US_ID}; ATS->Story link = coverage)
+    |       +-- Test (TC1, TC2, ...)         ALL the Story's TCs; membership = TC->ATS link
+    |                                        + Xray-internal; prefix stays {US_ID};
+    |                                        ATS->Story link = coverage)
     +-- Test Set: TS: Checkout: Validate checkout v2        (OPTIONAL feature grouping)
     |       +-- Test (TC3, TC4, ...)
     +-- Test Execution: ATR: PROJ-101: Story Testing
@@ -136,13 +137,13 @@ Same concept, different storage. Use this when translating a TC design into actu
 | Priority | `Priority` field | `Priority` field |
 | Labels | `Labels` field | `Labels` field |
 | Components | `Components` field | `Components` field |
-| Trace to User Story | Via the ATS when the Test Set work type exists (TC→ATS links + ATS→Story "is tested by"); direct TC→Story "is tested by" only without it (cascade last resort) | Via the ATS (Xray-internal membership + the ATS→Story "is tested by" link — the one that fills the coverage panel), plus TC "is designed by" ATP + "is executed by" ATR (administrative). No direct TC → Story link while the ATS exists. |
+| Trace to User Story | Via the ATS when the Test Set work type exists (TC→ATS links + ATS→Story "is tested by"); direct TC→Story "is tested by" only without it (cascade last resort) | Via the ATS (TC→ATS links + the Xray-internal membership + the ATS→Story "is tested by" link — the one that fills the coverage panel), plus TC "is designed by" ATP + "is executed by" ATR (administrative). No direct TC → Story link while the ATS exists. |
 | Execution result | `Test Status` custom field | Xray `Test Run` inside a Test Execution |
 
 Xray additionally exposes:
 
 - `Test Repository` folder (flat path under the project) — not required if all Tests are under a single Regression Epic.
-- `Test Sets` associated to the Test (Xray-internal membership — not a Jira issue link).
+- `Test Sets` associated to the Test (Xray-internal membership; for the Story's ATS it is ALSO a TC→ATS issue link, `agentic-qa-core/references/traceability-linking.md` §9).
 - `Pre-Conditions` (dedicated issue type) — reusable across Tests (association is Xray-internal too).
 
 ---
@@ -158,10 +159,10 @@ The TC naming convention is identical in every modality — the prefix is **ALWA
 | Modality | `PREFIX` |
 |------|----------|
 | **Jira Native** | User Story ID (`PROJ-101`) |
-| **Jira + Xray with Test Sets** | User Story ID (`PROJ-101`) — Test Set membership is Xray-internal, not a prefix |
+| **Jira + Xray with Test Sets** | User Story ID (`PROJ-101`) — Test Set membership is a link + Xray-internal state, not a prefix |
 | **Jira + Xray without Test Sets** | User Story ID (`PROJ-101`) |
 
-The prefix never changes with mode. Under Modality jira-xray, Test Set association is **Xray-internal membership** (managed via `/xray-cli` add-to-set, read via `bun xray test enrich`) — NEVER a Jira issue link and NEVER in the TC title — so JQL by Story key stays reliable across the whole project. Jira-native carve-out: with a Test Set work type present, membership IS a TC→ATS issue link (still never in the TC title).
+The prefix never changes with mode. Membership in the Story's ATS is a TC→ATS issue link in both modalities, plus **Xray-internal membership** under Modality jira-xray (managed via `/xray-cli` add-to-set, read via `bun xray test enrich`); it is NEVER in the TC title, so JQL by Story key stays reliable across the whole project.
 
 Related naming — the unified planning-ladder grammar `{ACRONYM}: {scope-id}: {descriptor}` (full table: `tms-conventions.md` §3):
 
@@ -315,7 +316,7 @@ Notes:
   components: [{module}]
   epic: {REGRESSION_EPIC_KEY}
 
-# With a Test Set work type (ATS exists — jira-native carve-out: membership IS a link):
+# With a Test Set work type (ATS exists — membership IS a link, as in jira-xray):
 [ISSUE_TRACKER_TOOL] Link Issues:
   from: {TEST_KEY}
   to:   {ATS_KEY}
@@ -357,14 +358,18 @@ Notes:
   issue: {TEST_KEY}
   description: {full Description template from §7}
 
-# Set-first membership: add the TC to the Story's ATS. Test ↔ Test Set membership is
-# NOT a Jira issuelink under jira-xray — do NOT create it via [ISSUE_TRACKER_TOOL]
-# link create. It is Xray-internal state managed via the /xray-cli skill (add-to-set).
-# See traceability-linking.md §9. Coverage flows through the ATS->Story `is tested by`
-# link (already created in the Set-first preflight — the coverage-panel link).
-[TMS_TOOL] Add Test to Test Set:   # /xray-cli only — Xray-internal, NOT a Jira link
+# Set-first membership: add the TC to the Story's ATS TWICE — the Xray-internal membership
+# (/xray-cli add-to-set; it creates no Jira link) AND the TC->ATS `test` issue link
+# (traceability-linking.md §9: the membership every reader walks, in both modalities).
+# Coverage flows through the ATS->Story `is tested by` link (already created in the
+# Set-first preflight — the coverage-panel link).
+[TMS_TOOL] Add Test to Test Set:   # /xray-cli — Xray-internal membership
   test:    {TEST_KEY}
   testSet: {ATS_KEY}               # the Story's ATS; the optional feature TS: is a second add
+[ISSUE_TRACKER_TOOL] Link Issues:  # the membership link (ATS only, never the feature TS:)
+  from: {TEST_KEY}
+  to:   {ATS_KEY}
+  linkType: {{jira.link_types.test.name}}   # ATS is tested by Test
 
 # Administrative edges: ATP designs TC, ATR executes TC. The Test is NOT linked to the
 # Story directly while the ATS exists — direct TC->Story is the cascade's last resort.
@@ -425,11 +430,16 @@ When `/test-documentation` Stage 4 promotes a sprint Xray Test into regression, 
   issue: {TEST_KEY}
   description: {full Description template from §7}
 
-# Set-first membership: add the TC to the Story's ATS (Xray-internal, NOT a Jira link).
-# Coverage flows through the ATS->Story `is tested by` link.
+# Set-first membership: add the TC to the Story's ATS (Xray-internal membership AND the
+# TC->ATS `test` link — traceability-linking.md §9). Coverage flows through the ATS->Story
+# `is tested by` link.
 [TMS_TOOL] Add Test to Test Set:
   test:    {TEST_KEY}
   testSet: {ATS_KEY}
+[ISSUE_TRACKER_TOOL] Link Issues:
+  from: {TEST_KEY}
+  to:   {ATS_KEY}
+  linkType: {{jira.link_types.test.name}}   # ATS is tested by Test — the membership link
 
 # Administrative edges: ATP designs TC, ATR executes TC. The Test is NOT linked to the
 # Story directly while the ATS exists (direct TC->Story = cascade last resort). The
@@ -641,7 +651,7 @@ A later `test-automation` run greps the synced files for `automation-candidate` 
 ## 13. Completeness checklist (per TC before moving to READY)
 
 - [ ] Summary follows `{US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]` — no anti-patterns. On a **promoted** sprint Test this is re-checked against the LIVE summary, not the one you intended at create time (`SKILL.md` §"Title on promotion")
-- [ ] Traced to the User Story via the cascade: member of the Story's ATS (jira-xray: Xray-internal; jira-native with the work type: TC→ATS link) + "is designed by" ATP + "is executed by" ATR; direct TC→Story "is tested by" ONLY when no ATS exists (jira-native without the Test Set work type)
+- [ ] Traced to the User Story via the cascade: member of the Story's ATS (TC→ATS link in both modalities; jira-xray also Xray-internal) + "is designed by" ATP + "is executed by" ATR; direct TC→Story "is tested by" ONLY when no ATS exists (jira-native without the Test Set work type)
 - [ ] Linked to Regression Epic (Epic Link)
 - [ ] Components set (affected product module — mandatory, defect-management doctrine Part 3)
 - [ ] Priority set
@@ -651,7 +661,7 @@ A later `test-automation` run greps the synced files for `automation-candidate` 
 - [ ] Prior bugs covered section filled (or "none")
 - [ ] Refinement Notes filled if source-code validation found discrepancies
 - [ ] Xray mode: Test Type set (Manual / Cucumber / Generic)
-- [ ] Added to the Story's ATS (mandatory — Xray mode: Xray-internal membership via `/xray-cli`, never a Jira issue link; jira-native with the work type: TC→ATS issue link); optional feature `TS:` per promotion
+- [ ] Added to the Story's ATS (mandatory — TC→ATS issue link in both modalities; Xray mode also writes the Xray-internal membership via `/xray-cli`); optional feature `TS:` per promotion
 - [ ] Workflow state = READY (or MANUAL / Candidate once decision is made)
 - [ ] Local cache materialized (never hand-written) via `bun run jira:sync-issues get <STORY_KEY>` — one `TEST-<KEY>-<slug>.md` per Test under `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/test-cases/`
 

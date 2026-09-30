@@ -232,7 +232,8 @@ the stage NEEDS REVISION.
 [ ] QA comment posted; ticket transitioned to the correct status
 [ ] Regression follow-up noted for any regression-worthy bug (Stage-4 hand-off); bug retest (xray):
     repro Test's run recorded PASSED/FAILED in the retest Execution
-[ ] Traceability verified — xray: Story↔ATS (`test` slug, coverage) + ATS membership complete +
+[ ] Traceability verified — xray: Story↔ATS (`test` slug, coverage) + ATS membership complete
+    (Xray membership AND one TC→ATS link per member, `traceability-linking.md` §9) +
     Story↔ATP / Story↔ATR (administrative); native: field/comment containers populated
 [ ] Artifact statuses match §"Lifecycle expectations per stage"; light stage verifier run
 ```
