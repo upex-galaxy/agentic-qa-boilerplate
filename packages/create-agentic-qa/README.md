@@ -14,7 +14,8 @@ That single command:
 
 1. Downloads `upex-galaxy/agentic-qa-boilerplate` (latest `main`) as a tarball.
 2. Extracts into `./my-app/` (no git history).
-3. Rewrites `package.json` name + `.agents/project.yaml` `project.name`.
+3. Rewrites `package.json` name + `.agents/project.yaml` `project.project_name`
+   (and `project.project_key` when `--project-key` is passed).
 4. Initializes a fresh repository on `main` and creates the initial commit.
 5. Runs `bun install`.
 6. Hands off to the boilerplate's interactive installer (`bun run setup`),
@@ -32,7 +33,7 @@ bunx create-agentic-qa            # no args + TTY → menu
 bunx create-agentic-qa --menu     # force menu even when args are present
 ```
 
-The menu offers four options:
+The menu offers these options:
 
 | Option                    | What it does                                                                                                                       |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
@@ -45,7 +46,7 @@ Suppress the ASCII banner with `--no-banner` (useful for CI or piped output).
 
 ## Doctor — pre-clone system checks
 
-The scaffolder's doctor verifies six **universal prerequisites** before you
+The scaffolder's doctor verifies a short list of **universal prerequisites** before you
 clone anything. This is intentionally a thin layer — the boilerplate's own
 installer (`bun run setup`, invoked at the end of this CLI) has a much bigger
 `cli/doctor.ts` that handles agent CLIs, gentle-ai, MCP credentials and the
@@ -53,14 +54,16 @@ per-skill binary matrix. See
 [INSTALLER.md](https://github.com/upex-galaxy/agentic-qa-boilerplate/blob/main/INSTALLER.md)
 for the downstream version.
 
-| #   | Check         | Required | Why                                                       |
-| --- | ------------- | -------- | --------------------------------------------------------- |
-| 1   | `bun`         | yes      | Runs this CLI, `bun install`, and `bun run setup`.        |
-| 2   | `git`         | yes      | `git init` + initial commit on `main` (skipped on `--no-git`). |
-| 3   | `node >= 18`  | yes      | Some downstream tools shell out to a Node 18+ runtime. Probes the real binary — under `bunx`, `process.versions.node` is emulated by Bun and would pass on a machine with no Node. |
-| 4   | `gh`          | optional | Needed only for `--github-create` at the end of setup.    |
-| 5   | `internet`    | yes      | Reaches `api.github.com` to fetch the template tarball.   |
-| 6   | `disk space`  | optional | Warns if less than 200 MB free in the current directory.  |
+The checks, as `src/doctor.ts` defines them:
+
+| Check         | Required | Why                                                       |
+| ------------- | -------- | --------------------------------------------------------- |
+| `bun`         | yes      | Runs this CLI, `bun install`, and `bun run setup`.        |
+| `git`         | yes      | `git init` + initial commit on `main` (skipped on `--no-git`). |
+| `node >= 18`  | yes      | Some downstream tools shell out to a Node 18+ runtime. Probes the real binary — under `bunx`, `process.versions.node` is emulated by Bun and would pass on a machine with no Node. |
+| `gh`          | optional | Needed only for `--github-create` at the end of setup.    |
+| `internet`    | yes      | Reaches `api.github.com` to fetch the template tarball.   |
+| `disk space`  | optional | Warns if less than 200 MB free in the current directory.  |
 
 The doctor is reachable from the interactive menu. There is no standalone CLI
 flag — if you need machine-readable output, parse the menu run or use the
@@ -72,12 +75,12 @@ The inspect view is a read-only walkthrough driven by
 `src/installer-manifest.json`. It answers "what is this thing going to do to my
 machine?" before you commit to running it.
 
-Five sections are rendered:
+The view renders these sections:
 
 1. **Prerequisites** — every binary the downstream installer expects, with a
    live `present` / `MISSING` / `n/a` status next to it.
 2. **Will install** — gentle-ai skills, community project-level skills, and
-   community user-level skills (counts + first 5 of each, with a drill-down
+   community user-level skills (a count and the first few of each, with a drill-down
    prompt to expand any category).
 3. **Will configure** — MCP servers (with the `.env` keys each one reads),
    `.env` files written or updated, authentication services, and the
@@ -113,8 +116,8 @@ A ready-to-use QA project wired for:
   to wire KATA fixtures to your stack, `/shift-left-testing` for pre-sprint
   AC refinement on backlog Stories, and `/sprint-testing` for per-ticket
   in-sprint manual QA.
-- **MCPs preconfigured** for Playwright, OpenAPI, Atlassian (Jira/Xray),
-  DBHub, Context7, and Tavily.
+- **MCPs preconfigured** for all three harnesses: the servers the template's
+  `.mcp.json` declares, mirrored in `opencode.jsonc` and `.codex/config.toml`.
 - **Allure + Xray reporting** — pre-wired Allure reporter and `bun xray` CLI
   for syncing automated runs back to your test management system.
 
@@ -174,10 +177,10 @@ prerequisite list. Both are documented here so you do not get stopped mid-flow.
 
 | Tool  | Min version | Required for                                                            | Where it is checked                                          |
 | ----- | ----------- | ----------------------------------------------------------------------- | ------------------------------------------------------------ |
-| `bun`  | `>= 1.0.0`  | Running `bun install` + handing off to `bun run setup`                  | `src/runners.ts` (`ensureBunAvailable`) — exit 10 if missing |
+| `bun`  | any         | Running `bun install` + handing off to `bun run setup`                  | `src/runners.ts` (`ensureBunAvailable`) — exit 10 if missing |
 | `tar`  | any         | Extracting the template tarball. GNU tar or bsdtar, either works        | `src/download.ts` — exit 10 if missing                       |
 | `git`  | any         | `git init` + initial commit on `main` (skipped with `--no-git`)         | `src/runners.ts` (`ensureGitAvailable`) — exit 10 if missing |
-| `node` | `>= 18`     | Running this CLI under `npx`                                            | Reported by **Check prerequisites** in the menu               |
+| `node` | `engines.node` in `package.json` | Running this CLI under `npx`                    | Reported by **Check prerequisites** in the menu               |
 | `gh`   | any         | _Optional_ — creating a GitHub repository at the end of `bun run setup` | Verified inside the boilerplate installer, not by this CLI   |
 
 **Windows**: PowerShell and cmd are supported; WSL and Git Bash work but are not
@@ -197,11 +200,11 @@ enforces these additional preconditions:
 
 | Tool                                                            | Min version | Why                                                                                                                                                                                                                                                                                                                                                                                               | Behavior on miss                                                                                                                                                                                             |
 | --------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Agent CLI** — Claude Code **or** OpenCode                     | latest      | Step 4 detects `~/.claude/` or `~/.config/opencode/`. Skills + MCPs install into the chosen agent.                                                                                                                                                                                                                                                                                                | **Hard exit 1** with both docs URLs. Install [Claude Code](https://docs.claude.com/en/docs/claude-code) or [OpenCode](https://opencode.ai/docs) before re-running.                                           |
-| **gentle-ai**                                                   | `>= 1.26.5` | Installs 13 universal skills (Engram persistent memory + 10 SDD-\* + skill-registry + judgment-day + issue-creation).                                                                                                                                                                                                                                                                             | Warns + offers two install commands and the [docs URL](https://github.com/Gentleman-Programming/gentle-ai); you can continue without it or exit and install.                                                 |
-| Per-skill CLIs — `gh`, `acli`, `playwright-cli`, `resend`, `jq` | latest      | Each one is **required by a specific skill**, not optional for the workflow (`gh` → `/git-flow-master` + `/regression-testing`; `acli` → `/acli` + `/sprint-testing` + `/test-documentation`; `playwright-cli` → `/playwright-cli`; `resend` → `/resend-cli`; `jq` → `acli ... --json \| jq ...` pipelines). Installer cannot guess which skills you will run, so they ship as **lazy-required**. | Non-blocking — Step 10 prints a status table with `quick:` install commands (where cross-platform) and `docs:` URL per missing CLI. Install on-demand when the owning skill surfaces a missing-binary error. |
-| Convenience opt-in — `direnv`                                   | latest      | Pure UX. Auto-loads `.env` so the bare `claude` / `opencode` binaries see MCP credentials. The `bun run claude` / `bun run opencode` wrappers (already a project devDep) do the same cross-platform with zero setup.                                                                                                                                                                              | Non-blocking. Safe to decline — recommended on Windows (PowerShell support is experimental in direnv 2.37+).                                                                                                 |
-| MCP credentials — 8 `.env` keys                                 | —           | Wires the 7 canonical MCPs (Tavily, Atlassian, OpenAPI, Postman). `.mcp.json` / `opencode.jsonc` are committed with `${VAR}` placeholders.                                                                                                                                                                                                                                                        | Non-blocking — `bun run setup:doctor` lists pending vars with `where` URLs (token-generation pages) until you fill them.                                                                                     |
+| **Agent** — Claude Code, OpenCode **or** Codex                  | latest      | Step `4-agent-detect` finds the config directory, the binary on PATH, or `.codex/config.toml`; exits 1 only when none is found. | **Hard exit 1** with every harness's docs URL. Install [Claude Code](https://docs.claude.com/en/docs/claude-code), [OpenCode](https://opencode.ai/docs) or [Codex](https://developers.openai.com/codex/) before re-running. |
+| **gentle-ai**                                                   | `MIN_GENTLE_AI_VERSION` in the template's `cli/install.ts` | Installs the Engram persistent-memory component (`--preset minimal`). Optional: skipping it only turns cross-session memory off. | Warns + offers the install commands and the [docs URL](https://github.com/Gentleman-Programming/gentle-ai); you can continue without it or exit and install. |
+| Per-skill CLIs                                                  | latest      | Each one is **required by a specific skill**; the list, with the owning skill and an install hint, is `EXTERNAL_CLIS` in the template's `cli/install.ts`. Missing ones are reported, never blocking. | Non-blocking — step `11-verify-clis` prints a status table with `quick:` install commands (where cross-platform) and a `docs:` URL per missing CLI. Install on-demand when the owning skill surfaces a missing-binary error. |
+| Convenience opt-in — `direnv`                                   | latest      | Pure UX. Exports `.env` into your shell, which only Codex and shell CLIs need. The `bun run claude` / `bun run opencode` / `bun run codex` wrappers load `.env` cross-platform with zero setup. | Non-blocking. Safe to decline — recommended on Windows (direnv's PowerShell support is experimental). |
+| MCP credentials                                                 | —           | The `.env` keys the MCP configs reference. The installer discovers them from the placeholders in each selected harness's config and prompts for the missing ones. | Non-blocking — `bun run setup:doctor` lists pending vars with `where` URLs (token-generation pages) until you fill them. |
 
 The scaffolder prints actionable install hints up front for its own
 requirements (`bun`, `tar`, `git`). For the boilerplate-side preconditions
@@ -237,7 +240,7 @@ the end of `bun run setup`. A `warn` row on `gh` will not block the scaffold.
 
 **Inspect says a prerequisite is MISSING but doctor was happy.**
 Inspect uses the **manifest's** prerequisite list (everything the downstream
-installer touches), while doctor only checks the six universal binaries the
+installer touches), while doctor only checks the universal prerequisites the
 scaffolder itself needs. The wider list is expected to surface more gaps.
 
 **ASCII banner mangles my CI logs.**
@@ -328,8 +331,8 @@ cd "$(mktemp -d)" && bunx create-agentic-qa@latest smoke-test --no-setup
 
 ### What ends up in the tarball
 
-`files` is `["README.md", "dist"]`, so the published package is exactly three
-entries — `README.md`, `dist/cli.js`, `package.json` — around 53 kB. Nothing
+`files` is `["README.md", "dist"]`, so the published package holds only
+`README.md`, `dist/cli.js` and `package.json`. Nothing
 under `src/`, `tests/` or `scripts/` ships; `dist/cli.js` is the bundled build
 of all of them.
 

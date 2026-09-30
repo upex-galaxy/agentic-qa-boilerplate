@@ -33,7 +33,7 @@ agentic-qa-boilerplate/
 ├── AGENTS.md               → Project memory: the only instruction body (loaded every session)
 ├── .agents/
 │   ├── project.yaml        → Tool-agnostic project + Jira config (any harness reads this)
-│   ├── skills/             → Workflow skills (task instructions + references) — 19, committed
+│   ├── skills/             → Workflow skills (task instructions + references), committed; list: REGISTRY.md
 │   └── hooks/              → Shared personality-reinject emitter (one file, three adapters)
 ├── .context/               → Documentation THAT the AI reads (context)
 ├── docs/                   → Human documentation site (`bun run docs`)
@@ -66,7 +66,7 @@ The repo runs on **Claude Code, OpenCode, and Codex (CLI + Desktop)**. There is 
 
 **Instructions.** `AGENTS.md` is the only instruction body. OpenCode and Codex load it natively. Claude Code loads `CLAUDE.md`, which is exactly `@AGENTS.md` plus one newline — a documented import rather than a symlink, so it survives a Windows checkout. Writing operational prose into `CLAUDE.md` is structural drift, and `agents:compat:check` fails on it.
 
-**Skills.** All 19 skills live committed under `.agents/skills/`. OpenCode and Codex discover that directory natively. Claude Code reaches the same tree through `.claude/skills`, a POSIX symlink (Windows junction) that is **generated and gitignored** — never committed, never hand-edited.
+**Skills.** Every repo skill lives committed under `.agents/skills/` (the list is `.agents/skills/REGISTRY.md`). OpenCode and Codex discover that directory natively. Claude Code reaches the same tree through `.claude/skills`, a POSIX symlink (Windows junction) that is **generated and gitignored** — never committed, never hand-edited.
 
 **Commands.** No harness gets command files. A skill is invoked by its own name plus a mode: when the first token of `$ARGUMENTS` matches one of its modes, that token is the mode and the rest is forwarded; with no match, the skill asks. Claude Code: `/<skill> <mode>` through `.claude/skills` (for example `/project-context data`). OpenCode and Codex: name the skill and the mode in prose. Each multi-mode skill lists its modes in its `## Mode routing` section; `.agents/skills/REGISTRY.md` lists the skills.
 
@@ -155,7 +155,7 @@ Two systems, two consumers, two lifecycles. Use the right substrate for the righ
 
 > **TMS configuration**: modality (Xray vs Jira-native) is derived from `.agents/project.yaml` `testing.tms_cli`. Regression Epic and label taxonomy are auto-discovered live by `/test-documentation` Phase 0 + Preflight. Jira/Xray setup lives in `docs/core/setup/jira-xray.html`; the IQL methodology narrative is the official site, https://upexgalaxy.com/metodologia.
 
-Workflow instructions and role-specific guidelines (TAE, QA, MCP usage) now live inside agent skills under `.agents/skills/`.
+Workflow instructions and role-specific guidelines (TAE, QA, MCP usage) live inside agent skills under `.agents/skills/`.
 
 ### .agents/skills/ - AI Operations Center
 
@@ -174,16 +174,10 @@ Every repo skill is committed here. OpenCode and Codex read this directory direc
 docs/
 ├── index.html      → Portal: sidebar built from each page's <title> + meta description
 ├── assets/         → Shared docs.css / docs.js and the IQL diagrams
-├── core/           → Shipped by the boilerplate, synced by `bun run up`
-│   ├── empezar-aqui.html   → Start here (also `bun run onboarding`)
-│   ├── setup/              → Jira + Xray, DBHub, OpenAPI
-│   ├── metodologia/        → IQL overview, the three phases, Observation, how this repo implements it
-│   ├── exploracion/        → Postman, SQL cookbook
-│   └── personalidad.html   → Human mirror of AGENTS.md §2
+├── core/           → Shipped by the boilerplate, synced by `bun run up`; its pages are the portal sidebar
+│   └── empezar-aqui.html   → Start here (also `bun run onboarding`)
 └── <any other folder>/     → Project-owned pages, never written by the updater
 ```
-
-> Context engineering strategy has moved to `CONTEXT.md` at the repo root (alongside `README.md`, `AGENTS.md`, `INSTALLER.md`).
 
 ### tests/ - KATA Implementation
 
@@ -265,7 +259,7 @@ The maps are HTML: a human opens them in a browser or in `bun run docs` (folder 
 | Stage | Activity | Skill |
 |-------|----------|-------|
 | **Stage 0** | Pre-sprint Shift-Left: AC refinement on backlog Stories, gap-spotting, pre-sprint ATP (outline maturity, authored into the `{{jira.acceptance_test_plan}}` field; the Test Plan item is created by `/sprint-testing` Stage 1), batch grooming | `/shift-left-testing` |
-| **Stage 1** | Planning (in-sprint, AC validation, full ATP; short-circuits Phases 1-3 if Stage 0 ran <30 days ago) | `/sprint-testing` |
+| **Stage 1** | Planning (in-sprint, AC validation, full ATP; short-circuits the early planning phases when a recent Stage 0 pass exists, window in `/sprint-testing`) | `/sprint-testing` |
 | **Stage 2** | Execution (exploratory + smoke + trifuerza) | `/sprint-testing` |
 | **Stage 3** | Reporting (ATR, QA comment, bug reports) | `/sprint-testing` |
 | **Stage 4** | TMS documentation + ROI prioritization (Candidate / Manual / Deferred) | `/test-documentation` |
@@ -279,7 +273,7 @@ The maps are HTML: a human opens them in a browser or in `bun run docs` (folder 
 
 Token efficiency is not just about which files to load — it is also about which agent loads them. Subagent dispatch is a context-engineering tool: the main conversation stays lean and acts as command center, while focused subagents do heavy reading and work in their own context.
 
-The orchestration doctrine has three shared assets, all hosted by `agentic-qa-core`:
+The orchestration doctrine has a few shared assets, all hosted by `agentic-qa-core`:
 
 | Asset | Path | Role |
 |-------|------|------|
@@ -288,9 +282,9 @@ The orchestration doctrine has three shared assets, all hosted by `agentic-qa-co
 | **Dispatch patterns** | `agentic-qa-core/references/dispatch-patterns.md` | Decision guide and heuristic for picking Single / Sequential / Parallel / Background. |
 | **Skill Resolver Protocol** | `agentic-qa-core/references/skill-resolver.md` + `.agents/skills/REGISTRY.md` | Build-once-per-session compact-rules cache. Orchestrator runs `bun run skills:registry`, then pastes per-skill "Compact Rules" blocks into every briefing under `Project Standards (auto-resolved)`. Subagents trust these and skip re-reading full `SKILL.md`. Validated by `bun run skills:registry:check`. |
 
-Each workflow skill (`shift-left-testing`, `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `framework-development`) declares **its own dispatch points** in a `## Subagent Dispatch Strategy` section of its `SKILL.md`. That table maps each stage to its dispatch pattern and subagent role, so the AI knows up-front when to delegate and how to brief.
+Each stage-owning workflow skill (frontmatter `metadata.stage_owner: true`; `.agents/skills/REGISTRY.md` shows which) declares **its own dispatch points** in a `## Subagent Dispatch Strategy` section of its `SKILL.md`. That table maps each stage to its dispatch pattern and subagent role, so the AI knows up-front when to delegate and how to brief. `bun run skills:check` (`STAGE-OWNER-DISPATCH`) enforces the section.
 
-Reference / utility / generator skills (`agentic-qa-core`, `acli`, `xray-cli`, `playwright-cli`, `project-discovery`, `test-framework-adaptation`, `project-context` and the other generator skills) are exempt from the dispatch-table requirement — they execute synchronously in-line.
+Every other skill (reference, utility, generator) is exempt from the dispatch-table requirement: it executes synchronously in-line.
 
 ---
 
@@ -380,6 +374,4 @@ Never write the update into `CLAUDE.md`: it is a generated one-line shim, and `a
 
 ---
 
-> **You are here**: Context Engineering map for AI agents in the QA repo. **Read time**: 15 min. **Next**: `bun run docs`, then [`docs/core/metodologia/este-repo.html`](docs/core/metodologia/este-repo.html).
-
-**Last Updated**: 2026-04-26
+> **You are here**: Context Engineering map for AI agents in the QA repo. **Next**: `bun run docs`, then [`docs/core/metodologia/este-repo.html`](docs/core/metodologia/este-repo.html).
