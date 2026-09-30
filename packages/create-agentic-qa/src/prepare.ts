@@ -333,9 +333,6 @@ const TEMPLATE_EXCLUDES = [
   // regression-testing skill (references/github-pages-setup.md).
   '.github/workflows/pages.yml',
   '.github/workflows/pages-squash.yml',
-  '.context/business/business-data-map.md',
-  '.context/business/business-feature-map.md',
-  '.context/business/business-api-map.md',
   // Jira catalogs are cached from the boilerplate's source workspace and must
   // not travel to a new project (otherwise `jira:sync-fields` errors with
   // "already populated" on first install).
