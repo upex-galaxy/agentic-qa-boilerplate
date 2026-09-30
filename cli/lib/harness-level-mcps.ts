@@ -9,7 +9,9 @@
  * local-only servers with project-scope values stay in the three project MCP
  * files.
  *
- * This module is the ONE list of the servers that moved, so the doctor, the
+ * This module is the ONE list of the harness-level servers the repo
+ * recommends (the ones that moved out, plus Exa, which never was committed),
+ * in the order a capability prefers them, so the doctor, the
  * installer's closing guidance and the updater's parity row name the same
  * things. It also reads the user-level harness configs, read-only, to tell a
  * developer whether such a server is "provided elsewhere" on this machine. A
@@ -30,8 +32,8 @@ export interface HarnessLevelMcp {
   id: string
   /** Capability name from `mcp-capabilities.md`, or null when no skill instructs its use yet. */
   capability: string | null
-  /** The `.env` key the committed server used to need. Kept for the migration message only. */
-  formerEnvVar: string
+  /** The `.env` key the committed server used to need, for the migration message only; null when upstream never committed the server. */
+  formerEnvVar: string | null
   /** Remote endpoint, so a user-level server named differently still matches. */
   urlHost: string
   /** One line for a human: what the capability is for. */
@@ -40,11 +42,18 @@ export interface HarnessLevelMcp {
 
 export const HARNESS_LEVEL_MCPS: readonly HarnessLevelMcp[] = [
   {
+    id: 'exa',
+    capability: 'web-search',
+    formerEnvVar: null,
+    urlHost: 'mcp.exa.ai',
+    purpose: 'web search, first choice: semantic search and page fetch for spikes, fixes and doc checks ([WEB_SEARCH_TOOL])',
+  },
+  {
     id: 'tavily',
     capability: 'web-search',
     formerEnvVar: 'TAVILY_API_KEY',
     urlHost: 'mcp.tavily.com',
-    purpose: 'web search: community fixes, error lookups, non-doc research ([WEB_SEARCH_TOOL])',
+    purpose: 'web search, second choice: community fixes, error lookups, non-doc research ([WEB_SEARCH_TOOL])',
   },
   {
     id: 'postman',
@@ -56,7 +65,7 @@ export const HARNESS_LEVEL_MCPS: readonly HarnessLevelMcp[] = [
 ];
 
 export const HARNESS_LEVEL_MCP_IDS: readonly string[] = HARNESS_LEVEL_MCPS.map(m => m.id);
-export const HARNESS_LEVEL_ENV_VARS: readonly string[] = HARNESS_LEVEL_MCPS.map(m => m.formerEnvVar);
+export const HARNESS_LEVEL_ENV_VARS: readonly string[] = HARNESS_LEVEL_MCPS.flatMap(m => (m.formerEnvVar === null ? [] : [m.formerEnvVar]));
 
 /**
  * How to connect one at harness level, per host. Verified against each host's

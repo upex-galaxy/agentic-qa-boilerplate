@@ -919,11 +919,12 @@ export function harnessLevelMcpNote(filePath: string, project: string, upstream:
   const theirs = configEntries(upstream, filePath);
   if (!mine || !theirs) { return null; }
   const registries = ['mcpServers', 'mcp', 'mcp_servers'];
-  const moved = HARNESS_LEVEL_MCPS.filter(m =>
-    registries.some(r => mine.has(`${r}.${m.id}`)) && !registries.some(r => theirs.has(`${r}.${m.id}`)));
+  // Only a server upstream once committed moved; one it never shipped has no migration to explain.
+  const moved = HARNESS_LEVEL_MCPS.filter(m => m.formerEnvVar !== null
+    && registries.some(r => mine.has(`${r}.${m.id}`)) && !registries.some(r => theirs.has(`${r}.${m.id}`)));
   if (moved.length === 0) { return null; }
   const ids = moved.map(m => m.id);
-  const vars = moved.map(m => m.formerEnvVar);
+  const vars = moved.flatMap(m => (m.formerEnvVar === null ? [] : [m.formerEnvVar]));
   return {
     clause: `${listNames(ids)} now run at harness level (upstream removed them and their keys ${listNames(vars)}): keep them here as project-only servers, or remove them and connect them once per machine`,
     note: [

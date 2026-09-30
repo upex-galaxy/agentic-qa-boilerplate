@@ -1,6 +1,6 @@
 ---
 name: agentic-qa-core
-description: "Foundation skill that hosts shared references cited by other workflow skills (briefing template, dispatch patterns, orchestration doctrine, skill composition strategy). Loaded on demand by any skill that declares `agentic-qa-core` in its Dependencies block. Do NOT use for: syncing AI-critical docs (use `/sync-ai-context`), adapting KATA tests (use `/adapt-framework`), or onboarding the target project (use `/project-discovery`)."
+description: "Foundation skill that hosts shared references cited by other workflow skills (briefing template, dispatch patterns, orchestration doctrine, skill composition strategy). Loaded on demand by any skill that declares `agentic-qa-core` in its Dependencies block. Do NOT use for: syncing AI-critical docs (use `/sync-ai-context`), adapting KATA tests (use `/test-framework-adaptation`), or onboarding the target project (use `/project-discovery`)."
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 complementary_categories: [meta-skill]
@@ -30,7 +30,7 @@ This skill does NOT orchestrate workflows, does NOT generate files, and does NOT
 -->
 
 - DO NOT create, modify, or delete ANY file while acting as `agentic-qa-core`. It is a passive reference library with no write path of its own.
-- DO NOT write `.context/` artifacts here (that is `/project-discovery`), scaffold tests / fixtures / KATA components (that is `/adapt-framework` and `/test-automation`), adapt the framework to a stack (`/adapt-framework`), sync AI-critical docs (`/sync-ai-context`), or sync OpenAPI schemas (`bun run api:sync`).
+- DO NOT write `.context/` artifacts here (that is `/project-discovery`), scaffold tests / fixtures / KATA components (that is `/test-framework-adaptation` and `/test-automation`), adapt the framework to a stack (`/test-framework-adaptation`), sync AI-critical docs (`/sync-ai-context`), or sync OpenAPI schemas (`bun run api:sync`).
 - DO NOT orchestrate a workflow or bootstrap a target repo from this skill. It hosts doctrine; the workflow skills execute it.
 - WHEN a workflow skill cites `agentic-qa-core/references/*.md`: load ONLY the files that skill's `## Dependencies` block names. Never preload the whole reference set.
 - WHEN deriving test cases or coverage from acceptance criteria in ANY testing skill: `references/test-design-doctrine.md` is mandatory reading first.
@@ -126,8 +126,8 @@ If a downstream user has only the skills and not the rest of the repo, the suppo
 
 - Create or modify any files. It is a passive reference library.
 - Create or modify `.context/` files (that belongs to `/project-discovery`).
-- Generate or scaffold tests, fixtures, or KATA components (that belongs to `/adapt-framework` and `/test-automation`).
-- Adapt the framework to a specific stack (that belongs to `/adapt-framework`).
+- Generate or scaffold tests, fixtures, or KATA components (that belongs to `/test-framework-adaptation` and `/test-automation`).
+- Adapt the framework to a specific stack (that belongs to `/test-framework-adaptation`).
 - Sync AI-critical documents or project-specific facts in `AGENTS.md` (that belongs to `/sync-ai-context`).
 - Sync OpenAPI / API schemas (that's `bun run api:sync`).
 

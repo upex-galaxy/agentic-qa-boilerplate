@@ -14,7 +14,7 @@
 
 - User asks any variant of: "set up GitHub Pages", "publish the Allure
   reports", "why is the report URL 404", "enable the reports site".
-- `/adapt-framework` finished wiring CI and the project wants browsable
+- `/test-framework-adaptation` finished wiring CI and the project wants browsable
   reports.
 - The `Post Report URL` step of a suite run prints a URL that returns 404.
 

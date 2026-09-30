@@ -185,6 +185,17 @@ export const RETIRED_COMMAND_WRAPPERS: DeprecatedFile[] = [
   }))),
 ];
 
+// A skill renamed upstream: the new folder arrives through the `skills`
+// component, the old one leaves here. `cleanupDeprecated` also removes the
+// folders it empties, because a skill folder with no SKILL.md fails skills:check.
+const RENAMED_SKILL_REASON = 'skill renamed to test-framework-adaptation (same workflow, new name)';
+export const RETIRED_SKILL_FILES: DeprecatedFile[] = [
+  '.agents/skills/adapt-framework/SKILL.md',
+  '.agents/skills/adapt-framework/references/adaptation-workflow.md',
+].map(path => ({ path, component: 'skills', reason: RENAMED_SKILL_REASON, deprecatedSince: '8.5' }));
+
+export const DEPRECATED_FILES: DeprecatedFile[] = [...RETIRED_COMMAND_WRAPPERS, ...RETIRED_SKILL_FILES];
+
 export const COMPONENTS: Component[] = [
   // `skills` stays its own component (not folded into `agent-compatibility` as
   // upstream dev does): `bun run up skills --skill a,b` narrows it by subdirectory.
@@ -1374,8 +1385,9 @@ function makeParityHook(sink: ReportSink, priorLockSha: string, dryRun: boolean,
         catch (err) { compatErrors = [err instanceof Error ? err.message : String(err)]; }
         // The real run deletes the retired alias wrappers (deprecatedFiles)
         // BEFORE this check; the preview still has them on disk, and the one
-        // whose name is a skill (`adapt-framework`) would read as a command
-        // shadowing it. It is not: it is already on the removal list.
+        // named like a skill the project may still hold (`adapt-framework`,
+        // renamed in the same release) would read as a command shadowing it.
+        // It is not: it is already on the removal list.
         const retired = RETIRED_COMMAND_WRAPPERS.map(d => d.path);
         compatErrors = compatErrors.filter(error => !retired.some(p => error.includes(`: ${p};`)));
       }
@@ -1818,7 +1830,7 @@ async function main(): Promise<void> {
     packageJsonSpecs: [
       { path: 'package.json', sections: ['scripts', 'devDependencies', 'dependencies', 'lint-staged'] },
     ],
-    deprecatedFiles: RETIRED_COMMAND_WRAPPERS,
+    deprecatedFiles: DEPRECATED_FILES,
     // Every watched path is project-owned inside a synced component too:
     // delivered once when missing, never overwritten (`.husky/pre-push`, a
     // path from `updater.protected_paths`). Paths no component owns are

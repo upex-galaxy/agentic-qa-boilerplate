@@ -55,7 +55,7 @@
  *      bodies AND each skill's references/*.md (outside fenced code blocks)
  *      must resolve to existing files relative to the skill dir or repo root.
  *      Known gitignored artifacts + illustrative example paths are exempted
- *      via STALE_PATH_ALLOWED; the example components `/adapt-framework`
+ *      via STALE_PATH_ALLOWED; the example components `/test-framework-adaptation`
  *      deletes are exempted via EXAMPLE_ARTIFACTS, so a skill body that cites
  *      one passes here AND in an adapted repo. `.context/` is checked too,
  *      with a kind-scoped rule: inside a `metadata.kind: context` skill every
@@ -763,7 +763,7 @@ const CONTEXT_GENERATED_PREFIXES: ReadonlyArray<{ prefix: string, generator: str
   { prefix: '.context/PRD/', generator: 'project-discovery Phase 2' },
   { prefix: '.context/SRS/', generator: 'project-discovery Phase 2' },
   { prefix: '.context/infrastructure/', generator: 'project-discovery Phase 3' },
-  { prefix: '.context/reports/', generator: 'skill-owned reports (adapt-framework, jira-administration, regression-testing)' },
+  { prefix: '.context/reports/', generator: 'skill-owned reports (test-framework-adaptation, jira-administration, regression-testing)' },
   { prefix: '.context/regression-history/', generator: 'regression-testing' },
   { prefix: '.context/project-config.md', generator: 'project-discovery Phase 1' },
   { prefix: '.context/risk-assessment.md', generator: 'project-discovery Phase 1' },
@@ -819,7 +819,7 @@ const STALE_PATH_ALLOWED = new Set<string>([
 ]);
 
 /**
- * The example artifacts the boilerplate SHIPS and `/adapt-framework` DELETES.
+ * The example artifacts the boilerplate SHIPS and `/test-framework-adaptation` DELETES.
  *
  * These exist in this repo and are gone in every adapted one, so their
  * existence on disk says nothing about whether a doc reference is stale. Left
@@ -828,10 +828,10 @@ const STALE_PATH_ALLOWED = new Set<string>([
  * `bun run skills:check` unconditionally, so the whole team stops committing
  * over a doc line that was correct all along. That is exactly how
  * `tests/components/steps/ExampleSteps.ts` (test-automation) and
- * `tests/data/fixtures/example.json` (adapt-framework) broke adapted repos.
+ * `tests/data/fixtures/example.json` (test-framework-adaptation) broke adapted repos.
  *
  * Note the irony worth preserving: several of these citations appear in
- * `adapt-framework`'s own Definition of Done, whose whole job is to assert the
+ * `test-framework-adaptation`'s own Definition of Done, whose whole job is to assert the
  * file is GONE.
  *
  * Exempt in BOTH directions — present or absent, a citation here is fine.

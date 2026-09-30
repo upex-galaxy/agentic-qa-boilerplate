@@ -63,6 +63,23 @@ below names which one it applies to:
   skill (`/framework-development`, `project-context` mode `context-skill`).
 
 ### Changed
+- **`adapt-framework` is now `test-framework-adaptation`** (updater 8.5). Same one-mode
+  workflow; the description keeps the old trigger phrases ("adapt framework", "wire
+  fixtures"). `bun run up` removes the old folder downstream through `deprecatedFiles`, and
+  `cleanupDeprecated` now also removes the folders it empties (a skill folder with no
+  `SKILL.md` fails `skills:check`); a deprecated file no longer reaches the delete prompt or
+  holds `--auto` back. The plan report is `.context/reports/test-framework-adaptation-plan.md`;
+  Phase 0 still resumes one written under the old name. The workflow now covers the local-only
+  MCP rule and harness-level recommendations, the third harness file, `harness:env` plus a
+  session restart, the varlock env schema, the config split, the five env-list sources, an
+  idempotency signal that ignores legitimate `null`s, the `authenticate` hook, dual-mode
+  reporting secrets, `git_strategy:` as the home of the branching strategy, and the
+  updater-owned `docs/core/`.
+- **Web search resolves Exa first, Tavily second.** `[WEB_SEARCH_TOOL]` (AGENTS.md §6),
+  `mcp-capabilities.md` and the preflight gate name the Exa suffixes (`web_search_exa`,
+  `web_fetch_exa`) ahead of Tavily's; `cli/lib/harness-level-mcps.ts` lists `exa` first
+  (never committed, so it carries no former `.env` key and never triggers the migration
+  parity note).
 - **STALE-PATH now covers `.context/`, kind-scoped** (`scripts/lint-skills.ts`): inside a
   `metadata.kind: context` skill every `.context/` cite must exist (only the gitignored
   `.context/PBI/` mirror is exempt); in every other skill the generator outputs

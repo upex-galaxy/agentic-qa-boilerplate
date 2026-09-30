@@ -109,7 +109,7 @@ A ready-to-use QA project wired for:
 
 - **Playwright + KATA + TypeScript** test architecture (Layer 1-4 fixtures).
 - **Skills-based AI workflows** — invoke `/agentic-qa-onboard` for a tour,
-  `/project-discovery` to reverse-engineer your target app, `/adapt-framework`
+  `/project-discovery` to reverse-engineer your target app, `/test-framework-adaptation`
   to wire KATA fixtures to your stack, `/shift-left-testing` for pre-sprint
   AC refinement on backlog Stories, and `/sprint-testing` for per-ticket
   in-sprint manual QA.

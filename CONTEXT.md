@@ -175,7 +175,7 @@ Nineteen skills, all committed here. OpenCode and Codex read this directory dire
 ├── test-automation/         → KATA test planning + coding + review
 ├── regression-testing/      → Regression execution + GO/NO-GO
 ├── project-context/         → Regenerates the business data / feature / API maps and the master test plan, one mode per artifact (`/project-context data` on Claude Code).
-├── adapt-framework/         → Idempotent KATA adaptation: no-write analysis and plan first, mutation only after explicit approval.
+├── test-framework-adaptation/         → Idempotent KATA adaptation: no-write analysis and plan first, mutation only after explicit approval.
 ├── jira-administration/     → Components reconciliation + Atlassian instance migration, each sealed behind read-first analysis.
 ├── sync-ai-context/         → Synchronizes the AI-critical repo docs against the canonical instructions, skills, context and `package.json`.
 ├── git-flow-master/         → End-to-end Git operator: branch / commit / push / PR / conflict / chained-PR. Auto-detects branching strategy.
@@ -299,7 +299,7 @@ bun run api:sync            → api/schemas/ (TypeScript types from OpenAPI)
 | **Stage 4** | TMS documentation + ROI prioritization (Candidate / Manual / Deferred) | `/test-documentation` |
 | **Stage 5** | Automation: plan → code → review (KATA on Playwright + TS) | `/test-automation` |
 | **Stage 6** | Regression execution + failure classification + GO/NO-GO | `/regression-testing` |
-| **Onboarding** | 4-phase reverse-engineering of an existing target repo | `/project-discovery` + `/adapt-framework` |
+| **Onboarding** | 4-phase reverse-engineering of an existing target repo | `/project-discovery` + `/test-framework-adaptation` |
 
 ---
 
@@ -318,7 +318,7 @@ The orchestration doctrine has three shared assets, all hosted by `agentic-qa-co
 
 Each workflow skill (`shift-left-testing`, `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `framework-development`) declares **its own dispatch points** in a `## Subagent Dispatch Strategy` section of its `SKILL.md`. That table maps each stage to its dispatch pattern and subagent role, so the AI knows up-front when to delegate and how to brief.
 
-Reference / utility / generator skills (`agentic-qa-core`, `acli`, `xray-cli`, `playwright-cli`, `project-discovery`, `adapt-framework`, `project-context` and the other generator skills) are exempt from the dispatch-table requirement — they execute synchronously in-line.
+Reference / utility / generator skills (`agentic-qa-core`, `acli`, `xray-cli`, `playwright-cli`, `project-discovery`, `test-framework-adaptation`, `project-context` and the other generator skills) are exempt from the dispatch-table requirement — they execute synchronously in-line.
 
 ---
 
@@ -338,7 +338,7 @@ Reference / utility / generator skills (`agentic-qa-core`, `acli`, `xray-cli`, `
 
 | Role | Primary Skill(s) |
 |------|------------------|
-| **Project Onboarding** | `/project-discovery` -> `/adapt-framework` |
+| **Project Onboarding** | `/project-discovery` -> `/test-framework-adaptation` |
 | **TAE (Test Automation)** | `/test-automation` |
 | **QA (Manual Testing)** | `/sprint-testing` + `/test-documentation` |
 | **DevOps** | `/regression-testing` |

@@ -14,6 +14,7 @@ import {
   computeDelta,
   detectLocalEdits,
   dirtyTreeExemptions,
+  dropDeprecatedDeletes,
   foreignDirtyPaths,
   isBootstrapOnlyFile,
   isLocalTemplateSource,
@@ -824,5 +825,18 @@ describe('project-local context skills (a consumer\'s `<aspect>-context/` is nev
     const delta = computeDelta(template, [SKILLS], state, local, []);
     expect(delta.map(e => e.path)).toEqual(['.agents/skills/iql-context/SKILL.md']);
     expect(delta.some(e => e.classification === 'deleted-upstream')).toBe(false);
+  });
+});
+
+describe('dropDeprecatedDeletes', () => {
+  test('a deprecated file leaves through the cleanup, not the delete prompt; every other entry stays', () => {
+    const deprecated = [{ path: '.agents/skills/adapt-framework/SKILL.md' }];
+    const entries = [
+      { path: '.agents/skills/adapt-framework/SKILL.md', classification: 'deleted-upstream' },
+      { path: '.agents/skills/gone/SKILL.md', classification: 'deleted-upstream' },
+      { path: '.agents/skills/adapt-framework/SKILL.md', classification: 'locally-diverged' },
+    ];
+    expect(dropDeprecatedDeletes(entries, deprecated)).toEqual(entries.slice(1));
+    expect(dropDeprecatedDeletes(entries, [])).toEqual(entries);
   });
 });

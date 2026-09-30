@@ -29,6 +29,7 @@ import type {
   Component,
   CoreLogger,
   DeltaEntry,
+  DeprecatedFile,
   FailedFile,
   FileClass,
   GitVersion,
@@ -2271,6 +2272,35 @@ export function buildPairedDiff(entry: DeltaEntry, templateDir: string, localRep
 // ============================================================================
 
 /**
+ * Remove the folders a deleted file left empty, walking up toward the repo
+ * root and stopping at the first one that still holds anything. A retired
+ * skill otherwise leaves `.agents/skills/<slug>/references/` behind, and a
+ * skill folder with no SKILL.md fails skills:check.
+ */
+function pruneEmptyParents(repoRoot: string, relPath: string): void {
+  let dir = path.dirname(path.join(repoRoot, relPath));
+  const root = path.resolve(repoRoot);
+  while (path.resolve(dir) !== root && path.resolve(dir).startsWith(root + path.sep)) {
+    if (fs.readdirSync(dir).length > 0) { return; }
+    fs.rmdirSync(dir);
+    dir = path.dirname(dir);
+  }
+}
+
+/**
+ * Drop the `deleted-upstream` entries of files `cleanupDeprecated` removes in
+ * Phase 5 anyway. Left in, the interactive run asks about the same delete
+ * twice and `--auto` defers it, which holds the whole component back.
+ */
+export function dropDeprecatedDeletes<T extends { path: string, classification: string }>(
+  entries: T[],
+  deprecatedFiles: Pick<DeprecatedFile, 'path'>[],
+): T[] {
+  const deprecated = new Set(deprecatedFiles.map(d => d.path.replace(/\\/g, '/')));
+  return entries.filter(e => !(e.classification === 'deleted-upstream' && deprecated.has(e.path.replace(/\\/g, '/'))));
+}
+
+/**
  * Remove files in `cfg.deprecatedFiles` from the local repo. Honors dryRun.
  * Returns the count of files actually removed (or that would be removed in dry-run).
  */
@@ -2292,6 +2322,7 @@ export function cleanupDeprecated(
     }
     try {
       fs.unlinkSync(path.join(repoRoot, dep.path));
+      pruneEmptyParents(repoRoot, dep.path);
       logger.success(`Eliminado: ${dep.path}`);
       logger.info(`Razon: ${dep.reason} (deprecated desde ${dep.deprecatedSince})`);
       removed++;
@@ -2802,6 +2833,9 @@ export async function runUpdate(
   if (cfg.repoOnlyPaths && cfg.repoOnlyPaths.length > 0) {
     entries = entries.filter(e => !isRepoOnlyPath(e.path, cfg.repoOnlyPaths ?? []));
   }
+
+  // A deprecated file leaves through cleanupDeprecated (Phase 5), not the delete prompt.
+  entries = dropDeprecatedDeletes(entries, cfg.deprecatedFiles);
 
   // Filter out unchanged / binary-skip from the user-facing pool
   const visible = entries.filter(

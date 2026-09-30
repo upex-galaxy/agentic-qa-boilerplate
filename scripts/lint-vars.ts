@@ -96,10 +96,10 @@ const DOC_META_ALLOWLIST: Array<[string, string]> = [
   ['VAR', 'AGENTS.md'],
   // §Tool Resolution pseudocode type list: "`{{PROJECT_VAR}}` (from `.agents/project.yaml`)"
   ['PROJECT_VAR', 'AGENTS.md'],
-  // §3.5 Validate / §Verify checklist: the adapt-framework workflow documents the
+  // §3.5 Validate / §Verify checklist: the test-framework-adaptation workflow documents the
   // {{VAR}} syntax inside `bun run vars:check` shell comments. The prose lives in the
   // skill reference — keep the entry pinned to that path, not to a bare filename.
-  ['VAR', 'adapt-framework/references/adaptation-workflow.md'],
+  ['VAR', 'test-framework-adaptation/references/adaptation-workflow.md'],
   // resend-cli (vendored community skill) reference docs use Resend's own
   // Handlebars-style triple-mustache {{{VAR_NAME}}} email-template placeholders —
   // third-party syntax unrelated to this repo's {{VAR}} project convention.

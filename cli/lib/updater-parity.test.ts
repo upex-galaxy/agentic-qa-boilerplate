@@ -1255,6 +1255,10 @@ describe('harnessLevelMcpNote', () => {
     expect(harnessLevelMcpNote('.mcp.json', both, both)).toBeNull();
     expect(harnessLevelMcpNote('AGENTS.md', '# a', '# b')).toBeNull();
   });
+  test('silent on a harness-level server upstream never committed: nothing moved, so there is nothing to migrate', () => {
+    const project = JSON.stringify({ mcpServers: { context7: { command: 'bunx' }, exa: { type: 'http', url: 'https://mcp.exa.ai/mcp' } } });
+    expect(harnessLevelMcpNote('.mcp.json', project, upstream)).toBeNull();
+  });
   test('reads the Codex and OpenCode registries too', () => {
     const codexProject = '[mcp_servers.postman]\nurl = "https://mcp.postman.com/mcp"\n';
     const codexUpstream = '[mcp_servers.context7]\ncommand = "bunx"\n';

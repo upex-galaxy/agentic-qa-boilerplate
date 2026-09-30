@@ -503,7 +503,7 @@ bun run codex      # Codex CLI (Codex Desktop usa la misma config del repo)</cod
             </tr>
             <tr>
               <td><strong>2 · Adapt</strong></td>
-              <td><code>/adapt-framework</code>, siempre después de Discovery</td>
+              <td><code>/test-framework-adaptation</code>, siempre después de Discovery</td>
               <td>
                 <code>tests/components/</code>, fixtures, <code>config/variables.ts</code> y
                 <code>api/schemas/</code> adaptados al stack y al modelo de auth del target.
@@ -675,7 +675,7 @@ bun run codex      # Codex CLI (Codex Desktop usa la misma config del repo)</cod
           </thead>
           <tbody>
             <tr>
-              <td><code>/adapt-framework</code></td>
+              <td><code>/test-framework-adaptation</code></td>
               <td>Una vez por target, después de <code>/project-discovery</code>.</td>
               <td>
                 El código de tests de <em>este</em> repo (<code>tests/components/</code>,
@@ -909,7 +909,9 @@ subagente (contexto limpio)
             </tr>
             <tr>
               <td>Empezar con un target nuevo</td>
-              <td><code>/project-discovery</code>, luego <code>/adapt-framework</code></td>
+              <td>
+                <code>/project-discovery</code>, luego <code>/test-framework-adaptation</code>
+              </td>
             </tr>
             <tr>
               <td>Refinar historias del backlog</td>
