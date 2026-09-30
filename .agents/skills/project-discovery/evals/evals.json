@@ -3,13 +3,13 @@
     {
       "name": "should-trigger-fresh-onboarding",
       "prompt": "I need to set up this boilerplate for the Curacity project. Backend is Node.js + Express, frontend is React. Start by discovering the architecture.",
-      "expected_behavior": "Activates project-discovery. Confirms scope (Fresh onboarding). Begins Phase 1: Constitution -- asks for repo paths/access, detects stack, produces project-connection, then proceeds through project-assessment, business-model, domain-glossary. Waits for confirmation between phases before advancing.",
+      "expected_behavior": "Activates project-discovery. Confirms scope (Fresh onboarding). Begins Phase 1: Constitution -- asks for repo paths/access, detects stack, writes `.context/project-config.md`, records the project assessment, then writes the business model and glossary as sections of the `business-domain-context` map (read back with `bun run context:map business-domain-context`). Phases 2-3 write the `infra-context` map; Phase 4 is a backlog connection check that writes no file. Does not produce PRD/SRS markdown, `risk-assessment.md` or `ACCESS.md`. Waits for confirmation between phases before advancing.",
       "category": "positive"
     },
     {
       "name": "should-redirect-business-data-map-regeneration",
       "prompt": "Generate the business-data-map.md for this project. Look at the source code and the database.",
-      "expected_behavior": "Does NOT generate the map inside this skill and does NOT claim to own it. Redirects to `project-context` mode `data` (`/project-context data`), which is where the entity/flow/state-machine extraction lives and which writes the map inside `business-data-context`. May state which discovery artifacts that mode depends on, and offer to run Phase 1 + Phase 3 first if `.context/` has no project-config or infrastructure yet. Does not reference a context-generators file: this skill has no such reference.",
+      "expected_behavior": "Does NOT generate the map inside this skill and does NOT claim to own it. Redirects to `project-context` mode `data` (`/project-context data`), which is where the entity/flow/state-machine extraction lives and which writes the map inside `business-data-context`. May state which discovery artifacts that mode depends on, and offer to run Phase 1 + Phase 3 first if there is no `.context/project-config.md` or the `infra-context` map is still a placeholder. Does not reference a context-generators file: this skill has no such reference.",
       "category": "positive"
     },
     {
@@ -35,6 +35,12 @@
       "prompt": "Run the regression suite.",
       "expected_behavior": "Does NOT activate project-discovery. Should route to regression-testing. project-discovery never executes test suites.",
       "category": "negative"
+    },
+    {
+      "name": "should-update-infra-map-sections-only",
+      "prompt": "We moved from Vercel to Fly.io last month. Re-run discovery for the infrastructure part.",
+      "expected_behavior": "Activates project-discovery for Phase 3 only. Runs `bun run context:map infra-context --list`, sees a generated map, runs the staleness check per section, regenerates ONLY the stale sections (e.g. `environments`, `ci-cd`), shows a section-level diff and waits for approval before writing. Never regenerates the whole map, never writes `.context/infrastructure/*.md`, and leaves any legacy markdown there untouched (input only).",
+      "category": "positive"
     }
   ]
 }

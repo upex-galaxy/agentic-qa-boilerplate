@@ -41,14 +41,6 @@ node_modules/
 /reports/
 *.json.bak
 
-# `.context/reports/` is generated output, same as the PBI cache below: sprint
-# trackers, test-framework-adaptation plans, regression reports, GO/NO-GO verdicts, the
-# coverage matrix, the test map. Every one is rebuilt by the command that owns
-# it, so committing them only produces conflicts between sessions that ran at
-# different times. Only the README, which explains the directory, is tracked.
-.context/reports/*
-!.context/reports/README.md
-
 # ===== Environment =====
 # Deny-by-default across the whole `.env*` family, then re-include the two files
 # that are meant to travel. The enumerated form (.env, .env.local, .env.*.local)
@@ -176,22 +168,32 @@ dbhub.local.toml
 # NOTE: do NOT use a broad pattern like `*_*/` here — it accidentally
 # ignores any directory containing an underscore (e.g. future skills, refs,
 # business data maps named with underscores). List paths explicitly.
-.context/_framework/
 .husky/_/
 
-# ===== Auto-generated framework caches with timestamps =====
-.context/_framework/testing-capabilities.json
-
-# ===== PBI: Jira-backed cache (Jira is the source of truth) =====
-# `.context/PBI/` mirrors Jira. `bun run context:hydrate` rebuilds it from
-# scratch, so committing it only produces merge conflicts between sessions that
-# re-synced at different times. Ignore the whole tree, then re-include the three
-# things Jira does NOT own.
+# ===== .context/: caches of a source of truth, plus what this repo owns =====
+# `.context/` holds what a SCRIPT pulls from a source of truth (the Jira mirror
+# under PBI/, rebuilt by `bun run context:hydrate`; the reports every command
+# regenerates; the `_framework/` caches) plus the few files this repo is itself
+# the source of truth for. What an AI synthesizes lives in a context skill, not
+# here (`agentic-qa-core/references/skill-scaffold.md` §3). So everything is
+# ignored by default and only what the repo owns is re-included: a new cache
+# never gets committed by accident, and nothing has to remember to add a line.
+# An ignore rule never untracks a file already committed: a project that
+# committed older `.context/` outputs keeps them tracked.
 #
 # Git cannot re-include a file whose parent directory is excluded, so each level
 # is excluded with `/*` and the directory we want is negated before descending.
-# Keep that ladder intact — collapsing it to `.context/PBI/` silently drops
-# test-specs/ from version control.
+# Keep that ladder intact: collapsing it to `.context/PBI/` silently drops
+# test-specs/ from version control. Probe any change with `git check-ignore -v`.
+.context/*
+!.context/README.md
+!.context/project-config.md
+!.context/ADR/
+!.context/regression-history/
+!.context/reports/
+.context/reports/*
+!.context/reports/README.md
+!.context/PBI/
 .context/PBI/*
 !.context/PBI/README.md
 !.context/PBI/templates/

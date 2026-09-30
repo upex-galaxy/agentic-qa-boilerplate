@@ -1,10 +1,10 @@
 # Context Skill Scaffolder (`context-skill` mode)
 
-Scaffold a project-owned `<aspect>-context` skill for an aspect the business context skills do not already cover. Contract: `../../agentic-qa-core/references/skill-scaffold.md` §3-§5. The sources hold facts; the skill holds the rules for reading them.
+Scaffold a project-owned `<aspect>-context` skill for an aspect the shipped context map skills (`CONTEXT_MAP_SKILLS`, `cli/lib/context-maps.ts`) do not already cover. Contract: `../../agentic-qa-core/references/skill-scaffold.md` §3-§5. The sources hold facts; the skill holds the rules for reading them.
 
-**Target**: $ARGUMENTS (`<aspect>`: `infra` · a project-chosen aspect; optional path to what it sits over)
+**Target**: $ARGUMENTS (`<aspect>`: a project-chosen aspect; optional path to what it sits over)
 
-Data, API and end-to-end knowledge already have their skills (`business-data-context`, `business-api-context`, `business-e2e-context`): their maps come from modes `data` / `api` / `e2e` and their rules accrue in the same skill. A request for `data-context` or `api-context` is answered by pointing there, never by scaffolding a second skill over the same aspect.
+Data, API, end-to-end, domain and infrastructure knowledge already have their skills (the entries of `CONTEXT_MAP_SKILLS`): each map comes from the entry's `generator` (modes `data` / `api` / `e2e` here, `project-discovery` for `business-domain-context` and `infra-context`) and their rules accrue in the same skill. A request for `data-context`, `api-context`, `glossary-context` or `infra-context` is answered by pointing to the shipped skill, never by scaffolding a second skill over the same aspect.
 
 ---
 
@@ -12,7 +12,6 @@ Data, API and end-to-end knowledge already have their skills (`business-data-con
 
 | Aspect | What it sits over | Produced by |
 |---|---|---|
-| `infra` | `.context/SRS/` (infrastructure complements the SRS) | `/project-discovery` Phase 3 |
 | other | the path the user names | whoever owns it |
 
 What it sits over MUST exist. Missing → run the owning step first; never scaffold a context skill over nothing (it would become the source by accident).
@@ -47,4 +46,4 @@ What it sits over MUST exist. Missing → run the owning step first; never scaff
 
 ## After its sources change (the UPDATE reminder)
 
-When what a project-owned context skill sits over is regenerated, offer to run THIS mode in UPDATE for it. The facts just changed and a human is already looking at a diff, so that is the one moment a review of the judgment layer is cheap. UPDATE appends dated rules and never rewrites an existing one; a rule the new sources contradict is moved to the gotchas' "No longer true" section, not deleted. (The business context skills do the same review inside modes `data` / `api` / `e2e`, over their own maps.)
+When what a project-owned context skill sits over is regenerated, offer to run THIS mode in UPDATE for it. The facts just changed and a human is already looking at a diff, so that is the one moment a review of the judgment layer is cheap. UPDATE appends dated rules and never rewrites an existing one; a rule the new sources contradict is moved to the gotchas' "No longer true" section, not deleted. (The context map skills get the same review from their generators, over their own maps: modes `data` / `api` / `e2e` here, `project-discovery` for the domain and infra maps.)

@@ -1,6 +1,6 @@
 # ADR Doctrine — detecting and authoring test-architecture decision records
 
-Shared reference cited by `project-discovery` (SRS / infrastructure), `framework-development` (framework evolution), and `sprint-testing` + `test-automation` (Stage 1 / Phase 1 planning). It tells a workflow **when** a test-architecture decision deserves a permanent record, and **how** to author one without re-litigating settled decisions.
+Shared reference cited by `project-discovery` (architecture / infrastructure phases), `framework-development` (framework evolution), and `sprint-testing` + `test-automation` (Stage 1 / Phase 1 planning). It tells a workflow **when** a test-architecture decision deserves a permanent record, and **how** to author one without re-litigating settled decisions.
 
 The canonical convention — template, status lifecycle, append-only rule, index — lives in `.context/ADR/README.md`. This file owns the AI-side **detection heuristic**, the **promotion rule**, and the **authoring procedure**. Read both; do not duplicate the lifecycle here.
 
@@ -69,7 +69,7 @@ When you promote, leave a one-line backlink in the plan's `## Technical Decision
 
 ## 4. Where this plugs into the workflows
 
-- **`/project-discovery`, SRS / infrastructure phases** — when defining (greenfield) or discovering (brownfield) the project's test landscape, the big cross-cutting choices are exactly the ADR-worthy ones. Seed / flag the **first batch** here (test-runner, isolation model, fixture/data strategy, auth-in-tests, selector contract), referencing `.context/SRS/` and `.context/infrastructure/`. Foundational, made once, maximally hard to reverse.
+- **`/project-discovery`, architecture / infrastructure phases (Phases 2-3)** — when defining (greenfield) or discovering (brownfield) the project's test landscape, the big cross-cutting choices are exactly the ADR-worthy ones. Seed / flag the **first batch** here (test-runner, isolation model, fixture/data strategy, auth-in-tests, selector contract), referencing the `infra-context` map sections they rest on (`bun run context:map infra-context --section <id>`). Foundational, made once, maximally hard to reverse.
 - **`/framework-development`, Phase 1 planning** — the primary seeding site for the boilerplate's **own** test architecture. When a change reshapes KATA layers, fixture APIs, the test runner, or the isolation model, record an ADR before Phase 2 coding. Framework evolution is meta-work — its decisions touch every test session that follows.
 - **`/sprint-testing` + `/test-automation`, Stage 1 / Phase 1 planning** — when a ticket forces a decision that passes both gates (and wasn't already covered by a foundation ADR), promote it from the plan's `## Technical Decisions` / `## Architecture Decisions` to a standalone ADR before coding. Architectural rework discovered mid-review loops back here.
 

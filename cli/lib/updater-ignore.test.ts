@@ -14,6 +14,20 @@ const PBI_LADDER = [
   '!.context/PBI/epics/*/test-specs/',
 ];
 
+// The `.context/` ladder: ignore everything, re-include what the repo owns.
+const CONTEXT_LADDER = [
+  '.context/*',
+  '!.context/README.md',
+  '!.context/project-config.md',
+  '!.context/ADR/',
+  '!.context/regression-history/',
+  '!.context/reports/',
+  '.context/reports/*',
+  '!.context/reports/README.md',
+  '!.context/PBI/',
+  ...PBI_LADDER,
+];
+
 describe('ignoreLineStem', () => {
   test('strips the leading negation', () => {
     expect(ignoreLineStem('!.context/PBI/README.md')).toBe('.context/PBI/README.md');
@@ -37,6 +51,15 @@ describe('groupIgnoreLines', () => {
     expect(groups).toHaveLength(1);
     expect(groups[0].atomic).toBe(true);
     expect(groups[0].lines).toEqual(PBI_LADDER);
+  });
+
+  test('a project on the PBI-only ladder is offered the lines it lacks as ONE atomic group', () => {
+    const local = new Set([...PBI_LADDER, '.context/reports/*', '!.context/reports/README.md']);
+    const upstreamOnly = CONTEXT_LADDER.filter(l => !local.has(l));
+    const groups = groupIgnoreLines(upstreamOnly);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].atomic).toBe(true);
+    expect(groups[0].lines).toEqual(upstreamOnly);
   });
 
   test('unrelated single lines stay individual and non-atomic', () => {

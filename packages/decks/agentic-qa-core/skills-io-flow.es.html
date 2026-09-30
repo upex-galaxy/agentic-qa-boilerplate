@@ -438,7 +438,7 @@ ul.plain b{color:var(--t1)}
       <div class="proc">
         <div class="proc-hd"><span class="pid">S1</span><h3>Planning</h3><span class="repo qa">qa</span></div>
         <div class="io deps"><span class="io-k">skills</span><div><span class="chip mand">test-design-doctrine.md — MANDATORIO</span><span class="chip mand">defect-management-doctrine.md — MANDATORIO</span><span class="chip">acli / xray-cli</span><span class="chip">shift-left-testing (short-circuit si label &lt;30 días)</span></div></div>
-        <div class="io in"><span class="io-k">stdin ←</span><div><code>story.md</code> · <code>acceptance-criteria.md</code> · <code>acceptance-test-plan.md</code> · <code>comments.md</code> · <code>domain-glossary.md</code> · <code>master-test-plan.md</code> · campos <code>{{jira.qa_assignee}}</code> · AC · priority · label <code>shift-left-reviewed</code></div></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div><code>story.md</code> · <code>acceptance-criteria.md</code> · <code>acceptance-test-plan.md</code> · <code>comments.md</code> · mapa de dominio (<code>business-domain-context</code>) · <code>master-test-plan.md</code> · campos <code>{{jira.qa_assignee}}</code> · AC · priority · label <code>shift-left-reviewed</code></div></div>
         <div class="io out"><span class="io-k">stdout →</span><div>Primer ticket del sprint: <b>STP «STP: Sprint#{N}: {objetivo}»</b> find-or-create · orden <b>Set-first</b>: Test Set <b>«ATS: {US}: {título}»</b> → epic <b class="hi-jira">QA Test Artifacts</b> con link <b>ATS→Story</b> (<b class="hi-out">el link de coverage</b>) → Test Plan <b>«ATP: {STORY}: {título}»</b> desde el field del shift-left → epic <b class="hi-jira">QA Master Test Plan</b> → Test Execution <b>«ATR: …»</b> con <code>--environment</code> <b class="hi-warn">siempre</b> (gate: sin environment no hay ATR) · listas de Plan/Exec derivadas de la membership del ATS · triage de riesgo en bugs: <b>0-3 LOW · 4-7 MEDIUM (pregunta) · 8+ HIGH</b></div></div>
         <div class="io note"><span class="io-k">nota</span><div><code>kata-manifest.json</code> se vuelve load-bearing recién en el hand-off de Reporting → test-automation, no en Planning.</div></div>
       </div>
@@ -475,7 +475,7 @@ ul.plain b{color:var(--t1)}
       <div class="proc">
         <div class="proc-hd"><span class="pid">P1</span><h3>Analyze</h3><span class="repo qa">qa</span></div>
         <div class="io deps"><span class="io-k">skills</span><div><span class="chip mand">test-design-doctrine.md</span><span class="chip mand">defect-management-doctrine.md</span></div></div>
-        <div class="io in"><span class="io-k">stdin ←</span><div>Todos los archivos sincronizados de la historia · ATP/ATR · implementation-plan/código (<code>data-testid=</code>, rutas, endpoints) · <code>domain-glossary.md</code></div></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div>Todos los archivos sincronizados de la historia · ATP/ATR · implementation-plan/código (<code>data-testid=</code>, rutas, endpoints) · mapa de dominio (<code>business-domain-context</code>)</div></div>
         <div class="io out"><span class="io-k">stdout →</span><div>Lista de escenarios candidatos (sin escritura en el TMS todavía)</div></div>
       </div>
 

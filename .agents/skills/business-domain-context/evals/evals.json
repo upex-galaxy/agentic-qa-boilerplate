@@ -1,0 +1,26 @@
+{
+  "skill_name": "business-domain-context",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I'm naming the test cases for the story about cancelling a subscription. What does the product call a cancelled subscription, and is it the same thing the code calls 'churned'?",
+      "expected_output": "Loads business-domain-context, reads `bun run context:map business-domain-context --section term-<slug>` for the term, answers with the business term and UI label for TC titles and keeps the code identifier out of them, citing the section id and date. Placeholder map -> says so and hands over `project-discovery` Phase 1 instead of inventing vocabulary.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "revisando la historia vi que el equipo usa 'reserva' para lo que el glosario llama 'pedido', y la UI ya dice 'Reserva'. ¿actualizamos el mapa?",
+      "expected_output": "Loads business-domain-context and follows references/refresh.md: proposes a one-section edit to the term section (evidence = the UI label and the story key, before/after text), applies it only on explicit approval, and never renames the section id. Answers in Spanish.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Write the SQL that lists every order stuck in 'pending_payment' for more than 24 hours so I can seed a test.",
+      "expected_output": "Should NOT be driven by business-domain-context: table structure, status fields and lifecycles are business-data-context (plus the DB tool). The domain map may be cited for what 'order' means, never as the schema source.",
+      "should_trigger": false,
+      "files": []
+    }
+  ]
+}

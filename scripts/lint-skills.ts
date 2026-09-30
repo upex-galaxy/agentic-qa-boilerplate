@@ -62,9 +62,11 @@
  *      `.context/` cite must exist (a context skill citing a dead map is the
  *      failure mode the check exists for; only the gitignored Jira cache
  *      `.context/PBI/` is exempt), while in every other skill the outputs the
- *      generators write per project (CONTEXT_GENERATED_PREFIXES: discovery,
- *      the business maps, the master test plan, skill reports) are exempt in
- *      both directions, because they do not exist in the boilerplate checkout.
+ *      generators write per project, plus the legacy discovery outputs a
+ *      project may still hold (CONTEXT_GENERATED_PREFIXES: project-config.md,
+ *      the legacy PRD / SRS / business / infrastructure files, the legacy
+ *      master test plan, skill reports) are exempt in both directions, because
+ *      they do not exist in the boilerplate checkout.
  *      ERROR severity.
  *
  *   9. DUPLICATE-TIER — a skill slug appearing in more than one of
@@ -761,11 +763,17 @@ function stripFencedCodeBlocks(md: string): string {
 const INLINE_CODE_PATH
   = /`((?:\.claude\/skills|scripts|cli|\.agents|tests|api|\.context)\/[\w./-]+)`/g;
 
+/** Why a legacy discovery output (`.context/PRD/`, `SRS/`, ...) is exempt: it is input now, never written. */
+const LEGACY_DISCOVERY_OUTPUT = 'legacy discovery output a project may still hold, no longer written; read as generator input by the context map skills (CONTEXT_MAP_SKILLS)';
+
 /**
- * `.context/` paths a generator writes per project, named by the generator
- * that owns them. None of these exist in the boilerplate checkout (the
- * committed `.context/` tree holds only the ADRs, the README files, the PBI
- * templates and the example maps), yet the workflow skills cite them
+ * `.context/` paths a generator writes per project, or a legacy output a
+ * project may still hold, named by the generator that owns (or once owned)
+ * them. Discovery's synthesis now lives in the context map skills
+ * (`CONTEXT_MAP_SKILLS`, cli/lib/context-maps.ts), which read the legacy files
+ * as generator input and never delete them. None of these exist in the
+ * boilerplate checkout (the committed `.context/` tree holds only the ADRs,
+ * the README files and the PBI templates), yet the workflow skills cite them
  * legitimately, so outside a context skill they are exempt in BOTH directions,
  * present or absent, exactly like EXAMPLE_ARTIFACTS. Inside a
  * `metadata.kind: context` skill the exemption does NOT apply: the scaffold
@@ -775,14 +783,14 @@ const INLINE_CODE_PATH
  */
 const CONTEXT_GENERATED_PREFIXES: ReadonlyArray<{ prefix: string, generator: string }> = [
   { prefix: '.context/PBI/', generator: 'scripts/sync-jira-issues.ts (gitignored Jira mirror)' },
-  { prefix: '.context/business/', generator: 'project-discovery Phase 1 (a project may also keep its pre-skill business maps here, read as generator input)' },
-  { prefix: '.context/PRD/', generator: 'project-discovery Phase 2' },
-  { prefix: '.context/SRS/', generator: 'project-discovery Phase 2' },
-  { prefix: '.context/infrastructure/', generator: 'project-discovery Phase 3' },
+  { prefix: '.context/business/', generator: LEGACY_DISCOVERY_OUTPUT },
+  { prefix: '.context/PRD/', generator: LEGACY_DISCOVERY_OUTPUT },
+  { prefix: '.context/SRS/', generator: LEGACY_DISCOVERY_OUTPUT },
+  { prefix: '.context/infrastructure/', generator: LEGACY_DISCOVERY_OUTPUT },
   { prefix: '.context/reports/', generator: 'skill-owned reports (test-framework-adaptation, jira-administration, regression-testing)' },
   { prefix: '.context/regression-history/', generator: 'regression-testing' },
   { prefix: '.context/project-config.md', generator: 'project-discovery Phase 1' },
-  { prefix: '.context/risk-assessment.md', generator: 'project-discovery Phase 1' },
+  { prefix: '.context/risk-assessment.md', generator: 'legacy discovery output a project may still hold, no longer written; read as input by project-context mode test-plan' },
   // Legacy: the MTP now lives in Jira and is cached under .context/PBI/ (ADR-0007).
   // Kept because `project-context` mode `test-plan` names it as the seed input.
   { prefix: '.context/master-test-plan.md', generator: 'legacy local MTP, read only as the seed of the MTP Epic (project-context test-plan)' },

@@ -41,7 +41,7 @@ Read before starting. All paths relative to repo root.
 | Child story list | `bun run jira:sync-issues jql "parent = <EPIC-KEY>"` (or `[ISSUE_TRACKER_TOOL]` search for a trivial key/summary list only) |
 | Business context | `bun run context:map business-data-context` + `bun run context:map business-e2e-context` (journeys) + `.context/PBI/qa-artifacts/master-test-plan.md` |
 | API context | `bun run context:map business-api-context` (business angle) + `api/schemas/` (generated types from `bun run api:sync`) |
-| Architecture + SRS (if present) | `.context/SRS/architecture.md`, `.context/SRS/functional-specs.md`, `.context/SRS/non-functional-specs.md` (API contract comes from `api/openapi-types.ts` and the `business-api-context` map, not from SRS) |
+| Architecture + NFRs (if generated) | `bun run context:map infra-context --section architecture` and the `nfr-*` sections (`--list` shows them); functional specs live in the `business-e2e-context` `feature-*` sections. API contract comes from `api/openapi-types.ts` and the `business-api-context` map |
 | Prior epic discussions | Synced `comments.md` from the epic (Team Discussion extraction — see `session-entry-points.md`) |
 
 If project-wide context files are missing, stop and hand off to `project-discovery`. Do not proceed on partial context.
@@ -95,17 +95,17 @@ The output document has seven sections. AI fills each one by reading the specifi
 
 ### 1. Business Context
 
-From the data map (`business-data-context`) + `.context/business/business-model.md` + `.context/PRD/*` (if present) extract:
+From the data map (`business-data-context`) + the domain map (`bun run context:map business-domain-context --section business-model`) + the personas and journeys in `business-e2e-context` (`persona-*`, `journey-*`) extract:
 
 - Primary user personas affected
 - Business value proposition and success metrics (KPIs the feature influences)
 - Critical user journeys the feature enables or modifies
 
-Keep to 5-10 bullets. The goal is to anchor risk analysis, not reproduce the PRD.
+Keep to 5-10 bullets. The goal is to anchor risk analysis, not reproduce the business context.
 
 ### 2. Technical Architecture
 
-From the API map (`business-api-context`) + `SRS/*` + `api/schemas/` + backend/frontend code exploration:
+From the API map (`business-api-context`) + the infra map (`infra-context`: `architecture`, `backend`, `frontend`) + `api/schemas/` + backend/frontend code exploration:
 
 - Frontend components / pages / routes touched
 - Backend endpoints + services (reference section ids from the `business-api-context` map, `api/schemas/`, or `api-contracts.yaml`)
@@ -161,7 +161,7 @@ Anchor each testing level to the integration points from Section 2.
 | Integration | Each integration point from Section 2 | QA + Dev |
 | E2E | Critical user journeys from Section 1 | QA |
 | API | Endpoints from Section 2, contract-validated against OpenAPI | QA |
-| Non-functional | NFRs from `SRS/non-functional-specs.md` if present | QA |
+| Non-functional | NFRs from the `infra-context` `nfr-*` sections if generated | QA |
 
 **Scope**: list what is in and out of scope explicitly. Out-of-scope items become hand-offs to sibling epics, platform teams, or regression.
 
@@ -228,7 +228,7 @@ The ATP refines each class into concrete test outlines. The feature plan stops a
 
 Identify variables once at feature level to avoid per-story re-discovery.
 
-- **Shared personas**: list roles used across stories (admin, standard user, trial user). Reference from `user-personas.md` if present.
+- **Shared personas**: list roles used across stories (admin, standard user, trial user). Reference the `persona-*` sections of `business-e2e-context` if generated.
 - **Shared fixtures**: entities that pre-exist in the active env's DB (e.g., a seeded tenant, a baseline catalog). Found via `[DB_TOOL]` on `{{DB_MCP}}`.
 - **Dynamic generators**: Faker utilities reused across stories (`faker.internet.email`, `faker.person.firstName`, `faker.finance.amount`).
 - **Factories**: entity factories from `tests/data/` that stories should extend rather than duplicate.

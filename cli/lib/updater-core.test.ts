@@ -9,7 +9,7 @@ import { afterEach, describe, expect, test } from 'bun:test';
 import {
   advanceSyncStateV7,
   classifyFile,
-  collectBusinessContextBootstrap,
+  collectContextMapBootstrap,
   componentOwnedPaths,
   computeComponentAdvancement,
   computeDelta,
@@ -842,7 +842,7 @@ describe('dropDeprecatedDeletes', () => {
   });
 });
 
-describe('collectBusinessContextBootstrap: business context skills delivered once', () => {
+describe('collectContextMapBootstrap: context map skills delivered once', () => {
   const skills: Component[] = [{ name: 'skills', type: 'directory', paths: ['.agents/skills'] }];
 
   function seedTemplate(template: string): void {
@@ -857,7 +857,7 @@ describe('collectBusinessContextBootstrap: business context skills delivered onc
     const template = temporaryRoot();
     const repo = temporaryRoot();
     seedTemplate(template);
-    const entries = collectBusinessContextBootstrap(skills, template, repo);
+    const entries = collectContextMapBootstrap(skills, template, repo);
     expect(entries.map(e => e.path).sort()).toEqual([
       '.agents/skills/business-data-context/SKILL.md',
       '.agents/skills/business-data-context/references/business-data-map.html',
@@ -871,7 +871,7 @@ describe('collectBusinessContextBootstrap: business context skills delivered onc
     const repo = temporaryRoot();
     seedTemplate(template);
     mkdirSync(join(repo, '.agents/skills/business-data-context'), { recursive: true });
-    expect(collectBusinessContextBootstrap(skills, template, repo)).toEqual([]);
+    expect(collectContextMapBootstrap(skills, template, repo)).toEqual([]);
     // Still project-local for every overwrite / delete decision.
     expect(isProjectLocalSkillPath('.agents/skills/business-data-context/references/business-data-map.html')).toBe(true);
   });
@@ -880,10 +880,10 @@ describe('collectBusinessContextBootstrap: business context skills delivered onc
     const template = temporaryRoot();
     const repo = temporaryRoot();
     seedTemplate(template);
-    expect(collectBusinessContextBootstrap([{ name: 'docs', type: 'directory', paths: ['docs'] }], template, repo)).toEqual([]);
+    expect(collectContextMapBootstrap([{ name: 'docs', type: 'directory', paths: ['docs'] }], template, repo)).toEqual([]);
     const narrowed: Component[] = [{ name: 'skills', type: 'directory', paths: ['.agents/skills/business-data-context'] }];
-    const first = collectBusinessContextBootstrap(narrowed, template, repo);
+    const first = collectContextMapBootstrap(narrowed, template, repo);
     expect(first).toHaveLength(3);
-    expect(collectBusinessContextBootstrap(narrowed, template, repo, first)).toEqual([]);
+    expect(collectContextMapBootstrap(narrowed, template, repo, first)).toEqual([]);
   });
 });

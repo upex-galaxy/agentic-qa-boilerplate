@@ -602,7 +602,7 @@ kbd,.kbd{font-family:var(--font-mono);font-size:12.5px;padding:2px 8px;border-ra
       <tr><td><b>Bugs cerrados enlazados</b></td><td>summary, causa raíz, área del fix</td><td>regla de priorización por bug previo</td></tr>
       <tr><td><b>ATP / ATR existentes</b></td><td>lectura modality-aware vía <span class="mono">bun run jira:sync-issues get &lt;KEY&gt; --include-comments</span> → leer el <span class="mono">.md</span> sincronizado</td><td>escenarios y resultados que ya existen — no reinventar ni re-ejecutar</td></tr>
       <tr><td><b>Implementation plan + código</b></td><td>archivos reales, APIs, test IDs</td><td>validar diseño vs implementación</td></tr>
-      <tr><td><b><span class="mono">domain-glossary.md</span></b></td><td>nombres canónicos de entidades y procesos</td><td>vocabulario de títulos, pasos y precondiciones</td></tr>
+      <tr><td><b><span class="mono">business-domain-context</span></b></td><td>nombres canónicos de entidades y procesos (<span class="mono">bun run context:map business-domain-context</span>)</td><td>vocabulario de títulos, pasos y precondiciones</td></tr>
     </tbody>
   </table>
   <div class="callout warn"><h4>Validación contra código fuente — obligatoria antes de documentar</h4><p>El ATP se escribió ANTES de que el código existiera. Grep a <span class="mono">data-testid=</span>, route handlers, rutas de API y formatos de texto; toda divergencia va a una sección <b>Refinement Notes</b> del TC. Saltarse este paso es la causa nº1 de tests automatizados inválidos después.</p></div>

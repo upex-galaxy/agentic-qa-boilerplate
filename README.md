@@ -186,7 +186,7 @@ bunx -y ccstatusline@latest
 
 # Drive the QA lifecycle inside the agent:
 /agentic-qa-onboard     # first-time orientation tour
-/project-discovery      # reverse-engineer the target app into .context/
+/project-discovery      # reverse-engineer the target app into the domain + infra context maps
 /test-framework-adaptation        # wire KATA to the target stack (auth, vars, CI, MCP) — run once after discovery
 /shift-left-testing     # Stage 0: pre-sprint AC refinement on backlog batch
 /sprint-testing         # in-sprint manual QA per ticket (plan + execute + report)
@@ -461,10 +461,9 @@ bun run test:smoke         # smoke / @critical tests
 │   ├── variables.ts              # Runtime env vars consumed by Playwright/KATA
 │   └── validateTestEnv.ts        # Test environment validation
 │
-├── .context/                     # AI Context Engineering (generated)
-│   ├── business/                  # business model + domain glossary (the maps live in their context skills)
-│   ├── PRD/                      # Product requirements
-│   ├── SRS/                      # Technical specs
+├── .context/                     # Script caches + the few files this repo owns (ignored by default; see .gitignore)
+│   ├── ADR/                      # Test-architecture decision records (committed, append-only)
+│   ├── project-config.md         # Project config written by /project-discovery (committed)
 │   ├── reports/                  # Generated output (GITIGNORED except its README): test map, regression reports
 │   └── PBI/                      # Per-ticket backlog items + the MTP cache (GITIGNORED Jira cache; `bun run context:hydrate`)
 │
@@ -856,7 +855,7 @@ touch tests/e2e/your-module/your-feature.test.ts
 
 ### 4. Generate Context
 
-Load the `/project-discovery` skill in your AI assistant to generate project-specific context (PRD, SRS, domain glossary), then `project-context` for the business maps (HTML inside `business-data-context`, `business-api-context` and `business-e2e-context`, read with `bun run context:map`). The Master Test Plan is written by `project-context` mode `test-plan` to the `QA Master Test Plan` Epic in Jira.
+Load the `/project-discovery` skill in your AI assistant to generate project-specific context (the domain map inside `business-domain-context` and the infra map inside `infra-context`), then `project-context` for the business maps (HTML inside `business-data-context`, `business-api-context` and `business-e2e-context`). Every map is read with `bun run context:map <slug>`; the list of map skills is `CONTEXT_MAP_SKILLS` in `cli/lib/context-maps.ts`. The Master Test Plan is written by `project-context` mode `test-plan` to the `QA Master Test Plan` Epic in Jira.
 
 ### 5. Adapt the Framework
 

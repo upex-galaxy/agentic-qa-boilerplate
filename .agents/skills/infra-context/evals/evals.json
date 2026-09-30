@@ -1,0 +1,26 @@
+{
+  "skill_name": "infra-context",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I'm about to wire the KATA fixtures to our app. How does login actually work on the backend, and which command starts the API locally?",
+      "expected_output": "Loads infra-context, reads `bun run context:map infra-context --section backend` (auth flow, run commands) and cites the section id and date. Takes URLs from .agents/project.yaml and credentials from .env, never from the map. Placeholder map -> says so and hands over `project-discovery` Phases 2-3 instead of guessing a command.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "el mapa de infra dice que el pipeline de CI corre los tests E2E contra staging, pero el workflow ahora apunta a un entorno preview por PR. ¿lo corregimos?",
+      "expected_output": "Loads infra-context and follows references/refresh.md: proposes a one-section edit to `ci-cd` (and `environments` if the preview environment is new) with the workflow file at its commit as evidence, before/after text, and applies it only on explicit approval. Does not edit the CI workflow itself. Answers in Spanish.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Add a GitHub Actions job that runs our Playwright smoke suite on every push to main.",
+      "expected_output": "Should NOT be driven by infra-context: editing CI YAML is framework or regression work (/framework-development, /regression-testing). The infra map may be cited for how the product deploys, never used as the thing to change.",
+      "should_trigger": false,
+      "files": []
+    }
+  ]
+}

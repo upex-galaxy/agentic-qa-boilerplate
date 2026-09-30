@@ -24,7 +24,7 @@ Phase 9 is the engine: the same detection signals that close the loop on a fresh
 
 | Use this command for | Use a different tool for |
 |----------------------|--------------------------|
-| Wiring `AuthApi` + `LoginPage` against real endpoints | Regenerating `.context/` files → `/project-discovery` |
+| Wiring `AuthApi` + `LoginPage` against real endpoints | Regenerating the discovery maps (domain, infra) → `/project-discovery` |
 | Populating `.agents/project.yaml` + `.env` + `config/variables.ts` | Writing sprint-level feature tests → `/test-automation` |
 | Creating the first `{Entity}Api` / `{Entity}Page` | Running regression suites → `/regression-testing` |
 | Syncing OpenAPI and creating type facades | Documenting test cases in TMS → `/test-documentation` |
@@ -70,20 +70,23 @@ If **all** rows are ADAPTED, report "Framework already adapted to {{PROJECT_NAME
 
 ### 0.2 Hard prerequisites — block Phase 1 if missing
 
-Verify each by path. Treat a **placeholder/stub file as missing** (grep for `placeholder` or `Run \`/business-`). A business context map is verified through its reader: `bun run context:map <slug> --list` must print sections; the placeholder notice (or a missing skill) counts as missing.
+Verify each by path. Treat a **placeholder/stub file as missing**. A context map is verified through its reader: `bun run context:map <slug> --list` must print sections; the placeholder notice (or a missing skill) counts as missing.
 
-- [ ] `.context/PRD/` populated (≥ `README.md`) AND `.context/business/business-model.md` or `domain-glossary.md` present (non-stub)
-- [ ] `.context/SRS/architecture.md` present (non-stub)
-- [ ] `.context/infrastructure/backend.md` and `.context/infrastructure/frontend.md` present (non-stub)
+<!-- keep in sync with .agents/skills/project-discovery/SKILL.md §Pre-test-framework-adaptation checklist -->
+
+- [ ] `business-domain-context` holds a generated map (`bun run context:map business-domain-context` prints sections, no placeholder notice)
+- [ ] `infra-context` holds a generated map with its `backend` and `frontend` sections (`bun run context:map infra-context --list`)
+- [ ] `.context/project-config.md`
 - [ ] `business-data-context` holds a generated map (`bun run context:map business-data-context --list` prints sections)
 - [ ] API contract source resolvable — one of: `api/openapi-types.ts` already generated and non-stub, OR a reachable OpenAPI spec URL/file (synced in Phase 4), OR a generated `business-api-context` map (business-angle fallback, accepted only if OpenAPI is unreachable)
 - [ ] `.env.example` exists; `.env` either exists or will be created from it in Phase 3
 
 If any hard prereq fails, stop and **enumerate each missing file mapped to the exact command that produces it**:
 
-> `/test-framework-adaptation` needs `.context/` populated by `/project-discovery`. Missing:
-> - `.context/SRS/architecture.md` → run `/project-discovery` (Phase 2 Architecture)
-> - `.context/infrastructure/backend.md`, `frontend.md` → `/project-discovery` (Phase 3 Infrastructure)
+> `/test-framework-adaptation` needs the discovery context generated first. Missing:
+> - the `business-domain-context` map (placeholder) → run `/project-discovery` (Phase 1 Constitution)
+> - the `infra-context` map, or its `backend` / `frontend` sections → `/project-discovery` (Phases 2-3 Architecture + Infrastructure)
+> - `.context/project-config.md` → `/project-discovery`
 > - the `business-data-context` map (placeholder) → `project-context` mode `data`
 >
 > Run the listed command(s), then re-invoke `/test-framework-adaptation`.
@@ -112,7 +115,7 @@ If the user continues, log each gap in the plan's Discovery Gaps section. Do not
 
 ### 1.1 Read existing project context
 
-In order: `.context/SRS/architecture.md`; `api/openapi-types.ts` (if generated) or the OpenAPI spec source; `bun run context:map business-data-context`; `bun run context:map business-e2e-context`, `bun run context:map business-api-context`, `.context/PBI/qa-artifacts/master-test-plan.md` (if present); `.context/infrastructure/backend.md`, `frontend.md`; `.context/business/domain-glossary.md` (if present); `.env.example`; `.agents/project.yaml`; `config/variables.ts`.
+In order: `bun run context:map infra-context --section architecture`; `api/openapi-types.ts` (if generated) or the OpenAPI spec source; `bun run context:map business-data-context`; `bun run context:map business-e2e-context`, `bun run context:map business-api-context`, `.context/PBI/qa-artifacts/master-test-plan.md` (if present); `bun run context:map infra-context --section backend` and `--section frontend` (auth flow, stacks, repo paths); `bun run context:map business-domain-context` (canonical entity names); `.env.example`; `.agents/project.yaml`; `config/variables.ts`.
 
 ### 1.2 Read KATA references
 
@@ -172,7 +175,7 @@ Session reuse always has the same shape: `global.setup → ui-auth.setup + api-a
 
 ### 1.6 Map entities to the first component
 
-From `domain-glossary.md` + the `business-e2e-context` feature catalog, pick the **highest-traffic entity** per the Master Test Plan (`.context/PBI/qa-artifacts/master-test-plan.md`). Build that entity end-to-end in Phase 6; list the rest as follow-ups. Do not scaffold everything at once.
+From the `business-domain-context` terms (`term-*` sections) + the `business-e2e-context` feature catalog, pick the **highest-traffic entity** per the Master Test Plan (`.context/PBI/qa-artifacts/master-test-plan.md`). Build that entity end-to-end in Phase 6; list the rest as follow-ups. Do not scaffold everything at once.
 
 ### 1.7 Upfront questionnaire
 
@@ -518,7 +521,7 @@ Run every detection signal and print a per-subsystem **GENERIC / ADAPTED** table
 | Auth setups | `.auth/api-state.json` + `.auth/user.json` exist non-empty |
 | Agentic curl auth | `bun run api:login <env>` populates `.auth/tokens.env` with an `API_TOKEN_<ROLE>_<ENV>` line (proves `scripts/api-login.project.ts` adapted for the curl maneuver) |
 | Session reuse | second `test:smoke` does not execute api-setup/ui-setup (and ≥1 test actually ran) |
-| Business context | `grep -l 'placeholder\|Run \`/business-' .context/business/*.md` returns nothing, and `.context/PBI/qa-artifacts/master-test-plan.md` exists after `bun run context:hydrate` |
+| Business context | `bun run context:map <slug>` prints no placeholder notice for any shipped context map skill (`CONTEXT_MAP_SKILLS`, `cli/lib/context-maps.ts`), and `.context/PBI/qa-artifacts/master-test-plan.md` exists after `bun run context:hydrate` |
 | CI workflows | workflow `options:` == env union; secret names match scheme; smoke filter == config grep tag |
 | MCP parity | `db_mcp`/`api_mcp` resolve to server names present in `.mcp.json`, `opencode.jsonc`, and `.codex/config.toml`; `bun run agents:compat:check` exits 0; `API_BASE_URL`/`OPENAPI_SPEC_PATH` set in `.env` (or `openapi` disabled in all three); `bun run harness:env:check` exits 0 |
 | Env schema | `bun run vars:schema:check` exits 0 **AND** every variable the project added or renamed is declared in `.env.schema` |
@@ -598,7 +601,7 @@ Done only when **every** box is true (all map to a Phase 9 signal):
 ## References
 
 - `.agents/skills/test-automation/references/` (the references `test-automation/SKILL.md` lists)
-- `project-discovery` (produces `.context/`), `project-context` (context enrichment), `/git-flow-master` (Strategy Setup)
+- `project-discovery` (generates the `business-domain-context` and `infra-context` maps plus `.context/project-config.md`), `project-context` (context enrichment), `/git-flow-master` (Strategy Setup)
 - `agentic-qa-core/references/mcp-capabilities.md` (capability resolution for harness-level servers)
 
 ---

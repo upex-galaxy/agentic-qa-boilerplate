@@ -33,12 +33,15 @@ This is **NOT** a flow description (→ `business-data-context`), a journey or f
 |--------|--------|----------------|------|
 | `business-data-context` map | **HARD REQUIREMENT** | Critical flows, state machines, automatic processes, integrations, business rules | `bun run context:map business-data-context` |
 | `business-e2e-context` map | Optional — warn if missing | Journeys, feature catalog, CRUD matrix, feature flags, high-risk tags, QA relevance matrix | `bun run context:map business-e2e-context` |
-| Existing context | If available | PRD, SRS, domain glossary | `.context/PRD/`, `.context/SRS/` |
+| Discovery risk seed | If available | The HIGH risks `project-discovery` recorded in its Phase 1 assessment and carried in its handoff (severity, evidence path) | The `## Project Assessment (Phase 1)` block in `AGENTS.md`, or the handoff the user pastes |
+| `infra-context` map | If available | NFR sections (`nfr-<slug>`: performance, security, reliability, observability budgets), external services, environments | `bun run context:map infra-context` (`--list`, then `--section nfr-<slug>`) |
+| Domain vocabulary | If available | Business terms, so flows and risks are named the way the business names them | `bun run context:map business-domain-context` |
+| Legacy `.context/risk-assessment.md` (input only) | Only when a project still holds one | Earlier risk findings, merged into the discovery seed | Read file; never delete or rewrite it |
 | Git history | If signals needed | Recently changed modules (breakage-likelihood indicator) | `git log --oneline -90 --stat` |
 | Incident / bug tracker | If helpful | Historical pain points that feed "why it matters" per flow | `[ISSUE_TRACKER_TOOL]` |
 | Legacy local MTP `.context/master-test-plan.md` | Only when it exists and is not a placeholder | Seed for the Epic on CREATE (see "Seeding from a legacy local MTP") | Read file |
 
-**Golden rule**: ground every priority claim in evidence from the maps. "This flow is high-risk because…" must cite either a data-map flow, an E2E-map journey or QA-relevance row, or a named external dependency. No hand-wave prioritization.
+**Golden rule**: ground every priority claim in evidence from the maps. "This flow is high-risk because…" must cite either a data-map flow, an E2E-map journey or QA-relevance row, a discovery HIGH risk, an infra-map NFR section, or a named external dependency. No hand-wave prioritization.
 
 ---
 
@@ -100,6 +103,8 @@ If the `business-e2e-context` map is a placeholder → **WARN and proceed**. Log
 
 From the data-map: flows, state machines, automatic processes, external integrations, business rules.
 From the E2E map (if generated): the highest-risk journeys, high-risk features, CRUD gaps (⚠️ / ❌), feature flags, QA-coverage deficits, third-party dependencies.
+From the discovery risk seed (if present): every HIGH risk, each one scored below like any flow and never dropped silently. A legacy `.context/risk-assessment.md`, when a project still holds one, is merged into the seed.
+From the infra map (if generated): the NFR budgets that make a flow performance-, security- or reliability-critical, and the external services a flow depends on.
 
 ### Phase 2 — Risk scoring
 

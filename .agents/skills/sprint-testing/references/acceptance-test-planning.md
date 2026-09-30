@@ -107,7 +107,7 @@ Read every item before planning. Fail fast if any project-wide context file is m
 | Module context | `.context/PBI/epics/EPIC-<KEY>-<slug>/module-context.md` |
 | Code | `{{BACKEND_REPO}}/{{BACKEND_ENTRY}}` + `{{FRONTEND_REPO}}/{{FRONTEND_ENTRY}}` (targeted reads only) |
 | Test data candidates | `[DB_TOOL]` on `{{DB_MCP}}` |
-| Architecture + API contracts (if present) | `.context/SRS/architecture.md`, `.context/SRS/functional-specs.md`, `.context/SRS/non-functional-specs.md`; API contract from `api/openapi-types.ts` (types) + the `business-api-context` map (business) |
+| Architecture + API contracts (if generated) | `bun run context:map infra-context --section architecture` + its `nfr-*` sections; functional specs from the `business-e2e-context` `feature-*` sections; API contract from `api/openapi-types.ts` (types) + the `business-api-context` map (business) |
 
 ---
 

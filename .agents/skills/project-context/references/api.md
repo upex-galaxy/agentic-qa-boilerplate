@@ -38,7 +38,9 @@ Exhaust every source. Prefer existing context files over re-deriving from code.
 | Controllers / routes | Handler shapes and side effects behind each endpoint | Same backend entry — controllers, services |
 | Package dependencies | External SDKs at the API boundary (Stripe, Auth0, Resend, S3, etc.) | Read `package.json`, `requirements.txt`, `Gemfile` |
 | Env / config (examples only) | Auth provider config, integration endpoints, webhook URLs | Read `.env.example`, config files — NEVER read or dump real secrets |
-| Existing docs | Hand-written API notes, onboarding guides | `.context/PRD/`, `.context/SRS/`, `docs/` |
+| Existing docs | Hand-written API notes, onboarding guides | `docs/`, the project's own API notes |
+| Architecture and auth | auth flow, external services, environments, NFR budgets at the API boundary (rate limits, timeouts) | `bun run context:map infra-context` |
+| Domain vocabulary | business terms, so endpoint groups are named the way the business names them | `bun run context:map business-domain-context` |
 
 **Golden rule**: This is a *narrative* document. If OpenAPI already expresses a fact as a schema, link to it — do NOT restate it in prose.
 
