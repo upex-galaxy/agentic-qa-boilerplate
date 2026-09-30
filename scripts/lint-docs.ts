@@ -21,6 +21,16 @@
  *     `<pre>`, `<code class="block">`, `<script>` and `<style>` are skipped; a
  *     line marked `volatile-ok: <reason>` is kept. Severity per family in
  *     `VOLATILE_SEVERITY` (both families fail the gate).
+ *   - a repo skill (a committed `.agents/skills/<slug>/SKILL.md`) is missing
+ *     from the `AGENTS.md` section 5 skill router (`roster`). A project-local
+ *     `<aspect>-context` skill is exempt (`isProjectLocalSkillPath`). The human
+ *     pages are NOT checked for a skill list: they point to the generated
+ *     `REGISTRY.md`, because enumerating the skills there is the mutable-set
+ *     copy Critical Rule #17 forbids.
+ *   - a `bun run <name>` quoted in `AGENTS.md` or in the doc surface (fenced
+ *     blocks included; decks excluded) names a script `package.json` does not
+ *     declare (`script`). Placeholders and file runs (`bun run scripts/x.ts`)
+ *     are ignored.
  *
  * External URLs, `mailto:` / `tel:` / `data:` / `javascript:`, bare anchors
  * and template placeholders are ignored; a `#fragment` or `?query` is stripped
@@ -44,6 +54,7 @@
 import type { VolatileKind } from './lib/volatile-facts.ts';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
+import { isProjectLocalSkillPath } from '../cli/lib/updater-core.ts';
 import { relativePosix, toPosix } from './lib/posix-path.ts';
 import { isVolatileExemptPath, scanVolatile, volatileRemedy } from './lib/volatile-facts.ts';
 
@@ -53,7 +64,7 @@ export const KNOWN_ROOTS = ['docs/', '.agents/', 'scripts/', 'cli/', 'tests/', '
 export interface DocFinding {
   file: string
   line: number
-  kind: 'link' | 'path' | 'meta' | 'file-line' | 'current-state'
+  kind: 'link' | 'path' | 'meta' | 'file-line' | 'current-state' | 'roster' | 'script'
   target: string
   /** Only `meta` findings on project-owned pages are warnings; everything else fails the gate. */
   severity?: 'error' | 'warning'
@@ -216,6 +227,74 @@ export function lintDocFile(root: string, file: string): DocFinding[] {
   return findings;
 }
 
+const ROUTER_HEADING = /^### Skills \(lazy-loaded by trigger phrase\)/m;
+
+/** Slugs in the first column of the AGENTS.md section 5 router table, or null when the table is missing. */
+export function routerSlugs(agentsMd: string): Set<string> | null {
+  const start = agentsMd.search(ROUTER_HEADING);
+  if (start < 0) { return null; }
+  const after = agentsMd.slice(start).split('\n').slice(1);
+  const next = after.findIndex(line => /^#{1,3} /.test(line));
+  const section = next < 0 ? after : after.slice(0, next);
+  const slugs = new Set<string>();
+  for (const line of section) {
+    const cell = /^\|\s*`([a-z0-9][a-z0-9-]*)`\s*\|/.exec(line);
+    if (cell) { slugs.add(cell[1]); }
+  }
+  return slugs;
+}
+
+/** Repo skills: committed skill folders (a gitignored community install does not count). */
+function repoSkills(root: string): string[] {
+  const dir = join(root, '.agents', 'skills');
+  if (!existsSync(dir)) { return []; }
+  const candidates = readdirSync(dir, { withFileTypes: true })
+    .filter(e => e.isDirectory() && existsSync(join(dir, e.name, 'SKILL.md')))
+    .map(e => e.name);
+  const ignored = gitIgnored(root, candidates.map(slug => `.agents/skills/${slug}/SKILL.md`));
+  return candidates
+    .filter(slug => !ignored.has(`.agents/skills/${slug}/SKILL.md`))
+    .filter(slug => !isProjectLocalSkillPath(`.agents/skills/${slug}/SKILL.md`))
+    .sort();
+}
+
+/** `roster` findings: repo skills missing from the AGENTS.md section 5 router. */
+export function lintRoster(root: string): DocFinding[] {
+  const agentsFile = join(root, 'AGENTS.md');
+  const skills = repoSkills(root);
+  if (!existsSync(agentsFile) || skills.length === 0) { return []; }
+  const findings: DocFinding[] = [];
+  const router = routerSlugs(readFileSync(agentsFile, 'utf8'));
+  if (router === null) {
+    return [{ file: 'AGENTS.md', line: 1, kind: 'roster', target: 'section 5 skill router table (### Skills heading not found)' }];
+  }
+  for (const slug of skills) {
+    if (!router.has(slug)) { findings.push({ file: 'AGENTS.md', line: 1, kind: 'roster', target: slug }); }
+  }
+  return findings;
+}
+
+const BUN_RUN = /\bbun run(?:\s+--silent)?\s+([^\s`'"<>()[\]|,;]+)/g;
+
+/** `script` findings: `bun run <name>` citations whose name `package.json` does not declare. */
+export function lintScripts(root: string, files: string[]): DocFinding[] {
+  const pkgFile = join(root, 'package.json');
+  if (!existsSync(pkgFile)) { return []; }
+  const scripts = new Set(Object.keys((JSON.parse(readFileSync(pkgFile, 'utf8')) as { scripts?: Record<string, string> }).scripts ?? {}));
+  const findings: DocFinding[] = [];
+  for (const file of files) {
+    const rel = relativePosix(root, file);
+    if (rel.startsWith('packages/decks/')) { continue; }
+    const text = readFileSync(file, 'utf8');
+    for (const match of text.matchAll(BUN_RUN)) {
+      const name = match[1].replace(/[.:]+$/, '');
+      if (name === '' || name.includes('/') || /\.[cm]?[jt]sx?$/.test(name) || PATTERN_CHARS.test(name)) { continue; }
+      if (!scripts.has(name)) { findings.push({ file: rel, line: lineOf(text, match.index ?? 0), kind: 'script', target: name }); }
+    }
+  }
+  return findings.sort((a, b) => (a.file < b.file ? -1 : a.file > b.file ? 1 : a.line - b.line));
+}
+
 /** Targets git ignores, resolved from the repo root. Empty outside a git work tree. */
 function gitIgnored(root: string, paths: string[]): Set<string> {
   if (paths.length === 0) { return new Set(); }
@@ -238,6 +317,9 @@ export function lintDocs(root: string): { files: number, findings: DocFinding[] 
     : relativePosix(root, resolve(root, dirname(f.file), decodeURIComponent(stripSuffix(f.target))));
   const ignored = gitIgnored(root, [...new Set(refs.map(resolvedOf))]);
   const findings = raw.filter(f => !isRef(f) || !ignored.has(resolvedOf(f)));
+  const agentsFile = join(root, 'AGENTS.md');
+  findings.push(...lintRoster(root));
+  findings.push(...lintScripts(root, existsSync(agentsFile) ? [agentsFile, ...files] : files));
   return { files: files.length, findings };
 }
 
@@ -251,6 +333,8 @@ if (import.meta.main) {
       case 'path': return 'missing path';
       case 'file-line': return 'FILE-LINE';
       case 'current-state': return 'CURRENT-STATE';
+      case 'roster': return 'skill not listed';
+      case 'script': return 'unknown script';
       default: return 'missing';
     }
   };

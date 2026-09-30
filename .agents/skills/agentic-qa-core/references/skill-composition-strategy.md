@@ -366,7 +366,7 @@ The script is wired in `package.json` as `"skills:check": "bun run scripts/lint-
 
 4. **Gentle-ai bundle scope**: ✅ **Minimal preset (engram only).** No SDD-* skills auto-installed. No gentle-ai foundation skills. Rationale: our workflow skills already cover Plan → Code → Verify natively; SDD ceremony does not apply to test authoring. Users who want SDD for framework evolution work install it manually: `gentle-ai install --components engram,sdd --agent <a>`.
 
-5. **Category vocabulary maintainer** (deferred, NOT implemented): **`/sync-ai-context` would auto-maintain §5.1.** On invocation, sync-ai-context scans T1 SKILL.md frontmatter + installed T3/T4 skills (via `skill-registry`), detects category gaps, writes additions to §5.1 of this doc. No human approval required (categories are additive, not destructive). Removal of unused categories: deferred to manual review.
+5. **Category vocabulary maintainer**: no automated maintainer. `bun run skills:check` rejects a category outside §5.1 (the category cross-checks in `scripts/lint-skills.ts`), and a human adds the new category here in the same PR that first needs it (additive change). Removal of unused categories stays a manual review.
 
 6. **Sub-agent skill list inspection**: ✅ **Contract drafted in §3.4 is authoritative.** Sub-agents that cannot find a named skill in their own list MUST emit `skill_resolution: "fallback-inline" + missing: [list]` in their result envelope. Orchestrator on receiving fallback re-resolves and may retry with explicit injection.
 

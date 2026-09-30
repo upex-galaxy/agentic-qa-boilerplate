@@ -1,6 +1,6 @@
 ---
 name: framework-development
-description: "Framework evolution mode — evolves the QA boilerplate itself (KATA, fixtures, cli/, scripts/, api/schemas/ pipeline, package.json deps). Self-contained Plan → Code → Verify → Archive pipeline; runs under the `gentle-ai install --preset minimal` install (no SDD-* skills required). Use when adding new fixture APIs, refactoring KATA base classes, evolving the installer, modifying the OpenAPI sync pipeline, or any change to the framework infrastructure that is NOT per-ticket test writing or manual QA. Triggers on: /framework-development, \"evolve framework\", \"framework refactor\", \"new fixture API\", \"modify KATA base\", \"refactor cli\", \"boilerplate evolution\". Do NOT use for: writing tests for a ticket (use /test-automation), manual QA per ticket (use /sprint-testing), documenting test cases (use /test-documentation), running regression suites (use /regression-testing)."
+description: "Framework evolution mode — evolves the QA boilerplate itself (KATA, fixtures, cli/, scripts/, api/schemas/ pipeline, package.json deps). Self-contained Plan → Code → Verify → Archive pipeline; runs under the `gentle-ai install --preset minimal` install (no SDD-* skills required). Use when adding new fixture APIs, refactoring KATA base classes, evolving the installer, modifying the OpenAPI sync pipeline, or any change to the framework infrastructure that is NOT per-ticket test writing or manual QA. Triggers on: /framework-development, \"evolve framework\", \"framework refactor\", \"new fixture API\", \"modify KATA base\", \"refactor cli\", \"boilerplate evolution\", \"sync AI context\", \"sync AI memory\" (the docs follow-through after a boilerplate change). Do NOT use for: writing tests for a ticket (use /test-automation), manual QA per ticket (use /sprint-testing), documenting test cases (use /test-documentation), running regression suites (use /regression-testing)."
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 complementary_categories: [framework-evolution, meta-skill]
@@ -33,6 +33,7 @@ The skill exists because framework-surface changes — new fixture, new layer he
 - DO: verify with all four checks (test, types, lint, skills) and treat any non-zero exit as REJECT — present retry / skip-and-document / abort, never auto-fix. A skill that itself broke (a wrong step, a missing verifier, a stale rule) is reported upstream per `../agentic-qa-core/references/upstream-feedback.md`: drafted and redacted locally, filed only on explicit OK, verified with `gh issue view`.
 - WHEN the change IS a skill (a new or restructured `.agents/skills/<slug>/`): scaffold it per `../agentic-qa-core/references/skill-scaffold.md` (frontmatter incl. `metadata.kind`, per-kind files and sections, Definition of Done). `skill-creator` (T3, installed at project level) is ALWAYS the builder: load it for the draft, the test prompts, the evals and the description pass; the scaffold contract stays this repo's. Missing on the machine → scaffold from the reference's template and say so. Consumer SUT context skills are NOT this skill's job: `project-context` mode `context-skill` owns them.
 - DO NOT: let a subagent write `progress.md`; it is orchestrator-only. Code subagents return one-line summaries per task, and the orchestrator does not read their diffs.
+- DO: close every change that adds, renames or retires a skill, a `package.json` script or a doc path with the docs follow-through (Phase 3): patch `AGENTS.md` §4/§5, `README.md`, `INSTALLER.md`, `CONTEXT.md` and the `docs/core/` pages in the same PR. `bun run docs:check` proves the router and the quoted scripts; the prose is judgment.
 - DO: archive the session directory only after all four verifiers pass. On REJECT it stays in place so the run can be debugged or resumed.
 
 **Read full SKILL.md when**: writing the plan artifact, batching Code-phase tasks, resuming an interrupted session, or reading the ALLOWED/FORBIDDEN path tables themselves.
@@ -206,6 +207,10 @@ After all four return, the orchestrator inline-aggregates:
 
 - All four `exitCode == 0` → ACCEPT. Proceed to Phase 4.
 - Any `exitCode != 0` → REJECT. Present failing verifier(s) to the user. Options: retry the failing Phase 2 batch / skip-and-document / abort. Do NOT auto-fix.
+
+### Docs follow-through (closing step of Phase 3)
+
+When the change adds, renames or retires a skill, a `package.json` script or a doc path, the same PR patches every doc that names it: `AGENTS.md` (§4 task map, §5 router), `README.md`, `INSTALLER.md`, `CONTEXT.md`, and the `docs/core/` pages. `bun run docs:check` (inside `repo:check`) fails when a repo skill is missing from the §5 router or a doc quotes a `bun run` script `package.json` does not declare; the wording around each fact, and any page that describes the old behaviour, is read and fixed by hand. Human pages point to `.agents/skills/REGISTRY.md` for the skill list and never enumerate it (Critical Rule #17). A downstream project's own docs are `test-framework-adaptation` Phase 9.3, never this skill.
 
 ### Phase 4 — Archive
 

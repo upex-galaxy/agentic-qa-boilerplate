@@ -197,7 +197,7 @@ Out-of-scope surfaces. Modifying these from a framework-development task is FORB
 - **Credentials and env**: `.env`, `.env.example` (only the variable list may be appended when adding a new framework env var; never values).
 - **Playwright artifacts (gitignored)**: `test-results/`, `tests/data/downloads/`, `playwright/.auth/`.
 - **Test results / TMS sync state**: outputs of CI runs, not framework code.
-- **Skills / AGENTS.md**: owned by `/agentic-qa-core`, `sync-ai-context`, and the SDD orchestrator. A framework change that needs to surface in AI memory must coordinate via `sync-ai-context`, not direct edit.
+- **Skills / AGENTS.md**: a framework change that needs to surface in AI memory patches `AGENTS.md` and the docs in the same PR (the docs follow-through in `SKILL.md` Phase 3), and `bun run docs:check` proves the router and the quoted scripts.
 
 ---
 

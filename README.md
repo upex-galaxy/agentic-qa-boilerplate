@@ -234,7 +234,7 @@ Get-Content .env | Where-Object { $_ -match '^\s*[^#].*=' } | ForEach-Object {
 claude
 ```
 
-> Run the snippet **inline** in the shell you are already in. Wrapping it in a script would export into a child process that exits immediately, leaving your terminal untouched — which is why there is no `bun run env` script.
+> Run the snippet **inline** in the shell you are already in. Wrapping it in a script would export into a child process that exits immediately, leaving your terminal untouched — which is why `package.json` has no `env` script.
 
 direnv works on macOS / Linux / Windows. On Windows install via `winget install direnv` — Git Bash is recommended; PowerShell support is experimental and requires direnv 2.37+. See [INSTALLER.md § Launching the agent](./INSTALLER.md#launching-the-agent-after-setup) for the per-shell hook lines.
 
@@ -885,7 +885,7 @@ This repo runs on **Claude Code, OpenCode, and Codex (CLI + Desktop)**. There is
 | **Hook** | `.claude/settings.json` → `UserPromptSubmit` | `.opencode/plugins/personality-reinject.js` | `.codex/hooks.json` → `UserPromptSubmit` |
 | **MCP** | `.mcp.json` | `opencode.jsonc` | `.codex/config.toml` |
 
-- **Instructions.** `AGENTS.md` is the only instruction body. OpenCode and Codex load it natively; Claude Code loads `CLAUDE.md`, which is exactly `@AGENTS.md` plus one newline: a documented import rather than a symlink, so it survives a Windows checkout. Operational prose in the shim is structural drift, and `sync-ai-context` stops rather than propagating it.
+- **Instructions.** `AGENTS.md` is the only instruction body. OpenCode and Codex load it natively; Claude Code loads `CLAUDE.md`, which is exactly `@AGENTS.md` plus one newline: a documented import rather than a symlink, so it survives a Windows checkout. Operational prose in the shim is structural drift, and `agents:compat:check` fails on it.
 - **Skills.** Every committed skill lives in `.agents/skills/`, and the project-level community skills install into the same store. OpenCode and Codex read it directly; Claude Code reaches it through `.claude/skills`, a POSIX symlink (Windows junction) that is generated and gitignored: never committed, never hand-edited. Each skill still declares `compatibility: [claude-code, copilot, cursor, codex, opencode]` per the [agentskills.io](https://agentskills.io) spec, and hosts without slash triggers auto-activate from the same `description` field.
 - **Commands.** No harness gets generated command files: a skill is invoked by its name plus a mode ([Invoking a skill mode](#invoking-a-skill-mode)). A project command named like a skill would hide that skill's instructions, so the check fails on it and `bun run agents:compat` moves it aside.
 - **Hook.** `.agents/hooks/personality-reinject.mjs` holds the contract text once. Claude and Codex run it as a command hook; OpenCode imports the constant from a thin plugin.

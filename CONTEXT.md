@@ -3,7 +3,7 @@
 > **Purpose**: Explain the context engineering strategy for AI-driven test automation. Top-level reference alongside `README.md`, `AGENTS.md`, and `INSTALLER.md`.
 > **Audience**: Humans learning the system + AI when needing to understand "why".
 > **Related**: `AGENTS.md` contains the operational context loaded each session. It is the only instruction body in the repo; `CLAUDE.md` is a one-line shim (`@AGENTS.md`) that Claude Code follows to reach it. Operational prose belongs in `AGENTS.md` — never in the shim. See §2.1 below.
-> **Sync**: This file is in scope of `sync-ai-context` — re-run it whenever the context architecture changes.
+> **Sync**: A change to the context architecture updates this file in the same PR (`framework-development` docs follow-through); `bun run docs:check` guards its paths.
 
 ---
 
@@ -64,7 +64,7 @@ The repo runs on **Claude Code, OpenCode, and Codex (CLI + Desktop)**. There is 
 | **Hook** | `.claude/settings.json` → `UserPromptSubmit` | `.opencode/plugins/personality-reinject.js` | `.codex/hooks.json` → `UserPromptSubmit` |
 | **MCP** | `.mcp.json` | `opencode.jsonc` | `.codex/config.toml` |
 
-**Instructions.** `AGENTS.md` is the only instruction body. OpenCode and Codex load it natively. Claude Code loads `CLAUDE.md`, which is exactly `@AGENTS.md` plus one newline — a documented import rather than a symlink, so it survives a Windows checkout. Writing operational prose into `CLAUDE.md` is structural drift, and `sync-ai-context` stops rather than propagating it.
+**Instructions.** `AGENTS.md` is the only instruction body. OpenCode and Codex load it natively. Claude Code loads `CLAUDE.md`, which is exactly `@AGENTS.md` plus one newline — a documented import rather than a symlink, so it survives a Windows checkout. Writing operational prose into `CLAUDE.md` is structural drift, and `agents:compat:check` fails on it.
 
 **Skills.** All 19 skills live committed under `.agents/skills/`. OpenCode and Codex discover that directory natively. Claude Code reaches the same tree through `.claude/skills`, a POSIX symlink (Windows junction) that is **generated and gitignored** — never committed, never hand-edited.
 
@@ -168,7 +168,7 @@ Nineteen skills, all committed here. OpenCode and Codex read this directory dire
 ├── agentic-qa-core/         → Foundation: passive reference host (briefing template, dispatch patterns, orchestration doctrine, skill-composition strategy, Skill Resolver protocol). Cited on demand by workflow skills.
 ├── agentic-qa-onboard/      → First-time orientation tour: stack + 6-stage pipeline + MCPs. Hands off to the right downstream skill.
 ├── framework-development/   → Framework-evolution orchestrator for the boilerplate itself (KATA bases, fixtures, cli/, scripts/, api/schemas/ pipeline). Self-contained Plan → Code → Verify → Archive pipeline. NOT for per-ticket QA.
-├── project-discovery/       → 4-phase reverse-engineering, generates `.context/` artifacts. README/`AGENTS.md` upkeep is `sync-ai-context`. Foundation files (`AGENTS.md`, `.agents/`, `scripts/`) ship with the boilerplate and are not generated per project.
+├── project-discovery/       → 4-phase reverse-engineering, generates `.context/` artifacts. Foundation files (`AGENTS.md`, `.agents/`, `scripts/`) ship with the boilerplate and are not generated per project.
 ├── shift-left-testing/      → Stage 0: pre-sprint AC refinement on a batch of backlog Stories. Refines ACs, surfaces gaps, drafts ATP, transitions backlog → shift_left_qa → estimation. Adds label shift-left-reviewed so /sprint-testing Stage 1 can short-circuit later.
 ├── sprint-testing/          → In-sprint QA (planning + execution + reporting, per ticket)
 ├── test-documentation/      → TMS documentation + test prioritization
@@ -177,7 +177,6 @@ Nineteen skills, all committed here. OpenCode and Codex read this directory dire
 ├── project-context/         → Regenerates the business data / feature / API maps and the master test plan, one mode per artifact (`/project-context data` on Claude Code).
 ├── test-framework-adaptation/         → Idempotent KATA adaptation: no-write analysis and plan first, mutation only after explicit approval.
 ├── jira-administration/     → Components reconciliation + Atlassian instance migration, each sealed behind read-first analysis.
-├── sync-ai-context/         → Synchronizes the AI-critical repo docs against the canonical instructions, skills, context and `package.json`.
 ├── git-flow-master/         → End-to-end Git operator: branch / commit / push / PR / conflict / chained-PR. Auto-detects branching strategy.
 ├── pr-review-lead/          → QA Lead review of a PR's test-automation work against KATA doctrine, every finding grounded in a citation.
 ├── bug-screenshot-annotation/ → Turns a raw bug screenshot into annotated evidence, rendered 100% locally.
@@ -196,7 +195,7 @@ Nineteen skills, all committed here. OpenCode and Codex read this directory dire
 - `agentic-qa-core` - Passive reference host cited by other skills (no direct invocation)
 - `/test-automation` - KATA test writing pipeline
 - `/sprint-testing` - End-to-end in-sprint QA
-- `/project-discovery` - Generates `.context/` artifacts; pair with `sync-ai-context` for README / `AGENTS.md` upkeep
+- `/project-discovery` - Generates `.context/` artifacts
 - `/framework-development` - Evolves the boilerplate itself (KATA bases, fixtures, cli/, scripts/)
 
 ### docs/ - Human Documentation
@@ -373,7 +372,7 @@ Reference / utility / generator skills (`agentic-qa-core`, `acli`, `xray-cli`, `
 - New CLI tools added
 - Testing decisions documented
 
-Never write the update into `CLAUDE.md`: it is a generated one-line shim, and `sync-ai-context` refuses to propagate prose from it.
+Never write the update into `CLAUDE.md`: it is a generated one-line shim, and `agents:compat:check` fails when it holds prose.
 
 ### When to Update the Harness Adapters
 
