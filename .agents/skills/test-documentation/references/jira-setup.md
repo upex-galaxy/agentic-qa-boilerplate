@@ -121,18 +121,7 @@ Steps:
 4. Add both fields to the Story's **View Screen** (Settings → Issues → Screens). Leave them off the Create screen (the skill populates them later, not the PM).
 5. Optionally add them to the Story's Edit Screen so PO/Dev can see them inline.
 
-Record the IDs in `.context/master-test-plan.md`:
-
-```markdown
-## TMS Modality: Jira-native
-
-| Artifact | Custom field ID |
-|----------|-----------------|
-| ATP      | {{jira.acceptance_test_plan}}
-| ATR      | {{jira.acceptance_test_results}}
-| Test Status (on Test) | {{jira.test_status}}
-| Automation Candidate (on Test) | {{jira.to_be_automated}}
-```
+Nothing to record by hand: `.agents/jira-fields.json` is the one place the IDs live, and the skills resolve `{{jira.<slug>}}` from it.
 
 ### 3.4 Bug custom fields (UPEX reference, both modalities)
 
@@ -164,23 +153,16 @@ Same state machine as Modality jira-xray (`tms-conventions.md` §5). Build a Jir
 
 ## 4. Per-project configuration output
 
-At the end of setup, `.context/master-test-plan.md` must contain a TMS section that answers these five questions unambiguously:
+At the end of setup, five questions must have an unambiguous answer. Each already has one owner, so setup fills those owners and writes no summary anywhere else (the Master Test Plan is strategy, not configuration):
 
-```markdown
-## TMS
+| Question | Owner |
+|----------|-------|
+| Modality (Xray on Jira or Jira-native) and TMS CLI | `.agents/project.yaml` → `testing.tms_cli` (`bun xray` = jira-xray; unset or `acli` = jira-native) |
+| Regression Epic | `.agents/project.yaml` → `qa.qa_epics.test_repository_epic` (name, key cached on first discovery) |
+| Custom field IDs (Modality jira-native only) | `.agents/jira-fields.json`, filled by `bun run jira:sync-fields` |
+| Link types available | `.agents/jira-link-types.json`, filled by `bun run jira:sync-link-types` |
 
-- Modality: Xray on Jira | Jira-native
-- TMS CLI: bun xray | acli (only)
-- Regression Epic: {KEY} — {title}
-- Custom field IDs (Modality jira-native only):
-    ATP: {{jira.acceptance_test_plan}}
-    ATR: {{jira.acceptance_test_results}}
-    Test Status: {{jira.test_status}}
-    Automation Candidate: {{jira.to_be_automated}}
-- Link types available: is tested by / tests, is blocked by / blocks
-```
-
-If any answer is missing, the skills fall back to the Phase 0 resolution probes (`AGENTS.md` → `master-test-plan.md` → list issue types → ask the user). Making the answers explicit here is what saves every future session from re-asking.
+If an owner is empty, the skills fall back to the Phase 0 resolution probes (`.agents/project.yaml` → list issue types → ask the user). Filling the owners is what saves every future session from re-asking.
 
 ---
 
