@@ -490,12 +490,13 @@ Report format:
     },
     "tc_results": { "passed": <int>, "failed": <int>, "total": <int> },
     "pass_completed": true|false,
-    "bugs_found": [{ "summary": "...", "severity": "Critical|High|Medium|Low", "blocking": true|false, "evidence_paths": [...], "repro_steps": "..." }],
+    "bugs_found": [{ "summary": "...", "severity": "critica|mayor|moderada|menor|trivial", "blocking": true|false, "evidence_paths": [...], "repro_steps": "..." }],
     "blockers": [...],
     "checklist": "X/Y"
   }
 
 Rules:
+  - `severity` is an option slug of `{{jira.severity}}` (the five impact levels of `agentic-qa-core/references/defect-management-doctrine.md` Part 5.1), never a Priority word: Priority is derived from it at filing time.
   - Do NOT file the bug in the issue tracker yet — Stage 3 handles filing per the bug-report template in reporting-templates.md.
   - Do NOT modify production data; for write-side checks use staging entities flagged in the ATP.
   - Critical Rule #1 (Login Credentials): credentials always from .env; never hardcode.
