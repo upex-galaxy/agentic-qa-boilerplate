@@ -600,7 +600,7 @@ All references are self-contained. Load one at a time.
 ## Anti-patterns — NEVER do these
 
 - **S1.** NEVER mark a Story Ready For Release (or transition to {{jira.status.story.qa_approved}}) without QA sign-off AND a signed-off ATR snapshot for audit trail.
-- **S2.** NEVER skip the Stage 1 Test Plan (ATP) step in Modality jira-xray workflows — the Xray `Test Plan` / `Test Execution` issues depend on the ATP being committed first; downstream TCs cannot link without it.
+- **S2.** NEVER skip the Stage 1 Test Plan (ATP) item in Modality jira-xray workflows. It is step 2 of the Set-first order, born from the `{{jira.acceptance_test_plan}}` field; without it the three-edge check fails (ATP→Story missing). The order is ATS first, ATP second, never ATP first (§"Stage 1 Set-first order"). The one exception is `qa.methodology.gate_mode: light`, which may collapse the ATP item as a declared, per-sprint collapse written in the STP with its debt item.
 - **S3.** NEVER push test results to Jira without an ATR snapshot. The QA comment is a summary; the ATR is the audit record.
 - **S4.** NEVER duplicate the ATR across Jira + Confluence (or any second store). Single source of truth — pick one per the TMS modality (`testing.tms_cli` in `.agents/project.yaml`) and link from anywhere else.
 - **S5.** NEVER bypass the bug-triage decision tree (veto → risk-score → Severity + Root Cause) when a test fails. Every failure gets a triage before it becomes a Bug ticket.

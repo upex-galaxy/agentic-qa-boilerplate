@@ -388,25 +388,7 @@ The modality was resolved in Session Start (§0) and persisted into `test-sessio
 ATP = `Test Plan` issue. ATR = `Test Execution` issue. ATS = `Test Set` issue — the Story's coverage backbone (MANDATORY per Story, even with a single TC). Execute in THIS order; the ATP's and the ATR's test lists are DERIVED from the ATS membership — never maintained as three independent id lists.
 
 ```
-# ① ATP item FROM the field (find-or-create)
-#    Pre-sprint the ATP lives ONLY in {{jira.acceptance_test_plan}} (shift-left is field-first).
-#    Search for an existing `ATP: {STORY-KEY}:` Test Plan first; create only if absent.
-[TMS_TOOL] Find-or-create TestPlan:
-  project: {{PROJECT_KEY}}
-  title: ATP: {STORY-KEY}: {story title}
-  parentEpic: QA Master Test Plan
-
-[ISSUE_TRACKER_TOOL] Update Issue:
-  issue: {ATP_KEY}
-  description: {full ATP body — seeded from the {{jira.acceptance_test_plan}} field content when the
-                shift-left pass left it; authored fresh (item + field) when the field is empty}
-
-[ISSUE_TRACKER_TOOL] Link Issues:
-  linkType: {{jira.link_types.test.name}}   # Story is tested by Test Plan — ADMINISTRATIVE traceability
-  outward: {ATP_KEY}                        # (contributes ZERO coverage, see `xray-cli/SKILL.md` §Direction; the ATS link
-  inward:  {STORY_KEY}                      #  below is the coverage edge)
-
-# ② ATS — create/update the Story's Test Set holding ALL its TCs
+# ① ATS — create/update the Story's Test Set holding ALL its TCs
 #    (the sprint `Test` issues were created per SKILL.md §"TC creation timing")
 [TMS_TOOL] Find-or-create TestSet:
   project: {{PROJECT_KEY}}
@@ -427,6 +409,24 @@ ATP = `Test Plan` issue. ATR = `Test Execution` issue. ATS = `Test Set` issue �
   linkType: {{jira.link_types.test.name}}   # Story is tested by ATS — THE coverage link: this is what
   outward: {ATS_KEY}                        # fills the Xray coverage panel (`xray-cli/SKILL.md` §Direction)
   inward:  {STORY_KEY}
+
+# ② ATP item FROM the field (find-or-create)
+#    Pre-sprint the ATP lives ONLY in {{jira.acceptance_test_plan}} (shift-left is field-first).
+#    Search for an existing `ATP: {STORY-KEY}:` Test Plan first; create only if absent.
+[TMS_TOOL] Find-or-create TestPlan:
+  project: {{PROJECT_KEY}}
+  title: ATP: {STORY-KEY}: {story title}
+  parentEpic: QA Master Test Plan
+
+[ISSUE_TRACKER_TOOL] Update Issue:
+  issue: {ATP_KEY}
+  description: {full ATP body — seeded from the {{jira.acceptance_test_plan}} field content when the
+                shift-left pass left it; authored fresh (item + field) when the field is empty}
+
+[ISSUE_TRACKER_TOOL] Link Issues:
+  linkType: {{jira.link_types.test.name}}   # Story is tested by Test Plan — ADMINISTRATIVE traceability
+  outward: {ATP_KEY}                        # (contributes ZERO coverage, see `xray-cli/SKILL.md` §Direction; the ATS link
+  inward:  {STORY_KEY}                      #  above is the coverage edge)
 
 # ③ + ④ ATR — created WITH the Test Environment; test list derived from the ATS
 [TMS_TOOL] Create Execution:
