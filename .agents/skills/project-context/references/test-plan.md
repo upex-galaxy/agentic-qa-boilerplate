@@ -10,7 +10,7 @@ Generate or update the Master Test Plan — a business-derived test roadmap that
 
 ## What this produces
 
-A conversational, senior-QA-voice document that sits **on top of** `business-data-map.md` and `business-feature-map.md` and converts them into a ranked testing strategy.
+A conversational, senior-QA-voice document that sits **on top of** the data map (`business-data-context`) and the E2E map (`business-e2e-context`) and converts them into a ranked testing strategy.
 
 The output contains:
 - Executive risk map (top critical flows, ranked)
@@ -23,7 +23,7 @@ The output contains:
 - Priority-ordered pre-release checklist
 - Explicit out-of-scope section (to stop scope creep)
 
-This is **NOT** a flow description (→ `business-data-map.md`), a feature inventory (→ `business-feature-map.md`), nor a test case list (→ TMS via `/test-documentation`). It is the **test-strategy layer** above those maps.
+This is **NOT** a flow description (→ `business-data-context`), a journey or feature inventory (→ `business-e2e-context`), nor a test case list (→ TMS via `/test-documentation`). It is the **test-strategy layer** above those maps.
 
 ---
 
@@ -31,14 +31,14 @@ This is **NOT** a flow description (→ `business-data-map.md`), a feature inven
 
 | Source | Status | What to extract | Tool |
 |--------|--------|----------------|------|
-| `.context/business/business-data-map.md` | **HARD REQUIREMENT** | Critical flows, state machines, automatic processes, integrations, business rules | Read file |
-| `.context/business/business-feature-map.md` | Optional — warn if missing | Feature catalog, CRUD matrix, feature flags, high-risk tags, QA relevance matrix | Read file |
+| `business-data-context` map | **HARD REQUIREMENT** | Critical flows, state machines, automatic processes, integrations, business rules | `bun run context:map business-data-context` |
+| `business-e2e-context` map | Optional — warn if missing | Journeys, feature catalog, CRUD matrix, feature flags, high-risk tags, QA relevance matrix | `bun run context:map business-e2e-context` |
 | Existing context | If available | PRD, SRS, domain glossary | `.context/PRD/`, `.context/SRS/` |
 | Git history | If signals needed | Recently changed modules (breakage-likelihood indicator) | `git log --oneline -90 --stat` |
 | Incident / bug tracker | If helpful | Historical pain points that feed "why it matters" per flow | `[ISSUE_TRACKER_TOOL]` |
 | Legacy local MTP `.context/master-test-plan.md` | Only when it exists and is not a placeholder | Seed for the Epic on CREATE (see "Seeding from a legacy local MTP") | Read file |
 
-**Golden rule**: ground every priority claim in evidence from the maps. "This flow is high-risk because…" must cite either a data-map flow, a feature-map QA-relevance row, or a named external dependency. No hand-wave prioritization.
+**Golden rule**: ground every priority claim in evidence from the maps. "This flow is high-risk because…" must cite either a data-map flow, an E2E-map journey or QA-relevance row, or a named external dependency. No hand-wave prioritization.
 
 ---
 
@@ -82,24 +82,24 @@ Over 30,000 → **STOP before writing**. Propose which sections move to which FT
 
 ### Phase 1 — Validation gate
 
-#### 1.1 `business-data-map.md` check (HARD)
+#### 1.1 Data map check (HARD)
 
-If `.context/business/business-data-map.md` does NOT exist → **STOP** with:
+If `bun run context:map business-data-context` prints the placeholder notice (or the skill is missing) → **STOP** with:
 
-> This mode needs `.context/business/business-data-map.md` to reason about risk. Run `project-context` mode `data` first, then re-invoke mode `test-plan`.
+> This mode needs the `business-data-context` map to reason about risk. Run `project-context` mode `data` first, then re-invoke mode `test-plan`.
 
 Do not proceed with assumptions.
 
-#### 1.2 `business-feature-map.md` check (SOFT)
+#### 1.2 E2E map check (SOFT)
 
-If `.context/business/business-feature-map.md` does NOT exist → **WARN and proceed**. Log in §10 Discovery Gaps:
+If the `business-e2e-context` map is a placeholder → **WARN and proceed**. Log in §10 Discovery Gaps:
 
-> The feature-map was not available at generation time. This plan reflects `business-data-map.md` only. Angles missed: CRUD-coverage gaps, feature-flag risk, per-feature QA-relevance tagging. Run `project-context` mode `features` and re-run mode `test-plan` for the complete picture.
+> The E2E map was not available at generation time. This plan reflects the data map only. Angles missed: journey risk, CRUD-coverage gaps, feature-flag risk, per-feature QA-relevance tagging. Run `project-context` mode `e2e` and re-run mode `test-plan` for the complete picture.
 
 #### 1.3 Read and extract
 
 From the data-map: flows, state machines, automatic processes, external integrations, business rules.
-From the feature-map (if present): high-risk features, CRUD gaps (⚠️ / ❌), feature flags, QA-coverage deficits, third-party dependencies.
+From the E2E map (if generated): the highest-risk journeys, high-risk features, CRUD gaps (⚠️ / ❌), feature flags, QA-coverage deficits, third-party dependencies.
 
 ### Phase 2 — Risk scoring
 
@@ -133,7 +133,7 @@ Compose the body of the `## Master Test Plan` section with this structure (use `
 
 **Tone**: conversational, senior-QA voice, second person ("you'll want to verify…"). Assume the reader is a QA engineer onboarding to the project — guide them, don't lecture. Use the same flow names as the data-map.
 
-**What NOT to include**: flow diagrams (live in data-map), feature catalogs (live in feature-map), test case definitions (live in TMS), payload / fixture snippets.
+**What NOT to include**: flow diagrams (live in data-map), journeys and feature catalogs (live in the E2E map), test case definitions (live in TMS), payload / fixture snippets.
 
 ### 1. Visual header
 
@@ -205,8 +205,8 @@ Short, action-oriented. No more than 15 items. Ordered CRITICAL first, then HIGH
 Explicit delegation to stop scope creep:
 
 ```markdown
-- Flow-level diagrams and state-machine transition tables → `.context/business/business-data-map.md`
-- Feature catalog, CRUD matrix, feature flags → `.context/business/business-feature-map.md`
+- Flow-level diagrams and state-machine transition tables → the `business-data-context` map
+- Journeys, feature catalog, CRUD matrix, feature flags → the `business-e2e-context` map
 - API endpoint inventory / contracts → `bun run api:sync` + `project-context` mode `api` (when available)
 - Detailed test case definitions and traceability → TMS (see `/test-documentation`)
 - Sprint-level execution order → the sprint's **STP** in Jira (see `/sprint-testing` sprint-wide mode)
@@ -218,7 +218,7 @@ MANDATORY, kept short (one line per gap). List anything you could not ground in 
 - Flows mentioned in the data-map with no clear business owner
 - Integrations without documented SLAs or failure modes
 - State machines where transitions are implied by code but not documented
-- If §1.2 triggered the feature-map warning, restate the limitation here
+- If §1.2 triggered the E2E-map warning, restate the limitation here
 
 "I could not verify X" is better than inventing an answer.
 
@@ -298,5 +298,5 @@ Projects that ran this mode before the MTP moved to Jira have a committed `.cont
   - MTP Epic: {key} (created | updated), description size {ADF JSON chars} / 30,000, sibling links ensured (note any missing sibling)
   - Sections moved to FTPs this run (if any), with their target FTP
   - Cache read back: `.context/PBI/qa-artifacts/master-test-plan.md` (yes / no)
-- If §1.2 warned, remind the user to run `project-context` mode `features` and re-run mode `test-plan`.
+- If §1.2 warned, remind the user to run `project-context` mode `e2e` and re-run mode `test-plan`.
 - If a project-owned context skill sits over the master test plan (the project names the aspect): offer to run `project-context` mode `context-skill <aspect>` in UPDATE now. The methodology index itself (`iql-context`) is shipped upstream and is NOT updated from a map: a local rule goes to its `references/project-overrides.md`.

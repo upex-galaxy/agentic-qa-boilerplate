@@ -1,6 +1,6 @@
-# Business Feature Map Generator
+# Business E2E Map Generator (mode `e2e`, synonym `features`)
 
-Generate or update `.context/business/business-feature-map.md` — a comprehensive inventory of every feature in the system under test.
+Generate or update the E2E map of `business-e2e-context`: `.agents/skills/business-e2e-context/references/business-e2e-map.html`, how people use the system under test end to end: **the user journeys first**, then the feature catalog those journeys cross. The file anatomy, the section contract and the incremental update are in `../../agentic-qa-core/references/business-context-maps.md` §2 and §4; this reference says WHAT goes in the sections. `features` and the old output name `business-feature-map` route here as synonyms.
 
 **Target**: $ARGUMENTS (project path, module filter, or leave blank for full system)
 
@@ -8,7 +8,12 @@ Generate or update `.context/business/business-feature-map.md` — a comprehensi
 
 ## What this produces
 
-A single document that catalogs **every feature** of the system with:
+A single map, journeys first:
+- Personas: who uses the product and what each one is trying to get done
+- User journeys: entry point, steps, branches, where money or data changes hands, where each one can fail
+- Cross-feature flows that only make sense across several features
+
+Then the catalog those journeys cross, with:
 - Feature identification, status, and maturity
 - CRUD matrix per entity
 - API endpoint inventory grouped by domain
@@ -17,7 +22,7 @@ A single document that catalogs **every feature** of the system with:
 - Feature test coverage matrix and risk assessment
 - Discovery gaps (planned, WIP, undocumented features)
 
-This is the **feature-centric** complement to `business-data-map.md` (which is data-centric). Together they provide a complete understanding of what the system does and how.
+This is the **journey-centric** complement to `business-data-context` (data-centric) and `business-api-context` (API-centric). Together they explain what the system does, for whom, and how.
 
 ---
 
@@ -33,25 +38,42 @@ Exhaust every source. Do not rely on code alone — cross-reference with DB, API
 | Backend services | Business logic, validation, processing | Read `{{BACKEND_REPO}}/{{BACKEND_ENTRY}}` — focus on services, controllers, handlers |
 | Package dependencies | Third-party integrations (payments, email, auth, analytics) | Read `package.json`, `requirements.txt`, `Gemfile`, etc. |
 | Feature flags / env vars | Disabled or experimental features | Grep for `FEATURE_`, `isEnabled`, `feature.*flag` in codebase and `.env.example` |
-| Existing context | PRD, SRS, business-data-map, domain glossary | `.context/PRD/`, `.context/SRS/`, `.context/business/` |
+| Existing context | PRD (personas, user journeys), SRS (functional specs), domain glossary | `.context/PRD/`, `.context/SRS/`, `.context/business/domain-glossary.md` |
+| Sibling maps | entities and flows; endpoint groups and auth | `bun run context:map business-data-context`, `bun run context:map business-api-context` |
+| Legacy map (input only) | a project's old `.context/business/business-feature-map.md`, when present | Read it as input; cite it in `data-migrated-from` on the sections it seeded; never delete or rewrite it |
 | Git history (recent) | Recently added or changed features | `git log --oneline -30` for activity patterns |
 
-**Golden rule**: a feature is any **capability the system offers** — API endpoints, UI actions, background processes, integrations. If a user or system can DO it, it's a feature.
+**Golden rule**: a journey is what a person DOES to reach an outcome; a feature is any **capability the system offers** (API endpoints, UI actions, background processes, integrations). Journeys come first because a story is tested inside the journey that reaches it.
 
 ---
 
 ## Mode detection
 
 ```
-Does .context/business/business-feature-map.md exist?
-  → NO:  CREATE mode — generate from scratch
-  → YES: UPDATE mode — generate new version, show diff summary, ask
-         for confirmation before overwriting. NEVER auto-overwrite.
+bun run context:map business-e2e-context --list
+  → skill folder missing:   STOP. The skill is delivered by `bun run up`
+                            (or scaffolded from the boilerplate); never create it here.
+  → placeholder notice:     CREATE mode — build every section from the sources.
+  → a list of sections:     UPDATE mode — staleness check per section
+                            (business-context-maps.md §5), regenerate ONLY the
+                            stale ones, show a section-level diff, WAIT for
+                            explicit approval. NEVER regenerate the whole map.
 ```
+
+Before drawing the first figure, run the point-of-use check for capability `diagrams` (`../../agentic-qa-core/references/business-context-maps.md` §7).
 
 ---
 
 ## Discovery phases
+
+### Phase 0 — Personas and journeys (first, and the heart of the map)
+
+- Who uses the product? One persona per distinct goal and permission level (PRD personas when they exist; otherwise the roles the code enforces).
+- For each persona, which journeys reach its outcomes? Trace each from its entry point (landing, deep link, email, webhook) through every page and API call to the outcome.
+- Per journey: the branches (validation failure, payment declined, permission denied), the step where money or data changes hands, and the steps where it can fail silently.
+- Rank journeys by business risk (revenue, security, core value, blast radius). The top ones get a figure.
+
+Do NOT invent journeys: each one needs evidence (routes, pages, PRD, a real session). Unverified steps go to `discovery-gaps`.
 
 ### Phase 1 — API-based feature discovery
 
@@ -88,9 +110,9 @@ Scan for:
 - Empty or stub route handlers (planned features)
 - Disabled feature flags
 
-### Phase 5 — Cross-reference with business-data-map
+### Phase 5 — Cross-reference with the data map
 
-If `.context/business/business-data-map.md` exists:
+If `business-data-context` holds a generated map:
 - Verify every entity in the data map has corresponding CRUD features
 - Verify every business flow maps to at least one feature
 - Flag entities without features (orphaned data?)
@@ -100,7 +122,20 @@ If `.context/business/business-data-map.md` exists:
 
 ## Output structure
 
-Write `.context/business/business-feature-map.md` with:
+Write the map as flat `<section>`s, in this order, each with a stable `id`, its `data-sources` and its `data-updated` date (anatomy: `business-context-maps.md` §2):
+
+| Section id | Content | Figure (diagram-design type) |
+|---|---|---|
+| `overview` | who uses the product, the top journeys in one paragraph each | one overview figure (user journey or swimlane) |
+| `persona-<slug>` | one per persona: goal, permissions, the journeys it takes | none by default |
+| `journey-<slug>` | one per journey: entry point, numbered steps, branches, failure points, the data and API behind each step as pointers to `business-data-context` / `business-api-context` section ids | user journey, swimlane or sequence, for the top-risk journeys |
+| `cross-feature-<slug>` | a flow that spans several features | flowchart or swimlane when it clarifies handoffs |
+| `inventory` | §1 below | none |
+| `feature-<domain>` | §2 below, one section per domain | none by default |
+| `crud-matrix`, `ui-inventory`, `integrations`, `flags-wip`, `qa-relevance` | §3 and §5-§8 below | none |
+| `discovery-gaps` | §9 below, MANDATORY | none |
+
+The API endpoint inventory (§4 below) stays a pointer section: endpoint groups live in `business-api-context`. Every fact a figure shows is also written in the section text: the AI reads the text only (`bun run context:map`). The tables below describe section CONTENT; render them as HTML tables.
 
 ### 1. Inventory summary
 
@@ -147,7 +182,7 @@ Legend: ✅ Full, ⚠️ Partial/conditional, ❌ Not available
 
 ### 4. API endpoint inventory
 
-Grouped by domain. Each: `Method | Endpoint | Purpose | Auth`.
+A pointer per domain to the matching `business-api-context` section id. Do not restate endpoints here.
 
 ### 5. UI component inventory
 
@@ -191,8 +226,8 @@ MANDATORY. List features that:
 
 ## After generation
 
-- Cross-reference with `business-data-map.md` if it exists — note any mismatches.
-- Update `AGENTS.md` with a reference if not already present. `CLAUDE.md` remains the one-line compatibility shim.
-- In UPDATE mode: show diff summary, wait for confirmation.
-- Report: total features, features by status, CRUD coverage, integrations found, discovery gaps.
-- If a project-owned context skill sits over this map (the project names the aspect; there is no shipped default for features): offer to run `project-context` mode `context-skill <aspect>` in UPDATE now. Otherwise name the option once.
+- Cross-reference with the data and API maps when they are generated: note any mismatch in `discovery-gaps`.
+- Verify: `bun run context:map business-e2e-context --list` prints every section, with the run's date on the ones written, and no placeholder notice.
+- In UPDATE mode: show the section-level diff and wait for explicit confirmation before writing.
+- Report: personas, journeys traced, features by status, CRUD coverage, integrations found, sections regenerated vs untouched, discovery gaps.
+- The map just changed: review `business-e2e-context`'s `## Rules` and `references/gotchas.md` against it. A rule the new map contradicts is PROPOSED for the gotchas' "No longer true" section, never deleted.

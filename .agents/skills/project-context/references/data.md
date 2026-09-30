@@ -1,6 +1,6 @@
 # Business Data Map Generator
 
-Generate or update `.context/business/business-data-map.md` — a visual and narrative map of the system under test.
+Generate or update the data map of `business-data-context`: `.agents/skills/business-data-context/references/business-data-map.html`, a visual and narrative map of the system under test. The file anatomy, the section contract and the incremental update are in `../../agentic-qa-core/references/business-context-maps.md` §2 and §4; this reference says WHAT goes in the sections.
 
 **Target**: $ARGUMENTS (project path, or leave blank for current repo)
 
@@ -29,7 +29,8 @@ Exhaust every source before writing. Do not rely on a single one.
 | API endpoints | Routes, methods, payloads, auth levels | `[API_TOOL]` or read `api/openapi.json` if it exists; otherwise read route files directly |
 | Backend codebase | Services, business logic, validation rules, triggers | Read `{{BACKEND_REPO}}/{{BACKEND_ENTRY}}` — focus on services, controllers, models |
 | Frontend codebase | Pages, forms, user flows, state management | Read `{{FRONTEND_REPO}}/{{FRONTEND_ENTRY}}` — focus on routes, pages, forms |
-| Existing context | PRD, SRS, business model + domain glossary | `.context/PRD/`, `.context/SRS/`, `.context/business/` |
+| Existing context | PRD, SRS, business model + domain glossary | `.context/PRD/`, `.context/SRS/`, `.context/business/business-model.md`, `.context/business/domain-glossary.md` |
+| Legacy map (input only) | a project's old `.context/business/business-data-map.md`, when present | Read it as input; cite it in `data-migrated-from` on the sections it seeded; never delete or rewrite it |
 | Package dependencies | External integrations (Stripe, SendGrid, Auth0, etc.) | Read `package.json`, `requirements.txt`, `Gemfile`, etc. |
 
 **Golden rule**: Synthesize, don't extract. The DB MCP is live — use it to UNDERSTAND the system, not to dump `information_schema` into markdown.
@@ -39,11 +40,17 @@ Exhaust every source before writing. Do not rely on a single one.
 ## Mode detection
 
 ```
-Does .context/business/business-data-map.md exist?
-  → NO:  CREATE mode — generate from scratch
-  → YES: UPDATE mode — generate new version, show diff summary, ask
-         for confirmation before overwriting. NEVER auto-overwrite.
+bun run context:map business-data-context --list
+  → skill folder missing:   STOP. The skill is delivered by `bun run up`
+                            (or scaffolded from the boilerplate); never create it here.
+  → placeholder notice:     CREATE mode — build every section from the sources.
+  → a list of sections:     UPDATE mode — staleness check per section
+                            (business-context-maps.md §5), regenerate ONLY the
+                            stale ones, show a section-level diff, WAIT for
+                            explicit approval. NEVER regenerate the whole map.
 ```
+
+Before drawing the first figure, run the point-of-use check for capability `diagrams` (`../../agentic-qa-core/references/business-context-maps.md` §7).
 
 ---
 
@@ -94,24 +101,26 @@ For each third-party service:
 
 ## Output structure
 
-Write `.context/business/business-data-map.md` with this structure:
+Write the map as flat `<section>`s, in this order, each with a stable `id`, its `data-sources` and its `data-updated` date (anatomy: `business-context-maps.md` §2):
 
-1. **Visual header** — project name + short description in ASCII box
-2. **Executive summary** — 2-3 paragraphs on business purpose, actors (ASCII diagram), value proposition
-3. **Entity map** — ASCII relationship diagram + table (`Entity | Business Role | Why it exists`) + narrative on key relationships
-4. **Business flows** — one section per flow with: ASCII flow diagram, numbered narrative, business rules, code paths involved
-5. **State machines** — one section per stateful entity with: ASCII state diagram, transitions table (`From | To | Event | Effects`), business rules
-6. **Automatic processes** — three tables (triggers, cron jobs, webhooks) each with "why it exists" column
-7. **External integrations** — one section per service with ASCII call diagram, data impact, dependent flows
-8. **Discovery gaps** — MANDATORY. List anything you could not verify from code/DB. "I could not verify X" is better than inventing an answer.
+| Section id | Content | Figure (diagram-design type) |
+|---|---|---|
+| `overview` | executive summary: business purpose, actors, value proposition | one overview figure for the whole map (architecture or ER) |
+| `entities` | table `Entity \| Business role \| Why it exists` + the key relationships in prose | ER / data model (split above the type's budget) |
+| `entity-<slug>` | one per entity whose meaning is not obvious from the table: soft deletes, derived fields, ownership | only when a picture carries the mechanism |
+| `flow-<slug>` | one per business flow: numbered narrative, business rules, code paths involved | flowchart or sequence |
+| `state-<entity>` | one per stateful entity: transitions table `From \| To \| Event \| Effects`, rules | state machine |
+| `automatic-processes` | three tables (DB triggers, cron jobs, webhooks), each with a "why it exists" column | none by default |
+| `integration-<service>` | one per external service: data impact, dependent flows, failure behaviour | data flow when it clarifies direction |
+| `discovery-gaps` | MANDATORY: everything you could not verify. "I could not verify X" beats an invented answer | none |
 
-**Visual first**: use ASCII diagrams extensively. Diagrams beat paragraphs.
+Every fact a figure shows is also written in the section text: the AI reads the text only (`bun run context:map`). Ids are slugs of the source name and never change after CREATE.
 
 ---
 
 ## After generation
 
-- Update `AGENTS.md` with a reference to the generated file if not already present. `CLAUDE.md` remains the one-line compatibility shim.
-- In UPDATE mode: show the diff summary and wait for explicit confirmation.
-- Report: entities documented, flows traced, state machines found, integrations mapped, discovery gaps.
-- If `.agents/skills/data-context/` exists: offer to run `project-context` mode `context-skill data` in UPDATE now (the map just changed; its judgment layer may carry a rule the new map contradicts). If it does not exist: name the option once, do not scaffold it here.
+- Verify: `bun run context:map business-data-context --list` prints every section, with the run's date on the ones written, and no placeholder notice.
+- In UPDATE mode: show the section-level diff and wait for explicit confirmation before writing.
+- Report: entities documented, flows traced, state machines found, integrations mapped, sections regenerated vs untouched, discovery gaps.
+- The map just changed: review `business-data-context`'s `## Rules` and `references/gotchas.md` against it. A rule the new map contradicts is PROPOSED for the gotchas' "No longer true" section, never deleted.
