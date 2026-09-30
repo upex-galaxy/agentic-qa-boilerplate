@@ -67,19 +67,23 @@ reads **`QA Master Test Plan`** for family consistency (the user's intent — "M
 
 ### 1.1 The MTP Epic — special role
 
-`QA Master Test Plan` is **both** an Epic **and** the local file `.context/master-test-plan.md`
-(they mirror each other). The Epic is NOT a Test Plan work type — it is the umbrella Epic
-whose **children are every Test Plan in the project** (FTP/STP/ATP/RTP). Its description holds:
+`QA Master Test Plan` is an Epic, and its description IS the Master Test Plan: Jira is the
+source of truth, and the sync caches the plan at `.context/PBI/qa-artifacts/master-test-plan.md`
+(gitignored, never hand-edited; `.context/ADR/ADR-0007-mtp-in-jira.md`). The Epic is NOT a Test
+Plan work type — it is the umbrella Epic whose **children are every Test Plan in the project**
+(FTP/STP/ATP/RTP). Its description holds:
 
-- the master test strategy (same content as `.context/master-test-plan.md`: what to test, why,
-  risk ranking, regression Epic pointer, pass-rate SLOs);
+- the master test strategy, under a `## Master Test Plan` section written by `project-context`
+  mode `test-plan` (what to test, why, risk ranking, regression Epic pointer, pass-rate SLOs),
+  budgeted to the PRODUCT altitude: Jira caps a description's serialized ADF, so feature depth
+  goes down one rung, into each feature's FTP;
 - a pointer to the **official QA team repository** (this boilerplate clone — the home of
   Agentic Testing + Test Automation for the project).
 
 It is **cross-linked to its three sibling QA Epics** (`relates to`): QA Test Repository,
 QA Test Artifacts, QA Defect Management — so the four form a navigable QA-governance cluster.
 
-**MTP ≠ RTP.** The MTP is the Epic plus `.context/master-test-plan.md` — the strategy and the
+**MTP ≠ RTP.** The MTP is the Epic and its description — the strategy and the
 bucket every Plan hangs from, never a Test Plan item. The **RTP** is one of the items *inside*
 that bucket: an executable Test Plan whose membership is the regression suite that actually
 runs. Strategy versus suite — the two never collapse into each other.
@@ -123,7 +127,7 @@ Parent stays the MTP Epic for all Plans regardless of roll-up.
 
 | Altitude | Plan | Runner | Jira work type | When / who | Cardinality |
 |---|---|---|---|---|---|
-| **Product** | **MTP** Master Test Plan | — | **Epic** (+ local file) | `project-context` mode `test-plan` produces BOTH the real file (`.context/master-test-plan.md`) AND the `QA Master Test Plan` Epic with mirror description + cross-links to the 3 sibling QA Epics | 1 per project |
+| **Product** | **MTP** Master Test Plan | — | **Epic** (description = the plan; local cache) | `project-context` mode `test-plan` writes the `## Master Test Plan` section of the `QA Master Test Plan` Epic description + cross-links to the 3 sibling QA Epics; the sync caches it at `.context/PBI/qa-artifacts/master-test-plan.md` | 1 per project |
 | **Feature / Epic** | **FTP** Feature Test Plan | — (FTR cut: it duplicated the STR) | Test Plan | find-or-create/update when `/sprint-testing` loads the Story's Epic context (`feature-test-planning`); consumed as context from then on. Item-first; Epic field `feature_test_plan` = fallback | 1 per feature |
 | **Sprint** | **STP** Sprint Test Plan | **STR** Sprint Test Results | Test Plan → Test Execution | **STP** created at sprint START — find-or-create in the Session Start of the FIRST sprint ticket in `/sprint-testing` (fallback: `/regression-testing` creates it when running suites); a LIVING planner updated per tested ticket, closed at sprint end. **STR** created at sprint CLOSE as the recap of all results (`/sprint-testing` batch-close or `/regression-testing` — first to arrive creates it, the other completes it) | 1 per sprint (term: "Regression Testing"; "Sprint" comes from the `Sprint#{N}` scope-id) |
 | **User Story** | **ATP** Acceptance Test Plan | **ATR** Acceptance Test Results | Test Plan → Test Execution | pre-sprint the ATP lives ONLY in `{{jira.acceptance_test_plan}}` (authored by `/shift-left-testing`); the Test Plan ITEM is born in sprint-testing S1 from that field. ATR item created in S1, filled in S3 | ATP 1 per Story · ATR 1 run ("Story Testing") |

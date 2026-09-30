@@ -138,7 +138,7 @@ Stage 1 — Plan agent
 Goal: Produce a feature-level test plan and an implementation plan for ticket <<ISSUE_KEY>> under .context/PBI/epics/EPIC-<<EPIC_KEY>>-<<EPIC_SLUG>>/stories/STORY-<<ISSUE_KEY>>-<<SLUG>>/.
 
 Context docs:
-  - <<REPO_ROOT>>/.context/master-test-plan.md
+  - <<REPO_ROOT>>/.context/PBI/qa-artifacts/master-test-plan.md
   - <<REPO_ROOT>>/.context/PBI/epics/EPIC-<<EPIC_KEY>>-<<EPIC_SLUG>>/module-context.md
   - <<REPO_ROOT>>/.context/PBI/epics/EPIC-<<EPIC_KEY>>-<<EPIC_SLUG>>/test-specs/ROADMAP.md
   - <<REPO_ROOT>>/tests/components/TestFixture.ts

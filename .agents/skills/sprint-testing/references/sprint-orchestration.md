@@ -171,7 +171,7 @@ Sprint-wide mode. One nested sub-scope per issue at `.session/sprint-testing/spr
 ## Cross-references
 - STP: {STP-KEY}
 - Per-issue sub-scopes: `.session/sprint-testing/sprint-{N}/<KEY>/{plan.md, progress.md, test-session-memory.md}`
-- `.context/master-test-plan.md`, `.context/business/business-feature-map.md`
+- `.context/PBI/qa-artifacts/master-test-plan.md`, `.context/business/business-feature-map.md`
 ```
 
 **`plan.md` is rewritten wholesale, so it has exactly ONE writer** — whoever plans the sprint. Mid-sprint changes (an issue arrives, a wave is promoted, an owner changes) are appended under `## Changelog` per §6, which is append-only; the body sections above it are never edited in place, because they record the agreement the sprint started from.
@@ -328,7 +328,7 @@ Goal: Fetch ticket <TICKET_KEY> from the issue tracker, load relevant context, c
 
 Context docs:
   - <<REPO_ROOT>>/AGENTS.md (§"Local Context (PBI)" folder convention)
-  - <<REPO_ROOT>>/.context/master-test-plan.md
+  - <<REPO_ROOT>>/.context/PBI/qa-artifacts/master-test-plan.md
   - <<REPO_ROOT>>/.context/business/business-data-map.md
   - <<REPO_ROOT>>/.context/business/business-feature-map.md
   - <<REPO_ROOT>>/.context/business/business-api-map.md

@@ -48,5 +48,5 @@ The STP and the STR are Jira items (`Test Plan` and `Test Execution`, parented t
 ## Related
 
 - Ticket-level artifacts (ATP, ATS, ATR, Tests, evidence) → `.context/PBI/`, a gitignored cache of Jira
-- Project-wide test strategy → `.context/master-test-plan.md`, which **is** committed
+- Project-wide test strategy → the `QA Master Test Plan` Epic description in Jira, cached at `.context/PBI/qa-artifacts/master-test-plan.md` (gitignored, ADR-0007)
 - Test-architecture decisions → `.context/ADR/`, append-only and committed

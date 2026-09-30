@@ -146,10 +146,10 @@ Read these files to understand the system:
 .context/business/business-data-map.md       # business flows and state machines
 .context/business/business-feature-map.md    # feature catalog, CRUD matrix, integrations
 .context/business/business-api-map.md        # auth model, critical journey endpoints, external integrations
-.context/master-test-plan.md                # testing guide (what to test and why)
+.context/PBI/qa-artifacts/master-test-plan.md   # testing guide (what to test and why); cache of the MTP Epic
 ```
 
-These provide business flows, feature inventory, API contracts + authentication model, and the test strategy. If ALL four files are missing, stop and hand off to the `project-discovery` skill (or invoke the individual `project-context` modes `data` / `features` / `api` + `test-plan`). Sprint-testing cannot plan without them.
+These provide business flows, feature inventory, API contracts + authentication model, and the test strategy. A missing MTP cache is first refreshed with `bun run context:hydrate` (the plan lives in Jira). If ALL four are still missing, stop and hand off to the `project-discovery` skill (or invoke the individual `project-context` modes `data` / `features` / `api` + `test-plan`). Sprint-testing cannot plan without them.
 
 ### Step 4 — Module context (3-level hierarchy)
 

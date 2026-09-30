@@ -73,8 +73,9 @@ qa:
   # Doctrine: .agents/skills/agentic-qa-core/references/defect-management-doctrine.md (Part 4).
   qa_epics:
     master_test_plan_epic:
-      name: QA Master Test Plan # the MTP — parent of every Test Plan (FTP/STP/ATP and the long-lived RTP); description mirrors
-      # .context/master-test-plan.md + points to the official QA repo; cross-linked to the 3 sibling QA epics
+      name: QA Master Test Plan # the MTP — parent of every Test Plan (FTP/STP/ATP and the long-lived RTP); its description IS
+      # the plan (section `## Master Test Plan`, cached at .context/PBI/qa-artifacts/master-test-plan.md) + points to the
+      # official QA repo; cross-linked to the 3 sibling QA epics
       key: null # discovered/created at runtime, then cached here (e.g. PROJ-100)
     test_repository_epic:
       name: QA Test Repository # convention name; holds every Test (TC) issue

@@ -767,7 +767,9 @@ const CONTEXT_GENERATED_PREFIXES: ReadonlyArray<{ prefix: string, generator: str
   { prefix: '.context/regression-history/', generator: 'regression-testing' },
   { prefix: '.context/project-config.md', generator: 'project-discovery Phase 1' },
   { prefix: '.context/risk-assessment.md', generator: 'project-discovery Phase 1' },
-  { prefix: '.context/master-test-plan.md', generator: 'project-context test-plan' },
+  // Legacy: the MTP now lives in Jira and is cached under .context/PBI/ (ADR-0007).
+  // Kept because `project-context` mode `test-plan` names it as the seed input.
+  { prefix: '.context/master-test-plan.md', generator: 'legacy local MTP, read only as the seed of the MTP Epic (project-context test-plan)' },
 ];
 
 /** The only `.context/` prefix a context skill may cite without it resolving on disk. */
