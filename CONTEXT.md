@@ -151,9 +151,10 @@ Two systems, two consumers, two lifecycles. Use the right substrate for the righ
 │   ├── business-feature-map.md    → Feature catalog + CRUD matrix  (project-context features)
 │   └── business-api-map.md        → Auth model + critical API      (project-context api)
 │
-├── reports/                   → Run artifacts: regression reports, GO/NO-GO verdicts, analysis output
-└── master-test-plan.md        → What to test and why                (project-context test-plan)
+└── reports/                   → Run artifacts: regression reports, GO/NO-GO verdicts, analysis output
 ```
+
+> **Master Test Plan**: it lives in Jira, in the `QA Master Test Plan` Epic description (`project-context` mode `test-plan` writes it). The sync caches it at `.context/PBI/qa-artifacts/master-test-plan.md`, so there is no committed MTP file (ADR-0007).
 
 > **TMS configuration**: modality (Xray vs Jira-native) is derived from `.agents/project.yaml` `testing.tms_cli`. Regression Epic and label taxonomy are auto-discovered live by `/test-documentation` Phase 0 + Preflight. Jira/Xray setup lives in `docs/core/setup/jira-xray.html`; the IQL methodology narrative is the official site, https://upexgalaxy.com/metodologia.
 
@@ -281,7 +282,7 @@ After discovery, run these `project-context` modes (orchestrated by `/project-di
 /project-context data       → .context/business/business-data-map.md
 /project-context features   → .context/business/business-feature-map.md
 /project-context api        → .context/business/business-api-map.md
-/project-context test-plan  → .context/master-test-plan.md
+/project-context test-plan  → QA Master Test Plan Epic in Jira (cache: .context/PBI/qa-artifacts/master-test-plan.md)
 bun run api:sync            → api/schemas/ (TypeScript types from OpenAPI)
 ```
 
@@ -329,7 +330,7 @@ Reference / utility / generator skills (`agentic-qa-core`, `acli`, `xray-cli`, `
 |------|------------|----------------|
 | **Write E2E or API Test** | `/test-automation` (SKILL.md) | The skill's own `references/` (planning playbook, KATA patterns, etc.) |
 | **Pre-sprint AC refinement / backlog grooming** | `/shift-left-testing` (SKILL.md) + `.context/business/*` | Skill `references/` (backlog-selection, refinement-playbook, atp-outline-template) |
-| **Exploratory Testing** | `/sprint-testing` (SKILL.md) + `.context/master-test-plan.md` | Skill `references/` (exploration patterns, session entry points) |
+| **Exploratory Testing** | `/sprint-testing` (SKILL.md) + `.context/PBI/qa-artifacts/master-test-plan.md` | Skill `references/` (exploration patterns, session entry points) |
 | **Understand System** | `.context/business/business-data-map.md` | `.context/business/*`, `.context/PRD/*`, `.context/SRS/*` |
 | **Use MCP** | `AGENTS.md` §5 "MCPs (decision rules)" + §6 "Tool Resolution" | The owning CLI skill (`/acli`, `/xray-cli`, `/playwright-cli`) |
 

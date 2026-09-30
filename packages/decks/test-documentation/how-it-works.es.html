@@ -540,11 +540,10 @@ kbd,.kbd{font-family:var(--font-mono);font-size:12.5px;padding:2px 8px;border-ra
 <section class="slide" data-title="Fase 0 · Modalidad TMS">
   <p class="kicker">fase 0 — gate obligatorio, se resuelve UNA vez</p>
   <h2 class="h2" data-anim="fade-up">¿Xray licenciado? Mismos conceptos, distintos <span class="grad">contenedores</span></h2>
-  <div class="steps s4 anim-stagger-list">
+  <div class="steps s3 anim-stagger-list">
     <div class="step"><div class="num">1</div><h4>Config</h4><p><span class="mono">{{TMS_CLI}}</span> = <span class="mono">bun xray</span> → jira-xray; <span class="mono">acli</span>-solo o sin definir → jira-native.</p></div>
-    <div class="step"><div class="num">2</div><h4>Master Test Plan</h4><p>Línea <span class="mono">TMS: Xray on Jira</span> o <span class="mono">TMS: Jira native</span> en <span class="mono">.context/master-test-plan.md</span>.</p></div>
-    <div class="step"><div class="num">3</div><h4>Issue types</h4><p>¿Existen <span class="mono">Test Plan / Test Execution / Test Set / Pre-Condition</span>? Sí → jira-xray; no → jira-native.</p></div>
-    <div class="step"><div class="num">4</div><h4>Preguntar</h4><p>Solo si los tres sondeos fallan. Persistir en <span class="mono">plan.md</span>; sticky — drift a mitad de sesión → STOP y pregunta.</p></div>
+    <div class="step"><div class="num">2</div><h4>Issue types</h4><p>¿Existen <span class="mono">Test Plan / Test Execution / Test Set / Pre-Condition</span>? Sí → jira-xray; no → jira-native.</p></div>
+    <div class="step"><div class="num">3</div><h4>Preguntar</h4><p>Solo si los dos sondeos fallan. Persistir en <span class="mono">plan.md</span>; sticky — drift a mitad de sesión → STOP y pregunta.</p></div>
   </div>
   <table class="dtable tight">
     <thead><tr><th>Artefacto</th><th>jira-xray</th><th>jira-native (sin Xray)</th></tr></thead>
