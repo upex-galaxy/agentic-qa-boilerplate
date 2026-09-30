@@ -111,3 +111,60 @@ describe('lint-docs', () => {
     expect(lintDocs(root).findings).toEqual([]);
   });
 });
+
+describe('lint-docs roster and scripts', () => {
+  const router = (slugs: string[]): string => [
+    '## 5. SKILLS',
+    '',
+    '### Skills (lazy-loaded by trigger phrase)',
+    '',
+    '| Skill | Trigger | Purpose |',
+    '|---|---|---|',
+    ...slugs.map(s => `| \`${s}\` | \`/${s}\` | x |`),
+    '',
+    '### Skill modes',
+    '',
+    'Mentions `ghost-flow` outside the router, which does not count.',
+  ].join('\n');
+  const skill = (slug: string): void => write(`.agents/skills/${slug}/SKILL.md`, `---\nname: ${slug}\n---\n`);
+  const head = '<head><title>Start</title><meta name="description" content="Start." /></head>';
+
+  test('a repo skill missing from the AGENTS.md router fails by name; a project-local context skill is exempt', () => {
+    skill('alpha-flow');
+    skill('ghost-flow');
+    skill('acme-context');
+    write('AGENTS.md', router(['alpha-flow']));
+    const findings = lintDocs(root).findings.filter(f => f.kind === 'roster');
+    expect(findings.map(f => `${f.file}:${f.target}`)).toEqual(['AGENTS.md:ghost-flow']);
+  });
+
+  test('the human pages are not a skill list: a README that names no skill passes (Critical Rule #17)', () => {
+    write('packages/create-agentic-qa/package.json', '{}');
+    skill('alpha-flow');
+    write('AGENTS.md', router(['alpha-flow']));
+    write('README.md', 'The catalog is the generated REGISTRY.md.');
+    write('docs/core/empezar-aqui.html', `${head}<p>Catalog: REGISTRY.md</p>`);
+    expect(lintDocs(root).findings.filter(f => f.kind === 'roster')).toEqual([]);
+  });
+
+  test('a quoted bun run script that package.json does not declare fails; placeholders and file runs pass', () => {
+    write('package.json', JSON.stringify({ scripts: { 'test': 'x', 'docs:check': 'y' } }));
+    write('README.md', [
+      'Run `bun run test` and `bun run --silent docs:check`.',
+      '',
+      '```bash',
+      'bun run nope:gone',
+      '```',
+      '',
+      'Placeholders: `bun run <script>`, `bun run {name}`, `bun run scripts/tool.ts`.',
+    ].join('\n'));
+    write('docs/core/page.html', `${head}<code>bun run missing-one</code>`);
+    write('AGENTS.md', 'Verify with `bun run docs:check`, never `bun run old-name`.');
+    const findings = lintDocs(root).findings.filter(f => f.kind === 'script');
+    expect(findings.map(f => `${f.file}:${f.line}:${f.target}`)).toEqual([
+      'AGENTS.md:1:old-name',
+      'README.md:4:nope:gone',
+      'docs/core/page.html:1:missing-one',
+    ]);
+  });
+});
