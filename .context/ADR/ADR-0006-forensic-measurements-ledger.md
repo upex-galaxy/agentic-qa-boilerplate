@@ -1,6 +1,6 @@
 # ADR-0006 — Doctrine keeps the why; the measured figures and dates live here
 
-- **Status:** Proposed
+- **Status:** Accepted (by the owner, 2026-09-30)
 - **Date:** 2026-09-24
 - **Deciders:** framework owner (boilerplate maintainer); drafted by `/framework-development` from the volatile-facts sweep (decided 2026-09-24)
 - **Tags:** doctrine, documentation, lint, forensics
