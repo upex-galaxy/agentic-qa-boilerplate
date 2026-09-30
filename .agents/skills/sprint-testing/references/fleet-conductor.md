@@ -139,7 +139,7 @@ Run: <run id — ONLY when this worker was launched without a supervised dispatc
 - no sprint-altitude writes, no token minting, no bulk sync
 - no heartbeats; report once at the end
 - if your own measurement contradicts an instruction in this brief or a later message, STOP and `ask` with both readings and your evidence — never comply silently and never deviate silently
-- <for a non-Claude harness: rename this session to <KEY>-<slug> with /rename as your first action>
+- your session name is set by the conductor (the prompt token on Claude; a conductor-typed `/rename <KEY>` on a non-Claude harness): never try to rename yourself
 ```
 
 **Absolute paths, always.** `.session/` is gitignored and local; a worker that resolves a relative path against the wrong working directory silently reads nothing.

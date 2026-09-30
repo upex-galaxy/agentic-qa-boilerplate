@@ -394,7 +394,13 @@ captured evidence, any local session scope, the tracker cache and installed depe
    — list the gitignored files and decide, one by one: evidence and reports that matter get COPIED
    into the primary checkout's `.session/orchestration/<slug>/reports/`; durable documents are moved
    to where the repo keeps them; the rest is disposable by design.
-4. Only then remove, and `git worktree prune`.
+4. Is anyone going to RESUME this worker's session? Removing the worktree also ends that. A harness
+   finds its sessions by working directory (Claude Code keeps transcripts under a folder named after
+   the path), so once the directory is gone the resume command in the roster (`claude --resume
+   <label>`, `codex resume <label>`) has nowhere to run and the owner cannot bring the session back
+   after a crash or a restart. Keep the worktree while the session may still be resumed; when you do
+   remove it, mark the roster row `resume: gone (worktree removed)` so nobody tries.
+5. Only then remove, and `git worktree prune`.
 
 Mechanics and the untracked-files gotcha: `git-flow-master/references/worktrees.md`.
 
