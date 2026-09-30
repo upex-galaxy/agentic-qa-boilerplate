@@ -104,6 +104,21 @@ describe('lint-docs', () => {
     ]);
   });
 
+  test('scans the nested READMEs under .context/ and packages/, not the PBI cache below them', () => {
+    write('.context/README.md', 'Ten skills today.');
+    write('.context/reports/README.md', 'See [gone](./gone.md).');
+    write('.context/PBI/epics/EPIC-1-x/README.md', 'A synced cache file, today.');
+    write('packages/create-agentic-qa/README.md', '**Last Updated**: 2026-04-26');
+    write('packages/decks/README.md', 'Deck index, today.');
+    const findings = lintDocs(root).findings;
+    expect(findings.map(f => `${f.file}:${f.line}:${f.kind}`)).toEqual([
+      '.context/README.md:1:current-state',
+      '.context/reports/README.md:1:link',
+      'packages/create-agentic-qa/README.md:1:current-state',
+      'packages/decks/README.md:1:current-state',
+    ]);
+  });
+
   test('fenced code, <pre>, <code class="block"> and a volatile-ok line are not volatile findings', () => {
     write('README.md', ['```', 'x.ts:12 today', '```', 'Teaching the word today <!-- volatile-ok: teaching example -->'].join('\n'));
     const head = '<head><title>Setup</title><meta name="description" content="Guides." /></head>';
@@ -166,5 +181,13 @@ describe('lint-docs roster and scripts', () => {
       'README.md:4:nope:gone',
       'docs/core/page.html:1:missing-one',
     ]);
+  });
+
+  test('a package README resolves its own scripts plus the root ones', () => {
+    write('package.json', JSON.stringify({ scripts: { 'repo:check': 'x' } }));
+    write('packages/cli-pkg/package.json', JSON.stringify({ scripts: { build: 'y' } }));
+    write('packages/cli-pkg/README.md', '`bun run repo:check`, then `bun run build`, never `bun run gone`.');
+    const findings = lintDocs(root).findings.filter(f => f.kind === 'script');
+    expect(findings.map(f => `${f.file}:${f.target}`)).toEqual(['packages/cli-pkg/README.md:gone']);
   });
 });

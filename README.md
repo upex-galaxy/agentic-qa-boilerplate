@@ -61,7 +61,7 @@ Before running `bunx create-agentic-qa@latest` or `bun install && bun run setup`
 | ---------------------------------------------------------------------------------------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
 | **Bun**                                                                                                                | the floor `bun run setup:doctor --preflight` enforces | Runtime for every script (`bun install`, `bun run setup`, `bun run test`, `bun xray`, `bun run setup:doctor`) | macOS/Linux/WSL: `curl -fsSL https://bun.sh/install \| bash` · Windows: `powershell -c "irm bun.sh/install.ps1 \| iex"` · [docs](https://bun.sh/docs/installation) |
 | **Node**                                                                                                               | the floor `bun run setup:doctor --preflight` enforces (`MIN_NODE_MAJOR` in `cli/doctor.ts`) | Hooks run `node .agents/hooks/personality-reinject.mjs`; checked by the scaffolder doctor and the `bun run setup` preflight | [nodejs.org](https://nodejs.org)                                                       |
-| **An agent** — [Claude Code](https://docs.claude.com/en/docs/claude-code), [OpenCode](https://opencode.ai/docs) **or** [Codex](https://developers.openai.com/codex/) | latest      | `bun run setup` Step 4 detects all three (`~/.claude/` or `claude` on PATH · `~/.config/opencode/` or `opencode` on PATH · `codex` on PATH or `.codex/config.toml` in the repo) and lets you pick which to configure; exits 1 only if none is found | See each project's official docs                           |
+| **An agent** — [Claude Code](https://docs.claude.com/en/docs/claude-code), [OpenCode](https://opencode.ai/docs) **or** [Codex](https://developers.openai.com/codex/) | latest      | `bun run setup` step `4-agent-detect` detects all three (`~/.claude/` or `claude` on PATH · `~/.config/opencode/` or `opencode` on PATH · `codex` on PATH or `.codex/config.toml` in the repo) and lets you pick which to configure; exits 1 only if none is found | See each project's official docs                           |
 | `git`                                                                                                                  | any         | Scaffolder runs `git init`; pre-commit hooks (Husky) require git                                            | [git-scm.com/downloads](https://git-scm.com/downloads)                                 |
 | `tar`                                                                                                                  | any         | Scaffolder extracts the template tarball. Either flavour works — GNU tar (Linux, WSL, Git Bash) or bsdtar   | Ships with macOS, Linux, and Windows 10 1803+ / Windows 11 (`C:\Windows\System32\tar.exe`) |
 
@@ -77,14 +77,7 @@ Before running `bunx create-agentic-qa@latest` or `bun install && bun run setup`
 
 These are **not optional** for the workflow — each one is required by a specific skill. They are non-blocking at setup time because the installer cannot guess which skills you will actually use. Install them up front if you plan to use the whole stack, or lazily when the skill that uses them surfaces a missing-binary error.
 
-| Tool             | Required by                                                                         | Install                                                                           |
-| ---------------- | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| `gh`             | `/git-flow-master`, `/regression-testing` (PRs, Actions, releases)                  | [cli.github.com](https://cli.github.com/)                                         |
-| `acli`           | `/acli`, `/shift-left-testing`, `/sprint-testing`, `/test-documentation` (Jira / Confluence from terminal) | [Atlassian docs](https://developer.atlassian.com/cloud/acli/guides/install-acli/) |
-| `playwright-cli` | `/playwright-cli` skill (agent-driven browser automation)                           | `bun add -g @playwright/cli@latest`                                               |
-| `resend`         | `/resend-cli` (email testing flows)                                                 | [resend.com/docs/cli](https://resend.com/docs/cli)                                |
-| `jq`             | `acli` JSON pipelines (`acli ... --json \| jq ...`)                                 | [jqlang.github.io/jq/download](https://jqlang.github.io/jq/download)              |
-| `rg`             | Repo search used by every agent. **Claude Code bundles it; OpenCode and Codex use the system binary** | `brew install ripgrep` · `apt install ripgrep` · `winget install BurntSushi.ripgrep.MSVC` |
+The list is `EXTERNAL_CLIS` in `cli/install.ts`: each entry names the skill that needs it, a cross-platform install hint when one exists, and the official docs URL. `bun run setup` prints that table with a found / missing status per tool, and `bun run setup:doctor` re-checks it any time. Repo search (`rg`) is not on it: Claude Code bundles its own, OpenCode and Codex use the system binary (`brew install ripgrep` · `apt install ripgrep` · `winget install BurntSushi.ripgrep.MSVC`).
 
 ### Convenience opt-ins (pure UX, never required)
 
@@ -112,10 +105,10 @@ Nothing blocks install, update or `setup:doctor`: a value is validated by the co
 
 | Stage                    | Check depth                                                                                                                     | Behavior                                                                                                                                                                                                  |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Preflight (Step 0)       | Version compare — reads `Bun.version`, parses semver, requires the floor `cli/doctor.ts` sets. Also checks `node_modules/@inquirer/prompts` exists. | Hard exit 1 with explicit `Fix:` command before any other step.                                                                                                                                           |
-| Step 2 — gentle-ai       | Version compare — runs `gentle-ai version`, parses semver, requires the minimum `cli/install.ts` enforces (`MIN_GENTLE_AI_VERSION`).                                                | Missing: prints brew + go install commands + docs URL, asks exit-or-continue. Too old: warns and continues with `gentle-ai update` hint.                                                                  |
-| Step 4 — agents          | Detects Claude Code, OpenCode and Codex (config directory, binary on PATH, or `.codex/config.toml`), then prompts which to configure. | None of the three found: prints all three docs URLs, hard exit 1.                                                                                                                                     |
-| Step 10 — per-skill CLIs | PATH probe — runs `which <name>` (POSIX) or `where <name>` (Windows). Presence only, no version check.                          | Prints `found`/`missing` table; for missing entries adds `quick:` install command (when cross-platform) + `docs:` URL. Non-blocking.                                                                      |
+| Preflight                | Version compare — reads `Bun.version`, parses semver, requires the floor `cli/doctor.ts` sets. Also checks `node_modules/@inquirer/prompts` exists. | Hard exit 1 with explicit `Fix:` command before any other step.                                                                                                                                           |
+| `2-gentle-ai-detect`     | Version compare — runs `gentle-ai version`, parses semver, requires the minimum `cli/install.ts` enforces (`MIN_GENTLE_AI_VERSION`).                                                | Missing: prints brew + go install commands + docs URL, asks exit-or-continue. Too old: warns and continues with `gentle-ai update` hint.                                                                  |
+| `4-agent-detect`         | Detects Claude Code, OpenCode and Codex (config directory, binary on PATH, or `.codex/config.toml`), then prompts which to configure. | None of the three found: prints all three docs URLs, hard exit 1.                                                                                                                                     |
+| `11-verify-clis`         | PATH probe — runs `which <name>` (POSIX) or `where <name>` (Windows). Presence only, no version check.                          | Prints `found`/`missing` table; for missing entries adds `quick:` install command (when cross-platform) + `docs:` URL. Non-blocking.                                                                      |
 | direnv (optional)        | Presence + `.envrc` allow status + shell-rc hook line.                                                                          | Pure convenience nudge — the `bun run claude` / `bun run opencode` / `bun run codex` wrappers already work without it. If absent, lists `system_install` action with install command; safe to decline (recommended on Windows). |
 | `bun run setup:doctor`   | Re-runs everything above + every MCP `.env` var the manifest declares + Playwright browser cache.                                                        | Human-readable or `--json` report. Every `pending_action` carries a `where` hint or URL — re-run any time after partial setup.                                                                            |
 
@@ -159,7 +152,7 @@ cd <your-repo-name>
 What it does:
 
 1. Downloads `upex-galaxy/agentic-qa-boilerplate` (latest `main`) as a tarball — no git history.
-2. Rewrites `package.json` name + `.agents/project.yaml` `project.name`.
+2. Rewrites `package.json` name + `.agents/project.yaml` `project.project_name` (and `project.project_key` when `--project-key` is passed).
 3. Initializes a fresh `git init -b main` with an initial commit.
 4. Runs `bun install`.
 5. Hands off to `bun run setup` — gentle-ai, the committed skills under `.agents/skills/`, community skills, the MCP servers `.mcp.json` declares, `.env`, direnv autoload, optional `gh repo create`.
@@ -267,9 +260,9 @@ Prefer to start your project **on GitHub from day one** (your own repo, your own
 
    The template copies the boilerplate's own filled `.agents/project.yaml` (its `MAINTAINER COPY:` header line says so). The project-metadata step (`bun run agents:setup`) detects it and offers to replace it with the blank template before asking anything; accept. Without a TTY, pass the consent explicitly: `bun run agents:setup --non-interactive --reseed`.
 
-5. (Optional) Rename the project inside the codebase: edit `package.json` → `name`, and `.agents/project.yaml` → `project.name`.
+5. (Optional) Rename the project inside the codebase: edit `package.json` → `name`, and `.agents/project.yaml` → `project.project_name`.
 
-> **The magic command does this better.** `bunx create-agentic-qa@latest <your-repo-name>` does everything the template flow does **plus**: scrubs the upstream git history (so your repo doesn't carry boilerplate commits), auto-rewrites `package.json` name and `.agents/project.yaml` `project.name`, runs `bun install`, runs the interactive installer, and optionally creates the GitHub repo for you via `gh` — all in one command. The template route is a good fit only if you want the GitHub repo created via the web UI before any local work.
+> **The magic command does this better.** `bunx create-agentic-qa@latest <your-repo-name>` does everything the template flow does **plus**: scrubs the upstream git history (so your repo doesn't carry boilerplate commits), auto-rewrites `package.json` name and `.agents/project.yaml` `project.project_name`, runs `bun install`, runs the interactive installer, and optionally creates the GitHub repo for you via `gh` — all in one command. The template route is a good fit only if you want the GitHub repo created via the web UI before any local work.
 
 ### Manual clone (contributors)
 
@@ -309,7 +302,7 @@ bun run setup:doctor
 
 Skills auto-trigger when your prompt matches their `description` frontmatter — or you force-load with a slash command (`/sprint-testing`). Each skill is a `SKILL.md` plus a `references/` folder. The agent only reads what the current step needs, so context stays lean.
 
-Project values (URLs, project key, Jira fields) live in `.agents/project.yaml` and get injected into prompts via a 4-syntax variable system. Skills are grouped by phase: onboarding (one-time discovery), in-sprint QA (continuous), automation (per story), regression (per release). The dev companion repo follows the same pattern.
+Project values (URLs, project key, Jira fields) live in `.agents/project.yaml` and get injected into prompts through the variable syntaxes `.agents/README.md` defines. Skills are grouped by phase: onboarding (one-time discovery), in-sprint QA (continuous), automation (per story), regression (per release). The dev companion repo follows the same pattern.
 
 <br />
 
@@ -341,31 +334,7 @@ Both are needed. Skip neither.
 
 ### (a) Runtime test config — `.env`
 
-Edit `.env` with your project values:
-
-```bash
-# Environment selector (valid: local, staging)
-TEST_ENV=local
-
-# Test User Credentials (project examples: never required up front; config.testUser fails by name when a test reads an empty pair)
-LOCAL_USER_EMAIL=
-LOCAL_USER_PASSWORD=
-STAGING_USER_EMAIL=your-test-user@example.com
-STAGING_USER_PASSWORD=your-password
-
-# Browser Configuration (optional — defaults shown)
-HEADLESS=true
-DEFAULT_TIMEOUT=30000
-
-# TMS Integration (optional — only if AUTO_SYNC=true)
-TMS_PROVIDER=xray
-AUTO_SYNC=false
-XRAY_CLIENT_ID=
-XRAY_CLIENT_SECRET=
-XRAY_PROJECT_KEY=
-STP_EXECUTION_KEY=          # key of the Test Execution this run imports into: the RTR by default, the sprint-close STR at sprint close; never a Test Plan key
-RTP_KEY=                    # optional, local-only: RTP key so a locally minted Execution is at least plan-linked
-```
+Copy `.env.example` to `.env` and fill in what your project uses. `.env.example` is the annotated template, one comment per variable and the defaults of the optional ones as commented lines; `cli/lib/variables-manifest.ts` declares each known variable's scope (framework, tooling, project-under-test) and the feature switch that makes it required. `bun run setup:doctor` reports which ones are still missing.
 
 Every variable also has a **typed schema**, read by [varlock](https://varlock.dev): `.env.core.schema` (generated from `cli/lib/variables-manifest.ts`, synced by `bun run up`) plus `.env.schema` (yours: root decorators and the variables your project-under-test adds). Neither holds a value. Validate your `.env` against it with sensitive values redacted:
 
@@ -379,7 +348,7 @@ The schema is a gate (pre-commit freshness, pre-push warn-only, first step of `b
 
 ### (b) Runtime URLs — `config/variables.ts`
 
-Update `envDataMap` in `config/variables.ts` with your application URLs. The `Environment` type in `config/variables.ts` lists the accepted values; extend it there when you need another environment.
+Update `envDataMap` in `config/variables.ts` with your application URLs. The `Environment` type in `config/variables.ts` lists the accepted values; extend it there when you need another environment. The shape (two environments shown):
 
 ```typescript
 const envDataMap: Record<
@@ -407,7 +376,7 @@ Every supported harness (Claude Code, OpenCode, Codex) resolves `{{VAR}}` refere
 bun run agents:setup
 ```
 
-This populates `project.project_name`, `project.project_key`, `issue_tracker.atlassian_url`, `environments.<env>.web_url`, `environments.<env>.api_url`, `environments.<env>.db_mcp`, `environments.<env>.api_mcp`, and the rest. See `.agents/README.md` for the full convention.
+This populates project identity (`project.project_name`, `project.project_key`), `issue_tracker.atlassian_url` and the per-environment leaves under `environments.<env>`; the full key set is `.agents/project.schema.yaml`. See `.agents/README.md` for the convention.
 
 <br />
 
@@ -454,10 +423,10 @@ bun run test:smoke         # smoke / @critical tests
 │   │   ├── fixtures/             # Static test data (JSON)
 │   │   ├── types.ts              # Test data types
 │   │   └── DataFactory.ts        # Dynamic data generation
-│   └── utils/                    # Test utilities
-│       ├── decorators.ts         # @atc decorator
-│       ├── jiraSync.ts           # TMS synchronization
-│       └── KataReporter.ts       # Terminal reporter
+│   ├── utils/                    # Test utilities
+│   │   ├── decorators.ts         # @atc decorator
+│   │   └── jiraSync.ts           # TMS synchronization
+│   └── KataReporter.ts           # Terminal reporter
 │
 ├── config/
 │   ├── variables.ts              # Runtime env vars consumed by Playwright/KATA
@@ -482,19 +451,14 @@ bun run test:smoke         # smoke / @critical tests
 ├── .opencode/                    # OpenCode adapter — plugins/personality-reinject.js
 ├── .codex/                       # Codex adapter — config.toml (MCP) + hooks.json. Shared by CLI and Desktop
 │
-├── .github/workflows/            # CI/CD pipelines
-│   ├── build.yml                 # PR validation
-│   ├── smoke.yml                 # Scheduled smoke tests
-│   ├── sanity.yml                # Pattern-based tests
-│   └── regression.yml            # Full regression
+├── .github/workflows/            # CI/CD pipelines, one file per workflow (see CI/CD Pipelines below)
 │
 ├── docs/                         # Human docs site (`bun run docs`)
 │   ├── index.html                # Portal (sidebar built from each page's meta)
 │   ├── assets/                   # Shared docs.css / docs.js, IQL diagrams
 │   └── core/                     # Shipped pages (synced); other folders are project-owned
 │
-├── packages/
-│   └── create-agentic-qa/        # Official npm scaffolder (bunx create-agentic-qa@latest <your-repo-name>) — own README + tests
+├── packages/                     # Boilerplate-only (pruned from scaffolds): the npm scaffolder, the published decks site
 │
 ├── cli/                          # install.ts, doctor.ts, update-boilerplate.ts consumed by bun scripts
 │
@@ -639,65 +603,15 @@ The `.template/boilerplate.lock.json` file is committable: commit it so your tea
 
 ### GitHub Actions Workflows
 
-| Workflow         | Trigger        | Description                 |
-| ---------------- | -------------- | --------------------------- |
-| `build.yml`      | PR to main     | Validate framework compiles |
-| `smoke.yml`      | Scheduled (cron in the workflow file) | Run @critical tests |
-| `sanity.yml`     | Manual         | Run tests by grep pattern   |
-| `regression.yml` | Scheduled (cron in the workflow file) | Full test suite |
+The workflows are the files in `.github/workflows/`; each one's `on:` block is its trigger (a PR to `main`, a cron, a manual dispatch). The suite workflows (smoke, sanity, regression) run the Playwright tags and patterns their names say, `build.yml` validates that the framework compiles, and the `pages*` workflows publish and maintain the decks site.
 
 ### Environment Secrets
 
 The framework requires nothing but `TEST_ENV` (it has a default). The test-user pair is a project-under-test example: the suite workflows inject it as secrets, and `config.testUser` fails with a named error the first time a test reads an empty pair. Nothing validates it up front, so a fork PR with no secrets still builds.
 
-```yaml
-# Environment selection
-TEST_ENV                    # local | staging
+Every other variable is optional and switched on by a feature (browser tuning, the TMS sync, Xray, the Atlassian pair, reporting). `.env.example` is the annotated list, with the default of each optional one as a commented line; `cli/lib/variables-manifest.ts` declares the scope and feature switch of every variable the installer, `setup:doctor` and the updater know; each suite workflow's `env:` block shows which ones CI passes. The Atlassian site host is never one of them: it is `issue_tracker.atlassian_url` in `.agents/project.yaml`.
 
-# Test User Credentials (project examples, read by config.testUser at the point of use)
-LOCAL_USER_EMAIL
-LOCAL_USER_PASSWORD
-STAGING_USER_EMAIL
-STAGING_USER_PASSWORD
-```
-
-Optional (only when the corresponding feature is enabled):
-
-```yaml
-# Browser
-HEADLESS                    # default: true
-DEFAULT_TIMEOUT             # default: 30000
-
-# TMS — set TMS_PROVIDER + AUTO_SYNC=true to push results
-TMS_PROVIDER                # xray | jira
-AUTO_SYNC                   # default: false
-
-# Xray Cloud (required if TMS_PROVIDER=xray AND AUTO_SYNC=true)
-XRAY_CLIENT_ID
-XRAY_CLIENT_SECRET
-XRAY_PROJECT_KEY
-STP_EXECUTION_KEY           # key of the Test Execution this run imports into: the RTR by default, the sprint-close STR at sprint close; never a Test Plan key
-RTP_KEY                     # optional, local-only: RTP key so a locally minted Execution is at least plan-linked
-
-# Atlassian credentials (required if TMS_PROVIDER=jira AND AUTO_SYNC=true; also
-# used by MCP atlassian, acli, xray-cli, and scripts/sync-jira-*.ts).
-# The site HOST is NOT here: .agents/project.yaml -> issue_tracker.atlassian_url
-# (print it with `bun run --silent jira:url`).
-ATLASSIAN_EMAIL
-ATLASSIAN_API_TOKEN
-JIRA_TEST_STATUS_FIELD      # optional override; resolves from .agents/jira-fields.json -> `test_status`
-
-# Reporting
-ALLURE_RESULTS_DIR          # default: ./allure-results
-SCREENSHOT_ON_FAILURE       # default: true
-VIDEO_ON_FAILURE            # default: true
-
-# CI/CD (set automatically by GitHub Actions)
-CI
-BUILD_ID
-```
-
-`TMS_PROVIDER` is the one entry above that is **not** a secret. `.github/workflows/regression.yml` reads it as `${{ vars.TMS_PROVIDER || 'xray' }}`, so set it as a repository **Variable** (Settings → Secrets and variables → Actions → Variables), not as a secret. A job-level `if:` can read `vars` but never `secrets`, and the Xray import job gates on exactly that expression — stored as a secret it is invisible to the gate and the step stays on the default forever.
+`TMS_PROVIDER` is the one of them that is **not** a secret. `.github/workflows/regression.yml` reads it as `${{ vars.TMS_PROVIDER || 'xray' }}`, so set it as a repository **Variable** (Settings → Secrets and variables → Actions → Variables), not as a secret. A job-level `if:` can read `vars` but never `secrets`, and the Xray import job gates on exactly that expression — stored as a secret it is invisible to the gate and the step stays on the default forever.
 
 <br />
 
@@ -747,7 +661,7 @@ The modes of each skill are in its `## Mode routing` section; the skills themsel
 
 ## Variables system
 
-The `.agents/` directory hosts a 4-syntax variable system used by every skill and command.
+The `.agents/` directory hosts the variable system every skill and command uses. The main forms:
 
 | Syntax                         | Purpose                                      | Resolves from                                             |
 | ------------------------------ | -------------------------------------------- | --------------------------------------------------------- |
@@ -886,7 +800,7 @@ This repo runs on **Claude Code, OpenCode, and Codex (CLI + Desktop)**. There is
 | **MCP** | `.mcp.json` | `opencode.jsonc` | `.codex/config.toml` |
 
 - **Instructions.** `AGENTS.md` is the only instruction body. OpenCode and Codex load it natively; Claude Code loads `CLAUDE.md`, which is exactly `@AGENTS.md` plus one newline: a documented import rather than a symlink, so it survives a Windows checkout. Operational prose in the shim is structural drift, and `agents:compat:check` fails on it.
-- **Skills.** Every committed skill lives in `.agents/skills/`, and the project-level community skills install into the same store. OpenCode and Codex read it directly; Claude Code reaches it through `.claude/skills`, a POSIX symlink (Windows junction) that is generated and gitignored: never committed, never hand-edited. Each skill still declares `compatibility: [claude-code, copilot, cursor, codex, opencode]` per the [agentskills.io](https://agentskills.io) spec, and hosts without slash triggers auto-activate from the same `description` field.
+- **Skills.** Every committed skill lives in `.agents/skills/`, and the project-level community skills install into the same store. OpenCode and Codex read it directly; Claude Code reaches it through `.claude/skills`, a POSIX symlink (Windows junction) that is generated and gitignored: never committed, never hand-edited. Each skill still declares the hosts it supports in its `compatibility:` frontmatter per the [agentskills.io](https://agentskills.io) spec, and hosts without slash triggers auto-activate from the same `description` field.
 - **Commands.** No harness gets generated command files: a skill is invoked by its name plus a mode ([Invoking a skill mode](#invoking-a-skill-mode)). A project command named like a skill would hide that skill's instructions, so the check fails on it and `bun run agents:compat` moves it aside.
 - **Hook.** `.agents/hooks/personality-reinject.mjs` holds the contract text once. Claude and Codex run it as a command hook; OpenCode imports the constant from a thin plugin.
 - **MCP.** Every server declared in `.mcp.json` must exist in the other two configs with the same `.env` dependencies. Parity is checked semantically: each native format (JSON / JSONC / TOML) is normalized into a common shape, then compared on the `.env` variables each server depends on and on its literal settings, so a server missing from one host, or present in one host only, is a failure. The servers the boilerplate ships (`KNOWN_MCP_IDS` in `cli/lib/agent-compatibility-contracts.ts`) additionally get a strict per-host shape check when declared; a downstream project with a different set passes on the generic check alone. Codex cannot expand `${VAR}`, so its adapter names every secret by variable (`bearer_token_env_var` for an HTTP server, `env_vars` for a local one).
@@ -907,7 +821,7 @@ bun run agents:compat:check   # validate the whole contract (also runs in repo:c
 
 **Project-owned slash commands** are plain harness command files the project writes and edits by hand (`.claude/commands/`, `.opencode/commands/`); nothing generates them and `bun run up` never overwrites them. The old overlay `.agents/compatibility/command-aliases.project.json` is inert: nothing reads it, and `bun run up` names it once in an informational row. One rule still applies: a command named like a repo skill (say `.claude/commands/sprint-testing.md`) would hide the skill's instructions, so `agents:compat:check` fails on it and `bun run agents:compat` (also run by `bun run up` and `bun run setup`) moves it to `.backups/shadowing-commands/<same path>`, gitignored and recoverable.
 
-`agents:compat:check` covers the shim bytes, the alias target, no project command named like a skill, the hook adapters, MCP parity, and the eslint block wiring. It prints the alias status line on every run (created, OK, deferred until the migration commit, missing) and groups the errors per surface (instructions, alias, commands, hooks, MCP, lint), so "alias pending commit" and "MCP drift" never read as one flat failure. It runs inside `bun run repo:check`, in the pre-push hook, and conditionally in pre-commit. `bun run setup:doctor` reports the same surfaces (the server count comes from `.mcp.json`) plus **Codex repository trust**: project `.codex/` config and hooks load only in a trusted repo, and that is runtime state no file read can verify.
+`agents:compat:check` covers the shim bytes, the alias target, no project command named like a skill, the hook adapters, MCP parity, and the eslint block wiring. It prints the alias status line on every run (created, OK, deferred until the migration commit, missing) and groups the errors per surface (`COMPATIBILITY_GROUP_ORDER` in `cli/lib/agent-compatibility.ts`), so "alias pending commit" and "MCP drift" never read as one flat failure. It runs inside `bun run repo:check`, in the pre-push hook, and conditionally in pre-commit. `bun run setup:doctor` reports the same surfaces (the server count comes from `.mcp.json`) plus **Codex repository trust**: project `.codex/` config and hooks load only in a trusted repo, and that is runtime state no file read can verify.
 
 The `.agents/` variable system is harness-agnostic and unchanged across all three.
 

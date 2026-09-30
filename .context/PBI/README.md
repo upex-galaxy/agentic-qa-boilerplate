@@ -60,11 +60,11 @@ Everything under `.context/PBI/` is one of three things. Getting the tier wrong 
 
 Folder naming follows Jira IDs verbatim — `<KEY>` is the Jira issue key, `<slug>` is `kebab-case` from the summary. Epic and Story folders are prefixed `EPIC-` / `STORY-`. Every Story lives under its Epic's `stories/` (Module = Epic, 1:1).
 
-**Not in this tree**: `test-session-memory.md` lives in `.session/sprint-testing/<scope>/`, beside `plan.md` and `progress.md`. It used to sit in the Story folder, which was wrong: a re-sync rewrites this cache wholesale and that file is the payload every resume and every sub-agent reads.
+**Not in this tree**: `test-session-memory.md` lives in `.session/sprint-testing/<scope>/`, beside `plan.md` and `progress.md`, never in the Story folder: a re-sync rewrites this cache wholesale and that file is the payload every resume and every sub-agent reads.
 
 ## The planning ladder on disk
 
-The rungs above a Story — **FTP** (feature), **STP** / **STR** (sprint), **RTP** (product regression, long-lived) and **RTR** (its run record, one per verdict) — sit *above* a Story, so the coverage walk that descends from a coverable issue through its links structurally cannot reach them. They used to never materialize at all. Two rules fix that.
+The rungs above a Story — **FTP** (feature), **STP** / **STR** (sprint), **RTP** (product regression, long-lived) and **RTR** (its run record, one per verdict) — sit *above* a Story, so the coverage walk that descends from a coverable issue through its links structurally cannot reach them. Two rules give them a home.
 
 **Discovery goes through the QA-process Epics.** An unfiltered `pull` sweeps the children of the four QA buckets (`QA Master Test Plan`, `QA Test Artifacts`, `QA Test Repository`, `QA Defect Management`), resolved exactly as `qa-artifacts/_index.md` resolves them: the `QA-Artifact` label, then the cached `qa.qa_epics.*.key` in `.agents/project.yaml`, then the `QA ` name prefix. No new configuration — the Epics already *are* the index. The sweep only takes what nothing else owns (Test Plans, Test Executions, Test Sets, Preconditions); Bugs, Defects, Improvements and Tests keep their existing owners so no artifact is written twice. A project with no QA-process Epics runs zero extra queries. Skip it with `pull --no-qa-artifacts`.
 
@@ -83,11 +83,11 @@ The rungs above a Story — **FTP** (feature), **STP** / **STR** (sprint), **RTP
 | `test-executions/` | `ATR: PROJ-123: Story Testing` | `ATR-PROJ-124-story-testing.md` |
 | `test-executions/` | `ReTest: PROJ-123: Story Testing` | `RETEST-PROJ-130-story-testing.md` |
 
-One `ls test-plans/` then shows the ladder state at a glance. A title that does **not** follow the grammar keeps the legacy prefix — `TESTPLAN-` / `TESTEXEC-` / `RETESTEXEC-` — so a project that has not adopted the grammar syncs exactly as it did before. The acronym is scoped per work type: a Test Plan mis-titled `ATR: …` is filed as `TESTPLAN-`, never as a run.
+One `ls test-plans/` then shows the ladder state at a glance. A title that does **not** follow the grammar keeps the legacy prefix — `TESTPLAN-` / `TESTEXEC-` / `RETESTEXEC-` — so a project that has not adopted the grammar still syncs every item. The acronym is scoped per work type: a Test Plan mis-titled `ATR: …` is filed as `TESTPLAN-`, never as a run.
 
 Renaming is free here (the tree is a regenerable cache), and the sync deletes the same issue's file under its old name so an adopted grammar does not leave two copies of one Plan.
 
-**The Story-altitude guard is unchanged.** An `FTP:` / `STP:` / `STR:` / `RTP:` / `RTR:` Plan or Execution linked to a Story is still *never* materialized as that Story's `acceptance-test-plan.md` / `acceptance-test-results.md` — it is named in an INFO line and skipped. An FTP linked to a Story is not that Story's ATP. The two paths are separate: the guard keeps the Story folder honest, the sweep gives the higher rungs their own home.
+**The Story-altitude guard still applies.** An `FTP:` / `STP:` / `STR:` / `RTP:` / `RTR:` Plan or Execution linked to a Story is still *never* materialized as that Story's `acceptance-test-plan.md` / `acceptance-test-results.md` — it is named in an INFO line and skipped. An FTP linked to a Story is not that Story's ATP. The two paths are separate: the guard keeps the Story folder honest, the sweep gives the higher rungs their own home.
 
 ## What the `.gitignore` actually does
 
@@ -125,7 +125,7 @@ Every `[SYNC]` file's content originates in Jira. The flow is always **generate 
 3. Module context is appended to the **Epic `description`** under a `## Module Context (QA)` heading (read-first, never overwrite) and the sync splits that section back out into `module-context.md`. It deliberately has no custom field: `description` exists on every Jira instance, so this works on a project that never provisions one.
 4. If a custom field is absent on the instance, the skill writes the content as a structured Jira comment (`## <label>`, per `.agents/jira-required.yaml` → `fallback:`); the sync then emits a pointer stub for that field's `.md`. Never block on a missing field.
 
-**Default `pull` scope = Epics + Stories + Bugs** (plus optional types via `--types` / `JIRA_SYNC_TYPES`). **Coverable** issues — Story, Bug, Defect, Improvement, Tech Story, Tech Debt — each get their OWN folder containing the issue body, ATP, ATR, a `test-executions/` subfolder (only when >1 execution is linked), a `test-cases/` subfolder (the linked `Test` issues), and a `defects/` subfolder. **ATP/ATR source precedence:** a linked Xray Test Plan description (ATP) / Test Execution / Re-Test Execution description (ATR, newest wins) **OVERRIDES** the custom-field copy; absent that, the issue custom field; absent that, a Jira comment only with `--include-comments`; otherwise silent. The sync emits end-of-run **traceability WARNINGS** for ATP/ATR linked via the wrong link type, atypical Defect links, and orphan Defects with no coverable parent.
+**Default `pull` scope = the work types declared `sync: default` in `.agents/jira-required.yaml`** (plus optional types via `--types` / `JIRA_SYNC_TYPES`). **Coverable** issues (the work types declared `coverable: true` there) each get their OWN folder containing the issue body, ATP, ATR, a `test-executions/` subfolder (only when >1 execution is linked), a `test-cases/` subfolder (the linked `Test` issues), and a `defects/` subfolder. **ATP/ATR source precedence:** a linked Xray Test Plan description (ATP) / Test Execution / Re-Test Execution description (ATR, newest wins) **OVERRIDES** the custom-field copy; absent that, the issue custom field; absent that, a Jira comment only with `--include-comments`; otherwise silent. The sync emits end-of-run **traceability WARNINGS** for ATP/ATR linked via the wrong link type, atypical Defect links, and orphan Defects with no coverable parent.
 
 **Tests appear exactly once.** A `Test` linked to a coverable issue is materialized under that issue's `test-cases/`. `epics/_orphans/tests/` holds only the orphans — Tests no Story, Bug or Improvement covers, which is itself a coverage smell worth seeing; re-linking one in Jira moves it under its Story on the next sync.
 

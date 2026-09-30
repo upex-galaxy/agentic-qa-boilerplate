@@ -1,6 +1,6 @@
 # Volatile facts in committed prose
 
-> Canon for Critical Rule #17 in `AGENTS.md`. Cited by every skill that writes or reviews committed prose; the two linters (`scripts/lint-skills.ts` for `.agents/**` and `AGENTS.md`, `scripts/lint-docs.ts` for `docs/**`, `README.md`, `INSTALLER.md` and the decks) enforce the two families a regex can see.
+> Canon for Critical Rule #17 in `AGENTS.md`. Cited by every skill that writes or reviews committed prose; the two linters (`scripts/lint-skills.ts` for `.agents/**` and `AGENTS.md`, `scripts/lint-docs.ts` for `docs/**`, the root `README.md`, `INSTALLER.md` and `CONTEXT.md`, the nested READMEs under `.context/` and `packages/`, and the decks) enforce the two families a regex can see.
 
 ## 1. The rule
 
@@ -58,7 +58,7 @@ User-facing decks and pages are committed too. They may show a current list or a
 Two families have a regex-visible shape, and the linters report them:
 
 - `FILE-LINE`: a path with a known extension followed by `:N`, `:N-M` or `#LN`, outside fenced blocks and `<pre>` / `<code class="block">`.
-- `CURRENT-STATE`: the dating vocabulary ("today", "currently", "as of <year>", "measured <date>", "since <version>", a `~Nk tokens` or `N bytes` measurement, a tool version after "as of" / "verified against", and the Spanish equivalents), outside the same blocks and outside the frontmatter `description`. <!-- volatile-ok: names the words it forbids -->
+- `CURRENT-STATE`: the dating vocabulary ("today", "currently", "as of <year>", "measured <date>", "since <version>", a hand-stamped "Last updated: <date>", a `~Nk tokens` or `N bytes` measurement, a tool version after "as of" / "verified against", and the Spanish equivalents), outside the same blocks and outside the frontmatter `description`. <!-- volatile-ok: names the words it forbids -->
 
 Counts and enumerations have no regex shape: no pattern can tell a router table from a copied inventory. Those stay a review-time judgement, which is what this reference is for.
 

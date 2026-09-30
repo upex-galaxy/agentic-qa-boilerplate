@@ -18,18 +18,9 @@ This directory is the ONLY home of the decks. The skill-side copies
 (`.agents/skills/<skill>/*.html`) were removed; do not reintroduce
 them. Edit decks here only; the published site is regenerated on push.
 
-## Index — one directory per skill
+## Layout — one directory per skill
 
-| Directory | What its decks teach |
-| --------- | -------------------- |
-| `agentic-qa-core/` | Cross-cutting reference decks: naming conventions, output style, skills input/output flow |
-| `shift-left-testing/` | Stage 0 — pre-sprint AC refinement, plus the shift-left craft deck |
-| `sprint-testing/` | Stages 1-3 — the per-ticket QA workflow, defect management, trifuerza exploration |
-| `test-documentation/` | Stage 4 — TMS authoring + ROI, plus the test-case craft deck |
-| `test-automation/` | Stage 5 — KATA + Playwright automation, coding decks, dev craft, Dojo labs |
-| `regression-testing/` | Stage 6 — CI suite execution and the GO / CAUTION / NO-GO verdict, plus the two-part CI mini-course (`ci-pipelines-fundamentals` → `ci-pipelines-architecture`: GitHub Actions taught on this repo's own workflows) |
-| `xray-cli/` | The Xray-for-Jira workflow as the TMS side of the pipeline |
-| `orca-orchestration/` | Multi-session orchestration: one conductor, a fleet of supervised workers |
+Each deck lives under the directory of the skill it teaches (`packages/decks/<skill>/`), so `ls packages/decks/` is the index. The published catalog, with a card per deck, is `packages/pages-home/index.html`.
 
 ## Adding a new deck
 

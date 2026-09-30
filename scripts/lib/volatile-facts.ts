@@ -2,13 +2,15 @@
  * volatile-facts.ts — the two regex-visible families of Critical Rule #17
  * (committed prose names the source of truth, never its current value), shared
  * by `lint-skills.ts` (`.agents/**` + `AGENTS.md`) and `lint-docs.ts`
- * (`docs/**`, `README.md`, `INSTALLER.md`, the decks).
+ * (`docs/**`, the root and nested READMEs, `INSTALLER.md`, `CONTEXT.md`,
+ * the decks).
  *
  *   FILE-LINE      a path with a known extension followed by `:N`, `:N-M` or
  *                  `#LN`. A line number shifts on any edit above it; cite the
  *                  file plus a symbol or a heading instead.
  *   CURRENT-STATE  the dating vocabulary of a claim about the present: "today",
  *                  "currently", "as of <year>", a dated "measured / verified",
+ *                  a hand-stamped "Last updated: <date>",
  *                  "since <version>", a measured token or byte size, a tool
  *                  version after a tool name, and the Spanish equivalents.
  *
@@ -60,6 +62,8 @@ export const CURRENT_STATE_PATTERNS: ReadonlyArray<RegExp> = [
   /\b(?:hoy|actualmente|a la fecha|por ahora)\b/gi,
   // dated forensic note: "measured 2026-09-17", "verified on 2026-08-18", "confirmed 2026-08-21 via", "measured (2026-09-04"
   /\b(?:measured|verified|confirmed|established|corrected|medido|verificado)(?: on| against| live)?[ :,(]+\d{4}-\d{2}(?:-\d{2})?\b/gi,
+  // a hand-stamped freshness date: "Last Updated: 2026-04-26", "**Last updated**: 2026-04" (a `{date}` placeholder is not a hit)
+  /\blast updated\W{0,4}\s*\d{4}-\d{2}(?:-\d{2})?\b/gi,
   // edit-history narration keyed on a release: "since 8.4", "desde 8.3"
   /\b(?:since|desde) \d+\.\d+\b/gi,
   // measured sizes: "~2k tokens", "2271 bytes"

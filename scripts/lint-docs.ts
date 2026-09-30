@@ -3,7 +3,9 @@
  * lint-docs.ts — dead-link gate for the human documentation surface.
  *
  * Scans `docs/**` (`.html` and `.md`), the root `README.md`, `INSTALLER.md`
- * and `CONTEXT.md`, and `packages/decks/**` (`.html`), and fails when:
+ * and `CONTEXT.md`, the nested READMEs (`.context/README.md` and the
+ * `README.md` of each direct child of `.context/` and `packages/`), and
+ * `packages/decks/**` (`.html`), and fails when:
  *
  *   - a RELATIVE link (`href="…"`, `src="…"`, markdown `](…)`) does not
  *     resolve to an existing file or directory, relative to the file that
@@ -135,6 +137,27 @@ function walk(dir: string, exts: string[], out: string[]): void {
   }
 }
 
+/**
+ * The READMEs that live outside `docs/` one level down: `.context/` and its
+ * direct children, and every `packages/*` package. Not a recursive walk:
+ * `.context/PBI/` is a Jira cache that can hold thousands of files.
+ * `.agents/README.md` is `lint-skills.ts` territory.
+ */
+function nestedReadmes(root: string): string[] {
+  const out: string[] = [];
+  for (const base of ['.context', 'packages']) {
+    const dir = join(root, base);
+    if (!existsSync(dir)) { continue; }
+    const own = join(dir, 'README.md');
+    if (existsSync(own)) { out.push(own); }
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const readme = join(dir, entry.name, 'README.md');
+      if (entry.isDirectory() && existsSync(readme)) { out.push(readme); }
+    }
+  }
+  return out;
+}
+
 /** Every file the gate scans, absolute paths, sorted for stable output. */
 export function collectDocFiles(root: string): string[] {
   const files: string[] = [];
@@ -143,6 +166,9 @@ export function collectDocFiles(root: string): string[] {
   for (const name of ['README.md', 'INSTALLER.md', 'CONTEXT.md']) {
     const full = join(root, name);
     if (existsSync(full)) { files.push(full); }
+  }
+  for (const readme of nestedReadmes(root)) {
+    if (!files.includes(readme)) { files.push(readme); }
   }
   return files.sort();
 }
@@ -277,14 +303,22 @@ export function lintRoster(root: string): DocFinding[] {
 const BUN_RUN = /\bbun run(?:\s+--silent)?\s+([^\s`'"<>()[\]|,;]+)/g;
 
 /** `script` findings: `bun run <name>` citations whose name `package.json` does not declare. */
+function scriptNames(pkgFile: string): string[] {
+  if (!existsSync(pkgFile)) { return []; }
+  return Object.keys((JSON.parse(readFileSync(pkgFile, 'utf8')) as { scripts?: Record<string, string> }).scripts ?? {});
+}
+
 export function lintScripts(root: string, files: string[]): DocFinding[] {
   const pkgFile = join(root, 'package.json');
   if (!existsSync(pkgFile)) { return []; }
-  const scripts = new Set(Object.keys((JSON.parse(readFileSync(pkgFile, 'utf8')) as { scripts?: Record<string, string> }).scripts ?? {}));
+  const rootScripts = scriptNames(pkgFile);
   const findings: DocFinding[] = [];
   for (const file of files) {
     const rel = relativePosix(root, file);
     if (rel.startsWith('packages/decks/')) { continue; }
+    // A package README quotes its own scripts as well as the root ones.
+    const pkg = /^packages\/([^/]+)\//.exec(rel);
+    const scripts = new Set(pkg ? [...rootScripts, ...scriptNames(join(root, 'packages', pkg[1], 'package.json'))] : rootScripts);
     const text = readFileSync(file, 'utf8');
     for (const match of text.matchAll(BUN_RUN)) {
       const name = match[1].replace(/[.:]+$/, '');
