@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-09-30T08:50:14.033Z`
+> Generated: `2026-09-30T09:10:28.178Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -8,7 +8,7 @@ This file is the per-session compact-rules cache for the Skill Resolver protocol
 The orchestrator copies one or more `## Skill: <slug>` blocks below into every subagent briefing under `## Project Standards (auto-resolved)`.
 Subagents trust those compact rules and only read the full SKILL.md when explicitly instructed.
 
-Skills indexed: 24
+Skills indexed: 26
 
 ---
 ## Skill: acli
@@ -145,6 +145,25 @@ Skills indexed: 24
 
 ---
 
+## Skill: business-domain-context
+
+**Purpose**: The vocabulary and the business of the system under test: what the product is for, who pays and why, and what every domain term means (th...
+
+**Compact Rules**:
+- DO: read the map through `bun run context:map business-domain-context` (or `--section term-<slug>` for one term). NEVER read `references/business-domain-map.html` raw.
+- DO: treat a placeholder map as "no glossary". Say so and hand the user `project-discovery` Phase 1; never name test cases or rewrite ACs in invented vocabulary.
+- DO: use the business term the map gives, and quote the UI label when a step talks about the screen. The code identifier belongs in code and selectors, never in a TC title or a bug summary.
+- WHEN a session observes a term the map lacks, or a label or meaning that contradicts a section: PROPOSE the one-section edit with its evidence to the user (or to the conductor when you are a supervised worker), apply it only on approval. Procedure: `references/refresh.md`.
+- DO NOT: write anywhere but this skill's own `references/`. No Jira, no `.context/`, no other skill, no test code, no product code.
+- DO NOT: copy map content into this SKILL.md. Judgment goes in `## Rules` or `references/gotchas.md`, dated and measured.
+- Figures are optional here: the glossary is tables. Before a step that draws one, run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8.
+
+**Read full SKILL.md when**: building a briefing for an ATP, TC naming or AC refinement dispatch, deciding whether a term is stale, or proposing an edit to the map.
+
+> Source: `.agents/skills/business-domain-context/SKILL.md` · phase: `unknown` · kind: `context` · extraction strategy: A
+
+---
+
 ## Skill: business-e2e-context
 
 **Purpose**: How people actually use the system under test end to end: the personas, the user journeys first (entry point, steps, branches, where mone...
@@ -215,6 +234,25 @@ Skills indexed: 24
 **Read full SKILL.md when**: running Strategy Setup, resolving a specific conflict type, picking a base branch or branch prefix for an unfamiliar strategy, or setting up an isolated worktree.
 
 > Source: `.agents/skills/git-flow-master/SKILL.md` · phase: `implementation` · kind: `workflow` · extraction strategy: A
+
+---
+
+## Skill: infra-context
+
+**Purpose**: How the system under test is built, run and deployed: its architecture and external services, the backend and frontend stacks with their...
+
+**Compact Rules**:
+- DO: read the map through `bun run context:map infra-context` (or `--section backend`, `--section environments`, ...). NEVER read `references/infra-map.html` raw: its SVG is most of the bytes and none of the facts.
+- DO: treat a placeholder map as "no infra map". Say so and hand the user `project-discovery` Phases 2-3; never guess a run command, an environment URL or an auth flow.
+- DO: take environment URLs from `.agents/project.yaml` and credentials from `.env`. The map says which environments exist and how they differ; it never holds a secret or a value that has its own source.
+- WHEN a session observes something that contradicts a section (a command that no longer runs, a pipeline step, an auth request that changed): PROPOSE the one-section edit with its evidence to the user (or to the conductor when you are a supervised worker), apply it only on approval. Procedure: `references/refresh.md`.
+- DO NOT: write anywhere but this skill's own `references/`. No Jira, no `.context/`, no CI files, no other skill, no product code.
+- DO NOT: copy map content into this SKILL.md. Judgment goes in `## Rules` or `references/gotchas.md`, dated and measured.
+- Before a step that uses `diagrams` (redrawing the architecture figure), run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8. A table is fine where it says it better.
+
+**Read full SKILL.md when**: building a briefing for framework adaptation, an environment or CI change, an auth-in-tests decision or a non-functional check; deciding whether a section is stale; or proposing an edit to the map.
+
+> Source: `.agents/skills/infra-context/SKILL.md` · phase: `unknown` · kind: `context` · extraction strategy: A
 
 ---
 
@@ -352,8 +390,8 @@ Skills indexed: 24
 
 **Compact Rules**:
 - Exactly ONE mode per run: `data` · `e2e` (synonym `features`) · `api` · `test-plan` · `refresh-all` · `context-skill`. Load only that mode's reference; never open a second one in the same pass.
-- `context-skill` scaffolds a project-owned `<aspect>-context` for an aspect the business context skills do not cover (`../agentic-qa-core/references/skill-scaffold.md` §3): it cites its sources and never copies them. `refresh-all` never includes it.
-- Mode → reference → output: see the Mode routing table. A map mode writes ONLY its own skill's `references/<map>.html`; the old `.context/business/*-map.md` a project may hold is read as input and never deleted. `test-plan` → `references/test-plan.md` → the `## Master Test Plan` section of the `QA Master Test Plan` Epic description in Jira (cached by the sync at `.context/PBI/qa-artifacts/master-test-plan.md`; never a local file).
+- `context-skill` scaffolds a project-owned `<aspect>-context` for an aspect the shipped context map skills (`CONTEXT_MAP_SKILLS`) do not cover (`../agentic-qa-core/references/skill-scaffold.md` §3): it cites its sources and never copies them. `refresh-all` never includes it.
+- Mode → reference → output: see the Mode routing table. A map mode writes ONLY its own skill's `references/<map>.html`; the legacy markdown files a project may hold (the skill's `legacy` list in `CONTEXT_MAP_SKILLS`, `cli/lib/context-maps.ts`) are read as input and never deleted. Domain vocabulary and architecture come from the maps `project-discovery` generates: `bun run context:map business-domain-context` and `bun run context:map infra-context`, never a `.context/` file. `test-plan` → `references/test-plan.md` → the `## Master Test Plan` section of the `QA Master Test Plan` Epic description in Jira (cached by the sync at `.context/PBI/qa-artifacts/master-test-plan.md`; never a local file).
 - User did not name a mode → ASK. NEVER infer `refresh-all` from a generic "refresh the context" request.
 - `refresh-all` runs strictly `data` → `e2e` → `api` → `test-plan`, one at a time. Each reference's own validation and approval gate must close before the next is loaded. Never skip ahead.
 - Artifact missing (or a placeholder map) = CREATE mode: may write once the analysis completes. Artifact exists = UPDATE mode: generate a candidate (for a map: only its stale sections), show the diff summary, WAIT for explicit approval. NEVER overwrite an existing artifact without that approval, and NEVER regenerate a whole generated map.
@@ -375,20 +413,21 @@ Skills indexed: 24
 
 **Compact Rules**:
 - DO: run the four phases in order (Constitution → Architecture → Infrastructure → Specification), each gated on the previous. Show the output paths and wait for an explicit "Phase N complete" before continuing — never auto-chain.
-- DO NOT: write anything into the target repo. Discovery is read-only on it; `.context/` is the only write target, and modifying the boilerplate itself is `test-framework-adaptation`.
-- DO NOT: invent business entities, flows, requirements, or Jira/Xray field IDs and status names. Anything not verifiable from the source goes in the `## Discovery Gaps` section that every output must carry.
+- DO NOT: write anything into the target repo. Discovery is read-only on it. The write targets are `.context/project-config.md`, `.context/ADR/`, and the maps of `business-domain-context` and `infra-context` (their `references/<map>.html`), nothing else (plus the Phase 1 `## Project Assessment (Phase 1)` block in `AGENTS.md`); modifying the boilerplate itself is `test-framework-adaptation`.
+- DO: act as the GENERATOR of those two maps, per `agentic-qa-core/references/business-context-maps.md` (anatomy §2, reading §3, CREATE/UPDATE §4, staleness §5). Map absent or placeholder → CREATE every section. Map generated → UPDATE only the stale sections (§5 staleness check), show a section-level diff, WAIT for approval. Never regenerate a whole generated map.
+- DO: read a project's old `.context/business/`, `.context/SRS/` and `.context/infrastructure/` markdown files (the `legacy` list of `business-domain-context` and `infra-context` in `CONTEXT_MAP_SKILLS`, `cli/lib/context-maps.ts`) as INPUT when present, cite them in `data-migrated-from` on the sections they seed, and never delete or rewrite them.
+- DO: before drawing a figure, run the point-of-use check for capability `diagrams` (`agentic-qa-core/references/business-context-maps.md` §7). Figures are optional where a table says it better: the glossary is tables; the architecture overview usually earns a figure.
+- DO NOT: invent business entities, flows, requirements, or Jira/Xray field IDs and status names. Anything not verifiable from the source goes in the map's `discovery-gaps` section (or the `## Discovery Gaps` block of `project-config.md`).
 - DO: describe what the system DOES, not what product wants it to do. Discovery is reverse-engineering; a "to-be" PRD/SRS is out of scope — point the user at their own product workflow.
 - DO: lock the target repo path(s) before Phase 1 and block on ambiguity. A repo that is not cloned locally cannot be discovered from a URL — ask for the clone first.
 - WHEN the layout is split sibling repos: run the Phase 1 sub-steps once per repo and merge into ONE `project-config.md`, never interleaved. WHEN it is a monorepo: Phase 1 once project-wide, Phases 2-3 per package.
-- DO NOT: generate business maps, the feature catalog, or the master test plan here — those are `project-context` modes, which own their diff and overwrite approval. Exact API types are `bun run api:sync`.
-- DO NOT: create per-ticket PBI content or copy the backlog. Phase 4 produces only the backlog access recipe; the committed `README.md` and `templates/` under `.context/PBI/` stay untouched.
-- DO NOT: paste credentials or a detected secret into any discovery doc. Reference the `.env` key or the file path only; a hardcoded-secret hit is recorded as a HIGH risk with its path.
+- DO NOT: fill the `business-data-context`, `business-api-context` or `business-e2e-context` maps, and do not write personas, journeys, the feature catalog or the master test plan here. Those are `project-context` modes, which own their diff and overwrite approval. Exact API types are `bun run api:sync`.
+- DO NOT: create per-ticket PBI content or copy the backlog. Phase 4 is a connection check and writes no file; the committed `README.md` and `templates/` under `.context/PBI/` stay untouched.
+- DO NOT: paste credentials or a detected secret into any discovery output. Reference the `.env` key or the file path only; a hardcoded-secret hit is recorded as a HIGH risk (path only) in the Phase 1 assessment.
 - WHEN Phase 2 or 3 settles a test-architecture decision that is architectural AND hard to reverse (runner, isolation/parallelization, fixture and test-data strategy, auth-in-tests, selector contract, CI sharding): record it as an append-only ADR under `.context/ADR/`, drafted `Proposed` for the human to accept.
 - DO NOT: mix a discovery session with `test-framework-adaptation`, and do not use this skill for incremental map refreshes — the write boundaries differ.
-- DO NOT: skip Phase 1 or its domain glossary on a fresh start. Downstream skills read the glossary as a precondition for ATP authoring and TC naming.
-- WHEN both a DB schema/migrations and ORM models exist: prefer the schema or migrations. ORM definitions drift from the live schema.
-- DO: mention the IQL methodology only if the user asks why the discovery is structured this way — never lecture someone who just wants the artifact.
-- DO: before any step that uses a declared MCP capability (`metadata.requires_capabilities`: `db`, `api-schema`), run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8: resolve by tool-name suffix, and when no available tool provides it STOP and name the capability + how to enable it, never a silent fallback.
+- DO NOT: skip Phase 1 or its domain glossary on a fresh start. Downstream skills load `business-domain-context` as a precondition for ATP authoring and TC naming.
+- (truncated — read full SKILL.md for the rest)
 
 **Read full SKILL.md when**: running any phase's sub-steps, applying a completion gate's content checks, or resolving the pre-`test-framework-adaptation` prerequisite list.
 
@@ -496,7 +535,7 @@ Skills indexed: 24
 - Bugs run the veto + triage + risk-score decision tree BEFORE any ATP is written.
 - Execution = smoke pass first, then trifuerza (UI/API/DB) exploration; capture evidence under the PBI folder.
 - API testing = three-tool maneuver: OpenAPI MCP for schema (READ-ONLY) → `bun run api:login` for the token (→ `.auth/tokens.env`) → **curl** for authenticated requests. NEVER execute via the OpenAPI MCP. Canon: `agentic-qa-core/references/api-testing-doctrine.md`.
-- Consult `domain-glossary.md` (if present) before authoring the ATP, refined ACs, and TC outlines.
+- Consult `business-domain-context` (`bun run context:map business-domain-context`) before authoring the ATP, refined ACs, and TC outlines.
 - On any subagent failure: STOP, report partial state, offer retry / skip-stage / abort. No auto-fix, no auto-rollback. A skill that itself broke (a wrong step, a missing verifier, a stale rule) is reported upstream per `../agentic-qa-core/references/upstream-feedback.md`: drafted and redacted locally, filed only on explicit OK, verified with `gh issue view`.
 - Stage 1 Set-first order (Modality jira-xray — AUTHORITATIVE): the Story's coverage backbone is its **ATS** (`ATS: {US_ID}: {story title}` — mandatory per Story, even with a single TC; parent: QA Test Artifacts epic; components inherited from the Story). Create the sprint `Test` issues, put ALL of them in the ATS, and link **ATS→Story** via the `test` slug (Story `is tested by` ATS) — the PRIMARY coverage-bearing edge (fills the Xray coverage panel); a direct TC→Story link is the only other coverage-bearing edge (last resort, valid only when no ATS can exist); Story↔ATP and Story↔ATR links are administrative traceability with ZERO coverage.
 - The ATP item is find-or-created FROM the `{{jira.acceptance_test_plan}}` field (where shift-left authored it) — pre-sprint the ATP lives ONLY in that field; Stage 1 is where the Test Plan item is born (parent: QA Master Test Plan epic).
