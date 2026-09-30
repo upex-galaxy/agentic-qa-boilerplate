@@ -89,8 +89,10 @@ describe('component registry', () => {
     expect(retired).toContain('.agents/skills/adapt-framework/SKILL.md');
     expect(retired).toContain('.agents/skills/adapt-framework/references/adaptation-workflow.md');
     expect(DEPRECATED_FILES.map(d => d.path)).toEqual([...RETIRED_COMMAND_WRAPPERS, ...RETIRED_SKILL_FILES].map(d => d.path));
+    expect(retired).toContain('.agents/skills/sync-ai-context/SKILL.md');
+    expect(retired).toContain('.agents/skills/sync-ai-context/references/sync.md');
     for (const d of RETIRED_SKILL_FILES) {
-      expect(d.reason).toContain('test-framework-adaptation');
+      expect(d.reason).toContain(d.path.includes('/adapt-framework/') ? 'test-framework-adaptation' : 'docs:check');
     }
 
     const root = temporaryRoot();

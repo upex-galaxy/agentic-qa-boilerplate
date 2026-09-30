@@ -17,6 +17,17 @@ below names which one it applies to:
 ## Unreleased — Boilerplate
 
 ### Removed (updater 8.5, BREAKING)
+- **`sync-ai-context` is retired.** Nothing triggered it, and its checks were either
+  mechanical or judgment. The mechanical half is now `docs:check` (`scripts/lint-docs.ts`):
+  a committed repo skill missing from the `AGENTS.md` section 5 router fails by name
+  (`roster`; project-local `<aspect>-context` skills exempt), and so does a `bun run <name>`
+  quoted in `AGENTS.md` or the doc surface that `package.json` does not declare (`script`;
+  placeholders and file runs ignored). Human pages are deliberately not checked for a skill
+  list: they point to `REGISTRY.md` (Critical Rule #17). The judgment half is two closing
+  steps: the docs follow-through of `framework-development` in the boilerplate, and
+  `test-framework-adaptation` Phase 9.3 for a project's own docs (never `docs/core/`). The
+  trigger phrases "sync AI context" / "sync AI memory" route to `framework-development`.
+  `bun run up` removes the skill downstream through `deprecatedFiles`.
 - **Command aliases retired in one release.** The alias manifest
   (`.agents/compatibility/command-aliases.json`) and every generated wrapper under
   `.claude/commands/` and `.opencode/commands/` are gone, and so are the updater's

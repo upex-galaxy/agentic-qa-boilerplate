@@ -185,14 +185,22 @@ export const RETIRED_COMMAND_WRAPPERS: DeprecatedFile[] = [
   }))),
 ];
 
-// A skill renamed upstream: the new folder arrives through the `skills`
-// component, the old one leaves here. `cleanupDeprecated` also removes the
-// folders it empties, because a skill folder with no SKILL.md fails skills:check.
+// Skills renamed or retired upstream: a renamed skill's new folder arrives
+// through the `skills` component, the old one leaves here. `cleanupDeprecated`
+// also removes the folders it empties, because a skill folder with no SKILL.md
+// fails skills:check.
 const RENAMED_SKILL_REASON = 'skill renamed to test-framework-adaptation (same workflow, new name)';
+const RETIRED_SYNC_REASON = 'skill retired: bun run docs:check gates the skill router and quoted scripts; framework-development and test-framework-adaptation close the docs';
 export const RETIRED_SKILL_FILES: DeprecatedFile[] = [
-  '.agents/skills/adapt-framework/SKILL.md',
-  '.agents/skills/adapt-framework/references/adaptation-workflow.md',
-].map(path => ({ path, component: 'skills', reason: RENAMED_SKILL_REASON, deprecatedSince: '8.5' }));
+  ...[
+    '.agents/skills/adapt-framework/SKILL.md',
+    '.agents/skills/adapt-framework/references/adaptation-workflow.md',
+  ].map(path => ({ path, component: 'skills', reason: RENAMED_SKILL_REASON, deprecatedSince: '8.5' })),
+  ...[
+    '.agents/skills/sync-ai-context/SKILL.md',
+    '.agents/skills/sync-ai-context/references/sync.md',
+  ].map(path => ({ path, component: 'skills', reason: RETIRED_SYNC_REASON, deprecatedSince: '8.5' })),
+];
 
 export const DEPRECATED_FILES: DeprecatedFile[] = [...RETIRED_COMMAND_WRAPPERS, ...RETIRED_SKILL_FILES];
 

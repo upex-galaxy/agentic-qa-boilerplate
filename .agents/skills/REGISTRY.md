@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-09-30T07:35:45.627Z`
+> Generated: `2026-09-30T07:36:47.778Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -8,7 +8,7 @@ This file is the per-session compact-rules cache for the Skill Resolver protocol
 The orchestrator copies one or more `## Skill: <slug>` blocks below into every subagent briefing under `## Project Standards (auto-resolved)`.
 Subagents trust those compact rules and only read the full SKILL.md when explicitly instructed.
 
-Skills indexed: 22
+Skills indexed: 21
 
 ---
 ## Skill: acli
@@ -44,7 +44,7 @@ Skills indexed: 22
 
 **Compact Rules**:
 - DO NOT create, modify, or delete ANY file while acting as `agentic-qa-core`. It is a passive reference library with no write path of its own.
-- DO NOT write `.context/` artifacts here (that is `/project-discovery`), scaffold tests / fixtures / KATA components (that is `/test-framework-adaptation` and `/test-automation`), adapt the framework to a stack (`/test-framework-adaptation`), sync AI-critical docs (`/sync-ai-context`), or sync OpenAPI schemas (`bun run api:sync`).
+- DO NOT write `.context/` artifacts here (that is `/project-discovery`), scaffold tests / fixtures / KATA components (that is `/test-framework-adaptation` and `/test-automation`), adapt the framework to a stack (`/test-framework-adaptation`), or sync OpenAPI schemas (`bun run api:sync`).
 - DO NOT orchestrate a workflow or bootstrap a target repo from this skill. It hosts doctrine; the workflow skills execute it.
 - WHEN a workflow skill cites `agentic-qa-core/references/*.md`: load ONLY the files that skill's `## Dependencies` block names. Never preload the whole reference set.
 - WHEN deriving test cases or coverage from acceptance criteria in ANY testing skill: `references/test-design-doctrine.md` is mandatory reading first.
@@ -125,6 +125,7 @@ Skills indexed: 22
 - DO: verify with all four checks (test, types, lint, skills) and treat any non-zero exit as REJECT — present retry / skip-and-document / abort, never auto-fix. A skill that itself broke (a wrong step, a missing verifier, a stale rule) is reported upstream per `../agentic-qa-core/references/upstream-feedback.md`: drafted and redacted locally, filed only on explicit OK, verified with `gh issue view`.
 - WHEN the change IS a skill (a new or restructured `.agents/skills/<slug>/`): scaffold it per `../agentic-qa-core/references/skill-scaffold.md` (frontmatter incl. `metadata.kind`, per-kind files and sections, Definition of Done). `skill-creator` (T3, installed at project level) is ALWAYS the builder: load it for the draft, the test prompts, the evals and the description pass; the scaffold contract stays this repo's. Missing on the machine → scaffold from the reference's template and say so. Consumer SUT context skills are NOT this skill's job: `project-context` mode `context-skill` owns them.
 - DO NOT: let a subagent write `progress.md`; it is orchestrator-only. Code subagents return one-line summaries per task, and the orchestrator does not read their diffs.
+- DO: close every change that adds, renames or retires a skill, a `package.json` script or a doc path with the docs follow-through (Phase 3): patch `AGENTS.md` §4/§5, `README.md`, `INSTALLER.md`, `CONTEXT.md` and the `docs/core/` pages in the same PR. `bun run docs:check` proves the router and the quoted scripts; the prose is judgment.
 - DO: archive the session directory only after all four verifiers pass. On REJECT it stays in place so the run can be debugged or resumed.
 
 **Read full SKILL.md when**: writing the plan artifact, batching Code-phase tasks, resuming an interrupted session, or reading the ALLOWED/FORBIDDEN path tables themselves.
@@ -457,24 +458,6 @@ Skills indexed: 22
 **Read full SKILL.md when**: starting a sprint cold, resuming a session, or handling a bug-triage / sprint-wide flow not covered by the rules above.
 
 > Source: `.agents/skills/sprint-testing/SKILL.md` · phase: `unknown` · kind: `workflow` · stage owner · source: frontmatter `compact_rules` (verbatim)
-
----
-
-## Skill: sync-ai-context
-
-> ⚠ LOW-CONFIDENCE (extraction strategy B): bullets scraped without context — read the full SKILL.md before relying on any rule below.
-
-**Purpose**: Synchronize AI-critical repository documents against current context, package scripts, skills, modes, and project identity.
-
-**Compact Rules**:
-- Legacy `sync-ai-memory` invocations route to `sync` for backward compatibility. The canonical name avoids confusion with Engram persistent memory.
-- Forward `$ARGUMENTS` unchanged.
-- Load `references/sync.md`, patch only verified facts, preserve all protected sections, run its cross-document and security checks, then report per-file outcomes.
-- This skill synchronizes repository documents. It does not read, write, merge, or replace Engram observations.
-
-**Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
-
-> Source: `.agents/skills/sync-ai-context/SKILL.md` · phase: `unknown` · kind: `workflow` · extraction strategy: B
 
 ---
 

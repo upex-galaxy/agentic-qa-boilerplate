@@ -210,11 +210,11 @@ const VOLATILE_SEVERITY: Record<VolatileKind, Severity> = {
  * predates the suffix rule and is grandfathered BY NAME so the exemption stays
  * visible here instead of hiding in a looser regex:
  *   - `acli`: a utility without the `-cli` / `-tool` / `-app` suffix.
- *   - `project-context`, `sync-ai-context`: workflows whose slug ends
- *     `-context` (the suffix the `context` kind reserves).
+ *   - `project-context`: a workflow whose slug ends `-context` (the suffix
+ *     the `context` kind reserves).
  * A new skill picks a slug that matches its kind; it does not get added here.
  */
-const KIND_SUFFIX_EXEMPT = new Set<string>(['acli', 'project-context', 'sync-ai-context']);
+const KIND_SUFFIX_EXEMPT = new Set<string>(['acli', 'project-context']);
 
 /**
  * Suffix ⇔ kind table for KIND-SUFFIX (check 17), enforced both ways: a slug

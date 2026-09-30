@@ -1,6 +1,6 @@
 ---
 name: agentic-qa-core
-description: "Foundation skill that hosts shared references cited by other workflow skills (briefing template, dispatch patterns, orchestration doctrine, skill composition strategy). Loaded on demand by any skill that declares `agentic-qa-core` in its Dependencies block. Do NOT use for: syncing AI-critical docs (use `/sync-ai-context`), adapting KATA tests (use `/test-framework-adaptation`), or onboarding the target project (use `/project-discovery`)."
+description: "Foundation skill that hosts shared references cited by other workflow skills (briefing template, dispatch patterns, orchestration doctrine, skill composition strategy). Loaded on demand by any skill that declares `agentic-qa-core` in its Dependencies block. Do NOT use for: adapting KATA tests (use `/test-framework-adaptation`), or onboarding the target project (use `/project-discovery`)."
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 complementary_categories: [meta-skill]
@@ -30,7 +30,7 @@ This skill does NOT orchestrate workflows, does NOT generate files, and does NOT
 -->
 
 - DO NOT create, modify, or delete ANY file while acting as `agentic-qa-core`. It is a passive reference library with no write path of its own.
-- DO NOT write `.context/` artifacts here (that is `/project-discovery`), scaffold tests / fixtures / KATA components (that is `/test-framework-adaptation` and `/test-automation`), adapt the framework to a stack (`/test-framework-adaptation`), sync AI-critical docs (`/sync-ai-context`), or sync OpenAPI schemas (`bun run api:sync`).
+- DO NOT write `.context/` artifacts here (that is `/project-discovery`), scaffold tests / fixtures / KATA components (that is `/test-framework-adaptation` and `/test-automation`), adapt the framework to a stack (`/test-framework-adaptation`), or sync OpenAPI schemas (`bun run api:sync`).
 - DO NOT orchestrate a workflow or bootstrap a target repo from this skill. It hosts doctrine; the workflow skills execute it.
 - WHEN a workflow skill cites `agentic-qa-core/references/*.md`: load ONLY the files that skill's `## Dependencies` block names. Never preload the whole reference set.
 - WHEN deriving test cases or coverage from acceptance criteria in ANY testing skill: `references/test-design-doctrine.md` is mandatory reading first.
@@ -75,7 +75,7 @@ This skill does NOT orchestrate workflows, does NOT generate files, and does NOT
 | `references/upstream-feedback.md` | Every skill marked `metadata.stage_owner: true` in its frontmatter (failure / blocker path), `skill-refinement-protocol.md` §4 | Filing a skill problem against the boilerplate: repo resolution order (`UPEX_TEMPLATE_REPO` → installer lock → local), the redacted draft, explicit OK before `gh issue create`, verification with `gh issue view`, the manual-filing fallback. |
 | `references/artifact-lifecycle.md` | `shift-left-testing`, `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing` | Which status every harness artifact is created in, which stage moves it where via which transition slug, and its terminal status. Covers assignee-at-create on every QA artifact, the unmapped-status fallback (list the live transitions, one question, fire the live id, recommend `bun run jira:sync-workflows`) and the light stage verifier every stage closes with. Load before firing any transition. |
 | `references/decision-elicitation-doctrine.md` | `agentic-qa-onboard`, any skill that must ask the user to decide | How the harness asks a human to decide: the ladder from harness prompt to `mkd` decision deck to plan mode, the threshold (more than three decisions, or one dense one), the non-silent gate and its fallback, and how to read the returned contract (a "did not understand" note means do not execute that item). |
-| `references/volatile-facts.md` | Every skill that writes or reviews committed prose (`framework-development`, `sync-ai-context`, `project-context`, `pr-review-lead`), `AGENTS.md` Rule #17, the two linters | **Canon for Critical Rule #17**: committed prose names the source of truth, never its current value. The five volatile categories (count, enumeration, `file:line`, current-state claim, edit-history narration) with one test each, the stable vocabulary that passes, the exemptions where a snapshot is the point, the forensic-note split (the why stays, the figure and date go to ADR-0006 or a dated ledger), and the `volatile-ok: <reason>` escape hatch the `FILE-LINE` / `CURRENT-STATE` lint checks honour. |
+| `references/volatile-facts.md` | Every skill that writes or reviews committed prose (`framework-development`, `test-framework-adaptation`, `project-context`, `pr-review-lead`), `AGENTS.md` Rule #17, the two linters | **Canon for Critical Rule #17**: committed prose names the source of truth, never its current value. The five volatile categories (count, enumeration, `file:line`, current-state claim, edit-history narration) with one test each, the stable vocabulary that passes, the exemptions where a snapshot is the point, the forensic-note split (the why stays, the figure and date go to ADR-0006 or a dated ledger), and the `volatile-ok: <reason>` escape hatch the `FILE-LINE` / `CURRENT-STATE` lint checks honour. |
 
 When a skill cites one of these, it includes a Dependencies block at the top so the AI knows to load `agentic-qa-core` before continuing.
 
@@ -128,7 +128,7 @@ If a downstream user has only the skills and not the rest of the repo, the suppo
 - Create or modify `.context/` files (that belongs to `/project-discovery`).
 - Generate or scaffold tests, fixtures, or KATA components (that belongs to `/test-framework-adaptation` and `/test-automation`).
 - Adapt the framework to a specific stack (that belongs to `/test-framework-adaptation`).
-- Sync AI-critical documents or project-specific facts in `AGENTS.md` (that belongs to `/sync-ai-context`).
+- Sync AI-critical documents or project-specific facts in `AGENTS.md` (the docs follow-through of `/framework-development` in the boilerplate, `/test-framework-adaptation` Phase 9.3 in a project).
 - Sync OpenAPI / API schemas (that's `bun run api:sync`).
 
 For framework evolution (changes to KATA bases, fixtures, `cli/`, `scripts/`, `api/schemas/` pipeline), see `/framework-development`.

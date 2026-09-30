@@ -106,10 +106,12 @@ export function isRepoOnlyPath(filePath: string, prefixes: string[]): boolean {
  * never delivers, overwrites or deletes one, even on the day upstream ships a
  * same-slug directory as an example. Two families keep syncing as before: the
  * one context skill upstream owns (`iql-context`), and the workflow skills
- * whose slugs predate the `-context` suffix rule (`project-context`,
- * `sync-ai-context`), the same names `scripts/lint-skills.ts` grandfathers in
- * KIND_SUFFIX_EXEMPT; `cli/` is import-closed, so the set is repeated here
- * and a test keeps the two in step.
+ * whose slugs predate the `-context` suffix rule: `project-context`, which
+ * `scripts/lint-skills.ts` grandfathers in KIND_SUFFIX_EXEMPT (`cli/` is
+ * import-closed, so a test keeps the two in step), and the retired
+ * `sync-ai-context`, kept here so a downstream copy stays upstream's and
+ * `deprecatedFiles` can remove it instead of the sync treating it as the
+ * project's own.
  */
 export const CONTEXT_SKILL_SUFFIX = '-context';
 export const UPSTREAM_CONTEXT_SUFFIX_SKILLS: ReadonlySet<string> = new Set(['iql-context', 'project-context', 'sync-ai-context']);

@@ -526,13 +526,11 @@ bun run codex      # Codex CLI (Codex Desktop usa la misma config del repo)</cod
                 reflejan el producto
               </td>
               <td>
-                Docs sincronizados (<code>/sync-ai-context</code>), mapas regenerados (<code
-                  >project-context</code
-                >
-                modos <code>data</code> / <code>features</code> / <code>api</code> y
-                <code>test-plan</code>), catálogos de Jira al día (<code>jira:sync-*</code>,
-                <code>jira:check</code>, <code>vars:check</code>) y el framework actualizado con
-                <code>bun run up</code>.
+                Docs al día (<code>bun run docs:check</code> y el cierre de cada skill), mapas
+                regenerados (<code>project-context</code> modos <code>data</code> /
+                <code>features</code> / <code>api</code> y <code>test-plan</code>), catálogos de
+                Jira al día (<code>jira:sync-*</code>, <code>jira:check</code>,
+                <code>vars:check</code>) y el framework actualizado con <code>bun run up</code>.
               </td>
               <td>Cuando aparece el drift. Trátalo como un warning del compilador.</td>
             </tr>
@@ -684,12 +682,13 @@ bun run codex      # Codex CLI (Codex Desktop usa la misma config del repo)</cod
               </td>
             </tr>
             <tr>
-              <td><code>sync-ai-context</code></td>
-              <td>Cuando los docs para la IA ya no reflejan el repo.</td>
+              <td><code>bun run docs:check</code></td>
+              <td>En cada commit (pre-commit y <code>bun run repo:check</code>).</td>
               <td>
-                <code>AGENTS.md</code>, <code>README.md</code> y el resto de docs críticos, contra
-                los skills, <code>.context/</code> y <code>package.json</code>. No toca la memoria
-                de Engram.
+                Falla si un skill del repo falta en el router de <code>AGENTS.md</code> §5 o si un
+                doc cita un <code>bun run</code> que <code>package.json</code> no tiene. Lo que pide
+                criterio lo cierra <code>/framework-development</code> en el boilerplate y la fase
+                9.3 de <code>/test-framework-adaptation</code> en tu proyecto.
               </td>
             </tr>
             <tr>
@@ -985,7 +984,7 @@ subagente (contexto limpio)
             </tr>
             <tr>
               <td>Sincronizar los docs de la IA tras un cambio</td>
-              <td><code>/sync-ai-context</code></td>
+              <td><code>bun run docs:check</code></td>
             </tr>
             <tr>
               <td>Reparar la trazabilidad US, ATP, ATR y TC</td>
