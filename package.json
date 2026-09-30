@@ -50,6 +50,7 @@
     "claude": "dotenv -o -e .env -- claude",
     "codex": "dotenv -o -e .env -- codex",
     "context:hydrate": "bun scripts/sync-jira-issues.ts pull --include-comments",
+    "context:map": "bun scripts/context-map.ts",
     "docs": "bun scripts/docs-serve.ts",
     "docs:build": "bun scripts/docs-manifest.ts",
     "docs:check": "bun scripts/lint-docs.ts",
