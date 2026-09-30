@@ -54,6 +54,19 @@ describe('volatile-facts CURRENT-STATE', () => {
     ]);
   });
 
+  test('a hand-stamped Last Updated date is a hit, a template placeholder is not', () => {
+    const text = [
+      '**Last Updated**: 2026-04-26',
+      '> Last updated: 2026-04 by hand',
+      '> **Last Updated**: {date}',
+      'Update **Last Updated** in the header.',
+    ].join('\n');
+    expect(tags(md(text))).toEqual([
+      '1:CURRENT-STATE:Last Updated**: 2026-04-26',
+      '2:CURRENT-STATE:Last updated: 2026-04',
+    ]);
+  });
+
   test('a stable sentence with a date-free rationale is not a hit', () => {
     expect(md('Measured on a real fleet: every worker started empty. The servers `.mcp.json` declares. Max 2 positional params.')).toEqual([]);
   });
