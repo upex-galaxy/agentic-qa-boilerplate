@@ -8,8 +8,8 @@ Produce the Product Requirements Documents by reading the code, not by interview
 1. Executive Summary     -> .context/PRD/executive-summary.md
 2. User Personas         -> .context/PRD/user-personas.md
 3. User Journeys         -> .context/PRD/user-journeys.md
-4. Feature Inventory     -> delegated to /project-context features
-                            (output: .context/business/business-feature-map.md)
+4. Feature Inventory     -> delegated to /project-context e2e
+                            (output: the map inside business-e2e-context)
 ```
 
 Prereqs (from Phase 1): `.context/business/business-model.md` and `.context/business/domain-glossary.md` must exist. Personas link to roles already identified in the glossary; journeys link to features already identified in the business model.
@@ -195,15 +195,15 @@ grep -rE "redirect\(|router\.(push|replace)" --include="*.ts" --include="*.tsx" 
 
 ---
 
-## 4. Feature Inventory — delegated to `project-context` mode `features`
+## 4. Feature Inventory — delegated to `project-context` mode `e2e`
 
-Feature inventory work lives in `project-context` mode `features`, **not** in this phase. After the PRD sections above are complete (Executive Summary, User Personas, User Journeys), invoke `/project-context features` to produce `.context/business/business-feature-map.md`.
+Feature inventory work lives in `project-context` mode `e2e` (synonym `features`), **not** in this phase. After the PRD sections above are complete (Executive Summary, User Personas, User Journeys), invoke `/project-context e2e`: it reads the personas and journeys written here as input and produces the E2E map inside `business-e2e-context`, journeys first, feature catalog second.
 
 That mode covers the full feature taxonomy: feature catalog by domain (with stable `FEAT-NNN` IDs), CRUD matrix per entity, API endpoint inventory, UI component inventory (forms + dashboards), third-party integrations, feature flags, planned/WIP features, and the QA relevance matrix. Do not duplicate that logic inside this reference.
 
-**Why split?** The feature map is now also useful outside the discovery pipeline (e.g. when only the backlog changes), so it lives as a standalone `project-context` mode that can be re-run on demand without going through the four-phase discovery again. It also keeps phase-2-prd.md focused on the human-readable PRD docs (summary, personas, journeys), with feature taxonomy as a sibling artifact rather than a section.
+**Why split?** The E2E map is also useful outside the discovery pipeline (e.g. when only the backlog changes), so it lives as a standalone `project-context` mode that can be re-run on demand without going through the four-phase discovery again. It also keeps phase-2-prd.md focused on the human-readable PRD docs (summary, personas, journeys), with feature taxonomy as a sibling artifact rather than a section.
 
-When the PRD is assembled, link from `executive-summary.md` and `user-journeys.md` to `business-feature-map.md` for the canonical feature list — never paste a feature catalog into those docs.
+When the PRD is assembled, point `executive-summary.md` and `user-journeys.md` at `business-e2e-context` (`bun run context:map business-e2e-context`) for the canonical feature list — never paste a feature catalog into those docs.
 
 ---
 
@@ -214,9 +214,9 @@ Before moving to the SRS half of Phase 2:
 - [ ] `.context/PRD/executive-summary.md` exists, 5-or-fewer core capabilities, every row has evidence.
 - [ ] `.context/PRD/user-personas.md` exists, 2-4 personas, Permission Matrix filled in, test-account mapping to `.env` complete.
 - [ ] `.context/PRD/user-journeys.md` exists, Route Map has all three tables filled in, 3-5 journeys each with Evidence column populated, error paths included.
-- [ ] `.context/business/business-feature-map.md` exists (produced by `project-context` mode `features`, NOT by this phase). CRUD matrix complete for every core entity in the glossary, FEAT-NNN IDs assigned.
-- [ ] All three PRD docs (executive-summary, user-personas, user-journeys) include a Discovery Gaps section. The feature map has its own gaps section.
-- [ ] `## Phase 2 Progress - PRD` block present in `AGENTS.md`, checkmarks on the three in-phase docs + a pointer to `business-feature-map.md`.
+- [ ] Not a gate of this phase: the E2E map is produced AFTER discovery by `project-context` mode `e2e`. Note in the handoff that it is pending when `business-e2e-context` still holds a placeholder.
+- [ ] All three PRD docs (executive-summary, user-personas, user-journeys) include a Discovery Gaps section.
+- [ ] `## Phase 2 Progress - PRD` block present in `AGENTS.md`, checkmarks on the three in-phase docs + a pointer to `business-e2e-context`.
 
 Proceed to `phase-2-srs.md` once the gate is met.
 
@@ -227,6 +227,6 @@ Proceed to `phase-2-srs.md` once the gate is met.
 - **PRDs are discovery, not creation.** Do not re-scope the product. Describe what it does as built; aspirational content goes in Discovery Gaps.
 - **Personas = roles.** In existing systems, personas are the roles the authorization code recognizes. Do not invent "Sarah the busy marketer" -- document "admin", "editor", "viewer" with their actual permissions.
 - **Journeys need step-level evidence.** Every step row needs a file path. If you cannot cite a file for a step, the step does not exist in the code; it is either a guess or a future feature -- flag accordingly.
-- **Feature IDs and the catalog live in `business-feature-map.md`.** Stable `FEAT-NNN` IDs, CRUD matrix, third-party integration call-site rule, feature-flag defaults — all of that is owned by `project-context` mode `features`. PRD docs (summary, personas, journeys) link to it instead of re-listing features.
+- **Feature IDs and the catalog live in `business-e2e-context`.** Stable `FEAT-NNN` IDs, CRUD matrix, third-party integration call-site rule, feature-flag defaults — all of that is owned by `project-context` mode `e2e`. PRD docs (summary, personas, journeys) link to it instead of re-listing features.
 - **Happy paths without error paths are incomplete.** Refuse to ship a journey doc that lists only the success flow. Error handling is half the behavior.
 - **Breadcrumb patterns reveal hierarchy.** If a project uses breadcrumbs, their patterns are the canonical nesting model -- prefer them over navigation group names.

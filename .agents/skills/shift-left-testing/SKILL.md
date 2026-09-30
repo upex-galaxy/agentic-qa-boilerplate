@@ -14,7 +14,7 @@ metadata:
 
 Read in order; stop earlier when the batch is small enough that later inputs add no signal.
 
-1. `.context/business/business-feature-map.md` + `.context/business/business-data-map.md` + `.context/business/business-api-map.md` — domain vocabulary, entity model, CRUD matrix, auth model + endpoint contracts. Anchors refined ACs in real entities, flows, and API behavior. (All three are hard-required by the Readiness Preflight Gate + Phase 0.3.)
+1. The business context skills `business-e2e-context` + `business-data-context` + `business-api-context`, read through `bun run context:map <slug>` — journeys and feature catalog, entity model, CRUD matrix, auth model + endpoint groups. Anchors refined ACs in real entities, flows, and API behavior. (All three are hard-required by the Readiness Preflight Gate + Phase 0.3.)
 2. `.context/PBI/qa-artifacts/master-test-plan.md` — regression Epic + in-scope modules. Tells the refinement whether the Story falls inside an already-prioritized area.
 3. The Story's Acceptance Criteria + `**Source spec:**` reference on Jira. Detailed read via `bun run jira:sync-issues get <STORY_KEY> --include-comments`, then read the synced `acceptance-criteria.md` (+ description). NEVER `acli view` for custom fields. Canonical input — every refined AC must trace back here.
 4. `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/` if a PBI folder already exists for this Story (created by a prior `/sprint-testing` cycle). Carries earlier session notes worth honoring.
@@ -192,7 +192,7 @@ Phase 3 — Handoff
 | Issue-tracker (`[ISSUE_TRACKER_TOOL]`) | REQUIRED | All refinement output lands on Jira (description, ATP field, comment, labels, transitions). Load `/acli`; validate setup via `bun run jira:check`. |
 | TMS modality resolved | REQUIRED | Recorded in `plan.md` and carried into the handoff so `/sprint-testing` Stage 1 knows which engine will materialize the Test Plan item later. The pre-sprint ATP write itself is modality-independent — field-first in both. The modality probe is `test-documentation/SKILL.md` §Phase 0; ask only if all auto-checks fail. |
 | `/xray-cli` + `XRAY_*` creds | NOT NEEDED | Shift-Left creates no TMS items in either modality. The pre-sprint ATP lives in the `{{jira.acceptance_test_plan}}` field (fallback: comment); the Test Plan item is created by `/sprint-testing` Stage 1 from the field content. |
-| Business context files | REQUIRED | `.context/business/*` + `.context/PBI/qa-artifacts/master-test-plan.md` — refinement without them produces low-value questions. Missing → hand off to `/project-discovery`; a missing MTP cache is first refreshed with `bun run context:hydrate`, then written by `project-context` mode `test-plan` if the Epic has none. |
+| Business context maps + MTP | REQUIRED | each of `business-data-context`, `business-api-context`, `business-e2e-context` exists AND its map is generated (`bun run context:map <slug> --list` prints sections, no placeholder notice), plus `.context/PBI/qa-artifacts/master-test-plan.md` — refinement without them produces low-value questions. A missing skill → `bun run up`; a placeholder map → the matching `project-context` mode; a missing MTP cache is first refreshed with `bun run context:hydrate`, then written by `project-context` mode `test-plan` if the Epic has none. |
 | Candidate Story list | REQUIRED | Explicit IDs (args) or a backlog JQL. Confirm size with the user before Phase 1. |
 
 Env reachability, test-user creds, DBHub, OpenAPI / API token, Playwright and `resend` are **N/A** here — shift-left never executes against a running system. After the gate clears (all REQUIRED GREEN), continue to Phase 0 below.
@@ -212,13 +212,13 @@ Env reachability, test-user creds, DBHub, OpenAPI / API token, Playwright and `r
 
    This step is **mandatory before any pseudocode block below executes**. The skills carry the concrete syntax, flags, and JSON payloads this skill intentionally omits.
 
-0.3 **Verify project-wide context files exist**:
-   - `.context/business/business-data-map.md`
-   - `.context/business/business-feature-map.md`
-   - `.context/business/business-api-map.md`
+0.3 **Verify project-wide context exists** (existence alone is not enough: a placeholder map passes a file check and carries nothing):
+   - `bun run context:map business-data-context --list`
+   - `bun run context:map business-e2e-context --list`
+   - `bun run context:map business-api-context --list`
    - `.context/PBI/qa-artifacts/master-test-plan.md`
 
-   If any of these is missing, STOP and hand off to `project-discovery` (or the individual `project-context` modes `data` / `features` / `api` and `test-plan`). Shift-left refinement without business context produces low-value PO/Dev questions and bloats the batch report.
+   If a command prints the placeholder notice (or the skill is missing), or the plan is missing, STOP and hand off to `project-discovery` (or the individual `project-context` modes `data` / `e2e` / `api` and `test-plan`). Shift-left refinement without business context produces low-value PO/Dev questions and bloats the batch report.
 
 0.4 **Resolve the candidate Story list**. Two modes:
 
@@ -471,7 +471,7 @@ After the batch report lands, append the final progress entry `## Phase 3 — Ha
 | Formal TC creation + ROI scoring after Story ships | `/test-documentation` | Stage 4 turns the outlines + refined ACs into formal Xray TCs (Modality jira-xray) or Jira Test issues (Modality jira-native) with ROI scoring. |
 | Automated test code | `/test-automation` | Stage 5. |
 | Regression suite execution | `/regression-testing` | Stage 6. |
-| Generate / refresh business + master test plan context | `/project-discovery` + `project-context` modes `data` / `features` / `api` / `test-plan` | This skill consumes those; it does not create them. |
+| Generate / refresh business + master test plan context | `/project-discovery` + `project-context` modes `data` / `e2e` / `api` / `test-plan` | This skill consumes those; it does not create them. |
 | Adversarial dual-review of the refinement (optional) | `/judgment-day` | Useful when shift-left output goes to a high-risk Story. Not auto-invoked. |
 
 If Phase 0.3 reports any project-wide context file missing, STOP and hand off — refinement without business context produces vague PO questions and dilutes the batch report.

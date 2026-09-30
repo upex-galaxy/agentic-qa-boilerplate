@@ -140,16 +140,16 @@ If team discussions reveal decisions that modify or extend the ACs, highlight th
 
 ### Step 3 — Load project context
 
-Read these files to understand the system:
+Read these to understand the system (the maps through their reader, never the raw HTML):
 
 ```
-.context/business/business-data-map.md       # business flows and state machines
-.context/business/business-feature-map.md    # feature catalog, CRUD matrix, integrations
-.context/business/business-api-map.md        # auth model, critical journey endpoints, external integrations
+bun run context:map business-data-context    # business flows, entities and state machines
+bun run context:map business-e2e-context     # user journeys, feature catalog, CRUD matrix, integrations
+bun run context:map business-api-context     # auth model, critical journey endpoints, external integrations
 .context/PBI/qa-artifacts/master-test-plan.md   # testing guide (what to test and why); cache of the MTP Epic
 ```
 
-These provide business flows, feature inventory, API contracts + authentication model, and the test strategy. A missing MTP cache is first refreshed with `bun run context:hydrate` (the plan lives in Jira). If ALL four are still missing, stop and hand off to the `project-discovery` skill (or invoke the individual `project-context` modes `data` / `features` / `api` + `test-plan`). Sprint-testing cannot plan without them.
+These provide business flows, journeys and feature inventory, API contracts + authentication model, and the test strategy. A command that prints the placeholder notice counts as missing: existence of the file is not enough. A missing MTP cache is first refreshed with `bun run context:hydrate` (the plan lives in Jira). If ALL four are still missing, stop and hand off to the `project-discovery` skill (or invoke the individual `project-context` modes `data` / `e2e` / `api` + `test-plan`). Sprint-testing cannot plan without them.
 
 ### Step 4 — Module context (3-level hierarchy)
 

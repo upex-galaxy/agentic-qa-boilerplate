@@ -22,8 +22,7 @@ Context docs:
   - kata-manifest.json (root) — REQUIRED FIRST READ. Authoritative registry of every existing Component + ATC. Use it for reuse detection and ID-collision avoidance before drafting anything.
   - .context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/ (Jira-synced caches: story.md, acceptance-criteria.md, implementation-plan.md (dev plan), acceptance-test-plan.md — READ-ONLY input; materialize via `bun run jira:sync-issues get <STORY-KEY> --include-comments`)
   - .context/PBI/qa-artifacts/master-test-plan.md
-  - .context/business/business-data-map.md
-  - .context/business/business-feature-map.md
+  - `bun run context:map business-data-context` and `bun run context:map business-e2e-context` (per touched level; add `business-api-context` for API scope; `--section <id>` for one entity, journey or endpoint group)
   - .agents/skills/test-automation/references/kata-architecture.md
   - .agents/skills/test-automation/references/atc-tracing.md
   - tests/components/<api|ui>/ (existing components — open ONLY when the manifest entry is ambiguous)
@@ -81,7 +80,7 @@ Inputs:
 - Module name or feature area (`"Orders Dashboard"`, `"Billing"`).
 - Any stakeholder input: meeting transcript, priority list, known regressions.
 - Access to frontend and backend source for the module.
-- Access to `.context/` docs (business-data-map, api-architecture, existing PBI).
+- Access to the business context maps (`bun run context:map <slug>`) and the existing PBI under `.context/PBI/`.
 
 Outputs:
 

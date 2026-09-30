@@ -39,9 +39,9 @@ Read before starting. All paths relative to repo root.
 |-------|--------|
 | Epic / feature ticket (detail) | `bun run jira:sync-issues get <EPIC-KEY> --include-comments` then read the synced `epic.md` / custom-field files |
 | Child story list | `bun run jira:sync-issues jql "parent = <EPIC-KEY>"` (or `[ISSUE_TRACKER_TOOL]` search for a trivial key/summary list only) |
-| Business context | `.context/business/business-data-map.md` + `.context/PBI/qa-artifacts/master-test-plan.md` |
-| API context | `.context/business/business-api-map.md` (business angle) + `api/schemas/` (generated types from `bun run api:sync`) |
-| Architecture + SRS (if present) | `.context/SRS/architecture.md`, `.context/SRS/functional-specs.md`, `.context/SRS/non-functional-specs.md` (API contract comes from `api/openapi-types.ts` and `.context/business/business-api-map.md`, not from SRS) |
+| Business context | `bun run context:map business-data-context` + `bun run context:map business-e2e-context` (journeys) + `.context/PBI/qa-artifacts/master-test-plan.md` |
+| API context | `bun run context:map business-api-context` (business angle) + `api/schemas/` (generated types from `bun run api:sync`) |
+| Architecture + SRS (if present) | `.context/SRS/architecture.md`, `.context/SRS/functional-specs.md`, `.context/SRS/non-functional-specs.md` (API contract comes from `api/openapi-types.ts` and the `business-api-context` map, not from SRS) |
 | Prior epic discussions | Synced `comments.md` from the epic (Team Discussion extraction — see `session-entry-points.md`) |
 
 If project-wide context files are missing, stop and hand off to `project-discovery`. Do not proceed on partial context.
@@ -95,7 +95,7 @@ The output document has seven sections. AI fills each one by reading the specifi
 
 ### 1. Business Context
 
-From `business-data-map.md` + `.context/business/business-model.md` + `.context/PRD/*` (if present) extract:
+From the data map (`business-data-context`) + `.context/business/business-model.md` + `.context/PRD/*` (if present) extract:
 
 - Primary user personas affected
 - Business value proposition and success metrics (KPIs the feature influences)
@@ -105,10 +105,10 @@ Keep to 5-10 bullets. The goal is to anchor risk analysis, not reproduce the PRD
 
 ### 2. Technical Architecture
 
-From `business-api-map.md` + `SRS/*` + `api/schemas/` + backend/frontend code exploration:
+From the API map (`business-api-context`) + `SRS/*` + `api/schemas/` + backend/frontend code exploration:
 
 - Frontend components / pages / routes touched
-- Backend endpoints + services (reference IDs from `business-api-map.md`, `api/schemas/`, or `api-contracts.yaml`)
+- Backend endpoints + services (reference section ids from the `business-api-context` map, `api/schemas/`, or `api-contracts.yaml`)
 - Database tables + critical queries
 - External services (payment, email, auth provider, webhooks)
 - Integration points table (internal: FE↔API, API↔DB, API↔Auth; external: API↔Stripe, API↔Email, …)

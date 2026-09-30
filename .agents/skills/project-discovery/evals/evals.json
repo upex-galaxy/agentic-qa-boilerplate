@@ -9,7 +9,7 @@
     {
       "name": "should-redirect-business-data-map-regeneration",
       "prompt": "Generate the business-data-map.md for this project. Look at the source code and the database.",
-      "expected_behavior": "Does NOT generate the map inside this skill and does NOT claim to own it. Redirects to `project-context` mode `data` (`/project-context data`), which is where the entity/flow/state-machine extraction lives. May state which discovery artifacts that mode depends on, and offer to run Phase 1 + Phase 3 first if `.context/` has no project-config or infrastructure yet. Does not reference a context-generators file: this skill has no such reference.",
+      "expected_behavior": "Does NOT generate the map inside this skill and does NOT claim to own it. Redirects to `project-context` mode `data` (`/project-context data`), which is where the entity/flow/state-machine extraction lives and which writes the map inside `business-data-context`. May state which discovery artifacts that mode depends on, and offer to run Phase 1 + Phase 3 first if `.context/` has no project-config or infrastructure yet. Does not reference a context-generators file: this skill has no such reference.",
       "category": "positive"
     },
     {
