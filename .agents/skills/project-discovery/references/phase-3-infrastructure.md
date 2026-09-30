@@ -1,20 +1,25 @@
 # Phase 3 — Infrastructure Discovery
 
-> Read this when running any Phase 3 sub-step: Backend Discovery, Frontend Discovery, or Infrastructure Mapping. Phase 3 runs after Phase 2 is complete (Architecture + API contracts are the inputs).
+> Read this when running any Phase 3 sub-step: Backend Discovery, Frontend Discovery, or Infrastructure Mapping. Phase 3 runs after Phase 2 is complete (the infra map's `overview`, `architecture` and the recorded API contract source are the inputs).
 
 ---
 
-## Phase 3 outputs
+## Phase 3 outputs: the infra map, second half
 
-| File | Purpose |
-|------|---------|
-| `.context/infrastructure/backend.md` | Runtime, dependencies, env vars, DB setup, test/build commands, local-dev recipe. |
-| `.context/infrastructure/frontend.md` | Build config, client env vars, static assets, bundle/perf, browser targets. |
-| `.context/infrastructure/infrastructure.md` | CI/CD workflows, deployment targets, environment matrix, IaC, monitoring, rollback. |
+Phase 3 writes into the same file as Phase 2: `.agents/skills/infra-context/references/infra-map.html`. Anatomy, reading and the CREATE/UPDATE contract are `agentic-qa-core/references/business-context-maps.md` §2-§5; `phase-2-srs.md` §"Phase 2 outputs" has the mode detection and the generated banner. Within one discovery session, whichever of Phase 2 or Phase 3 runs first CREATEs the map; the other adds its own section ids. On a later re-run, UPDATE only the stale sections, show a section-level diff, and WAIT for approval.
 
-Some teams merge backend + frontend sections into `.context/SRS/architecture.md`. Either layout is acceptable; pick one and be consistent. Prefer `.context/infrastructure/` when the target is a monorepo or has non-trivial ops surface.
+| Section id | Content |
+|------------|---------|
+| `backend` (monorepo: `backend-<pkg>`) | Runtime, dependencies, env vars, DB setup, auth flow, test/build commands, local-dev recipe. |
+| `frontend` (monorepo: `frontend-<pkg>`) | Build config, client env vars, routing/state/auth integration points, test IDs strategy, static assets, bundle/perf, browser targets. |
+| `environments` | Environment matrix, env vars by environment, secrets storage, cloud services, database infrastructure, monitoring, rollback. |
+| `ci-cd` | CI/CD workflows, deployment targets, IaC, the exact commands CI runs. |
 
-Every output MUST include a `## Discovery Gaps` section.
+Every gap goes in the map's `discovery-gaps` section (shared with Phase 2, always last).
+
+Legacy input: a project's old `.context/infrastructure/backend.md`, `frontend.md` and `infrastructure.md` (the `legacy` list of `infra-context` in `CONTEXT_MAP_SKILLS`, `cli/lib/context-maps.ts`) are read as INPUT when present and cited in `data-migrated-from` on the sections they seed. Never delete or rewrite them.
+
+Commands go in `<pre><code>` blocks inside the section; tables are `<table>`. Before drawing a figure (the deployment topology in `environments` or `ci-cd` is the usual candidate), run the point-of-use check for capability `diagrams` (`business-context-maps.md` §7); tables beat figures for matrices.
 
 ---
 
@@ -78,7 +83,7 @@ Run this BEFORE any discovery step. Never ask the user "what stack is this?" —
 
 `pnpm-workspace.yaml`, `turbo.json`, `nx.json`, `lerna.json`, `rush.json`, root `package.json` with `workspaces` field.
 
-If any of these are present: Phase 3 must be run ONCE PER PACKAGE. Each package gets its own sub-section inside the output files (`## packages/api`, `## packages/web`, ...).
+If any of these are present: Phase 3 must be run ONCE PER PACKAGE. Each package gets its own section in the infra map (`backend-api`, `frontend-web`, ...); `environments` and `ci-cd` stay project-wide.
 
 ---
 
@@ -115,7 +120,7 @@ If any of these are present: Phase 3 must be run ONCE PER PACKAGE. Each package 
    - Type check command (if separate from build).
    - Lint command.
 
-### Required sections in `.context/infrastructure/backend.md`
+### Content of the `backend` section
 
 - Runtime Environment table (runtime / version / language / package manager)
 - Package Scripts table (name / command / purpose)
@@ -124,9 +129,10 @@ If any of these are present: Phase 3 must be run ONCE PER PACKAGE. Each package 
 - Database Configuration (type / provider / ORM / migration tool)
 - Migration Commands block (create / apply / reset / seed)
 - Build Configuration (output dir, standalone flag, bundler settings)
-- Local Development Setup — copy-pasteable `bash` block from `git clone` to `npm run dev`
+- Local Development Setup: a copy-pasteable `<pre><code>` block from `git clone` to `npm run dev` (install + run)
+- Auth Flow: the real login request (endpoint, payload shape, what comes back, where the session or token lives). This is the single most important input for `test-framework-adaptation`; the `architecture` section holds only the sequence.
 - Health Check Endpoints (if implemented)
-- Discovery Gaps
+- Gaps go to `discovery-gaps`
 
 ### Local dev recipe template
 
@@ -189,7 +195,7 @@ curl http://localhost:<port>/api/health
    - Auth client: NextAuth `useSession()`, Clerk, Auth0, Supabase Auth, custom cookie/JWT.
    - Test IDs strategy: `data-testid` (preferred), `data-cy`, id/class selectors.
 
-### Required sections in `.context/infrastructure/frontend.md`
+### Content of the `frontend` section
 
 - Build Configuration table (framework / bundler / output mode / TS settings)
 - Framework config snippet (key settings extracted from `next.config.*` / `vite.config.*`)
@@ -201,8 +207,9 @@ curl http://localhost:<port>/api/health
 - Performance Configuration table (image opt / font opt / prefetching / script opt)
 - SEO Configuration (metadata / OG / sitemap / robots)
 - Browser Support / Polyfills
-- Routing + State + Auth integration points (consumed later by `/test-framework-adaptation`)
-- Discovery Gaps
+- Routing + State + Auth integration points and the test IDs strategy (consumed later by `/test-framework-adaptation`)
+- Install + run commands in a `<pre><code>` block
+- Gaps go to `discovery-gaps`
 
 ---
 
@@ -242,26 +249,33 @@ curl http://localhost:<port>/api/health
    - Log shipping destination + retention.
    - Rollback mechanism: `vercel rollback`, `kubectl rollout undo`, redeploy prior Git SHA.
 
-### Required sections in `.context/infrastructure/infrastructure.md`
+### Content of the `ci-cd` section
 
-- Overview diagram (Mermaid `graph TB` showing Dev -> CI -> Envs -> Infra)
-- CI/CD Configuration — Platform + Workflows, per workflow (triggers, jobs, steps, env names)
-- Deployment Configuration — Hosting platform, platform-specific config snippet, Docker/Compose summary if applicable
-- Environments Matrix (env / URL / branch / auto-deploy)
-- Environment Variables by Environment table
-- Secrets Management table (secret / storage / access scope)
+- Delivery overview figure (optional; diagram-design, never Mermaid): Dev -> CI -> Envs -> Infra
+- CI/CD Configuration: platform + workflows, per workflow (triggers, jobs, steps, env names), the exact test commands CI runs
+- Deployment Configuration: hosting platform, platform-specific config snippet, Docker/Compose summary if applicable
+- IaC (tool / location / state / resources), or "Not present"
+- Deployment Checklist (pre-deploy / post-deploy / rollback)
+- QA Relevance: CI integration points for test jobs
+
+### Content of the `environments` section
+
+- Environments Matrix `<table>` (env / URL / branch / auto-deploy / approval): the template below
+- Environment Variables by Environment table (names only)
+- Secrets Management table (secret / storage / access scope), never values
 - Cloud Services table (service / provider / purpose)
 - Database Infrastructure (provider / type / region / backups / connection)
-- Infrastructure Resources diagram (Mermaid — apps, DBs, external services, CDN)
-- IaC section (tool / location / state / resources)
-- Monitoring & Observability (error tracking, uptime, logging)
-- Deployment Checklist (pre-deploy / post-deploy / rollback)
-- Discovery Gaps
-- QA Relevance (test environment access, CI integration points for test jobs)
+- Infrastructure Resources figure (optional; diagram-design: apps, DBs, external services, CDN) when the topology is not obvious from the tables
+- Monitoring & Observability (error tracking, uptime, logging) and the rollback mechanism
+- QA Relevance: test environment access
+
+Gaps from either section go to `discovery-gaps`.
 
 ### Environment matrix template
 
-```markdown
+The columns and rows of the `<table>` in `environments`:
+
+```text
 | Environment | URL | Branch | Auto Deploy | Approval |
 |-------------|-----|--------|-------------|----------|
 | Development | http://localhost:3000 | - | - | - |
@@ -275,7 +289,7 @@ curl http://localhost:<port>/api/health
 ## Stack detection gotchas
 
 - **Monorepos hide their internals.** A top-level `package.json` with no deps of its own is a workspace root. Run detection per package.
-- **Hybrid stacks are common.** Next.js + separate Express API, Next.js + tRPC, Rails API + React SPA. Treat the two halves as separate backend/frontend discoveries and link them in the infrastructure mapping diagram.
+- **Hybrid stacks are common.** Next.js + separate Express API, Next.js + tRPC, Rails API + React SPA. Treat the two halves as separate backend/frontend discoveries and link them in the `architecture` figure (Phase 2).
 - **Missing Dockerfile is not a red flag.** Many modern deployments (Vercel, Netlify, Fly) build without a Dockerfile. Check for platform-specific config (`vercel.json`, `fly.toml`) before assuming "no deploy config".
 - **Old `pages/` next to new `app/`.** Next.js apps mid-migration have both. Document both routing models — tests may need to target either.
 - **Serverless edge runtime.** Next.js middleware and edge functions run in a restricted V8 runtime (no `fs`, limited `crypto`). Flag if tests assume Node APIs.
@@ -292,11 +306,13 @@ curl http://localhost:<port>/api/health
 
 Before the Phase 3 completion gate, verify:
 
-- [ ] `.context/infrastructure/backend.md` exists with Runtime, Scripts, Dependencies, Env Vars, Database, Local Dev Recipe, Discovery Gaps.
-- [ ] `.context/infrastructure/frontend.md` exists with Build Config, Client Env Vars, Static Assets, Bundle/Perf, Routing/State/Auth integration points, Discovery Gaps.
-- [ ] `.context/infrastructure/infrastructure.md` exists with CI/CD, Deployment, Environments, Secrets, IaC (or "Not present"), Monitoring, Rollback, Discovery Gaps.
+- [ ] `bun run context:map infra-context --list` shows `backend`, `frontend`, `environments` and `ci-cd` (or their per-package forms), each with `data-sources`.
+- [ ] `backend` has Runtime, Scripts, Dependencies, Env Vars, Database, Local Dev Recipe, and the Auth Flow.
+- [ ] `frontend` has Build Config, Client Env Vars, Static Assets, Bundle/Perf, Routing/State/Auth integration points, test IDs strategy.
+- [ ] `environments` has the environments matrix, secrets storage, monitoring and rollback; `ci-cd` has workflows, deployment and IaC (or "Not present").
+- [ ] Every gap is in `discovery-gaps`.
 - [ ] Every command block is copy-pasteable (no `<placeholder>` mixed with real commands).
 - [ ] No secret values committed; only keys + example formats.
-- [ ] Monorepos have per-package sub-sections.
+- [ ] Monorepos have per-package sections (`backend-<pkg>`, `frontend-<pkg>`).
 - [ ] Each environment URL is reachable (or flagged as gap if cannot verify from code).
 - [ ] User confirms "Phase 3 complete" before Phase 4 begins. KATA adaptation happens later via `/test-framework-adaptation`, outside this skill.

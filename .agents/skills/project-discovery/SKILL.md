@@ -1,17 +1,17 @@
 ---
 name: project-discovery
-description: "Onboard a project through four discovery phases: Constitution, Architecture, Infrastructure, and Specification. Produces PRD, SRS, domain glossary, infrastructure context, and backlog access, then hands business maps and the master test plan to `project-context`. Use for set up this project, onboard this repo, connect to project, discover architecture, or create PRD/SRS. Do NOT use for incremental context refresh (`project-context`), writing tests, TMS documentation, running suites, adapting KATA (`test-framework-adaptation`), or technical OpenAPI sync (`bun run api:sync`)."
+description: "Onboard a project through four discovery phases: Constitution, Architecture, Infrastructure, and Specification. Produces the domain map (business model + glossary) inside `business-domain-context` and the infra map (architecture, NFRs, backend, frontend, environments, CI/CD) inside `infra-context`, plus `.context/project-config.md` and a backlog connection check, then hands the business maps and the master test plan to `project-context`. Use for set up this project, onboard this repo, connect to project, discover architecture, or create PRD/SRS. Do NOT use for incremental context refresh (`project-context`), writing tests, TMS documentation, running suites, adapting KATA (`test-framework-adaptation`), or technical OpenAPI sync (`bun run api:sync`)."
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 complementary_categories: [meta-skill]
 metadata:
   kind: workflow
-  requires_capabilities: [db, api-schema]
+  requires_capabilities: [db, api-schema, diagrams]
 ---
 
 # Project Discovery — Onboarding Orchestrator
 
-Turn an unknown codebase into a testable project. Four phases, always in order, gated on completion of the previous one. The output is a set of context files the rest of the skills (`shift-left-testing`, `sprint-testing`, `test-automation`, `test-documentation`, `regression-testing`) rely on.
+Turn an unknown codebase into a testable project. Four phases, always in order, gated on completion of the previous one. The output is the domain map and the infra map inside their context skills, plus `.context/project-config.md`: the knowledge the rest of the skills (`shift-left-testing`, `sprint-testing`, `test-automation`, `test-documentation`, `regression-testing`) rely on.
 
 The discovery is **conversational**: you read the code, ask when ambiguous, confirm before writing files. Never fabricate -- if you cannot verify a claim from the source, mark it as a "Discovery Gap" and move on.
 
@@ -22,20 +22,23 @@ Grounding methodology: **IQL (Integrated Quality Lifecycle)** — QA is continuo
 ## Compact Rules
 
 - DO: run the four phases in order (Constitution → Architecture → Infrastructure → Specification), each gated on the previous. Show the output paths and wait for an explicit "Phase N complete" before continuing — never auto-chain.
-- DO NOT: write anything into the target repo. Discovery is read-only on it; `.context/` is the only write target, and modifying the boilerplate itself is `test-framework-adaptation`.
-- DO NOT: invent business entities, flows, requirements, or Jira/Xray field IDs and status names. Anything not verifiable from the source goes in the `## Discovery Gaps` section that every output must carry.
+- DO NOT: write anything into the target repo. Discovery is read-only on it. The write targets are `.context/project-config.md`, `.context/ADR/`, and the maps of `business-domain-context` and `infra-context` (their `references/<map>.html`), nothing else (plus the Phase 1 `## Project Assessment (Phase 1)` block in `AGENTS.md`); modifying the boilerplate itself is `test-framework-adaptation`.
+- DO: act as the GENERATOR of those two maps, per `agentic-qa-core/references/business-context-maps.md` (anatomy §2, reading §3, CREATE/UPDATE §4, staleness §5). Map absent or placeholder → CREATE every section. Map generated → UPDATE only the stale sections (§5 staleness check), show a section-level diff, WAIT for approval. Never regenerate a whole generated map.
+- DO: read a project's old `.context/business/`, `.context/SRS/` and `.context/infrastructure/` markdown files (the `legacy` list of `business-domain-context` and `infra-context` in `CONTEXT_MAP_SKILLS`, `cli/lib/context-maps.ts`) as INPUT when present, cite them in `data-migrated-from` on the sections they seed, and never delete or rewrite them.
+- DO: before drawing a figure, run the point-of-use check for capability `diagrams` (`agentic-qa-core/references/business-context-maps.md` §7). Figures are optional where a table says it better: the glossary is tables; the architecture overview usually earns a figure.
+- DO NOT: invent business entities, flows, requirements, or Jira/Xray field IDs and status names. Anything not verifiable from the source goes in the map's `discovery-gaps` section (or the `## Discovery Gaps` block of `project-config.md`).
 - DO: describe what the system DOES, not what product wants it to do. Discovery is reverse-engineering; a "to-be" PRD/SRS is out of scope — point the user at their own product workflow.
 - DO: lock the target repo path(s) before Phase 1 and block on ambiguity. A repo that is not cloned locally cannot be discovered from a URL — ask for the clone first.
 - WHEN the layout is split sibling repos: run the Phase 1 sub-steps once per repo and merge into ONE `project-config.md`, never interleaved. WHEN it is a monorepo: Phase 1 once project-wide, Phases 2-3 per package.
-- DO NOT: generate business maps, the feature catalog, or the master test plan here — those are `project-context` modes, which own their diff and overwrite approval. Exact API types are `bun run api:sync`.
-- DO NOT: create per-ticket PBI content or copy the backlog. Phase 4 produces only the backlog access recipe; the committed `README.md` and `templates/` under `.context/PBI/` stay untouched.
-- DO NOT: paste credentials or a detected secret into any discovery doc. Reference the `.env` key or the file path only; a hardcoded-secret hit is recorded as a HIGH risk with its path.
+- DO NOT: fill the `business-data-context`, `business-api-context` or `business-e2e-context` maps, and do not write personas, journeys, the feature catalog or the master test plan here. Those are `project-context` modes, which own their diff and overwrite approval. Exact API types are `bun run api:sync`.
+- DO NOT: create per-ticket PBI content or copy the backlog. Phase 4 is a connection check and writes no file; the committed `README.md` and `templates/` under `.context/PBI/` stay untouched.
+- DO NOT: paste credentials or a detected secret into any discovery output. Reference the `.env` key or the file path only; a hardcoded-secret hit is recorded as a HIGH risk (path only) in the Phase 1 assessment.
 - WHEN Phase 2 or 3 settles a test-architecture decision that is architectural AND hard to reverse (runner, isolation/parallelization, fixture and test-data strategy, auth-in-tests, selector contract, CI sharding): record it as an append-only ADR under `.context/ADR/`, drafted `Proposed` for the human to accept.
 - DO NOT: mix a discovery session with `test-framework-adaptation`, and do not use this skill for incremental map refreshes — the write boundaries differ.
-- DO NOT: skip Phase 1 or its domain glossary on a fresh start. Downstream skills read the glossary as a precondition for ATP authoring and TC naming.
+- DO NOT: skip Phase 1 or its domain glossary on a fresh start. Downstream skills load `business-domain-context` as a precondition for ATP authoring and TC naming.
 - WHEN both a DB schema/migrations and ORM models exist: prefer the schema or migrations. ORM definitions drift from the live schema.
 - DO: mention the IQL methodology only if the user asks why the discovery is structured this way — never lecture someone who just wants the artifact.
-- DO: before any step that uses a declared MCP capability (`metadata.requires_capabilities`: `db`, `api-schema`), run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8: resolve by tool-name suffix, and when no available tool provides it STOP and name the capability + how to enable it, never a silent fallback.
+- DO: before any step that uses a declared capability (`metadata.requires_capabilities`: `db`, `api-schema`, `diagrams`), run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8: resolve by tool-name suffix, and when no available tool provides it STOP and name the capability + how to enable it, never a silent fallback.
 
 **Read full SKILL.md when**: running any phase's sub-steps, applying a completion gate's content checks, or resolving the pre-`test-framework-adaptation` prerequisite list.
 
@@ -47,7 +50,7 @@ Canonical reading order when starting cold on a discovery run. Read in order; st
 
 1. **Target project repo** — path resolved at session start (see "Before starting: target repo location" below). Read code and any in-repo PRD. This is the primary source of truth — discovery is reverse-engineering, never aspirational design.
 2. **Target repo's `README.md` and existing onboarding docs** — fastest path to project intent, stack signals, and run commands before deep code reads.
-3. **`.context/` directory** (if partial state exists from a prior discovery run) — informs Phase 0 resume decisions and prevents redundant work. Diff against current code before overwriting.
+3. **Prior discovery state** (if any): `bun run context:map business-domain-context --list` and `bun run context:map infra-context --list`, `.context/project-config.md`, and any legacy markdown a project kept under `.context/business/`, `.context/SRS/`, `.context/infrastructure/` (input only). Informs Phase 0 resume decisions and CREATE vs UPDATE, and prevents redundant work.
 4. **`.agents/project.yaml` and `.env.example`** — variable resolution patterns (`{{PROJECT_KEY}}`, env URLs, MCP names) that every downstream context file references.
 5. **`kata-manifest.json`** — registry of existing KATA Components + ATCs. Anchors what test surface the boilerplate already expects so discovery records gaps coherently.
 6. **`.agents/skills/agentic-qa-core/references/skill-composition-strategy.md`** — workflow context for downstream handoffs (`project-context`, `test-framework-adaptation`, `sprint-testing`, `test-documentation`).
@@ -59,7 +62,7 @@ Canonical reading order when starting cold on a discovery run. Read in order; st
 
 > **Orchestration & Session contracts**: this skill follows `agentic-qa-core/references/orchestration-doctrine.md` (mandatory subagent dispatch — main thread is command center) AND `agentic-qa-core/references/session-management.md` (Phase 0 resume check, plan-first persistence at `.session/<skill-slug>/<scope>/`, archive on completion). Phase 0 (resume check) and Phase 1 (plan write) are NOT optional.
 
-This skill is **project-scope**: no `<scope>` segment. Session state lives directly at `.session/project-discovery/{plan.md, progress.md}` per `agentic-qa-core/references/session-management.md` §3 + §9. This skill runs long (hours, four hard-gate phases) and benefits most from per-phase checkpoints: if interrupted between Phase 2 (PRD/SRS) and Phase 3 (Infrastructure), resume reads `progress.md` and skips back to the first incomplete phase without re-prompting the user for already-confirmed scope.
+This skill is **project-scope**: no `<scope>` segment. Session state lives directly at `.session/project-discovery/{plan.md, progress.md}` per `agentic-qa-core/references/session-management.md` §3 + §9. This skill runs long (hours, four hard-gate phases) and benefits most from per-phase checkpoints: if interrupted between Phase 2 (Architecture) and Phase 3 (Infrastructure), resume reads `progress.md` and skips back to the first incomplete phase without re-prompting the user for already-confirmed scope.
 
 This skill is compliant with the doctrine in `AGENTS.md` §"Orchestration Mode (Subagent Strategy)" and the session contract in `.agents/skills/agentic-qa-core/references/session-management.md`. Per-phase dispatch decisions live in `Pick the scope first` below: Fresh = heavy subagent delegation per phase; Boilerplate adoption = medium; Brownfield + Context refresh = main session only.
 
@@ -104,9 +107,9 @@ All projects go through the same 4 phases, but depth varies. Pick once, then fol
 | Scenario | Input | Phases to run | Typical depth | Context weight & subagent hint |
 |----------|-------|---------------|---------------|--------------------------------|
 | **Fresh onboarding** (greenfield or unseen project) | Repo URL or local path(s), no existing context files | 1 -> 2 -> 3 -> 4, then `project-context refresh-all` | Full discovery. Business maps and test strategy are generated by their dedicated skill. After context completion, run `test-framework-adaptation`. | **Heavy.** Delegate each phase's code survey to a dedicated subagent. |
-| **Boilerplate adoption** (this repo adopted for a new project) | Target app repo(s), this repo as the test framework | 1 (project-connection) -> 3, then `project-context` for missing maps | Skip Phase 2 or 4 only when their required artifacts already exist. Verify files on disk before `test-framework-adaptation`. | **Medium.** Delegate Phase 1 and Phase 3 per package for monorepos. |
+| **Boilerplate adoption** (this repo adopted for a new project) | Target app repo(s), this repo as the test framework | 1 -> 3, then `project-context` for missing maps | Phase 1 runs in full: the domain map is a `test-framework-adaptation` prerequisite. Skip Phase 2 or 4 only when their required artifacts already exist. Verify files on disk before `test-framework-adaptation`. | **Medium.** Delegate Phase 1 and Phase 3 per package for monorepos. |
 | **Brownfield** (project already documented, tests missing) | Existing `.context/` partially filled | 2 (gaps) -> 3 (gaps) -> 4 (gaps), then `project-context` for stale maps | Fill discovery gaps here; refresh map artifacts in their owning skill. | **Light.** Main session unless gaps span many files. |
-| **Context refresh** | User asks to regenerate a business map or master test plan | Redirect to the matching `project-context` mode | This skill does not refresh those artifacts. For PBI access changes, re-run Phase 4. For exact OpenAPI types, use `bun run api:sync`. | **Minimal.** Handoff only. |
+| **Context refresh** | User asks to regenerate a business map or master test plan | Redirect to the matching `project-context` mode | This skill does not refresh those artifacts. For the domain or infra map, re-run Phase 1 or Phases 2-3 in UPDATE mode (stale sections only). For a backlog connection change, re-run Phase 4. For exact OpenAPI types, use `bun run api:sync`. | **Minimal.** Handoff only. |
 
 Default to "Fresh onboarding" when in doubt. Confirm the scope with the user before starting Phase 1.
 
@@ -117,13 +120,14 @@ After scope confirmation, **write `.session/project-discovery/plan.md`** per `ag
 ## Workflow — the 4-phase pipeline
 
 ```
-Phase 1: Constitution        -> Phase 2: Architecture       -> Phase 3: Infrastructure    -> Phase 4: Specification
-(who/what/why)                 (PRD + SRS)                    (backend/frontend/infra)       (PBI mapping)
-                |                      |                              |                              |
-   .context/business/            .context/PRD/*.md           .context/infrastructure/*.md     .context/PBI/ACCESS.md
-   business-model.md            .context/SRS/*.md
-   domain-glossary.md
-   project-config.md
+Phase 1: Constitution          -> Phase 2: Architecture        -> Phase 3: Infrastructure      -> Phase 4: Specification
+(who/what/why)                    (architecture + NFRs)           (backend/frontend/envs/CI)      (backlog connection check)
+        |                                 |                               |                               |
+ .context/project-config.md       infra-context map:              infra-context map:              no file written
+ AGENTS.md assessment block       overview, architecture,         backend, frontend,              `bun run jira:check`
+ business-domain-context map:     external-services, nfr-<slug>   environments, ci-cd
+ overview, business-model,
+ term-<slug>, enumerations
 
                                                  |
                                                  v
@@ -133,9 +137,11 @@ Phase 1: Constitution        -> Phase 2: Architecture       -> Phase 3: Infrastr
                                     OpenAPI type pipeline.
 ```
 
+Both maps close with a `discovery-gaps` section. Read them back with `bun run context:map <slug>` (or `--list` for the section index), never as raw HTML.
+
 > KATA adaptation is a separate skill: `test-framework-adaptation`. It runs after discovery and context outputs exist.
 
-Each phase has a **completion gate**: before moving on, the required output files must exist on disk with non-placeholder content. Ask the user to confirm after each phase; never auto-chain.
+Each phase has a **completion gate**: before moving on, the phase's sections must print through `bun run context:map` with real content (and the files it names must exist on disk). Ask the user to confirm after each phase; never auto-chain.
 
 ### Phase 1 — Constitution (who, what, why)
 
@@ -143,83 +149,76 @@ Each phase has a **completion gate**: before moving on, the required output file
 
 Four sub-steps, in order:
 
-1. **Project Connection** -- repo paths, tech stack detection, environment URLs, credentials from `.env`, team contacts.
-2. **Project Assessment** -- current testing maturity (frameworks in place, CI presence, lint/typecheck, coverage). Produces a risk profile.
-3. **Business Model Discovery** -- problem statement, target users, value proposition, revenue model (if any). Business Model Canvas recommended.
-4. **Domain Glossary** -- core entities, relationships, state machines, enumerations, UI-label vs code-identifier mapping.
+1. **Project Connection** -- repo paths, tech stack detection, environment URLs, credentials from `.env`, team contacts. Output: `.context/project-config.md`.
+2. **Project Assessment** -- current testing maturity (frameworks in place, CI presence, lint/typecheck, coverage). Output: the `## Project Assessment (Phase 1)` block. HIGH risks (a hardcoded-secret hit included, path only) are recorded there and carried to the handoff as seed input for `project-context` mode `test-plan` (the MTP). No separate risk file is written.
+3. **Business Model Discovery** -- problem statement, target users, value proposition, revenue model (if any). Output: the `overview` and `business-model` sections of the `business-domain-context` map.
+4. **Domain Glossary** -- core entities and concepts, UI-label vs code-identifier mapping, enumerations. Output: one `term-<slug>` section per core entity or concept, plus `enumerations` and `discovery-gaps`, in the same map.
 
-**Completion gate**: `.context/business/business-model.md`, `.context/business/domain-glossary.md`, `.context/project-config.md` all exist and are non-empty. Plus a `## Project Assessment (Phase 1)` block in canonical `AGENTS.md`. Sanity-check content — these are soft gates, surfaced to the human as warnings, not hard aborts:
-- `domain-glossary.md` contains at least 5 core-entity subsections (grep `^### ` yields 5+ matches, ignoring top-level H3s from "Enumerations" etc. — aim for real entities).
-- `business-model.md` cites at least one concrete source (`Source:` or `Found in:` literal appears 3+ times).
+**Completion gate**: `bun run context:map business-domain-context --list` prints sections and no placeholder notice; `.context/project-config.md` exists and is non-empty; the `## Project Assessment (Phase 1)` block is in canonical `AGENTS.md`. Sanity-check content (soft gates, surfaced to the human as warnings, not hard aborts):
+- Several `term-` sections exist, one per real core entity from the schema (not one catch-all section, not only enumerations).
+- `overview` and `business-model` carry `data-sources` (the reader's `--list` shows them).
 - `project-config.md` has a `## Tech Stack` section AND a `## Environments` section.
 
-After the automated sanity check, show the human the output paths and wait for explicit "Phase 1 complete, continue" before moving on.
+After the automated sanity check, show the human the map index and the file path, and wait for explicit "Phase 1 complete, continue" before moving on.
 
-Read `references/phase-1-constitution.md` when running any Phase 1 sub-step. Contains the discovery process, stack-detection commands, required output sections, and quality checklists.
+Read `references/phase-1-constitution.md` when running any Phase 1 sub-step. Contains the discovery process, stack-detection commands, the content of each domain map section, and quality checklists.
 
-### Phase 2 — Architecture (PRD + SRS)
+### Phase 2 — Architecture
 
-**Goal**: produce the Product and Software Requirements docs from code (not the other way round -- that is the "creation" direction, this is the "discovery" direction).
+**Goal**: describe how the system is built, from code (the "discovery" direction, never the "creation" one).
 
-PRD sub-steps (run first, in parallel or sequentially — user choice):
-1. **Executive Summary** -- problem, solution, success metrics, scope.
-2. **User Personas** -- roles, permissions, primary/secondary users, role hierarchy.
-3. **User Journeys** -- critical paths through the UI, route map, journey diagrams.
+Sub-steps, serially:
+1. **Architecture** -- system overview, component structure, database schema at the architecture level, data and auth flow, security model. Output: `infra-context` sections `overview` and `architecture`.
+2. **External Services** -- third-party dependencies and their integration points. Output: `external-services`.
+3. **Non-Functional** -- performance, security posture, reliability, scalability, observability, compliance. Output: one `nfr-<slug>` section per category that has evidence.
 
-> **Journeys map and feature catalog are post-discovery.** `project-context` mode `e2e` writes them into `business-e2e-context`, reading the PRD journeys and personas produced here as input. Do not generate them here.
+> **Personas, user journeys and functional specs are not discovery outputs.** `project-context` mode `e2e` builds them as the persona, journey and feature sections of `business-e2e-context`.
 
-SRS sub-steps (run after PRD, serially):
-1. **Architecture Specs** -- C4 context and container diagrams, component structure, database schema, external services, security model.
-2. **Functional Specs** -- FR-N entries with preconditions, business rules, validations, state machines.
-3. **Non-Functional Specs** -- performance budgets, security posture, reliability (RTO/RPO), scalability, observability, compliance.
+> **API contracts are NOT a Phase 2 output.** The technical surface is owned by `bun run api:sync`; the business angle is owned by `project-context` mode `api`. Phase 2 records only the spec location (in `.context/project-config.md`) or a discovery gap.
 
-> **API contracts are NOT an SRS output.** The technical surface is owned by `bun run api:sync`; the business angle is owned by `project-context` mode `api`. Phase 2 records only the spec location or a Discovery Gap.
+> **Test-architecture ADR seeding (Phase 2 + Phase 3).** When the Architecture / Infrastructure sub-steps settle a hard-to-reverse **test**-architecture decision — test runner/framework, isolation & parallelization model, fixture/test-data strategy, auth-in-tests, selector/`data-testid` contract, exploratory-vs-scripted boundary, CI sharding — promote each one that passes the two-gate test (architectural AND hard to reverse) to a standalone `ADR-NNNN-<slug>.md` in `.context/ADR/`, and cite it in the `architecture` section of the infra map. Greenfield: you are ENCODING the decision; brownfield: you are RECORDING the one you discovered. Follow `agentic-qa-core/references/adr-doctrine.md` (detection + authoring) and `.context/ADR/README.md` (template + lifecycle). AI drafts `Proposed`; the human accepts.
 
-> **Test-architecture ADR seeding (Phase 2 SRS + Phase 3).** When the Architecture Specs / Infrastructure sub-steps settle a hard-to-reverse **test**-architecture decision — test runner/framework, isolation & parallelization model, fixture/test-data strategy, auth-in-tests, selector/`data-testid` contract, exploratory-vs-scripted boundary, CI sharding — promote each one that passes the two-gate test (architectural AND hard to reverse) to a standalone `ADR-NNNN-<slug>.md` in `.context/ADR/`, and reference it from `architecture.md` / `infrastructure/`. Greenfield: you are ENCODING the decision; brownfield: you are RECORDING the one you discovered. Follow `agentic-qa-core/references/adr-doctrine.md` (detection + authoring) and `.context/ADR/README.md` (template + lifecycle). AI drafts `Proposed`; the human accepts.
+**Completion gate**: `bun run context:map infra-context --list` shows an `architecture` section and at least one `nfr-` section. The API contract source is recorded in `.context/project-config.md`. Soft content checks:
+- `architecture` carries a figure, or a `discovery-gaps` entry explaining why not.
+- `external-services` exists, or `discovery-gaps` says none were found and where you looked.
+- Every numeric NFR claim cites evidence in its section or sits in `discovery-gaps`.
 
-**Completion gate**: `.context/PRD/executive-summary.md`, `user-personas.md`, `user-journeys.md`, `.context/SRS/architecture.md`, `functional-specs.md`, `non-functional-specs.md` all exist. API contract source is recorded in `.context/project-config.md`. The E2E map (journeys + feature catalog) remains a post-discovery `project-context` output. Soft content checks:
-- `architecture.md` contains at least one ` ```mermaid` block AND one of (`## Data Flow`, `## Database Schema`, `## Component Structure`).
-- `functional-specs.md` contains at least one `FR-` identifier and one `BR-` identifier.
-- `user-personas.md` lists at least 2 role entries (`### ` or table rows with role names).
+Show the map index to the human and wait for "Phase 2 complete, continue" before moving on.
 
-Show outputs to the human and wait for "Phase 2 complete, continue" before moving on.
-
-Read `references/phase-2-prd.md` when working on any PRD doc. Read `references/phase-2-srs.md` when working on any SRS doc. They are independent -- do not load both unless you are straddling both sides.
+Read `references/phase-2-srs.md` when running any Phase 2 sub-step.
 
 ### Phase 3 — Infrastructure
 
 **Goal**: make the project runnable and deployable for the test environment.
 
 Three sub-steps:
-1. **Backend Discovery** -- language, framework, database, ORM, auth, dependency manager, run/test commands, migrations, env vars.
-2. **Frontend Discovery** -- framework, bundler, routing, state management, design system, component library, test IDs strategy.
-3. **Infrastructure Mapping** -- CI/CD providers, deployment targets, environments (dev/staging/prod), infra-as-code, monitoring, rollback procedure.
+1. **Backend Discovery** -- language, framework, database, ORM, auth, dependency manager, run/test commands, migrations, env vars. Output: `infra-context` section `backend` (monorepo: `backend-<pkg>`).
+2. **Frontend Discovery** -- framework, bundler, routing, state management, design system, component library, test IDs strategy. Output: `frontend` (monorepo: `frontend-<pkg>`).
+3. **Infrastructure Mapping** -- CI/CD providers, deployment targets, environments (dev/staging/prod), infra-as-code, monitoring, rollback procedure. Output: `environments` and `ci-cd`.
 
-**Completion gate**: `.context/infrastructure/backend.md`, `frontend.md`, `infrastructure.md` all exist with the key facts (auth flow, test commands, deploy URLs) filled in. Soft content checks:
-- `backend.md` AND `frontend.md` each contain a `## Runtime` (or `## Build Configuration`) section AND a commands block (`bash` fenced) covering install + run.
-- `infrastructure.md` lists environments explicitly (`| Staging |` or `| Production |` table row).
-- At least one auth-flow pointer exists in `backend.md` (e.g., mentions `/auth/login`, `session`, `JWT`, `cookie`, `OAuth`).
+**Completion gate**: `bun run context:map infra-context --list` shows `backend`, `frontend`, `environments` and `ci-cd` (or their per-package forms) with the key facts (auth flow, test commands, deploy URLs) filled in. Soft content checks:
+- `backend` AND `frontend` each carry the commands to install and run (a `<pre><code>` block).
+- `environments` holds an environments table (a Staging or Production row).
+- `backend` points at the auth flow (e.g., `/auth/login`, `session`, `JWT`, `cookie`, `OAuth`).
 
-Show outputs to the human and wait for "Phase 3 complete, continue" before moving on.
+Show the map index to the human and wait for "Phase 3 complete, continue" before moving on.
 
-Read `references/phase-3-infrastructure.md` when running any Phase 3 sub-step. Contains framework-detection heuristics, required sections per artifact, and common gotchas (SSR vs CSR, edge vs serverless, monorepo vs split repos).
+Read `references/phase-3-infrastructure.md` when running any Phase 3 sub-step. Contains framework-detection heuristics, the content of each infra map section, and common gotchas (SSR vs CSR, edge vs serverless, monorepo vs split repos).
 
-### Phase 4 — Specification (Backlog mapping)
+### Phase 4 — Specification (backlog connection)
 
-**Goal**: hook the testing framework into the team's issue tracker without duplicating content.
+**Goal**: prove the testing framework can reach the team's issue tracker, without duplicating content. Phase 4 writes no file.
 
 One sub-step:
-1. **PBI Backlog Mapping** -- connect to `{{ISSUE_TRACKER}}` via `[ISSUE_TRACKER_TOOL]`, discover project key, map hierarchy (Epic/Story/Task/Bug), record queries used to fetch tickets. Output: `.context/PBI/ACCESS.md` (backlog access recipe). NEVER write `.context/PBI/README.md` — it is a committed framework document (tier doctrine + gitignore ladder), not a discovery output; same for the committed `templates/` skeletons.
+1. **Backlog connection check** -- connect to `{{ISSUE_TRACKER}}` via `[ISSUE_TRACKER_TOOL]`, confirm the project key in `.agents/project.yaml`, run `bun run jira:check` (read `package.json` first to confirm the script), and confirm the hierarchy the sync will use is declared in `.agents/jira-required.yaml`. NEVER write `.context/PBI/README.md` or the committed `templates/`: the access recipe lives in `.context/PBI/README.md` and AGENTS.md §9.
 
-> **Per-ticket PBI is NOT generated by this skill.** It is materialized later by `/sprint-testing` via `bun run jira:sync-issues get <KEY> --include-comments`, which writes the canonical synced tree `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/` (Module = Epic, 1:1). Those local `.md` files are a READ-ONLY cache of Jira (Jira = source of truth). This skill does NOT create per-ticket `story.md` — it only sets up the backlog access recipe (`ACCESS.md`).
+> **Per-ticket PBI is NOT generated by this skill.** It is materialized later by `/sprint-testing` via `bun run jira:sync-issues get <KEY> --include-comments`, which writes the canonical synced tree `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/` (Module = Epic, 1:1). Those local `.md` files are a READ-ONLY cache of Jira (Jira = source of truth). This skill does NOT create per-ticket `story.md`.
 
-**Completion gate**: `.context/PBI/ACCESS.md` exists with project key + auth recipe. Soft content checks:
-- `PBI/ACCESS.md` contains the configured `{{PROJECT_KEY}}` literal AND a `## Common Queries` section (or JQL / WIQL snippet).
-- `.context/PBI/README.md` and `.context/PBI/templates/` untouched (framework-owned, committed).
+**Completion gate**: `bun run jira:check` green, or a recorded discovery gap (in `project-config.md` `## Discovery Gaps`) when the team has no tracker access yet. `.context/PBI/README.md` and `.context/PBI/templates/` untouched.
 
-Show outputs to the human and wait for "Phase 4 complete" before emitting the `project-context` handoff.
+Show the check output to the human and wait for "Phase 4 complete" before emitting the `project-context` handoff.
 
-Read `references/phase-4-specification.md` when running Phase 4. Contains issue-tracker connection recipes, query conventions, and the `ACCESS.md` structure.
+Read `references/phase-4-specification.md` when running Phase 4.
 
 ### Business-context handoff
 
@@ -241,18 +240,16 @@ On Phase-gate REJECT (user marks a phase incomplete or finds a Discovery Gap tha
 
 ## Next recommended steps (emit after Phase 4 completes)
 
-Discovery populates PRD, SRS, glossary, infrastructure, and backlog access. It does not invoke `project-context`, which is token-heavy and best run in a clean session.
+Discovery populates the domain map, the infra map and `project-config.md`, and checks the backlog connection. It does not invoke `project-context`, which is token-heavy and best run in a clean session.
 
 When Phase 4 is confirmed complete, print this block to the user verbatim:
 
 ```
 Discovery complete. `/project-discovery` has populated:
-- .context/business/business-model.md, domain-glossary.md
+- `business-domain-context` map (business model + glossary): `bun run context:map business-domain-context`
+- `infra-context` map (architecture, NFRs, backend, frontend, environments, CI/CD): `bun run context:map infra-context`
 - .context/project-config.md
-- .context/PRD/executive-summary.md, user-personas.md, user-journeys.md
-- .context/SRS/architecture.md, functional-specs.md, non-functional-specs.md
-- .context/infrastructure/backend.md, frontend.md, infrastructure.md
-- .context/PBI/ACCESS.md
+- Backlog connection check: `bun run jira:check` <green | discovery gap: why>
 
 **Recommended next skill** (run in a clean session):
 
@@ -260,19 +257,23 @@ Discovery complete. `/project-discovery` has populated:
 
 It runs data -> e2e -> api -> test-plan in dependency order, writes the maps inside `business-data-context`, `business-e2e-context` and `business-api-context`, and can be re-run whenever project context becomes stale (UPDATE regenerates only stale sections).
 
+**Seed input for the master test plan** (`project-context` mode `test-plan`): the HIGH risks from the Phase 1 assessment:
+- <risk, severity, evidence path> (or "none recorded")
+
 After it completes, invoke `test-framework-adaptation` to wire KATA against the target stack.
 
-**Judgment the business context skills could start with** (proposed, not written — each becomes a dated rule in that skill's `## Rules` after its map is generated and the user approves):
-- `business-data-context` — <one line: the judgment a session needs to read the data right, or "no candidate yet">
-- `business-api-context` — <one line, or "no candidate yet">
-- `business-e2e-context` — <one line, or "no candidate yet">
+**Judgment the context skills could start with** (proposed, not written: each becomes a dated rule in that skill's `## Rules` after its map is generated and the user approves):
+- `business-domain-context`: <one line: a term the team and the code name differently, or "no candidate yet">
+- `infra-context`: <one line: an environment-only behaviour, or "no candidate yet">
+- `business-data-context`: <one line: the judgment a session needs to read the data right, or "no candidate yet">
+- `business-api-context`: <one line, or "no candidate yet">
+- `business-e2e-context`: <one line, or "no candidate yet">
 
-**Other context skills this project could carry** (proposed, not created — `project-context` mode `context-skill <aspect>` creates each one through `skill-creator`, once what it sits over exists):
-- `infra-context` over `.context/SRS/` + `.context/infrastructure/` — <one line, or "no candidate yet">
-- <any other aspect the discovery surfaced> — <one line>
+**Other context skills this project could carry** (proposed, not created: `project-context` mode `context-skill <aspect>` creates each one through `skill-creator`, once what it sits over exists):
+- <any other aspect the discovery surfaced>: <one line>
 ```
 
-Fill each proposal line from what the phases actually found: a soft-delete convention, a derived field, an auth edge case, an environment-only behaviour. A proposal is one sentence naming the judgment, never a file: the facts go in the map, and a rule is born later, over an approved map, with its date. "No candidate yet" is a valid line.
+The judgment lines cover the context skills in `CONTEXT_MAP_SKILLS` (`cli/lib/context-maps.ts`); the template names each slug only because it is a fill-in. Fill each proposal line from what the phases actually found: a soft-delete convention, a derived field, an auth edge case, an environment-only behaviour. A proposal is one sentence naming the judgment, never a file: the facts go in the map, and a rule is born later, over an approved map, with its date. "No candidate yet" is a valid line.
 
 Do not auto-chain the handoff inside this session. Context generation needs its own token budget and approval lifecycle.
 
@@ -280,11 +281,11 @@ Do not auto-chain the handoff inside this session. Context generation needs its 
 
 <!-- keep in sync with .agents/skills/test-framework-adaptation/references/adaptation-workflow.md §Hard prerequisites -->
 
-Before the user invokes `test-framework-adaptation`, verify every file below is on disk. Missing business maps route to the matching `project-context` mode.
+Before the user invokes `test-framework-adaptation`, verify every item below. A missing domain or infra map routes back to the matching discovery phase; a missing business map routes to the matching `project-context` mode.
 
-- [ ] `.context/PRD/` populated (at least `README.md`) AND `.context/business/business-model.md` or `domain-glossary.md` present
-- [ ] `.context/SRS/architecture.md`
-- [ ] `.context/infrastructure/backend.md` and `.context/infrastructure/frontend.md`
+- [ ] `business-domain-context` holds a generated map (`bun run context:map business-domain-context` prints sections, no placeholder notice)
+- [ ] `infra-context` holds a generated map with its `backend` and `frontend` sections (`bun run context:map infra-context --list`)
+- [ ] `.context/project-config.md`
 - [ ] `business-data-context` holds a generated map (`bun run context:map business-data-context` prints sections, no placeholder notice)
 - [ ] API contract source: one of `api/openapi-types.ts` (non-stub) OR reachable OpenAPI spec URL OR a generated `business-api-context` map (business-angle fallback)
 - [ ] `.env.example` (and `.env` either present or created during `test-framework-adaptation`)
@@ -301,29 +302,29 @@ Base stack detection (package.json → Node, pyproject.toml → Python, go.mod �
 
 | Signal | Action for discovery |
 |--------|----------------------|
-| Monorepo (`pnpm-workspace.yaml`, `turbo.json`, `nx.json`, `lerna.json`, or top-level `package.json` with no deps of its own) | Split backend/frontend per package. Run Phase 1 **once** (project-level), Phase 2-3 **per package**. Merge outputs under `.context/infrastructure/` with sub-sections per package. |
-| Multiple coexisting signals in one repo (e.g., Next.js + Express) | Almost always a monorepo — treat frontend and backend as separate discoveries even if workspace config is missing. Do NOT produce a merged SRS. |
+| Monorepo (`pnpm-workspace.yaml`, `turbo.json`, `nx.json`, `lerna.json`, or top-level `package.json` with no deps of its own) | Split backend/frontend per package. Run Phase 1 **once** (project-level), Phase 2-3 **per package**. Merge into the one infra map as per-package sections (`backend-<pkg>`, `frontend-<pkg>`). |
+| Multiple coexisting signals in one repo (e.g., Next.js + Express) | Almost always a monorepo — treat frontend and backend as separate discoveries even if workspace config is missing. Do NOT merge them into one `backend` / `frontend` section. |
 | `Dockerfile` + `docker-compose.yml` present | Read compose for service inventory **before** scanning source — it is the authoritative runtime topology. Use source only to fill gaps. |
 | No test framework deps detected | Greenfield test story. Phase 3 documents the absence as a Discovery Gap. **Do NOT install tooling in the target repo.** `test-framework-adaptation` wires this boilerplate's own test stack; it never modifies the target. |
 | `.github/workflows/*.yml` present | Extract the test job from CI for Phase 3 Infrastructure — usually the cleanest source for "how CI runs tests". |
-| API handlers found but no OpenAPI spec | Flag as Discovery Gap in Phase 2 SRS. Do NOT hand-write an OpenAPI inside project-discovery; ask for a spec or defer the business angle to `project-context` mode `api`. |
-| Hardcoded secrets detected (grep hits in source) | HIGH risk. Record path in `.context/risk-assessment.md` §Phase 1 Project Assessment. Do NOT paste the secret into any discovery doc — reference path only. |
+| API handlers found but no OpenAPI spec | Flag as a discovery gap in Phase 2 (infra map `discovery-gaps`). Do NOT hand-write an OpenAPI inside project-discovery; ask for a spec or defer the business angle to `project-context` mode `api`. |
+| Hardcoded secrets detected (grep hits in source) | HIGH risk. Record it in the Phase 1 assessment's `### Identified Risks` table, path only, and carry it to the MTP seed in the handoff. Do NOT paste the secret into any discovery output. |
 
 ---
 
 ## Gotchas
 
-- **Discovery is read-only on the target repo.** `.context/` is the only write target. For modifications to this boilerplate, use `test-framework-adaptation`.
-- **Hard-to-reverse test decisions become ADRs, not buried prose.** When Phase 2/3 settles a test-runner, isolation, fixture/data, auth-in-tests, or selector-contract decision that is architectural AND hard to reverse, record it as `.context/ADR/ADR-NNNN-<slug>.md` (append-only) instead of leaving it only inside `architecture.md`. Draft `Proposed`; the human approves. See `agentic-qa-core/references/adr-doctrine.md`.
+- **Discovery is read-only on the target repo.** It writes only `.context/project-config.md`, `.context/ADR/` and the domain and infra maps (see Compact Rules). For modifications to this boilerplate, use `test-framework-adaptation`.
+- **Hard-to-reverse test decisions become ADRs, not buried prose.** When Phase 2/3 settles a test-runner, isolation, fixture/data, auth-in-tests, or selector-contract decision that is architectural AND hard to reverse, record it as `.context/ADR/ADR-NNNN-<slug>.md` (append-only) instead of leaving it only inside the infra map's `architecture` section. Draft `Proposed`; the human approves. See `agentic-qa-core/references/adr-doctrine.md`.
 - **Credentials never live in discovery docs.** Read them from `.env` (`LOCAL_USER_EMAIL`, `STAGING_USER_EMAIL`, etc.). If missing, ask the user to create `.env.example` or hand over secrets out-of-band -- do not paste them into markdown.
-- **"Discovery Gaps" section is mandatory in every output.** If you could not verify something from the code (e.g., traffic volume, uptime targets), list it in a `## Discovery Gaps` section rather than inventing a number. This signals to future sessions what still needs human input.
-- **PRD/SRS discovered from code is authoritative, not aspirational.** Describe what the system does, not what product wants it to do. If the user wants a "to-be" doc, that is PRD/SRS *creation* (out of scope for this skill); point them to their own product workflow.
-- **Do not duplicate the backlog.** Jira/Linear/GitHub Issues is the source of truth for tickets. `.context/PBI/` holds the backlog access recipe (`README.md`) and format-reference guides (`templates/`), never a copy of the full backlog. Per-ticket PBI is synced on demand from Jira by `/sprint-testing` (`bun run jira:sync-issues`) as a read-only cache — this skill does not create it.
-- **Monorepos require scoped discovery.** Run Phase 1 once (project as a whole) but Phases 2-3 per package. Merge findings into a single `.context/infrastructure/` with sub-sections per package.
+- **A discovery-gaps record is mandatory in every output.** If you could not verify something from the code (e.g., traffic volume, uptime targets), list it in the map's `discovery-gaps` section (or `project-config.md` `## Discovery Gaps`) rather than inventing a number. This signals to future sessions what still needs human input.
+- **What discovery writes from code is authoritative, not aspirational.** Describe what the system does, not what product wants it to do. If the user wants a "to-be" PRD/SRS, that is *creation* (out of scope for this skill); point them to their own product workflow.
+- **Do not duplicate the backlog.** Jira/Linear/GitHub Issues is the source of truth for tickets. `.context/PBI/` never holds a copy of the full backlog. Per-ticket PBI is synced on demand from Jira by `/sprint-testing` (`bun run jira:sync-issues`) as a read-only cache; this skill does not create it.
+- **Monorepos require scoped discovery.** Run Phase 1 once (project as a whole) but Phases 2-3 per package. Merge findings into the one infra map as per-package sections (`backend-<pkg>`, `frontend-<pkg>`).
 - **Database schemas over ORM models.** If both exist, prefer the migration files / schema dump over the ORM definitions -- ORM definitions can drift from the live schema.
 - **API base URL vs route prefix.** `{{environments.local.api_url}}` includes the protocol+host; route prefixes (e.g., `/api/v1`) belong in the path. Do not concatenate them twice in any context file that documents endpoints (e.g., the `business-api-context` map).
-- **Auth flow is the single most important input for downstream `test-framework-adaptation`.** Capture the real login request in `backend.md` so adaptation has a concrete contract.
-- **Never refresh maps here.** Route existing-map refreshes to `project-context`, which owns diff and overwrite approval.
+- **Auth flow is the single most important input for downstream `test-framework-adaptation`.** Capture the real login request in the infra map's `backend` section so adaptation has a concrete contract.
+- **Refresh only your own maps here.** The domain and infra maps are refreshed by re-running their phase in UPDATE mode (stale sections only, approval first). Route the data, API and E2E maps to `project-context`, which owns their diff and overwrite approval.
 - **Context modes need grounded discovery.** If the user requests a business map on a fresh repo, complete at least Phase 1 and Phase 3 before handing off.
 - **IQL framing is optional.** Mention it only if the user asks "why this structure?" -- do not lecture them on methodology when they just want a working data map.
 - **API requests get redirected.** Use `bun run api:sync` for technical types and `project-context` mode `api` for the business angle.
@@ -332,7 +333,9 @@ Base stack detection (package.json → Node, pyproject.toml → Python, go.mod �
 
 ## Templates (inline -- small, load-bearing)
 
-### Discovery Gaps section (every output)
+### Discovery gaps (every output)
+
+In `project-config.md`, a markdown block; in a map, the closing `<section id="discovery-gaps">` carries the same list as a `<ul>`.
 
 ```markdown
 ## Discovery Gaps
@@ -347,9 +350,9 @@ The following items could not be verified from code and require human confirmati
 
 ```
 Phase N complete.
-Generated files:
-- <path1>
-- <path2>
+Written:
+- <file path, or `<slug>` map sections: <id>, <id>, ...>
+Read back: bun run context:map <slug> --list
 Next: Phase N+1 (<phase name>). Confirm to continue, or say "pause" to stop here.
 ```
 
@@ -378,18 +381,19 @@ ATLASSIAN_EMAIL=
 ATLASSIAN_API_TOKEN=
 ```
 
-Larger templates (full PRD sections, KATA component skeletons, `.context/infrastructure/backend.md` layout) live in the references; the business map structure lives in `project-context`.
+The content of each domain and infra map section lives in the phase references; the map anatomy lives in `agentic-qa-core/references/business-context-maps.md` §2; the business map structure lives in `project-context`.
 
 ---
 
 ## Specific tasks -- which reference to read
 
-- **Phase 1 (project connection, assessment, business model, glossary)** -> read `references/phase-1-constitution.md`.
-- **Phase 2 PRD (executive summary, personas, journeys, features)** -> read `references/phase-2-prd.md`.
-- **Phase 2 SRS (architecture, API contracts, functional, non-functional)** -> read `references/phase-2-srs.md`.
-- **Phase 3 (backend, frontend, infrastructure)** -> read `references/phase-3-infrastructure.md`.
+- **Phase 1 (project connection, assessment, business model, glossary → `business-domain-context` map)** -> read `references/phase-1-constitution.md`.
+- **Phase 2 (architecture, external services, non-functional → `infra-context` map; API contract source)** -> read `references/phase-2-srs.md`.
+- **Phase 3 (backend, frontend, environments, CI/CD → `infra-context` map)** -> read `references/phase-3-infrastructure.md`.
+- **Map anatomy, reading, CREATE/UPDATE, staleness, diagrams** -> read `agentic-qa-core/references/business-context-maps.md`.
 - **Recording a hard-to-reverse test-architecture decision (ADR)** -> read `agentic-qa-core/references/adr-doctrine.md` + `.context/ADR/README.md`.
-- **Phase 4 (backlog mapping, templates)** -> read `references/phase-4-specification.md`.
+- **Phase 4 (backlog connection check)** -> read `references/phase-4-specification.md`.
+- **Personas, journeys, functional specs** -> NOT this skill. `project-context` mode `e2e`.
 - **Generating or refreshing business maps and master test plan** -> NOT this skill. Invoke the matching `project-context` mode.
 - **API endpoint sync** -> `bun run api:sync` for technical types; `project-context` mode `api` for business narrative.
 - **User asks about IQL methodology** -> `iql-context` (the methodology index: it cites the official site https://upexgalaxy.com/metodologia for the narrative and `agentic-qa-core/references/stage-gates.md` for the enforced per-stage contract). This skill carries no IQL reference of its own.
@@ -402,12 +406,12 @@ Larger templates (full PRD sections, KATA component skeletons, `.context/infrast
 
 ## Anti-patterns — NEVER do these
 
-- **P1.** NEVER invent business entities, flows, or requirements not present in the target repo code or PRD. Discovery is reverse-engineering, not aspirational design — unverified items go in a `## Discovery Gaps` block, never inline.
-- **P2.** NEVER skip Phase 1 (Constitution) when starting fresh. Downstream phases (PRD/SRS, infrastructure, PBI mapping) assume the project values and stack are fixed first; skipping leaves later artifacts ungrounded.
-- **P3.** NEVER fill a business context map (the HTML inside `business-data-context`, `business-api-context`, `business-e2e-context`) from this skill. `project-context` re-reads evidence and owns the artifact.
+- **P1.** NEVER invent business entities, flows, or requirements not present in the target repo code or PRD. Discovery is reverse-engineering, not aspirational design — unverified items go in a `discovery-gaps` section, never inline.
+- **P2.** NEVER skip Phase 1 (Constitution) when starting fresh. Downstream phases (architecture, infrastructure, backlog connection) assume the project values and stack are fixed first; skipping leaves later artifacts ungrounded.
+- **P3.** NEVER fill the data, API or E2E maps (the HTML inside `business-data-context`, `business-api-context`, `business-e2e-context`) from this skill. `project-context` re-reads evidence and owns those artifacts. This skill generates only the `business-domain-context` and `infra-context` maps.
 - **P4.** NEVER mix `project-discovery` with `test-framework-adaptation` in the same session. Their write boundaries differ.
-- **P5.** NEVER use `project-discovery` for incremental map updates. Use `project-context`.
-- **P6.** NEVER skip the domain glossary in Phase 1. Downstream skills read it as a precondition when present: `sprint-testing` lists it in its Stage 1 planning inputs (ATP, refined ACs, TC outlines) and `test-documentation` uses it as the vocabulary reference for TC naming and bodies.
+- **P5.** NEVER use `project-discovery` for incremental updates of the data, API or E2E maps. Use `project-context`. Its own two maps are updated section by section, never regenerated whole.
+- **P6.** NEVER skip the domain glossary in Phase 1. It lives in `business-domain-context`, and downstream skills load that skill as a precondition when its map is generated: `sprint-testing` lists it in its Stage 1 planning inputs (ATP, refined ACs, TC outlines) and `test-documentation` uses it as the vocabulary reference for TC naming and bodies.
 - **P7.** NEVER fabricate Jira / Xray field IDs or status names in the Master Test Plan or any PBI template. Run `bun run jira:sync-fields --force` and reference `{{jira.<slug>}}` via the slug catalog in `.agents/jira-required.yaml`.
 
 ---
@@ -422,7 +426,7 @@ cat <target-repo>/pyproject.toml          # Python stack
 ls <target-repo>/.github/workflows        # CI presence
 find <target-repo> -maxdepth 2 -name "docker-compose*.yml" -o -name "Dockerfile"
 
-# Phase 2 — PRD/SRS source-of-truth order
+# Phase 2 — Architecture source-of-truth order
 # 1. Read routes (frontend app/ or pages/ or router.ts)
 # 2. Read API handlers (src/controllers/ or src/routes/ or src/api/)
 # 3. Read DB schema (prisma/schema.prisma, migrations/, schema.sql)
@@ -437,11 +441,13 @@ cat <target-repo>/.github/workflows/*.yml  # CI/CD pipeline
 #   project-context refresh-all     # data -> e2e -> api -> test-plan
 #   bun run api:sync                # exact API types from OpenAPI
 
-# Issue tracker (Phase 4) — example placeholder
+# Read back the two maps discovery generates
+bun run context:map business-domain-context --list
+bun run context:map infra-context --list
+
+# Issue tracker (Phase 4): connection check, writes no file
 # Prerequisite: Load /acli skill before executing the commands below.
+bun run jira:check
 [ISSUE_TRACKER_TOOL] Get Issue:
   key: {{PROJECT_KEY}}-1
-[ISSUE_TRACKER_TOOL] Search Issues:
-  project: {{PROJECT_KEY}}
-  query: sprint in openSprints() AND assignee = currentUser()
 ```
