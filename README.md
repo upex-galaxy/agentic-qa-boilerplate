@@ -265,6 +265,8 @@ Prefer to start your project **on GitHub from day one** (your own repo, your own
    bun run setup        # gentle-ai, skills, community skills, .env wiring, MCPs
    ```
 
+   The template copies the boilerplate's own filled `.agents/project.yaml` (its `MAINTAINER COPY:` header line says so). The project-metadata step (`bun run agents:setup`) detects it and offers to replace it with the blank template before asking anything; accept. Without a TTY, pass the consent explicitly: `bun run agents:setup --non-interactive --reseed`.
+
 5. (Optional) Rename the project inside the codebase: edit `package.json` → `name`, and `.agents/project.yaml` → `project.name`.
 
 > **The magic command does this better.** `bunx create-agentic-qa@latest <your-repo-name>` does everything the template flow does **plus**: scrubs the upstream git history (so your repo doesn't carry boilerplate commits), auto-rewrites `package.json` name and `.agents/project.yaml` `project.name`, runs `bun install`, runs the interactive installer, and optionally creates the GitHub repo for you via `gh` — all in one command. The template route is a good fit only if you want the GitHub repo created via the web UI before any local work.

@@ -92,6 +92,98 @@ export function isSchemaOwner(packageJsonText: string): boolean {
 }
 
 // ============================================================================
+// THE MAINTAINER COPY — the one route the schema does not cover
+// ============================================================================
+
+/**
+ * The line that marks `.agents/project.yaml` as the BOILERPLATE's own filled
+ * copy, in the file's leading comment block.
+ *
+ * Every route but one delivers a project the blank template: the scaffolder
+ * seeds from `.agents/project.schema.yaml`, and the updater never walks
+ * `.agents/project.yaml`. GitHub "Use this template" copies the tree as it is,
+ * `package.json` name included, so neither `isSchemaOwner` nor anything else
+ * inside the copy can tell it from the original. Without this line such a
+ * repo carries the maintainers' project identity AND their chosen standing
+ * push authorization, and `git-flow-master` never offers Strategy Setup.
+ *
+ * It lives in the header on purpose: `withSchemaHeader` drops that block, so
+ * the schema never carries it, and the scaffolder writes its own header, so a
+ * consumer's yaml never carries it either. The leak gate refuses a schema that
+ * does, which catches it if it is ever moved below the header.
+ */
+export const MAINTAINER_SENTINEL = '# MAINTAINER COPY:';
+
+/** Whether the yaml's leading comment block carries `MAINTAINER_SENTINEL`. */
+export function isMaintainerCopy(yamlText: string): boolean {
+  for (const line of yamlText.split('\n')) {
+    if (line.startsWith(MAINTAINER_SENTINEL)) { return true; }
+    if (!line.startsWith('#') && line.trim() !== '') { return false; }
+  }
+  return false;
+}
+
+/**
+ * Whether a git `origin` URL points at the boilerplate itself (any owner, so a
+ * contributor's fork counts) rather than at a repo made from it.
+ */
+export function originIsUpstream(originUrl: string | null): boolean {
+  if (!originUrl) { return false; }
+  const name = originUrl.trim().replace(/\/+$/, '').replace(/\.git$/, '').split(/[/:]/).pop();
+  return name === UPSTREAM_PACKAGE;
+}
+
+/**
+ * What kind of `.agents/project.yaml` this checkout holds.
+ *
+ *  - `consumer`         a project's own file; nothing to do.
+ *  - `maintainer`       the boilerplate's filled copy, in the boilerplate (or a fork).
+ *  - `copied-template`  the boilerplate's filled copy in someone else's repo:
+ *                       reseed it from the schema before anything reads it.
+ *
+ * No `origin` at all is read as `copied-template`: the boilerplate itself and
+ * every fork of it has one, and the cost of the wrong call is one declined
+ * prompt, while the cost of the other wrong call is a project pushing to
+ * `main` under someone else's authorization.
+ */
+export type YamlOrigin = 'consumer' | 'maintainer' | 'copied-template';
+
+export function classifyProjectYaml(yamlText: string, originUrl: string | null): YamlOrigin {
+  if (!isMaintainerCopy(yamlText)) { return 'consumer'; }
+  return originIsUpstream(originUrl) ? 'maintainer' : 'copied-template';
+}
+
+/**
+ * The header a CONSUMER's `.agents/project.yaml` opens with. Twin of the one
+ * in `packages/create-agentic-qa/src/prepare.ts`, which is a separately
+ * published package and cannot import from here: keep the two identical.
+ */
+export const CONSUMER_YAML_HEADER = `# Project configuration consumed by AI agents (Claude, Cursor, Gemini, Codex, etc.)
+# when they encounter {{VAR_NAME}} references in skills, commands, templates and docs.
+# Variable names are snake_case; the AI maps {{PROJECT_NAME}} -> project.project_name lexically.
+# Edit values manually, or run \`bun run agents:setup\` for an interactive walkthrough.
+# Every unfilled field is \`null\` plus a TODO comment with a concrete example.
+#
+# \`bun run agents:schema --project\` lists the keys upstream has added since this
+# project was scaffolded; \`bun run up\` offers to insert them, one prompt per block.
+`;
+
+/**
+ * A consumer's `.agents/project.yaml`, seeded from the schema: the generated
+ * banner swapped for `CONSUMER_YAML_HEADER`, everything else verbatim. Same
+ * transform as `seedProjectYamlFromSchema` in the scaffolder. `null` when the
+ * text is not the shape the generator emits.
+ */
+export function seedFromSchema(schemaText: string): string | null {
+  const lines = schemaText.split('\n');
+  let i = 0;
+  while (i < lines.length && lines[i].startsWith('#')) { i += 1; }
+  while (i < lines.length && lines[i].trim() === '') { i += 1; }
+  if (i === 0 || i >= lines.length) { return null; }
+  return `${CONSUMER_YAML_HEADER}\n${lines.slice(i).join('\n')}`;
+}
+
+// ============================================================================
 // THE FULL-DEPTH WALK
 // ============================================================================
 
@@ -573,6 +665,7 @@ export const IDENTITY_PATTERNS: ReadonlyArray<{ name: string, re: RegExp }> = [
   // documentation it is meant to protect.
   { name: 'a concrete Atlassian host', re: /https:\/\/(?!company\.|example\.|your-)[\w-]+\.atlassian\.net/ },
   { name: 'a GitHub owner/repo of the maintainer', re: /\bupex-galaxy\/[\w.-]+/ },
+  { name: 'the maintainer-copy sentinel (it belongs in the source header only)', re: /MAINTAINER COPY:/ },
 ];
 
 export interface IdentityLeak {

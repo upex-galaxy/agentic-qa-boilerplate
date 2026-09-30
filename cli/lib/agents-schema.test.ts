@@ -21,6 +21,8 @@ import {
   applyInsertions,
   applySplices,
   checkSchema,
+  classifyProjectYaml,
+  CONSUMER_YAML_HEADER,
   distinctiveValues,
   FILLED_ELSEWHERE,
   findIdentityLeaks,
@@ -28,8 +30,10 @@ import {
   GENERIC_RULES,
   IDENTITY_PATHS,
   isIdentityPath,
+  isMaintainerCopy,
   isSchemaOwner,
   locateLeaf,
+  originIsUpstream,
   planInsertions,
   projectDelta,
   ruleFor,
@@ -37,6 +41,7 @@ import {
   SCHEMA_SOURCE,
   schemaExemptions,
   schemaKeyPaths,
+  seedFromSchema,
   walkGovernedFile,
   yamlLeafWalk,
 } from './agents-schema.ts';
@@ -394,6 +399,62 @@ describe('the value-leak net under IDENTITY_PATHS', () => {
     const result = generateSchema(src);
     expect(result.error).toContain('identity leak');
     expect(result.leaks.some(l => l.pattern.includes('https://staging.acme.io'))).toBe(true);
+  });
+});
+
+// GitHub "Use this template" copies the maintainers' filled yaml verbatim, and
+// `package.json` with it, so nothing but the header sentinel tells the copy
+// from the original.
+describe('the maintainer copy and the template route', () => {
+  test('this repo\'s own yaml carries the sentinel; the schema never does', () => {
+    expect(isMaintainerCopy(realSource())).toBe(true);
+    expect(isMaintainerCopy(committedSchema())).toBe(false);
+    expect(committedSchema()).not.toContain('MAINTAINER COPY');
+  });
+
+  test('the sentinel counts only in the leading comment block', () => {
+    expect(isMaintainerCopy('# MAINTAINER COPY: x\nproject: {}\n')).toBe(true);
+    expect(isMaintainerCopy('project: {}\n# MAINTAINER COPY: x\n')).toBe(false);
+  });
+
+  test('a sentinel moved below the header is a leak the gate refuses', () => {
+    const moved = realSource().replace('\nbackend:', '\n# MAINTAINER COPY: moved\nbackend:');
+    expect(generateSchema(moved).error).toContain('identity leak');
+  });
+
+  test('origin decides between the boilerplate (or a fork) and a repo made from it', () => {
+    expect(originIsUpstream('https://github.com/upex-galaxy/agentic-qa-boilerplate.git')).toBe(true);
+    expect(originIsUpstream('git@github.com:someone/agentic-qa-boilerplate.git')).toBe(true);
+    expect(originIsUpstream('https://github.com/acme/acme-qa.git')).toBe(false);
+    expect(originIsUpstream(null)).toBe(false);
+  });
+
+  test('classifyProjectYaml: maintainer here, copied-template elsewhere, consumer without the sentinel', () => {
+    expect(classifyProjectYaml(realSource(), 'https://github.com/upex-galaxy/agentic-qa-boilerplate')).toBe('maintainer');
+    expect(classifyProjectYaml(realSource(), 'https://github.com/acme/acme-qa.git')).toBe('copied-template');
+    expect(classifyProjectYaml(realSource(), null)).toBe('copied-template');
+    expect(classifyProjectYaml(seedFromSchema(committedSchema())!, 'https://github.com/acme/acme-qa.git')).toBe('consumer');
+  });
+
+  test('a reseeded copy carries no maintainer identity, and the git-flow guard fires on it', () => {
+    const reseeded = seedFromSchema(committedSchema())!;
+    for (const value of distinctiveValues(realSource())) { expect(reseeded).not.toContain(value); }
+    const walk = yamlLeafWalk(reseeded)!;
+    expect(walk.entries.get('project.project_name')).toBeNull();
+    expect(walk.entries.get('project.project_key')).toBeNull();
+    expect(walk.entries.get('issue_tracker.atlassian_url')).toBeNull();
+    // git-flow-master §"Bootstrap trigger" case (b): strategy set, strategy_source
+    // not `chosen`, project_name null -> OFFER Strategy Setup.
+    expect(walk.entries.get('git_strategy.strategy')).not.toBeNull();
+    expect(walk.entries.get('git_strategy.meta.strategy_source')).toBe('inherited');
+    expect(walk.entries.get('git_strategy.policy.direct_push_to_protected')).toBe('confirm');
+    expect(reseeded.startsWith(CONSUMER_YAML_HEADER)).toBe(true);
+  });
+
+  test('the consumer header matches its twin in the scaffolder', () => {
+    const prepare = readFileSync(join(REPO_ROOT, 'packages', 'create-agentic-qa', 'src', 'prepare.ts'), 'utf8');
+    const twin = /const CONSUMER_YAML_HEADER = `([\s\S]*?)`;/.exec(prepare)![1].replace(/\\`/g, '`');
+    expect(twin).toBe(CONSUMER_YAML_HEADER);
   });
 });
 
