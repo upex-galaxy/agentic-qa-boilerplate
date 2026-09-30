@@ -227,7 +227,7 @@ const ENGRAM_COMPONENT = 'engram';
 // cli/lib/harness-level-mcps.ts).
 const CANONICAL_MCPS = [
   'context7',
-  'playwright',
+  'slack-aurora',
   'dbhub',
   'openapi',
 ] as const;
@@ -424,15 +424,18 @@ const SECRET_NAME_HINTS = ['TOKEN', 'KEY', 'SECRET', 'PASSWORD'];
 // must edit `dbhub.toml` manually based on the target project's database
 // (sqlserver/postgres/mysql/sqlite/mariadb). Marked as `placeholder` always.
 export const MCP_SERVER_SECRETS: Record<string, readonly string[]> = {
-  context7: [],
-  playwright: [],
+  'context7': [],
+  // The Slack bot MCP. SLACK_MCP_REACTION_TOOL is a channel allowlist, not a
+  // secret, but the configs reference it, so it is declared here too; empty is
+  // a valid value (reactions off).
+  'slack-aurora': ['SLACK_MCP_XOXP_TOKEN', 'SLACK_MCP_REACTION_TOOL'],
   // All six that `dbhub.toml` interpolates. PORT and TYPE were missing until
   // 2026-09-20: the configs referenced them, this hand-written map did not, so
   // the installer never prompted for them and a fresh project hit a dbhub that
   // would not connect. Found by the generator's scan-vs-declared cross-check,
   // which is the whole reason that cross-check exists.
-  dbhub: ['DBHUB_TYPE', 'DBHUB_HOST', 'DBHUB_PORT', 'DBHUB_DATABASE', 'DBHUB_USER', 'DBHUB_PASSWORD'],
-  openapi: ['API_BASE_URL', 'OPENAPI_SPEC_PATH'],
+  'dbhub': ['DBHUB_TYPE', 'DBHUB_HOST', 'DBHUB_PORT', 'DBHUB_DATABASE', 'DBHUB_USER', 'DBHUB_PASSWORD'],
+  'openapi': ['API_BASE_URL', 'OPENAPI_SPEC_PATH'],
 };
 
 // Vars discovered from committed MCP configs that the installer should NOT
