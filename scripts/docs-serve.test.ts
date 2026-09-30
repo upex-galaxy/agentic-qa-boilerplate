@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
-import { createDocsHandler, DEFAULT_PORT, normalizePage, parseServeArgs } from './docs-serve.ts';
+import { CONTEXT_MAPS_DIR, createDocsHandler, DEFAULT_PORT, normalizePage, parseServeArgs } from './docs-serve.ts';
 
 let docs: string;
 
@@ -76,5 +76,40 @@ describe('createDocsHandler', () => {
     expect(await asset.text()).toBe('Not found');
     const injected = await get('/core/%3Cscript%3Ealert(1)%3C%2Fscript%3E.html');
     expect(await injected.text()).not.toContain('<script>alert');
+  });
+});
+
+describe('business context maps served in place', () => {
+  function repoWithMap(): string {
+    const repo = mkdtempSync(join(tmpdir(), 'docs-serve-repo-'));
+    const refs = join(repo, '.agents', 'skills', 'business-data-context', 'references');
+    mkdirSync(refs, { recursive: true });
+    writeFileSync(join(refs, 'business-data-map.html'), '<!-- placeholder: run project-context mode data to generate this map -->\n<html><head><title>Business data map</title></head><body>MAP BODY</body></html>');
+    return repo;
+  }
+
+  test('the map is served from its skill, and listed under the virtual folder with its state', async () => {
+    const repo = repoWithMap();
+    try {
+      const handler = createDocsHandler(docs, repo);
+      const page = await handler(new Request(`http://x/${CONTEXT_MAPS_DIR}/business-data-context.html`));
+      expect(page.status).toBe(200);
+      expect(await page.text()).toContain('MAP BODY');
+      const manifest = await (await handler(new Request('http://x/manifest.json'))).json() as { children: Array<{ path: string, children?: Array<{ path: string, title: string, description: string }> }> };
+      const folder = manifest.children.find(c => c.path === CONTEXT_MAPS_DIR);
+      expect(folder?.children?.map(c => c.path)).toEqual([`${CONTEXT_MAPS_DIR}/business-data-context.html`]);
+      expect(folder?.children?.[0].title).toBe('Business data map');
+      expect(folder?.children?.[0].description).toContain('project-context mode data');
+      // A slug that is not a business context skill never escapes to the skills tree.
+      expect((await handler(new Request(`http://x/${CONTEXT_MAPS_DIR}/project-context.html`))).status).toBe(404);
+    }
+    finally {
+      rmSync(repo, { recursive: true, force: true });
+    }
+  });
+
+  test('without a repo root there is no virtual folder', async () => {
+    const manifest = await (await createDocsHandler(docs)(new Request('http://x/manifest.json'))).json() as { children: Array<{ path: string }> };
+    expect(manifest.children.some(c => c.path === CONTEXT_MAPS_DIR)).toBe(false);
   });
 });
