@@ -55,7 +55,7 @@ The skill is **batch-by-design**: one session refines N Stories from the backlog
 | Output | ATP + ATR + bugs + execution evidence | Refined ACs + risk map + pre-sprint ATP in the Story field (outlines only) + `[QA] Shift-Left Review` subtask + batch report |
 | Execution | Smoke + UI / API / DB exploration | NONE — feature does not exist yet |
 | Code reads | Deep, targeted (reproduce / verify) | Light (feasibility only — does the codebase support this?) |
-| TC creation | Yes (TCs created in Stage 1) | No — Stage 4 (`test-documentation`) creates TCs after the Story ships |
+| TC creation | Yes, per the modality (see `/sprint-testing` §"TC creation timing") | No — `/sprint-testing` or Stage 4 (`test-documentation`) creates them, per the modality |
 | Sprint-testing later | Runs full pipeline | Short-circuits Phases 1-3 (label `shift-left-reviewed` detected) and just validates |
 
 The reuse story is **deliberate**: most of the refinement logic already lives in `sprint-testing/references/acceptance-test-planning.md` Phases 1-3. This skill cites that reference instead of duplicating it — see Phase 2 below.
