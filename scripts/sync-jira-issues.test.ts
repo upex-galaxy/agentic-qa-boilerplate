@@ -2,12 +2,16 @@ import { describe, expect, test } from 'bun:test';
 
 import {
   classifyQaArtifactEpic,
+  DEFAULT_MTP_EPIC_NAME,
   DEFAULT_QA_ARTIFACT_LABEL,
   fileNamePrefix,
   HIGHER_ALTITUDE_PREFIX,
   higherAltitudeLabel,
+  isMasterTestPlanEpic,
   ladderTitleAcronym,
   MODULE_CONTEXT_HEADING,
+  MTP_HEADING,
+  renderMasterTestPlanCache,
   splitDescriptionSection,
   standaloneSkipReason,
   sweptFromQaEpic,
@@ -121,6 +125,60 @@ describe('classifyQaArtifactEpic', () => {
     const custom = { label: 'proceso-qa', cachedKeys: new Set<string>() };
     expect(classifyQaArtifactEpic(epic({ labels: ['proceso-qa'] }), custom)).toEqual({ via: 'label' });
     expect(classifyQaArtifactEpic(epic({ labels: ['QA-Artifact'] }), custom)).toBeNull();
+  });
+});
+
+describe('isMasterTestPlanEpic', () => {
+  const epic = (key: string, summary: string): never => ({ key, fields: { summary, labels: [] } }) as never;
+
+  test('matches the convention name, case-insensitively, when no key is cached', () => {
+    const cfg = { key: null, name: DEFAULT_MTP_EPIC_NAME };
+    expect(isMasterTestPlanEpic(epic('PROJ-7', 'QA Master Test Plan'), cfg)).toBe(true);
+    expect(isMasterTestPlanEpic(epic('PROJ-7', '  qa master test plan '), cfg)).toBe(true);
+    expect(isMasterTestPlanEpic(epic('PROJ-8', 'QA Test Repository'), cfg)).toBe(false);
+  });
+
+  test('a cached key wins over the name', () => {
+    const cfg = { key: 'PROJ-9', name: DEFAULT_MTP_EPIC_NAME };
+    expect(isMasterTestPlanEpic(epic('PROJ-9', 'Renamed by a human'), cfg)).toBe(true);
+    // A second Epic that merely carries the name is not the MTP once the key is known.
+    expect(isMasterTestPlanEpic(epic('PROJ-7', 'QA Master Test Plan'), cfg)).toBe(false);
+  });
+});
+
+describe('renderMasterTestPlanCache', () => {
+  const mtpEpic = (description: string): never =>
+    ({ key: 'PROJ-7', fields: { summary: 'QA Master Test Plan', labels: [], description } }) as never;
+
+  test('renders the MTP section only, never the text around it', () => {
+    const description = [
+      'Owned by the QA lead. Official QA repo: example/qa.',
+      '',
+      `## ${MTP_HEADING}`,
+      '',
+      '### Risk map',
+      '',
+      'Checkout is the silent killer.',
+      '',
+      '## Links',
+      '',
+      'relates to the three QA siblings',
+    ].join('\n');
+
+    const out = renderMasterTestPlanCache(mtpEpic(description), 'https://jira.example.com');
+    expect(out).not.toBeNull();
+    expect(out).toContain('### Risk map\n\nCheckout is the silent killer.');
+    expect(out).toContain('[View in Jira](https://jira.example.com/browse/PROJ-7)');
+    expect(out).not.toContain('Owned by the QA lead');
+    expect(out).not.toContain('relates to the three QA siblings');
+  });
+
+  test('returns null when the Epic carries no MTP section', () => {
+    expect(renderMasterTestPlanCache(mtpEpic('Only PO text, no plan yet.'), 'https://x')).toBeNull();
+  });
+
+  test('returns null for an empty description', () => {
+    expect(renderMasterTestPlanCache(mtpEpic(''), 'https://x')).toBeNull();
   });
 });
 
