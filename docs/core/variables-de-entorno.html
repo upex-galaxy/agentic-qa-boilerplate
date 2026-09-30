@@ -94,8 +94,9 @@
               </td>
               <td>
                 <code>SLACK_WEBHOOK_URL</code>, <code>PORTAL_*</code> y <code>R2_*</code> (portal
-                privado, solo en GitHub Actions). La búsqueda web, Postman y los logins de
-                <code>acli</code> o <code>resend</code> no son variables de este archivo.
+                privado, solo en GitHub Actions); <code>SLACK_MCP_*</code> (el bot de Slack, solo si
+                el proyecto lo usa). La búsqueda web, Postman y los logins de <code>acli</code> o
+                <code>resend</code> no son variables de este archivo.
               </td>
               <td>Una fila informativa. Nunca un bloqueo.</td>
             </tr>
@@ -271,9 +272,10 @@ bun run vars:schema:check      # el core generado está al día y el par carga</
       <h2 id="mcps">MCPs locales y MCPs a nivel del harness</h2>
       <p>
         El principio: un server remoto cuyo único contenido del lado del proyecto era una API key es
-        asunto del harness, no del repo. Solo los servers locales que leen valores del proyecto
-        siguen en <code>.mcp.json</code>, <code>opencode.jsonc</code> y
-        <code>.codex/config.toml</code>, junto a los que no necesitan clave.
+        asunto del harness, no del repo. Solo los servers locales (stdio) viven en
+        <code>.mcp.json</code>, <code>opencode.jsonc</code> y <code>.codex/config.toml</code>. El
+        navegador no es un MCP: toda la automatización de navegador pasa por
+        <code>/playwright-cli</code>.
       </p>
       <div class="table-wrap">
         <table>
@@ -294,7 +296,20 @@ bun run vars:schema:check      # el core generado está al día y el par carga</
               <td>Corren en tu máquina y leen la base de datos y la API de tu app</td>
             </tr>
             <tr>
-              <td><code>context7</code>, <code>playwright</code></td>
+              <td><code>slack-aurora</code></td>
+              <td>
+                En el proyecto, con variables de alcance tooling (<code>SLACK_MCP_XOXP_TOKEN</code>,
+                <code>SLACK_MCP_REACTION_TOOL</code>), opcionales
+              </td>
+              <td>
+                El bot de Slack: leer canales, publicar y reaccionar. Corre en tu máquina. Sin token
+                arranca vacío y ningún skill lo llama. <code>SLACK_MCP_REACTION_TOOL</code> es la
+                lista de canales donde puede reaccionar: son datos de tu workspace, así que viven
+                solo en <code>.env</code>; vacía, las reacciones quedan apagadas
+              </td>
+            </tr>
+            <tr>
+              <td><code>context7</code></td>
               <td>En el proyecto, sin clave</td>
               <td>No hay nada que autenticar</td>
             </tr>

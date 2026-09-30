@@ -6,8 +6,7 @@
  * (a claude.ai connector, a user-scope server, the OpenCode / Codex user
  * config), and the skills resolve it by CAPABILITY, whatever prefix the host
  * gives its tools (`agentic-qa-core/references/mcp-capabilities.md`). Only
- * local-only servers with project-scope values stay in the three project MCP
- * files.
+ * LOCAL (stdio) servers stay in the three project MCP files.
  *
  * This module is the ONE list of the harness-level servers the repo
  * recommends (the ones that moved out, plus Exa, which never was committed),

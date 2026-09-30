@@ -34,7 +34,7 @@ Information here is DISCOVERED (not invented) from:
 1. **Source Code Analysis** — entity/model names, module structure, comments, docstrings
 2. **Database Schema** — table names, relationships, field types
 3. **Existing Documentation** — READMEs, wikis, Confluence/Notion, API docs, user guides
-4. **Running Product** — UI exploration with Playwright MCP, feature observation
+4. **Running Product** — UI exploration with `/playwright-cli`, feature observation
 
 ## When to Read This Folder
 

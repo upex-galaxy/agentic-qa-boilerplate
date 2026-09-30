@@ -234,17 +234,17 @@ const KIND_SUFFIX_RULES: ReadonlyArray<{ kind: string, suffixes: readonly string
  * `.mcp.json` server, a user-level server and a claude.ai connector all
  * satisfy it. Add a name here AND in the reference, in the same change. Check 18.
  */
-const KNOWN_CAPABILITIES = new Set(['web-search', 'library-docs', 'db', 'api-schema', 'browser']);
+const KNOWN_CAPABILITIES = new Set(['web-search', 'library-docs', 'db', 'api-schema']);
 
 /**
  * Resolution tag → capability it resolves to (AGENTS.md §6). Drives the
  * CAPABILITY-UNDECLARED heuristic (check 19): a SKILL.md body using the tag
- * without declaring the capability is a WARN.
+ * without declaring the capability is a WARN. `[AUTOMATION_TOOL]` is absent on
+ * purpose: it resolves to `/playwright-cli`, a CLI, so no MCP capability backs it.
  */
 const CAPABILITY_TAGS: ReadonlyArray<{ tag: string, capability: string }> = [
   { tag: '[DB_TOOL]', capability: 'db' },
   { tag: '[API_TOOL]', capability: 'api-schema' },
-  { tag: '[AUTOMATION_TOOL]', capability: 'browser' },
   { tag: '[DOCS_TOOL]', capability: 'library-docs' },
   { tag: '[WEB_SEARCH_TOOL]', capability: 'web-search' },
 ];
@@ -1490,7 +1490,7 @@ function main(): void {
     'KIND-MISSING (T1 / vendored T2 SKILL.md without `metadata.kind`)',
     'KIND-VOCAB (`metadata.kind` outside context / workflow / utility / core)',
     'KIND-SUFFIX (slug suffix `-context` / `-cli` / `-tool` / `-app` vs declared kind, both directions)',
-    'CAPABILITY-VOCAB (`metadata.requires_capabilities` outside web-search / library-docs / db / api-schema / browser)',
+    'CAPABILITY-VOCAB (`metadata.requires_capabilities` outside web-search / library-docs / db / api-schema)',
     'CAPABILITY-UNDECLARED (resolution tag in SKILL.md body without the matching declaration; WARN)',
     `FILE-LINE (path:line citation in .agents/**/*.md + AGENTS.md prose; ${VOLATILE_SEVERITY['FILE-LINE']})`,
     `CURRENT-STATE (today / as of / dated measurement / since <version> / tool version in the same prose; ${VOLATILE_SEVERITY['CURRENT-STATE']})`,

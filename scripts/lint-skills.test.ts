@@ -275,8 +275,22 @@ describe('lint-skills MCP capabilities (metadata.requires_capabilities)', () => 
     expect(exitCode).toBe(1);
   });
 
-  test('the five vocabulary names pass', () => {
-    const { exitCode, output } = runLint(fixture({ listCommunityInAgentsMd: true, extraSkills: [{ slug: 'acme-flow', kind: 'workflow', capabilities: ['web-search', 'library-docs', 'db', 'api-schema', 'browser'] }] }));
+  test('the vocabulary names pass', () => {
+    const { exitCode, output } = runLint(fixture({ listCommunityInAgentsMd: true, extraSkills: [{ slug: 'acme-flow', kind: 'workflow', capabilities: ['web-search', 'library-docs', 'db', 'api-schema'] }] }));
+
+    expect(output).not.toMatch(CAPABILITY_VIOLATION);
+    expect(exitCode).toBe(0);
+  });
+
+  test('the retired `browser` capability is rejected: browser automation is a CLI, not an MCP', () => {
+    const { exitCode, output } = runLint(fixture({ listCommunityInAgentsMd: true, extraSkills: [{ slug: 'acme-flow', kind: 'workflow', capabilities: ['db', 'browser'] }] }));
+
+    expect(output).toContain('[acme-flow] CAPABILITY-VOCAB: `metadata.requires_capabilities` names `browser`');
+    expect(exitCode).toBe(1);
+  });
+
+  test('`[AUTOMATION_TOOL]` maps to no capability, so a body using it never warns', () => {
+    const { exitCode, output } = runLint(fixture({ listCommunityInAgentsMd: true, extraSkills: [{ slug: 'acme-flow', kind: 'workflow', body: 'Explore the UI via `[AUTOMATION_TOOL]`.' }] }));
 
     expect(output).not.toMatch(CAPABILITY_VIOLATION);
     expect(exitCode).toBe(0);
@@ -299,7 +313,7 @@ describe('lint-skills MCP capabilities (metadata.requires_capabilities)', () => 
   });
 
   test('a tag whose capability is declared, or one inside a fenced block, does not warn', () => {
-    const body = 'Validate rows via `[DB_TOOL]`.\n\n```\nUI via [AUTOMATION_TOOL]\n```\n';
+    const body = 'Validate rows via `[DB_TOOL]`.\n\n```\nSchema via [API_TOOL]\n```\n';
     const { exitCode, output } = runLint(fixture({ listCommunityInAgentsMd: true, extraSkills: [{ slug: 'acme-flow', kind: 'workflow', capabilities: ['db'], body }] }));
 
     expect(output).not.toMatch(CAPABILITY_VIOLATION);
@@ -428,7 +442,7 @@ describe('lint-skills stage owners (check 22) and the §5 table scope', () => {
       '',
       '| Capability | Use for | Rule |',
       '|---|---|---|',
-      '| `browser` | E2E | fallback |',
+      '| `db` | data checks | primary |',
       '',
       '## 6. TOOL RESOLUTION',
       '',

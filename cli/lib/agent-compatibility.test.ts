@@ -182,8 +182,9 @@ function codexPayload(sessionId: string, prompt: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// Inline fixtures: the six servers this repo ships plus `supabase` (a
-// downstream server the contract does not know), spelled per host. Written
+// Inline fixtures: the servers this repo ships plus the ones a downstream
+// project may keep or add (`supabase`, never known to the contract; `tavily`,
+// `postman` and `playwright`, which left the shipped set), spelled per host. Written
 // here rather than copied so the tests describe the contract on their own,
 // whatever the real repo looks like at the moment they run. Each host file is
 // composed from the ids a test declares, so one fixture describes both this
@@ -191,22 +192,24 @@ function codexPayload(sessionId: string, prompt: string): string {
 // ---------------------------------------------------------------------------
 
 /** The set this boilerplate ships (and the strict per-host shapes cover). */
-const BOILERPLATE_IDS = ['context7', 'playwright', 'dbhub', 'openapi'];
+const BOILERPLATE_IDS = ['context7', 'slack-aurora', 'dbhub', 'openapi'];
 /**
- * A downstream set: no `dbhub`, plus servers the contract has no shape for
- * (`tavily` and `postman` left the shipped set with ADR-0005 and are now what a
- * project that keeps them looks like; `supabase` never had one).
+ * A downstream set: no `dbhub`, no `slack-aurora`, plus servers the contract
+ * has no shape for (`tavily` and `postman` left the shipped set with ADR-0005,
+ * `playwright` left it when browser automation became `playwright-cli` only;
+ * they are now what a project that keeps them looks like; `supabase` never had
+ * one).
  */
 const PROJECT_IDS = ['context7', 'tavily', 'playwright', 'openapi', 'postman', 'supabase'];
 
 const MCP_SERVERS: Record<string, unknown> = {
-  context7: { command: 'bunx', args: ['-y', '@upstash/context7-mcp@4.0.3'] },
-  tavily: {
+  'context7': { command: 'bunx', args: ['-y', '@upstash/context7-mcp@4.0.3'] },
+  'tavily': {
     type: 'http',
     url: 'https://mcp.tavily.com/mcp/',
     headers: { Authorization: 'Bearer ${TAVILY_API_KEY}' },
   },
-  playwright: {
+  'playwright': {
     command: 'bunx',
     args: [
       '@playwright/mcp@0.0.79',
@@ -220,22 +223,27 @@ const MCP_SERVERS: Record<string, unknown> = {
       '1920x1080',
     ],
   },
-  dbhub: {
+  'slack-aurora': {
+    command: 'bunx',
+    args: ['-y', 'slack-mcp-server@latest', '--transport', 'stdio'],
+    env: { SLACK_MCP_XOXP_TOKEN: '${SLACK_MCP_XOXP_TOKEN}', SLACK_MCP_ADD_MESSAGE_TOOL: 'true', SLACK_MCP_REACTION_TOOL: '${SLACK_MCP_REACTION_TOOL}' },
+  },
+  'dbhub': {
     command: 'bunx',
     args: ['-y', '@bytebase/dbhub@1.2.1', '--config', 'dbhub.toml'],
     env: { DBHUB_DATABASE: '${DBHUB_DATABASE}', DBHUB_HOST: '${DBHUB_HOST}', DBHUB_PASSWORD: '${DBHUB_PASSWORD}', DBHUB_PORT: '${DBHUB_PORT}', DBHUB_TYPE: '${DBHUB_TYPE}', DBHUB_USER: '${DBHUB_USER}' },
   },
-  openapi: {
+  'openapi': {
     command: 'bunx',
     args: ['-y', '@ivotoby/openapi-mcp-server@1.16.1', '--tools', 'dynamic'],
     env: { API_BASE_URL: '${API_BASE_URL}', OPENAPI_SPEC_PATH: '${OPENAPI_SPEC_PATH}' },
   },
-  postman: {
+  'postman': {
     type: 'http',
     url: 'https://mcp.postman.com/mcp',
     headers: { Authorization: 'Bearer ${POSTMAN_API_KEY}' },
   },
-  supabase: {
+  'supabase': {
     command: 'bunx',
     args: ['-y', '@supabase/mcp-server-supabase@latest', '--read-only'],
     env: { SUPABASE_ACCESS_TOKEN: '${SUPABASE_ACCESS_TOKEN}', LOG_LEVEL: 'error' },
@@ -244,12 +252,12 @@ const MCP_SERVERS: Record<string, unknown> = {
 
 // Comments and trailing commas on purpose: this is what Prettier writes.
 const OPENCODE_SERVERS: Record<string, string> = {
-  context7: `    "context7": {
+  'context7': `    "context7": {
       "type": "local",
       "command": ["bunx", "-y", "@upstash/context7-mcp@4.0.3"],
       "enabled": true,
     },`,
-  tavily: `    "tavily": {
+  'tavily': `    "tavily": {
       "type": "remote",
       "url": "https://mcp.tavily.com/mcp/",
       "enabled": true,
@@ -257,7 +265,7 @@ const OPENCODE_SERVERS: Record<string, string> = {
         "Authorization": "Bearer {env:TAVILY_API_KEY}",
       },
     },`,
-  playwright: `    "playwright": {
+  'playwright': `    "playwright": {
       "type": "local",
       "command": [
         "bunx",
@@ -273,7 +281,17 @@ const OPENCODE_SERVERS: Record<string, string> = {
       ],
       "enabled": true,
     },`,
-  dbhub: `    "dbhub": {
+  'slack-aurora': `    "slack-aurora": {
+      "type": "local",
+      "command": ["bunx", "-y", "slack-mcp-server@latest", "--transport", "stdio"],
+      "enabled": true,
+      "environment": {
+        "SLACK_MCP_XOXP_TOKEN": "{file:.auth/opencode/SLACK_MCP_XOXP_TOKEN}",
+        "SLACK_MCP_ADD_MESSAGE_TOOL": "true",
+        "SLACK_MCP_REACTION_TOOL": "{file:.auth/opencode/SLACK_MCP_REACTION_TOOL}",
+      },
+    },`,
+  'dbhub': `    "dbhub": {
       "type": "local",
       "command": ["bunx", "-y", "@bytebase/dbhub@1.2.1", "--config", "dbhub.toml"],
       "enabled": true,
@@ -286,7 +304,7 @@ const OPENCODE_SERVERS: Record<string, string> = {
         "DBHUB_USER": "{env:DBHUB_USER}",
       },
     },`,
-  openapi: `    // schema-read-only: no token here
+  'openapi': `    // schema-read-only: no token here
     "openapi": {
       "type": "local",
       "command": ["bunx", "-y", "@ivotoby/openapi-mcp-server@1.16.1", "--tools", "dynamic"],
@@ -296,7 +314,7 @@ const OPENCODE_SERVERS: Record<string, string> = {
         "OPENAPI_SPEC_PATH": "{env:OPENAPI_SPEC_PATH}",
       },
     },`,
-  postman: `    "postman": {
+  'postman': `    "postman": {
       "type": "remote",
       "url": "https://mcp.postman.com/mcp",
       "enabled": true,
@@ -304,7 +322,7 @@ const OPENCODE_SERVERS: Record<string, string> = {
         "Authorization": "Bearer {env:POSTMAN_API_KEY}",
       },
     },`,
-  supabase: `    "supabase": {
+  'supabase': `    "supabase": {
       "type": "local",
       "command": ["bunx", "-y", "@supabase/mcp-server-supabase@latest", "--read-only"],
       "enabled": true,
@@ -316,39 +334,48 @@ const OPENCODE_SERVERS: Record<string, string> = {
 };
 
 const CODEX_SERVERS: Record<string, string> = {
-  context7: `[mcp_servers.context7]
+  'context7': `[mcp_servers.context7]
 command = "bunx"
 enabled = true
 args = ["-y", "@upstash/context7-mcp@4.0.3"]
 `,
-  tavily: `[mcp_servers.tavily]
+  'tavily': `[mcp_servers.tavily]
 url = "https://mcp.tavily.com/mcp/"
 bearer_token_env_var = "TAVILY_API_KEY"
 enabled = true
 `,
-  playwright: `[mcp_servers.playwright]
+  'playwright': `[mcp_servers.playwright]
 command = "bunx"
 enabled = true
 args = ["@playwright/mcp@0.0.79", "--caps", "vision,pdf,testing,tracing,tabs", "--timeout-action", "10000", "--timeout-navigation", "30000", "--viewport-size", "1920x1080"]
 `,
-  dbhub: `[mcp_servers.dbhub]
+  'slack-aurora': `[mcp_servers.slack-aurora]
+command = "bunx"
+enabled = true
+args = ["-y", "slack-mcp-server@latest", "--transport", "stdio"]
+env_vars = ["SLACK_MCP_XOXP_TOKEN", "SLACK_MCP_REACTION_TOOL"]
+
+[mcp_servers.slack-aurora.env]
+SLACK_MCP_ADD_MESSAGE_TOOL = "true"
+`,
+  'dbhub': `[mcp_servers.dbhub]
 command = "bunx"
 enabled = true
 args = ["-y", "@bytebase/dbhub@1.2.1", "--config", "dbhub.toml"]
 env_vars = ["DBHUB_DATABASE", "DBHUB_HOST", "DBHUB_PASSWORD", "DBHUB_PORT", "DBHUB_TYPE", "DBHUB_USER"]
 `,
-  openapi: `[mcp_servers.openapi]
+  'openapi': `[mcp_servers.openapi]
 command = "bunx"
 enabled = true
 args = ["-y", "@ivotoby/openapi-mcp-server@1.16.1", "--tools", "dynamic"]
 env_vars = ["API_BASE_URL", "OPENAPI_SPEC_PATH"]
 `,
-  postman: `[mcp_servers.postman]
+  'postman': `[mcp_servers.postman]
 url = "https://mcp.postman.com/mcp"
 bearer_token_env_var = "POSTMAN_API_KEY"
 enabled = true
 `,
-  supabase: `[mcp_servers.supabase]
+  'supabase': `[mcp_servers.supabase]
 command = "bunx"
 enabled = true
 args = ["-y", "@supabase/mcp-server-supabase@latest", "--read-only"]

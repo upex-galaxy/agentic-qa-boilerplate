@@ -786,10 +786,11 @@ subagente (contexto limpio)
       <h2 id="mcps">Los MCPs del repo</h2>
       <p>
         Los declara <code>.mcp.json</code> y existen igual en <code>opencode.jsonc</code> y
-        <code>.codex/config.toml</code>. Solo viven ahí los servers locales que leen valores del
-        proyecto (la base de datos, la API) y los que no necesitan clave. La regla general: primero
-        el CLI (gasta menos tokens) y el MCP como respaldo, salvo donde el MCP es la herramienta
-        principal.
+        <code>.codex/config.toml</code>. Solo viven ahí servers locales: los que leen valores de
+        <code>.env</code> (la base de datos, la API, el bot de Slack) y el de documentación, que no
+        necesita clave. El navegador no es un MCP: es <code>/playwright-cli</code>. La regla
+        general: primero el CLI (gasta menos tokens) y el MCP como respaldo, salvo donde el MCP es
+        la herramienta principal.
       </p>
       <p>
         Qué hace cada uno y cuándo se usa está en la tabla de MCPs de <code>AGENTS.md</code> §5; las
