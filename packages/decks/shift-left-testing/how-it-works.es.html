@@ -481,7 +481,7 @@ h4,.h4{font-size:17px;color:var(--text-1)}
     </div>
     <div class="wf-row">
       <div class="wf-node"><span class="wf-num">0</span>Session Init</div>
-      <div class="wf-what">Resume check · modalidad TMS A/B · carga <b>/acli</b> · verifica <b>.context/</b> · resuelve candidatos · crea <b>.session/&lt;batch-id&gt;/</b></div>
+      <div class="wf-what">Resume check · modalidad TMS A/B · carga <b>/acli</b> · verifica <b>contexto</b> · resuelve candidatos · crea <b>.session/&lt;batch-id&gt;/</b></div>
       <div class="wf-side"><span class="fb">falta contexto → /project-discovery</span></div>
     </div>
     <div class="wf-row">
@@ -524,7 +524,7 @@ h4,.h4{font-size:17px;color:var(--text-1)}
       <tr><td><b>/acli</b> — issue tracker</td><td class="ok">REQUIRED</td><td><code>bun run jira:check</code> — todo el output del refinamiento aterriza en Jira</td></tr>
       <tr><td><b>Modalidad TMS resuelta</b></td><td class="ok">REQUIRED</td><td>A: Xray · B: Jira-native — se persiste para el pipeline; el ATP pre-sprint vive en el campo en AMBAS</td></tr>
       <tr><td><b>/xray-cli</b> + creds <code>XRAY_*</code></td><td class="opt">N/A</td><td>No se usa pre-sprint: el ATP es field-first — el Test Plan item lo crea <code>/sprint-testing</code> Planning desde el campo</td></tr>
-      <tr><td><b>Contexto de negocio</b></td><td class="ok">REQUIRED</td><td><code>.context/business/*</code> + <code>master-test-plan.md</code> — sin ellos, preguntas vagas al PO</td></tr>
+      <tr><td><b>Contexto de negocio</b></td><td class="ok">REQUIRED</td><td>los mapas de negocio (<code>bun run context:map &lt;slug&gt;</code>) + <code>master-test-plan.md</code>, sin ellos, preguntas vagas al PO</td></tr>
       <tr><td><b>Lista de candidatos</b></td><td class="ok">REQUIRED</td><td>IDs explícitos o JQL de backlog — tamaño confirmado con el usuario</td></tr>
     </tbody>
   </table>
@@ -541,7 +541,7 @@ h4,.h4{font-size:17px;color:var(--text-1)}
       <li><b>0.0 Resume check.</b> ¿Existe <code>progress.md</code> del batch? → ofrecer <b>resume / restart / abort</b>. Restart archiva lo anterior como <code>-aborted</code>.</li>
       <li><b>0.1 Modalidad TMS.</b> Probe de 4 pasos (A: Xray · B: Jira-native). Se persiste en <code>plan.md</code> §Inputs.</li>
       <li><b>0.2 Tool skills.</b> <code>/acli</code> siempre (escrituras + búsqueda trivial). Lecturas de detalle → <code>bun run jira:sync-issues</code>, nunca <code>acli view</code>.</li>
-      <li><b>0.3 Contexto.</b> Los archivos <code>.context/</code> que exige el preflight (ver SKILL.md) verificados; si falta uno → STOP → <b>/project-discovery</b>.</li>
+      <li><b>0.3 Contexto.</b> Los mapas de contexto (<code>bun run context:map</code>) y el master test plan que exige el preflight (ver SKILL.md) verificados; si falta uno → STOP → <b>/project-discovery</b>.</li>
       <li><b>0.4 Candidatos.</b> IDs explícitos (UPEX-100,101,102) o JQL de backlog. Sweet spot 1-12; &gt;12 se divide en sesiones.</li>
       <li><b>0.5 Carpeta de sesión</b> + <code>plan.md</code> (Goal · Inputs · fases · riesgos) + primer entry en <code>progress.md</code>.</li>
     </ul>

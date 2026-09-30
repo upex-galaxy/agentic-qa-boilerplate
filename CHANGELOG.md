@@ -16,6 +16,30 @@ below names which one it applies to:
 
 ## Unreleased — Boilerplate
 
+### Changed (`.context/` becomes a cache, BREAKING for discovery readers)
+- **`.context/` holds only script caches plus the few files this repo owns.** `.context/*` is
+  ignored by default and re-includes `README.md`, `project-config.md`, `ADR/`,
+  `regression-history/`, `reports/README.md` and the PBI ladder (`README.md`, `templates/`,
+  `epics/*/test-specs/`); `.gitignore` owns the list. AI synthesis lives in a context skill.
+- **Discovery writes maps, not markdown files.** `project-discovery` Phase 1 generates the domain
+  map inside the new `business-domain-context` (overview, business model, one `term-<slug>`
+  section per domain term) and Phases 2-3 generate the infra map inside the new `infra-context`
+  (architecture, NFRs, backend, frontend, environments, CI/CD). Both use the business-map
+  anatomy and read path (`bun run context:map <slug>`), and `bun run up` delivers them once as
+  placeholders. `BUSINESS_CONTEXT_SKILLS` becomes `CONTEXT_MAP_SKILLS` (`cli/lib/context-maps.ts`),
+  each entry naming its generator and its legacy inputs.
+- `business-e2e-context` absorbs the personas, user journeys and functional specs that used to
+  live in `.context/PRD/` and `.context/SRS/`.
+- Retired outputs, no replacement file: `PRD/executive-summary.md`, `risk-assessment.md` (high
+  risks seed the Master Test Plan in Jira) and `PBI/ACCESS.md` (Phase 4 is a backlog connection
+  check, `bun run jira:check`, that writes no file).
+- Every reader of a moved output (`sprint-testing`, `test-documentation`,
+  `test-framework-adaptation`, the ADR doctrine, the docs) now loads the matching context skill.
+  `test-framework-adaptation` gates on the domain and infra maps plus `.context/project-config.md`.
+- Legacy `business/`, `PRD/`, `SRS/`, `infrastructure/` files in a project stay tracked (an
+  ignore rule never untracks) and are read as generator input; nothing upstream deletes them,
+  and `bun run up` / `bun run setup:doctor` name them in an informational line.
+
 ### Added (business context maps)
 - **The business maps move into context skills, as HTML.** `business-data-context`,
   `business-api-context` and `business-e2e-context` each hold their map at

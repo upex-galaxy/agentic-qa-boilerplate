@@ -135,8 +135,8 @@ Two systems, two consumers, two lifecycles. Use the right substrate for the righ
 
 ```
 .context/
-├── PRD/                       → Product Requirements (generated)
-├── SRS/                       → Software Requirements (generated)
+├── README.md                  → What lives here and why (caches + repo-owned files)
+├── project-config.md          → Project config written by `/project-discovery` (committed)
 │
 ├── ADR/                       → Architecture Decision Records — test architecture (append-only, never regenerated)
 │   ├── README.md                  → When-to-write (two-gate) + status lifecycle + index
@@ -146,11 +146,10 @@ Two systems, two consumers, two lifecycles. Use the right substrate for the righ
 │                                 rebuild: `bun run context:hydrate` · committed exceptions: README.md,
 │                                 templates/, epics/*/test-specs/ (see .context/PBI/README.md)
 │
-├── business/                   → Business model + domain glossary (`/project-discovery`); the
-│                                 business MAPS live in their context skills (see below)
-│
 └── reports/                   → Run artifacts: regression reports, GO/NO-GO verdicts, analysis output
 ```
+
+> **Ignored by default.** `.context/*` is ignored and only the files this repo owns are re-included; `.gitignore` (the `.context/` block) owns the list. The AI's synthesis (business model, glossary, architecture, infra, data / API / E2E maps) lives in context skills, not here. A project may still hold legacy `business/`, `PRD/`, `SRS/` or `infrastructure/` folders: they stay tracked and are read only as generator input (`.context/README.md` §Legacy folders).
 
 > **Master Test Plan**: it lives in Jira, in the `QA Master Test Plan` Epic description (`project-context` mode `test-plan` writes it). The sync caches it at `.context/PBI/qa-artifacts/master-test-plan.md`, so there is no committed MTP file (ADR-0007).
 
@@ -160,41 +159,13 @@ Workflow instructions and role-specific guidelines (TAE, QA, MCP usage) now live
 
 ### .agents/skills/ - AI Operations Center
 
-Nineteen skills, all committed here. OpenCode and Codex read this directory directly; Claude Code reaches it through the generated `.claude/skills` alias (§2.1).
-
-```
-.agents/skills/
-├── agentic-qa-core/         → Foundation: passive reference host (briefing template, dispatch patterns, orchestration doctrine, skill-composition strategy, Skill Resolver protocol). Cited on demand by workflow skills.
-├── agentic-qa-onboard/      → First-time orientation tour: stack + 6-stage pipeline + MCPs. Hands off to the right downstream skill.
-├── framework-development/   → Framework-evolution orchestrator for the boilerplate itself (KATA bases, fixtures, cli/, scripts/, api/schemas/ pipeline). Self-contained Plan → Code → Verify → Archive pipeline. NOT for per-ticket QA.
-├── project-discovery/       → 4-phase reverse-engineering, generates `.context/` artifacts. Foundation files (`AGENTS.md`, `.agents/`, `scripts/`) ship with the boilerplate and are not generated per project.
-├── shift-left-testing/      → Stage 0: pre-sprint AC refinement on a batch of backlog Stories. Refines ACs, surfaces gaps, drafts ATP, transitions backlog → shift_left_qa → estimation. Adds label shift-left-reviewed so /sprint-testing Stage 1 can short-circuit later.
-├── sprint-testing/          → In-sprint QA (planning + execution + reporting, per ticket)
-├── test-documentation/      → TMS documentation + test prioritization
-├── test-automation/         → KATA test planning + coding + review
-├── regression-testing/      → Regression execution + GO/NO-GO
-├── project-context/         → Regenerates the business data / feature / API maps and the master test plan, one mode per artifact (`/project-context data` on Claude Code).
-├── test-framework-adaptation/         → Idempotent KATA adaptation: no-write analysis and plan first, mutation only after explicit approval.
-├── jira-administration/     → Components reconciliation + Atlassian instance migration, each sealed behind read-first analysis.
-├── git-flow-master/         → End-to-end Git operator: branch / commit / push / PR / conflict / chained-PR. Auto-detects branching strategy.
-├── pr-review-lead/          → QA Lead review of a PR's test-automation work against KATA doctrine, every finding grounded in a citation.
-├── bug-screenshot-annotation/ → Turns a raw bug screenshot into annotated evidence, rendered 100% locally.
-├── judgment-day/            → T2 vendored from gentle-ai (Apache-2.0): adversarial dual-judge review. Cited as optional gate by `/test-automation` Phase 3 + `/git-flow-master` pre-PR.
-├── acli/                    → Atlassian CLI skill: Jira issue tracking + Modality jira-native TMS operations
-├── xray-cli/                → Xray TMS helper
-└── REGISTRY.md              → Generated compact-rules cache (`bun run skills:registry`) — not a skill
-
-(community, installed by `cli/install.ts` — not committed in repo)
-  • playwright-cli/             → Browser automation CLI (screenshots, tracing, video, session mgmt)
-  • playwright-best-practices/  → Playwright + TS reference (flaky-test fixes, axe-core, auth/OAuth, perf budgets, i18n, component testing)
-  • resend-cli/                 → Resend email testing CLI (pairs with the `resend` binary)
-```
+Every repo skill is committed here. OpenCode and Codex read this directory directly; Claude Code reaches it through the generated `.claude/skills` alias (§2.1). The list of skills, with tier, kind and compact rules, is `.agents/skills/REGISTRY.md` (generated by `bun run skills:registry`); community skills installed by `cli/install.ts` share the same store but are not committed. Context skills (`metadata.kind: context`) hold the AI's synthesis of the project: the context map skills (`CONTEXT_MAP_SKILLS` in `cli/lib/context-maps.ts`) each carry one HTML map, read with `bun run context:map <slug>`.
 
 **Key Skills**:
 - `agentic-qa-core` - Passive reference host cited by other skills (no direct invocation)
 - `/test-automation` - KATA test writing pipeline
 - `/sprint-testing` - End-to-end in-sprint QA
-- `/project-discovery` - Generates `.context/` artifacts
+- `/project-discovery` - Generates the domain map (`business-domain-context`) and the infra map (`infra-context`), plus `.context/project-config.md`
 - `/framework-development` - Evolves the boilerplate itself (KATA bases, fixtures, cli/, scripts/)
 
 ### docs/ - Human Documentation
@@ -262,15 +233,15 @@ Phase 0: Foundation      → bun run agents:setup   (interactive walkthrough of 
                           bun run jira:sync-fields (catalog Jira workspace fields)
                           bun run jira:check     (validate against jira-required.yaml manifest)
                           bun run vars:check     (verify every {{VAR}} and {{jira.<slug>}} resolves)
-Phase 1: Constitution    → Understand the business
-Phase 2: Architecture    → Document PRD + SRS
-Phase 3: Infrastructure  → Map technical stack
-Phase 4: Specification   → Connect to backlog
+Phase 1: Constitution    → Understand the business       (business-domain-context map)
+Phase 2: Architecture    → Architecture, NFRs, services   (infra-context map)
+Phase 3: Infrastructure  → Map technical stack            (infra-context map)
+Phase 4: Specification   → Backlog connection check       (bun run jira:check, writes no file)
 ```
 
 > Foundation files (`AGENTS.md`, `.agents/`, `scripts/`, `package.json`) ship with the boilerplate — clone the full repo rather than bootstrapping per project.
 
-**Output**: Populated `.agents/` config + `.context/` directories.
+**Output**: Populated `.agents/` config, the `business-domain-context` and `infra-context` maps, and `.context/project-config.md`.
 
 ### Context Generators
 
@@ -287,7 +258,7 @@ bun run api:sync            → api/schemas/ (TypeScript types from OpenAPI)
 The maps are HTML: a human opens them in a browser or in `bun run docs` (folder "Mapas de contexto"); the AI reads them with `bun run context:map <slug> [--section <id>]`, never raw. A second run regenerates only the stale sections.
 
 
-> **`.context/ADR/` is the exception — append-only, never regenerated.** Architecture Decision Records are the one `.context/` artifact that is authored (by a human QA architect, or an AI workflow drafting for human approval — `/project-discovery` SRS/infra, `/framework-development`, `/sprint-testing` + `/test-automation` Stage 1) and **never re-run**. Each captures one important, hard-to-reverse test-architecture decision (runner, fixtures, isolation, auth-in-tests, selector contract, flake policy). Superseded by a newer ADR that links back — never overwritten or deleted. See `.context/ADR/README.md`.
+> **`.context/ADR/` is the exception — append-only, never regenerated.** Architecture Decision Records are the one `.context/` artifact that is authored (by a human QA architect, or an AI workflow drafting for human approval — `/project-discovery` architecture/infra phases, `/framework-development`, `/sprint-testing` + `/test-automation` Stage 1) and **never re-run**. Each captures one important, hard-to-reverse test-architecture decision (runner, fixtures, isolation, auth-in-tests, selector contract, flake policy). Superseded by a newer ADR that links back — never overwritten or deleted. See `.context/ADR/README.md`.
 
 ### QA Stages (Per User Story)
 
@@ -332,7 +303,7 @@ Reference / utility / generator skills (`agentic-qa-core`, `acli`, `xray-cli`, `
 | **Write E2E or API Test** | `/test-automation` (SKILL.md) | The skill's own `references/` (planning playbook, KATA patterns, etc.) |
 | **Pre-sprint AC refinement / backlog grooming** | `/shift-left-testing` (SKILL.md) + the business context maps (`bun run context:map <slug>`) | Skill `references/` (backlog-selection, refinement-playbook, atp-outline-template) |
 | **Exploratory Testing** | `/sprint-testing` (SKILL.md) + `.context/PBI/qa-artifacts/master-test-plan.md` | Skill `references/` (exploration patterns, session entry points) |
-| **Understand System** | `bun run context:map business-data-context` (and `business-api-context`, `business-e2e-context`) | `.context/business/*`, `.context/PRD/*`, `.context/SRS/*` |
+| **Understand System** | `bun run context:map business-data-context` (and `business-api-context`, `business-e2e-context`) | `bun run context:map business-domain-context` (vocabulary), `bun run context:map infra-context` (stack, environments) |
 | **Use MCP** | `AGENTS.md` §5 "MCPs (decision rules)" + §6 "Tool Resolution" | The owning CLI skill (`/acli`, `/xray-cli`, `/playwright-cli`) |
 
 ### By Role
@@ -361,7 +332,7 @@ Reference / utility / generator skills (`agentic-qa-core`, `acli`, `xray-cli`, `
 - Load all guidelines at once
 - Include full file trees in prompts
 - Duplicate information across files
-- Load PRD/SRS for simple test writing
+- Load whole context maps for simple test writing (use `--section <id>`)
 
 ---
 
