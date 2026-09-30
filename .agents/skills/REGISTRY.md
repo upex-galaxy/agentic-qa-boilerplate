@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-09-30T08:34:37.264Z`
+> Generated: `2026-09-30T08:42:28.984Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -296,7 +296,7 @@ Skills indexed: 21
 **Compact Rules**:
 - Exactly ONE mode per run: `data` · `features` · `api` · `test-plan` · `refresh-all` · `context-skill`. Load only that mode's reference; never open a second one in the same pass.
 - `context-skill` scaffolds the JUDGMENT layer over a map the other modes produced (`../agentic-qa-core/references/skill-scaffold.md` §3): it cites `.context/` paths and never copies their content; the map must exist first. `refresh-all` never includes it.
-- Mode → reference → output: `data` → `references/data.md` → `.context/business/business-data-map.md` · `features` → `references/features.md` → `.context/business/business-feature-map.md` · `api` → `references/api.md` → `.context/business/business-api-map.md` · `test-plan` → `references/test-plan.md` → `.context/master-test-plan.md`.
+- Mode → reference → output: `data` → `references/data.md` → `.context/business/business-data-map.md` · `features` → `references/features.md` → `.context/business/business-feature-map.md` · `api` → `references/api.md` → `.context/business/business-api-map.md` · `test-plan` → `references/test-plan.md` → the `## Master Test Plan` section of the `QA Master Test Plan` Epic description in Jira (cached by the sync at `.context/PBI/qa-artifacts/master-test-plan.md`; never a local file).
 - User did not name a mode → ASK. NEVER infer `refresh-all` from a generic "refresh the context" request.
 - `refresh-all` runs strictly `data` → `features` → `api` → `test-plan`, one at a time. Each reference's own validation and approval gate must close before the next is loaded. Never skip ahead.
 - Artifact missing = CREATE mode: may write once the analysis completes. Artifact exists = UPDATE mode: generate a candidate, show the diff summary, WAIT for explicit approval. NEVER overwrite an existing artifact without that approval.

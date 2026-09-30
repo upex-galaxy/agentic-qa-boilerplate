@@ -145,16 +145,16 @@ The conductor keeps using SUBAGENTS for its own reads and verifications: that is
 | First-time orientation **OR user is lost / wants to understand a skill** | "onboard me", "first time using this", "I don't know how to use this", "how does `<skill>` work", "explain/teach me how X works", "no sé cómo usar", "no entiendo cómo funciona", "cómo funciona este skill" | `/agentic-qa-onboard` | (skill self-loads) | - *onboard enters teaching mode: SUSPEND caveman, explain in plain human language, and OFFER to open the per-skill `how-it-works.es.html` deck in the browser (ask first)* |
 | Onboard target project | "onboard this repo", "set up project" | `/project-discovery` | target repo code, `.context/` if exists | Read + Grep |
 | Adapt KATA to stack | "adapt framework", "wire fixtures", "test framework adaptation" | `/test-framework-adaptation` | `.context/business/*`, `.context/SRS/*`, `.context/infrastructure/*`, `.agents/project.yaml` | Code edit |
-| Shift-Left batch grooming | "shift-left these stories", "groom the backlog", "pre-sprint QA", "refine these N stories" | `/shift-left-testing` | `.context/business/*`, `.context/master-test-plan.md`, `.context/PBI/epics/EPIC-*/stories/STORY-*/` | `[ISSUE_TRACKER_TOOL]` |
+| Shift-Left batch grooming | "shift-left these stories", "groom the backlog", "pre-sprint QA", "refine these N stories" | `/shift-left-testing` | `.context/business/*`, `.context/PBI/qa-artifacts/master-test-plan.md`, `.context/PBI/epics/EPIC-*/stories/STORY-*/` | `[ISSUE_TRACKER_TOOL]` |
 | Sprint testing issue | "test this", "QA this story", "verify bug", "process sprint N" | `/sprint-testing` | `.context/PBI/epics/EPIC-*/stories/STORY-*/` | `[AUTOMATION_TOOL]` + `[ISSUE_TRACKER_TOOL]` |
-| TMS documentation / ROI | "document tests", "ROI", "automate priority" | `/test-documentation` | `.context/master-test-plan.md`, `.agents/jira-required.yaml`, `.agents/jira-fields.json` | `[TMS_TOOL]` |
+| TMS documentation / ROI | "document tests", "ROI", "automate priority" | `/test-documentation` | `.context/PBI/qa-artifacts/master-test-plan.md`, `.agents/jira-required.yaml`, `.agents/jira-fields.json` | `[TMS_TOOL]` |
 | Write automated test | "automate", "E2E test", "API test" | `/test-automation` | `kata-manifest.json`, `tests/components/`, `.context/PBI/.../implementation-plan.md`, skill `references/` | Code edit |
 | Derive test cases / coverage from ACs (ANY of the 4 testing skills) | "design test cases", "what to test", "cover this AC", "is this enough coverage" | (the active testing skill) | **`agentic-qa-core/references/test-design-doctrine.md` (MANDATORY)** | - |
 | Report a bug / defect / improvement | "report bug", "file defect", "raise improvement", "found an error in the app" | (the active testing skill) | **`agentic-qa-core/references/defect-management-doctrine.md` (MANDATORY)** | `[ISSUE_TRACKER_TOOL]` |
 | Annotate a bug screenshot (visual/positional defect) | "annotate bug screenshot", "mark up evidence", "anota este bug", "marca la captura" | `/bug-screenshot-annotation` | `agentic-qa-core/references/evidence-conventions.md` | `/playwright-cli` + local HTTP |
 | Ask the user to decide (batch of decisions, or one dense one) | "decide", "which option", "necesito que decidas", "opciones", a report the user must react to point by point | - | **`agentic-qa-core/references/decision-elicitation-doctrine.md` (MANDATORY)** | `mkd` decision deck; harness prompt below the threshold or when `mkd` is absent |
 | Discovery / inventory | "what components exist", "list ATCs", "is TC-X automated", "coverage map", "what's tested", "qué está cubierto" | - | `kata-manifest.json`; coverage map + gaps → `bun run tests:map` (reads `.context/PBI/`, offline) | Read / `bun run tests:map` |
-| Regression / release | "run regression", "GO/NO-GO" | `/regression-testing` | `.context/master-test-plan.md`, CI logs | `gh` + Allure |
+| Regression / release | "run regression", "GO/NO-GO" | `/regression-testing` | `.context/PBI/qa-artifacts/master-test-plan.md`, CI logs | `gh` + Allure |
 | Private report hosting (login-walled Allure) | "reportes privados", "make reports private", "protect test evidence", "login para los reportes" | `/regression-testing` | **`regression-testing/references/private-hosting-setup.md` (AI-executed protocol)**: AI clones + deploys the Test Report Portal (Supabase/R2/Vercel) and wires this repo's secrets; suite workflows are already dual-mode | CLIs (`supabase`, `wrangler`, `vercel`, `gh`) |
 | Test-architecture decision (record/supersede) | "record an ADR", "document our fixture/runner/isolation decision", "architecture decision record" |: (see `.context/ADR/README.md`) | `.context/ADR/`, `agentic-qa-core/references/adr-doctrine.md` | Read + Write |
 | Why the QA process is shaped this way (methodology, not a procedure) | "why do we create an ATS per story", "what is a stage / step / phase / altitude", "Early-Game / Mid-Game / Late-Game", "TMLC / TALC", "light mode", "what does IQL mean here" | `iql-context` (auto, kind `context`) | `.agents/project.yaml` → `qa.methodology`; `iql-context/references/project-overrides.md` | - *knowledge only: never runs a stage* |
@@ -457,6 +457,7 @@ Verify any change with `git check-ignore -v` on both a `test-specs/` file (must 
       shift-left-refinement.md                   [LOCAL] staging buffer for the shift-left publish
   epics/_orphans/                                [SYNC - parentless Stories, plus tests/: orphan Tests with no issue-link to any coverable — a visible traceability worklist]
   qa-artifacts/_index.md                         [SYNC - register of the QA-bucket Epics (label `QA-Artifact`): bucket name → key; no per-epic folders. Their content is distributed: coverables + Tests under what they cover, higher-altitude Plans/Runs into test-plans/ + test-executions/ below]
+  qa-artifacts/master-test-plan.md               [SYNC ← '## Master Test Plan' section of the QA Master Test Plan Epic description: the MTP itself, mastered in Jira (ADR-0007)]
   bugs/BUG-<KEY>-<slug>/                         [SYNC - coverable folder: bug.md + ATP + ATR + test-executions/ + defects/]
   improvements/IMPROVEMENT-<KEY>-<slug>/         [SYNC - coverable folder: improvement.md + ATP + ATR + …]
   tech-stories/TECHSTORY-<KEY>-<slug>/           [SYNC - coverable folder: tech-story.md + ATP + ATR + …]
@@ -495,13 +496,12 @@ Verify any change with `git check-ignore -v` on both a `test-specs/` file (must 
 
 **RESUME SESSION**: invoke `/test-automation`. Skill reads `PROGRESS.md` + `ROADMAP.md` automatically, picks up where left off.
 
-**Project-wide context** (Level 1, generated):
+**Project-wide context** (Level 1, generated). The Master Test Plan is NOT here: `project-context` mode `test-plan` writes it to the `QA Master Test Plan` Epic description, and the sync caches it at `.context/PBI/qa-artifacts/master-test-plan.md`.
 
 ```
 .context/business/business-data-map.md       (project-context mode data)
 .context/business/business-feature-map.md    (project-context mode features)
 .context/business/business-api-map.md        (project-context mode api)
-.context/master-test-plan.md                 (project-context mode test-plan)
 api/schemas/                                 (bun run api:sync)
 ```
 

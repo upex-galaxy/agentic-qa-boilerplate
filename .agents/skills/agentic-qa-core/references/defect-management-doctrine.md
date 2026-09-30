@@ -252,8 +252,10 @@ components          ->  PRODUCT module/epic  ("what part of the product it affec
 | **Defect epic** | every **bug/defect/improvement** | `qa.qa_epics.defect_epic.name` — **"QA Defect Management"** |
 
 - The **Master Test Plan epic has a special role**: it is an **Epic** (not a Test
-  Plan work type), is the **parent of all Test Plans** (FTP/STP/ATP/RTP), mirrors
-  `.context/master-test-plan.md` + points to the official QA team repository, and is
+  Plan work type), is the **parent of all Test Plans** (FTP/STP/ATP/RTP), carries
+  the Master Test Plan itself in its description (source of truth; cached by the
+  sync at `.context/PBI/qa-artifacts/master-test-plan.md`) + points to the official
+  QA team repository, and is
   cross-linked (`relates to`) to its three sibling QA epics (Test Repository, Test
   Artifacts, Defect Management) — so the four form a navigable QA-governance cluster.
 - **Test Sets split by altitude.** The per-Story **ATS** (Acceptance Test Set,

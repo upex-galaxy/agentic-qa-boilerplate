@@ -463,11 +463,10 @@ bun run test:smoke         # smoke / @critical tests
 │
 ├── .context/                     # AI Context Engineering (generated)
 │   ├── business/                  # business-data-map / business-feature-map / business-api-map
-│   ├── master-test-plan.md       # What to test and why
 │   ├── PRD/                      # Product requirements
 │   ├── SRS/                      # Technical specs
 │   ├── reports/                  # Generated output (GITIGNORED except its README): test map, regression reports
-│   └── PBI/                      # Per-ticket backlog items (GITIGNORED Jira cache; `bun run context:hydrate`)
+│   └── PBI/                      # Per-ticket backlog items + the MTP cache (GITIGNORED Jira cache; `bun run context:hydrate`)
 │
 ├── .agents/                      # Agentskills.io spec layout — the shared, harness-agnostic substrate
 │   ├── project.yaml              # AI context vars (resolved as {{VAR}} by skills)
@@ -857,7 +856,7 @@ touch tests/e2e/your-module/your-feature.test.ts
 
 ### 4. Generate Context
 
-Load the `/project-discovery` skill in your AI assistant to generate project-specific context (PRD, SRS, business-data-map, business-feature-map, business-api-map, master-test-plan).
+Load the `/project-discovery` skill in your AI assistant to generate project-specific context (PRD, SRS, business-data-map, business-feature-map, business-api-map). The Master Test Plan is written by `project-context` mode `test-plan` to the `QA Master Test Plan` Epic in Jira.
 
 ### 5. Adapt the Framework
 

@@ -21,7 +21,7 @@ Goal: Produce spec.md + automation-plan.md for scope <SCOPE> (module|ticket|ATC)
 Context docs:
   - kata-manifest.json (root) — REQUIRED FIRST READ. Authoritative registry of every existing Component + ATC. Use it for reuse detection and ID-collision avoidance before drafting anything.
   - .context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/ (Jira-synced caches: story.md, acceptance-criteria.md, implementation-plan.md (dev plan), acceptance-test-plan.md — READ-ONLY input; materialize via `bun run jira:sync-issues get <STORY-KEY> --include-comments`)
-  - .context/master-test-plan.md
+  - .context/PBI/qa-artifacts/master-test-plan.md
   - .context/business/business-data-map.md
   - .context/business/business-feature-map.md
   - .agents/skills/test-automation/references/kata-architecture.md

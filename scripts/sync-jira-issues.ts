@@ -919,6 +919,51 @@ function classifyQaArtifactEpic(
   return null;
 }
 
+/** Default when `.agents/project.yaml` does not declare `qa.qa_epics.master_test_plan_epic.name`. */
+const DEFAULT_MTP_EPIC_NAME = 'QA Master Test Plan';
+
+interface MasterTestPlanEpicConfig {
+  /** Cached `qa.qa_epics.master_test_plan_epic.key`; null until a skill discovers it. */
+  key: string | null
+  /** Convention name the Epic is found by when the key is not cached yet. */
+  name: string
+}
+
+/**
+ * Reads how the Master Test Plan Epic is identified: its cached key, else its name.
+ * Same fallback posture as `readQaArtifactConfig` — a yaml that never mentions it
+ * still gets the convention name.
+ */
+function readMasterTestPlanEpicConfig(): MasterTestPlanEpicConfig {
+  const fallback: MasterTestPlanEpicConfig = { key: null, name: DEFAULT_MTP_EPIC_NAME };
+  if (!existsSync(PROJECT_YAML_PATH)) { return fallback; }
+
+  let parsed: unknown;
+  try {
+    parsed = parseYaml(readFileSync(PROJECT_YAML_PATH, 'utf8'));
+  }
+  catch {
+    return fallback;
+  }
+  const qa = (parsed as Record<string, unknown> | null)?.qa as Record<string, unknown> | undefined;
+  const epics = qa?.qa_epics as Record<string, unknown> | undefined;
+  const entry = epics?.master_test_plan_epic as Record<string, unknown> | undefined;
+  if (entry === null || typeof entry !== 'object') { return fallback; }
+
+  const key = typeof entry.key === 'string' && entry.key.trim() !== '' ? entry.key.trim() : null;
+  const name = typeof entry.name === 'string' && entry.name.trim() !== '' ? entry.name.trim() : DEFAULT_MTP_EPIC_NAME;
+  return { key, name };
+}
+
+/**
+ * Decides whether an Epic is THE Master Test Plan Epic. The cached key wins; the
+ * convention name (case-insensitive) covers an instance whose key was never cached.
+ */
+function isMasterTestPlanEpic(epic: JiraIssue, cfg: MasterTestPlanEpicConfig): boolean {
+  if (cfg.key !== null) { return epic.key === cfg.key; }
+  return epic.fields.summary.trim().toLowerCase() === cfg.name.toLowerCase();
+}
+
 /**
  * Resolves the active Jira project key. Precedence:
  *   1. `JIRA_PROJECT_KEY` env var (explicit override).
@@ -2786,6 +2831,16 @@ async function syncEpic(
     return null;
   }
 
+  // The MTP Epic is a QA bucket, not a product module: `get <MTP-KEY>` refreshes
+  // the MTP cache instead of growing a product folder under `epics/`.
+  if (isMasterTestPlanEpic(epic, readMasterTestPlanEpicConfig())) {
+    if (syncMasterTestPlanFile(epic, config, options.dryRun, result) && !options.json) {
+      log.info(`Synced Master Test Plan from ${epic.key} → qa-artifacts/master-test-plan.md`);
+    }
+    result.synced.epics++;
+    return null;
+  }
+
   // Fetch stories for this epic (only Stories, not Bugs/Tests/etc.)
   const stories = await searchIssues(
     config,
@@ -2897,6 +2952,67 @@ async function syncSingleStory(
 const QA_ARTIFACTS_DIR = 'qa-artifacts';
 
 /**
+ * Heading that carries the Master Test Plan inside the MTP Epic `description`.
+ *
+ * The Epic description IS the MTP (ADR-0007): `project-context` mode `test-plan`
+ * writes this section read-first, leaving any other text on the Epic untouched,
+ * and the sync splits it back out into the cache file below.
+ */
+const MTP_HEADING = 'Master Test Plan';
+
+/** Cache file the MTP section is materialized into, under `qa-artifacts/`. */
+const MTP_CACHE_FILE = 'master-test-plan.md';
+
+/**
+ * Renders the MTP cache from the Epic description, or null when the Epic carries
+ * no `## Master Test Plan` section (the plan was never written to Jira yet).
+ * Only the section is rendered: any PO or human text around it stays in Jira.
+ */
+function renderMasterTestPlanCache(epic: JiraIssue, displayUrl: string): string | null {
+  const { section } = splitDescriptionSection(adfToMarkdown(epic.fields.description), MTP_HEADING);
+  if (!section) { return null; }
+  return [
+    `# ${epic.key} — Master Test Plan`,
+    '',
+    `> Jira source: the \`## ${MTP_HEADING}\` section of the Epic description · [View in Jira](${displayUrl}/browse/${epic.key})`,
+    '> Cache. Never hand-edit: `project-context` mode `test-plan` writes the Epic, then the sync rewrites this file.',
+    '',
+    section.trim(),
+    '',
+    '---',
+    '_Synced from Jira by sync-jira-issues_',
+    '',
+  ].join('\n');
+}
+
+/**
+ * Materializes `qa-artifacts/master-test-plan.md` from the MTP Epic. Returns true
+ * when written. A section removed from Jira removes the stale cache too: a cache
+ * that outlives its source is the one failure a cache must never have.
+ */
+function syncMasterTestPlanFile(
+  epic: JiraIssue,
+  config: Config,
+  dryRun: boolean,
+  result: SyncResult,
+): boolean {
+  const dir = join(config.outputDir, QA_ARTIFACTS_DIR);
+  const filePath = join(dir, MTP_CACHE_FILE);
+  const content = renderMasterTestPlanCache(epic, config.displayUrl);
+  if (content === null) {
+    if (existsSync(filePath) && !dryRun) { unlinkSync(filePath); }
+    result.warnings.push(
+      `${epic.key}: the Master Test Plan Epic has no \`## ${MTP_HEADING}\` section — `
+      + 'no MTP cache written (author it with `project-context` mode `test-plan`)',
+    );
+    return false;
+  }
+  if (!dryRun) { ensureDir(dir); }
+  bumpFile(writeFieldFile(filePath, content, dryRun), result);
+  return true;
+}
+
+/**
  * Writes `qa-artifacts/_index.md` — the register of Epics that are QA buckets.
  *
  * No per-epic folder is created on purpose: their content is already distributed
@@ -2910,6 +3026,7 @@ function writeQaArtifactsIndex(
   config: Config,
   dryRun: boolean,
   result: SyncResult,
+  mtpKey: string | null = null,
 ): void {
   const dir = join(config.outputDir, QA_ARTIFACTS_DIR);
   if (!dryRun) { ensureDir(dir); }
@@ -2926,6 +3043,9 @@ function writeQaArtifactsIndex(
   ];
   for (const { epic, via } of epics) {
     lines.push(`| [${epic.key}](${config.displayUrl}/browse/${epic.key}) | ${epic.fields.summary} | ${via} |`);
+  }
+  if (mtpKey !== null) {
+    lines.push('', `Master Test Plan (from ${mtpKey}): [${MTP_CACHE_FILE}](${MTP_CACHE_FILE})`);
   }
   lines.push('', '---', '_Synced from Jira by sync-jira-issues_', '');
 
@@ -3060,7 +3180,14 @@ async function syncAll(config: Config, options: SyncOptions): Promise<SyncResult
       }
 
       if (qaArtifactEpics.length > 0) {
-        writeQaArtifactsIndex(qaArtifactEpics, config, options.dryRun, result);
+        // The MTP Epic description IS the Master Test Plan: its section becomes the
+        // local cache. Already fetched with the Epic list, so no extra query runs.
+        const mtpCfg = readMasterTestPlanEpicConfig();
+        const mtpEpic = options.noQaArtifacts
+          ? undefined
+          : qaArtifactEpics.find(e => isMasterTestPlanEpic(e.epic, mtpCfg))?.epic;
+        const mtpWritten = mtpEpic ? syncMasterTestPlanFile(mtpEpic, config, options.dryRun, result) : false;
+        writeQaArtifactsIndex(qaArtifactEpics, config, options.dryRun, result, mtpWritten && mtpEpic ? mtpEpic.key : null);
         // The name-prefix signal is the guessy one — surface it so the label (or the
         // cached key) can be set and the guess stops being load-bearing.
         const guessed = qaArtifactEpics.filter(e => e.via === 'name-prefix').map(e => e.epic.key);
@@ -4191,6 +4318,9 @@ ${colors.bold}PLANNING LADDER (higher-altitude artifacts)${colors.reset}
     test-executions/  STR-<KEY>-<slug>.md · ATR-… · RETEST-…
   A title that does not follow the grammar keeps the legacy prefix (TESTPLAN- /
   TESTEXEC- / RETESTEXEC-). Skip the whole sweep with --no-qa-artifacts.
+  The MTP itself is the \`## Master Test Plan\` section of the QA Master Test Plan
+  Epic description, cached as qa-artifacts/master-test-plan.md by the same
+  \`pull\` and by \`get <MTP-KEY>\`.
 
 ${colors.bold}TRACEABILITY VALIDATION${colors.reset}
   End-of-run WARNINGS flag: an ATP/ATR linked via the wrong link type (expected the
@@ -4338,13 +4468,18 @@ async function main(): Promise<void> {
 
 export {
   classifyQaArtifactEpic,
+  DEFAULT_MTP_EPIC_NAME,
   DEFAULT_QA_ARTIFACT_LABEL,
   fileNamePrefix,
   HIGHER_ALTITUDE_PREFIX,
   higherAltitudeLabel,
+  isMasterTestPlanEpic,
   ladderTitleAcronym,
   MODULE_CONTEXT_FILE,
   MODULE_CONTEXT_HEADING,
+  MTP_CACHE_FILE,
+  MTP_HEADING,
+  renderMasterTestPlanCache,
   splitDescriptionSection,
   standaloneSkipReason,
   sweptFromQaEpic,

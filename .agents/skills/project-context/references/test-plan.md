@@ -1,6 +1,8 @@
 # Master Test Plan Generator
 
-Generate or update `.context/master-test-plan.md` — a business-derived test roadmap that answers one question: **what to test in this application, and why does it matter?**
+Generate or update the Master Test Plan — a business-derived test roadmap that answers one question: **what to test in this application, and why does it matter?**
+
+**Where it lives**: the `## Master Test Plan` section of the `QA Master Test Plan` Epic description in Jira (`qa.qa_epics.master_test_plan_epic` in `.agents/project.yaml`). Jira is the source of truth; `bun run jira:sync-issues` caches the section at `.context/PBI/qa-artifacts/master-test-plan.md` (gitignored, never hand-edited). This mode writes the Epic, never a local file. Decision record: `.context/ADR/ADR-0007-mtp-in-jira.md`.
 
 **Target**: $ARGUMENTS (project path, module filter, or leave blank for full system)
 
@@ -34,6 +36,7 @@ This is **NOT** a flow description (→ `business-data-map.md`), a feature inven
 | Existing context | If available | PRD, SRS, domain glossary | `.context/PRD/`, `.context/SRS/` |
 | Git history | If signals needed | Recently changed modules (breakage-likelihood indicator) | `git log --oneline -90 --stat` |
 | Incident / bug tracker | If helpful | Historical pain points that feed "why it matters" per flow | `[ISSUE_TRACKER_TOOL]` |
+| Legacy local MTP `.context/master-test-plan.md` | Only when it exists and is not a placeholder | Seed for the Epic on CREATE (see "Seeding from a legacy local MTP") | Read file |
 
 **Golden rule**: ground every priority claim in evidence from the maps. "This flow is high-risk because…" must cite either a data-map flow, a feature-map QA-relevance row, or a named external dependency. No hand-wave prioritization.
 
@@ -41,12 +44,37 @@ This is **NOT** a flow description (→ `business-data-map.md`), a feature inven
 
 ## Mode detection
 
+Load `/acli` first. Resolve the MTP Epic (Step 1 of "Write to Jira" below), then refresh the cache from it:
+
 ```
-Does .context/master-test-plan.md exist?
-  → NO:  CREATE mode — generate from scratch.
-  → YES: UPDATE mode — generate new version, show diff summary, ask
-         for confirmation before overwriting. NEVER auto-overwrite.
+bun run jira:sync-issues get <MTP-KEY>
+Does .context/PBI/qa-artifacts/master-test-plan.md exist now?
+  → NO:  CREATE mode — the Epic has no `## Master Test Plan` section yet.
+         A non-placeholder legacy `.context/master-test-plan.md` exists?
+           → offer to SEED from it (see "Seeding from a legacy local MTP").
+           → otherwise generate from scratch.
+  → YES: UPDATE mode — read the cache as the current plan, generate the new
+         version, show the diff summary, WAIT for explicit approval before
+         writing the Epic. NEVER auto-overwrite.
 ```
+
+---
+
+## Altitude and budget
+
+The MTP is the PRODUCT altitude of the planning ladder (`agentic-qa-core/references/planning-ladder.md`): strategy for the whole system. Feature depth belongs one rung down, in each feature's FTP (`FTP: {EPIC-KEY}: {feature}`, parented to the same MTP Epic). That split is also what keeps the plan inside Jira's description cap.
+
+**The cap counts serialized ADF JSON, not visible text.** Jira Cloud rejects a description whose ADF document serializes past 32,767 characters, and markdown converted to ADF grows by a factor that depends on its structure (tables and short lists grow the most). Measurements behind this: ADR-0007.
+
+**Size check on EVERY write** (CREATE and UPDATE, not only the first):
+
+```
+# the FULL description as it will be stored: the text outside the section + the new section
+bun .agents/skills/acli/scripts/md-to-adf.ts <description.md> <description.adf.json>
+jq -c . <description.adf.json> | wc -m        # must stay at or under 30000
+```
+
+Over 30,000 → **STOP before writing**. Propose which sections move to which FTP (per-flow rationale, state-machine detail and edge cases of feature X → `FTP: {EPIC-KEY}: X`), with the size each move saves, and wait for the user's decision. A Jira rejection for content length (`CONTENT_LIMIT_EXCEEDED`) is the same STOP: never truncate, never split the section across two fields.
 
 ---
 
@@ -101,7 +129,7 @@ Identify automatic processes (crons, webhooks, DB triggers) with **no UI feedbac
 
 ## Output structure
 
-Write `.context/master-test-plan.md` with this structure.
+Compose the body of the `## Master Test Plan` section with this structure (use `###` for its sub-sections, so the section boundary stays intact). Every section stays at product altitude: a line that only makes sense for one feature goes to that feature's FTP.
 
 **Tone**: conversational, senior-QA voice, second person ("you'll want to verify…"). Assume the reader is a QA engineer onboarding to the project — guide them, don't lecture. Use the same flow names as the data-map.
 
@@ -126,21 +154,13 @@ Cap at 7–10 rows. Anything below HIGH goes to §8 as a short list.
 
 ### 3. What to test first and why
 
-One subsection per CRITICAL / HIGH flow. For each:
-- **Why it matters** — business impact + what happens if it breaks (customer-facing wording, not technical)
-- **What commonly breaks** — specific scenarios that historically fail or feel fragile
-- **Dependencies** — flows that feed into it or consume its output
-- **What an experienced QA would check** — 3–5 prose bullets, not a TC list
+One short paragraph per CRITICAL / HIGH flow: why it matters (business impact, customer-facing wording) and what commonly breaks. The per-flow depth (dependencies in detail, what an experienced QA would check, scenarios) is feature altitude: it goes to that feature's FTP, and this paragraph names the FTP when one exists.
 
 Prose, not code. No payloads, no fixtures.
 
 ### 4. State machines that matter
 
-Only the state machines with financial, legal, or operational impact. Skip cosmetic states. Per machine:
-- Why the transitions matter (business consequence of an illegal transition)
-- Transitions most likely to be broken
-- Terminal / forbidden states to guard
-- How corruption would be detected — or NOT, if invisible
+Only the state machines with financial, legal, or operational impact. Per machine, one line: the business consequence of an illegal transition, and whether corruption would be visible. Transition tables and forbidden-state lists go to the owning feature's FTP.
 
 ### 5. Silent killers — automated processes
 
@@ -174,7 +194,7 @@ Point is: testing flow A in isolation hides breakage that only surfaces in `A �
 
 ### 8. Edge cases developers commonly forget
 
-Grouped by theme, not by flow: concurrency, data limits, timezone / DST, permission boundaries, orphaned states, idempotency. For each theme, name the specific project flow most at risk.
+Grouped by theme, not by flow: concurrency, data limits, timezone / DST, permission boundaries, orphaned states, idempotency. For each theme, one line naming the project flow most at risk; the cases themselves go to that feature's FTP.
 
 ### 9. Pre-release checklist (priority-ordered)
 
@@ -194,7 +214,7 @@ Explicit delegation to stop scope creep:
 
 ### 11. Discovery gaps
 
-MANDATORY. List anything you could not ground in evidence:
+MANDATORY, kept short (one line per gap). List anything you could not ground in evidence:
 - Flows mentioned in the data-map with no clear business owner
 - Integrations without documented SLAs or failure modes
 - State machines where transitions are implied by code but not documented
@@ -204,11 +224,13 @@ MANDATORY. List anything you could not ground in evidence:
 
 ---
 
-## Jira mirror — the MTP Epic
+## Write to Jira — the MTP Epic
 
-Runs AFTER `.context/master-test-plan.md` is written (in UPDATE mode: after the user confirmed the overwrite). The file is the real plan; the Epic is its Jira anchor in the planning ladder (MTP altitude — see `.agents/skills/agentic-qa-core/references/planning-ladder.md`). Load `/acli` before any `[ISSUE_TRACKER_TOOL]` call.
+Runs after the section body is composed (in UPDATE mode: after the user approved the diff). Load `/acli` before any `[ISSUE_TRACKER_TOOL]` call; rich text goes through `acli/scripts/md-to-adf.ts` (see `/acli` "Publishing rich text").
 
 ### Step 1 — Find-or-create the Epic
+
+Cached key in `.agents/project.yaml` → `qa.qa_epics.master_test_plan_epic.key`: use it. Otherwise search by name:
 
 ```
 [ISSUE_TRACKER_TOOL] Search Issues:
@@ -222,30 +244,59 @@ Not found → create it:
   - type: Epic
   - summary: {qa.qa_epics.master_test_plan_epic.name}     # "QA Master Test Plan"
   - labels: {qa.qa_artifact_label}                        # QA-Artifact — mandatory identity label
+  - assignee: self                                        # artifact-lifecycle §2
 ```
 
 Cache the discovered/created key into `.agents/project.yaml` → `qa.qa_epics.master_test_plan_epic.key`.
 
-### Step 2 — Mirror the summary (read-first, never clobber)
+### Step 2 — Write the section (read-first, never clobber)
 
-Read the Epic `description` FIRST. Replace only the content under a `## Master Test Plan (mirror)` heading (append the heading if absent); every other section — PO/human-authored text included — stays byte-for-byte untouched. The mirror holds: the executive risk map table (§2), counts (CRITICAL / HIGH / silent killers / integration failure points), generation date, and a pointer to `.context/master-test-plan.md` as the full plan.
+Read the Epic `description` FIRST (`[ISSUE_TRACKER_TOOL] View Issue` with the description field). QA owns only the `## Master Test Plan` section: replace its content (append the heading when absent) and keep every other section, PO or human text included, verbatim. An old `## Master Test Plan (mirror)` section from the previous file-first model is replaced by this one, not kept beside it.
+
+Assemble the full description, run the size check from "Altitude and budget", and only then write:
+
+```
+[ISSUE_TRACKER_TOOL] Update Issue:
+  issue: <MTP-KEY>
+  description: <the full description, as ADF>
+```
 
 ### Step 3 — Cross-link the 3 sibling QA epics
 
 Ensure a `relates to` link from the MTP Epic to each sibling (resolve by name from `qa.qa_epics.*`): **QA Test Repository**, **QA Test Artifacts**, **QA Defect Management**. Idempotent — skip links that already exist. A sibling that does not exist yet is NOT created here (its owning skill creates it); note it in the report instead.
 
+### Step 4 — Read it back (Critical Rule #16)
+
+```
+bun run jira:sync-issues get <MTP-KEY>
+```
+
+Read `.context/PBI/qa-artifacts/master-test-plan.md` and confirm it carries the new plan. The write's success code is not the proof; the cache is.
+
+---
+
+## Seeding from a legacy local MTP
+
+Projects that ran this mode before the MTP moved to Jira have a committed `.context/master-test-plan.md`. On CREATE (the Epic has no `## Master Test Plan` section), when that file exists and is not the placeholder:
+
+1. Offer to seed the Epic from it. Nothing is written without the user's approval.
+2. On approval, take its content as the section body, run the size check, and on overflow present the FTP move proposal before anything is written (a plan generated under the file-first model is usually over budget: its per-flow sections are feature altitude).
+3. Write through Steps 2-4 above.
+4. NEVER delete the local file. Tell the user it is now superseded by the Jira Epic and its cache, that no skill reads it any more, and that removing it from git is their call.
+
 ---
 
 ## After generation
 
-- Update `AGENTS.md` Context System section to reference `.context/master-test-plan.md` if not present. `CLAUDE.md` remains the one-line compatibility shim.
-- In UPDATE mode: show diff summary, wait for explicit confirmation before overwriting.
+- In UPDATE mode: show diff summary, wait for explicit confirmation before writing the Epic.
 - Report:
   - CRITICAL flows identified: N
   - HIGH flows identified: N
   - Silent killers flagged: N
   - Integration failure points mapped: N
   - Discovery gaps open: N
-  - MTP Epic: {key} (created | updated) — mirror refreshed, sibling links ensured (note any missing sibling)
+  - MTP Epic: {key} (created | updated), description size {ADF JSON chars} / 30,000, sibling links ensured (note any missing sibling)
+  - Sections moved to FTPs this run (if any), with their target FTP
+  - Cache read back: `.context/PBI/qa-artifacts/master-test-plan.md` (yes / no)
 - If §1.2 warned, remind the user to run `project-context` mode `features` and re-run mode `test-plan`.
 - If a project-owned context skill sits over the master test plan (the project names the aspect): offer to run `project-context` mode `context-skill <aspect>` in UPDATE now. The methodology index itself (`iql-context`) is shipped upstream and is NOT updated from a map: a local rule goes to its `references/project-overrides.md`.

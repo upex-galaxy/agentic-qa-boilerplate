@@ -171,7 +171,7 @@ Forbidden surface ALWAYS routes to a non-SDD skill:
 
 - `tests/e2e/`, `tests/integration/`, `tests/components/{module}/` → `/test-automation`
 - `.context/PBI/` → `/sprint-testing`
-- `.context/master-test-plan.md` → `project-context` mode `test-plan`
+- the Master Test Plan (the `QA Master Test Plan` Epic description; cache `.context/PBI/qa-artifacts/master-test-plan.md`) → `project-context` mode `test-plan`
 - `.context/business/**` → `project-context` modes `data` / `features` / `api`
 - `.env`, credentials → manual edit only
 

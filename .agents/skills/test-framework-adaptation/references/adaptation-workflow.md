@@ -94,7 +94,7 @@ These massively improve adaptation accuracy and are produced by token-heavy stan
 
 - [ ] `.context/business/business-feature-map.md` (`project-context` mode `features`)
 - [ ] `.context/business/business-api-map.md` (`project-context` mode `api`)
-- [ ] `.context/master-test-plan.md` (`project-context` mode `test-plan`)
+- [ ] Master Test Plan: `.context/PBI/qa-artifacts/master-test-plan.md` after `bun run context:hydrate` (`project-context` mode `test-plan` writes it to the MTP Epic)
 
 If **any** is missing or a placeholder, do not proceed silently:
 
@@ -112,7 +112,7 @@ If the user continues, log each gap in the plan's Discovery Gaps section. Do not
 
 ### 1.1 Read existing project context
 
-In order: `.context/SRS/architecture.md`; `api/openapi-types.ts` (if generated) or the OpenAPI spec source; `.context/business/business-data-map.md`; `business-feature-map.md`, `business-api-map.md`, `master-test-plan.md` (if present); `.context/infrastructure/backend.md`, `frontend.md`; `.context/business/domain-glossary.md` (if present); `.env.example`; `.agents/project.yaml`; `config/variables.ts`.
+In order: `.context/SRS/architecture.md`; `api/openapi-types.ts` (if generated) or the OpenAPI spec source; `.context/business/business-data-map.md`; `business-feature-map.md`, `business-api-map.md`, `.context/PBI/qa-artifacts/master-test-plan.md` (if present); `.context/infrastructure/backend.md`, `frontend.md`; `.context/business/domain-glossary.md` (if present); `.env.example`; `.agents/project.yaml`; `config/variables.ts`.
 
 ### 1.2 Read KATA references
 
@@ -172,7 +172,7 @@ Session reuse always has the same shape: `global.setup → ui-auth.setup + api-a
 
 ### 1.6 Map entities to the first component
 
-From `domain-glossary.md` + `business-feature-map.md`, pick the **highest-traffic entity** per `master-test-plan.md`. Build that entity end-to-end in Phase 6; list the rest as follow-ups. Do not scaffold everything at once.
+From `domain-glossary.md` + `business-feature-map.md`, pick the **highest-traffic entity** per the Master Test Plan (`.context/PBI/qa-artifacts/master-test-plan.md`). Build that entity end-to-end in Phase 6; list the rest as follow-ups. Do not scaffold everything at once.
 
 ### 1.7 Upfront questionnaire
 
@@ -518,7 +518,7 @@ Run every detection signal and print a per-subsystem **GENERIC / ADAPTED** table
 | Auth setups | `.auth/api-state.json` + `.auth/user.json` exist non-empty |
 | Agentic curl auth | `bun run api:login <env>` populates `.auth/tokens.env` with an `API_TOKEN_<ROLE>_<ENV>` line (proves `scripts/api-login.project.ts` adapted for the curl maneuver) |
 | Session reuse | second `test:smoke` does not execute api-setup/ui-setup (and ≥1 test actually ran) |
-| Business context | `grep -l 'placeholder\|Run \`/business-' .context/business/*.md .context/master-test-plan.md` returns nothing |
+| Business context | `grep -l 'placeholder\|Run \`/business-' .context/business/*.md` returns nothing, and `.context/PBI/qa-artifacts/master-test-plan.md` exists after `bun run context:hydrate` |
 | CI workflows | workflow `options:` == env union; secret names match scheme; smoke filter == config grep tag |
 | MCP parity | `db_mcp`/`api_mcp` resolve to server names present in `.mcp.json`, `opencode.jsonc`, and `.codex/config.toml`; `bun run agents:compat:check` exits 0; `API_BASE_URL`/`OPENAPI_SPEC_PATH` set in `.env` (or `openapi` disabled in all three); `bun run harness:env:check` exits 0 |
 | Env schema | `bun run vars:schema:check` exits 0 **AND** every variable the project added or renamed is declared in `.env.schema` |

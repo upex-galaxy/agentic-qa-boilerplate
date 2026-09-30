@@ -284,8 +284,9 @@
             <tr>
               <td>Producto</td>
               <td>
-                <strong>MTP</strong> Master Test Plan: el Epic <code>QA Master Test Plan</code> más
-                <code>.context/master-test-plan.md</code>
+                <strong>MTP</strong> Master Test Plan: la descripción del Epic
+                <code>QA Master Test Plan</code> (copia local en
+                <code>.context/PBI/qa-artifacts/master-test-plan.md</code>)
               </td>
               <td>(no tiene)</td>
               <td>1 por proyecto</td>
@@ -611,8 +612,9 @@ components    -&gt;  módulo del producto  (qué parte del producto toca)</code>
       </ul>
       <p>
         Fuera de <code>PBI/</code> viven los artefactos de proyecto: los mapas en
-        <code>.context/business/</code>, <code>.context/master-test-plan.md</code> y las decisiones
-        de arquitectura de tests en <code>.context/ADR/</code>. El estado de sesión va en
+        <code>.context/business/</code> y las decisiones de arquitectura de tests en
+        <code>.context/ADR/</code>. El Master Test Plan no: vive en Jira y su copia está en
+        <code>PBI/qa-artifacts/master-test-plan.md</code>. El estado de sesión va en
         <code>.session/</code>, para que un re-sync no lo pise. Para ver qué está cubierto sin
         llamar a Jira, <code>bun run tests:map</code> genera un mapa de cobertura en HTML.
       </p>

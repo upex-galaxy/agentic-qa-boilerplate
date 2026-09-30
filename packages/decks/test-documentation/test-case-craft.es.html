@@ -1368,7 +1368,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <tr><td><b>Sync de resultados</b></td><td>CI importa JUnit/Cucumber → Test Runs auto-actualizan</td><td>Script custom actualiza el campo Test Status por TC</td></tr>
     </tbody>
   </table>
-  <div class="callout mt-m"><h4>Resuélvela primero (Phase 0)</h4><p>¿El proyecto tiene Xray instalado y licenciado? Auto-resuelve por <span class="mono">{{TMS_CLI}}</span>, luego <span class="mono">master-test-plan.md</span>, luego listando issue types. Solo pregunta si los 3 fallan. Sticky — no la re-resuelvas a mitad de sesión.</p></div>
+  <div class="callout mt-m"><h4>Resuélvela primero (Phase 0)</h4><p>¿El proyecto tiene Xray instalado y licenciado? Auto-resuelve por <span class="mono">{{TMS_CLI}}</span>, luego listando issue types. Solo pregunta si los 2 fallan. Sticky — no la re-resuelvas a mitad de sesión.</p></div>
   <div class="notes">Una decisión por proyecto, nunca se mezcla (anti-patrón D5). Items-first en AMBAS modalidades: work type presente → item; el campo del Story es un fallback degradado solo cuando el work type no existe en la instancia. En xray los issues son además queryables por JQL y target del import de CI.</div>
 </section>
 

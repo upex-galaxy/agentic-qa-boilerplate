@@ -52,6 +52,7 @@ Everything under `.context/PBI/` is one of three things. Getting the tier wrong 
   tech-debts/TECHDEBT-<KEY>-<slug>/               [SYNC — coverable folder: tech-debt.md + ATP + ATR + …]
   defects/                                        [SYNC — standalone defect issues]
   qa-artifacts/_index.md                          [SYNC — register of the QA-process Epics (QA buckets); no per-epic folders, their content is distributed into the dirs below]
+  qa-artifacts/master-test-plan.md                [SYNC ← '## Master Test Plan' section of the QA Master Test Plan Epic description; the MTP itself (ADR-0007)]
   test-plans/                                     [SYNC — FTP-/STP-/RTP-/ATP-<KEY>-<slug>.md; description holds the plan body]
   test-executions/                                [SYNC — STR-/RTR-/ATR-/RETEST-<KEY>-<slug>.md; description holds the run body]
   test-sets/ preconditions/                       [SYNC — TESTSET-/PRECONDITION-<KEY>-<slug>.md]
@@ -66,6 +67,8 @@ Folder naming follows Jira IDs verbatim — `<KEY>` is the Jira issue key, `<slu
 The rungs above a Story — **FTP** (feature), **STP** / **STR** (sprint), **RTP** (product regression, long-lived) and **RTR** (its run record, one per verdict) — sit *above* a Story, so the coverage walk that descends from a coverable issue through its links structurally cannot reach them. They used to never materialize at all. Two rules fix that.
 
 **Discovery goes through the QA-process Epics.** An unfiltered `pull` sweeps the children of the four QA buckets (`QA Master Test Plan`, `QA Test Artifacts`, `QA Test Repository`, `QA Defect Management`), resolved exactly as `qa-artifacts/_index.md` resolves them: the `QA-Artifact` label, then the cached `qa.qa_epics.*.key` in `.agents/project.yaml`, then the `QA ` name prefix. No new configuration — the Epics already *are* the index. The sweep only takes what nothing else owns (Test Plans, Test Executions, Test Sets, Preconditions); Bugs, Defects, Improvements and Tests keep their existing owners so no artifact is written twice. A project with no QA-process Epics runs zero extra queries. Skip it with `pull --no-qa-artifacts`.
+
+**The MTP is the top rung, and it is the Epic itself.** The `QA Master Test Plan` Epic description carries the Master Test Plan under a `## Master Test Plan` section (`project-context` mode `test-plan` writes it). The same `pull` splits that section out into `qa-artifacts/master-test-plan.md`, with no extra query (the Epic list is already fetched), and `get <MTP-KEY>` refreshes it alone. A section removed in Jira removes the cache too. Skipped with `pull --no-qa-artifacts`.
 
 **Filenames mirror the Jira title grammar.** The ratified grammar is `{ACRONYM}: {scope}: {desc}` (`.agents/skills/agentic-qa-core/references/planning-ladder.md` §3), so the file takes the acronym from the title:
 

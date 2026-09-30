@@ -5,7 +5,7 @@
 - **Deciders:** QA architect (framework owner)
 - **Tags:** traceability, tms, sync, artifact-ladder, cache
 - **Supersedes:** —
-- **Superseded by:** —
+- **Superseded by:** ADR-0007, for the §Consequences follow-up "The MTP needs no cache file" only. The title grammar and the QA-epic sweep stand.
 
 ---
 

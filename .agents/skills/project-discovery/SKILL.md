@@ -405,7 +405,7 @@ Larger templates (full PRD sections, KATA component skeletons, `.context/infrast
 - **P4.** NEVER mix `project-discovery` with `test-framework-adaptation` in the same session. Their write boundaries differ.
 - **P5.** NEVER use `project-discovery` for incremental map updates. Use `project-context`.
 - **P6.** NEVER skip the domain glossary in Phase 1. Downstream skills read it as a precondition when present: `sprint-testing` lists it in its Stage 1 planning inputs (ATP, refined ACs, TC outlines) and `test-documentation` uses it as the vocabulary reference for TC naming and bodies.
-- **P7.** NEVER fabricate Jira / Xray field IDs or status names in `.context/master-test-plan.md` or any PBI template. Run `bun run jira:sync-fields --force` and reference `{{jira.<slug>}}` via the slug catalog in `.agents/jira-required.yaml`.
+- **P7.** NEVER fabricate Jira / Xray field IDs or status names in the Master Test Plan or any PBI template. Run `bun run jira:sync-fields --force` and reference `{{jira.<slug>}}` via the slug catalog in `.agents/jira-required.yaml`.
 
 ---
 
