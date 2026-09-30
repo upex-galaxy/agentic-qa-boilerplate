@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-09-30T09:44:25.605Z`
+> Generated: `2026-09-30T09:51:37.162Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -217,7 +217,7 @@ Skills indexed: 26
 **Compact Rules**:
 - DO: read the repo state (status, branches, diff, log, fetch, upstream, remotes) at the start of EVERY invocation and report it before acting. Never assume repo state.
 - DO: resolve the branching strategy from the `git_strategy:` block in `.agents/project.yaml` first, then layout heuristics, then by asking — never pick one silently. Persist the resolution back into that block, never into a separate file and never as policy prose in `AGENTS.md`.
-- WHEN `git_strategy.strategy` is set but `project.project_name` is null, or `meta.strategy_source` is still `inherited` on a named project: the strategy was INHERITED from the template, not chosen. Treat it as unconfirmed and OFFER Strategy Setup once per session — never auto-run it, and proceed under the inherited strategy on a "no".
+- WHEN `git_strategy.meta.strategy_source` is `chosen`: the strategy is CONFIRMED, whatever `project.project_name` holds; no offer. Otherwise, WHEN `git_strategy.strategy` is set but `project.project_name` is null, or `meta.strategy_source` is `inherited` (or absent) on a named project: the strategy was INHERITED from the template, not chosen. Treat it as unconfirmed and OFFER Strategy Setup once per session — never auto-run it, and proceed under the inherited strategy on a "no".
 - DO: consult `git_strategy.policy.direct_push_to_protected` before any direct push to a protected branch — `allowed` is standing authorization (asking anyway collapses it into `confirm`), `confirm` asks every time, `forbidden` refuses and routes through a PR. A missing or null block behaves as `confirm`.
 - DO NOT: force-push, `--force-with-lease`, `--no-verify`, amend or rebase a pushed commit, or otherwise rewrite pushed history, unless the user explicitly authorizes it AND the branch is unshared.
 - DO NOT: run a repo-wide discard (`git restore .`, `git checkout -- .`, `git reset --hard`, untargeted `git stash`, `git clean -f`) — concurrent sessions may share this working tree. Discard only explicit paths this session modified; unclear ownership means stop and ask.
