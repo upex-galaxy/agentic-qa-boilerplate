@@ -61,7 +61,7 @@
       ]
     },
     "communityProjectSkills": {
-      "count": 4,
+      "count": 5,
       "items": [
         {
           "name": "playwright-cli",
@@ -82,6 +82,11 @@
           "name": "skill-creator",
           "purpose": "Create, modify, and evaluate Claude Code skills.",
           "source": "https://github.com/anthropics/skills"
+        },
+        {
+          "name": "diagram-design",
+          "purpose": "Community skill: diagram-design",
+          "source": "https://github.com/cathrynlavery/diagram-design"
         }
       ]
     },

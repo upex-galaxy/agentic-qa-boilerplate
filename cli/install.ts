@@ -390,6 +390,13 @@ export const PROJECT_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [
   // (a consumer's `<aspect>-context`) both scaffold through it, so a clone
   // without it would silently skip the description pass and the test prompts.
   { package: 'https://github.com/anthropics/skills', skill: 'skill-creator' },
+  // diagram-design (Cathryn Lavery): the diagrams inside the business context
+  // maps (`project-context` modes data / api / e2e and each business
+  // `*-context` refresh). Capability `diagrams`, resolved by skill presence
+  // with a point-of-use STOP (agentic-qa-core/references/business-context-maps.md
+  // §7). Project-level because one workflow depends on it and must not hinge on
+  // a user's global plugin list; a user-level install satisfies it too.
+  { package: 'https://github.com/cathrynlavery/diagram-design', skill: 'diagram-design' },
 ];
 
 /**

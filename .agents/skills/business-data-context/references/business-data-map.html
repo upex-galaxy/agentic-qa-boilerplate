@@ -1,0 +1,73 @@
+<!-- placeholder: run project-context mode data to generate this map -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Business data map</title>
+    <meta name="description" content="Entities, relationships, state machines, automatic processes, integrations and the flows that move data." />
+    <style>
+      :root {
+        --paper: #f5f5f5;
+        --ink: #2d3142;
+        --muted: #4f5d75;
+        --rule: rgba(45, 49, 66, 0.12);
+        --accent: #eb6c36;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --paper: #1d1f27;
+          --ink: #e8e9ee;
+          --muted: #a4abbd;
+          --rule: rgba(232, 233, 238, 0.14);
+        }
+      }
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font: 16px/1.6 system-ui, -apple-system, 'Segoe UI', sans-serif;
+      }
+      main {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 48px 16px;
+      }
+      .eyebrow {
+        font: 12px/1 ui-monospace, 'SF Mono', Menlo, monospace;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+      section {
+        border-top: 1px solid var(--rule);
+        padding-top: 16px;
+        margin-top: 32px;
+      }
+      code {
+        font: 14px ui-monospace, 'SF Mono', Menlo, monospace;
+      }
+      .muted {
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">business-data-context · placeholder</p>
+      <h1>Business data map</h1>
+      <p class="muted">Entities, relationships, state machines, automatic processes, integrations and the flows that move data.</p>
+      <section id="placeholder" data-sources="" data-updated="">
+        <h2>Not generated yet</h2>
+        <p>
+          This project has no business data map yet. Run <code>project-context</code> mode <code>data</code>: it reads the
+          code, the database and the API contract and replaces this file with the real map, one section per fact unit (entities, flows, state machines, automatic processes, external integrations).
+        </p>
+        <p>
+          Until then, <code>bun run context:map business-data-context</code> reports this placeholder and every skill that needs the map
+          treats it as missing.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>
