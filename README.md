@@ -187,7 +187,7 @@ bunx -y ccstatusline@latest
 # Drive the QA lifecycle inside the agent:
 /agentic-qa-onboard     # first-time orientation tour
 /project-discovery      # reverse-engineer the target app into .context/
-/adapt-framework        # wire KATA to the target stack (auth, vars, CI, MCP) — run once after discovery
+/test-framework-adaptation        # wire KATA to the target stack (auth, vars, CI, MCP) — run once after discovery
 /shift-left-testing     # Stage 0: pre-sprint AC refinement on backlog batch
 /sprint-testing         # in-sprint manual QA per ticket (plan + execute + report)
 /test-documentation     # TMS docs + ROI scoring (Candidate / Manual / Deferred)
@@ -861,7 +861,7 @@ Load the `/project-discovery` skill in your AI assistant to generate project-spe
 
 ### 5. Adapt the Framework
 
-Once `.context/` exists, run `/adapt-framework` to wire the KATA architecture to your stack — auth, variables, OpenAPI facades, CI workflows, and the MCP registry. It runs an idempotent flow (no writes before your approval) and, on re-run, reports a GENERIC / ADAPTED checklist of what is still example-project boilerplate. After it passes, you can start writing automated tests.
+Once `.context/` exists, run `/test-framework-adaptation` to wire the KATA architecture to your stack — auth, variables, OpenAPI facades, CI workflows, and the MCP registry. It runs an idempotent flow (no writes before your approval) and, on re-run, reports a GENERIC / ADAPTED checklist of what is still example-project boilerplate. After it passes, you can start writing automated tests.
 
 <br />
 

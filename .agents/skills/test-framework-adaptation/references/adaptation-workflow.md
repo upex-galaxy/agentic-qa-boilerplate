@@ -1,5 +1,5 @@
 ---
-name: adapt-framework
+name: test-framework-adaptation
 description: Adapt this boilerplate's KATA test architecture (tests/, api/schemas/, config/, CI, MCP) to a project already reverse-engineered by `/project-discovery`, so the repo is fully project-specific and ready to write automated tests. Triggers on "adapt KATA to this project", "set up test framework for this project", "implement the test fixtures", "connect boilerplate to target stack", "wire auth for the framework". Idempotent: re-running reports what is still generic vs project-adapted. Strict gate — Phases 0-2 (no writes) → user approval → Phases 3-9 (writes). Modifies THIS repo only, never the target repo. Prerequisites: `.context/` populated by `/project-discovery`. Do NOT use for writing feature tests (`/test-automation`), running suites (`/regression-testing`), or regenerating context (`/project-discovery`).
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
@@ -85,12 +85,12 @@ Verify each by path. Treat a **placeholder/stub file as missing** (grep for `pla
 
 If any hard prereq fails, stop and **enumerate each missing file mapped to the exact command that produces it**:
 
-> `/adapt-framework` needs `.context/` populated by `/project-discovery`. Missing:
+> `/test-framework-adaptation` needs `.context/` populated by `/project-discovery`. Missing:
 > - `.context/SRS/architecture.md` → run `/project-discovery` (Phase 2 Architecture)
 > - `.context/infrastructure/backend.md`, `frontend.md` → `/project-discovery` (Phase 3 Infrastructure)
 > - `.context/business/business-data-map.md` → `project-context` mode `data`
 >
-> Run the listed command(s), then re-invoke `/adapt-framework`.
+> Run the listed command(s), then re-invoke `/test-framework-adaptation`.
 
 ### 0.3 Strong-recommended — pause and propose
 
@@ -104,7 +104,7 @@ If **any** is missing or a placeholder, do not proceed silently:
 
 > Strongly recommend enriching context before adapting KATA. Missing/placeholder: `{list}`.
 >
-> Best practice: open a **clean session**, run `project-context` mode `refresh-all` (its fixed order is data → features → api → test-plan), then re-invoke `adapt-framework`.
+> Best practice: open a **clean session**, run `project-context` mode `refresh-all` (its fixed order is data → features → api → test-plan), then re-invoke `test-framework-adaptation`.
 >
 > Continue anyway, or pause to enrich context first? (yes-continue / pause)
 
@@ -217,7 +217,7 @@ Fold answers into the plan §§2, 6, 9. Unanswered items → Discovery Gaps.
 
 ## Phase 2 — Write the plan (no writes to code)
 
-Write `.context/reports/adapt-framework-plan.md` (skill-owned report path — **not** `.context/PBI/`, which is the Jira-sync read-only cache). Sections:
+Write `.context/reports/test-framework-adaptation-plan.md` (skill-owned report path — **not** `.context/PBI/`, which is the Jira-sync read-only cache). Sections:
 
 1. **Project Summary** — stack, auth system, main entities, OpenAPI source, environments.
 2. **Auth Strategy** — branch from §1.4, endpoints, token shape, **refresh rule (per-run mint vs staleness check)**, success indicator.
@@ -521,7 +521,7 @@ Edit `AGENTS.md` in place: record the resolved auth strategy, the first entity w
 
 ### 9.4 Close
 
-- Mark `.context/reports/adapt-framework-plan.md` `Status: COMPLETED` and append a results block (files created/modified, tests passing, gaps remaining, GitHub Secrets the user still owes).
+- Mark `.context/reports/test-framework-adaptation-plan.md` `Status: COMPLETED` and append a results block (files created/modified, tests passing, gaps remaining, GitHub Secrets the user still owes).
 - Report to the user: entities wired, facades created, setups passing, smoke passing, session reuse verified, MCP synced, and the GENERIC/ADAPTED table.
 
 ---
@@ -542,7 +542,7 @@ Done only when **every** box is true (all map to a Phase 9 signal):
 - [ ] MCP servers consistent across `.mcp.json` + `opencode.jsonc`; `allurerc.mjs` renamed
 - [ ] CI workflow env options + secret names + smoke tag reconciled; GitHub Secrets list emitted
 - [ ] `AGENTS.md` updated, `CLAUDE.md` shim unchanged; `sync-ai-context` handoff done or recommended
-- [ ] `.context/reports/adapt-framework-plan.md` marked `COMPLETED`
+- [ ] `.context/reports/test-framework-adaptation-plan.md` marked `COMPLETED`
 
 ---
 

@@ -20,7 +20,7 @@ Verify with `git check-ignore -v .context/reports/<file>`.
 | File | Producer | What it is |
 |---|---|---|
 | `regression-{env}-{date}.md` | `/regression-testing` | Suite run report + GO / CAUTION / NO-GO verdict |
-| `adapt-framework-plan.md` | `/adapt-framework` | Adaptation plan, written before the approval gate |
+| `test-framework-adaptation-plan.md` | `/test-framework-adaptation` | Adaptation plan, written before the approval gate |
 | `jira-components-plan.json` | `/jira-administration` mode `components` | Component sync plan, written before the approval gate |
 | `test-map.html` | `bun run tests:map` | Coverage map rendered from the synced `.context/PBI/` tree |
 | `COVERAGE-MATRIX-{scope}.md` | `/test-documentation` | AC → scenario → TC → verdict grid for one documentation session |

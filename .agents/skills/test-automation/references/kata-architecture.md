@@ -621,7 +621,7 @@ Never apply decorators to Layer 2 base methods or private helpers. Detailed trac
 For a project that already has Playwright tests and adopts this boilerplate. One area at a time; the old tests keep running until their replacement is proven.
 
 1. **Find ATC candidates.** Read the current tests for blocks that repeat, map each to a Jira/Xray test case, and start with the most reused. Check `kata-manifest.json` first (Critical Rule #12): the boilerplate may already ship the component.
-2. **Adapt Layers 1-2, do not rewrite them.** `TestContext`, `ApiBase` and `UiBase` ship in `tests/components/`; wire your URLs and credentials through `config/variables.ts` and `.env` (`/adapt-framework` does this).
+2. **Adapt Layers 1-2, do not rewrite them.** `TestContext`, `ApiBase` and `UiBase` ship in `tests/components/`; wire your URLs and credentials through `config/variables.ts` and `.env` (`/test-framework-adaptation` does this).
 3. **Extract the first component.** Pick one functional area, create `{Resource}Api` or `{Page}Page`, move its methods in as ATCs with `@atc('{TICKET-ID}')`, helpers with `@step`.
 4. **Register it in the fixture.** Add it to `ApiFixture` / `UiFixture` (`tests/components/`), then rewrite ONE test to use `{ api }` / `{ ui }` / `{ test }` per the fixture selection table (§7).
 5. **Migrate progressively.** One component per change, legacy tests running in parallel, each new ATC shown to behave like the code it replaces before the legacy code goes. Run `bun run kata:manifest` after each.

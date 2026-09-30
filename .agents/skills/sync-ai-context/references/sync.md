@@ -65,7 +65,7 @@ ls .context/business/business-model.md .context/business/domain-glossary.md .con
 |---|---|---|
 | KATA + at least one Level 1 context file | **Full Sync** | Patch all targets with real values |
 | KATA only, no `.context/` | **Minimal Sync** | Patch all targets with `<<PLACEHOLDER>>` values |
-| No KATA architecture | **Stop** | Tell the user to run `/project-discovery` first, then `/adapt-framework` to wire KATA to the target stack |
+| No KATA architecture | **Stop** | Tell the user to run `/project-discovery` first, then `/test-framework-adaptation` to wire KATA to the target stack |
 
 ---
 
@@ -292,7 +292,7 @@ Sync the **Available scripts** section against `package.json` — do not invent 
 {Simplified `tests/` tree}
 
 ## KATA architecture
-{One-paragraph explanation + link to adapt-framework and kata-architecture.md}
+{One-paragraph explanation + link to test-framework-adaptation and kata-architecture.md}
 
 ## AI-assisted development
 {Reference to the AI memory file from Step 0 + a note about /project-discovery}

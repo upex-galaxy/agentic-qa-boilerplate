@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, test } from 'bun:test';
 
 import { cleanupDeprecated, componentOwnedPaths, isRepoOnlyPath, validateComponentRegistry } from './lib/updater-core.ts';
-import { COMPONENTS, GATE_SCRIPTS, gatesSummaryLine, parseArgs, resolveProtectedWatchlist, RETIRED_COMMAND_WRAPPERS, runGate, summarizeGates } from './update-boilerplate.ts';
+import { COMPONENTS, DEPRECATED_FILES, GATE_SCRIPTS, gatesSummaryLine, parseArgs, resolveProtectedWatchlist, RETIRED_COMMAND_WRAPPERS, RETIRED_SKILL_FILES, runGate, summarizeGates } from './update-boilerplate.ts';
 
 const temporaryRoots: string[] = [];
 
@@ -82,6 +82,39 @@ describe('component registry', () => {
     expect(cleanupDeprecated(cfg, root, false)).toBe(RETIRED_COMMAND_WRAPPERS.length);
     expect(cleanupDeprecated(cfg, root, false)).toBe(0);
     expect(existsSync(join(root, '.claude/commands/acme-deploy.md'))).toBe(true);
+  });
+
+  test('a renamed skill leaves downstream with its folder, and a folder the project still uses stays', () => {
+    const retired = RETIRED_SKILL_FILES.map(d => d.path);
+    expect(retired).toContain('.agents/skills/adapt-framework/SKILL.md');
+    expect(retired).toContain('.agents/skills/adapt-framework/references/adaptation-workflow.md');
+    expect(DEPRECATED_FILES.map(d => d.path)).toEqual([...RETIRED_COMMAND_WRAPPERS, ...RETIRED_SKILL_FILES].map(d => d.path));
+    for (const d of RETIRED_SKILL_FILES) {
+      expect(d.reason).toContain('test-framework-adaptation');
+    }
+
+    const root = temporaryRoot();
+    for (const d of RETIRED_SKILL_FILES) {
+      mkdirSync(join(root, d.path, '..'), { recursive: true });
+      writeFileSync(join(root, d.path), 'old skill\n');
+    }
+    mkdirSync(join(root, '.agents/skills/test-framework-adaptation'), { recursive: true });
+    writeFileSync(join(root, '.agents/skills/test-framework-adaptation/SKILL.md'), 'new skill\n');
+    const cfg = { deprecatedFiles: RETIRED_SKILL_FILES } as Parameters<typeof cleanupDeprecated>[0];
+    expect(cleanupDeprecated(cfg, root, false)).toBe(RETIRED_SKILL_FILES.length);
+    // An emptied skill folder would fail skills:check ("directory has no SKILL.md").
+    expect(existsSync(join(root, '.agents/skills/adapt-framework'))).toBe(false);
+    expect(existsSync(join(root, '.agents/skills/test-framework-adaptation/SKILL.md'))).toBe(true);
+
+    const kept = temporaryRoot();
+    for (const d of RETIRED_SKILL_FILES) {
+      mkdirSync(join(kept, d.path, '..'), { recursive: true });
+      writeFileSync(join(kept, d.path), 'old skill\n');
+    }
+    writeFileSync(join(kept, '.agents/skills/adapt-framework/references/our-notes.md'), 'the project\'s own\n');
+    cleanupDeprecated(cfg, kept, false);
+    expect(existsSync(join(kept, '.agents/skills/adapt-framework/references/our-notes.md'))).toBe(true);
+    expect(existsSync(join(kept, '.agents/skills/adapt-framework/SKILL.md'))).toBe(false);
   });
 
   test('docs syncs only its shipped half; every other path under docs/ is project-owned', () => {

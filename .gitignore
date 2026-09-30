@@ -42,7 +42,7 @@ node_modules/
 *.json.bak
 
 # `.context/reports/` is generated output, same as the PBI cache below: sprint
-# trackers, adapt-framework plans, regression reports, GO/NO-GO verdicts, the
+# trackers, test-framework-adaptation plans, regression reports, GO/NO-GO verdicts, the
 # coverage matrix, the test map. Every one is rebuilt by the command that owns
 # it, so committing them only produces conflicts between sessions that ran at
 # different times. Only the README, which explains the directory, is tracked.

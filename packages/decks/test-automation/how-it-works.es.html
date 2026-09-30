@@ -510,7 +510,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <table class="tt">
       <thead><tr><th>Capacidad</th><th>Nivel</th><th>Por qué aquí</th></tr></thead>
       <tbody>
-        <tr><td><b>Framework adaptado</b></td><td>REQUIRED</td><td>Sin ATCs contra los scaffolds <span class="mono">Example*</span>. ¿Genérico? STOP → el usuario corre <span class="mono">/project-discovery</span> → <span class="mono">/adapt-framework</span> (el gate nunca los auto-ejecuta)</td></tr>
+        <tr><td><b>Framework adaptado</b></td><td>REQUIRED</td><td>Sin ATCs contra los scaffolds <span class="mono">Example*</span>. ¿Genérico? STOP → el usuario corre <span class="mono">/project-discovery</span> → <span class="mono">/test-framework-adaptation</span> (el gate nunca los auto-ejecuta)</td></tr>
         <tr><td><b>Toolchain + manifest</b></td><td>REQUIRED</td><td><span class="mono">bun run test / types:check / lint:check</span> resuelven en t=0; <span class="mono">kata:manifest:check</span> limpio antes de proponer componentes</td></tr>
         <tr><td><b>Env activo + credenciales</b></td><td>REQUIRED</td><td>Los tests corren en vivo: URL alcanzable + test users en <span class="mono">.env</span> (por rol si aplica) + browsers Playwright (<span class="mono">bun run pw:install</span>)</td></tr>
         <tr><td><b>OpenAPI MCP + <span class="mono">api/schemas/</span></b></td><td>SCOPE · API</td><td>Se necesita ya en PLAN-time: explorar endpoints para diseñar ATCs y clasificar datos</td></tr>

@@ -123,7 +123,7 @@ Canonical reading order for any AI starting cold on a test-automation workflow. 
 
 | Capability | Need | Why here |
 |---|---|---|
-| Framework adapted (artifacts present) | REQUIRED | Cannot write project ATCs against the generic `Example*` scaffolds the boilerplate ships. Probe the reference §4 ADAPTED signals; still generic → STOP and tell the user to run `/project-discovery` → `/adapt-framework` themselves. The gate NEVER auto-runs them. |
+| Framework adapted (artifacts present) | REQUIRED | Cannot write project ATCs against the generic `Example*` scaffolds the boilerplate ships. Probe the reference §4 ADAPTED signals; still generic → STOP and tell the user to run `/project-discovery` → `/test-framework-adaptation` themselves. The gate NEVER auto-runs them. |
 | Dev toolchain | REQUIRED | The Review gate runs `bun run test` / `bun run types:check` / `bun run lint:check`. Resolve them at t=0, not at Phase 3. `bun install` if a dep is missing. |
 | `kata-manifest.json` clean | REQUIRED | Anti-duplication source of truth (Critical Rule #12). `bun run kata:manifest:check` clean before proposing components/ATCs; `bun run kata:manifest` if stale. |
 | Active env + test-user creds | REQUIRED | Authored tests run live against `<<ACTIVE_ENV>>`. Env reachable + `.env` creds for the env (per role if multi-role). |

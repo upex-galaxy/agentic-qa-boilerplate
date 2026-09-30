@@ -201,4 +201,4 @@ Before reporting Phase 4 complete:
 - [ ] Per-ticket PBI sync is documented as out of scope (synced from Jira by `/sprint-testing`, not created here).
 - [ ] User has confirmed the workflow diagram matches reality (manual transition test or recent ticket review).
 
-Emit the phase completion ping and wait for user confirmation before moving to the context generators. KATA adaptation is out of scope for this skill — it is owned by the `/adapt-framework` command and runs after discovery outputs exist.
+Emit the phase completion ping and wait for user confirmation before moving to the context generators. KATA adaptation is out of scope for this skill — it is owned by the `/test-framework-adaptation` command and runs after discovery outputs exist.

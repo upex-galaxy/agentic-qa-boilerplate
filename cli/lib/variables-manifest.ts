@@ -221,7 +221,7 @@ export const VAR_MANIFEST: VarSpec[] = [
     required: true,
     critical: false,
     defaultValue: 'local',
-    obtainHint: 'defaults to local; reconfigure manually or via the /adapt-framework skill when you adapt the framework to your project-under-test.',
+    obtainHint: 'defaults to local; reconfigure manually or via the /test-framework-adaptation skill when you adapt the framework to your project-under-test.',
     note: 'Which environment to test against. CI env INPUT, not a secret. Has a default, so it never blocks; an undeclared value fails by name at the envDataMap lookup. Installer writes the default; never prompts.',
     schema: { type: 'enum(local, staging)', default: 'local' },
   },

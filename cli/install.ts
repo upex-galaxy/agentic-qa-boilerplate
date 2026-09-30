@@ -1330,14 +1330,14 @@ async function configureDayZeroCredentials(state: InstallState): Promise<void> {
   const newValues: Record<string, string> = {};
 
   // ── TEST_ENV default (NO prompt) ─────────────────────────────────────────
-  // Project-dependent; the user reconfigures it manually or via /adapt-framework
+  // Project-dependent; the user reconfigures it manually or via /test-framework-adaptation
   // when wiring the framework to their project-under-test. Write the manifest
   // default only when absent — never clobber an existing value.
   const currentTestEnv = (envValues.TEST_ENV ?? process.env.TEST_ENV ?? '').trim();
   if (currentTestEnv.length === 0) {
     const defaultEnv = nonCriticalVars().find(s => s.name === 'TEST_ENV')?.defaultValue ?? 'local';
     newValues.TEST_ENV = defaultEnv;
-    log.dim(`  TEST_ENV: defaulting to "${defaultEnv}" (reconfigure later via /adapt-framework).`);
+    log.dim(`  TEST_ENV: defaulting to "${defaultEnv}" (reconfigure later via /test-framework-adaptation).`);
   }
   else {
     log.dim(`  TEST_ENV: already set to "${currentTestEnv}".`);
@@ -2786,7 +2786,7 @@ function printClosingSummary(state: InstallState): void {
   process.stdout.write('    Then run:  bun run jira:sync-fields && bun run jira:check\n\n');
   process.stdout.write('  • Bootstrap KATA manifest once:  bun run kata:manifest\n');
   process.stdout.write('    Validate:                       bun run kata:manifest:check\n\n');
-  process.stdout.write('  • Adapt KATA to your stack:      /adapt-framework\n');
+  process.stdout.write('  • Adapt KATA to your stack:      /test-framework-adaptation\n');
   process.stdout.write('    (removes example tests + business maps; wires fixtures to your stack)\n\n');
 
   // Next steps — optional vars still empty in .env, by scope (manifest-driven).

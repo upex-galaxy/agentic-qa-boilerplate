@@ -30,8 +30,8 @@ import { resolvedAtlassianUrlForValidation, validateTmsEnvironment } from './var
 
 /**
  * The environments this project declares. Keep in step with `Environment` and
- * `envDataMap` in `config/variables.ts` (the 4-way env-enum reconciliation in
- * `/adapt-framework`): this list is what `test:env:check` names in its error.
+ * `envDataMap` in `config/variables.ts` (the env-enum reconciliation in
+ * `/test-framework-adaptation`): this list is what `test:env:check` names in its error.
  */
 export const VALID_TEST_ENVS = ['local', 'staging'] as const;
 
