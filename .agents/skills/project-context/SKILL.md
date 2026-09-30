@@ -17,7 +17,7 @@ Own the four regenerative project-context artifacts without duplicating their wo
 
 - Exactly ONE mode per run: `data` · `features` · `api` · `test-plan` · `refresh-all` · `context-skill`. Load only that mode's reference; never open a second one in the same pass.
 - `context-skill` scaffolds the JUDGMENT layer over a map the other modes produced (`../agentic-qa-core/references/skill-scaffold.md` §3): it cites `.context/` paths and never copies their content; the map must exist first. `refresh-all` never includes it.
-- Mode → reference → output: `data` → `references/data.md` → `.context/business/business-data-map.md` · `features` → `references/features.md` → `.context/business/business-feature-map.md` · `api` → `references/api.md` → `.context/business/business-api-map.md` · `test-plan` → `references/test-plan.md` → `.context/master-test-plan.md`.
+- Mode → reference → output: `data` → `references/data.md` → `.context/business/business-data-map.md` · `features` → `references/features.md` → `.context/business/business-feature-map.md` · `api` → `references/api.md` → `.context/business/business-api-map.md` · `test-plan` → `references/test-plan.md` → the `## Master Test Plan` section of the `QA Master Test Plan` Epic description in Jira (cached by the sync at `.context/PBI/qa-artifacts/master-test-plan.md`; never a local file).
 - User did not name a mode → ASK. NEVER infer `refresh-all` from a generic "refresh the context" request.
 - `refresh-all` runs strictly `data` → `features` → `api` → `test-plan`, one at a time. Each reference's own validation and approval gate must close before the next is loaded. Never skip ahead.
 - Artifact missing = CREATE mode: may write once the analysis completes. Artifact exists = UPDATE mode: generate a candidate, show the diff summary, WAIT for explicit approval. NEVER overwrite an existing artifact without that approval.
@@ -38,7 +38,7 @@ Resolve one mode from the invocation: the first token of `$ARGUMENTS` when it na
 | `data` | `business-data-map`, entity/data map | `references/data.md` | `.context/business/business-data-map.md` |
 | `features` | `business-feature-map`, feature inventory | `references/features.md` | `.context/business/business-feature-map.md` |
 | `api` | `business-api-map`, API business map | `references/api.md` | `.context/business/business-api-map.md` |
-| `test-plan` | `master-test-plan`, risk-ranked test roadmap | `references/test-plan.md` | `.context/master-test-plan.md` |
+| `test-plan` | `master-test-plan`, risk-ranked test roadmap | `references/test-plan.md` | MTP Epic description in Jira (cache: `.context/PBI/qa-artifacts/master-test-plan.md`) |
 | `refresh-all` | refresh all project context | all four references, one at a time | all four outputs |
 | `context-skill` | `context skill`, scaffold `<aspect>-context`, judgment layer over a map | `references/context-skill.md` | `.agents/skills/<aspect>-context/` (project-owned, never shipped upstream) |
 
