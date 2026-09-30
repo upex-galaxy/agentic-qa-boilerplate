@@ -91,9 +91,11 @@ Renaming is free here (the tree is a regenerable cache), and the sync deletes th
 
 ## What the `.gitignore` actually does
 
-The whole tree is excluded, then three things are negated back in. Git cannot re-include a file whose parent directory is excluded, so the rules walk down level by level:
+This tree is one rung of the `.context/` ladder: `.context/*` is ignored by default and `.context/PBI/` is negated back in, then the whole tree is excluded again and three things are negated back in. Git cannot re-include a file whose parent directory is excluded, so the rules walk down level by level (the full block, including the rungs above this one, is in `.gitignore`):
 
 ```gitignore
+.context/*
+!.context/PBI/
 .context/PBI/*
 !.context/PBI/README.md
 !.context/PBI/templates/
@@ -104,7 +106,7 @@ The whole tree is excluded, then three things are negated back in. Git cannot re
 !.context/PBI/epics/*/test-specs/
 ```
 
-Collapsing that ladder to a plain `.context/PBI/` silently drops `test-specs/` from version control. If you touch it, verify with `git check-ignore -v <path>` on both a `test-specs/` file (must NOT be ignored) and a `stories/.../story.md` (must be ignored).
+Collapsing that ladder (to a plain `.context/PBI/`, or by dropping the `!.context/PBI/` rung) silently drops `test-specs/` from version control. If you touch it, verify with `git check-ignore -v <path>` on both a `test-specs/` file (must NOT be ignored) and a `stories/.../story.md` (must be ignored).
 
 ## Why `test-specs/` is committed and everything around it is not
 
