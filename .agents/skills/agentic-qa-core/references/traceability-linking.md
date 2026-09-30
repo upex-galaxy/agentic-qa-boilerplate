@@ -1,7 +1,7 @@
 # Traceability Linking
 
 > **Purpose**: Reflect QA traceability relationships — Story↔test-artifact coverage, Story→Bug causation, Story→Bug blocking — as real Jira issue links, not just local declarations inside `story.md` / test-spec files. Local declarations document author intent; Jira links are the operational source of truth that audit trails, coverage reports, and the `defect_reported → blocked` gate read. Without this phase, the traceability graph exists only in the methodology docs and any consumer that walks `issuelinks` walks an empty graph.
-> **Use when**: Any time a QA workflow binds a Story to a test artifact, files a defect against a Story, or blocks a Story on an open defect. Concretely: shift-left Test Plan creation, sprint-testing bug filing + blocking, test-documentation Test / Test Execution creation, regression-testing re-coverage. Re-run whenever the coverage or defect graph changes mid-flight.
+> **Use when**: Any time a QA workflow binds a Story to a test artifact, files a defect against a Story, or blocks a Story on an open defect. Concretely: sprint-testing Set-first (ATS, then the ATP item born from the field), bug filing + blocking, test-documentation Test / Test Execution creation, regression-testing re-coverage. Re-run whenever the coverage or defect graph changes mid-flight.
 > **Companion references**:
 >
 > - `agentic-qa-core/references/acli-integration.md` — slug catalog, `{{jira.*}}` syntax, tool routing for the link-creation write operation (`[ISSUE_TRACKER_TOOL]` → `/acli`).
@@ -16,14 +16,16 @@ Traceability linking turns QA intent into a queryable graph in Jira. These touch
 
 | Touchpoint              | Moment                                                          | Link created                                  |
 | ----------------------- | -------------------------------------------------------------- | --------------------------------------------- |
-| `shift-left-testing`    | Test Plan (ATP) authored ahead of dev for a Story / feature    | Story `is tested by` ATP (`test`)             |
 | `test-documentation`    | ATP (Test Plan) + ATR (Test Execution) created for a Story (Modality `jira-xray`) | Story `is tested by` ATP and ATR (`test`)     |
 | `test-documentation`    | Test Case created for a Story under an ATP / ATR (Modality `jira-xray`) | ATP `designs` TC (`test_design`); ATR `executes` TC (`test_execute`) — placement edges; coverage flows through the ATS→Story link (direct TC→Story stays a valid last-resort, §3). |
 | `test-documentation`    | Test / Test Execution issue created for a Story (Modality `jira-native`) | Story `is tested by` Test / Test Exec (`test`)|
 | `sprint-testing`        | ATS (per-Story Acceptance Test Set, `ATS: {US_ID}: {story title}`) created/updated for the Story — Stage 1, Set-first | Story `is tested by` ATS (`test`) — **the coverage-bearing edge** (§3) |
+| `sprint-testing`        | ATP item find-or-created FROM the `{{jira.acceptance_test_plan}}` field — Stage 1, Set-first step 2 | Story `is tested by` ATP (`test`, administrative) |
 | `sprint-testing`        | Defect found during in-sprint QA of a Story                     | Story `causes` Bug (`problem_incident`)       |
 | `sprint-testing`        | QA blocks a Story on an open defect (the `defect_reported → blocked` gate) | Story `is blocked by` Bug (`blocks`)          |
 | `regression-testing`    | Existing Test re-bound to a Story for a regression cycle        | ATP `designs` Test (`test_design`); ATR `executes` Test (`test_execute`) |
+
+`shift-left-testing` creates no link: the pre-sprint ATP lives in the `{{jira.acceptance_test_plan}}` field, never as a Test Plan item (`artifact-lifecycle.md` §1).
 
 Skip the phase only when there is genuinely no relationship to record (e.g. an exploratory session with no Story under test and no defect filed) — but still record `no_links: true` in the workflow output so the consumer knows the phase ran.
 
@@ -149,10 +151,6 @@ The "Verified direction" column is `no` only for symmetric types (`relates`) —
 ## 8. Touchpoint map — which skill creates which link, when
 
 ```
-shift-left-testing
-  └─ Test Plan (ATP) authored for Story/feature
-        → Story is tested by ATP              [test]
-
 test-documentation  (Modality jira-xray)
   ├─ ATP (Test Plan) + ATR (Test Execution) created for Story
   │     → Story is tested by ATP              [test]   (acli — [ISSUE_TRACKER_TOOL])
@@ -174,6 +172,8 @@ test-documentation  (Modality jira-native)
 sprint-testing
   ├─ Stage 1 — Set-first: ATS created/updated for the Story (mandatory, even for 1 TC)
   │     → Story is tested by ATS               [test]  ← the coverage-bearing edge
+  ├─ Stage 1 — Set-first step 2: ATP item find-or-created FROM the field
+  │     → Story is tested by ATP               [test]  (administrative)
   │     → TC ∈ ATS membership                  (jira-xray: xray-cli GraphQL, NO Jira link;
   │                                             jira-native: TC→ATS issue links — §9 carve-out)
   ├─ defect found during QA of Story
@@ -190,7 +190,7 @@ regression-testing
 Edge ownership in one line:
 
 - **ATS → tests → Story** created on **ATS creation** (sprint-testing Stage 1, Set-first) via `test`. THE coverage-bearing edge (live-verified) — mandatory per Story.
-- **ATP/ATR → tests → Story** created on **ATP/ATR creation** (test-documentation, shift-left) via `test`. Administrative traceability only — contributes zero coverage (live-verified).
+- **ATP/ATR → tests → Story** created on **ATP/ATR creation** (sprint-testing Stage 1, test-documentation) via `test`. Administrative traceability only — contributes zero coverage (live-verified).
 - **TC ∈ ATS/ATP/ATR membership** — Xray layer: GraphQL-only in Modality `jira-xray` (`/xray-cli`); expressed as `TC→ATS` issue links in `jira-native` (§9 carve-out).
 - **ATP → designs → TC** and **ATR → executes → TC** created on **TC creation** (test-documentation, regression) via `test_design` / `test_execute`. Placement-only — coverage flows through the ATS→Story (or last-resort TC→Story) edge, never through these.
 - **TC → tests → Story** direct — last-resort rung of the cascade (`TC → ATS → Story` → `TC → ATP → Story` placement-only → `TC → Story` → ORPHAN); valid, not a defect, when no ATS exists.
@@ -261,8 +261,8 @@ Concretely: the three link reads are the `/acli` link-list read (§4's direction
 
 ## used_by
 
-- `sprint-testing` — creates/updates the per-Story ATS and its coverage-bearing `ATS→Story` link (`test`) in Stage 1 (Set-first); files Bug (`problem_incident`) and blocks Story (`blocks`) during in-sprint QA.
-- `shift-left-testing` — binds Story to ATP/Test Plan (`test`, administrative) during pre-dev refinement.
+- `sprint-testing` — creates/updates the per-Story ATS and its coverage-bearing `ATS→Story` link (`test`) in Stage 1 (Set-first), then find-or-creates the ATP item from the field and its administrative `ATP→Story` link; files Bug (`problem_incident`) and blocks Story (`blocks`) during in-sprint QA.
+- `shift-left-testing` — creates no link: the pre-sprint ATP lives in the `{{jira.acceptance_test_plan}}` field, and `sprint-testing` Stage 1 creates the ATP item and its `test` link from it.
 - `test-documentation` — binds Story to ATP + ATR (`test`, administrative); binds each TC to the ATP (`test_design`) and ATR (`test_execute`) as placement edges — direct `TC→Story` stays the cascade's last resort (Modality `jira-xray`). In Modality `jira-native` binds Story to Test / Test Execution (`test`, opt. `test_automation`).
 - `regression-testing` — re-binds existing Tests via ATP (`test_design`) and ATR (`test_execute`) per regression cycle.
 - `xray-cli` — owns Xray-internal `TC ∈ ATS/ATP/ATR` membership in Modality `jira-xray` (NOT a Jira issuelink there — §9; jira-native expresses it as `TC→ATS` links).

@@ -288,7 +288,6 @@ link_types:
       fallback: relates
       used_by:
         - sprint-testing
-        - shift-left-testing
         - test-documentation
         - regression-testing
 
