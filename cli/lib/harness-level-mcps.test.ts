@@ -11,6 +11,7 @@ import { afterEach, describe, expect, test } from 'bun:test';
 
 import {
   classifyHarnessLevelMcp,
+  HARNESS_LEVEL_ENV_VARS,
   HARNESS_LEVEL_MCPS,
   harnessLevelMcpReport,
   readUserLevelMcpServers,
@@ -82,6 +83,18 @@ describe('classifyHarnessLevelMcp', () => {
     expect(verdict.detail).toContain('claude.ai connector');
     expect(verdict.detail).toContain('~/.codex/config.toml');
     expect(verdict.detail).not.toContain('missing');
+  });
+});
+
+describe('web-search order', () => {
+  test('Exa comes first and Tavily second; Exa was never committed, so it has no former key', () => {
+    const webSearch = HARNESS_LEVEL_MCPS.filter(m => m.capability === 'web-search').map(m => m.id);
+    expect(webSearch).toEqual(['exa', 'tavily']);
+    const exa = HARNESS_LEVEL_MCPS.find(m => m.id === 'exa')!;
+    expect(exa.urlHost).toBe('mcp.exa.ai');
+    expect(exa.formerEnvVar).toBeNull();
+    expect(HARNESS_LEVEL_ENV_VARS).not.toContain(null);
+    expect(HARNESS_LEVEL_ENV_VARS).toContain('TAVILY_API_KEY');
   });
 });
 

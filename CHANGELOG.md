@@ -75,6 +75,11 @@ below names which one it applies to:
   idempotency signal that ignores legitimate `null`s, the `authenticate` hook, dual-mode
   reporting secrets, `git_strategy:` as the home of the branching strategy, and the
   updater-owned `docs/core/`.
+- **Web search resolves Exa first, Tavily second.** `[WEB_SEARCH_TOOL]` (AGENTS.md §6),
+  `mcp-capabilities.md` and the preflight gate name the Exa suffixes (`web_search_exa`,
+  `web_fetch_exa`) ahead of Tavily's; `cli/lib/harness-level-mcps.ts` lists `exa` first
+  (never committed, so it carries no former `.env` key and never triggers the migration
+  parity note).
 - **STALE-PATH now covers `.context/`, kind-scoped** (`scripts/lint-skills.ts`): inside a
   `metadata.kind: context` skill every `.context/` cite must exist (only the gitignored
   `.context/PBI/` mirror is exempt); in every other skill the generator outputs

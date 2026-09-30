@@ -46,6 +46,7 @@
       "Bash(acli *)",
       "Bash(orca *)",
       "mcp__context7__*",
+      "mcp__exa__*",
       "mcp__tavily__*",
       "mcp__atlassian__*",
       "mcp__playwright__*",

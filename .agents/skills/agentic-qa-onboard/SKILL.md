@@ -283,7 +283,7 @@ A remote server whose only project-side content was an API key is the harness's 
 **Decision rule** (tools resolve by CAPABILITY, i.e. by tool-name suffix, so a user-level server or a claude.ai connector exposing the same tools counts; a capability nobody provides is a point-of-use STOP, never a silent fallback: `agentic-qa-core/references/mcp-capabilities.md`):
 
 - Use **Context7** (capability `library-docs`) for "how to use X" — official docs, current API
-- Use the **web-search** capability (a harness-level server, e.g. Tavily) for "how to solve X" — community fixes, troubleshooting
+- Use the **web-search** capability (a harness-level server: Exa first, Tavily second) for "how to solve X" — community fixes, troubleshooting
 - Use `/acli` for ticket WRITES (create, transition, comment, link); for detailed READS (custom fields, ACs, ATP/ATR, comments) use `bun run jira:sync-issues get`/`jql`
 - Use **Playwright MCP** for ad-hoc live browser interactions; for scripted runs use `/playwright-cli`
 
