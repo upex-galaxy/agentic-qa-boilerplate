@@ -15,6 +15,7 @@ A single map, journeys first:
 
 Then the catalog those journeys cross, with:
 - Feature identification, status, and maturity
+- Per feature, its testable rules: preconditions, business rules, validations, user-visible state transitions
 - CRUD matrix per entity
 - API endpoint inventory grouped by domain
 - UI component inventory (forms, views, actions)
@@ -38,9 +39,9 @@ Exhaust every source. Do not rely on code alone — cross-reference with DB, API
 | Backend services | Business logic, validation, processing | Read `{{BACKEND_REPO}}/{{BACKEND_ENTRY}}` — focus on services, controllers, handlers |
 | Package dependencies | Third-party integrations (payments, email, auth, analytics) | Read `package.json`, `requirements.txt`, `Gemfile`, etc. |
 | Feature flags / env vars | Disabled or experimental features | Grep for `FEATURE_`, `isEnabled`, `feature.*flag` in codebase and `.env.example` |
-| Existing context | PRD (personas, user journeys), SRS (functional specs), domain glossary | `.context/PRD/`, `.context/SRS/`, `.context/business/domain-glossary.md` |
+| Domain vocabulary | business terms, UI label ↔ code identifier, enumerations: persona, journey and feature names use these words | `bun run context:map business-domain-context` (a placeholder notice = no map yet: record a Discovery Gap) |
 | Sibling maps | entities and flows; endpoint groups and auth | `bun run context:map business-data-context`, `bun run context:map business-api-context` |
-| Legacy map (input only) | a project's old `.context/business/business-feature-map.md`, when present | Read it as input; cite it in `data-migrated-from` on the sections it seeded; never delete or rewrite it |
+| Legacy files (input only) | the `legacy` list of `business-e2e-context` in `CONTEXT_MAP_SKILLS` (`cli/lib/context-maps.ts`): an old feature map, PRD personas and journeys, SRS functional specs, whichever a project still holds | Read each as input; cite it in `data-migrated-from` on the sections it seeded; never delete or rewrite it |
 | Git history (recent) | Recently added or changed features | `git log --oneline -30` for activity patterns |
 
 **Golden rule**: a journey is what a person DOES to reach an outcome; a feature is any **capability the system offers** (API endpoints, UI actions, background processes, integrations). Journeys come first because a story is tested inside the journey that reaches it.
@@ -68,12 +69,22 @@ Before drawing the first figure, run the point-of-use check for capability `diag
 
 ### Phase 0 — Personas and journeys (first, and the heart of the map)
 
-- Who uses the product? One persona per distinct goal and permission level (PRD personas when they exist; otherwise the roles the code enforces).
-- For each persona, which journeys reach its outcomes? Trace each from its entry point (landing, deep link, email, webhook) through every page and API call to the outcome.
-- Per journey: the branches (validation failure, payment declined, permission denied), the step where money or data changes hands, and the steps where it can fail silently.
+**Personas are the roles the code recognizes**, not researched demographics. Document `admin`, `editor`, `viewer` with their real permissions, never an invented "Sarah the busy marketer". Two clean personas beat five speculative ones.
+
+- Find the roles: role enums and types, the role column on the user model, auth guards and middleware (`requireRole`, `hasPermission`, `isAdmin`), role-conditional UI (`role === ...`, `isAdmin && ...`), role-specific route trees (`/admin`, `/dashboard`).
+- One persona per distinct goal and permission level. Per persona: the system role value and its evidence path, goals inferred from the features it can reach, pain points inferred from the validation and error messages it can hit (quote the message), and the test-account key it needs (`<ENV>_<ROLE>_EMAIL` in `.env`; a role with no test user is flagged as needing one).
+- Role hierarchy and a permission matrix (`Permission | Role1 | Role2 | ...`) go in `overview`; each `persona-<slug>` carries its own row of it.
+
+**Journeys are traced through routes**: routes are steps, redirects are transitions, a form's submit handler reveals the next step.
+
+- Build the route map first (public, protected with the role each requires, dynamic segments): route files or the router config, navigation components (conditional nav included), multi-step flows (`wizard`, `stepper`), `redirect(` / `router.push` calls. It lands in `ui-inventory` (§5).
+- For each persona, which journeys reach its outcomes? Trace each from its entry point (landing, deep link, email, webhook) through every page and API call to the outcome. Every step cites a file; a step you cannot cite is a guess or a future feature, so it goes to `discovery-gaps`.
+- Per journey: the branches (validation failure, payment declined, permission denied), the step where money or data changes hands, and the steps where it can fail silently. A journey with no error path is incomplete.
+- A step that needs input the session cannot produce (OTP, 2FA, a third-party redirect, a CAPTCHA) is flagged as an external-dependency step, never traced as if it were automatable.
+- Critical paths: the happy paths that must work (start, end, business impact) and the unhappy paths that must be handled (scenario, expected behavior, evidence). Aim for the few journeys that carry the product, not one per form.
 - Rank journeys by business risk (revenue, security, core value, blast radius). The top ones get a figure.
 
-Do NOT invent journeys: each one needs evidence (routes, pages, PRD, a real session). Unverified steps go to `discovery-gaps`.
+Do NOT invent journeys: each one needs evidence (routes, pages, a legacy journey doc, a real session). Unverified steps go to `discovery-gaps`.
 
 ### Phase 1 — API-based feature discovery
 
@@ -126,8 +137,8 @@ Write the map as flat `<section>`s, in this order, each with a stable `id`, its 
 
 | Section id | Content | Figure (diagram-design type) |
 |---|---|---|
-| `overview` | who uses the product, the top journeys in one paragraph each | one overview figure (user journey or swimlane) |
-| `persona-<slug>` | one per persona: goal, permissions, the journeys it takes | none by default |
+| `overview` | who uses the product, role hierarchy and permission matrix, the top journeys in one paragraph each | one overview figure (user journey or swimlane) |
+| `persona-<slug>` | one per persona: system role + evidence, goals, pain points, permissions, test-account key, the journeys it takes | none by default |
 | `journey-<slug>` | one per journey: entry point, numbered steps, branches, failure points, the data and API behind each step as pointers to `business-data-context` / `business-api-context` section ids | user journey, swimlane or sequence, for the top-risk journeys |
 | `cross-feature-<slug>` | a flow that spans several features | flowchart or swimlane when it clarifies handoffs |
 | `inventory` | §1 below | none |
@@ -168,7 +179,19 @@ One section per domain. Each feature:
 **Capabilities:**
 - [x] Implemented capability
 - [ ] Missing or planned capability
+
+**Rules:**
+| ID | Kind | Rule | Evidence |
+|----|------|------|----------|
+| BR-NNN | precondition / business rule / validation / transition | [one testable sentence] | [code path] |
 ```
+
+The rules table is where functional specification lives, condensed. Derive it from the code, one row per testable statement:
+
+- **Preconditions**: what must be true before the feature can run (role, prior state, a flag, an existing record).
+- **Business rules**: service methods are requirements; every `throw` in a service is a scenario and every non-trivial branch a rule. Stable `BR-NNN` IDs across regenerations: downstream tests cite them.
+- **Validations**: literal constraints from the schemas (`.min(8)`, `.email()`, `CHECK`, `UNIQUE`, `NOT NULL`, enum columns), each with the error message the user sees. Each one is a boundary to test. Frontend and backend schemas that disagree are both recorded; the backend is canonical and the drift is a gap.
+- **Transitions**: the state changes the feature causes, as seen from the user (from, to, trigger, guard). The state machine itself lives in `business-data-context`: point to its section id, never redraw it here. Transitions blocked by DB triggers or row-level policies count, and they are invisible in the service code.
 
 ### 3. CRUD matrix
 
@@ -186,7 +209,7 @@ A pointer per domain to the matching `business-api-context` section id. Do not r
 
 ### 5. UI component inventory
 
-Tables for: Forms, Dashboards/Views, Actions (modals, dialogs, confirmations).
+Tables for: Routes (public `Route | Page | Purpose`, protected `Route | Page | Requires | Purpose`, dynamic `Pattern | Example | Purpose`), Forms, Dashboards/Views, Actions (modals, dialogs, confirmations).
 
 ### 6. Third-party integrations
 

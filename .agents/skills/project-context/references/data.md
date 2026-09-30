@@ -29,7 +29,8 @@ Exhaust every source before writing. Do not rely on a single one.
 | API endpoints | Routes, methods, payloads, auth levels | `[API_TOOL]` or read `api/openapi.json` if it exists; otherwise read route files directly |
 | Backend codebase | Services, business logic, validation rules, triggers | Read `{{BACKEND_REPO}}/{{BACKEND_ENTRY}}` — focus on services, controllers, models |
 | Frontend codebase | Pages, forms, user flows, state management | Read `{{FRONTEND_REPO}}/{{FRONTEND_ENTRY}}` — focus on routes, pages, forms |
-| Existing context | PRD, SRS, business model + domain glossary | `.context/PRD/`, `.context/SRS/`, `.context/business/business-model.md`, `.context/business/domain-glossary.md` |
+| Domain vocabulary | business model, domain terms, UI label ↔ code identifier, enumerations: entity and flow names use these words | `bun run context:map business-domain-context` |
+| Architecture | external services, async processing, auth flow | `bun run context:map infra-context` |
 | Legacy map (input only) | a project's old `.context/business/business-data-map.md`, when present | Read it as input; cite it in `data-migrated-from` on the sections it seeded; never delete or rewrite it |
 | Package dependencies | External integrations (Stripe, SendGrid, Auth0, etc.) | Read `package.json`, `requirements.txt`, `Gemfile`, etc. |
 
