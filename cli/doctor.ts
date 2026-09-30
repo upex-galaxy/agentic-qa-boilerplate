@@ -53,6 +53,7 @@ import {
   formatInstanceMismatchWarning,
   resolveAtlassianInstance,
 } from './lib/atlassian-instance.ts';
+import { businessMapAdvice, businessMapStatuses } from './lib/context-maps.ts';
 import { CORE_SCHEMA_FILE, PROJECT_SCHEMA_FILE, RETIRED_KEYS } from './lib/env-schema.ts';
 // Canonical variable manifest (source of truth — D1). Imports only `node:fs`,
 // so it is safe to load statically here without breaking the dependency-free
@@ -949,6 +950,19 @@ export async function runDoctor(): Promise<DoctorReport> {
       type: 'shell_command',
       target: `delete from .env: ${retiredPresent.join(', ')}`,
       hint: 'Nothing in the repo reads these any more. Web search and Postman are MCP servers you connect at harness level (see the doctor section below); the resend CLI keeps its own login; the curl token lives in .auth/tokens.env. The line still validates, it just does nothing.',
+    });
+  }
+
+  // Business context maps: a delivered skill whose map was never generated.
+  // Informational (a warning, never a pending action): a mode generates it,
+  // and an old `.context/business/*-map.md` beside it is kept as input.
+  for (const status of businessMapStatuses(REPO_ROOT)) {
+    const advice = businessMapAdvice(status);
+    if (advice === null) { continue; }
+    report.warnings.push({
+      type: 'shell_command',
+      target: `project-context mode ${status.skill.mode}`,
+      hint: advice.replace(/`/g, ''),
     });
   }
 

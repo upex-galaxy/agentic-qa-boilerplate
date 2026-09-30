@@ -9,6 +9,7 @@ import { afterEach, describe, expect, test } from 'bun:test';
 import {
   advanceSyncStateV7,
   classifyFile,
+  collectBusinessContextBootstrap,
   componentOwnedPaths,
   computeComponentAdvancement,
   computeDelta,
@@ -838,5 +839,51 @@ describe('dropDeprecatedDeletes', () => {
     ];
     expect(dropDeprecatedDeletes(entries, deprecated)).toEqual(entries.slice(1));
     expect(dropDeprecatedDeletes(entries, [])).toEqual(entries);
+  });
+});
+
+describe('collectBusinessContextBootstrap: business context skills delivered once', () => {
+  const skills: Component[] = [{ name: 'skills', type: 'directory', paths: ['.agents/skills'] }];
+
+  function seedTemplate(template: string): void {
+    for (const f of ['SKILL.md', 'references/business-data-map.html', 'references/refresh.md']) {
+      const full = join(template, '.agents/skills/business-data-context', f);
+      mkdirSync(dirname(full), { recursive: true });
+      writeFileSync(full, 'x');
+    }
+  }
+
+  test('an absent folder is delivered whole, as new-upstream bootstrap entries', () => {
+    const template = temporaryRoot();
+    const repo = temporaryRoot();
+    seedTemplate(template);
+    const entries = collectBusinessContextBootstrap(skills, template, repo);
+    expect(entries.map(e => e.path).sort()).toEqual([
+      '.agents/skills/business-data-context/SKILL.md',
+      '.agents/skills/business-data-context/references/business-data-map.html',
+      '.agents/skills/business-data-context/references/refresh.md',
+    ]);
+    expect(entries.every(e => e.classification === 'new-upstream' && e.component === 'skills')).toBe(true);
+  });
+
+  test('a present folder, even missing files, is the project\'s and gets nothing', () => {
+    const template = temporaryRoot();
+    const repo = temporaryRoot();
+    seedTemplate(template);
+    mkdirSync(join(repo, '.agents/skills/business-data-context'), { recursive: true });
+    expect(collectBusinessContextBootstrap(skills, template, repo)).toEqual([]);
+    // Still project-local for every overwrite / delete decision.
+    expect(isProjectLocalSkillPath('.agents/skills/business-data-context/references/business-data-map.html')).toBe(true);
+  });
+
+  test('no component owning the skills dir, or a path already in the delta, delivers nothing twice', () => {
+    const template = temporaryRoot();
+    const repo = temporaryRoot();
+    seedTemplate(template);
+    expect(collectBusinessContextBootstrap([{ name: 'docs', type: 'directory', paths: ['docs'] }], template, repo)).toEqual([]);
+    const narrowed: Component[] = [{ name: 'skills', type: 'directory', paths: ['.agents/skills/business-data-context'] }];
+    const first = collectBusinessContextBootstrap(narrowed, template, repo);
+    expect(first).toHaveLength(3);
+    expect(collectBusinessContextBootstrap(narrowed, template, repo, first)).toEqual([]);
   });
 });
