@@ -94,6 +94,7 @@
     "test:smoke": "playwright test --project=smoke-ui --project=smoke-api",
     "test:sync": "bun tests/utils/jiraSync.ts",
     "test:ui": "playwright test --ui",
+    "tests:explain:render": "bun scripts/tests-explain-render.ts",
     "tests:map": "bun scripts/tests-map.ts",
     "test": "playwright test",
     "types:check": "tsc --noEmit",
