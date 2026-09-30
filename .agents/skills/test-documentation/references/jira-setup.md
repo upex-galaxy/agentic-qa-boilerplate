@@ -40,9 +40,14 @@ Project Settings → Issue types → Actions → Add Xray Issue Types. Select al
 
 ### 2.3 Configure Requirement Coverage
 
-Project Settings → Apps → Xray Settings → Test Coverage. Select `Story` and `Epic` as coverable issue types. Optionally add `Bug`. Save.
+The coverable issue types are declared once: every work type `.agents/jira-required.yaml` marks `coverable: true` under `work_types`, by its `jira_issue_type` name. Configure Xray from that list, not from memory, so Xray's coverage and the PBI sync agree on which issues a Test can cover.
 
-Global: Settings → Apps → Xray → Issue Type Mapping → Requirement Issue Types = `Story, Epic`, Defect Issue Types = `Bug`.
+Project Settings → Apps → Xray Settings → Test Coverage. Select every coverable issue type. Save.
+
+Global: Settings → Apps → Xray → Issue Type Mapping:
+
+- Requirement Issue Types = the same coverable issue types.
+- Defect Issue Types = `Bug, Defect`: the two broken-AC classes of `../../agentic-qa-core/references/defect-management-doctrine.md` Part 1, so a Defect filed pre-release can be attached to a Test Run exactly like a Bug. An Improvement is not a broken AC and stays out of this mapping.
 
 ### 2.4 Test workflow
 
