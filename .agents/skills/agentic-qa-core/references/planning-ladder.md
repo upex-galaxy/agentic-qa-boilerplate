@@ -171,10 +171,10 @@ Parent stays the MTP Epic for all Plans regardless of roll-up.
 | **ATS** (per-Story) | Test Set | `ATS: {STORY-KEY}: {story title}` | `ATS: PROJ-123: Apply discount at checkout` | **mandatory, 1 per Story** (even with a single TC). Parent: QA Test Artifacts. **Components inherited from the Story (mandatory)**. Its `tests` link to the Story fills the coverage panel; Plan/Exec test lists derive from its membership |
 | **TS** (feature-level) | Test Set | `TS: {EPIC-KEY\|module}: Validate {feature/module}` | `TS: PROJ-42: Validate Checkout` | groups TCs by feature/module for smoke / regression / feature grouping; **optional**; components optional (may cross modules) |
 
-> **ATS membership per modality**: in **jira-xray** modality `TC ∈ ATS` is **Xray-internal**
-> (GraphQL associations — `addTestsToTestSet` / `getTestSet`), NEVER expressed as an issue link.
-> In **jira-native** modality (no Xray layer) the membership IS expressed as `TC→ATS` issue links
-> (explicit carve-out), plus the `ATS→Story` link. An instance without the Test Set work type has
+> **ATS membership, one rule in both modalities**: `TC ∈ ATS` is ALWAYS a `TC→ATS` issue link
+> (`test` slug), plus the `ATS→Story` link. In **jira-xray** modality the Xray-internal membership
+> (GraphQL — `addTestsToTestSet` / `getTestSet`) is written IN ADDITION, never instead
+> (`traceability-linking.md` §9). An instance without the Test Set work type has
 > no ATS: fallback = direct `TC→Story` links (the cascade resolves them as its last step).
 
 > **Decision B — RATIFIED (rescoped 2026-08-21)**: the feature-level Test Set **keeps `Validate`**

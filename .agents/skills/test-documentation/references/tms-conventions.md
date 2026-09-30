@@ -39,7 +39,7 @@ The prefix is **ALWAYS the User Story key** (`{US_ID}`) — never the Test Set I
 {US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]
 ```
 
-> Under Modality jira-xray, Test Set membership is **Xray-internal state** (managed via `/xray-cli`, read via `bun xray test enrich`) — NEVER a Jira issue link and NEVER baked into the TC title. Jira-native carve-out: with a Test Set work type present, membership IS expressed as TC→ATS issue links (still never in the TC title).
+> Membership in the Story's ATS is a TC→ATS issue link in both modalities; under Modality jira-xray it is ALSO **Xray-internal state** (managed via `/xray-cli`, read via `bun xray test enrich`). It is NEVER baked into the TC title (`../../agentic-qa-core/references/traceability-linking.md` §9).
 
 ### Components
 
@@ -587,7 +587,7 @@ When 3+ independent factors each have multiple values (browser × locale × plan
 
 | Link | Type | When |
 |------|------|------|
-| ATS (Acceptance Test Set) | Membership — Xray-internal (jira-xray) or TC→ATS issue link (jira-native with the Test Set work type) | Always — the ATS holds ALL the Story's TCs; its ATS→Story `is tested by` link is what fills the coverage panel |
+| ATS (Acceptance Test Set) | Membership — TC→ATS issue link (both modalities, Test Set work type present) + Xray-internal (jira-xray) | Always — the ATS holds ALL the Story's TCs; its ATS→Story `is tested by` link is what fills the coverage panel |
 | User Story | "tests" / "is tested by" | **Last resort only** (cascade step 3): jira-native WITHOUT a Test Set work type — no ATS possible, so the direct TC→Story link carries traceability. Never needed while an ATS covers the TC |
 | ATP (Test Plan) | Parent / reference | Always, after ATP exists (administrative — contributes no coverage) |
 | ATR (Test Results) | Reference | Always, after ATR exists (administrative — contributes no coverage) |

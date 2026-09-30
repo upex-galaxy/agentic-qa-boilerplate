@@ -31,8 +31,8 @@ Two layers, never confused:
 
 - **Jira layer (issue links)**: container→coverable via the `Test` link type (inward `is tested by`; resolve the slug from `.agents/jira-required.yaml`, never hardcode the literal). `ATS→Story` is MANDATORY — it is what fills the coverage panel. `ATP→Story` / `ATR→Story` are administrative traceability only (verified: they contribute ZERO coverage). Direct `TC→Story` is a valid last-resort, not a defect — the defect is having NO path.
 - **Membership layer** (modality-dependent):
-  - **jira-xray**: `TC ∈ ATS/ATP/ATR` is Xray-internal (GraphQL via `/xray-cli`: `addTestsToTestSet` / `getTestSet` etc.). NEVER expressed as an issue link in this modality.
-  - **jira-native**: no Xray layer exists — membership IS expressed as `TC→ATS` issue links (explicit carve-out from the rule above). Instance without a Test Set work type → no ATS; direct `TC→Story` links are the fallback (the cascade still resolves at rung ③).
+  - **Both modalities**: `TC ∈ ATS` IS a `TC→ATS` issue link (`test` slug) — one traceability rule, so IQL and the TMS never disagree (`../../agentic-qa-core/references/traceability-linking.md` §9). Instance without a Test Set work type → no ATS; direct `TC→Story` links are the fallback (the cascade still resolves at rung ③).
+  - **jira-xray, in addition**: `TC ∈ ATS/ATP/ATR` is also Xray-internal (GraphQL via `/xray-cli`: `addTestsToTestSet` / `getTestSet` etc.); `TC ∈ ATP/ATR` has no membership link.
 
 Rung ② finding: TCs reachable via ATP alone are placed but NOT covered — flag that the coverage panel still needs the ATS path.
 
@@ -67,7 +67,7 @@ Extract the ticket's full title and current issue links (ATS, ATP, ATR, direct T
   - issue: {from $ARGUMENTS}
 ```
 
-List all TCs, the ATS, ATPs, and ATRs associated with this ticket. Modality jira-xray: read ATS/ATP membership via GraphQL (`getTestSet` / plan tests). Modality jira-native: read `TC→ATS` issue links instead.
+List all TCs, the ATS, ATPs, and ATRs associated with this ticket. Both modalities: read the `TC→ATS` issue links. Modality jira-xray: ALSO read ATS/ATP membership via GraphQL (`getTestSet` / plan tests) and compare the ATS membership against the links.
 
 ### Step 2: Audit the Cascade
 
@@ -98,7 +98,8 @@ Common fixes:
 |-------|-----|
 | No ATS for the Story | Create `ATS: {US_ID}: {story title}` (parent: "QA Test Artifacts" epic; components inherited from the Story), link to Story via `is tested by`, add all TCs as members |
 | ATS exists but not linked to Story | Add the `is tested by` link ATS→Story |
-| TC not a member of the ATS | Add membership (jira-xray: GraphQL `addTestsToTestSet`; jira-native: `TC→ATS` issue link) |
+| TC not a member of the ATS | Add membership: the `TC→ATS` issue link (both modalities) + GraphQL `addTestsToTestSet` (jira-xray) |
+| ATS links and Xray membership disagree (jira-xray) | Add the missing side: a member with no `TC→ATS` link gets the link; a linked TC missing from the Xray membership gets `addTestsToTestSet` |
 | TC covered only via ATP (rung ②) | Add the TC to the ATS — ATP placement alone leaves the panel uncovered |
 | TC orphan (rung ④) | Add the TC to the ATS (create the ATS first if missing) |
 | ATP not linked to Story | Add Story link to ATP (administrative) |

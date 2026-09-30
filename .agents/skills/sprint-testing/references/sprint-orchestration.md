@@ -398,8 +398,8 @@ Exact instructions:
   4. Draft TC outlines (summary + steps + expected) — full TC bodies are formalized in Stage 4 (test-documentation), not here.
   5. Create ATP + ATS + ATR per the modality branch in acceptance-test-planning.md §"Phase 6 — Traceability + Ticket updates":
        - Modality jira-xray — Set-first order (AUTHORITATIVE):
-           ① [TMS_TOOL] Find-or-create TestPlan `ATP: <TICKET_KEY>: {title}` (parent QA Master Test Plan) FROM the {{jira.acceptance_test_plan}} field content the shift-left pass left (pre-sprint the ATP lives ONLY in the field; author fresh — item + field — when the field is empty).
-           ② Create the sprint Test issues per the TC-timing rule, then [TMS_TOOL] Find-or-create TestSet `ATS: <TICKET_KEY>: {title}` (parent QA Test Artifacts, components inherited from the Story — mandatory) holding ALL of them (Xray-internal membership, never issue links); link ATS→Story via the `test` slug — THE coverage link (fills the Xray coverage panel).
+           ① Create the sprint Test issues per the TC-timing rule, then [TMS_TOOL] Find-or-create TestSet `ATS: <TICKET_KEY>: {title}` (parent QA Test Artifacts, components inherited from the Story — mandatory) holding ALL of them (Xray-internal membership PLUS one TC→ATS `test` link per TC — traceability-linking.md §9); link ATS→Story via the `test` slug — THE coverage link (fills the Xray coverage panel).
+           ② [TMS_TOOL] Find-or-create TestPlan `ATP: <TICKET_KEY>: {title}` (parent QA Master Test Plan) FROM the {{jira.acceptance_test_plan}} field content the shift-left pass left (pre-sprint the ATP lives ONLY in the field; author fresh — item + field — when the field is empty).
            ③ Derive the ATP's and the ATR Execution's test lists FROM the ATS membership — never three independent id lists.
            ④ [TMS_TOOL] Create Execution `ATR: <TICKET_KEY>: Story Testing` (parent QA Test Artifacts) ALWAYS carrying the Test Environment from `active_env` in .agents/project.yaml (or the session env switch) — NO ATR without environment (hard gate: agentic-qa-core/references/stage-gates.md §Stage 1).
            ATP→Story / ATR→Story links stay administrative ([ISSUE_TRACKER_TOOL] Link Issues; zero coverage).
@@ -490,12 +490,13 @@ Report format:
     },
     "tc_results": { "passed": <int>, "failed": <int>, "total": <int> },
     "pass_completed": true|false,
-    "bugs_found": [{ "summary": "...", "severity": "Critical|High|Medium|Low", "blocking": true|false, "evidence_paths": [...], "repro_steps": "..." }],
+    "bugs_found": [{ "summary": "...", "severity": "critica|mayor|moderada|menor|trivial", "blocking": true|false, "evidence_paths": [...], "repro_steps": "..." }],
     "blockers": [...],
     "checklist": "X/Y"
   }
 
 Rules:
+  - `severity` is an option slug of `{{jira.severity}}` (the five impact levels of `agentic-qa-core/references/defect-management-doctrine.md` Part 5.1), never a Priority word: Priority is derived from it at filing time.
   - Do NOT file the bug in the issue tracker yet — Stage 3 handles filing per the bug-report template in reporting-templates.md.
   - Do NOT modify production data; for write-side checks use staging entities flagged in the ATP.
   - Critical Rule #1 (Login Credentials): credentials always from .env; never hardcode.

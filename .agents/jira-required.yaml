@@ -274,8 +274,10 @@ unmapped:
 # .fallback. Creation doctrine + the acli --out/--in inversion gotcha live in
 # agentic-qa-core/references/traceability-linking.md.
 #
-# NOTE: Test↔Test Set membership is NOT a Jira issuelink — it is Xray-internal;
-# handle via /xray-cli, never `acli link create`.
+# NOTE: membership of the Story's ATS is a `test` issuelink (ATS is tested by TC) in
+# BOTH modalities; Modality jira-xray also writes the Xray-internal membership via
+# /xray-cli. Plan / Execution membership stays Xray-internal only. Canon:
+# agentic-qa-core/references/traceability-linking.md §9.
 link_types:
   required:
     test:
@@ -288,7 +290,6 @@ link_types:
       fallback: relates
       used_by:
         - sprint-testing
-        - shift-left-testing
         - test-documentation
         - regression-testing
 
@@ -912,8 +913,9 @@ work_types:
     jira_issue_type: Test Set
     description: |
       Xray Test Set — grouping of tests. A Set titled `ATS:*` linked to a coverable issue feeds
-      cascade rung 1 of sync-jira-issues: its member Tests (Xray GraphQL membership, or TC→ATS
-      Jira links in Modality jira-native) materialize under that issue's test-cases/.
+      cascade rung 1 of sync-jira-issues: its member Tests (the TC→ATS Jira links, required in
+      both modalities, unioned with the Xray GraphQL membership when credentials allow)
+      materialize under that issue's test-cases/.
       Feature-level `TS:*` Sets stay ignored by the cascade.
       `sync: discovery` — reachable by an explicit `get <KEY>` / `jql`, and swept from the QA
       Test Artifacts epic, but never by a plain type sweep. Declaration and behavior agree: a

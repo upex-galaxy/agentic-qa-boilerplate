@@ -310,7 +310,7 @@ Examples:
 
 Anti-patterns: `Login test`, `Login - error`, `Test the form`, `Negative case`. Always describe behavior AND condition.
 
-**Note:** In Stage 4 `test-documentation` prepends `{US_ID}: TC#:` (always the User Story key, never the Test Set ID) to formalize these in Xray; Test Set membership is expressed via an issue link, not in the title. Do not add the prefix here — this is manual / shift-left, not formal TC.
+**Note:** In Stage 4 `test-documentation` prepends `{US_ID}: TC#:` (always the User Story key, never the Test Set ID) to formalize these in Xray; Test Set membership is a `TC→ATS` issue link in both modalities (plus the Xray-internal membership in jira-xray, `agentic-qa-core/references/traceability-linking.md` §9), never the title. Do not add the prefix here — this is manual / shift-left, not formal TC.
 
 ### Outline structure (per scenario)
 
@@ -388,7 +388,29 @@ The modality was resolved in Session Start (§0) and persisted into `test-sessio
 ATP = `Test Plan` issue. ATR = `Test Execution` issue. ATS = `Test Set` issue — the Story's coverage backbone (MANDATORY per Story, even with a single TC). Execute in THIS order; the ATP's and the ATR's test lists are DERIVED from the ATS membership — never maintained as three independent id lists.
 
 ```
-# ① ATP item FROM the field (find-or-create)
+# ① ATS — create/update the Story's Test Set holding ALL its TCs
+#    (the sprint `Test` issues were created per SKILL.md §"TC creation timing")
+[TMS_TOOL] Find-or-create TestSet:
+  project: {{PROJECT_KEY}}
+  title: ATS: {US_ID}: {story title}
+  parentEpic: QA Test Artifacts
+  components: {inherited from the Story — MANDATORY}
+
+[TMS_TOOL] Add Tests to TestSet:            # Xray-internal membership (GraphQL) — creates NO Jira link
+  set: {ATS_KEY}
+  tests: [ALL of the Story's TCs]
+
+[ISSUE_TRACKER_TOOL] Link Issues:           # ONE per member TC — the membership link, required in BOTH
+  linkType: {{jira.link_types.test.name}}   # modalities (`traceability-linking.md` §9): ATS is tested by TC
+  outward: {TC_KEY}
+  inward:  {ATS_KEY}
+
+[ISSUE_TRACKER_TOOL] Link Issues:
+  linkType: {{jira.link_types.test.name}}   # Story is tested by ATS — THE coverage link: this is what
+  outward: {ATS_KEY}                        # fills the Xray coverage panel (`xray-cli/SKILL.md` §Direction)
+  inward:  {STORY_KEY}
+
+# ② ATP item FROM the field (find-or-create)
 #    Pre-sprint the ATP lives ONLY in {{jira.acceptance_test_plan}} (shift-left is field-first).
 #    Search for an existing `ATP: {STORY-KEY}:` Test Plan first; create only if absent.
 [TMS_TOOL] Find-or-create TestPlan:
@@ -404,24 +426,7 @@ ATP = `Test Plan` issue. ATR = `Test Execution` issue. ATS = `Test Set` issue �
 [ISSUE_TRACKER_TOOL] Link Issues:
   linkType: {{jira.link_types.test.name}}   # Story is tested by Test Plan — ADMINISTRATIVE traceability
   outward: {ATP_KEY}                        # (contributes ZERO coverage, see `xray-cli/SKILL.md` §Direction; the ATS link
-  inward:  {STORY_KEY}                      #  below is the coverage edge)
-
-# ② ATS — create/update the Story's Test Set holding ALL its TCs
-#    (the sprint `Test` issues were created per SKILL.md §"TC creation timing")
-[TMS_TOOL] Find-or-create TestSet:
-  project: {{PROJECT_KEY}}
-  title: ATS: {US_ID}: {story title}
-  parentEpic: QA Test Artifacts
-  components: {inherited from the Story — MANDATORY}
-
-[TMS_TOOL] Add Tests to TestSet:            # Xray-internal membership (GraphQL) — NEVER issue links
-  set: {ATS_KEY}                            # in this modality
-  tests: [ALL of the Story's TCs]
-
-[ISSUE_TRACKER_TOOL] Link Issues:
-  linkType: {{jira.link_types.test.name}}   # Story is tested by ATS — THE coverage link: this is what
-  outward: {ATS_KEY}                        # fills the Xray coverage panel (`xray-cli/SKILL.md` §Direction)
-  inward:  {STORY_KEY}
+  inward:  {STORY_KEY}                      #  above is the coverage edge)
 
 # ③ + ④ ATR — created WITH the Test Environment; test list derived from the ATS
 [TMS_TOOL] Create Execution:

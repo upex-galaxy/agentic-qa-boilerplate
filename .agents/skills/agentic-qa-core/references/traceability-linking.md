@@ -1,12 +1,12 @@
 # Traceability Linking
 
 > **Purpose**: Reflect QA traceability relationships — Story↔test-artifact coverage, Story→Bug causation, Story→Bug blocking — as real Jira issue links, not just local declarations inside `story.md` / test-spec files. Local declarations document author intent; Jira links are the operational source of truth that audit trails, coverage reports, and the `defect_reported → blocked` gate read. Without this phase, the traceability graph exists only in the methodology docs and any consumer that walks `issuelinks` walks an empty graph.
-> **Use when**: Any time a QA workflow binds a Story to a test artifact, files a defect against a Story, or blocks a Story on an open defect. Concretely: shift-left Test Plan creation, sprint-testing bug filing + blocking, test-documentation Test / Test Execution creation, regression-testing re-coverage. Re-run whenever the coverage or defect graph changes mid-flight.
+> **Use when**: Any time a QA workflow binds a Story to a test artifact, files a defect against a Story, or blocks a Story on an open defect. Concretely: sprint-testing Set-first (ATS, then the ATP item born from the field), bug filing + blocking, test-documentation Test / Test Execution creation, regression-testing re-coverage. Re-run whenever the coverage or defect graph changes mid-flight.
 > **Companion references**:
 >
 > - `agentic-qa-core/references/acli-integration.md` — slug catalog, `{{jira.*}}` syntax, tool routing for the link-creation write operation (`[ISSUE_TRACKER_TOOL]` → `/acli`).
 > - `acli/references/workitem.md` §link — the per-link-type directionality table, the empirical acli `--out` / `--in` INVERSION gotcha, and the mandatory post-create verification recipe. **Cited here, not duplicated.**
-> - `xray-cli` skill — owns Xray-internal membership (`TC ∈ ATS` / `TC ∈ ATP` / `TC ∈ ATR`) which, in Modality `jira-xray`, is NOT a Jira issuelink. See §9 (including the jira-native carve-out).
+> - `xray-cli` skill — owns Xray-internal membership (`TC ∈ ATS` / `TC ∈ ATP` / `TC ∈ ATR`) in Modality `jira-xray`. `TC ∈ ATS` is ALSO a `TC→ATS` issue link in both modalities, so IQL and the TMS read the same graph. See §9.
 
 ---
 
@@ -16,14 +16,16 @@ Traceability linking turns QA intent into a queryable graph in Jira. These touch
 
 | Touchpoint              | Moment                                                          | Link created                                  |
 | ----------------------- | -------------------------------------------------------------- | --------------------------------------------- |
-| `shift-left-testing`    | Test Plan (ATP) authored ahead of dev for a Story / feature    | Story `is tested by` ATP (`test`)             |
 | `test-documentation`    | ATP (Test Plan) + ATR (Test Execution) created for a Story (Modality `jira-xray`) | Story `is tested by` ATP and ATR (`test`)     |
 | `test-documentation`    | Test Case created for a Story under an ATP / ATR (Modality `jira-xray`) | ATP `designs` TC (`test_design`); ATR `executes` TC (`test_execute`) — placement edges; coverage flows through the ATS→Story link (direct TC→Story stays a valid last-resort, §3). |
 | `test-documentation`    | Test / Test Execution issue created for a Story (Modality `jira-native`) | Story `is tested by` Test / Test Exec (`test`)|
 | `sprint-testing`        | ATS (per-Story Acceptance Test Set, `ATS: {US_ID}: {story title}`) created/updated for the Story — Stage 1, Set-first | Story `is tested by` ATS (`test`) — **the coverage-bearing edge** (§3) |
+| `sprint-testing`        | ATP item find-or-created FROM the `{{jira.acceptance_test_plan}}` field — Stage 1, Set-first step 2 | Story `is tested by` ATP (`test`, administrative) |
 | `sprint-testing`        | Defect found during in-sprint QA of a Story                     | Story `causes` Bug (`problem_incident`)       |
 | `sprint-testing`        | QA blocks a Story on an open defect (the `defect_reported → blocked` gate) | Story `is blocked by` Bug (`blocks`)          |
 | `regression-testing`    | Existing Test re-bound to a Story for a regression cycle        | ATP `designs` Test (`test_design`); ATR `executes` Test (`test_execute`) |
+
+`shift-left-testing` creates no link: the pre-sprint ATP lives in the `{{jira.acceptance_test_plan}}` field, never as a Test Plan item (`artifact-lifecycle.md` §1).
 
 Skip the phase only when there is genuinely no relationship to record (e.g. an exploratory session with no Story under test and no defect filed) — but still record `no_links: true` in the workflow output so the consumer knows the phase ran.
 
@@ -55,7 +57,7 @@ Resolve every slug via `{{jira.link_types.<slug>}}`; an absent slug STOPs (§2).
 
 | Slug               | Semantic (illustrative)            | Source → Target                                              | Outward (illustrative) | Inward (illustrative) | Required / Optional | When to create                                                                 |
 | ------------------ | ---------------------------------- | ----------------------------------------------------------- | ---------------------- | --------------------- | ------------------- | ------------------------------------------------------------------------------ |
-| `test`             | Coverage + administrative traceability — Story is tested by ATS / ATP / ATR | ATS (Test Set) / ATP (Test Plan) / ATR (Test Execution) / TC (last-resort) → Story | `tests`                | `is tested by`        | **REQUIRED**        | Canonical container→coverable link. **ATS→Story is the coverage-bearing edge** (live-verified: it is what fills the Story's coverage panel) and is MANDATORY per Story. **ATP→Story and ATR→Story are administrative traceability only** — live-verified to contribute ZERO coverage (a Story linked only to its Plan + Execution reads UNCOVERED). **TC→Story direct is a valid last-resort** (also coverage-bearing) when no ATS exists — the final rung of the resolution cascade below, not a defect. |
+| `test`             | Coverage + administrative traceability — Story is tested by ATS / ATP / ATR | ATS (Test Set) / ATP (Test Plan) / ATR (Test Execution) / TC (last-resort) → Story | `tests`                | `is tested by`        | **REQUIRED**        | Canonical container→coverable link. **ATS→Story is the coverage-bearing edge** (live-verified: it is what fills the Story's coverage panel) and is MANDATORY per Story. **ATP→Story and ATR→Story are administrative traceability only** — live-verified to contribute ZERO coverage (a Story linked only to its Plan + Execution reads UNCOVERED). **TC→Story direct is a valid last-resort** (also coverage-bearing) when no ATS exists — the final rung of the resolution cascade below, not a defect. **TC→ATS** (the ATS `is tested by` each member TC) is the membership edge, created in BOTH modalities (§9). |
 | `problem_incident` | Causation — Story causes a defect  | Story → Bug / Defect                                        | `causes`               | `is caused by`        | **REQUIRED**        | When a defect is filed against a Story under test (sprint-testing bug filing). Records that the Story's behaviour caused the defect. |
 | `blocks`           | Blocking — Story is blocked by an open defect | Bug / Defect / Story / TechStory / TechDebt → Story | `blocks`               | `is blocked by`       | **REQUIRED**        | When QA blocks a Story on an open defect — the `defect_reported → blocked` gate. The defect (or blocking issue) `blocks` the Story; the Story `is blocked by` it. |
 | `relates`          | Symmetric reference (fallback)     | Any ↔ Any (symmetric)                                       | `relates to`           | `relates to`          | Fallback            | Degradation target ONLY when a required type is absent from the workspace. **Direction is lost** — warn on degradation (§6). |
@@ -65,12 +67,12 @@ Resolve every slug via `{{jira.link_types.<slug>}}`; an absent slug STOPs (§2).
 
 > **Two-layer model (binding — never confuse the layers).** An ATS/ATP/ATR↔TC↔Story graph lives in TWO distinct layers:
 >
-> 1. **Jira layer — issue links** (container → coverable, `test` slug, inward `is tested by`): **ATS→Story** (MANDATORY, the coverage-bearing edge — live-verified as the link that fills the Story's coverage panel) · **ATP→Story** + **ATR→Story** (administrative traceability — live-verified to contribute ZERO coverage) · **TC→Story** direct (valid last-resort only).
-> 2. **Xray layer — membership** (`TC ∈ ATS`, `TC ∈ ATP`, `TC ∈ ATR`): Xray-internal associations, **GraphQL-only** in Modality `jira-xray` (`addTestsToTestSet` / `getTestSet` / `getTestsEnrichment` etc.) — in that modality NEVER expressed as a Jira issue link (§9).
+> 1. **Jira layer — issue links** (`test` slug, inward `is tested by`): **ATS→Story** (MANDATORY, the coverage-bearing edge — live-verified as the link that fills the Story's coverage panel) · **ATP→Story** + **ATR→Story** (administrative traceability — live-verified to contribute ZERO coverage) · **TC→ATS** (the membership edge, MANDATORY per member TC in BOTH modalities, §9) · **TC→Story** direct (valid last-resort only).
+> 2. **Xray layer — membership** (`TC ∈ ATS`, `TC ∈ ATP`, `TC ∈ ATR`): Xray-internal associations, **GraphQL-only**, present only in Modality `jira-xray` (`addTestsToTestSet` / `getTestSet` / `getTestsEnrichment` etc.). `TC ∈ ATS` is written here IN ADDITION to its `TC→ATS` link; `TC ∈ ATP` / `TC ∈ ATR` have no membership link (their Jira-layer edges are `test_design` / `test_execute`).
 >
-> **jira-native carve-out (explicit):** the "membership is never a Jira link" rule is **xray-modality-only**. In Modality `jira-native` there is no Xray layer, so membership IS expressed as **`TC→ATS` issue links** (slug-resolved per §2, never a literal) alongside the `ATS→Story` link. An instance without the Test Set work type has no ATS: fall back to direct `TC→Story` links — the cascade below still resolves (third rung).
+> **One traceability rule, both modalities (binding).** `TC ∈ ATS` is ALWAYS a `TC→ATS` issue link (slug-resolved per §2, never a literal), in `jira-xray` and `jira-native` alike, so the graph IQL describes and the graph the TMS holds are the same graph. Modality `jira-xray` adds the Xray-internal membership on top, never instead. An instance without the Test Set work type has no ATS: fall back to direct `TC→Story` links — the cascade below still resolves (third rung).
 >
-> **Resolution cascade (doctrine — how a TC resolves to its Story):** `TC → ATS → Story` (primary, coverage) → `TC → ATP → Story` (secondary, **placement-only** — does NOT fill the coverage panel) → `TC → Story` direct (last resort) → nothing matches: **ORPHAN**. The container→TC hop is walked via Xray membership in Modality `jira-xray` and via the `TC→ATS` links in `jira-native`.
+> **Resolution cascade (doctrine — how a TC resolves to its Story):** `TC → ATS → Story` (primary, coverage) → `TC → ATP → Story` (secondary, **placement-only** — does NOT fill the coverage panel) → `TC → Story` direct (last resort) → nothing matches: **ORPHAN**. The container→TC hop is walked via the `TC→ATS` links in both modalities; in Modality `jira-xray` the Xray membership is read as well, and the ATP hop is Xray membership only.
 >
 > **The ATS (Acceptance Test Set) — third canonical per-Story artifact.** Title `ATS: {US_ID}: {story title}`. **MANDATORY per Story**, even when it holds a single TC. Set-first: the ATP and ATR derive their test lists from the ATS membership. Parents to the **QA Test Artifacts** epic; **components INHERITED from the Story (mandatory)** — the components exemption applies only to feature-level `TS:` sets, never to the ATS. Feature-level `TS: {EPIC|module}: Validate {feature}` sets remain optional (smoke / regression / feature grouping), components optional.
 >
@@ -149,16 +151,13 @@ The "Verified direction" column is `no` only for symmetric types (`relates`) —
 ## 8. Touchpoint map — which skill creates which link, when
 
 ```
-shift-left-testing
-  └─ Test Plan (ATP) authored for Story/feature
-        → Story is tested by ATP              [test]
-
 test-documentation  (Modality jira-xray)
   ├─ ATP (Test Plan) + ATR (Test Execution) created for Story
   │     → Story is tested by ATP              [test]   (acli — [ISSUE_TRACKER_TOOL])
   │     → Story is tested by ATR              [test]   (acli — [ISSUE_TRACKER_TOOL])
   └─ Test Case created under the ATP/ATR
-        → Xray-internal attach (plan add-tests / exec add-tests)  (xray-cli — membership only, NO Jira link)
+        → TC tests ATS                          [test]  (acli — the membership edge, §9)
+        → Xray-internal attach (set / plan / exec add-tests)  (xray-cli — membership only, creates NO Jira link)
         → ATP designs TC                       [test_design]   (acli — [ISSUE_TRACKER_TOOL], create explicitly)
         → ATR executes TC                      [test_execute]  (acli — [ISSUE_TRACKER_TOOL], create explicitly)
         (Coverage does NOT flow through the ATP/ATR — it flows through the ATS→Story
@@ -174,8 +173,10 @@ test-documentation  (Modality jira-native)
 sprint-testing
   ├─ Stage 1 — Set-first: ATS created/updated for the Story (mandatory, even for 1 TC)
   │     → Story is tested by ATS               [test]  ← the coverage-bearing edge
-  │     → TC ∈ ATS membership                  (jira-xray: xray-cli GraphQL, NO Jira link;
-  │                                             jira-native: TC→ATS issue links — §9 carve-out)
+  ├─ Stage 1 — Set-first step 2: ATP item find-or-created FROM the field
+  │     → Story is tested by ATP               [test]  (administrative)
+  │     → TC tests ATS                         [test]  ← membership edge, BOTH modalities (§9)
+  │       + jira-xray: TC ∈ ATS Xray membership (xray-cli GraphQL, in addition)
   ├─ defect found during QA of Story
   │     → Story causes Bug                     [problem_incident]
   └─ QA blocks Story on open defect (defect_reported → blocked gate)
@@ -190,8 +191,8 @@ regression-testing
 Edge ownership in one line:
 
 - **ATS → tests → Story** created on **ATS creation** (sprint-testing Stage 1, Set-first) via `test`. THE coverage-bearing edge (live-verified) — mandatory per Story.
-- **ATP/ATR → tests → Story** created on **ATP/ATR creation** (test-documentation, shift-left) via `test`. Administrative traceability only — contributes zero coverage (live-verified).
-- **TC ∈ ATS/ATP/ATR membership** — Xray layer: GraphQL-only in Modality `jira-xray` (`/xray-cli`); expressed as `TC→ATS` issue links in `jira-native` (§9 carve-out).
+- **ATP/ATR → tests → Story** created on **ATP/ATR creation** (sprint-testing Stage 1, test-documentation) via `test`. Administrative traceability only — contributes zero coverage (live-verified).
+- **TC → tests → ATS** created on **TC creation / membership** (sprint-testing Stage 1, test-documentation) via `test`, in BOTH modalities (§9). In Modality `jira-xray` the `TC ∈ ATS/ATP/ATR` Xray membership (GraphQL, `/xray-cli`) is written as well; it never replaces the link.
 - **ATP → designs → TC** and **ATR → executes → TC** created on **TC creation** (test-documentation, regression) via `test_design` / `test_execute`. Placement-only — coverage flows through the ATS→Story (or last-resort TC→Story) edge, never through these.
 - **TC → tests → Story** direct — last-resort rung of the cascade (`TC → ATS → Story` → `TC → ATP → Story` placement-only → `TC → Story` → ORPHAN); valid, not a defect, when no ATS exists.
 - **Story → causes → Bug** created on **bug filing** (sprint-testing) via `problem_incident`.
@@ -199,13 +200,17 @@ Edge ownership in one line:
 
 ---
 
-## 9. Test Set / Xray-internal caveat (Modality `jira-xray`) + jira-native carve-out
+## 9. Test Set membership: one rule, both modalities
 
-**In Modality `jira-xray`, Test ↔ Test Set (ATS / `TS:`) membership is NOT a Jira issuelink.** Neither is Test ↔ Test Plan / Test Execution membership in an Xray-managed project. These are Xray-internal associations stored in Xray's own data model (`TC ∈ ATS`, `TC ∈ ATP`, `TC ∈ ATR`), not in Jira's `issuelinks`. They MUST be handled via **`/xray-cli`** (Xray GraphQL — `addTestsToTestSet` / `getTestSet` / enrichment), NEVER via `acli jira workitem link create`.
+**`TC ∈ ATS` is ALWAYS a Jira issue link, in both modalities.** Each member TC carries a `TC→ATS` link, slug `test` (the ATS `is tested by` the TC; checked as the raw field: the TC appears under `inwardIssue` in the ATS's `issuelinks` entry, the same shape as the coverage edge), created through `[ISSUE_TRACKER_TOOL]` one edge per call and direction-verified (§4, §5). This is the membership every reader walks: the IQL doctrine, the PBI sync (`jira:sync-issues` cascade rung 1 and its orphan check read the Set's links in both modalities), and any consumer of `issuelinks`. One graph means IQL and the TMS never disagree about which Tests belong to a Story.
 
-**Explicit warning (Modality `jira-xray`)**: do NOT attempt to create membership with the `"is part of test set"` link-type literal. It is not a real Jira link type in this workspace catalog, it bypasses the slug resolver (violating §2), and the Xray membership it appears to imply will not register. Test Set / Test Plan membership goes through `/xray-cli` only. The `test` issuelink in §3 covers container→Story COVERAGE — in this modality it does not and cannot express Test-Set MEMBERSHIP.
+**Modality `jira-xray` writes the Xray membership IN ADDITION.** Xray keeps Test ↔ Test Set membership in its own data model (`addTestsToTestSet` / `getTestSet` / enrichment, through **`/xray-cli`**), and Xray's panels, the Set-first derivation of the ATP and ATR test lists, and the `trace` list parity read it there. So in that modality a membership is written twice: the Xray attach (`/xray-cli`) AND the `TC→ATS` link (`/acli`). The two writes are independent: Xray membership is invisible to Jira's `issuelinks` (the CONFIRMED note below measures it for Plan and Execution attaches), and a Jira link registers nothing in Xray. Neither write can be skipped, and both copies must list the same TCs.
 
-**jira-native carve-out (explicit — the rule above is xray-modality-only).** In Modality `jira-native` there is NO Xray layer, so membership has no GraphQL home: there, membership IS expressed as Jira issue links — `TC→ATS` links bind each TC into the per-Story ATS, and the `ATS→Story` link carries coverage. An instance without the Test Set work type has no ATS at all; membership degrades to direct `TC→Story` links (the cascade's last rung, §3). The "never a Jira link" prohibition therefore applies ONLY where the Xray layer exists.
+**What stays Xray-internal.** Test ↔ Test Plan / Test Execution membership (`TC ∈ ATP`, `TC ∈ ATR`), membership of a feature-level `TS:` Set (grouping, not traceability) and Test ↔ Precondition associations have no membership link: `/xray-cli` only. Their Jira-layer counterparts are the `test_design` / `test_execute` placement edges below, never a membership link.
+
+**Explicit warning**: do NOT create membership with the `"is part of test set"` link-type literal. It is not a real Jira link type in this workspace catalog, it bypasses the slug resolver (violating §2), and the Xray membership it appears to imply will not register. The membership link is the `test` slug; the Xray membership is `/xray-cli`.
+
+**No Test Set work type.** An instance without it has no ATS at all: membership degrades to direct `TC→Story` links (the cascade's last rung, §3), in either modality.
 
 ### Jira-layer links vs Xray-internal membership for the `designs` / `executes` edges — CONFIRMED
 
@@ -227,9 +232,10 @@ Consumers that wrote `[TMS_TOOL] trace {TICKET}` were, in practice, checking ONE
 [ISSUE_TRACKER_TOOL] Link List: {ATP_KEY}     # expect: ATP "tests" Story   (administrative edge)
 [ISSUE_TRACKER_TOOL] Link List: {ATR_KEY}     # expect: ATR "tests" Story   (administrative edge)
 [TMS_TOOL] plan get: {ATP_KEY} · exec get: {ATR_KEY}   # expect: Plan + Execution test lists == ATS membership
+[ISSUE_TRACKER_TOOL] Link List: {ATS_KEY}     # expect: one TC "tests" ATS link per member (§9), same TCs as the Xray membership
 ```
 
-Concretely: the three link reads are the `/acli` link-list read (§4's direction check — the artifact must appear under `inwardIssue` in the Story's entry); the list comparison is the `/xray-cli` plan/execution read against the ATS membership (the `/xray-cli` test-enrich read), because that membership is Xray-internal and invisible to the link reads (§9). Exact command syntax lives in those two skills, not here.
+Concretely: the three link reads are the `/acli` link-list read (§4's direction check — the artifact must appear under `inwardIssue` in the Story's entry); the list comparison is the `/xray-cli` plan/execution read against the ATS membership (the `/xray-cli` test-enrich read), because that membership is Xray-internal and invisible to the link reads (§9). The last read compares the `TC→ATS` links (§9) against that same membership; the one-call form below does not cover it, so run it explicitly. Exact command syntax lives in those two skills, not here.
 
 **The rule.** Traceability is verified ONLY when all three edges are present AND the lists match. A missing administrative edge is a **FAIL** of this check, not a warning. **Never log "traceability verified" from the coverage edge alone** — the ATS→Story edge carries the coverage, but a Story whose ATP or ATR is unlinked has an incomplete audit trail, and the next consumer walking `issuelinks` from the Plan or the Run finds nothing.
 
@@ -237,7 +243,7 @@ Concretely: the three link reads are the `/acli` link-list read (§4's direction
 
 **Project-wide sweep (run it once per engagement).** The same one-call form accepts several Story keys or a JQL query and closes with a repair worklist: `[TMS_TOOL] trace: {KEY} {KEY} …` or `[TMS_TOOL] trace --jql: {JQL}` (`/xray-cli` owns the syntax). This is not a nice-to-have. A per-Story gate structurally cannot see an inconsistency that exists only in aggregate, and on the one project where the sweep was run first, 21 of 43 linked Stories were wired the wrong way and one had lost a fully populated 69-Test Test Set. Whoever inherits a project whose links were created before this direction was measured should assume the mix is there until a sweep says otherwise. The sweep keeps going past a Story it cannot read, so one permission error does not hide the rest of the worklist.
 
-**Modality `jira-native`.** There is no Xray layer and no one-call form: verification is that the Story's `{{jira.acceptance_test_plan}}` field is populated (or its `## Acceptance Test Plan (ATP)` fallback comment exists — §6 degradation rules), plus the `TC→ATS` and `ATS→Story` issue links per §9's carve-out. An instance with no Test Set work type verifies the last-resort direct `TC→Story` links instead.
+**Modality `jira-native`.** There is no Xray layer and no one-call form: verification is that the Story's `{{jira.acceptance_test_plan}}` field is populated (or its `## Acceptance Test Plan (ATP)` fallback comment exists — §6 degradation rules), plus the `TC→ATS` and `ATS→Story` issue links per §9 (the same links `jira-xray` carries). An instance with no Test Set work type verifies the last-resort direct `TC→Story` links instead.
 
 ---
 
@@ -255,14 +261,14 @@ Concretely: the three link reads are the `/acli` link-list read (§4's direction
 - NEVER treat an ATP→Story or ATR→Story link as coverage — administrative only (live-verified zero coverage); coverage = ATS→Story, or last-resort TC→Story (§3).
 - NEVER skip the per-Story ATS — it is mandatory even for a single TC; the ATP/ATR derive their test lists from its membership (Set-first, §3).
 - NEVER log "traceability verified" from the coverage edge alone — run the three-edge check (one call in Modality `jira-xray`, the four explicit reads otherwise); a missing administrative edge is a FAIL (§10).
-- NEVER (Modality `jira-xray`) create Test ↔ Test Set / Test Plan membership via acli link, and NEVER use the `"is part of test set"` literal — route to `/xray-cli` (§9). In Modality `jira-native` membership IS `TC→ATS` issue links — the prohibition does not apply there (§9 carve-out).
+- NEVER record `TC ∈ ATS` in only one place: the `TC→ATS` link (`test`) exists in BOTH modalities, and Modality `jira-xray` adds the Xray membership via `/xray-cli` (§9). NEVER express `TC ∈ ATP` / `TC ∈ ATR` as a membership link, and NEVER use the `"is part of test set"` literal (§9).
 
 ---
 
 ## used_by
 
-- `sprint-testing` — creates/updates the per-Story ATS and its coverage-bearing `ATS→Story` link (`test`) in Stage 1 (Set-first); files Bug (`problem_incident`) and blocks Story (`blocks`) during in-sprint QA.
-- `shift-left-testing` — binds Story to ATP/Test Plan (`test`, administrative) during pre-dev refinement.
+- `sprint-testing` — creates/updates the per-Story ATS and its coverage-bearing `ATS→Story` link (`test`) in Stage 1 (Set-first), then find-or-creates the ATP item from the field and its administrative `ATP→Story` link; files Bug (`problem_incident`) and blocks Story (`blocks`) during in-sprint QA.
+- `shift-left-testing` — creates no link: the pre-sprint ATP lives in the `{{jira.acceptance_test_plan}}` field, and `sprint-testing` Stage 1 creates the ATP item and its `test` link from it.
 - `test-documentation` — binds Story to ATP + ATR (`test`, administrative); binds each TC to the ATP (`test_design`) and ATR (`test_execute`) as placement edges — direct `TC→Story` stays the cascade's last resort (Modality `jira-xray`). In Modality `jira-native` binds Story to Test / Test Execution (`test`, opt. `test_automation`).
 - `regression-testing` — re-binds existing Tests via ATP (`test_design`) and ATR (`test_execute`) per regression cycle.
-- `xray-cli` — owns Xray-internal `TC ∈ ATS/ATP/ATR` membership in Modality `jira-xray` (NOT a Jira issuelink there — §9; jira-native expresses it as `TC→ATS` links).
+- `xray-cli` — owns the Xray-internal `TC ∈ ATS/ATP/ATR` membership in Modality `jira-xray`; the `TC→ATS` link that accompanies `TC ∈ ATS` in both modalities goes through `[ISSUE_TRACKER_TOOL]` (§9).

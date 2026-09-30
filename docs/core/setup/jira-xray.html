@@ -102,7 +102,10 @@
             <tr>
               <td>Requirement</td>
               <td>Un issue que los tests pueden cubrir</td>
-              <td>Story, Epic y, si quieres, Bug</td>
+              <td>
+                Los tipos con <code>coverable: true</code> en
+                <code>.agents/jira-required.yaml</code>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -159,10 +162,12 @@
           <strong>Activa la cobertura de requisitos</strong>
           <p>
             En <strong>Project settings</strong> &gt; <strong>Apps</strong> &gt;
-            <strong>Xray Settings</strong> &gt; <strong>Test Coverage</strong>, marca Story y Epic
-            como issues cubribles (Bug es opcional). En la configuración global de Xray,
-            <strong>Issue Type Mapping</strong>, deja Story y Epic como requirement types y Bug como
-            defect type.
+            <strong>Xray Settings</strong> &gt; <strong>Test Coverage</strong>, marca como cubribles
+            los tipos de issue que <code>.agents/jira-required.yaml</code> declara con
+            <code>coverable: true</code> en <code>work_types</code>. En la configuración global de
+            Xray, <strong>Issue Type Mapping</strong>, pon esos mismos tipos como requirement types,
+            y Bug y Defect como defect types (una Improvement no rompe un criterio, así que queda
+            fuera).
           </p>
         </li>
         <li>

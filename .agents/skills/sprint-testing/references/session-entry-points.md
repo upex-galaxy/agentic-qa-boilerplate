@@ -353,9 +353,9 @@ Actions:
 1. Read the story (ACs, business rules, dependencies) from the synced `.md` (materialized by `bun run jira:sync-issues get <KEY> --include-comments`).
 2. Triage (veto or risk score) — outputs: Full Plan vs Quick Plan vs Skip.
 3. Discover test data via `[DB_TOOL]` on `{{DB_MCP}}` (and/or `[API_TOOL]`).
-4. **ATP item from the field (find-or-create)**: find-or-create the Test Plan item `ATP: {STORY-KEY}: {story title}` FROM the Story's `{{jira.acceptance_test_plan}}` field content — pre-sprint the ATP lives ONLY in the field (shift-left is field-first); author fresh (item + field) when the field is empty. Modality jira-native: write `{{jira.acceptance_test_plan}}` / fallback comment instead.
-5. Create the TCs per SKILL.md §"TC creation timing" (jira-xray: sprint `Test` issues at executable detail; jira-native: outlines only, no `Test` work items).
-6. **ATS (jira-xray)**: create/update the Story's `ATS: {US_ID}: {story title}` (parent **QA Test Artifacts**, components inherited from the Story — mandatory) holding ALL the Story's TCs (Xray-internal membership); link **ATS→Story** via the `test` slug — THE coverage link (fills the coverage panel).
+4. Create the TCs per SKILL.md §"TC creation timing" (jira-xray: sprint `Test` issues at executable detail; jira-native: outlines only, no `Test` work items).
+5. **ATS (jira-xray)**: create/update the Story's `ATS: {US_ID}: {story title}` (parent **QA Test Artifacts**, components inherited from the Story — mandatory) holding ALL the Story's TCs (Xray-internal membership PLUS one `TC→ATS` link per TC, `agentic-qa-core/references/traceability-linking.md` §9); link **ATS→Story** via the `test` slug — THE coverage link (fills the coverage panel).
+6. **ATP item from the field (find-or-create)**: find-or-create the Test Plan item `ATP: {STORY-KEY}: {story title}` FROM the Story's `{{jira.acceptance_test_plan}}` field content — pre-sprint the ATP lives ONLY in the field (shift-left is field-first); author fresh (item + field) when the field is empty. Modality jira-native: write `{{jira.acceptance_test_plan}}` / fallback comment instead. Set-first: the ATS comes first, the ATP item second (SKILL.md §"Stage 1 Set-first order").
 7. **ATR with environment**: create the ATR Execution (`ATR: {STORY-KEY}: Story Testing`) ALWAYS carrying the Test Environment from `active_env` (**no ATR without environment** — hard gate). Derive the ATP's and the ATR's test lists FROM the ATS membership — never three independent id lists. Link ATP→Story and ATR→Story (administrative traceability; zero coverage). Link ATP -> ATR.
 8. Fill Test Analysis in the ATP (scope, risks, scenarios, variables, test data, AC gaps).
 9. Verify: run the **three-edge check** (`agentic-qa-core/references/traceability-linking.md` §Traceability verification: Link List on Story + ATP + ATR, or `bun xray trace {{PROJECT_KEY}}-{number}`) (traceability reads stay on `[ISSUE_TRACKER_TOOL]` / `[TMS_TOOL]`, not the sync).
@@ -443,7 +443,7 @@ Output checkpoint:
 USER STORY ({{PROJECT_KEY}}-XXX)
     |
     +--> ATS (ATS: {US_ID}: {story title})        <- `test` slug: THE coverage link (fills the panel)
-    |        holds ALL the Story's TCs (Xray-internal membership, never issue links in xray)
+    |        holds ALL the Story's TCs (a TC->ATS `test` link per TC, both modalities; + Xray membership in xray)
     |
     +--> ATP (ATP: {STORY-KEY}: {story title})    <- administrative link (zero coverage)
     |        test list DERIVED from the ATS
