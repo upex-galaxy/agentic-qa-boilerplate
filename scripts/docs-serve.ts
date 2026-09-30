@@ -30,7 +30,7 @@ import type { DocsFolder } from './docs-manifest.ts';
 import { spawn } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve, sep } from 'node:path';
-import { BUSINESS_CONTEXT_SKILLS, isPlaceholderMap } from '../cli/lib/context-maps.ts';
+import { CONTEXT_MAP_SKILLS, isPlaceholderMap } from '../cli/lib/context-maps.ts';
 import { buildManifest, DEFAULT_ORDER, readPageMeta } from './docs-manifest.ts';
 
 const REPO_ROOT = join(import.meta.dir, '..');
@@ -145,19 +145,19 @@ function notFound(pathname: string): Response {
   return new Response(html, { status: 404, headers: { 'Content-Type': MIME['.html'], 'Cache-Control': 'no-store' } });
 }
 
-/** Absolute path of a business map by its virtual page path (`mapas-de-contexto/<slug>.html`), or null. */
+/** Absolute path of a context map by its virtual page path (`mapas-de-contexto/<slug>.html`), or null. */
 export function contextMapFile(repoRoot: string, page: string): string | null {
   const m = new RegExp(`^/?${CONTEXT_MAPS_DIR}/([a-z0-9-]+)\\.html$`).exec(page);
-  const skill = m ? BUSINESS_CONTEXT_SKILLS.find(s => s.slug === m[1]) : undefined;
+  const skill = m ? CONTEXT_MAP_SKILLS.find(s => s.slug === m[1]) : undefined;
   if (!skill) { return null; }
   const file = join(repoRoot, '.agents', 'skills', skill.slug, 'references', skill.map);
   return existsSync(file) ? file : null;
 }
 
-/** Sidebar folder for the business maps present on disk; null when there are none. */
+/** Sidebar folder for the context maps present on disk; null when there are none. */
 export function contextMapsFolder(repoRoot: string): DocsFolder | null {
   const children: DocsFolder['children'] = [];
-  for (const skill of BUSINESS_CONTEXT_SKILLS) {
+  for (const skill of CONTEXT_MAP_SKILLS) {
     const page = `${CONTEXT_MAPS_DIR}/${skill.slug}.html`;
     const file = contextMapFile(repoRoot, page);
     if (file === null) { continue; }
@@ -168,7 +168,7 @@ export function contextMapsFolder(repoRoot: string): DocsFolder | null {
       path: page,
       title: meta.title ?? skill.slug,
       description: isPlaceholderMap(html)
-        ? `Sin generar todavía: ejecuta project-context mode ${skill.mode}.`
+        ? `Sin generar todavía: ejecuta ${skill.generator}.`
         : (meta.description ?? `Mapa de ${skill.slug}, servido desde su skill.`),
       order: children.length + 1,
     });
@@ -178,7 +178,7 @@ export function contextMapsFolder(repoRoot: string): DocsFolder | null {
     type: 'folder',
     path: CONTEXT_MAPS_DIR,
     title: 'Mapas de contexto',
-    description: 'Los mapas de negocio que viven dentro de sus context skills (datos, API, E2E), servidos en su lugar.',
+    description: 'Los mapas que viven dentro de sus context skills (negocio, dominio, infraestructura), servidos en su lugar.',
     order: DEFAULT_ORDER - 1,
     index: null,
     children,

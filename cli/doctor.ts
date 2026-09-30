@@ -53,7 +53,7 @@ import {
   formatInstanceMismatchWarning,
   resolveAtlassianInstance,
 } from './lib/atlassian-instance.ts';
-import { businessMapAdvice, businessMapStatuses } from './lib/context-maps.ts';
+import { contextMapAdvice, contextMapStatuses } from './lib/context-maps.ts';
 import { CORE_SCHEMA_FILE, PROJECT_SCHEMA_FILE, RETIRED_KEYS } from './lib/env-schema.ts';
 // Canonical variable manifest (source of truth — D1). Imports only `node:fs`,
 // so it is safe to load statically here without breaking the dependency-free
@@ -953,15 +953,15 @@ export async function runDoctor(): Promise<DoctorReport> {
     });
   }
 
-  // Business context maps: a delivered skill whose map was never generated.
-  // Informational (a warning, never a pending action): a mode generates it,
-  // and an old `.context/business/*-map.md` beside it is kept as input.
-  for (const status of businessMapStatuses(REPO_ROOT)) {
-    const advice = businessMapAdvice(status);
+  // Context maps: a delivered skill whose map was never generated.
+  // Informational (a warning, never a pending action): its generator writes it,
+  // and the old `.context/` markdown it replaces is kept as input.
+  for (const status of contextMapStatuses(REPO_ROOT)) {
+    const advice = contextMapAdvice(status);
     if (advice === null) { continue; }
     report.warnings.push({
       type: 'shell_command',
-      target: `project-context mode ${status.skill.mode}`,
+      target: status.skill.generator,
       hint: advice.replace(/`/g, ''),
     });
   }

@@ -55,7 +55,7 @@ import * as os from 'node:os';
 
 import * as path from 'node:path';
 
-import { BUSINESS_CONTEXT_SKILLS } from './context-maps';
+import { CONTEXT_MAP_SKILLS } from './context-maps';
 import { applyIgnoreAppend, computeBlobSha, detectIgnoreDelta } from './updater-ignore';
 import { applyPackageJsonAppend, applyPackageJsonOverride, detectPackageJsonDelta } from './updater-package';
 import { ComponentOverlapError, CorruptStateError } from './updater-types';
@@ -131,8 +131,8 @@ export function isProjectLocalSkillPath(relPath: string, skillsDir = '.agents/sk
 }
 
 /**
- * The one exception to "a `<aspect>-context` is project-local": the business
- * context skills (`BUSINESS_CONTEXT_SKILLS`, cli/lib/context-maps.ts) ship as
+ * The one exception to "a `<aspect>-context` is project-local": the context
+ * map skills (`CONTEXT_MAP_SKILLS`, cli/lib/context-maps.ts) ship as
  * placeholders, so a project that lacks one gets its WHOLE folder once. A
  * folder that exists, even half-empty, is the project's and is never touched:
  * `isProjectLocalSkillPath` still keeps every one of these paths out of the
@@ -140,7 +140,7 @@ export function isProjectLocalSkillPath(relPath: string, skillsDir = '.agents/sk
  * entries for the absent folders, owned by whichever selected component owns
  * the skills dir (or that skill's own subdirectory, for `--skill` runs).
  */
-export function collectBusinessContextBootstrap(
+export function collectContextMapBootstrap(
   components: readonly Component[],
   templateDir: string,
   repoRoot: string,
@@ -150,7 +150,7 @@ export function collectBusinessContextBootstrap(
   const root = skillsDir.replace(/\\/g, '/').replace(/\/+$/, '');
   const taken = new Set(existing.map(e => e.path.replace(/\\/g, '/')));
   const out: DeltaEntry[] = [];
-  for (const skill of BUSINESS_CONTEXT_SKILLS) {
+  for (const skill of CONTEXT_MAP_SKILLS) {
     const skillRel = `${root}/${skill.slug}`;
     const owner = components.find(c => c.type === 'directory'
       && c.paths.some(p => [root, skillRel].includes(p.replace(/\\/g, '/').replace(/\/+$/, ''))));
@@ -2881,7 +2881,7 @@ export async function runUpdate(
   entries = dropDeprecatedDeletes(entries, cfg.deprecatedFiles);
 
   // Business context skills: the whole folder once, when the project has none.
-  entries.push(...collectBusinessContextBootstrap(cfg.components, templateDir, repoRoot, entries));
+  entries.push(...collectContextMapBootstrap(cfg.components, templateDir, repoRoot, entries));
 
   // Filter out unchanged / binary-skip from the user-facing pool
   const visible = entries.filter(

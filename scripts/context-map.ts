@@ -22,7 +22,7 @@
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { businessContextSkill, isPlaceholderMap } from '../cli/lib/context-maps.ts';
+import { contextMapSkill, isPlaceholderMap } from '../cli/lib/context-maps.ts';
 
 export interface MapSection {
   id: string
@@ -134,7 +134,7 @@ export function resolveMapPath(target: string, repoRoot: string): string | null 
     return existsSync(abs) ? abs : null;
   }
   const refs = join(repoRoot, '.agents', 'skills', target, 'references');
-  const known = businessContextSkill(target);
+  const known = contextMapSkill(target);
   if (known && existsSync(join(refs, known.map))) { return join(refs, known.map); }
   if (!existsSync(refs)) { return null; }
   const candidate = readdirSync(refs).find(f => f.endsWith('-map.html'));
@@ -179,8 +179,8 @@ export function run(argv: string[], repoRoot: string, io: Io = STDIO): number {
   }
   const map = parseMap(readFileSync(path, 'utf8'));
   if (map.placeholder) {
-    const mode = businessContextSkill(args.target)?.mode ?? '<aspect>';
-    io.err(`context:map: \`${args.target}\` holds a PLACEHOLDER map: nothing has been generated yet. Run \`project-context\` mode \`${mode}\`.\n`);
+    const generator = contextMapSkill(args.target)?.generator ?? 'project-context mode <aspect>';
+    io.err(`context:map: \`${args.target}\` holds a PLACEHOLDER map: nothing has been generated yet. Run \`${generator}\`.\n`);
     return 0;
   }
   if (args.list) {

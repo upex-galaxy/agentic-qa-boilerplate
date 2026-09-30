@@ -1296,7 +1296,7 @@ describe('harnessLevelMcpNote', () => {
   });
 });
 
-describe('business context map rows (informational)', () => {
+describe('context map rows (informational)', () => {
   function base(root: string): ParityInput {
     return { root, upstreamDir: temporaryRoot(), drift: [], compatErrors: [], archivedSkills: [], archivedSkillsDir: join(root, 'x'), heldBack: [], envNewKeys: [] };
   }
@@ -1317,7 +1317,7 @@ describe('business context map rows (informational)', () => {
     expect(rows[0].evidence).toContain('informational:');
     expect(rows[0].evidence).toContain('placeholder');
     expect(rows[0].evidence).toContain('.context/business/business-data-map.md');
-    expect(rows[0].evidence).toContain('mode `data`');
+    expect(rows[0].evidence).toContain('project-context mode data');
   });
 
   test('a generated map, or a skill the project does not have, raises no row', () => {
