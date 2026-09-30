@@ -128,7 +128,7 @@ Phase 1: Constitution        -> Phase 2: Architecture       -> Phase 3: Infrastr
                                                  |
                                                  v
                                     project-context (separate skill)
-                                    data -> features -> api -> test-plan
+                                    data -> e2e -> api -> test-plan
                                     `bun run api:sync` remains the technical
                                     OpenAPI type pipeline.
 ```
@@ -166,7 +166,7 @@ PRD sub-steps (run first, in parallel or sequentially — user choice):
 2. **User Personas** -- roles, permissions, primary/secondary users, role hierarchy.
 3. **User Journeys** -- critical paths through the UI, route map, journey diagrams.
 
-> **Feature catalog is post-discovery.** `project-context` mode `features` owns `.context/business/business-feature-map.md`. Do not generate it here.
+> **Journeys map and feature catalog are post-discovery.** `project-context` mode `e2e` writes them into `business-e2e-context`, reading the PRD journeys and personas produced here as input. Do not generate them here.
 
 SRS sub-steps (run after PRD, serially):
 1. **Architecture Specs** -- C4 context and container diagrams, component structure, database schema, external services, security model.
@@ -177,7 +177,7 @@ SRS sub-steps (run after PRD, serially):
 
 > **Test-architecture ADR seeding (Phase 2 SRS + Phase 3).** When the Architecture Specs / Infrastructure sub-steps settle a hard-to-reverse **test**-architecture decision — test runner/framework, isolation & parallelization model, fixture/test-data strategy, auth-in-tests, selector/`data-testid` contract, exploratory-vs-scripted boundary, CI sharding — promote each one that passes the two-gate test (architectural AND hard to reverse) to a standalone `ADR-NNNN-<slug>.md` in `.context/ADR/`, and reference it from `architecture.md` / `infrastructure/`. Greenfield: you are ENCODING the decision; brownfield: you are RECORDING the one you discovered. Follow `agentic-qa-core/references/adr-doctrine.md` (detection + authoring) and `.context/ADR/README.md` (template + lifecycle). AI drafts `Proposed`; the human accepts.
 
-**Completion gate**: `.context/PRD/executive-summary.md`, `user-personas.md`, `user-journeys.md`, `.context/SRS/architecture.md`, `functional-specs.md`, `non-functional-specs.md` all exist. API contract source is recorded in `.context/project-config.md`. `business-feature-map.md` remains a post-discovery `project-context` output. Soft content checks:
+**Completion gate**: `.context/PRD/executive-summary.md`, `user-personas.md`, `user-journeys.md`, `.context/SRS/architecture.md`, `functional-specs.md`, `non-functional-specs.md` all exist. API contract source is recorded in `.context/project-config.md`. The E2E map (journeys + feature catalog) remains a post-discovery `project-context` output. Soft content checks:
 - `architecture.md` contains at least one ` ```mermaid` block AND one of (`## Data Flow`, `## Database Schema`, `## Component Structure`).
 - `functional-specs.md` contains at least one `FR-` identifier and one `BR-` identifier.
 - `user-personas.md` lists at least 2 role entries (`### ` or table rows with role names).
@@ -223,7 +223,7 @@ Read `references/phase-4-specification.md` when running Phase 4. Contains issue-
 
 ### Business-context handoff
 
-Business maps and the master test plan are not generated here. After Phase 4, open a clean session and invoke `project-context` mode `refresh-all`. It owns the deterministic sequence `data -> features -> api -> test-plan`, including every CREATE/UPDATE approval gate. Exact OpenAPI types remain owned by `bun run api:sync`.
+Business maps and the master test plan are not generated here. After Phase 4, open a clean session and invoke `project-context` mode `refresh-all`. It owns the deterministic sequence `data -> e2e -> api -> test-plan`, including every CREATE/UPDATE approval gate; the maps land inside the business context skills. Exact OpenAPI types remain owned by `bun run api:sync`.
 
 After those outputs exist, invoke `test-framework-adaptation` to wire this boilerplate to the target stack.
 
@@ -258,18 +258,21 @@ Discovery complete. `/project-discovery` has populated:
 
 `project-context` mode `refresh-all`
 
-It runs data -> features -> api -> test-plan in dependency order and can be re-run whenever project context becomes stale.
+It runs data -> e2e -> api -> test-plan in dependency order, writes the maps inside `business-data-context`, `business-e2e-context` and `business-api-context`, and can be re-run whenever project context becomes stale (UPDATE regenerates only stale sections).
 
 After it completes, invoke `test-framework-adaptation` to wire KATA against the target stack.
 
-**Context skills this project could carry** (proposed, not created — `project-context` mode `context-skill <aspect>` creates each one through `skill-creator`, once the map it sits over exists):
-- `data-context` over `.context/business/business-data-map.md` — <one line: the judgment a session needs to read that map right, or "no candidate yet">
-- `api-context` over `.context/business/business-api-map.md` — <one line, or "no candidate yet">
+**Judgment the business context skills could start with** (proposed, not written — each becomes a dated rule in that skill's `## Rules` after its map is generated and the user approves):
+- `business-data-context` — <one line: the judgment a session needs to read the data right, or "no candidate yet">
+- `business-api-context` — <one line, or "no candidate yet">
+- `business-e2e-context` — <one line, or "no candidate yet">
+
+**Other context skills this project could carry** (proposed, not created — `project-context` mode `context-skill <aspect>` creates each one through `skill-creator`, once what it sits over exists):
 - `infra-context` over `.context/SRS/` + `.context/infrastructure/` — <one line, or "no candidate yet">
 - <any other aspect the discovery surfaced> — <one line>
 ```
 
-Fill each proposal line from what the phases actually found: a soft-delete convention, a derived field, an auth edge case, an environment-only behaviour. A proposal is one sentence naming the judgment, never a file: the facts stay in the map, and the skill is born later, over an approved map, with dated rules. "No candidate yet" is a valid line.
+Fill each proposal line from what the phases actually found: a soft-delete convention, a derived field, an auth edge case, an environment-only behaviour. A proposal is one sentence naming the judgment, never a file: the facts go in the map, and a rule is born later, over an approved map, with its date. "No candidate yet" is a valid line.
 
 Do not auto-chain the handoff inside this session. Context generation needs its own token budget and approval lifecycle.
 
@@ -282,8 +285,8 @@ Before the user invokes `test-framework-adaptation`, verify every file below is 
 - [ ] `.context/PRD/` populated (at least `README.md`) AND `.context/business/business-model.md` or `domain-glossary.md` present
 - [ ] `.context/SRS/architecture.md`
 - [ ] `.context/infrastructure/backend.md` and `.context/infrastructure/frontend.md`
-- [ ] `.context/business/business-data-map.md`
-- [ ] API contract source: one of `api/openapi-types.ts` (non-stub) OR reachable OpenAPI spec URL OR `.context/business/business-api-map.md` (business-angle fallback)
+- [ ] `business-data-context` holds a generated map (`bun run context:map business-data-context` prints sections, no placeholder notice)
+- [ ] API contract source: one of `api/openapi-types.ts` (non-stub) OR reachable OpenAPI spec URL OR a generated `business-api-context` map (business-angle fallback)
 - [ ] `.env.example` (and `.env` either present or created during `test-framework-adaptation`)
 
 Handoff line to print to the user:
@@ -318,11 +321,11 @@ Base stack detection (package.json → Node, pyproject.toml → Python, go.mod �
 - **Do not duplicate the backlog.** Jira/Linear/GitHub Issues is the source of truth for tickets. `.context/PBI/` holds the backlog access recipe (`README.md`) and format-reference guides (`templates/`), never a copy of the full backlog. Per-ticket PBI is synced on demand from Jira by `/sprint-testing` (`bun run jira:sync-issues`) as a read-only cache — this skill does not create it.
 - **Monorepos require scoped discovery.** Run Phase 1 once (project as a whole) but Phases 2-3 per package. Merge findings into a single `.context/infrastructure/` with sub-sections per package.
 - **Database schemas over ORM models.** If both exist, prefer the migration files / schema dump over the ORM definitions -- ORM definitions can drift from the live schema.
-- **API base URL vs route prefix.** `{{environments.local.api_url}}` includes the protocol+host; route prefixes (e.g., `/api/v1`) belong in the path. Do not concatenate them twice in any context file that documents endpoints (e.g., `business-api-map.md`).
+- **API base URL vs route prefix.** `{{environments.local.api_url}}` includes the protocol+host; route prefixes (e.g., `/api/v1`) belong in the path. Do not concatenate them twice in any context file that documents endpoints (e.g., the `business-api-context` map).
 - **Auth flow is the single most important input for downstream `test-framework-adaptation`.** Capture the real login request in `backend.md` so adaptation has a concrete contract.
 - **Never refresh maps here.** Route existing-map refreshes to `project-context`, which owns diff and overwrite approval.
 - **Context modes need grounded discovery.** If the user requests a business map on a fresh repo, complete at least Phase 1 and Phase 3 before handing off.
-- **IQL framing is optional.** Mention it only if the user asks "why this structure?" -- do not lecture them on methodology when they just want a working `business-data-map.md`.
+- **IQL framing is optional.** Mention it only if the user asks "why this structure?" -- do not lecture them on methodology when they just want a working data map.
 - **API requests get redirected.** Use `bun run api:sync` for technical types and `project-context` mode `api` for the business angle.
 
 ---
@@ -375,7 +378,7 @@ ATLASSIAN_EMAIL=
 ATLASSIAN_API_TOKEN=
 ```
 
-Larger templates (full PRD sections, KATA component skeletons, `.context/infrastructure/backend.md` layout, `business-data-map.md` structure) live in the references.
+Larger templates (full PRD sections, KATA component skeletons, `.context/infrastructure/backend.md` layout) live in the references; the business map structure lives in `project-context`.
 
 ---
 
@@ -401,7 +404,7 @@ Larger templates (full PRD sections, KATA component skeletons, `.context/infrast
 
 - **P1.** NEVER invent business entities, flows, or requirements not present in the target repo code or PRD. Discovery is reverse-engineering, not aspirational design — unverified items go in a `## Discovery Gaps` block, never inline.
 - **P2.** NEVER skip Phase 1 (Constitution) when starting fresh. Downstream phases (PRD/SRS, infrastructure, PBI mapping) assume the project values and stack are fixed first; skipping leaves later artifacts ungrounded.
-- **P3.** NEVER fill `.context/business/business-data-map.md` from this skill. `project-context` re-reads evidence and owns the artifact.
+- **P3.** NEVER fill a business context map (the HTML inside `business-data-context`, `business-api-context`, `business-e2e-context`) from this skill. `project-context` re-reads evidence and owns the artifact.
 - **P4.** NEVER mix `project-discovery` with `test-framework-adaptation` in the same session. Their write boundaries differ.
 - **P5.** NEVER use `project-discovery` for incremental map updates. Use `project-context`.
 - **P6.** NEVER skip the domain glossary in Phase 1. Downstream skills read it as a precondition when present: `sprint-testing` lists it in its Stage 1 planning inputs (ATP, refined ACs, TC outlines) and `test-documentation` uses it as the vocabulary reference for TC naming and bodies.
@@ -431,7 +434,7 @@ grep -r "process.env\." <target-repo>/src  # env vars actually read
 cat <target-repo>/.github/workflows/*.yml  # CI/CD pipeline
 
 # Post-discovery context handoff (separate skill):
-#   project-context refresh-all     # data -> features -> api -> test-plan
+#   project-context refresh-all     # data -> e2e -> api -> test-plan
 #   bun run api:sync                # exact API types from OpenAPI
 
 # Issue tracker (Phase 4) — example placeholder

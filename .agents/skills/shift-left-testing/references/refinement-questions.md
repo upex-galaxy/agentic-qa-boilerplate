@@ -17,7 +17,7 @@ Use this catalog as a **rubric**, not a script. If the Story is already explicit
    - **Critical** -> blocks sprint planning (write into Phase 2 Critical Questions for PO)
    - **Important** -> blocks implementation (Technical Questions for Dev)
    - **Edge** -> testable but not blocking (Edge Cases not in Story, with NEEDS PO/DEV CONFIRMATION)
-5. If a question's answer can be inferred from `.context/business/*` or module-context, cite the source and skip the PO ask.
+5. If a question's answer can be inferred from a business context map (`bun run context:map <slug>`) or module-context, cite the source (skill + section id) and skip the PO ask.
 6. **Map each archetype to the formal technique it implies, then derive outlines by that technique** (canon: `agentic-qa-core/references/test-design-doctrine.md` Part 2). A gap is not just a PO question — it is also a missing outline.
 
 | Archetype | Formal technique it triggers | Outlines to derive |
@@ -220,7 +220,7 @@ Use this catalog as a **rubric**, not a script. If the Story is already explicit
 ## Gotchas
 
 1. **Archetype overlap is normal.** Most Stories touch 2-3 archetypes. Walk each; dedupe questions.
-2. **Don't ask for project-wide answers.** If `business-data-map.md` already defines the currency / state machine, cite it. PO has finite patience.
+2. **Don't ask for project-wide answers.** If the data map (`business-data-context`) already defines the currency / state machine, cite its section. PO has finite patience.
 3. **Critical vs Edge classification matters.** PO triages by criticality. Putting a U3 question (success path text) into "Critical Questions for PO" alongside an A1 (auth gate) signals lack of judgment.
 4. **Universal questions are not auto-included.** Walk them ONLY when the Story doesn't already answer them. The Refinement file is high-signal, not exhaustive.
 5. **This catalog is evergreen.** Add new archetypes when projects discover them.

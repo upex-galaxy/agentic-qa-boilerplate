@@ -171,7 +171,7 @@ Sprint-wide mode. One nested sub-scope per issue at `.session/sprint-testing/spr
 ## Cross-references
 - STP: {STP-KEY}
 - Per-issue sub-scopes: `.session/sprint-testing/sprint-{N}/<KEY>/{plan.md, progress.md, test-session-memory.md}`
-- `.context/PBI/qa-artifacts/master-test-plan.md`, `.context/business/business-feature-map.md`
+- `.context/PBI/qa-artifacts/master-test-plan.md`, `business-e2e-context` (journeys + feature catalog)
 ```
 
 **`plan.md` is rewritten wholesale, so it has exactly ONE writer** — whoever plans the sprint. Mid-sprint changes (an issue arrives, a wave is promoted, an owner changes) are appended under `## Changelog` per §6, which is append-only; the body sections above it are never edited in place, because they record the agreement the sprint started from.
@@ -329,9 +329,7 @@ Goal: Fetch ticket <TICKET_KEY> from the issue tracker, load relevant context, c
 Context docs:
   - <<REPO_ROOT>>/AGENTS.md (§"Local Context (PBI)" folder convention)
   - <<REPO_ROOT>>/.context/PBI/qa-artifacts/master-test-plan.md
-  - <<REPO_ROOT>>/.context/business/business-data-map.md
-  - <<REPO_ROOT>>/.context/business/business-feature-map.md
-  - <<REPO_ROOT>>/.context/business/business-api-map.md
+  - `bun run context:map business-data-context` / `business-e2e-context` / `business-api-context` (the business maps, through the reader)
   - <<REPO_ROOT>>/.agents/skills/sprint-testing/references/session-entry-points.md
   - <<REPO_ROOT>>/.agents/project.yaml (project metadata + active env)
 
@@ -387,8 +385,8 @@ Context docs:
   - <PBI_FOLDER>/context.md (output of Session Start)
   - <SESSION_DIR>/test-session-memory.md (READ FIRST — shared memory)
   - <<REPO_ROOT>>/.agents/skills/sprint-testing/references/acceptance-test-planning.md
-  - <<REPO_ROOT>>/.context/business/business-feature-map.md
-  - <<REPO_ROOT>>/.context/business/business-api-map.md (if API-affecting)
+  - `bun run context:map business-e2e-context --section <journey-id>` (the journey this story sits in)
+  - `bun run context:map business-api-context` (if API-affecting; `--section <group-id>` for one endpoint group)
   - <<REPO_ROOT>>/.context/PBI/epics/EPIC-<EPIC_KEY>-<EPIC_SLUG>/module-context.md (if it exists)
 
 Skills to load: /acli (for ATP/ATR WRITE + Story link); in Modality jira-xray also /xray-cli (for [TMS_TOOL] Test Plan / Test Execution issues). Detailed reads (ACs, parent feature plan) use bun run jira:sync-issues, not /acli.
@@ -459,7 +457,7 @@ Context docs:
   - <PBI_FOLDER>/context.md
   - <<REPO_ROOT>>/.agents/skills/sprint-testing/references/exploration-patterns.md
   - <<REPO_ROOT>>/.agents/project.yaml (active env URLs and MCP names)
-  - <<REPO_ROOT>>/.context/business/business-data-map.md (entity flows for DB exploration)
+  - `bun run context:map business-data-context --section <id>` (entity flows for DB exploration)
 
 Skills to load: /playwright-cli (UI exploration); the active environment's API and DB MCPs ({{API_MCP}} and {{DB_MCP}} from project.yaml). For Bug tickets in Modality jira-xray: also /xray-cli (repro-Test creation at fix-verification time, step 7) + /acli (the Bug↔Test link).
 

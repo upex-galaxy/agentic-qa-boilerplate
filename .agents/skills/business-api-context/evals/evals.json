@@ -1,0 +1,26 @@
+{
+  "skill_name": "business-api-context",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "We're planning API coverage for billing next sprint. Which endpoint groups touch invoices, who is allowed to call each one, and which of them change money?",
+      "expected_output": "Loads business-api-context, reads `bun run context:map business-api-context` (or the invoices section), answers per endpoint group with auth level and business effect, citing section ids and dates; takes shapes from the OpenAPI schema, meaning from the map. Placeholder map -> says so and hands over `project-context` mode `api`.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "the map says DELETE /projects/{id} returns 204 but staging just gave me a 409 when the project still has members. can you fix the api map?",
+      "expected_output": "Loads business-api-context and follows references/refresh.md: verifies against the schema / a curl evidence, proposes a one-section edit (section id, evidence = the request, before/after) and applies it only on explicit approval, editing one section of references/business-api-map.html and bumping data-updated. Never edits api/schemas/ or anything outside the skill's references/.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Generate the TypeScript types for the new /payments endpoints from the OpenAPI spec.",
+      "expected_output": "Should NOT load business-api-context: regenerating types is `bun run api:sync` (framework pipeline), not business knowledge.",
+      "should_trigger": false,
+      "files": []
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # Business API Map Generator
 
-Generate or update `.context/business/business-api-map.md` — a business-first map of how the system's API powers user journeys.
+Generate or update the API map of `business-api-context`: `.agents/skills/business-api-context/references/business-api-map.html`, a business-first map of how the system's API powers user journeys. The file anatomy, the section contract and the incremental update are in `../../agentic-qa-core/references/business-context-maps.md` §2 and §4; this reference says WHAT goes in the sections.
 
 **Target**: $ARGUMENTS (project path, module filter, or leave blank for full system)
 
@@ -13,11 +13,11 @@ A single document that explains **how the business operates through the API**, c
 - Critical business journeys traced as end-to-end API call chains
 - The architecture that sits behind the API (services, persistence, boundaries)
 - External integrations at the API boundary (payment, auth, email, webhooks)
-- Cross-references to `business-data-map.md` entities and `business-feature-map.md` features
+- Cross-references to the entities of `business-data-context` and the journeys and features of `business-e2e-context`
 
 This is the **narrative** complement to:
-- `business-data-map.md` (data-centric)
-- `business-feature-map.md` (capability-centric)
+- `business-data-context` (data-centric)
+- `business-e2e-context` (journey-centric, with the feature catalog)
 - `bun run api:sync` output (technical types in `api/schemas/`)
 
 **It is NOT an endpoint catalog.** See §What is NOT in this plan.
@@ -31,8 +31,9 @@ Exhaust every source. Prefer existing context files over re-deriving from code.
 | Source | What to extract | Tool |
 |--------|-----------------|------|
 | OpenAPI spec | Endpoint inventory, auth tags, request/response shapes | `api/openapi.json`, output of `bun run api:sync`, or `[API_TOOL]` |
-| `.context/business/business-data-map.md` | Entities, flows, state machines — journeys must align to these | Read directly |
-| `.context/business/business-feature-map.md` | Features, CRUD, integrations — endpoints belong to features | Read directly |
+| `business-data-context` map | Entities, flows, state machines — journeys must align to these | `bun run context:map business-data-context` |
+| `business-e2e-context` map | Journeys, features, CRUD, integrations — endpoints belong to features | `bun run context:map business-e2e-context` |
+| Legacy map (input only) | a project's old `.context/business/business-api-map.md`, when present | Read it as input; cite it in `data-migrated-from` on the sections it seeded; never delete or rewrite it |
 | Auth middleware | Where tokens are validated, how roles map, public-vs-protected boundaries | Read `{{BACKEND_REPO}}/{{BACKEND_ENTRY}}` — auth/, middleware/, guards/, decorators |
 | Controllers / routes | Handler shapes and side effects behind each endpoint | Same backend entry — controllers, services |
 | Package dependencies | External SDKs at the API boundary (Stripe, Auth0, Resend, S3, etc.) | Read `package.json`, `requirements.txt`, `Gemfile` |
@@ -46,11 +47,17 @@ Exhaust every source. Prefer existing context files over re-deriving from code.
 ## Mode detection
 
 ```
-Does .context/business/business-api-map.md exist?
-  → NO:  CREATE mode — generate from scratch
-  → YES: UPDATE mode — generate new version, show diff summary, ask
-         for confirmation before overwriting. NEVER auto-overwrite.
+bun run context:map business-api-context --list
+  → skill folder missing:   STOP. The skill is delivered by `bun run up`
+                            (or scaffolded from the boilerplate); never create it here.
+  → placeholder notice:     CREATE mode — build every section from the sources.
+  → a list of sections:     UPDATE mode — staleness check per section
+                            (business-context-maps.md §5), regenerate ONLY the
+                            stale ones, show a section-level diff, WAIT for
+                            explicit approval. NEVER regenerate the whole map.
 ```
+
+Before drawing the first figure, run the point-of-use check for capability `diagrams` (`../../agentic-qa-core/references/business-context-maps.md` §7).
 
 ---
 
@@ -58,8 +65,8 @@ Does .context/business/business-api-map.md exist?
 
 Both context-file gates are **soft** — this mode produces value even in sparse repos; missing inputs become Discovery Gaps, not hard stops.
 
-- **`business-data-map.md` missing** → warn the user ("journeys will be weaker without entity context"), proceed, log the limitation in §Discovery Gaps.
-- **`business-feature-map.md` missing** → warn the user ("journey selection will rely on code scan alone"), proceed, log the limitation in §Discovery Gaps.
+- **`business-data-context` map missing or placeholder** → warn the user ("journeys will be weaker without entity context"), proceed, log the limitation in §Discovery Gaps.
+- **`business-e2e-context` map missing or placeholder** → warn the user ("journey selection will rely on code scan alone"), proceed, log the limitation in §Discovery Gaps.
 - **No OpenAPI spec AND no route-scannable backend** → hard stop. Ask the user to expose a spec or run `bun run api:sync`; you cannot produce an API map without either.
 
 ---
@@ -115,7 +122,7 @@ Validate coherence, do not duplicate content:
 
 ## Output structure
 
-Write `.context/business/business-api-map.md` with these 7 sections:
+Write the map as flat `<section>`s with stable ids (`overview`, `auth-model`, `journey-<slug>`, `architecture`, `integrations`, `cross-references`, `discovery-gaps`), each with its `data-sources` and `data-updated` date (anatomy: `business-context-maps.md` §2). Figures are diagram-design SVG inside `<figure data-diagram>`: sequence for a journey, architecture for §4. Every fact a figure shows is also in the text. Their content, section by section:
 
 ### 1. Executive summary
 
@@ -124,7 +131,7 @@ Write `.context/business/business-api-map.md` with these 7 sections:
 ### 2. Permission & auth model
 
 - Tier table: `Tier | Who it applies to | How to acquire | Where enforced (code path)`.
-- ASCII diagram of the token flow for the primary auth scheme (login → token → subsequent call → refresh).
+- A sequence figure of the token flow for the primary auth scheme (login → token → subsequent call → refresh).
 - If multiple schemes coexist (JWT + API key + session cookie), include one diagram per scheme.
 
 No per-endpoint listings here.
@@ -133,17 +140,17 @@ No per-endpoint listings here.
 
 One sub-section per journey. Each:
 - Name + one-sentence business purpose.
-- ASCII sequence diagram: `Client → Middleware → Handler → DB / External → Response`.
+- A sequence figure: `Client → Middleware → Handler → DB / External → Response`.
 - Numbered narrative (1..N) with the *why* at each step.
 - **Endpoints involved**: list of `METHOD /path` pointers (not full specs — link to OpenAPI).
-- **Entities touched**: pointers to data-map entities.
-- **Feature IDs**: pointers to feature-map FEAT-NNNs.
+- **Entities touched**: pointers to `business-data-context` section ids.
+- **Feature IDs**: pointers to `business-e2e-context` feature section ids.
 
 Cap at 7 journeys by default. If the system genuinely has more critical flows, document the cap decision in §Discovery Gaps rather than expanding silently.
 
 ### 4. Architecture behind the API
 
-- One ASCII layered diagram: `Client → API Gateway / Edge → Handlers → Services → Persistence / External`.
+- One architecture figure: `Client → API Gateway / Edge → Handlers → Services → Persistence / External`.
 - Table: `Component | Role | Persistence/Integrations touched | Why it matters for QA`.
 
 One diagram total for the whole system, not one per journey.
@@ -159,8 +166,8 @@ One diagram total for the whole system, not one per journey.
 
 ### 6. Cross-references
 
-- Data-map entities this API exposes → pointers to `.context/business/business-data-map.md` anchors.
-- Feature-map features this API backs → pointers to `.context/business/business-feature-map.md` anchors.
+- Entities this API exposes → `business-data-context` section ids.
+- Features this API backs → `business-e2e-context` section ids.
 - OpenAPI spec location (file path or URL) for full endpoint specs.
 - `bun run api:sync` output path (`api/schemas/`) for TypeScript types.
 
@@ -179,12 +186,12 @@ MANDATORY. List anything you could not verify:
 
 ## After generation
 
-- Update `AGENTS.md` §Context System with a pointer to `.context/business/business-api-map.md` if not already present. `CLAUDE.md` remains the one-line compatibility shim.
-- If `business-data-map.md` or `business-feature-map.md` were missing during generation, note the limitation in the summary you report back to the user.
-- Add a `> Last verified against OpenAPI on YYYY-MM-DD` line at the top of the output so future runs detect staleness at a glance.
-- In UPDATE mode: show the diff summary and wait for explicit confirmation.
-- Report: auth tiers documented, journeys traced, services behind the API, integrations mapped, discovery gaps.
-- If `.agents/skills/api-context/` exists: offer to run `project-context` mode `context-skill api` in UPDATE now (the map just changed). If it does not exist: name the option once, do not scaffold it here.
+- Verify: `bun run context:map business-api-context --list` prints every section, with the run's date on the ones written, and no placeholder notice.
+- If the data or e2e map was missing or a placeholder during generation, note the limitation in the summary you report back to the user.
+- Every section built from the contract carries `openapi:<tag or path>` in `data-sources`: that is how a later run detects staleness per section.
+- In UPDATE mode: show the section-level diff and wait for explicit confirmation before writing.
+- Report: auth tiers documented, journeys traced, services behind the API, integrations mapped, sections regenerated vs untouched, discovery gaps.
+- The map just changed: review `business-api-context`'s `## Rules` and `references/gotchas.md` against it. A rule the new map contradicts is PROPOSED for the gotchas' "No longer true" section, never deleted.
 
 ---
 
@@ -198,10 +205,10 @@ This mode does one thing: narrate the **business-level API story**. Everything b
 | TypeScript types for request/response shapes | `api/schemas/*.types.ts` via `bun run api:sync` |
 | cURL / Postman / DevTools recipes | `/playwright-cli` + existing integration tests |
 | Per-endpoint test case design (happy/error matrix) | `/test-documentation` (ATPs) |
-| CRUD matrix per entity | `project-context` mode `features` |
-| UI component inventory | `project-context` mode `features` |
+| CRUD matrix per entity | `project-context` mode `e2e` |
+| UI component inventory | `project-context` mode `e2e` |
 | Entity schemas, state machines, business rules | `project-context` mode `data` |
 | Risk-ranked test roadmap ("what to test and why") | `project-context` mode `test-plan` |
 | Sprint-level test execution order | `/sprint-testing` |
 
-If the user asks for any of the above inside `business-api-map.md`, decline politely and point to the owning tool. This document stays short, narrative, and business-first.
+If the user asks for any of the above inside the API map, decline politely and point to the owning tool. This document stays short, narrative, and business-first.

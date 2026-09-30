@@ -611,12 +611,16 @@ components    -&gt;  módulo del producto  (qué parte del producto toca)</code>
         </li>
       </ul>
       <p>
-        Fuera de <code>PBI/</code> viven los artefactos de proyecto: los mapas en
+        Fuera de <code>PBI/</code> viven los artefactos de proyecto: el glosario en
         <code>.context/business/</code> y las decisiones de arquitectura de tests en
         <code>.context/ADR/</code>. El Master Test Plan no: vive en Jira y su copia está en
         <code>PBI/qa-artifacts/master-test-plan.md</code>. El estado de sesión va en
         <code>.session/</code>, para que un re-sync no lo pise. Para ver qué está cubierto sin
-        llamar a Jira, <code>bun run tests:map</code> genera un mapa de cobertura en HTML.
+        llamar a Jira, <code>bun run tests:map</code> genera un mapa de cobertura en HTML. Los mapas
+        de negocio (datos, API, recorridos E2E) no están en <code>.context/</code>: son una
+        síntesis, así que viven dentro de sus context skills como HTML. Los abres en
+        <code>bun run docs</code> (carpeta Mapas de contexto); la IA los lee con
+        <code>bun run context:map</code>.
       </p>
 
       <footer class="doc-footer">

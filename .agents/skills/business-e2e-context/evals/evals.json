@@ -1,0 +1,26 @@
+{
+  "skill_name": "business-e2e-context",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I need to scope a smoke suite for the release on Friday. What are the main user journeys in the product and which ones would hurt the most if they broke?",
+      "expected_output": "Loads business-e2e-context, reads `bun run context:map business-e2e-context`, answers journeys first (entry point, steps, failure points) and uses the feature catalog only as the secondary index, citing section ids and dates. Placeholder map -> says so and hands over `project-context` mode `e2e`.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "explorando el checkout vi que ahora hay un paso de verificación de dirección antes del pago que el mapa E2E no tiene. ¿qué hago con eso?",
+      "expected_output": "Loads business-e2e-context and follows references/refresh.md: proposes a one-section edit to the checkout journey (evidence = the exploration, screenshot path or session label, before/after, figure redraw because the journey figure changes, which needs the diagrams capability) and applies it only on explicit approval. Answers in Spanish.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Write the Playwright page object for the checkout page with locators for the address form.",
+      "expected_output": "Should NOT be driven by business-e2e-context: page objects and locators are KATA code owned by /test-automation. The e2e map may be cited for the journey, never used as a code source.",
+      "should_trigger": false,
+      "files": []
+    }
+  ]
+}

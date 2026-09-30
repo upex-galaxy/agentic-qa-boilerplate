@@ -1,0 +1,26 @@
+{
+  "skill_name": "business-data-context",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I'm writing the DB checks for the refund story. Before I query anything: when an order gets refunded, what actually changes in the database? Which tables, which status transitions, is there a trigger or a job involved?",
+      "expected_output": "Loads business-data-context, reads the map with `bun run context:map business-data-context --section <order or refund id>` (never the raw HTML), answers from the section with its id and data-updated date, and suggests verifying stale facts with [DB_TOOL]. If the map is a placeholder it says so and hands over `project-context` mode `data` instead of inventing an answer.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "oye, acabo de correr un SELECT en staging y la tabla subscriptions tiene una columna paused_until que el mapa de datos no menciona para nada. ¿lo arreglamos?",
+      "expected_output": "Loads business-data-context and follows references/refresh.md: locates the section via --list / --section, PROPOSES a one-section edit in the fixed proposal shape (section id, evidence = the query, before/after, figure unchanged or redraw) and waits for an explicit yes before editing only that section of references/business-data-map.html and bumping data-updated. Answers in Spanish. Does not touch any file outside the skill's references/.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "What does the POST /orders endpoint return when the cart is empty, and which role can call it?",
+      "expected_output": "Should NOT be answered from business-data-context: endpoint contracts, statuses and auth levels belong to business-api-context (plus the OpenAPI schema). At most business-data-context is cited for what the order entity is.",
+      "should_trigger": false,
+      "files": []
+    }
+  ]
+}

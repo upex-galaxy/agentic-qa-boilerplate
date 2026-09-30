@@ -214,6 +214,7 @@ dbhub.local.toml
 .agents/skills/playwright-best-practices/
 .agents/skills/resend-cli/
 .agents/skills/skill-creator/
+.agents/skills/diagram-design/
 
 # ===== refcheck per-dev config (local-only) =====
 .refcheckrc.toml

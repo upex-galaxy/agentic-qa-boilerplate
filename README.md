@@ -462,7 +462,7 @@ bun run test:smoke         # smoke / @critical tests
 │   └── validateTestEnv.ts        # Test environment validation
 │
 ├── .context/                     # AI Context Engineering (generated)
-│   ├── business/                  # business-data-map / business-feature-map / business-api-map
+│   ├── business/                  # business model + domain glossary (the maps live in their context skills)
 │   ├── PRD/                      # Product requirements
 │   ├── SRS/                      # Technical specs
 │   ├── reports/                  # Generated output (GITIGNORED except its README): test map, regression reports
@@ -856,7 +856,7 @@ touch tests/e2e/your-module/your-feature.test.ts
 
 ### 4. Generate Context
 
-Load the `/project-discovery` skill in your AI assistant to generate project-specific context (PRD, SRS, business-data-map, business-feature-map, business-api-map). The Master Test Plan is written by `project-context` mode `test-plan` to the `QA Master Test Plan` Epic in Jira.
+Load the `/project-discovery` skill in your AI assistant to generate project-specific context (PRD, SRS, domain glossary), then `project-context` for the business maps (HTML inside `business-data-context`, `business-api-context` and `business-e2e-context`, read with `bun run context:map`). The Master Test Plan is written by `project-context` mode `test-plan` to the `QA Master Test Plan` Epic in Jira.
 
 ### 5. Adapt the Framework
 

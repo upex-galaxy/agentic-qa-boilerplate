@@ -25,34 +25,40 @@ Only `allowed-tools, compatibility, description, license, metadata, name` are sp
 
 | Kind | Slug suffix | Files | Body sections that must exist |
 |---|---|---|---|
-| **context** | `-context` (mandatory) | `SKILL.md`, `references/gotchas.md` | `## What this skill knows` (one aspect), `## Sources of truth` (the `.context/` paths it CITES), `## Rules` (judgment, each dated), `## Not here` (what belongs in `.context/` instead) |
+| **context** | `-context` (mandatory) | `SKILL.md`, `references/gotchas.md`; a skill that holds a generated map adds `references/<map>.html` + `references/refresh.md` and declares `metadata.writes: [references/]` | `## What this skill knows` (one aspect), `## Sources of truth` (what it CITES), `## Rules` (judgment, each dated), `## Not here` (what belongs elsewhere) |
 | **workflow** | none | `SKILL.md`, `references/`, `evals/evals.json` | the session banner + `## Phase 0` (register the slug in `SESSION_RETROFITTED_SKILLS`, `scripts/lint-skills.ts`, so the `SESSION-BANNER-MISSING`, `SESSION-PHASE-0-MISSING` and `SESSION-SCOPE-INVALID` checks bind), `## Compact Rules`, `## Subagent Dispatch Strategy` (7-component briefing), a session-close step citing `session-footer-contract.md` and `skill-refinement-protocol.md`, a blocker path citing `upstream-feedback.md` |
 | **utility** | `-cli` / `-tool` / `-app` (mandatory) | `SKILL.md` with `allowed-tools: Bash(<binary>:*)`, `references/gotchas.md` | `## Compact Rules`, the tool's grammar (verbs, flags, auth, errors), a §6.5 row in `AGENTS.md` if a Bash binary must auto-load it |
 | **core** | none | `SKILL.md` + `references/` | no write path of its own; other skills cite its references |
 
 `references/gotchas.md` uses the measured genre (`orca-orchestration/references/gotchas.md`): columns `# · Gotcha · Symptom · Fix · Measured · Verified against`, plus a `## No longer true` section rows move to instead of being deleted.
 
-## 3 · Context skills: the three-question test (what goes where)
+## 3 · Context skills: what goes where
 
-Ask about each piece of knowledge:
+**The principle.** `.context/` holds what a SCRIPT pulls from an external source of truth, plus the few things this repo itself is the source of truth for. What an AI SYNTHESIZES lives in a skill. A cache is cheap to rebuild and identical on two machines; a synthesis is authored (by an AI, but authored), two sessions write it differently, rebuilding it costs thousands of tokens, and it is exactly the knowledge that should arrive unasked. Ask about each piece of knowledge:
 
-1. **Can a command regenerate it from a source of truth?** (code, OpenAPI, Jira, a live DB, a CI log) → yes: `.context/` (owned by `/project-discovery`, `project-context`, `bun run context:hydrate`, `bun run api:sync`). A context skill never holds regenerable facts.
-2. **Would two competent sessions write it differently?** → yes: judgment (a rule, an interpretation, a gotcha paid for on a date) → the `-context` skill. No: a fact → `.context/`.
-3. **Must it trigger by itself when the topic comes up?** A skill has a `description` the harness matches; a `.context/` file is read only when a skill's read list names it. Unasked-for knowledge → skill. Pulled-at-a-known-step knowledge → `.context/`.
+| Question | Yes → |
+|---|---|
+| 1. Does a script pull it from an external source of truth? (Jira, OpenAPI, a CI log) | `.context/` as a `[SYNC]` cache, recovered by that script (`bun run context:hydrate`, `bun run api:sync`) |
+| 2. Is this repo itself the source of truth for it? (a decision record, an automation plan versioned with the code) | `.context/` as `[COMMIT]` |
+| 3. Otherwise: the AI synthesizes it from code, DB and contracts, or a human writes judgment about it | a context skill: the synthesis as the skill's generated map (`references/<map>.html`, `./business-context-maps.md`), the judgment in `## Rules` / `references/gotchas.md` |
+
+Judgment vs fact inside a context skill: would two competent sessions write it differently? Yes → a dated rule. No → a fact, which belongs in the map (or the cache) and never in `SKILL.md`.
 
 | Content | Home |
 |---|---|
-| Entity map, CRUD matrix, endpoint list, auth model, infra topology | `.context/business/*.md`, `.context/SRS/*` |
-| The rule for READING that map ("orders are soft-deleted; a count without `deleted_at IS NULL` is wrong") | `<aspect>-context/SKILL.md` or its `references/gotchas.md` |
+| Entity map, flows, state machines, endpoint groups, journeys (synthesis) | the business context skills' generated maps (`BUSINESS_CONTEXT_SKILLS` in `cli/lib/context-maps.ts`), read through `bun run context:map <slug>` |
+| The rule for READING that map ("orders are soft-deleted; a count without `deleted_at IS NULL` is wrong") | the skill's `## Rules` or `references/gotchas.md` |
 | Jira mirror | `.context/PBI/` (never hand-written) |
 | A test-architecture decision | `.context/ADR/` |
 | The repo's own methodology (index + invariants) | `iql-context` (shipped upstream) |
 
-**Hard rule: a `-context` skill CITES `.context/` paths, it does not copy them.** A context skill that restates a `.context/` fact is a second source of truth and fails review. The STALE-PATH check (`scripts/lint-skills.ts`) enforces the citing half with a kind-scoped rule: inside a `metadata.kind: context` skill every `.context/` cite must exist on disk (the map is born before the skill; only the gitignored `.context/PBI/` mirror is exempt), while in every other skill the outputs the generators write per project (`project-discovery`, the `project-context` maps, the skill reports) are exempt in both directions, because they do not exist in the boilerplate checkout. The "does not copy" half stays a review rule.
+**Hard rule: a `-context` skill CITES `.context/` paths, it does not copy them.** A context skill that restates a `.context/` fact is a second source of truth and fails review. Its generated map is not a copy: it is the ONLY copy of that synthesis, and the old `.context/business/*-map.md` files a project may still hold are generator input, never a second source. The STALE-PATH check (`scripts/lint-skills.ts`) enforces the citing half with a kind-scoped rule: inside a `metadata.kind: context` skill every `.context/` cite must exist on disk (the map is born before the skill; only the gitignored `.context/PBI/` mirror is exempt), while in every other skill the outputs the generators write per project (`project-discovery`, the `project-context` maps, the skill reports) are exempt in both directions, because they do not exist in the boilerplate checkout. The "does not copy" half stays a review rule.
 
-**Ownership rule:** SUT context skills (`data-context`, `api-context`, `infra-context`, ...) are project-owned and NEVER shipped upstream. The updater enforces it: any `.agents/skills/<slug>-context/` other than the ones upstream owns (`iql-context`, the grandfathered workflow slug `project-context`, and the retired `sync-ai-context`, kept so the updater still removes a downstream copy) is project-local by construction, never delivered, overwritten or deleted by `bun run up`, even if upstream ever ships a same-slug example (`isProjectLocalSkillPath` in `cli/lib/updater-core.ts`). Upstream ships `iql-context` only; its `references/project-overrides.md` is bootstrap-only (delivered once, then project-owned).
+**Ownership rule:** SUT context skills (`billing-context`, `infra-context`, ...) are project-owned and NEVER shipped upstream. The updater enforces it: any `.agents/skills/<slug>-context/` other than the ones upstream owns (`iql-context`, the grandfathered workflow slug `project-context`, and the retired `sync-ai-context`, kept so the updater still removes a downstream copy) is project-local by construction, never delivered, overwritten or deleted by `bun run up`, even if upstream ever ships a same-slug example (`isProjectLocalSkillPath` in `cli/lib/updater-core.ts`). Upstream ships `iql-context` (synced; its `references/project-overrides.md` is bootstrap-only), plus one narrow exception: the business context skills listed in `BUSINESS_CONTEXT_SKILLS` (`cli/lib/context-maps.ts`) arrive as placeholders whose whole folder is DELIVERED ONCE when absent, then belongs to the project and is never overwritten or deleted.
 
-**Who proposes, who creates:** `project-discovery` PROPOSES the context skills a fresh repo could carry, at its close, from the maps it just produced (one line per aspect, never a file). `project-context` mode `context-skill` CREATES them, always through `skill-creator`, and the modes that regenerate a map (`data`, `features`, `api`, `test-plan`) offer, when done, to run `context-skill` in UPDATE for the skill that sits over that map. UPDATE appends dated rules; it never rewrites one.
+**The write-scope amendment.** A context skill that holds a generated map keeps it honest: when a session observes something that contradicts a section, it PROPOSES the one-section edit (to the user, or to the conductor for a supervised worker) and applies it on approval, under its own `references/` and nowhere else. It declares that in frontmatter (`metadata.writes: [references/]`), carries the procedure in `references/refresh.md`, and `CONTEXT-WRITES` (`scripts/lint-skills.ts`) gates it. It still never runs a stage, never touches Jira and never edits another skill.
+
+**Who proposes, who creates:** the business context skills already exist (delivered as placeholders); `project-context` modes `data` / `api` / `e2e` write their maps, and their dated rules accrue in the same skill through its refresh and refinement paths. For any OTHER aspect, `project-discovery` PROPOSES the context skills a fresh repo could carry, at its close (one line per aspect, never a file), and `project-context` mode `context-skill` CREATES them, always through `skill-creator`. UPDATE appends dated rules; it never rewrites one.
 
 **Who loads them:** a context skill triggers by its `description` in the main thread. In a subagent briefing the Skill Resolver injects only the context skills whose ASPECT the dispatch touches (`skill-resolver.md` §"How the orchestrator picks relevant skills"), never all of them.
 
@@ -74,7 +80,7 @@ metadata:
 One aspect of the SUT: <aspect>. Loading it changes what the agent KNOWS, not what it does next.
 
 ## Sources of truth (cited, never copied)
-- `.context/business/business-data-map.md` — <what to read there>
+- `<the path or command it cites>` — <what to read there>
 
 ## Rules (judgment, dated)
 - <YYYY-MM-DD> · <rule> · measured: <how>

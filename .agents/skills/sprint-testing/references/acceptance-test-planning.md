@@ -103,11 +103,11 @@ Read every item before planning. Fail fast if any project-wide context file is m
 | Ticket (title, description, ACs, priority, comments) | `bun run jira:sync-issues get <KEY> --include-comments` then read the synced `story.md` / `acceptance-criteria.md` / `comments.md` (Jira Key from `{STORY_PATH}/context.md`). NEVER `acli workitem view` for custom fields. |
 | Team Discussion | Synced `comments.md` — extract decisions, tech notes, edge cases (see `session-entry-points.md`) |
 | Parent epic + feature plan | `.context/PBI/epics/EPIC-<KEY>-<slug>/feature-test-plan.md` if it exists (synced from the epic) |
-| Project-wide context | `.context/business/business-data-map.md`, `.context/business/business-feature-map.md`, `.context/business/business-api-map.md`, `.context/PBI/qa-artifacts/master-test-plan.md` |
+| Project-wide context | `bun run context:map business-data-context` / `business-e2e-context` / `business-api-context` (per touched level; `--section <id>` for one entity, journey or endpoint group), `.context/PBI/qa-artifacts/master-test-plan.md` |
 | Module context | `.context/PBI/epics/EPIC-<KEY>-<slug>/module-context.md` |
 | Code | `{{BACKEND_REPO}}/{{BACKEND_ENTRY}}` + `{{FRONTEND_REPO}}/{{FRONTEND_ENTRY}}` (targeted reads only) |
 | Test data candidates | `[DB_TOOL]` on `{{DB_MCP}}` |
-| Architecture + API contracts (if present) | `.context/SRS/architecture.md`, `.context/SRS/functional-specs.md`, `.context/SRS/non-functional-specs.md`; API contract from `api/openapi-types.ts` (types) + `.context/business/business-api-map.md` (business) |
+| Architecture + API contracts (if present) | `.context/SRS/architecture.md`, `.context/SRS/functional-specs.md`, `.context/SRS/non-functional-specs.md`; API contract from `api/openapi-types.ts` (types) + the `business-api-context` map (business) |
 
 ---
 
@@ -207,7 +207,7 @@ Anchor the ticket to business + technical context.
 
 ### Technical context
 - Frontend: components, pages/routes, state management (if any)
-- Backend: endpoints from `business-api-map.md` / `api/schemas/` / `api-contracts.yaml`, services, DB tables
+- Backend: endpoints from the `business-api-context` map / `api/schemas/` / `api-contracts.yaml`, services, DB tables
 - External services (if any)
 - Integration points specific to this ticket
 

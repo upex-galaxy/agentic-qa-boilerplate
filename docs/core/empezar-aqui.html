@@ -495,8 +495,9 @@ bun run codex      # Codex CLI (Codex Desktop usa la misma config del repo)</cod
                 stack
               </td>
               <td>
-                <code>.context/</code>: PRD, SRS, glosario, mapas de datos, features y API, y el
-                master test plan. Cuatro fases: Constitution, Architecture, Infrastructure,
+                <code>.context/</code>: PRD, SRS y glosario; después, con
+                <code>project-context</code>, los mapas de negocio (dentro de sus context skills) y
+                el master test plan. Cuatro fases: Constitution, Architecture, Infrastructure,
                 Specification.
               </td>
               <td>Target nuevo o cambio grande de arquitectura.</td>
@@ -528,9 +529,9 @@ bun run codex      # Codex CLI (Codex Desktop usa la misma config del repo)</cod
               <td>
                 Docs al día (<code>bun run docs:check</code> y el cierre de cada skill), mapas
                 regenerados (<code>project-context</code> modos <code>data</code> /
-                <code>features</code> / <code>api</code> y <code>test-plan</code>), catálogos de
-                Jira al día (<code>jira:sync-*</code>, <code>jira:check</code>,
-                <code>vars:check</code>) y el framework actualizado con <code>bun run up</code>.
+                <code>e2e</code> / <code>api</code> y <code>test-plan</code>), catálogos de Jira al
+                día (<code>jira:sync-*</code>, <code>jira:check</code>, <code>vars:check</code>) y
+                el framework actualizado con <code>bun run up</code>.
               </td>
               <td>Cuando aparece el drift. Trátalo como un warning del compilador.</td>
             </tr>
@@ -693,14 +694,16 @@ bun run codex      # Codex CLI (Codex Desktop usa la misma config del repo)</cod
             </tr>
             <tr>
               <td>
-                <code>project-context</code> (modos <code>data</code>, <code>features</code>,
+                <code>project-context</code> (modos <code>data</code>, <code>e2e</code>,
                 <code>api</code> y <code>test-plan</code>)
               </td>
               <td>Cuando el producto cambia: entidades, features, endpoints, riesgos.</td>
               <td>
-                Los mapas de <code>.context/business/</code> y el Master Test Plan, que se escribe
-                en el Epic <code>QA Master Test Plan</code> de Jira. En modo UPDATE muestra el diff
-                y espera aprobación.
+                Los mapas HTML dentro de <code>business-data-context</code>,
+                <code>business-api-context</code> y <code>business-e2e-context</code>, y el Master
+                Test Plan, que se escribe en el Epic <code>QA Master Test Plan</code> de Jira. En
+                modo UPDATE rehace solo las secciones desactualizadas, muestra el diff y espera
+                aprobación.
               </td>
             </tr>
           </tbody>
@@ -979,7 +982,7 @@ subagente (contexto limpio)
             <tr>
               <td>Refrescar los mapas de negocio o el master test plan</td>
               <td>
-                <code>/project-context data</code> · <code>/project-context features</code> ·
+                <code>/project-context data</code> · <code>/project-context e2e</code> ·
                 <code>/project-context api</code> · <code>/project-context test-plan</code>
               </td>
             </tr>
@@ -1121,7 +1124,11 @@ subagente (contexto limpio)
             <tr>
               <td><code>/project-context data</code></td>
               <td><code>project-context</code> · data</td>
-              <td>Regenera <code>.context/business/business-data-map.md</code>.</td>
+              <td>
+                Genera el mapa de datos dentro de <code>business-data-context</code> (HTML; lo ves
+                en <code>bun run docs</code>, carpeta Mapas de contexto) y, si ya existe, rehace
+                solo las secciones desactualizadas.
+              </td>
             </tr>
           </tbody>
         </table>

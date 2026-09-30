@@ -32,7 +32,7 @@
     {
       "id": 5,
       "prompt": "What are the soft-delete rules on the orders table? A count query in my test is returning more rows than the UI shows.",
-      "expected_output": "Should NOT trigger: SUT knowledge belongs to .context/business/business-data-map.md and the project's data-context skill, not to the methodology index.",
+      "expected_output": "Should NOT trigger: SUT knowledge belongs to business-data-context (its map, read via `bun run context:map business-data-context`), not to the methodology index.",
       "should_trigger": false,
       "files": []
     }

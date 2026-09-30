@@ -579,7 +579,7 @@ h4,.h4{font-size:17px;color:var(--text-1)}
     <div class="step"><div class="num">3</div><h4>Tabla de veto</h4><p>Money / auth / data-integrity / integración / state machine → FORZAR FULL. CSS puro / copy / docs → SKIP.</p></div>
     <div class="step"><div class="num">4</div><h4>Risk score</h4><p>Solo sin veto. Feature nueva +3 · datos dinámicos +3 · AC-light +2 · esfuerzo +2 · &gt;5 comentarios +1…</p></div>
   </div>
-  <div class="callout"><h4>5 · Escaneo de viabilidad de datos (solo HIGH)</h4><p>Lectura de <code>business-data-map</code> / <code>business-api-map</code> / <code>master-test-plan</code> — sin queries, sin API calls. Si el modelo de datos no soporta los ACs → flag <code>DATA-FEASIBILITY-RISK</code> (suave: no bloquea, se vuelve pregunta crítica al PO).</p></div>
+  <div class="callout"><h4>5 · Escaneo de viabilidad de datos (solo HIGH)</h4><p>Lectura de los mapas de datos y API (<code>bun run context:map</code>) y del <code>master-test-plan</code> — sin queries, sin API calls. Si el modelo de datos no soporta los ACs → flag <code>DATA-FEASIBILITY-RISK</code> (suave: no bloquea, se vuelve pregunta crítica al PO).</p></div>
   <div class="notes">El embudo va en orden estricto: tipo antes que label, label antes que veto, veto antes que score. El rechazo ruidoso ES valor — a menudo revela que el tablero está mal etiquetado.</div>
 </section>
 
@@ -807,7 +807,7 @@ h4,.h4{font-size:17px;color:var(--text-1)}
         <tr><td>La Story llega a <b>Ready For QA</b></td><td><code>/sprint-testing</code> — lee <code>shift-left-reviewed</code> (&lt;30 días) y cortocircuita sus fases de planning</td></tr>
         <tr><td>TCs formales + ROI, cuando la Story shippea</td><td><code>/test-documentation</code> — Documentation</td></tr>
         <tr><td>Código de test automatizado</td><td><code>/test-automation</code> — Automation · luego <code>/regression-testing</code> — Regression</td></tr>
-        <tr><td>Falta contexto de negocio</td><td><code>/project-discovery</code> + <code>/project-context</code> (modos <code>data</code> / <code>features</code> / <code>api</code> y <code>test-plan</code>)</td></tr>
+        <tr><td>Falta contexto de negocio</td><td><code>/project-discovery</code> + <code>/project-context</code> (modos <code>data</code> / <code>e2e</code> / <code>api</code> y <code>test-plan</code>)</td></tr>
         <tr><td>Revisión adversarial del refinamiento (opcional)</td><td><code>/judgment-day</code> — nunca auto-invocado</td></tr>
       </tbody>
     </table>

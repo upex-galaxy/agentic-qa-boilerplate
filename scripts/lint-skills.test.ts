@@ -452,3 +452,57 @@ describe('lint-skills stage owners (check 22) and the §5 table scope', () => {
     expect(exitCode).toBe(0);
   });
 });
+
+describe('lint-skills context write scope (check 23, CONTEXT-WRITES)', () => {
+  function contextSkill(root: string, slug: string, writes: string, body = '', refresh: string | null = 'Propose, then apply on approval.'): void {
+    write(root, `.agents/skills/${slug}/SKILL.md`, t1Skill(slug, body, 'context').replace('  kind: context\n', `  kind: context\n  writes: ${writes}\n`));
+    if (refresh !== null) { write(root, `.agents/skills/${slug}/references/refresh.md`, refresh); }
+  }
+
+  test('a context skill writing only its own references/ with a refresh procedure passes', () => {
+    const root = fixture({ listCommunityInAgentsMd: true, extraSkills: [{ slug: 'acme-context', kind: 'context' }] });
+    contextSkill(root, 'acme-context', '[references/]');
+    const { exitCode, output } = runLint(root);
+
+    expect(output).not.toContain('CONTEXT-WRITES:');
+    expect(exitCode).toBe(0);
+  });
+
+  test('a write scope outside references/, or escaping it, is an error', () => {
+    const root = fixture({ listCommunityInAgentsMd: true, extraSkills: [{ slug: 'acme-context', kind: 'context' }] });
+    contextSkill(root, 'acme-context', '[references/, .context/business/, references/../SKILL.md]');
+    const { exitCode, output } = runLint(root);
+
+    expect(output).toContain('names `.context/business/`');
+    expect(output).toContain('names `references/../SKILL.md`');
+    expect(output).not.toContain('names `references/`;');
+    expect(exitCode).toBe(1);
+  });
+
+  test('a non-context skill cannot declare a write scope', () => {
+    const root = fixture({ listCommunityInAgentsMd: true, extraSkills: [{ slug: 'acme-flow', kind: 'workflow' }] });
+    write(root, '.agents/skills/acme-flow/SKILL.md', t1Skill('acme-flow').replace('  kind: workflow\n', '  kind: workflow\n  writes: [references/]\n'));
+    const { exitCode, output } = runLint(root);
+
+    expect(output).toContain('[acme-flow] CONTEXT-WRITES: `metadata.writes` is the context-kind amendment');
+    expect(exitCode).toBe(1);
+  });
+
+  test('a write scope without references/refresh.md, or next to a Jira tag, is an error', () => {
+    const root = fixture({ listCommunityInAgentsMd: true, extraSkills: [{ slug: 'acme-context', kind: 'context' }, { slug: 'beta-context', kind: 'context' }] });
+    contextSkill(root, 'acme-context', '[references/]', '', null);
+    contextSkill(root, 'beta-context', '[references/]', '', 'Then comment on the story via `[ISSUE_TRACKER_TOOL]`.');
+    const { exitCode, output } = runLint(root);
+
+    expect(output).toContain('[acme-context] CONTEXT-WRITES: a context skill that declares `metadata.writes` must carry `references/refresh.md`');
+    expect(output).toContain('[beta-context] CONTEXT-WRITES: a context skill with a write scope carries `[ISSUE_TRACKER_TOOL]`');
+    expect(exitCode).toBe(1);
+  });
+
+  test('`diagrams` is in the capability vocabulary', () => {
+    const { exitCode, output } = runLint(fixture({ listCommunityInAgentsMd: true, extraSkills: [{ slug: 'acme-flow', kind: 'workflow', capabilities: ['diagrams'] }] }));
+
+    expect(output).not.toMatch(CAPABILITY_VIOLATION);
+    expect(exitCode).toBe(0);
+  });
+});

@@ -36,7 +36,7 @@ The skeleton below is the canonical body for `shift-left-refinement.md`, the `[L
 
 ### Technical context
 - **Frontend**: components, pages / routes, state management (if any)
-- **Backend**: endpoints (cite `business-api-map.md`), services, DB tables
+- **Backend**: endpoints (cite the `business-api-context` section id), services, DB tables
 - **External services**: ...
 - **Integration points specific to this Story**: ...
 

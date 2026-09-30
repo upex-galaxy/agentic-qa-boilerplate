@@ -146,6 +146,15 @@
  *      AGENTS.md §3 used to enumerate by hand) must carry a
  *      `## Subagent Dispatch Strategy` section. ERROR severity.
  *
+ *  23. CONTEXT-WRITES — the write scope a skill declares in `metadata.writes`
+ *      (skill-scaffold.md §2, the context-kind amendment). Only a
+ *      `metadata.kind: context` skill may declare it; every entry must be the
+ *      skill's own `references/` folder or a path under it; a context skill
+ *      that declares it must carry `references/refresh.md` (the procedure the
+ *      write path runs); and neither its SKILL.md nor that procedure may carry
+ *      the Jira resolution tags (`[ISSUE_TRACKER_TOOL]`, `[TMS_TOOL]`): a
+ *      context skill edits its own map, never a tracker. ERROR severity.
+ *
  * Usage: bun run scripts/lint-skills.ts   (or: bun run skills:check)
  */
 
@@ -234,7 +243,7 @@ const KIND_SUFFIX_RULES: ReadonlyArray<{ kind: string, suffixes: readonly string
  * `.mcp.json` server, a user-level server and a claude.ai connector all
  * satisfy it. Add a name here AND in the reference, in the same change. Check 18.
  */
-const KNOWN_CAPABILITIES = new Set(['web-search', 'library-docs', 'db', 'api-schema']);
+const KNOWN_CAPABILITIES = new Set(['web-search', 'library-docs', 'db', 'api-schema', 'diagrams']);
 
 /**
  * Resolution tag → capability it resolves to (AGENTS.md §6). Drives the
@@ -248,6 +257,9 @@ const CAPABILITY_TAGS: ReadonlyArray<{ tag: string, capability: string }> = [
   { tag: '[DOCS_TOOL]', capability: 'library-docs' },
   { tag: '[WEB_SEARCH_TOOL]', capability: 'web-search' },
 ];
+
+/** Jira resolution tags a context skill with a write scope must never carry (check 23). */
+const JIRA_WRITE_TAGS = ['[ISSUE_TRACKER_TOOL]', '[TMS_TOOL]'];
 
 /**
  * QA workflow skills subject to the anti-leak rule (check 6). The "Forbidden
@@ -380,6 +392,8 @@ interface SkillFrontmatter {
   stageOwner: boolean
   /** `metadata.requires_capabilities` (MCP capabilities); undefined when the nested key is absent. */
   requiresCapabilities?: string[]
+  /** `metadata.writes` (a context skill's own write scope); undefined when the nested key is absent. */
+  writes?: string[]
   raw: string
 }
 
@@ -453,15 +467,17 @@ function parseFrontmatter(content: string): SkillFrontmatter | null {
   let kind: string | undefined;
   let stageOwner = false;
   let requiresCapabilities: string[] | undefined;
+  let writes: string[] | undefined;
   const metadataMatch = block.match(/^metadata:[ \t]*\n((?:[ \t]+\S[^\n]*\n?)+)/m);
   if (metadataMatch) {
     const kindMatch = metadataMatch[1].match(/^[ \t]+kind:[ \t]*["']?([\w-]+)["']?/m);
     if (kindMatch) { kind = kindMatch[1]; }
     stageOwner = /^[ \t]+stage_owner:[ \t]*true\b/m.test(metadataMatch[1]);
     requiresCapabilities = parseNestedList(metadataMatch[1], 'requires_capabilities');
+    writes = parseNestedList(metadataMatch[1], 'writes');
   }
 
-  return { name, categoriesField, kind, stageOwner, requiresCapabilities, raw: block };
+  return { name, categoriesField, kind, stageOwner, requiresCapabilities, writes, raw: block };
 }
 
 /**
@@ -759,7 +775,7 @@ const INLINE_CODE_PATH
  */
 const CONTEXT_GENERATED_PREFIXES: ReadonlyArray<{ prefix: string, generator: string }> = [
   { prefix: '.context/PBI/', generator: 'scripts/sync-jira-issues.ts (gitignored Jira mirror)' },
-  { prefix: '.context/business/', generator: 'project-discovery Phase 1 + project-context data / features / api' },
+  { prefix: '.context/business/', generator: 'project-discovery Phase 1 (a project may also keep its pre-skill business maps here, read as generator input)' },
   { prefix: '.context/PRD/', generator: 'project-discovery Phase 2' },
   { prefix: '.context/SRS/', generator: 'project-discovery Phase 2' },
   { prefix: '.context/infrastructure/', generator: 'project-discovery Phase 3' },
@@ -1374,6 +1390,31 @@ function main(): void {
         violation('WARN', entry, `CAPABILITY-UNDECLARED: body uses \`${tag}\` but \`metadata.requires_capabilities\` does not declare \`${capability}\` (declare it, or drop the mention if the skill never uses it; mcp-capabilities.md §3)`);
       }
     }
+
+    // Check 23: a declared write scope is a context skill's own references/.
+    if (fm.writes !== undefined) {
+      if (fm.kind !== 'context') {
+        violation('ERROR', entry, `CONTEXT-WRITES: \`metadata.writes\` is the context-kind amendment; a \`${fm.kind ?? 'kind-less'}\` skill does not declare a write scope (skill-scaffold.md §2)`);
+      }
+      else {
+        for (const target of fm.writes) {
+          const norm = target.replace(/\\/g, '/').replace(/^\.\//, '');
+          if (!(norm === 'references' || norm.startsWith('references/')) || norm.includes('..')) {
+            violation('ERROR', entry, `CONTEXT-WRITES: \`metadata.writes\` names \`${target}\`; a context skill writes only under its own \`references/\``);
+          }
+        }
+        const refresh = join(slugPath, 'references', 'refresh.md');
+        if (!existsSync(refresh)) {
+          violation('ERROR', entry, 'CONTEXT-WRITES: a context skill that declares `metadata.writes` must carry `references/refresh.md`, the procedure its write path runs');
+        }
+        const procedure = `${body}\n${existsSync(refresh) ? readFileSync(refresh, 'utf8') : ''}`;
+        for (const tag of JIRA_WRITE_TAGS) {
+          if (procedure.includes(tag)) {
+            violation('ERROR', entry, `CONTEXT-WRITES: a context skill with a write scope carries \`${tag}\`; it edits its own map, never a tracker`);
+          }
+        }
+      }
+    }
   }
 
   // Build T1 dir slug set (available after the T1 walk).
@@ -1492,11 +1533,12 @@ function main(): void {
     'KIND-MISSING (T1 / vendored T2 SKILL.md without `metadata.kind`)',
     'KIND-VOCAB (`metadata.kind` outside context / workflow / utility / core)',
     'KIND-SUFFIX (slug suffix `-context` / `-cli` / `-tool` / `-app` vs declared kind, both directions)',
-    'CAPABILITY-VOCAB (`metadata.requires_capabilities` outside web-search / library-docs / db / api-schema)',
+    'CAPABILITY-VOCAB (`metadata.requires_capabilities` outside web-search / library-docs / db / api-schema / diagrams)',
     'CAPABILITY-UNDECLARED (resolution tag in SKILL.md body without the matching declaration; WARN)',
     `FILE-LINE (path:line citation in .agents/**/*.md + AGENTS.md prose; ${VOLATILE_SEVERITY['FILE-LINE']})`,
     `CURRENT-STATE (today / as of / dated measurement / since <version> / tool version in the same prose; ${VOLATILE_SEVERITY['CURRENT-STATE']})`,
     'STAGE-OWNER-DISPATCH (`metadata.stage_owner: true` without a `## Subagent Dispatch Strategy` section)',
+    'CONTEXT-WRITES (`metadata.writes` outside a context skill, outside its own `references/`, without `references/refresh.md`, or next to a Jira tag)',
   ];
 
   if (violations.length === 0) {

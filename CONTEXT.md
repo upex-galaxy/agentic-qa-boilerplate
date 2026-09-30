@@ -146,10 +146,8 @@ Two systems, two consumers, two lifecycles. Use the right substrate for the righ
 │                                 rebuild: `bun run context:hydrate` · committed exceptions: README.md,
 │                                 templates/, epics/*/test-specs/ (see .context/PBI/README.md)
 │
-├── business/                   → Business maps (`project-context`)
-│   ├── business-data-map.md       → System flows + entities        (project-context data)
-│   ├── business-feature-map.md    → Feature catalog + CRUD matrix  (project-context features)
-│   └── business-api-map.md        → Auth model + critical API      (project-context api)
+├── business/                   → Business model + domain glossary (`/project-discovery`); the
+│                                 business MAPS live in their context skills (see below)
 │
 └── reports/                   → Run artifacts: regression reports, GO/NO-GO verdicts, analysis output
 ```
@@ -279,12 +277,15 @@ Phase 4: Specification   → Connect to backlog
 After discovery, run these `project-context` modes (orchestrated by `/project-discovery` or invoked one by one; each mode is independent):
 
 ```
-/project-context data       → .context/business/business-data-map.md
-/project-context features   → .context/business/business-feature-map.md
-/project-context api        → .context/business/business-api-map.md
+/project-context data       → .agents/skills/business-data-context/references/business-data-map.html
+/project-context e2e        → .agents/skills/business-e2e-context/references/business-e2e-map.html
+/project-context api        → .agents/skills/business-api-context/references/business-api-map.html
 /project-context test-plan  → QA Master Test Plan Epic in Jira (cache: .context/PBI/qa-artifacts/master-test-plan.md)
 bun run api:sync            → api/schemas/ (TypeScript types from OpenAPI)
 ```
+
+The maps are HTML: a human opens them in a browser or in `bun run docs` (folder "Mapas de contexto"); the AI reads them with `bun run context:map <slug> [--section <id>]`, never raw. A second run regenerates only the stale sections.
+
 
 > **`.context/ADR/` is the exception — append-only, never regenerated.** Architecture Decision Records are the one `.context/` artifact that is authored (by a human QA architect, or an AI workflow drafting for human approval — `/project-discovery` SRS/infra, `/framework-development`, `/sprint-testing` + `/test-automation` Stage 1) and **never re-run**. Each captures one important, hard-to-reverse test-architecture decision (runner, fixtures, isolation, auth-in-tests, selector contract, flake policy). Superseded by a newer ADR that links back — never overwritten or deleted. See `.context/ADR/README.md`.
 
@@ -329,9 +330,9 @@ Reference / utility / generator skills (`agentic-qa-core`, `acli`, `xray-cli`, `
 | Task | Load First | Load If Needed |
 |------|------------|----------------|
 | **Write E2E or API Test** | `/test-automation` (SKILL.md) | The skill's own `references/` (planning playbook, KATA patterns, etc.) |
-| **Pre-sprint AC refinement / backlog grooming** | `/shift-left-testing` (SKILL.md) + `.context/business/*` | Skill `references/` (backlog-selection, refinement-playbook, atp-outline-template) |
+| **Pre-sprint AC refinement / backlog grooming** | `/shift-left-testing` (SKILL.md) + the business context maps (`bun run context:map <slug>`) | Skill `references/` (backlog-selection, refinement-playbook, atp-outline-template) |
 | **Exploratory Testing** | `/sprint-testing` (SKILL.md) + `.context/PBI/qa-artifacts/master-test-plan.md` | Skill `references/` (exploration patterns, session entry points) |
-| **Understand System** | `.context/business/business-data-map.md` | `.context/business/*`, `.context/PRD/*`, `.context/SRS/*` |
+| **Understand System** | `bun run context:map business-data-context` (and `business-api-context`, `business-e2e-context`) | `.context/business/*`, `.context/PRD/*`, `.context/SRS/*` |
 | **Use MCP** | `AGENTS.md` §5 "MCPs (decision rules)" + §6 "Tool Resolution" | The owning CLI skill (`/acli`, `/xray-cli`, `/playwright-cli`) |
 
 ### By Role

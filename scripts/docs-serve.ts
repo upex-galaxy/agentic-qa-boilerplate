@@ -13,6 +13,11 @@
  *   bun run docs -- --page core/setup/dbhub.html  # open one page inside the portal
  *   bun run docs -- --no-open                     # skip the browser (CI, headless)
  *
+ * The business context maps are served IN PLACE from their skills
+ * (`.agents/skills/<slug>/references/<map>.html`) under a virtual
+ * `mapas-de-contexto/` folder, so the portal and the AI read the same file;
+ * nothing is copied into `docs/` (agentic-qa-core/references/business-context-maps.md §8).
+ *
  * When the port is busy the server tries the next one, up to 20 ports higher.
  * `bun run onboarding` is this same server opened on `core/empezar-aqui.html`.
  *
@@ -21,12 +26,16 @@
  *   1  startup error (missing docs/, bad flag value, no free port, --page not found)
  */
 
+import type { DocsFolder } from './docs-manifest.ts';
 import { spawn } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve, sep } from 'node:path';
-import { buildManifest } from './docs-manifest.ts';
+import { BUSINESS_CONTEXT_SKILLS, isPlaceholderMap } from '../cli/lib/context-maps.ts';
+import { buildManifest, DEFAULT_ORDER, readPageMeta } from './docs-manifest.ts';
 
 const REPO_ROOT = join(import.meta.dir, '..');
+/** Virtual folder the business context maps are served under. */
+export const CONTEXT_MAPS_DIR = 'mapas-de-contexto';
 const DOCS_DIR = resolve(REPO_ROOT, 'docs');
 export const DEFAULT_PORT = 4173;
 const PORT_ATTEMPTS = 20;
@@ -136,16 +145,67 @@ function notFound(pathname: string): Response {
   return new Response(html, { status: 404, headers: { 'Content-Type': MIME['.html'], 'Cache-Control': 'no-store' } });
 }
 
-/** Request handler for a docs directory. Exported for the unit test. */
-export function createDocsHandler(docsDir: string): (req: Request) => Promise<Response> {
+/** Absolute path of a business map by its virtual page path (`mapas-de-contexto/<slug>.html`), or null. */
+export function contextMapFile(repoRoot: string, page: string): string | null {
+  const m = new RegExp(`^/?${CONTEXT_MAPS_DIR}/([a-z0-9-]+)\\.html$`).exec(page);
+  const skill = m ? BUSINESS_CONTEXT_SKILLS.find(s => s.slug === m[1]) : undefined;
+  if (!skill) { return null; }
+  const file = join(repoRoot, '.agents', 'skills', skill.slug, 'references', skill.map);
+  return existsSync(file) ? file : null;
+}
+
+/** Sidebar folder for the business maps present on disk; null when there are none. */
+export function contextMapsFolder(repoRoot: string): DocsFolder | null {
+  const children: DocsFolder['children'] = [];
+  for (const skill of BUSINESS_CONTEXT_SKILLS) {
+    const page = `${CONTEXT_MAPS_DIR}/${skill.slug}.html`;
+    const file = contextMapFile(repoRoot, page);
+    if (file === null) { continue; }
+    const html = readFileSync(file, 'utf8');
+    const meta = readPageMeta(html);
+    children.push({
+      type: 'page',
+      path: page,
+      title: meta.title ?? skill.slug,
+      description: isPlaceholderMap(html)
+        ? `Sin generar todavía: ejecuta project-context mode ${skill.mode}.`
+        : (meta.description ?? `Mapa de ${skill.slug}, servido desde su skill.`),
+      order: children.length + 1,
+    });
+  }
+  if (children.length === 0) { return null; }
+  return {
+    type: 'folder',
+    path: CONTEXT_MAPS_DIR,
+    title: 'Mapas de contexto',
+    description: 'Los mapas de negocio que viven dentro de sus context skills (datos, API, E2E), servidos en su lugar.',
+    order: DEFAULT_ORDER - 1,
+    index: null,
+    children,
+  };
+}
+
+/**
+ * Request handler for a docs directory. Exported for the unit test. With a
+ * `repoRoot`, the business context maps are served from their skills and
+ * listed in the manifest.
+ */
+export function createDocsHandler(docsDir: string, repoRoot: string | null = null): (req: Request) => Promise<Response> {
   const docsAbs = resolve(docsDir);
   return async (req: Request): Promise<Response> => {
     const url = new URL(req.url);
     let pathname = url.pathname;
     if (pathname === '/manifest.json') {
-      return new Response(JSON.stringify(buildManifest(docsAbs), null, 2), {
+      const manifest = buildManifest(docsAbs);
+      const maps = repoRoot === null ? null : contextMapsFolder(repoRoot);
+      if (maps !== null) { manifest.children.push(maps); }
+      return new Response(JSON.stringify(manifest, null, 2), {
         headers: { 'Content-Type': MIME['.json'], 'Cache-Control': 'no-store' },
       });
+    }
+    const mapFile = repoRoot === null ? null : contextMapFile(repoRoot, pathname);
+    if (mapFile !== null) {
+      return new Response(Bun.file(mapFile), { headers: { 'Content-Type': MIME['.html'], 'Cache-Control': 'no-store' } });
     }
     if (pathname === '/' || pathname === '') { pathname = '/index.html'; }
     let decoded: string;
@@ -240,14 +300,14 @@ export function serveDocs(argv: string[], title = 'docs server'): void {
     log.error('docs/index.html not found. Run this from the repo root.');
     process.exit(1);
   }
-  if (flags.page !== null && !existsSync(join(DOCS_DIR, flags.page))) {
+  if (flags.page !== null && !existsSync(join(DOCS_DIR, flags.page)) && contextMapFile(REPO_ROOT, flags.page) === null) {
     log.error(`--page ${flags.page}: docs/${flags.page} does not exist.`);
     process.exit(1);
   }
 
   let server: ReturnType<typeof Bun.serve>;
   try {
-    server = listen(flags.port, createDocsHandler(DOCS_DIR));
+    server = listen(flags.port, createDocsHandler(DOCS_DIR, REPO_ROOT));
   }
   catch (e) {
     log.error(`Could not start the server: ${(e as Error).message}`);
