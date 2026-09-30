@@ -16,6 +16,27 @@ below names which one it applies to:
 
 ## Unreleased — Boilerplate
 
+### Added (business context maps)
+- **The business maps move into context skills, as HTML.** `business-data-context`,
+  `business-api-context` and `business-e2e-context` each hold their map at
+  `references/<map>.html`: one `<section>` per entity, endpoint group or journey, each with a
+  stable id, `data-sources` and `data-updated`. Humans open it in a browser or in `bun run docs`
+  (folder "Mapas de contexto", served in place); the AI reads it with the new
+  `bun run context:map <slug> [--section <id>] [--list]`, which strips SVG and styles. Doctrine:
+  `agentic-qa-core/references/business-context-maps.md`.
+- `project-context` modes `data` / `api` / `e2e` write those maps; a second run regenerates
+  only the stale sections. Mode `features` becomes `e2e` (journeys first, feature catalog as a
+  section); `features` stays a synonym. An old `.context/business/*-map.md` is kept and read
+  as input, never deleted.
+- A context skill may write its own `references/` and nothing else (`metadata.writes`, lint
+  `CONTEXT-WRITES`): when a session contradicts one section, it proposes the edit and applies it
+  on approval.
+- `diagram-design` is installed at project level (capability `diagrams`, point-of-use STOP).
+  Style is its own `.diagram-design` marker at the repo root.
+- `bun run up` delivers each business context skill ONCE when its folder is absent and never
+  touches it afterwards; a placeholder or missing map (and an old markdown map beside it) is an
+  informational row, and `bun run setup:doctor` prints the same line.
+
 ### Removed (updater 8.5, BREAKING)
 - **`sync-ai-context` is retired.** Nothing triggered it, and its checks were either
   mechanical or judgment. The mechanical half is now `docs:check` (`scripts/lint-docs.ts`):

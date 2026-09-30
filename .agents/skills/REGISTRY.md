@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-09-30T08:42:28.984Z`
+> Generated: `2026-09-30T08:50:14.033Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -8,7 +8,7 @@ This file is the per-session compact-rules cache for the Skill Resolver protocol
 The orchestrator copies one or more `## Skill: <slug>` blocks below into every subagent briefing under `## Project Standards (auto-resolved)`.
 Subagents trust those compact rules and only read the full SKILL.md when explicitly instructed.
 
-Skills indexed: 21
+Skills indexed: 24
 
 ---
 ## Skill: acli
@@ -104,6 +104,63 @@ Skills indexed: 21
 **Read full SKILL.md when**: building the annotation HTML, choosing shape types, or handling a case the local render cannot cover (e.g. a photo of physical signage that would need anonymization).
 
 > Source: `.agents/skills/bug-screenshot-annotation/SKILL.md` · phase: `unknown` · kind: `workflow` · extraction strategy: A
+
+---
+
+## Skill: business-api-context
+
+**Purpose**: What the API of the system under test MEANS to the business: every endpoint group, who calls it and why, what it changes, which auth leve...
+
+**Compact Rules**:
+- DO: read the map through `bun run context:map business-api-context` (or `--section <id>` for one endpoint group). NEVER read `references/business-api-map.html` raw: its SVG is most of the bytes and none of the facts.
+- DO: treat a placeholder map as "no map". Say so and hand the user `project-context` mode `api`; never answer API questions as if the API were empty.
+- DO: take field names, types and required flags from the schema (`[API_TOOL]` schema read, `api/schemas/`), and the MEANING from the map. On a conflict the schema wins for shape, the running API wins for behaviour.
+- WHEN a session observes something that contradicts a section (a status, a field, an auth rule): PROPOSE the one-section edit with its evidence to the user (or to the conductor when you are a supervised worker), apply it only on approval. Procedure: `references/refresh.md`.
+- DO NOT: write anywhere but this skill's own `references/`. No Jira, no `.context/`, no other skill, no `api/schemas/`, no product code.
+- DO NOT: copy map content into this SKILL.md. Judgment goes in `## Rules` or `references/gotchas.md`, dated and measured.
+- Before a step that uses `api-schema` (verifying a section) or `diagrams` (redrawing a figure), run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8.
+
+**Read full SKILL.md when**: building a briefing for an API-level dispatch, deciding whether a section is stale, or proposing an edit to the map.
+
+> Source: `.agents/skills/business-api-context/SKILL.md` · phase: `unknown` · kind: `context` · extraction strategy: A
+
+---
+
+## Skill: business-data-context
+
+**Purpose**: What the system under test IS at the data level: business entities and why they exist, their relationships, state machines, automatic pro...
+
+**Compact Rules**:
+- DO: read the map through `bun run context:map business-data-context` (or `--section <id>` for one entity or flow). NEVER read `references/business-data-map.html` raw: its SVG is most of the bytes and none of the facts.
+- DO: treat a placeholder map as "no map". Say so and hand the user `project-context` mode `data`; never answer data questions as if the system were empty.
+- DO: cite a fact with its section id and `data-updated` date. A section older than the code it describes is a hypothesis to check with `[DB_TOOL]`, not an answer.
+- WHEN a session observes something that contradicts a section: PROPOSE the one-section edit with its evidence to the user (or to the conductor when you are a supervised worker), apply it only on approval. Procedure: `references/refresh.md`.
+- DO NOT: write anywhere but this skill's own `references/`. No Jira, no `.context/`, no other skill, no product code.
+- DO NOT: copy map content into this SKILL.md. Judgment (a rule for READING the data) goes in `## Rules` or `references/gotchas.md`, dated and measured.
+- Before a step that uses `db` (verifying a section) or `diagrams` (redrawing a figure), run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8.
+
+**Read full SKILL.md when**: building a briefing for a DB-level dispatch, deciding whether a section is stale, or proposing an edit to the map.
+
+> Source: `.agents/skills/business-data-context/SKILL.md` · phase: `unknown` · kind: `context` · extraction strategy: A
+
+---
+
+## Skill: business-e2e-context
+
+**Purpose**: How people actually use the system under test end to end: the personas, the user journeys first (entry point, steps, branches, where mone...
+
+**Compact Rules**:
+- DO: read the map through `bun run context:map business-e2e-context` (or `--section <id>` for one journey or feature). NEVER read `references/business-e2e-map.html` raw: its SVG is most of the bytes and none of the facts.
+- DO: treat a placeholder map as "no map". Say so and hand the user `project-context` mode `e2e`; never plan E2E coverage as if the product had no journeys.
+- DO: start from the journey, then the feature. A story is tested inside the journey that reaches it; the feature catalog answers "what exists", the journeys answer "what a user does and where it breaks".
+- WHEN a session observes something that contradicts a section (a step, a branch, a state the UI shows): PROPOSE the one-section edit with its evidence to the user (or to the conductor when you are a supervised worker), apply it only on approval. Procedure: `references/refresh.md`.
+- DO NOT: write anywhere but this skill's own `references/`. No Jira, no `.context/`, no other skill, no test code, no product code.
+- DO NOT: copy map content into this SKILL.md. Judgment goes in `## Rules` or `references/gotchas.md`, dated and measured.
+- Before a step that uses `diagrams` (redrawing a figure), run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8.
+
+**Read full SKILL.md when**: building a briefing for a UI or E2E dispatch, scoping a smoke or regression run, deciding whether a section is stale, or proposing an edit to the map.
+
+> Source: `.agents/skills/business-e2e-context/SKILL.md` · phase: `unknown` · kind: `context` · extraction strategy: A
 
 ---
 
@@ -291,20 +348,20 @@ Skills indexed: 21
 
 ## Skill: project-context
 
-**Purpose**: Generate or refresh the canonical business context maps and master test plan.
+**Purpose**: Generate or refresh the business context maps (the HTML maps inside business-data-context, business-api-context and business-e2e-context)...
 
 **Compact Rules**:
-- Exactly ONE mode per run: `data` · `features` · `api` · `test-plan` · `refresh-all` · `context-skill`. Load only that mode's reference; never open a second one in the same pass.
-- `context-skill` scaffolds the JUDGMENT layer over a map the other modes produced (`../agentic-qa-core/references/skill-scaffold.md` §3): it cites `.context/` paths and never copies their content; the map must exist first. `refresh-all` never includes it.
-- Mode → reference → output: `data` → `references/data.md` → `.context/business/business-data-map.md` · `features` → `references/features.md` → `.context/business/business-feature-map.md` · `api` → `references/api.md` → `.context/business/business-api-map.md` · `test-plan` → `references/test-plan.md` → the `## Master Test Plan` section of the `QA Master Test Plan` Epic description in Jira (cached by the sync at `.context/PBI/qa-artifacts/master-test-plan.md`; never a local file).
+- Exactly ONE mode per run: `data` · `e2e` (synonym `features`) · `api` · `test-plan` · `refresh-all` · `context-skill`. Load only that mode's reference; never open a second one in the same pass.
+- `context-skill` scaffolds a project-owned `<aspect>-context` for an aspect the business context skills do not cover (`../agentic-qa-core/references/skill-scaffold.md` §3): it cites its sources and never copies them. `refresh-all` never includes it.
+- Mode → reference → output: see the Mode routing table. A map mode writes ONLY its own skill's `references/<map>.html`; the old `.context/business/*-map.md` a project may hold is read as input and never deleted. `test-plan` → `references/test-plan.md` → the `## Master Test Plan` section of the `QA Master Test Plan` Epic description in Jira (cached by the sync at `.context/PBI/qa-artifacts/master-test-plan.md`; never a local file).
 - User did not name a mode → ASK. NEVER infer `refresh-all` from a generic "refresh the context" request.
-- `refresh-all` runs strictly `data` → `features` → `api` → `test-plan`, one at a time. Each reference's own validation and approval gate must close before the next is loaded. Never skip ahead.
-- Artifact missing = CREATE mode: may write once the analysis completes. Artifact exists = UPDATE mode: generate a candidate, show the diff summary, WAIT for explicit approval. NEVER overwrite an existing artifact without that approval.
+- `refresh-all` runs strictly `data` → `e2e` → `api` → `test-plan`, one at a time. Each reference's own validation and approval gate must close before the next is loaded. Never skip ahead.
+- Artifact missing (or a placeholder map) = CREATE mode: may write once the analysis completes. Artifact exists = UPDATE mode: generate a candidate (for a map: only its stale sections), show the diff summary, WAIT for explicit approval. NEVER overwrite an existing artifact without that approval, and NEVER regenerate a whole generated map.
 - Stop the run on a hard dependency failure or a rejected overwrite. A missing SOFT dependency is not a stop: record it as a Discovery Gap and continue, exactly as the selected reference defines.
-- NEVER invent business facts. Read every source the selected reference requires; anything unverified belongs under the output's mandatory `## Discovery Gaps` section, not asserted in the body.
+- NEVER invent business facts. Read every source the selected reference requires; anything unverified belongs under the output's mandatory discovery-gaps section, not asserted in the body.
 - After a successful artifact write, add the pointer to `AGENTS.md` ONLY when that pointer is missing. Never add operational prose to `CLAUDE.md`.
 - Mode from `$ARGUMENTS`: when its first token matches a mode in the Mode routing table, that token IS the mode and the rest is forwarded to it unchanged (`/project-context data` on Claude Code, "project-context mode data" in prose on OpenCode and Codex). No matching first token → ASK which mode.
-- Before any step that uses a declared MCP capability (`metadata.requires_capabilities`: `db`, `api-schema`), run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8: resolve by tool-name suffix, and when no available tool provides it STOP and name the capability + how to enable it, never a silent fallback.
+- Before any step that uses a declared capability (`metadata.requires_capabilities`: `db`, `api-schema`, `diagrams` for the maps' figures), run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8: resolve by tool-name suffix, and when no available tool provides it STOP and name the capability + how to enable it, never a silent fallback.
 
 **Read full SKILL.md when**: the requested mode is ambiguous, a `refresh-all` chain fails mid-sequence, or you need the selected reference's own analysis steps and validation gate.
 
