@@ -48,7 +48,7 @@ import {
   groupCompatibilityErrors,
   validateCanonicalSources,
 } from './lib/agent-compatibility.ts';
-import { projectDelta, SCHEMA_FILE, SCHEMA_SOURCE } from './lib/agents-schema.ts';
+import { classifyProjectYaml, projectDelta, SCHEMA_FILE, SCHEMA_SOURCE } from './lib/agents-schema.ts';
 import {
   formatInstanceMismatchWarning,
   resolveAtlassianInstance,
@@ -560,6 +560,19 @@ export interface ProjectSchemaDiagnostic {
   exempt: string[]
   /** Set when nothing could be compared: a parse failure, or no schema on disk. */
   note: string | null
+  /**
+   * True when `.agents/project.yaml` is the boilerplate maintainers' own copy
+   * in a repo that is not the boilerplate (GitHub "Use this template"). A
+   * warning, never a failure: `bun run agents:setup` is the fix.
+   */
+  copied_template: boolean
+}
+
+function gitOrigin(): string | null {
+  try {
+    return execFileSync('git', ['remote', 'get-url', 'origin'], { cwd: REPO_ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() || null;
+  }
+  catch { return null; }
 }
 
 /**
@@ -569,14 +582,16 @@ export interface ProjectSchemaDiagnostic {
 function projectSchemaDiagnostic(): ProjectSchemaDiagnostic {
   const sourcePath = join(REPO_ROOT, SCHEMA_SOURCE);
   const schemaPath = join(REPO_ROOT, SCHEMA_FILE);
-  if (!existsSync(sourcePath)) { return { gaps: [], exempt: [], note: `${SCHEMA_SOURCE} not found` }; }
-  if (!existsSync(schemaPath)) { return { gaps: [], exempt: [], note: `${SCHEMA_FILE} not found — run \`bun run up\` to receive it` }; }
+  if (!existsSync(sourcePath)) { return { gaps: [], exempt: [], note: `${SCHEMA_SOURCE} not found`, copied_template: false }; }
+  const sourceText = readFileSync(sourcePath, 'utf8');
+  const copied_template = classifyProjectYaml(sourceText, gitOrigin()) === 'copied-template';
+  if (!existsSync(schemaPath)) { return { gaps: [], exempt: [], note: `${SCHEMA_FILE} not found — run \`bun run up\` to receive it`, copied_template }; }
   try {
-    const delta = projectDelta(readFileSync(sourcePath, 'utf8'), readFileSync(schemaPath, 'utf8'));
-    return { gaps: delta.gaps, exempt: delta.exempt, note: delta.error };
+    const delta = projectDelta(sourceText, readFileSync(schemaPath, 'utf8'));
+    return { gaps: delta.gaps, exempt: delta.exempt, note: delta.error, copied_template };
   }
   catch (err) {
-    return { gaps: [], exempt: [], note: `the schema comparison threw: ${(err as Error).message}` };
+    return { gaps: [], exempt: [], note: `the schema comparison threw: ${(err as Error).message}`, copied_template };
   }
 }
 
@@ -1243,8 +1258,12 @@ function printHuman(report: DoctorReport): void {
   // and it must never push the report to `needs action`. It answers a
   // different question from the checks above — not "is something broken" but
   // "has upstream moved and am I still on the old shape".
-  if (report.project_schema.note !== null || report.project_schema.gaps.length > 0) {
+  if (report.project_schema.note !== null || report.project_schema.gaps.length > 0 || report.project_schema.copied_template) {
     tui.section('Project config vs upstream schema (.agents/project.yaml)');
+    if (report.project_schema.copied_template) {
+      process.stdout.write(`  ${tui.statusIcon('warn')} .agents/project.yaml is the boilerplate maintainers' own copy (GitHub "Use this template"): their project, Jira and push authorization\n`);
+      process.stdout.write('  Fix: bun run agents:setup  (replaces it with the blank template after one confirm)\n');
+    }
     if (report.project_schema.note !== null) {
       process.stdout.write(`  ${tui.statusIcon('warn')} ${report.project_schema.note}\n`);
     }

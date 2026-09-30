@@ -92,6 +92,98 @@ export function isSchemaOwner(packageJsonText: string): boolean {
 }
 
 // ============================================================================
+// THE MAINTAINER COPY — the one route the schema does not cover
+// ============================================================================
+
+/**
+ * The line that marks `.agents/project.yaml` as the BOILERPLATE's own filled
+ * copy, in the file's leading comment block.
+ *
+ * Every route but one delivers a project the blank template: the scaffolder
+ * seeds from `.agents/project.schema.yaml`, and the updater never walks
+ * `.agents/project.yaml`. GitHub "Use this template" copies the tree as it is,
+ * `package.json` name included, so neither `isSchemaOwner` nor anything else
+ * inside the copy can tell it from the original. Without this line such a
+ * repo carries the maintainers' project identity AND their chosen standing
+ * push authorization, and `git-flow-master` never offers Strategy Setup.
+ *
+ * It lives in the header on purpose: `withSchemaHeader` drops that block, so
+ * the schema never carries it, and the scaffolder writes its own header, so a
+ * consumer's yaml never carries it either. The leak gate refuses a schema that
+ * does, which catches it if it is ever moved below the header.
+ */
+export const MAINTAINER_SENTINEL = '# MAINTAINER COPY:';
+
+/** Whether the yaml's leading comment block carries `MAINTAINER_SENTINEL`. */
+export function isMaintainerCopy(yamlText: string): boolean {
+  for (const line of yamlText.split('\n')) {
+    if (line.startsWith(MAINTAINER_SENTINEL)) { return true; }
+    if (!line.startsWith('#') && line.trim() !== '') { return false; }
+  }
+  return false;
+}
+
+/**
+ * Whether a git `origin` URL points at the boilerplate itself (any owner, so a
+ * contributor's fork counts) rather than at a repo made from it.
+ */
+export function originIsUpstream(originUrl: string | null): boolean {
+  if (!originUrl) { return false; }
+  const name = originUrl.trim().replace(/\/+$/, '').replace(/\.git$/, '').split(/[/:]/).pop();
+  return name === UPSTREAM_PACKAGE;
+}
+
+/**
+ * What kind of `.agents/project.yaml` this checkout holds.
+ *
+ *  - `consumer`         a project's own file; nothing to do.
+ *  - `maintainer`       the boilerplate's filled copy, in the boilerplate (or a fork).
+ *  - `copied-template`  the boilerplate's filled copy in someone else's repo:
+ *                       reseed it from the schema before anything reads it.
+ *
+ * No `origin` at all is read as `copied-template`: the boilerplate itself and
+ * every fork of it has one, and the cost of the wrong call is one declined
+ * prompt, while the cost of the other wrong call is a project pushing to
+ * `main` under someone else's authorization.
+ */
+export type YamlOrigin = 'consumer' | 'maintainer' | 'copied-template';
+
+export function classifyProjectYaml(yamlText: string, originUrl: string | null): YamlOrigin {
+  if (!isMaintainerCopy(yamlText)) { return 'consumer'; }
+  return originIsUpstream(originUrl) ? 'maintainer' : 'copied-template';
+}
+
+/**
+ * The header a CONSUMER's `.agents/project.yaml` opens with. Twin of the one
+ * in `packages/create-agentic-qa/src/prepare.ts`, which is a separately
+ * published package and cannot import from here: keep the two identical.
+ */
+export const CONSUMER_YAML_HEADER = `# Project configuration consumed by AI agents (Claude, Cursor, Gemini, Codex, etc.)
+# when they encounter {{VAR_NAME}} references in skills, commands, templates and docs.
+# Variable names are snake_case; the AI maps {{PROJECT_NAME}} -> project.project_name lexically.
+# Edit values manually, or run \`bun run agents:setup\` for an interactive walkthrough.
+# Every unfilled field is \`null\` plus a TODO comment with a concrete example.
+#
+# \`bun run agents:schema --project\` lists the keys upstream has added since this
+# project was scaffolded; \`bun run up\` offers to insert them, one prompt per block.
+`;
+
+/**
+ * A consumer's `.agents/project.yaml`, seeded from the schema: the generated
+ * banner swapped for `CONSUMER_YAML_HEADER`, everything else verbatim. Same
+ * transform as `seedProjectYamlFromSchema` in the scaffolder. `null` when the
+ * text is not the shape the generator emits.
+ */
+export function seedFromSchema(schemaText: string): string | null {
+  const lines = schemaText.split('\n');
+  let i = 0;
+  while (i < lines.length && lines[i].startsWith('#')) { i += 1; }
+  while (i < lines.length && lines[i].trim() === '') { i += 1; }
+  if (i === 0 || i >= lines.length) { return null; }
+  return `${CONSUMER_YAML_HEADER}\n${lines.slice(i).join('\n')}`;
+}
+
+// ============================================================================
 // THE FULL-DEPTH WALK
 // ============================================================================
 
@@ -321,16 +413,18 @@ export function locateLeaf(text: string, path: readonly string[]): Located | nul
 /**
  * What happens to one leaf on its way into the schema.
  *
- *  - `blank`   the value becomes `null`, the comment is kept verbatim.
+ *  - `blank`   the value becomes `null`; the comment is kept, with its
+ *              `TODO: ` prefix restored when this repo dropped it.
  *  - `keep`    value and comment travel untouched.
  *  - `generic` upstream supplies a replacement, because this repo's own
  *              answer is meaningless or misleading downstream.
  *
- * The DEFAULT decides almost everything and needs no table: a leaf already
- * `null` is a field the consumer fills (`blank`, which is a no-op), and a
- * non-null leaf is methodology that the consumer should inherit (`keep`). The
- * split is the one `prepare.ts` already makes by hand: identity blanks,
- * methodology keeps.
+ * Two tables and a DEFAULT decide it. `GENERIC_RULES` first, then
+ * `IDENTITY_PATHS` (this repo's own project, always `blank`), then the
+ * default: a leaf already `null` is a field the consumer fills (`blank`, a
+ * no-op), and a non-null leaf is methodology that the consumer should inherit
+ * (`keep`). The split is the one `prepare.ts` already makes by hand: identity
+ * blanks, methodology keeps.
  */
 export type RuleKind = 'blank' | 'keep' | 'generic';
 
@@ -427,10 +521,82 @@ export const GENERIC_RULES: Readonly<Record<string, GenericRule>> = {
   },
 };
 
-/** The rule for one leaf: the table first, then the null/non-null default. */
+/**
+ * The leaves that are THIS repo's identity, blanked whatever value they hold.
+ * A segment of `*` matches any one key name.
+ *
+ * The null/non-null default only works while the boilerplate's own yaml stays
+ * empty, and it does not: the maintainers dogfood the boilerplate, so this
+ * file carries a real project name, Jira host, environment URLs and cached
+ * QA epic keys. Under the default alone a filled Atlassian host tripped the
+ * leak gate and refused to generate, and a filled project name or URL passed
+ * the gate and shipped silently to every consumer. So identity is DECLARED
+ * here, by block, and blanked back to the template's `null`.
+ *
+ * Declared by block rather than by leaf on purpose: a key added later under
+ * `project:` or `environments.<env>:` is identity from the day it lands,
+ * without anyone remembering to list it. A key added to a MIXED block
+ * (`testing`, `qa`) is not covered, which is what `distinctiveValues` and the
+ * leak gate are for.
+ */
+export const IDENTITY_PATHS: readonly string[] = [
+  'project.*',
+  'backend.*',
+  'frontend.*',
+  'database.*',
+  'issue_tracker.*',
+  'testing.default_env',
+  'testing.tms_cli',
+  'qa.qa_epics.*.key',
+  'environments.*.*',
+];
+
+/** Whether a dotted path matches one `IDENTITY_PATHS` pattern, segment by segment. */
+function matchesPattern(path: string, pattern: string): boolean {
+  const have = path.split('.');
+  const want = pattern.split('.');
+  return have.length === want.length && want.every((seg, i) => seg === WILDCARD || seg === have[i]);
+}
+
+/** Whether a leaf is identity the schema must never carry. */
+export function isIdentityPath(path: string): boolean {
+  return IDENTITY_PATHS.some(pattern => matchesPattern(path, pattern));
+}
+
+/** The rule for one leaf: the tables first, then the null/non-null default. */
 export function ruleFor(path: string, value: unknown): RuleKind {
   if (path in GENERIC_RULES) { return 'generic'; }
+  if (isIdentityPath(path)) { return 'blank'; }
   return value === null ? 'blank' : 'keep';
+}
+
+/**
+ * The values in the source that could only ever be THIS repo's: an absolute
+ * URL that is not loopback, a bare hostname, an issue key, a relative path out
+ * of the repo. None of them can appear in the template legitimately (the
+ * template's examples are `myproject.com`, `company.atlassian.net`,
+ * `PROJ-100`, `../my-backend`, which are written into comments, not values).
+ *
+ * This is the net under `IDENTITY_PATHS`: a filled key added to a mixed block
+ * and never declared survives blanking, and its value is then found here.
+ * Deliberately narrow: a project NAME or KEY is not distinctive enough to scan
+ * for (`UPEX` is one of the template's own examples), which is why those are
+ * blanked by declaration instead.
+ */
+export function distinctiveValues(sourceText: string): string[] {
+  const walk = yamlLeafWalk(sourceText);
+  if (!walk) { return []; }
+  const found = new Set<string>();
+  for (const value of walk.entries.values()) {
+    if (typeof value !== 'string') { continue; }
+    const v = value.trim();
+    const url = /^https?:\/\/(?!localhost\b|127\.0\.0\.1\b)\S+$/.test(v);
+    const host = /^[a-z\d-]+(?:\.[a-z\d-]+)+$/i.test(v) && /[a-z]/i.test(v.split('.').pop() ?? '');
+    const issueKey = /^[A-Z][A-Z\d]+-\d+$/.test(v);
+    const outOfRepo = /^\.\.\//.test(v);
+    if (url || host || issueKey || outOfRepo) { found.add(v); }
+  }
+  return [...found];
 }
 
 /**
@@ -462,6 +628,21 @@ export const FILLED_ELSEWHERE: Readonly<Record<string, string>> = {
   'git_strategy.meta.policy_verified': 'stamped by `bun run git:policy verify --stamp`',
 };
 
+/**
+ * The trailing comment a blanked identity leaf gets back.
+ *
+ * A filled project drops the `TODO: ` prefix from the comment it answered
+ * (that is what a filled field looks like in a consumer repo, and in this
+ * one). The template must still show it, so it is restored here, and only
+ * here: a comment already carrying it is left alone, and a placeholder that
+ * nobody fills by hand (`FILLED_ELSEWHERE`) never had one.
+ */
+function placeholderComment(path: string, comment: string): string {
+  if (path in FILLED_ELSEWHERE) { return comment; }
+  if (/^#\s*TODO:/.test(comment)) { return comment; }
+  return comment.replace(/^#\s*/, '# TODO: ');
+}
+
 // ============================================================================
 // IDENTITY LEAK GATE
 // ============================================================================
@@ -484,12 +665,28 @@ export const IDENTITY_PATTERNS: ReadonlyArray<{ name: string, re: RegExp }> = [
   // documentation it is meant to protect.
   { name: 'a concrete Atlassian host', re: /https:\/\/(?!company\.|example\.|your-)[\w-]+\.atlassian\.net/ },
   { name: 'a GitHub owner/repo of the maintainer', re: /\bupex-galaxy\/[\w.-]+/ },
+  { name: 'the maintainer-copy sentinel (it belongs in the source header only)', re: /MAINTAINER COPY:/ },
 ];
 
 export interface IdentityLeak {
   line: number
   pattern: string
   text: string
+}
+
+/**
+ * Every line of the generated schema that still carries one of this repo's
+ * distinctive values (`distinctiveValues`), in a value or in a comment.
+ */
+export function findValueLeaks(schemaText: string, values: readonly string[]): IdentityLeak[] {
+  const leaks: IdentityLeak[] = [];
+  const lines = schemaText.split('\n');
+  for (let i = 0; i < lines.length; i += 1) {
+    for (const value of values) {
+      if (lines[i].includes(value)) { leaks.push({ line: i + 1, pattern: `a value this repo filled in (${value})`, text: lines[i].trim() }); }
+    }
+  }
+  return leaks;
 }
 
 /** Every identity pattern found in the generated schema, with its line. */
@@ -553,10 +750,10 @@ export function generateSchema(sourceText: string): GenerateResult {
     const kind = ruleFor(path, value);
     if (kind === 'keep') { continue; }
 
-    if (kind === 'blank') {
-      // Already `null` by definition of the default rule, so there is nothing
-      // to splice and no reason to pay for a locate. Recorded so the report
-      // can say what the consumer must fill.
+    if (kind === 'blank' && value === null) {
+      // Already the placeholder, so there is nothing to splice and no reason
+      // to pay for a locate. Recorded so the report can say what the consumer
+      // must fill.
       blanked.push(path);
       continue;
     }
@@ -564,6 +761,19 @@ export function generateSchema(sourceText: string): GenerateResult {
     const located = locateLeaf(sourceText, segments(path));
     if (!located) {
       return { schema: '', blanked: [], generic: [], leaks: [], error: `cannot locate ${path} in ${SCHEMA_SOURCE}` };
+    }
+
+    if (kind === 'blank') {
+      // An identity leaf this repo filled: back to `null`, and its comment
+      // back to the TODO the template shows.
+      blanked.push(path);
+      edits.push({ range: located.value, text: 'null' });
+      if (located.trailingComment) {
+        const comment = sourceText.slice(...located.trailingComment);
+        const restored = placeholderComment(path, comment);
+        if (restored !== comment) { edits.push({ range: located.trailingComment, text: restored }); }
+      }
+      continue;
     }
 
     const rule = GENERIC_RULES[path];
@@ -606,7 +816,7 @@ export function generateSchema(sourceText: string): GenerateResult {
     return { schema: '', blanked, generic, leaks: [], error: `the generated schema lost ${lost.length} key path(s): ${lost.slice(0, 5).join(', ')}` };
   }
 
-  const leaks = findIdentityLeaks(schema);
+  const leaks = [...findIdentityLeaks(schema), ...findValueLeaks(schema, distinctiveValues(sourceText))];
   if (leaks.length > 0) {
     const first = leaks[0];
     return { schema: '', blanked, generic, leaks, error: `${SCHEMA_FILE} would carry ${leaks.length} identity leak(s); first at line ${first.line}: ${first.pattern}` };

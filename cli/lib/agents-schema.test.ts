@@ -21,24 +21,60 @@ import {
   applyInsertions,
   applySplices,
   checkSchema,
+  classifyProjectYaml,
+  CONSUMER_YAML_HEADER,
+  distinctiveValues,
   FILLED_ELSEWHERE,
   findIdentityLeaks,
   generateSchema,
   GENERIC_RULES,
+  IDENTITY_PATHS,
+  isIdentityPath,
+  isMaintainerCopy,
   isSchemaOwner,
   locateLeaf,
+  originIsUpstream,
   planInsertions,
   projectDelta,
   ruleFor,
+  SCHEMA_FILE,
   SCHEMA_SOURCE,
   schemaExemptions,
   schemaKeyPaths,
+  seedFromSchema,
   walkGovernedFile,
   yamlLeafWalk,
 } from './agents-schema.ts';
 
 const REPO_ROOT = join(import.meta.dir, '..', '..');
 const realSource = (): string => readFileSync(join(REPO_ROOT, SCHEMA_SOURCE), 'utf8');
+const committedSchema = (): string => readFileSync(join(REPO_ROOT, SCHEMA_FILE), 'utf8');
+
+/**
+ * The real source with EVERY identity leaf filled the way a maintainer fills
+ * it: a concrete value, and the `TODO: ` prefix dropped from its comment.
+ * Values are distinct per leaf so a single survivor is attributable.
+ */
+function fillEveryIdentityLeaf(source: string): { text: string, values: string[] } {
+  const walk = yamlLeafWalk(source)!;
+  const containers = new Set(walk.containers);
+  const edits: Array<{ range: readonly [number, number], text: string }> = [];
+  const values: string[] = [];
+  let i = 0;
+  for (const path of walk.entries.keys()) {
+    if (containers.has(path) || !isIdentityPath(path)) { continue; }
+    const located = locateLeaf(source, path.split('.'))!;
+    const value = path.endsWith('.key') ? `LEAK-${900 + i}` : `https://leak-${i}.acme-corp.io`;
+    values.push(value);
+    edits.push({ range: located.value, text: value });
+    if (located.trailingComment) {
+      const comment = source.slice(...located.trailingComment);
+      edits.push({ range: located.trailingComment, text: comment.replace(/^#\s*TODO:\s*/, '# ') });
+    }
+    i += 1;
+  }
+  return { text: applySplices(source, edits), values };
+}
 
 const SAMPLE = `top:
   a: 1
@@ -302,6 +338,126 @@ describe('generateSchema, against the real .agents/project.yaml', () => {
   });
 });
 
+describe('identity is blanked, whatever this repo filled in', () => {
+  test('IDENTITY_PATHS matches segment by segment, * being one key name', () => {
+    expect(isIdentityPath('project.project_name')).toBe(true);
+    expect(isIdentityPath('environments.uat.web_url')).toBe(true);
+    expect(isIdentityPath('qa.qa_epics.defect_epic.key')).toBe(true);
+    expect(isIdentityPath('qa.qa_epics.defect_epic.name')).toBe(false);
+    expect(isIdentityPath('testing.tc_creation_stage')).toBe(false);
+    expect(isIdentityPath('environments.local')).toBe(false);
+  });
+
+  test('an identity leaf blanks even when filled', () => {
+    expect(ruleFor('issue_tracker.atlassian_url', 'https://acme.atlassian.net')).toBe('blank');
+  });
+
+  test('every pattern covers at least one leaf of the real file: a stale pattern is a silent no-op', () => {
+    const walk = yamlLeafWalk(realSource())!;
+    const leaves = [...walk.entries.keys()].filter(p => !walk.containers.includes(p));
+    for (const pattern of IDENTITY_PATHS) {
+      expect(leaves.some(p => isIdentityPath(p) && p.split('.').length === pattern.split('.').length)).toBe(true);
+    }
+  });
+
+  test('the real source generates the committed schema byte for byte', () => {
+    expect(generateSchema(realSource()).schema).toBe(committedSchema());
+  });
+
+  test('filling every identity leaf changes nothing in the schema, byte for byte', () => {
+    const { text, values } = fillEveryIdentityLeaf(realSource());
+    const result = generateSchema(text);
+    expect(result.error).toBeNull();
+    expect(result.schema).toBe(committedSchema());
+    for (const value of values) { expect(result.schema).not.toContain(value); }
+  });
+
+  test('the TODO prefix is restored, and a comment that never had one is left alone', () => {
+    const src = 'project:\n  project_name: Acme # Project name (e.g. MyProject)\nqa:\n  qa_epics:\n    defect_epic:\n      key: ACME-12 # discovered/created at runtime, then cached here (e.g. PROJ-123)\n';
+    const { schema, error } = generateSchema(src);
+    expect(error).toBeNull();
+    expect(schema).toContain('  project_name: null # TODO: Project name (e.g. MyProject)\n');
+    expect(schema).toContain('      key: null # discovered/created at runtime, then cached here (e.g. PROJ-123)\n');
+  });
+
+  test('a real Atlassian host no longer refuses generation: it is blanked first', () => {
+    const src = realSource().replace(/atlassian_url: [^#\n]*#/, 'atlassian_url: https://acme-corp.atlassian.net #');
+    const result = generateSchema(src);
+    expect(result.error).toBeNull();
+    expect(result.schema).not.toContain('acme-corp');
+  });
+});
+
+describe('the value-leak net under IDENTITY_PATHS', () => {
+  test('finds URLs, hosts, issue keys and out-of-repo paths; skips loopback and prose', () => {
+    const src = 'a: https://staging.acme.io\nb: acme.io\nc: ACME-7\nd: ../acme-api\ne: http://localhost:3000\nf: QA Defect Management\ng: bun xray\nh: \'{prefix}/{kebab-slug}\'\n';
+    expect(distinctiveValues(src).sort()).toEqual(['../acme-api', 'ACME-7', 'acme.io', 'https://staging.acme.io'].sort());
+  });
+
+  test('a filled key in a MIXED block that nobody declared still refuses generation', () => {
+    const src = realSource().replace('  tc_creation_stage: auto', '  tc_creation_stage: auto\n  sut_url: https://staging.acme.io # the SUT');
+    const result = generateSchema(src);
+    expect(result.error).toContain('identity leak');
+    expect(result.leaks.some(l => l.pattern.includes('https://staging.acme.io'))).toBe(true);
+  });
+});
+
+// GitHub "Use this template" copies the maintainers' filled yaml verbatim, and
+// `package.json` with it, so nothing but the header sentinel tells the copy
+// from the original.
+describe('the maintainer copy and the template route', () => {
+  test('this repo\'s own yaml carries the sentinel; the schema never does', () => {
+    expect(isMaintainerCopy(realSource())).toBe(true);
+    expect(isMaintainerCopy(committedSchema())).toBe(false);
+    expect(committedSchema()).not.toContain('MAINTAINER COPY');
+  });
+
+  test('the sentinel counts only in the leading comment block', () => {
+    expect(isMaintainerCopy('# MAINTAINER COPY: x\nproject: {}\n')).toBe(true);
+    expect(isMaintainerCopy('project: {}\n# MAINTAINER COPY: x\n')).toBe(false);
+  });
+
+  test('a sentinel moved below the header is a leak the gate refuses', () => {
+    const moved = realSource().replace('\nbackend:', '\n# MAINTAINER COPY: moved\nbackend:');
+    expect(generateSchema(moved).error).toContain('identity leak');
+  });
+
+  test('origin decides between the boilerplate (or a fork) and a repo made from it', () => {
+    expect(originIsUpstream('https://github.com/upex-galaxy/agentic-qa-boilerplate.git')).toBe(true);
+    expect(originIsUpstream('git@github.com:someone/agentic-qa-boilerplate.git')).toBe(true);
+    expect(originIsUpstream('https://github.com/acme/acme-qa.git')).toBe(false);
+    expect(originIsUpstream(null)).toBe(false);
+  });
+
+  test('classifyProjectYaml: maintainer here, copied-template elsewhere, consumer without the sentinel', () => {
+    expect(classifyProjectYaml(realSource(), 'https://github.com/upex-galaxy/agentic-qa-boilerplate')).toBe('maintainer');
+    expect(classifyProjectYaml(realSource(), 'https://github.com/acme/acme-qa.git')).toBe('copied-template');
+    expect(classifyProjectYaml(realSource(), null)).toBe('copied-template');
+    expect(classifyProjectYaml(seedFromSchema(committedSchema())!, 'https://github.com/acme/acme-qa.git')).toBe('consumer');
+  });
+
+  test('a reseeded copy carries no maintainer identity, and the git-flow guard fires on it', () => {
+    const reseeded = seedFromSchema(committedSchema())!;
+    for (const value of distinctiveValues(realSource())) { expect(reseeded).not.toContain(value); }
+    const walk = yamlLeafWalk(reseeded)!;
+    expect(walk.entries.get('project.project_name')).toBeNull();
+    expect(walk.entries.get('project.project_key')).toBeNull();
+    expect(walk.entries.get('issue_tracker.atlassian_url')).toBeNull();
+    // git-flow-master §"Bootstrap trigger" case (b): strategy set, strategy_source
+    // not `chosen`, project_name null -> OFFER Strategy Setup.
+    expect(walk.entries.get('git_strategy.strategy')).not.toBeNull();
+    expect(walk.entries.get('git_strategy.meta.strategy_source')).toBe('inherited');
+    expect(walk.entries.get('git_strategy.policy.direct_push_to_protected')).toBe('confirm');
+    expect(reseeded.startsWith(CONSUMER_YAML_HEADER)).toBe(true);
+  });
+
+  test('the consumer header matches its twin in the scaffolder', () => {
+    const prepare = readFileSync(join(REPO_ROOT, 'packages', 'create-agentic-qa', 'src', 'prepare.ts'), 'utf8');
+    const twin = /const CONSUMER_YAML_HEADER = `([\s\S]*?)`;/.exec(prepare)![1].replace(/\\`/g, '`');
+    expect(twin).toBe(CONSUMER_YAML_HEADER);
+  });
+});
+
 describe('checkSchema', () => {
   const source = realSource();
   const schema = generateSchema(source).schema;
@@ -471,7 +627,7 @@ describe('insertion', () => {
   // INSERT-ONLY is the promise that makes writing to a project's identity file
   // acceptable at all. Every existing leaf keeps its value, byte for byte.
   test('not one existing value changes', () => {
-    const old = stripBlock(source.replace('  project_key: null #', '  project_key: ACME #'), 'orchestration');
+    const old = stripBlock(source.replace(/ {2}project_key: [^#\n]*#/, '  project_key: ACME #'), 'orchestration');
     const before = yamlLeafWalk(old)!;
     const { text, error } = applyInsertions(old, planInsertions(old, schema, ['orchestration'], '8.5'));
     expect(error).toBeNull();
