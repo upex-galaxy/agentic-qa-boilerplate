@@ -276,7 +276,7 @@ Visual deck: `packages/decks/orca-orchestration/how-it-works.es.html` (same open
 
 ## MCPs available
 
-The project MCP files (`.mcp.json` and its OpenCode / Codex twins) commit only the local servers that read project values and the ones that need no key. The set is whatever `.mcp.json` declares (`KNOWN_MCP_IDS` in `cli/lib/agent-compatibility-contracts.ts` pins the shipped ones), and the capability each server provides is in `agentic-qa-core/references/mcp-capabilities.md` §2.
+The project MCP files (`.mcp.json` and its OpenCode / Codex twins) commit only LOCAL (stdio) servers: the ones that read `.env` values (the app's database and API, the Slack bot) and the docs server, which needs no key. The set is whatever `.mcp.json` declares (`KNOWN_MCP_IDS` in `cli/lib/agent-compatibility-contracts.ts` pins the shipped ones), and the capability each server provides is in `agentic-qa-core/references/mcp-capabilities.md` §2.
 
 A remote server whose only project-side content was an API key is the harness's business (ADR-0005; the list of moved servers and how to connect each one per host: `cli/lib/harness-level-mcps.ts`, human guide `docs/core/variables-de-entorno.html`). The **Atlassian MCP is opt-in** (setup in `agentic-qa-core/references/mcp-atlassian-optin.md`) — the primary Jira tools are `/acli` and `bun run jira:sync-issues`.
 
@@ -285,7 +285,7 @@ A remote server whose only project-side content was an API key is the harness's 
 - Use **Context7** (capability `library-docs`) for "how to use X" — official docs, current API
 - Use the **web-search** capability (a harness-level server: Exa first, Tavily second) for "how to solve X" — community fixes, troubleshooting
 - Use `/acli` for ticket WRITES (create, transition, comment, link); for detailed READS (custom fields, ACs, ATP/ATR, comments) use `bun run jira:sync-issues get`/`jql`
-- Use **Playwright MCP** for ad-hoc live browser interactions; for scripted runs use `/playwright-cli`
+- Use `/playwright-cli` for every browser interaction, ad-hoc or scripted: there is no browser MCP
 
 `.mcp.json` lives at the repo root and is **committed**: it is secret-free, referencing secrets as `${VAR}` placeholders. The value reaches each harness from `.env` through a generated surface (`bun run harness:env`): Claude Code reads the `env` block of `.claude/settings.local.json`, OpenCode reads `.auth/opencode/<VAR>` via `{file:}`, Codex reads the process environment (`bun run codex` or direnv). Only `.mcp.local.json` (personal overrides) is gitignored.
 
