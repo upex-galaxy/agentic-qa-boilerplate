@@ -601,7 +601,7 @@ test("crea y luego lee un pedido", async ({ api }) => {
 
 <span class="tk-k">const</span> body = <span class="tk-k">await</span> res.<span class="tk-f">json</span>();
 OrderSchema.<span class="tk-f">parse</span>(body);  <span class="tk-c">// 💥 lanza si la forma no calza</span></pre>
-      <div class="callout info" style="margin-top:.85rem"><span class="co-ico">🔗</span><p>En este repo los schemas se <b>generan desde la OpenAPI</b> (<code>bun run api:sync</code> → <code>api/schemas/</code>). El contrato del backend y tus tests no pueden divergir.</p></div>
+      <div class="callout info" style="margin-top:.85rem"><span class="co-ico">🔗</span><p>En este repo el contrato se <b>genera desde la OpenAPI</b>: <code>bun run api:sync</code> escribe los tipos TypeScript en <code>api/openapi-types.ts</code> y <code>api/schemas/</code> los expone como fachadas por dominio. Son tipos (los chequea el compilador), no Zod: Zod no viene en el repo y queda como opción si quieres validar en runtime.</p></div>
     </div>
     <div data-anim="fade-up" style="animation-delay:.2s">
       <div class="livecell">
@@ -631,7 +631,7 @@ if (errors.length === 0) {
       </div>
     </div>
   </div>
-  <div class="notes"><p>El salto de "afirmar campos sueltos" a "validar el contrato completo". Zod define la forma una vez y parse() lanza si algo no calza — un campo faltante, un tipo cambiado, un null inesperado. Dato verídico y potente del repo: los schemas NO se escriben a mano, se generan desde la OpenAPI del backend con bun run api:sync hacia api/schemas/. Eso significa que si el backend cambia su contrato, tus tipos se actualizan y los tests que asumían lo viejo fallan en compilación — trazabilidad real entre contrato y prueba. Demo del live cell: ejecutar tal cual → OK; cambiar qty a -3 o item a 99 → ver los errores concretos. Que la sala rompa el body y vea el validador atraparlo.</p></div>
+  <div class="notes"><p>El salto de "afirmar campos sueltos" a "validar el contrato completo". Zod define la forma una vez y parse() lanza si algo no calza: un campo faltante, un tipo cambiado, un null inesperado. Dato verídico del repo: los tipos NO se escriben a mano, se generan desde la OpenAPI del backend con bun run api:sync (api/openapi-types.ts, con fachadas por dominio en api/schemas/). No es Zod: el repo no lo trae, Zod es el ejemplo genérico de validación en runtime. Si el backend cambia su contrato, tus tipos se actualizan y los tests que asumían lo viejo fallan en compilación, trazabilidad real entre contrato y prueba. Demo del live cell: ejecutar tal cual → OK; cambiar qty a -3 o item a 99 → ver los errores concretos. Que la sala rompa el body y vea el validador atraparlo.</p></div>
 </section>
 
 <!-- 12 · STEPPER: ciclo de vida de una request -->
@@ -988,7 +988,8 @@ tests/
     TestFixture.ts        <span class="tk-c">// L4 · híbrido</span>
   integration/**          <span class="tk-c">// tests API puros</span>
   e2e/**                  <span class="tk-c">// tests UI (+API)</span>
-api/schemas/              <span class="tk-c">// Zod desde OpenAPI</span>
+api/openapi-types.ts      <span class="tk-c">// tipos generados (bun run api:sync)</span>
+api/schemas/              <span class="tk-c">// fachadas de tipos por dominio</span>
 playwright.config.ts      <span class="tk-c">// baseURL, workers</span>
 <span class="tk-c">// estructura de capas: OrdersApi.ts es ilustrativo; los componentes reales, en kata-manifest.json</span></pre>
     </div>
@@ -998,7 +999,7 @@ playwright.config.ts      <span class="tk-c">// baseURL, workers</span>
       <div class="card" style="margin-top:.8rem"><h3>📖 Para profundizar</h3><p>Skill <code class="pill">/test-automation</code> + <code class="pill">references/kata-architecture.md</code>: reglas de ATC, fixtures y schemas.</p></div>
     </div>
   </div>
-  <div class="notes"><p>Aterriza todo en la estructura REAL del repo. Mensaje tranquilizador: las capas bajas (TestContext, ApiBase, fixtures) ya están construidas; el alumno trabaja sobre todo en components/api (ATCs) y integration (tests). Punteros reales: la skill /test-automation y references/kata-architecture.md tienen las reglas completas de ATC y la tabla de fixtures; los schemas Zod se generan desde la OpenAPI con bun run api:sync (no se escriben a mano). Esta slide es el puente del aprendizaje a la práctica del lunes.</p></div>
+  <div class="notes"><p>Aterriza todo en la estructura REAL del repo. Mensaje tranquilizador: las capas bajas (TestContext, ApiBase, fixtures) ya están construidas; el alumno trabaja sobre todo en components/api (ATCs) y integration (tests). Punteros reales: la skill /test-automation y references/kata-architecture.md tienen las reglas completas de ATC y la tabla de fixtures; los tipos se generan desde la OpenAPI con bun run api:sync (no se escriben a mano; no hay Zod en el repo). Esta slide es el puente del aprendizaje a la práctica del lunes.</p></div>
 </section>
 
 <!-- 26 · Recap visual -->
@@ -1008,7 +1009,7 @@ playwright.config.ts      <span class="tk-c">// baseURL, workers</span>
     <thead><tr><th>Herramienta</th><th>Dolor que cura</th><th>Pieza clave</th><th>En KATA</th></tr></thead>
     <tbody>
       <tr><td>🚀 request fixture</td><td>navegador para un endpoint</td><td><code>request.post(...)</code></td><td>ApiBase (L2)</td></tr>
-      <tr><td>🎯 Aserciones + schema</td><td>"200" no significa correcto</td><td><code>status + body + Zod</code></td><td>dentro de la ATC (L3)</td></tr>
+      <tr><td>🎯 Aserciones + schema</td><td>"200" no significa correcto</td><td><code>status + body + tipos/schema</code></td><td>dentro de la ATC (L3)</td></tr>
       <tr><td>🔧 Fixtures + faker</td><td>setup/auth/datos repetidos</td><td><code>{ api }</code> + datos únicos</td><td>Fixtures (L4)</td></tr>
       <tr><td>🥋 KATA</td><td>todo junto, a escala</td><td>arquitectura de capas + ATC</td><td>el marco completo</td></tr>
     </tbody>
