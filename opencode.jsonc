@@ -19,7 +19,9 @@
   // spawned before any hook runs. {file:path} substitutes the file's CONTENTS and
   // needs no environment at all, so it works however OpenCode was started.
   //
-  // MEASURED on OpenCode 1.18.30, and worth knowing before editing this file:
+  // MEASURED on OpenCode 1 and re-measured on OpenCode 2 (versions and dates:
+  // .context/ADR/ADR-0006-forensic-measurements-ledger.md), and worth knowing
+  // before editing this file:
   //   - a MISSING {file:} target invalidates the WHOLE config (exit 1, "bad file
   //     reference"), not just the one server. Never point at a file the generator
   //     does not create.
@@ -29,6 +31,11 @@
   //     declares, with or without a value.
   //   - a trailing newline is trimmed. The generator writes none anyway, so a
   //     value never depends on that.
+  //
+  // V1 SYNTAX ON PURPOSE ("mcp", "enabled", "permission"). OpenCode 2 migrates
+  // these keys on load ("mcp" -> "mcp.servers", "enabled" -> "disabled",
+  // "permission" -> "permissions"), and OpenCode 1 rejects the V2 spelling, so
+  // the V1 file is the one both generations read. Revisit when V1 support ends.
   //
   // Syntax notes (OpenCode-specific, different from Claude Code's .mcp.json):
   //   - File substitution uses {file:path}, env expansion {env:VAR_NAME} (NOT ${VAR})
