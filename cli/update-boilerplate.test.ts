@@ -50,6 +50,10 @@ describe('component registry', () => {
     }
   });
 
+  test('.worktreeinclude ships once (bootstrap-only), so the lines a project adds survive every sync', () => {
+    expect(COMPONENTS.find(c => c.name === 'worktree-include')).toMatchObject({ type: 'file-list', paths: ['.'], files: ['.worktreeinclude'], bootstrapOnly: true });
+  });
+
   test('the retired command aliases leave the sync and are removed downstream, the project\'s own commands stay', () => {
     const paths = COMPONENTS.flatMap(c => c.paths);
     for (const p of ['.agents/compatibility', '.claude/commands', '.opencode/commands']) {

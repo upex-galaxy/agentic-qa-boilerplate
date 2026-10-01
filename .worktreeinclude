@@ -1,0 +1,20 @@
+# Gitignored files a NEW worktree needs to run, copied from the checkout it
+# was created from. Read by Claude Code (`--worktree`, subagent and desktop
+# worktrees) and by the Codex app (Codex-managed worktrees); `.gitignore`
+# syntax, and only files that are ALSO gitignored are copied, so a tracked file
+# is never duplicated. `bun run worktree:provision` covers every other kind of
+# worktree (orchestrated, `git worktree add`) and copies the same files.
+#
+# Shared with the team: list only what a fresh worktree cannot rebuild. Add a
+# project-only line below the shipped ones; the updater delivers this file once
+# and never overwrites it.
+
+# Values every harness launch and every MCP loader read.
+.env
+# Claude Code's generated env block (`bun run harness:env`).
+.claude/settings.local.json
+# OpenCode `{file:}` values and the curl token from `bun run api:login`.
+.auth/**
+# The synced OpenAPI spec: the OpenAPI MCP exits at start without it when
+# OPENAPI_SPEC_PATH points here (`bun run api:sync` rebuilds it).
+api/openapi.json
