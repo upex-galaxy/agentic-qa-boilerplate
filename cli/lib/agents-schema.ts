@@ -626,6 +626,7 @@ export const FILLED_ELSEWHERE: Readonly<Record<string, string>> = {
   'git_strategy.branches.ephemeral_pattern': 'the git-flow-master Strategy Setup questionnaire',
   'git_strategy.meta.created': 'stamped by the git-flow-master Strategy Setup questionnaire',
   'git_strategy.meta.policy_verified': 'stamped by `bun run git:policy verify --stamp`',
+  'testing.browser.pair_mode': 'asked once, the first time an agentic browser session starts (agentic-qa-core/references/browser-sessions.md, Agentic Pair Testing)',
 };
 
 /**
@@ -1051,7 +1052,25 @@ export function planInsertions(
   const skipped: Array<{ path: string, reason: string }> = [];
   const anchors = new Map<number, string[]>();
 
+  // The diff reports LEAVES. A leaf whose parent container is missing too
+  // (`testing.browser.pair_mode` in a project that has `testing:` but no
+  // `browser:`) has no parent to anchor to, so it is lifted to the highest
+  // missing ancestor whose own parent the project HAS, and that ancestor's
+  // whole block is inserted once. Without the lift, a new sub-block inside
+  // an existing block could never be inserted at all.
+  const lifted: string[] = [];
   for (const target of paths) {
+    const parts = target.split('.');
+    let top = target;
+    for (let depth = parts.length - 1; depth >= 1; depth -= 1) {
+      const ancestor = parts.slice(0, depth).join('.');
+      if (project.entries.has(ancestor)) { break; }
+      top = ancestor;
+    }
+    if (!lifted.includes(top)) { lifted.push(top); }
+  }
+
+  for (const target of lifted) {
     const extent = pairExtent(schemaText, target.split('.'));
     if (!extent) { skipped.push({ path: target, reason: `not found in ${SCHEMA_FILE}` }); continue; }
     let block = schemaText.slice(extent.start, extent.end);

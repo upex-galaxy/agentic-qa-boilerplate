@@ -41,8 +41,12 @@
       <div class="callout tip">
         <span class="callout-title">Para la UI</span>
         <p>
-          La exploración de la interfaz la hace la IA con la skill <code>/playwright-cli</code>
-          (capturas, traces, video). No necesita guía aparte.
+          La exploración de la interfaz la hace la IA con la skill
+          <code>/playwright-cli</code> (capturas, traces, video), cada sesión en su propio navegador
+          en memoria y con el login de cada rol cargado desde <code>.auth/</code>. La primera vez
+          pregunta una sola cosa: si prefieres <strong>Pair Testing agéntico</strong>, es decir,
+          probar juntos en tu propio Chrome. La respuesta queda en <code>.agents/project.yaml</code>
+          (<code>testing.browser.pair_mode</code>) y se cambia editando esa línea.
         </p>
       </div>
     </article>

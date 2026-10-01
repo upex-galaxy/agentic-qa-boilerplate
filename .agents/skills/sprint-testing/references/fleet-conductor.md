@@ -201,6 +201,8 @@ bun run api:login <env> --role admin --profile W2
 
 Each brief then names the **absolute path** of the token file its worker sources (`.auth/profiles/<label>/tokens.env`). One writer either way: the worker sources, never mints.
 
+The browser side follows the same rule. The conductor produces one state file per environment and role the round needs (`.auth/<env>-<role>.json`, recipe in `agentic-qa-core/references/browser-sessions.md` §4) before launch; each brief names its absolute path; the worker only `state-load`s it into its own named session. An expired state is `BLOCKED_AUTH_STALE`, like an expired token.
+
 ---
 
 ## 8. Claims — declare before you write
@@ -296,10 +298,10 @@ Two things must be per-worker, and neither one edits the shared file:
 
 | What | Why | How |
 |---|---|---|
-| browser profile / user-data dir | the config ships `isolated: false` with a single `userDataDir`; two browsers on one profile dir collide on the profile lock | give each worker its own session / profile identifier |
+| browser session | two browsers on one profile dir write the same cookies, last writer wins, silently | a named in-memory session per worker (`-s=<label>`): the shipped config keeps every session in memory, so the name IS the isolation; never `--persistent` |
 | output dir | otherwise Bucket A noise and any non-explicit capture cross-contaminates tickets | per-worker config file, or an explicit full destination on every capture |
 
-The mechanics (which flag or env var the installed automation CLI reads for an alternate config, and the session identifier form) belong to the `/playwright-cli` skill — load it and use what that version documents. Two measured constraints carry over regardless: an alternate config **replaces** the default, it does not merge, so a per-worker config file must be complete; and `outputDir` never applies to `.png`, so every screenshot passes its full destination path anyway (`agentic-qa-core/references/evidence-conventions.md` §5).
+Which session and whose login: `agentic-qa-core/references/browser-sessions.md` §7 (fleets). The verbs belong to `/playwright-cli`. Two measured constraints carry over regardless: an alternate config **replaces** the default, it does not merge, so a per-worker config file must be complete; and `outputDir` never applies to `.png`, so every screenshot passes its full destination path anyway (`agentic-qa-core/references/evidence-conventions.md` §5).
 
 Each worker closes its browser sessions before reporting done. Orphaned browsers eating gigabytes is a measured outcome, not a hypothetical (ADR-0006).
 
@@ -333,7 +335,7 @@ Each worker closes its browser sessions before reporting done. Orphaned browsers
 - [ ] Every worker prompt opens with the skill, its issue key, the token `fleet worker` and its brief path — the only detection channel (§3)
 - [ ] Round size ≤ cap; no two `write` claims on one entity inside the round; `Owner` + `Pattern: Fleet` set on every queue row
 - [ ] Tokens minted by the conductor before launch, environment named positionally, one profile per worker; every brief names the absolute token path; no worker logs in (§7)
-- [ ] Per-worker browser profile + output dir; shared `.playwright/cli.config.json` untouched and its `outputDir` neutral
+- [ ] Per-worker named browser session + explicit capture paths; browser state files provisioned by the conductor; shared `.playwright/cli.config.json` untouched and its `outputDir` neutral
 - [ ] Dashboard presented at the round checkpoint: native liveness first, `BLOCKED_` grep second, staleness > 20 min flagged
 - [ ] Every worker released / closed as it finishes — not at the end of the round
 - [ ] Sprint `progress.md` entry + STP comment + queue row + issue archive written by the CONDUCTOR, one per closed issue, after Stage 3 verified

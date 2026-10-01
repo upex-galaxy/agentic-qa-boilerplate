@@ -618,6 +618,23 @@ describe('insertion', () => {
     expect(yamlLeafWalk(text)!.entries.get('git_strategy.policy.direct_push_to_protected')).toBe('confirm');
   });
 
+  // The diff reports the leaf (`testing.browser.pair_mode`); its parent
+  // `testing.browser` is missing too, so there was nothing to anchor to and
+  // the key was skipped forever. The plan lifts it to the missing sub-block.
+  test('a new sub-block inside an existing block is inserted whole, under its parent', () => {
+    const old = source.replace(/ {2}# Agentic browser sessions[\s\S]*? {4}pair_mode: null\n/, '');
+    const gap = projectDelta(old, schema).gaps.find(g => g.block === 'testing');
+    expect(gap?.wholeBlock).toBe(false);
+    const plan = planInsertions(old, schema, gap!.paths, null);
+    expect(plan.skipped).toEqual([]);
+    expect(plan.inserted).toEqual(['testing.browser']);
+    const { text, error } = applyInsertions(old, plan);
+    expect(error).toBeNull();
+    expect(yamlLeafWalk(text)!.entries.get('testing.browser.pair_mode')).toBeNull();
+    expect(text).toContain('\n  browser:\n');
+    expect(projectDelta(text, schema).gaps).toEqual([]);
+  });
+
   test('a missing leaf takes the SCHEMA\'s value, not the maintainer\'s', () => {
     const old = source.replace(/ {4}admin_bypass: true #[^\n]*\n/, '');
     const { text } = applyInsertions(old, planInsertions(old, schema, ['git_strategy.policy.admin_bypass'], null));

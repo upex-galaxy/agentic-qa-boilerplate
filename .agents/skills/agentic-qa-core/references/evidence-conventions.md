@@ -70,14 +70,14 @@ Two things are per-session, and neither one edits the shared config file:
 
 | What | Why | How |
 |---|---|---|
-| **Browser profile / user-data dir** | the shipped config is non-isolated with a single user-data dir; two browsers on one profile directory collide on its lock, and the second one fails or hijacks the first one's state | give each session its own session / profile identifier |
+| **Browser session** | two browsers on one profile directory write the same cookies, last writer wins, silently | a named session per ticket or worker (`-s=<KEY>`): the shipped config runs every session in memory, so the name IS the isolation. Never `--persistent`. Canon: `browser-sessions.md` |
 | **Output destination** | keeps Bucket A noise and any non-explicit capture from crossing into another ticket's folder | a per-session config file, OR simply the Bucket B rule already in force: an explicit full destination on every capture |
 
-Mechanics — the flag or environment variable the installed automation CLI reads for an alternate config, and the shape of the session identifier — belong to that tool's own skill (`/playwright-cli`): load it and use what the installed version documents. Do not invent a flag, and do not hand-edit the shared config to fake isolation.
+Which session, which identity and which browser: `browser-sessions.md` (the repo's canon; `/playwright-cli` owns only the verbs). A distinct session name is enough ONLY because the shipped config keeps sessions in memory: a config edited back to a shared `userDataDir` (`isolated: false`) puts every session name on one profile again, so do not hand-edit the shared config to fake isolation, in either direction.
 
 Two constraints hold whatever the mechanism:
 
 - An alternate config **replaces** the default, it does not merge with it, so a per-session config file must be complete.
-- `outputDir` never applies to `.png`, so a screenshot passes its full destination path regardless — which is why Bucket B's explicit-destination rule already makes *evidence* concurrency-safe even with a shared config. What is left unsafe without isolation is the **browser profile**.
+- `outputDir` never applies to `.png`, so a screenshot passes its full destination path regardless — which is why Bucket B's explicit-destination rule already makes *evidence* concurrency-safe even with a shared config. What is left unsafe without isolation is the **browser profile**, which the session name covers (above).
 
 Every session closes its browser sessions before it reports. Orphaned browser processes accumulate per session and are a measured, non-trivial cost (see ADR-0006), not a hypothetical.
