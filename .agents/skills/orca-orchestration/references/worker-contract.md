@@ -47,7 +47,9 @@
    terminal — the conductor owns that.
 
 7. **Write the long report BEFORE `worker_done`**, to the path the brief gives you
-   (`.session/orchestration/<slug>/reports/<label>.md`, or the scope the workflow skill declares).
+   (`<ABS>/.session/orchestration/<slug>/reports/<label>.md` in the PRIMARY checkout, or the scope
+   the workflow skill declares, always by absolute path: a report written inside your worktree dies
+   with it).
    Sections: `## Summary`, `## Files changed`, `## Commits` (sha + subject), `## Decisions taken`
    (and why), `## Verification` (commands + exit codes), `## Left open`. The message body is a
    summary; the file is the record.

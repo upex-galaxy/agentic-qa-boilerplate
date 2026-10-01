@@ -29,7 +29,7 @@ When in doubt, the sibling doctrine doc is canonical for its concern. This file 
 
 ## 3. Storage layout
 
-Every retrofitted skill writes its session state under a single tree at the repo root:
+Every retrofitted skill writes its session state under a single tree at `<<PRIMARY_ROOT>>`, the PRIMARY checkout (`.agents/README.md` §"Checkout roots"). In the primary it is the repo root; in a linked worktree it is NOT the worktree's root, because everything git ignores inside a worktree is deleted with it. Every `.session/...` path in this document, and in every skill that cites it, resolves under `<<PRIMARY_ROOT>>` and is passed to a subagent as an absolute path:
 
 ```
 .session/
@@ -101,7 +101,7 @@ Rules:
 Every retrofitted skill runs Phase 0 as the **first** thing it does, before any subagent dispatch, before any user prompt beyond the initial trigger. The decision tree is:
 
 1. Resolve `<scope>` for this invocation (see §9 for the skill's rule).
-2. Check whether `.session/<skill-slug>/<scope>/progress.md` exists.
+2. Check whether `<<PRIMARY_ROOT>>/.session/<skill-slug>/<scope>/progress.md` exists. When the session runs in a linked worktree (`<<REPO_ROOT>>` differs from `<<PRIMARY_ROOT>>`), say so in one line and look in the primary; a check against the worktree's own `.session/` finds nothing and silently restarts work that was already done.
 3. If it does NOT exist → proceed to Phase 1 (write a new `plan.md`).
 4. If it DOES exist:
    1. Read `.session/<skill-slug>/<scope>/plan.md` in full.
@@ -382,8 +382,8 @@ Goal: <one sentence>
 Context docs:
   - /abs/path/file1.md
   - /abs/path/file2.ts
-  - .session/<skill-slug>/<scope>/plan.md           ← session artifact path
-  - .session/<skill-slug>/<scope>/progress.md       ← session artifact path
+  - <<PRIMARY_ROOT>>/.session/<skill-slug>/<scope>/plan.md       ← session artifact path
+  - <<PRIMARY_ROOT>>/.session/<skill-slug>/<scope>/progress.md   ← session artifact path
 
 ... (remaining 5 components per briefing-template.md)
 ```

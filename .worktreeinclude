@@ -3,18 +3,35 @@
 # worktrees) and by the Codex app (Codex-managed worktrees); `.gitignore`
 # syntax, and only files that are ALSO gitignored are copied, so a tracked file
 # is never duplicated. `bun run worktree:provision` covers every other kind of
-# worktree (orchestrated, `git worktree add`) and copies the same files.
+# worktree (orchestrated, `git worktree add`) and copies the same files: the
+# shipped lines below mirror `PROVISION_COPIES` in `cli/lib/worktree.ts`, and a
+# test keeps the two equal.
+#
+# What this file cannot carry: `node_modules/`, the `.husky/_` hook shims and
+# the `.claude/skills` alias. Without them git hooks do not run and Claude Code
+# finds no repo skill; the prompt hook says so, and `bun run worktree:provision`
+# (the Codex app runs it from `.codex/environments/environment.toml`) adds them.
 #
 # Shared with the team: list only what a fresh worktree cannot rebuild. Add a
 # project-only line below the shipped ones; the updater delivers this file once
 # and never overwrites it.
 
-# Values every harness launch and every MCP loader read.
+# Values every harness launch and every MCP loader read, and their overrides.
 .env
+.env.local
+.envrc.local
 # Claude Code's generated env block (`bun run harness:env`).
 .claude/settings.local.json
 # OpenCode `{file:}` values and the curl token from `bun run api:login`.
 .auth/**
+# `bun run api:sync` config: without it `api:sync -c` falls into prompts.
+api/.openapi-config.json
 # The synced OpenAPI spec: the OpenAPI MCP exits at start without it when
 # OPENAPI_SPEC_PATH points here (`bun run api:sync` rebuilds it).
 api/openapi.json
+# Per-developer MCP overrides.
+.mcp.local.json
+opencode.local.jsonc
+dbhub.local.toml
+# The installer's record of community skills (`setup:doctor` reads it).
+.template/installer.state.json

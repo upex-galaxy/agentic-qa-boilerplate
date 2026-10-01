@@ -44,7 +44,10 @@ for the real grammar. Only this skill spells out commands, because only this ski
 
 ### 2.1 · The launch file
 
-- Path: `.session/<skill-slug>/<scope>/launch.txt`.
+- Path: `<<PRIMARY_ROOT>>/.session/<skill-slug>/<scope>/launch.txt`, inside the scope of the workflow
+  skill that distributes the work. One file, one home: only a wave that no single workflow skill
+  owns (a conductor running `orca-orchestration` directly) keeps it in the orchestration scope,
+  `.session/orchestration/<slug>/launch.txt` (`references/coordinator-playbook.md` §0). Never both.
 - **Regenerated whole** at each planning pass. Closed or finished items simply drop out; nothing is
   edited in place, so there is never a half-updated file.
 - One line per unit of work, **self-contained**: it exports whatever the worker needs, then starts

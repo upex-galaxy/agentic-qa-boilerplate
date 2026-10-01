@@ -16,7 +16,9 @@
 3. Create the orchestration scope on disk: `.session/orchestration/<slug>/`, where `<slug>` names the
    wave of work (`sprint-42-qa`, `kata-fixtures-refactor`, `regression-2026-09-17`). Everything the
    fleet needs to survive a crash lives there, in the PRIMARY checkout, cited by absolute path.
-4. Seed `run.md`, `roster.md`, `COMMON.md` and `launch.txt` from `templates/`.
+4. Seed `run.md`, `roster.md`, `COMMON.md` and `launch.txt` from `templates/`. When the wave belongs to
+   one workflow skill, `launch.txt` lives in that skill's scope instead and this scope does not get
+   a copy (`references/launch-seam.md` §2.1).
 
 **Everything written inside a worktree dies with the worktree.** Fleet state belongs in the primary
 checkout, and a worker reaches it by absolute path in its prompt — never by a relative path, never by
@@ -193,7 +195,7 @@ on one existing on another machine):
 | `roster.md` | conductor | one row per worker (see below) |
 | `COMMON.md` | conductor | the common brief every worker reads first |
 | `W-<label>.md` | conductor | the per-worker brief |
-| `launch.txt` | conductor | one self-contained launch line per worker, ALWAYS written |
+| `launch.txt` | conductor | one self-contained launch line per worker, ALWAYS written; here only when no workflow skill owns the wave (`references/launch-seam.md` §2.1) |
 | `claims.md` | conductor | the claims ledger (`references/claims-protocol.md`) |
 | `learnings.md` | conductor | cross-session findings worth carrying to the next wave |
 | `skill-improvements.md` | conductor | gaps in the SKILLS themselves that this wave exposed |
@@ -240,7 +242,7 @@ has one worktree for N workers (gotcha G50).
 <KEY> · Stage 2 execution
 session <session label>
 branch <branch>
-brief .session/orchestration/<slug>/W-<label>.md
+brief <ABS>/.session/orchestration/<slug>/W-<label>.md
 ```
 
 **N workers in one checkout** — one FLEET-level card, and per-worker recovery lives in the roster,
@@ -384,23 +386,26 @@ screen and no command reports it, so closing the terminal destroys the number (g
 
 ### Orphan audit before removing a worktree
 
-Removing a worktree deletes everything gitignored inside it. In THIS repo that means the env file,
-captured evidence, any local session scope, the tracker cache and installed dependencies. Before
-`worktree rm`:
+Removing a worktree deletes everything gitignored inside it, silently and with exit 0. In THIS repo
+that means the env file, captured evidence, any local session scope, the tracker cache and installed
+dependencies. Before `worktree rm`:
 
 1. `git -C <wt> status --porcelain` — uncommitted work? Commit it or copy it out.
 2. `git -C <wt> cherry -v origin/<base>` — commits not in the base? Push or integrate first.
-3. `git -C <wt> status --porcelain --ignored` (or `git -C <wt> ls-files --others --ignored --exclude-standard`)
-   — list the gitignored files and decide, one by one: evidence and reports that matter get COPIED
-   into the primary checkout's `.session/orchestration/<slug>/reports/`; durable documents are moved
-   to where the repo keeps them; the rest is disposable by design.
+3. `bun run worktree:audit <wt>` — classifies every gitignored file as STATE, CACHE, DISPOSABLE or
+   UNKNOWN (`references/provisioning.md` §5) and exits 1 while STATE or UNKNOWN is only in the
+   worktree. `--rescue` copies STATE to the same path under `<<PRIMARY_ROOT>>`, never overwriting;
+   a CONFLICT line (the primary holds different bytes) and every UNKNOWN entry are decided by hand.
+   Exit 0 is the gate. Test-run outputs are DISPOSABLE by the owner's decision and never rescued.
 4. Is anyone going to RESUME this worker's session? Removing the worktree also ends that. A harness
    finds its sessions by working directory (Claude Code keeps transcripts under a folder named after
    the path), so once the directory is gone the resume command in the roster (`claude --resume
    <label>`, `codex resume <label>`) has nowhere to run and the owner cannot bring the session back
    after a crash or a restart. Keep the worktree while the session may still be resumed; when you do
    remove it, mark the roster row `resume: gone (worktree removed)` so nobody tries.
-5. Only then remove, and `git worktree prune`.
+5. Only then remove, and `git worktree prune`. From the CLI that is `orca worktree rm --run-hooks`:
+   without the flag Orca skips the committed `orca.yaml` archive hook (which runs the same rescue).
+   A worktree provisioned with direnv leaves an allow entry behind; `direnv prune` clears it.
 
 Mechanics and the untracked-files gotcha: `git-flow-master/references/worktrees.md`.
 

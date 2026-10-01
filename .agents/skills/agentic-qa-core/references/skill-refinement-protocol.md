@@ -24,7 +24,7 @@ Entry genre already in the repo: `orca-orchestration/references/gotchas.md` rows
 
 | Moment | Write | Owner |
 |---|---|---|
-| A lesson is noticed | Append ONE block (§3) to `.session/<active-workflow-slug>/<scope>/refinements.md` — a companion file inside the running skill's OWN scope (`session-management.md` §3 permits companions; nothing else under `.session/` is allowed) | the session, unprompted |
+| A lesson is noticed | Append ONE block (§3) to `<<PRIMARY_ROOT>>/.session/<active-workflow-slug>/<scope>/refinements.md` (the primary checkout, also from a worktree) — a companion file inside the running skill's OWN scope (`session-management.md` §3 permits companions; nothing else under `.session/` is allowed) | the session, unprompted |
 | Same moment | `mem_save` with `topic_key: skill-refinement/<target-slug>` so the proposal survives a wiped `.session/` | the session |
 | Session close | The session footer (`session-footer-contract.md` Part 2) gains one line: `Refinements proposed: N → <path>` (`0` and no path when none) | the session |
 | Review | The owner reads the file and answers **apply / drop per entry**. Never auto-applied. An entry without a measurement is dropped at review | human |

@@ -30,6 +30,8 @@ import { delimiter, join, resolve } from 'node:path';
 
 import { afterEach, describe, expect, test } from 'bun:test';
 
+import { PROVISION_COPIES, worktreeIncludeLine } from '../cli/lib/worktree.ts';
+
 const SCRIPT = resolve(import.meta.dir, 'provision-worktree.ts');
 const IS_WINDOWS = platform() === 'win32';
 
@@ -104,10 +106,12 @@ function fixture(): { primary: string, worktree: string } {
 
   // Gitignored state present in the primary, never committed.
   writeFileSync(join(primary, '.env'), 'LOCAL_USER_EMAIL=test@example.com\n');
+  mkdirSync(join(primary, 'api'), { recursive: true });
+  writeFileSync(join(primary, '.env.local'), 'LOCAL_USER_PASSWORD=override\n');
+  writeFileSync(join(primary, 'api', '.openapi-config.json'), '{}\n');
   mkdirSync(join(primary, '.auth', 'opencode'), { recursive: true });
   writeFileSync(join(primary, '.auth', 'tokens.env'), 'export API_TOKEN_USER_LOCAL=\'x\'\n');
   writeFileSync(join(primary, '.auth', 'opencode', 'TAVILY_API_KEY'), 'tk-literal');
-  mkdirSync(join(primary, 'api'), { recursive: true });
   writeFileSync(join(primary, 'api', 'openapi.json'), '{"openapi":"3.0.0"}\n');
   mkdirSync(join(primary, '.session'), { recursive: true });
   writeFileSync(join(primary, '.session', 'probe.md'), 'must never be copied\n');
@@ -210,6 +214,26 @@ describe('provision-worktree', () => {
     expect(authDirMode).toBe(0o700);
     const tokenMode = statSync(join(worktree, '.auth', 'tokens.env')).mode & 0o777;
     expect(tokenMode).toBe(0o600);
+  });
+
+  test('local overrides and the OpenAPI config travel too; absent optional inputs are info, not warnings', () => {
+    const { worktree } = fixture();
+    const result = run([worktree]);
+    expect(result.code).toBe(0);
+    expect(readFileSync(join(worktree, '.env.local'), 'utf8')).toBe('LOCAL_USER_PASSWORD=override\n');
+    expect(existsSync(join(worktree, 'api', '.openapi-config.json'))).toBe(true);
+    if (!IS_WINDOWS) { expect(statSync(join(worktree, '.env.local')).mode & 0o777).toBe(0o600); }
+    expect(result.out).toContain('Skipping .envrc.local (not present in primary checkout)');
+  });
+
+  test('.worktreeinclude names every path the provisioner copies', () => {
+    const lines = readFileSync(resolve(import.meta.dir, '..', '.worktreeinclude'), 'utf8')
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line !== '' && !line.startsWith('#'));
+    for (const entry of PROVISION_COPIES) {
+      expect(lines).toContain(worktreeIncludeLine(entry));
+    }
   });
 
   test('--dry-run reports intent without writing anything', () => {

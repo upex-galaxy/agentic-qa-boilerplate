@@ -17,7 +17,7 @@ Resolve in this order, the same order the updater uses:
 
 ## 2 · The draft
 
-Write `.session/<workflow-slug>/<scope>/upstream-issue-NN.md` (a companion file inside the running skill's scope) with:
+Write `<<PRIMARY_ROOT>>/.session/<workflow-slug>/<scope>/upstream-issue-NN.md` (a companion file inside the running skill's scope, in the primary checkout even when the session runs in a worktree) with:
 
 - **skill** + its `metadata.kind`
 - **upstream cursor**: the content hash in `.template/upstream-sha/<slug>.sha` when present (written by `cli/lib/updater-drift.ts`), else the `cliVersion` from `.template/installer.lock.json`
@@ -45,7 +45,7 @@ Line-by-line test the session applies: **every literal in the draft either exist
 ```bash
 gh issue create --repo <upstream> \
   --title "[skill-feedback] <slug>: <one line>" \
-  --body-file .session/<workflow-slug>/<scope>/upstream-issue-NN.md \
+  --body-file <<PRIMARY_ROOT>>/.session/<workflow-slug>/<scope>/upstream-issue-NN.md \
   --label skill-feedback --label "skill:<slug>" --label "kind:<kind>"
 ```
 

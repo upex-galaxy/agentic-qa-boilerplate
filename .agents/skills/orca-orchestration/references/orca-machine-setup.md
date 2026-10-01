@@ -132,24 +132,27 @@ Two rules that follow from this being per-machine and invisible:
 
 ---
 
-## 4 · The setup hook → the provisioning script
+## 4 · The setup and archive hooks → the committed `orca.yaml`
+
+The repo commits `orca.yaml`: `scripts.setup` runs `bun run worktree:provision` in every new worktree
+and `scripts.archive` runs `bun run worktree:audit --rescue` before one is removed
+(`references/provisioning.md` §3). Nothing is set per machine, but three per-machine things decide
+whether it runs, so read them once:
 
 ```bash
 orca repo list --json </dev/null
-orca repo show --repo <selector> --json </dev/null     # read the CURRENT setup command + policy
+orca repo show --repo <selector> --json </dev/null     # registered hooks + source policy
 ```
 
-Read the registered setup command (`orca repo show`, above): if it only installs dependencies, it
-covers one row of the gap table in `references/provisioning.md` §1. Point it at
-`bun run worktree:provision` instead and every repairable row closes automatically:
+- The source policy in the repository's Hooks settings must not be local-only, or `orca.yaml` is
+  ignored. A local script set before `orca.yaml` existed (often `bun install`) is redundant now.
+- Approve the trust prompt the first time each hook runs; it asks again when the script changes.
+- Keep the setup policy at run-by-default, so a new worktree provisions itself before the agent
+  starts.
 
-- In the app: the repository's settings → the setup script field → `bun run worktree:provision`.
-- Keep the setup policy at run-by-default, so a newly created worktree provisions itself before the
-  agent starts.
-
-**This setting is UI-only** (gotcha G24): the CLI does not expose it, the machine-readable command
-schema has no command for it, and desktop automation is blocked by the OS permission model on
-macOS. It cannot be scripted and it cannot be versioned.
+A machine where the committed hooks cannot run falls back to setting the setup script field in the
+app to `bun run worktree:provision` (UI only, gotcha G24) and running the audit by hand before every
+removal.
 
 ---
 
@@ -176,7 +179,7 @@ find out during a real fleet, and record it in `references/gotchas.md`.
     generated surfaces; no direnv needed for them)
 [ ] direnv installed, hooked into the shell, `.envrc` sources the env file, `direnv allow` run
     (Codex workers and shell-exported CLI vars only; verify on the worker's screen at launch)
-[ ] repo setup script set to `bun run worktree:provision`, policy run-by-default
+[ ] `orca.yaml` hooks honoured: source policy not local-only, trust approved, setup run-by-default
 [ ] (optional) phone paired
 [ ] a single test worker launched and released end to end BEFORE a real fleet
 ```

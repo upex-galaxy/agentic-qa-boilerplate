@@ -13,6 +13,9 @@
  *      `Session:` commit trailers, which are NOT attribution.
  *   3. The `ORCA:` line — emitted only when an `orca` binary is on PATH, so a
  *      machine without Orca never hears about it (silence rule).
+ *   4. At most ONE setup warning: `MISSING_ENV_LINE` when the checkout has no
+ *      `.env`, else `UNPROVISIONED_WORKTREE_LINE` when it is a linked worktree
+ *      that never ran `bun run worktree:provision`.
  *
  * Verified sources only. Claude Code: the hook input carries `session_id`,
  * `prompt` and an optional `session_title`, and the JSON output supports
@@ -66,6 +69,21 @@ export const MISSING_ENV_LINE = [
   'started without one. They are already running; this session cannot be repaired.',
   'Fix and restart: in a worktree run `bun run worktree:provision <this path>` from',
   'the main checkout; in a fresh clone run `bun run setup`. Then `bun run harness:env`.',
+].join(' ');
+
+/**
+ * Emitted in a linked worktree that has no `node_modules/` or no `.husky/_/`.
+ *
+ * The worktrees Claude Code and the Codex app create copy `.worktreeinclude`
+ * and nothing else: no dependencies, no hook shims, no `.claude/skills` alias.
+ * `core.hooksPath` is shared with the primary and points at `.husky/_`, so with
+ * that directory missing every commit in the worktree skips every gate and
+ * succeeds. Nothing else says so.
+ */
+export const UNPROVISIONED_WORKTREE_LINE = [
+  'WORKTREE: this linked worktree is not provisioned (no node_modules/ or .husky/_),',
+  'so git hooks do not run here, repo scripts may fail and Claude Code may not see the repo skills.',
+  'Run `bun run worktree:provision` in it, then restart the session.',
 ].join(' ');
 
 export const ORCA_CONTEXT_LINE = [
@@ -329,6 +347,29 @@ export function envFileMissing(options = {}) {
   catch { return false; }
 }
 
+/**
+ * Is the checkout a LINKED worktree missing what provisioning adds?
+ *
+ * A worktree's `.git` is a file `gitdir: <common>/worktrees/<name>`; a
+ * submodule's is a file too, but its gitdir sits under `modules/`, so the
+ * pointer is read rather than trusting the file type. Three cheap stats and one
+ * tiny read: this runs on every prompt.
+ */
+export function worktreeUnprovisioned(options = {}) {
+  const { env = process.env, existsSync: exists = existsSync, readFileSync: read = readFileSync } = options;
+  const root = options.repoRoot ?? env.CLAUDE_PROJECT_DIR ?? env.CODEX_PROJECT_DIR ?? process.cwd();
+  if (!root) { return false; }
+  try {
+    const pointer = String(read(join(root, '.git'), 'utf8'));
+    if (!/^gitdir:.*[\\/]worktrees[\\/][^\\/\s]+\s*$/m.test(pointer)) { return false; }
+    return !exists(join(root, 'node_modules')) || !exists(join(root, '.husky', '_'));
+  }
+  catch {
+    // `.git` is a directory (primary checkout) or absent: not a linked worktree.
+    return false;
+  }
+}
+
 export function identityLine(identity) {
   return `${IDENTITY_PREFIX} worktree=${identity.worktree} session=${identity.label} harness=${identity.harness}`;
 }
@@ -341,6 +382,7 @@ export function agentContextLines(options = {}) {
   const lines = [PERSONALITY_CONTRACT, identityLine(identity)];
   if (orca) { lines.push(ORCA_CONTEXT_LINE); }
   if (options.envMissing ?? envFileMissing({ env })) { lines.push(MISSING_ENV_LINE); }
+  else if (options.worktreeUnprovisioned ?? worktreeUnprovisioned({ env })) { lines.push(UNPROVISIONED_WORKTREE_LINE); }
   return lines;
 }
 

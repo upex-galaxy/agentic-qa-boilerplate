@@ -1,0 +1,25 @@
+# Orca repo hooks, committed so every machine that opens this repo in Orca
+# provisions a new worktree and audits it before removal, without anyone
+# setting a script in the app. Settings > Repository > Hooks stays a
+# per-machine alternative; its source policy decides which one runs.
+#
+# Both scripts run with the worktree as their working directory, and both
+# commands default their target to the current directory, so no shell
+# variable is needed and the same line works under bash and under cmd.
+#
+# setup:   copies the gitignored files a session needs from the primary
+#          checkout (.env, settings, .auth/, ...), runs bun install and
+#          bun run agents:compat. Refuses to run on the primary itself.
+# archive: lists what the worktree still holds that git does not and copies
+#          the STATE class (.session/, .scratch/, evidence, reports, updater
+#          state) into the primary, never overwriting. Orca logs a failed
+#          archive hook and removes the worktree anyway, which is why this
+#          rescues instead of only warning. `orca worktree rm` skips archive
+#          hooks unless it is given --run-hooks.
+#
+# Doctrine: .agents/skills/orca-orchestration/references/provisioning.md
+scripts:
+  setup: |
+    bun run worktree:provision
+  archive: |
+    bun run worktree:audit --rescue

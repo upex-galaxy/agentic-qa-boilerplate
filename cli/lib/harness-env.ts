@@ -735,17 +735,55 @@ export interface GenerateResult {
   declared: string[]
   /** true when anything was written. */
   changed: boolean
+  /**
+   * Set when the run REFUSED to write anything: a worktree whose `.env` is
+   * missing, or would remove credentials from the main checkout's env block.
+   * Names the reason and the fix; never a value.
+   */
+  refused?: string
+}
+
+/**
+ * Why a run from a worktree must not write, or null when it may.
+ *
+ * In a worktree emitter A writes the MAIN checkout's env block, the one every
+ * Claude session on the machine reads. A worktree with no `.env`, or one
+ * copied from `.env.example` (exactly what an unprovisioned worktree invites),
+ * would plan to REMOVE every credential that block holds: measured in the
+ * worktree audit, a dry run listed them. Refusing is cheap; the removal is
+ * silent and hits every session on the machine.
+ */
+export function primaryRemovalRefusal(claude: ClaudePlan, env: Pick<EnvSnapshot, 'exists'>): string | null {
+  if (!claude.redirectedToMainCheckout) { return null; }
+  if (!env.exists) {
+    return 'this worktree has no .env, and in a worktree this command writes the MAIN checkout\'s '
+      + `${CLAUDE_LOCAL_SETTINGS}, which every Claude session on this machine reads. `
+      + 'Provision the worktree first: bun run worktree:provision';
+  }
+  if (claude.removed.length > 0) {
+    return `this worktree's .env has no value for ${claude.removed.join(', ')}, and running here would `
+      + `REMOVE them from the MAIN checkout's ${CLAUDE_LOCAL_SETTINGS}, which every Claude session on this `
+      + 'machine reads. Copy the real .env with bun run worktree:provision, or pass --allow-primary-removal '
+      + 'if removing them is what you want';
+  }
+  return null;
 }
 
 /** Read `.env`, build the allowlist, and write both surfaces. */
-export function generate(root = REPO_ROOT, opts: { dryRun?: boolean } = {}): GenerateResult {
+export function generate(
+  root = REPO_ROOT,
+  opts: { dryRun?: boolean, allowPrimaryRemoval?: boolean } = {},
+): GenerateResult {
   const allowlist = buildAllowlist(root);
   const env = readEnvSnapshot(root);
   const template = readTemplateDeclarations(root);
   const { plan: claude, content: claudeContent } = planClaudeSettings(root, allowlist, env);
   const { plan: opencode, configContent } = planOpencode(root, allowlist, env, template);
+  // A missing `.env` is never overridable: there is nothing to generate from.
+  const refusal = primaryRemovalRefusal(claude, env);
+  const refused = refusal !== null && (!env.exists || opts.allowPrimaryRemoval !== true) ? refusal : undefined;
 
-  if (opts.dryRun !== true) {
+  if (opts.dryRun !== true && refused === undefined) {
     if (claudeContent !== null) { secureFile(claude.path, claudeContent); }
     const dir = join(root, OPENCODE_SECRET_DIR);
     for (const name of opencode.write) { secureFile(join(dir, name), env.values[name] ?? ''); }
@@ -769,9 +807,10 @@ export function generate(root = REPO_ROOT, opts: { dryRun?: boolean } = {}): Gen
     emitted,
     excluded: template.filter(n => !referenced.has(n)),
     declared: template,
-    changed: claude.dirty || opencode.configDirty
+    changed: refused === undefined && (claude.dirty || opencode.configDirty
       || opencode.write.length > 0
-      || opencode.removed.length > 0,
+      || opencode.removed.length > 0),
+    ...(refused === undefined ? {} : { refused }),
   };
 }
 

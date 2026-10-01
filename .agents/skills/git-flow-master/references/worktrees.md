@@ -129,7 +129,7 @@ Launching a session into that worktree can go through the native path (supervise
 | Directory location | anywhere you choose (`../dir`) | fixed under `.claude/worktrees/` | the orchestrator's own workspace dir, outside the repo |
 | Base ref | whatever you pass | setting: `fresh`=origin/default or `head` | the base you pass at create time — **verify the new HEAD against `origin/<base>`**, it resolves local refs |
 | Moves the agent's session | no (you `cd`) | yes, automatically | no — it creates the tree, then a session is launched INTO it |
-| Cleanup | manual (`remove`/`prune`) | `ExitWorktree remove` | orchestrated removal + `git worktree prune`, always after the orphan audit below |
+| Cleanup | `bun run worktree:audit` then `remove`/`prune` | `bun run worktree:audit` then `ExitWorktree remove` | orchestrated removal (the committed `orca.yaml` archive hook runs the audit) + `git worktree prune` |
 | Branch naming | you choose | derived from the name (rename with `git branch -m`) | you choose at create time |
 | Owner can see it (board / phone) | no | no | yes |
 
@@ -159,14 +159,14 @@ git checkout -- path/to/tracked-file        # bring a tracked file back into the
 
 ## Provisioning: what a fresh worktree does NOT have (all approaches)
 
-Untracked files are only half of it. Everything **gitignored** is missing too, and that half fails in ways that point at the wrong cause: no `.env` means the MCP servers do not parse (they reference `${VAR}`) and any login script has no credentials; no `node_modules/` reports `Cannot find module`; a missing `.claude/skills` alias makes every Claude Code skill invocation an `Unknown skill`; a missing `.context/PBI/` cache fails **silently** — the session simply cannot see the synced ticket.
+Untracked files are only half of it. Everything **gitignored** is missing too, and that half fails in ways that point at the wrong cause: no `.env` means every `${VAR}` an MCP config references reaches the server as that LITERAL string, so the server starts and dies on its first authenticated call with an error that reads like a broken tool (AGENTS.md Critical Rule #10), and any login script has no credentials; no `node_modules/` reports `Cannot find module`; a missing `.claude/skills` alias makes every Claude Code skill invocation an `Unknown skill`; a missing `.context/PBI/` cache fails **silently** — the session simply cannot see the synced ticket.
 
 ```bash
 bun run worktree:provision          # in the new worktree: .env, deps, the skills alias, community skills, .auth/
 bun run context:hydrate             # rebuild the Jira cache (needs credentials, so run it after the above)
 ```
 
-Worktrees the HARNESS creates (Claude Code `--worktree`, subagent and desktop worktrees; Codex-managed worktrees in the Codex app) copy the gitignored inputs listed in the committed `.worktreeinclude` by themselves (`.env`, the generated harness credential files, `.auth/`, the synced `api/openapi.json`); dependencies, the skills alias and the cache still need the two commands above. A worktree made with plain `git worktree add` or by an orchestration layer reads no `.worktreeinclude`, so `worktree:provision` is the whole story there.
+Worktrees the HARNESS creates (Claude Code `--worktree`, subagent and desktop worktrees; Codex-managed worktrees in the Codex app) copy the gitignored inputs listed in the committed `.worktreeinclude` by themselves (`.env` and its local overrides, the generated harness credential files, `.auth/`, the OpenAPI config and synced spec, local MCP overrides, the installer state: the same list `worktree:provision` copies). They do NOT get dependencies, the `.husky/_` hook shims or the skills alias, and without `.husky/_` every git hook is skipped and commits pass no gate. The Codex app runs `bun run worktree:provision` itself through the committed `.codex/environments/environment.toml`; in a Claude Code worktree the prompt hook prints one `WORKTREE:` warning line until you run it. A worktree made with plain `git worktree add` or by an orchestration layer reads no `.worktreeinclude`, so `worktree:provision` is the whole story there (Orca runs it from the committed `orca.yaml`).
 
 `.session/` is deliberately NOT provisioned: a plan, brief, or roster written inside a worktree dies with it. Keep those in the primary checkout and cite them by **absolute** path. Full gap table and how to wire provisioning as an orchestration setup hook: `orca-orchestration/references/provisioning.md`.
 
@@ -209,21 +209,25 @@ Removing a worktree deletes its directory, and **gitignored files are not in git
 ```bash
 git -C <worktree> status --porcelain            # tracked work: must be committed AND pushed
 git -C <worktree> log --oneline origin/<base>.. # commits that exist only here
-git -C <worktree> status --porcelain --ignored   # THE audit: every ignored/untracked file about to die
+bun run worktree:audit <worktree>               # THE audit: every gitignored file about to die, classified
+bun run worktree:audit <worktree> --rescue      # copy the STATE class into the primary, never overwriting
 ```
 
-For each survivor in that last list, decide once: **copy it out** to the primary checkout (evidence, reports, anything a Jira comment or an ATR already references), or accept the loss deliberately (`node_modules/`, caches, a `.env` that is just a copy). A durable document belongs in the primary checkout or in the tracker, never only in a worktree. Only then remove the worktree.
+`worktree:audit` sorts every gitignored path into STATE (belongs in the primary checkout: `.session/`, `.scratch/`, PBI evidence and `[LOCAL]` notes, `.context/reports/`, updater state), CACHE (a command it names brings it back), DISPOSABLE (test output, editor litter, and the test-run outputs the owner accepted losing: Allure history, `reports/`, refreshed `.auth/` tokens) and UNKNOWN (no rule matched). It exits 1 while STATE or UNKNOWN is only in the worktree. `--rescue` copies STATE to the same path under the primary; a file the primary already holds with different bytes is a CONFLICT left for you, and every UNKNOWN entry is decided by hand. A durable document belongs in the primary checkout or in the tracker, never only in a worktree. Only on exit 0 remove the worktree. The classification table and the class definitions: `orca-orchestration/references/provisioning.md` §5.
+
+The removal paths that skip this on their own: `git worktree remove` without `--force` exits 0 and deletes ignored files without a word; Claude Code removes a worktree it judges clean, and ignored files do not count against clean; a subagent `isolation: "worktree"` tree is cleaned automatically, so nothing can be audited there. A subagent that must leave durable output writes it straight to the primary checkout by absolute path.
 
 ---
 
 ## Cleanup checklist
 
-- [ ] Orphan audit ran (`--ignored`) and every file worth keeping was copied to the primary checkout.
+- [ ] `bun run worktree:audit <path>` exits 0 (after `--rescue` and any hand-resolved conflict).
 - [ ] Branch's work is committed and pushed (or deliberately discarded).
 - [ ] `git worktree remove <path>` (or `ExitWorktree remove`) — succeeds only when clean.
 - [ ] `git branch -d <branch>` once the branch is merged.
 - [ ] `git worktree prune` if any directory was removed by hand.
 - [ ] Local `info/exclude` entries cleaned up if the worktree path is gone for good.
+- [ ] `direnv prune` if the worktree was provisioned on a machine with direnv (provisioning runs `direnv allow` on it).
 
 ---
 
@@ -253,5 +257,6 @@ When an AI session needs isolation from in-progress work on another branch:
 4. Hide the nested worktree from the primary tree via local `info/exclude`.
 5. Do all further work (edits, verifies, commits) in the worktree; the other branch stays
    untouched.
-6. On completion, commit on the worktree's branch → open its own PR → `ExitWorktree`
-   (`keep` to preserve, `remove` when merged/abandoned).
+6. On completion, commit on the worktree's branch → open its own PR → run
+   `bun run worktree:audit --rescue` from the worktree → `ExitWorktree` (`keep` to preserve,
+   `remove` when merged/abandoned, and only once the audit exits 0).

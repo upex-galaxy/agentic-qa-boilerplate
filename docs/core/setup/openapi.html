@@ -176,7 +176,9 @@
           tenga variables de entorno. Hace falta <code>bun install</code> una vez (el loader es la
           dependencia <code>dotenv-cli</code>) y un <code>.env</code> con valores en la raíz del
           proyecto. En un worktree que crea la app, <code>.env</code> y
-          <code>api/openapi.json</code> llegan por el <code>.worktreeinclude</code> del repo.
+          <code>api/openapi.json</code> llegan por el <code>.worktreeinclude</code> del repo, y la
+          app corre <code>bun run worktree:provision</code> (dependencias incluidas) desde
+          <code>.codex/environments/environment.toml</code>.
         </dd>
         <dt>El spec</dt>
         <dd>

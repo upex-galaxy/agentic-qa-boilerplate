@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-09-30T09:51:37.162Z`
+> Generated: `2026-10-01T09:38:45.115Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -475,16 +475,16 @@ Skills indexed: 26
 - the session is about to do something that will itself consume a large slice of the window (a big harvest, a long file read) and the remaining budget will not cover the work after it
 - the owner asks
 - **Capture.** Walk `.agents/skills/session-handoff/references/capture-contract.md` section by section. Every section is mandatory; a section with nothing in it is written as an explicit `none` line, never omitted. Omission is indistinguishable from forgetting, and the successor cannot tell which happened.
-- **Write.** Fill `.agents/skills/session-handoff/templates/handoff.md` to `.session/handoffs/<session-name>-handoff-NN.md`. Naming contract below.
+- **Write.** Fill `.agents/skills/session-handoff/templates/handoff.md` to `<<PRIMARY_ROOT>>/.session/handoffs/<session-name>-handoff-NN.md`. Naming contract below.
 - **Launch the successor.** Follow `.agents/skills/session-handoff/references/successor-launch.md`. With a runtime, this session launches it. Without one, this session prints the line and the human pastes it.
-- `.session/` is gitignored. A handoff is worktree-local and disposable by design: it describes one session's state, it is not a project record, and committing it would put a decaying snapshot under version control.
-- `NN` is zero-padded, two digits, starting at `01`, incrementing across the whole lineage. List the directory before choosing; never assume.
+- `.session/` is gitignored, and a handoff is disposable by design: it describes one session's state, it is not a project record, and committing it would put a decaying snapshot under version control.
+- It lives in the PRIMARY checkout, `<<PRIMARY_ROOT>>` (`.agents/README.md` §"Checkout roots"), even when the session runs in a linked worktree. A handoff written inside a worktree dies with the worktree, and two worktrees of one lineage would each count `NN` from their own empty directory. The successor still launches in the SAME worktree as the predecessor; only the file lives in the primary.
+- `NN` is zero-padded, two digits, starting at `01`, incrementing across the whole lineage. List `<<PRIMARY_ROOT>>/.session/handoffs/` before choosing; never assume, and never count from a worktree's own `.session/`.
 - **The successor's session name is the handoff file's basename without the extension.** That is the entire naming rule, and it makes the lineage readable from the file list alone: `<base>`, then `<base>-handoff-01`, then `<base>-handoff-01-handoff-02`. Long names are the point; a lineage you cannot read is a lineage you cannot audit.
 - A durable fact that outlives the session does not belong in the handoff. It belongs in Engram, in the repo, or in the tracker. The handoff cites it.
 - **Label every claim `measured` or `predicted`.** The predecessor's guesses about what the successor will find are useful and are also the first thing to go stale. A predicted branch stated as fact sends the successor down a path that no longer exists. Measured means: this session ran it and read the output.
 - **Mark perishable state `PERISHABLE`, with the wall-clock time it was measured.** Running workers, open mailboxes, in-flight PRs and live runs decay between writing and reading. The successor's instruction for anything marked perishable is: re-verify before acting, not act then discover.
 - **Perishable beats priority.** If a perishable item needs attention before the priority list, say so in the same line. A successor that follows a stale priority order while a live worker waits has done exactly what the handoff was supposed to prevent.
-- **Ids are copied, never described.** A run id, a dispatch id, a terminal handle, a session id, a PR number, a tracker key, a commit SHA: verbatim, in backticks, in a form that can be pasted. "the worker from earlier" is not an id.
 - (truncated — read full SKILL.md for the rest)
 
 **Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).

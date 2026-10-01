@@ -27,6 +27,8 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 
+import { checkoutRoots } from '../cli/lib/worktree.ts';
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -623,6 +625,14 @@ function main(): void {
   const asJson = args.includes('--json');
 
   const pbiRoot = join(process.cwd(), '.context', 'PBI');
+  // The cache is gitignored, so each checkout has its own. In a worktree a
+  // green map can describe a partial or empty cache while the primary's is
+  // full, and nothing else says which one was read.
+  const roots = checkoutRoots(process.cwd());
+  if (roots?.linked === true) {
+    log.warn(`Linked worktree: this map reads THIS checkout's .context/PBI/, not the primary's (${roots.primaryRoot}).`);
+    log.info('Run `bun run context:hydrate` here first, or run this command in the primary checkout.');
+  }
   const model = loadPbiTree(pbiRoot);
   if (!model) {
     // Cold clone or never-hydrated cache: not an error, just nothing to map.

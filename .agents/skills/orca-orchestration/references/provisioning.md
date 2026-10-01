@@ -20,7 +20,7 @@ gap. It disguises itself as something else, and the worker then debugs the wrong
 | `.context/PBI/` (the tracker cache) | ignored | **silent**: the worker cannot see the synced story and quietly works from the ticket title alone | `bun run context:hydrate`, or a scoped per-issue sync named in the brief |
 | `.auth/` (tokens) | not committed, created at login | loud: authenticated API calls fail with 401 | the CONDUCTOR mints tokens before the round (`bun run api:login`, with a per-worker profile when workers must not share a token) and the worker only reads the file; copy mode `0600` |
 | `api/openapi.json` (the synced spec) | ignored | loud, on the OpenAPI MCP only: with `OPENAPI_SPEC_PATH` pointing at it the server exits at start, before the handshake, and reads as a dead tool | copy it from the primary checkout (`worktree:provision` does), or `bun run api:sync` |
-| `.session/` | ignored | the brief, the roster and the run files are simply absent inside the worktree | do NOT copy it. Cite ABSOLUTE paths into the PRIMARY checkout from the prompt. Anything written inside a worktree dies with it |
+| `.session/` | ignored | the brief, the roster and the run files are simply absent inside the worktree | do NOT copy it. Cite ABSOLUTE paths into the PRIMARY checkout (`<<PRIMARY_ROOT>>`, `.agents/README.md` §"Checkout roots") from the prompt. Anything written inside a worktree dies with it; `bun run worktree:audit --rescue` (§5) copies what a worker wrote there anyway |
 
 **Present in a fresh worktree because they are committed**: everything `git ls-files` lists, which
 includes the MCP config of each host (with its `${VAR}`-style placeholders, hence the `.env`
@@ -81,11 +81,14 @@ bun run worktree:provision /path/to/wt --dry-run # print what it would do, touch
 ```
 
 Implementation: `scripts/provision-worktree.ts` (Bun, cross-platform). It refuses to run on the
-primary checkout, resolves the primary via git's common-dir, copies the secret files with mode
-`0600` (guarding `chmod` on Windows), installs dependencies from the lockfile, runs
-`bun run agents:compat` inside the target, copies the gitignored T3 skill directories and `.auth/`
-when present, deliberately does NOT copy `.session/`, prints a summary plus the tracker-cache hint,
-and exits non-zero on any hard failure.
+primary checkout, resolves the primary via git's common-dir, copies every gitignored input a
+worktree cannot rebuild that the primary has (`PROVISION_COPIES` in `cli/lib/worktree.ts`: `.env` and
+its local overrides, the Claude settings, `.auth/`, the OpenAPI config and spec, local MCP overrides,
+the installer state; secrets at mode `0600`, guarding `chmod` on Windows), installs dependencies from
+the lockfile, runs `bun run agents:compat` inside the target, copies the gitignored T3 skill
+directories, deliberately does NOT copy `.session/`, prints a summary plus the tracker-cache hint, and
+exits non-zero on any hard failure. The committed `.worktreeinclude` names the same list, and a test
+keeps the two equal.
 
 What it deliberately leaves to a human decision: hydrating the tracker cache (it can be large and
 slow, and a scoped per-issue sync is often enough) and minting tokens (conductor-only, see
@@ -95,21 +98,31 @@ slow, and a scoped per-issue sync is often enough) and minting tokens (conductor
 
 ## 3 · Making it the Orca setup hook
 
-Read the registered setup command first (below): if it only installs dependencies, it covers one
-row of the table above. Pointing the hook at the provisioning script closes every repairable row
-automatically on every worktree the runtime creates.
+The repo commits `orca.yaml` at its root, and Orca reads it as the repo's shared hooks: `scripts.setup`
+runs `bun run worktree:provision` in every worktree Orca creates, and `scripts.archive` runs
+`bun run worktree:audit --rescue` before Orca removes one (§5). Both run with the worktree as their
+working directory, which is why neither names a path. Nobody has to set anything per machine.
 
-**This can only be changed from the app's UI.** The setting is not exposed by the CLI
-(`orca agent-context --json` has no command for it), so it cannot be scripted, cannot be versioned,
-and must be redone on every machine. Read the current value before changing anything:
+Three things still decide whether the committed hooks run, and they are per machine:
 
-```bash
-orca repo show --repo <selector> --json </dev/null   # read the registered setup command + policy
-```
+- **Trust.** The first run of each hook shows the script and asks; the answer is remembered until the
+  script changes.
+- **Source policy.** Settings for this repository → Hooks can hold a LOCAL script too, and a policy
+  that picks shared, local or both. A local-only policy ignores `orca.yaml`. Read what is registered
+  before assuming:
 
-Then, in the app: Settings for this repository → the setup script field → set it to
-`bun run worktree:provision`. Keep the setup policy at run-by-default so a newly created worktree
-provisions itself before the agent starts.
+  ```bash
+  orca repo show --repo <selector> --json </dev/null   # registered hooks + policy
+  ```
+
+- **The CLI skips archive hooks by default.** `orca worktree rm` runs them only with `--run-hooks`;
+  a conductor that removes from the CLI passes it (`references/coordinator-playbook.md` §6).
+
+A machine where the committed hooks do not run (policy, an older Orca, a declined trust prompt) falls
+back to the manual steps: `bun run worktree:provision <wt>` in §4 and the audit in §5. Keep the setup
+policy at run-by-default so a new worktree provisions itself before the agent starts; whether the
+agent waits for setup under `start-immediately` is unverified, so read the worker's screen before
+sending it work (§4 step 6).
 
 The per-machine checklist this belongs to: `references/orca-machine-setup.md`.
 
@@ -133,3 +146,25 @@ For each new worktree, in this order, and none of it optional:
    title and the dispatch binding all survive a failure, so creating a new terminal would orphan the
    dispatch row instead of fixing anything. Check the screen first: a send that answered
    `agent_prompt_stalled` has usually already queued the text (gotcha G52).
+
+---
+
+## 5 · Before a worktree is removed
+
+Removing a worktree deletes everything git ignores inside it, and every removal path (`git worktree
+remove` without `--force`, Orca's delete, a harness's own cleanup) does it silently. Run the audit
+first:
+
+```bash
+bun run worktree:audit <wt>            # read-only; exit 1 while STATE or UNKNOWN is only in the worktree
+bun run worktree:audit <wt> --rescue   # copy STATE to the same path in the primary, never overwriting
+```
+
+It classifies each gitignored path from one table (`AUDIT_RULES` in `cli/lib/worktree.ts`): STATE
+(`.session/`, `.scratch/`, PBI evidence and `[LOCAL]` notes, `.context/reports/`, updater state)
+belongs in the primary; CACHE comes back with a command it names; DISPOSABLE is safe to lose; UNKNOWN
+matched no rule and is decided by hand. Test-run outputs (Allure history, `reports/` for the TMS sync,
+refreshed `.auth/` tokens) are DISPOSABLE by the owner's decision: they are never rescued and their
+loss is accepted. The committed `orca.yaml` archive hook runs the rescue form; the full orphan audit,
+with uncommitted work and unpushed commits, is `references/coordinator-playbook.md` §6.
+

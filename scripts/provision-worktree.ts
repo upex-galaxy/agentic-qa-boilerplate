@@ -32,6 +32,10 @@ import { chmodSync, copyFileSync, cpSync, existsSync, mkdirSync, readdirSync, re
 import { platform } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 
+// Node built-ins only on the other side, so this static import works before
+// `bun install` has run in the worktree being provisioned.
+import { PROVISION_COPIES } from '../cli/lib/worktree.ts';
+
 const PREFIX = '[provision-worktree]';
 
 function log(msg: string, type: 'info' | 'success' | 'warn' | 'error' = 'info') {
@@ -56,8 +60,12 @@ function showHelp(): void {
 
 \x1B[1mWHAT IT DOES\x1B[0m
   1. Refuses to run if [path] resolves to the PRIMARY checkout.
-  2. Copies .env, .claude/settings.local.json, .auth/ (mode 0600; chmod
-     skipped on Windows), and api/openapi.json when it was synced.
+  2. Copies every gitignored input a worktree cannot rebuild, each only when
+     the primary has it: .env, .env.local, .envrc.local,
+     .claude/settings.local.json, .auth/, api/.openapi-config.json, the local
+     MCP overrides (mode 0600; chmod skipped on Windows), api/openapi.json and
+     .template/installer.state.json. One list, PROVISION_COPIES in
+     cli/lib/worktree.ts, which .worktreeinclude mirrors.
   3. Runs \`bun install --frozen-lockfile\` inside the target.
   4. Runs \`bun run agents:compat\` inside the target (creates the
      .claude/skills alias).
@@ -167,64 +175,33 @@ function secureChmodRecursive(target: string): void {
   }
 }
 
-function secureCopyFile(relPath: string): void {
-  const src = join(PRIMARY, relPath);
+// Every entry is optional: a project with no API never syncs a spec, and most
+// developers have no `.env.local`. Absence is info, never a warning, except for
+// `.env`, without which every MCP server in the worktree starts with nothing.
+for (const entry of PROVISION_COPIES) {
+  const shown = entry.kind === 'dir' ? `${entry.path}/` : entry.path;
+  const src = join(PRIMARY, entry.path);
   if (!existsSync(src)) {
-    log(`Skipping ${relPath} (not present in primary checkout)`, 'warn');
-    skipped.push(relPath);
-    return;
+    log(`Skipping ${shown} (not present in primary checkout)`, entry.path === '.env' ? 'warn' : 'info');
+    skipped.push(shown);
+    continue;
   }
   if (dryRun) {
-    log(`Would copy ${relPath} (mode 0600)`, 'info');
-    return;
+    log(`Would copy ${shown}${entry.secret ? ' (mode 0600)' : ''}`, 'info');
+    continue;
   }
-  const dest = join(TARGET, relPath);
+  const dest = join(TARGET, entry.path);
   mkdirSync(dirname(dest), { recursive: true });
-  copyFileSync(src, dest);
-  if (!IS_WINDOWS) { chmodSync(dest, 0o600); }
-  log(`Copied ${relPath}`, 'success');
-  copied.push(relPath);
-}
-
-function secureCopyDir(relPath: string): void {
-  const src = join(PRIMARY, relPath);
-  if (!existsSync(src)) {
-    log(`Skipping ${relPath}/ (not present in primary checkout)`, 'warn');
-    skipped.push(`${relPath}/`);
-    return;
+  if (entry.kind === 'dir') {
+    cpSync(src, dest, { recursive: true });
+    if (entry.secret) { secureChmodRecursive(dest); }
   }
-  if (dryRun) {
-    log(`Would copy ${relPath}/ (mode 0600/0700)`, 'info');
-    return;
+  else {
+    copyFileSync(src, dest);
+    if (entry.secret && !IS_WINDOWS) { chmodSync(dest, 0o600); }
   }
-  const dest = join(TARGET, relPath);
-  cpSync(src, dest, { recursive: true });
-  secureChmodRecursive(dest);
-  log(`Copied ${relPath}/`, 'success');
-  copied.push(`${relPath}/`);
-}
-
-secureCopyFile('.env');
-secureCopyFile('.claude/settings.local.json');
-secureCopyDir('.auth');
-
-// The synced OpenAPI spec (`bun run api:sync`) is gitignored too, and the
-// OpenAPI MCP exits at start when OPENAPI_SPEC_PATH names a file that is not
-// there. Not a secret, so no chmod; optional, so its absence is info, not a
-// warning (a project with no API never syncs one). Same list as the committed
-// `.worktreeinclude`, which covers the worktrees the harnesses create.
-const OPENAPI_SPEC = 'api/openapi.json';
-if (!existsSync(join(PRIMARY, OPENAPI_SPEC))) {
-  log(`Skipping ${OPENAPI_SPEC} (never synced in the primary checkout; \`bun run api:sync\` creates it)`, 'info');
-}
-else if (dryRun) {
-  log(`Would copy ${OPENAPI_SPEC}`, 'info');
-}
-else {
-  mkdirSync(dirname(join(TARGET, OPENAPI_SPEC)), { recursive: true });
-  copyFileSync(join(PRIMARY, OPENAPI_SPEC), join(TARGET, OPENAPI_SPEC));
-  log(`Copied ${OPENAPI_SPEC}`, 'success');
-  copied.push(OPENAPI_SPEC);
+  log(`Copied ${shown}`, 'success');
+  copied.push(shown);
 }
 
 // ============================================
@@ -359,6 +336,7 @@ function direnvAllowedIn(cwd: string): boolean | 'no-envrc' | 'not-installed' {
     const allow = Bun.spawnSync(['direnv', 'allow', TARGET], { stdout: 'pipe', stderr: 'pipe' });
     if (allow.exitCode === 0) {
       log(`direnv: allowed ${TARGET}/.envrc (the primary checkout's .envrc is already allowed).`, 'success');
+      log('direnv: the allow entry outlives the worktree; run `direnv prune` after removing it.', 'info');
     }
     else {
       log(`direnv: \`direnv allow ${TARGET}\` failed (exit ${allow.exitCode}); run it yourself in the worktree. ${allow.stderr.toString().trim().slice(0, 200)}`, 'warn');

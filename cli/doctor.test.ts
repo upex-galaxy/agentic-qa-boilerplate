@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, test } from 'bun:test';
 
-import { envVarVerdict, probeOpenApiSpec } from './doctor.ts';
+import { checkoutSetupActions, envVarVerdict, probeOpenApiSpec } from './doctor.ts';
 import { VAR_MANIFEST, varsFor } from './lib/variables-manifest.ts';
 
 function spec(overrides: Partial<VarSpec> & { name: string }): VarSpec {
@@ -91,5 +91,34 @@ describe('probeOpenApiSpec', () => {
     expect(notFound?.hint).not.toContain('token=x');
     const down = await probeOpenApiSpec('http://127.0.0.1:9/openapi.json', root, silent);
     expect(down?.hint).toContain('127.0.0.1:9 that did not answer');
+  });
+});
+
+describe('checkoutSetupActions', () => {
+  const ready = { linked: false, envFile: true, deps: true, gitHooks: true };
+
+  test('a ready checkout needs nothing', () => {
+    expect(checkoutSetupActions(ready).actions).toEqual([]);
+    expect(checkoutSetupActions({ ...ready, linked: true }).actions).toEqual([]);
+  });
+
+  test('an unprovisioned worktree gets ONE provision command, never the template copy', () => {
+    const { actions, replaces } = checkoutSetupActions({ linked: true, envFile: false, deps: false, gitHooks: false });
+    expect(actions.map(a => a.target)).toEqual(['bun run worktree:provision']);
+    expect(actions[0].hint).toContain('.husky/_');
+    // The generic `cp .env.example .env` and `bun run harness:env` are exactly what empties
+    // the main checkout's env block from a worktree, so both are suppressed.
+    expect(replaces).toEqual({ envFile: true, deps: true, harnessEnv: true });
+  });
+
+  test('a worktree with .env but no hooks keeps the harness:env advice', () => {
+    const { actions, replaces } = checkoutSetupActions({ linked: true, envFile: true, deps: true, gitHooks: false });
+    expect(actions.map(a => a.target)).toEqual(['bun run worktree:provision']);
+    expect(replaces.harnessEnv).toBe(false);
+  });
+
+  test('a primary checkout with dependencies but no hook shims is told to reinstall', () => {
+    const { actions } = checkoutSetupActions({ ...ready, gitHooks: false });
+    expect(actions.map(a => a.target)).toEqual(['bun install']);
   });
 });

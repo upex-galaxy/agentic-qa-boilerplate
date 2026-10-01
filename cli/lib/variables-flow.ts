@@ -442,6 +442,10 @@ async function regenerateHarnessSurfaces(): Promise<void> {
   try {
     const { generate } = await import('./harness-env.ts');
     const result = generate();
+    if (result.refused !== undefined) {
+      tui.log.warn(`Harness credential surfaces NOT written: ${result.refused}`);
+      return;
+    }
     tui.log.info(
       `Harness credential surfaces ${result.changed ? 'regenerated' : 'already in sync'}: `
       + `${result.emitted.length === 0 ? '(none emitted)' : result.emitted.join(', ')}`,
