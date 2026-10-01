@@ -172,8 +172,10 @@ describe('retired keys in .env', () => {
   });
 
   test('neutralizeRetiredKeys sets a constant placeholder and never touches other keys', () => {
-    const env = neutralizeRetiredKeys({ PATH: '/bin', TAVILY_API_KEY: '' }, ['TAVILY_API_KEY', 'API_TOKEN']);
+    const input: Record<string, string | undefined> = { PATH: '/bin', TAVILY_API_KEY: '' };
+    const env = neutralizeRetiredKeys(input, ['TAVILY_API_KEY', 'API_TOKEN']);
     expect(env).toEqual({ PATH: '/bin', TAVILY_API_KEY: 'retired', API_TOKEN: 'retired' });
+    expect(input.TAVILY_API_KEY).toBe('');
   });
 
   test('through the pinned varlock: an empty retired key fails the load, and both remedies pass it', () => {

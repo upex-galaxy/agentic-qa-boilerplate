@@ -179,10 +179,12 @@ export function removeRetiredEnvLines(envText: string, retired: readonly Retired
  * process value wins over the `.env` line (measured), and an undeclared key
  * fails only when EMPTY. The placeholder is a constant, never the real value.
  */
-export function neutralizeRetiredKeys(env: NodeJS.ProcessEnv, retiredInFile: readonly string[]): NodeJS.ProcessEnv {
-  const out: NodeJS.ProcessEnv = { ...env };
+export function neutralizeRetiredKeys<T extends Record<string, string | undefined>>(env: T, retiredInFile: readonly string[]): T {
+  // Generic, never `NodeJS.ProcessEnv`: `cli/**` must compile under a host
+  // whose `ProcessEnv` requires `NODE_ENV` (cli/updater-host-types.test.ts).
+  const out: Record<string, string | undefined> = { ...env };
   for (const name of retiredInFile) { out[name] = 'retired'; }
-  return out;
+  return out as T;
 }
 
 // ----------------------------------------------------------------------------
