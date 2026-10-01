@@ -567,6 +567,15 @@
 bun run jira:sync-workflows
 bun run jira:sync-link-types
 bun run jira:check</code></pre>
+      <p>
+        Dos tareas de administración tienen su propio skill, <code>jira-administration</code>, con
+        un modo cada una: <code>components</code> reconcilia los Components del proyecto en Jira con
+        los módulos del producto, y <code>instance-migration</code> repunta el repo cuando cambia la
+        URL del sitio de Atlassian. En Claude Code, <code>/jira-administration components</code>; en
+        OpenCode y Codex, "cargá la skill <code>jira-administration</code>, modo
+        <code>components</code>". Los dos modos analizan sin escribir, te muestran el plan y no
+        tocan Jira ni el repo hasta que lo apruebes.
+      </p>
 
       <h2 id="cli-xray">La CLI de Xray</h2>
       <p>
@@ -651,8 +660,9 @@ bun xray plan get PROJ-300</code></pre>
       </ol>
       <p>
         En el día a día no harás esto a mano: los skills crean los planes y las ejecuciones con sus
-        convenciones de nombre (ATP, STP, RTP, ATR, STR, RTR) y los cuelgan del epic de QA que
-        corresponde. Hacerlo una vez sirve para comprobar que permisos y configuración están bien.
+        convenciones de nombre (ATP, STP, RTP, ATR, STR, RTR), crean el Test Set de aceptación de
+        cada historia (ATS) y los cuelgan del epic de QA que corresponde. Hacerlo una vez sirve para
+        comprobar que permisos y configuración están bien.
       </p>
 
       <h2 id="validacion">Validación final</h2>
@@ -666,8 +676,18 @@ bun xray plan get PROJ-300</code></pre>
           El workflow del Test está asignado y la transición <code>start design</code> aparece en un
           Test en Draft.
         </li>
-        <li>La cobertura de requisitos está activa para Story y Epic.</li>
-        <li>Puedes crear un enlace <code>is tested by</code> desde un Test a una historia.</li>
+        <li>
+          La cobertura de requisitos está activa para los tipos que
+          <code>.agents/jira-required.yaml</code> declara con <code>coverable: true</code> (el Epic
+          no es uno de ellos).
+        </li>
+        <li>
+          Un Test Set enlazado a una historia con el tipo <code>tests / is tested by</code> (el Set
+          del lado <code>is tested by</code> de la historia) llena el panel de cobertura de esa
+          historia. Es la arista que crean los skills: el ATS de cada Story. El enlace directo de un
+          Test a la historia también cubre, pero queda como último recurso; el canon está en
+          <code>.agents/skills/agentic-qa-core/references/traceability-linking.md</code>.
+        </li>
         <li>
           <code>bun xray auth status</code> responde autenticado y
           <code>bun xray test list --project PROJ</code> devuelve datos.

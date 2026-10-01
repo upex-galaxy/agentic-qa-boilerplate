@@ -524,12 +524,15 @@
               </td>
             </tr>
             <tr>
-              <td>MCPs (OpenAPI, base de datos, tracker, navegador)</td>
+              <td>MCPs y CLIs (schema de la API, base de datos, tracker, navegador)</td>
               <td><span class="badge accent">Adaptable</span></td>
               <td>
-                Así lee el agente schema, datos y tracker. Regla del boilerplate: el MCP lee y nunca
-                ejecuta (la API se ejercita con curl y el token de la CLI), y un MCP configurado
-                está en rojo hasta que responde de verdad.
+                Así lee el agente schema, datos y tracker. En este repo los MCPs son los que declara
+                <code>.mcp.json</code> (schema de la API y base de datos, entre otros); el tracker
+                se opera con la CLI <code>/acli</code> (el MCP de Atlassian es opcional) y el
+                navegador con <code>/playwright-cli</code>, sin MCP. Regla del boilerplate: el MCP
+                lee y nunca ejecuta (la API se ejercita con curl y el token de la CLI), y un MCP
+                configurado está en rojo hasta que responde de verdad.
               </td>
             </tr>
             <tr>

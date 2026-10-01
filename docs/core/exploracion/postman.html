@@ -401,22 +401,22 @@ newman run postman/collection.json \
       <h2 id="mcp">El Postman MCP, a nivel del harness</h2>
       <p>
         Postman publica un server MCP remoto, <code>https://mcp.postman.com/mcp</code>, que se
-        autentica con tu API key. El repo ya no lo declara en <code>.mcp.json</code> ni en sus
-        equivalentes: un server remoto cuyo único contenido del lado del proyecto era una clave es
-        asunto del harness, no del repo. Lo conectas una vez por máquina y el agente lo resuelve por
-        capacidad, sea cual sea el prefijo con el que aparezcan sus herramientas.
+        autentica con tu cuenta de Postman. El repo no lo declara en <code>.mcp.json</code> ni en
+        sus equivalentes: un server remoto cuyo único contenido del lado del proyecto sería una
+        clave es asunto del harness, no del repo (la lista de esos servers vive en
+        <code>cli/lib/harness-level-mcps.ts</code>). Lo conectas una vez por máquina y el agente lo
+        resuelve por capacidad, sea cual sea el prefijo con el que aparezcan sus herramientas.
       </p>
       <dl class="defs">
         <dt>Cómo conectarlo</dt>
         <dd>
           Claude Code: un server de usuario (<code>claude mcp add --scope user</code>) o un conector
           desde claude.ai. OpenCode: la config global <code>~/.config/opencode/opencode.json</code>.
-          Codex:
-          <code
-            >codex mcp add postman --url https://mcp.postman.com/mcp --bearer-token-env-var
-            POSTMAN_API_KEY</code
-          >. La misma key sirve para <code>postman login</code>. Detalle por harness en
-          <a href="../variables-de-entorno.html#mcps">Variables de entorno</a>.
+          Codex: <code>codex mcp add postman --url https://mcp.postman.com/mcp</code> y después
+          <code>codex mcp login postman</code> (OAuth: el token queda en el almacén de Codex y sirve
+          igual para la CLI y la app de escritorio). Tu API key de Postman, la de
+          <code>postman login</code>, es tuya y no va en el <code>.env</code> del proyecto. Detalle
+          por harness en <a href="../variables-de-entorno.html#mcps">Variables de entorno</a>.
         </dd>
         <dt>Rol</dt>
         <dd>

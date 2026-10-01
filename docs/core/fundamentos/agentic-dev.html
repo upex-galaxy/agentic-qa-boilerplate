@@ -330,7 +330,9 @@
         nunca pisa los archivos que son identidad del proyecto: <code>AGENTS.md</code>, las
         configuraciones de MCP de cada harness, los hooks de husky,
         <code>.agents/project.yaml</code> y cualquier ruta que el proyecto declare en
-        <code>updater.protected_paths</code>.
+        <code>updater.protected_paths</code>. Corre solo en el checkout principal: en un worktree se
+        niega, porque sus backups y marcadores morirían con él (ver
+        <a href="worktrees.html#updater">Worktrees</a>).
       </p>
       <p>
         Cuando upstream y el proyecto no coinciden en un archivo protegido, el updater no decide

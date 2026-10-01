@@ -152,7 +152,8 @@
       <p>
         El sitio oficial nombra las cinco clases. La columna de la derecha es cómo las trata el
         skill <code>/regression-testing</code> de este repo
-        (<code>.agents/skills/regression-testing/SKILL.md</code>).
+        (<code>.agents/skills/regression-testing/SKILL.md</code>, que es la fuente si la lista
+        cambia). El skill parte KNOWN en dos: KNOWN-BLOCKED y KNOWN ISSUE.
       </p>
       <div class="table-wrap">
         <table>
@@ -176,7 +177,14 @@
             </tr>
             <tr>
               <td><span class="badge">KNOWN</span></td>
-              <td>Se documenta contra el ticket existente, no bloquea y no se crea bug nuevo.</td>
+              <td>
+                <strong>KNOWN-BLOCKED</strong>: el test lleva el tag
+                <code>@blocked:{BUG-KEY}</code> porque está estacionado detrás de un bug ya abierto.
+                Se excluye del pass-rate que decide el veredicto y se lista aparte con su bug.
+                <strong>KNOWN ISSUE</strong>: el fallo está enlazado a un ticket conocido; se
+                documenta contra ese ticket y no bloquea. En ninguno de los dos casos se crea un bug
+                nuevo.
+              </td>
             </tr>
             <tr>
               <td><span class="badge">ENVIRONMENT</span></td>

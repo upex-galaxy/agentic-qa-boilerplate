@@ -192,7 +192,7 @@
               .context/
             </text>
             <text x="518" y="94" font-size="11" style="fill: var(--text-2)">
-              caché de Jira y mapas
+              caché de Jira (PBI)
             </text>
             <rect
               x="506"
@@ -511,9 +511,25 @@
               <td><code>.agents/skills/project-context/SKILL.md</code></td>
               <td>
                 Cada ejecución resuelve un solo modo y carga solo la reference de ese modo. El modo
-                <code>context-skill</code> crea una skill de criterio sobre un mapa de
-                <code>.context/</code>: cita las rutas y nunca copia su contenido
+                <code>context-skill</code> crea una skill de criterio propia del proyecto, solo para
+                un aspecto que las context skills de mapas no cubren: cita sus fuentes y nunca copia
+                su contenido
                 (<code>.agents/skills/project-context/references/context-skill.md</code>).
+              </td>
+            </tr>
+            <tr>
+              <td>Lo sintetizado vive en una skill</td>
+              <td>
+                <code>cli/lib/context-maps.ts</code> (<code>CONTEXT_MAP_SKILLS</code>),
+                <code>scripts/context-map.ts</code>
+              </td>
+              <td>
+                Lo que un script baja de una fuente (la caché de Jira) va a <code>.context/</code>;
+                lo que una IA sintetiza (los mapas de datos, API, E2E, dominio e infraestructura) es
+                un HTML dentro de su context skill. Tú lo abres en el navegador; el agente lo lee
+                con <code>bun run context:map &lt;slug&gt;</code>, que quita SVG y estilos y deja
+                cada sección como texto (<code>--section &lt;id&gt;</code> trae una sola,
+                <code>--list</code> el índice). Así el agente carga una sección y no el mapa entero.
               </td>
             </tr>
             <tr>
@@ -610,8 +626,9 @@
             el paso se degrada sin avisar.
           </li>
           <li>
-            Copiar en una skill la tabla de un mapa de <code>.context/</code>. Quedan dos fuentes y
-            una va a envejecer.
+            Copiar en otra skill la tabla de un mapa de contexto. El mapa vive en su context skill y
+            se lee con <code>bun run context:map</code>; con una copia quedan dos fuentes y una va a
+            envejecer.
           </li>
           <li>
             Confiar en la compaction para una tarea de horas. Escribe plan y progreso en disco, o

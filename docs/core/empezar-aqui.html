@@ -294,9 +294,12 @@ bun run setup</code></pre>
         <p>
           El scaffold trae <code>solo-main</code> como estrategia por defecto, marcada como
           heredada. Pídele al agente "set up our git strategy" para que
-          <code>/git-flow-master</code> la defina contigo. Mientras no lo hagas, el hook
-          <code>pre-push</code> falla con un mensaje que te manda aquí. Es la señal de que falta ese
-          paso.
+          <code>/git-flow-master</code> la defina contigo: mientras siga heredada, el agente te lo
+          ofrece una vez por sesión. El hook <code>pre-push</code> (vía
+          <code>bun run git:policy verify</code>) solo te frena con ese mensaje si el bloque
+          <code>git_strategy:</code> de <code>.agents/project.yaml</code> falta o no tiene
+          estrategia; con el bloque presente, lo que reporta es la diferencia entre la política
+          declarada y la que aplica GitHub.
         </p>
       </div>
       <p>
@@ -461,8 +464,9 @@ bun run codex      # Codex CLI (Codex Desktop usa la misma config del repo)</cod
       ><code>  una vez por repo           una vez por target              continuo        cuando hay drift
 +-----------------+   +---------------+   +-----------+   +-------------+   +---------------+
 | 0 Bootstrap     |--&gt;| 1 Discovery   |--&gt;| 2 Adapt   |--&gt;| 3 QA diario |&lt;--| 4 Mantenim.   |
-| bun run setup   |   | /project-     |   | /adapt-   |   | stages IQL  |--&gt;| sync + maps   |
-|                 |   |  discovery    |   |  framework|   | con skill   |   |               |
+| bun run setup   |   | /project-     |   | /test-    |   | stages IQL  |--&gt;| sync + maps   |
+|                 |   |  discovery    |   | framework-|   | con skill   |   |               |
+|                 |   |               |   | adaptation|   |             |   |               |
 +-----------------+   +---------------+   +-----------+   +-------------+   +---------------+</code></pre>
       <div class="table-wrap">
         <table>
@@ -646,8 +650,9 @@ bun run codex      # Codex CLI (Codex Desktop usa la misma config del repo)</cod
           <span class="badge accent">Release</span>
           <h3>/regression-testing</h3>
           <p>
-            Corrida nocturna o previa a un release sobre la suite existente. Clasifica cada fallo
-            (REGRESSION, FLAKY, KNOWN, ENVIRONMENT, NEW TEST) y emite el veredicto.
+            Corrida nocturna o previa a un release sobre la suite existente. Clasifica cada fallo en
+            una de las clases que define el skill (su <code>SKILL.md</code> es la lista) y emite el
+            veredicto GO, CAUTION o NO-GO.
           </p>
         </div>
       </div>
@@ -704,7 +709,11 @@ bun run codex      # Codex CLI (Codex Desktop usa la misma config del repo)</cod
                 <code>business-api-context</code> y <code>business-e2e-context</code>, y el Master
                 Test Plan, que se escribe en el Epic <code>QA Master Test Plan</code> de Jira. En
                 modo UPDATE rehace solo las secciones desactualizadas, muestra el diff y espera
-                aprobación.
+                aprobación. Tú abres un mapa en el navegador (carpeta "Mapas de contexto" de este
+                sitio); el agente lo lee con <code>bun run context:map &lt;slug&gt;</code> (<code
+                  >--section &lt;id&gt;</code
+                >
+                para una sola sección, <code>--list</code> para el índice), nunca el HTML crudo.
               </td>
             </tr>
           </tbody>
@@ -723,7 +732,7 @@ bun run codex      # Codex CLI (Codex Desktop usa la misma config del repo)</cod
                                         |
                                         | el agente lo lee una vez por sesión
                                         v
-skills, comandos y plantillas con {{PROJECT_KEY}}, {{WEB_URL}}, {{jira.*}}
+skills y plantillas con {{PROJECT_KEY}}, {{WEB_URL}}, {{jira.*}}
                                         |
                                         v
         valores reales antes de cada llamada a una herramienta</code></pre>
@@ -863,7 +872,10 @@ subagente (contexto limpio)
       <h2 id="chuleta">Chuleta: quiero X, ejecuto Y</h2>
       <p>
         Todo lo de esta tabla existe como skill (con su modo, si tiene varios) o script de
-        <code>package.json</code>.
+        <code>package.json</code>. Los skills se muestran en la forma de Claude Code (<code
+          >/&lt;skill&gt; &lt;modo&gt;</code
+        >); en OpenCode y Codex se piden en prosa ("cargá la skill <code>&lt;skill&gt;</code>, modo
+        <code>&lt;modo&gt;</code>"), como explica <a href="#comandos">Skill y modo</a>.
       </p>
       <div class="table-wrap">
         <table>
@@ -988,6 +1000,20 @@ subagente (contexto limpio)
               </td>
             </tr>
             <tr>
+              <td>Leer un mapa de contexto desde la terminal, como lo lee el agente</td>
+              <td>
+                <code>bun run context:map &lt;slug&gt;</code> (<code>--list</code> ·
+                <code>--section &lt;id&gt;</code>)
+              </td>
+            </tr>
+            <tr>
+              <td>Sincronizar los Components de Jira o repuntar el repo a otra instancia</td>
+              <td>
+                <code>/jira-administration components</code> ·
+                <code>/jira-administration instance-migration</code>
+              </td>
+            </tr>
+            <tr>
               <td>Sincronizar los docs de la IA tras un cambio</td>
               <td><code>bun run docs:check</code></td>
             </tr>
@@ -1020,8 +1046,16 @@ subagente (contexto limpio)
               <td><code>/orca-orchestration</code></td>
             </tr>
             <tr>
+              <td>Preparar un worktree nuevo (o revisar uno antes de borrarlo)</td>
+              <td>
+                <code>bun run worktree:provision</code> ·
+                <code>bun run worktree:audit --rescue</code> (ver
+                <a href="fundamentos/worktrees.html">Worktrees</a>)
+              </td>
+            </tr>
+            <tr>
               <td>Traer las novedades del boilerplate</td>
-              <td><code>bun run up</code></td>
+              <td><code>bun run up</code> (en el checkout principal: en un worktree se niega)</td>
             </tr>
             <tr>
               <td>Pasar todos los chequeos del repo</td>
@@ -1034,11 +1068,12 @@ subagente (contexto limpio)
       <h2 id="skills">Catálogo de skills</h2>
       <p>
         El catálogo es <code>.agents/skills/REGISTRY.md</code> (generado por
-        <code>bun run skills:registry</code>; <code>AGENTS.md</code> §5 tiene la misma tabla para el
-        agente). Hay tres tipos: propios del repo, vendorizados (como <code>judgment-day</code>, de
-        gentle-ai) y de la comunidad, que instala <code>bun run setup</code> a nivel de proyecto.
-        Además hay skills de usuario (la lista <code>USER_LEVEL_SKILLS</code> de
-        <code>cli/install.ts</code>) que el agente solo carga si le das permiso.
+        <code>bun run skills:registry</code>). <code>AGENTS.md</code> §5 es otra cosa: el router de
+        frases disparadoras que usa el agente para elegir skill, no el inventario. Hay tres tipos:
+        propios del repo, vendorizados (como <code>judgment-day</code>, de gentle-ai) y de la
+        comunidad, que instala <code>bun run setup</code> a nivel de proyecto. Además hay skills de
+        usuario (la lista <code>USER_LEVEL_SKILLS</code> de <code>cli/install.ts</code>) que el
+        agente solo carga si le das permiso.
       </p>
 
       <h3 id="skills-workflow">Workflow: los stages del pipeline</h3>

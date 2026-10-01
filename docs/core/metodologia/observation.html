@@ -456,6 +456,17 @@
         Lo que falta es la rutina que vigile las señales por su cuenta. Hasta que exista, esa
         vigilancia es trabajo humano con las herramientas del equipo.
       </p>
+      <p>
+        El transporte para una rutina así ya está en el repo: el modo AUTOMATION de
+        <code>/orca-orchestration</code> corre un prompt versionado con un disparador tipo cron, sin
+        una persona del otro lado. Cumple las cuatro partes de arriba a su manera: despacha workers
+        y no produce nada por sí mismo, no publica ni aprueba, lo ambiguo lo reporta en vez de
+        adivinarlo y su reporte siempre dice cuánto costó la corrida en tokens. Sus recetas, como el
+        triage nocturno de una corrida de regresión, están en
+        <code>.agents/skills/orca-orchestration/references/automations.md</code>. Ninguna vigila
+        producción: la rutina de Observation es la que sigue sin escribirse, y sería una receta más
+        sobre ese mismo transporte.
+      </p>
 
       <footer class="doc-footer">
         Relacionado: <a href="late-game.html">Late-Game</a> ·

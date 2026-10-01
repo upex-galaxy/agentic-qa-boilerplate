@@ -205,7 +205,10 @@
             </tr>
             <tr>
               <th>Verificador separado</th>
-              <td>Obligatorio: <code>pr-review-lead</code> y <code>judgment-day</code></td>
+              <td>
+                Obligatorio: <code>pr-review-lead</code> o <code>judgment-day</code>, en un contexto
+                limpio
+              </td>
             </tr>
             <tr>
               <th>Roles</th>
@@ -451,7 +454,10 @@
         </li>
         <li>
           <strong>Enlazar el ATS a la historia</strong>
-          <p>Enlace <em>Test · is tested by</em>. Es la única arista que da cobertura.</p>
+          <p>
+            Enlace <em>Test · is tested by</em>. Es la arista que da cobertura; el enlace directo de
+            un caso a la historia también cubre, pero solo como último recurso.
+          </p>
         </li>
         <li>
           <strong>Recién ahí, el ATP</strong>

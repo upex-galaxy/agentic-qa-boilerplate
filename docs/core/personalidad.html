@@ -152,7 +152,11 @@
             </tr>
             <tr>
               <td>Sin firma de IA</td>
-              <td>Los commits y PRs parecen escritos por una persona.</td>
+              <td>
+                Los commits y PRs parecen escritos por una persona. Cada commit termina en dos
+                trailers forenses, <code>Worktree:</code> y <code>Session:</code>, que dicen qué
+                checkout y qué sesión lo produjo, sin nombrar herramienta ni modelo.
+              </td>
             </tr>
           </tbody>
         </table>
@@ -505,19 +509,16 @@
               <td>Hasta que termine la sesión</td>
             </tr>
             <tr>
-              <td>Registro técnico por un turno</td>
-              <td>Menciona una ruta, un comando, un error, un selector o una librería</td>
-              <td>Un turno</td>
-            </tr>
-            <tr>
-              <td>Registro técnico sostenido</td>
-              <td>Pide "modo técnico" o "habla técnico"</td>
-              <td>Hasta que digas otra cosa</td>
-            </tr>
-            <tr>
-              <td>Volver a PM Voice</td>
-              <td>Pide "modo PM" o "PM voice"</td>
-              <td>Hasta que digas otra cosa</td>
+              <td>Registro técnico</td>
+              <td>
+                Menciona una ruta, un comando, un error, un selector o una librería, o pide el
+                detalle técnico. También se activa solo si el tema es seguridad, secretos, auth,
+                migraciones, rollback o un deploy a producción, o si corre un skill de testing.
+              </td>
+              <td>
+                Un turno: después vuelve a PM Voice. No hay un interruptor que lo deje fijo; si lo
+                necesitas varios turnos seguidos, sigue pidiendo el detalle.
+              </td>
             </tr>
             <tr>
               <td>Idioma de un artefacto</td>
@@ -646,7 +647,11 @@
         </li>
         <li>
           <strong>Haz commit</strong>
-          <p>Con prefijo <code>docs:</code> o <code>chore:</code> y sin firma de IA.</p>
+          <p>
+            Con prefijo <code>docs:</code> o <code>chore:</code>, sin firma de IA y cerrando con los
+            trailers <code>Worktree:</code> y <code>Session:</code> (<code>/git-flow-master</code>
+            los pone por ti).
+          </p>
         </li>
       </ol>
 
