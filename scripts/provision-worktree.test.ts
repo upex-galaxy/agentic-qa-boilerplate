@@ -76,6 +76,7 @@ function fixture(): { primary: string, worktree: string } {
     '.auth/',
     '.session/',
     '.agents/skills/community-skill/',
+    'api/openapi.json',
     '',
   ].join('\n'));
   // A committed OpenCode config pointing at a value file nothing has written:
@@ -106,6 +107,8 @@ function fixture(): { primary: string, worktree: string } {
   mkdirSync(join(primary, '.auth', 'opencode'), { recursive: true });
   writeFileSync(join(primary, '.auth', 'tokens.env'), 'export API_TOKEN_USER_LOCAL=\'x\'\n');
   writeFileSync(join(primary, '.auth', 'opencode', 'TAVILY_API_KEY'), 'tk-literal');
+  mkdirSync(join(primary, 'api'), { recursive: true });
+  writeFileSync(join(primary, 'api', 'openapi.json'), '{"openapi":"3.0.0"}\n');
   mkdirSync(join(primary, '.session'), { recursive: true });
   writeFileSync(join(primary, '.session', 'probe.md'), 'must never be copied\n');
   mkdirSync(join(primary, '.agents', 'skills', 'community-skill'), { recursive: true });
@@ -166,6 +169,9 @@ describe('provision-worktree', () => {
     expect(readFileSync(join(worktree, '.auth', 'tokens.env'), 'utf8')).toContain('API_TOKEN_USER_LOCAL');
 
     expect(existsSync(join(worktree, '.agents', 'skills', 'community-skill', 'SKILL.md'))).toBe(true);
+
+    // The synced spec the OpenAPI MCP reads at start.
+    expect(readFileSync(join(worktree, 'api', 'openapi.json'), 'utf8')).toContain('openapi');
 
     // .session/ exists in the primary but must NEVER be copied.
     expect(existsSync(join(worktree, '.session'))).toBe(false);

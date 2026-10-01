@@ -19,6 +19,7 @@ gap. It disguises itself as something else, and the worker then debugs the wrong
 | `node_modules/` | ignored | loud **with the wrong message**: `Cannot find module`, which reads as a broken import | `bun install --frozen-lockfile` |
 | `.context/PBI/` (the tracker cache) | ignored | **silent**: the worker cannot see the synced story and quietly works from the ticket title alone | `bun run context:hydrate`, or a scoped per-issue sync named in the brief |
 | `.auth/` (tokens) | not committed, created at login | loud: authenticated API calls fail with 401 | the CONDUCTOR mints tokens before the round (`bun run api:login`, with a per-worker profile when workers must not share a token) and the worker only reads the file; copy mode `0600` |
+| `api/openapi.json` (the synced spec) | ignored | loud, on the OpenAPI MCP only: with `OPENAPI_SPEC_PATH` pointing at it the server exits at start, before the handshake, and reads as a dead tool | copy it from the primary checkout (`worktree:provision` does), or `bun run api:sync` |
 | `.session/` | ignored | the brief, the roster and the run files are simply absent inside the worktree | do NOT copy it. Cite ABSOLUTE paths into the PRIMARY checkout from the prompt. Anything written inside a worktree dies with it |
 
 **Present in a fresh worktree because they are committed**: everything `git ls-files` lists, which
