@@ -104,6 +104,7 @@
     "vars:check": "bun scripts/lint-vars.ts",
     "vars:env:check": "bun scripts/check-vars.ts",
     "worktree:provision": "bun scripts/provision-worktree.ts",
+    "worktree:audit": "bun scripts/worktree-audit.ts",
     "xray": "bun cli/xray/index.ts",
     "vars:schema": "bun scripts/env-schema.ts",
     "vars:schema:check": "bun scripts/env-schema.ts --check"

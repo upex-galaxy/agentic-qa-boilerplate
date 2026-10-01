@@ -129,7 +129,7 @@ Launching a session into that worktree can go through the native path (supervise
 | Directory location | anywhere you choose (`../dir`) | fixed under `.claude/worktrees/` | the orchestrator's own workspace dir, outside the repo |
 | Base ref | whatever you pass | setting: `fresh`=origin/default or `head` | the base you pass at create time — **verify the new HEAD against `origin/<base>`**, it resolves local refs |
 | Moves the agent's session | no (you `cd`) | yes, automatically | no — it creates the tree, then a session is launched INTO it |
-| Cleanup | manual (`remove`/`prune`) | `ExitWorktree remove` | orchestrated removal + `git worktree prune`, always after the orphan audit below |
+| Cleanup | `bun run worktree:audit` then `remove`/`prune` | `bun run worktree:audit` then `ExitWorktree remove` | orchestrated removal (the committed `orca.yaml` archive hook runs the audit) + `git worktree prune` |
 | Branch naming | you choose | derived from the name (rename with `git branch -m`) | you choose at create time |
 | Owner can see it (board / phone) | no | no | yes |
 
@@ -209,21 +209,25 @@ Removing a worktree deletes its directory, and **gitignored files are not in git
 ```bash
 git -C <worktree> status --porcelain            # tracked work: must be committed AND pushed
 git -C <worktree> log --oneline origin/<base>.. # commits that exist only here
-git -C <worktree> status --porcelain --ignored   # THE audit: every ignored/untracked file about to die
+bun run worktree:audit <worktree>               # THE audit: every gitignored file about to die, classified
+bun run worktree:audit <worktree> --rescue      # copy the STATE class into the primary, never overwriting
 ```
 
-For each survivor in that last list, decide once: **copy it out** to the primary checkout (evidence, reports, anything a Jira comment or an ATR already references), or accept the loss deliberately (`node_modules/`, caches, a `.env` that is just a copy). A durable document belongs in the primary checkout or in the tracker, never only in a worktree. Only then remove the worktree.
+`worktree:audit` sorts every gitignored path into STATE (belongs in the primary checkout: `.session/`, `.scratch/`, PBI evidence and `[LOCAL]` notes, `.context/reports/`, updater state), CACHE (a command it names brings it back), DISPOSABLE (test output, editor litter, and the test-run outputs the owner accepted losing: Allure history, `reports/`, refreshed `.auth/` tokens) and UNKNOWN (no rule matched). It exits 1 while STATE or UNKNOWN is only in the worktree. `--rescue` copies STATE to the same path under the primary; a file the primary already holds with different bytes is a CONFLICT left for you, and every UNKNOWN entry is decided by hand. A durable document belongs in the primary checkout or in the tracker, never only in a worktree. Only on exit 0 remove the worktree. The classification table and the class definitions: `orca-orchestration/references/provisioning.md` §5.
+
+The removal paths that skip this on their own: `git worktree remove` without `--force` exits 0 and deletes ignored files without a word; Claude Code removes a worktree it judges clean, and ignored files do not count against clean; a subagent `isolation: "worktree"` tree is cleaned automatically, so nothing can be audited there. A subagent that must leave durable output writes it straight to the primary checkout by absolute path.
 
 ---
 
 ## Cleanup checklist
 
-- [ ] Orphan audit ran (`--ignored`) and every file worth keeping was copied to the primary checkout.
+- [ ] `bun run worktree:audit <path>` exits 0 (after `--rescue` and any hand-resolved conflict).
 - [ ] Branch's work is committed and pushed (or deliberately discarded).
 - [ ] `git worktree remove <path>` (or `ExitWorktree remove`) — succeeds only when clean.
 - [ ] `git branch -d <branch>` once the branch is merged.
 - [ ] `git worktree prune` if any directory was removed by hand.
 - [ ] Local `info/exclude` entries cleaned up if the worktree path is gone for good.
+- [ ] `direnv prune` if the worktree was provisioned on a machine with direnv (provisioning runs `direnv allow` on it).
 
 ---
 
@@ -253,5 +257,6 @@ When an AI session needs isolation from in-progress work on another branch:
 4. Hide the nested worktree from the primary tree via local `info/exclude`.
 5. Do all further work (edits, verifies, commits) in the worktree; the other branch stays
    untouched.
-6. On completion, commit on the worktree's branch → open its own PR → `ExitWorktree`
-   (`keep` to preserve, `remove` when merged/abandoned).
+6. On completion, commit on the worktree's branch → open its own PR → run
+   `bun run worktree:audit --rescue` from the worktree → `ExitWorktree` (`keep` to preserve,
+   `remove` when merged/abandoned, and only once the audit exits 0).
