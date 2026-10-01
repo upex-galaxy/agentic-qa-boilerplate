@@ -336,6 +336,7 @@ function direnvAllowedIn(cwd: string): boolean | 'no-envrc' | 'not-installed' {
     const allow = Bun.spawnSync(['direnv', 'allow', TARGET], { stdout: 'pipe', stderr: 'pipe' });
     if (allow.exitCode === 0) {
       log(`direnv: allowed ${TARGET}/.envrc (the primary checkout's .envrc is already allowed).`, 'success');
+      log('direnv: the allow entry outlives the worktree; run `direnv prune` after removing it.', 'info');
     }
     else {
       log(`direnv: \`direnv allow ${TARGET}\` failed (exit ${allow.exitCode}); run it yourself in the worktree. ${allow.stderr.toString().trim().slice(0, 200)}`, 'warn');
