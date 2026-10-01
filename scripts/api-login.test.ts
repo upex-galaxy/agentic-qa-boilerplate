@@ -34,7 +34,7 @@ import { join, resolve } from 'node:path';
 import { afterEach, describe, expect, test } from 'bun:test';
 
 import * as projectAdapter from './api-login.project';
-import { parseApiLoginArgs, renderHelp, renderTokenUsage, runApiLogin, upsertTokenEnvLine, upsertTokenMeta } from './lib/api-login-core';
+import { parseApiLoginArgs, renderHelp, renderTokenUsage, resolveRoleCredentials, runApiLogin, upsertTokenEnvLine, upsertTokenMeta } from './lib/api-login-core';
 
 // Credentials must exist BEFORE config/variables.ts is evaluated (it reads
 // process.env at module-evaluation time), and which environment is active
@@ -198,8 +198,60 @@ describe('runApiLogin', () => {
 
   test('--role names the token var and coexists with a profile', async () => {
     const root = scratch();
-    expect(await run(['--role', 'admin', '--profile', 'W2'], root, [])).toBe(0);
-    expect(readFileSync(join(root, 'profiles', 'W2', 'tokens.env'), 'utf-8')).toContain(`export API_TOKEN_ADMIN_${ENV_UPPER}=`);
+    process.env[`${ENV_UPPER}_ADMIN_EMAIL`] = 'qa-admin@example.com';
+    process.env[`${ENV_UPPER}_ADMIN_PASSWORD`] = 'qa-admin-password';
+    try {
+      expect(await run(['--role', 'admin', '--profile', 'W2'], root, [])).toBe(0);
+      expect(readFileSync(join(root, 'profiles', 'W2', 'tokens.env'), 'utf-8')).toContain(`export API_TOKEN_ADMIN_${ENV_UPPER}=`);
+    }
+    finally {
+      delete process.env[`${ENV_UPPER}_ADMIN_EMAIL`];
+      delete process.env[`${ENV_UPPER}_ADMIN_PASSWORD`];
+    }
+  });
+
+  // Before this, `--role admin` logged in as the DEFAULT user and labelled the
+  // token ADMIN: a token named for a role it never had, and a test that passes
+  // as the wrong identity.
+  test('a non-default role logs in with its own pair and leaves the suite api-state alone', async () => {
+    const root = scratch();
+    const calls: FetchCall[] = [];
+    process.env[`${ENV_UPPER}_ADMIN_EMAIL`] = 'qa-admin@example.com';
+    process.env[`${ENV_UPPER}_ADMIN_PASSWORD`] = 'qa-admin-password';
+    try {
+      expect(await run(['--role', 'admin'], root, calls)).toBe(0);
+    }
+    finally {
+      delete process.env[`${ENV_UPPER}_ADMIN_EMAIL`];
+      delete process.env[`${ENV_UPPER}_ADMIN_PASSWORD`];
+    }
+    expect(calls[0]?.body).toEqual({ email: 'qa-admin@example.com', password: 'qa-admin-password' });
+    expect(readFileSync(join(root, 'tokens.env'), 'utf-8')).toContain(`export API_TOKEN_ADMIN_${ENV_UPPER}=`);
+    expect(existsSync(join(root, 'api-state.json'))).toBe(false);
+  });
+
+  test('a role with no credentials exits 1 naming both variables, before any network call', async () => {
+    const root = scratch();
+    const calls: FetchCall[] = [];
+    const lines: string[] = [];
+    const code = await runApiLogin(projectAdapter, {
+      argv: ['--role', 'auditor'],
+      authDir: root,
+      apiStatePath: join(root, 'api-state.json'),
+      fetchImpl: stubFetch(calls),
+      log: line => lines.push(line),
+    });
+    expect(code).toBe(1);
+    expect(calls).toHaveLength(0);
+    expect(lines.join('\n')).toContain(`${ENV_UPPER}_AUDITOR_EMAIL`);
+    expect(lines.join('\n')).toContain(`${ENV_UPPER}_AUDITOR_PASSWORD`);
+    expect(existsSync(join(root, 'tokens.env'))).toBe(false);
+  });
+
+  test('resolveRoleCredentials maps env + role to the conventional pair', () => {
+    const source = { STAGING_SHOP_OWNER_EMAIL: 'a@b.c', STAGING_SHOP_OWNER_PASSWORD: 'pw' };
+    expect(resolveRoleCredentials('staging', 'shop-owner', source)).toEqual({ email: 'a@b.c', password: 'pw', missing: [] });
+    expect(resolveRoleCredentials('local', 'admin', {}).missing).toEqual(['LOCAL_ADMIN_EMAIL', 'LOCAL_ADMIN_PASSWORD']);
   });
 
   test('the adapter owns the endpoint, the headers, the payload and the token shape', async () => {
@@ -328,9 +380,18 @@ describe('the authenticate escape hatch', () => {
       },
     });
 
-    expect(await runWith(['--role', 'admin', '--profile', 'W4', '--method', 'magic'], root, calls, adapter)).toBe(0);
+    process.env[`${ENV_UPPER}_ADMIN_EMAIL`] = 'qa-admin@example.com';
+    process.env[`${ENV_UPPER}_ADMIN_PASSWORD`] = 'qa-admin-password';
+    try {
+      expect(await runWith(['--role', 'admin', '--profile', 'W4', '--method', 'magic'], root, calls, adapter)).toBe(0);
+    }
+    finally {
+      delete process.env[`${ENV_UPPER}_ADMIN_EMAIL`];
+      delete process.env[`${ENV_UPPER}_ADMIN_PASSWORD`];
+    }
 
-    expect(captured.credentials).toEqual({ email: config.testUser.email, password: config.testUser.password });
+    // The role's own pair, not the default test user's.
+    expect(captured.credentials).toEqual({ email: 'qa-admin@example.com', password: 'qa-admin-password' });
     expect(captured.context).toMatchObject({ role: 'admin', profile: 'W4', flags: { '--method': 'magic' } });
     expect(captured.apiUrl).toBe(config.apiUrl);
 

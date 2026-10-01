@@ -19,7 +19,7 @@
  * With `--profile <name>` the two agentic files move under
  * `.auth/profiles/<name>/` so several token sets (one per orchestration
  * worker, session or credential) coexist without overwriting the default one.
- * `.auth/api-state.json` is never profiled.
+ * `.auth/api-state.json` is never profiled, and only the default role writes it.
  *
  * The token is NOT written to .env and NOT injected into any MCP. The OpenAPI
  * MCP is schema-READ-ONLY; authenticated requests run via curl:
@@ -131,6 +131,29 @@ export interface ApiLoginRuntime {
 
 const DEFAULT_ENVIRONMENTS = ['local', 'staging'] as const;
 const DEFAULT_ROLE = 'user';
+
+/**
+ * Credentials for a NON-default role, read by convention from the process
+ * environment: `<ENV>_<ROLE>_EMAIL` + `<ENV>_<ROLE>_PASSWORD` (role `admin` on
+ * `staging` -> `STAGING_ADMIN_EMAIL`). The default role keeps reading
+ * `config.testUser`, whose pair (`<ENV>_USER_*`) is the same convention, so no
+ * project renames anything. These are project-scope variables: nothing
+ * declares or validates them up front; a missing half is named here, at the
+ * point of use. Canon: agentic-qa-core/references/browser-sessions.md (case b).
+ */
+export function resolveRoleCredentials(
+  environment: string,
+  role: string,
+  source: Readonly<Record<string, string | undefined>> = process.env,
+): { email: string, password: string, missing: string[] } {
+  const prefix = `${environment}_${role}`.toUpperCase().replace(/[^A-Z0-9]/g, '_');
+  const emailVar = `${prefix}_EMAIL`;
+  const passwordVar = `${prefix}_PASSWORD`;
+  const email = source[emailVar] ?? '';
+  const password = source[passwordVar] ?? '';
+  const missing = [email === '' ? emailVar : null, password === '' ? passwordVar : null].filter((n): n is string => n !== null);
+  return { email, password, missing };
+}
 
 // ============================================
 // CLI parsing
@@ -348,7 +371,7 @@ export function renderHelp(adapter: Pick<ApiLoginAdapter, 'environments' | 'extr
   bun run api:login --profile W1          # Flags may come before the environment
 
 \x1B[1mTOKEN STORAGE\x1B[0m
-  .auth/api-state.json    Used by Playwright test fixtures (unchanged; never profiled).
+  .auth/api-state.json    Used by Playwright test fixtures (default role only; never profiled).
   .auth/tokens.env        Sourceable: export API_TOKEN_<ROLE>_<ENV>='<token>'.
                           One line per role+env (upserted; others preserved).
   .auth/tokens.json       Metadata (expiresIn, createdAt) keyed by <ROLE>_<ENV>
@@ -365,6 +388,7 @@ export function renderHelp(adapter: Pick<ApiLoginAdapter, 'environments' | 'extr
 
 \x1B[1mREQUIRED .env VARIABLES\x1B[0m
 ${credentials}
+  Other roles:      <ENV>_<ROLE>_EMAIL, <ENV>_<ROLE>_PASSWORD (e.g. --role admin)
 
 \x1B[1mCONFIGURATION\x1B[0m
   Environment URLs:   config/variables.ts (envDataMap)
@@ -372,7 +396,7 @@ ${credentials}
   CLI behaviour:      scripts/lib/api-login-core.ts (synced; do not adapt)
 
 \x1B[1mOPTIONS\x1B[0m
-  -r, --role <role>     Role label for the token var (default: ${DEFAULT_ROLE})
+  -r, --role <role>     Log in as this role (default: ${DEFAULT_ROLE}); a non-default role reads <ENV>_<ROLE>_EMAIL / _PASSWORD
   --profile <name>      Isolated token set under .auth/profiles/<name>/ (default: none)
   -h, --help            Show this help${extra}
 `;
@@ -443,19 +467,27 @@ export async function runApiLogin(adapter: ApiLoginAdapter, runtime: ApiLoginRun
   const tokenKey = `${roleUpper}_${envUpper}`;
 
   out(`\n\x1B[1mAPI Login\x1B[0m — ${env.current} — role: ${parsed.role}${parsed.profile ? ` — profile: ${parsed.profile}` : ''}\n`);
-  log(`User: ${config.testUser.email}`);
 
-  // 1. Authenticate
+  // 1. Authenticate. The default role is the suite's own test user
+  //    (`config.testUser`); any other role reads its own pair by convention,
+  //    so `--role admin` logs in AS the admin instead of labelling the default
+  //    user's token ADMIN.
   const url = `${config.apiUrl}${adapter.loginEndpoint ?? config.auth.loginEndpoint}`;
-  const { email, password } = config.testUser;
+  const isDefaultRole = parsed.role === DEFAULT_ROLE;
+  const { email, password, missing } = isDefaultRole
+    ? { ...config.testUser, missing: [] as string[] }
+    : resolveRoleCredentials(env.current, parsed.role);
 
   if (!email || !password) {
     log('Missing credentials in .env file:', 'error');
-    if (!email) { log(`  - ${envUpper}_USER_EMAIL is not set`, 'error'); }
-    if (!password) { log(`  - ${envUpper}_USER_PASSWORD is not set`, 'error'); }
+    const names = missing.length > 0
+      ? missing
+      : [!email ? `${envUpper}_USER_EMAIL` : null, !password ? `${envUpper}_USER_PASSWORD` : null].filter((n): n is string => n !== null);
+    for (const name of names) { log(`  - ${name} is not set`, 'error'); }
     log('Set these in your .env file and try again.', 'info');
     return 1;
   }
+  log(`User: ${email}`);
 
   log(adapter.authenticate
     ? 'Authenticating through the project adapter...'
@@ -531,13 +563,17 @@ export async function runApiLogin(adapter: ApiLoginAdapter, runtime: ApiLoginRun
   log(`Token type: ${apiState.tokenType}`);
   log(`Expires in: ${apiState.expiresIn} seconds`);
 
-  // 2. Save the Playwright state (unchanged - consumed by the API fixture).
-  const apiStateDir = dirname(apiStatePath);
-  if (!existsSync(apiStateDir)) {
-    mkdirSync(apiStateDir, { recursive: true });
+  // 2. Save the Playwright state (consumed by the API fixture). Only the
+  //    default role writes it: the suite runs as its default test user, and a
+  //    role login that overwrote this file would silently run it as that role.
+  if (isDefaultRole) {
+    const apiStateDir = dirname(apiStatePath);
+    if (!existsSync(apiStateDir)) {
+      mkdirSync(apiStateDir, { recursive: true });
+    }
+    writeFileSync(apiStatePath, JSON.stringify(apiState, null, 2));
+    log(`Token saved to ${apiStatePath}`, 'success');
   }
-  writeFileSync(apiStatePath, JSON.stringify(apiState, null, 2));
-  log(`Token saved to ${apiStatePath}`, 'success');
 
   // 3. Save the sourceable token + metadata for curl-based agentic API testing.
   //    The agent runs `source <tokens.env> && curl -H "Authorization: Bearer
