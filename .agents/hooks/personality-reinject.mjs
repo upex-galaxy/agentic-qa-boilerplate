@@ -361,7 +361,7 @@ export function worktreeUnprovisioned(options = {}) {
   if (!root) { return false; }
   try {
     const pointer = String(read(join(root, '.git'), 'utf8'));
-    if (!/^gitdir:.*[\\/]worktrees[\\/][^\\/]+\s*$/m.test(pointer)) { return false; }
+    if (!/^gitdir:.*[\\/]worktrees[\\/][^\\/\s]+\s*$/m.test(pointer)) { return false; }
     return !exists(join(root, 'node_modules')) || !exists(join(root, '.husky', '_'));
   }
   catch {
