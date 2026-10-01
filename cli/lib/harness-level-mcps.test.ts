@@ -57,6 +57,15 @@ describe('readUserLevelMcpServers', () => {
     expect(servers.sources).toHaveLength(3);
   });
 
+  test('reads an OpenCode 2 global config, whose servers sit under mcp.servers', () => {
+    const home = fakeHome();
+    mkdirSync(join(home, '.config', 'opencode'), { recursive: true });
+    writeFileSync(join(home, '.config', 'opencode', 'opencode.json'), '{ "mcp": { "servers": { "exa": { "type": "remote", "url": "https://mcp.exa.ai/mcp" } } } }\n');
+
+    const servers = readUserLevelMcpServers(home, ENV);
+    expect(servers.opencode).toEqual(['exa', 'mcp.exa.ai']);
+  });
+
   test('an absent or unparseable file contributes nothing and never throws', () => {
     const home = fakeHome();
     writeFileSync(join(home, '.claude.json'), '{ not json');
