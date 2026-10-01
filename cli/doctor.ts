@@ -485,6 +485,46 @@ function compareVersion(a: readonly number[], b: readonly number[]): number {
   return 0;
 }
 
+/**
+ * Whether the OpenAPI MCP can find its spec, checked BEFORE a harness starts it.
+ *
+ * `@ivotoby/openapi-mcp-server` exits at start, before the MCP handshake, when
+ * `OPENAPI_SPEC_PATH` names a file that is not there or a URL that does not
+ * answer. Every host then shows a dead server and nothing says why, so the
+ * doctor probes the source itself. A file path resolves against the repo root,
+ * the directory every MCP config launches the server from. A URL gets one GET
+ * with a short timeout: an unreachable backend reads exactly like a broken MCP.
+ *
+ * Returns null when there is nothing to report: no value (the env row already
+ * says so), an existing file, or a URL that answered 2xx. Never returns or
+ * prints the value itself beyond the file path or the URL's host.
+ */
+export async function probeOpenApiSpec(
+  value: string | undefined,
+  root: string,
+  fetchImpl: (url: string, init: RequestInit) => Promise<Response> = fetch,
+  timeoutMs = 3000,
+): Promise<PendingAction | null> {
+  const spec = value?.trim() ?? '';
+  if (spec === '') { return null; }
+  const sync: Pick<PendingAction, 'type' | 'target'> = { type: 'shell_command', target: 'bun run api:sync' };
+  if (/^https?:\/\//i.test(spec)) {
+    let host = spec;
+    try { host = new URL(spec).host; }
+    catch { /* keep the raw value for the message */ }
+    try {
+      const response = await fetchImpl(spec, { method: 'GET', signal: AbortSignal.timeout(timeoutMs) });
+      if (response.ok) { return null; }
+      return { ...sync, hint: `OPENAPI_SPEC_PATH is a URL on ${host} that answered ${response.status}: the OpenAPI MCP exits at start without its spec. Fix the URL, or sync the spec to a local file and point OPENAPI_SPEC_PATH at it.` };
+    }
+    catch {
+      return { ...sync, hint: `OPENAPI_SPEC_PATH is a URL on ${host} that did not answer within ${timeoutMs / 1000} s (backend down, VPN, proxy): the OpenAPI MCP exits at start without its spec. Sync it to a local file and point OPENAPI_SPEC_PATH at it.` };
+    }
+  }
+  if (existsSync(resolve(root, spec))) { return null; }
+  return { ...sync, hint: `OPENAPI_SPEC_PATH points at ${spec}, which does not exist here (a gitignored file is missing from every fresh worktree): the OpenAPI MCP exits at start without it. Run the sync to create it.` };
+}
+
 export function diagnoseAgentCompatibility(
   root: string,
   options: { platform?: NodeJS.Platform, codexCliDetected?: boolean } = {},
@@ -967,6 +1007,11 @@ export async function runDoctor(): Promise<DoctorReport> {
       hint: 'Nothing in the repo reads these any more. Web search and Postman are MCP servers you connect at harness level (see the doctor section below); the resend CLI keeps its own login; the curl token lives in .auth/tokens.env. The line still validates, it just does nothing.',
     });
   }
+
+  // OpenAPI spec source: a missing file or a dead URL kills the OpenAPI MCP
+  // before its handshake, on every host, with no message of its own.
+  const openApiSpec = await probeOpenApiSpec(envValues.OPENAPI_SPEC_PATH, REPO_ROOT);
+  if (openApiSpec !== null) { report.warnings.push(openApiSpec); }
 
   // Context maps: a delivered skill whose map was never generated.
   // Informational (a warning, never a pending action): its generator writes it,

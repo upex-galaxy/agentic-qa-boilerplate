@@ -6,9 +6,12 @@
  */
 
 import type { GateContext, VarSpec } from './lib/variables-manifest.ts';
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, test } from 'bun:test';
 
-import { envVarVerdict } from './doctor.ts';
+import { envVarVerdict, probeOpenApiSpec } from './doctor.ts';
 import { VAR_MANIFEST, varsFor } from './lib/variables-manifest.ts';
 
 function spec(overrides: Partial<VarSpec> & { name: string }): VarSpec {
@@ -59,5 +62,34 @@ describe('envVarVerdict', () => {
     expect(blocking).toEqual([]);
     // And the manifest as a whole declares every scope the doctor prints.
     expect(new Set(VAR_MANIFEST.map(s => s.scope))).toEqual(new Set(['core', 'tooling', 'project']));
+  });
+});
+
+describe('probeOpenApiSpec', () => {
+  const root = mkdtempSync(join(tmpdir(), 'doctor-openapi-'));
+  mkdirSync(join(root, 'api'), { recursive: true });
+  writeFileSync(join(root, 'api', 'openapi.json'), '{}');
+  const answering = (status: number) => async () => new Response('{}', { status });
+  const silent = async () => { throw new Error('ECONNREFUSED'); };
+
+  test('says nothing when the variable is empty: the env row already covers it', async () => {
+    expect(await probeOpenApiSpec(undefined, root, silent)).toBeNull();
+    expect(await probeOpenApiSpec('  ', root, silent)).toBeNull();
+  });
+
+  test('a file path resolves against the repo root', async () => {
+    expect(await probeOpenApiSpec('./api/openapi.json', root, silent)).toBeNull();
+    const missing = await probeOpenApiSpec('./api/missing.json', root, silent);
+    expect(missing?.target).toBe('bun run api:sync');
+    expect(missing?.hint).toContain('./api/missing.json');
+  });
+
+  test('a URL must answer 2xx, and the message names the host, never the full value', async () => {
+    expect(await probeOpenApiSpec('https://api.example.test/openapi.json?token=x', root, answering(200))).toBeNull();
+    const notFound = await probeOpenApiSpec('https://api.example.test/openapi.json?token=x', root, answering(404));
+    expect(notFound?.hint).toContain('api.example.test that answered 404');
+    expect(notFound?.hint).not.toContain('token=x');
+    const down = await probeOpenApiSpec('http://127.0.0.1:9/openapi.json', root, silent);
+    expect(down?.hint).toContain('127.0.0.1:9 that did not answer');
   });
 });
