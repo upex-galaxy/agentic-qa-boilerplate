@@ -32,6 +32,7 @@
         <ol>
           <li><a href="#regla">La regla: el MCP solo lee</a></li>
           <li><a href="#configurar">Configurar el MCP</a></li>
+          <li><a href="#escritorio">Desde una app de escritorio</a></li>
           <li><a href="#herramientas">Las tres herramientas</a></li>
           <li><a href="#token">Obtener el token</a></li>
           <li><a href="#curl">Ejecutar con curl</a></li>
@@ -153,6 +154,37 @@
         Para comprobar que funciona, pregunta al agente qué endpoints tiene la API. Debería llamar a
         <code>list-api-endpoints</code> y devolver la lista.
       </p>
+
+      <h2 id="escritorio">Desde una app de escritorio</h2>
+      <p>
+        Este MCP es el más delicado de todos al abrir el harness desde el Dock o el menú de inicio:
+        si al arrancar le falta <code>API_BASE_URL</code>, <code>OPENAPI_SPEC_PATH</code> o el
+        propio spec, se cierra antes del handshake y el harness solo muestra un server caído. DBHub,
+        en cambio, lee <code>.env</code> por su cuenta y arranca igual, por eso uno puede fallar
+        mientras el otro parece bien.
+      </p>
+      <dl class="defs">
+        <dt>Claude Code y OpenCode</dt>
+        <dd>
+          Leen lo que genera <code>bun run harness:env</code>. Córrelo después de tocar
+          <code>.env</code> y reinicia la app.
+        </dd>
+        <dt>Codex Desktop</dt>
+        <dd>
+          Cada MCP de <code>.codex/config.toml</code> arranca con
+          <code>dotenv -o -e .env --</code> delante, así que lee <code>.env</code> aunque la app no
+          tenga variables de entorno. Hace falta <code>bun install</code> una vez (el loader es la
+          dependencia <code>dotenv-cli</code>) y un <code>.env</code> con valores en la raíz del
+          proyecto. En un worktree que crea la app, <code>.env</code> y
+          <code>api/openapi.json</code> llegan por el <code>.worktreeinclude</code> del repo.
+        </dd>
+        <dt>El spec</dt>
+        <dd>
+          <code>api/openapi.json</code> está en <code>.gitignore</code>, así que un worktree nuevo
+          no lo trae. <code>bun run setup:doctor</code> avisa si el archivo no existe o si la URL no
+          responde, y <code>bun run api:sync</code> lo vuelve a crear.
+        </dd>
+      </dl>
 
       <h2 id="herramientas">Las tres herramientas</h2>
       <p>
@@ -369,6 +401,14 @@ bun run api:sync --config                                 # con la configuració
                 Que <code>OPENAPI_SPEC_PATH</code> apunte a algo que exista. Si es una URL, ábrela
                 en el navegador; si pide autenticación, descarga el spec con
                 <code>bun run api:sync</code> y apunta al archivo local.
+              </td>
+            </tr>
+            <tr>
+              <td>El server aparece caído en la app de escritorio y en la terminal funciona</td>
+              <td>
+                La app no tiene las variables. Revisa la sección
+                <a href="#escritorio">Desde una app de escritorio</a> y corre
+                <code>bun run setup:doctor</code>.
               </td>
             </tr>
             <tr>

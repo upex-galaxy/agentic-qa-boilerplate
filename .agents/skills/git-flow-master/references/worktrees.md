@@ -166,6 +166,8 @@ bun run worktree:provision          # in the new worktree: .env, deps, the skill
 bun run context:hydrate             # rebuild the Jira cache (needs credentials, so run it after the above)
 ```
 
+Worktrees the HARNESS creates (Claude Code `--worktree`, subagent and desktop worktrees; Codex-managed worktrees in the Codex app) copy the gitignored inputs listed in the committed `.worktreeinclude` by themselves (`.env`, the generated harness credential files, `.auth/`, the synced `api/openapi.json`); dependencies, the skills alias and the cache still need the two commands above. A worktree made with plain `git worktree add` or by an orchestration layer reads no `.worktreeinclude`, so `worktree:provision` is the whole story there.
+
 `.session/` is deliberately NOT provisioned: a plan, brief, or roster written inside a worktree dies with it. Keep those in the primary checkout and cite them by **absolute** path. Full gap table and how to wire provisioning as an orchestration setup hook: `orca-orchestration/references/provisioning.md`.
 
 ---

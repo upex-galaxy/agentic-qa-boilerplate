@@ -59,6 +59,41 @@ export const CLAUDE_HOOK_COMMAND = 'node "$CLAUDE_PROJECT_DIR/.agents/hooks/pers
 export const CODEX_HOOK_COMMAND = 'root="$(git rev-parse --show-toplevel)" && node "$root/.agents/hooks/personality-reinject.mjs"';
 export const CODEX_HOOK_COMMAND_WINDOWS = 'powershell.exe -NoProfile -Command "$root = git rev-parse --show-toplevel; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; node (Join-Path $root \'.agents/hooks/personality-reinject.mjs\')"';
 
+/**
+ * The `.env` loader every Codex stdio server launches through.
+ *
+ * Codex forwards `env_vars` BY NAME from its own process environment. A
+ * terminal launch through `bun run codex` has them; Codex Desktop, opened from
+ * Finder or the Dock, has none, so every server started with empty variables
+ * and the OpenAPI server exited before the MCP handshake. The loader reads
+ * `.env` from the launch directory (the project root, the same one
+ * `--config dbhub.toml` already resolves against) and then starts the real
+ * server, so the values arrive however Codex was opened.
+ *
+ * `-p dotenv-cli@<pin>` names the package explicitly: a bare `bunx dotenv`
+ * resolves to the `dotenv` LIBRARY when `node_modules` is absent and prints its
+ * usage instead of running anything. The pin tracks the `dotenv-cli`
+ * devDependency, so the cache already holds it after `bun install`. `-o` makes
+ * `.env` win over an inherited value, exactly as the `bun run codex` wrapper
+ * does. Measured: ADR-0006.
+ */
+export const CODEX_ENV_LOADER_COMMAND = 'bunx';
+export const CODEX_ENV_LOADER_ARGS = ['-p', 'dotenv-cli@8.0.0', 'dotenv', '-o', '-e', '.env', '--'] as const;
+
+/**
+ * Splits a Codex `command` + `args` into the server it actually starts. A
+ * server launched through `CODEX_ENV_LOADER_*` reads as the inner command with
+ * `envLoader: true`; anything else is returned as-is.
+ */
+export function unwrapCodexEnvLoader(command: string, args: readonly string[]): { command: string, args: string[], envLoader: boolean } {
+  const prefix = CODEX_ENV_LOADER_ARGS;
+  const wrapped = command === CODEX_ENV_LOADER_COMMAND
+    && args.length > prefix.length
+    && prefix.every((entry, index) => args[index] === entry);
+  if (!wrapped) { return { command, args: [...args], envLoader: false }; }
+  return { command: args[prefix.length], args: args.slice(prefix.length + 1), envLoader: true };
+}
+
 export type KnownMcpId = (typeof KNOWN_MCP_IDS)[number];
 export type McpHost = 'claude' | 'opencode' | 'codex';
 type Transport = 'stdio' | 'http';
@@ -86,6 +121,10 @@ export interface NormalizedMcpServer {
   dependsOn: string[]
   literalEnv: Record<string, string>
   enabled: boolean
+  /** Codex only: the server starts through `CODEX_ENV_LOADER_*`. */
+  envLoader?: boolean
+  /** Codex only: `startup_timeout_sec`; absent means Codex's default. */
+  startupTimeoutSec?: number
 }
 
 type NormalizedMcpConfig = Record<string, NormalizedMcpServer>;
@@ -136,6 +175,8 @@ function canonical(shape: Pick<NormalizedMcpServer, 'transport'> & Partial<Norma
     dependsOn: [...new Set(shape.dependsOn ?? [])].sort(),
     literalEnv,
     enabled: shape.enabled ?? true,
+    envLoader: shape.envLoader ?? false,
+    startupTimeoutSec: shape.startupTimeoutSec,
   };
 }
 
@@ -172,10 +213,21 @@ const EVERY_HOST: Record<KnownMcpId, NormalizedMcpServer> = {
   }),
 };
 
+/**
+ * Codex starts the same servers, each through the `.env` loader and with a
+ * 30-second startup budget. Codex's default is 10 seconds, and every shipped
+ * server is fetched by `bunx` on first use: a cold cache plus the loader hop
+ * can pass 10 seconds where a warm dbhub already took most of it (ADR-0006).
+ */
+export const CODEX_STARTUP_TIMEOUT_SEC = 30;
+const CODEX_SHAPE = Object.fromEntries(
+  Object.entries(EVERY_HOST).map(([id, shape]) => [id, canonical({ ...shape, envLoader: true, startupTimeoutSec: CODEX_STARTUP_TIMEOUT_SEC })]),
+) as Record<KnownMcpId, NormalizedMcpServer>;
+
 export const EXPECTED_MCP: Record<McpHost, Record<KnownMcpId, NormalizedMcpServer>> = {
   claude: EVERY_HOST,
   opencode: EVERY_HOST,
-  codex: EVERY_HOST,
+  codex: CODEX_SHAPE,
 };
 
 function object(value: unknown, label: string): JsonObject {
@@ -439,14 +491,21 @@ function normalizeCodex(root: JsonObject): NormalizedMcpConfig {
       throw new Error(`${label}.env cannot reference ${leaked.join(', ')}: Codex does not expand placeholders. Forward the variable through env_vars instead.`);
     }
 
+    // The loader is a launch detail, not a different server: compare what it
+    // starts, and record that it is there.
+    const launch = transport === 'stdio'
+      ? unwrapCodexEnvLoader(stringValue(server.command, `${label}.command`), stringArray(server.args ?? [], `${label}.args`))
+      : undefined;
     return [id, {
       transport,
-      command: transport === 'stdio' ? stringValue(server.command, `${label}.command`) : undefined,
-      args: transport === 'stdio' ? stringArray(server.args ?? [], `${label}.args`) : undefined,
+      command: launch?.command,
+      args: launch?.args,
       url: transport === 'http' ? stringValue(server.url, `${label}.url`) : undefined,
       dependsOn: sorted(dependsOn),
       literalEnv: literalEntries(env, `${label}.env`),
       enabled: server.enabled !== false,
+      envLoader: launch?.envLoader ?? false,
+      startupTimeoutSec: typeof server.startup_timeout_sec === 'number' ? server.startup_timeout_sec : undefined,
     }];
   }));
 }
@@ -540,6 +599,15 @@ export function validateMcpParity(root = process.cwd()): string[] {
     }
   }
 
+  // Codex: a stdio server that needs `.env` values must start through the
+  // loader, known to this boilerplate or not. `env_vars` alone forwards
+  // nothing when Codex Desktop was opened from the Dock.
+  for (const id of declared) {
+    const server = configs.codex[id];
+    if (!server || server.transport !== 'stdio' || server.dependsOn.length === 0 || server.envLoader === true) { continue; }
+    errors.push(`codex MCP ${id} must launch through the .env loader (command = "${CODEX_ENV_LOADER_COMMAND}", args starting ${JSON.stringify(CODEX_ENV_LOADER_ARGS)}): a Codex Desktop launch has no process environment, so env_vars alone forwards nothing.`);
+  }
+
   // Cross-host contract for EVERY declared server: same `.env` dependencies and
   // same literal settings, whatever the transport or command each host uses.
   for (const id of declared) {
@@ -574,6 +642,37 @@ function personalAbsolutePath(command: string): boolean {
 export function hookScriptPath(command: string): string | null {
   const match = /(?:\$CLAUDE_PROJECT_DIR\/|\$root\/|\$root\s+')([^"')]+\.m?js)/.exec(command);
   return match === null ? null : match[1];
+}
+
+/**
+ * The OpenCode adapter must load on BOTH plugin generations, because the repo
+ * cannot pin which OpenCode a teammate runs.
+ *
+ * OpenCode 2 reads ONE default export `{ id, setup(ctx) }` and refuses
+ * anything else ("Plugin must export a default definition with an id and an
+ * effect or setup function"); the context lines then go through
+ * `ctx.session.hook('context', ...)`. OpenCode 1 (1.18.29 and newer) calls
+ * `server()` on that same object and expects the
+ * `experimental.chat.system.transform` hook back. The V1-only shape this file
+ * used to have passed every check above while OpenCode 2 refused to load it,
+ * so the check now names each entrypoint. Text-level on purpose, like the
+ * rest of this contract: importing the adapter would execute it.
+ */
+export function validateOpenCodePluginEntrypoints(plugin: string): string[] {
+  const errors: string[] = [];
+  if (!/^export default\b/m.test(plugin)) {
+    errors.push('OpenCode personality adapter must default-export one plugin definition: OpenCode 2 loads nothing else.');
+  }
+  if (!/^\s*id:\s*['"][^'"]+['"]/m.test(plugin)) {
+    errors.push('OpenCode personality adapter must declare a stable id: OpenCode 2 refuses a definition without one.');
+  }
+  if (!/\bsetup\s*\(/.test(plugin) || !/ctx\.session\.hook\(\s*['"]context['"]/.test(plugin)) {
+    errors.push('OpenCode personality adapter must register the OpenCode 2 entrypoint: setup(ctx) with ctx.session.hook(\'context\', ...).');
+  }
+  if (!/\bserver\s*\(/.test(plugin) || !plugin.includes('experimental.chat.system.transform')) {
+    errors.push('OpenCode personality adapter must keep the OpenCode 1 entrypoint: server() returning experimental.chat.system.transform.');
+  }
+  return errors;
 }
 
 function readHookCommand(settings: JsonObject, host: 'claude' | 'codex'): JsonObject {
@@ -665,6 +764,10 @@ export function validateHookCompatibility(root = process.cwd()): string[] {
     if (plugin.includes('output.system =')) {
       errors.push('OpenCode personality adapter must mutate output.system in place.');
     }
+    if (/\bevent\.system\s*=[^=]/.test(plugin)) {
+      errors.push('OpenCode personality adapter must mutate event.system in place.');
+    }
+    errors.push(...validateOpenCodePluginEntrypoints(plugin));
     for (const [label, source] of [['emitter', shared], ['OpenCode adapter', plugin]] as const) {
       if (personalAbsolutePath(source)) {
         errors.push(`Shared hook ${label} contains an absolute personal path.`);

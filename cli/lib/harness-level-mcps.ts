@@ -67,23 +67,31 @@ export const HARNESS_LEVEL_MCP_IDS: readonly string[] = HARNESS_LEVEL_MCPS.map(m
 export const HARNESS_LEVEL_ENV_VARS: readonly string[] = HARNESS_LEVEL_MCPS.flatMap(m => (m.formerEnvVar === null ? [] : [m.formerEnvVar]));
 
 /**
- * How to connect one at harness level, per host. Verified against each host's
- * own docs on 2026-09-24 (Claude Code `claude mcp add --scope user`, OpenCode
- * global config precedence, `codex mcp add` writing the global config). Windows
- * paths follow the same `~` layout; documented, not measured.
+ * How to connect one at harness level, per host. Checked against each host's
+ * own docs and `--help` (dates in ADR-0006). Windows paths follow the same `~`
+ * layout; documented, not measured.
+ *
+ * Two host-specific traps the strings carry:
+ *   - `claude mcp list` does not apply `.claude/settings.local.json`'s `env`
+ *     block, so it reports servers as failing that a session connects fine.
+ *     `/mcp` inside a session is the real check.
+ *   - Codex `--bearer-token-env-var` reads the token from Codex's process
+ *     environment, which a Codex Desktop launch does not have. OAuth
+ *     (`codex mcp login`) keeps the token in Codex's own store and works for
+ *     both the CLI and the desktop app.
  */
 export const HARNESS_LEVEL_HOWTO: Record<HarnessId, { where: string, how: string }> = {
   claude: {
     where: '~/.claude.json (user scope) or a claude.ai connector',
-    how: 'claude mcp add --scope user --transport http <name> <url>   (or connect it from claude.ai settings; `/mcp` inside a session lists it)',
+    how: 'claude mcp add --scope user --transport http <name> <url>   (or connect it from claude.ai settings). Check it with `/mcp` inside a session: `claude mcp list` ignores the settings env block and can report a working server as failed',
   },
   opencode: {
-    where: '~/.config/opencode/opencode.json (global config, key "mcp")',
-    how: 'add the server under "mcp" in the global config; a project opencode.jsonc must not re-declare it',
+    where: '~/.config/opencode/opencode.json (global config: key "mcp.servers" on OpenCode 2, "mcp" on OpenCode 1)',
+    how: 'OpenCode 2: opencode mcp add <name> --global --url <url> [--header Authorization=...]; OpenCode 1: add it under "mcp" in the global config. A project opencode.jsonc must not re-declare it',
   },
   codex: {
-    where: '~/.codex/config.toml ([mcp_servers.<name>])',
-    how: 'codex mcp add <name> --url <url> [--bearer-token-env-var <VAR>]',
+    where: '~/.codex/config.toml ([mcp_servers.<name>]), shared by the Codex CLI and the desktop app',
+    how: 'codex mcp add <name> --url <url>, then codex mcp login <name> (OAuth). Avoid --bearer-token-env-var for the desktop app: it reads a process environment a Dock launch does not have',
   },
 };
 
@@ -165,7 +173,7 @@ function stripJsonComments(source: string): string {
  *
  *   - Claude Code: `~/.claude.json` -> `mcpServers` (user scope) and
  *     `projects.<path>.mcpServers` (local scope, any project).
- *   - OpenCode: the global config -> `mcp`.
+ *   - OpenCode: the global config -> `mcp.servers` (V2) or `mcp` (V1).
  *   - Codex: `~/.codex/config.toml` -> `mcp_servers`.
  */
 export function readUserLevelMcpServers(home = homedir(), env: NodeJS.ProcessEnv = process.env): UserLevelMcpServers {
@@ -193,7 +201,12 @@ export function readUserLevelMcpServers(home = homedir(), env: NodeJS.ProcessEnv
     try {
       const parsed = JSON.parse(stripJsonComments(readFileSync(file, 'utf8'))) as Record<string, unknown>;
       sources.push(file);
-      collectRegistry(parsed.mcp, found.opencode);
+      // OpenCode 2 nests servers under `mcp.servers`; OpenCode 1 lists them
+      // directly under `mcp`. Without this a V2 config reads as one server
+      // named "servers".
+      const mcp = parsed.mcp;
+      const v2Servers = typeof mcp === 'object' && mcp !== null ? (mcp as Record<string, unknown>).servers : undefined;
+      collectRegistry(typeof v2Servers === 'object' && v2Servers !== null ? v2Servers : mcp, found.opencode);
     }
     catch { /* contributes nothing */ }
   }

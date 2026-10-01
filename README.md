@@ -83,7 +83,7 @@ The list is `EXTERNAL_CLIS` in `cli/install.ts`: each entry names the skill that
 
 | Tool     | What it buys you                                                                                                                                                                                                                                                                          | Install                                                                                       |
 | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `direnv` | Optional. Exports `.env` into your shell on `cd`, which only Codex (it reads the process environment) and shell-exported CLI vars (`acli`, `curl`, `bun xray`) need. Claude Code and OpenCode do not: `bun run harness:env` writes their credentials into `.claude/settings.local.json` and `.auth/opencode/*`. Without direnv, `bun run codex` loads `.env` the same way. | macOS/Linux: `brew install direnv` / `apt install direnv` · [direnv.net](https://direnv.net/) |
+| `direnv` | Optional. Exports `.env` into your shell on `cd`, which only shell-exported CLI vars (`acli`, `curl`, `bun xray`) need. No harness does: `bun run harness:env` writes Claude Code's and OpenCode's credentials into `.claude/settings.local.json` and `.auth/opencode/*`, and Codex starts each MCP server through a `.env` loader. Without direnv, the `bun run claude` / `opencode` / `codex` wrappers load `.env` the same way. | macOS/Linux: `brew install direnv` / `apt install direnv` · [direnv.net](https://direnv.net/) |
 
 > **Windows users**: skip direnv. The `bun run claude` / `bun run opencode` / `bun run codex` wrappers already load `.env` cross-platform with zero setup, and Claude Code / OpenCode read the surfaces `bun run harness:env` generates. direnv on PowerShell needs version 2.37+ and is officially experimental; Git Bash works but at that point the wrapper is simpler. The installer will offer the direnv hook; just decline it.
 
@@ -190,13 +190,13 @@ bunx -y ccstatusline@latest
 
 > Don't chain `bun run onboarding && bun run setup` — the docs server is blocking and the chain deadlocks. Run them as separate steps.
 
-> `bunx -y ccstatusline@latest` is Claude Code-only and optional. Run it from a plain terminal with NO agent running — concurrent TUIs fight over stdin and the configurator silently breaks. OpenCode users skip this: the `opencode-subagent-statusline` plugin is already wired into `opencode.jsonc`.
+> `bunx -y ccstatusline@latest` is Claude Code-only and optional. Run it from a plain terminal with NO agent running — concurrent TUIs fight over stdin and the configurator silently breaks. OpenCode users can add the `opencode-subagent-statusline` plugin to their own global config instead (OpenCode 1 only; see `INSTALLER.md`); the shared `opencode.jsonc` carries no cosmetic plugins.
 
 <br />
 
 ## Launching the agent
 
-`.env` is the single source of credentials, but no harness reads it directly. Claude Code reads the `env` block of `.claude/settings.local.json`; OpenCode reads `.auth/opencode/<VAR>` files via `{file:}`; Codex reads the process environment (`bun run codex` or direnv). `bun run harness:env` derives the first two from `.env`, and `bun run setup:doctor` reports drift. After filling `.env`: run `bun run harness:env`, then restart the agent session (MCP servers read credentials at startup). Launch via one of these:
+`.env` is the single source of credentials, but no harness reads it directly. Claude Code reads the `env` block of `.claude/settings.local.json`; OpenCode reads `.auth/opencode/<VAR>` files via `{file:}`; Codex starts every MCP server through `dotenv -o -e .env` (`.codex/config.toml`), so its servers read `.env` itself however Codex was opened. `bun run harness:env` derives the first two from `.env`, and `bun run setup:doctor` reports drift. After filling `.env`: run `bun run harness:env`, then restart the agent session (MCP servers read credentials at startup). Launch via one of these:
 
 ```bash
 # Cross-platform default (uses dotenv-cli, no extra tooling required):
@@ -204,7 +204,7 @@ bun run claude        # Claude Code
 bun run opencode      # OpenCode
 bun run codex         # Codex CLI
 
-# Optional: direnv autoload (Codex + shell CLIs such as acli / bun xray; Claude Code and OpenCode do not need it)
+# Optional: direnv autoload (shell CLIs such as acli / bun xray; no harness needs it)
 direnv allow          # one-time per repo (the installer offers to run this)
 claude                # direct binary picks up .env from your shell
 
@@ -215,7 +215,7 @@ claude                        # now claude / opencode / codex / acli / bun xray 
 
 Each wrapper is `dotenv -o -e .env -- <binary>`. The `-o` forces `.env` to win over an inherited process variable; launching the bare executable skips that, so a stale value from the parent shell can silently shadow the file.
 
-**Codex Desktop** consumes the same repository configuration as the CLI — no second convention, no extra directory. One caveat applies to both: Codex loads the project's `.codex/` config and hooks **only in a repository you have marked trusted**. `bun run setup:doctor` reports that trust on its own line, because it is runtime state no file check can verify.
+**Codex Desktop** consumes the same repository configuration as the CLI — no second convention, no extra directory. Opened from Finder or the Dock it has no process environment, which is why every MCP server in `.codex/config.toml` starts through a `.env` loader instead of relying on `env_vars`: run `bun install` once (the loader is the `dotenv-cli` devDependency) and keep a filled `.env` at the project root. A worktree the Codex app creates gets `.env`, `.auth/` and the synced `api/openapi.json` from the committed `.worktreeinclude`. Two caveats apply to CLI and Desktop alike: Codex loads the project's `.codex/` config and hooks **only in a repository you have marked trusted** (`bun run setup:doctor` reports that trust on its own line, because it is runtime state no file check can verify), and a remote MCP you add at user level should authenticate with `codex mcp login` (OAuth), because `--bearer-token-env-var` reads the same process environment a Dock launch does not have.
 
 PowerShell equivalent of that last block:
 

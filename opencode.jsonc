@@ -19,7 +19,9 @@
   // spawned before any hook runs. {file:path} substitutes the file's CONTENTS and
   // needs no environment at all, so it works however OpenCode was started.
   //
-  // MEASURED on OpenCode 1.18.30, and worth knowing before editing this file:
+  // MEASURED on OpenCode 1 and re-measured on OpenCode 2 (versions and dates:
+  // .context/ADR/ADR-0006-forensic-measurements-ledger.md), and worth knowing
+  // before editing this file:
   //   - a MISSING {file:} target invalidates the WHOLE config (exit 1, "bad file
   //     reference"), not just the one server. Never point at a file the generator
   //     does not create.
@@ -30,6 +32,11 @@
   //   - a trailing newline is trimmed. The generator writes none anyway, so a
   //     value never depends on that.
   //
+  // V1 SYNTAX ON PURPOSE ("mcp", "enabled", "permission"). OpenCode 2 migrates
+  // these keys on load ("mcp" -> "mcp.servers", "enabled" -> "disabled",
+  // "permission" -> "permissions"), and OpenCode 1 rejects the V2 spelling, so
+  // the V1 file is the one both generations read. Revisit when V1 support ends.
+  //
   // Syntax notes (OpenCode-specific, different from Claude Code's .mcp.json):
   //   - File substitution uses {file:path}, env expansion {env:VAR_NAME} (NOT ${VAR})
   //   - {file:} paths are relative to THIS file's directory, so in a worktree they
@@ -39,15 +46,11 @@
   //   - MCP env field is "environment"         (NOT "env")
   "$schema": "https://opencode.ai/config.json",
 
-  // Plugins:
-  //   - @warp-dot-dev/opencode-warp: Warp terminal integration — surfaces
-  //     OpenCode agent activity as native Warp notifications. Auto-installed
-  //     when OpenCode runs inside Warp.
-  //     Docs: https://docs.warp.dev/agent-platform/cli-agents/opencode/
-  //   - opencode-subagent-statusline: Cosmetic UX — shows the active subagent
-  //     in the OpenCode status line so you can see which agent is running at
-  //     a glance. Pure polish, no behavioral side effects.
-  "plugin": ["@warp-dot-dev/opencode-warp", "opencode-subagent-statusline"],
+  // No npm plugins here. Cosmetic ones (a status line, terminal notifications)
+  // are a personal choice: install them in your GLOBAL config
+  // (~/.config/opencode/opencode.json), never in this shared file, where one
+  // that fails to load becomes every teammate's startup warning. The repo's own
+  // hook needs no entry: OpenCode loads .opencode/plugins/ automatically.
 
   "mcp": {
     "context7": {

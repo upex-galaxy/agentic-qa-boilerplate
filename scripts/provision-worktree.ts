@@ -5,7 +5,7 @@
  * worktree shares every TRACKED file with the primary checkout (same repo,
  * different branch) but starts with none of the gitignored state a session
  * needs: `.env`, the `.claude/skills` alias, gitignored T3 community skills,
- * `node_modules/`, and `.auth/`. See the gap table in
+ * `node_modules/`, `.auth/`, and the synced `api/openapi.json`. See the gap table in
  * `.agents/skills/orca-orchestration/references/provisioning.md` for the full
  * rationale per item.
  *
@@ -57,7 +57,7 @@ function showHelp(): void {
 \x1B[1mWHAT IT DOES\x1B[0m
   1. Refuses to run if [path] resolves to the PRIMARY checkout.
   2. Copies .env, .claude/settings.local.json, .auth/ (mode 0600; chmod
-     skipped on Windows).
+     skipped on Windows), and api/openapi.json when it was synced.
   3. Runs \`bun install --frozen-lockfile\` inside the target.
   4. Runs \`bun run agents:compat\` inside the target (creates the
      .claude/skills alias).
@@ -207,6 +207,25 @@ function secureCopyDir(relPath: string): void {
 secureCopyFile('.env');
 secureCopyFile('.claude/settings.local.json');
 secureCopyDir('.auth');
+
+// The synced OpenAPI spec (`bun run api:sync`) is gitignored too, and the
+// OpenAPI MCP exits at start when OPENAPI_SPEC_PATH names a file that is not
+// there. Not a secret, so no chmod; optional, so its absence is info, not a
+// warning (a project with no API never syncs one). Same list as the committed
+// `.worktreeinclude`, which covers the worktrees the harnesses create.
+const OPENAPI_SPEC = 'api/openapi.json';
+if (!existsSync(join(PRIMARY, OPENAPI_SPEC))) {
+  log(`Skipping ${OPENAPI_SPEC} (never synced in the primary checkout; \`bun run api:sync\` creates it)`, 'info');
+}
+else if (dryRun) {
+  log(`Would copy ${OPENAPI_SPEC}`, 'info');
+}
+else {
+  mkdirSync(dirname(join(TARGET, OPENAPI_SPEC)), { recursive: true });
+  copyFileSync(join(PRIMARY, OPENAPI_SPEC), join(TARGET, OPENAPI_SPEC));
+  log(`Copied ${OPENAPI_SPEC}`, 'success');
+  copied.push(OPENAPI_SPEC);
+}
 
 // ============================================
 // bun install --frozen-lockfile + bun run agents:compat, inside TARGET

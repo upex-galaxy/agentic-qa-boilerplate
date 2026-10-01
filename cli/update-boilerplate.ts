@@ -97,6 +97,8 @@ const CONFIG_CORE_FILES = ['variables.core.ts'];
 // against a template frozen at scaffold time and reports nothing to do.
 const AGENTS_DOCS_FILES = ['README.md', 'project.schema.yaml'];
 const ENV_TEMPLATE_FILES = ['.env.example'];
+// The gitignored files a Claude Code or Codex-managed worktree copies in.
+const WORKTREE_INCLUDE_FILES = ['.worktreeinclude'];
 // The varlock env schema, in two halves like `config/variables{.core,}.ts`:
 // `.env.core.schema` is GENERATED from cli/lib/variables-manifest.ts by
 // `bun run vars:schema` and plainly synced; `.env.schema` imports it, carries
@@ -238,6 +240,11 @@ export const COMPONENTS: Component[] = [
   // afterApply hook can only diff against an `.env.example` we have shipped.
   { name: 'env-template', type: 'file-list', paths: ['.'], files: ENV_TEMPLATE_FILES },
   { name: 'env-schema', type: 'file-list', paths: ['.'], files: ENV_SCHEMA_FILES },
+  // Delivered once when missing, then project-owned: a project appends its own
+  // gitignored inputs, and a later sync must not drop them. Without it a
+  // Codex-managed worktree starts with no `.env`, and every MCP loader in
+  // `.codex/config.toml` with it.
+  { name: 'worktree-include', type: 'file-list', paths: ['.'], files: WORKTREE_INCLUDE_FILES, bootstrapOnly: true },
 ];
 
 // --- ARG PARSE ---
