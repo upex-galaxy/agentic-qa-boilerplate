@@ -16,7 +16,9 @@
 3. Create the orchestration scope on disk: `.session/orchestration/<slug>/`, where `<slug>` names the
    wave of work (`sprint-42-qa`, `kata-fixtures-refactor`, `regression-2026-09-17`). Everything the
    fleet needs to survive a crash lives there, in the PRIMARY checkout, cited by absolute path.
-4. Seed `run.md`, `roster.md`, `COMMON.md` and `launch.txt` from `templates/`.
+4. Seed `run.md`, `roster.md`, `COMMON.md` and `launch.txt` from `templates/`. When the wave belongs to
+   one workflow skill, `launch.txt` lives in that skill's scope instead and this scope does not get
+   a copy (`references/launch-seam.md` §2.1).
 
 **Everything written inside a worktree dies with the worktree.** Fleet state belongs in the primary
 checkout, and a worker reaches it by absolute path in its prompt — never by a relative path, never by
@@ -193,7 +195,7 @@ on one existing on another machine):
 | `roster.md` | conductor | one row per worker (see below) |
 | `COMMON.md` | conductor | the common brief every worker reads first |
 | `W-<label>.md` | conductor | the per-worker brief |
-| `launch.txt` | conductor | one self-contained launch line per worker, ALWAYS written |
+| `launch.txt` | conductor | one self-contained launch line per worker, ALWAYS written; here only when no workflow skill owns the wave (`references/launch-seam.md` §2.1) |
 | `claims.md` | conductor | the claims ledger (`references/claims-protocol.md`) |
 | `learnings.md` | conductor | cross-session findings worth carrying to the next wave |
 | `skill-improvements.md` | conductor | gaps in the SKILLS themselves that this wave exposed |

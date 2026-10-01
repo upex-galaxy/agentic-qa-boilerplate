@@ -159,7 +159,7 @@ git checkout -- path/to/tracked-file        # bring a tracked file back into the
 
 ## Provisioning: what a fresh worktree does NOT have (all approaches)
 
-Untracked files are only half of it. Everything **gitignored** is missing too, and that half fails in ways that point at the wrong cause: no `.env` means the MCP servers do not parse (they reference `${VAR}`) and any login script has no credentials; no `node_modules/` reports `Cannot find module`; a missing `.claude/skills` alias makes every Claude Code skill invocation an `Unknown skill`; a missing `.context/PBI/` cache fails **silently** — the session simply cannot see the synced ticket.
+Untracked files are only half of it. Everything **gitignored** is missing too, and that half fails in ways that point at the wrong cause: no `.env` means every `${VAR}` an MCP config references reaches the server as that LITERAL string, so the server starts and dies on its first authenticated call with an error that reads like a broken tool (AGENTS.md Critical Rule #10), and any login script has no credentials; no `node_modules/` reports `Cannot find module`; a missing `.claude/skills` alias makes every Claude Code skill invocation an `Unknown skill`; a missing `.context/PBI/` cache fails **silently** — the session simply cannot see the synced ticket.
 
 ```bash
 bun run worktree:provision          # in the new worktree: .env, deps, the skills alias, community skills, .auth/
