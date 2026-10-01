@@ -71,7 +71,10 @@ export const HARNESS_LEVEL_ENV_VARS: readonly string[] = HARNESS_LEVEL_MCPS.flat
  * own docs and `--help` (dates in ADR-0006). Windows paths follow the same `~`
  * layout; documented, not measured.
  *
- * The host-specific trap the strings carry:
+ * Two host-specific traps the strings carry:
+ *   - `claude mcp list` does not apply `.claude/settings.local.json`'s `env`
+ *     block, so it reports servers as failing that a session connects fine.
+ *     `/mcp` inside a session is the real check.
  *   - Codex `--bearer-token-env-var` reads the token from Codex's process
  *     environment, which a Codex Desktop launch does not have. OAuth
  *     (`codex mcp login`) keeps the token in Codex's own store and works for
@@ -80,7 +83,7 @@ export const HARNESS_LEVEL_ENV_VARS: readonly string[] = HARNESS_LEVEL_MCPS.flat
 export const HARNESS_LEVEL_HOWTO: Record<HarnessId, { where: string, how: string }> = {
   claude: {
     where: '~/.claude.json (user scope) or a claude.ai connector',
-    how: 'claude mcp add --scope user --transport http <name> <url>   (or connect it from claude.ai settings; `/mcp` inside a session lists it)',
+    how: 'claude mcp add --scope user --transport http <name> <url>   (or connect it from claude.ai settings). Check it with `/mcp` inside a session: `claude mcp list` ignores the settings env block and can report a working server as failed',
   },
   opencode: {
     where: '~/.config/opencode/opencode.json (global config: key "mcp.servers" on OpenCode 2, "mcp" on OpenCode 1)',

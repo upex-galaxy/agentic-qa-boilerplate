@@ -229,6 +229,12 @@ bun run vars:schema:check      # el core generado está al día y el par carga</
         </table>
       </div>
       <p>
+        Para ver si un MCP de Claude Code conecta, usa <code>/mcp</code> dentro de la sesión.
+        <code>claude mcp list</code> no lee el bloque <code>env</code> de
+        <code>.claude/settings.local.json</code>, así que puede marcar como fallido un server que en
+        la sesión funciona bien.
+      </p>
+      <p>
         Después de tocar <code>.env</code>: <code>bun run harness:env</code> y reinicia el agente.
         En Windows los tres wrappers (<code>bun run claude</code>, <code>bun run opencode</code>,
         <code>bun run codex</code>) cargan <code>.env</code> igual; direnv es opcional en todas las
