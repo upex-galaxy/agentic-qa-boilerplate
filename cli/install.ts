@@ -3234,6 +3234,10 @@ async function generateHarnessEnv(): Promise<void> {
   try {
     const { generate } = await import('./lib/harness-env.ts');
     const result = generate();
+    if (result.refused !== undefined) {
+      log.warn(`Harness credential surfaces NOT written: ${result.refused}`);
+      return;
+    }
     log.success(
       `${result.changed ? 'Wrote' : 'Already in sync:'} ${result.emitted.length} of `
       + `${result.declared.length} declared variables `

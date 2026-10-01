@@ -523,6 +523,64 @@ describe('worktree redirection', () => {
     expect(serialised).not.toContain('main-value');
   });
 
+  /** A main checkout holding a real env block, and one worktree of it with no `.env`. */
+  function mainWithWorktree(): { main: string, wt: string, settings: string } {
+    const parent = makeRoot();
+    const main = join(parent, 'main');
+    mkdirSync(main, { recursive: true });
+    run(main, ['init', '-q']);
+    run(main, ['-c', 'user.email=t@t.invalid', '-c', 'user.name=t', 'commit', '-q', '--allow-empty', '-m', 'init']);
+    scaffold(main, 'TAVILY_API_KEY=tk\nDBHUB_HOST=db.invalid\n');
+    generate(main);
+    const wt = join(parent, 'wt');
+    run(main, ['worktree', 'add', '-q', wt, '-b', 'probe']);
+    scaffold(wt, '');
+    rmSync(join(wt, '.env'));
+    return { main, wt, settings: join(main, CLAUDE_LOCAL_SETTINGS) };
+  }
+
+  test('refuses to write from a worktree with no .env, and leaves the main env block intact', () => {
+    if (process.platform === 'win32') { return; }
+    const { wt, settings } = mainWithWorktree();
+    const before = readFileSync(settings, 'utf8');
+
+    const result = generate(wt);
+    expect(result.refused).toContain('bun run worktree:provision');
+    expect(result.changed).toBe(false);
+    expect(readFileSync(settings, 'utf8')).toBe(before);
+    // Emitter B is held back too: nothing is written while the run is refused.
+    expect(existsSync(join(wt, OPENCODE_SECRET_DIR))).toBe(false);
+    // No override reaches a run with nothing to generate from.
+    expect(generate(wt, { allowPrimaryRemoval: true }).refused).toBeDefined();
+    expect(readFileSync(settings, 'utf8')).toBe(before);
+  });
+
+  test('refuses a worktree .env that would strip credentials from the main block, unless overridden', () => {
+    if (process.platform === 'win32') { return; }
+    const { wt, settings } = mainWithWorktree();
+    // The shape an unprovisioned worktree invites: `.env` copied from the template.
+    write(wt, '.env', 'TAVILY_API_KEY=\nDBHUB_HOST=\n');
+    const before = readFileSync(settings, 'utf8');
+
+    const refused = generate(wt);
+    expect(refused.refused).toContain('TAVILY_API_KEY');
+    expect(refused.refused).toContain('--allow-primary-removal');
+    expect(JSON.stringify(refused)).not.toContain('db.invalid');
+    expect(readFileSync(settings, 'utf8')).toBe(before);
+
+    const allowed = generate(wt, { allowPrimaryRemoval: true });
+    expect(allowed.refused).toBeUndefined();
+    expect(allowed.claude.removed).toEqual(['DBHUB_HOST', 'TAVILY_API_KEY']);
+    expect(readFileSync(settings, 'utf8')).not.toContain('TAVILY_API_KEY');
+  });
+
+  test('a provisioned worktree is not refused', () => {
+    if (process.platform === 'win32') { return; }
+    const { wt } = mainWithWorktree();
+    write(wt, '.env', 'TAVILY_API_KEY=tk\nDBHUB_HOST=db.invalid\n');
+    expect(generate(wt).refused).toBeUndefined();
+  });
+
   test('a plain checkout is never redirected', () => {
     const root = makeRoot();
     scaffold(root, 'TAVILY_API_KEY=tk\n');

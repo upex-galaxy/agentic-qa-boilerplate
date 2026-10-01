@@ -34,6 +34,7 @@ const CHECK = argv.includes('--check');
 const DRY_RUN = argv.includes('--dry-run');
 const JSON_OUT = argv.includes('--json');
 const PLACEHOLDERS = argv.includes('--placeholders');
+const ALLOW_PRIMARY_REMOVAL = argv.includes('--allow-primary-removal');
 const HELP = argv.includes('--help') || argv.includes('-h');
 
 function names(list: string[]): string {
@@ -47,6 +48,9 @@ if (HELP) {
   bun run harness:env --check      verify; exit 1 when .env and the surfaces disagree
   bun run harness:env --dry-run    report what would change, write nothing
   bun run harness:env --json       machine-readable result
+  bun run harness:env --allow-primary-removal
+                                   in a worktree, let this run REMOVE credentials from the main
+                                   checkout's env block (refused by default; never with no .env)
   bun scripts/harness-env.ts --placeholders
                                    create the EMPTY ${OPENCODE_SECRET_DIR}/<VAR> files a fresh clone
                                    lacks (run by \`prepare\` on bun install; never overwrites, reads no .env)
@@ -98,13 +102,20 @@ if (CHECK) {
   process.exit(result.ok ? 0 : 1);
 }
 
-const result = generate(undefined, { dryRun: DRY_RUN });
+const result = generate(undefined, { dryRun: DRY_RUN, allowPrimaryRemoval: ALLOW_PRIMARY_REMOVAL });
 
 if (JSON_OUT) {
   // Safe by construction: `GenerateResult.env` is typed without its `values`
   // map, so there is no credential in this object to serialise.
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-  process.exit(0);
+  process.exit(result.refused === undefined ? 0 : 1);
+}
+
+if (result.refused !== undefined) {
+  // Nothing was written, dry run or not: see `primaryRemovalRefusal`.
+  process.stdout.write(`harness-env: REFUSED, nothing written.\n  ${result.refused}\n`);
+  process.stdout.write(`  main checkout file: ${result.claude.path}\n`);
+  process.exit(1);
 }
 
 const verb = DRY_RUN ? 'would write' : 'wrote';
