@@ -9,7 +9,7 @@
 
 ## Background
 
-Jira rich-text fields require ADF (a structured JSON document, not Markdown). The `[ISSUE_TRACKER_TOOL]` ecosystem auto-converts Markdown → ADF for most operations, but the conversion has known edges and the API has surprise rejection paths. Both gotchas below are reproducible and silent until they fail at publish time.
+Jira rich-text fields require ADF (a structured JSON document, not Markdown). The CLI path of `[ISSUE_TRACKER_TOOL]` (`acli`) never converts Markdown: the body is converted explicitly with `.agents/skills/acli/scripts/md-to-adf.ts` and the resulting ADF JSON is published. The opt-in MCP variant auto-converts only the top-level `description` (Gotcha 2). The conversion has known edges and the API has surprise rejection paths. Both gotchas below are reproducible and silent until they fail at publish time.
 
 ---
 

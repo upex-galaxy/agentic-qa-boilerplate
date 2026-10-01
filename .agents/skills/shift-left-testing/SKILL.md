@@ -450,7 +450,7 @@ After the batch report lands, append the final progress entry `## Phase 3 — Ha
 
 **L3.** NEVER mix Story refinement with bug retest in the same batch. `/shift-left-testing` accepts Stories only (Phase 1 type filter is a hard reject). Bugs are reactive — they have no upstream ACs to refine and belong to `/sprint-testing` instead.
 
-**L4.** NEVER hand-write the ATP body as raw ADF JSON. Author the body in Markdown locally (`shift-left-refinement.md`) and let `[ISSUE_TRACKER_TOOL]` convert via its md-to-ADF path on update. Hand-rolled ADF drifts from the field content that `test-documentation` mode `repair-traceability` later validates.
+**L4.** NEVER hand-write the ATP body as raw ADF JSON. Author the body in Markdown locally (`shift-left-refinement.md`), convert and validate it with the bundled converter `.agents/skills/acli/scripts/md-to-adf.ts`, then publish the resulting ADF JSON. `[ISSUE_TRACKER_TOOL]` never converts Markdown on the CLI path: a Markdown body handed to it renders literal `#` and `**` (`sprint-testing` S6). Hand-rolled ADF drifts from the field content that `test-documentation` mode `repair-traceability` later validates.
 
 **L5.** NEVER transition a Story to `estimation` without a populated ATP (the `{{jira.acceptance_test_plan}}` custom field in BOTH modalities; the `## Acceptance Test Plan (ATP)` fallback comment when the field is absent). The pre-sprint ATP is what makes the Story estimable — without it, Dev and PO guess scope and the shift-left effort delivers no signal.
 
