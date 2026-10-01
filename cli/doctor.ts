@@ -206,6 +206,8 @@ export interface AgentCompatibilityDiagnostic {
   /** Every file-verifiable part of the contract holds (alias, hooks, MCP parity, shim). */
   file_correct: boolean
   errors: string[]
+  /** Printed, never failing (`CompatibilityCheck.warnings`). */
+  warnings: string[]
   /** Errors bucketed per surface, so "alias pending" and "MCP drift" never read as one flat failure. */
   errors_by_surface: Array<{ group: CompatibilityErrorGroup, label: string, errors: string[] }>
   /** The alias on its own, whatever the verdict: `deferred` is expected right after the migration. */
@@ -549,6 +551,7 @@ export function diagnoseAgentCompatibility(
   return {
     file_correct: compatibility.ok,
     errors: [...new Set(compatibility.errors)],
+    warnings: compatibility.warnings,
     errors_by_surface: groupCompatibilityErrors([...new Set(compatibility.errors)]),
     alias: compatibility.alias,
     instructions: {
@@ -1155,6 +1158,12 @@ export async function runDoctor(): Promise<DoctorReport> {
         + 'The command prints what is missing with sensitive values redacted; fill .env and re-run doctor.',
       where: report.env_schema.errors[0],
     });
+  }
+
+  // A contract a project cannot satisfy by syncing (a bootstrap-only file
+  // upstream improved later): a warning that names the file and the fix.
+  for (const warning of agentCompatibility.warnings) {
+    report.warnings.push({ type: 'shell_command', target: 'bun run agents:compat:check', hint: warning });
   }
 
   if (!agentCompatibility.file_correct) {

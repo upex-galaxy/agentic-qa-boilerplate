@@ -149,6 +149,8 @@ export interface ParityInput {
   drift: ParityDriftInput[]
   /** `checkAgentCompatibility().errors`. */
   compatErrors: string[]
+  /** `checkAgentCompatibility().warnings`: one informational row each, never blocking. */
+  compatWarnings?: string[]
   /** Skills to report as archived (names only); see `archivedSkillsToReport`. */
   archivedSkills: string[]
   /** Directory holding the archived skills (`<MIGRATION_BACKUP_DIR>/skills`). */
@@ -1309,6 +1311,26 @@ export function collectParityFindings(input: ParityInput): ParityFinding[] {
       evidence: parts.join('; '),
       suggested: sets.extra.length === 0 ? 'take upstream' : 'merge',
       blocking: true,
+    });
+  }
+  // Compat warnings: a contract the project cannot satisfy by syncing (a
+  // bootstrap-only file upstream improved later). Informational, never
+  // blocking; the warning itself names what to add. One row per path: it
+  // folds into a compat row already on that path, or onto its drift row.
+  for (const warning of input.compatWarnings ?? []) {
+    const warningPath = compatErrorPath(warning);
+    const existing = compat.find(f => f.path === warningPath);
+    if (existing) {
+      existing.evidence = `${existing.evidence}; informational: ${warning}`;
+      continue;
+    }
+    pushCompat({
+      surface: compatErrorSurface(warning),
+      path: warningPath,
+      evidence: `informational: ${warning}`,
+      suggested: 'merge',
+      blocking: false,
+      side: 'kept',
     });
   }
   // The doctrine ledger: one aggregated row for AGENTS.md sections this project

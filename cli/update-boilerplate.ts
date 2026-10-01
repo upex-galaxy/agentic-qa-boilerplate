@@ -1391,12 +1391,17 @@ function makeParityHook(sink: ReportSink, priorLockSha: string, dryRun: boolean,
     // read-only check stands in, unless the preflight would migrate first
     // (then every contract is expectedly broken and the check says nothing).
     let compatErrors = runFacts.compat?.errors ?? [];
+    let compatWarnings = runFacts.compat?.warnings ?? [];
     if (dryRun && !runFacts.compat) {
       if (runFacts.migrationPlanned) {
         sink.step('[dry-run] Comprobación de compatibilidad omitida: la corrida real migra primero y la evalúa después.');
       }
       else {
-        try { compatErrors = checkAgentCompatibility(cwd).errors; }
+        try {
+          const check = checkAgentCompatibility(cwd);
+          compatErrors = check.errors;
+          compatWarnings = check.warnings;
+        }
         catch (err) { compatErrors = [err instanceof Error ? err.message : String(err)]; }
         // The real run deletes the retired alias wrappers (deprecatedFiles)
         // BEFORE this check; the preview still has them on disk, and the one
@@ -1412,6 +1417,7 @@ function makeParityHook(sink: ReportSink, priorLockSha: string, dryRun: boolean,
       upstreamDir: UPSTREAM_DIR,
       drift: drifted.map(d => ({ path: d.path, reason: d.reason, structural: d.structural === true, source: d.source })),
       compatErrors,
+      compatWarnings,
       archivedSkills,
       archivedSkillsDir,
       heldBack,

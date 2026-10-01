@@ -389,6 +389,34 @@ describe('collectParityFindings', () => {
     expect(findings).toEqual([]);
   });
 
+  test('a compat warning is one informational row on its file, never blocking, folded into an error row on the same file', () => {
+    const root = temporaryRoot();
+    const upstream = temporaryRoot();
+    write(root, '.agents/project.yaml', 'git_strategy:\n  strategy: solo-main\n  meta:\n    strategy_source: chosen\n');
+    const warning = 'codex MCP dbhub starts without the .env loader in .codex/config.toml: set command = "bunx" and put [...] before the current command and args (reason).';
+    const base = {
+      root,
+      upstreamDir: upstream,
+      drift: [],
+      archivedSkills: [],
+      archivedSkillsDir: join(root, '.template/pre-agents-migration/skills'),
+      heldBack: [],
+      envNewKeys: [],
+    };
+
+    const alone = collectParityFindings({ ...base, compatErrors: [], compatWarnings: [warning] });
+    expect(alone).toHaveLength(1);
+    expect(alone[0]).toMatchObject({ surface: 'mcp', path: '.codex/config.toml', blocking: false, side: 'kept' });
+    expect(alone[0].evidence).toBe(`informational: ${warning}`);
+
+    const error = 'codex MCP openapi mismatch: expected {"a":1}, found {"a":2}';
+    const folded = collectParityFindings({ ...base, compatErrors: [error], compatWarnings: [warning] });
+    expect(folded).toHaveLength(1);
+    expect(folded[0].path).toBe('.codex/config.toml');
+    expect(folded[0].blocking).toBe(true);
+    expect(folded[0].evidence).toBe(`${error}; informational: ${warning}`);
+  });
+
   test('archived skills nudge once: this run, plus unreported archive entries, until their marker exists', () => {
     const root = temporaryRoot();
     const archive = join(root, '.template/pre-agents-migration/skills');
