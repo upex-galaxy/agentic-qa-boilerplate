@@ -59,6 +59,41 @@ export const CLAUDE_HOOK_COMMAND = 'node "$CLAUDE_PROJECT_DIR/.agents/hooks/pers
 export const CODEX_HOOK_COMMAND = 'root="$(git rev-parse --show-toplevel)" && node "$root/.agents/hooks/personality-reinject.mjs"';
 export const CODEX_HOOK_COMMAND_WINDOWS = 'powershell.exe -NoProfile -Command "$root = git rev-parse --show-toplevel; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; node (Join-Path $root \'.agents/hooks/personality-reinject.mjs\')"';
 
+/**
+ * The `.env` loader every Codex stdio server launches through.
+ *
+ * Codex forwards `env_vars` BY NAME from its own process environment. A
+ * terminal launch through `bun run codex` has them; Codex Desktop, opened from
+ * Finder or the Dock, has none, so every server started with empty variables
+ * and the OpenAPI server exited before the MCP handshake. The loader reads
+ * `.env` from the launch directory (the project root, the same one
+ * `--config dbhub.toml` already resolves against) and then starts the real
+ * server, so the values arrive however Codex was opened.
+ *
+ * `-p dotenv-cli@<pin>` names the package explicitly: a bare `bunx dotenv`
+ * resolves to the `dotenv` LIBRARY when `node_modules` is absent and prints its
+ * usage instead of running anything. The pin tracks the `dotenv-cli`
+ * devDependency, so the cache already holds it after `bun install`. `-o` makes
+ * `.env` win over an inherited value, exactly as the `bun run codex` wrapper
+ * does. Measured: ADR-0006.
+ */
+export const CODEX_ENV_LOADER_COMMAND = 'bunx';
+export const CODEX_ENV_LOADER_ARGS = ['-p', 'dotenv-cli@8.0.0', 'dotenv', '-o', '-e', '.env', '--'] as const;
+
+/**
+ * Splits a Codex `command` + `args` into the server it actually starts. A
+ * server launched through `CODEX_ENV_LOADER_*` reads as the inner command with
+ * `envLoader: true`; anything else is returned as-is.
+ */
+export function unwrapCodexEnvLoader(command: string, args: readonly string[]): { command: string, args: string[], envLoader: boolean } {
+  const prefix = CODEX_ENV_LOADER_ARGS;
+  const wrapped = command === CODEX_ENV_LOADER_COMMAND
+    && args.length > prefix.length
+    && prefix.every((entry, index) => args[index] === entry);
+  if (!wrapped) { return { command, args: [...args], envLoader: false }; }
+  return { command: args[prefix.length], args: args.slice(prefix.length + 1), envLoader: true };
+}
+
 export type KnownMcpId = (typeof KNOWN_MCP_IDS)[number];
 export type McpHost = 'claude' | 'opencode' | 'codex';
 type Transport = 'stdio' | 'http';
@@ -86,6 +121,8 @@ export interface NormalizedMcpServer {
   dependsOn: string[]
   literalEnv: Record<string, string>
   enabled: boolean
+  /** Codex only: the server starts through `CODEX_ENV_LOADER_*`. */
+  envLoader?: boolean
 }
 
 type NormalizedMcpConfig = Record<string, NormalizedMcpServer>;
@@ -136,6 +173,7 @@ function canonical(shape: Pick<NormalizedMcpServer, 'transport'> & Partial<Norma
     dependsOn: [...new Set(shape.dependsOn ?? [])].sort(),
     literalEnv,
     enabled: shape.enabled ?? true,
+    envLoader: shape.envLoader ?? false,
   };
 }
 
@@ -172,10 +210,15 @@ const EVERY_HOST: Record<KnownMcpId, NormalizedMcpServer> = {
   }),
 };
 
+/** Codex starts the same servers, each through the `.env` loader. */
+const CODEX_SHAPE = Object.fromEntries(
+  Object.entries(EVERY_HOST).map(([id, shape]) => [id, canonical({ ...shape, envLoader: true })]),
+) as Record<KnownMcpId, NormalizedMcpServer>;
+
 export const EXPECTED_MCP: Record<McpHost, Record<KnownMcpId, NormalizedMcpServer>> = {
   claude: EVERY_HOST,
   opencode: EVERY_HOST,
-  codex: EVERY_HOST,
+  codex: CODEX_SHAPE,
 };
 
 function object(value: unknown, label: string): JsonObject {
@@ -439,14 +482,20 @@ function normalizeCodex(root: JsonObject): NormalizedMcpConfig {
       throw new Error(`${label}.env cannot reference ${leaked.join(', ')}: Codex does not expand placeholders. Forward the variable through env_vars instead.`);
     }
 
+    // The loader is a launch detail, not a different server: compare what it
+    // starts, and record that it is there.
+    const launch = transport === 'stdio'
+      ? unwrapCodexEnvLoader(stringValue(server.command, `${label}.command`), stringArray(server.args ?? [], `${label}.args`))
+      : undefined;
     return [id, {
       transport,
-      command: transport === 'stdio' ? stringValue(server.command, `${label}.command`) : undefined,
-      args: transport === 'stdio' ? stringArray(server.args ?? [], `${label}.args`) : undefined,
+      command: launch?.command,
+      args: launch?.args,
       url: transport === 'http' ? stringValue(server.url, `${label}.url`) : undefined,
       dependsOn: sorted(dependsOn),
       literalEnv: literalEntries(env, `${label}.env`),
       enabled: server.enabled !== false,
+      envLoader: launch?.envLoader ?? false,
     }];
   }));
 }
@@ -538,6 +587,15 @@ export function validateMcpParity(root = process.cwd()): string[] {
         errors.push(`${host} MCP ${id} mismatch: expected ${describeServer(expected)}, found ${describeServer(actual)}`);
       }
     }
+  }
+
+  // Codex: a stdio server that needs `.env` values must start through the
+  // loader, known to this boilerplate or not. `env_vars` alone forwards
+  // nothing when Codex Desktop was opened from the Dock.
+  for (const id of declared) {
+    const server = configs.codex[id];
+    if (!server || server.transport !== 'stdio' || server.dependsOn.length === 0 || server.envLoader === true) { continue; }
+    errors.push(`codex MCP ${id} must launch through the .env loader (command = "${CODEX_ENV_LOADER_COMMAND}", args starting ${JSON.stringify(CODEX_ENV_LOADER_ARGS)}): a Codex Desktop launch has no process environment, so env_vars alone forwards nothing.`);
   }
 
   // Cross-host contract for EVERY declared server: same `.env` dependencies and

@@ -15,6 +15,8 @@ import {
 import opencodePlugin from '../../.opencode/plugins/personality-reinject.js';
 import {
   CLAUDE_HOOK_COMMAND,
+  CODEX_ENV_LOADER_ARGS,
+  CODEX_ENV_LOADER_COMMAND,
   CODEX_HOOK_COMMAND,
   CODEX_HOOK_COMMAND_WINDOWS,
   declaredMcpIds,
@@ -24,6 +26,7 @@ import {
   hookScriptPath,
   KNOWN_MCP_IDS,
   stripJsonComments,
+  unwrapCodexEnvLoader,
   validateEslintBlockWiring,
   validateHookCompatibility,
   validateMcpParity,
@@ -334,11 +337,14 @@ const OPENCODE_SERVERS: Record<string, string> = {
     },`,
 };
 
+/** The `.env` loader every Codex stdio fixture starts through (CODEX_ENV_LOADER_*). */
+const CODEX_LOADER = [...CODEX_ENV_LOADER_ARGS, CODEX_ENV_LOADER_COMMAND].map(arg => JSON.stringify(arg)).join(', ');
+
 const CODEX_SERVERS: Record<string, string> = {
   'context7': `[mcp_servers.context7]
 command = "bunx"
 enabled = true
-args = ["-y", "@upstash/context7-mcp@4.0.3"]
+args = [${CODEX_LOADER}, "-y", "@upstash/context7-mcp@4.0.3"]
 `,
   'tavily': `[mcp_servers.tavily]
 url = "https://mcp.tavily.com/mcp/"
@@ -348,12 +354,12 @@ enabled = true
   'playwright': `[mcp_servers.playwright]
 command = "bunx"
 enabled = true
-args = ["@playwright/mcp@0.0.79", "--caps", "vision,pdf,testing,tracing,tabs", "--timeout-action", "10000", "--timeout-navigation", "30000", "--viewport-size", "1920x1080"]
+args = [${CODEX_LOADER}, "@playwright/mcp@0.0.79", "--caps", "vision,pdf,testing,tracing,tabs", "--timeout-action", "10000", "--timeout-navigation", "30000", "--viewport-size", "1920x1080"]
 `,
   'slack-aurora': `[mcp_servers.slack-aurora]
 command = "bunx"
 enabled = true
-args = ["-y", "slack-mcp-server@latest", "--transport", "stdio"]
+args = [${CODEX_LOADER}, "-y", "slack-mcp-server@latest", "--transport", "stdio"]
 env_vars = ["SLACK_MCP_XOXP_TOKEN", "SLACK_MCP_REACTION_TOOL"]
 
 [mcp_servers.slack-aurora.env]
@@ -362,13 +368,13 @@ SLACK_MCP_ADD_MESSAGE_TOOL = "true"
   'dbhub': `[mcp_servers.dbhub]
 command = "bunx"
 enabled = true
-args = ["-y", "@bytebase/dbhub@1.2.1", "--config", "dbhub.toml"]
+args = [${CODEX_LOADER}, "-y", "@bytebase/dbhub@1.2.1", "--config", "dbhub.toml"]
 env_vars = ["DBHUB_DATABASE", "DBHUB_HOST", "DBHUB_PASSWORD", "DBHUB_PORT", "DBHUB_TYPE", "DBHUB_USER"]
 `,
   'openapi': `[mcp_servers.openapi]
 command = "bunx"
 enabled = true
-args = ["-y", "@ivotoby/openapi-mcp-server@1.16.1", "--tools", "dynamic"]
+args = [${CODEX_LOADER}, "-y", "@ivotoby/openapi-mcp-server@1.16.1", "--tools", "dynamic"]
 env_vars = ["API_BASE_URL", "OPENAPI_SPEC_PATH"]
 `,
   'postman': `[mcp_servers.postman]
@@ -379,7 +385,7 @@ enabled = true
   'supabase': `[mcp_servers.supabase]
 command = "bunx"
 enabled = true
-args = ["-y", "@supabase/mcp-server-supabase@latest", "--read-only"]
+args = [${CODEX_LOADER}, "-y", "@supabase/mcp-server-supabase@latest", "--read-only"]
 env_vars = ["SUPABASE_ACCESS_TOKEN"]
 
 [mcp_servers.supabase.env]
@@ -1067,6 +1073,32 @@ describe('project-declared MCP set', () => {
     expect(errors).toHaveLength(1);
     expect(errors[0]).toStartWith('codex MCP openapi mismatch: expected ');
     expect(errors[0]).toContain('--read-only');
+  });
+
+  test('requires the .env loader on a Codex server that needs .env values, known or not', () => {
+    const root = contractFixture(undefined, PROJECT_IDS);
+    const configPath = join(root, '.codex/config.toml');
+    // Strip the loader from every server: the unknown `supabase` still needs a variable.
+    writeFileSync(configPath, readFileSync(configPath, 'utf8').replaceAll(`${CODEX_LOADER}, `, ''));
+
+    const errors = validateMcpParity(root);
+    expect(errors.some(e => e.startsWith('codex MCP supabase must launch through the .env loader'))).toBe(true);
+    expect(errors.some(e => e.startsWith('codex MCP openapi must launch through the .env loader'))).toBe(true);
+    // A server with nothing to load is left alone by the generic rule.
+    expect(errors.some(e => e.startsWith('codex MCP context7 must launch'))).toBe(false);
+  });
+
+  test('reads a loader-wrapped Codex command as the server it starts', () => {
+    expect(unwrapCodexEnvLoader('bunx', [...CODEX_ENV_LOADER_ARGS, 'bunx', '-y', 'pkg@1'])).toEqual({ command: 'bunx', args: ['-y', 'pkg@1'], envLoader: true });
+    expect(unwrapCodexEnvLoader('bunx', ['-y', 'pkg@1'])).toEqual({ command: 'bunx', args: ['-y', 'pkg@1'], envLoader: false });
+    // A prefix with nothing after it is not a launch.
+    expect(unwrapCodexEnvLoader('bunx', [...CODEX_ENV_LOADER_ARGS]).envLoader).toBe(false);
+  });
+
+  test('pins the loader to the dotenv-cli major the repo installs', () => {
+    const pkg = JSON.parse(readFileSync(join(REPO_ROOT, 'package.json'), 'utf8')) as { devDependencies: Record<string, string> };
+    const pinned = CODEX_ENV_LOADER_ARGS[1].replace('dotenv-cli@', '');
+    expect(pkg.devDependencies['dotenv-cli'].replace(/^[\^~]/, '').split('.')[0]).toBe(pinned.split('.')[0]);
   });
 
   test('compares the .env contract of an unknown server across hosts', () => {

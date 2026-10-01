@@ -13,11 +13,13 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync,
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, describe, expect, test } from 'bun:test';
+import { CODEX_ENV_LOADER_ARGS } from './agent-compatibility-contracts.ts';
 import {
   buildAllowlist,
   check,
   CLAUDE_LOCAL_SETTINGS,
   claudeSettingsRoot,
+  codexNamesWithoutLoader,
   ensureOpencodePlaceholders,
   generate,
   OPENCODE_CONFIG,
@@ -143,6 +145,28 @@ describe('buildAllowlist', () => {
     expect(list.all).toEqual(['DBHUB_HOST', 'TAVILY_API_KEY']);
     expect(list.all).not.toContain('VAR');
     expect(list.all).not.toContain('VAR_NAME');
+  });
+
+  test('reports Codex variables only for servers that skip the .env loader', () => {
+    const root = makeRoot();
+    write(root, '.codex/config.toml', [
+      '[mcp_servers.wrapped]',
+      'command = "bunx"',
+      `args = [${[...CODEX_ENV_LOADER_ARGS, 'bunx', '-y', 'pkg@1'].map(a => JSON.stringify(a)).join(', ')}]`,
+      'env_vars = ["WRAPPED_VAR"]',
+      '',
+      '[mcp_servers.bare]',
+      'command = "bunx"',
+      'args = ["-y", "pkg@1"]',
+      'env_vars = ["BARE_VAR"]',
+      '',
+      '[mcp_servers.remote]',
+      'url = "https://example.test/mcp"',
+      'bearer_token_env_var = "REMOTE_TOKEN"',
+      '',
+    ].join('\n'));
+
+    expect(codexNamesWithoutLoader(root)).toEqual(['BARE_VAR', 'REMOTE_TOKEN']);
   });
 
   test('skips a Codex [mcp_servers.*].env table, whose values Codex supplies itself', () => {

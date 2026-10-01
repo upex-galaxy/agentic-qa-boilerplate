@@ -26,9 +26,11 @@
  *      substitutes a file's CONTENTS and needs no environment at all.
  *
  * Codex is deliberately NOT emitted. `.codex/config.toml` is project-level and
- * overrides user config, but it is COMMITTED, so a secret cannot go in it, and
- * where its gitignored half should live is an open question. Codex stays on the
- * wrapper and is scanned here for the allowlist only.
+ * overrides user config, but it is COMMITTED, so a secret cannot go in it.
+ * Instead every Codex stdio server starts through a `.env` loader
+ * (`CODEX_ENV_LOADER_*` in `agent-compatibility-contracts.ts`), which reads
+ * `.env` itself at launch. Codex is scanned here for the allowlist, and for
+ * any server that still lacks the loader.
  *
  * ALLOWLIST, NEVER THE WHOLE FILE. `.env.example` declares 24 variables and 10
  * are referenced by an MCP config. Emitting all 24 would copy a project's Jira
@@ -54,7 +56,7 @@ import { dirname, join, resolve } from 'node:path';
 // ever consumed through `String.prototype.matchAll`, which constructs its own
 // matcher and therefore never shares `lastIndex` across callers.
 import { MCP_SERVER_SECRETS, MCP_VAR_PATTERN, OPENCODE_VAR_PATTERN, parseEnvFile } from '../install.ts';
-import { stripJsonComments } from './agent-compatibility-contracts.ts';
+import { stripJsonComments, unwrapCodexEnvLoader } from './agent-compatibility-contracts.ts';
 import { parsePackageJson, stringifyPackageJson } from './updater-package.ts';
 
 const REPO_ROOT = resolve(import.meta.dir, '..', '..');
@@ -293,6 +295,32 @@ function collectCodexNames(value: unknown, seen: Set<string>): void {
     }
     else if (key !== 'env') { collectCodexNames(entry, seen); }
   }
+}
+
+/**
+ * Variables a Codex stdio server needs while it does NOT start through the
+ * `.env` loader. Empty when the file is absent or unparseable (the allowlist
+ * scan already reports that).
+ */
+export function codexNamesWithoutLoader(root = REPO_ROOT): string[] {
+  const path = join(root, CODEX_CONFIG);
+  if (!existsSync(path)) { return []; }
+  let parsed: unknown;
+  try { parsed = Bun.TOML.parse(readFileSync(path, 'utf8')); }
+  catch { return []; }
+  const servers = (parsed as { mcp_servers?: unknown }).mcp_servers;
+  if (servers === null || typeof servers !== 'object') { return []; }
+  const seen = new Set<string>();
+  for (const server of Object.values(servers as Record<string, unknown>)) {
+    if (server === null || typeof server !== 'object') { continue; }
+    // An HTTP server (`url` + `bearer_token_env_var`) has no launch to wrap:
+    // its token always comes from the process environment.
+    const { command, args } = server as { command?: unknown, args?: unknown };
+    const argv = Array.isArray(args) ? args.filter((a): a is string => typeof a === 'string') : [];
+    if (typeof command === 'string' && unwrapCodexEnvLoader(command, argv).envLoader) { continue; }
+    collectCodexNames(server, seen);
+  }
+  return [...seen].sort();
 }
 
 export interface ConfigScan {
@@ -944,23 +972,24 @@ export function check(root = REPO_ROOT): CheckResult {
   //
   // `.codex/config.toml` IS project-level and overrides the user layer, so the
   // obvious move is to put values in it. It is also COMMITTED, which makes that
-  // the one thing we must not do. Codex reads `bearer_token_env_var` and
-  // forwards `env_vars` from its OWN process environment at connect time, so a
-  // committed file can name a credential but never carry one.
+  // the one thing we must not do. Codex forwards `env_vars` from its OWN
+  // process environment, which a desktop launch does not have, so each server
+  // starts through a `.env` loader instead. A server WITHOUT the loader (a
+  // project-added one, a config from before the loader) still depends on the
+  // process environment, and only those are reported.
   //
   // NOT blocking: a Codex user launching through `bun run codex`, or with direnv
-  // in the shell, is fully working today. Blocking would report a broken setup
-  // for a setup that is merely unimproved. But staying SILENT is worse: a Codex
-  // desktop launch has no process environment, so those servers start with
-  // nothing and fail later as an auth error that reads like a broken tool. This
-  // finding exists so that hour is never spent.
-  const codexNames = allowlist.scans.find(s => s.file === CODEX_CONFIG)?.vars ?? [];
+  // in the shell, is fully working. But staying SILENT is worse: a desktop
+  // launch starts those servers with nothing, and they fail later as an auth
+  // error that reads like a broken tool. This finding exists so that hour is
+  // never spent. `bun run agents:compat:check` names the server itself.
+  const codexNames = codexNamesWithoutLoader(root);
   if (codexNames.length > 0) {
     findings.push({
       surface: 'codex',
       kind: 'codex-process-env-only',
       names: codexNames,
-      detail: `${CODEX_CONFIG} NAMES these and reads them from Codex's own process environment; a committed file cannot carry their values. Launch with \`bun run codex\` (or direnv in the shell). A GUI/desktop launch has no process environment and these will be empty.`,
+      detail: `${CODEX_CONFIG} starts a server that needs these WITHOUT the .env loader, so they come from Codex's own process environment only. \`bun run codex\` (or direnv) covers a terminal launch; a GUI/desktop launch has no process environment and these will be empty. Wrap the server the way the shipped ones are.`,
       blocking: false,
     });
   }

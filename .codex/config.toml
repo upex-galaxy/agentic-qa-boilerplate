@@ -10,10 +10,30 @@
 [shell_environment_policy]
 inherit = "core"
 
+# EVERY server below starts through a .env loader: `bunx -p dotenv-cli@8.0.0
+# dotenv -o -e .env -- <the real command>`. `env_vars` forwards variables BY
+# NAME from Codex's own process environment, and Codex Desktop opened from
+# Finder or the Dock has none, so without the loader those servers started
+# empty (the OpenAPI one exits before the handshake). The loader reads .env
+# from the project root whatever launched Codex; `-o` lets .env win over a
+# stale inherited value, like `bun run codex`. `env_vars` stays: it is what
+# `bun run agents:compat:check` compares across the three hosts.
+#
+# Needs `bun install` once (the dotenv-cli devDependency) and a .env in the
+# checkout. A Codex-managed worktree gets its .env through .worktreeinclude.
+
 [mcp_servers.context7]
 command = "bunx"
 enabled = true
 args = [
+  "-p",
+  "dotenv-cli@8.0.0",
+  "dotenv",
+  "-o",
+  "-e",
+  ".env",
+  "--",
+  "bunx",
   "-y",
   "@upstash/context7-mcp@4.0.3",
 ]
@@ -26,6 +46,14 @@ args = [
 command = "bunx"
 enabled = true
 args = [
+  "-p",
+  "dotenv-cli@8.0.0",
+  "dotenv",
+  "-o",
+  "-e",
+  ".env",
+  "--",
+  "bunx",
   "-y",
   "slack-mcp-server@latest",
   "--transport",
@@ -43,6 +71,14 @@ SLACK_MCP_ADD_MESSAGE_TOOL = "true"
 command = "bunx"
 enabled = true
 args = [
+  "-p",
+  "dotenv-cli@8.0.0",
+  "dotenv",
+  "-o",
+  "-e",
+  ".env",
+  "--",
+  "bunx",
   "-y",
   "@bytebase/dbhub@1.2.1",
   "--config",
@@ -67,6 +103,14 @@ env_vars = [
 command = "bunx"
 enabled = true
 args = [
+  "-p",
+  "dotenv-cli@8.0.0",
+  "dotenv",
+  "-o",
+  "-e",
+  ".env",
+  "--",
+  "bunx",
   "-y",
   "@ivotoby/openapi-mcp-server@1.16.1",
   "--tools",
