@@ -731,7 +731,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
       <p class="part-no">Capítulo 01</p>
       <h1 class="h1">Qué es CI <span class="grad">y por qué un tester lo necesita</span></h1>
       <p class="lede">Integración Continua: cada cambio dispara una verificación automática en una máquina limpia. Para QA significa que la suite corre sola, siempre igual, y deja evidencia que nadie tiene que pedir.</p>
-      <div class="goals"><span>Al terminar sabrás qué es un workflow, un job, un step y un runner</span><span>Y leerás <code class="k">build.yml</code> completo sin miedo</span></div>
+      <div class="goals"><span>Al terminar sabrás qué es un workflow, un job, un step y un runner</span><span>Y leerás <code class="k">build.yml</code> sin miedo</span></div>
     </div>
     <div class="notes">Capítulo 1: vocabulario y anatomía. Usamos build.yml porque es el más corto y no corre tests: solo valida el framework.</div>
   </section>
@@ -751,7 +751,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
       <div class="fn"><div class="t">smoke.yml</div><div class="d">¿La app está viva? Solo tests <code class="k">@critical</code>.</div><div class="r">02:00 UTC + manual</div></div><div class="fa">→</div>
       <div class="fn"><div class="t">sanity.yml</div><div class="d">¿Funciona ESTE cambio? Un archivo o un <code class="k">--grep</code>.</div><div class="r">manual, con inputs</div></div><div class="fa">→</div>
       <div class="fn"><div class="t">regression.yml</div><div class="d">¿Se rompió algo más? Integration + E2E completos.</div><div class="r">00:00 UTC + manual</div></div><div class="fa">→</div>
-      <div class="fn k"><div class="t">Allure + TMS</div><div class="d">Reporte publicado en GitHub Pages; resultados importados al RTR en Xray.</div><div class="r">jobs finales</div></div>
+      <div class="fn k"><div class="t">Allure + TMS</div><div class="d">Reporte publicado en GitHub Pages (o en el portal privado si está configurado); resultados al TMS (en Xray, import JUnit al RTR).</div><div class="r">jobs finales</div></div>
     </div>
     <p class="small dim mt-m">Cada caja es un archivo en <code class="k">.github/workflows/</code>. Los cuatro comparten el mismo esqueleto; por eso, cuando entiendas uno, entiendes todos. La estrategia (por qué cuatro y no uno) es el Capítulo 6, en la Parte II.</p>
     </div>
@@ -799,7 +799,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
   <section class="slide" data-title="Anatomía: build.yml">
     <div class="body">
     <p class="kicker">explorador: haz clic en cada bloque del YAML</p>
-    <h2 class="h2">Anatomía de un workflow: <span class="grad">build.yml</span> completo</h2>
+    <h2 class="h2">Anatomía de un workflow: <span class="grad">build.yml</span>, pieza por pieza</h2>
     <div class="split wide">
       <div class="yaml yx tall" data-first="name"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>.github/workflows/build.yml</b> · extracto</span><span class="badge real">real</span></div>
 <pre class="sm"><span class="row" data-x="name"><span class="key">name</span>: <span class="str">TestBuild Checks</span>

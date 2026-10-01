@@ -767,7 +767,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <p class="kicker">suite 0: no prueba la app, prueba el repo de pruebas</p>
     <h2 class="h2"><span class="grad">build.yml</span>: el gate del Pull Request</h2>
     <div class="split eq">
-      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">extracto de <b>.github/workflows/build.yml</b> · steps Validate env schema (varlock) … Playwright Compile Check</span><span class="badge real">real</span></div>
+      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">extracto de <b>.github/workflows/build.yml</b></span><span class="badge real">real</span></div>
 <pre class="sm">      - <span class="key">name</span>: <span class="str">Validate env schema (varlock)</span>
         <span class="key">uses</span>: <span class="str">dmno-dev/varlock-action@v1.0.5</span>
         <span class="key">with</span>:
@@ -779,7 +779,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
         <span class="c"># (it has a default); project credentials are optional typed examples,</span>
         <span class="c"># so a PR from a fork, which has no secrets, passes here and at</span>
         <span class="c"># test:env:check below. …</span>
-<span class="c">      # …</span>
+      <span class="c"># … Setup Bun · Install Dependencies</span>
       - <span class="key">name</span>: <span class="str">Validate Test Environment Variables</span>
         <span class="key">run</span>: bun run test:env:check
       - <span class="key">name</span>: <span class="str">TypeScript Check</span>
