@@ -13,6 +13,11 @@ node_modules/
 /playwright/.auth/
 .playwright/user-data
 .playwright/output
+# Disposable per-ticket browser profiles, and the file `playwright-cli state-save`
+# writes into the current directory when no filename is given. Session state
+# belongs in /.auth/ (agentic-qa-core/references/browser-sessions.md).
+.playwright/profiles/
+storage-state-*.json
 **/evidence/
 
 # ===== Auth Storage (Session State) =====
