@@ -1,6 +1,6 @@
 # ADR-0005 — The framework validates only what it owns
 
-- **Status:** Proposed
+- **Status:** Accepted (by the owner, 2026-10-01)
 - **Date:** 2026-09-24
 - **Deciders:** framework owner (boilerplate maintainer); drafted by `/framework-development` from the env-scopes SPIKE (D1-D8 decided 2026-09-24)
 - **Tags:** env, validation, install, doctor, ci, mcp, updater

@@ -60,7 +60,7 @@ When you promote, leave a one-line backlink in the plan's `## Technical Decision
 1. **Confirm both gates** (§1). If unsure, ask.
 2. **Allocate the number (manual — no script).** Open `.context/ADR/README.md` → read the **Index** table, take `max(existing NNNN) + 1`, and zero-pad to 4 digits. The Index table is the only allocator; there is no `adr:next` command. Numbers are never reused, even when an ADR is superseded or deprecated.
 3. **Copy the template.** `.context/ADR/ADR-NNNN-template.md` → `.context/ADR/ADR-<NNNN>-<slug>.md` (`<slug>` = short kebab summary). Fill every section — Context, Decision, Consequences (positive **and** negative), Alternatives considered.
-4. **Set status honestly.** Open question remaining → `Proposed`. Agreed and binding → `Accepted` **after the human approves**. An AI workflow drafts; the human accepts.
+4. **Set status honestly.** The ADR records a decision the human already made (a decision deck, a chat answer, an approved plan) → `Accepted`, and the `Deciders` line names where it was approved. A question that is still open → `Proposed`, and the ADR says what is unresolved. Never ask the human to "accept" an ADR that only records a decision they already took: the approval happened when they decided.
 5. **Update the Index** table in `.context/ADR/README.md` (ADR / Title / Status / Supersedes / Superseded by).
 6. **If it supersedes an existing ADR**, wire both directions and flip the old ADR's `Status` line to `Superseded by ADR-<NNNN>`. **Never edit the superseded decision's body** — it is the historical record.
 7. **Persist to engram** (`mem_save`, type `architecture`) so the decision survives compaction, per the proactive-memory protocol.
@@ -80,5 +80,5 @@ When you promote, leave a one-line backlink in the plan's `## Technical Decision
 - **A1.** NEVER ADR a ticket-local test trade-off. If it changes one spec and is easy to undo, it stays in the ticket's plan. Over-recording buries the decisions that matter.
 - **A2.** NEVER rewrite or delete an Accepted ADR to "update" it. Write a new ADR that supersedes it. The old one stays as history (append-only).
 - **A3.** NEVER record an ADR with no `Negative / trade-off` consequence. A decision with only upsides is under-examined — find the cost (runtime, flake, setup, lock-in) or it isn't a real architectural choice.
-- **A4.** NEVER mark an AI-drafted ADR `Accepted` without explicit human sign-off. Draft as `Proposed`; the human flips it to `Accepted`.
+- **A4.** NEVER mark an ADR `Accepted` when the decision itself was never approved by a human. An ADR that records an approved decision is `Accepted` from the start, citing the approval; `Proposed` is only for a decision still open.
 - **A5.** NEVER reuse or skip ADR numbers. The Index in `.context/ADR/README.md` is the allocator — read it before assigning.

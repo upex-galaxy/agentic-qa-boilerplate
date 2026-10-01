@@ -1,6 +1,6 @@
 # ADR-0008 — Browser sessions are isolated in memory; persistence and the human's browser are explicit
 
-- **Status:** Proposed
+- **Status:** Accepted (by the owner, 2026-10-01)
 - **Date:** 2026-10-01
 - **Deciders:** framework owner (boilerplate maintainer); drafted by `/framework-development` from the pw-profiles SPIKE (D1-D9 approved 2026-10-01, with two owner notes that extended D6 and D8)
 - **Tags:** isolation, auth-in-tests, exploratory-vs-scripted, playwright-cli, fleet

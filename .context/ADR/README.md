@@ -37,7 +37,7 @@ Proposed ──→ Accepted ──→ Superseded   (by ADR-NNNN, which links bac
                    └────→ Deprecated   (no longer applies; nothing replaces it)
 ```
 
-- **Proposed** — drafted, under discussion, not yet binding.
+- **Proposed** — the decision is still open; the ADR names what is unresolved. An ADR that records a decision the human already approved starts as `Accepted`.
 - **Accepted** — binding. Downstream test work must honor it.
 - **Superseded** — a newer ADR replaces it. Set `Superseded by: ADR-NNNN`; the new ADR sets `Supersedes: ADR-MMMM`. **Do not edit the old decision body** — leave it as the historical record. (Test-architecture decisions evolve as the suite matures, so superseding is the normal, expected path.)
 - **Deprecated** — the decision no longer applies and nothing replaces it (e.g. that test surface was removed).
@@ -65,12 +65,12 @@ Who authors: a human QA architect / lead directly, **or** an AI workflow that de
 | --- | ----- | ------ | ---------- | ------------- |
 | [ADR-0001](./ADR-0001-artifact-ladder-local-cache.md) | The local cache mirrors the artifact ladder's title grammar | Accepted | — | ADR-0007 (§Consequences MTP follow-up only) |
 | [ADR-0002](./ADR-0002-regression-run-record.md) | Every regression verdict gets its own run record: the RTR | Accepted | — | — |
-| [ADR-0003](./ADR-0003-env-schema-owner-varlock.md) | varlock owns the env schema; the schema ships in two files | Proposed | — | ADR-0005 (§Decision bullet 3 only) |
+| [ADR-0003](./ADR-0003-env-schema-owner-varlock.md) | varlock owns the env schema; the schema ships in two files | Accepted | — | ADR-0005 (§Decision bullet 3 only) |
 | [ADR-0004](./ADR-0004-naming-decisions.md) | Twelve naming conventions for QA artifacts outside the planning ladder | Accepted | — | — |
-| [ADR-0005](./ADR-0005-validation-scope.md) | The framework validates only what it owns | Proposed | ADR-0003 §Decision bullet 3 | — |
+| [ADR-0005](./ADR-0005-validation-scope.md) | The framework validates only what it owns | Accepted | ADR-0003 §Decision bullet 3 | — |
 | [ADR-0006](./ADR-0006-forensic-measurements-ledger.md) | Doctrine keeps the why; the measured figures and dates live here | Accepted | — | — |
 | [ADR-0007](./ADR-0007-mtp-in-jira.md) | The Master Test Plan lives in Jira; the local file is a cache | Accepted | ADR-0001 (§Consequences MTP follow-up only) | — |
-| [ADR-0008](./ADR-0008-browser-session-isolation.md) | Browser sessions are isolated in memory; persistence and the human's browser are explicit | Proposed | — | — |
+| [ADR-0008](./ADR-0008-browser-session-isolation.md) | Browser sessions are isolated in memory; persistence and the human's browser are explicit | Accepted | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first.
 

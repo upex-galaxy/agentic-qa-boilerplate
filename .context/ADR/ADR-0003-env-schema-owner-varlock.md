@@ -1,6 +1,6 @@
 # ADR-0003 — varlock owns the env schema; the schema ships in two files
 
-- **Status:** Proposed
+- **Status:** Accepted (by the owner, 2026-10-01)
 - **Date:** 2026-09-23
 - **Deciders:** framework owner (boilerplate maintainer); drafted by `/framework-development` from the env-secrets SPIKE (D1-D7 approved 2026-09-23)
 - **Tags:** env, secrets, validation, ci, updater
