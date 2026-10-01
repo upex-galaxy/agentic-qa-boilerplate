@@ -802,43 +802,45 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <h2 class="h2">Anatomía de un workflow: <span class="grad">build.yml</span> completo</h2>
     <div class="split wide">
       <div class="yaml yx tall" data-first="name"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>.github/workflows/build.yml</b> · extracto</span><span class="badge real">real</span></div>
-<pre class="sm"><span class="row" data-x="name"><span class="ln">7</span><span class="key">name</span>: <span class="str">TestBuild Checks</span>
-<span class="ln">8</span><span class="key">run-name</span>: <span class="ex">${{ github.actor }}</span> triggered TestBuild Checks on <span class="ex">${{ github.ref_name }}</span></span>
-<span class="row" data-x="on"><span class="ln">10</span><span class="key">on</span>:
-<span class="ln">11</span>  <span class="key">pull_request</span>:
-<span class="ln">12</span>    <span class="key">branches</span>:
-<span class="ln">13</span>      - <span class="str">main</span></span>
-<span class="row" data-x="conc"><span class="ln">15</span><span class="key">concurrency</span>:
-<span class="ln">18</span>  <span class="key">group</span>: build-<span class="ex">${{ github.ref }}</span>
-<span class="ln">19</span>  <span class="key">cancel-in-progress</span>: <span class="kw">true</span></span>
-<span class="row" data-x="env"><span class="ln">21</span><span class="key">env</span>:
-<span class="ln">22</span>  <span class="key">CI</span>: <span class="kw">true</span>
-<span class="ln">23</span>  <span class="key">TEST_ENV</span>: <span class="str">'staging'</span>
-<span class="ln">25</span>  <span class="key">STAGING_USER_EMAIL</span>: <span class="ex">${{ secrets.STAGING_USER_EMAIL }}</span>
-<span class="ln">26</span>  <span class="key">STAGING_USER_PASSWORD</span>: <span class="ex">${{ secrets.STAGING_USER_PASSWORD }}</span></span>
-<span class="row" data-x="job"><span class="ln">28</span><span class="key">jobs</span>:
-<span class="ln">29</span>  <span class="key">TestBuild</span>:
-<span class="ln">30</span>    <span class="key">name</span>: <span class="str">Framework Validation</span>
-<span class="ln">31</span>    <span class="key">runs-on</span>: <span class="str">ubuntu-latest</span>
-<span class="ln">32</span>    <span class="key">timeout-minutes</span>: <span class="kw">15</span></span>
-<span class="row" data-x="uses"><span class="ln">34</span>    <span class="key">steps</span>:
-<span class="ln">35</span>      - <span class="key">name</span>: <span class="str">Checkout Repo</span>
-<span class="ln">36</span>        <span class="key">uses</span>: <span class="str">actions/checkout@v4</span>
-<span class="ln">37</span>        <span class="key">with</span>:
-<span class="ln">38</span>          <span class="key">fetch-depth</span>: <span class="kw">1</span></span>
-<span class="row" data-x="run"><span class="ln">59</span>      - <span class="key">name</span>: <span class="str">Install Dependencies</span>
-<span class="ln">60</span>        <span class="key">run</span>: bun install
-<span class="ln">68</span>      - <span class="key">name</span>: <span class="str">ESLint Check</span>
-<span class="ln">69</span>        <span class="key">run</span>: bun run lint:check
-<span class="ln">78</span>      - <span class="key">name</span>: <span class="str">Playwright Compile Check</span>
-<span class="ln">79</span>        <span class="key">run</span>: bunx playwright test --list</span></pre></div>
+<pre class="sm"><span class="row" data-x="name"><span class="key">name</span>: <span class="str">TestBuild Checks</span>
+<span class="key">run-name</span>: <span class="ex">${{ github.actor }}</span> triggered TestBuild Checks on <span class="ex">${{ github.ref_name }}</span></span>
+<span class="row" data-x="on"><span class="key">on</span>:
+  <span class="key">pull_request</span>:
+    <span class="key">branches</span>:
+      - <span class="str">main</span></span>
+<span class="row" data-x="conc"><span class="key">concurrency</span>:
+  <span class="key">group</span>: build-<span class="ex">${{ github.ref }}</span>
+  <span class="key">cancel-in-progress</span>: <span class="kw">true</span></span>
+<span class="row" data-x="env"><span class="key">env</span>:
+  <span class="key">CI</span>: <span class="kw">true</span>
+  <span class="key">TEST_ENV</span>: <span class="str">'staging'</span>
+  <span class="c"># Test-user pair for the selected TEST_ENV. OPTIONAL here: nothing in this</span>
+  <span class="c"># job logs in … A fork PR has no secrets and still passes.</span>
+  <span class="key">STAGING_USER_EMAIL</span>: <span class="ex">${{ secrets.STAGING_USER_EMAIL }}</span>
+  <span class="key">STAGING_USER_PASSWORD</span>: <span class="ex">${{ secrets.STAGING_USER_PASSWORD }}</span></span>
+<span class="row" data-x="job"><span class="key">jobs</span>:
+  <span class="key">TestBuild</span>:
+    <span class="key">name</span>: <span class="str">Framework Validation</span>
+    <span class="key">runs-on</span>: <span class="str">ubuntu-latest</span>
+    <span class="key">timeout-minutes</span>: <span class="kw">15</span></span>
+<span class="row" data-x="uses">    <span class="key">steps</span>:
+      - <span class="key">name</span>: <span class="str">Checkout Repo</span>
+        <span class="key">uses</span>: <span class="str">actions/checkout@v4</span>
+        <span class="key">with</span>:
+          <span class="key">fetch-depth</span>: <span class="kw">1</span></span>
+<span class="row" data-x="run">      - <span class="key">name</span>: <span class="str">Install Dependencies</span>
+        <span class="key">run</span>: bun install
+      - <span class="key">name</span>: <span class="str">ESLint Check</span>
+        <span class="key">run</span>: bun run lint:check
+      - <span class="key">name</span>: <span class="str">Playwright Compile Check</span>
+        <span class="key">run</span>: bunx playwright test --list</span></pre></div>
       <div>
         <div class="yx-panel idle">Haz clic en un bloque del YAML →</div>
         <div class="yx-data" hidden>
           <div data-x="name"><h4><span class="mono">name</span> y <span class="mono">run-name</span></h4><p><b>name</b> es el título fijo del workflow en la pestaña Actions. <b>run-name</b> es el título de CADA ejecución y acepta expresiones <code class="k">${{ }}</code>: aquí muestra quién lo disparó (<code class="k">github.actor</code>) y en qué rama (<code class="k">github.ref_name</code>).</p><p>Sin <code class="k">run-name</code>, GitHub usa el mensaje del commit. Ponerle nombre convierte la lista de runs en un log legible.</p><div class="hint">docs: workflow-syntax → run-name</div></div>
           <div data-x="on"><h4><span class="mono">on:</span> el trigger</h4><p>Este workflow despierta cuando se abre o actualiza un <b>pull request hacia main</b>. Ningún cron, ningún botón: solo PRs. Es el gate de la rama: si el framework no compila, el PR queda rojo.</p><p>Fíjate en <code class="k">branches: [main]</code>: un PR hacia otra rama no lo dispara. Filtros de rama y de ruta (<code class="k">paths</code>) se combinan con AND.</p><div class="hint">docs: events-that-trigger-workflows → pull_request</div></div>
           <div data-x="conc"><h4><span class="mono">concurrency</span> con cancelación</h4><p>Un solo build por rama (<code class="k">group: build-${{ github.ref }}</code>). Si haces push dos veces seguidas, el primer run <b>se cancela</b>: no publica nada, así que cancelarlo es gratis y ahorra minutos.</p><p>Compara con las suites: ellas usan <code class="k">cancel-in-progress: false</code> porque publican un reporte. Lo vemos en el Capítulo 4.</p><div class="hint">docs: control-workflow-concurrency</div></div>
-          <div data-x="env"><h4><span class="mono">env:</span> variables para todos los jobs</h4><p>A nivel de workflow, <code class="k">env</code> define variables de entorno que heredan todos los jobs y steps. <code class="k">CI: true</code> es una convención que muchas herramientas leen (Playwright activa <code class="k">forbidOnly</code>, por ejemplo).</p><p>Las credenciales NO están escritas aquí: se leen de <code class="k">${{ secrets.X }}</code>, que GitHub inyecta enmascaradas. Copiar un valor de tu <code class="k">.env</code> al YAML es la falta más grave del curso.</p><div class="hint">docs: use-variables · use-secrets</div></div>
+          <div data-x="env"><h4><span class="mono">env:</span> variables para todos los jobs</h4><p>A nivel de workflow, <code class="k">env</code> define variables de entorno que heredan todos los jobs y steps. <code class="k">CI: true</code> es una convención que muchas herramientas leen (Playwright activa <code class="k">forbidOnly</code>, por ejemplo).</p><p>Las credenciales NO están escritas aquí: se leen de <code class="k">${{ secrets.X }}</code>, que GitHub inyecta enmascaradas. Copiar un valor de tu <code class="k">.env</code> al YAML es la falta más grave del curso.</p><p>En build.yml el par de test-user es <b>opcional</b>: nada en este job hace login, así que un PR de fork, que no recibe secrets, pasa igual.</p><div class="hint">docs: use-variables · use-secrets</div></div>
           <div data-x="job"><h4>el job <span class="mono">TestBuild</span></h4><p>La clave <code class="k">TestBuild</code> es el id (lo usa <code class="k">needs</code>); <code class="k">name</code> es lo que ves en la UI. <code class="k">runs-on: ubuntu-latest</code> pide una VM Linux de GitHub, limpia. <code class="k">timeout-minutes: 15</code> mata el job si se cuelga: sin él, el default es 360 minutos de factura.</p><div class="hint">docs: workflow-syntax → jobs.&lt;job_id&gt;</div></div>
           <div data-x="uses"><h4>steps con <span class="mono">uses:</span> (acciones)</h4><p><code class="k">actions/checkout@v4</code> clona el repo en el runner (sin esto, la máquina está vacía). <code class="k">fetch-depth: 1</code> trae solo el último commit: más rápido. El siguiente step (Setup Bun, omitido aquí) es <code class="k">oven-sh/setup-bun@v2</code>, que instala Bun.</p><p><code class="k">@v4</code> es una etiqueta de versión mayor. Para máxima seguridad, GitHub recomienda fijar un <b>SHA de commit</b> completo en acciones de terceros: una etiqueta se puede mover, un SHA no.</p><div class="hint">docs: find-and-customize-actions · security/secure-use</div></div>
           <div data-x="run"><h4>steps con <span class="mono">run:</span> (comandos)</h4><p>Cada <code class="k">run</code> es un comando de shell en el runner. Aquí corren los mismos scripts de <code class="k">package.json</code> que corres en local: <code class="k">lint:check</code> (y <code class="k">types:check</code>, omitido por espacio). <code class="k">playwright test --list</code> compila todos los specs sin ejecutarlos: valida que la suite ES ejecutable.</p><p>Regla del repo: el YAML nunca inventa comandos. Llama a los scripts de <code class="k">package.json</code>, así local y CI hacen exactamente lo mismo.</p><div class="hint">Rule #11 de AGENTS.md: los scripts viven en package.json</div></div>
@@ -909,7 +911,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
           <div class="wf" data-fires="cron2 dispatch"><div class="nm">smoke.yml</div><div class="ds"><code class="k">schedule</code> 02:00 · <code class="k">workflow_dispatch</code></div><div class="why">@critical contra staging. Con el botón podés elegir env, Allure y execution_key.</div></div>
           <div class="wf" data-fires="dispatch"><div class="nm">sanity.yml</div><div class="ds">solo <code class="k">workflow_dispatch</code></div><div class="why">Nunca automático: siempre le decís QUÉ correr (grep, archivo, tipo).</div></div>
           <div class="wf" data-fires="cron0 dispatch"><div class="nm">regression.yml</div><div class="ds"><code class="k">schedule</code> 00:00 · <code class="k">workflow_dispatch</code></div><div class="why">Integration + E2E completos. El único con input video_record.</div></div>
-          <div class="wf" data-fires="push dispatch day1"><div class="nm">pages.yml / squash</div><div class="ds"><code class="k">push</code> a main con <code class="k">paths</code> · <code class="k">dispatch</code> · squash mensual</div><div class="why">pages.yml publica el hub de docs solo si cambiaron packages/**. pages-squash.yml aplana gh-pages el 1° de cada mes.</div></div>
+          <div class="wf" data-fires="push dispatch day1"><div class="nm">pages.yml / squash</div><div class="ds"><code class="k">push</code> a main con <code class="k">paths</code> · <code class="k">dispatch</code> · squash mensual</div><div class="why">pages.yml publica la portada (<code class="k">packages/pages-home</code>), <code class="k">/kata/</code> y <code class="k">/decks/</code> solo si cambiaron esos paquetes; <code class="k">docs/</code> no se publica, se sirve en local con <code class="k">bun run docs</code>. pages-squash.yml aplana gh-pages el 1° de cada mes.</div></div>
         </div>
         <div class="trig-note"></div>
         <div class="trig-notes" hidden>
@@ -932,27 +934,27 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <p class="kicker">formulario: cambia los valores y mira el comando que genera</p>
     <h2 class="h2"><span class="grad">workflow_dispatch</span>: el botón con parámetros</h2>
     <div class="dform">
-      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>smoke.yml</b> · extracto: inputs de workflow_dispatch</span><span class="badge real">real</span></div>
-<pre class="sm"><span class="ln">14</span>  <span class="key">workflow_dispatch</span>:
-<span class="ln">15</span>    <span class="key">inputs</span>:
-<span class="ln">16</span>      <span class="key">environment</span>:
-<span class="ln">17</span>        <span class="key">description</span>: Select the Test Environment
-<span class="ln">18</span>        <span class="key">required</span>: <span class="kw">true</span>
-<span class="ln">19</span>        <span class="key">default</span>: <span class="str">'staging'</span>
-<span class="ln">20</span>        <span class="key">type</span>: <span class="kw">choice</span>
-<span class="ln">21</span>        <span class="key">options</span>:
-<span class="ln">22</span>          - local
-<span class="ln">23</span>          - staging
-<span class="ln">24</span>      <span class="key">generate_allure</span>:
-<span class="ln">25</span>        <span class="key">description</span>: Generate Allure Report
-<span class="ln">26</span>        <span class="key">required</span>: <span class="kw">true</span>
-<span class="ln">27</span>        <span class="key">default</span>: <span class="kw">true</span>
-<span class="ln">28</span>        <span class="key">type</span>: <span class="kw">boolean</span>
-<span class="ln">29</span>      <span class="key">execution_key</span>:
-<span class="ln">30</span>        <span class="key">description</span>: <span class="str">'Key of the Test Execution this run imports into (…)'</span>
-<span class="ln">31</span>        <span class="key">required</span>: <span class="kw">false</span>
-<span class="ln">32</span>        <span class="key">default</span>: <span class="str">''</span>
-<span class="ln">33</span>        <span class="key">type</span>: <span class="kw">string</span></pre></div>
+      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>.github/workflows/smoke.yml</b> · extracto: inputs de workflow_dispatch</span><span class="badge real">real</span></div>
+<pre class="sm">  <span class="key">workflow_dispatch</span>:
+    <span class="key">inputs</span>:
+      <span class="key">environment</span>:
+        <span class="key">description</span>: Select the Test Environment
+        <span class="key">required</span>: <span class="kw">true</span>
+        <span class="key">default</span>: <span class="str">'staging'</span>
+        <span class="key">type</span>: <span class="kw">choice</span>
+        <span class="key">options</span>:
+          - local
+          - staging
+      <span class="key">generate_allure</span>:
+        <span class="key">description</span>: Generate Allure Report
+        <span class="key">required</span>: <span class="kw">true</span>
+        <span class="key">default</span>: <span class="kw">true</span>
+        <span class="key">type</span>: <span class="kw">boolean</span>
+      <span class="key">execution_key</span>:
+        <span class="key">description</span>: <span class="str">'Key of the Test Execution this run imports into (…)'</span>
+        <span class="key">required</span>: <span class="kw">false</span>
+        <span class="key">default</span>: <span class="str">''</span>
+        <span class="key">type</span>: <span class="kw">string</span></pre></div>
       <div>
         <div class="gform" id="dform">
           <div class="hd">Actions → <b>Smoke Tests</b> → Run workflow ▾ &nbsp;<span class="dim2">(así lo dibuja GitHub a partir de los inputs)</span></div>
@@ -981,7 +983,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <h2 class="h2"><span class="grad">schedule</span>: el reloj que nadie olvida</h2>
     <div class="split eq">
       <div>
-        <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">schedule: de <b>regression.yml</b> · <b>smoke.yml</b> · <b>pages-squash.yml</b></span><span class="badge real">real</span></div>
+        <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">extracto del bloque schedule: de <b>.github/workflows/regression.yml</b> · <b>.github/workflows/smoke.yml</b> · <b>.github/workflows/pages-squash.yml</b></span><span class="badge real">real</span></div>
 <pre><span class="key">schedule</span>:
   - <span class="key">cron</span>: <span class="str">'0 0 * * *'</span> <span class="c"># Runs daily at midnight UTC   (regression)</span>
   - <span class="key">cron</span>: <span class="str">'0 2 * * *'</span> <span class="c"># Runs daily at 2:00 AM UTC    (smoke)</span>
@@ -1136,24 +1138,24 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <p class="kicker">los cinco steps que toda suite repite</p>
     <h2 class="h2">Steps: <span class="grad">uses</span> enchufa una action, <span class="grad">run</span> ejecuta un comando</h2>
     <div class="split">
-      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>smoke.yml</b> · extracto: steps de setup (idéntico en sanity y regression)</span><span class="badge real">real</span></div>
-<pre class="sm"><span class="ln">79</span>    <span class="key">steps</span>:
-<span class="ln">80</span>      - <span class="key">name</span>: <span class="str">Checkout Repo</span>
-<span class="ln">81</span>        <span class="key">uses</span>: <span class="str">actions/checkout@v4</span>        <span class="c"># 1 · trae el código</span>
-<span class="ln">82</span>        <span class="key">with</span>:
-<span class="ln">83</span>          <span class="key">fetch-depth</span>: <span class="kw">1</span>
-<span class="ln">85</span>      - <span class="key">name</span>: <span class="str">Setup Bun</span>
-<span class="ln">86</span>        <span class="key">uses</span>: <span class="str">oven-sh/setup-bun@v2</span>        <span class="c"># 2 · el runtime</span>
-<span class="ln">87</span>        <span class="key">with</span>:
-<span class="ln">88</span>          <span class="key">bun-version</span>: <span class="str">latest</span>
-<span class="ln">90</span>      - <span class="key">name</span>: <span class="str">Install Dependencies</span>
-<span class="ln">91</span>        <span class="key">run</span>: bun install                  <span class="c"># 3 · node_modules</span>
-<span class="ln">93</span>      - <span class="key">name</span>: <span class="str">Validate Test Environment Variables</span>
-<span class="ln">94</span>        <span class="key">run</span>: bun run test:env:check       <span class="c"># 4 · ¿faltan secrets?</span>
-<span class="ln">96</span>      - <span class="key">name</span>: <span class="str">Install Playwright Browsers</span>
-<span class="ln">97</span>        <span class="key">run</span>: bun run pw:install           <span class="c"># 5 · chromium + deps</span>
-<span class="ln">99</span>      - <span class="key">name</span>: <span class="str">Run Smoke Tests (@critical) on <span class="ex">${{ env.TEST_ENV }}</span></span>
-<span class="ln">100</span>        <span class="key">run</span>: bun run test:smoke           <span class="c"># la suite</span></pre></div>
+      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>.github/workflows/smoke.yml</b> · extracto: steps de setup (idéntico en sanity y regression)</span><span class="badge real">real</span></div>
+<pre class="sm">    <span class="key">steps</span>:
+      - <span class="key">name</span>: <span class="str">Checkout Repo</span>
+        <span class="key">uses</span>: <span class="str">actions/checkout@v4</span>        <span class="c"># 1 · trae el código</span>
+        <span class="key">with</span>:
+          <span class="key">fetch-depth</span>: <span class="kw">1</span>
+      - <span class="key">name</span>: <span class="str">Setup Bun</span>
+        <span class="key">uses</span>: <span class="str">oven-sh/setup-bun@v2</span>        <span class="c"># 2 · el runtime</span>
+        <span class="key">with</span>:
+          <span class="key">bun-version</span>: <span class="str">latest</span>
+      - <span class="key">name</span>: <span class="str">Install Dependencies</span>
+        <span class="key">run</span>: bun install                  <span class="c"># 3 · node_modules</span>
+      - <span class="key">name</span>: <span class="str">Validate Test Environment Variables</span>
+        <span class="key">run</span>: bun run test:env:check       <span class="c"># 4 · ¿faltan secrets?</span>
+      - <span class="key">name</span>: <span class="str">Install Playwright Browsers</span>
+        <span class="key">run</span>: bun run pw:install           <span class="c"># 5 · chromium + deps</span>
+      - <span class="key">name</span>: <span class="str">Run Smoke Tests (@critical) on <span class="ex">${{ env.TEST_ENV }}</span></span>
+        <span class="key">run</span>: bun run test:smoke           <span class="c"># la suite</span></pre></div>
       <div>
         <div class="cards c2">
           <div class="card acc"><h4><code class="k">uses:</code> una action</h4><p>Código empaquetado por otro (<code class="k">owner/repo@version</code>). Recibe parámetros en <code class="k">with:</code>. <code class="k">actions/*</code> son de GitHub; <code class="k">oven-sh/setup-bun</code> es de los autores de Bun. Sin checkout, el runner no tiene ni el <code class="k">package.json</code>.</p></div>
@@ -1214,24 +1216,24 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <p class="kicker">cómo un step le habla al siguiente, y al humano</p>
     <h2 class="h2">$GITHUB_OUTPUT, $GITHUB_STEP_SUMMARY y <span class="grad">::warning</span></h2>
     <div class="split eq">
-      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>smoke.yml</b> · extracto: job allure-report</span><span class="badge real">real</span></div>
-<pre class="sm"><span class="ln">184</span>      - <span class="key">name</span>: <span class="str">Check Allure Results</span>
-<span class="ln">185</span>        <span class="key">id</span>: check_allure                    <span class="c"># ← el id hace legibles sus outputs</span>
-<span class="ln">186</span>        <span class="key">shell</span>: bash
-<span class="ln">187</span>        <span class="key">run</span>: |
-<span class="ln">188</span>          if [ -d "smoke-artifacts/allure-results" ] &amp;&amp; [ -n "$(ls -A … )" ]; then
-<span class="ln">189</span>            echo "Allure results found."
-<span class="ln">190</span>            echo "has_results=true" &gt;&gt; $GITHUB_OUTPUT   <span class="c"># ← escribe un output</span>
-<span class="ln">191</span>          else
-<span class="ln">192</span>            echo "No Allure results found. Skipping report generation."
-<span class="ln">193</span>            echo "has_results=false" &gt;&gt; $GITHUB_OUTPUT
-<span class="ln">194</span>          fi
-<span class="ln">196</span>      - <span class="key">name</span>: <span class="str">Setup Bun</span>
-<span class="ln">197</span>        <span class="key">if</span>: steps.check_allure.outputs.has_results == 'true'   <span class="c"># ← lo lee</span>
-<span class="ln">198</span>        <span class="key">uses</span>: <span class="str">oven-sh/setup-bun@v2</span>
-<span class="ln">…</span>
-<span class="ln">233</span>            echo "## Allure Report" &gt;&gt; $GITHUB_STEP_SUMMARY
-<span class="ln">234</span>            echo "View the report: https://<span class="ex">${{ github.repository_owner }}</span>.github.io/…/<span class="ex">${{ env.TEST_ENV }}</span>/smoke/" &gt;&gt; $GITHUB_STEP_SUMMARY</pre></div>
+      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>.github/workflows/smoke.yml</b> · extracto: job allure-report</span><span class="badge real">real</span></div>
+<pre class="sm">      - <span class="key">name</span>: <span class="str">Check Allure Results</span>
+        <span class="key">id</span>: check_allure                    <span class="c"># ← el id hace legibles sus outputs</span>
+        <span class="key">shell</span>: bash
+        <span class="key">run</span>: |
+          if [ -d "smoke-artifacts/allure-results" ] &amp;&amp; [ -n "$(ls -A … )" ]; then
+            echo "Allure results found."
+            echo "has_results=true" &gt;&gt; $GITHUB_OUTPUT   <span class="c"># ← escribe un output</span>
+          else
+            echo "No Allure results found. Skipping report generation."
+            echo "has_results=false" &gt;&gt; $GITHUB_OUTPUT
+          fi
+      - <span class="key">name</span>: <span class="str">Setup Bun</span>
+        <span class="key">if</span>: steps.check_allure.outputs.has_results == 'true'   <span class="c"># ← lo lee</span>
+        <span class="key">uses</span>: <span class="str">oven-sh/setup-bun@v2</span>
+<span class="c">…</span>
+            echo "## Allure Report" &gt;&gt; $GITHUB_STEP_SUMMARY
+            echo "View the report: https://<span class="ex">${{ github.repository_owner }}</span>.github.io/…/<span class="ex">${{ env.TEST_ENV }}</span>/smoke/" &gt;&gt; $GITHUB_STEP_SUMMARY</pre></div>
       <div>
         <div class="cards c3">
           <div class="card acc"><h4>$GITHUB_OUTPUT</h4><p>Un archivo. Escribís <code class="k">clave=valor</code> y GitHub lo expone como <code class="k">steps.&lt;id&gt;.outputs.clave</code> para los steps siguientes. Para pasarlo a OTRO job, lo mapeás en <code class="k">jobs.X.outputs</code> y lo leés con <code class="k">needs.X.outputs.clave</code>.</p></div>
@@ -1299,16 +1301,16 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
           <tr><td><b><code class="k">${{ vars.X }}</code></b></td><td>Configuración que cambia por repo/entorno pero <b>no es secreta</b></td><td>Se define en Settings → Variables. Legible en <code class="k">if</code> de job. Vacío si no existe.</td></tr>
           <tr><td><b><code class="k">${{ secrets.X }}</code></b></td><td>Credenciales</td><td>Cifrado, enmascarado en logs, <b>no llega a PRs de forks</b>, no legible en <code class="k">if</code> de job.</td></tr>
         </table>
-        <div class="callout warn mt-m"><h4><code class="k">environment: name:</code> = un cajón de secrets con reglas</h4><p>Cada job de suite declara <code class="k">environment: name: ${{ inputs.environment || 'staging' }}</code>. Eso desbloquea los secrets/vars definidos en ESE environment de GitHub y aplica sus <b>protection rules</b> (revisores obligatorios, espera). Así <code class="k">production</code> puede exigir un aprobador aunque el YAML sea el mismo.</p></div>
+        <div class="callout warn mt-m"><h4><code class="k">environment: name:</code> = un cajón de secrets con reglas</h4><p>Cada job de suite declara <code class="k">environment: name: ${{ github.event.inputs.environment || 'staging' }}</code>. Eso desbloquea los secrets/vars definidos en ESE environment de GitHub y aplica sus <b>protection rules</b> (revisores obligatorios, espera). Así <code class="k">production</code> puede exigir un aprobador aunque el YAML sea el mismo.</p></div>
         <p class="small dim2 mt-s">No existe un secret <code class="k">ATLASSIAN_URL</code> a propósito: el host se lee de <code class="k">.agents/project.yaml</code>. Una segunda copia de un valor es la copia que envejece.</p>
       </div>
       <div class="items">
-        <div class="it" data-correct="secret"><span class="nm">STAGING_USER_PASSWORD</span><span class="ch"><button class="btn sm" data-ans="env">env</button><button class="btn sm" data-ans="var">var</button><button class="btn sm" data-ans="secret">secret</button></span><div class="res" data-why="Credencial: cifrada y enmascarada. smoke.yml L47."></div></div>
-        <div class="it" data-correct="var"><span class="nm">TMS_PROVIDER (xray | jira)</span><span class="ch"><button class="btn sm" data-ans="env">env</button><button class="btn sm" data-ans="var">var</button><button class="btn sm" data-ans="secret">secret</button></span><div class="res" data-why="Configuración no sensible que además debe leerse en un if de job: solo vars puede. regression.yml L58-62."></div></div>
-        <div class="it" data-correct="env"><span class="nm">CI: true</span><span class="ch"><button class="btn sm" data-ans="env">env</button><button class="btn sm" data-ans="var">var</button><button class="btn sm" data-ans="secret">secret</button></span><div class="res" data-why="Constante universal del workflow; no cambia por repo ni por entorno. L41."></div></div>
-        <div class="it" data-correct="secret"><span class="nm">XRAY_CLIENT_SECRET</span><span class="ch"><button class="btn sm" data-ans="env">env</button><button class="btn sm" data-ans="var">var</button><button class="btn sm" data-ans="secret">secret</button></span><div class="res" data-why="Es una credencial de API. Nombre lo dice. regression.yml L65."></div></div>
+        <div class="it" data-correct="secret"><span class="nm">STAGING_USER_PASSWORD</span><span class="ch"><button class="btn sm" data-ans="env">env</button><button class="btn sm" data-ans="var">var</button><button class="btn sm" data-ans="secret">secret</button></span><div class="res" data-why="Credencial: cifrada y enmascarada. Bloque env de smoke.yml."></div></div>
+        <div class="it" data-correct="var"><span class="nm">TMS_PROVIDER (xray | jira)</span><span class="ch"><button class="btn sm" data-ans="env">env</button><button class="btn sm" data-ans="var">var</button><button class="btn sm" data-ans="secret">secret</button></span><div class="res" data-why="Configuración no sensible que además debe leerse en un if de job: solo vars puede. Bloque env de regression.yml."></div></div>
+        <div class="it" data-correct="env"><span class="nm">CI: true</span><span class="ch"><button class="btn sm" data-ans="env">env</button><button class="btn sm" data-ans="var">var</button><button class="btn sm" data-ans="secret">secret</button></span><div class="res" data-why="Constante universal del workflow; no cambia por repo ni por entorno. Bloque env de cada suite."></div></div>
+        <div class="it" data-correct="secret"><span class="nm">XRAY_CLIENT_SECRET</span><span class="ch"><button class="btn sm" data-ans="env">env</button><button class="btn sm" data-ans="var">var</button><button class="btn sm" data-ans="secret">secret</button></span><div class="res" data-why="Es una credencial de API. Nombre lo dice. Bloque env de regression.yml."></div></div>
         <div class="it" data-correct="secret"><span class="nm">AUTO_SYNC ('true' | 'false')</span><span class="ch"><button class="btn sm" data-ans="env">env</button><button class="btn sm" data-ans="var">var</button><button class="btn sm" data-ans="secret">secret</button></span><div class="res" data-why="Trampa: por su naturaleza sería una var, pero el repo lo guarda como SECRET (secrets.AUTO_SYNC en el bloque env) y solo lo lee en if de STEP, donde secrets sí está permitido. Funciona; una var sería más honesta. Distingue «qué es» de «cómo está configurado»."></div></div>
-        <div class="it" data-correct="env"><span class="nm">TEST_ENV: ${{ inputs.environment || 'staging' }}</span><span class="ch"><button class="btn sm" data-ans="env">env</button><button class="btn sm" data-ans="var">var</button><button class="btn sm" data-ans="secret">secret</button></span><div class="res" data-why="Es una variable de entorno del workflow calculada desde el input: env: con una expresión. L42."></div></div>
+        <div class="it" data-correct="env"><span class="nm">TEST_ENV: ${{ github.event.inputs.environment || 'staging' }}</span><span class="ch"><button class="btn sm" data-ans="env">env</button><button class="btn sm" data-ans="var">var</button><button class="btn sm" data-ans="secret">secret</button></span><div class="res" data-why="Es una variable de entorno del workflow calculada desde el input: env: con una expresión. Bloque env de cada suite."></div></div>
       </div>
     </div>
     </div>
@@ -1322,7 +1324,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <h2 class="h2"><span class="grad">concurrency</span>: cancelar o encolar, según qué publica</h2>
     <div class="split eq">
       <div>
-        <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">bloque concurrency: de <b>build.yml</b> vs <b>regression.yml</b></span><span class="badge real">real</span></div>
+        <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">extracto del bloque concurrency: de <b>.github/workflows/build.yml</b> vs <b>.github/workflows/regression.yml</b></span><span class="badge real">real</span></div>
 <pre class="sm"><span class="c"># build.yml: valida, no publica</span>
 <span class="key">concurrency</span>:
   <span class="c"># One build per PR branch: a force-push supersedes the run already in flight.</span>
@@ -1367,17 +1369,17 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <h2 class="h2"><span class="grad">permissions</span>: qué puede hacer GITHUB_TOKEN</h2>
     <div class="split eq">
       <div>
-        <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>pages.yml</b> · extracto</span><span class="badge real">real</span></div>
-<pre class="sm"><span class="ln">24</span><span class="key">permissions</span>:
-<span class="ln">25</span>  <span class="key">contents</span>: write        <span class="c"># puede hacer push (a gh-pages)</span>
-<span class="ln">…</span>
-<span class="ln">74</span>      - <span class="key">name</span>: <span class="str">Deploy to GitHub Pages</span>
-<span class="ln">75</span>        <span class="key">uses</span>: <span class="str">peaceiris/actions-gh-pages@v4</span>
-<span class="ln">76</span>        <span class="key">with</span>:
-<span class="ln">77</span>          <span class="key">github_token</span>: <span class="ex">${{ secrets.GITHUB_TOKEN }}</span>
-<span class="ln">78</span>          <span class="key">publish_branch</span>: gh-pages
-<span class="ln">79</span>          <span class="key">publish_dir</span>: _site
-<span class="ln">80</span>          <span class="key">keep_files</span>: <span class="kw">true</span></pre></div>
+        <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>.github/workflows/pages.yml</b> · extracto</span><span class="badge real">real</span></div>
+<pre class="sm"><span class="key">permissions</span>:
+  <span class="key">contents</span>: write        <span class="c"># puede hacer push (a gh-pages)</span>
+<span class="c">…</span>
+      - <span class="key">name</span>: <span class="str">Deploy to GitHub Pages</span>
+        <span class="key">uses</span>: <span class="str">peaceiris/actions-gh-pages@v4</span>
+        <span class="key">with</span>:
+          <span class="key">github_token</span>: <span class="ex">${{ secrets.GITHUB_TOKEN }}</span>
+          <span class="key">publish_branch</span>: gh-pages
+          <span class="key">publish_dir</span>: _site
+          <span class="key">keep_files</span>: <span class="kw">true</span></pre></div>
         <div class="yaml mt-m"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">forma recomendada para un workflow nuevo</span><span class="badge ex">ejemplo</span></div>
 <pre class="sm"><span class="key">permissions</span>: {}            <span class="c"># nada por defecto…</span>
 <span class="key">jobs</span>:
@@ -1424,7 +1426,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
           <div class="opt" data-correct="1"><span class="mk">B</span><span>Vacío: los secrets no se pasan a workflows disparados por <code class="k">pull_request</code> desde forks</span></div>
           <div class="opt"><span class="mk">C</span><span>Enmascarado como <code class="k">***</code> pero funcional</span></div>
         </div>
-        <div class="qexp"><b>Vacío, por diseño.</b> Un fork podría modificar el YAML para imprimir el secret; por eso GitHub no lo entrega y además le da al token permisos de solo lectura. El propio build.yml lo anticipa: el comentario del step de varlock dice que un PR de fork «has no secrets and fails here», en el gate de varlock, exactamente como fallaría en <code class="k">test:env:check</code>.</div>
+        <div class="qexp"><b>Vacío, por diseño.</b> Un fork podría modificar el YAML para imprimir el secret; por eso GitHub no lo entrega y además le da al token permisos de solo lectura. El propio build.yml lo anticipa: su bloque <code class="k">env</code> declara el par de test-user como opcional («A fork PR has no secrets and still passes»), y el comentario del step de varlock dice que el único requerido es <code class="k">TEST_ENV</code>, así que el fork pasa varlock y <code class="k">test:env:check</code> con esos secrets vacíos.</div>
       </div>
     </div>
     </div>
@@ -1447,30 +1449,30 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <p class="kicker">lo que sobrevive al runner</p>
     <h2 class="h2">Artifacts: <span class="grad">subir en un job, bajar en otro</span></h2>
     <div class="split eq">
-      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>smoke.yml</b> · extracto: steps Upload … (sube) · Download Smoke Test Artifacts (baja)</span><span class="badge real">real</span></div>
-<pre class="sm"><span class="ln">113</span>      - <span class="key">name</span>: <span class="str">Upload Allure Results</span>
-<span class="ln">114</span>        <span class="key">if</span>: always()
-<span class="ln">115</span>        <span class="key">uses</span>: <span class="str">actions/upload-artifact@v4</span>
-<span class="ln">116</span>        <span class="key">with</span>:
-<span class="ln">117</span>          <span class="key">name</span>: smoke-allure-results     <span class="c"># único por run</span>
-<span class="ln">118</span>          <span class="key">path</span>: allure-results/
-<span class="ln">119</span>          <span class="key">retention-days</span>: <span class="kw">10</span>
-<span class="ln">129</span>      - <span class="key">name</span>: <span class="str">Upload Failure Evidence</span>
-<span class="ln">130</span>        <span class="key">if</span>: failure()
-<span class="ln">131</span>        <span class="key">uses</span>: <span class="str">actions/upload-artifact@v4</span>
-<span class="ln">132</span>        <span class="key">with</span>:
-<span class="ln">133</span>          <span class="key">name</span>: smoke-failure-evidence
-<span class="ln">134</span>          <span class="key">path</span>: |                        <span class="c"># varias rutas</span>
-<span class="ln">135</span>            test-results/
-<span class="ln">136</span>            playwright-report/
-<span class="ln">137</span>          <span class="key">retention-days</span>: <span class="kw">10</span>
-<span class="ln">…</span>   <span class="c"># en el job allure-report (otro runner):</span>
-<span class="ln">177</span>      - <span class="key">name</span>: <span class="str">Download Smoke Test Artifacts</span>
-<span class="ln">178</span>        <span class="key">uses</span>: <span class="str">actions/download-artifact@v4</span>
-<span class="ln">179</span>        <span class="key">with</span>:
-<span class="ln">180</span>          <span class="key">name</span>: smoke-allure-results
-<span class="ln">181</span>          <span class="key">path</span>: smoke-artifacts/allure-results
-<span class="ln">182</span>        <span class="key">continue-on-error</span>: <span class="kw">true</span>   <span class="c"># si no existe, no rompas el job</span></pre></div>
+      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>.github/workflows/smoke.yml</b> · extracto: steps Upload … (sube) · Download Smoke Test Artifacts (baja)</span><span class="badge real">real</span></div>
+<pre class="sm">      - <span class="key">name</span>: <span class="str">Upload Allure Results</span>
+        <span class="key">if</span>: always()
+        <span class="key">uses</span>: <span class="str">actions/upload-artifact@v4</span>
+        <span class="key">with</span>:
+          <span class="key">name</span>: smoke-allure-results     <span class="c"># único por run</span>
+          <span class="key">path</span>: allure-results/
+          <span class="key">retention-days</span>: <span class="kw">10</span>
+      - <span class="key">name</span>: <span class="str">Upload Failure Evidence</span>
+        <span class="key">if</span>: failure()
+        <span class="key">uses</span>: <span class="str">actions/upload-artifact@v4</span>
+        <span class="key">with</span>:
+          <span class="key">name</span>: smoke-failure-evidence
+          <span class="key">path</span>: |                        <span class="c"># varias rutas</span>
+            test-results/
+            playwright-report/
+          <span class="key">retention-days</span>: <span class="kw">10</span>
+<span class="c">…</span>   <span class="c"># en el job allure-report (otro runner):</span>
+      - <span class="key">name</span>: <span class="str">Download Smoke Test Artifacts</span>
+        <span class="key">uses</span>: <span class="str">actions/download-artifact@v4</span>
+        <span class="key">with</span>:
+          <span class="key">name</span>: smoke-allure-results
+          <span class="key">path</span>: smoke-artifacts/allure-results
+        <span class="key">continue-on-error</span>: <span class="kw">true</span>   <span class="c"># si no existe, no rompas el job</span></pre></div>
       <div>
         <table class="tbl tight">
           <tr><th>Artifact</th><th>Contenido</th><th>Cuándo</th><th>Quién lo consume</th></tr>
@@ -1499,7 +1501,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <p class="kicker">explorador: el mismo esqueleto en smoke, sanity y regression</p>
     <h2 class="h2">El esqueleto de una suite, <span class="grad">bloque por bloque</span></h2>
     <div class="split wide">
-      <div class="yaml yx" data-first="hdr"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">plantilla destilada de <b>smoke.yml</b> (cada bloque mapea a ese archivo)</span><span class="badge ex">esquema</span></div>
+      <div class="yaml yx" data-first="hdr"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">plantilla destilada de <b>.github/workflows/smoke.yml</b> (cada bloque mapea a ese archivo)</span><span class="badge ex">esquema</span></div>
 <pre class="sm"><span class="row" data-x="hdr"><span class="c"># ==== Purpose: qué pregunta contesta, cuándo corre ====</span>
 <span class="key">name</span>: Smoke Tests
 <span class="key">run-name</span>: <span class="ex">${{ github.actor }}</span> triggered … on <span class="ex">${{ … || 'staging' }}</span></span>
@@ -1555,7 +1557,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
           <div class="opt" data-correct="1"><span class="mk">B</span><span>El segundo upload falla: en v4 los artifacts son inmutables y el nombre debe ser único por run</span></div>
           <div class="opt"><span class="mk">C</span><span>El segundo sobrescribe al primero en silencio</span></div>
         </div>
-        <div class="qexp"><b>Falla.</b> Desde upload-artifact v4 un nombre solo puede subirse una vez por run (salvo <code class="k">overwrite: true</code>, que pisa el anterior). La solución es el prefijo por job (<code class="k">visual-allure-results</code>) y, si querés fusionarlos, bajar con <code class="k">pattern: '*-allure-results'</code> + <code class="k">merge-multiple: true</code>, que es justo lo que hace a mano el step «Merge Allure Results» de regression.yml L294-314.</div>
+        <div class="qexp"><b>Falla.</b> Desde upload-artifact v4 un nombre solo puede subirse una vez por run (salvo <code class="k">overwrite: true</code>, que pisa el anterior). La solución es el prefijo por job (<code class="k">visual-allure-results</code>) y, si querés fusionarlos, bajar con <code class="k">pattern: '*-allure-results'</code> + <code class="k">merge-multiple: true</code>, que es justo lo que hace a mano el step «Merge Allure Results» de <code class="k">.github/workflows/regression.yml</code>.</div>
       </div>
       <div class="qitem">
         <div class="qq"><span class="qn">Q10</span><span>La regresión del viernes falló. Es lunes (3 días después) y querés el trace. ¿Dónde está?</span></div>
