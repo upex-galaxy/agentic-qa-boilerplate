@@ -123,6 +123,8 @@ export interface NormalizedMcpServer {
   enabled: boolean
   /** Codex only: the server starts through `CODEX_ENV_LOADER_*`. */
   envLoader?: boolean
+  /** Codex only: `startup_timeout_sec`; absent means Codex's default. */
+  startupTimeoutSec?: number
 }
 
 type NormalizedMcpConfig = Record<string, NormalizedMcpServer>;
@@ -174,6 +176,7 @@ function canonical(shape: Pick<NormalizedMcpServer, 'transport'> & Partial<Norma
     literalEnv,
     enabled: shape.enabled ?? true,
     envLoader: shape.envLoader ?? false,
+    startupTimeoutSec: shape.startupTimeoutSec,
   };
 }
 
@@ -210,9 +213,15 @@ const EVERY_HOST: Record<KnownMcpId, NormalizedMcpServer> = {
   }),
 };
 
-/** Codex starts the same servers, each through the `.env` loader. */
+/**
+ * Codex starts the same servers, each through the `.env` loader and with a
+ * 30-second startup budget. Codex's default is 10 seconds, and every shipped
+ * server is fetched by `bunx` on first use: a cold cache plus the loader hop
+ * can pass 10 seconds where a warm dbhub already took most of it (ADR-0006).
+ */
+export const CODEX_STARTUP_TIMEOUT_SEC = 30;
 const CODEX_SHAPE = Object.fromEntries(
-  Object.entries(EVERY_HOST).map(([id, shape]) => [id, canonical({ ...shape, envLoader: true })]),
+  Object.entries(EVERY_HOST).map(([id, shape]) => [id, canonical({ ...shape, envLoader: true, startupTimeoutSec: CODEX_STARTUP_TIMEOUT_SEC })]),
 ) as Record<KnownMcpId, NormalizedMcpServer>;
 
 export const EXPECTED_MCP: Record<McpHost, Record<KnownMcpId, NormalizedMcpServer>> = {
@@ -496,6 +505,7 @@ function normalizeCodex(root: JsonObject): NormalizedMcpConfig {
       literalEnv: literalEntries(env, `${label}.env`),
       enabled: server.enabled !== false,
       envLoader: launch?.envLoader ?? false,
+      startupTimeoutSec: typeof server.startup_timeout_sec === 'number' ? server.startup_timeout_sec : undefined,
     }];
   }));
 }

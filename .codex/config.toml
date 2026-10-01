@@ -21,10 +21,14 @@ inherit = "core"
 #
 # Needs `bun install` once (the dotenv-cli devDependency) and a .env in the
 # checkout. A Codex-managed worktree gets its .env through .worktreeinclude.
+#
+# `startup_timeout_sec = 30` on each: Codex waits 10 s by default, and a cold
+# `bunx` fetch plus the loader hop can pass that before the first handshake.
 
 [mcp_servers.context7]
 command = "bunx"
 enabled = true
+startup_timeout_sec = 30
 args = [
   "-p",
   "dotenv-cli@8.0.0",
@@ -45,6 +49,7 @@ args = [
 [mcp_servers.slack-aurora]
 command = "bunx"
 enabled = true
+startup_timeout_sec = 30
 args = [
   "-p",
   "dotenv-cli@8.0.0",
@@ -70,6 +75,7 @@ SLACK_MCP_ADD_MESSAGE_TOOL = "true"
 [mcp_servers.dbhub]
 command = "bunx"
 enabled = true
+startup_timeout_sec = 30
 args = [
   "-p",
   "dotenv-cli@8.0.0",
@@ -102,6 +108,7 @@ env_vars = [
 [mcp_servers.openapi]
 command = "bunx"
 enabled = true
+startup_timeout_sec = 30
 args = [
   "-p",
   "dotenv-cli@8.0.0",

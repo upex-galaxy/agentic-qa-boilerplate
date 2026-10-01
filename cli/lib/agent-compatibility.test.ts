@@ -19,6 +19,7 @@ import {
   CODEX_ENV_LOADER_COMMAND,
   CODEX_HOOK_COMMAND,
   CODEX_HOOK_COMMAND_WINDOWS,
+  CODEX_STARTUP_TIMEOUT_SEC,
   declaredMcpIds,
   EXPECTED_MCP,
   HOOK_IDENTITY_MARKER,
@@ -344,6 +345,7 @@ const CODEX_SERVERS: Record<string, string> = {
   'context7': `[mcp_servers.context7]
 command = "bunx"
 enabled = true
+startup_timeout_sec = 30
 args = [${CODEX_LOADER}, "-y", "@upstash/context7-mcp@4.0.3"]
 `,
   'tavily': `[mcp_servers.tavily]
@@ -359,6 +361,7 @@ args = [${CODEX_LOADER}, "@playwright/mcp@0.0.79", "--caps", "vision,pdf,testing
   'slack-aurora': `[mcp_servers.slack-aurora]
 command = "bunx"
 enabled = true
+startup_timeout_sec = 30
 args = [${CODEX_LOADER}, "-y", "slack-mcp-server@latest", "--transport", "stdio"]
 env_vars = ["SLACK_MCP_XOXP_TOKEN", "SLACK_MCP_REACTION_TOOL"]
 
@@ -368,12 +371,14 @@ SLACK_MCP_ADD_MESSAGE_TOOL = "true"
   'dbhub': `[mcp_servers.dbhub]
 command = "bunx"
 enabled = true
+startup_timeout_sec = 30
 args = [${CODEX_LOADER}, "-y", "@bytebase/dbhub@1.2.1", "--config", "dbhub.toml"]
 env_vars = ["DBHUB_DATABASE", "DBHUB_HOST", "DBHUB_PASSWORD", "DBHUB_PORT", "DBHUB_TYPE", "DBHUB_USER"]
 `,
   'openapi': `[mcp_servers.openapi]
 command = "bunx"
 enabled = true
+startup_timeout_sec = 30
 args = [${CODEX_LOADER}, "-y", "@ivotoby/openapi-mcp-server@1.16.1", "--tools", "dynamic"]
 env_vars = ["API_BASE_URL", "OPENAPI_SPEC_PATH"]
 `,
@@ -1086,6 +1091,18 @@ describe('project-declared MCP set', () => {
     expect(errors.some(e => e.startsWith('codex MCP openapi must launch through the .env loader'))).toBe(true);
     // A server with nothing to load is left alone by the generic rule.
     expect(errors.some(e => e.startsWith('codex MCP context7 must launch'))).toBe(false);
+  });
+
+  test('pins the Codex startup budget of a known server', () => {
+    const root = contractFixture(undefined, PROJECT_IDS);
+    const configPath = join(root, '.codex/config.toml');
+    writeFileSync(configPath, readFileSync(configPath, 'utf8')
+      .replace('[mcp_servers.openapi]\ncommand = "bunx"\nenabled = true\nstartup_timeout_sec = 30\n', '[mcp_servers.openapi]\ncommand = "bunx"\nenabled = true\n'));
+
+    const errors = validateMcpParity(root);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toStartWith('codex MCP openapi mismatch: expected ');
+    expect(errors[0]).toContain(`"startupTimeoutSec":${CODEX_STARTUP_TIMEOUT_SEC}`);
   });
 
   test('reads a loader-wrapped Codex command as the server it starts', () => {
