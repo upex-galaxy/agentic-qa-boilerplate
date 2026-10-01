@@ -412,6 +412,15 @@ resend login</code></pre>
         <code>acli</code> no los sustituye. <code>RESEND_API_KEY</code> desapareció de la plantilla
         porque nada del repo la leía.
       </p>
+      <p>
+        Si tu <code>.env</code> viene de una plantilla vieja y todavía tiene una de esas claves
+        retiradas (<code>TAVILY_API_KEY</code>, <code>POSTMAN_API_KEY</code>,
+        <code>RESEND_API_KEY</code>, <code>API_TOKEN</code>), <code>bun run setup</code> y
+        <code>bun run setup:doctor</code> te ofrecen borrar esas líneas con una sola confirmación,
+        antes de validar. El esquema ya no las declara, y varlock rechaza una clave no declarada que
+        está vacía. Sin terminal interactiva solo las listan: nunca editan el archivo ni muestran
+        valores.
+      </p>
 
       <h2 id="doctor">Qué te dice el doctor</h2>
       <p>

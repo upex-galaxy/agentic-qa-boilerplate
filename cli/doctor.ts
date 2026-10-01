@@ -32,7 +32,7 @@ import type { HarnessLevelVerdict } from './lib/harness-level-mcps.ts';
 import type { GateContext, VarSpec } from './lib/variables-manifest.ts';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 
 import { homedir } from 'node:os';
 
@@ -54,7 +54,7 @@ import {
   resolveAtlassianInstance,
 } from './lib/atlassian-instance.ts';
 import { contextMapAdvice, contextMapStatuses } from './lib/context-maps.ts';
-import { CORE_SCHEMA_FILE, PROJECT_SCHEMA_FILE, RETIRED_KEYS } from './lib/env-schema.ts';
+import { CORE_SCHEMA_FILE, neutralizeRetiredKeys, PROJECT_SCHEMA_FILE, removeRetiredEnvLines, RETIRED_KEYS, retiredEnvKeysIn } from './lib/env-schema.ts';
 // Canonical variable manifest (source of truth — D1). Imports only `node:fs`,
 // so it is safe to load statically here without breaking the dependency-free
 // `--preflight` contract (no third-party deps pulled in).
@@ -713,8 +713,14 @@ function envSchemaDiagnostic(): EnvSchemaDiagnostic {
   const base: EnvSchemaDiagnostic = { schema_present: schemaPresent, binary, binary_version: binaryVersion, validation: 'skipped', items: 0, errors: [] };
   if (!schemaPresent || !devDep) { return base; }
 
+  // A retired key still in `.env` is no longer declared, and an undeclared
+  // EMPTY key fails varlock: neutralize them so this verdict is about the
+  // declared items. The cleanup itself is offered before the report
+  // (`offerRetiredEnvCleanup`) and repeated in the warnings when declined.
+  const retiredInFile = existsSync(ENV_PATH) ? retiredEnvKeysIn(readFileSync(ENV_PATH, 'utf8')) : [];
   const run = spawnSync('bunx', ['varlock', 'load', '--agent'], {
     cwd: REPO_ROOT,
+    env: neutralizeRetiredKeys(process.env, retiredInFile),
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -731,7 +737,7 @@ function envSchemaDiagnostic(): EnvSchemaDiagnostic {
   }
   let items = 0;
   try {
-    items = Object.keys(JSON.parse(run.stdout) as Record<string, unknown>).length;
+    items = Object.keys(JSON.parse(run.stdout) as Record<string, unknown>).filter(name => !retiredInFile.includes(name)).length;
   }
   catch {
     // A non-JSON success is still a success; the count is informational.
@@ -997,14 +1003,16 @@ export async function runDoctor(): Promise<DoctorReport> {
     );
   }
   // Keys the manifest retired (web search / Postman moved to harness level, the
-  // resend CLI logs in on its own, the legacy API token). The schema still
-  // declares them so the line validates; the value is simply never read.
+  // resend CLI logs in on its own, the legacy API token). The schema no longer
+  // declares them; an interactive run already offered to delete the lines
+  // (`offerRetiredEnvCleanup`), so what is left here was declined or never
+  // asked (non-interactive, --json).
   const retiredPresent = RETIRED_KEYS.filter(k => envValues[k.name] !== undefined).map(k => k.name);
   if (retiredPresent.length > 0) {
     report.warnings.push({
       type: 'shell_command',
       target: `delete from .env: ${retiredPresent.join(', ')}`,
-      hint: 'Nothing in the repo reads these any more. Web search and Postman are MCP servers you connect at harness level (see the doctor section below); the resend CLI keeps its own login; the curl token lives in .auth/tokens.env. The line still validates, it just does nothing.',
+      hint: 'Nothing in the repo reads these any more. Web search and Postman are MCP servers you connect at harness level (see the doctor section below); the resend CLI keeps its own login; the curl token lives in .auth/tokens.env. The schema no longer declares them, so an EMPTY one fails a bare `bunx varlock load`: delete the lines, or run `bun run setup:doctor` in a terminal and accept the cleanup.',
     });
   }
 
@@ -1402,6 +1410,27 @@ function printHuman(report: DoctorReport): void {
 // Entry
 // ----------------------------------------------------------------------------
 
+/**
+ * Offer to delete the `.env` lines that assign a retired key (`RETIRED_KEYS`),
+ * one confirmation for all of them. Interactive runs only: a non-interactive
+ * one reports them in the warnings and never edits a file. Names are printed,
+ * values never.
+ */
+async function offerRetiredEnvCleanup(): Promise<void> {
+  if (!existsSync(ENV_PATH)) { return; }
+  const text = await readFile(ENV_PATH, 'utf8');
+  const present = retiredEnvKeysIn(text);
+  if (present.length === 0) { return; }
+  const answer = await tui.confirm({
+    message: `.env still sets ${present.length} retired key(s) nothing reads any more (${present.join(', ')}). Delete those lines?`,
+    initialValue: true,
+  });
+  if (tui.isCancel(answer) || answer !== true) { return; }
+  const { text: next, removed } = removeRetiredEnvLines(text);
+  await writeFile(ENV_PATH, next, { mode: 0o600 });
+  process.stdout.write(`  ${tui.statusIcon('ok')} Deleted from .env: ${removed.join(', ')}\n`);
+}
+
 async function main(): Promise<void> {
   if (process.argv.includes('--preflight')) {
     runPreflight(); // never returns
@@ -1415,6 +1444,8 @@ async function main(): Promise<void> {
 
   const asJson = process.argv.includes('--json');
   try {
+    // Before the report, so the validation it runs sees the cleaned file.
+    if (!asJson && process.stdin.isTTY) { await offerRetiredEnvCleanup(); }
     const report = await runDoctor();
     if (asJson) {
       process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
