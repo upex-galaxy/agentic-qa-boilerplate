@@ -99,6 +99,12 @@ const AGENTS_DOCS_FILES = ['README.md', 'project.schema.yaml'];
 const ENV_TEMPLATE_FILES = ['.env.example'];
 // The gitignored files a Claude Code or Codex-managed worktree copies in.
 const WORKTREE_INCLUDE_FILES = ['.worktreeinclude'];
+// The playwright-cli launch defaults (in memory, headless; ADR-0008). Delivered
+// ONCE when missing, then project-owned: a project may tune the viewport,
+// timeouts or test-id attribute. A copy that still carries the old shared
+// on-disk profile gets an informational parity row instead of an overwrite
+// (`legacyPlaywrightProfileKeys` in cli/lib/updater-parity.ts).
+const PLAYWRIGHT_CLI_CONFIG_FILES = ['cli.config.json'];
 // The varlock env schema, in two halves like `config/variables{.core,}.ts`:
 // `.env.core.schema` is GENERATED from cli/lib/variables-manifest.ts by
 // `bun run vars:schema` and plainly synced; `.env.schema` imports it, carries
@@ -245,6 +251,7 @@ export const COMPONENTS: Component[] = [
   // Codex-managed worktree starts with no `.env`, and every MCP loader in
   // `.codex/config.toml` with it.
   { name: 'worktree-include', type: 'file-list', paths: ['.'], files: WORKTREE_INCLUDE_FILES, bootstrapOnly: true },
+  { name: 'playwright-cli-config', type: 'file-list', paths: ['.playwright'], files: PLAYWRIGHT_CLI_CONFIG_FILES, bootstrapOnly: true },
 ];
 
 // --- ARG PARSE ---

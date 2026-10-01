@@ -22,11 +22,13 @@ import {
   diffStats,
   frameworkGatesNote,
   harnessLevelMcpNote,
+  legacyPlaywrightProfileKeys,
   lintStagedNoStashNote,
   markdownSectionDelta,
   missingConfigBlocks,
   PATH_PREREQUISITES,
   persistArchivedSkillMarkers,
+  PLAYWRIGHT_CLI_CONFIG,
   prerequisiteFor,
   protectNote,
   readGitStrategyStamp,
@@ -415,6 +417,45 @@ describe('collectParityFindings', () => {
     expect(folded[0].path).toBe('.codex/config.toml');
     expect(folded[0].blocking).toBe(true);
     expect(folded[0].evidence).toBe(`${error}; informational: ${warning}`);
+  });
+
+  test('a playwright-cli config with the old shared profile gets one informational row; a clean, absent or broken one gets none', () => {
+    const root = temporaryRoot();
+    const upstream = temporaryRoot();
+    write(root, '.agents/project.yaml', 'git_strategy:\n  strategy: solo-main\n  meta:\n    strategy_source: chosen\n');
+    const findings = (): ReturnType<typeof collectParityFindings> => collectParityFindings({
+      root,
+      upstreamDir: upstream,
+      drift: [],
+      compatErrors: [],
+      archivedSkills: [],
+      archivedSkillsDir: join(root, '.template/pre-agents-migration/skills'),
+      heldBack: [],
+      envNewKeys: [],
+    });
+
+    expect(legacyPlaywrightProfileKeys(root)).toEqual([]);
+    expect(findings()).toEqual([]);
+
+    write(root, PLAYWRIGHT_CLI_CONFIG, JSON.stringify({ browser: { browserName: 'chromium', isolated: false, userDataDir: '.playwright/user-data' } }));
+    expect(legacyPlaywrightProfileKeys(root)).toEqual(['browser.isolated: false', 'browser.userDataDir']);
+    const both = findings();
+    expect(both).toHaveLength(1);
+    expect(both[0]).toMatchObject({ surface: 'components', path: '.playwright/cli.config.json', blocking: false, side: 'kept', suggested: 'merge' });
+    expect(both[0].evidence).toStartWith('informational: browser.isolated: false and browser.userDataDir still set');
+    expect(both[0].evidence).toContain('remove both keys');
+    expect(both[0].evidence).toContain('browser-sessions.md');
+    expect(both[0].evidence).toContain('ADR-0008');
+
+    write(root, PLAYWRIGHT_CLI_CONFIG, JSON.stringify({ browser: { userDataDir: '/tmp/x' } }));
+    expect(findings()[0].evidence).toContain('remove that key');
+
+    // `isolated: true` is not the legacy shape; only `false` shares a profile.
+    write(root, PLAYWRIGHT_CLI_CONFIG, JSON.stringify({ browser: { isolated: true, launchOptions: { headless: true } } }));
+    expect(findings()).toEqual([]);
+
+    write(root, PLAYWRIGHT_CLI_CONFIG, '{ not json');
+    expect(findings()).toEqual([]);
   });
 
   test('archived skills nudge once: this run, plus unreported archive entries, until their marker exists', () => {

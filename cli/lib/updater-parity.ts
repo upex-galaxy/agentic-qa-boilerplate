@@ -176,6 +176,8 @@ export interface ParityInput {
   pbiCache?: PbiCacheInput | null
   /** Context map states; defaults to reading them from `root` (`contextMapStatuses`). */
   contextMaps?: MapStatus[]
+  /** Shared-profile keys in the project's playwright-cli config; defaults to reading `root` (`legacyPlaywrightProfileKeys`). */
+  playwrightProfileKeys?: string[]
   /** Prerequisite declarations, keyed by repo-relative path. Defaults to `PATH_PREREQUISITES`. */
   prerequisites?: Record<string, PathPrerequisite>
   /** Which shipped skill reads which top-level config block. Defaults to `CONFIG_BLOCK_READERS`. */
@@ -1104,6 +1106,29 @@ function compatErrorPath(message: string): string {
   return '(compat)';
 }
 
+/** Delivered once by the `playwright-cli-config` component, then project-owned. */
+export const PLAYWRIGHT_CLI_CONFIG = '.playwright/cli.config.json';
+
+/**
+ * The keys in the project's playwright-cli config that pin every session to
+ * one shared on-disk profile: `browser.isolated: false` and any
+ * `browser.userDataDir` (ADR-0008 removed both). Empty when the file is
+ * absent, unparseable, or clean: a broken file is the CLI's to report.
+ */
+export function legacyPlaywrightProfileKeys(root: string): string[] {
+  const file = path.join(root, PLAYWRIGHT_CLI_CONFIG);
+  if (!fs.existsSync(file)) { return []; }
+  let browser: unknown;
+  try { browser = (JSON.parse(fs.readFileSync(file, 'utf8')) as { browser?: unknown }).browser; }
+  catch { return []; }
+  if (typeof browser !== 'object' || browser === null || Array.isArray(browser)) { return []; }
+  const block = browser as Record<string, unknown>;
+  const keys: string[] = [];
+  if (block.isolated === false) { keys.push('browser.isolated: false'); }
+  if (Object.prototype.hasOwnProperty.call(block, 'userDataDir')) { keys.push('browser.userDataDir'); }
+  return keys;
+}
+
 // ============================================================================
 // COLLECTOR
 // ============================================================================
@@ -1434,6 +1459,22 @@ export function collectParityFindings(input: ParityInput): ParityFinding[] {
       evidence: `informational: ${advice}`,
       suggested: 'keep project',
       blocking: false,
+    });
+  }
+
+  // The playwright-cli config ships once and is never overwritten, so a copy
+  // scaffolded before ADR-0008 keeps launching every named session on ONE
+  // shared on-disk profile. Informational: the fix is two deleted keys, and
+  // the human decides when (browser-sessions.md, rule of the OK).
+  const profileKeys = input.playwrightProfileKeys ?? legacyPlaywrightProfileKeys(input.root);
+  if (profileKeys.length > 0) {
+    findings.push({
+      surface: 'components',
+      path: PLAYWRIGHT_CLI_CONFIG,
+      evidence: `informational: ${profileKeys.join(' and ')} still set: every session name shares one on-disk profile, so a named session isolates nothing; remove ${profileKeys.length === 1 ? 'that key' : 'both keys'} from "browser" (keep "headless": true), with the owner's OK. Doctrine: .agents/skills/agentic-qa-core/references/browser-sessions.md, .context/ADR/ADR-0008-browser-session-isolation.md`,
+      suggested: 'merge',
+      blocking: false,
+      side: 'kept',
     });
   }
 
