@@ -6,11 +6,15 @@ import { dirname, join, resolve } from 'node:path';
 import { afterEach, describe, expect, test } from 'bun:test';
 
 import {
+  agentContextLines,
+  MISSING_ENV_LINE,
   orcaAvailable,
   PERSONALITY_CONTRACT,
   proposeSessionTitle,
   resolveWorktree,
   sessionLabel,
+  UNPROVISIONED_WORKTREE_LINE,
+  worktreeUnprovisioned,
 } from '../../.agents/hooks/personality-reinject.mjs';
 import opencodePlugin from '../../.opencode/plugins/personality-reinject.js';
 import {
@@ -600,6 +604,31 @@ describe('agent identity', () => {
     const primary = temporaryRoot('agent identity primary ');
     mkdirSync(join(primary, '.git'));
     expect(resolveWorktree({ ORCA_WORKTREE_ID: 'repo-id::/work/orca/BK-123-login' }, primary)).toBe('primary');
+  });
+
+  test('an unprovisioned linked worktree gets one warning line; a primary or a submodule never does', () => {
+    const linked = temporaryRoot('agent identity unprovisioned ');
+    write(linked, '.git', 'gitdir: /elsewhere/.git/worktrees/wt-a\n');
+    expect(worktreeUnprovisioned({ repoRoot: linked })).toBe(true);
+    mkdirSync(join(linked, 'node_modules'));
+    expect(worktreeUnprovisioned({ repoRoot: linked })).toBe(true);
+    mkdirSync(join(linked, '.husky', '_'), { recursive: true });
+    expect(worktreeUnprovisioned({ repoRoot: linked })).toBe(false);
+
+    const submodule = temporaryRoot('agent identity submodule ');
+    write(submodule, '.git', 'gitdir: ../.git/modules/vendored\n');
+    expect(worktreeUnprovisioned({ repoRoot: submodule })).toBe(false);
+    const primary = temporaryRoot('agent identity primary checkout ');
+    mkdirSync(join(primary, '.git'));
+    expect(worktreeUnprovisioned({ repoRoot: primary })).toBe(false);
+
+    const identity = { worktree: 'wt-a', label: 'x', harness: 'claude-code' };
+    const lines = agentContextLines({ identity, orca: false, envMissing: false, worktreeUnprovisioned: true });
+    expect(lines).toContain(UNPROVISIONED_WORKTREE_LINE);
+    // One setup warning at most: a missing `.env` already names the provisioner.
+    const both = agentContextLines({ identity, orca: false, envMissing: true, worktreeUnprovisioned: true });
+    expect(both).toContain(MISSING_ENV_LINE);
+    expect(both).not.toContain(UNPROVISIONED_WORKTREE_LINE);
   });
 
   test('the session label follows the name-source ladder', () => {
