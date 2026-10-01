@@ -40,7 +40,7 @@
           <li><a href="#mcps">MCPs locales y MCPs a nivel del harness</a></li>
           <li><a href="#clis">Logins de CLI</a></li>
           <li><a href="#doctor">Qué te dice el doctor</a></li>
-          <li><a href="#gestores">Gestores de secretos (próximamente)</a></li>
+          <li><a href="#gestores">Gestores de secretos</a></li>
         </ol>
       </nav>
 
@@ -275,8 +275,9 @@ bun run vars:schema:check      # el core generado está al día y el par carga</
         </dd>
         <dt>El portal privado de reportes</dt>
         <dd>
-          <code>scripts/ci/publish-allure-portal.ts</code> exige por nombre las siete variables solo
-          cuando el workflow encuentra <code>PORTAL_URL</code>; sin ella publica en GitHub Pages.
+          <code>scripts/ci/publish-allure-portal.ts</code> exige por nombre cada variable del portal
+          (<code>PORTAL_*</code> y <code>R2_*</code>) solo cuando el workflow encuentra
+          <code>PORTAL_URL</code>; sin ella publica en GitHub Pages.
         </dd>
       </dl>
 
@@ -299,33 +300,26 @@ bun run vars:schema:check      # el core generado está al día y el par carga</
           </thead>
           <tbody>
             <tr>
-              <td><code>dbhub</code>, <code>openapi</code></td>
               <td>
-                En el proyecto, con variables de alcance proyecto (<code>DBHUB_*</code>,
-                <code>API_BASE_URL</code>, <code>OPENAPI_SPEC_PATH</code>)
-              </td>
-              <td>Corren en tu máquina y leen la base de datos y la API de tu app</td>
-            </tr>
-            <tr>
-              <td><code>slack-aurora</code></td>
-              <td>
-                En el proyecto, con variables de alcance tooling (<code>SLACK_MCP_XOXP_TOKEN</code>,
-                <code>SLACK_MCP_REACTION_TOOL</code>), opcionales
+                Los servers locales: los que declara <code>.mcp.json</code> (con sus espejos en
+                <code>opencode.jsonc</code> y <code>.codex/config.toml</code>)
               </td>
               <td>
-                El bot de Slack: leer canales, publicar y reaccionar. Corre en tu máquina. Sin token
-                arranca vacío y ningún skill lo llama. <code>SLACK_MCP_REACTION_TOOL</code> es la
-                lista de canales donde puede reaccionar: son datos de tu workspace, así que viven
-                solo en <code>.env</code>; vacía, las reacciones quedan apagadas
+                En el proyecto. Las variables que lee cada uno, y su alcance, están en
+                <code>cli/lib/variables-manifest.ts</code>
+              </td>
+              <td>
+                Corren en tu máquina y leen lo tuyo: la base de datos y la API de tu app, por
+                ejemplo, con variables de alcance proyecto como <code>DBHUB_*</code> u
+                <code>OPENAPI_SPEC_PATH</code>. Uno sin clave no tiene nada que autenticar; uno
+                opcional sin su token arranca vacío y ningún skill lo llama
               </td>
             </tr>
             <tr>
-              <td><code>context7</code></td>
-              <td>En el proyecto, sin clave</td>
-              <td>No hay nada que autenticar</td>
-            </tr>
-            <tr>
-              <td>Búsqueda web (capacidad <code>web-search</code>), Postman</td>
+              <td>
+                Los remotos con clave del usuario: los que lista
+                <code>cli/lib/harness-level-mcps.ts</code>, como la búsqueda web
+              </td>
               <td>A nivel del harness, una vez por máquina</td>
               <td>
                 Son remotos y su clave es tuya, no del proyecto. Los skills los resuelven por
@@ -386,12 +380,13 @@ bun run vars:schema:check      # el core generado está al día y el par carga</
         </table>
       </div>
       <div class="callout">
-        <span class="callout-title">Si tu proyecto venía con esos servers</span>
+        <span class="callout-title">Si tu proyecto declara uno de esos servers</span>
         <p>
-          Un proyecto que adoptó el boilerplate antes de este cambio los conserva: sus archivos MCP
-          están protegidos y <code>bun run up</code> nunca los sobreescribe. La actualización deja
-          una fila de paridad que explica el movimiento, y las dos respuestas son válidas: dejarlos
-          como servers propios del proyecto, o quitarlos y conectarlos a nivel del harness.
+          Los archivos MCP de un proyecto están protegidos: <code>bun run up</code> nunca los
+          sobreescribe. Si todavía declaran un server de la lista del harness, la actualización deja
+          una fila de paridad que lo explica, y las dos respuestas son válidas: dejarlo como server
+          propio del proyecto, o quitarlo y conectarlo a nivel del harness. El porqué está en
+          <code>.context/ADR/ADR-0005-validation-scope.md</code>.
         </p>
       </div>
 
@@ -409,17 +404,16 @@ resend login</code></pre>
       <p>
         La pareja <code>ATLASSIAN_*</code> sigue en <code>.env</code> porque los scripts de
         sincronía, el CLI de Xray y el proveedor de TMS la leen por REST; el login de
-        <code>acli</code> no los sustituye. <code>RESEND_API_KEY</code> desapareció de la plantilla
-        porque nada del repo la leía.
+        <code>acli</code> no los sustituye. <code>RESEND_API_KEY</code> no va en <code>.env</code>:
+        nada del repo la lee y el CLI de Resend guarda su propia sesión.
       </p>
       <p>
-        Si tu <code>.env</code> viene de una plantilla vieja y todavía tiene una de esas claves
-        retiradas (<code>TAVILY_API_KEY</code>, <code>POSTMAN_API_KEY</code>,
-        <code>RESEND_API_KEY</code>, <code>API_TOKEN</code>), <code>bun run setup</code> y
-        <code>bun run setup:doctor</code> te ofrecen borrar esas líneas con una sola confirmación,
-        antes de validar. El esquema ya no las declara, y varlock rechaza una clave no declarada que
-        está vacía. Sin terminal interactiva solo las listan: nunca editan el archivo ni muestran
-        valores.
+        Si tu <code>.env</code> todavía tiene una clave retirada (la lista es
+        <code>RETIRED_KEYS</code> en <code>cli/lib/env-schema.ts</code>),
+        <code>bun run setup</code> y <code>bun run setup:doctor</code> te ofrecen borrar esas líneas
+        con una sola confirmación, antes de validar. El esquema no las declara, y varlock rechaza
+        una clave no declarada que está vacía. Sin terminal interactiva solo las listan: nunca
+        editan el archivo ni muestran valores.
       </p>
 
       <h2 id="doctor">Qué te dice el doctor</h2>
@@ -436,14 +430,15 @@ resend login</code></pre>
       ><code>bun run setup:doctor          # tabla por alcance + servers a nivel del harness
 bun run setup:doctor --json   # env_var_scopes[] y harness_level_mcps para un agente</code></pre>
 
-      <h2 id="gestores">Gestores de secretos (próximamente)</h2>
+      <h2 id="gestores">Gestores de secretos</h2>
       <p>
         El camino recomendado para los valores sensibles es un gestor de secretos (1Password u otro
         proveedor que varlock resuelva en tiempo de carga) en lugar de un <code>.env</code> con
-        valores en claro. Está planificado como la fase de proveedores del trabajo de secretos y
-        todavía no forma parte del repo: los valores viven en <code>.env</code>. Cuando llegue, los
-        items marcados <code>@sensitive</code> en el esquema serán los que resuelva el proveedor,
-        sin cambiar los alcances de esta página.
+        valores en claro. El repo no trae ninguno configurado: los valores viven en
+        <code>.env</code>. Si tu proyecto conecta uno, los items marcados <code>@sensitive</code> en
+        el esquema son los que tiene que resolver el proveedor, y los alcances de esta página no
+        cambian. El dueño del esquema y de esa decisión es
+        <code>.context/ADR/ADR-0003-env-schema-owner-varlock.md</code>.
       </p>
 
       <footer class="doc-footer">
