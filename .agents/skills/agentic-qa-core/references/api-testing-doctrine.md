@@ -63,11 +63,13 @@ The MCP handles both; there is no loss either way.
 ```bash
 bun run api:login                       # active env (TEST_ENV), role=user
 bun run api:login staging               # explicit env
-bun run api:login staging --role admin  # named role
+bun run api:login staging --role admin  # logs in AS admin: STAGING_ADMIN_EMAIL / _PASSWORD
 bun run api:login staging --profile W1  # isolated token set -> .auth/profiles/W1/
 bun run api:login --profile W1          # flags may also precede the env (active env)
 bun run api:login --help                # options, storage paths, required .env vars
 ```
+
+The default role (`user`) logs in with `config.testUser` and is the only one that also writes `.auth/api-state.json` for the suite. Any other role reads its own pair, `<ENV>_<ROLE>_EMAIL` + `<ENV>_<ROLE>_PASSWORD`, and fails by name when either half is missing; the browser side of the same role uses the same pair (`browser-sessions.md` §4).
 
 Flag order does not matter and a flag VALUE is never read as the environment
 (`--profile W1` mints for the active env, it does not look for an env called

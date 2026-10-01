@@ -65,7 +65,7 @@ The standing lesson: **QA evidence containing real product or customer data neve
    python3 -m http.server <port> --bind 127.0.0.1 --directory <scratchpad>
    ```
 
-5. **Capture with the browser-automation CLI.** Load `/playwright-cli` first (CLI → skill auto-load rule) for exact verbs/flags. Flow: open `http://127.0.0.1:<port>/annotation.html`, resize the viewport to the HTML's real dimensions (equal or larger — a smaller viewport clips callouts), then screenshot with an explicit destination path into the ticket's `evidence/` folder, named:
+5. **Capture with the browser-automation CLI.** Load `/playwright-cli` first (CLI → skill auto-load rule) for exact verbs/flags. Flow: open `http://127.0.0.1:<port>/annotation.html` in a named session of its own (`-s=<KEY>-annotate`; anonymous, case (a) of `../agentic-qa-core/references/browser-sessions.md`), close it when the PNG is on disk, resize the viewport to the HTML's real dimensions (equal or larger — a smaller viewport clips callouts), then screenshot with an explicit destination path into the ticket's `evidence/` folder, named:
 
    ```
    {KEY}-BUG-{BUG-KEY}-annotated.png

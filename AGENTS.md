@@ -164,7 +164,7 @@ The conductor keeps using SUBAGENTS for its own reads and verifications: that is
 | Orchestrate several sessions (fleet of workers) | "orchestrate", "fleet", "workers", "one session per story", "resume the run", "automation routine", "orquestar", "lanza workers", "una sesión por historia", "comunícate con el worker" | `/orca-orchestration` | `.agents/project.yaml` → `orchestration:` block (defaults); the skill self-loads its references | `[ORCHESTRATION_TOOL]` (gate: binary + reachable runtime; silent when absent) |
 | Hand this session to a fresh one (context window filling up) | "hagamos el handoff", "handoff", "pasa el contexto a otra sesión", "continúa esto en otra sesión", "hand this session over", "write a handoff" | `/session-handoff` | `.session/handoffs/` (the lineage so far); the skill self-loads its capture contract | terminal of the SAME harness in the SAME worktree (runtime optional: without it the owner pastes the line) |
 | Git / PR work | any git intent | `/git-flow-master` (auto) | `git status`, `git log` | `git` + `gh` |
-| Browser action | "screenshot", "trace", "record" | `/playwright-cli` | - | Playwright CLI |
+| Browser action | "screenshot", "trace", "record", "log in as <role>", "pair testing", "use my browser" | `/playwright-cli` | **`agentic-qa-core/references/browser-sessions.md` (MANDATORY before the first `open`)**: whose login, which browser, `testing.browser.pair_mode` | Playwright CLI |
 | Jira / Xray operation | "Jira issue", "Xray import" | `/acli` or `/xray-cli` | `.agents/jira-required.yaml`, `.agents/jira-fields.json` | CLI |
 | Any script / build / test command question | "what command runs X", "how do I run tests" | - | **READ `package.json` FIRST** | - |
 
@@ -336,7 +336,7 @@ Each row is a CAPABILITY skills declare (`metadata.requires_capabilities`) and r
 - Before any `[ISSUE_TRACKER_TOOL] ...` → load `/acli`
 - Before any `[TMS_TOOL] ...` Modality jira-xray → load `/xray-cli`
 - Before any `[TMS_TOOL] ...` Modality jira-native → load `/acli`
-- Before any `[AUTOMATION_TOOL] ...` → load `/playwright-cli`
+- Before any `[AUTOMATION_TOOL] ...` → load `/playwright-cli`, and read `agentic-qa-core/references/browser-sessions.md` before the first `open` (named session, whose login, pair mode)
 - Before any `[API_TOOL] ...` → the OpenAPI MCP is **schema-read-only** (discover endpoints + read schemas); load `agentic-qa-core/references/api-testing-doctrine.md` for the schema → `bun run api:login` → `curl` maneuver. Execute authenticated requests with curl, NEVER via the MCP.
 - Before any `[DOCS_TOOL] ...` → use the `library-docs` tools directly, any prefix (no skill load: MCP self-documents). NEVER substitute with `WebSearch` / `WebFetch` for library docs.
 - Before any `[WEB_SEARCH_TOOL] ...` → use the `web-search` tools directly (any prefix). NEVER substitute with built-in `WebSearch` / `WebFetch` on your own: no provider → point-of-use STOP, the user chooses.
