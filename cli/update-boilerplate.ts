@@ -48,6 +48,7 @@ import {
 } from './lib/updater-harness-migration.ts';
 import { groupIgnoreLines } from './lib/updater-ignore';
 import {
+  ABORTED_OUTRO,
   archivedSkillsToReport,
   collectParityFindings,
   PARITY_PROMPT_PATH,
@@ -60,6 +61,7 @@ import {
 import { makePbiCacheMigrationHook } from './lib/updater-pbi';
 import { CLAUDE_SETTINGS_FILE, mergeAllowList } from './lib/updater-settings';
 import { parseDotEnvExampleKeys, requiredNow, VAR_MANIFEST } from './lib/variables-manifest.ts';
+import { checkoutRoots } from './lib/worktree.ts';
 
 // --- CONFIGURATION ---
 // Not tied to the lock schema (`schemaVersion: 7` stays): it stamps the lock's
@@ -1771,10 +1773,34 @@ function buildSink(): ReportSink {
 }
 
 // --- MAIN ---
+/**
+ * Why the updater must not run from `cwd`, or null when it may.
+ *
+ * Everything the updater keeps between runs is gitignored and cwd-relative:
+ * the `.backups/` that `--rollback` restores, the `.template/` markers and the
+ * doctrine ledger, the single-use prompts under `.agents/prompts/`. Run from a
+ * linked worktree, all of it lands in the worktree and dies with it, and the
+ * next run in the primary sees none of it. So the updater runs in the primary
+ * checkout only.
+ */
+export function worktreeRefusal(cwd = process.cwd()): string | null {
+  const roots = checkoutRoots(cwd);
+  if (roots === null || !roots.linked) { return null; }
+  return 'Este checkout es un worktree. `bun run up` guarda backups (para --rollback), marcadores y prompts '
+    + 'dentro del checkout, y en un worktree se pierden al borrarlo. Ejecuta `bun run up` en el checkout '
+    + `principal: ${roots.primaryRoot}`;
+}
+
 async function main(): Promise<void> {
   const parsed = parseArgs(process.argv.slice(2));
 
   if (parsed.help) { process.stdout.write(HELP_TEXT); process.exit(0); }
+  const refusal = worktreeRefusal();
+  if (refusal !== null) {
+    tui.log.error(refusal);
+    tui.outro(ABORTED_OUTRO);
+    process.exit(1);
+  }
   if (parsed.rollback) { rollbackFromBackup(); process.exit(0); }
   if (parsed.listSkills) { await listAvailableSkills(); process.exit(0); }
 

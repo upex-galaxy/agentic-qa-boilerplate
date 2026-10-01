@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, test } from 'bun:test';
 
 import { cleanupDeprecated, componentOwnedPaths, isRepoOnlyPath, validateComponentRegistry } from './lib/updater-core.ts';
-import { COMPONENTS, DEPRECATED_FILES, GATE_SCRIPTS, gatesSummaryLine, parseArgs, resolveProtectedWatchlist, RETIRED_COMMAND_WRAPPERS, RETIRED_SKILL_FILES, runGate, summarizeGates } from './update-boilerplate.ts';
+import { COMPONENTS, DEPRECATED_FILES, GATE_SCRIPTS, gatesSummaryLine, parseArgs, resolveProtectedWatchlist, RETIRED_COMMAND_WRAPPERS, RETIRED_SKILL_FILES, runGate, summarizeGates, worktreeRefusal } from './update-boilerplate.ts';
 
 const temporaryRoots: string[] = [];
 
@@ -180,6 +180,26 @@ describe('protected watchlist', () => {
       'updater.protected_paths (.agents/project.yaml): entrada ignorada "../outside.ts": outside the repo (`..` segment).',
       'updater.protected_paths (.agents/project.yaml): entrada ignorada ".git/config": under .git.',
     ]);
+  });
+});
+
+describe('worktree refusal', () => {
+  test('runs in the primary checkout, refuses in a linked worktree and names the primary', () => {
+    const base = temporaryRoot();
+    const primary = join(base, 'primary');
+    mkdirSync(primary);
+    const git = (cwd: string, ...args: string[]) => Bun.spawnSync(['git', '-C', cwd, ...args], { stdout: 'ignore', stderr: 'ignore' });
+    git(primary, 'init', '-q');
+    git(primary, '-c', 'user.email=t@t.invalid', '-c', 'user.name=t', 'commit', '-q', '--allow-empty', '-m', 'init');
+    const wt = join(base, 'wt');
+    git(primary, 'worktree', 'add', '-q', '-b', 'probe', wt);
+
+    expect(worktreeRefusal(primary)).toBeNull();
+    const refusal = worktreeRefusal(wt);
+    expect(refusal).toContain('bun run up');
+    expect(refusal).toContain('primary');
+    // Not a git checkout at all: not this guard's business.
+    expect(worktreeRefusal(temporaryRoot())).toBeNull();
   });
 });
 
