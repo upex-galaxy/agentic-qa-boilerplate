@@ -81,11 +81,14 @@ bun run worktree:provision /path/to/wt --dry-run # print what it would do, touch
 ```
 
 Implementation: `scripts/provision-worktree.ts` (Bun, cross-platform). It refuses to run on the
-primary checkout, resolves the primary via git's common-dir, copies the secret files with mode
-`0600` (guarding `chmod` on Windows), installs dependencies from the lockfile, runs
-`bun run agents:compat` inside the target, copies the gitignored T3 skill directories and `.auth/`
-when present, deliberately does NOT copy `.session/`, prints a summary plus the tracker-cache hint,
-and exits non-zero on any hard failure.
+primary checkout, resolves the primary via git's common-dir, copies every gitignored input a
+worktree cannot rebuild that the primary has (`PROVISION_COPIES` in `cli/lib/worktree.ts`: `.env` and
+its local overrides, the Claude settings, `.auth/`, the OpenAPI config and spec, local MCP overrides,
+the installer state; secrets at mode `0600`, guarding `chmod` on Windows), installs dependencies from
+the lockfile, runs `bun run agents:compat` inside the target, copies the gitignored T3 skill
+directories, deliberately does NOT copy `.session/`, prints a summary plus the tracker-cache hint, and
+exits non-zero on any hard failure. The committed `.worktreeinclude` names the same list, and a test
+keeps the two equal.
 
 What it deliberately leaves to a human decision: hydrating the tracker cache (it can be large and
 slow, and a scoped per-issue sync is often enough) and minting tokens (conductor-only, see
