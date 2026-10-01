@@ -2864,7 +2864,7 @@ function printClosingSummary(state: InstallState): void {
   process.stdout.write(`   ${COLORS.cyan}/plugin install warp@claude-code-warp${COLORS.reset}\n`);
   process.stdout.write(`   ${COLORS.dim}Docs: https://docs.warp.dev/agent-platform/cli-agents/claude-code/${COLORS.reset}\n\n`);
 
-  process.stdout.write('→  OpenCode Warp plugin: already wired in opencode.jsonc via the "plugin" field.\n');
+  process.stdout.write('→  OpenCode Warp plugin: personal, so add it to your global ~/.config/opencode/opencode.json (OpenCode 1; Warp installs it itself).\n');
   process.stdout.write(`   ${COLORS.dim}Docs: https://docs.warp.dev/agent-platform/cli-agents/opencode/${COLORS.reset}\n\n`);
 
   // AI personality

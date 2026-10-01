@@ -190,7 +190,7 @@ bunx -y ccstatusline@latest
 
 > Don't chain `bun run onboarding && bun run setup` — the docs server is blocking and the chain deadlocks. Run them as separate steps.
 
-> `bunx -y ccstatusline@latest` is Claude Code-only and optional. Run it from a plain terminal with NO agent running — concurrent TUIs fight over stdin and the configurator silently breaks. OpenCode users skip this: the `opencode-subagent-statusline` plugin is already wired into `opencode.jsonc`.
+> `bunx -y ccstatusline@latest` is Claude Code-only and optional. Run it from a plain terminal with NO agent running — concurrent TUIs fight over stdin and the configurator silently breaks. OpenCode users can add the `opencode-subagent-statusline` plugin to their own global config instead (OpenCode 1 only; see `INSTALLER.md`); the shared `opencode.jsonc` carries no cosmetic plugins.
 
 <br />
 

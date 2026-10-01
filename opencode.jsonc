@@ -39,15 +39,11 @@
   //   - MCP env field is "environment"         (NOT "env")
   "$schema": "https://opencode.ai/config.json",
 
-  // Plugins:
-  //   - @warp-dot-dev/opencode-warp: Warp terminal integration — surfaces
-  //     OpenCode agent activity as native Warp notifications. Auto-installed
-  //     when OpenCode runs inside Warp.
-  //     Docs: https://docs.warp.dev/agent-platform/cli-agents/opencode/
-  //   - opencode-subagent-statusline: Cosmetic UX — shows the active subagent
-  //     in the OpenCode status line so you can see which agent is running at
-  //     a glance. Pure polish, no behavioral side effects.
-  "plugin": ["@warp-dot-dev/opencode-warp", "opencode-subagent-statusline"],
+  // No npm plugins here. Cosmetic ones (a status line, terminal notifications)
+  // are a personal choice: install them in your GLOBAL config
+  // (~/.config/opencode/opencode.json), never in this shared file, where one
+  // that fails to load becomes every teammate's startup warning. The repo's own
+  // hook needs no entry: OpenCode loads .opencode/plugins/ automatically.
 
   "mcp": {
     "context7": {
