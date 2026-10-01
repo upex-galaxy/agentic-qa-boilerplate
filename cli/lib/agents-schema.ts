@@ -626,6 +626,7 @@ export const FILLED_ELSEWHERE: Readonly<Record<string, string>> = {
   'git_strategy.branches.ephemeral_pattern': 'the git-flow-master Strategy Setup questionnaire',
   'git_strategy.meta.created': 'stamped by the git-flow-master Strategy Setup questionnaire',
   'git_strategy.meta.policy_verified': 'stamped by `bun run git:policy verify --stamp`',
+  'testing.browser.pair_mode': 'asked once, the first time an agentic browser session starts (agentic-qa-core/references/browser-sessions.md, Agentic Pair Testing)',
 };
 
 /**

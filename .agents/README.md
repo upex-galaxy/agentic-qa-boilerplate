@@ -142,6 +142,18 @@ Both `/sprint-testing` and `/test-documentation` resolve it at their modality ga
 
 Because it is a scalar leaf of a top-level section, `bun run vars:check` validates `{{TC_CREATION_STAGE}}` like any other flat project variable.
 
+### Browser pair mode
+
+`testing.browser.pair_mode` decides whether agentic browser sessions run in the AI's own browser or as **Agentic Pair Testing**, where the human and the AI test together in the human's own running Chrome (`playwright-cli attach`). Skills read it directly; it is not a `{{VAR}}` token.
+
+| Value | Meaning |
+|---|---|
+| `null` (shipped default) | not chosen yet: the first agentic browser session presents both modes, and the answer is saved here once as `true` or `false` |
+| `true` | pair testing is the default mode |
+| `false` | dedicated sessions by default; pair testing only on explicit request, after one confirmation |
+
+Unattended runs (CI, scheduled routines, a worker with no human watching) never pair, whatever the value. Canon, including what several sessions on one Chrome can and cannot share: `.agents/skills/agentic-qa-core/references/browser-sessions.md` §6.
+
 ## Workflows
 
 ### 5.1 New user setup
