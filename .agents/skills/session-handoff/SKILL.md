@@ -1,6 +1,6 @@
 ---
 name: session-handoff
-description: "Compact an entire agent session into a handoff document so a NEW session resumes exactly where this one stopped, as if the context window had been extended rather than reset. Use when the context window is getting high (default threshold ~500k tokens, beyond which the model degrades and starts inventing), when work must continue past the end of this session, or on any variant of: hagamos el handoff, pasa el contexto a otra sesion, continua esto en otra sesion, hand this session over, continue this in a fresh session, write a handoff, session handoff. Produces .session/handoffs/<session-name>-handoff-NN.md and, when an orchestration runtime is reachable, launches the successor itself in the SAME worktree and the SAME harness. Do NOT use for: delegating a scoped task to a worker while you keep working (that is orca-orchestration), one-shot subagent dispatch, or persisting durable project facts across projects (that is Engram memory)."
+description: "Compact an entire agent session into a handoff document so a NEW session resumes exactly where this one stopped, as if the context window had been extended rather than reset. Use when the context window is getting high (default threshold ~500k tokens, beyond which the model degrades and starts inventing), when work must continue past the end of this session, or on any variant of: hagamos el handoff, pasa el contexto a otra sesion, continua esto en otra sesion, hand this session over, continue this in a fresh session, write a handoff, session handoff. Produces <<PRIMARY_ROOT>>/.session/handoffs/<session-name>-handoff-NN.md (the primary checkout, also from a worktree) and, when an orchestration runtime is reachable, launches the successor itself in the SAME worktree and the SAME harness. Do NOT use for: delegating a scoped task to a worker while you keep working (that is orca-orchestration), one-shot subagent dispatch, or persisting durable project facts across projects (that is Engram memory)."
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode]
 complementary_categories: [meta-skill, orchestration]
@@ -44,17 +44,18 @@ Do NOT write one when the remaining work fits comfortably in the window. A hando
 ## The three steps
 
 1. **Capture.** Walk `.agents/skills/session-handoff/references/capture-contract.md` section by section. Every section is mandatory; a section with nothing in it is written as an explicit `none` line, never omitted. Omission is indistinguishable from forgetting, and the successor cannot tell which happened.
-2. **Write.** Fill `.agents/skills/session-handoff/templates/handoff.md` to `.session/handoffs/<session-name>-handoff-NN.md`. Naming contract below.
+2. **Write.** Fill `.agents/skills/session-handoff/templates/handoff.md` to `<<PRIMARY_ROOT>>/.session/handoffs/<session-name>-handoff-NN.md`. Naming contract below.
 3. **Launch the successor.** Follow `.agents/skills/session-handoff/references/successor-launch.md`. With a runtime, this session launches it. Without one, this session prints the line and the human pastes it.
 
 ## Naming and location contract
 
 ```
-.session/handoffs/<predecessor-session-name>-handoff-NN.md
+<<PRIMARY_ROOT>>/.session/handoffs/<predecessor-session-name>-handoff-NN.md
 ```
 
-- `.session/` is gitignored. A handoff is worktree-local and disposable by design: it describes one session's state, it is not a project record, and committing it would put a decaying snapshot under version control.
-- `NN` is zero-padded, two digits, starting at `01`, incrementing across the whole lineage. List the directory before choosing; never assume.
+- `.session/` is gitignored, and a handoff is disposable by design: it describes one session's state, it is not a project record, and committing it would put a decaying snapshot under version control.
+- It lives in the PRIMARY checkout, `<<PRIMARY_ROOT>>` (`.agents/README.md` §"Checkout roots"), even when the session runs in a linked worktree. A handoff written inside a worktree dies with the worktree, and two worktrees of one lineage would each count `NN` from their own empty directory. The successor still launches in the SAME worktree as the predecessor; only the file lives in the primary.
+- `NN` is zero-padded, two digits, starting at `01`, incrementing across the whole lineage. List `<<PRIMARY_ROOT>>/.session/handoffs/` before choosing; never assume, and never count from a worktree's own `.session/`.
 - **The successor's session name is the handoff file's basename without the extension.** That is the entire naming rule, and it makes the lineage readable from the file list alone: `<base>`, then `<base>-handoff-01`, then `<base>-handoff-01-handoff-02`. Long names are the point; a lineage you cannot read is a lineage you cannot audit.
 - A durable fact that outlives the session does not belong in the handoff. It belongs in Engram, in the repo, or in the tracker. The handoff cites it.
 

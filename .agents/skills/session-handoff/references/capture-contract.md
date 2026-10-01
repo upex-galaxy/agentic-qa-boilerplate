@@ -98,5 +98,5 @@ Close with the handoff instruction itself: at what threshold the successor write
 
 ## Two things to check before writing the file
 
-1. **List the handoff directory.** `NN` is the next number in the lineage, not a guess. Two handoffs with the same number is a lineage that cannot be read.
+1. **List the handoff directory** (`<<PRIMARY_ROOT>>/.session/handoffs/`, the primary checkout's, also from a worktree). `NN` is the next number in the lineage, not a guess. Two handoffs with the same number is a lineage that cannot be read.
 2. **Re-verify anything going into §7.** Do not copy a measurement taken an hour ago into a section whose entire purpose is freshness. Re-run the check, then write the number and the time.
