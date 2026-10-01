@@ -66,6 +66,7 @@ import {
 import { harnessLevelMcpReport } from './lib/harness-level-mcps.ts';
 import { playwrightBrowsersInstalled } from './lib/playwright-cache.ts';
 import { gateIsOn, varsFor } from './lib/variables-manifest.ts';
+import { checkoutRoots } from './lib/worktree.ts';
 
 // `tui` pulls third-party deps (boxen/cli-table3/figures/picocolors). It is
 // imported lazily inside main() so `--preflight` loads only node built-ins and
@@ -187,11 +188,61 @@ export function envVarVerdict(spec: VarSpec, isSet: boolean, ctx: GateContext): 
   return spec.required === true && spec.defaultValue === undefined ? 'missing-required' : 'missing-optional';
 }
 
-interface PendingAction {
+export interface PendingAction {
   type: PendingActionType
   target: string
   hint: string
   where?: string
+}
+
+/** What setup this checkout lacks, as the worktree-aware fix list reads it. */
+export interface CheckoutSetupState {
+  /** A linked worktree, not the primary checkout. */
+  linked: boolean
+  envFile: boolean
+  deps: boolean
+  /** `.husky/_/` exists: without it `core.hooksPath` points at nothing and no git hook runs. */
+  gitHooks: boolean
+}
+
+/**
+ * The fix for missing setup, worktree-aware.
+ *
+ * In a linked worktree the answer is ONE command, `bun run worktree:provision`:
+ * it copies the real `.env` from the primary and installs everything. The
+ * primary-checkout answer (`cp .env.example .env`, then `bun run harness:env`)
+ * is the one thing NOT to do there: from a worktree `harness:env` writes the
+ * main checkout's env block, and a template `.env` would empty it. Returns the
+ * actions to add, and which generic ones they replace.
+ */
+export function checkoutSetupActions(state: CheckoutSetupState): { actions: PendingAction[], replaces: { envFile: boolean, deps: boolean, harnessEnv: boolean } } {
+  const missing = [
+    state.envFile ? null : '.env',
+    state.deps ? null : 'node_modules/',
+    state.gitHooks ? null : '.husky/_ (git hooks)',
+  ].filter((m): m is string => m !== null);
+  if (missing.length === 0) { return { actions: [], replaces: { envFile: false, deps: false, harnessEnv: false } }; }
+  if (state.linked) {
+    return {
+      actions: [{
+        type: 'shell_command',
+        target: 'bun run worktree:provision',
+        hint: `This is a linked worktree missing ${missing.join(', ')}. Provisioning copies .env and the other gitignored inputs from the primary checkout and installs dependencies and git hooks. Do not copy .env.example here: from a worktree, \`bun run harness:env\` writes the main checkout's env block.`,
+      }],
+      replaces: { envFile: true, deps: true, harnessEnv: !state.envFile },
+    };
+  }
+  if (!state.gitHooks && state.deps) {
+    return {
+      actions: [{
+        type: 'shell_command',
+        target: 'bun install',
+        hint: '.husky/_ is missing, so no git hook runs and commits pass no gate. `bun install` recreates it (husky prepare).',
+      }],
+      replaces: { envFile: false, deps: false, harnessEnv: false },
+    };
+  }
+  return { actions: [], replaces: { envFile: false, deps: false, harnessEnv: false } };
 }
 
 interface DirenvState {
@@ -270,6 +321,10 @@ interface DoctorReport {
   opencode_jsonc_exists: boolean
   agent_compatibility: AgentCompatibilityDiagnostic
   deps_installed: boolean
+  /** `.husky/_/` exists, i.e. git hooks run in this checkout. */
+  git_hooks_installed: boolean
+  /** Linked worktree: the primary checkout's root; null in the primary itself. */
+  worktree_of: string | null
   playwright_browsers: boolean
   direnv: DirenvState
   /**
@@ -881,6 +936,11 @@ export async function runDoctor(): Promise<DoctorReport> {
     opencode_jsonc_exists: existsSync(OPENCODE_PATH),
     agent_compatibility: agentCompatibility,
     deps_installed: existsSync(NODE_MODULES_DOTENV),
+    git_hooks_installed: existsSync(join(REPO_ROOT, '.husky', '_')),
+    worktree_of: ((): string | null => {
+      const roots = checkoutRoots(REPO_ROOT);
+      return roots?.linked === true ? roots.primaryRoot : null;
+    })(),
     playwright_browsers: playwrightBrowsersInstalled(),
     direnv: { installed: false },
     community_skills: await collectCommunitySkills(),
@@ -892,8 +952,16 @@ export async function runDoctor(): Promise<DoctorReport> {
     warnings: [],
   };
 
+  const setup = checkoutSetupActions({
+    linked: report.worktree_of !== null,
+    envFile: report.env_file_exists,
+    deps: report.deps_installed,
+    gitHooks: report.git_hooks_installed,
+  });
+  report.pending_actions.push(...setup.actions);
+
   // .env presence
-  if (!report.env_file_exists) {
+  if (!report.env_file_exists && !setup.replaces.envFile) {
     report.pending_actions.push({
       type: 'shell_command',
       target: 'cp .env.example .env',
@@ -1058,7 +1126,7 @@ export async function runDoctor(): Promise<DoctorReport> {
   }
 
   // node_modules / dotenv-cli
-  if (!report.deps_installed) {
+  if (!report.deps_installed && !setup.replaces.deps) {
     report.pending_actions.push({
       type: 'shell_command',
       target: 'bun install',
@@ -1124,7 +1192,7 @@ export async function runDoctor(): Promise<DoctorReport> {
     });
   }
 
-  if (!report.harness_env.ok) {
+  if (!report.harness_env.ok && !setup.replaces.harnessEnv) {
     const blocking = report.harness_env.findings.filter(f => f.blocking);
     report.pending_actions.push({
       type: 'shell_command',
@@ -1196,6 +1264,7 @@ function printHuman(report: DoctorReport): void {
     ['Codex CLI executable', compat.codex.cli_detected ? tui.statusIcon('ok') : `${tui.statusIcon('warn')} not found; Desktop remains configured`],
     ['Codex repository trust', `${tui.statusIcon('warn')} required; runtime state is not file-verifiable`],
     ['node_modules', report.deps_installed ? tui.statusIcon('ok') : tui.statusIcon('fail')],
+    ['Git hooks (.husky/_)', report.git_hooks_installed ? tui.statusIcon('ok') : `${tui.statusIcon('fail')} no hook runs`],
     ['Playwright browsers', report.playwright_browsers ? tui.statusIcon('ok') : tui.statusIcon('warn')],
     [`direnv binary${report.direnv.version ? ` (${report.direnv.version})` : ''}`, report.direnv.installed ? tui.statusIcon('ok') : tui.statusIcon('warn')],
   ];
@@ -1215,6 +1284,9 @@ function printHuman(report: DoctorReport): void {
     return `${icon} ${host.value}${note}`;
   })();
   checks.push(['Atlassian host (.agents/project.yaml)', hostRow]);
+  if (report.worktree_of !== null) {
+    checks.push(['Linked worktree of', `${tui.statusIcon('info')} ${report.worktree_of}`]);
+  }
   process.stdout.write(`${tui.table(['Check', 'Status'], checks)}\n`);
 
   // Env vars as a table, by scope (ADR-0005). A FAIL icon is reserved for the
