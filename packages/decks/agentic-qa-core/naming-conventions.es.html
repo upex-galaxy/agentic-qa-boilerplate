@@ -168,7 +168,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
     <span class="chip" style="--ac:#a78bfa"><span class="dot"></span>todos los artefactos del pipeline</span>
     <span class="chip" style="--ac:#fbbf24"><span class="dot"></span>convenciones ratificadas</span>
   </div>
-  <p class="dim3 mono mt-l" style="font-size:12px">Vive en <b>.agents/skills/agentic-qa-core/</b> — el skill base global.</p>
+  <p class="dim3 mono mt-l" style="font-size:12px">Vive en <b>packages/decks/agentic-qa-core/</b>, junto al skill base global que enseña.</p>
 </section>
 
 <!-- A · POR QUÉ UN CÓDICE -->
@@ -350,7 +350,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
     <div class="card lyr" style="--ac:#a3e635"><h4>Test Set · TS <span class="dim3" style="font-size:12px">(Feature · opcional)</span></h4>
       <div class="tmpl sm" style="--ac:#a3e635"><span class="t-fix" style="color:#a3e635">TS:</span> <span class="t-pre">{EPIC-KEY|module}</span><span class="t-pun">: </span><span class="t-fix" style="color:#a3e635">Validate</span> <span class="t-var">{feature}</span></div>
       <div class="ex mt-s">TS: <b>GX-101:</b> Validate credit card payment</div>
-      <p class="dim3" style="font-size:12.5px">Smoke / regression / agrupación de feature. La membresía vive en el Set (asociación Xray; issue link TC→Set solo en jira-native) — nunca el prefijo del TC.</p>
+      <p class="dim3" style="font-size:12.5px">Smoke / regression / agrupación de feature. La membresía vive en el Set: un issue link TC→Set en ambas modalidades (jira-xray suma además la asociación Xray), nunca el prefijo del TC.</p>
     </div>
     <div class="card lyr" style="--ac:#fbbf24"><h4>Test Plan · ATP <span class="dim3" style="font-size:12px">(Story)</span></h4>
       <div class="tmpl sm" style="--ac:#fbbf24"><span class="t-fix" style="color:#fbbf24">ATP:</span> <span class="t-pre">{STORY-KEY}</span><span class="t-pun">: </span><span class="t-var">{story title}</span></div>
@@ -526,7 +526,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
       <p class="mono" style="font-size:12.5px;line-height:1.8"><span style="color:#9aa3b4">TODO</span> · <span style="color:#60a5fa">EXECUTING</span> · <span style="color:#34d399">PASS</span> · <span style="color:#f87171">FAIL</span> · <span style="color:#fb923c">ABORTED</span> · <span style="color:#fbbf24">BLOCKED</span></p>
     </div>
   </div>
-  <div class="row mt-m" style="gap:8px;flex-wrap:wrap"><span class="dim3 mono" style="font-size:12px">labels (catálogo: .agents/jira-required.yaml):</span>
+  <div class="row mt-m" style="gap:8px;flex-wrap:wrap"><span class="dim3 mono" style="font-size:12px">labels (catálogo: test-documentation/references/tms-conventions.md):</span>
     <span class="tag">smoke</span><span class="tag">regression</span><span class="tag">e2e</span><span class="tag">integration</span><span class="tag">functional</span><span class="tag">automation-candidate</span><span class="tag">manual-only</span><span class="tag">automated</span></div>
   <div class="callout mt-m" style="--ac:#60a5fa;padding:10px 14px"><p style="margin:0" class="dim">Esta capa es <b>agnóstica del gestor</b> — Jira es el ejemplo de referencia; las mismas formas aplican a cualquier issue tracker (estados, labels, títulos de calidad).</p></div>
   <p class="mt-s"><span class="src">tms-conventions.md · reporting-templates.md · defect-management-doctrine.md</span></p>
@@ -564,7 +564,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
     <tbody>
       <tr><td>Carpeta de Epic</td><td class="m"><span class="lp">EPIC</span>-&lt;KEY&gt;-&lt;slug&gt;</td><td class="m">EPIC-GX-101-user-auth</td></tr>
       <tr><td>Carpeta de Story</td><td class="m"><span class="lp">STORY</span>-&lt;KEY&gt;-&lt;slug&gt;</td><td class="m">STORY-UPEX-110-discount-code</td></tr>
-      <tr><td>Carpetas coverable</td><td class="m"><span class="lp">BUG / IMPROVEMENT / TECHSTORY</span>-&lt;KEY&gt;-&lt;slug&gt;</td><td class="m">BUG-GX-202-login-error</td></tr>
+      <tr><td>Carpetas coverable</td><td class="m"><span class="lp">BUG / IMPROVEMENT / TECHSTORY / TECHDEBT</span>-&lt;KEY&gt;-&lt;slug&gt;</td><td class="m">BUG-GX-202-login-error</td></tr>
       <tr><td>Scope de test-spec</td><td class="m"><span class="lp">{PREFIX}</span>-T{NN}-{name}</td><td class="m">OD-T01-discount-validation</td></tr>
       <tr><td>Spec por ATC</td><td class="m">atc/<span class="lp">{TICKET-ID}</span>-{brief}.md</td><td class="m">atc/UPEX-411-discount-20pct.md</td></tr>
       <tr><td>Archivos canónicos</td><td class="m">spec.md · automation-plan.md · ROADMAP.md · PROGRESS.md</td><td class="dim">nombres fijos</td></tr>
@@ -606,7 +606,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
   <h2>Ratificadas · 7–12</h2>
   <div class="grid g3 mt-m">
     <div class="gap"><h4>7 · Labels de suite Allure</h4><p class="dim" style="font-size:13.5px">Agrupación del reporter indefinida.</p><span class="prop">derivar del tag Playwright — única fuente</span></div>
-    <div class="gap"><h4>8 · Archivos de test-execution</h4><p class="dim" style="font-size:13.5px">Un archivo md por ejecución vinculada (convención de sync).</p><span class="prop">test-executions/{TESTEXEC|RETESTEXEC}-{KEY}-{slug}.md</span></div>
+    <div class="gap"><h4>8 · Archivos de test-execution</h4><p class="dim" style="font-size:13.5px">Un archivo md por ejecución vinculada (convención de sync).</p><span class="prop">test-executions/{ATR|STR|RTR|RETEST}-{KEY}-{slug}.md</span><p class="dim3" style="font-size:12px;margin-top:6px">El prefijo copia el acrónimo del título; <span class="mono">TESTEXEC-</span> / <span class="mono">RETESTEXEC-</span> quedan solo para títulos que no siguen la convención.</p></div>
     <div class="gap"><h4>9 · Archivos de defect anidados</h4><p class="dim" style="font-size:13.5px">Un archivo md por defect vinculado (convención de sync).</p><span class="prop">defects/DEFECT-{KEY}-{slug}.md</span></div>
     <div class="gap"><h4>10 · Data factory / types</h4><p class="dim" style="font-size:13.5px">Payloads Faker y modelos varían.</p><span class="prop">DataFactory.ts · types.ts · constants.ts</span></div>
     <div class="gap"><h4>11 · Variables Gherkin</h4><p class="dim" style="font-size:13.5px">Estilo de placeholder implícito.</p><span class="prop">{snake_case} → {user_id}, {order_amount}</span></div>
@@ -773,7 +773,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
     <div class="lbar" style="--ac:#a78bfa"><span class="ln">B · CAPA</span><span class="ld">El primer token codifica la capa/altitud — se lee antes que la frase</span><span class="lx">ATP: · TS: · @atc</span></div>
     <div class="lbar" style="--ac:#22d3ee"><span class="ln">C · RESULTADO</span><span class="ld">Los casos se nombran por su resultado, no por su acción — verbo primero</span><span class="lx">should &lt;outcome&gt;</span></div>
     <div class="lbar" style="--ac:#fbbf24"><span class="ln">D · PLAN vs RESULTS</span><span class="ld">Plan y results se distinguen en el primer token (P = Plan, R = Results)</span><span class="lx">ATP → ATR</span></div>
-    <div class="lbar" style="--ac:#a3e635"><span class="ln">E · UNA FORMA</span><span class="ld">Una sola forma por artefacto; la membresía vive en el Set (asociación Xray; link solo en jira-native), nunca se mete en el nombre</span><span class="lx">membership ≠ prefijo</span></div>
+    <div class="lbar" style="--ac:#a3e635"><span class="ln">E · UNA FORMA</span><span class="ld">Una sola forma por artefacto; la membresía vive en el Set (issue link TC→ATS en ambas modalidades, más la asociación Xray en jira-xray), nunca se mete en el nombre</span><span class="lx">membership ≠ prefijo</span></div>
   </div>
   <div class="callout good mt-m" style="padding:11px 14px"><p style="margin:0" class="dim">El siguiente slide aplica estos axiomas a los <b>5 errores</b> que más se cometen al ignorarlos.</p></div>
 </section>
@@ -786,7 +786,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
     <div class="card lyr" style="--ac:#22d3ee"><h4>1 · <span class="mono">should</span> = caso · <span class="mono">Validate</span> = grupo</h4><p class="dim">El caso afirma un comportamiento (<span class="mono">should</span>); el grupo solo nombra la caja (<span class="mono">Validate</span>). Nunca al revés.</p></div>
     <div class="card lyr" style="--ac:#a78bfa"><h4>2 · ATC = <b>Acceptance</b> Test Case</h4><p class="dim">No "Automated". El ATC <b>es</b> el caso de prueba; <span class="mono">@atc</span> es su representación en código, y lo ata a Jira.</p></div>
     <div class="card lyr" style="--ac:#fbbf24"><h4>3 · R = <b>Results</b>, no Run</h4><p class="dim">ATR / STR son Test <b>Results</b>. Un "run" es solo una iteración de la ejecución; Results es el paraguas.</p></div>
-    <div class="card lyr" style="--ac:#60a5fa"><h4>4 · El prefijo = la clave de la Story</h4><p class="dim">El título de un TC lleva la clave de su User Story. La pertenencia a un Test Set es <b>membership</b> (asociación Xray; issue link solo en jira-native), nunca va en el nombre.</p></div>
+    <div class="card lyr" style="--ac:#60a5fa"><h4>4 · El prefijo = la clave de la Story</h4><p class="dim">El título de un TC lleva la clave de su User Story. La pertenencia a un Test Set es <b>membership</b> (issue link TC→ATS en ambas modalidades; jira-xray suma la asociación Xray), nunca va en el nombre.</p></div>
     <div class="card lyr" style="--ac:#a78bfa"><h4>5 · <span class="mono">@atc('PROJ-101')</span> literal</h4><p class="dim">El decorador lleva una clave Jira literal — sin template literals, sin IDs sintéticos.</p></div>
     <div class="card lyr" style="--ac:#fb923c"><h4>6 · <span class="mono">@integration</span>, no <span class="mono">@api</span></h4><p class="dim">El tag de API tests es <span class="mono">@integration</span> (contraparte de <span class="mono">@e2e</span>). <span class="mono">@api/</span> es el alias de import — otra cosa.</p></div>
     <div class="card lyr" style="--ac:#22d3ee"><h4>7 · El casing sigue a la capa</h4><p class="dim"><span class="mono">should</span> minúscula (continúa el prefijo) · <span class="mono">Validate</span> mayúscula (inicia el summary del grupo).</p></div>
@@ -823,8 +823,8 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
   <p class="kick">Mantenlo canónico</p>
   <h1>Una forma, <span class="grad">una verdad</span></h1>
   <div class="grid g3 mt-m">
-    <div class="card lyr" style="--ac:#22d3ee"><h4>Dónde vive</h4><p class="dim">Este deck vive en <span class="mono">agentic-qa-core</span> — el skill global citado por cada workflow. La fuente en prosa son los <span class="mono">references/</span> de los skills.</p></div>
-    <div class="card lyr" style="--ac:#a78bfa"><h4>Cuándo cambia</h4><p class="dim">Edita los <span class="mono">references/*.md</span> canónicos, regenera <span class="mono">REGISTRY.md</span>, y luego refresca este deck (EN + ES) para que el códice nunca derive.</p></div>
+    <div class="card lyr" style="--ac:#22d3ee"><h4>Dónde vive</h4><p class="dim">Este deck vive en <span class="mono">packages/decks/agentic-qa-core/</span>, el único hogar de los decks, y enseña el skill global citado por cada workflow. La fuente en prosa son los <span class="mono">references/</span> de los skills.</p></div>
+    <div class="card lyr" style="--ac:#a78bfa"><h4>Cuándo cambia</h4><p class="dim">Edita los <span class="mono">references/*.md</span> canónicos, regenera <span class="mono">REGISTRY.md</span>, y luego refresca este deck para que el códice nunca derive.</p></div>
     <div class="card lyr" style="--ac:#fbbf24"><h4>Qué sigue</h4><p class="dim">Todos los huecos ratificados; el detalle vive en los references de los skills.</p></div>
   </div>
   <p class="dim3 mono mt-l" style="font-size:12px">should = caso · Validate = grupo · prefijo = Story · @atc = clave Jira · @integration ≠ @api</p>
