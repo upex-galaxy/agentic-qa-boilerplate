@@ -719,7 +719,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <table class="dtable mt-s">
     <thead><tr><th>Dimensión</th><th>Defect</th><th>Bug</th><th>Improvement</th></tr></thead>
     <tbody>
-      <tr><td><b>Momento</b></td><td>Durante el sprint</td><td>Post-release</td><td>Cualquiera</td></tr>
+      <tr><td><b>Etapa de la feature</b></td><td>Aún no pasó de Staging</td><td>Ya vive arriba de Staging (prod)</td><td>Cualquiera</td></tr>
       <tr><td><b>Estado del producto</b></td><td>En desarrollo</td><td>Ya liberado</td><td>Funcional</td></tr>
       <tr><td><b>Qué señala</b></td><td>US saliendo defectuosa</td><td>Regresión / escape</td><td>Mejora o reclasificación</td></tr>
       <tr><td><b>Lectura de gestión</b></td><td>Contención (éxito de QA)</td><td>Fuga (riesgo a usuario)</td><td>Valor incremental / RCA</td></tr>
@@ -742,7 +742,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <div class="opt"><span class="mk">B</span><span>Bug — es una falla funcional</span></div>
         <div class="opt"><span class="mk">C</span><span>Improvement — el formulario podría mejorar</span></div>
       </div>
-      <div class="qexp"><b>Defect.</b> El criterio no es la gravedad sino el momento: la funcionalidad sigue en construcción dentro del sprint. Cazarlo aquí es contención, no fuga.</div>
+      <div class="qexp"><b>Defect.</b> Lo que decide es la etapa de vida de la <i>feature</i>, no la gravedad ni el ambiente donde lo viste: la funcionalidad sigue en construcción y todavía no pasó de Staging. Cazarlo aquí es contención, no fuga.</div>
     </div>
     <div class="qitem">
       <div class="qq"><span class="qn">Q2</span><span>Tres meses tras el release, un usuario reporta que el login falla solo si la contraseña tiene emojis. Antes funcionaba.</span></div>
@@ -754,7 +754,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="qexp"><b>Bug.</b> Funcionalidad ya desplegada que deja de funcionar = regresión. Es un escape: cruzó la red del sprint y llegó al usuario.</div>
     </div>
   </div>
-  <div class="notes">Deja que el público haga clic — las explicaciones aparecen al responder. La lección: el criterio que distingue es momento + estado del producto, nunca la gravedad ni el síntoma. Tercer caso (Improvement): si tras RCA el comportamiento es el especificado pero el cliente lo quiere distinto, se reclasifica vía "is not a Bug" → Enhancement (ver slide 9).</div>
+  <div class="notes">Deja que el público haga clic: las explicaciones aparecen al responder. La lección: el criterio que distingue es la etapa de vida de la feature (¿ya vive arriba de Staging?), nunca la gravedad, el síntoma ni el ambiente donde lo encontraste. Tercer caso (Improvement): si tras RCA el comportamiento es el especificado pero el cliente lo quiere distinto, se reclasifica vía "is not a Bug" → Enhancement (ver slide 9).</div>
 </section>
 
 <!-- 12. DIVIDER PART 2 -->
@@ -951,7 +951,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <div class="opt"><span class="mk">B</span><span>Priority</span></div>
         <div class="opt" data-correct="1"><span class="mk">C</span><span>Components</span></div>
       </div>
-      <div class="qexp"><b>Components.</b> Es el campo de agrupación por parte del producto (features/épicas). En ShopFlow está relleno en las 40 incidencias, así que ese dashboard se construye entero y muestra que Checkout y Auth lideran.</div>
+      <div class="qexp"><b>Components.</b> Es el campo de agrupación por módulo funcional de la app (rutas, features reales del sistema en marcha), nunca derivado de las épicas: la épica viaja por el parent y el link. En ShopFlow está relleno en las 40 incidencias, así que ese dashboard se construye entero y muestra que Checkout y Auth lideran.</div>
     </div>
   </div>
   <div class="notes">Refuerza: triage terminal (is WAD → REJECTED) y el rol de Components. Recuerda también el otro eje: un typo cosmético antes de una demo = Severity Trivial (impacto bajo) pero Priority High (urgencia alta) — ejes independientes, dos campos (ver slide 18).</div>
@@ -1093,7 +1093,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 <section class="slide" data-title="Escape rate">
   <p class="kicker">la métrica estrella del shift-left</p>
   <h2 class="h2" data-anim="fade-up">Defect vs Bug = tu Medidor de Escape</h2>
-  <p class="lede mt-s">Aquí la taxonomía paga. Como <b>Defect = en sprint</b> y <b>Bug = post-release</b>, su proporción <b>es</b>, literalmente, la salud del shift-left: ¿cuánto contenemos vs cuánto se fuga?</p>
+  <p class="lede mt-s">Aquí la taxonomía paga. Como <b>Defect = feature aún sin liberar</b> y <b>Bug = feature ya liberada</b>, su proporción <b>es</b>, literalmente, la salud del shift-left: ¿cuánto contenemos vs cuánto se fuga?</p>
   <div class="mgrid mt-m">
     <div class="mcard"><div class="mv grad">26</div><div class="mk">Defects (contenidos)</div><div class="md">cazados dentro del sprint</div></div>
     <div class="mcard"><div class="mv grad">10</div><div class="mk">Bugs (escapados)</div><div class="md">descubiertos post-release</div></div>
@@ -1369,7 +1369,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <div class="opt"><span class="mk">B</span><span>Severity Index</span></div>
         <div class="opt"><span class="mk">C</span><span>Defect Age</span></div>
       </div>
-      <div class="qexp"><b>Defect Escape Rate.</b> La proporción Bug/Defect mide exactamente la fuga, porque Defect=en sprint y Bug=post-release. Es la métrica núcleo del shift-left.</div>
+      <div class="qexp"><b>Defect Escape Rate.</b> La proporción Bug/Defect mide exactamente la fuga, porque Defect = feature aún sin liberar y Bug = feature ya liberada. Es la métrica núcleo del shift-left.</div>
     </div>
     <div class="qitem">
       <div class="qq"><span class="qn">Q2</span><span>El equipo de producto abre el dashboard de ShopFlow y pregunta "¿qué parte de la app concentra más defectos?". ¿Qué módulo lidera?</span></div>
