@@ -103,6 +103,12 @@ const ENV_TEMPLATE_FILES = ['.env.example'];
 const WORKTREE_INCLUDE_FILES = ['.worktreeinclude'];
 // Orca's committed repo hooks: provision a new worktree, audit it before removal.
 const ORCA_CONFIG_FILES = ['orca.yaml'];
+// The playwright-cli launch defaults (in memory, headless; ADR-0008). Delivered
+// ONCE when missing, then project-owned: a project may tune the viewport,
+// timeouts or test-id attribute. A copy that still carries the old shared
+// on-disk profile gets an informational parity row instead of an overwrite
+// (`legacyPlaywrightProfileKeys` in cli/lib/updater-parity.ts).
+const PLAYWRIGHT_CLI_CONFIG_FILES = ['cli.config.json'];
 // The varlock env schema, in two halves like `config/variables{.core,}.ts`:
 // `.env.core.schema` is GENERATED from cli/lib/variables-manifest.ts by
 // `bun run vars:schema` and plainly synced; `.env.schema` imports it, carries
@@ -250,6 +256,7 @@ export const COMPONENTS: Component[] = [
   // `.codex/config.toml` with it.
   { name: 'worktree-include', type: 'file-list', paths: ['.'], files: WORKTREE_INCLUDE_FILES, bootstrapOnly: true },
   { name: 'orca-config', type: 'file-list', paths: ['.'], files: ORCA_CONFIG_FILES, bootstrapOnly: true },
+  { name: 'playwright-cli-config', type: 'file-list', paths: ['.playwright'], files: PLAYWRIGHT_CLI_CONFIG_FILES, bootstrapOnly: true },
 ];
 
 // --- ARG PARSE ---
@@ -1396,12 +1403,17 @@ function makeParityHook(sink: ReportSink, priorLockSha: string, dryRun: boolean,
     // read-only check stands in, unless the preflight would migrate first
     // (then every contract is expectedly broken and the check says nothing).
     let compatErrors = runFacts.compat?.errors ?? [];
+    let compatWarnings = runFacts.compat?.warnings ?? [];
     if (dryRun && !runFacts.compat) {
       if (runFacts.migrationPlanned) {
         sink.step('[dry-run] Comprobación de compatibilidad omitida: la corrida real migra primero y la evalúa después.');
       }
       else {
-        try { compatErrors = checkAgentCompatibility(cwd).errors; }
+        try {
+          const check = checkAgentCompatibility(cwd);
+          compatErrors = check.errors;
+          compatWarnings = check.warnings;
+        }
         catch (err) { compatErrors = [err instanceof Error ? err.message : String(err)]; }
         // The real run deletes the retired alias wrappers (deprecatedFiles)
         // BEFORE this check; the preview still has them on disk, and the one
@@ -1417,6 +1429,7 @@ function makeParityHook(sink: ReportSink, priorLockSha: string, dryRun: boolean,
       upstreamDir: UPSTREAM_DIR,
       drift: drifted.map(d => ({ path: d.path, reason: d.reason, structural: d.structural === true, source: d.source })),
       compatErrors,
+      compatWarnings,
       archivedSkills,
       archivedSkillsDir,
       heldBack,

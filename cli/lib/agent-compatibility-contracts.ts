@@ -26,6 +26,8 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 
+import { isSchemaOwner } from './agents-schema.ts';
+
 /**
  * Servers whose per-host shape this boilerplate pins (`EXPECTED_MCP`). The
  * strict shape check applies to one of these ONLY when the project's
@@ -554,9 +556,63 @@ export function declaredMcpIds(root = process.cwd()): string[] {
   return Object.keys(servers).sort();
 }
 
-export function validateMcpParity(root = process.cwd()): string[] {
+/** What `validateMcpParityFindings` returns: errors fail the check, warnings are printed and never fail it. */
+export interface McpParityFindings {
+  errors: string[]
+  warnings: string[]
+}
+
+export interface McpParityOptions {
+  /**
+   * True in the boilerplate itself (`isSchemaOwner`). There a Codex launch
+   * gap (no `.env` loader, no startup budget) is an ERROR: the boilerplate
+   * ships the fix, so its own copy must carry it. Downstream it is a WARNING
+   * that names the file and what to add: `.codex/config.toml` is
+   * bootstrap-only, so a project scaffolded before the loader existed cannot
+   * receive it from a sync, and a red gate it cannot clear by syncing is how a
+   * team learns `--no-verify`. Defaults to reading `<root>/package.json`.
+   */
+  schemaOwner?: boolean
+}
+
+function readSchemaOwner(root: string): boolean {
+  const packageJson = join(root, 'package.json');
+  return existsSync(packageJson) && isSchemaOwner(readFileSync(packageJson, 'utf8'));
+}
+
+const LOADER_REASON = 'a Codex Desktop launch has no process environment, so env_vars alone forwards nothing';
+
+function loaderFix(): string {
+  return `set command = "${CODEX_ENV_LOADER_COMMAND}" and put ${JSON.stringify(CODEX_ENV_LOADER_ARGS)} before the current command and args`;
+}
+
+/**
+ * What a known server's Codex entry lacks when the ONLY difference from the
+ * pinned shape is a launch detail (the loader, the startup budget), or null
+ * when anything else differs too. Both details change how Codex starts the
+ * server, never which server it starts.
+ */
+function codexLaunchGaps(actual: NormalizedMcpServer, expected: NormalizedMcpServer): string[] | null {
+  if (!sameServer({ ...actual, envLoader: expected.envLoader, startupTimeoutSec: expected.startupTimeoutSec }, expected)) { return null; }
+  const gaps: string[] = [];
+  if ((actual.envLoader ?? false) !== (expected.envLoader ?? false)) { gaps.push(`${loaderFix()} (${LOADER_REASON})`); }
+  if (actual.startupTimeoutSec !== expected.startupTimeoutSec) {
+    gaps.push(expected.startupTimeoutSec === undefined
+      ? 'remove startup_timeout_sec'
+      : `set startup_timeout_sec = ${expected.startupTimeoutSec} (Codex's 10-second default is too short for a bunx-fetched server on a cold cache)`);
+  }
+  return gaps;
+}
+
+export function validateMcpParity(root = process.cwd(), options: McpParityOptions = {}): string[] {
+  return validateMcpParityFindings(root, options).errors;
+}
+
+export function validateMcpParityFindings(root = process.cwd(), options: McpParityOptions = {}): McpParityFindings {
   const resolvedRoot = resolve(root);
   const errors: string[] = [];
+  const warnings: string[] = [];
+  const schemaOwner = options.schemaOwner ?? readSchemaOwner(resolvedRoot);
   let configs: Record<McpHost, NormalizedMcpConfig>;
   try {
     configs = {
@@ -566,7 +622,7 @@ export function validateMcpParity(root = process.cwd()): string[] {
     };
   }
   catch (error) {
-    return [error instanceof Error ? error.message : String(error)];
+    return { errors: [error instanceof Error ? error.message : String(error)], warnings };
   }
 
   // The declaring host defines the set; the other two must match it exactly.
@@ -587,15 +643,22 @@ export function validateMcpParity(root = process.cwd()): string[] {
   }
 
   // Strict per-host shape, only for the servers this boilerplate knows AND the
-  // project declares (see PARITY RULE).
+  // project declares (see PARITY RULE). Downstream, a Codex entry that differs
+  // ONLY in a launch detail is a warning (see `McpParityOptions`).
+  const launchWarned = new Set<string>();
   for (const [host, config] of Object.entries(configs) as Array<[McpHost, NormalizedMcpConfig]>) {
     for (const id of declared) {
       const actual = config[id];
       if (!actual || !isKnownMcpId(id)) { continue; }
       const expected = EXPECTED_MCP[host][id];
-      if (!sameServer(actual, expected)) {
-        errors.push(`${host} MCP ${id} mismatch: expected ${describeServer(expected)}, found ${describeServer(actual)}`);
+      if (sameServer(actual, expected)) { continue; }
+      const gaps = host === 'codex' && !schemaOwner ? codexLaunchGaps(actual, expected) : null;
+      if (gaps !== null) {
+        warnings.push(`codex MCP ${id} launch is out of date in ${MCP_CONFIG_FILE.codex}: ${gaps.join('; ')}. Upstream never overwrites this file, so add it by hand.`);
+        launchWarned.add(id);
+        continue;
       }
+      errors.push(`${host} MCP ${id} mismatch: expected ${describeServer(expected)}, found ${describeServer(actual)}`);
     }
   }
 
@@ -605,7 +668,12 @@ export function validateMcpParity(root = process.cwd()): string[] {
   for (const id of declared) {
     const server = configs.codex[id];
     if (!server || server.transport !== 'stdio' || server.dependsOn.length === 0 || server.envLoader === true) { continue; }
-    errors.push(`codex MCP ${id} must launch through the .env loader (command = "${CODEX_ENV_LOADER_COMMAND}", args starting ${JSON.stringify(CODEX_ENV_LOADER_ARGS)}): a Codex Desktop launch has no process environment, so env_vars alone forwards nothing.`);
+    if (schemaOwner) {
+      errors.push(`codex MCP ${id} must launch through the .env loader (command = "${CODEX_ENV_LOADER_COMMAND}", args starting ${JSON.stringify(CODEX_ENV_LOADER_ARGS)}): ${LOADER_REASON}.`);
+    }
+    else if (!launchWarned.has(id)) {
+      warnings.push(`codex MCP ${id} starts without the .env loader in ${MCP_CONFIG_FILE.codex}: ${loaderFix()} (${LOADER_REASON}).`);
+    }
   }
 
   // Cross-host contract for EVERY declared server: same `.env` dependencies and
@@ -622,7 +690,7 @@ export function validateMcpParity(root = process.cwd()): string[] {
     }
   }
 
-  return errors;
+  return { errors, warnings };
 }
 
 function personalAbsolutePath(command: string): boolean {

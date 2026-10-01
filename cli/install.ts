@@ -82,6 +82,7 @@ import {
   toSiteSlug,
   writeAtlassianUrlToYaml,
 } from './lib/atlassian-instance.ts';
+import { removeRetiredEnvLines, retiredEnvKeysIn } from './lib/env-schema.ts';
 import { CLI_LOGINS, HARNESS_LEVEL_HOWTO, HARNESS_LEVEL_MCPS } from './lib/harness-level-mcps.ts';
 import { playwrightBrowsersInstalled } from './lib/playwright-cache.ts';
 import * as tui from './lib/tui.ts';
@@ -1157,6 +1158,31 @@ export async function ensureEnvFileExists(): Promise<void> {
   }
   await writeFile(ENV_PATH, '', 'utf8');
   log.warn('.env.example missing; created empty .env.');
+}
+
+/**
+ * Delete the `.env` lines that assign a retired key (`RETIRED_KEYS`), after one
+ * confirmation. The schema no longer declares them, and an undeclared EMPTY
+ * key fails `varlock load`, so this runs before anything validates `.env`.
+ * Non-interactive: report the names and edit nothing. Values are never printed.
+ */
+export async function cleanRetiredEnvKeys(): Promise<void> {
+  if (!existsSync(ENV_PATH)) { return; }
+  const text = await readFile(ENV_PATH, 'utf8');
+  const present = retiredEnvKeysIn(text);
+  if (present.length === 0) { return; }
+  if (NON_INTERACTIVE) {
+    log.warn(`.env still sets retired key(s) nothing reads any more: ${present.join(', ')}. Delete those lines (or run \`bun run setup:doctor\` in a terminal and accept the cleanup).`);
+    return;
+  }
+  const remove = await maybeConfirm(`.env still sets ${present.length} retired key(s) nothing reads any more (${present.join(', ')}). Delete those lines?`, true);
+  if (!remove) {
+    log.dim('  Kept. `bun run setup:doctor` keeps listing them until they are gone.');
+    return;
+  }
+  const { text: next, removed } = removeRetiredEnvLines(text);
+  await writeFile(ENV_PATH, next, { mode: 0o600 });
+  log.success(`Deleted from .env: ${removed.join(', ')}`);
 }
 
 export async function appendVarsToEnv(vars: Record<string, string>): Promise<void> {
@@ -3175,6 +3201,7 @@ async function main(): Promise<void> {
   tui.phaseHeader(3, 'CONFIGURATION');
 
   tui.section('Step 10: Wiring .env for MCP servers');
+  await cleanRetiredEnvKeys();
   await configureMcps(agents, state);
   await offerDirenvAutoload();
 

@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -52,6 +52,14 @@ describe('component registry', () => {
 
   test('.worktreeinclude ships once (bootstrap-only), so the lines a project adds survive every sync', () => {
     expect(COMPONENTS.find(c => c.name === 'worktree-include')).toMatchObject({ type: 'file-list', paths: ['.'], files: ['.worktreeinclude'], bootstrapOnly: true });
+  });
+
+  test('.playwright/cli.config.json ships once (bootstrap-only): a project keeps its tuning, the legacy profile is a parity row', () => {
+    expect(COMPONENTS.find(c => c.name === 'playwright-cli-config')).toMatchObject({ type: 'file-list', paths: ['.playwright'], files: ['cli.config.json'], bootstrapOnly: true });
+    // Upstream's own copy is the shape the parity row asks for.
+    const shipped = JSON.parse(readFileSync(join(import.meta.dir, '..', '.playwright', 'cli.config.json'), 'utf8')) as { browser: Record<string, unknown> };
+    expect(shipped.browser.isolated).not.toBe(false);
+    expect(shipped.browser).not.toHaveProperty('userDataDir');
   });
 
   test('the retired command aliases leave the sync and are removed downstream, the project\'s own commands stay', () => {

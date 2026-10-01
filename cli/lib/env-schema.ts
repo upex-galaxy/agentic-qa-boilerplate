@@ -103,19 +103,25 @@ export const RUNTIME_KNOBS: readonly RuntimeKnob[] = [
 ];
 
 // ----------------------------------------------------------------------------
-// Retired keys: declared so an older .env still validates
+// Retired keys: cleaned from .env, never declared
 // ----------------------------------------------------------------------------
 
 /**
  * Keys the manifest no longer knows but an adopting repo's `.env` may still
- * carry, copied from an older template. varlock fails an UNDECLARED key that
- * is present and EMPTY (env-secrets probe), so retiring a key from the manifest
- * without declaring it here would break every downstream `.env` the day it
- * synced the new schema. Each stays declared, optional and sensitive, under a
- * banner that says to delete the line; the doctor warns when one is set.
+ * carry, copied from an older template. The schema does NOT declare them:
+ * nothing reads them, and a declared name reads as a live one.
+ *
+ * That has a price, measured with the pinned varlock: an UNDECLARED key that
+ * is present and EMPTY in `.env` fails `varlock load` ("Value is required but
+ * is currently empty"); one with a value passes. So the cleanup runs BEFORE
+ * any validation: `bun run setup` and `bun run setup:doctor` find the lines
+ * (`retiredEnvKeysIn`) and offer to delete them with one confirmation
+ * (`removeRetiredEnvLines`), and the doctor's own validation neutralizes the
+ * ones still there (`neutralizeRetiredKeys`) so a declined cleanup or a
+ * non-interactive run reports them instead of failing on them.
  *
  * `since` is the date the key left the manifest; `reason` is one sentence a
- * human reads in the schema comment.
+ * human reads in the cleanup prompt.
  */
 export interface RetiredKey {
   name: string
@@ -129,6 +135,57 @@ export const RETIRED_KEYS: readonly RetiredKey[] = [
   { name: 'RESEND_API_KEY', since: '2026-09-24', reason: 'the resend CLI logs in on its own (resend login); nothing in the repo reads it.' },
   { name: 'API_TOKEN', since: '2026-09-24', reason: 'legacy; bun run api:login writes the curl token to .auth/tokens.env.' },
 ];
+
+/** An ACTIVE assignment line (`KEY=` or `export KEY=`); a commented line is inert and stays. */
+const ENV_ASSIGNMENT = /^\s*(?:export\s+)?([A-Za-z_]\w*)\s*=/;
+
+/**
+ * The retired keys that `.env` text still assigns, in `RETIRED_KEYS` order.
+ * Names only: a caller never needs, and never gets, a value.
+ */
+export function retiredEnvKeysIn(envText: string, retired: readonly RetiredKey[] = RETIRED_KEYS): string[] {
+  const assigned = new Set<string>();
+  for (const line of envText.split(/\r?\n/)) {
+    const match = ENV_ASSIGNMENT.exec(line);
+    if (match) { assigned.add(match[1]); }
+  }
+  return retired.filter(k => assigned.has(k.name)).map(k => k.name);
+}
+
+/**
+ * `.env` text without the active lines that assign a retired key. Every other
+ * line, comment and line ending is kept byte for byte; a duplicate assignment
+ * of the same key goes too.
+ */
+export function removeRetiredEnvLines(envText: string, retired: readonly RetiredKey[] = RETIRED_KEYS): { text: string, removed: string[] } {
+  const names = new Set(retired.map(k => k.name));
+  const removed = new Set<string>();
+  const kept: string[] = [];
+  // Split keeping each line's own terminator, so a CRLF file stays CRLF.
+  for (const line of envText.split(/(?<=\n)/)) {
+    const match = ENV_ASSIGNMENT.exec(line);
+    if (match && names.has(match[1])) {
+      removed.add(match[1]);
+      continue;
+    }
+    kept.push(line);
+  }
+  return { text: kept.join(''), removed: retired.filter(k => removed.has(k.name)).map(k => k.name) };
+}
+
+/**
+ * A child environment in which every retired key `.env` still assigns has a
+ * non-empty placeholder, so `varlock load` judges the declared items only. A
+ * process value wins over the `.env` line (measured), and an undeclared key
+ * fails only when EMPTY. The placeholder is a constant, never the real value.
+ */
+export function neutralizeRetiredKeys<T extends Record<string, string | undefined>>(env: T, retiredInFile: readonly string[]): T {
+  // Generic, never `NodeJS.ProcessEnv`: `cli/**` must compile under a host
+  // whose `ProcessEnv` requires `NODE_ENV` (cli/updater-host-types.test.ts).
+  const out: Record<string, string | undefined> = { ...env };
+  for (const name of retiredInFile) { out[name] = 'retired'; }
+  return out as T;
+}
 
 // ----------------------------------------------------------------------------
 // Generation
@@ -228,18 +285,12 @@ function envFileSpecs(manifest: readonly VarSpec[]): VarSpec[] {
 export function generateCoreSchema(
   manifest: readonly VarSpec[] = VAR_MANIFEST,
   knobs: readonly RuntimeKnob[] = RUNTIME_KNOBS,
-  retired: readonly RetiredKey[] = RETIRED_KEYS,
 ): string {
   validateVarManifest(manifest);
   const manifestNames = new Set(manifest.map(s => s.name));
   for (const knob of knobs) {
     if (manifestNames.has(knob.name)) {
       throw new Error(`Runtime knob '${knob.name}' is also a manifest variable; declare it once.`);
-    }
-  }
-  for (const key of retired) {
-    if (manifestNames.has(key.name) || knobs.some(k => k.name === key.name)) {
-      throw new Error(`Retired key '${key.name}' is still declared elsewhere; retire it or declare it, not both.`);
     }
   }
 
@@ -305,19 +356,6 @@ export function generateCoreSchema(
   for (const knob of knobs) {
     body.push(...renderKnob(knob));
     body.push('');
-  }
-  if (retired.length > 0) {
-    body.push('# ----------------------------------------------------------------------------');
-    body.push('# RETIRED keys. Nothing reads them any more. Declared (optional) only so a .env');
-    body.push('# copied from an older template still validates: delete the line from yours.');
-    body.push('# ----------------------------------------------------------------------------');
-    body.push('');
-    for (const key of retired) {
-      body.push(`# Retired ${key.since}: ${safeText(key.reason)}`);
-      body.push('# @sensitive');
-      body.push(`${key.name}=`);
-      body.push('');
-    }
   }
 
   return `${[...header, ...body].join('\n').replace(/\n+$/, '')}\n`;

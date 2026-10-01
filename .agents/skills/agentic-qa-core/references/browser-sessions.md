@@ -17,7 +17,7 @@ Before the first `open`, answer: **does the page need a logged-in session, and w
 
 The shipped `.playwright/cli.config.json` launches every session **in memory and headless**: no profile on disk, nothing shared between two session names. Persistence is always explicit (`--profile`), headed is always explicit (`--headed`, when a human must see the window: a first login, a demo, a pair session).
 
-`bun run up` does not deliver that file: a project keeps the copy it was scaffolded with. If its `browser` block still carries `"isolated": false` and a `"userDataDir"`, every session name shares that one profile and nothing in this file's isolation holds. Fix it once (remove both keys; `headless: true`), with the human's OK, before trusting a session name as isolation.
+`bun run up` delivers that file only when it is missing and never overwrites it: a project keeps the copy it has. If its `browser` block still carries `"isolated": false` and a `"userDataDir"`, every session name shares that one profile and nothing in this file's isolation holds; the updater says so in an informational parity row on every run until it is fixed. Fix it once (remove both keys; `headless: true`), with the human's OK, before trusting a session name as isolation.
 
 ---
 
