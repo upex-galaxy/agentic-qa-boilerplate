@@ -1,0 +1,10 @@
+[UI Setup] Starting UI authentication...
+[UI Setup] Target: /login
+✅ [PROJ-101] loginSuccessfully - PASS (2108ms)
+[UI Setup] UI login successful
+[UI Setup] Intercepting token from login response...
+[UI Setup] Token intercepted successfully
+[UI Setup] Storage state saved to .auth/user.json
+[UI Setup] API token saved to .auth/api-state.json
+[UI Setup] Authentication successful
+[UI Setup] Current URL: https://dojo.upexgalaxy.com/dashboard

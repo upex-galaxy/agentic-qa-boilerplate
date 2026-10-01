@@ -1,0 +1,3 @@
+---- API OK: 200 - https://dojo.upexgalaxy.com/api/auth/login
+---- API OK: 200 - https://dojo.upexgalaxy.com/api/auth/me
+✅ [PROJ-101] authenticateSuccessfully - PASS (501ms)

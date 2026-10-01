@@ -1,0 +1,15 @@
+
+============================================================
+KATA Architecture - Global Setup
+============================================================
+Environment: staging
+CI Mode: Yes
+============================================================
+
+[CREATED] test-results/screenshots
+[CREATED] playwright-report
+[CREATED] allure-results
+[CREATED] reports
+[CREATED] .auth
+[OK] Global setup complete
+
