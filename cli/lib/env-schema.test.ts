@@ -10,6 +10,7 @@
  */
 
 import type { VarSpec } from './variables-manifest.ts';
+import { spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -19,11 +20,14 @@ import {
   CORE_SCHEMA_FILE,
   generateCoreSchema,
   loadSchemaPairThroughVarlock,
+  neutralizeRetiredKeys,
   placeholderEnv,
   placeholderFor,
   PROJECT_SCHEMA_FILE,
   projectSchemaTemplate,
+  removeRetiredEnvLines,
   RETIRED_KEYS,
+  retiredEnvKeysIn,
   RUNTIME_KNOBS,
   schemaRequiredDecorator,
   seedProjectSchema,
@@ -77,22 +81,14 @@ describe('generateCoreSchema', () => {
     expect(a.endsWith('\n\n')).toBe(false);
   });
 
-  test('declares every env-file manifest var, every runtime knob and every retired key exactly once, never ATLASSIAN_URL', () => {
+  test('declares every env-file manifest var and every runtime knob exactly once, never ATLASSIAN_URL nor a retired key', () => {
     const text = generateCoreSchema();
     const declared = text.split('\n').filter(l => /^[A-Z][A-Z0-9_]*=/.test(l)).map(l => l.slice(0, l.indexOf('=')));
     for (const s of envFileVars()) { expect(declared.filter(k => k === s.name)).toHaveLength(1); }
     for (const k of RUNTIME_KNOBS) { expect(declared.filter(x => x === k.name)).toHaveLength(1); }
-    for (const k of RETIRED_KEYS) { expect(declared.filter(x => x === k.name)).toHaveLength(1); }
+    for (const k of RETIRED_KEYS) { expect(declared).not.toContain(k.name); }
     expect(declared).not.toContain('ATLASSIAN_URL');
-    expect(declared).toHaveLength(envFileVars().length + RUNTIME_KNOBS.length + RETIRED_KEYS.length);
-  });
-
-  test('a retired key is declared optional and sensitive, and rejected when still declared elsewhere', () => {
-    // An older .env carrying `TAVILY_API_KEY=` (empty) must keep validating:
-    // varlock fails an undeclared key that is present and empty.
-    const text = generateCoreSchema([spec({ name: 'A' })], [], [{ name: 'OLD_KEY', since: '2026-01-01', reason: 'gone' }]);
-    expect(text).toContain('# Retired 2026-01-01: gone\n# @sensitive\nOLD_KEY=\n');
-    expect(() => generateCoreSchema([spec({ name: 'A' })], [], [{ name: 'A', since: 'x', reason: 'dup' }])).toThrow(/retire it or declare it/);
+    expect(declared).toHaveLength(envFileVars().length + RUNTIME_KNOBS.length);
   });
 
   test('maps the manifest to decorators the way VarSchemaHints documents', () => {
@@ -142,6 +138,76 @@ describe('generateCoreSchema', () => {
     const unconditional = envFileVars().filter(s => schemaRequiredDecorator(s) === '@required').map(s => s.name);
     expect(unconditional).toEqual(['TEST_ENV']);
   });
+});
+
+describe('retired keys in .env', () => {
+  const OLD_ENV = [
+    '# a comment that names TAVILY_API_KEY=',
+    'TEST_ENV=local',
+    'TAVILY_API_KEY=',
+    'export POSTMAN_API_KEY=pm-value',
+    '# RESEND_API_KEY=commented-out',
+    'ATLASSIAN_EMAIL=me(at)example.com',
+    'TAVILY_API_KEY=duplicate',
+    '',
+  ].join('\n');
+
+  test('retiredEnvKeysIn names the active assignments only, in RETIRED_KEYS order, never a value', () => {
+    expect(retiredEnvKeysIn(OLD_ENV)).toEqual(['TAVILY_API_KEY', 'POSTMAN_API_KEY']);
+    expect(retiredEnvKeysIn('TEST_ENV=local\n')).toEqual([]);
+  });
+
+  test('removeRetiredEnvLines drops every active retired line and keeps the rest byte for byte', () => {
+    const { text, removed } = removeRetiredEnvLines(OLD_ENV);
+    expect(removed).toEqual(['TAVILY_API_KEY', 'POSTMAN_API_KEY']);
+    expect(text).toBe([
+      '# a comment that names TAVILY_API_KEY=',
+      'TEST_ENV=local',
+      '# RESEND_API_KEY=commented-out',
+      'ATLASSIAN_EMAIL=me(at)example.com',
+      '',
+    ].join('\n'));
+    expect(removeRetiredEnvLines('A=1\r\nAPI_TOKEN=x\r\nB=2').text).toBe('A=1\r\nB=2');
+    expect(removeRetiredEnvLines(text).removed).toEqual([]);
+  });
+
+  test('neutralizeRetiredKeys sets a constant placeholder and never touches other keys', () => {
+    const input: Record<string, string | undefined> = { PATH: '/bin', TAVILY_API_KEY: '' };
+    const env = neutralizeRetiredKeys(input, ['TAVILY_API_KEY', 'API_TOKEN']);
+    expect(env).toEqual({ PATH: '/bin', TAVILY_API_KEY: 'retired', API_TOKEN: 'retired' });
+    expect(input.TAVILY_API_KEY).toBe('');
+  });
+
+  test('through the pinned varlock: an empty retired key fails the load, and both remedies pass it', () => {
+    // The measurement this design rests on. If varlock ever stops failing an
+    // undeclared empty key, the cleanup is still right; if a process value
+    // stops winning over the .env line, the doctor's neutralization breaks.
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'env-schema-retired-'));
+    try {
+      fs.copyFileSync(path.join(REPO_ROOT, CORE_SCHEMA_FILE), path.join(dir, CORE_SCHEMA_FILE));
+      fs.copyFileSync(path.join(REPO_ROOT, PROJECT_SCHEMA_FILE), path.join(dir, PROJECT_SCHEMA_FILE));
+      const scrubbed: NodeJS.ProcessEnv = { ...process.env };
+      for (const s of VAR_MANIFEST) { delete scrubbed[s.name]; }
+      for (const k of RUNTIME_KNOBS) { delete scrubbed[k.name]; }
+      for (const k of RETIRED_KEYS) { delete scrubbed[k.name]; }
+      const load = (env: NodeJS.ProcessEnv): number | null => spawnSync('bunx', ['varlock', 'load', '--agent', '--path', `${dir}${path.sep}`], {
+        cwd: REPO_ROOT,
+        env,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      }).status;
+
+      const old = 'TEST_ENV=local\nTAVILY_API_KEY=\n';
+      fs.writeFileSync(path.join(dir, '.env'), old, 'utf8');
+      expect(load(scrubbed)).not.toBe(0);
+      expect(load(neutralizeRetiredKeys(scrubbed, retiredEnvKeysIn(old)))).toBe(0);
+      fs.writeFileSync(path.join(dir, '.env'), removeRetiredEnvLines(old).text, 'utf8');
+      expect(load(scrubbed)).toBe(0);
+    }
+    finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  }, 60_000);
 });
 
 describe('placeholders', () => {

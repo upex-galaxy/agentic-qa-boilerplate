@@ -28,8 +28,12 @@ export * from '../cli/lib/agent-compatibility.ts';
 
 function printCheck(result: CompatibilityCheck): void {
   console.log(describeAliasStatus(result.alias));
+  // Warnings never fail the check: each names the file and what to add.
+  for (const warning of result.warnings) {
+    console.warn(`  WARN: ${warning}`);
+  }
   if (result.ok) {
-    console.log('Agent compatibility OK.');
+    console.log(`Agent compatibility OK${result.warnings.length > 0 ? ` (${result.warnings.length} warning(s) above)` : ''}.`);
     return;
   }
   const groups = groupCompatibilityErrors(result.errors);

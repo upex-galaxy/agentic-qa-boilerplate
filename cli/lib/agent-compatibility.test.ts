@@ -31,6 +31,7 @@ import {
   validateEslintBlockWiring,
   validateHookCompatibility,
   validateMcpParity,
+  validateMcpParityFindings,
   validateOpenCodePluginEntrypoints,
 } from './agent-compatibility-contracts.ts';
 import {
@@ -1080,29 +1081,84 @@ describe('project-declared MCP set', () => {
     expect(errors[0]).toContain('--read-only');
   });
 
-  test('requires the .env loader on a Codex server that needs .env values, known or not', () => {
+  test('in the boilerplate, requires the .env loader on a Codex server that needs .env values, known or not', () => {
     const root = contractFixture(undefined, PROJECT_IDS);
     const configPath = join(root, '.codex/config.toml');
     // Strip the loader from every server: the unknown `supabase` still needs a variable.
     writeFileSync(configPath, readFileSync(configPath, 'utf8').replaceAll(`${CODEX_LOADER}, `, ''));
 
-    const errors = validateMcpParity(root);
+    const errors = validateMcpParity(root, { schemaOwner: true });
     expect(errors.some(e => e.startsWith('codex MCP supabase must launch through the .env loader'))).toBe(true);
     expect(errors.some(e => e.startsWith('codex MCP openapi must launch through the .env loader'))).toBe(true);
     // A server with nothing to load is left alone by the generic rule.
     expect(errors.some(e => e.startsWith('codex MCP context7 must launch'))).toBe(false);
   });
 
-  test('pins the Codex startup budget of a known server', () => {
+  test('downstream, a missing Codex loader is a warning that names the file and what to add', () => {
+    const root = contractFixture(undefined, PROJECT_IDS);
+    const configPath = join(root, '.codex/config.toml');
+    writeFileSync(configPath, readFileSync(configPath, 'utf8').replaceAll(`${CODEX_LOADER}, `, ''));
+
+    const { errors, warnings } = validateMcpParityFindings(root, { schemaOwner: false });
+    expect(errors).toEqual([]);
+    // The unknown server gets the generic loader warning; a known one gets
+    // ONE launch warning, never a second one from the generic rule.
+    const supabase = warnings.filter(w => w.startsWith('codex MCP supabase '));
+    expect(supabase).toHaveLength(1);
+    expect(supabase[0]).toContain('starts without the .env loader in .codex/config.toml');
+    expect(supabase[0]).toContain(`set command = "${CODEX_ENV_LOADER_COMMAND}"`);
+    expect(supabase[0]).toContain(JSON.stringify(CODEX_ENV_LOADER_ARGS));
+    const openapi = warnings.filter(w => w.startsWith('codex MCP openapi '));
+    expect(openapi).toHaveLength(1);
+    expect(openapi[0]).toStartWith('codex MCP openapi launch is out of date in .codex/config.toml: set command = ');
+    // context7 needs no variable, but it is a known server: its pinned shape
+    // carries the loader, so it is warned about too.
+    expect(warnings.some(w => w.startsWith('codex MCP context7 launch is out of date'))).toBe(true);
+    // The compat error group stays MCP, so the doctor and the updater place it.
+    expect(warnings.every(w => /\bMCP\b/.test(w))).toBe(true);
+  });
+
+  test('ownership comes from package.json: the boilerplate errors, any other name warns', () => {
+    const root = contractFixture(undefined, PROJECT_IDS);
+    const configPath = join(root, '.codex/config.toml');
+    writeFileSync(configPath, readFileSync(configPath, 'utf8').replaceAll(`${CODEX_LOADER}, `, ''));
+
+    expect(validateMcpParity(root)).toEqual([]);
+    write(root, 'package.json', JSON.stringify({ name: 'my-qa-project' }));
+    expect(validateMcpParity(root)).toEqual([]);
+    write(root, 'package.json', JSON.stringify({ name: 'agentic-qa-boilerplate' }));
+    expect(validateMcpParity(root).some(e => e.includes('must launch through the .env loader'))).toBe(true);
+  });
+
+  test('in the boilerplate, pins the Codex startup budget of a known server', () => {
     const root = contractFixture(undefined, PROJECT_IDS);
     const configPath = join(root, '.codex/config.toml');
     writeFileSync(configPath, readFileSync(configPath, 'utf8')
       .replace('[mcp_servers.openapi]\ncommand = "bunx"\nenabled = true\nstartup_timeout_sec = 30\n', '[mcp_servers.openapi]\ncommand = "bunx"\nenabled = true\n'));
 
-    const errors = validateMcpParity(root);
+    const errors = validateMcpParity(root, { schemaOwner: true });
     expect(errors).toHaveLength(1);
     expect(errors[0]).toStartWith('codex MCP openapi mismatch: expected ');
     expect(errors[0]).toContain(`"startupTimeoutSec":${CODEX_STARTUP_TIMEOUT_SEC}`);
+  });
+
+  test('downstream, a missing Codex startup budget is a warning; any other shape difference still fails', () => {
+    const root = contractFixture(undefined, PROJECT_IDS);
+    const configPath = join(root, '.codex/config.toml');
+    writeFileSync(configPath, readFileSync(configPath, 'utf8')
+      .replace('[mcp_servers.openapi]\ncommand = "bunx"\nenabled = true\nstartup_timeout_sec = 30\n', '[mcp_servers.openapi]\ncommand = "bunx"\nenabled = true\n'));
+
+    const budget = validateMcpParityFindings(root, { schemaOwner: false });
+    expect(budget.errors).toEqual([]);
+    expect(budget.warnings).toEqual([
+      `codex MCP openapi launch is out of date in .codex/config.toml: set startup_timeout_sec = ${CODEX_STARTUP_TIMEOUT_SEC} (Codex's 10-second default is too short for a bunx-fetched server on a cold cache). Upstream never overwrites this file, so add it by hand.`,
+    ]);
+
+    writeFileSync(configPath, readFileSync(configPath, 'utf8').replace('"--tools", "dynamic"]', '"--tools", "dynamic", "--read-only"]'));
+    const shape = validateMcpParityFindings(root, { schemaOwner: false });
+    expect(shape.warnings).toEqual([]);
+    expect(shape.errors).toHaveLength(1);
+    expect(shape.errors[0]).toStartWith('codex MCP openapi mismatch: expected ');
   });
 
   test('reads a loader-wrapped Codex command as the server it starts', () => {
@@ -1340,7 +1396,26 @@ describe('checkAgentCompatibility', () => {
     const root = repositoryFixture();
     repairClaudeSkillsAlias(root, 'linux');
 
-    expect(checkAgentCompatibility(root, 'linux')).toMatchObject({ ok: true, errors: [], alias: { status: 'valid' } });
+    expect(checkAgentCompatibility(root, 'linux')).toMatchObject({ ok: true, errors: [], warnings: [], alias: { status: 'valid' } });
+  });
+
+  test('a downstream Codex launch gap passes with a warning; the boilerplate fails on the same file', () => {
+    const root = repositoryFixture();
+    repairClaudeSkillsAlias(root, 'linux');
+    const configPath = join(root, '.codex/config.toml');
+    writeFileSync(configPath, readFileSync(configPath, 'utf8').replaceAll(`${CODEX_LOADER}, `, ''));
+
+    const downstream = checkAgentCompatibility(root, 'linux');
+    expect(downstream.ok).toBe(true);
+    expect(downstream.errors).toEqual([]);
+    expect(downstream.warnings.length).toBeGreaterThan(0);
+    expect(downstream.warnings.every(w => w.includes('.codex/config.toml'))).toBe(true);
+
+    write(root, 'package.json', JSON.stringify({ name: 'agentic-qa-boilerplate' }));
+    const owner = checkAgentCompatibility(root, 'linux');
+    expect(owner.ok).toBe(false);
+    expect(owner.warnings).toEqual([]);
+    expect(owner.errors.some(e => e.includes('must launch through the .env loader'))).toBe(true);
   });
 
   test('reports the missing alias together with every contract error', () => {
