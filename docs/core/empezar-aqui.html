@@ -263,9 +263,9 @@ bun run setup</code></pre>
           <strong>Configuración</strong>
           <p>
             Pide las credenciales que usan los MCPs y las guarda en <code>.env</code>. Ofrece
-            <code>direnv allow</code> (opcional: solo lo necesitan Codex y las CLIs que leen
-            variables de la shell, como <code>acli</code>, <code>curl</code> o
-            <code>bun xray</code>) y, si quieres, crea el repo en GitHub con <code>gh</code>.
+            <code>direnv allow</code> (opcional: solo lo necesitan las CLIs que leen variables de la
+            shell, como <code>acli</code>, <code>curl</code> o <code>bun xray</code>) y, si quieres,
+            crea el repo en GitHub con <code>gh</code>.
           </p>
         </li>
         <li>
@@ -395,11 +395,11 @@ bun run setup</code></pre>
             </tr>
             <tr>
               <td>Codex</td>
-              <td>El entorno del proceso.</td>
               <td>
-                Tú, al lanzarlo con <code>bun run codex</code>, o direnv con el
-                <code>.envrc</code> del repo.
+                El propio <code>.env</code>: cada MCP de <code>.codex/config.toml</code> arranca con
+                un loader que lo lee.
               </td>
+              <td>Nadie. Solo hace falta <code>bun install</code> una vez.</td>
             </tr>
           </tbody>
         </table>

@@ -152,9 +152,10 @@ DBHUB_PASSWORD=</code></pre>
             archivos que leen los harness al arrancar: el bloque <code>env</code> de
             <code>.claude/settings.local.json</code> y los archivos de <code>.auth/opencode/</code>.
             Así el MCP recibe las variables aunque abras el harness desde la app de escritorio.
-            Codex sigue dependiendo del wrapper del paso siguiente.
-            <code>bun run harness:env:check</code> te dice si <code>.env</code> y esos archivos
-            están desalineados. Ninguno de los dos imprime valores, solo nombres.
+            Codex no necesita este paso: cada MCP de <code>.codex/config.toml</code> arranca con un
+            loader que lee <code>.env</code> directamente. <code>bun run harness:env:check</code> te
+            dice si <code>.env</code> y esos archivos están desalineados. Ninguno de los dos imprime
+            valores, solo nombres.
           </p>
         </li>
         <li>

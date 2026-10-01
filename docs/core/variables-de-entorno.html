@@ -221,8 +221,13 @@ bun run vars:schema:check      # el core generado está al día y el par carga</
             </tr>
             <tr>
               <td>Codex</td>
-              <td>El entorno del proceso, por nombre</td>
-              <td>Tú, con <code>bun run codex</code> o direnv</td>
+              <td>
+                El propio <code>.env</code>: cada MCP arranca con
+                <code>dotenv -o -e .env --</code> delante, así que no depende de cómo abriste Codex
+              </td>
+              <td>
+                Nadie: el loader lo lee al arrancar el server (necesita <code>bun install</code>)
+              </td>
               <td>Es el único que falla al arrancar nombrando el server</td>
             </tr>
           </tbody>
@@ -348,16 +353,21 @@ bun run vars:schema:check      # el core generado está al día y el par carga</
               <td><code>~/.claude.json</code> (ámbito de usuario) o un conector de claude.ai</td>
               <td>
                 <code>claude mcp add --scope user --transport http &lt;nombre&gt; &lt;url&gt;</code
-                >, o conectarlo desde los ajustes de claude.ai; <code>/mcp</code> dentro de la
-                sesión lo lista.
+                >, o conectarlo desde los ajustes de claude.ai. Compruébalo con
+                <code>/mcp</code> dentro de la sesión.
               </td>
             </tr>
             <tr>
               <td>OpenCode</td>
-              <td><code>~/.config/opencode/opencode.json</code>, clave <code>mcp</code></td>
               <td>
-                Añade el server a la config global; el <code>opencode.jsonc</code> del proyecto no
-                lo redeclara.
+                <code>~/.config/opencode/opencode.json</code>: clave <code>mcp.servers</code> en
+                OpenCode 2, <code>mcp</code> en OpenCode 1
+              </td>
+              <td>
+                En OpenCode 2,
+                <code>opencode mcp add &lt;nombre&gt; --global --url &lt;url&gt;</code>. En OpenCode
+                1, añádelo a mano en la config global. El <code>opencode.jsonc</code>
+                del proyecto no lo redeclara.
               </td>
             </tr>
             <tr>
@@ -366,10 +376,10 @@ bun run vars:schema:check      # el core generado está al día y el par carga</
                 <code>~/.codex/config.toml</code>, tabla <code>[mcp_servers.&lt;nombre&gt;]</code>
               </td>
               <td>
-                <code
-                  >codex mcp add &lt;nombre&gt; --url &lt;url&gt; --bearer-token-env-var
-                  &lt;VAR&gt;</code
-                >
+                <code>codex mcp add &lt;nombre&gt; --url &lt;url&gt;</code> y después
+                <code>codex mcp login &lt;nombre&gt;</code> (OAuth). Evita
+                <code>--bearer-token-env-var</code> si usas la app de escritorio: lee una variable
+                del entorno del proceso, y abierta desde el Dock no tiene ninguna.
               </td>
             </tr>
           </tbody>
