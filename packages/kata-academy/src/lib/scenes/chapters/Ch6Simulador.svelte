@@ -376,14 +376,17 @@
     <section class="stage" bind:this={syncEl} class:on={syncOn} class:current={syncOn && !syncedOn}>
       <header class="stage-head">
         <span class="stage-num">4</span>
-        <h3><code>global.teardown</code> — los resultados viajan a <Term t="xray">Xray</Term></h3>
+        <h3><code>bun run test:sync</code>: los resultados viajan a <Term t="xray">Xray</Term></h3>
         <span class="tag warn">AUTO_SYNC apagado por defecto en el seed</span>
       </header>
 
       <p class="stage-sub">
-        <code>syncToXray()</code> hace POST a
+        <code>global.teardown</code> solo imprime el resumen de cobertura. Cuando el
+        proceso de Playwright termina, <code>bun run test:sync</code> (en CI es un paso
+        aparte) lee <code>atc_results.json</code> y <code>syncToXray()</code> hace POST a
         <code>xray.cloud/api/v2/import/execution</code> con un <code>testKey</code> y un
-        estado por cada caso. En Jira aparece una Test Execution nueva:
+        estado por cada caso. Con <code>STP_EXECUTION_KEY</code> escribe sobre esa Test
+        Execution; sin ella, Xray crea una nueva:
       </p>
 
       <div class="xray-panel">
@@ -414,9 +417,11 @@
       <div class="callout warn">
         <strong>Honestidad del seed:</strong> esta sync automática existe pero viene
         apagada (<code>AUTO_SYNC=false</code>). La corrida siempre deja
-        <code>atc_results.json</code>; subirlo a Xray puede hacerse a mano
-        (<code>bun xray import junit</code>) o vía <code>syncToJiraDirect()</code> en
-        proyectos jira-native.
+        <code>atc_results.json</code>; con <code>AUTO_SYNC=true</code>,
+        <code>bun run test:sync</code> lo sube (<code>syncToXray()</code> en jira-xray,
+        <code>syncToJiraDirect()</code> en jira-native). En la regresión con Xray, CI
+        importa el JUnit (<code>bun xray import junit</code>) en lugar de llamar a
+        <code>test:sync</code>.
       </div>
     </section>
   </div>

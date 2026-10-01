@@ -32,11 +32,11 @@ export const WORKFLOWS: WorkflowCard[] = [
     name: 'regression',
     icon: '🌙',
     trigger: 'cron diario 00:00 + manual',
-    runs: 'integration → e2e → merge Allure → GitHub Pages',
+    runs: 'integration → e2e → merge Allure → publicación',
     detail: [
       'La suite completa, cada medianoche: primero integración (API), después E2E (navegador).',
       'Los resultados de ambos jobs se fusionan en UN solo reporte Allure.',
-      'El reporte se publica en GitHub Pages: todo el equipo lo abre con un link.',
+      'El reporte se publica en GitHub Pages; si el repo define el secret PORTAL_URL, va al portal privado con login. En los dos casos el equipo lo abre con un link.',
     ],
   },
   {
