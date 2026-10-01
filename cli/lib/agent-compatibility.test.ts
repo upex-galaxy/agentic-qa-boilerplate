@@ -12,7 +12,7 @@ import {
   resolveWorktree,
   sessionLabel,
 } from '../../.agents/hooks/personality-reinject.mjs';
-import { PersonalityReinject } from '../../.opencode/plugins/personality-reinject.js';
+import opencodePlugin from '../../.opencode/plugins/personality-reinject.js';
 import {
   CLAUDE_HOOK_COMMAND,
   CODEX_HOOK_COMMAND,
@@ -27,6 +27,7 @@ import {
   validateEslintBlockWiring,
   validateHookCompatibility,
   validateMcpParity,
+  validateOpenCodePluginEntrypoints,
 } from './agent-compatibility-contracts.ts';
 import {
   checkAgentCompatibility,
@@ -459,8 +460,8 @@ describe('shared personality hook', () => {
     expect(PERSONALITY_CONTRACT).not.toContain('CLAUDE.md');
   });
 
-  test('OpenCode mutates the system array in place with the same payload', async () => {
-    const plugin = await PersonalityReinject();
+  test('OpenCode 1 (server entrypoint) mutates the system array in place with the same payload', async () => {
+    const plugin = await opencodePlugin.server();
     const transform = plugin['experimental.chat.system.transform'];
     const output = { system: ['base system'] };
     const originalArray = output.system;
@@ -475,6 +476,26 @@ describe('shared personality hook', () => {
     expect(output.system[1]).toBe(PERSONALITY_CONTRACT);
     // The label degrades to the raw id: OpenCode exposes no session name.
     expect(output.system[2]).toContain('session=test harness=opencode');
+  });
+
+  test('OpenCode 2 (setup entrypoint) registers a context hook that pushes text parts once', async () => {
+    const hooks: Record<string, (event: { sessionID: string, system: Array<{ type: string, text: string }> }) => void> = {};
+    await opencodePlugin.setup({
+      session: { hook: async (name: string, callback: (typeof hooks)[string]) => { hooks[name] = callback; } },
+    });
+    const event = { sessionID: 'test', system: [{ type: 'text', text: 'base system' }] };
+    const originalArray = event.system;
+
+    hooks.context(event);
+    const afterFirst = event.system.length;
+    hooks.context(event);
+
+    expect(opencodePlugin.id).toBe('agentic-qa.personality-reinject');
+    expect(Object.keys(hooks)).toEqual(['context']);
+    expect(event.system).toBe(originalArray);
+    expect(event.system.length).toBe(afterFirst);
+    expect(event.system[1]).toEqual({ type: 'text', text: PERSONALITY_CONTRACT });
+    expect(event.system[2].text).toContain('session=test harness=opencode');
   });
 });
 
@@ -793,6 +814,45 @@ describe('hook adapters', () => {
     ].join('\n'));
 
     expect(validateHookCompatibility(root)).toContain('OpenCode personality adapter must mutate output.system in place.');
+  });
+
+  test('rejects a V1-only OpenCode adapter: OpenCode 2 refuses to load it', () => {
+    const root = contractFixture();
+    write(root, '.opencode/plugins/personality-reinject.js', [
+      'import { agentContextLines } from \'../../.agents/hooks/personality-reinject.mjs\';',
+      'export const PersonalityReinject = async () => ({',
+      '  \'experimental.chat.system.transform\': async (input, output) => {',
+      '    output.system.push(...agentContextLines({ harness: \'opencode\' }));',
+      '  },',
+      '});',
+      '',
+    ].join('\n'));
+
+    const errors = validateHookCompatibility(root);
+    expect(errors.some(e => e.includes('must default-export one plugin definition'))).toBe(true);
+    expect(errors.some(e => e.includes('OpenCode 2 entrypoint'))).toBe(true);
+  });
+
+  test('rejects an OpenCode adapter that dropped the V1 entrypoint', () => {
+    const root = contractFixture();
+    write(root, '.opencode/plugins/personality-reinject.js', [
+      'import { agentContextLines } from \'../../.agents/hooks/personality-reinject.mjs\';',
+      'export default {',
+      '  id: \'agentic-qa.personality-reinject\',',
+      '  async setup(ctx) {',
+      '    await ctx.session.hook(\'context\', (event) => {',
+      '      for (const text of agentContextLines({ harness: \'opencode\' })) { event.system.push({ type: \'text\', text }); }',
+      '    });',
+      '  },',
+      '};',
+      '',
+    ].join('\n'));
+
+    expect(validateHookCompatibility(root)).toContain('OpenCode personality adapter must keep the OpenCode 1 entrypoint: server() returning experimental.chat.system.transform.');
+  });
+
+  test('accepts the shipped dual-entrypoint OpenCode adapter', () => {
+    expect(validateOpenCodePluginEntrypoints(readFileSync(join(REPO_ROOT, '.opencode/plugins/personality-reinject.js'), 'utf8'))).toEqual([]);
   });
 
   test('reads the emitter path out of every adapter form', () => {
