@@ -426,7 +426,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   table.tt.tight td{padding:8px 14px}
   table.tt.tight th{font-size:13px}
   .dg.dg-tall{max-height:440px}
-  /* tooling: the scaled 1280x720 canvas (narrow or short viewports) gets tighter compact slides */
+  /* tooling: the scaled 1440x900 canvas (narrow or short viewports) gets tighter compact slides */
   @media (max-width:1023px),(max-height:639px){
     .slide.compact{padding:36px 56px 64px}
     .dg.dg-tall{max-height:330px!important}
@@ -1871,12 +1871,12 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 </script>
 
 <script>
-/* deck :: mobile scale-to-fit — fixed 16:9 layout scaled into narrow/short viewports.
+/* deck :: mobile scale-to-fit — fixed 1440x900 layout (the desktop reference viewport) scaled into narrow/short viewports.
    Desktop (vw>=1024 && vh>=640) is left untouched (native fluid). Preview iframes skipped. */
 (function(){
   try{
     if (new URLSearchParams(location.search).has('preview')) return;
-    var BASE_W = 1280, BASE_H = 720;
+    var BASE_W = 1440, BASE_H = 900;
     var deck = document.querySelector('.deck');
     if (!deck) return;
     function fit(){
