@@ -159,7 +159,7 @@ Where new code CAN safely land WITHOUT a major-version bump. Anything not on thi
 | New static fixture data | `tests/data/fixtures/*.json` | Only for reference data (roles, permission matrices, mock responses, configuration trees). Transactional data goes to DataFactory. |
 | New script | `scripts/<name>.ts` | Add the matching `bun run` entry to `package.json`. |
 | New CLI command | `cli/<command>/` | Project-level installer concern; standalone binaries do not affect the runtime test architecture. |
-| New TS path alias | `tsconfig.json` `paths` | Allowed for new layers/folders — but never collapses an existing alias. |
+| New TS path alias | `tsconfig.base.json` `paths` (the alias authority, §5) | Allowed for new layers/folders — but never collapses an existing alias. |
 | New Playwright tag | usage in `test()`/`describe()` | Must be documented in `automation-standards.md` §4 tag table. |
 
 ---
@@ -175,7 +175,7 @@ Mandatory verification matrix when modifying load-bearing surface area. Each row
 | `UiBase.interceptResponse` / `waitForApiResponse` signature | Re-run ALL UI ATCs that use interception; confirm Allure attachments still produce. |
 | `TestContext` constructor or option shape (`TestContextOptions`) | Audit every Layer 2/3/3.5 constructor that calls `super(options)`. Re-run full suite. |
 | Fixture signature in `TestFixture`/`ApiFixture`/`UiFixture` | Grep all consumers (`tests/**/*.test.ts`); update destructures; re-run full suite. |
-| Import alias in `tsconfig.json` paths | Update tsconfig + every import in repo + ESLint config. Run `bun run types:check` + `bun run lint:check`. |
+| Import alias in `tsconfig.base.json` paths | Update `tsconfig.base.json` + every import in repo + ESLint config. Run `bun run types:check` + `bun run lint:check`. |
 | `@atc` / `@step` decorator API or `SENSITIVE_KEYS` set | Re-run full suite; manually inspect Allure step titles for unmasked sensitive values; verify NDJSON line schema unchanged. |
 | `KataReporter` NDJSON line schema or `atc_results.json` aggregation logic | Verify teardown summary still parses; verify TMS sync (`syncToXray`, `syncToJiraDirect`) still consumes correct fields. |
 | `tests/utils/decorators.ts` `storeResult` writer | Confirm NDJSON file is still atomic-append safe; confirm reporter `onEnd` deletes the partial file. |
