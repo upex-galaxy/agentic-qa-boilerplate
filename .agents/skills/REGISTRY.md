@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-10-01T09:38:45.115Z`
+> Generated: `2026-10-02T04:57:43.662Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -197,7 +197,7 @@ Skills indexed: 26
 - DO NOT: add a new fixture API without updating the matching fixture file AND `kata-manifest.json` AND citing at least one existing test that consumes it. Orphan fixtures rot, and the manifest is the anti-duplication gate.
 - DO NOT: bump a major version of Playwright / Bun / TypeScript without a regression run on a representative E2E suite — lockstep upgrades hide breaks in fixture lifecycle, locator engines, and type emit.
 - DO NOT: refactor `cli/install.ts` without exercising the full install flow on a clean clone. Verification on an already-installed repo proves nothing, and the installer is the one surface where a bug ships silently to every new user.
-- WHEN the chosen approach reshapes test architecture (KATA layers, a fixture API, the runner, the isolation/parallelization model, the OpenAPI/type pipeline) AND is hard to reverse: record an ADR under `.context/ADR/` after plan approval and before coding, drafted `Proposed` for the human to accept. ADRs are append-only — supersede, never rewrite.
+- WHEN the chosen approach reshapes test architecture (KATA layers, a fixture API, the runner, the isolation/parallelization model, the OpenAPI/type pipeline) AND is hard to reverse: record an ADR under `.context/ADR/` after plan approval and before coding. The plan approval IS the decision, so the ADR is written `Accepted` citing it, never handed back for acceptance (`Proposed` only for a question still open). ADRs are append-only — supersede, never rewrite.
 - DO: verify with all four checks (test, types, lint, skills) and treat any non-zero exit as REJECT — present retry / skip-and-document / abort, never auto-fix. A skill that itself broke (a wrong step, a missing verifier, a stale rule) is reported upstream per `../agentic-qa-core/references/upstream-feedback.md`: drafted and redacted locally, filed only on explicit OK, verified with `gh issue view`.
 - WHEN the change IS a skill (a new or restructured `.agents/skills/<slug>/`): scaffold it per `../agentic-qa-core/references/skill-scaffold.md` (frontmatter incl. `metadata.kind`, per-kind files and sections, Definition of Done). `skill-creator` (T3, installed at project level) is ALWAYS the builder: load it for the draft, the test prompts, the evals and the description pass; the scaffold contract stays this repo's. Missing on the machine → scaffold from the reference's template and say so. Consumer SUT context skills are NOT this skill's job: `project-context` mode `context-skill` owns them.
 - DO NOT: let a subagent write `progress.md`; it is orchestrator-only. Code subagents return one-line summaries per task, and the orchestrator does not read their diffs.
