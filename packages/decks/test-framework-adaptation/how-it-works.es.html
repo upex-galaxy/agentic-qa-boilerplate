@@ -1,0 +1,1940 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="tokyo-night">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>test-framework-adaptation · Cómo funciona</title>
+<style>
+/* ============================================================
+   Self-contained deck — html-ppt assets inlined (fonts, base,
+   tokyo-night theme, animations) + deck-local styles.
+   Source: ~/.agents/skills/html-ppt (shell mirrored from packages/decks/git-flow-master).
+   ============================================================ */
+
+/* ---- fonts.css ---- */
+/* html-ppt :: shared webfonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@200;300;400;500;600;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,800;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap');
+
+
+/* ---- base.css ---- */
+/* html-ppt :: base.css — reset + shared tokens + layout primitives */
+/* Default tokens. Themes in assets/themes/*.css override the :root block. */
+:root {
+  --bg: #ffffff;
+  --bg-soft: #f7f7f8;
+  --surface: #ffffff;
+  --surface-2: #f2f2f4;
+  --border: rgba(0,0,0,.08);
+  --border-strong: rgba(0,0,0,.16);
+  --text-1: #111216;
+  --text-2: #55596a;
+  --text-3: #8a8f9e;
+  --accent: #3b6cff;
+  --accent-2: #7a5cff;
+  --accent-3: #ff5c8a;
+  --good: #1aaf6c;
+  --warn: #f5a524;
+  --bad:  #e0445a;
+  --grad: linear-gradient(135deg,#3b6cff,#7a5cff 55%,#ff5c8a);
+  --grad-soft: linear-gradient(135deg,#eef2ff,#f5ecff 55%,#ffeef5);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --radius-lg: 26px;
+  --shadow: 0 10px 30px rgba(18,24,40,.08), 0 2px 6px rgba(18,24,40,.04);
+  --shadow-lg: 0 24px 60px rgba(18,24,40,.14), 0 6px 16px rgba(18,24,40,.06);
+  --font-sans: 'Inter','Noto Sans SC',-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;
+  --font-serif: 'Playfair Display','Noto Serif SC',Georgia,serif;
+  --font-mono: 'JetBrains Mono','IBM Plex Mono',SFMono-Regular,Menlo,monospace;
+  --font-display: var(--font-sans);
+  --letter-tight: -.03em;
+  --letter-normal: -.01em;
+  --ease: cubic-bezier(.4,0,.2,1);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text-1);
+  font-family:var(--font-sans);font-weight:400;line-height:1.6;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  letter-spacing:var(--letter-normal)}
+img,svg,video{max-width:100%;display:block}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code,kbd,pre,samp{font-family:var(--font-mono)}
+
+/* ================= SLIDE SYSTEM ================= */
+.deck{position:relative;width:100vw;height:100vh;overflow:hidden;background:var(--bg)}
+.slide{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:72px 96px;
+  box-sizing:border-box;
+  opacity:0;pointer-events:none;
+  transition:opacity .5s var(--ease), transform .5s var(--ease);
+  transform:translateX(30px);
+  overflow:hidden;
+}
+.slide.is-active{opacity:1;pointer-events:auto;transform:translateX(0);z-index:2}
+.slide.is-prev{transform:translateX(-30px)}
+
+/* single-page standalone (used when a layout file is opened directly) */
+body.single .slide{position:relative;width:100vw;height:100vh;opacity:1;transform:none;pointer-events:auto}
+
+/* ================= TYPOGRAPHY ================= */
+.eyebrow{font-size:13px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--text-3)}
+.kicker{font-size:14px;font-weight:600;color:var(--accent);letter-spacing:.08em;text-transform:uppercase}
+h1.title,.h1{font-family:var(--font-display);font-size:72px;line-height:1.05;font-weight:800;letter-spacing:var(--letter-tight);margin:0 0 18px;color:var(--text-1)}
+h2.title,.h2{font-family:var(--font-display);font-size:54px;line-height:1.1;font-weight:700;letter-spacing:var(--letter-tight);margin:0 0 14px}
+h3,.h3{font-size:32px;line-height:1.2;font-weight:600;letter-spacing:var(--letter-normal);margin:0 0 10px}
+h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
+.lede{font-size:22px;line-height:1.55;color:var(--text-2);font-weight:300;max-width:62ch}
+.dim{color:var(--text-2)}
+.dim2{color:var(--text-3)}
+.mono{font-family:var(--font-mono)}
+.serif{font-family:var(--font-serif)}
+.gradient-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+
+/* ================= LAYOUT PRIMITIVES ================= */
+.stack>*+*{margin-top:14px}
+.row{display:flex;gap:24px;align-items:center}
+.row.wrap{flex-wrap:wrap}
+.grid{display:grid;gap:24px}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.center{display:flex;align-items:center;justify-content:center;text-align:center}
+.fill{flex:1}
+.sp-t{padding-top:24px}.sp-b{padding-bottom:24px}
+.mt-s{margin-top:8px}.mt-m{margin-top:18px}.mt-l{margin-top:32px}
+.mb-s{margin-bottom:8px}.mb-m{margin-bottom:18px}.mb-l{margin-bottom:32px}
+
+/* ================= CARDS ================= */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:26px 28px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.card-soft{background:var(--surface-2);border:1px solid var(--border)}
+.card-outline{background:transparent;border:1.5px solid var(--border-strong);box-shadow:none}
+.card-accent{background:var(--surface);border-top:3px solid var(--accent)}
+.card-hover{transition:transform .3s var(--ease),box-shadow .3s var(--ease)}
+.card-hover:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}
+
+.pill{display:inline-block;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:500;
+  background:var(--surface-2);color:var(--text-2);border:1px solid var(--border)}
+.pill-accent{background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border-color:color-mix(in srgb,var(--accent) 28%,transparent)}
+
+/* ================= BARS / DIVIDERS ================= */
+.divider{height:1px;background:var(--border);width:100%}
+.divider-accent{height:3px;width:72px;background:var(--accent);border-radius:2px}
+
+/* ================= CHROME (header/footer/progress) ================= */
+.deck-header{position:absolute;top:24px;left:40px;right:40px;display:flex;align-items:center;justify-content:space-between;
+  font-size:12px;color:var(--text-3);letter-spacing:.12em;text-transform:uppercase;z-index:10;pointer-events:none}
+.deck-footer{position:absolute;bottom:24px;left:40px;right:40px;display:flex;align-items:center;justify-content:space-between;
+  font-size:12px;color:var(--text-3);z-index:10;pointer-events:none}
+.slide-number::before{content:attr(data-current)}
+.slide-number::after{content:" / " attr(data-total)}
+.progress-bar{position:fixed;left:0;right:0;bottom:0;height:3px;background:transparent;z-index:20}
+.progress-bar > span{display:block;height:100%;width:0;background:var(--accent);transition:width .3s var(--ease)}
+
+/* ================= PRESENTER / OVERVIEW ================= */
+.notes{display:none!important}
+.notes-overlay{position:fixed;inset:auto 0 0 0;max-height:42vh;background:rgba(20,22,30,.95);color:#e8ebf4;
+  padding:20px 32px;font-size:16px;line-height:1.6;border-top:1px solid rgba(255,255,255,.1);transform:translateY(100%);
+  transition:transform .3s var(--ease);z-index:40;overflow:auto;font-family:var(--font-sans)}
+.notes-overlay.open{transform:translateY(0)}
+.overview{position:fixed;inset:0;background:rgba(10,12,18,.92);backdrop-filter:blur(12px);z-index:50;
+  display:none;padding:40px;overflow:auto}
+.overview.open{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;align-content:start}
+.overview .thumb{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  aspect-ratio:16/9;overflow:hidden;cursor:pointer;position:relative;color:var(--text-1);padding:16px;
+  font-size:11px;transition:transform .2s var(--ease)}
+.overview .thumb:hover{transform:scale(1.04)}
+.overview .thumb .n{position:absolute;top:8px;left:10px;font-weight:700;font-size:14px;color:var(--text-3)}
+.overview .thumb .t{position:absolute;bottom:10px;left:14px;right:14px;font-weight:600;color:var(--text-1)}
+
+/* ================= PRESENTER VIEW ================= */
+/* Presenter view opens in a separate popup window (S key).
+ * All presenter styles are self-contained in the popup HTML generated by runtime.js.
+ * The audience window (this file) is NOT affected — it stays as normal deck view.
+ * Only the .notes class below is needed to hide speaker notes from audience. */
+
+/* ================= UTILITY ================= */
+.hidden{display:none!important}
+.nowrap{white-space:nowrap}
+.tr{text-align:right}.tc{text-align:center}.tl{text-align:left}
+.uppercase{text-transform:uppercase;letter-spacing:.12em}
+
+/* ================= PRINT ================= */
+@media print{
+  .slide{position:relative;opacity:1!important;transform:none!important;page-break-after:always;height:100vh}
+  .deck-header,.deck-footer,.progress-bar,.notes-overlay,.overview{display:none!important}
+}
+
+
+/* ---- themes/tokyo-night.css ---- */
+/* theme: tokyo-night */
+:root{
+  --bg:#1a1b26;--bg-soft:#16161e;--surface:#24283b;--surface-2:#2f334d;
+  --border:rgba(192,202,245,.12);--border-strong:rgba(192,202,245,.24);
+  --text-1:#c0caf5;--text-2:#a9b1d6;--text-3:#565f89;
+  --accent:#7aa2f7;--accent-2:#bb9af7;--accent-3:#7dcfff;
+  --good:#9ece6a;--warn:#e0af68;--bad:#f7768e;
+  --grad:linear-gradient(135deg,#7aa2f7,#bb9af7 55%,#f7768e);
+  --grad-soft:linear-gradient(135deg,#24283b,#2f334d);
+  --radius:12px;--radius-sm:8px;--radius-lg:20px;
+  --shadow:0 10px 30px rgba(0,0,0,.45);
+  --shadow-lg:0 24px 62px rgba(0,0,0,.6);
+  --font-sans:'Inter','Noto Sans SC',sans-serif;
+}
+
+
+/* ---- animations/animations.css ---- */
+/* html-ppt :: animations.css
+ * Apply by adding class="anim-<name>" or data-anim="<name>".
+ * Durations are deliberately snappy; tweak --anim-dur per element.
+ */
+:root{--anim-dur:.7s;--anim-ease:cubic-bezier(.4,0,.2,1)}
+
+/* ---------- FADE DIRECTIONALS ---------- */
+@keyframes kf-fade-up{from{opacity:0;transform:translateY(32px)}to{opacity:1;transform:none}}
+@keyframes kf-fade-down{from{opacity:0;transform:translateY(-32px)}to{opacity:1;transform:none}}
+@keyframes kf-fade-left{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:none}}
+@keyframes kf-fade-right{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
+.anim-fade-up{animation:kf-fade-up var(--anim-dur) var(--anim-ease) both}
+.anim-fade-down{animation:kf-fade-down var(--anim-dur) var(--anim-ease) both}
+.anim-fade-left{animation:kf-fade-left var(--anim-dur) var(--anim-ease) both}
+.anim-fade-right{animation:kf-fade-right var(--anim-dur) var(--anim-ease) both}
+
+/* ---------- RISE / DROP / ZOOM / BLUR / GLITCH ---------- */
+@keyframes kf-rise{from{opacity:0;transform:translateY(60px) scale(.97);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
+@keyframes kf-drop{from{opacity:0;transform:translateY(-60px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes kf-zoom{0%{opacity:0;transform:scale(.6)}60%{transform:scale(1.04)}100%{opacity:1;transform:scale(1)}}
+@keyframes kf-blur{from{opacity:0;filter:blur(18px)}to{opacity:1;filter:none}}
+@keyframes kf-glitch{0%{opacity:0;transform:translateX(0);clip-path:inset(0 0 0 0)}
+  20%{opacity:1;transform:translateX(-6px);clip-path:inset(20% 0 30% 0)}
+  40%{transform:translateX(4px);clip-path:inset(50% 0 10% 0)}
+  60%{transform:translateX(-3px);clip-path:inset(10% 0 60% 0)}
+  80%{transform:translateX(2px);clip-path:inset(0 0 0 0)}
+  100%{opacity:1;transform:none}}
+.anim-rise-in{animation:kf-rise .9s var(--anim-ease) both}
+.anim-drop-in{animation:kf-drop .8s var(--anim-ease) both}
+.anim-zoom-pop{animation:kf-zoom .7s cubic-bezier(.22,1.3,.36,1) both}
+.anim-blur-in{animation:kf-blur .8s var(--anim-ease) both}
+.anim-glitch-in{animation:kf-glitch .8s steps(5,end) both}
+
+/* ---------- TYPEWRITER ---------- */
+.anim-typewriter{display:inline-block;overflow:hidden;white-space:nowrap;border-right:2px solid currentColor;
+  width:0;animation:kf-type 2.4s steps(40,end) forwards, kf-caret 1s step-end infinite}
+@keyframes kf-type{to{width:100%}}
+@keyframes kf-caret{50%{border-color:transparent}}
+
+/* ---------- GLOW / SHIMMER / GRADIENT-FLOW ---------- */
+@keyframes kf-neon{0%,100%{text-shadow:0 0 8px var(--accent),0 0 20px var(--accent)}
+  50%{text-shadow:0 0 16px var(--accent),0 0 40px var(--accent),0 0 80px var(--accent)}}
+.anim-neon-glow{animation:kf-neon 2s ease-in-out infinite}
+
+.anim-shimmer-sweep{position:relative;overflow:hidden}
+.anim-shimmer-sweep::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(110deg,transparent 40%,rgba(255,255,255,.55) 50%,transparent 60%);
+  transform:translateX(-100%);animation:kf-shimmer 2.4s var(--anim-ease) infinite}
+@keyframes kf-shimmer{to{transform:translateX(100%)}}
+
+.anim-gradient-flow{background:linear-gradient(90deg,var(--accent),var(--accent-2,var(--accent)),var(--accent-3,var(--accent)),var(--accent));
+  background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;
+  animation:kf-gradflow 4s linear infinite}
+@keyframes kf-gradflow{to{background-position:300% 0}}
+
+/* ---------- STAGGER LIST ---------- */
+.anim-stagger-list > *{opacity:0;animation:kf-rise .65s var(--anim-ease) both}
+.anim-stagger-list > *:nth-child(1){animation-delay:.05s}
+.anim-stagger-list > *:nth-child(2){animation-delay:.15s}
+.anim-stagger-list > *:nth-child(3){animation-delay:.25s}
+.anim-stagger-list > *:nth-child(4){animation-delay:.35s}
+.anim-stagger-list > *:nth-child(5){animation-delay:.45s}
+.anim-stagger-list > *:nth-child(6){animation-delay:.55s}
+.anim-stagger-list > *:nth-child(7){animation-delay:.65s}
+.anim-stagger-list > *:nth-child(8){animation-delay:.75s}
+.anim-stagger-list > *:nth-child(n+9){animation-delay:.85s}
+
+/* ---------- COUNTER-UP (JS-driven, marker class only) ---------- */
+.counter{font-variant-numeric:tabular-nums}
+
+/* ---------- SVG PATH DRAW ---------- */
+.anim-path-draw path,.anim-path-draw line,.anim-path-draw polyline,.anim-path-draw circle,.anim-path-draw rect{
+  stroke-dasharray:1000;stroke-dashoffset:1000;animation:kf-draw 2s var(--anim-ease) forwards}
+@keyframes kf-draw{to{stroke-dashoffset:0}}
+
+/* ---------- PARALLAX TILT (hover) ---------- */
+.anim-parallax-tilt{transform-style:preserve-3d;transition:transform .4s var(--anim-ease)}
+.anim-parallax-tilt:hover{transform:perspective(900px) rotateX(6deg) rotateY(-8deg) translateZ(10px)}
+
+/* ---------- CARD FLIP 3D ---------- */
+@keyframes kf-flip{from{transform:perspective(1200px) rotateY(-90deg);opacity:0}
+  to{transform:perspective(1200px) rotateY(0);opacity:1}}
+.anim-card-flip-3d{animation:kf-flip .9s var(--anim-ease) both;transform-style:preserve-3d;backface-visibility:hidden}
+
+/* ---------- CUBE ROTATE 3D ---------- */
+@keyframes kf-cube{from{transform:perspective(1200px) rotateX(20deg) rotateY(-90deg) translateZ(-200px);opacity:0}
+  to{transform:perspective(1200px) rotateX(0) rotateY(0) translateZ(0);opacity:1}}
+.anim-cube-rotate-3d{animation:kf-cube 1s var(--anim-ease) both}
+
+/* ---------- PAGE TURN 3D ---------- */
+@keyframes kf-pageturn{from{transform:perspective(1600px) rotateY(-85deg);transform-origin:left center;opacity:0}
+  to{transform:perspective(1600px) rotateY(0);opacity:1}}
+.anim-page-turn-3d{animation:kf-pageturn 1s var(--anim-ease) both;transform-origin:left center}
+
+/* ---------- PERSPECTIVE ZOOM ---------- */
+@keyframes kf-pzoom{from{opacity:0;transform:perspective(1400px) translateZ(-400px) rotateX(12deg)}
+  to{opacity:1;transform:none}}
+.anim-perspective-zoom{animation:kf-pzoom 1s var(--anim-ease) both}
+
+/* ---------- MARQUEE SCROLL ---------- */
+.anim-marquee-scroll{display:flex;gap:48px;white-space:nowrap;animation:kf-marquee 20s linear infinite}
+@keyframes kf-marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ---------- KEN BURNS ---------- */
+@keyframes kf-kenburns{0%{transform:scale(1) translate(0,0)}100%{transform:scale(1.15) translate(-2%,-1%)}}
+.anim-kenburns{animation:kf-kenburns 14s ease-in-out infinite alternate}
+
+/* ---------- CONFETTI BURST (pseudo — pure CSS sparkles) ---------- */
+.anim-confetti-burst{position:relative}
+.anim-confetti-burst::before,.anim-confetti-burst::after{
+  content:"";position:absolute;top:50%;left:50%;width:8px;height:8px;border-radius:50%;
+  background:var(--accent);box-shadow:
+    20px -30px 0 var(--accent-2,var(--accent)),-25px -20px 0 var(--accent-3,var(--accent)),
+    30px 20px 0 var(--good,#1aaf6c),-30px 25px 0 var(--warn,#f5a524),
+    40px -10px 0 var(--bad,#e0445a),-45px 0 0 var(--accent),
+    10px 40px 0 var(--accent-2,var(--accent)),-15px -40px 0 var(--accent-3,var(--accent));
+  opacity:0;animation:kf-confetti 1.2s var(--anim-ease) forwards}
+.anim-confetti-burst::after{animation-delay:.15s;transform:rotate(45deg)}
+@keyframes kf-confetti{0%{opacity:0;transform:scale(.2)}30%{opacity:1}100%{opacity:0;transform:scale(2.2)}}
+
+/* ---------- SPOTLIGHT ---------- */
+@keyframes kf-spot{0%{clip-path:circle(0% at 50% 50%)}100%{clip-path:circle(140% at 50% 50%)}}
+.anim-spotlight{animation:kf-spot 1.1s var(--anim-ease) both}
+
+/* ---------- MORPH SHAPE (SVG) ---------- */
+.anim-morph-shape path{animation:kf-morph 6s ease-in-out infinite alternate}
+@keyframes kf-morph{0%{d:path("M60,120 Q120,20 180,120 T300,120")}
+  100%{d:path("M60,120 Q120,220 180,120 T300,120")}}
+
+/* ---------- RIPPLE REVEAL ---------- */
+@keyframes kf-ripple{0%{clip-path:circle(0% at 20% 80%);opacity:.4}
+  100%{clip-path:circle(160% at 20% 80%);opacity:1}}
+.anim-ripple-reveal{animation:kf-ripple 1.2s var(--anim-ease) both}
+
+/* reduced motion */
+@media (prefers-reduced-motion: reduce){
+  [class*="anim-"]{animation:none!important;transition:none!important}
+}
+
+
+/* ---- deck-local ---- */
+/* ===== Deck-local: TIPOGRAFÍA GRANDE + más aire para exposición en proyector ===== */
+  .slide{padding:64px 84px}
+  .h1{font-size:88px;line-height:1.02}
+  .h2{font-size:62px;line-height:1.06;margin-bottom:10px}
+  .h4{font-size:26px}
+  .kicker{font-size:17px;letter-spacing:.1em}
+  .lede{font-size:30px;line-height:1.5;max-width:60ch;font-weight:400}
+  .small{font-size:19px;line-height:1.55}
+  .dim{color:var(--text-2)}
+  .card{padding:26px 28px;background:var(--surface);border:1px solid var(--border-strong)}
+  .card-soft{background:var(--grad-soft)}
+  .card-accent{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset,var(--shadow)}
+  .lbl{font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-2);font-weight:700}
+  ul.big{font-size:21px;line-height:2.05;margin:0;padding-left:1.1em}
+  ul.big li{margin-bottom:2px}
+
+  /* schematic mockups — monospace forzado sobre tema sans */
+  .mk{font-family:'JetBrains Mono','IBM Plex Mono',ui-monospace,monospace;font-size:18px;line-height:1.5;
+      white-space:pre;background:#16161e;border:1px solid var(--border-strong);
+      border-radius:14px;padding:24px 26px;color:#c0caf5;overflow:auto;box-shadow:var(--shadow)}
+
+  /* etiquetas tipo issue Jira — grandes */
+  .tag{display:inline-block;padding:5px 14px;border-radius:8px;font-size:17px;font-weight:700;
+       letter-spacing:.02em;border:1px solid transparent}
+  .tag-test{background:rgba(122,162,247,.18);color:#9cc2ff;border-color:rgba(122,162,247,.5)}
+  .tag-plan{background:rgba(158,206,106,.16);color:#b9e08a;border-color:rgba(158,206,106,.5)}
+  .tag-exec{background:rgba(224,175,104,.16);color:#f0c886;border-color:rgba(224,175,104,.5)}
+  .tag-bug{background:rgba(247,118,142,.18);color:#ff9bac;border-color:rgba(247,118,142,.5)}
+  .tag-story{background:rgba(192,202,245,.14);color:#c0caf5;border-color:var(--border-strong)}
+  /* chips dentro de un título: escalan con el heading para no verse diminutos */
+  .h2 .tag{font-size:.46em;padding:.18em .5em;border-radius:.28em;vertical-align:middle;
+           position:relative;top:-.06em}
+
+  /* chips de estado grandes */
+  .chip{display:inline-flex;align-items:center;gap:10px;padding:12px 20px;border-radius:12px;
+        font-size:20px;font-weight:700;background:var(--surface);border:1px solid var(--border-strong)}
+  .dot{display:inline-block;width:16px;height:16px;border-radius:50%}
+  .q{font-size:58px;font-weight:800;line-height:1.04;letter-spacing:-.01em}
+
+  table.tt{width:100%;border-collapse:separate;border-spacing:0 10px;font-size:20px}
+  table.tt th{color:var(--accent-2);font-weight:800;font-size:16px;letter-spacing:.08em;
+              text-transform:uppercase;text-align:left;padding:0 16px 4px}
+  table.tt td{background:var(--surface);border-top:1px solid var(--border-strong);
+              border-bottom:1px solid var(--border-strong);padding:16px 16px;vertical-align:top}
+  table.tt td:first-child{border-left:1px solid var(--border-strong);border-radius:12px 0 0 12px}
+  table.tt td:last-child{border-right:1px solid var(--border-strong);border-radius:0 12px 12px 0}
+
+  .fx-host{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.45}
+  .above{position:relative;z-index:1}
+  .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+  /* ===== workflow map (slide 2) ===== */
+  .wf-row{display:flex;align-items:stretch;gap:8px}
+  .wf-node{flex:1;min-width:0;background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;padding:10px 12px}
+  .wf-node p{margin:0}
+  .wf-node .n{font-size:12px;font-weight:800;letter-spacing:.1em;color:var(--accent-2);text-transform:uppercase}
+  .wf-node .t{font-size:17px;font-weight:700;line-height:1.25;margin-top:2px}
+  .wf-node .c{font-family:var(--font-mono);font-size:12px;color:var(--text-3);margin-top:5px;line-height:1.5}
+  .wf-node.gate{border-color:var(--warn);box-shadow:0 0 0 1px var(--warn) inset}
+  .wf-node.alt{background:var(--grad-soft)}
+  .wf-arr{align-self:center;color:var(--accent);font-size:20px;font-weight:800;flex:none}
+  .wf-lane{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-3);font-weight:700;margin:16px 0 8px}
+  /* slides densos: cards compactas + heading contenido */
+  .slide.compact .card{padding:16px 20px}
+  .slide.compact .h2{font-size:46px}
+  .slide.compact .small{font-size:18px;line-height:1.5}
+
+  /* ===== test-framework-adaptation: diagramas SVG inline (tokens del tema) ===== */
+  .dg{width:100%;height:auto;display:block}
+  .dg text{font-family:var(--font-sans);fill:var(--text-1)}
+  .dg .t-s{font-size:13px;fill:var(--text-2)}
+  .dg .t-m{font-family:var(--font-mono);font-size:13px;fill:var(--accent-3)}
+  .dg .t-b{font-size:15px;font-weight:700}
+  .dg .t-l{font-size:11px;font-weight:800;letter-spacing:.12em;fill:var(--accent-2)}
+  .dg .bx{fill:var(--surface);stroke:var(--border-strong);stroke-width:1.2}
+  .dg .bx-acc{fill:var(--surface);stroke:var(--accent);stroke-width:1.6}
+  .dg .bx-good{fill:var(--surface);stroke:var(--good);stroke-width:1.6}
+  .dg .bx-warn{fill:var(--surface);stroke:var(--warn);stroke-width:1.6}
+  .dg .bx-bad{fill:var(--surface);stroke:var(--bad);stroke-width:1.6}
+  .dg .bx-soft{fill:var(--surface-2);stroke:var(--border);stroke-width:1}
+  .dg .ln{stroke:var(--accent);stroke-width:2;fill:none}
+  .dg .ln-d{stroke:var(--text-3);stroke-width:1.6;fill:none;stroke-dasharray:5 5}
+  .dg .yes{fill:var(--good);font-size:12px;font-weight:800}
+  .dg .no{fill:var(--bad);font-size:12px;font-weight:800}
+  .dg .ar{fill:var(--accent)}
+  .dg .ar-d{fill:var(--text-3)}
+  .lane-good{color:var(--good)} .lane-warn{color:var(--warn)} .lane-bad{color:var(--bad)}
+  table.tt.tight{font-size:15px;border-spacing:0 5px}
+  table.tt.tight td{padding:8px 14px}
+  table.tt.tight th{font-size:13px}
+  /* modo escalado (scale-to-fit a 1280x720 en pantallas chicas): más compacto para que cada slide entre entero */
+  @media (max-width:1023px),(max-height:639px){
+    .slide{padding:30px 52px}
+    .slide.compact .h2{font-size:36px}
+    .slide.compact .small{font-size:15.5px;line-height:1.4}
+    .slide.compact .card{padding:10px 16px}
+    .slide.compact .card p{margin-top:2px;margin-bottom:2px}
+    .slide.compact .mt-m{margin-top:10px}
+    .slide.compact .mt-s{margin-top:4px}
+    .slide.compact ul.big{font-size:15.5px!important;line-height:1.5!important}
+    .slide.compact .stack{gap:8px!important}
+    .slide.compact .grid{gap:14px!important}
+    .slide.compact table.tt.tight{border-spacing:0 4px}
+    .slide.compact table.tt.tight td{padding:5px 12px}
+    .slide.compact .mk{padding:12px 16px}
+    .slide.compact .wf-node{padding:8px 10px}
+    .slide.compact .lbl{font-size:13px}
+    .wf-lane{margin:10px 0 6px}
+  }
+</style>
+</head>
+<body>
+
+<div class="deck">
+
+  <!-- 1. PORTADA -->
+  <section class="slide is-active" data-title="Portada">
+    <p class="eyebrow" style="margin-bottom:20px">Agentic QA · Skill de workflow</p>
+    <h1 class="h1 mono anim-rise-in" data-anim="rise-in" style="font-size:72px;letter-spacing:-.02em"><span class="grad">/</span>test-framework-adaptation</h1>
+    <p class="lede mt-m">Saca del boilerplate el proyecto de ejemplo y lo conecta a <b>tu</b> app: login real, la primera entidad, variables, CI y MCPs. Al terminar, el repo está listo para escribir tests automatizados con KATA contra el sistema que vas a testear.</p>
+    <div class="row wrap mt-l" style="gap:12px">
+      <span class="chip"><span class="dot" style="background:var(--accent)"></span>Análisis y plan sin escribir nada</span>
+      <span class="chip"><span class="dot" style="background:var(--warn)"></span>Escribe solo después de tu aprobación</span>
+      <span class="chip"><span class="dot" style="background:var(--good)"></span>Re-ejecutable: hace solo lo que falta</span>
+    </div>
+    <div class="notes">Deck de la skill test-framework-adaptation, que antes se llamaba adapt-framework. Adapta exactamente lo que el proyecto bajo test necesita para testearse bien, autenticación incluida, y nada más: una entidad de punta a punta primero, el resto como follow-up. Pulsá → para avanzar, S para modo presentador, O para overview, F para pantalla completa.</div>
+  </section>
+
+  <!-- 2. CUÁNDO SÍ / CUÁNDO NO -->
+  <section class="slide compact" data-title="Cuándo usarla">
+    <p class="kicker">Decidir · 2 de 17</p>
+    <h2 class="h2">¿El repo todavía habla del <span class="grad">proyecto de ejemplo</span>?</h2>
+    <div class="grid g2 mt-m" style="gap:28px;grid-template-columns:1fr 1.25fr;align-items:start">
+      <div class="card card-accent">
+        <p class="lbl" style="color:var(--good)">Usala para</p>
+        <ul class="big" style="font-size:18px;line-height:1.75">
+          <li>Cablear <span class="mono">AuthApi</span> y <span class="mono">LoginPage</span> contra los endpoints reales.</li>
+          <li>Completar <span class="mono">.agents/project.yaml</span>, <span class="mono">.env</span> y <span class="mono">config/variables.ts</span>.</li>
+          <li>Crear el primer <span class="mono">{Entity}Api</span> / <span class="mono">{Entity}Page</span>.</li>
+          <li>Sincronizar OpenAPI y crear los facades de tipos.</li>
+          <li>Reconciliar los workflows de CI y los MCPs con el proyecto.</li>
+          <li>Limpiar la identidad de ejemplo de los docs propios del proyecto.</li>
+        </ul>
+      </div>
+      <div>
+        <p class="lbl" style="color:var(--bad)">No es para esto: va a</p>
+        <table class="tt tight mt-s">
+          <tr><td class="small">Regenerar los mapas de dominio e infraestructura</td><td class="small mono">/project-discovery</td></tr>
+          <tr><td class="small">Escribir los tests de un sprint</td><td class="small mono">/test-automation</td></tr>
+          <tr><td class="small">Correr suites de regresión</td><td class="small mono">/regression-testing</td></tr>
+          <tr><td class="small">Documentar casos en el TMS</td><td class="small mono">/test-documentation</td></tr>
+          <tr><td class="small">Elegir la estrategia de branching</td><td class="small mono">/git-flow-master</td></tr>
+          <tr><td class="small">Editar <span class="mono">docs/core/**</span> o <span class="mono">docs/assets/**</span></td><td class="small">nunca: los entrega el updater</td></tr>
+        </table>
+        <p class="small dim mt-s">Toca solo este repo. El repo objetivo, desde acá, es de solo lectura.</p>
+      </div>
+    </div>
+    <div class="notes">La frontera con project-discovery es la que más se confunde: discovery describe el sistema bajo test, esta skill conecta el framework a ese sistema. Por eso no se mezclan en la misma sesión: sus límites de escritura son distintos.</div>
+  </section>
+
+  <!-- 3. MAPA -->
+  <section class="slide" data-title="Mapa de la skill">
+    <p class="kicker">Mapa · 3 de 17</p>
+    <h2 class="h2" style="font-size:42px">Primero entender y planear, después <span class="grad">escribir</span></h2>
+    <p class="wf-lane">Sin escrituras</p>
+    <div class="wf-row">
+      <div class="wf-node"><p class="n">Fase 0</p><p class="t">Prerrequisitos y genericidad</p><p class="c">tabla GENERIC / ADAPTED<br>bloquea si falta contexto</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node"><p class="n">Fase 1</p><p class="t">Análisis y cuestionario</p><p class="c">auth · OpenAPI · entidad<br>una sola tanda de preguntas</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node gate"><p class="n">Fase 2</p><p class="t">El plan</p><p class="c">.context/reports/<br>Status: PENDING APPROVAL</p></div>
+    </div>
+    <p class="wf-lane">Tu aprobación explícita del plan abre la segunda mitad</p>
+    <div class="wf-row">
+      <div class="wf-node alt"><p class="n">Fase 3</p><p class="t">Identidad y variables</p><p class="c">project.yaml · .env<br>variables.ts</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node alt"><p class="n">Fase 4</p><p class="t">OpenAPI y facades</p><p class="c">api:sync<br>{entity}.types.ts</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node alt"><p class="n">Fase 5</p><p class="t">Auth</p><p class="c">AuthApi · LoginPage<br>setups · api:login</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node alt"><p class="n">Fase 6</p><p class="t">Primera entidad</p><p class="c">fixtures · smoke<br>borra los Example*</p></div>
+    </div>
+    <div class="wf-row mt-s">
+      <div class="wf-node alt"><p class="n">Fase 7</p><p class="t">CI, manifest y MCP</p><p class="c">workflows · kata-manifest<br>los tres hosts</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node gate"><p class="n">Fase 8</p><p class="t">Gate de validación</p><p class="c">en orden, frena<br>en la primera falla</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node"><p class="n">Fase 9</p><p class="t">Escaneo y cierre</p><p class="c">GENERIC / ADAPTED<br>plan en COMPLETED</p></div>
+    </div>
+    <div class="notes">La regla de la skill es corta: nunca escribir antes de la aprobación y nunca saltear el escaneo de genericidad. Las Fases 0 a 2 solo leen y preguntan; la Fase 3 arranca recién cuando aprobás el archivo del plan.</div>
+  </section>
+
+  <!-- 4. IDEMPOTENCIA -->
+  <section class="slide compact" data-title="Re-ejecutable">
+    <p class="kicker">Idempotencia · 4 de 17</p>
+    <h2 class="h2">La podés correr de nuevo: hace solo lo que <span class="grad">sigue genérico</span></h2>
+    <div class="grid g2 mt-m" style="gap:28px;grid-template-columns:1.1fr 1fr;align-items:start">
+      <div>
+        <p class="lbl">Lo que trae el boilerplate como ejemplo</p>
+        <table class="tt tight mt-s">
+          <tr><td class="small"><b>Dominio</b></td><td class="small">hotel / booking en <span class="mono">tests/data/</span></td></tr>
+          <tr><td class="small"><b>ATC keys</b></td><td class="small"><span class="mono">PROJ-</span> y <span class="mono">UPEX-</span> en los <span class="mono">@atc</span></td></tr>
+          <tr><td class="small"><b>URLs</b></td><td class="small"><span class="mono">localhost:3000</span>, <span class="mono">dojo.upexgalaxy.com</span></td></tr>
+          <tr><td class="small"><b>Componentes</b></td><td class="small"><span class="mono">ExampleApi</span>, <span class="mono">ExamplePage</span>, <span class="mono">ExampleSteps</span></td></tr>
+          <tr><td class="small"><b>Specs</b></td><td class="small"><span class="mono">module-example/</span> en e2e e integration</td></tr>
+          <tr><td class="small"><b>Reporte</b></td><td class="small"><span class="mono">Agentic QA Boilerplate</span> en <span class="mono">allurerc.mjs</span></td></tr>
+        </table>
+      </div>
+      <div class="stack" style="gap:14px">
+        <div class="card card-accent"><p class="lbl">Cada corrida empieza igual</p><p class="small mt-s">Corre las señales de detección de la Fase 9 <b>antes</b> que nada y te muestra la tabla GENERIC / ADAPTED. Lo GENERIC es el trabajo de esta corrida; lo ADAPTED se saltea.</p></div>
+        <div class="card"><p class="lbl">Todo adaptado</p><p class="small mt-s">Te dice que el framework ya está adaptado al proyecto y termina. No rehace trabajo hecho.</p></div>
+        <div class="card"><p class="lbl">Plan anterior</p><p class="small mt-s">Se retoma, no se reescribe. Si solo existe <span class="mono">adapt-framework-plan.md</span> (el nombre viejo de la skill), lo renombra antes de tocarlo.</p></div>
+      </div>
+    </div>
+    <div class="notes">La Fase 9 es el motor: las mismas señales que cierran el ciclo en una corrida nueva son el reporte en una re-ejecución. Una corrida parcial planifica y ejecuta solo los ítems pendientes.</div>
+  </section>
+
+  <!-- 5. FASE 0 -->
+  <section class="slide compact" data-title="Fase 0 · Prerrequisitos">
+    <p class="kicker">Fase 0 · 5 de 17</p>
+    <h2 class="h2">Sin el contexto de discovery, <span class="grad">no arranca</span></h2>
+    <div class="grid g2 mt-m" style="gap:28px;grid-template-columns:1.25fr 1fr;align-items:start">
+      <div>
+        <p class="lbl" style="color:var(--bad)">Obligatorios: si falta uno, bloquea</p>
+        <table class="tt tight mt-s">
+          <tr><th>Qué tiene que existir</th><th style="width:230px">Quién lo genera</th></tr>
+          <tr><td class="small">Mapa de <span class="mono">business-domain-context</span></td><td class="small mono">/project-discovery</td></tr>
+          <tr><td class="small">Mapa de <span class="mono">infra-context</span> con <span class="mono">backend</span> y <span class="mono">frontend</span></td><td class="small mono">/project-discovery</td></tr>
+          <tr><td class="small"><span class="mono">.context/project-config.md</span></td><td class="small mono">/project-discovery</td></tr>
+          <tr><td class="small">Mapa de <span class="mono">business-data-context</span></td><td class="small"><span class="mono">project-context</span> modo <span class="mono">data</span></td></tr>
+          <tr><td class="small">Fuente del contrato de API: tipos generados, una spec alcanzable o, si no hay OpenAPI, el mapa de <span class="mono">business-api-context</span></td><td class="small"><span class="mono">api:sync</span> o <span class="mono">project-context</span></td></tr>
+          <tr><td class="small"><span class="mono">.env.example</span></td><td class="small">el proyecto</td></tr>
+        </table>
+        <p class="small dim mt-s">Un placeholder cuenta como faltante. Un mapa se verifica por su lector: <span class="mono">bun run context:map &lt;slug&gt; --list</span> tiene que mostrar secciones.</p>
+      </div>
+      <div class="stack" style="gap:14px">
+        <div class="card card-accent"><p class="lbl">Recomendados: pausa y propone</p><p class="small mt-s">Los mapas de <span class="mono">business-e2e-context</span> y <span class="mono">business-api-context</span>, y el Master Test Plan. Si faltan, te propone abrir una <b>sesión limpia</b>, correr <span class="mono">project-context</span> modo <span class="mono">refresh-all</span> y volver.</p></div>
+        <div class="card"><p class="lbl">Vos decidís</p><p class="small mt-s">Seguir o pausar. Si seguís, cada hueco queda en la sección Discovery Gaps del plan: no arma KATA sobre suposiciones.</p></div>
+      </div>
+    </div>
+    <div class="notes">Cuando bloquea, lista cada archivo faltante junto con el comando exacto que lo produce, y te pide re-invocar la skill después. La lista de prerrequisitos se mantiene sincronizada con el checklist de cierre de project-discovery.</div>
+  </section>
+
+  <!-- 6. FASE 1 -->
+  <section class="slide compact" data-title="Fase 1 · Análisis">
+    <p class="kicker">Fase 1 · 6 de 17</p>
+    <h2 class="h2">Lee todo lo que puede y <span class="grad">pregunta</span> solo el resto</h2>
+    <div class="grid g2 mt-s" style="gap:28px;grid-template-columns:1fr 1.2fr;align-items:start">
+      <div class="stack" style="gap:12px">
+        <div class="card"><p class="lbl">Lee</p><p class="small mt-s">Los mapas de contexto con <span class="mono">bun run context:map</span>, la spec o los tipos de OpenAPI, el Master Test Plan si está, <span class="mono">.env.example</span>, <span class="mono">.agents/project.yaml</span>, <span class="mono">config/variables.ts</span> y las referencias KATA de <span class="mono">test-automation</span>. Inspecciona la superficie de ejemplo sin tocarla.</p></div>
+        <div class="card card-accent"><p class="lbl">Una entidad, no todas</p><p class="small mt-s">Elige la entidad de más tráfico según el Master Test Plan, la construye de punta a punta y deja las demás como follow-ups. No arma todo de una vez.</p></div>
+      </div>
+      <div>
+        <p class="lbl">El cuestionario: una sola tanda, preguntas cortas</p>
+        <table class="tt tight mt-s">
+          <tr><td class="small"><b>Auth</b></td><td class="small">Esquema, endpoint de login, campos del body, campo del token, TTL, header, ruta de login, roles y usuarios de prueba.</td></tr>
+          <tr><td class="small"><b>Identidad y entornos</b></td><td class="small">Nombre, project key, dominio, stacks y la lista real de entornos con sus URLs.</td></tr>
+          <tr><td class="small"><b>OpenAPI y entidad</b></td><td class="small">De dónde sale la spec y qué entidad va primero.</td></tr>
+          <tr><td class="small"><b>Base y MCP</b></td><td class="small">Si hay base para validar, qué servidores usa cada entorno, qué hosts va a usar el equipo.</td></tr>
+          <tr><td class="small"><b>CI, reportes y docs</b></td><td class="small">Modalidad de TMS, nombre del reporte Allure, GitHub Pages, y si se limpian los docs en esta corrida.</td></tr>
+        </table>
+        <p class="small mt-s" style="color:var(--warn)"><b>Obstáculos en staging</b> (verificación por email, 2FA, captcha, rate limits) sin un bypass para CI: frena y pide el bypass en vez de adivinar.</p>
+      </div>
+    </div>
+    <div class="notes">Las respuestas se pliegan al plan. Lo que quede sin responder va a Discovery Gaps. Multi-tenant también se pregunta: cómo se define el tenant y cómo se crean usuarios de prueba por tenant.</div>
+  </section>
+
+  <!-- 7. AUTH: DECISIÓN -->
+  <section class="slide compact" data-title="Estrategia de auth">
+    <p class="kicker">Fase 1 · 7 de 17</p>
+    <h2 class="h2">El login decide cómo se <span class="grad">reusa</span> la sesión</h2>
+    <div class="grid g2 mt-s" style="gap:28px;grid-template-columns:1.3fr 1fr;align-items:start">
+      <svg class="dg" style="max-height:410px" viewBox="0 0 660 410" role="img" aria-label="Árbol de decisión de la estrategia de autenticación">
+        <defs><marker id="tfa-a7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="ar"/></marker></defs>
+        <rect class="bx-acc" x="170" y="8" width="320" height="56" rx="10"/>
+        <text class="t-l" x="188" y="30">LA PREGUNTA</text>
+        <text class="t-b" x="188" y="52">¿La API entrega un token o una cookie?</text>
+        <path class="ln" d="M240 64L110 112" marker-end="url(#tfa-a7)"/>
+        <path class="ln" d="M330 64V112" marker-end="url(#tfa-a7)"/>
+        <path class="ln" d="M420 64L550 112" marker-end="url(#tfa-a7)"/>
+        <rect class="bx-good" x="8" y="114" width="204" height="150" rx="10"/>
+        <text class="t-b" x="24" y="140">TOKEN</text>
+        <text class="t-s" x="24" y="162">Bearer, JWT o API key</text>
+        <text class="t-s" x="24" y="186">En el body:</text>
+        <text class="t-m" x="24" y="206">api-auth.setup.ts</text>
+        <text class="t-s" x="24" y="230">Solo por UI (OAuth):</text>
+        <text class="t-m" x="24" y="250">ui-auth.setup.ts</text>
+        <rect class="bx" x="228" y="114" width="204" height="150" rx="10"/>
+        <text class="t-b" x="244" y="140">COOKIE</text>
+        <text class="t-s" x="244" y="162">Sesión del servidor</text>
+        <text class="t-s" x="244" y="190">Solo storageState:</text>
+        <text class="t-s" x="244" y="210">Playwright reenvía las</text>
+        <text class="t-s" x="244" y="230">cookies solo</text>
+        <rect class="bx-warn" x="448" y="114" width="204" height="150" rx="10"/>
+        <text class="t-b" x="464" y="140">HÍBRIDO</text>
+        <text class="t-s" x="464" y="162">CSRF + cookie + bearer</text>
+        <text class="t-s" x="464" y="190">Login por UI, después</text>
+        <text class="t-s" x="464" y="210">extrae CSRF y bearer;</text>
+        <text class="t-s" x="464" y="230">CSRF en cada request</text>
+        <text class="t-s" x="464" y="250">dentro de ApiBase</text>
+        <path class="ln" d="M330 264V300" marker-end="url(#tfa-a7)"/>
+        <rect class="bx-acc" x="40" y="302" width="580" height="96" rx="10"/>
+        <text class="t-l" x="58" y="326">SIEMPRE LA MISMA FORMA</text>
+        <text class="t-m" x="58" y="352">global.setup → ui-auth.setup + api-auth.setup</text>
+        <text class="t-m" x="58" y="376">→ .auth/*.json → tests</text>
+      </svg>
+      <div class="stack" style="gap:14px">
+        <div class="card" style="border-color:var(--warn)"><p class="lbl" style="color:var(--warn)">Sin auto-refresh</p><p class="small mt-s"><span class="mono">bun run api:login</span> genera un token nuevo en cada corrida. Nada lo renueva al vencer. La skill no te va a decir lo contrario.</p></div>
+        <div class="card card-accent"><p class="lbl">Lo elegís vos, en el plan</p><p class="small mt-s">(a) Token por corrida, por defecto: se re-corre el setup cuando vence. (b) Un chequeo de vencimiento con <span class="mono">createdAt + expiresIn</span>, si el TTL del proyecto es corto.</p></div>
+      </div>
+    </div>
+    <div class="notes">La misma corrida de api:login escribe .auth/api-state.json para Playwright y .auth/tokens.env más .auth/tokens.json para el flujo de curl del agente, con claves por rol y entorno. Con un 401 en curl, se vuelve a correr api:login.</div>
+  </section>
+
+  <!-- 8. FASE 2 -->
+  <section class="slide compact" data-title="Fase 2 · El plan">
+    <p class="kicker">Fase 2 · 8 de 17</p>
+    <h2 class="h2">Un plan que leés y <span class="grad">aprobás</span> antes del primer cambio</h2>
+    <div class="grid g2 mt-m" style="gap:28px;grid-template-columns:1fr 1.1fr;align-items:start">
+      <div class="stack" style="gap:14px">
+        <div class="mk" style="font-size:15px">.context/reports/test-framework-adaptation-plan.md
+
+&gt; Project: {{PROJECT_NAME}}
+&gt; Status: PENDING APPROVAL</div>
+        <div class="card card-accent"><p class="lbl">El gate</p><p class="small mt-s">Termina con "esperá la aprobación explícita antes de la Fase 3". Vos marcás el <b>Approval Checklist</b> y das el OK. Sin eso, no se escribe código.</p></div>
+        <div class="card"><p class="lbl">Dónde vive</p><p class="small mt-s">En <span class="mono">.context/reports/</span>, un reporte propio de la skill. Nunca en <span class="mono">.context/PBI/</span>: esa es la caché de solo lectura que sincroniza Jira.</p></div>
+      </div>
+      <div>
+        <p class="lbl">Lo que vas a revisar</p>
+        <table class="tt tight mt-s">
+          <tr><td class="small"><b>Auth Strategy</b></td><td class="small">La rama elegida, endpoints, forma del token, regla de refresh e indicador de login exitoso.</td></tr>
+          <tr><td class="small"><b>OpenAPI Strategy</b></td><td class="small">Fuente, comando de sync, facades a crear y si el MCP <span class="mono">openapi</span> queda activo.</td></tr>
+          <tr><td class="small"><b>Components</b></td><td class="small">Qué se crea, qué se modifica, qué se borra y la reescritura de las ATC keys.</td></tr>
+          <tr><td class="small"><b>Env Vars + Secrets</b></td><td class="small">Claves de <span class="mono">.env</span> y los Secrets de GitHub que vas a cargar vos.</td></tr>
+          <tr><td class="small"><b>Discovery Gaps</b></td><td class="small">Lo que no se pudo verificar: refresh, multi-tenant, sin OpenAPI, sin base.</td></tr>
+          <tr><td class="small"><b>Genericness Baseline</b></td><td class="small">La foto de la tabla GENERIC / ADAPTED que esta corrida va a cerrar.</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="notes">El plan también trae el resumen del proyecto, identidad y variables, CI, MCP y reportes, las fases de implementación, las reglas KATA para la IA y las preguntas respondidas textuales. Al cerrar la Fase 9 pasa a Status: COMPLETED con un bloque de resultados.</div>
+  </section>
+
+  <!-- 9. FASE 3 -->
+  <section class="slide compact" data-title="Fase 3 · Identidad">
+    <p class="kicker">Fase 3 · 9 de 17</p>
+    <h2 class="h2">Identidad y variables: que todo diga el <span class="grad">mismo</span> proyecto</h2>
+    <div class="grid g3 mt-m" style="gap:18px">
+      <div class="card card-accent"><p class="lbl"><span class="mono">.agents/project.yaml</span></p><p class="small mt-s">Completa cada <span class="mono">null</span>: identidad, stacks, tracker y cada hoja de <span class="mono">environments.&lt;env&gt;</span>. Te ofrece <span class="mono">bun run agents:setup</span> para hacerlo guiado.</p></div>
+      <div class="card"><p class="lbl"><span class="mono">.env</span></p><p class="small mt-s">Credenciales por entorno (<span class="mono">&lt;ENV&gt;_USER_EMAIL</span>, <span class="mono">&lt;ENV&gt;_USER_PASSWORD</span>), <span class="mono">API_BASE_URL</span>, <span class="mono">OPENAPI_SPEC_PATH</span>, TMS y base. No existe <span class="mono">BASE_URL</span>: las URLs viven en <span class="mono">envDataMap</span>.</p></div>
+      <div class="card"><p class="lbl"><span class="mono">config/variables.ts</span></p><p class="small mt-s">La mitad del proyecto: <span class="mono">Environment</span>, los mapas de credenciales, <span class="mono">envDataMap</span> (<span class="mono">base</span> y <span class="mono">api</span>) y los endpoints de auth. <span class="mono">variables.core.ts</span> no se toca.</p></div>
+    </div>
+    <div class="grid g2 mt-m" style="gap:22px;align-items:start">
+      <div class="card"><p class="lbl">La lista de entornos, una sola</p><p class="small mt-s">Vive en varios archivos que tienen que coincidir: <span class="mono">config/variables.ts</span>, <span class="mono">.agents/project.yaml</span>, <span class="mono">config/validateTestEnv.ts</span>, <span class="mono">scripts/api-login.project.ts</span> y las opciones de los workflows. Se fija la lista real y se borran los entornos que el proyecto no corre.</p></div>
+      <div class="card"><p class="lbl">Schema de entorno</p><p class="small mt-s"><span class="mono">.env.schema</span> es del proyecto: declara cada variable que agregó o renombró, con <span class="mono">@required=forEnv(&lt;env&gt;)</span>. <span class="mono">.env.core.schema</span> es del framework y no se edita. Si la app no tiene login, el par de usuario de prueba se borra.</p></div>
+    </div>
+    <p class="small dim mt-s"><b>Valida con</b> <span class="mono">vars:check</span>, <span class="mono">vars:env:check</span>, <span class="mono">test:env:check</span>, <span class="mono">vars:schema:check</span> y <span class="mono">harness:env</span>. Después, <b>reiniciá la sesión</b>: un MCP no ve un valor escrito en <span class="mono">.env</span> a mitad de sesión.</p>
+    <div class="notes">Renombrar las credenciales toca junto la desestructuración de process.env, los dos mapas, .env.schema, .env.example y los nombres de secretos de los workflows. Después del reinicio, bun run harness:env:check confirma que los archivos de credenciales de cada host coinciden con .env.</div>
+  </section>
+
+  <!-- 10. FASE 4 -->
+  <section class="slide compact" data-title="Fase 4 · OpenAPI">
+    <p class="kicker">Fase 4 · 10 de 17</p>
+    <h2 class="h2">Tipos desde OpenAPI, consumidos por <span class="grad">facades</span></h2>
+    <div class="wf-row mt-m">
+      <div class="wf-node"><p class="n">Spec</p><p class="t">URL, GitHub o archivo local</p><p class="c">bun run api:sync -t</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node"><p class="n">Generado</p><p class="t">api/openapi-types.ts</p><p class="c">+ openapi.json<br>+ .openapi-config.json</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node gate"><p class="n">Facade</p><p class="t">api/schemas/{entity}.types.ts</p><p class="c">el único que importa @openapi</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node"><p class="n">Componentes</p><p class="t">{Entity}Api, {Entity}Page</p><p class="c">importan @schemas/…</p></div>
+    </div>
+    <div class="grid g3 mt-m" style="gap:20px">
+      <div class="card card-accent"><p class="lbl">Regla de oro</p><p class="small mt-s">Un componente importa de <span class="mono">@schemas/{domain}.types</span>, nunca de <span class="mono">@openapi</span>. El escaneo final lo verifica con un grep sobre <span class="mono">tests/components/</span>.</p></div>
+      <div class="card"><p class="lbl">Qué adapta</p><p class="small mt-s"><span class="mono">auth.types.ts</span> al login real, un facade nuevo por entidad (copiando el patrón de <span class="mono">example.types.ts</span>) y el re-export en <span class="mono">api/schemas/index.ts</span>.</p></div>
+      <div class="card" style="border-color:var(--warn)"><p class="lbl" style="color:var(--warn)">Sin spec</p><p class="small mt-s">Primero <span class="mono">curl</span> a los endpoints reales, después interfaces escritas a mano. Se anota en Discovery Gaps y el MCP <span class="mono">openapi</span> se desactiva en los tres hosts.</p></div>
+    </div>
+    <div class="notes">El MCP openapi es de solo lectura de schemas: descubre endpoints y lee contratos. Las requests autenticadas van por curl con el token de api:login, según agentic-qa-core/references/api-testing-doctrine.md.</div>
+  </section>
+
+  <!-- 11. FASE 5 -->
+  <section class="slide compact" data-title="Fase 5 · Auth">
+    <p class="kicker">Fase 5 · 11 de 17</p>
+    <h2 class="h2">Auth: cablear lo que la app <span class="grad">necesita</span>, y nada más</h2>
+    <div class="grid g2 mt-s" style="gap:26px;grid-template-columns:1.1fr 1fr;align-items:start">
+      <div>
+        <p class="lbl">Dos caminos que tienen que andar</p>
+        <table class="tt tight mt-s">
+          <tr><th style="width:150px">Camino</th><th>Qué se adapta</th></tr>
+          <tr><td class="small"><b>Playwright</b></td><td class="small"><span class="mono">AuthApi</span> y <span class="mono">LoginPage</span> (se quedan, con locators reales y sus ATC keys pasadas a <span class="mono">{{PROJECT_KEY}}</span>), y los setups <span class="mono">api-auth</span> y <span class="mono">ui-auth</span>. <span class="mono">ApiBase.buildHeaders()</span> solo si el header no es estándar.</td></tr>
+          <tr><td class="small"><b>curl del agente</b></td><td class="small"><span class="mono">scripts/api-login.project.ts</span>, el único archivo a adaptar: <span class="mono">buildAuthPayload()</span> y <span class="mono">extractTokenFromResponse()</span>.</td></tr>
+        </table>
+        <p class="small mt-s"><span class="mono">authenticate</span> es el último recurso, para un login que un solo POST no expresa (OAuth, MFA, varias requests). Reemplaza la fase de request del core, así que el proyecto deja de recibir sus mejoras.</p>
+      </div>
+      <div class="stack" style="gap:12px">
+        <div class="card card-accent"><p class="lbl">Verificación</p><div class="mk" style="font-size:13px;margin-top:8px">bun run test --project=api-setup
+bun run test --project=ui-setup
+bun run api:login &lt;env&gt;
+# + un curl autenticado</div><p class="small mt-s">Un 2xx, o un 4xx de la app que no sea 401, prueba el token.</p></div>
+        <div class="card" style="border-color:var(--bad)"><p class="lbl" style="color:var(--bad)">La falla silenciosa</p><p class="small mt-s">Si el token tiene otra forma y el adaptador no se tocó, <span class="mono">.auth/tokens.env</span> queda vacío y todo curl da 401, mientras los setups de Playwright siguen en verde.</p></div>
+      </div>
+    </div>
+    <div class="notes">scripts/lib/api-login-core.ts es sincronizado y scripts/api-login.ts se entrega una sola vez: ninguno se adapta. Verificación por email o 2FA en ui-auth.setup.ts se agrega solo si está activa y existe un bypass. La auth es lo más frágil: siempre se prueba contra staging real, nunca contra mocks.</div>
+  </section>
+
+  <!-- 12. FASE 6 -->
+  <section class="slide compact" data-title="Fase 6 · Primera entidad">
+    <p class="kicker">Fase 6 · 12 de 17</p>
+    <h2 class="h2">La primera entidad, de punta a punta, y <span class="grad">adiós</span> al ejemplo</h2>
+    <div class="grid g3 mt-m" style="gap:18px">
+      <div class="card card-accent"><p class="lbl">Crea</p><p class="small mt-s"><span class="mono">tests/components/api/{Entity}Api.ts</span> y/o <span class="mono">tests/components/ui/{Entity}Page.ts</span>, con sus <span class="mono">@atc('{{PROJECT_KEY}}-NNN')</span>, y los registra en <span class="mono">ApiFixture</span>, <span class="mono">UiFixture</span> y <span class="mono">TestFixture</span> con imports por alias.</p></div>
+      <div class="card"><p class="lbl" style="color:var(--bad)">Borra</p><p class="small mt-s"><span class="mono">ExampleApi</span>, <span class="mono">ExamplePage</span>, <span class="mono">ExampleSteps</span>, <span class="mono">example.types.ts</span>, las carpetas <span class="mono">module-example/</span>, <span class="mono">example.json</span> y la línea <span class="mono">testIgnore</span> que ya no sirve.</p></div>
+      <div class="card"><p class="lbl">Limpia</p><p class="small mt-s"><span class="mono">DataFactory.ts</span> y <span class="mono">types.ts</span> pierden hotel y booking y ganan el dominio real. <span class="mono">createUser</span>, <span class="mono">createCredentials</span> y los tipos genéricos se quedan.</p></div>
+    </div>
+    <div class="grid g2 mt-m" style="gap:22px;align-items:start">
+      <div class="card" style="border-color:var(--warn)"><p class="lbl" style="color:var(--warn)">El smoke va con <span class="mono">@critical</span></p><p class="small mt-s">Es el tag que filtran los proyectos smoke de <span class="mono">playwright.config.ts</span> y los workflows. Con <span class="mono">@smoke</span>, <span class="mono">test:smoke</span> no seleccionaría ningún test.</p></div>
+      <div class="card"><p class="lbl">Un smoke real</p><p class="small mt-s">Usa la entidad nueva por el fixture y prueba al menos una operación de dominio completa. Sin mocks contra la auth real. Los specs de referencia con <span class="mono">UPEX-</span> se pasan a <span class="mono">{{PROJECT_KEY}}</span> si sus endpoints existen; si no, se borran.</p></div>
+    </div>
+    <div class="notes">El smoke vive en tests/e2e/{feature}/smoke.test.ts, o en tests/integration/{feature}/ si es solo API. Las demás entidades quedan en el plan como follow-ups para /test-automation.</div>
+  </section>
+
+  <!-- 13. FASE 7 -->
+  <section class="slide compact" data-title="Fase 7 · CI y MCP">
+    <p class="kicker">Fase 7 · 13 de 17</p>
+    <h2 class="h2">CI, manifest y MCPs: lo que vive <span class="grad">fuera</span> de los tests</h2>
+    <div class="grid g2 mt-s" style="gap:24px;align-items:start">
+      <div class="stack" style="gap:12px">
+        <div class="card"><p class="lbl"><span class="mono">kata-manifest.json</span></p><p class="small mt-s">Borrar los ejemplos lo deja viejo, y el pre-commit bloquea un manifest viejo. <span class="mono">bun run kata:manifest</span> y después <span class="mono">kata:manifest:check</span>.</p></div>
+        <div class="card"><p class="lbl">Workflows de suites</p><p class="small mt-s">Opciones de entorno iguales a la lista real, nombres de secretos con el esquema por entorno, smoke en <span class="mono">@critical</span>. Reportes en GitHub Pages o en el portal privado: te pregunta cuál.</p></div>
+        <div class="card card-accent"><p class="lbl">Secrets de GitHub</p><p class="small mt-s">Te deja un bloque para copiar. Si <span class="mono">gh</span> está autenticado y aprobás, los carga desde <span class="mono">.env</span> con <span class="mono">gh secret set</span>, sin mostrar nunca un valor. <span class="mono">TMS_PROVIDER</span> va como Variable, no como secreto.</p></div>
+      </div>
+      <div class="stack" style="gap:12px">
+        <div class="card" style="border-color:var(--warn)"><p class="lbl" style="color:var(--warn)">MCP en los tres hosts</p><p class="small mt-s">Todo cambio entra igual en <span class="mono">.mcp.json</span>, <span class="mono">opencode.jsonc</span> y <span class="mono">.codex/config.toml</span>, cada uno con su sintaxis. <span class="mono">bun run agents:compat:check</span> lo prueba. Si falta uno, ese host pierde el servidor.</p></div>
+        <div class="card"><p class="lbl">Solo servidores locales</p><p class="small mt-s">Búsqueda web, Postman y Atlassian se conectan a nivel harness, una vez por máquina, nunca en los archivos del proyecto. Te recomienda Exa, Tavily y Context7.</p></div>
+        <div class="card"><p class="lbl"><span class="mono">dbhub.toml</span> y <span class="mono">allurerc.mjs</span></p><p class="small mt-s">La base que corresponda (o <span class="mono">dbhub</span> desactivado si no hay base) y el nombre real del reporte Allure.</p></div>
+      </div>
+    </div>
+    <div class="notes">STP_EXECUTION_KEY lleva la key de la Test Execution STR vinculada al STP del sprint, nunca la del STP: sin ella, la primera corrida nocturna saltea la importación con un aviso. Crear la rama gh-pages y activar GitHub Pages son pasos externos que te quedan anotados.</div>
+  </section>
+
+  <!-- 14. FASE 8 -->
+  <section class="slide compact" data-title="Fase 8 · Validación">
+    <p class="kicker">Fase 8 · 14 de 17</p>
+    <h2 class="h2">Un gate en orden que frena en la <span class="grad">primera</span> falla</h2>
+    <div class="grid g2 mt-m" style="gap:28px;grid-template-columns:1fr 1.15fr;align-items:start">
+      <div class="mk" style="font-size:14px;line-height:1.55">types:check → lint:check
+vars:check → vars:env:check
+vars:schema:check → harness:env:check
+kata:manifest:check
+test --project=api-setup
+test --project=ui-setup
+api:login &lt;env&gt;
+test:smoke   (1ª corrida)
+test:smoke   (2ª: reusa .auth/*)
+repo:check</div>
+      <div class="stack" style="gap:12px">
+        <div class="card card-accent"><p class="lbl">Sin auto-arreglos</p><p class="small mt-s">Ante una falla te reporta el diagnóstico y no corrige nada sin tu aprobación.</p></div>
+        <table class="tt tight">
+          <tr><th>Síntoma</th><th>Causa</th></tr>
+          <tr><td class="small">El smoke corre 0 tests</td><td class="small">El tag no es <span class="mono">@critical</span></td></tr>
+          <tr><td class="small">La 2ª corrida vuelve a loguear</td><td class="small">Se rompió el reuso de sesión: dependencias de proyectos en <span class="mono">playwright.config.ts</span> o <span class="mono">.auth/*</span></td></tr>
+          <tr><td class="small"><span class="mono">.auth/tokens.env</span> sin token</td><td class="small"><span class="mono">api-login.project.ts</span> sin adaptar al login real</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="notes">Todos son scripts de package.json y se corren con bun run. La segunda corrida del smoke tendría que ser notablemente más rápida: si no lo es, el setup de auth se está repitiendo.</div>
+  </section>
+
+  <!-- 15. FASE 9 -->
+  <section class="slide compact" data-title="Fase 9 · Cierre">
+    <p class="kicker">Fase 9 · 15 de 17</p>
+    <h2 class="h2">El escaneo final: cada subsistema, <span class="grad">GENERIC</span> o ADAPTED</h2>
+    <div class="grid g2 mt-s" style="gap:26px;grid-template-columns:1.15fr 1fr;align-items:start">
+      <div>
+        <p class="lbl">Algunas señales (la tabla completa está en la referencia)</p>
+        <table class="tt tight mt-s">
+          <tr><td class="small"><b>ATC keys</b></td><td class="small">Ningún <span class="mono">@atc('PROJ-</span> ni <span class="mono">@atc('UPEX-</span> en <span class="mono">tests/components/</span></td></tr>
+          <tr><td class="small"><b>Facades</b></td><td class="small">Ningún componente importa <span class="mono">@openapi</span></td></tr>
+          <tr><td class="small"><b>URLs</b></td><td class="small"><span class="mono">envDataMap</span> igual a los entornos de <span class="mono">project.yaml</span></td></tr>
+          <tr><td class="small"><b>Auth</b></td><td class="small"><span class="mono">.auth/*.json</span> no vacíos y <span class="mono">API_TOKEN_&lt;ROLE&gt;_&lt;ENV&gt;</span> en <span class="mono">tokens.env</span></td></tr>
+          <tr><td class="small"><b>MCP</b></td><td class="small">Paridad en los tres hosts y <span class="mono">harness:env:check</span> en verde</td></tr>
+          <tr><td class="small"><b>Gate</b></td><td class="small"><span class="mono">bun run repo:check</span> sale en 0</td></tr>
+        </table>
+      </div>
+      <div class="stack" style="gap:12px">
+        <div class="card card-accent"><p class="lbl"><span class="mono">AGENTS.md</span></p><p class="small mt-s">Registra la estrategia de auth, la primera entidad, la fuente de OpenAPI y los gaps abiertos. <span class="mono">CLAUDE.md</span> sigue siendo solo <span class="mono">@AGENTS.md</span>.</p></div>
+        <div class="card"><p class="lbl">Docs del proyecto</p><p class="small mt-s">Si lo aprobaste, limpia la identidad de ejemplo de <span class="mono">README.md</span>, <span class="mono">CONTEXT.md</span>, <span class="mono">INSTALLER.md</span> y las carpetas propias de <span class="mono">docs/</span>. Nunca <span class="mono">docs/core/**</span> ni <span class="mono">docs/assets/**</span>. Cierra con <span class="mono">bun run docs:check</span>.</p></div>
+        <div class="card"><p class="lbl">Plan en COMPLETED</p><p class="small mt-s">Con lo creado, lo que pasa, los gaps y los Secrets que todavía tenés que cargar.</p></div>
+      </div>
+    </div>
+    <div class="notes">La estrategia de branching no se escribe en AGENTS.md: vive en el bloque git_strategy de .agents/project.yaml. Si su strategy_source sigue en inherited, la skill te ofrece el Strategy Setup de /git-flow-master como paso siguiente.</div>
+  </section>
+
+  <!-- 16. SALVAGUARDAS -->
+  <section class="slide compact" data-title="Salvaguardas">
+    <p class="kicker">Salvaguardas · 16 de 17</p>
+    <h2 class="h2">Lo que <span class="grad">nunca</span> hace</h2>
+    <table class="tt mt-m" style="font-size:16px;border-spacing:0 5px">
+      <tr><th style="width:64px">#</th><th>Regla</th></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">A1</b></td><td style="padding:8px 16px" class="small">Escribir antes de que apruebes el plan, o saltear el escaneo de genericidad.</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">A2</b></td><td style="padding:8px 16px" class="small">Escribir en el repo objetivo: desde acá es de solo lectura.</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">A3</b></td><td style="padding:8px 16px" class="small">Hardcodear credenciales. Viven en <span class="mono">.env</span>; una variable de MCP vacía es un STOP de sesión.</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">A4</b></td><td style="padding:8px 16px" class="small">Editar las mitades sincronizadas: <span class="mono">config/variables.core.ts</span>, <span class="mono">.env.core.schema</span>, <span class="mono">scripts/lib/api-login-core.ts</span>, <span class="mono">docs/core/**</span>. El próximo <span class="mono">bun run up</span> borraría el cambio.</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">A5</b></td><td style="padding:8px 16px" class="small">Prometer un refresh de token que no existe, o probar la auth contra mocks.</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">A6</b></td><td style="padding:8px 16px" class="small">Cambiar un MCP en un solo host, o meter un servidor remoto en los archivos del proyecto.</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">A7</b></td><td style="padding:8px 16px" class="small">Arreglar por su cuenta una falla del gate, o cargar Secrets sin tu OK.</td></tr>
+    </table>
+    <div class="grid g3 mt-s" style="gap:16px">
+      <p class="small dim"><b>Sin sobre-ingeniería:</b> una entidad primero, auth solo lo que la app pide.</p>
+      <p class="small dim"><b>Sin adivinar:</b> un obstáculo sin bypass frena y se pide.</p>
+      <p class="small dim"><b>Sin secretos a la vista:</b> nombra la clave, nunca el valor.</p>
+    </div>
+    <div class="notes">Reglas tomadas del contrato de fases, los Gotchas y la Fase 8 de la referencia, más las reglas críticas de AGENTS.md sobre credenciales (1 y 10). Una variable nueva en .env no llega a un MCP que ya está corriendo: harness:env y reinicio de sesión.</div>
+  </section>
+
+  <!-- 17. CIERRE -->
+  <section class="slide compact" data-title="Cierre">
+    <p class="kicker">Cierre · 17 de 17</p>
+    <h2 class="h2">Invocación y <span class="grad">handoffs</span></h2>
+    <div class="grid g3 mt-m" style="gap:22px;align-items:start">
+      <div class="card">
+        <p class="lbl">Cómo se invoca</p>
+        <p class="small mt-s"><b>Claude Code:</b> <span class="mono">/test-framework-adaptation</span>, o con una entidad para acotar el primer componente: <span class="mono">/test-framework-adaptation &lt;entidad&gt;</span>.<br><b>OpenCode y Codex:</b> cargá la skill <span class="mono">test-framework-adaptation</span>, modo <span class="mono">adapt</span>.</p>
+        <p class="small mt-s">Tiene un solo modo, <span class="mono">adapt</span>. También se activa con <i>"adapt framework"</i> o <i>"wire fixtures"</i>.</p>
+      </div>
+      <div class="card">
+        <p class="lbl">Antes</p>
+        <p class="small mt-s"><a href="../project-discovery/how-it-works.es.html"><span class="mono">/project-discovery</span></a>: dominio, infraestructura y <span class="mono">project-config.md</span>.<br><a href="../project-context/how-it-works.es.html"><span class="mono">project-context</span></a>, modo <span class="mono">refresh-all</span>: <span class="mono">data → e2e → api → test-plan</span>, en una sesión limpia.</p>
+      </div>
+      <div class="card">
+        <p class="lbl">Después</p>
+        <p class="small mt-s"><a href="../test-automation/how-it-works.es.html"><span class="mono">/test-automation</span></a>: los tests de cada ticket sobre la entidad ya cableada.<br><a href="../git-flow-master/how-it-works.es.html"><span class="mono">/git-flow-master</span></a>: Strategy Setup si la estrategia sigue heredada.<br><a href="../regression-testing/how-it-works.es.html"><span class="mono">/regression-testing</span></a>: las suites en CI.</p>
+      </div>
+    </div>
+    <div class="card card-accent mt-m">
+      <p class="lbl">Lo que deja la skill</p>
+      <p class="small mt-s">Un repo sin restos del ejemplo · login real en Playwright y en el curl del agente · la primera entidad con su smoke en <span class="mono">@critical</span> · variables, CI y MCPs alineados en los tres hosts · <span class="mono">.context/reports/test-framework-adaptation-plan.md</span> en <span class="mono">COMPLETED</span>.</p>
+    </div>
+    <p class="small dim mt-m">Canon: <span class="mono">.agents/skills/test-framework-adaptation/SKILL.md</span> y <span class="mono">references/adaptation-workflow.md</span>, que es dueño del flujo completo de Fase 0 a 9.</p>
+    <div class="notes">Fin del recorrido. El mapa del slide 3 resume todo: verificar el contexto, preguntar lo que falta, escribir el plan, esperar tu aprobación y recién ahí adaptar, validar y escanear.</div>
+  </section>
+
+  <div class="deck-footer"><span class="mono">/test-framework-adaptation · KATA conectado a tu proyecto</span><span class="slide-number" data-current="1" data-total="17"></span></div>
+</div>
+
+<!-- keyboard-nav hint (ported from defect-management deck) -->
+<div id="help-hint">← → navegar · O resumen · S presentador · N notas · F pantalla</div>
+<style id="upex-hint-style">
+#help-hint{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:60;pointer-events:none;
+  font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em;color:var(--text-3)}
+@media (max-width:768px){#help-hint{display:none}}
+@media (pointer:coarse){#help-hint{display:none}}
+@media print{#help-hint{display:none!important}}
+</style>
+<script>
+/* ---- runtime.js ---- */
+/* html-ppt :: runtime.js
+ * Keyboard-driven deck runtime. Zero dependencies.
+ *
+ * Features:
+ *   ← → / space / PgUp PgDn / Home End  navigation
+ *   F  fullscreen
+ *   S  presenter mode (opens a NEW WINDOW with current/next slide preview + notes + timer)
+ *       The original window stays as audience view, synced via BroadcastChannel.
+ *       Slide previews use CSS transform:scale() at design resolution for pixel-perfect layout.
+ *   N  quick notes overlay (bottom drawer)
+ *   O  slide overview grid
+ *   T  cycle themes (reads data-themes on <html> or <body>)
+ *   A  cycle demo animation on current slide
+ *   URL hash #/N  deep-link to slide N (1-based)
+ *   Progress bar auto-managed
+ */
+(function () {
+  'use strict';
+
+  const ANIMS = ['fade-up','fade-down','fade-left','fade-right','rise-in','drop-in',
+    'zoom-pop','blur-in','glitch-in','typewriter','neon-glow','shimmer-sweep',
+    'gradient-flow','stagger-list','counter-up','path-draw','parallax-tilt',
+    'card-flip-3d','cube-rotate-3d','page-turn-3d','perspective-zoom',
+    'marquee-scroll','kenburns','confetti-burst','spotlight','morph-shape','ripple-reveal'];
+
+  function ready(fn){ if(document.readyState!='loading')fn(); else document.addEventListener('DOMContentLoaded',fn);}
+
+  /* ========== Parse URL for preview-only mode ==========
+   * When loaded as iframe.src = "index.html?preview=3", runtime enters a
+   * locked single-slide mode: only slide N is visible, no chrome, no keys,
+   * no hash updates. This is how the presenter window shows pixel-perfect
+   * previews — by loading the actual deck file in an iframe and telling it
+   * to display only a specific slide.
+   */
+  function getPreviewIdx() {
+    const m = /[?&]preview=(\d+)/.exec(location.search || '');
+    return m ? parseInt(m[1], 10) - 1 : -1;
+  }
+
+  ready(function () {
+    const deck = document.querySelector('.deck');
+    if (!deck) return;
+    const slides = Array.from(deck.querySelectorAll('.slide'));
+    if (!slides.length) return;
+
+    const previewOnlyIdx = getPreviewIdx();
+    const isPreviewMode = previewOnlyIdx >= 0 && previewOnlyIdx < slides.length;
+
+    /* ===== Preview-only mode: show one slide, hide everything else ===== */
+    if (isPreviewMode) {
+      function showSlide(i) {
+        slides.forEach((s, j) => {
+          const active = (j === i);
+          s.classList.toggle('is-active', active);
+          s.style.display = active ? '' : 'none';
+          if (active) {
+            s.style.opacity = '1';
+            s.style.transform = 'none';
+            s.style.pointerEvents = 'auto';
+          }
+        });
+      }
+      showSlide(previewOnlyIdx);
+      /* Hide chrome that the presenter shouldn't see in preview */
+      const hideSel = '.progress-bar, .notes-overlay, .overview, .notes, aside.notes, .speaker-notes';
+      document.querySelectorAll(hideSel).forEach(el => { el.style.display = 'none'; });
+      document.documentElement.setAttribute('data-preview', '1');
+      document.body.setAttribute('data-preview', '1');
+      /* Auto-detect theme base path for theme switching in preview mode */
+      function getPreviewThemeBase() {
+        const base = document.documentElement.getAttribute('data-theme-base');
+        if (base) return base;
+        const tl = document.getElementById('theme-link');
+        if (tl) {
+          const raw = tl.getAttribute('href') || '';
+          const ls = raw.lastIndexOf('/');
+          if (ls >= 0) return raw.substring(0, ls + 1);
+        }
+        return 'assets/themes/';
+      }
+      const previewThemeBase = getPreviewThemeBase();
+
+      /* Listen for postMessage from parent presenter window:
+       *  - preview-goto: switch visible slide WITHOUT reloading
+       *  - preview-theme: switch theme CSS link to match audience window */
+      window.addEventListener('message', function(e) {
+        if (!e.data) return;
+        if (e.data.type === 'preview-goto') {
+          const n = parseInt(e.data.idx, 10);
+          if (n >= 0 && n < slides.length) showSlide(n);
+        } else if (e.data.type === 'preview-theme' && e.data.name) {
+          let link = document.getElementById('theme-link');
+          if (!link) {
+            link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.id = 'theme-link';
+            document.head.appendChild(link);
+          }
+          link.href = previewThemeBase + e.data.name + '.css';
+          document.documentElement.setAttribute('data-theme', e.data.name);
+        }
+      });
+      /* Signal to parent that preview iframe is ready */
+      try { window.parent && window.parent.postMessage({ type: 'preview-ready' }, '*'); } catch(e) {}
+      return;
+    }
+
+    let idx = 0;
+    const total = slides.length;
+
+    /* ===== BroadcastChannel for presenter sync ===== */
+    const CHANNEL_NAME = 'html-ppt-presenter-' + location.pathname;
+    let bc;
+    try { bc = new BroadcastChannel(CHANNEL_NAME); } catch(e) { bc = null; }
+
+    // Are we running inside the presenter popup? (legacy flag, now unused)
+    const isPresenterWindow = false;
+
+    /* ===== progress bar ===== */
+    let bar = document.querySelector('.progress-bar');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.className = 'progress-bar';
+      bar.innerHTML = '<span></span>';
+      document.body.appendChild(bar);
+    }
+    const barFill = bar.querySelector('span');
+
+    /* ===== notes overlay (N key) ===== */
+    let notes = document.querySelector('.notes-overlay');
+    if (!notes) {
+      notes = document.createElement('div');
+      notes.className = 'notes-overlay';
+      document.body.appendChild(notes);
+    }
+
+    /* ===== overview grid (O key) ===== */
+    let overview = document.querySelector('.overview');
+    if (!overview) {
+      overview = document.createElement('div');
+      overview.className = 'overview';
+      slides.forEach((s, i) => {
+        const t = document.createElement('div');
+        t.className = 'thumb';
+        // Force 16:9 aspect ratio robustly
+        t.style.padding = '0 0 56.25% 0';
+        t.style.height = '0';
+        t.style.position = 'relative';
+        t.style.overflow = 'hidden';
+
+        const title = s.getAttribute('data-title') ||
+          (s.querySelector('h1,h2,h3')||{}).textContent || ('Slide '+(i+1));
+        
+        // Create a container for the mini-slide
+        const mini = document.createElement('div');
+        mini.className = 'mini-slide';
+        mini.style.position = 'absolute';
+        mini.style.top = '0';
+        mini.style.left = '0';
+        mini.style.width = '1920px';
+        mini.style.height = '1080px';
+        mini.style.transformOrigin = 'top left';
+        mini.style.pointerEvents = 'none';
+        mini.style.background = 'var(--bg)';
+        
+        // Clone the slide content
+        const clone = s.cloneNode(true);
+        clone.className = 'slide is-active'; // force active styles
+        clone.style.position = 'absolute';
+        clone.style.inset = '0';
+        clone.style.transform = 'none';
+        clone.style.opacity = '1';
+        clone.style.padding = '72px 96px'; // ensure padding is kept
+        
+        mini.appendChild(clone);
+        t.appendChild(mini);
+
+        // Add the number and title overlay
+        const overlay = document.createElement('div');
+        overlay.style.position = 'absolute';
+        overlay.style.inset = '0';
+        overlay.style.background = 'linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, transparent 40%, transparent 60%, rgba(0,0,0,0.8) 100%)';
+        overlay.style.color = '#fff';
+        overlay.style.zIndex = '10';
+        overlay.style.pointerEvents = 'none';
+        
+        const n = document.createElement('div');
+        n.className = 'n';
+        n.textContent = i + 1;
+        n.style.position = 'absolute';
+        n.style.top = '12px';
+        n.style.left = '16px';
+        n.style.fontWeight = '700';
+        n.style.fontSize = '16px';
+        n.style.color = '#fff';
+        n.style.textShadow = '0 1px 4px rgba(0,0,0,0.8)';
+        
+        const text = document.createElement('div');
+        text.className = 't';
+        text.textContent = title.trim().slice(0,80);
+        text.style.position = 'absolute';
+        text.style.bottom = '12px';
+        text.style.left = '16px';
+        text.style.right = '16px';
+        text.style.fontWeight = '600';
+        text.style.fontSize = '14px';
+        text.style.color = '#fff';
+        text.style.textShadow = '0 1px 4px rgba(0,0,0,0.8)';
+        
+        overlay.appendChild(n);
+        overlay.appendChild(text);
+        t.appendChild(overlay);
+
+        t.addEventListener('click', () => { go(i); toggleOverview(false); });
+        overview.appendChild(t);
+      });
+      document.body.appendChild(overview);
+    }
+
+    /* ===== navigation ===== */
+    function go(n, fromRemote){
+      n = Math.max(0, Math.min(total-1, n));
+      slides.forEach((s,i) => {
+        s.classList.toggle('is-active', i===n);
+        s.classList.toggle('is-prev', i<n);
+      });
+      idx = n;
+      barFill.style.width = ((n+1)/total*100)+'%';
+      const numEl = document.querySelector('.slide-number');
+      if (numEl) { numEl.setAttribute('data-current', n+1); numEl.setAttribute('data-total', total); }
+
+      // notes (bottom overlay)
+      const note = slides[n].querySelector('.notes, aside.notes, .speaker-notes');
+      notes.innerHTML = note ? note.innerHTML : '';
+
+      // hash
+      const hashTarget = '#/'+(n+1);
+      if (location.hash !== hashTarget && !isPresenterWindow) {
+        history.replaceState(null,'', hashTarget);
+      }
+
+      // re-trigger entry animations
+      slides[n].querySelectorAll('[data-anim]').forEach(el => {
+        const a = el.getAttribute('data-anim');
+        el.classList.remove('anim-'+a);
+        void el.offsetWidth;
+        el.classList.add('anim-'+a);
+      });
+
+      // counter-up
+      slides[n].querySelectorAll('.counter').forEach(el => {
+        const target = parseFloat(el.getAttribute('data-to')||el.textContent);
+        const dur = parseInt(el.getAttribute('data-dur')||'1200',10);
+        const start = performance.now();
+        const from = 0;
+        function tick(now){
+          const t = Math.min(1,(now-start)/dur);
+          const v = from + (target-from)*(1-Math.pow(1-t,3));
+          el.textContent = (target % 1 === 0) ? Math.round(v) : v.toFixed(1);
+          if (t<1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+      });
+
+      // Broadcast to other window (audience ↔ presenter)
+      if (!fromRemote && bc) {
+        bc.postMessage({ type: 'go', idx: n });
+      }
+    }
+
+    /* ===== listen for remote navigation / theme changes ===== */
+    if (bc) {
+      bc.onmessage = function(e) {
+        if (!e.data) return;
+        if (e.data.type === 'go' && typeof e.data.idx === 'number') {
+          go(e.data.idx, true);
+        } else if (e.data.type === 'theme' && e.data.name) {
+          /* Sync theme across windows */
+          const i = themes.indexOf(e.data.name);
+          if (i >= 0) themeIdx = i;
+          applyTheme(e.data.name);
+        }
+      };
+    }
+
+    function toggleNotes(force){ notes.classList.toggle('open', force!==undefined?force:!notes.classList.contains('open')); }
+    function toggleOverview(force){
+      const isOpen = force!==undefined ? force : !overview.classList.contains('open');
+      overview.classList.toggle('open', isOpen);
+      if (isOpen) {
+        requestAnimationFrame(() => {
+          const thumbs = overview.querySelectorAll('.thumb');
+          if (thumbs.length) {
+            const scale = thumbs[0].clientWidth / 1920;
+            overview.querySelectorAll('.mini-slide').forEach(m => {
+              m.style.transform = 'scale(' + scale + ')';
+            });
+          }
+        });
+      }
+    }
+
+    /* ========== PRESENTER MODE — Magnetic-card popup window ========== */
+    /* Opens a new window with 4 draggable, resizable cards:
+     *   CURRENT  — iframe(?preview=N)   pixel-perfect preview of current slide
+     *   NEXT     — iframe(?preview=N+1) pixel-perfect preview of next slide
+     *   SCRIPT   — large speaker notes (Guion)
+     *   TIMER    — elapsed timer + page counter + controls
+     * Cards remember position/size in localStorage.
+     * Two windows sync via BroadcastChannel.
+     */
+    let presenterWin = null;
+
+    function openPresenterWindow() {
+      if (presenterWin && !presenterWin.closed) {
+        presenterWin.focus();
+        return;
+      }
+
+      // Build absolute URL of THIS deck file (without hash/query)
+      const deckUrl = location.protocol + '//' + location.host + location.pathname;
+
+      // Collect slide titles + notes (HTML strings)
+      const slideMeta = slides.map((s, i) => {
+        const note = s.querySelector('.notes, aside.notes, .speaker-notes');
+        return {
+          title: s.getAttribute('data-title') ||
+            (s.querySelector('h1,h2,h3')||{}).textContent || ('Slide '+(i+1)),
+          notes: note ? note.innerHTML : ''
+        };
+      });
+
+      /* Capture current theme so presenter previews match the audience */
+      const currentTheme = root.getAttribute('data-theme') || (themes[themeIdx] || '');
+      const presenterHTML = buildPresenterHTML(deckUrl, slideMeta, total, idx, CHANNEL_NAME, currentTheme);
+
+      presenterWin = window.open('', 'html-ppt-presenter', 'width=1280,height=820,menubar=no,toolbar=no');
+      if (!presenterWin) {
+        alert('Permite las ventanas emergentes para usar la vista de presentador');
+        return;
+      }
+      presenterWin.document.open();
+      presenterWin.document.write(presenterHTML);
+      presenterWin.document.close();
+    }
+
+    function buildPresenterHTML(deckUrl, slideMeta, total, startIdx, channelName, currentTheme) {
+      const metaJSON = JSON.stringify(slideMeta);
+      const deckUrlJSON = JSON.stringify(deckUrl);
+      const channelJSON = JSON.stringify(channelName);
+      const themeJSON = JSON.stringify(currentTheme || '');
+      const storageKey = 'html-ppt-presenter:' + location.pathname;
+
+      // Build the document as a single template string for clarity
+      return `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Presenter View</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: #1a1d24;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(88,166,255,.04), transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(188,140,255,.04), transparent 50%);
+    color: #e6edf3;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
+  }
+  /* Stage: positioned area where cards live */
+  #stage { position: absolute; inset: 0; overflow: hidden; }
+
+  /* Magnetic card */
+  .pcard {
+    position: absolute;
+    background: #0d1117;
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.02);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    min-width: 180px; min-height: 100px;
+    transition: box-shadow .2s, border-color .2s;
+  }
+  .pcard.dragging { box-shadow: 0 16px 48px rgba(0,0,0,.6), 0 0 0 2px rgba(88,166,255,.5); border-color: #58a6ff; transition: none; z-index: 9999; }
+  .pcard.resizing { box-shadow: 0 16px 48px rgba(0,0,0,.6), 0 0 0 2px rgba(63,185,80,.5); border-color: #3fb950; transition: none; z-index: 9999; }
+  .pcard:hover { border-color: rgba(88,166,255,.3); }
+
+  /* Card header (drag handle) */
+  .pcard-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px;
+    background: rgba(255,255,255,.04);
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    cursor: move;
+    user-select: none;
+    flex-shrink: 0;
+  }
+  .pcard-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dot-color, #58a6ff); flex-shrink: 0; }
+  .pcard-title {
+    font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    font-weight: 700; color: #8b949e; flex: 1;
+  }
+  .pcard-meta { font-size: 11px; color: #6e7681; }
+
+  /* Card body */
+  .pcard-body { flex: 1; position: relative; overflow: hidden; min-height: 0; }
+
+  /* Preview cards (CURRENT/NEXT) — iframe-based pixel-perfect render */
+  .pcard-preview .pcard-body { background: #000; }
+  .pcard-preview iframe {
+    position: absolute; top: 0; left: 0;
+    width: 1920px; height: 1080px;
+    border: none;
+    transform-origin: top left;
+    pointer-events: none;
+    background: transparent;
+  }
+  .pcard-preview .preview-end {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #484f58; font-size: 14px; letter-spacing: .12em;
+  }
+
+  /* Notes card */
+  .pcard-notes .pcard-body {
+    padding: 14px 18px;
+    overflow-y: auto;
+    font-size: 18px; line-height: 1.75;
+    color: #d0d7de;
+    font-family: "Noto Sans SC", -apple-system, sans-serif;
+  }
+  .pcard-notes .pcard-body p { margin: 0 0 .7em 0; }
+  .pcard-notes .pcard-body strong { color: #f0883e; }
+  .pcard-notes .pcard-body em { color: #58a6ff; font-style: normal; }
+  .pcard-notes .pcard-body code {
+    font-family: "SF Mono", monospace; font-size: .9em;
+    background: rgba(255,255,255,.08); padding: 1px 6px; border-radius: 4px;
+  }
+  .pcard-notes .empty { color: #484f58; font-style: italic; }
+
+  /* Timer card */
+  .pcard-timer .pcard-body {
+    display: flex; flex-direction: column; gap: 14px;
+    padding: 18px 20px; justify-content: center;
+  }
+  .timer-display {
+    font-family: "SF Mono", "JetBrains Mono", monospace;
+    font-size: 42px; font-weight: 700;
+    color: #3fb950;
+    letter-spacing: .04em;
+    line-height: 1;
+  }
+  .timer-row {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 14px; color: #8b949e;
+  }
+  .timer-row .label { font-size: 10px; letter-spacing: .15em; text-transform: uppercase; color: #6e7681; }
+  .timer-row .val { color: #e6edf3; font-weight: 600; font-family: "SF Mono", monospace; }
+  .timer-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+  .timer-btn {
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.1);
+    color: #e6edf3;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .timer-btn:hover { background: rgba(88,166,255,.15); border-color: #58a6ff; }
+  .timer-btn:active { transform: translateY(1px); }
+
+  /* Resize handle */
+  .pcard-resize {
+    position: absolute; right: 0; bottom: 0;
+    width: 18px; height: 18px;
+    cursor: nwse-resize;
+    background: linear-gradient(135deg, transparent 50%, rgba(255,255,255,.25) 50%, rgba(255,255,255,.25) 60%, transparent 60%, transparent 70%, rgba(255,255,255,.25) 70%, rgba(255,255,255,.25) 80%, transparent 80%);
+    z-index: 5;
+  }
+  .pcard-resize:hover { background: linear-gradient(135deg, transparent 50%, #58a6ff 50%, #58a6ff 60%, transparent 60%, transparent 70%, #58a6ff 70%, #58a6ff 80%, transparent 80%); }
+
+  /* Bottom hint bar */
+  .hint-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(0,0,0,.6);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(255,255,255,.08);
+    padding: 6px 16px;
+    font-size: 11px; color: #8b949e;
+    display: flex; gap: 18px; align-items: center;
+    z-index: 1000;
+  }
+  .hint-bar kbd {
+    background: rgba(255,255,255,.08);
+    padding: 1px 6px; border-radius: 3px;
+    font-family: "SF Mono", monospace;
+    font-size: 10px;
+    border: 1px solid rgba(255,255,255,.1);
+    color: #e6edf3;
+  }
+  .hint-bar .reset-layout {
+    margin-left: auto;
+    background: transparent; border: 1px solid rgba(255,255,255,.15);
+    color: #8b949e; padding: 3px 10px; border-radius: 4px;
+    font-size: 11px; cursor: pointer; font-family: inherit;
+  }
+  .hint-bar .reset-layout:hover { background: rgba(248,81,73,.15); border-color: #f85149; color: #f85149; }
+
+  body.is-dragging-card * { user-select: none !important; }
+  body.is-dragging-card iframe { pointer-events: none !important; }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="pcard pcard-preview" id="card-cur" style="--dot-color:#58a6ff">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">CURRENT</span>
+      <span class="pcard-meta" id="cur-meta">—</span>
+    </div>
+    <div class="pcard-body"><iframe id="iframe-cur"></iframe></div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+
+  <div class="pcard pcard-preview" id="card-nxt" style="--dot-color:#bc8cff">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">NEXT</span>
+      <span class="pcard-meta" id="nxt-meta">—</span>
+    </div>
+    <div class="pcard-body"><iframe id="iframe-nxt"></iframe></div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+
+  <div class="pcard pcard-notes" id="card-notes" style="--dot-color:#f0883e">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">SPEAKER SCRIPT · Guion</span>
+    </div>
+    <div class="pcard-body" id="notes-body"></div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+
+  <div class="pcard pcard-timer" id="card-timer" style="--dot-color:#3fb950">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">TIMER</span>
+    </div>
+    <div class="pcard-body">
+      <div class="timer-display" id="timer-display">00:00</div>
+      <div class="timer-row">
+        <span class="label">Slide</span>
+        <span class="val" id="timer-count">1 / ${total}</span>
+      </div>
+      <div class="timer-controls">
+        <button class="timer-btn" id="btn-prev">← Prev</button>
+        <button class="timer-btn" id="btn-next">Next →</button>
+        <button class="timer-btn" id="btn-reset">⏱ Reset</button>
+      </div>
+    </div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+</div>
+
+<div class="hint-bar">
+  <span><kbd>← →</kbd> Pasar diapositiva</span>
+  <span><kbd>R</kbd> Reiniciar tiempo</span>
+  <span><kbd>Esc</kbd> Cerrar</span>
+  <span style="color:#6e7681">Arrastra el encabezado para mover · Arrastra la esquina inferior derecha para redimensionar</span>
+  <button class="reset-layout" id="reset-layout">Reiniciar disposición</button>
+</div>
+
+<script>
+(function(){
+  var slideMeta = ${metaJSON};
+  var total = ${total};
+  var idx = ${startIdx};
+  var deckUrl = ${deckUrlJSON};
+  var STORAGE_KEY = ${JSON.stringify(storageKey)};
+  var bc;
+  try { bc = new BroadcastChannel(${channelJSON}); } catch(e) {}
+
+  var iframeCur = document.getElementById('iframe-cur');
+  var iframeNxt = document.getElementById('iframe-nxt');
+  var notesBody = document.getElementById('notes-body');
+  var curMeta = document.getElementById('cur-meta');
+  var nxtMeta = document.getElementById('nxt-meta');
+  var timerDisplay = document.getElementById('timer-display');
+  var timerCount = document.getElementById('timer-count');
+
+  /* ===== Default card layout ===== */
+  function defaultLayout() {
+    var w = window.innerWidth;
+    var h = window.innerHeight - 36; /* leave room for hint bar */
+    return {
+      'card-cur':   { x: 16,        y: 16,            w: Math.round(w*0.55) - 24, h: Math.round(h*0.62) - 16 },
+      'card-nxt':   { x: Math.round(w*0.55) + 8, y: 16, w: w - Math.round(w*0.55) - 24, h: Math.round(h*0.42) - 16 },
+      'card-notes': { x: Math.round(w*0.55) + 8, y: Math.round(h*0.42) + 8, w: w - Math.round(w*0.55) - 24, h: h - Math.round(h*0.42) - 16 },
+      'card-timer': { x: 16,        y: Math.round(h*0.62) + 8, w: Math.round(w*0.55) - 24, h: h - Math.round(h*0.62) - 16 }
+    };
+  }
+
+  /* ===== Apply / save / restore layout ===== */
+  function applyLayout(layout) {
+    Object.keys(layout).forEach(function(id){
+      var el = document.getElementById(id);
+      var l = layout[id];
+      if (el && l) {
+        el.style.left = l.x + 'px';
+        el.style.top = l.y + 'px';
+        el.style.width = l.w + 'px';
+        el.style.height = l.h + 'px';
+      }
+    });
+    rescaleAll();
+  }
+  function readLayout() {
+    try {
+      var saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch(e) {}
+    return defaultLayout();
+  }
+  function saveLayout() {
+    var layout = {};
+    ['card-cur','card-nxt','card-notes','card-timer'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) {
+        layout[id] = {
+          x: parseInt(el.style.left,10) || 0,
+          y: parseInt(el.style.top,10) || 0,
+          w: parseInt(el.style.width,10) || 300,
+          h: parseInt(el.style.height,10) || 200
+        };
+      }
+    });
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(layout)); } catch(e) {}
+  }
+
+  /* ===== iframe rescale to fit card body ===== */
+  function rescaleIframe(iframe) {
+    if (!iframe || iframe.style.display === 'none') return;
+    var body = iframe.parentElement;
+    var cw = body.clientWidth, ch = body.clientHeight;
+    if (!cw || !ch) return;
+    var s = Math.min(cw / 1920, ch / 1080);
+    iframe.style.transform = 'scale(' + s + ')';
+    /* Center the scaled iframe in the body */
+    var sw = 1920 * s, sh = 1080 * s;
+    iframe.style.left = Math.max(0, (cw - sw) / 2) + 'px';
+    iframe.style.top = Math.max(0, (ch - sh) / 2) + 'px';
+  }
+  function rescaleAll() {
+    rescaleIframe(iframeCur);
+    rescaleIframe(iframeNxt);
+  }
+  window.addEventListener('resize', rescaleAll);
+
+  /* ===== Drag (move card by header) ===== */
+  document.querySelectorAll('[data-drag]').forEach(function(handle){
+    handle.addEventListener('mousedown', function(e){
+      if (e.button !== 0) return;
+      var card = handle.closest('.pcard');
+      if (!card) return;
+      e.preventDefault();
+      card.classList.add('dragging');
+      document.body.classList.add('is-dragging-card');
+      var startX = e.clientX, startY = e.clientY;
+      var startL = parseInt(card.style.left,10) || 0;
+      var startT = parseInt(card.style.top,10)  || 0;
+      function onMove(ev){
+        var nx = Math.max(0, Math.min(window.innerWidth - 100, startL + ev.clientX - startX));
+        var ny = Math.max(0, Math.min(window.innerHeight - 50, startT + ev.clientY - startY));
+        card.style.left = nx + 'px';
+        card.style.top = ny + 'px';
+      }
+      function onUp(){
+        card.classList.remove('dragging');
+        document.body.classList.remove('is-dragging-card');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        saveLayout();
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  });
+
+  /* ===== Resize (drag bottom-right corner) ===== */
+  document.querySelectorAll('[data-resize]').forEach(function(handle){
+    handle.addEventListener('mousedown', function(e){
+      if (e.button !== 0) return;
+      var card = handle.closest('.pcard');
+      if (!card) return;
+      e.preventDefault(); e.stopPropagation();
+      card.classList.add('resizing');
+      document.body.classList.add('is-dragging-card');
+      var startX = e.clientX, startY = e.clientY;
+      var startW = parseInt(card.style.width,10)  || card.offsetWidth;
+      var startH = parseInt(card.style.height,10) || card.offsetHeight;
+      function onMove(ev){
+        var nw = Math.max(180, startW + ev.clientX - startX);
+        var nh = Math.max(100, startH + ev.clientY - startY);
+        card.style.width = nw + 'px';
+        card.style.height = nh + 'px';
+        if (card.querySelector('iframe')) rescaleIframe(card.querySelector('iframe'));
+      }
+      function onUp(){
+        card.classList.remove('resizing');
+        document.body.classList.remove('is-dragging-card');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        rescaleAll();
+        saveLayout();
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  });
+
+  /* ===== Preview iframe ready tracking =====
+   * Each iframe loads the deck ONCE with ?preview=1 on init. Subsequent
+   * slide changes are sent via postMessage('preview-goto') so the iframe
+   * just toggles visibility of a different .slide — no reload, no flicker.
+   */
+  var iframeReady = { cur: false, nxt: false };
+  var currentTheme = ${themeJSON};
+  window.addEventListener('message', function(e) {
+    if (!e.data || e.data.type !== 'preview-ready') return;
+    var iframe = null;
+    if (e.source === iframeCur.contentWindow) {
+      iframeReady.cur = true;
+      iframe = iframeCur;
+      postPreviewGoto(iframeCur, idx);
+    } else if (e.source === iframeNxt.contentWindow) {
+      iframeReady.nxt = true;
+      iframe = iframeNxt;
+      postPreviewGoto(iframeNxt, idx + 1 < total ? idx + 1 : idx);
+    }
+    /* Sync current theme to the iframe */
+    if (iframe && currentTheme) {
+      try { iframe.contentWindow.postMessage({ type: 'preview-theme', name: currentTheme }, '*'); } catch(err) {}
+    }
+    if (iframe) rescaleIframe(iframe);
+  });
+
+  function postPreviewGoto(iframe, n) {
+    try {
+      iframe.contentWindow.postMessage({ type: 'preview-goto', idx: n }, '*');
+    } catch(e) {}
+  }
+
+  /* ===== Update content =====
+   * Smooth (no-reload) navigation: send postMessage to iframes instead of
+   * resetting src. Iframes stay loaded, just switch visible .slide.
+   */
+  function update(n) {
+    n = Math.max(0, Math.min(total - 1, n));
+    idx = n;
+
+    /* Current preview — postMessage (smooth) */
+    if (iframeReady.cur) postPreviewGoto(iframeCur, n);
+    curMeta.textContent = (n + 1) + '/' + total;
+
+    /* Next preview */
+    if (n + 1 < total) {
+      iframeNxt.style.display = '';
+      var endEl = document.querySelector('#card-nxt .preview-end');
+      if (endEl) endEl.remove();
+      if (iframeReady.nxt) postPreviewGoto(iframeNxt, n + 1);
+      nxtMeta.textContent = (n + 2) + '/' + total;
+    } else {
+      iframeNxt.style.display = 'none';
+      var body = document.querySelector('#card-nxt .pcard-body');
+      if (body && !body.querySelector('.preview-end')) {
+        var end = document.createElement('div');
+        end.className = 'preview-end';
+        end.textContent = '— END OF DECK —';
+        body.appendChild(end);
+      }
+      nxtMeta.textContent = 'END';
+    }
+
+    /* Notes */
+    var note = slideMeta[n].notes;
+    notesBody.innerHTML = note || '<span class="empty">(Esta diapositiva aún no tiene guion)</span>';
+
+    /* Timer count */
+    timerCount.textContent = (n + 1) + ' / ' + total;
+  }
+
+  /* ===== Timer ===== */
+  var tStart = Date.now();
+  setInterval(function(){
+    var s = Math.floor((Date.now() - tStart) / 1000);
+    var mm = String(Math.floor(s/60)).padStart(2,'0');
+    var ss = String(s%60).padStart(2,'0');
+    timerDisplay.textContent = mm + ':' + ss;
+  }, 1000);
+  function resetTimer(){ tStart = Date.now(); timerDisplay.textContent = '00:00'; }
+
+  /* ===== BroadcastChannel sync ===== */
+  if (bc) {
+    bc.onmessage = function(e){
+      if (!e.data) return;
+      if (e.data.type === 'go') update(e.data.idx);
+      else if (e.data.type === 'theme' && e.data.name) {
+        currentTheme = e.data.name;
+        /* Forward theme change to preview iframes */
+        [iframeCur, iframeNxt].forEach(function(iframe){
+          try {
+            iframe.contentWindow.postMessage({ type: 'preview-theme', name: e.data.name }, '*');
+          } catch(err) {}
+        });
+      }
+    };
+  }
+  function go(n) {
+    update(n);
+    if (bc) bc.postMessage({ type: 'go', idx: idx });
+  }
+
+  /* ===== Buttons ===== */
+  document.getElementById('btn-prev').addEventListener('click', function(){ go(idx - 1); });
+  document.getElementById('btn-next').addEventListener('click', function(){ go(idx + 1); });
+  document.getElementById('btn-reset').addEventListener('click', resetTimer);
+  document.getElementById('reset-layout').addEventListener('click', function(){
+    if (confirm('¿Restaurar la disposición por defecto?')) {
+      try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
+      applyLayout(defaultLayout());
+    }
+  });
+
+  /* ===== Keyboard ===== */
+  document.addEventListener('keydown', function(e){
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    switch(e.key) {
+      case 'ArrowRight': case ' ': case 'PageDown': go(idx + 1); e.preventDefault(); break;
+      case 'ArrowLeft':  case 'PageUp':   go(idx - 1); e.preventDefault(); break;
+      case 'Home': go(0); break;
+      case 'End':  go(total - 1); break;
+      case 'r': case 'R': resetTimer(); break;
+      case 'Escape': window.close(); break;
+    }
+  });
+
+  /* ===== Iframe load → rescale (catches initial size) ===== */
+  iframeCur.addEventListener('load', function(){ rescaleIframe(iframeCur); });
+  iframeNxt.addEventListener('load', function(){ rescaleIframe(iframeNxt); });
+
+  /* ===== Init =====
+   * Load each iframe ONCE with the deck file. After they post
+   * 'preview-ready', all subsequent navigation is via postMessage
+   * (smooth, no reload, no flicker).
+   */
+  applyLayout(readLayout());
+  iframeCur.src = deckUrl + '?preview=' + (idx + 1);
+  if (idx + 1 < total) iframeNxt.src = deckUrl + '?preview=' + (idx + 2);
+  /* Initialize notes/timer/count without touching iframes */
+  notesBody.innerHTML = slideMeta[idx].notes || '<span class="empty">(Esta diapositiva aún no tiene guion)</span>';
+  curMeta.textContent = (idx + 1) + '/' + total;
+  nxtMeta.textContent = (idx + 2) + '/' + total;
+  timerCount.textContent = (idx + 1) + ' / ' + total;
+})();
+</` + `script>
+</body></html>`;
+    }
+
+    function fullscreen(){ const el=document.documentElement;
+      if (!document.fullscreenElement) el.requestFullscreen&&el.requestFullscreen();
+      else document.exitFullscreen&&document.exitFullscreen();
+    }
+
+    // theme cycling
+    const root = document.documentElement;
+    const themesAttr = root.getAttribute('data-themes') || document.body.getAttribute('data-themes');
+    const themes = themesAttr ? themesAttr.split(',').map(s=>s.trim()).filter(Boolean) : [];
+    let themeIdx = 0;
+
+    // Auto-detect theme base path from existing <link id="theme-link">
+    let themeBase = root.getAttribute('data-theme-base');
+    if (!themeBase) {
+      const existingLink = document.getElementById('theme-link');
+      if (existingLink) {
+        // el.getAttribute('href') gives the raw relative path written in HTML
+        const rawHref = existingLink.getAttribute('href') || '';
+        const lastSlash = rawHref.lastIndexOf('/');
+        themeBase = lastSlash >= 0 ? rawHref.substring(0, lastSlash + 1) : 'assets/themes/';
+      } else {
+        themeBase = 'assets/themes/';
+      }
+    }
+
+    function applyTheme(name) {
+      let link = document.getElementById('theme-link');
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.id = 'theme-link';
+        document.head.appendChild(link);
+      }
+      link.href = themeBase + name + '.css';
+      root.setAttribute('data-theme', name);
+      const ind = document.querySelector('.theme-indicator');
+      if (ind) ind.textContent = name;
+    }
+    function cycleTheme(fromRemote){
+      if (!themes.length) return;
+      themeIdx = (themeIdx+1) % themes.length;
+      const name = themes[themeIdx];
+      applyTheme(name);
+      /* Broadcast to other window (audience ↔ presenter) */
+      if (!fromRemote && bc) bc.postMessage({ type: 'theme', name: name });
+    }
+
+    // animation cycling on current slide
+    let animIdx = 0;
+    function cycleAnim(){
+      animIdx = (animIdx+1) % ANIMS.length;
+      const a = ANIMS[animIdx];
+      const target = slides[idx].querySelector('[data-anim-target]') || slides[idx];
+      ANIMS.forEach(x => target.classList.remove('anim-'+x));
+      void target.offsetWidth;
+      target.classList.add('anim-'+a);
+      target.setAttribute('data-anim', a);
+      const ind = document.querySelector('.anim-indicator');
+      if (ind) ind.textContent = a;
+    }
+
+    document.addEventListener('keydown', function (e) {
+      if (e.metaKey||e.ctrlKey||e.altKey) return;
+      switch (e.key) {
+        case 'ArrowRight': case ' ': case 'PageDown': case 'Enter': go(idx+1); e.preventDefault(); break;
+        case 'ArrowLeft': case 'PageUp': case 'Backspace': go(idx-1); e.preventDefault(); break;
+        case 'Home': go(0); break;
+        case 'End': go(total-1); break;
+        case 'f': case 'F': fullscreen(); break;
+        case 's': case 'S': openPresenterWindow(); break;
+        case 'n': case 'N': toggleNotes(); break;
+        case 'o': case 'O': toggleOverview(); break;
+        case 't': case 'T': cycleTheme(); break;
+        case 'a': case 'A': cycleAnim(); break;
+        case 'Escape': toggleOverview(false); toggleNotes(false); break;
+      }
+    });
+
+    // hash deep-link
+    function fromHash(){
+      const m = /^#\/(\d+)/.exec(location.hash||'');
+      if (m) go(Math.max(0, parseInt(m[1],10)-1));
+    }
+    window.addEventListener('hashchange', fromHash);
+    fromHash();
+    go(idx);
+  });
+})();
+
+</script>
+
+<script>
+/* deck :: mobile scale-to-fit — fixed 16:9 layout scaled into narrow/short viewports.
+   Desktop (vw>=1024 && vh>=640) is left untouched (native fluid). Preview iframes skipped. */
+(function(){
+  try{
+    if (new URLSearchParams(location.search).has('preview')) return;
+    var BASE_W = 1280, BASE_H = 720;
+    var deck = document.querySelector('.deck');
+    if (!deck) return;
+    function fit(){
+      var vw = window.innerWidth, vh = window.innerHeight;
+      if (vw >= 1024 && vh >= 640){
+        deck.style.transform = '';
+        deck.style.width = ''; deck.style.height = '';
+        deck.style.position = ''; deck.style.left = ''; deck.style.top = '';
+        document.documentElement.style.overflow = ''; document.body.style.overflow = '';
+        document.documentElement.style.background = '';
+        return;
+      }
+      var scale = Math.min(vw / BASE_W, vh / BASE_H);
+      deck.style.width = BASE_W + 'px';
+      deck.style.height = BASE_H + 'px';
+      deck.style.transformOrigin = 'top left';
+      deck.style.transform = 'scale(' + scale + ')';
+      deck.style.position = 'absolute';
+      deck.style.left = ((vw - BASE_W * scale) / 2) + 'px';
+      deck.style.top = ((vh - BASE_H * scale) / 2) + 'px';
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.background = (function(){var d=getComputedStyle(deck).backgroundColor;if(d&&d!=='rgba(0, 0, 0, 0)'&&d!=='transparent')return d;var b=getComputedStyle(document.body).backgroundColor;return (b&&b!=='rgba(0, 0, 0, 0)'&&b!=='transparent')?b:'#0d1117';})();
+    }
+    fit();
+    window.addEventListener('resize', fit);
+    window.addEventListener('orientationchange', function(){ setTimeout(fit, 60); });
+  }catch(e){ /* never break the deck over a fit error */ }
+})();
+</script>
+
+<!-- ============ MOBILE NAV (UPEX) — swipe → flechas + hint once-only. scale-to-fit vive en el deck fuente ============ -->
+<style id="upex-navhint-style">
+#upex-navhint{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:120;
+  display:flex;align-items:center;gap:.4rem;background:rgba(20,22,34,.94);
+  border:1px solid rgba(255,255,255,.18);border-radius:999px;
+  padding:.5rem .95rem;font:600 13px/1.2 system-ui,-apple-system,sans-serif;color:#c0caf5;
+  box-shadow:0 6px 20px rgba(0,0,0,.45);animation:upexHintIn .35s ease both;cursor:pointer}
+@keyframes upexHintIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%)}}
+#upex-navhint.out{opacity:0;transition:opacity .4s}
+</style>
+<script id="upex-mobile-nav">
+(function(){
+'use strict';
+/* Navegación por swipe: el runtime del deck escucha keydown ArrowLeft/Right. */
+var send=function(key){document.dispatchEvent(new KeyboardEvent('keydown',{key:key,bubbles:true}))};
+var x0=null,y0=null,skip=false;
+document.addEventListener('touchstart',function(e){
+  var t=e.target;
+  skip=!!(t&&t.closest&&t.closest('textarea,input,button,pre,table,a,.quiz'));
+  var p=e.changedTouches[0]; x0=p.clientX; y0=p.clientY;
+},{passive:true});
+document.addEventListener('touchend',function(e){
+  if(x0===null||skip) return;
+  var p=e.changedTouches[0], dx=p.clientX-x0, dy=p.clientY-y0;
+  x0=y0=null;
+  if(Math.abs(dx)>60&&Math.abs(dx)>2*Math.abs(dy)) send(dx<0?'ArrowRight':'ArrowLeft');
+},{passive:true});
+/* Hint de navegación: solo móvil (chrome del deck oculto por scale-to-fit),
+   una sola vez por dominio (localStorage). ?hint=1 lo fuerza para QA. */
+var KEY='upex-deck-navhint-v1';
+var isMobile=matchMedia('(pointer:coarse)').matches&&matchMedia('(max-width:768px)').matches;
+var force=/[?&]hint=1/.test(location.search);
+var seen=false; try{seen=localStorage.getItem(KEY)==='1'}catch(_e){}
+if(force||(isMobile&&!seen)){
+  var h=document.createElement('div'); h.id='upex-navhint';
+  h.textContent='👆 Desliza para avanzar →';
+  var close=function(){ if(!h.isConnected)return; h.classList.add('out'); setTimeout(function(){h.remove();},400); try{localStorage.setItem(KEY,'1')}catch(_e){} };
+  h.addEventListener('click',close);
+  document.body.appendChild(h);
+  setTimeout(close,5000);
+}
+})();
+</script>
+
+</body>
+</html>
