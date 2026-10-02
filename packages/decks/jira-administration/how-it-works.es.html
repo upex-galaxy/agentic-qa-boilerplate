@@ -1,0 +1,1915 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="tokyo-night">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>jira-administration · Cómo funciona</title>
+<style>
+/* ============================================================
+   Self-contained deck — html-ppt assets inlined (fonts, base,
+   tokyo-night theme, animations) + deck-local styles.
+   Source: ~/.agents/skills/html-ppt (shell mirrored from packages/decks/git-flow-master).
+   ============================================================ */
+
+/* ---- fonts.css ---- */
+/* html-ppt :: shared webfonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@200;300;400;500;600;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,800;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap');
+
+
+/* ---- base.css ---- */
+/* html-ppt :: base.css — reset + shared tokens + layout primitives */
+/* Default tokens. Themes in assets/themes/*.css override the :root block. */
+:root {
+  --bg: #ffffff;
+  --bg-soft: #f7f7f8;
+  --surface: #ffffff;
+  --surface-2: #f2f2f4;
+  --border: rgba(0,0,0,.08);
+  --border-strong: rgba(0,0,0,.16);
+  --text-1: #111216;
+  --text-2: #55596a;
+  --text-3: #8a8f9e;
+  --accent: #3b6cff;
+  --accent-2: #7a5cff;
+  --accent-3: #ff5c8a;
+  --good: #1aaf6c;
+  --warn: #f5a524;
+  --bad:  #e0445a;
+  --grad: linear-gradient(135deg,#3b6cff,#7a5cff 55%,#ff5c8a);
+  --grad-soft: linear-gradient(135deg,#eef2ff,#f5ecff 55%,#ffeef5);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --radius-lg: 26px;
+  --shadow: 0 10px 30px rgba(18,24,40,.08), 0 2px 6px rgba(18,24,40,.04);
+  --shadow-lg: 0 24px 60px rgba(18,24,40,.14), 0 6px 16px rgba(18,24,40,.06);
+  --font-sans: 'Inter','Noto Sans SC',-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;
+  --font-serif: 'Playfair Display','Noto Serif SC',Georgia,serif;
+  --font-mono: 'JetBrains Mono','IBM Plex Mono',SFMono-Regular,Menlo,monospace;
+  --font-display: var(--font-sans);
+  --letter-tight: -.03em;
+  --letter-normal: -.01em;
+  --ease: cubic-bezier(.4,0,.2,1);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text-1);
+  font-family:var(--font-sans);font-weight:400;line-height:1.6;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  letter-spacing:var(--letter-normal)}
+img,svg,video{max-width:100%;display:block}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code,kbd,pre,samp{font-family:var(--font-mono)}
+
+/* ================= SLIDE SYSTEM ================= */
+.deck{position:relative;width:100vw;height:100vh;overflow:hidden;background:var(--bg)}
+.slide{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:72px 96px;
+  box-sizing:border-box;
+  opacity:0;pointer-events:none;
+  transition:opacity .5s var(--ease), transform .5s var(--ease);
+  transform:translateX(30px);
+  overflow:hidden;
+}
+.slide.is-active{opacity:1;pointer-events:auto;transform:translateX(0);z-index:2}
+.slide.is-prev{transform:translateX(-30px)}
+
+/* single-page standalone (used when a layout file is opened directly) */
+body.single .slide{position:relative;width:100vw;height:100vh;opacity:1;transform:none;pointer-events:auto}
+
+/* ================= TYPOGRAPHY ================= */
+.eyebrow{font-size:13px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--text-3)}
+.kicker{font-size:14px;font-weight:600;color:var(--accent);letter-spacing:.08em;text-transform:uppercase}
+h1.title,.h1{font-family:var(--font-display);font-size:72px;line-height:1.05;font-weight:800;letter-spacing:var(--letter-tight);margin:0 0 18px;color:var(--text-1)}
+h2.title,.h2{font-family:var(--font-display);font-size:54px;line-height:1.1;font-weight:700;letter-spacing:var(--letter-tight);margin:0 0 14px}
+h3,.h3{font-size:32px;line-height:1.2;font-weight:600;letter-spacing:var(--letter-normal);margin:0 0 10px}
+h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
+.lede{font-size:22px;line-height:1.55;color:var(--text-2);font-weight:300;max-width:62ch}
+.dim{color:var(--text-2)}
+.dim2{color:var(--text-3)}
+.mono{font-family:var(--font-mono)}
+.serif{font-family:var(--font-serif)}
+.gradient-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+
+/* ================= LAYOUT PRIMITIVES ================= */
+.stack>*+*{margin-top:14px}
+.row{display:flex;gap:24px;align-items:center}
+.row.wrap{flex-wrap:wrap}
+.grid{display:grid;gap:24px}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.center{display:flex;align-items:center;justify-content:center;text-align:center}
+.fill{flex:1}
+.sp-t{padding-top:24px}.sp-b{padding-bottom:24px}
+.mt-s{margin-top:8px}.mt-m{margin-top:18px}.mt-l{margin-top:32px}
+.mb-s{margin-bottom:8px}.mb-m{margin-bottom:18px}.mb-l{margin-bottom:32px}
+
+/* ================= CARDS ================= */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:26px 28px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.card-soft{background:var(--surface-2);border:1px solid var(--border)}
+.card-outline{background:transparent;border:1.5px solid var(--border-strong);box-shadow:none}
+.card-accent{background:var(--surface);border-top:3px solid var(--accent)}
+.card-hover{transition:transform .3s var(--ease),box-shadow .3s var(--ease)}
+.card-hover:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}
+
+.pill{display:inline-block;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:500;
+  background:var(--surface-2);color:var(--text-2);border:1px solid var(--border)}
+.pill-accent{background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border-color:color-mix(in srgb,var(--accent) 28%,transparent)}
+
+/* ================= BARS / DIVIDERS ================= */
+.divider{height:1px;background:var(--border);width:100%}
+.divider-accent{height:3px;width:72px;background:var(--accent);border-radius:2px}
+
+/* ================= CHROME (header/footer/progress) ================= */
+.deck-header{position:absolute;top:24px;left:40px;right:40px;display:flex;align-items:center;justify-content:space-between;
+  font-size:12px;color:var(--text-3);letter-spacing:.12em;text-transform:uppercase;z-index:10;pointer-events:none}
+.deck-footer{position:absolute;bottom:24px;left:40px;right:40px;display:flex;align-items:center;justify-content:space-between;
+  font-size:12px;color:var(--text-3);z-index:10;pointer-events:none}
+.slide-number::before{content:attr(data-current)}
+.slide-number::after{content:" / " attr(data-total)}
+.progress-bar{position:fixed;left:0;right:0;bottom:0;height:3px;background:transparent;z-index:20}
+.progress-bar > span{display:block;height:100%;width:0;background:var(--accent);transition:width .3s var(--ease)}
+
+/* ================= PRESENTER / OVERVIEW ================= */
+.notes{display:none!important}
+.notes-overlay{position:fixed;inset:auto 0 0 0;max-height:42vh;background:rgba(20,22,30,.95);color:#e8ebf4;
+  padding:20px 32px;font-size:16px;line-height:1.6;border-top:1px solid rgba(255,255,255,.1);transform:translateY(100%);
+  transition:transform .3s var(--ease);z-index:40;overflow:auto;font-family:var(--font-sans)}
+.notes-overlay.open{transform:translateY(0)}
+.overview{position:fixed;inset:0;background:rgba(10,12,18,.92);backdrop-filter:blur(12px);z-index:50;
+  display:none;padding:40px;overflow:auto}
+.overview.open{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;align-content:start}
+.overview .thumb{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  aspect-ratio:16/9;overflow:hidden;cursor:pointer;position:relative;color:var(--text-1);padding:16px;
+  font-size:11px;transition:transform .2s var(--ease)}
+.overview .thumb:hover{transform:scale(1.04)}
+.overview .thumb .n{position:absolute;top:8px;left:10px;font-weight:700;font-size:14px;color:var(--text-3)}
+.overview .thumb .t{position:absolute;bottom:10px;left:14px;right:14px;font-weight:600;color:var(--text-1)}
+
+/* ================= PRESENTER VIEW ================= */
+/* Presenter view opens in a separate popup window (S key).
+ * All presenter styles are self-contained in the popup HTML generated by runtime.js.
+ * The audience window (this file) is NOT affected — it stays as normal deck view.
+ * Only the .notes class below is needed to hide speaker notes from audience. */
+
+/* ================= UTILITY ================= */
+.hidden{display:none!important}
+.nowrap{white-space:nowrap}
+.tr{text-align:right}.tc{text-align:center}.tl{text-align:left}
+.uppercase{text-transform:uppercase;letter-spacing:.12em}
+
+/* ================= PRINT ================= */
+@media print{
+  .slide{position:relative;opacity:1!important;transform:none!important;page-break-after:always;height:100vh}
+  .deck-header,.deck-footer,.progress-bar,.notes-overlay,.overview{display:none!important}
+}
+
+
+/* ---- themes/tokyo-night.css ---- */
+/* theme: tokyo-night */
+:root{
+  --bg:#1a1b26;--bg-soft:#16161e;--surface:#24283b;--surface-2:#2f334d;
+  --border:rgba(192,202,245,.12);--border-strong:rgba(192,202,245,.24);
+  --text-1:#c0caf5;--text-2:#a9b1d6;--text-3:#565f89;
+  --accent:#7aa2f7;--accent-2:#bb9af7;--accent-3:#7dcfff;
+  --good:#9ece6a;--warn:#e0af68;--bad:#f7768e;
+  --grad:linear-gradient(135deg,#7aa2f7,#bb9af7 55%,#f7768e);
+  --grad-soft:linear-gradient(135deg,#24283b,#2f334d);
+  --radius:12px;--radius-sm:8px;--radius-lg:20px;
+  --shadow:0 10px 30px rgba(0,0,0,.45);
+  --shadow-lg:0 24px 62px rgba(0,0,0,.6);
+  --font-sans:'Inter','Noto Sans SC',sans-serif;
+}
+
+
+/* ---- animations/animations.css ---- */
+/* html-ppt :: animations.css
+ * Apply by adding class="anim-<name>" or data-anim="<name>".
+ * Durations are deliberately snappy; tweak --anim-dur per element.
+ */
+:root{--anim-dur:.7s;--anim-ease:cubic-bezier(.4,0,.2,1)}
+
+/* ---------- FADE DIRECTIONALS ---------- */
+@keyframes kf-fade-up{from{opacity:0;transform:translateY(32px)}to{opacity:1;transform:none}}
+@keyframes kf-fade-down{from{opacity:0;transform:translateY(-32px)}to{opacity:1;transform:none}}
+@keyframes kf-fade-left{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:none}}
+@keyframes kf-fade-right{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
+.anim-fade-up{animation:kf-fade-up var(--anim-dur) var(--anim-ease) both}
+.anim-fade-down{animation:kf-fade-down var(--anim-dur) var(--anim-ease) both}
+.anim-fade-left{animation:kf-fade-left var(--anim-dur) var(--anim-ease) both}
+.anim-fade-right{animation:kf-fade-right var(--anim-dur) var(--anim-ease) both}
+
+/* ---------- RISE / DROP / ZOOM / BLUR / GLITCH ---------- */
+@keyframes kf-rise{from{opacity:0;transform:translateY(60px) scale(.97);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
+@keyframes kf-drop{from{opacity:0;transform:translateY(-60px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes kf-zoom{0%{opacity:0;transform:scale(.6)}60%{transform:scale(1.04)}100%{opacity:1;transform:scale(1)}}
+@keyframes kf-blur{from{opacity:0;filter:blur(18px)}to{opacity:1;filter:none}}
+@keyframes kf-glitch{0%{opacity:0;transform:translateX(0);clip-path:inset(0 0 0 0)}
+  20%{opacity:1;transform:translateX(-6px);clip-path:inset(20% 0 30% 0)}
+  40%{transform:translateX(4px);clip-path:inset(50% 0 10% 0)}
+  60%{transform:translateX(-3px);clip-path:inset(10% 0 60% 0)}
+  80%{transform:translateX(2px);clip-path:inset(0 0 0 0)}
+  100%{opacity:1;transform:none}}
+.anim-rise-in{animation:kf-rise .9s var(--anim-ease) both}
+.anim-drop-in{animation:kf-drop .8s var(--anim-ease) both}
+.anim-zoom-pop{animation:kf-zoom .7s cubic-bezier(.22,1.3,.36,1) both}
+.anim-blur-in{animation:kf-blur .8s var(--anim-ease) both}
+.anim-glitch-in{animation:kf-glitch .8s steps(5,end) both}
+
+/* ---------- TYPEWRITER ---------- */
+.anim-typewriter{display:inline-block;overflow:hidden;white-space:nowrap;border-right:2px solid currentColor;
+  width:0;animation:kf-type 2.4s steps(40,end) forwards, kf-caret 1s step-end infinite}
+@keyframes kf-type{to{width:100%}}
+@keyframes kf-caret{50%{border-color:transparent}}
+
+/* ---------- GLOW / SHIMMER / GRADIENT-FLOW ---------- */
+@keyframes kf-neon{0%,100%{text-shadow:0 0 8px var(--accent),0 0 20px var(--accent)}
+  50%{text-shadow:0 0 16px var(--accent),0 0 40px var(--accent),0 0 80px var(--accent)}}
+.anim-neon-glow{animation:kf-neon 2s ease-in-out infinite}
+
+.anim-shimmer-sweep{position:relative;overflow:hidden}
+.anim-shimmer-sweep::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(110deg,transparent 40%,rgba(255,255,255,.55) 50%,transparent 60%);
+  transform:translateX(-100%);animation:kf-shimmer 2.4s var(--anim-ease) infinite}
+@keyframes kf-shimmer{to{transform:translateX(100%)}}
+
+.anim-gradient-flow{background:linear-gradient(90deg,var(--accent),var(--accent-2,var(--accent)),var(--accent-3,var(--accent)),var(--accent));
+  background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;
+  animation:kf-gradflow 4s linear infinite}
+@keyframes kf-gradflow{to{background-position:300% 0}}
+
+/* ---------- STAGGER LIST ---------- */
+.anim-stagger-list > *{opacity:0;animation:kf-rise .65s var(--anim-ease) both}
+.anim-stagger-list > *:nth-child(1){animation-delay:.05s}
+.anim-stagger-list > *:nth-child(2){animation-delay:.15s}
+.anim-stagger-list > *:nth-child(3){animation-delay:.25s}
+.anim-stagger-list > *:nth-child(4){animation-delay:.35s}
+.anim-stagger-list > *:nth-child(5){animation-delay:.45s}
+.anim-stagger-list > *:nth-child(6){animation-delay:.55s}
+.anim-stagger-list > *:nth-child(7){animation-delay:.65s}
+.anim-stagger-list > *:nth-child(8){animation-delay:.75s}
+.anim-stagger-list > *:nth-child(n+9){animation-delay:.85s}
+
+/* ---------- COUNTER-UP (JS-driven, marker class only) ---------- */
+.counter{font-variant-numeric:tabular-nums}
+
+/* ---------- SVG PATH DRAW ---------- */
+.anim-path-draw path,.anim-path-draw line,.anim-path-draw polyline,.anim-path-draw circle,.anim-path-draw rect{
+  stroke-dasharray:1000;stroke-dashoffset:1000;animation:kf-draw 2s var(--anim-ease) forwards}
+@keyframes kf-draw{to{stroke-dashoffset:0}}
+
+/* ---------- PARALLAX TILT (hover) ---------- */
+.anim-parallax-tilt{transform-style:preserve-3d;transition:transform .4s var(--anim-ease)}
+.anim-parallax-tilt:hover{transform:perspective(900px) rotateX(6deg) rotateY(-8deg) translateZ(10px)}
+
+/* ---------- CARD FLIP 3D ---------- */
+@keyframes kf-flip{from{transform:perspective(1200px) rotateY(-90deg);opacity:0}
+  to{transform:perspective(1200px) rotateY(0);opacity:1}}
+.anim-card-flip-3d{animation:kf-flip .9s var(--anim-ease) both;transform-style:preserve-3d;backface-visibility:hidden}
+
+/* ---------- CUBE ROTATE 3D ---------- */
+@keyframes kf-cube{from{transform:perspective(1200px) rotateX(20deg) rotateY(-90deg) translateZ(-200px);opacity:0}
+  to{transform:perspective(1200px) rotateX(0) rotateY(0) translateZ(0);opacity:1}}
+.anim-cube-rotate-3d{animation:kf-cube 1s var(--anim-ease) both}
+
+/* ---------- PAGE TURN 3D ---------- */
+@keyframes kf-pageturn{from{transform:perspective(1600px) rotateY(-85deg);transform-origin:left center;opacity:0}
+  to{transform:perspective(1600px) rotateY(0);opacity:1}}
+.anim-page-turn-3d{animation:kf-pageturn 1s var(--anim-ease) both;transform-origin:left center}
+
+/* ---------- PERSPECTIVE ZOOM ---------- */
+@keyframes kf-pzoom{from{opacity:0;transform:perspective(1400px) translateZ(-400px) rotateX(12deg)}
+  to{opacity:1;transform:none}}
+.anim-perspective-zoom{animation:kf-pzoom 1s var(--anim-ease) both}
+
+/* ---------- MARQUEE SCROLL ---------- */
+.anim-marquee-scroll{display:flex;gap:48px;white-space:nowrap;animation:kf-marquee 20s linear infinite}
+@keyframes kf-marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ---------- KEN BURNS ---------- */
+@keyframes kf-kenburns{0%{transform:scale(1) translate(0,0)}100%{transform:scale(1.15) translate(-2%,-1%)}}
+.anim-kenburns{animation:kf-kenburns 14s ease-in-out infinite alternate}
+
+/* ---------- CONFETTI BURST (pseudo — pure CSS sparkles) ---------- */
+.anim-confetti-burst{position:relative}
+.anim-confetti-burst::before,.anim-confetti-burst::after{
+  content:"";position:absolute;top:50%;left:50%;width:8px;height:8px;border-radius:50%;
+  background:var(--accent);box-shadow:
+    20px -30px 0 var(--accent-2,var(--accent)),-25px -20px 0 var(--accent-3,var(--accent)),
+    30px 20px 0 var(--good,#1aaf6c),-30px 25px 0 var(--warn,#f5a524),
+    40px -10px 0 var(--bad,#e0445a),-45px 0 0 var(--accent),
+    10px 40px 0 var(--accent-2,var(--accent)),-15px -40px 0 var(--accent-3,var(--accent));
+  opacity:0;animation:kf-confetti 1.2s var(--anim-ease) forwards}
+.anim-confetti-burst::after{animation-delay:.15s;transform:rotate(45deg)}
+@keyframes kf-confetti{0%{opacity:0;transform:scale(.2)}30%{opacity:1}100%{opacity:0;transform:scale(2.2)}}
+
+/* ---------- SPOTLIGHT ---------- */
+@keyframes kf-spot{0%{clip-path:circle(0% at 50% 50%)}100%{clip-path:circle(140% at 50% 50%)}}
+.anim-spotlight{animation:kf-spot 1.1s var(--anim-ease) both}
+
+/* ---------- MORPH SHAPE (SVG) ---------- */
+.anim-morph-shape path{animation:kf-morph 6s ease-in-out infinite alternate}
+@keyframes kf-morph{0%{d:path("M60,120 Q120,20 180,120 T300,120")}
+  100%{d:path("M60,120 Q120,220 180,120 T300,120")}}
+
+/* ---------- RIPPLE REVEAL ---------- */
+@keyframes kf-ripple{0%{clip-path:circle(0% at 20% 80%);opacity:.4}
+  100%{clip-path:circle(160% at 20% 80%);opacity:1}}
+.anim-ripple-reveal{animation:kf-ripple 1.2s var(--anim-ease) both}
+
+/* reduced motion */
+@media (prefers-reduced-motion: reduce){
+  [class*="anim-"]{animation:none!important;transition:none!important}
+}
+
+
+/* ---- deck-local ---- */
+/* ===== Deck-local: TIPOGRAFÍA GRANDE + más aire para exposición en proyector ===== */
+  .slide{padding:64px 84px}
+  .h1{font-size:88px;line-height:1.02}
+  .h2{font-size:62px;line-height:1.06;margin-bottom:10px}
+  .h4{font-size:26px}
+  .kicker{font-size:17px;letter-spacing:.1em}
+  .lede{font-size:30px;line-height:1.5;max-width:60ch;font-weight:400}
+  .small{font-size:19px;line-height:1.55}
+  .dim{color:var(--text-2)}
+  .card{padding:26px 28px;background:var(--surface);border:1px solid var(--border-strong)}
+  .card-soft{background:var(--grad-soft)}
+  .card-accent{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset,var(--shadow)}
+  .lbl{font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-2);font-weight:700}
+  ul.big{font-size:21px;line-height:2.05;margin:0;padding-left:1.1em}
+  ul.big li{margin-bottom:2px}
+
+  /* schematic mockups — monospace forzado sobre tema sans */
+  .mk{font-family:'JetBrains Mono','IBM Plex Mono',ui-monospace,monospace;font-size:18px;line-height:1.5;
+      white-space:pre;background:#16161e;border:1px solid var(--border-strong);
+      border-radius:14px;padding:24px 26px;color:#c0caf5;overflow:auto;box-shadow:var(--shadow)}
+
+  /* etiquetas tipo issue Jira — grandes */
+  .tag{display:inline-block;padding:5px 14px;border-radius:8px;font-size:17px;font-weight:700;
+       letter-spacing:.02em;border:1px solid transparent}
+  .tag-test{background:rgba(122,162,247,.18);color:#9cc2ff;border-color:rgba(122,162,247,.5)}
+  .tag-plan{background:rgba(158,206,106,.16);color:#b9e08a;border-color:rgba(158,206,106,.5)}
+  .tag-exec{background:rgba(224,175,104,.16);color:#f0c886;border-color:rgba(224,175,104,.5)}
+  .tag-bug{background:rgba(247,118,142,.18);color:#ff9bac;border-color:rgba(247,118,142,.5)}
+  .tag-story{background:rgba(192,202,245,.14);color:#c0caf5;border-color:var(--border-strong)}
+  /* chips dentro de un título: escalan con el heading para no verse diminutos */
+  .h2 .tag{font-size:.46em;padding:.18em .5em;border-radius:.28em;vertical-align:middle;
+           position:relative;top:-.06em}
+
+  /* chips de estado grandes */
+  .chip{display:inline-flex;align-items:center;gap:10px;padding:12px 20px;border-radius:12px;
+        font-size:20px;font-weight:700;background:var(--surface);border:1px solid var(--border-strong)}
+  .dot{display:inline-block;width:16px;height:16px;border-radius:50%}
+  .q{font-size:58px;font-weight:800;line-height:1.04;letter-spacing:-.01em}
+
+  table.tt{width:100%;border-collapse:separate;border-spacing:0 10px;font-size:20px}
+  table.tt th{color:var(--accent-2);font-weight:800;font-size:16px;letter-spacing:.08em;
+              text-transform:uppercase;text-align:left;padding:0 16px 4px}
+  table.tt td{background:var(--surface);border-top:1px solid var(--border-strong);
+              border-bottom:1px solid var(--border-strong);padding:16px 16px;vertical-align:top}
+  table.tt td:first-child{border-left:1px solid var(--border-strong);border-radius:12px 0 0 12px}
+  table.tt td:last-child{border-right:1px solid var(--border-strong);border-radius:0 12px 12px 0}
+
+  .fx-host{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.45}
+  .above{position:relative;z-index:1}
+  .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+  /* ===== workflow map (slide 2) ===== */
+  .wf-row{display:flex;align-items:stretch;gap:8px}
+  .wf-node{flex:1;min-width:0;background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;padding:10px 12px}
+  .wf-node p{margin:0}
+  .wf-node .n{font-size:12px;font-weight:800;letter-spacing:.1em;color:var(--accent-2);text-transform:uppercase}
+  .wf-node .t{font-size:17px;font-weight:700;line-height:1.25;margin-top:2px}
+  .wf-node .c{font-family:var(--font-mono);font-size:12px;color:var(--text-3);margin-top:5px;line-height:1.5}
+  .wf-node.gate{border-color:var(--warn);box-shadow:0 0 0 1px var(--warn) inset}
+  .wf-node.alt{background:var(--grad-soft)}
+  .wf-arr{align-self:center;color:var(--accent);font-size:20px;font-weight:800;flex:none}
+  .wf-lane{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-3);font-weight:700;margin:16px 0 8px}
+  /* slides densos: cards compactas + heading contenido */
+  .slide.compact .card{padding:16px 20px}
+  .slide.compact .h2{font-size:46px}
+  .slide.compact .small{font-size:18px;line-height:1.5}
+
+  /* ===== jira-administration: diagramas SVG inline (tokens del tema) ===== */
+  .dg{width:100%;height:auto;display:block}
+  .dg text{font-family:var(--font-sans);fill:var(--text-1)}
+  .dg .t-s{font-size:13px;fill:var(--text-2)}
+  .dg .t-m{font-family:var(--font-mono);font-size:13px;fill:var(--accent-3)}
+  .dg .t-b{font-size:15px;font-weight:700}
+  .dg .t-l{font-size:11px;font-weight:800;letter-spacing:.12em;fill:var(--accent-2)}
+  .dg .bx{fill:var(--surface);stroke:var(--border-strong);stroke-width:1.2}
+  .dg .bx-acc{fill:var(--surface);stroke:var(--accent);stroke-width:1.6}
+  .dg .bx-good{fill:var(--surface);stroke:var(--good);stroke-width:1.6}
+  .dg .bx-warn{fill:var(--surface);stroke:var(--warn);stroke-width:1.6}
+  .dg .bx-bad{fill:var(--surface);stroke:var(--bad);stroke-width:1.6}
+  .dg .bx-soft{fill:var(--surface-2);stroke:var(--border);stroke-width:1}
+  .dg .ln{stroke:var(--accent);stroke-width:2;fill:none}
+  .dg .ln-d{stroke:var(--text-3);stroke-width:1.6;fill:none;stroke-dasharray:5 5}
+  .dg .yes{fill:var(--good);font-size:12px;font-weight:800}
+  .dg .no{fill:var(--bad);font-size:12px;font-weight:800}
+  .dg .ar{fill:var(--accent)}
+  .dg .ar-d{fill:var(--text-3)}
+  .lane-good{color:var(--good)} .lane-warn{color:var(--warn)} .lane-bad{color:var(--bad)}
+  table.tt.tight{font-size:15px;border-spacing:0 5px}
+  table.tt.tight td{padding:8px 14px}
+  table.tt.tight th{font-size:13px}
+  /* modo escalado (scale-to-fit a 1280x720 en pantallas chicas): más compacto para que cada slide entre entero */
+  @media (max-width:1023px),(max-height:639px){
+    .slide{padding:30px 52px}
+    .slide.compact .h2{font-size:36px}
+    .slide.compact .small{font-size:15.5px;line-height:1.4}
+    .slide.compact .card{padding:10px 16px}
+    .slide.compact .card p{margin-top:2px;margin-bottom:2px}
+    .slide.compact .mt-m{margin-top:10px}
+    .slide.compact .mt-s{margin-top:4px}
+    .slide.compact ul.big{font-size:15.5px!important;line-height:1.5!important}
+    .slide.compact .stack{gap:8px!important}
+    .slide.compact .grid{gap:14px!important}
+    .slide.compact table.tt.tight{border-spacing:0 4px}
+    .slide.compact table.tt.tight td{padding:5px 12px}
+    .slide.compact .mk{padding:12px 16px}
+    .slide.compact .wf-node{padding:8px 10px}
+    .slide.compact .lbl{font-size:13px}
+    .wf-lane{margin:10px 0 6px}
+  }
+</style>
+</head>
+<body>
+
+<div class="deck">
+
+
+  <!-- 1. PORTADA -->
+  <section class="slide is-active" data-title="Portada">
+    <p class="eyebrow" style="margin-bottom:20px">Agentic QA · Skill de workflow</p>
+    <h1 class="h1 mono anim-rise-in" data-anim="rise-in" style="font-size:80px;letter-spacing:-.02em"><span class="grad">/</span>jira-administration</h1>
+    <p class="lede mt-m">Dos tareas de administración que tocan a todo el proyecto: alinear los <b>Components</b> de Jira con los módulos reales de la app, y repuntar el repo a un <b>sitio nuevo de Atlassian</b> después de una migración. En las dos, la IA lee primero, te muestra el plan y no escribe nada hasta que digas que sí.</p>
+    <div class="row wrap mt-l" style="gap:12px">
+      <span class="chip"><span class="dot" style="background:var(--accent)"></span>Un modo por corrida</span>
+      <span class="chip"><span class="dot" style="background:var(--good)"></span>Lee antes de tocar</span>
+      <span class="chip"><span class="dot" style="background:var(--warn)"></span>Escribe solo con tu OK</span>
+    </div>
+    <div class="notes">Deck de la skill jira-administration. Reúne lo que antes eran dos comandos sueltos, jira-components y jira-instance-migration, que sobreviven solo como frases que la activan. Las dos tareas son raras y de alto impacto: un error se nota recién semanas después, en un filtro que no discrimina o en un campo que recibió datos que no eran suyos. Pulsá → para avanzar, S para modo presentador, O para overview, F para pantalla completa.</div>
+  </section>
+
+  <!-- 2. CUÁNDO SÍ / CUÁNDO NO -->
+  <section class="slide compact" data-title="Cuándo usarla">
+    <p class="kicker">Decidir · 2 de 15</p>
+    <h2 class="h2">¿Cambia algo de la <span class="grad">estructura</span> de Jira?</h2>
+    <div class="grid g2 mt-m" style="gap:28px;grid-template-columns:1fr 1.25fr;align-items:start">
+      <div class="card card-accent">
+        <p class="lbl" style="color:var(--good)">Usala para</p>
+        <ul class="big" style="font-size:18px;line-height:1.75">
+          <li>Reconciliar los <b>Components</b> del proyecto con los módulos funcionales de la app: crear los que faltan y renombrar los viejos.</li>
+          <li>Repuntar el repo a otra instancia de Atlassian tras una migración de sitio, y <b>regenerar los catálogos</b> que esa migración invalidó.</li>
+        </ul>
+        <p class="small dim mt-s">Se activa también con <i>"sync Jira components"</i>, <i>"cambió la URL de Jira"</i>, <i>"repoint jira"</i> o <i>"migrar la instancia de jira"</i>.</p>
+      </div>
+      <div>
+        <p class="lbl" style="color:var(--bad)">No es para esto: va a</p>
+        <table class="tt tight mt-s">
+          <tr><td class="small">Ponerle un component a un issue puntual</td><td class="small">la skill de testing que crea el issue, vía <span class="mono">/acli</span></td></tr>
+          <tr><td class="small">Operar tickets: crear, transicionar, comentar</td><td class="small mono">/acli</td></tr>
+          <tr><td class="small">Refrescar catálogos sin cambio de instancia</td><td class="small"><span class="mono">bun run jira:sync-*</span>, directo</td></tr>
+          <tr><td class="small">Provisionar Jira por primera vez</td><td class="small"><span class="mono">docs/core/setup/jira-xray.html</span> (sitio de docs)</td></tr>
+        </table>
+        <p class="small dim mt-s">Cada modo tiene su propio "no es para esto". Components no toca catálogos ni la instancia; la migración no da de alta un Jira nuevo.</p>
+      </div>
+    </div>
+    <div class="notes">Fuentes: la descripción del SKILL.md y los "Do NOT use for" de references/components.md y references/instance-migration.md. Que cada skill de testing complete los components de los issues que crea viene de la doctrina de defectos: components es obligatorio en cada bug, defect, improvement y Test.</div>
+  </section>
+
+  <!-- 3. MAPA -->
+  <section class="slide" data-title="Mapa de la skill">
+    <p class="kicker">Mapa · 3 de 15</p>
+    <h2 class="h2" style="font-size:42px">Un modo por corrida, y el mismo <span class="grad">sello</span> en los dos</h2>
+    <p class="wf-lane">El primer token elige el modo; si no nombra ninguno, pregunta</p>
+    <div class="wf-row">
+      <div class="wf-node gate"><p class="n">Router</p><p class="t">¿Qué modo?</p><p class="c">components<br>instance-migration</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node"><p class="n">Siempre</p><p class="t">Carga <span class="mono">/acli</span></p><p class="c">y valida credenciales<br>antes de operar</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node alt"><p class="n">Nunca</p><p class="t">Los dos juntos</p><p class="c">ni cae de uno<br>en el otro</p></div>
+    </div>
+    <p class="wf-lane">Modo components</p>
+    <div class="wf-row">
+      <div class="wf-node"><p class="n">Fase 1</p><p class="t">Mapa de módulos</p><p class="c">código + backlog</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node"><p class="n">Fase 2</p><p class="t">Components vivos</p><p class="c">--list con issues</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node gate"><p class="n">Fase 3</p><p class="t">Plan + dry run</p><p class="c">esperar tu OK</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node alt"><p class="n">Fase 4</p><p class="t">Aplicar y verificar</p><p class="c">--apply · --list</p></div>
+    </div>
+    <p class="wf-lane">Modo instance-migration</p>
+    <div class="wf-row">
+      <div class="wf-node gate"><p class="n">Fase 0</p><p class="t">Las dos instancias</p><p class="c">confirmadas</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node gate"><p class="n">Fase 1</p><p class="t">Auditoría</p><p class="c">tabla antes de editar</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node"><p class="n">Fases 2 y 3</p><p class="t">Aplicar y verificar</p><p class="c">yaml · acli</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node"><p class="n">Fase 4</p><p class="t">Catálogos</p><p class="c">regenerar y probar</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node alt"><p class="n">Fase 5</p><p class="t">Commit</p><p class="c">push con tu OK</p></div>
+    </div>
+    <div class="notes">Fuente: Mode routing y Compact Rules del SKILL.md, más las fases de cada reference. Los recuadros amarillos son los puntos donde decidís vos. Cada modo carga solo su propia reference y corre solo sus propias verificaciones: nunca las del otro.</div>
+  </section>
+
+  <!-- 4. CONTRATO -->
+  <section class="slide compact" data-title="El contrato sellado">
+    <p class="kicker">Contrato · 4 de 15</p>
+    <h2 class="h2">Leer, mostrar, esperar, <span class="grad">recién ahí</span> escribir</h2>
+    <div class="grid g2 mt-s" style="gap:28px;grid-template-columns:1.2fr 1fr;align-items:start">
+      <svg class="dg" style="max-height:400px" viewBox="0 0 640 400" role="img" aria-label="El contrato de mutación: leer, plan, aprobación explícita, mutación">
+        <defs><marker id="ja-a4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="ar"/></marker></defs>
+        <rect class="bx" x="10" y="20" width="270" height="76" rx="10"/>
+        <text class="t-l" x="28" y="44">1 · LEER EL ESTADO VIVO</text>
+        <text class="t-s" x="28" y="68">components con sus issues,</text>
+        <text class="t-s" x="28" y="86">o la instancia a la que apunta el repo</text>
+        <path class="ln" d="M145 96L145 130" marker-end="url(#ja-a4)"/>
+        <rect class="bx" x="10" y="132" width="270" height="76" rx="10"/>
+        <text class="t-l" x="28" y="156">2 · MOSTRAR EL PLAN</text>
+        <text class="t-s" x="28" y="180">tabla de renames y creates,</text>
+        <text class="t-s" x="28" y="198">o tabla de cambia / no cambia</text>
+        <path class="ln" d="M145 208L145 242" marker-end="url(#ja-a4)"/>
+        <rect class="bx-warn" x="10" y="244" width="270" height="62" rx="10"/>
+        <text class="t-b" x="28" y="270">3 · Tu aprobación explícita</text>
+        <text class="t-s" x="28" y="292">en la misma corrida</text>
+        <path class="ln" d="M145 306L145 340" marker-end="url(#ja-a4)"/>
+        <rect class="bx-good" x="10" y="342" width="270" height="50" rx="10"/>
+        <text class="t-b" x="28" y="373">4 · Mutación</text>
+        <path class="ln-d" d="M280 275L360 275" marker-end="url(#ja-a4)"/>
+        <rect class="bx-bad" x="362" y="236" width="268" height="80" rx="10"/>
+        <text class="t-b" x="378" y="262">Silencio o duda</text>
+        <text class="t-s" x="378" y="286">frena y pregunta otra vez;</text>
+        <text class="t-s" x="378" y="304">no hay "seguro que quiso decir sí"</text>
+        <rect class="bx-soft" x="362" y="20" width="268" height="188" rx="10"/>
+        <text class="t-l" x="378" y="44">QUÉ CUENTA COMO MUTACIÓN</text>
+        <text class="t-s" x="378" y="70">crear, renombrar o borrar</text>
+        <text class="t-s" x="378" y="90">components en Jira</text>
+        <text class="t-s" x="378" y="118">editar archivos del repo</text>
+        <text class="t-s" x="378" y="146">repuntar la sesión de</text>
+        <text class="t-m" x="378" y="166">acli</text>
+        <text class="t-s" x="378" y="194">publicar catálogos con push</text>
+      </svg>
+      <div class="stack" style="gap:12px">
+        <div class="card" style="border-color:var(--bad)"><p class="lbl" style="color:var(--bad)">Sin credenciales, parada total</p><p class="small mt-s">Si falta <span class="mono">ATLASSIAN_EMAIL</span> o <span class="mono">ATLASSIAN_API_TOKEN</span>, te nombra la variable, te señala <span class="mono">.env</span> y <span class="mono">.env.example</span> y pide reiniciar la sesión. Sin atajos, sin corrida parcial (Regla #10).</p></div>
+        <div class="card card-accent"><p class="lbl">El host vive en un solo lugar</p><p class="small mt-s"><span class="mono">.agents/project.yaml</span> → <span class="mono">issue_tracker.atlassian_url</span>. Un <span class="mono">ATLASSIAN_URL</span> viejo en <span class="mono">.env</span> o en el entorno es contaminación: se <b>borra</b>, no se actualiza.</p></div>
+        <div class="card"><p class="lbl">Repo sin onboarding</p><p class="small mt-s">Si <span class="mono">project.project_name</span> es <span class="mono">null</span>, el repo es un template: <span class="mono">atlassian_url</span> y <span class="mono">project_key</span> quedan en <span class="mono">null</span> y lo dice en el reporte.</p></div>
+      </div>
+    </div>
+    <div class="notes">Fuente: Compact Rules del SKILL.md. La regla del host único viene del ancla de identidad de instancia de AGENTS.md: una segunda copia del host es justamente la que se pone vieja. En un template, la skill no fabrica un commit para tapar que el valor está vacío.</div>
+  </section>
+
+  <!-- 5. COMPONENTS: POR QUÉ -->
+  <section class="slide compact" data-title="Components · Qué y por qué">
+    <p class="kicker">Modo components · 5 de 15</p>
+    <h2 class="h2">Un component es un <span class="grad">módulo</span> de la app</h2>
+    <div class="grid g2 mt-m" style="gap:28px;grid-template-columns:1fr 1.1fr;align-items:start">
+      <div class="stack" style="gap:14px">
+        <div class="card card-accent"><p class="lbl">La convención</p><p class="small mt-s">Un component = un módulo funcional de la aplicación que corre, derivado de su superficie real (rutas, features). No sale de la taxonomía de planificación: un Epic es una unidad de trabajo, un component es una unidad del sistema.</p></div>
+        <div class="card"><p class="lbl">Por qué importa</p><p class="small mt-s">Es obligatorio en cada bug, defect, improvement y Test, y es la clave de agrupación de los tableros de cobertura. Un filtro sirve en la medida en que discrimina.</p></div>
+      </div>
+      <div class="stack" style="gap:14px">
+        <div class="card"><p class="lbl">Por qué un script y no <span class="mono">acli</span></p><p class="small mt-s"><span class="mono">acli</span> no puede crear, renombrar ni borrar components. Por eso el modo maneja <span class="mono">scripts/sync-jira-components.ts</span>, que habla con la API REST directo (también <span class="mono">bun run jira:components</span>).</p></div>
+        <div class="card"><p class="lbl">Por qué un plan y no autodetección</p><p class="small mt-s">Decidir qué rutas son un mismo módulo y con qué nombre es juicio, no mecánica. La IA escribe el plan, una persona lo aprueba y el script ejecuta solo lo aprobado.</p></div>
+        <div class="card" style="border-color:var(--warn)"><p class="lbl" style="color:var(--warn)">Rename no es create</p><p class="small mt-s">Borrar y recrear con otro nombre deja huérfanos todos los issues asignados. El rename conserva cada asignación: así migra un component viejo a la convención sin editar issues en masa.</p></div>
+      </div>
+    </div>
+    <div class="notes">Fuentes: el encabezado de scripts/sync-jira-components.ts, el "Hard gate" de references/components.md y la Parte 3 de agentic-qa-core/references/defect-management-doctrine.md. El deck de gestión de defectos de sprint-testing muestra el mismo modelo de tres ejes desde el lado del que reporta.</div>
+  </section>
+
+  <!-- 6. COMPONENTS: FASES 1 Y 2 -->
+  <section class="slide compact" data-title="Components · Fases 1 y 2">
+    <p class="kicker">Modo components · 6 de 15</p>
+    <h2 class="h2">Lo que existe, lo que viene y lo que <span class="grad">ya hay</span></h2>
+    <div class="grid g2 mt-s" style="gap:26px;grid-template-columns:1.15fr 1fr;align-items:start">
+      <div>
+        <p class="lbl">Fase 1 · La IA propone, no decide</p>
+        <table class="tt tight mt-s">
+          <tr><td class="small" style="width:150px"><b>1a · El código</b></td><td class="small">La superficie real de la app. En Next.js App Router: <span class="mono">app/**/page.tsx</span> y <span class="mono">app/api/**/route.ts</span>; en otros stacks, su router o sus controllers. Agrupa con el vocabulario del producto: <span class="mono">/checkout/cart</span> y <span class="mono">/checkout/payment</span> son <span class="mono">Checkout</span>.</td></tr>
+          <tr><td class="small"><b>1b · El backlog</b></td><td class="small">Epics y Stories con áreas que el código todavía no tiene. Un component se puede declarar <b>antes</b> del código: una feature en refinamiento ya tiene Stories y Tests que lo necesitan.</td></tr>
+          <tr><td class="small"><b>1c · La propuesta</b></td><td class="small">Cada módulo con lo que absorbe (rutas o Epic), marcado como existente o adelantado, para que corrijas la agrupación.</td></tr>
+        </table>
+        <p class="small dim mt-s">Usar solo el código es el error fácil: borra en silencio todo lo planificado.</p>
+      </div>
+      <div class="stack" style="gap:12px">
+        <div class="card" style="border-color:var(--warn)"><p class="lbl" style="color:var(--warn)">Choque de nombres</p><p class="small mt-s">Si el producto tiene <i>Tests</i>, <i>Runs</i> o <i>Bugs</i> como features, choca con el vocabulario de QA. Propone prefijar con el nombre del producto (<span class="mono">Bunkai Tests</span>), y el prefijo entra en el plan que aprobás: nunca se aplica solo.</p></div>
+        <div class="card card-accent"><p class="lbl">Fase 2 · Components vivos</p><p class="mk mt-s" style="font-size:13px;white-space:pre-wrap">bun scripts/sync-jira-components.ts \
+  --list --project {{PROJECT_KEY}}</p><p class="small mt-s">Lista cada component <b>con su cantidad de issues</b>, que es lo que está en juego. Cada módulo propuesto queda como: ya existe (skip), existe con otro nombre (rename) o falta (create).</p></div>
+      </div>
+    </div>
+    <div class="notes">Fuente: Fases 1 y 2 de references/components.md. Adelantar un component es barato y seguro: create es aditivo, rename re-etiqueta sin tocar asignaciones, y el modo se vuelve a correr cuando el mapa cambia. Si el módulo sale con otro nombre es un rename; si nunca sale, es una fila sin uso. El backlog se lee con bun run jira:sync-issues pull --dry-run o con lo ya sincronizado en .context/PBI/epics/.</div>
+  </section>
+
+  <!-- 7. COMPONENTS: FASES 3 Y 4 -->
+  <section class="slide compact" data-title="Components · Fases 3 y 4">
+    <p class="kicker">Modo components · 7 de 15</p>
+    <h2 class="h2">Un plan en JSON, un dry run y un <span class="grad">sí</span></h2>
+    <div class="grid g2 mt-s" style="gap:26px;grid-template-columns:1fr 1.1fr;align-items:start">
+      <div>
+        <p class="lbl">Fase 3 · El plan, en <span class="mono">.context/reports/jira-components-plan.json</span></p>
+        <div class="mk mt-s" style="font-size:14px">{
+  "project": "&lt;KEY&gt;",
+  "rename": [{ "from": "Bugs &amp; Defect Heatmap",
+               "to": "Bunkai Bugs" }],
+  "create": [{ "name": "Bunkai Auth",
+               "description": "Login, registration, sessions" }]
+}</div>
+        <p class="small mt-s">Te lo muestra como tabla: renames separados de creates, y <b>cada rename con su cantidad de issues</b>.</p>
+      </div>
+      <div class="stack" style="gap:12px">
+        <div class="card"><p class="lbl">Dry run, por defecto</p><p class="small mt-s">Sin <span class="mono">--apply</span> el script solo muestra lo que resolvería. Un rename cuyo origen ya no está, o cuyo destino ya existe, queda como skip documentado: re-correr un plan aplicado a medias es normal.</p></div>
+        <div class="card" style="border-color:var(--warn)"><p class="lbl" style="color:var(--warn)">Esperar la aprobación</p><p class="small mt-s">Podés cambiar la agrupación, los nombres o el prefijo. Regenera el plan y lo vuelve a mostrar hasta que lo apruebes.</p></div>
+        <div class="card card-accent"><p class="lbl">Fase 4 · Aplicar y verificar</p><p class="mk mt-s" style="font-size:13px;white-space:pre-wrap">bun scripts/sync-jira-components.ts \
+  .context/reports/jira-components-plan.json --apply
+bun scripts/sync-jira-components.ts \
+  --list --project {{PROJECT_KEY}}</p><p class="small mt-s">La lista viva tiene que coincidir con el plan aprobado, con los renames mostrando sus issues intactos.</p></div>
+      </div>
+    </div>
+    <div class="notes">Fuente: Fases 3 y 4 de references/components.md y el uso documentado en el encabezado del script. El reporte final trae la lista de components resultante, qué se renombró, qué se creó, qué se salteó y cualquier skip cuyo motivo convenga revisar.</div>
+  </section>
+
+  <!-- 8. MIGRACIÓN: POR QUÉ -->
+  <section class="slide compact" data-title="Migración · Por qué no es buscar y reemplazar">
+    <p class="kicker">Modo instance-migration · 8 de 15</p>
+    <h2 class="h2">La falla no es un 404: es un <span class="grad">200 OK</span></h2>
+    <div class="grid g2 mt-s" style="gap:28px;grid-template-columns:1.2fr 1fr;align-items:start">
+      <svg class="dg" style="max-height:380px" viewBox="0 0 640 380" role="img" aria-label="Cómo un catálogo viejo escribe en el campo equivocado después de una migración">
+        <defs><marker id="ja-a8" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="ar"/></marker></defs>
+        <rect class="bx-acc" x="10" y="20" width="260" height="90" rx="10"/>
+        <text class="t-l" x="28" y="44">CATÁLOGO SIN REGENERAR</text>
+        <text class="t-m" x="28" y="70">acceptance_test_plan</text>
+        <text class="t-s" x="28" y="94">→ id A (del sitio viejo)</text>
+        <path class="ln" d="M270 65L360 65" marker-end="url(#ja-a8)"/>
+        <rect class="bx-bad" x="362" y="20" width="268" height="90" rx="10"/>
+        <text class="t-l" x="378" y="44">SITIO NUEVO</text>
+        <text class="t-s" x="378" y="70">el id A existe, pero</text>
+        <text class="t-b" x="378" y="94">es otro campo</text>
+        <path class="ln" d="M496 110L496 150" marker-end="url(#ja-a8)"/>
+        <rect class="bx-bad" x="300" y="152" width="330" height="70" rx="10"/>
+        <text class="t-b" x="316" y="180">200 OK, sin error</text>
+        <text class="t-s" x="316" y="204">el plan se escribe en un campo ajeno</text>
+        <rect class="bx-soft" x="10" y="152" width="260" height="70" rx="10"/>
+        <text class="t-s" x="28" y="180">un id inexistente daría 404</text>
+        <text class="t-s" x="28" y="204">y alguien lo notaría</text>
+        <rect class="bx-warn" x="10" y="262" width="620" height="100" rx="10"/>
+        <text class="t-l" x="28" y="288">SEGUNDA FALLA SILENCIOSA</text>
+        <text class="t-s" x="28" y="314">la configuración del repo y la sesión de acli son independientes:</text>
+        <text class="t-s" x="28" y="336">el REST pega en el sitio nuevo y acli sigue leyendo el viejo,</text>
+        <text class="t-s" x="28" y="354">sin ningún error que lo avise</text>
+      </svg>
+      <div class="stack" style="gap:14px">
+        <div class="card"><p class="lbl">La mitad fácil</p><p class="small mt-s">Repuntar la URL del sitio. Es una línea en <span class="mono">.agents/project.yaml</span> y un login de <span class="mono">acli</span>.</p></div>
+        <div class="card card-accent"><p class="lbl">La mitad que evita la corrupción</p><p class="small mt-s">Regenerar los catálogos de <span class="mono">.agents/</span>. Una migración de sitio reasigna los ids de los custom fields en vez de conservarlos.</p></div>
+        <div class="card" style="border-color:var(--warn)"><p class="lbl" style="color:var(--warn)">Antes, del lado de Xray</p><p class="small mt-s">Una mudanza completa entre sitios sigue el runbook de <span class="mono">/xray-cli</span> y cierra con este modo.</p></div>
+      </div>
+    </div>
+    <div class="notes">Fuente: "Why this is not a find-and-replace" de references/instance-migration.md. El slug del diagrama es ilustrativo: cualquier campo del catálogo corre el mismo riesgo. El cierre de la mudanza de Xray con este modo está en xray-cli/SKILL.md y en su references/migration-runbook.md.</div>
+  </section>
+
+  <!-- 9. MIGRACIÓN: FASES 0 Y 1 -->
+  <section class="slide compact" data-title="Migración · Fases 0 y 1">
+    <p class="kicker">Modo instance-migration · 9 de 15</p>
+    <h2 class="h2">De dónde a dónde, y qué <span class="grad">no</span> se toca</h2>
+    <div class="grid g2 mt-s" style="gap:26px;grid-template-columns:1fr 1.1fr;align-items:start">
+      <div>
+        <p class="lbl">Fase 0 · Resolver las dos instancias</p>
+        <table class="tt tight mt-s">
+          <tr><td class="small" style="width:120px"><b>Origen</b></td><td class="small">Lo detecta, no lo pregunta primero: <span class="mono">atlassian_url</span> del yaml, la sesión de <span class="mono">acli</span> y <span class="mono">bun run --silent jira:url</span>. Si no coinciden, el repo ya está a medio migrar: es una reparación y te pregunta cuál es el "antes" real.</td></tr>
+          <tr><td class="small"><b>Destino</b></td><td class="small">Nunca lo adivina. Si no vino en la invocación, pregunta: un sitio que el repo nunca contactó no se puede detectar.</td></tr>
+          <tr><td class="small"><b>Sondas</b></td><td class="small"><span class="mono">printenv ATLASSIAN_URL</span> y la línea en <span class="mono">.env</span> tienen que salir vacías. Un hit es contaminación a limpiar, nunca evidencia.</td></tr>
+        </table>
+        <p class="small mt-s">Confirma <span class="mono">&lt;origen&gt; → &lt;destino&gt;</span> en una línea, espera, y prueba <span class="mono">/rest/api/3/myself</span> en el destino: cualquier cosa distinta de <b>200</b> frena el modo.</p>
+      </div>
+      <div class="stack" style="gap:12px">
+        <div class="card card-accent"><p class="lbl">Fase 1 · Auditar antes de editar</p><p class="small mt-s">Barre el repo buscando el host de origen y clasifica cada hit en "cambia" o "no cambia". La tabla se te muestra <b>antes</b> de tocar nada.</p></div>
+        <div class="card"><p class="lbl">No cambia</p><ul class="big" style="font-size:16px;line-height:1.6"><li>Un dominio alias que redirige al sitio activo. Pero no se ve desde el repo: confirmalo a mano.</li><li>Registros históricos: reescribirlos falsifica el pasado.</li><li>Código cuyo patrón ya generaliza (una regex, no un literal).</li><li><span class="mono">.context/PBI/</span>: el sync lo reconstruye.</li></ul></div>
+        <div class="card" style="border-color:var(--warn)"><p class="lbl" style="color:var(--warn)">Ni en una lista ni en la otra</p><p class="small mt-s">Un workflow de CI, un README, <span class="mono">.mcp.json</span>: pregunta antes de tocarlo.</p></div>
+      </div>
+    </div>
+    <div class="notes">Fuente: Fases 0 y 1 de references/instance-migration.md. Migrar a una instancia vacía o a medio provisionar regenera catálogos vacíos y los publica, que es peor que no hacer nada: por eso la prueba de alcance va antes de cualquier cambio. Los dos hosts se normalizan al host pelado, sin esquema ni barra final.</div>
+  </section>
+
+  <!-- 10. MIGRACIÓN: FASES 2 Y 3 -->
+  <section class="slide compact" data-title="Migración · Fases 2 y 3">
+    <p class="kicker">Modo instance-migration · 10 de 15</p>
+    <h2 class="h2">Repuntar en orden y <span class="grad">probarlo</span> en el destino</h2>
+    <div class="grid g2 mt-s" style="gap:26px;grid-template-columns:1.05fr 1fr;align-items:start">
+      <div>
+        <p class="lbl">Fase 2 · Aplicar</p>
+        <table class="tt tight mt-s">
+          <tr><td class="small mono" style="width:40px">1</td><td class="small"><span class="mono">atlassian_url: https://&lt;destino&gt;</span> en <span class="mono">.agents/project.yaml</span>, primero: es lo que todo lo demás lee. <span class="mono">bun run --silent jira:url</span> tiene que devolver el destino.</td></tr>
+          <tr><td class="small mono">2</td><td class="small"><b>Borrar</b> cualquier <span class="mono">ATLASSIAN_URL</span> viejo que hayan encontrado las sondas, y lo que lo exporte al proceso.</td></tr>
+          <tr><td class="small mono">3</td><td class="small">Re-login de <span class="mono">acli</span> con el sitio que da <span class="mono">bun run --silent jira:url --slug</span>: si el yaml quedó mal, el login falla fuerte.</td></tr>
+        </table>
+        <div class="card mt-s" style="border-color:var(--bad)"><p class="lbl" style="color:var(--bad)">La sesión de acli es de la máquina</p><p class="small mt-s">Vive en <span class="mono">~/.config/acli</span>. El re-login repunta <b>todos</b> los repos de esta máquina, no solo este. Si todavía necesitás el sitio viejo para otro repo, te avisa antes.</p></div>
+      </div>
+      <div class="stack" style="gap:12px">
+        <div class="card card-accent"><p class="lbl">Fase 3 · Verificar, como tabla</p><ul class="big" style="font-size:16px;line-height:1.6"><li>El yaml, <span class="mono">bun run --silent jira:url</span> y la sesión de <span class="mono">acli</span> nombran el destino.</li><li><span class="mono">printenv ATLASSIAN_URL</span> sale vacío.</li><li><span class="mono">/rest/api/3/myself</span> en la URL resuelta devuelve 200.</li></ul><p class="small mt-s">Si algo no coincide, la migración falló: lo dice y frena.</p></div>
+        <div class="card" style="border-color:var(--warn)"><p class="lbl" style="color:var(--warn)">Higiene de secretos</p><p class="small mt-s">Nunca hace <span class="mono">cat .env</span>: filtra por la clave exacta. Tampoco guarda un backup del <span class="mono">.env</span> dentro del repo, porque el <span class="mono">.gitignore</span> suele cubrir el nombre exacto y no los sufijos.</p></div>
+      </div>
+    </div>
+    <div class="notes">Fuente: Fases 2 y 3 de references/instance-migration.md. El chequeo del resolver no es redundante con el del yaml: es el único que prueba que la herramienta coincide con el archivo, y avisa por stderr si una variable vieja lo contradice. Para cazar un ATLASSIAN_URL heredado: bun run vars:env:check o bun run setup:doctor. En un repo template, atlassian_url queda en null.</div>
+  </section>
+
+  <!-- 11. MIGRACIÓN: FASE 4 -->
+  <section class="slide compact" data-title="Migración · Fase 4 · Catálogos">
+    <p class="kicker">Modo instance-migration · 11 de 15</p>
+    <h2 class="h2">La parte que se saltea es la que <span class="grad">corrompe</span></h2>
+    <div class="grid g2 mt-s" style="gap:26px;grid-template-columns:1.1fr 1fr;align-items:start">
+      <div>
+        <table class="tt tight">
+          <tr><th>Catálogo</th><th>Se regenera con</th></tr>
+          <tr><td class="small mono" style="font-size:14px">.agents/jira-fields.json</td><td class="small"><span class="mono" style="white-space:nowrap">bun run jira:sync-fields --force</span><br><span class="dim">sin <span class="mono">--force</span> frena: catálogo ya poblado</span></td></tr>
+          <tr><td class="small mono" style="font-size:14px">.agents/jira-link-types.json</td><td class="small"><span class="mono">bun run jira:sync-link-types</span><br><span class="dim">no tiene <span class="mono">--force</span>, y lo traga en silencio</span></td></tr>
+          <tr><td class="small mono" style="font-size:14px">.agents/jira-workflows.json</td><td class="small"><span class="mono">bun run jira:sync-workflows</span><br><span class="dim">idempotente: <span class="mono">--force</span> no suma nada</span></td></tr>
+        </table>
+        <div class="card mt-s" style="border-color:var(--warn)"><p class="lbl" style="color:var(--warn)">Antes de sincronizar: el manifiesto</p><p class="small mt-s"><span class="mono">.agents/jira-required.yaml</span> no tiene ids, pero es la <b>entrada</b>: <span class="mono">jira:sync-workflows</span> cataloga solo los work types que declara. Si quedó atrás, el catálogo sale amputado y con exit 0. Lo compara con upstream (<span class="mono">bun run jira:baseline</span> avisa) y te deja decidir por work type.</p></div>
+      </div>
+      <div class="stack" style="gap:12px">
+        <div class="card card-accent"><p class="lbl">Probar que los ids se movieron</p><p class="small mt-s">El diff de <span class="mono">.agents/</span> tiene que mostrar ids cambiados. Y un id cambiado no es un id correcto: dos slugs pueden intercambiarse. Pregunta al sitio vivo qué es cada id y lo compara con el nombre catalogado.</p></div>
+        <div class="card"><p class="lbl">Lo que más se escapa</p><p class="small mt-s">Campos de selección con <span class="mono">options</span> vacías, ids literales de <span class="mono">customfield_</span>, de status o de transición fuera de <span class="mono">.agents/</span>, y variables que fijan un id por encima del catálogo.</p></div>
+        <div class="card" style="border-color:var(--bad)"><p class="lbl" style="color:var(--bad)"><span class="mono">--upex</span> casi nunca</p><p class="small mt-s">Baja el catálogo de referencia de los autores del boilerplate, con ids de <b>su</b> sitio. Para tu migración, nunca: es un andamio para quien no tiene permiso de Administer.</p></div>
+      </div>
+    </div>
+    <div class="notes">Fuente: Fase 4 de references/instance-migration.md. Si el manifiesto necesita cambios, va primero y después los syncs: en el otro orden los catálogos se regeneran dos veces. jira:sync-workflows pide el project key si el yaml lo tiene en null y lo persiste; en un template hay que revertir esa línea. El updater nunca pisa jira-required.yaml, por eso se queda atrás en silencio.</div>
+  </section>
+
+  <!-- 12. MIGRACIÓN: FASE 5 Y REPORTE -->
+  <section class="slide compact" data-title="Migración · Fase 5 y reporte">
+    <p class="kicker">Modo instance-migration · 12 de 15</p>
+    <h2 class="h2">Commits separados y lo que <span class="grad">solo una persona</span> puede ver</h2>
+    <div class="grid g2 mt-s" style="gap:26px;grid-template-columns:1fr 1.1fr;align-items:start">
+      <div>
+        <p class="lbl">Fase 5 · Commit</p>
+        <div class="mk mt-s" style="font-size:13.5px">chore(jira): sync jira-required.yaml work types with upstream
+chore(jira): point atlassian_url at the &lt;target&gt; instance
+chore(jira): refresh field, workflow and link-type catalogs for &lt;target&gt;</div>
+        <p class="small mt-s">El del manifiesto va primero y solo si hubo cambio. <span class="mono">.env</span> nunca se commitea. En un template el commit del yaml no tiene contenido: se saltea y lo dice, sin commit vacío.</p>
+        <div class="card mt-s" style="border-color:var(--warn)"><p class="lbl" style="color:var(--warn)">Push con confirmación</p><p class="small mt-s">Sigue la estrategia de git vía <span class="mono">/git-flow-master</span> y no hace push sin tu OK: en un boilerplate, publicar catálogos afecta a cada proyecto que después corra <span class="mono">--upex</span>.</p></div>
+      </div>
+      <div>
+        <p class="lbl">El reporte de cierre</p>
+        <table class="tt tight mt-s">
+          <tr><td class="small">Config</td><td class="small">antes y después de cada punto, y el id de un campo como prueba</td></tr>
+          <tr><td class="small">Verificación</td><td class="small">cuántos ids se contrastaron con el sitio vivo y cuántos no coinciden</td></tr>
+          <tr><td class="small"><b style="color:var(--warn)">A mano</b></td><td class="small">¿el dominio alias ya resuelve al destino?</td></tr>
+          <tr><td class="small"><b style="color:var(--warn)">A mano</b></td><td class="small">si el manifiesto estaba atrás, lo que lo atrasó lo va a volver a atrasar</td></tr>
+          <tr><td class="small"><b style="color:var(--warn)">Al equipo</b></td><td class="small">cada persona repite el login de <span class="mono">acli</span> en su máquina: una sesión vieja devuelve datos del sitio viejo sin error</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="notes">Fuente: Fase 5 y "Closing report" de references/instance-migration.md. La configuración del repo y el refresco de catálogos son responsabilidades distintas, por eso son commits distintos. Si el equipo consume el catálogo de referencia con --upex, nadie debería correrlo hasta que upstream publique sus catálogos post-migración.</div>
+  </section>
+
+  <!-- 13. SALVAGUARDAS -->
+  <section class="slide compact" data-title="Salvaguardas">
+    <p class="kicker">Salvaguardas · 13 de 15</p>
+    <h2 class="h2">Lo que <span class="grad">nunca</span> hace</h2>
+    <table class="tt mt-m" style="font-size:16px;border-spacing:0 5px">
+      <tr><th style="width:64px">#</th><th>Regla</th></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">R1</b></td><td style="padding:8px 16px" class="small">Escribir en Jira, en el repo o en la sesión de <span class="mono">acli</span> sin tu aprobación explícita, dada en la misma corrida.</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">R2</b></td><td style="padding:8px 16px" class="small">Combinar los dos modos, o adivinar uno a partir de un "arreglá Jira" sin más.</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">R3</b></td><td style="padding:8px 16px" class="small">Borrar y recrear un component con issues asignados: para eso está el rename.</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">R4</b></td><td style="padding:8px 16px" class="small">Actualizar un <span class="mono">ATLASSIAN_URL</span> en <span class="mono">.env</span> o en el entorno: se borra, porque una segunda copia es la que se pone vieja.</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">R5</b></td><td style="padding:8px 16px" class="small">Adivinar el sitio de destino, o seguir si no responde 200.</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">R6</b></td><td style="padding:8px 16px" class="small">Usar <span class="mono">--upex</span> para migrar tu propia instancia.</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">R7</b></td><td style="padding:8px 16px" class="small">Escribir un host o un project key en un repo template, o fabricar un commit para tapar que está vacío.</td></tr>
+    </table>
+    <div class="grid g3 mt-s" style="gap:16px">
+      <p class="small dim"><b>Sin atajos:</b> credenciales faltantes, parada total.</p>
+      <p class="small dim"><b>Sin éxito falso:</b> un exit 0 no prueba que el catálogo esté completo.</p>
+      <p class="small dim"><b>Sin push solo:</b> los catálogos publicados viajan.</p>
+    </div>
+    <div class="notes">Reglas tomadas de las Compact Rules del SKILL.md y de los hard gates de cada reference. Se apoya en las Reglas críticas #10 (credenciales de MCP: parar), #5 (push a ramas protegidas según la política de git del proyecto) y #16 (un código de éxito describe la llamada, no el resultado: por eso cada modo verifica en el destino).</div>
+  </section>
+
+  <!-- 14. ENTRADAS Y SALIDAS -->
+  <section class="slide compact" data-title="Qué lee y qué deja">
+    <p class="kicker">Entradas y salidas · 14 de 15</p>
+    <h2 class="h2">Qué lee, qué <span class="grad">deja</span></h2>
+    <div class="grid g2 mt-m" style="gap:28px;align-items:start">
+      <div class="card">
+        <p class="lbl">Lee</p>
+        <ul class="big" style="font-size:17px;line-height:1.7">
+          <li><span class="mono">.agents/project.yaml</span>: el host, el project key y si el repo ya tiene onboarding.</li>
+          <li><span class="mono">ATLASSIAN_EMAIL</span> y <span class="mono">ATLASSIAN_API_TOKEN</span> de <span class="mono">.env</span>, filtrando por clave.</li>
+          <li><b>components:</b> el código de la app objetivo y su backlog (<span class="mono">.context/PBI/epics/</span>).</li>
+          <li><b>migración:</b> <span class="mono">.agents/jira-required.yaml</span> contra el de upstream, y el sitio vivo para verificar cada id.</li>
+        </ul>
+      </div>
+      <div class="card card-accent">
+        <p class="lbl">Deja</p>
+        <ul class="big" style="font-size:17px;line-height:1.7">
+          <li><b>components:</b> <span class="mono">.context/reports/jira-components-plan.json</span> y, con tu OK, los components en Jira.</li>
+          <li><b>migración:</b> <span class="mono">atlassian_url</span> en el yaml y los catálogos <span class="mono">jira-fields.json</span>, <span class="mono">jira-workflows.json</span> y <span class="mono">jira-link-types.json</span>.</li>
+          <li>Una sesión de <span class="mono">acli</span> repuntada en esta máquina.</li>
+          <li>En el chat: el reporte, con lo que requiere una persona marcado aparte.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="small dim mt-m">Herramientas: <span class="mono">/acli</span> antes de cualquier operación de Jira, <span class="mono">scripts/sync-jira-components.ts</span>, los <span class="mono">bun run jira:*</span> que declara <span class="mono">package.json</span>, y <span class="mono">/git-flow-master</span> para commitear.</p>
+    <div class="notes">Fuentes: Compact Rules del SKILL.md, los Prerequisites de references/components.md, las Fases 2, 4 y 5 de references/instance-migration.md, y la tabla de reportes de .context/reports/README.md, que atribuye el plan de components a este modo.</div>
+  </section>
+
+  <!-- 15. CIERRE -->
+  <section class="slide compact" data-title="Cierre">
+    <p class="kicker">Cierre · 15 de 15</p>
+    <h2 class="h2">Invocación y <span class="grad">handoffs</span></h2>
+    <div class="grid g3 mt-m" style="gap:22px;align-items:start">
+      <div class="card">
+        <p class="lbl">Cómo se invoca</p>
+        <p class="small mt-s"><b>Claude Code:</b> <span class="mono">/jira-administration components</span> o <span class="mono">/jira-administration instance-migration</span>. Lo que sigue al modo pasa tal cual: <span class="mono">components BK ../bunkai</span>, <span class="mono">instance-migration old.atlassian.net new.atlassian.net</span>.<br><b>OpenCode y Codex:</b> cargá la skill <span class="mono">jira-administration</span>, modo <span class="mono">components</span> o <span class="mono">instance-migration</span>.</p>
+      </div>
+      <div class="card">
+        <p class="lbl">Antes</p>
+        <p class="small mt-s">Al adoptar el repo, después de <span class="mono">bun run jira:sync-fields</span>, <span class="mono">jira:sync-workflows</span> y <span class="mono">jira:sync-link-types</span>, viene el modo <span class="mono">components</span>.<br><a href="../xray-cli/how-it-works.es.html"><span class="mono">/xray-cli</span></a>: una mudanza de sitio de Xray cierra con <span class="mono">instance-migration</span>.</p>
+      </div>
+      <div class="card">
+        <p class="lbl">Después</p>
+        <p class="small mt-s">Las skills de testing completan el component de cada issue que reportan: <a href="../sprint-testing/defect-management.es.html">gestión de defectos</a>.<br><span class="mono">/git-flow-master</span>: commitea y abre el PR de la migración.</p>
+      </div>
+    </div>
+    <div class="card card-accent mt-m">
+      <p class="lbl">Lo que te llevás</p>
+      <p class="small mt-s">Components que reflejan la app real sin perder una sola asignación · una migración que no escribe en silencio en el campo equivocado · cada cambio visto y aprobado antes de existir.</p>
+    </div>
+    <p class="small dim mt-m">Canon: <span class="mono">.agents/skills/jira-administration/SKILL.md</span> y sus <span class="mono">references/</span>. La convención de components la fija <span class="mono">agentic-qa-core/references/defect-management-doctrine.md</span>.</p>
+    <div class="notes">Fin del recorrido. El orden de adopción (catálogos primero, components después) viene de la tabla de proyecto nuevo de agentic-qa-onboard/SKILL.md. El modo sin argumentos también funciona: components resuelve el key desde .agents/project.yaml y pregunta por el repo objetivo; instance-migration detecta el origen y pregunta el destino.</div>
+  </section>
+
+  <div class="deck-footer"><span class="mono">/jira-administration · components y migración de instancia</span><span class="slide-number" data-current="1" data-total="15"></span></div>
+</div>
+
+<!-- keyboard-nav hint (ported from defect-management deck) -->
+<div id="help-hint">← → navegar · O resumen · S presentador · N notas · F pantalla</div>
+<style id="upex-hint-style">
+#help-hint{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:60;pointer-events:none;
+  font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em;color:var(--text-3)}
+@media (max-width:768px){#help-hint{display:none}}
+@media (pointer:coarse){#help-hint{display:none}}
+@media print{#help-hint{display:none!important}}
+</style>
+<script>
+/* ---- runtime.js ---- */
+/* html-ppt :: runtime.js
+ * Keyboard-driven deck runtime. Zero dependencies.
+ *
+ * Features:
+ *   ← → / space / PgUp PgDn / Home End  navigation
+ *   F  fullscreen
+ *   S  presenter mode (opens a NEW WINDOW with current/next slide preview + notes + timer)
+ *       The original window stays as audience view, synced via BroadcastChannel.
+ *       Slide previews use CSS transform:scale() at design resolution for pixel-perfect layout.
+ *   N  quick notes overlay (bottom drawer)
+ *   O  slide overview grid
+ *   T  cycle themes (reads data-themes on <html> or <body>)
+ *   A  cycle demo animation on current slide
+ *   URL hash #/N  deep-link to slide N (1-based)
+ *   Progress bar auto-managed
+ */
+(function () {
+  'use strict';
+
+  const ANIMS = ['fade-up','fade-down','fade-left','fade-right','rise-in','drop-in',
+    'zoom-pop','blur-in','glitch-in','typewriter','neon-glow','shimmer-sweep',
+    'gradient-flow','stagger-list','counter-up','path-draw','parallax-tilt',
+    'card-flip-3d','cube-rotate-3d','page-turn-3d','perspective-zoom',
+    'marquee-scroll','kenburns','confetti-burst','spotlight','morph-shape','ripple-reveal'];
+
+  function ready(fn){ if(document.readyState!='loading')fn(); else document.addEventListener('DOMContentLoaded',fn);}
+
+  /* ========== Parse URL for preview-only mode ==========
+   * When loaded as iframe.src = "index.html?preview=3", runtime enters a
+   * locked single-slide mode: only slide N is visible, no chrome, no keys,
+   * no hash updates. This is how the presenter window shows pixel-perfect
+   * previews — by loading the actual deck file in an iframe and telling it
+   * to display only a specific slide.
+   */
+  function getPreviewIdx() {
+    const m = /[?&]preview=(\d+)/.exec(location.search || '');
+    return m ? parseInt(m[1], 10) - 1 : -1;
+  }
+
+  ready(function () {
+    const deck = document.querySelector('.deck');
+    if (!deck) return;
+    const slides = Array.from(deck.querySelectorAll('.slide'));
+    if (!slides.length) return;
+
+    const previewOnlyIdx = getPreviewIdx();
+    const isPreviewMode = previewOnlyIdx >= 0 && previewOnlyIdx < slides.length;
+
+    /* ===== Preview-only mode: show one slide, hide everything else ===== */
+    if (isPreviewMode) {
+      function showSlide(i) {
+        slides.forEach((s, j) => {
+          const active = (j === i);
+          s.classList.toggle('is-active', active);
+          s.style.display = active ? '' : 'none';
+          if (active) {
+            s.style.opacity = '1';
+            s.style.transform = 'none';
+            s.style.pointerEvents = 'auto';
+          }
+        });
+      }
+      showSlide(previewOnlyIdx);
+      /* Hide chrome that the presenter shouldn't see in preview */
+      const hideSel = '.progress-bar, .notes-overlay, .overview, .notes, aside.notes, .speaker-notes';
+      document.querySelectorAll(hideSel).forEach(el => { el.style.display = 'none'; });
+      document.documentElement.setAttribute('data-preview', '1');
+      document.body.setAttribute('data-preview', '1');
+      /* Auto-detect theme base path for theme switching in preview mode */
+      function getPreviewThemeBase() {
+        const base = document.documentElement.getAttribute('data-theme-base');
+        if (base) return base;
+        const tl = document.getElementById('theme-link');
+        if (tl) {
+          const raw = tl.getAttribute('href') || '';
+          const ls = raw.lastIndexOf('/');
+          if (ls >= 0) return raw.substring(0, ls + 1);
+        }
+        return 'assets/themes/';
+      }
+      const previewThemeBase = getPreviewThemeBase();
+
+      /* Listen for postMessage from parent presenter window:
+       *  - preview-goto: switch visible slide WITHOUT reloading
+       *  - preview-theme: switch theme CSS link to match audience window */
+      window.addEventListener('message', function(e) {
+        if (!e.data) return;
+        if (e.data.type === 'preview-goto') {
+          const n = parseInt(e.data.idx, 10);
+          if (n >= 0 && n < slides.length) showSlide(n);
+        } else if (e.data.type === 'preview-theme' && e.data.name) {
+          let link = document.getElementById('theme-link');
+          if (!link) {
+            link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.id = 'theme-link';
+            document.head.appendChild(link);
+          }
+          link.href = previewThemeBase + e.data.name + '.css';
+          document.documentElement.setAttribute('data-theme', e.data.name);
+        }
+      });
+      /* Signal to parent that preview iframe is ready */
+      try { window.parent && window.parent.postMessage({ type: 'preview-ready' }, '*'); } catch(e) {}
+      return;
+    }
+
+    let idx = 0;
+    const total = slides.length;
+
+    /* ===== BroadcastChannel for presenter sync ===== */
+    const CHANNEL_NAME = 'html-ppt-presenter-' + location.pathname;
+    let bc;
+    try { bc = new BroadcastChannel(CHANNEL_NAME); } catch(e) { bc = null; }
+
+    // Are we running inside the presenter popup? (legacy flag, now unused)
+    const isPresenterWindow = false;
+
+    /* ===== progress bar ===== */
+    let bar = document.querySelector('.progress-bar');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.className = 'progress-bar';
+      bar.innerHTML = '<span></span>';
+      document.body.appendChild(bar);
+    }
+    const barFill = bar.querySelector('span');
+
+    /* ===== notes overlay (N key) ===== */
+    let notes = document.querySelector('.notes-overlay');
+    if (!notes) {
+      notes = document.createElement('div');
+      notes.className = 'notes-overlay';
+      document.body.appendChild(notes);
+    }
+
+    /* ===== overview grid (O key) ===== */
+    let overview = document.querySelector('.overview');
+    if (!overview) {
+      overview = document.createElement('div');
+      overview.className = 'overview';
+      slides.forEach((s, i) => {
+        const t = document.createElement('div');
+        t.className = 'thumb';
+        // Force 16:9 aspect ratio robustly
+        t.style.padding = '0 0 56.25% 0';
+        t.style.height = '0';
+        t.style.position = 'relative';
+        t.style.overflow = 'hidden';
+
+        const title = s.getAttribute('data-title') ||
+          (s.querySelector('h1,h2,h3')||{}).textContent || ('Slide '+(i+1));
+        
+        // Create a container for the mini-slide
+        const mini = document.createElement('div');
+        mini.className = 'mini-slide';
+        mini.style.position = 'absolute';
+        mini.style.top = '0';
+        mini.style.left = '0';
+        mini.style.width = '1920px';
+        mini.style.height = '1080px';
+        mini.style.transformOrigin = 'top left';
+        mini.style.pointerEvents = 'none';
+        mini.style.background = 'var(--bg)';
+        
+        // Clone the slide content
+        const clone = s.cloneNode(true);
+        clone.className = 'slide is-active'; // force active styles
+        clone.style.position = 'absolute';
+        clone.style.inset = '0';
+        clone.style.transform = 'none';
+        clone.style.opacity = '1';
+        clone.style.padding = '72px 96px'; // ensure padding is kept
+        
+        mini.appendChild(clone);
+        t.appendChild(mini);
+
+        // Add the number and title overlay
+        const overlay = document.createElement('div');
+        overlay.style.position = 'absolute';
+        overlay.style.inset = '0';
+        overlay.style.background = 'linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, transparent 40%, transparent 60%, rgba(0,0,0,0.8) 100%)';
+        overlay.style.color = '#fff';
+        overlay.style.zIndex = '10';
+        overlay.style.pointerEvents = 'none';
+        
+        const n = document.createElement('div');
+        n.className = 'n';
+        n.textContent = i + 1;
+        n.style.position = 'absolute';
+        n.style.top = '12px';
+        n.style.left = '16px';
+        n.style.fontWeight = '700';
+        n.style.fontSize = '16px';
+        n.style.color = '#fff';
+        n.style.textShadow = '0 1px 4px rgba(0,0,0,0.8)';
+        
+        const text = document.createElement('div');
+        text.className = 't';
+        text.textContent = title.trim().slice(0,80);
+        text.style.position = 'absolute';
+        text.style.bottom = '12px';
+        text.style.left = '16px';
+        text.style.right = '16px';
+        text.style.fontWeight = '600';
+        text.style.fontSize = '14px';
+        text.style.color = '#fff';
+        text.style.textShadow = '0 1px 4px rgba(0,0,0,0.8)';
+        
+        overlay.appendChild(n);
+        overlay.appendChild(text);
+        t.appendChild(overlay);
+
+        t.addEventListener('click', () => { go(i); toggleOverview(false); });
+        overview.appendChild(t);
+      });
+      document.body.appendChild(overview);
+    }
+
+    /* ===== navigation ===== */
+    function go(n, fromRemote){
+      n = Math.max(0, Math.min(total-1, n));
+      slides.forEach((s,i) => {
+        s.classList.toggle('is-active', i===n);
+        s.classList.toggle('is-prev', i<n);
+      });
+      idx = n;
+      barFill.style.width = ((n+1)/total*100)+'%';
+      const numEl = document.querySelector('.slide-number');
+      if (numEl) { numEl.setAttribute('data-current', n+1); numEl.setAttribute('data-total', total); }
+
+      // notes (bottom overlay)
+      const note = slides[n].querySelector('.notes, aside.notes, .speaker-notes');
+      notes.innerHTML = note ? note.innerHTML : '';
+
+      // hash
+      const hashTarget = '#/'+(n+1);
+      if (location.hash !== hashTarget && !isPresenterWindow) {
+        history.replaceState(null,'', hashTarget);
+      }
+
+      // re-trigger entry animations
+      slides[n].querySelectorAll('[data-anim]').forEach(el => {
+        const a = el.getAttribute('data-anim');
+        el.classList.remove('anim-'+a);
+        void el.offsetWidth;
+        el.classList.add('anim-'+a);
+      });
+
+      // counter-up
+      slides[n].querySelectorAll('.counter').forEach(el => {
+        const target = parseFloat(el.getAttribute('data-to')||el.textContent);
+        const dur = parseInt(el.getAttribute('data-dur')||'1200',10);
+        const start = performance.now();
+        const from = 0;
+        function tick(now){
+          const t = Math.min(1,(now-start)/dur);
+          const v = from + (target-from)*(1-Math.pow(1-t,3));
+          el.textContent = (target % 1 === 0) ? Math.round(v) : v.toFixed(1);
+          if (t<1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+      });
+
+      // Broadcast to other window (audience ↔ presenter)
+      if (!fromRemote && bc) {
+        bc.postMessage({ type: 'go', idx: n });
+      }
+    }
+
+    /* ===== listen for remote navigation / theme changes ===== */
+    if (bc) {
+      bc.onmessage = function(e) {
+        if (!e.data) return;
+        if (e.data.type === 'go' && typeof e.data.idx === 'number') {
+          go(e.data.idx, true);
+        } else if (e.data.type === 'theme' && e.data.name) {
+          /* Sync theme across windows */
+          const i = themes.indexOf(e.data.name);
+          if (i >= 0) themeIdx = i;
+          applyTheme(e.data.name);
+        }
+      };
+    }
+
+    function toggleNotes(force){ notes.classList.toggle('open', force!==undefined?force:!notes.classList.contains('open')); }
+    function toggleOverview(force){
+      const isOpen = force!==undefined ? force : !overview.classList.contains('open');
+      overview.classList.toggle('open', isOpen);
+      if (isOpen) {
+        requestAnimationFrame(() => {
+          const thumbs = overview.querySelectorAll('.thumb');
+          if (thumbs.length) {
+            const scale = thumbs[0].clientWidth / 1920;
+            overview.querySelectorAll('.mini-slide').forEach(m => {
+              m.style.transform = 'scale(' + scale + ')';
+            });
+          }
+        });
+      }
+    }
+
+    /* ========== PRESENTER MODE — Magnetic-card popup window ========== */
+    /* Opens a new window with 4 draggable, resizable cards:
+     *   CURRENT  — iframe(?preview=N)   pixel-perfect preview of current slide
+     *   NEXT     — iframe(?preview=N+1) pixel-perfect preview of next slide
+     *   SCRIPT   — large speaker notes (Guion)
+     *   TIMER    — elapsed timer + page counter + controls
+     * Cards remember position/size in localStorage.
+     * Two windows sync via BroadcastChannel.
+     */
+    let presenterWin = null;
+
+    function openPresenterWindow() {
+      if (presenterWin && !presenterWin.closed) {
+        presenterWin.focus();
+        return;
+      }
+
+      // Build absolute URL of THIS deck file (without hash/query)
+      const deckUrl = location.protocol + '//' + location.host + location.pathname;
+
+      // Collect slide titles + notes (HTML strings)
+      const slideMeta = slides.map((s, i) => {
+        const note = s.querySelector('.notes, aside.notes, .speaker-notes');
+        return {
+          title: s.getAttribute('data-title') ||
+            (s.querySelector('h1,h2,h3')||{}).textContent || ('Slide '+(i+1)),
+          notes: note ? note.innerHTML : ''
+        };
+      });
+
+      /* Capture current theme so presenter previews match the audience */
+      const currentTheme = root.getAttribute('data-theme') || (themes[themeIdx] || '');
+      const presenterHTML = buildPresenterHTML(deckUrl, slideMeta, total, idx, CHANNEL_NAME, currentTheme);
+
+      presenterWin = window.open('', 'html-ppt-presenter', 'width=1280,height=820,menubar=no,toolbar=no');
+      if (!presenterWin) {
+        alert('Permite las ventanas emergentes para usar la vista de presentador');
+        return;
+      }
+      presenterWin.document.open();
+      presenterWin.document.write(presenterHTML);
+      presenterWin.document.close();
+    }
+
+    function buildPresenterHTML(deckUrl, slideMeta, total, startIdx, channelName, currentTheme) {
+      const metaJSON = JSON.stringify(slideMeta);
+      const deckUrlJSON = JSON.stringify(deckUrl);
+      const channelJSON = JSON.stringify(channelName);
+      const themeJSON = JSON.stringify(currentTheme || '');
+      const storageKey = 'html-ppt-presenter:' + location.pathname;
+
+      // Build the document as a single template string for clarity
+      return `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Presenter View</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: #1a1d24;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(88,166,255,.04), transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(188,140,255,.04), transparent 50%);
+    color: #e6edf3;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
+  }
+  /* Stage: positioned area where cards live */
+  #stage { position: absolute; inset: 0; overflow: hidden; }
+
+  /* Magnetic card */
+  .pcard {
+    position: absolute;
+    background: #0d1117;
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.02);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    min-width: 180px; min-height: 100px;
+    transition: box-shadow .2s, border-color .2s;
+  }
+  .pcard.dragging { box-shadow: 0 16px 48px rgba(0,0,0,.6), 0 0 0 2px rgba(88,166,255,.5); border-color: #58a6ff; transition: none; z-index: 9999; }
+  .pcard.resizing { box-shadow: 0 16px 48px rgba(0,0,0,.6), 0 0 0 2px rgba(63,185,80,.5); border-color: #3fb950; transition: none; z-index: 9999; }
+  .pcard:hover { border-color: rgba(88,166,255,.3); }
+
+  /* Card header (drag handle) */
+  .pcard-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px;
+    background: rgba(255,255,255,.04);
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    cursor: move;
+    user-select: none;
+    flex-shrink: 0;
+  }
+  .pcard-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dot-color, #58a6ff); flex-shrink: 0; }
+  .pcard-title {
+    font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    font-weight: 700; color: #8b949e; flex: 1;
+  }
+  .pcard-meta { font-size: 11px; color: #6e7681; }
+
+  /* Card body */
+  .pcard-body { flex: 1; position: relative; overflow: hidden; min-height: 0; }
+
+  /* Preview cards (CURRENT/NEXT) — iframe-based pixel-perfect render */
+  .pcard-preview .pcard-body { background: #000; }
+  .pcard-preview iframe {
+    position: absolute; top: 0; left: 0;
+    width: 1920px; height: 1080px;
+    border: none;
+    transform-origin: top left;
+    pointer-events: none;
+    background: transparent;
+  }
+  .pcard-preview .preview-end {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #484f58; font-size: 14px; letter-spacing: .12em;
+  }
+
+  /* Notes card */
+  .pcard-notes .pcard-body {
+    padding: 14px 18px;
+    overflow-y: auto;
+    font-size: 18px; line-height: 1.75;
+    color: #d0d7de;
+    font-family: "Noto Sans SC", -apple-system, sans-serif;
+  }
+  .pcard-notes .pcard-body p { margin: 0 0 .7em 0; }
+  .pcard-notes .pcard-body strong { color: #f0883e; }
+  .pcard-notes .pcard-body em { color: #58a6ff; font-style: normal; }
+  .pcard-notes .pcard-body code {
+    font-family: "SF Mono", monospace; font-size: .9em;
+    background: rgba(255,255,255,.08); padding: 1px 6px; border-radius: 4px;
+  }
+  .pcard-notes .empty { color: #484f58; font-style: italic; }
+
+  /* Timer card */
+  .pcard-timer .pcard-body {
+    display: flex; flex-direction: column; gap: 14px;
+    padding: 18px 20px; justify-content: center;
+  }
+  .timer-display {
+    font-family: "SF Mono", "JetBrains Mono", monospace;
+    font-size: 42px; font-weight: 700;
+    color: #3fb950;
+    letter-spacing: .04em;
+    line-height: 1;
+  }
+  .timer-row {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 14px; color: #8b949e;
+  }
+  .timer-row .label { font-size: 10px; letter-spacing: .15em; text-transform: uppercase; color: #6e7681; }
+  .timer-row .val { color: #e6edf3; font-weight: 600; font-family: "SF Mono", monospace; }
+  .timer-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+  .timer-btn {
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.1);
+    color: #e6edf3;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .timer-btn:hover { background: rgba(88,166,255,.15); border-color: #58a6ff; }
+  .timer-btn:active { transform: translateY(1px); }
+
+  /* Resize handle */
+  .pcard-resize {
+    position: absolute; right: 0; bottom: 0;
+    width: 18px; height: 18px;
+    cursor: nwse-resize;
+    background: linear-gradient(135deg, transparent 50%, rgba(255,255,255,.25) 50%, rgba(255,255,255,.25) 60%, transparent 60%, transparent 70%, rgba(255,255,255,.25) 70%, rgba(255,255,255,.25) 80%, transparent 80%);
+    z-index: 5;
+  }
+  .pcard-resize:hover { background: linear-gradient(135deg, transparent 50%, #58a6ff 50%, #58a6ff 60%, transparent 60%, transparent 70%, #58a6ff 70%, #58a6ff 80%, transparent 80%); }
+
+  /* Bottom hint bar */
+  .hint-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(0,0,0,.6);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(255,255,255,.08);
+    padding: 6px 16px;
+    font-size: 11px; color: #8b949e;
+    display: flex; gap: 18px; align-items: center;
+    z-index: 1000;
+  }
+  .hint-bar kbd {
+    background: rgba(255,255,255,.08);
+    padding: 1px 6px; border-radius: 3px;
+    font-family: "SF Mono", monospace;
+    font-size: 10px;
+    border: 1px solid rgba(255,255,255,.1);
+    color: #e6edf3;
+  }
+  .hint-bar .reset-layout {
+    margin-left: auto;
+    background: transparent; border: 1px solid rgba(255,255,255,.15);
+    color: #8b949e; padding: 3px 10px; border-radius: 4px;
+    font-size: 11px; cursor: pointer; font-family: inherit;
+  }
+  .hint-bar .reset-layout:hover { background: rgba(248,81,73,.15); border-color: #f85149; color: #f85149; }
+
+  body.is-dragging-card * { user-select: none !important; }
+  body.is-dragging-card iframe { pointer-events: none !important; }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="pcard pcard-preview" id="card-cur" style="--dot-color:#58a6ff">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">CURRENT</span>
+      <span class="pcard-meta" id="cur-meta">—</span>
+    </div>
+    <div class="pcard-body"><iframe id="iframe-cur"></iframe></div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+
+  <div class="pcard pcard-preview" id="card-nxt" style="--dot-color:#bc8cff">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">NEXT</span>
+      <span class="pcard-meta" id="nxt-meta">—</span>
+    </div>
+    <div class="pcard-body"><iframe id="iframe-nxt"></iframe></div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+
+  <div class="pcard pcard-notes" id="card-notes" style="--dot-color:#f0883e">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">SPEAKER SCRIPT · Guion</span>
+    </div>
+    <div class="pcard-body" id="notes-body"></div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+
+  <div class="pcard pcard-timer" id="card-timer" style="--dot-color:#3fb950">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">TIMER</span>
+    </div>
+    <div class="pcard-body">
+      <div class="timer-display" id="timer-display">00:00</div>
+      <div class="timer-row">
+        <span class="label">Slide</span>
+        <span class="val" id="timer-count">1 / ${total}</span>
+      </div>
+      <div class="timer-controls">
+        <button class="timer-btn" id="btn-prev">← Prev</button>
+        <button class="timer-btn" id="btn-next">Next →</button>
+        <button class="timer-btn" id="btn-reset">⏱ Reset</button>
+      </div>
+    </div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+</div>
+
+<div class="hint-bar">
+  <span><kbd>← →</kbd> Pasar diapositiva</span>
+  <span><kbd>R</kbd> Reiniciar tiempo</span>
+  <span><kbd>Esc</kbd> Cerrar</span>
+  <span style="color:#6e7681">Arrastra el encabezado para mover · Arrastra la esquina inferior derecha para redimensionar</span>
+  <button class="reset-layout" id="reset-layout">Reiniciar disposición</button>
+</div>
+
+<script>
+(function(){
+  var slideMeta = ${metaJSON};
+  var total = ${total};
+  var idx = ${startIdx};
+  var deckUrl = ${deckUrlJSON};
+  var STORAGE_KEY = ${JSON.stringify(storageKey)};
+  var bc;
+  try { bc = new BroadcastChannel(${channelJSON}); } catch(e) {}
+
+  var iframeCur = document.getElementById('iframe-cur');
+  var iframeNxt = document.getElementById('iframe-nxt');
+  var notesBody = document.getElementById('notes-body');
+  var curMeta = document.getElementById('cur-meta');
+  var nxtMeta = document.getElementById('nxt-meta');
+  var timerDisplay = document.getElementById('timer-display');
+  var timerCount = document.getElementById('timer-count');
+
+  /* ===== Default card layout ===== */
+  function defaultLayout() {
+    var w = window.innerWidth;
+    var h = window.innerHeight - 36; /* leave room for hint bar */
+    return {
+      'card-cur':   { x: 16,        y: 16,            w: Math.round(w*0.55) - 24, h: Math.round(h*0.62) - 16 },
+      'card-nxt':   { x: Math.round(w*0.55) + 8, y: 16, w: w - Math.round(w*0.55) - 24, h: Math.round(h*0.42) - 16 },
+      'card-notes': { x: Math.round(w*0.55) + 8, y: Math.round(h*0.42) + 8, w: w - Math.round(w*0.55) - 24, h: h - Math.round(h*0.42) - 16 },
+      'card-timer': { x: 16,        y: Math.round(h*0.62) + 8, w: Math.round(w*0.55) - 24, h: h - Math.round(h*0.62) - 16 }
+    };
+  }
+
+  /* ===== Apply / save / restore layout ===== */
+  function applyLayout(layout) {
+    Object.keys(layout).forEach(function(id){
+      var el = document.getElementById(id);
+      var l = layout[id];
+      if (el && l) {
+        el.style.left = l.x + 'px';
+        el.style.top = l.y + 'px';
+        el.style.width = l.w + 'px';
+        el.style.height = l.h + 'px';
+      }
+    });
+    rescaleAll();
+  }
+  function readLayout() {
+    try {
+      var saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch(e) {}
+    return defaultLayout();
+  }
+  function saveLayout() {
+    var layout = {};
+    ['card-cur','card-nxt','card-notes','card-timer'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) {
+        layout[id] = {
+          x: parseInt(el.style.left,10) || 0,
+          y: parseInt(el.style.top,10) || 0,
+          w: parseInt(el.style.width,10) || 300,
+          h: parseInt(el.style.height,10) || 200
+        };
+      }
+    });
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(layout)); } catch(e) {}
+  }
+
+  /* ===== iframe rescale to fit card body ===== */
+  function rescaleIframe(iframe) {
+    if (!iframe || iframe.style.display === 'none') return;
+    var body = iframe.parentElement;
+    var cw = body.clientWidth, ch = body.clientHeight;
+    if (!cw || !ch) return;
+    var s = Math.min(cw / 1920, ch / 1080);
+    iframe.style.transform = 'scale(' + s + ')';
+    /* Center the scaled iframe in the body */
+    var sw = 1920 * s, sh = 1080 * s;
+    iframe.style.left = Math.max(0, (cw - sw) / 2) + 'px';
+    iframe.style.top = Math.max(0, (ch - sh) / 2) + 'px';
+  }
+  function rescaleAll() {
+    rescaleIframe(iframeCur);
+    rescaleIframe(iframeNxt);
+  }
+  window.addEventListener('resize', rescaleAll);
+
+  /* ===== Drag (move card by header) ===== */
+  document.querySelectorAll('[data-drag]').forEach(function(handle){
+    handle.addEventListener('mousedown', function(e){
+      if (e.button !== 0) return;
+      var card = handle.closest('.pcard');
+      if (!card) return;
+      e.preventDefault();
+      card.classList.add('dragging');
+      document.body.classList.add('is-dragging-card');
+      var startX = e.clientX, startY = e.clientY;
+      var startL = parseInt(card.style.left,10) || 0;
+      var startT = parseInt(card.style.top,10)  || 0;
+      function onMove(ev){
+        var nx = Math.max(0, Math.min(window.innerWidth - 100, startL + ev.clientX - startX));
+        var ny = Math.max(0, Math.min(window.innerHeight - 50, startT + ev.clientY - startY));
+        card.style.left = nx + 'px';
+        card.style.top = ny + 'px';
+      }
+      function onUp(){
+        card.classList.remove('dragging');
+        document.body.classList.remove('is-dragging-card');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        saveLayout();
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  });
+
+  /* ===== Resize (drag bottom-right corner) ===== */
+  document.querySelectorAll('[data-resize]').forEach(function(handle){
+    handle.addEventListener('mousedown', function(e){
+      if (e.button !== 0) return;
+      var card = handle.closest('.pcard');
+      if (!card) return;
+      e.preventDefault(); e.stopPropagation();
+      card.classList.add('resizing');
+      document.body.classList.add('is-dragging-card');
+      var startX = e.clientX, startY = e.clientY;
+      var startW = parseInt(card.style.width,10)  || card.offsetWidth;
+      var startH = parseInt(card.style.height,10) || card.offsetHeight;
+      function onMove(ev){
+        var nw = Math.max(180, startW + ev.clientX - startX);
+        var nh = Math.max(100, startH + ev.clientY - startY);
+        card.style.width = nw + 'px';
+        card.style.height = nh + 'px';
+        if (card.querySelector('iframe')) rescaleIframe(card.querySelector('iframe'));
+      }
+      function onUp(){
+        card.classList.remove('resizing');
+        document.body.classList.remove('is-dragging-card');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        rescaleAll();
+        saveLayout();
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  });
+
+  /* ===== Preview iframe ready tracking =====
+   * Each iframe loads the deck ONCE with ?preview=1 on init. Subsequent
+   * slide changes are sent via postMessage('preview-goto') so the iframe
+   * just toggles visibility of a different .slide — no reload, no flicker.
+   */
+  var iframeReady = { cur: false, nxt: false };
+  var currentTheme = ${themeJSON};
+  window.addEventListener('message', function(e) {
+    if (!e.data || e.data.type !== 'preview-ready') return;
+    var iframe = null;
+    if (e.source === iframeCur.contentWindow) {
+      iframeReady.cur = true;
+      iframe = iframeCur;
+      postPreviewGoto(iframeCur, idx);
+    } else if (e.source === iframeNxt.contentWindow) {
+      iframeReady.nxt = true;
+      iframe = iframeNxt;
+      postPreviewGoto(iframeNxt, idx + 1 < total ? idx + 1 : idx);
+    }
+    /* Sync current theme to the iframe */
+    if (iframe && currentTheme) {
+      try { iframe.contentWindow.postMessage({ type: 'preview-theme', name: currentTheme }, '*'); } catch(err) {}
+    }
+    if (iframe) rescaleIframe(iframe);
+  });
+
+  function postPreviewGoto(iframe, n) {
+    try {
+      iframe.contentWindow.postMessage({ type: 'preview-goto', idx: n }, '*');
+    } catch(e) {}
+  }
+
+  /* ===== Update content =====
+   * Smooth (no-reload) navigation: send postMessage to iframes instead of
+   * resetting src. Iframes stay loaded, just switch visible .slide.
+   */
+  function update(n) {
+    n = Math.max(0, Math.min(total - 1, n));
+    idx = n;
+
+    /* Current preview — postMessage (smooth) */
+    if (iframeReady.cur) postPreviewGoto(iframeCur, n);
+    curMeta.textContent = (n + 1) + '/' + total;
+
+    /* Next preview */
+    if (n + 1 < total) {
+      iframeNxt.style.display = '';
+      var endEl = document.querySelector('#card-nxt .preview-end');
+      if (endEl) endEl.remove();
+      if (iframeReady.nxt) postPreviewGoto(iframeNxt, n + 1);
+      nxtMeta.textContent = (n + 2) + '/' + total;
+    } else {
+      iframeNxt.style.display = 'none';
+      var body = document.querySelector('#card-nxt .pcard-body');
+      if (body && !body.querySelector('.preview-end')) {
+        var end = document.createElement('div');
+        end.className = 'preview-end';
+        end.textContent = '— END OF DECK —';
+        body.appendChild(end);
+      }
+      nxtMeta.textContent = 'END';
+    }
+
+    /* Notes */
+    var note = slideMeta[n].notes;
+    notesBody.innerHTML = note || '<span class="empty">(Esta diapositiva aún no tiene guion)</span>';
+
+    /* Timer count */
+    timerCount.textContent = (n + 1) + ' / ' + total;
+  }
+
+  /* ===== Timer ===== */
+  var tStart = Date.now();
+  setInterval(function(){
+    var s = Math.floor((Date.now() - tStart) / 1000);
+    var mm = String(Math.floor(s/60)).padStart(2,'0');
+    var ss = String(s%60).padStart(2,'0');
+    timerDisplay.textContent = mm + ':' + ss;
+  }, 1000);
+  function resetTimer(){ tStart = Date.now(); timerDisplay.textContent = '00:00'; }
+
+  /* ===== BroadcastChannel sync ===== */
+  if (bc) {
+    bc.onmessage = function(e){
+      if (!e.data) return;
+      if (e.data.type === 'go') update(e.data.idx);
+      else if (e.data.type === 'theme' && e.data.name) {
+        currentTheme = e.data.name;
+        /* Forward theme change to preview iframes */
+        [iframeCur, iframeNxt].forEach(function(iframe){
+          try {
+            iframe.contentWindow.postMessage({ type: 'preview-theme', name: e.data.name }, '*');
+          } catch(err) {}
+        });
+      }
+    };
+  }
+  function go(n) {
+    update(n);
+    if (bc) bc.postMessage({ type: 'go', idx: idx });
+  }
+
+  /* ===== Buttons ===== */
+  document.getElementById('btn-prev').addEventListener('click', function(){ go(idx - 1); });
+  document.getElementById('btn-next').addEventListener('click', function(){ go(idx + 1); });
+  document.getElementById('btn-reset').addEventListener('click', resetTimer);
+  document.getElementById('reset-layout').addEventListener('click', function(){
+    if (confirm('¿Restaurar la disposición por defecto?')) {
+      try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
+      applyLayout(defaultLayout());
+    }
+  });
+
+  /* ===== Keyboard ===== */
+  document.addEventListener('keydown', function(e){
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    switch(e.key) {
+      case 'ArrowRight': case ' ': case 'PageDown': go(idx + 1); e.preventDefault(); break;
+      case 'ArrowLeft':  case 'PageUp':   go(idx - 1); e.preventDefault(); break;
+      case 'Home': go(0); break;
+      case 'End':  go(total - 1); break;
+      case 'r': case 'R': resetTimer(); break;
+      case 'Escape': window.close(); break;
+    }
+  });
+
+  /* ===== Iframe load → rescale (catches initial size) ===== */
+  iframeCur.addEventListener('load', function(){ rescaleIframe(iframeCur); });
+  iframeNxt.addEventListener('load', function(){ rescaleIframe(iframeNxt); });
+
+  /* ===== Init =====
+   * Load each iframe ONCE with the deck file. After they post
+   * 'preview-ready', all subsequent navigation is via postMessage
+   * (smooth, no reload, no flicker).
+   */
+  applyLayout(readLayout());
+  iframeCur.src = deckUrl + '?preview=' + (idx + 1);
+  if (idx + 1 < total) iframeNxt.src = deckUrl + '?preview=' + (idx + 2);
+  /* Initialize notes/timer/count without touching iframes */
+  notesBody.innerHTML = slideMeta[idx].notes || '<span class="empty">(Esta diapositiva aún no tiene guion)</span>';
+  curMeta.textContent = (idx + 1) + '/' + total;
+  nxtMeta.textContent = (idx + 2) + '/' + total;
+  timerCount.textContent = (idx + 1) + ' / ' + total;
+})();
+</` + `script>
+</body></html>`;
+    }
+
+    function fullscreen(){ const el=document.documentElement;
+      if (!document.fullscreenElement) el.requestFullscreen&&el.requestFullscreen();
+      else document.exitFullscreen&&document.exitFullscreen();
+    }
+
+    // theme cycling
+    const root = document.documentElement;
+    const themesAttr = root.getAttribute('data-themes') || document.body.getAttribute('data-themes');
+    const themes = themesAttr ? themesAttr.split(',').map(s=>s.trim()).filter(Boolean) : [];
+    let themeIdx = 0;
+
+    // Auto-detect theme base path from existing <link id="theme-link">
+    let themeBase = root.getAttribute('data-theme-base');
+    if (!themeBase) {
+      const existingLink = document.getElementById('theme-link');
+      if (existingLink) {
+        // el.getAttribute('href') gives the raw relative path written in HTML
+        const rawHref = existingLink.getAttribute('href') || '';
+        const lastSlash = rawHref.lastIndexOf('/');
+        themeBase = lastSlash >= 0 ? rawHref.substring(0, lastSlash + 1) : 'assets/themes/';
+      } else {
+        themeBase = 'assets/themes/';
+      }
+    }
+
+    function applyTheme(name) {
+      let link = document.getElementById('theme-link');
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.id = 'theme-link';
+        document.head.appendChild(link);
+      }
+      link.href = themeBase + name + '.css';
+      root.setAttribute('data-theme', name);
+      const ind = document.querySelector('.theme-indicator');
+      if (ind) ind.textContent = name;
+    }
+    function cycleTheme(fromRemote){
+      if (!themes.length) return;
+      themeIdx = (themeIdx+1) % themes.length;
+      const name = themes[themeIdx];
+      applyTheme(name);
+      /* Broadcast to other window (audience ↔ presenter) */
+      if (!fromRemote && bc) bc.postMessage({ type: 'theme', name: name });
+    }
+
+    // animation cycling on current slide
+    let animIdx = 0;
+    function cycleAnim(){
+      animIdx = (animIdx+1) % ANIMS.length;
+      const a = ANIMS[animIdx];
+      const target = slides[idx].querySelector('[data-anim-target]') || slides[idx];
+      ANIMS.forEach(x => target.classList.remove('anim-'+x));
+      void target.offsetWidth;
+      target.classList.add('anim-'+a);
+      target.setAttribute('data-anim', a);
+      const ind = document.querySelector('.anim-indicator');
+      if (ind) ind.textContent = a;
+    }
+
+    document.addEventListener('keydown', function (e) {
+      if (e.metaKey||e.ctrlKey||e.altKey) return;
+      switch (e.key) {
+        case 'ArrowRight': case ' ': case 'PageDown': case 'Enter': go(idx+1); e.preventDefault(); break;
+        case 'ArrowLeft': case 'PageUp': case 'Backspace': go(idx-1); e.preventDefault(); break;
+        case 'Home': go(0); break;
+        case 'End': go(total-1); break;
+        case 'f': case 'F': fullscreen(); break;
+        case 's': case 'S': openPresenterWindow(); break;
+        case 'n': case 'N': toggleNotes(); break;
+        case 'o': case 'O': toggleOverview(); break;
+        case 't': case 'T': cycleTheme(); break;
+        case 'a': case 'A': cycleAnim(); break;
+        case 'Escape': toggleOverview(false); toggleNotes(false); break;
+      }
+    });
+
+    // hash deep-link
+    function fromHash(){
+      const m = /^#\/(\d+)/.exec(location.hash||'');
+      if (m) go(Math.max(0, parseInt(m[1],10)-1));
+    }
+    window.addEventListener('hashchange', fromHash);
+    fromHash();
+    go(idx);
+  });
+})();
+
+</script>
+
+<script>
+/* deck :: mobile scale-to-fit — fixed 16:9 layout scaled into narrow/short viewports.
+   Desktop (vw>=1024 && vh>=640) is left untouched (native fluid). Preview iframes skipped. */
+(function(){
+  try{
+    if (new URLSearchParams(location.search).has('preview')) return;
+    var BASE_W = 1280, BASE_H = 720;
+    var deck = document.querySelector('.deck');
+    if (!deck) return;
+    function fit(){
+      var vw = window.innerWidth, vh = window.innerHeight;
+      if (vw >= 1024 && vh >= 640){
+        deck.style.transform = '';
+        deck.style.width = ''; deck.style.height = '';
+        deck.style.position = ''; deck.style.left = ''; deck.style.top = '';
+        document.documentElement.style.overflow = ''; document.body.style.overflow = '';
+        document.documentElement.style.background = '';
+        return;
+      }
+      var scale = Math.min(vw / BASE_W, vh / BASE_H);
+      deck.style.width = BASE_W + 'px';
+      deck.style.height = BASE_H + 'px';
+      deck.style.transformOrigin = 'top left';
+      deck.style.transform = 'scale(' + scale + ')';
+      deck.style.position = 'absolute';
+      deck.style.left = ((vw - BASE_W * scale) / 2) + 'px';
+      deck.style.top = ((vh - BASE_H * scale) / 2) + 'px';
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.background = (function(){var d=getComputedStyle(deck).backgroundColor;if(d&&d!=='rgba(0, 0, 0, 0)'&&d!=='transparent')return d;var b=getComputedStyle(document.body).backgroundColor;return (b&&b!=='rgba(0, 0, 0, 0)'&&b!=='transparent')?b:'#0d1117';})();
+    }
+    fit();
+    window.addEventListener('resize', fit);
+    window.addEventListener('orientationchange', function(){ setTimeout(fit, 60); });
+  }catch(e){ /* never break the deck over a fit error */ }
+})();
+</script>
+
+<!-- ============ MOBILE NAV (UPEX) — swipe → flechas + hint once-only. scale-to-fit vive en el deck fuente ============ -->
+<style id="upex-navhint-style">
+#upex-navhint{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:120;
+  display:flex;align-items:center;gap:.4rem;background:rgba(20,22,34,.94);
+  border:1px solid rgba(255,255,255,.18);border-radius:999px;
+  padding:.5rem .95rem;font:600 13px/1.2 system-ui,-apple-system,sans-serif;color:#c0caf5;
+  box-shadow:0 6px 20px rgba(0,0,0,.45);animation:upexHintIn .35s ease both;cursor:pointer}
+@keyframes upexHintIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%)}}
+#upex-navhint.out{opacity:0;transition:opacity .4s}
+</style>
+<script id="upex-mobile-nav">
+(function(){
+'use strict';
+/* Navegación por swipe: el runtime del deck escucha keydown ArrowLeft/Right. */
+var send=function(key){document.dispatchEvent(new KeyboardEvent('keydown',{key:key,bubbles:true}))};
+var x0=null,y0=null,skip=false;
+document.addEventListener('touchstart',function(e){
+  var t=e.target;
+  skip=!!(t&&t.closest&&t.closest('textarea,input,button,pre,table,a,.quiz'));
+  var p=e.changedTouches[0]; x0=p.clientX; y0=p.clientY;
+},{passive:true});
+document.addEventListener('touchend',function(e){
+  if(x0===null||skip) return;
+  var p=e.changedTouches[0], dx=p.clientX-x0, dy=p.clientY-y0;
+  x0=y0=null;
+  if(Math.abs(dx)>60&&Math.abs(dx)>2*Math.abs(dy)) send(dx<0?'ArrowRight':'ArrowLeft');
+},{passive:true});
+/* Hint de navegación: solo móvil (chrome del deck oculto por scale-to-fit),
+   una sola vez por dominio (localStorage). ?hint=1 lo fuerza para QA. */
+var KEY='upex-deck-navhint-v1';
+var isMobile=matchMedia('(pointer:coarse)').matches&&matchMedia('(max-width:768px)').matches;
+var force=/[?&]hint=1/.test(location.search);
+var seen=false; try{seen=localStorage.getItem(KEY)==='1'}catch(_e){}
+if(force||(isMobile&&!seen)){
+  var h=document.createElement('div'); h.id='upex-navhint';
+  h.textContent='👆 Desliza para avanzar →';
+  var close=function(){ if(!h.isConnected)return; h.classList.add('out'); setTimeout(function(){h.remove();},400); try{localStorage.setItem(KEY,'1')}catch(_e){} };
+  h.addEventListener('click',close);
+  document.body.appendChild(h);
+  setTimeout(close,5000);
+}
+})();
+</script>
+
+</body>
+</html>
