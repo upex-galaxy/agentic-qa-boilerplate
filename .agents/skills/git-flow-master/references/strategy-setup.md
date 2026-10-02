@@ -53,7 +53,7 @@ Run after the strategy slug is resolved (Step 2). Ask the questions in order. Fo
 - **Sub-questions (defaults are per-strategy — see `references/branching-strategies.md` → "git_strategy field rules (per strategy)")**:
   1. **`direct_push_to_protected`** — `forbidden` | `confirm` | `allowed`. How a direct push to a protected branch is treated. `allowed` = standing authorization, push without a per-push confirm (the recorded value IS the authorization); `confirm` = always ask; `forbidden` = refuse the direct push, redirect to the PR flow. Default per strategy: `solo-main` = `allowed`; multi-branch (`main-integration` / `enterprise` / `gitflow` / `github-flow` / `trunk-based` / `gitlab-flow`) = `forbidden`; `sdet` = `confirm` (trunk self-merge).
   2. **`admin_bypass`** — `true` | `false`. May a repo admin bypass PR/protection for an urgent change? Default `false`. **This is a team POLICY intent, NOT an enforcement check** — the real capability depends on the GitHub user's role. When `true`, the Push op may OFFER a bypass but MUST re-confirm at runtime (a) that the operator actually holds admin rights (ASK — the skill cannot know the role) and (b) the irreversible action. When `false`, never offer a bypass regardless of role.
-  3. **`require_pr_reviews`** — `null` | `0` | `N`. Minimum approvals before merge to a protected branch (informational; the skill does not enforce GitHub rulesets, it records intent). Default `null` for solo-main (`0`); strategy-appropriate otherwise (typically `1` for multi-branch flows; `0` on the sdet trunk / `1` on the final sdet PR).
+  3. **`require_pr_reviews`** — `null` | `0` | `N`. Minimum approvals before merge to a protected branch. Records the team's intent; Section 4.5 can materialize it onto the host in the same run, and `bun run git:policy verify` is what confirms the host enforces it. Default `null` for solo-main (`0`); strategy-appropriate otherwise (typically `1` for multi-branch flows; `0` on the sdet trunk / `1` on the final sdet PR).
 - **Persisted as**: `git_strategy.policy.direct_push_to_protected` + `git_strategy.policy.admin_bypass` + `git_strategy.policy.require_pr_reviews`.
 
 > Q4 has no single global default — each sub-field's default is keyed off the resolved strategy (per the branching-strategies.md field rules). Present each default first and let the user override.
@@ -145,11 +145,40 @@ Once branches are materialized and decisions captured, persist in this order:
    - `policy` — `direct_push_to_protected` / `admin_bypass` / `require_pr_reviews`, captured from Q4 (applies to every strategy; defaults are per-strategy).
    - `branch_prefixes` — `precedence` + naming patterns (carry the defaults unless the user overrides).
    - `description` — the one-paragraph human summary of the flow for this repo.
-   - `meta.created` — the date of the run; bump `meta.setup_version` on a re-run that changes the schema.
+   - `meta.created` — the date of the run; bump `meta.setup_version` on a re-run that changes the schema. Leave `meta.policy_verified: null` and `meta.policy_source: declared`: only a clean `bun run git:policy verify --stamp` may change them (Section 4.5).
+   - `meta.strategy_source: chosen` — stamp it whenever the questionnaire actually ran. It ships `inherited`, and it is the only field that separates "this project picked `solo-main`" from "this project never chose and kept the default", because `strategy` itself is never null. Without the stamp the bootstrap offer keeps proposing a setup the user already completed.
    Per-strategy field values: `references/branching-strategies.md` → "git_strategy field rules (per strategy)".
 2. **Set up local tracking** for any newly-ensured branch (`git branch --set-upstream-to=origin/<branch> <branch>` or `git checkout -b <branch> origin/<branch>`), so later operations don't re-detect.
 
 AGENTS.md's `## Git Strategy` section is a shipped pointer to `.agents/project.yaml` (`git_strategy:` block) — NEVER write strategy policy there. The block is the source of truth; its `git_strategy.description` field is the human summary. A later Strategy Setup re-run re-reads the block and only fills the `git_strategy.decisions.*` / `git_strategy.policy.*` fields still unset.
+
+---
+
+## 4.5 Materialize the policy onto the host (offer, never automatic)
+
+The questionnaire has just captured the branch policy, and the same answers describe a GitHub ruleset. Setup can therefore close the gap between intent and enforcement in the same run instead of leaving a `declared` block to drift until the first refused merge.
+
+**Always start read-only**, because an existing repo usually already has protection:
+
+```bash
+bun run git:policy verify   # what the host enforces today vs what was just captured
+```
+
+- **No drift** (or only divergences already listed in `git_strategy.policy.accepted_divergences`) → say so, run `bun run git:policy verify --stamp`, done. Nothing to write.
+- **Drift** → show it, then OFFER the write. Never perform it unasked: a ruleset governs who can merge, and the operator has to choose.
+
+```bash
+bun run git:policy apply         # dry run: prints the exact payload
+bun run git:policy apply --yes   # writes it
+```
+
+Three rules for this step:
+
+1. **Show the dry run before proposing the write.** The payload is the proposal; a described change is not a reviewed one.
+2. **A refusal to loosen is a result, not an obstacle.** `apply` blocks any change that removes a guard, lowers the approval bar, turns off code-owner review, or widens the allowed merge methods. If `--allow-loosening` is needed, name exactly which guard is being given up and get an explicit yes for that specific thing.
+3. **Drift has three resolutions, and the host is only one of them.** The yaml may be the wrong side, so the fix is to edit the answer just captured. Or the divergence is intended, and then it is recorded as an entry in `git_strategy.policy.accepted_divergences` (the `field` exactly as `verify` printed it, plus `enforced`, `accepted` and `reason`), never as prose: `verify` then reports it as ACCEPTED, and `apply` carries the host's side of that field forward instead of deriving it away.
+
+Mapping table, the derived fields, accepted divergences and what the tool deliberately does not manage (`bypass_actors`, `CODEOWNERS`, org-level rulesets): `references/ruleset-parity.md`.
 
 ---
 
@@ -168,12 +197,17 @@ Decisions captured:
   - feature_merge:  <value | n/a>
   - hotfix_policy:  <value | n/a>
 
-Policy captured (Q4):
+Policy captured (Q4, intent until verified against the host):
   - direct_push_to_protected: <forbidden | confirm | allowed>
   - admin_bypass:             <true | false>
   - require_pr_reviews:       <null | 0 | N>
 
-Definition: .agents/project.yaml (git_strategy block, <N> fields populated)
+Host ruleset (Section 4.5):
+  - verify: <in parity | in parity modulo N accepted divergence(s) | N drift(s) reported> | not run
+  - apply:  <written (ruleset <name>) | dry run shown, not written | declined | n/a>
+  - policy_source: <verified | accepted | declared>
+
+Definition: .agents/project.yaml (git_strategy block, <N> fields populated, strategy_source: chosen)
 
 Next: branch off <work-branch-base> to start work; the Branch operation will use this strategy automatically.
 ```
