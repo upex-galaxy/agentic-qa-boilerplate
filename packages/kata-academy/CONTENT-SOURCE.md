@@ -134,11 +134,17 @@ KataReporter.onEnd() agrega el NDJSON → reports/atc_results.json
    · estado CONSERVADOR: si CUALQUIER ejecución falló → el ATC queda FAILED
      (un solo contexto roto contamina el caso completo)
 
-global.teardown.ts (si AUTO_SYNC=true; por defecto OFF)
+global.teardown.ts: solo imprime el resumen de cobertura ATC. NO sincroniza:
+   atc_results.json lo escribe KataReporter.onEnd(), que corre DESPUÉS del teardown.
+
+bun run test:sync (tests/utils/jiraSync.ts, paso aparte cuando Playwright ya salió;
+                   solo si AUTO_SYNC=true, por defecto OFF)
+   └─ syncResults() lee reports/atc_results.json
    └─ syncToXray(): POST a xray.cloud/api/v2/import/execution
-        { info:{...}, tests:[{ testKey:'PROJ-101', status:'PASSED', comment }] }
-        → crea una Test Execution en Xray; cada Test Run se actualiza
+        { testExecutionKey | info:{...}, tests:[{ testKey:'PROJ-101', status:'PASSED', comment }] }
+        → con STP_EXECUTION_KEY escribe sobre esa Test Execution; sin ella, Xray crea una nueva
    └─ (alternativa jira-native) syncToJiraDirect(): PUT al issue + comentario
+   (en regression.yml con Xray, CI importa el junit.xml en un job aparte en lugar de test:sync)
 ```
 
 Trazabilidad (modelo tres letras): Historia (US) ↔ ATP (plan) ↔ ATR
@@ -146,11 +152,11 @@ Trazabilidad (modelo tres letras): Historia (US) ↔ ATP (plan) ↔ ATR
 código. El string del decorador ES la clave del issue — el único join key de
 punta a punta.
 
-CI (GitHub Actions, 4 workflows):
+CI (GitHub Actions; las suites viven en `.github/workflows/`, junto a `pages.yml` y `pages-squash.yml` que publican el sitio):
 | Workflow | Disparo | Qué corre |
 |---|---|---|
 | build | PR a main | types + lint + `--list` (sin ejecutar tests) |
-| regression | cron diario 00:00 + manual | integration → e2e → merge Allure → GitHub Pages |
+| regression | cron diario 00:00 + manual | integration → e2e → merge Allure → GitHub Pages (o portal privado si existe el secret `PORTAL_URL`) |
 | smoke | cron diario 02:00 + manual | solo tests `@critical` |
 | sanity | manual | tests filtrados por grep/archivo |
 
@@ -446,8 +452,9 @@ Reglas que el ensamblador debe hacer cumplir (con feedback visual):
 - ATC se expande **Acceptance Test Case** (nunca "Automated Test Case").
 - El decorador exige string literal: `@atc('PROJ-101')` — nada de variables.
 - `retries: 0`, `workers: 1` en el config del seed (conservador a propósito).
-- La sync automática a TMS está **apagada por defecto** (`AUTO_SYNC=false`);
-  el import de JUnit a Xray vía `bun xray import junit` existe pero es manual.
+- La sync automática a TMS está **apagada por defecto** (`AUTO_SYNC=false`).
+  Encendida, la hace `bun run test:sync` después de la corrida (nunca el
+  teardown); en la regresión con Xray, CI importa el JUnit (`bun xray import junit`).
 - Un mismo ID NO puede aparecer en 2 métodos. El seed daba `PROJ-101` a
   `AuthApi.authenticateSuccessfully` y a `LoginPage.loginSuccessfully` a la vez,
   y eso colapsaba las dos ATCs en una sola fila del reporte de cobertura: un

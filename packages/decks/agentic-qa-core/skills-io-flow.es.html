@@ -249,7 +249,14 @@ ul.plain b{color:var(--t1)}
         Este deck documenta ese contrato de inputs/outputs, fase por fase.
       </p>
 
-      <div class="map"><span class="f1">FASE 1 · Historia</span>          <span class="ar">dev-boilerplate · product-management</span>
+      <div class="map"><span class="f4">ANTES · Contexto del proyecto</span>  <span class="ar">qa-boilerplate · una vez, y cada vez que el producto cambia</span>
+      ├─ project-discovery            <span class="ar">mapas de dominio + infra · project-config.md</span>
+      ├─ test-framework-adaptation    <span class="ar">KATA adaptado al stack del producto</span>
+      └─ project-context              <span class="ar">mapas de datos · API · E2E · Master Test Plan</span>
+            └─ context skills         <span class="ar">bun run context:map &lt;slug&gt; · las lee cada fase</span>
+      │
+      ▼
+<span class="f1">FASE 1 · Historia</span>          <span class="ar">dev-boilerplate · product-management</span>
       │
       ▼
 <span class="f2">FASE 2 · Refinamiento</span>  ⟲ loop  <span class="ar">dev (INVEST) ⇄ qa (shift-left-testing)</span>
@@ -266,7 +273,13 @@ ul.plain b{color:var(--t1)}
       │
       ▼
 <span class="f4">FASE 5 · Producción</span>           <span class="ar">Observation · L4</span>
-      └─ rutina agéntica, sin skill  <span class="ar">SLOs · error budget · realimenta el próximo shift-left</span></div>
+      └─ rutina agéntica, sin skill  <span class="ar">SLOs · error budget · realimenta el próximo shift-left</span>
+
+<span class="f2">TRANSVERSAL</span>                    <span class="ar">cruza todas las fases · pestaña «transversal»</span>
+      ├─ revisión                 <span class="ar">pr-review-lead · judgment-day</span>
+      ├─ flota y relevo           <span class="ar">orca-orchestration (opcional) · session-handoff</span>
+      └─ git · evidencia · sync   <span class="ar">git-flow-master · bug-screenshot-annotation · [SYNC]</span>
+      lista completa de skills    <span class="ar">.agents/skills/REGISTRY.md</span></div>
       <p class="lede" style="margin-top:.6rem"><b>Observation está declarado, no implementado</b>: sin skill propio (ver <code>.agents/skills/</code> para el estado). Aparece acá para que el mapa no mienta sobre dónde termina el sistema.</p>
 
       <div class="legend">
@@ -445,7 +458,7 @@ ul.plain b{color:var(--t1)}
 
       <div class="proc">
         <div class="proc-hd"><span class="pid">S2</span><h3>Execution <span class="muted">(trifuerza UI · API · DB)</span></h3><span class="repo qa">qa</span></div>
-        <div class="io deps"><span class="io-k">skills</span><div><span class="chip">playwright-cli (UI)</span><span class="chip">OpenAPI MCP + curl (API)</span><span class="chip">DBHub MCP (DB)</span><span class="chip">bug-screenshot-annotation (bugs visuales)</span></div></div>
+        <div class="io deps"><span class="io-k">skills</span><div><span class="chip">playwright-cli (UI)</span><span class="chip">OpenAPI MCP → bun run api:login → curl (API)</span><span class="chip">DBHub MCP (DB)</span><span class="chip">bug-screenshot-annotation (bugs visuales)</span></div></div>
         <div class="io in"><span class="io-k">stdin ←</span><div>ATP de Planning · <code>test-session-memory.md</code></div></div>
         <div class="io out"><span class="io-k">stdout →</span><div>Evidencia en <code>stories/STORY-*/evidence/</code> · imágenes anotadas · PASS/FAIL en <code>test-session-memory.md</code> (o Test Run) · Test nuevo <b>solo si hay defecto reproducible</b></div></div>
       </div>
@@ -489,7 +502,7 @@ ul.plain b{color:var(--t1)}
         <div class="proc-hd"><span class="pid">P3</span><h3>Document</h3><span class="repo qa">qa</span></div>
         <div class="io deps"><span class="io-k">skills</span><div><span class="chip">acli / xray-cli</span><span class="chip">tms-architecture.md · traceability-linking.md</span></div></div>
         <div class="io in"><span class="io-k">stdin ←</span><div><code>qa.qa_epics.test_repository_epic</code> · <code>jira-required.yaml</code> · <code>jira-fields.json</code> · <code>jira-workflows.json</code></div></div>
-        <div class="io jira"><span class="io-k">jira ⇄</span><div>Test issues (TC) creados: description con template TC · labels · Test Status · membership <b>TC ∈ ATS</b> (Xray GraphQL; jira-native: links TC→ATS) + <b>ATS→Story</b> como link de coverage — <b>TC→Story directo solo last-resort</b> · transición <b>Draft → In Design → Ready → (Manual | In Review → Candidate)</b></div></div>
+        <div class="io jira"><span class="io-k">jira ⇄</span><div>Test issues (TC) creados: description con template TC · labels · Test Status · membership <b>TC ∈ ATS</b> = issue link <b>TC→ATS</b> en ambas modalidades (jira-xray suma la membership Xray vía GraphQL) + <b>ATS→Story</b> como link de coverage; <b>TC→Story directo solo last-resort</b> · transición <b>Draft → In Design → Ready → (Manual | In Review → Candidate)</b></div></div>
         <div class="io out"><span class="io-k">stdout →</span><div>Cache local <code>stories/STORY-*/test-cases/{TC-ID}-{slug}.md</code></div></div>
       </div>
 
@@ -521,10 +534,10 @@ ul.plain b{color:var(--t1)}
         <div class="io deps"><span class="io-k">skills</span><div><span class="chip mand">/pr-review-lead o /judgment-day — REQUERIDO</span><span class="chip">test-documentation + acli (transición del TC)</span></div></div>
         <div class="io in"><span class="io-k">stdin ←</span><div>Archivos nuevos/modificados de Code</div></div>
         <div class="io out"><span class="io-k">stdout →</span><div><code>kata-manifest.json</code> regenerado (<code>bun run kata:manifest</code>)</div></div>
-        <div class="io jira"><span class="io-k">jira ⇄</span><div>TC → <b>In Review</b> (al abrir PR) → <b>Automated</b> (al mergear a main con CI verde)</div></div>
+        <div class="io jira"><span class="io-k">jira ⇄</span><div>TC <b>Candidate → In Automation</b> (al arrancar Code) → <b>Pull Request</b> (al abrir el PR) → <b>AUTOMATED</b> (al mergear con CI verde)</div></div>
       </div>
 
-      <div class="exit"><b>exit 0</b> → ATC en la suite · manifest al día · TC en status <b>Automated</b></div>
+      <div class="exit"><b>exit 0</b> → ATC en la suite · manifest al día · TC en status <b>AUTOMATED</b></div>
     </article>
 
     <!-- ══════════════════ TAB 7 · 4d REGRESIÓN ══════════════════ -->
@@ -556,7 +569,7 @@ ul.plain b{color:var(--t1)}
         <div class="proc-hd"><span class="pid">⚖</span><h3>judgment-day</h3><span class="repo both">dev + qa</span></div>
         <div class="io in"><span class="io-k">stdin ←</span><div>Diff/PR bajo revisión · <code>AGENTS.md</code> · <code>REGISTRY.md</code></div></div>
         <div class="io out"><span class="io-k">stdout →</span><div>Veredicto en chat: <b>APPROVED ✅ / ESCALATED ⚠️</b> · en la fase de fix <b>sí</b> puede modificar archivos (delega un fix agent) — lo que nunca toca es Jira</div></div>
-        <div class="io note"><span class="io-k">nota</span><div><b>Nunca auto-invocado.</b> Gate opcional en: Code Review (dev) · Review de test-automation · pre-PR de git-flow-master.</div></div>
+        <div class="io note"><span class="io-k">nota</span><div><b>Nunca auto-invocado.</b> En la Review de test-automation es uno de los dos verificadores obligatorios (el otro es <code>/pr-review-lead</code>); gate opcional en Code Review (dev) y en el pre-PR de git-flow-master.</div></div>
       </div>
 
       <div class="proc">
@@ -572,13 +585,35 @@ ul.plain b{color:var(--t1)}
 
       <div class="proc">
         <div class="proc-hd"><span class="pid">◆</span><h3>Los 4 epics QA fijos</h3><span class="repo qa">qa</span></div>
-        <div class="io jira"><span class="io-k">jira ⇄</span><div><b>QA Defect Management</b> → bugs / defects / improvements · <b>QA Test Repository</b> → Tests (TC) · <b>QA Master Test Plan</b> → Test Plans (ATP · FTP · STP) · <b>QA Test Artifacts</b> → Test Executions (ATR · STR) + Test Sets (ATS · <code>TS:</code>) + Preconditions · <b class="hi-warn">nunca un epic de producto</b> — la Story origen viaja por issue-link, el módulo afectado por components (modelo de 3 ejes)</div></div>
+        <div class="io jira"><span class="io-k">jira ⇄</span><div><b>QA Defect Management</b> → bugs / defects / improvements · <b>QA Test Repository</b> → Tests (TC) · <b>QA Master Test Plan</b> → Test Plans (FTP · STP · ATP · RTP) · <b>QA Test Artifacts</b> → Test Executions (STR · ATR · RTR) + Test Sets (ATS · <code>TS:</code>) + Preconditions · <b class="hi-warn">nunca un epic de producto</b>: la Story origen viaja por issue-link, el módulo afectado por components (modelo de 3 ejes)</div></div>
+      </div>
+
+      <div class="proc">
+        <div class="proc-hd"><span class="pid">◎</span><h3>Contexto del producto</h3><span class="repo qa">qa</span></div>
+        <div class="io deps"><span class="io-k">skills</span><div><span class="chip">project-discovery</span><span class="chip">project-context</span><span class="chip">test-framework-adaptation</span><span class="chip">iql-context (metodología)</span></div></div>
+        <div class="io out"><span class="io-k">stdout →</span><div>Mapas HTML dentro de sus context skills (<code>.agents/skills/&lt;slug&gt;/references/</code>) · <code>.context/project-config.md</code> · Master Test Plan en la descripción del epic <b class="hi-jira">QA Master Test Plan</b></div></div>
+        <div class="io note"><span class="io-k">nota</span><div>Cada fase los lee con <code>bun run context:map &lt;slug&gt;</code>, nunca el HTML crudo. Si un mapa contradice lo que ves, la context skill <b>propone</b> el cambio y lo aplica con tu OK.</div></div>
+      </div>
+
+      <div class="proc">
+        <div class="proc-hd"><span class="pid">⇶</span><h3>orca-orchestration · session-handoff</h3><span class="repo qa">qa</span></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div>Bloque <code>orchestration:</code> de <code>.agents/project.yaml</code> · el sprint, la ola o la sesión a continuar</div></div>
+        <div class="io out"><span class="io-k">stdout →</span><div><b>Flota:</b> un conductor y workers persistentes (uno por historia o módulo) que hablan por el buzón del run; sin runtime, las mismas líneas de <code>launch.txt</code> se pegan a mano · <b>Relevo:</b> la sesión se compacta en <code>.session/handoffs/</code> y una sucesora sigue en el mismo worktree y el mismo harness</div></div>
+        <div class="io note"><span class="io-k">nota</span><div>La flota es <b>opcional</b>: los subagentes de un turno siguen siendo el ejecutor por defecto.</div></div>
+      </div>
+
+      <div class="proc">
+        <div class="proc-hd"><span class="pid">✓</span><h3>pr-review-lead</h3><span class="repo qa">qa</span></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div>Un PR de test automation (este repo u otro, <code>owner/repo#PR</code> vía <code>gh</code>) · la doctrina KATA</div></div>
+        <div class="io out"><span class="io-k">stdout →</span><div>Review de QA Lead con cada hallazgo anclado a una cita de doctrina o a una ubicación de código · nunca publica en GitHub sin tu OK final</div></div>
       </div>
 
       <div class="proc">
         <div class="proc-hd"><span class="pid">⎇</span><h3>git-flow-master</h3><span class="repo both">dev + qa</span></div>
         <div class="io out"><span class="io-k">stdout →</span><div>Branch <code>{prefix}/{ISSUE-KEY}-{slug}</code> · commit <code>{type}({KEY}): {desc}</code> · PR con body templado (Summary / Changes / Test Plan / Traceability / Risk)</div></div>
       </div>
+
+      <div class="callout"><b>Lista completa:</b> este deck dibuja el flujo, no el inventario. Todas las skills, con su tier, modos y descripción, están en <code>.agents/skills/REGISTRY.md</code> (lo genera <code>bun run skills:registry</code>).</div>
 
       <div class="exit"><b>eof</b> — deck hermano: <b>naming-conventions</b> (el Códice de Nomenclatura) define cómo se llama cada artefacto que este flujo produce.</div>
     </article>

@@ -293,7 +293,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
     <div class="arrow">↓ inyectadas por</div>
     <div class="layer"><span class="ly-tag">L4</span>TestFixture <span class="ly-note">({ api }) · ({ ui }) · ({ test })</span></div>
     <div class="arrow">↓ consumidas por</div>
-    <div class="consumer"><span class="ly-tag">—</span>login.spec.ts <span class="ly-note">consume el Fixture: no es una capa</span></div>
+    <div class="consumer"><span class="ly-tag">·</span>loginUser.test.ts <span class="ly-note">consume el Fixture: no es una capa</span></div>
   </div>
   <div class="callout info" data-anim="fade-up" style="max-width:680px;margin:1.1rem auto 0"><span class="co-ico">🥋</span><p><b>KATA</b> como en artes marciales: una <i>forma</i> ensayada hasta que sale sola. Dos mecanismos que ya dominas la sostienen: <b>extends</b> (Coding Classes) y <b>fixtures</b> (Playwright Pro). Nada más.</p></div>
   <div class="notes"><p>LA slide de la sesión — el mapa al que volverás en cada capa. Punto clave: solo hay DOS mecanismos (herencia y fixtures) y ambos los dominan. La estrella verde en L3 delimita su territorio: las otras capas se HEREDAN o se RECIBEN, no se tocan en el trabajo diario. Las siguientes 3 slides recorren las capas de abajo... de arriba hacia abajo.</p></div>
@@ -337,28 +337,31 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
   <div class="cols-32">
     <div data-anim="slide-l">
       <div class="code-window">
-        <div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/components/pages/login.page.ts — capa L3</span></div>
+        <div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/components/ui/LoginPage.ts (extracto) · capa L3</span></div>
         <pre class="code" style="font-size:clamp(.72rem,1.1vw,.9rem)">
 <span class="tk-k">export</span> <span class="tk-k">class</span> LoginPage <span class="tk-k">extends</span> UiBase {
 
+  <span class="tk-f">@step</span>
+  <span class="tk-k">async</span> <span class="tk-f">goto</span>() {
+    <span class="tk-k">await</span> <span class="tk-k">this</span>.page.<span class="tk-f">goto</span>(<span class="tk-k">this</span>.<span class="tk-f">buildUrl</span>(<span class="tk-s">"/login"</span>));
+  }
+
   <span class="tk-c">// login con credenciales válidas</span>
-  <span class="tk-f">@atc</span>(<span class="tk-s">'PROJ-101'</span>)
-  <span class="tk-k">async</span> <span class="tk-f">loginAs</span>(user: { email: <span class="tk-k">string</span>; password: <span class="tk-k">string</span> }) {
-    <span class="tk-k">await</span> <span class="tk-k">this</span>.page.<span class="tk-f">goto</span>(<span class="tk-k">this</span>.config.webUrl + <span class="tk-s">"/login"</span>);
-    <span class="tk-k">await</span> <span class="tk-k">this</span>.page.<span class="tk-f">getByLabel</span>(<span class="tk-s">"Email"</span>).<span class="tk-f">fill</span>(user.email);
-    <span class="tk-k">await</span> <span class="tk-k">this</span>.page.<span class="tk-f">getByLabel</span>(<span class="tk-s">"Password"</span>).<span class="tk-f">fill</span>(user.password);
-    <span class="tk-k">await</span> <span class="tk-k">this</span>.page.<span class="tk-f">getByRole</span>(<span class="tk-s">"button"</span>, { name: <span class="tk-c">/sign in/i</span> }).<span class="tk-f">click</span>();
+  <span class="tk-f">@atc</span>(<span class="tk-s">'PROJ-111'</span>)
+  <span class="tk-k">async</span> <span class="tk-f">loginSuccessfully</span>(credentials: LoginCredentials) {
+    <span class="tk-k">await</span> <span class="tk-k">this</span>.<span class="tk-f">fillAndSubmitLoginForm</span>(credentials);
+    <span class="tk-k">await</span> <span class="tk-f">expect</span>(<span class="tk-k">this</span>.page).not.<span class="tk-f">toHaveURL</span>(<span class="tk-c">/.*\/login.*/</span>);
   }
 }</pre>
       </div>
     </div>
     <div data-stagger>
       <div class="card hl"><h3>⚛️ ATC</h3><p><b>Acceptance Test Case</b>: un método que ejecuta un <b>mini-flujo completo y atómico</b>. Tu <code class="pill">login()</code> de siempre — con identidad y reglas.</p></div>
-      <div class="card" style="margin-top:.75rem"><h3>🏷️ PROJ-101</h3><p>Cada ATC lleva la <b>clave Jira literal</b> del ticket que cubre — <b>trazabilidad</b>: del código al test documentado y de vuelta. Nunca un id sintético ni un template literal.</p></div>
-      <div class="card" style="margin-top:.75rem"><h3>📦 Objeto en vez de 2 params</h3><p>Nota la firma: <code class="pill">loginAs(user)</code> recibe un objeto — regla de la casa para 3+ datos.</p></div>
+      <div class="card" style="margin-top:.75rem"><h3>🏷️ PROJ-111</h3><p>Cada ATC lleva la <b>clave Jira literal</b> del ticket que cubre: <b>trazabilidad</b>: del código al test documentado y de vuelta. Nunca un id sintético ni un template literal.</p></div>
+      <div class="card" style="margin-top:.75rem"><h3>📦 Objeto en vez de 2 params</h3><p>Nota la firma: <code class="pill">loginSuccessfully(credentials)</code> recibe un objeto <code class="pill">{ email, password }</code>, y con 3+ datos es regla de la casa.</p></div>
     </div>
   </div>
-  <div class="notes"><p>ATC = el corazón conceptual de KATA. El ATC ES el caso de prueba; @atc('PROJ-101') es su representación en código. Es su método login() de toda la serie, elevado: identidad (clave Jira → trazabilidad con el TMS), atomicidad (regla de la próxima slide) y convención de firma. El this.config.webUrl muestra a TestContext en acción: cero URLs hardcodeadas. El término "atómico" se define formalmente en la siguiente slide — aquí basta "completo e independiente".</p></div>
+  <div class="notes"><p>ATC = el corazón conceptual de KATA. El ATC ES el caso de prueba; @atc('PROJ-111') es su representación en código. Es su método login() de toda la serie, elevado: identidad (clave Jira → trazabilidad con el TMS), atomicidad (regla de la próxima slide) y convención de firma. El this.buildUrl("/login") muestra la cadena en acción: UiBase arma la URL con config.baseUrl, que viene de TestContext. Cero URLs hardcodeadas. El término "atómico" se define formalmente en la siguiente slide; aquí basta "completo e independiente".</p></div>
 </section>
 
 <!-- 7 · Reglas del ATC -->
@@ -369,7 +372,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
     <tr><td><b>Atómico</b></td><td>Un ATC ejecuta UN mini-flujo completo y <b>NUNCA llama a otro ATC</b></td><td>Si A llama a B y B cambia, A se rompe en cadena — el dominó que mata frameworks</td></tr>
     <tr><td><b>Cadenas → Steps</b></td><td>¿Necesitas login + crear proyecto + invitar? Eso es un <b>Steps module</b> que orquesta ATCs</td><td>Composición explícita en un solo lugar, no acoplamiento oculto</td></tr>
     <tr><td><b>Locators inline</b></td><td>Los locators viven DENTRO del ATC; se extraen solo si 2+ ATCs los usan</td><td>Leer un ATC = verlo completo, sin saltar entre archivos</td></tr>
-    <tr><td><b>Máx 2 params sueltos</b></td><td>3 o más datos → un objeto: <code>loginAs({ email, password, role })</code></td><td><code>fn(a, b, c, d)</code> = ¿cuál era el tercero? El objeto se autodocumenta</td></tr>
+    <tr><td><b>Máx 2 params sueltos</b></td><td>3 o más datos → un objeto: <code>loginSuccessfully({ email, password, role })</code></td><td><code>fn(a, b, c, d)</code> = ¿cuál era el tercero? El objeto se autodocumenta</td></tr>
   </table>
   <div class="notes"><p>Las 4 reglas que difieren de lo que harían por instinto. La #1 es LA regla: ATCs no se llaman entre sí — el dominó de dependencias es la muerte lenta de los frameworks caseros. Steps existe precisamente para componer sin acoplar. Locators inline sorprende a quien aprendió "extraer todo" — KATA prefiere legibilidad local; la extracción se GANA con el segundo uso.</p></div>
 </section>
@@ -378,13 +381,13 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
 <section class="slide" data-act="Acto 1 · Las capas" style="align-items:center">
   <div class="quiz" data-quiz="q1">
     <div class="quiz-tag">⭐ QUIZ 1 · La regla sagrada</div>
-    <h3 class="quiz-q">Tu ATC <code style="color:var(--cyan)">createProject()</code> necesita que el usuario esté logueado. ¿Puede llamar internamente a <code style="color:var(--cyan)">loginAs()</code>?</h3>
+    <h3 class="quiz-q">Tu ATC <code style="color:var(--cyan)">createProject()</code> necesita que el usuario esté logueado. ¿Puede llamar internamente a <code style="color:var(--cyan)">loginSuccessfully()</code>?</h3>
     <div class="quiz-opts">
       <button class="opt"><span class="key">A</span><span>Sí — es reutilización, justo lo que aprendimos</span></button>
       <button class="opt" data-ok="1"><span class="key">B</span><span>No — un ATC nunca llama a otro ATC; la cadena login→crear vive en un Steps module (o el login va en el fixture/hook)</span></button>
       <button class="opt"><span class="key">C</span><span>Sí, pero solo si están en la misma clase</span></button>
     </div>
-    <div class="quiz-expl">💡 La trampa de la opción A: reutilización ES buena, pero el acoplamiento oculto no. Si loginAs cambia y 14 ATCs lo llamaban por dentro, tienes 14 roturas invisibles. KATA exige que la composición sea EXPLÍCITA: un Steps module que orquesta, o la precondición en el fixture. Mismo beneficio, cero dominó.</div>
+    <div class="quiz-expl">💡 La trampa de la opción A: reutilización ES buena, pero el acoplamiento oculto no. Si loginSuccessfully cambia y 14 ATCs lo llamaban por dentro, tienes 14 roturas invisibles. KATA exige que la composición sea EXPLÍCITA: un Steps module que orquesta, o la precondición en el fixture. Mismo beneficio, cero dominó.</div>
   </div>
   <div class="notes"><p>El quiz más importante del deck — la opción A es exactamente lo que su instinto (bien entrenado en reutilización) les dicta. La distinción fina: reutilizar ≠ acoplar ocultamente. Composición explícita (Steps, fixtures) vs llamadas internas invisibles. Quien entiende esto ya piensa en arquitectura.</p></div>
 </section>
@@ -396,11 +399,12 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
     <div data-anim="slide-l">
       <pre class="code">
 <span class="tk-c">// Tu spec en KATA:</span>
-<span class="tk-k">import</span> { test, expect } <span class="tk-k">from</span> <span class="tk-s">"@fixtures/test.fixture"</span>;
+<span class="tk-k">import</span> { test, expect } <span class="tk-k">from</span> <span class="tk-s">"@TestFixture"</span>;
 
 <span class="tk-f">test</span>(<span class="tk-s">"crear proyecto"</span>, <span class="tk-k">async</span> ({ ui }) => {
-  <span class="tk-k">await</span> ui.loginPage.<span class="tk-f">loginAs</span>(ui.ctx.users.admin);
-  <span class="tk-k">await</span> ui.projectsPage.<span class="tk-f">createProject</span>({ name: <span class="tk-s">"Demo"</span> });
+  <span class="tk-k">await</span> ui.login.<span class="tk-f">goto</span>();
+  <span class="tk-k">await</span> ui.login.<span class="tk-f">loginSuccessfully</span>({ email, password });
+  <span class="tk-k">await</span> ui.projects.<span class="tk-f">createProject</span>({ name: <span class="tk-s">"Demo"</span> });
   <span class="tk-k">await</span> <span class="tk-f">expect</span>(ui.page.<span class="tk-f">getByText</span>(<span class="tk-s">"Demo"</span>)).<span class="tk-f">toBeVisible</span>();
 });</pre>
       <p style="margin-top:.7rem;font-size:.92rem"><code class="pill">ui</code> llega con TODAS las páginas instanciadas + contexto + datos. Cero <code class="pill">new</code>, cero setup — como tu fixture <code class="pill">loginPage</code>, multiplicado.</p>
@@ -444,17 +448,19 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
   <div class="cols">
     <div data-anim="slide-l">
       <pre class="code">
-<span class="tk-c">// kata-manifest.json (extracto)</span>
+<span class="tk-c">// kata-manifest.json (extracto, campos recortados)</span>
 {
   <span class="tk-s">"components"</span>: {
-    <span class="tk-s">"LoginPage"</span>: {
-      <span class="tk-s">"file"</span>: <span class="tk-s">"tests/components/pages/login.page.ts"</span>,
-      <span class="tk-s">"atcs"</span>: [<span class="tk-s">"PROJ-101"</span>, <span class="tk-s">"PROJ-102"</span>]
-    },
-    <span class="tk-s">"AuthApi"</span>: {
-      <span class="tk-s">"file"</span>: <span class="tk-s">"tests/components/api/auth.api.ts"</span>,
-      <span class="tk-s">"atcs"</span>: [<span class="tk-s">"PROJ-201"</span>]
-    }
+    <span class="tk-s">"api"</span>: [{
+      <span class="tk-s">"name"</span>: <span class="tk-s">"AuthApi"</span>,
+      <span class="tk-s">"relativePath"</span>: <span class="tk-s">"tests/components/api/AuthApi.ts"</span>,
+      <span class="tk-s">"atcs"</span>: [{ <span class="tk-s">"id"</span>: <span class="tk-s">"PROJ-101"</span>, <span class="tk-s">"method"</span>: <span class="tk-s">"authenticateSuccessfully"</span> }, …]
+    }],
+    <span class="tk-s">"ui"</span>: [{
+      <span class="tk-s">"name"</span>: <span class="tk-s">"LoginPage"</span>,
+      <span class="tk-s">"relativePath"</span>: <span class="tk-s">"tests/components/ui/LoginPage.ts"</span>,
+      <span class="tk-s">"atcs"</span>: [{ <span class="tk-s">"id"</span>: <span class="tk-s">"PROJ-111"</span>, <span class="tk-s">"method"</span>: <span class="tk-s">"loginSuccessfully"</span> }, …]
+    }]
   }
 }</pre>
     </div>
@@ -477,17 +483,17 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
       <div>├─ <span class="tr-dir">tests/e2e/</span> · <span class="tr-dir">tests/integration/</span> <span class="tr-c">← los specs</span></div>
       <div>├─ <span class="tr-dir">api/schemas/</span> <span class="tr-c">← tipos TS generados del OpenAPI real</span></div>
       <div>├─ <span class="tr-star">kata-manifest.json</span> <span class="tr-c">← el registro civil</span></div>
-      <div>├─ <span class="tr-dir">.context/</span> <span class="tr-c">← mapas de negocio + plan maestro de testing</span></div>
+      <div>├─ <span class="tr-dir">.context/</span> <span class="tr-c">← cache local de Jira (PBI) + ADRs + config del proyecto</span></div>
       <div>├─ <span class="tr-dir">.agents/skills/</span> <span class="tr-c">← los flujos de trabajo de la IA</span></div>
       <div>└─ <span class="tr-file">package.json</span> <span class="tr-c">← scripts con bun (= npm, otro motor)</span></div>
     </div>
     <div data-stagger>
       <div class="card"><h3>🔌 api/schemas/</h3><p>¿Recuerdas /api/docs del dojo? Aquí el contrato OpenAPI se convierte en <b>tipos TypeScript</b>: tu test de API sabe la forma exacta de cada respuesta. Typo en un campo = error antes de ejecutar.</p></div>
-      <div class="card" style="margin-top:.8rem"><h3>🗺️ .context/</h3><p>Mapas del negocio bajo prueba: features, datos, APIs, plan maestro. La "memoria" del proyecto — tuya y de la IA.</p></div>
+      <div class="card" style="margin-top:.8rem"><h3>🗺️ Contexto del proyecto</h3><p>Los mapas del negocio bajo prueba (dominio, datos, APIs, journeys) viven como HTML dentro de sus <b>context skills</b> en <code class="pill">.agents/skills/</code> y se leen con <code class="pill">bun run context:map &lt;slug&gt;</code>. El plan maestro vive en Jira (epic QA Master Test Plan). <code class="pill">.context/</code> guarda la cache de Jira y las decisiones (ADRs). La "memoria" del proyecto, tuya y de la IA.</p></div>
       <div class="card" style="margin-top:.8rem"><h3>⚡ bun</h3><p><code class="pill">bun install</code> = npm install · <code class="pill">bun run test</code> = npm run test. Mismo concepto, motor más rápido.</p></div>
     </div>
   </div>
-  <div class="notes"><p>Vista de dron, no tour exhaustivo. api/schemas conecta con su experiencia de /api/docs: contrato → tipos → shift-left en tests de API. .context/ prepara la mentalidad agentic de la siguiente slide: el repo guarda contexto para humanos E IA. bun: una línea basta, ya conocen el concepto de package manager.</p></div>
+  <div class="notes"><p>Vista de dron, no tour exhaustivo. api/schemas conecta con su experiencia de /api/docs: contrato → tipos → shift-left en tests de API. Los context skills y .context/ preparan la mentalidad agentic de la siguiente slide: el repo guarda contexto para humanos E IA. bun: una línea basta, ya conocen el concepto de package manager.</p></div>
 </section>
 
 <!-- 13 · Agentic QA -->
@@ -595,9 +601,9 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
         1. Abre cualquier spec de <code class="pill">tests/e2e/</code><br>
         2. Por cada elemento, anota de qué deck salió:</p>
         <table class="cmp" style="font-size:.82rem">
-          <tr><td><code>import { test } from "@fixtures/..."</code></td><td>→ ¿deck?</td></tr>
+          <tr><td><code>import { test } from "@TestFixture"</code></td><td>→ ¿deck?</td></tr>
           <tr><td><code>async ({ ui }) =></code></td><td>→ ¿deck?</td></tr>
-          <tr><td><code>ui.loginPage.loginAs({...})</code></td><td>→ ¿deck?</td></tr>
+          <tr><td><code>ui.login.loginSuccessfully({...})</code></td><td>→ ¿deck?</td></tr>
           <tr><td><code>await expect(...).toBeVisible()</code></td><td>→ ¿deck?</td></tr>
         </table>
       </div>

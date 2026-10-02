@@ -713,8 +713,8 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="card card-soft"><h4><span class="mono">BEHAVIOR</span> — el comportamiento</h4><p class="dim">qué hace el sistema: <span class="mono">log in successfully</span>, <span class="mono">show an authentication error</span>, <span class="mono">create the order</span>.</p></div>
     <div class="card card-soft"><h4><span class="mono">CONDITION</span> — la condición que distingue</h4><p class="dim"><span class="mono">when credentials are valid</span>, <span class="mono">when password is incorrect</span>, <span class="mono">when exceeding 5 failed attempts</span>.</p></div>
   </div>
-  <div class="callout mt-m"><h4>Reglas estructurales</h4><p>Separador literal <span class="mono">: </span> (dos puntos + espacio). El verbo <span class="mono">should</span> abre el comportamiento; el conector <span class="mono">when</span> (o <span class="mono">if</span>) introduce la condición — opcional, igual que un <span class="mono">given &lt;precondición&gt;</span> al final. <span class="mono">TC#</span> = <span class="mono">TC</span> + número, sin guion ni ceros (<span class="mono">TC1</span>, no <span class="mono">TC-01</span>). El prefijo es <b>SIEMPRE el US_ID</b> de la Story, en toda modalidad; la membresía a un Test Set nunca va en el prefijo (xray: <b>Xray-internal</b>, GraphQL; native: link <span class="mono">TC→ATS</span>).</p></div>
-  <div class="notes">Formato: {US_ID}: TC#: should <BEHAVIOR> [when/if <CONDITION>] [given <PRECONDITION>]. El prefijo es SIEMPRE el US_ID de la Story en toda modalidad — la membresía a un Test Set nunca va en el prefijo (xray: Xray-internal; native: link TC→ATS). El verbo del TC es should (BDD); Validate se reserva para el Set/Suite (slide siguiente). El vocabulario sale del mapa de dominio (business-domain-context): términos canónicos.</div>
+  <div class="callout mt-m"><h4>Reglas estructurales</h4><p>Separador literal <span class="mono">: </span> (dos puntos + espacio). El verbo <span class="mono">should</span> abre el comportamiento; el conector <span class="mono">when</span> (o <span class="mono">if</span>) introduce la condición (opcional, igual que un <span class="mono">given &lt;precondición&gt;</span> al final). <span class="mono">TC#</span> = <span class="mono">TC</span> + número, sin guion ni ceros (<span class="mono">TC1</span>, no <span class="mono">TC-01</span>). El prefijo es <b>SIEMPRE el US_ID</b> de la Story, en toda modalidad; la membresía a un Test Set nunca va en el prefijo: es un issue link <span class="mono">TC→ATS</span> en ambas modalidades, y jira-xray suma la membership <b>Xray-internal</b> (GraphQL).</p></div>
+  <div class="notes">Formato: {US_ID}: TC#: should <BEHAVIOR> [when/if <CONDITION>] [given <PRECONDITION>]. El prefijo es SIEMPRE el US_ID de la Story en toda modalidad; la membresía a un Test Set nunca va en el prefijo (link TC→ATS en ambas modalidades; jira-xray suma la membership Xray-internal). El verbo del TC es should (BDD); Validate se reserva para el Set/Suite (slide siguiente). El vocabulario sale del mapa de dominio (business-domain-context): términos canónicos.</div>
 </section>
 
 <!-- 12. GOOD VS BAD TITLES -->
@@ -784,7 +784,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     </tbody>
   </table>
   <div class="callout mt-m"><h4>Dos niveles: <span class="mono">Validate</span> agrupa, <span class="mono">should</span> asevera</h4><p>El <b>Set</b> nombra la feature — <span class="mono">TS: GX-101: Validate login</span> — y bajo él cada <b>TC</b> asevera un comportamiento: <span class="mono">should redirect to dashboard when credentials are valid</span>, <span class="mono">should show an error when password is incorrect</span>. El prefijo acrónimo (<span class="mono">ATP/ATR/ATS/STP/STR/RTP/RTR/TS</span>) revela altitud y plan-vs-run en el primer token; el verbo te dice el nivel: <span class="mono">Validate</span> = suite, <span class="mono">should</span> = caso — y el <b>ATS</b> per-Story lleva el título de la Story, no un Validate.</p></div>
-  <div class="notes">El nombrado embebe la trazabilidad: cada Plan/Run lleva un prefijo acrónimo de 3 letras (ATP/ATR/ATS/STP/STR/FTP/RTP/RTR) + el key de la cosa bajo prueba; el ATS per-Story (obligatorio) lleva el título de la Story y su link a la Story llena el coverage; el TS: feature-level opcional agrupa (Validate <feature>); el TC asevera con should…when y lleva SIEMPRE el prefijo US_ID del Story — la membership al Set nunca va en el prefijo (xray: Xray-internal; native: link TC→ATS). Validate=nivel suite, should=nivel caso.</div>
+  <div class="notes">El nombrado embebe la trazabilidad: cada Plan/Run lleva un prefijo acrónimo de 3 letras (ATP/ATR/ATS/STP/STR/FTP/RTP/RTR) + el key de la cosa bajo prueba; el ATS per-Story (obligatorio) lleva el título de la Story y su link a la Story llena el coverage; el TS: feature-level opcional agrupa (Validate <feature>); el TC asevera con should…when y lleva SIEMPRE el prefijo US_ID del Story; la membership al Set nunca va en el prefijo (link TC→ATS en ambas modalidades; jira-xray suma la membership Xray-internal). Validate=nivel suite, should=nivel caso.</div>
 </section>
 
 <!-- 15. CODE-SIDE NAMING -->
@@ -1245,8 +1245,8 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 <section class="slide center tc" data-title="Fórmula ROI">
   <div>
     <p class="kicker">valor sobre costo</p>
-    <div class="bigstat" style="font-size:88px"><span class="grad">ROI = (F × I × S) / (E × D)</span></div>
-    <h3 class="mt-m">Frequency × Impact × Stability — el <b>valor/riesgo</b> (multiplican) — dividido por Effort × Dependencies — el <b>costo</b> (dividen). Un "flujo crítico" con Effort=5 y Dependencies=5 tiene ROI bajo por diseño. Eso es correcto, no un bug de la fórmula.</h3>
+    <div class="bigstat" style="font-size:88px"><span class="grad">ROI = (F × I × S) / (E × D) / 10</span></div>
+    <h3 class="mt-m">Frequency × Impact × Stability, el <b>valor/riesgo</b> (multiplican), dividido por Effort × Dependencies, el <b>costo</b> (dividen). El <b>/ 10</b> final normaliza: todos los umbrales leen en la escala 0.004-12.5, así que un escenario neutro (todo en 3) da 0.3 y cae en Deferred, que es el default buscado. Un "flujo crítico" con Effort=5 y Dependencies=5 tiene ROI bajo por diseño. Eso es correcto, no un bug de la fórmula.</h3>
   </div>
   <div class="notes">La fórmula es Valor-Costo-Riesgo hecho concreto: numerador = valor+riesgo (frecuencia, impacto, estabilidad), denominador = costo (esfuerzo, dependencias). Effort y Dependencies son DIVISORES: más alto = peor.</div>
 </section>
@@ -1300,7 +1300,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         Effort = 3 <span class="dim2">(1-2 días)</span> ÷<br>
         Dependencies = 4 <span class="dim2">(gateway pago)</span> ÷
       </div>
-      <div class="callout mt-s" style="margin-top:14px"><h4>ROI = (5×5×4)/(3×4) = 100/12 ≈ <span class="grad">8.3</span></h4><p>&gt; 3.0 + happy path crítico → <b style="color:var(--good)">Candidate</b></p></div>
+      <div class="callout mt-s" style="margin-top:14px"><h4>ROI = (5×5×4)/(3×4)/10 = 100/120 ≈ <span class="grad">0.83</span></h4><p>Por número sería Manual o Deferred, pero es happy path crítico → <b style="color:var(--good)">Candidate</b></p></div>
     </div>
     <div class="card card-accent">
       <h4>Typo de tooltip en pantalla de ajustes</h4>
@@ -1311,10 +1311,10 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         Effort = 2 ÷<br>
         Dependencies = 1 ÷
       </div>
-      <div class="callout warn mt-s" style="margin-top:14px"><h4>ROI = (1×1×5)/(2×1) = 5/2 = <span class="grad">2.5</span></h4><p>Sin bug previo + validación de una vez → falla Phase-0 → <b style="color:var(--text-3)">Deferred</b></p></div>
+      <div class="callout warn mt-s" style="margin-top:14px"><h4>ROI = (1×1×5)/(2×1)/10 = 5/20 = <span class="grad">0.25</span></h4><p>&lt; 0.5 → Deferred por número, y además falla Phase-0 (validación de una vez) → <b style="color:var(--text-3)">Deferred</b></p></div>
     </div>
   </div>
-  <div class="notes">El happy path crítico va Candidate aunque tenga dependencias. El typo, aun con ROI 2.5, falla el filtro Phase-0 (validación de una sola vez) → Deferred. El gate Phase-0 corre ANTES de mirar el número.</div>
+  <div class="notes">El happy path crítico va Candidate por la regla de flujo crítico, no por el número (0.83 queda lejos de 3.0). El typo da 0.25: Deferred por número, y el filtro Phase-0 (validación de una sola vez) ya lo había sacado antes de calcular. El gate Phase-0 corre ANTES de mirar el número.</div>
 </section>
 
 <!-- 30. QUIZ 4 -->
@@ -1364,7 +1364,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <tr><td><b>ATP</b></td><td>Issue <span class="mono">Test Plan</span>, enlazado al Story (link administrativo)</td><td>Mismo issue <span class="mono">Test Plan</span> <b>por excelencia</b> (work type nativo); fallback: campo <span class="mono">{{acceptance_test_plan}}</span> → comment</td></tr>
       <tr><td><b>ATR</b></td><td>Issue <span class="mono">Test Execution</span> con Test Runs por TC, Environment, fechas</td><td>Mismo issue <span class="mono">Test Execution</span>; fallback: campo <span class="mono">{{acceptance_test_results}}</span> → comment</td></tr>
       <tr><td><b>TC</b></td><td>Issue <span class="mono">Test</span> (Manual / Cucumber / Generic)</td><td>Issue type <span class="mono">Test</span> nativo; Description lleva el template completo</td></tr>
-      <tr><td><b>ATS (Test Set) / Precondition</b></td><td>Issue types de primera clase de Xray; membership Xray-internal (nunca issue link)</td><td>Work type presente → mismo item, membership = links <span class="mono">TC→ATS</span>; ausente → links directos TC↔Story</td></tr>
+      <tr><td><b>ATS (Test Set) / Precondition</b></td><td>Issue types de primera clase de Xray; membership = link <span class="mono">TC→ATS</span> + la asociación Xray-internal (las dos, con la misma lista)</td><td>Work type presente → mismo item, membership = links <span class="mono">TC→ATS</span>; ausente → links directos TC↔Story</td></tr>
       <tr><td><b>Sync de resultados</b></td><td>CI importa JUnit/Cucumber → Test Runs auto-actualizan</td><td>Script custom actualiza el campo Test Status por TC</td></tr>
     </tbody>
   </table>
@@ -1431,12 +1431,12 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
    ├── <span class="gk">is tested by</span> ──→ ATS (ATS: PROJ-123: Apply discount at checkout)  <span class="cmt"># ← COVERAGE (verificado live)</span>
    ├── <span class="gk">is tested by</span> ──→ ATP (ATP: PROJ-123: Apply discount at checkout)  <span class="cmt"># administrativo — NO llena coverage</span>
    └── <span class="gk">is tested by</span> ──→ ATR (ATR: PROJ-123: Story Testing)              <span class="cmt"># administrativo</span>
-            ATS <span class="fn">∋</span> [ TC-1, TC-2, … TC-N ]   <span class="cmt"># membership: xray GraphQL / native links TC→ATS</span>
+            ATS <span class="fn">∋</span> [ TC-1, TC-2, … TC-N ]   <span class="cmt"># membership: link TC→ATS (ambas) + GraphQL Xray (jira-xray)</span>
             <span class="cmt"># listas de ATP/ATR derivadas de la membership del ATS (Set-first)</span>
 <span class="cmt"># Cascade: TC→ATS→Story (primaria) → TC→ATP→Story (placement) → TC→Story directo (last resort)</span></pre>
   </div>
   <div class="grid g2 mt-m">
-    <div class="card card-soft"><h4>jira-xray — Set-first</h4><p class="dim">El <b>ATS</b> agrupa los TCs (membership Xray-internal, nunca issue link) y su link a la Story es el que llena el panel de coverage. ATP y ATR se enlazan a la Story solo como traza administrativa. Crea el ATS <b>antes</b> del primer TC.</p></div>
+    <div class="card card-soft"><h4>jira-xray · Set-first</h4><p class="dim">El <b>ATS</b> agrupa los TCs (membership escrita dos veces: link <span class="mono">TC→ATS</span> vía acli y asociación Xray vía xray-cli) y su link a la Story es el que llena el panel de coverage. ATP y ATR se enlazan a la Story solo como traza administrativa. Crea el ATS <b>antes</b> del primer TC.</p></div>
     <div class="card card-soft"><h4>jira-native</h4><p class="dim">Con work type Test Set → mismo modelo: ATS item, membership = links <span class="mono">TC→ATS</span> + link <span class="mono">ATS→Story</span>. Sin work type → el TC se enlaza directo a la Story vía <span class="mono">is tested by</span> — last resort válido de la cascade.</p></div>
   </div>
   <div class="notes">Orden Set-first: ATS→Story (coverage), ATP→Story y ATR→Story (administrativos), ATP↔ATR 1:1, y los TCs entran por membership del ATS. TC→Story directo ya no es anti-patrón: es el último escalón de la cascade — el defecto es un TC sin NINGÚN camino a la Story (huérfano). Todo TC cuelga del epic «QA Test Repository»; el ATS, del epic «QA Test Artifacts».</div>

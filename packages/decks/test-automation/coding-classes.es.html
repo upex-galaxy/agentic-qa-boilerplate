@@ -1001,7 +1001,7 @@ test("login con Page Object", async ({ page }) => {
     <div class="arrow">↓ usada por</div>
     <div class="layer">TestFixture <span class="ly-note">el ({ page }) pero con tus clases</span></div>
     <div class="arrow">↓ consumida por</div>
-    <div class="consumer">login.spec.ts <span class="ly-note">consume el Fixture: no es una capa</span></div>
+    <div class="consumer">loginUser.test.ts <span class="ly-note">consume el Fixture: no es una capa</span></div>
   </div>
   <div class="callout" data-anim="fade-up" style="max-width:720px;margin:1.4rem auto 0"><span class="co-ico">🗺️</span><p>Las <b>cuatro capas</b> (TestContext → UiBase → LoginPage → TestFixture) son clases encadenadas por la herencia que acabas de dominar; el spec solo <b>consume</b> el Fixture, no es una capa más. Tu LoginPage de esta sesión es el corazón del framework profesional.</p></div>
   <div class="notes"><p>Teaser, NO lección: no expliques cada capa — solo muestra que la estrella verde (la Page que construyeron EN ESTA SESIÓN) es el centro del framework, y que el resto son las mismas dos herramientas de esta sesión (extends + fixtures/destructuring) aplicadas con más capas. El miedo a la arquitectura muere cuando reconocen las piezas. Próximos pasos del roadmap: práctica real con Playwright contra el dojo, luego el puente KATA completo.</p></div>

@@ -9,7 +9,7 @@
 
 ## 1. Qué es esto
 
-**KATA Academy** (`kata-academy/`, hoy UNTRACKED en la raíz del repo):
+**KATA Academy** (`packages/kata-academy/`, versionado en el repo y publicado en `/kata/`):
 mini-app Svelte 5 + Vite + TS estricto que enseña la arquitectura KATA como
 "super mega documentación interactiva". Español, audiencia con OOP mínimo.
 
@@ -28,11 +28,12 @@ mini-app Svelte 5 + Vite + TS estricto que enseña la arquitectura KATA como
 - **Glosario contextual**: `<Term t="...">` → popover fixed clampeado al
   viewport (`src/lib/components/Term.svelte`).
 
-**Estado de calidad**: `bun run check` 0 errores (272 archivos) · build verde
-(~30KB gzip main + capítulos code-split) · auditoría responsive (390/768/1440)
-y auditoría UX de 19 hallazgos COMPLETAS y corregidas · 0 errores de consola.
+**Estado de calidad**: la barra es `bun run check` sin errores, `bun run build`
+verde (capítulos code-split) y 0 errores de consola; `pages.yml` corre el
+build + type-check en cada publicación. Las auditorías responsive (390/768/1440)
+y UX se cerraron en su momento; repetirlas tras cambios grandes.
 
-**Comandos** (desde `kata-academy/`): `bun install` · `bun run dev`
+**Comandos** (desde `packages/kata-academy/`): `bun install` · `bun run dev`
 (localhost:4173) · `bun run check` · `bun run build`.
 
 ---
@@ -65,13 +66,14 @@ Ejecutado y verificado (build + type-check + smoke HTTP + screenshots):
    0 errores de consola).
 3. **Homepage dashboard**: `packages/pages-home/index.html` — estático,
    tokens tpl-howto, branding **"Agentic QA — UPEX Galaxy"** (decisión
-   usuario). Hero CTA → `./kata/` + 3 secciones de decks (Workflows EN/ES ·
-   Currículum 01-08 · Oficio QA) + strip Allure → `./staging/regression/`.
-   TODOS los 26 decks publicados (decisión usuario; repo ya es público).
+   usuario). Hero CTA → `./kata/`. Las secciones de la home y sus tarjetas de
+   decks se leen en el propio `index.html` (no se copian acá); todos los decks
+   de `packages/decks/` se publican (decisión usuario; repo ya es público). Solo
+   hay decks en español (`*.es.html`).
 4. **Workflow** `.github/workflows/pages.yml`: build + type-check de la academy →
    ensambla `_site/` (homepage raíz + `kata/` + `decks/<skill>/` +
    `.nojekyll`) → deploy peaceiris a `gh-pages` con `keep_files: true`
-   (protege `<env>/regression/` de Allure — hoy solo existe `staging/`).
+   (protege los `<env>/regression/` de Allure en modo público).
    Trigger: push a main (paths del paquete + homepage + decks) +
    `workflow_dispatch`.
 5. **Pendiente del usuario**: rewrite en su Next.js personal
@@ -116,9 +118,9 @@ en el mapa (decidir zona) y en el registry.
 
 1. **Bun resuelve imports desde el directorio DEL SCRIPT, no del cwd**: los
    scripts Playwright de verificación deben COPIARSE a la raíz del repo padre
-   (`.algo.tmp.ts`, borrar después) — el repo padre tiene `@playwright/test`
-   1.60 con browsers instalados; el caché global de bun trae versiones sin
-   browsers.
+   (`.algo.tmp.ts`, borrar después): el repo padre declara `@playwright/test`
+   en su `package.json` y tiene los browsers instalados (`bun run pw:install`);
+   el caché global de bun trae versiones sin browsers.
 2. **`mouseleave` sintético de Chrome**: tras un tap Y tras un scroll
    programático, Chrome dispara mouseleave fantasma. Mata popovers y
    selecciones. Patrón: gatear handlers hover con `e.pointerType === 'mouse'`
@@ -151,13 +153,14 @@ packages/kata-academy/
 ├── src/app.css                  ← design tokens tpl-howto + primitivas
 ├── src/lib/state/nav.svelte.ts  ← navegación (aquí van los deep-links P1)
 ├── src/lib/content/chapters/registry.ts ← metas + mnemónicos + zonas del mapa
-├── src/lib/content/glossary.ts  ← ~30 términos del glosario
+├── src/lib/content/glossary.ts  ← términos del glosario
 ├── src/lib/components/          ← ChapterShell (1160px, NO tocar ancho) · CodePane · Term
 ├── src/lib/scenes/              ← Intro · KataMap (dual: espacial/lista) · chapters/Ch1..Ch8 + ch2/ ch7/
 Repo padre:
 ├── packages/pages-home/index.html ← homepage dashboard del sitio Pages
+├── packages/pages-home/*.es.html ← páginas hermanas (arquitectura, harnesses, test-management)
 ├── packages/create-agentic-qa/  ← paquete vecino
 ├── .github/workflows/pages.yml  ← build + deploy del hub (keep_files: true)
-├── .github/workflows/regression.yml ← YA publica Allure a gh-pages (keep_files!)
+├── .github/workflows/regression.yml ← publica Allure a gh-pages (keep_files!) o al portal privado si existe `PORTAL_URL`
 └── packages/decks/*/*.html      ← decks publicados en /decks/<skill>/
 ```
