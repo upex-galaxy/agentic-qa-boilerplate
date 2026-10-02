@@ -721,7 +721,7 @@ Canonical reading order for any AI starting cold on a test-documentation workflo
 
 ## Anti-patterns — NEVER do these
 
-- **D1.** NEVER hand-write ADF JSON for Test Case / ATP / ATR bodies. Use the md-to-adf path via `[ISSUE_TRACKER_TOOL]`; ADF authored by hand drifts and breaks renderers.
+- **D1.** NEVER hand-write ADF JSON for Test Case / ATP / ATR bodies. Author the body in Markdown, convert and validate it with the bundled converter `.agents/skills/acli/scripts/md-to-adf.ts`, then publish the resulting ADF JSON through `[ISSUE_TRACKER_TOOL]`, which never converts Markdown on the CLI path (`sprint-testing` S6). ADF authored by hand drifts and breaks renderers.
 - **D2.** NEVER ship a Test Plan without traceability to a Story / Epic. Orphan ATPs are unauditable — link before the first TC lands.
 - **D3.** NEVER over-detail Test Case steps. The spec / KATA ATC is the source of truth; the TC step list is a pointer, not a duplicate.
 - **D4.** NEVER skip ROI scoring. Every TC ends with a Candidate / Manual / Deferred verdict before handoff to `/test-automation`.
