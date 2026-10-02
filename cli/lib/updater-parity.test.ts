@@ -750,6 +750,32 @@ describe('the husky hooks carry the gates split downstream', () => {
     expect(frameworkGatesNote('. "$(dirname -- "$0")/framework-gates.sh"\nframework_gates_pre_push\n', '.husky/pre-push')).toBeNull();
     // A mention in a comment is not an adoption.
     expect(frameworkGatesNote('# see framework-gates.sh\nbun run types:check\n', '.husky/pre-commit')).toContain('Adopt the gates split');
+    // commit-msg gets its own function, and the block forwards git's message file.
+    expect(frameworkGatesNote('bunx commitlint --edit "$1"\n', '.husky/commit-msg')).toContain('framework_gates_commit_msg "$1"');
+    expect(frameworkGatesNote('. "$(dirname -- "$0")/framework-gates.sh"\nframework_gates_commit_msg "$1"\n', '.husky/commit-msg')).toBeNull();
+  });
+
+  test('a project that already had its own commit-msg hook gets the row with the block to paste', () => {
+    const root = temporaryRoot();
+    const upstream = temporaryRoot();
+    write(root, '.husky/commit-msg', 'bunx commitlint --edit "$1"\n');
+    write(upstream, '.husky/commit-msg', 'GATES="$(dirname -- "$0")/framework-gates.sh"\nif [ -f "$GATES" ]; then\n  . "$GATES"\n  framework_gates_commit_msg "$1"\nfi\n');
+
+    const findings = collectParityFindings({
+      root,
+      upstreamDir: upstream,
+      drift: [{ path: '.husky/commit-msg', reason: 'project commit-message checks live here' }],
+      compatErrors: [],
+      archivedSkills: [],
+      archivedSkillsDir: join(root, '.template/pre-agents-migration/skills'),
+      heldBack: [],
+      envNewKeys: [],
+    });
+
+    const commitMsg = findings.find(f => f.path === '.husky/commit-msg');
+    expect(commitMsg!.evidence).toContain('does not source .husky/framework-gates.sh');
+    expect(commitMsg!.note).toContain('framework_gates_commit_msg "$1"');
+    expect(commitMsg!.blocking).toBe(false);
   });
 
   test('both hooks get the row, and pre-commit can carry both nudges at once', () => {

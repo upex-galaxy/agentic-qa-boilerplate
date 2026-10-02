@@ -1,0 +1,16 @@
+# Framework commit-message gates, in one call. They live in
+# `.husky/framework-gates.sh`, which the boilerplate updater SYNCS, while this
+# hook is project-owned and never overwritten — so a check added upstream lands
+# here without rewriting your file. Read that file for what each check covers;
+# the forensic-trailer check (AGENTS.md Critical Rule #3) is WARN-ONLY and never
+# blocks a commit.
+#
+# The `-f` guard is required: `.husky/_/h` runs this under `sh -e`, and sourcing
+# a file that is not there would kill the hook.
+#
+# Your own commit-msg checks (commitlint, ...) go around this call.
+GATES="$(dirname -- "$0")/framework-gates.sh"
+if [ -f "$GATES" ]; then
+  . "$GATES"
+  framework_gates_commit_msg "$1"
+fi

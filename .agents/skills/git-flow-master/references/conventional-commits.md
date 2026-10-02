@@ -144,6 +144,7 @@ PR label hint: `breaking-change`.
 3. **Never `--amend` a commit a hook rejected.** The hook rejected the commit, so it does not exist; `--amend` would mutate the previous commit instead. Fix the underlying issue and create a new commit.
 4. **Never `--amend` a published commit.** Once pushed, a commit is part of shared history. Add a forward commit (`fix:`, `revert:`) instead.
 5. **Never `--no-verify`** unless the user explicitly authorises bypassing hooks.
+6. **Forensic trailers close every message.** The last two lines are `Worktree: <name|primary>` then `Session: <label>` (SKILL.md §3.2). `.husky/commit-msg` runs `scripts/check-commit-trailers.ts` through `framework_gates_commit_msg` in `.husky/framework-gates.sh`: it WARNS, never blocks, when the pair is missing or not last, or when a harness-branded trailer (`Claude-Session:` and kin), an AI `Co-Authored-By:` or a "Generated with <tool>" line is present. A warning there means the commit landed wrong: fix the next one, never `--amend` a pushed one.
 
 ---
 

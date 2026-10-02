@@ -289,7 +289,10 @@ export const HUSKY_PRE_COMMIT = '.husky/pre-commit';
 /** Its pre-push sibling. Same delivery: once when missing, then project-owned. */
 export const HUSKY_PRE_PUSH = '.husky/pre-push';
 
-/** The SYNCED file both hooks source to get the gates upstream owns. */
+/** The commit-message sibling. Same delivery; its gates are warn-only. */
+export const HUSKY_COMMIT_MSG = '.husky/commit-msg';
+
+/** The SYNCED file every hook sources to get the gates upstream owns. */
 export const HUSKY_GATES_FILE = '.husky/framework-gates.sh';
 
 export interface PathPrerequisite {
@@ -487,7 +490,7 @@ export function lintStagedNoStashNote(projectHook: string): string | null {
 }
 
 /**
- * Both husky hooks are bootstrap-only: delivered once when missing, then
+ * Every husky hook is bootstrap-only: delivered once when missing, then
  * project-owned, because a project's own gates live in them. The cost was that
  * a gate added upstream never reached a project scaffolded earlier — four of
  * them had already failed to land anywhere downstream.
@@ -496,7 +499,10 @@ export function lintStagedNoStashNote(projectHook: string): string | null {
  * SYNCED `.husky/framework-gates.sh`, and each hook sources it and calls one
  * function. A hook that predates the split keeps every gate inlined and will
  * never see another one, and nothing but this row can tell it so — which is the
- * same shape as the `--no-stash` note, and the same reason it exists.
+ * same shape as the `--no-stash` note, and the same reason it exists. The same
+ * holds for a project that already had its own `.husky/commit-msg` (commitlint,
+ * say) when upstream added one: ours is never delivered over it, so this row is
+ * the only way the warn-only trailer check reaches it.
  *
  * Returns the adoption note while the hook does not source the gates file; null
  * once it does.
@@ -506,7 +512,9 @@ export function frameworkGatesNote(projectHook: string, hookPath: string): strin
     .split('\n')
     .some(line => !line.trimStart().startsWith('#') && line.includes('framework-gates.sh'));
   if (sourced) { return null; }
-  const fn = hookPath === HUSKY_PRE_PUSH ? 'framework_gates_pre_push' : 'framework_gates_pre_commit';
+  const fn = hookPath === HUSKY_PRE_PUSH
+    ? 'framework_gates_pre_push'
+    : hookPath === HUSKY_COMMIT_MSG ? 'framework_gates_commit_msg "$1"' : 'framework_gates_pre_commit';
   return [
     `Adopt the gates split in ${hookPath}. Your gates and their ordering stay yours; replace only the block`,
     'that runs upstream\'s gates with the call below, and every gate a future release adds arrives with',
@@ -1254,7 +1262,7 @@ export function collectParityFindings(input: ParityInput): ParityFinding[] {
         hookNotes.push({ clause: 'lint-staged still runs without --no-stash, which breaks every commit behind the .claude/skills symlink', note: noStash });
       }
     }
-    if (entry.path === HUSKY_PRE_COMMIT || entry.path === HUSKY_PRE_PUSH) {
+    if (entry.path === HUSKY_PRE_COMMIT || entry.path === HUSKY_PRE_PUSH || entry.path === HUSKY_COMMIT_MSG) {
       const gates = frameworkGatesNote(project, entry.path);
       if (gates !== null) {
         hookNotes.push({ clause: `this hook does not source ${HUSKY_GATES_FILE}, so no gate a future release adds will ever run here`, note: gates });
