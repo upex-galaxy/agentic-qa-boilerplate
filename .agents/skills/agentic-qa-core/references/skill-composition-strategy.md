@@ -347,7 +347,7 @@ The script is wired in `package.json` as `"skills:check": "bun run scripts/lint-
 | framework-development ↔ SDD anti-leak contract | Brief mention + link | Each affected skill (sprint-testing, test-automation, test-documentation, regression-testing) gets a "SDD chain MUST NOT be invoked from this skill" note | Authoritative |
 | Glue layer responsibilities | Brief mention + link | — | Authoritative |
 | T1 skill names | §5 Skills registry table | — | Reference only |
-| T2 vendored skill names (`judgment-day`) | §5 (named, with citation context) | host skill SKILL.md references it in optional review steps | Reference only |
+| T2 vendored skill names (`judgment-day`) | §5 (named, with citation context) | host skill SKILL.md references it in its review steps (required-verifier option or optional gate: §11 decision 3) | Reference only |
 | T2-opt SDD bundle names | §5 (named, with anti-leak note + manual-install pointer) | framework-development SKILL.md references SDD skills by name in delegation points | Reference only |
 | T3 skill names (community project-level) | §5 (mention `playwright-cli`, `playwright-best-practices` by name; small list, low fragility) | — | Reference only |
 | T4 skill names (community user-level) | NOT named in AGENTS.md. Auto-discovered at runtime per this doc | — | Reference only — name list only in installer |
@@ -363,7 +363,7 @@ The script is wired in `package.json` as `"skills:check": "bun run scripts/lint-
    2. Scan T3 + T4 already installed (via system-reminder list).
    3. If a task domain has no match in steps 1-2 AND the task would benefit significantly from a specialized skill → invoke `find-skills` automatically to suggest installable skills. Ask user before installing.
 
-3. **judgment-day adoption**: ✅ **Vendored T2; available on demand.** Lives committed under `.agents/skills/judgment-day/` (Apache-2.0, attribution preserved). Not auto-invoked. User invokes `/judgment-day` explicitly OR host orchestrators (`test-automation` Phase 3, `git-flow-master` pre-PR) cite it as an optional gate.
+3. **judgment-day adoption**: ✅ **Vendored T2; available on demand.** Lives committed under `.agents/skills/judgment-day/` (Apache-2.0, attribution preserved). Not auto-invoked. User invokes `/judgment-day` explicitly OR a host orchestrator cites it: `test-automation` Phase 3 names it as one of the two options for the REQUIRED separate verifier (the other is `/pr-review-lead`; `agentic-qa-core/references/stage-gates.md`), and `git-flow-master` offers it as an OPTIONAL pre-PR gate.
 
 4. **Gentle-ai bundle scope**: ✅ **Minimal preset (engram only).** No SDD-* skills auto-installed. No gentle-ai foundation skills. Rationale: our workflow skills already cover Plan → Code → Verify natively; SDD ceremony does not apply to test authoring. Users who want SDD for framework evolution work install it manually: `gentle-ai install --components engram,sdd --agent <a>`.
 
