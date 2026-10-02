@@ -40,6 +40,19 @@ The persisted source of truth for **this repository's** git workflow lives as th
 
 The keys, their allowed values and their shipped defaults are the commented `git_strategy:` block in `.agents/project.schema.yaml`; every leaf carries its own inline comment there. `git-flow-master` owns the semantics (strategy catalogue, Strategy Setup questionnaire, `git:policy` reconciliation), and `bun run git:policy verify` compares the `policy` leaves against the host.
 
+**Policy drift and accepted divergences**
+
+`policy:` records intent; the hosting platform records enforcement, and the two drift (someone tightens protection in the UI, or the block was filled before the remote existed). `git-flow-master` runs `bun run git:policy verify` once per session at the first push / PR / merge intent, reports each mismatch with both values, and lets YOU decide whether to align the yaml, change the host (`bun run git:policy apply`), or accept the divergence. It never edits the block on its own.
+
+Accepting is the third answer, and it is recorded in the yaml, not in prose:
+
+| Key | What it records |
+|---|---|
+| `policy.accepted_divergences[]` | One entry per divergence the project signed off. `field` names a `verify` finding verbatim (`<branch>.<policy_field>`, e.g. `main.direct_push_to_protected`); `enforced`, `accepted` (the date) and `reason` say what the host does and why that is right here. |
+| `meta.policy_source` | `verified` = the host matches the yaml exactly; `accepted` = it matches modulo the listed divergences; `declared` = never reconciled, or an unaccepted drift is open. Only `verify --stamp` writes `verified` or `accepted`, together with the date in `meta.policy_verified`. |
+
+What an entry changes: `verify` reports a matching finding under ACCEPTED instead of DRIFT and exits 0; an entry that matches no finding is reported as STALE, so the list cannot quietly keep dead exceptions; a field whose host side could not be read (no admin rights on the ruleset, `gh` offline) is not called stale, because absence of data is not data; and `apply` carries the host's side of an accepted field forward instead of deriving it away, so applying the policy never opens the branch the divergence keeps closed. Nothing outside the list is relaxed: every other drift still exits 1.
+
 ## `updater` (block inside `project.yaml`)
 
 `bun run up` never overwrites the files on its protected watchlist (`PROTECTED_WATCHLIST` in `cli/update-boilerplate.ts`; `AGENTS.md` and `.agents/project.yaml` are two of them, and `bun run up --dry-run` prints the rest): a watched file inside a synced component is delivered once when missing, then it is project-owned, and when upstream's copy changes the parity report shows a drift row with evidence (keys, headings or hunks) instead of touching it. The `updater:` block lets a project extend that list.
