@@ -660,7 +660,9 @@
         >
         <nav class="header-links">
           <a href="./">Hub</a>
+          <a href="./test-management.es.html">Test Management</a>
           <a href="./arquitectura.es.html">Arquitectura</a>
+          <a href="./docs/">Docs</a>
           <a href="https://github.com/upex-galaxy/agentic-qa-boilerplate">GitHub</a>
         </nav>
       </div>
@@ -710,8 +712,8 @@
             <div class="t">configs MCP en paridad</div>
           </div>
           <div class="stat">
-            <div class="n">11 B</div>
-            <div class="t">pesa <code>CLAUDE.md</code></div>
+            <div class="n">1</div>
+            <div class="t">línea en <code>CLAUDE.md</code>: <code>@AGENTS.md</code></div>
           </div>
         </div>
       </div>
@@ -925,7 +927,7 @@
                   font-size="10"
                   fill="#6e7681"
                 >
-                  11 bytes · shim generado
+                  una línea · shim generado
                 </text>
 
                 <polyline
@@ -1470,7 +1472,7 @@
                 </tr>
                 <tr>
                   <td class="rowlabel"><code>CLAUDE.md</code></td>
-                  <td><code>AGENTS.md</code><span class="cellsub">un import de 11 bytes</span></td>
+                  <td><code>AGENTS.md</code><span class="cellsub">un import de una línea</span></td>
                   <td><code>bun run agents:compat</code></td>
                 </tr>
               </tbody>
@@ -1592,7 +1594,10 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
             El contrato de personalidad que se reinyecta en cada prompt vive una sola vez, en
             <code>.agents/hooks/personality-reinject.mjs</code>. El archivo exporta la constante y
             además la escribe a <code>stdout</code> cuando se lo ejecuta como script. Esas dos
-            formas de consumirlo son las que necesitan los tres harnesses.
+            formas de consumirlo son las que necesitan los tres harnesses. El mismo emisor agrega
+            una línea <code>AGENT IDENTITY:</code> por prompt (worktree, sesión y harness, de donde
+            salen los trailers forenses de cada commit) y, solo si el binario de orquestación está
+            instalado, una línea que nombra <code>/orca-orchestration</code>.
           </p>
 
           <figure>
@@ -2338,7 +2343,7 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
                   migra, en este orden
                 </text>
                 <text x="444" y="262" font-family="Inter, sans-serif" font-size="10" fill="#9aa6b2">
-                  memoria → AGENTS.md, shim de 11 bytes
+                  memoria → AGENTS.md, shim de una línea
                 </text>
                 <text x="444" y="281" font-family="Inter, sans-serif" font-size="10" fill="#9aa6b2">
                   skills → .agents/skills/, propias incluidas
@@ -2466,6 +2471,7 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
         <div class="footlinks">
           <a href="./">Volver al hub</a>
           <a href="./arquitectura.es.html">Arquitectura: el refactor PBI</a>
+          <a href="./test-management.es.html">Test Management Architecture</a>
           <a href="https://github.com/upex-galaxy/agentic-qa-boilerplate">Repositorio en GitHub</a>
         </div>
         <p>
