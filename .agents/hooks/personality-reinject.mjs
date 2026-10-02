@@ -3,7 +3,7 @@
  *
  * Claude Code and Codex run this file as a `UserPromptSubmit` command hook and
  * read its stdout; OpenCode imports the same exports from its plugin adapter
- * (`.opencode/plugins/personality-reinject.js`). The emitter carries three
+ * (`.opencode/plugins/personality-reinject.js`). The emitter carries four
  * payloads, in this order:
  *
  *   1. `PERSONALITY_CONTRACT` — the AGENTS.md §2 output contract, re-injected
