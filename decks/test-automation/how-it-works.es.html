@@ -476,14 +476,36 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="wf-node m" style="grid-column:1;grid-row:2"><span class="n">Gate 0 · Preflight</span><h4>Readiness</h4><p>Framework adaptado, toolchain, env + creds, browsers. STOP en RED.</p></div>
       <div class="wf-node m" style="grid-column:2;grid-row:2"><span class="n">Phase 0</span><h4>Resume + scope</h4><p><span class="mono">.session/…</span> → resume / restart / abort. Scope: module · ticket · regression.</p></div>
       <div class="wf-node m" style="grid-column:3;grid-row:2"><span class="n">Phase 1</span><h4>Plan ✋</h4><p><span class="mono">spec.md</span> + <span class="mono">automation-plan.md</span>. TÚ apruebas antes de codear.</p></div>
-      <div class="wf-node m" style="grid-column:4;grid-row:2"><span class="n">Phase 2</span><h4>Code</h4><p>Types → componente → fixture → test file → <span class="mono">bun run test</span>.</p></div>
+      <div class="wf-node m" style="grid-column:4;grid-row:2"><span class="n">Phase 2</span><h4>Code</h4><p>TCs a In Automation, luego types → componente → fixture → test file → <span class="mono">bun run test</span>.</p></div>
       <div class="wf-node m" style="grid-column:5;grid-row:2"><span class="n">Phase 3</span><h4>Review</h4><p>3 Verifiers paralelos: <span class="mono">test</span> · <span class="mono">types:check</span> · <span class="mono">lint:check</span>.</p></div>
       <div class="wf-node m last" style="grid-column:6;grid-row:2"><span class="n">Accept</span><h4>Handoff</h4><p>Checkpoint + archivo de sesión. La skill se detiene aquí — sin git.</p></div>
       <div class="wf-node side loop" style="grid-column:4/6;grid-row:3"><span class="n">reject</span><h4>STOP — sin auto-fix</h4><p>Reporte fallido verbatim; re-despachar Code SOLO con tu aprobación. Bug real → confirma y crea el bug.</p></div>
-      <div class="wf-node side next" style="grid-column:6;grid-row:3"><span class="n">→ siguiente</span><h4><span class="mono">/git-flow-master</span></h4><p>Branch <span class="mono">test/*</span>, PR, merge. Luego <span class="mono">/regression-testing</span> (Regression) en CI.</p></div>
+      <div class="wf-node side" style="grid-column:1/4;grid-row:3"><span class="n">modo explain · solo lectura</span><h4>Explicar tests que ya existen</h4><p>Lee el código y deja un HTML con cada assertion. Sin Plan → Code → Review, sin sesión, sin Jira.</p></div>
+      <div class="wf-node side next" style="grid-column:6;grid-row:3"><span class="n">→ siguiente</span><h4><span class="mono">/git-flow-master</span></h4><p>Branch <span class="mono">test/*</span> y PR contra la base que declara <span class="mono">git_strategy:</span>. El merge lo hace la persona. Luego <span class="mono">/regression-testing</span> (Regression) en CI.</p></div>
     </div>
     <p class="small dim2 mt-m">Cada fase del mapa = una sección de este deck, en el mismo orden.</p>
-    <div class="notes">Camino principal: Preflight → Phase 0 → Plan → Code → Review → Handoff. Adyacentes: la entrada desde test-documentation, el gate del manifest en Plan, judgment-day opcional en Review, el loop de REJECT y el handoff a git-flow-master + regression-testing.</div>
+    <div class="notes">Camino principal: Preflight → Phase 0 → Plan → Code → Review → Handoff. Adyacentes: la entrada desde test-documentation, el gate del manifest en Plan, el verificador separado obligatorio en Review, el loop de REJECT y el handoff a git-flow-master + regression-testing. Abajo a la izquierda, el modo explain: un camino aparte que no escribe código.</div>
+  </section>
+
+  <!-- 2b · MODOS E INVOCACIÓN -->
+  <section class="slide" data-title="Modos e invocación">
+    <p class="kicker">mode routing: se resuelve antes del preflight</p>
+    <h2 class="h2" data-anim="fade-up">Dos modos: <span class="grad">automate</span> escribe, <span class="grad">explain</span> solo lee</h2>
+    <table class="tt">
+      <thead><tr><th>Modo</th><th>Cuándo</th><th>Qué hace</th></tr></thead>
+      <tbody>
+        <tr><td><b class="mono">automate</b> (default)</td><td>Cualquier pedido de planear, escribir o revisar tests KATA</td><td>Todo el resto del deck: preflight, Phase 0, Plan → Code → Review</td></tr>
+        <tr><td><b class="mono">explain</b></td><td>Primer token <span class="mono">explain</span>, la frase <i>"break-down-tests"</i> o un pedido explícito de explicar tests existentes</td><td>Lee solo <span class="mono">references/explain-tests.md</span>, traza el código y escribe <span class="mono">.context/reports/test-breakdown/&lt;scope&gt;.json</span>; <span class="mono">bun run tests:explain:render</span> genera el <span class="mono">.html</span> al lado. Luego se detiene</td></tr>
+      </tbody>
+    </table>
+    <div class="cols c2 mt-m">
+      <div class="term" style="margin:0"><div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>Claude Code</span></div>
+<pre><span class="p">&gt;</span> <span class="c">/test-automation &lt;KEY&gt;</span>               <span class="cmt"># automate</span>
+<span class="p">&gt;</span> <span class="c">/test-automation explain &lt;scope&gt;</span>     <span class="cmt"># explain</span></pre></div>
+      <div class="card" style="margin:0"><h4>OpenCode y Codex</h4><p>No tienen slash commands: se pide en prosa. <i>"Carga la skill <span class="mono">test-automation</span>, modo <span class="mono">explain</span>, sobre <span class="mono">&lt;scope&gt;</span>"</i>. El <b>primer token</b> que coincide con un modo ES el modo y el resto se reenvía; sin coincidencia aplica <span class="mono">automate</span>, y si el pedido puede ser cualquiera de los dos, la skill pregunta.</p></div>
+    </div>
+    <div class="callout warn"><h4>explain no toca nada más</h4><p>Sus únicas escrituras son esos dos archivos de reporte (gitignored). Sin estado de sesión, sin editar tests ni código de producto, sin regenerar <span class="mono">kata-manifest.json</span>, sin Jira ni TMS. Nunca se infiere implementación desde un pedido de explicación.</p></div>
+    <div class="notes">El scope de explain puede ser un archivo de test, un id de ATC, un ticket key o un módulo. En el chat deja tres líneas como máximo: qué prueba el scope en términos de negocio, los conteos y la ruta relativa del HTML; el detalle vive en la página.</div>
   </section>
 
   <!-- 3 · ENTRADA + SCOPE -->
@@ -515,6 +537,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <tr><td><b>Env activo + credenciales</b></td><td>REQUIRED</td><td>Los tests corren en vivo: URL alcanzable + test users en <span class="mono">.env</span> (por rol si aplica) + browsers Playwright (<span class="mono">bun run pw:install</span>)</td></tr>
         <tr><td><b>OpenAPI MCP + <span class="mono">api/schemas/</span></b></td><td>SCOPE · API</td><td>Se necesita ya en PLAN-time: explorar endpoints para diseñar ATCs y clasificar datos</td></tr>
         <tr><td><b>DBHub MCP</b></td><td>SCOPE · datos</td><td>PLAN-time también: explorar el schema para diseñar fixtures de datos</td></tr>
+        <tr><td><b>Mapa de negocio por nivel tocado</b></td><td>REQUIRED</td><td>E2E → <span class="mono">business-e2e-context</span>, API → <span class="mono">business-api-context</span>, datos → <span class="mono">business-data-context</span>: <span class="mono">bun run context:map &lt;slug&gt; --list</span> debe listar secciones. ¿Placeholder? STOP → <span class="mono">project-context</span> modo <span class="mono">e2e</span> / <span class="mono">api</span> / <span class="mono">data</span></td></tr>
         <tr><td><b>Issue tracker</b></td><td>SCOPE · ticket</td><td>Lecturas de ATP + ACs vía <span class="mono">bun run jira:sync-issues</span></td></tr>
       </tbody>
     </table>
@@ -524,7 +547,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 
   <!-- 5 · PHASE 0 -->
   <section class="slide" data-title="Phase 0 · Resume">
-    <p class="kicker">phase 0 · resume check — inline, &lt;1 minuto</p>
+    <p class="kicker">phase 0 · resume check, inline y sin subagente</p>
     <h2 class="h2" data-anim="fade-up">¿Hay una sesión previa? <span class="grad">Retómala</span>, no la repitas</h2>
     <div class="steps s4 anim-stagger-list">
       <div class="step"><div class="num">1</div><h4>Determina el scope</h4><p>Ticket key, TC de regresión o module slug — según la invocación.</p></div>
@@ -545,7 +568,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <li><b>Doctrina KATA.</b> <span class="mono">references/kata-architecture.md</span> + <span class="mono">typescript-patterns.md</span> — capas, identidad del ATC, fixtures, aliases.</li>
       <li><b><span class="mono">tests/components/</span>.</b> Las formas Api / Page / Steps que ya existen en disco — naming y patrones a seguir.</li>
       <li><b>La Story sincronizada.</b> <span class="mono">bun run jira:sync-issues get &lt;KEY&gt; --include-comments</span> → lee la carpeta ENTERA: ACs, scope, business rules Y <span class="mono">comments.md</span>. NUNCA <span class="mono">acli view</span> para <span class="mono">customfield_*</span> (devuelve null).</li>
-      <li><b>El ATP, items-first (ambas modalidades).</b> El sync materializa el ganador en <span class="mono">acceptance-test-plan.md</span>: description del Test Plan item «ATP: …» linkeado (lo crea <span class="mono">/sprint-testing</span> en Planning) si existe; si no, el campo <span class="mono">acceptance_test_plan</span> del Story.</li>
+      <li><b>El ATP, según la modalidad TMS</b> (<span class="mono">testing.tms_cli</span> en <span class="mono">.agents/project.yaml</span>). <b>jira-native:</b> el campo <span class="mono">acceptance_test_plan</span> del Story, sincronizado como <span class="mono">acceptance-test-plan.md</span>. <b>jira-xray:</b> la description del Test Plan «ATP: …» (lo crea <span class="mono">/sprint-testing</span> en Planning), vía <span class="mono">bun run jira:sync-issues get &lt;ATP_KEY&gt;</span> → <span class="mono">test-plans/ATP-&lt;KEY&gt;-&lt;slug&gt;.md</span>; los resultados por TC salen del TMS, no del sync.</li>
       <li><b><span class="mono">api/schemas/</span> + <span class="mono">.env</span>.</b> Types de OpenAPI (refresca con <span class="mono">bun run api:sync</span>); credenciales vía <span class="mono">config.testUser</span> — jamás hardcodear.</li>
     </ul>
     <div class="notes">Saltarse el manifest produce Pages duplicadas, IDs @atc repetidos y reuso perdido — todo rechazado en review. Leer solo un campo de la Story produce ATCs incompletos: los comments suelen contener el contexto que cambia el plan.</div>
@@ -619,14 +642,15 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="step"><div class="num">4</div><h4>Test file</h4><p><span class="mono">tests/e2e/{module}/</span> o <span class="mono">tests/integration/{module}/</span>, con el fixture correcto.</p></div>
       <div class="step"><div class="num">5</div><h4>Run + verify</h4><p>Los tres comandos, en orden — si algo falla, se arregla ANTES del Review.</p></div>
     </div>
-    <div class="term mt-l">
+    <div class="term mt-m">
       <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>local validation loop</span></div>
 <pre><span class="p">$</span> <span class="c">bun run test tests/e2e/checkout/processCheckout.test.ts</span>   <span class="cmt"># ¿pasa? (0 retries)</span>
 <span class="p">$</span> <span class="c">bun run types:check</span>                                       <span class="cmt"># tsc --noEmit, sin errores</span>
 <span class="p">$</span> <span class="c">bun run lint:check</span>                                        <span class="cmt"># ESLint, sin errores</span>
 <span class="p">$</span> <span class="c">bun allure:agent</span>                                          <span class="cmt"># opcional: reporte markdown por bloque @atc</span></pre>
     </div>
-    <p class="small dim2 mt-s">Dispatch Sequential: un subagente de Code por unidad de scope (module: 1 por TC · ticket: 1 total). Cada uno carga <span class="mono">/playwright-best-practices</span> junto a esta skill; retorna archivos cambiados + resumen — el orquestador nunca lee diffs.</p>
+    <div class="callout"><h4>Antes de la primera línea: abre el ciclo de vida del TC</h4><p>Cada TC del scope sale de <b>Candidate</b>: <span class="mono">start_automation</span> → <b>In Automation</b>. Un TC que sigue en Candidate mientras se escribe su código le dice al equipo que nadie lo tomó. ¿Slug sin mapear? Fallback de <span class="mono">artifact-lifecycle.md</span> §4: se pregunta, nunca se salta en silencio.</p></div>
+    <p class="small dim2 mt-s">Dispatch Sequential: un subagente de Code por unidad de scope (module: 1 por TC · ticket: 1 total). Cada uno carga <span class="mono">/playwright-best-practices</span> junto a esta skill y retorna archivos cambiados + resumen (el orquestador nunca lee diffs). Si además necesita manejar un browser real (snapshot, trace, record), suma <span class="mono">/playwright-cli</span>, el único camino de browser, con sesión con nombre según <span class="mono">agentic-qa-core/references/browser-sessions.md</span>.</p>
     <div class="notes">Checkpoint en progress.md tras cada subagente de Code — el resume a mitad de lote salta lo ya codificado. Allure vive como devDep (versión en package.json): bunx allure resuelve local, sin instalar global.</div>
   </section>
 
@@ -722,27 +746,102 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="callout bad" style="margin-top:0"><h4>REJECT — protocolo de error</h4><p>STOP: el reporte fallido se te muestra <b>verbatim</b>. Sin auto-fix, sin re-despachar Code sin tu aprobación. La sesión NO se archiva — queda para debug.</p></div>
       <div class="callout good" style="margin-top:0"><h4>ACCEPT — cierre limpio</h4><p>Checkpoint final en <span class="mono">progress.md</span> → sesión archivada en <span class="mono">.session/.archive/</span> → <span class="mono">bun run kata:manifest</span> + <span class="mono">git add</span> para el gate de husky.</p></div>
     </div>
-    <div class="callout"><h4>Verificador separado — requerido antes del merge</h4><p>El contrato de Automation exige un verificador separado en contexto limpio: <span class="mono">/pr-review-lead</span> por defecto, o <span class="mono">/judgment-day</span> (dos jueces ciegos en paralelo, aprueba solo si ambos coinciden) para cambios de alto riesgo — fixtures nuevos, bases Page/Api compartidas, refactors multi-ATC. Es el único stage con esta obligación, y es el precio de ser el único que llega a autonomía 3.</p></div>
+    <div class="callout"><h4>Verificador separado: requerido antes del merge</h4><p>El contrato de Automation exige un verificador separado en contexto limpio, para cualquier cambio y no solo los de alto riesgo: <span class="mono">/pr-review-lead</span> (review de QA lead anclado en la doctrina KATA) o <span class="mono">/judgment-day</span> (dos jueces ciegos en paralelo, aprueba solo si ambos coinciden). Eliges el que encaje con el cambio; saltarlo es una falla del DoD. Es el único stage con esta obligación, y es el precio de ser el único que llega a autonomía 3.</p></div>
     <div class="notes">La agregación es inline: el orquestador lee los 3 reportes y decide. Si un test falla por un bug REAL de producto: busca bug existente, anota test.fail('Blocked by {BUG-KEY}') o crea el bug con tu confirmación — un test rojo sin bug key nunca es override aceptable.</div>
   </section>
 
   <!-- 16 · HANDOFF -->
   <section class="slide" data-title="Handoff">
-    <p class="kicker">después del accept — git y ciclo de vida del TC</p>
+    <p class="kicker">después del accept: quién hace el git, y contra qué base</p>
     <h2 class="h2" data-anim="fade-up">La skill se detiene en un review local <span class="grad">limpio</span></h2>
-    <div class="term mt-m">
-      <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>handoff</span></div>
-<pre><span class="o">Local gate green. Ready for /git-flow-master:</span>
-<span class="o">cut test/UPEX-411-checkout from the integration trunk, push, Sanity-CI, PR, merge --no-ff.</span></pre>
+    <div class="callout good"><h4>La regla</h4><p>En la etapa Automation, <span class="mono">/test-automation</span> termina en una revisión local en verde (tests, tipos, lint) y deja el handoff explícito; el PR lo abre <span class="mono">/git-flow-master</span>, nunca <span class="mono">/test-automation</span> por su cuenta, contra la base que declara el bloque <span class="mono">git_strategy:</span> de <span class="mono">.agents/project.yaml</span>.</p></div>
+    <div class="cols c2 mt-m">
+      <div class="card"><h4>Default: lo que diga <span class="mono">git_strategy:</span></h4><p>El repo trae <span class="mono">solo-main</span> como default heredado; cada proyecto declara el suyo. <span class="mono">/git-flow-master</span> lo lee, corta la branch <span class="mono">test/*</span>, hace push y abre el PR hacia esa base. Se detiene al crear el PR: el merge es el siguiente paso explícito de la persona.</p></div>
+      <div class="card"><h4>Variante <span class="mono">sdet</span> (suites encadenadas)</h4><p>Cada ticket corta <span class="mono">test/{KEY}-{slug}</span> desde el <b>integration trunk</b>, pasa Sanity CI y abre su PR hacia el trunk; el trunk llega a <span class="mono">main</span> en un único PR final. El gate local pasa en <b>local Y staging</b> antes del push, y el Git Ledger se apendiza a <span class="mono">progress.md</span> tras cada acción de branch.</p></div>
     </div>
-    <ul class="blist anim-stagger-list">
-      <li><b>Nada de git aquí.</b> Branch, push y PR son trabajo de <span class="mono">/git-flow-master</span> — la skill solo anuncia el handoff, jamás lo auto-ejecuta.</li>
-      <li><b>Bajo estrategia <span class="mono">sdet</span></b> (suites encadenadas): el gate local debe pasar en <b>local Y staging</b> antes del push; el Git Ledger se apendiza a <span class="mono">progress.md</span> tras cada acción de branch.</li>
-      <li><b>Ciclo de vida del TC:</b> → <b>In Review</b> cuando abre el PR del ticket hacia el trunk; → <b>Automated</b> SOLO cuando el PR final <span class="mono">trunk → main</span> mergea con CI verde. Mergear al trunk NO es "Automated".</li>
-      <li><b>Transiciones</b> vía <span class="mono">/test-documentation</span> + <span class="mono">acli</span>; nombres de estado contra <span class="mono">.agents/jira-workflows.json</span>.</li>
-      <li><b>Después, en el pipeline:</b> <span class="mono">/regression-testing</span> (Regression) corre las suites en CI y emite GO / CAUTION / NO-GO.</li>
-    </ul>
-    <div class="notes">Los PRs de test siguen la convención test/* con título {type}({ISSUE-KEY}): {description}. Nunca mezclar código de producto y de test en el mismo PR (anti-pattern T8).</div>
+    <div class="term mt-m">
+      <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>handoff · variante sdet</span></div>
+<pre><span class="o">Local gate green. Ready for /git-flow-master: cut test/UPEX-411-checkout</span>
+<span class="o">from the integration trunk, push, Sanity-CI, PR into the trunk, merge --no-ff.</span></pre>
+    </div>
+    <p class="small dim2 mt-s">Después, en el pipeline: <span class="mono">/regression-testing</span> (Regression) corre las suites en CI y emite GO / CAUTION / NO-GO.</p>
+    <div class="notes">La skill anuncia el handoff y no invoca ninguna operación de git. Sanity CI en la branch es de git-flow-master + regression-testing, nunca de esta skill. Los PRs de test siguen la convención test/* con título {type}({ISSUE-KEY}): {description}. Nunca mezclar código de producto y de test en el mismo PR (anti-pattern T8); bajo sdet, el trabajo que no es de test va en una Plus Branch hacia el trunk. Runbook sdet: .agents/skills/git-flow-master/references/sdet-integration-trunk.md.</div>
+  </section>
+
+  <!-- 16a · CICLO DE VIDA DEL TC -->
+  <section class="slide" data-title="Ciclo de vida del TC">
+    <p class="kicker">tres transiciones que esta skill es dueña</p>
+    <h2 class="h2" data-anim="fade-up">El TC avanza con el código, y llega a <span class="grad">Automated</span> solo en <span class="mono">main</span></h2>
+    <table class="tt">
+      <thead><tr><th>Momento</th><th>Transición</th><th>Estado después</th></tr></thead>
+      <tbody>
+        <tr><td><b>Abre Phase 2 · Code</b></td><td class="mono">start_automation</td><td><b>In Automation</b></td></tr>
+        <tr><td><b>Abre el PR del ticket</b> (bajo <span class="mono">sdet</span>, hacia el trunk)</td><td class="mono">create_pr</td><td><b>Pull Request</b></td></tr>
+        <tr><td><b>El PR final de la suite mergea a <span class="mono">main</span></b> con CI verde ahí</td><td class="mono">merged</td><td><b>Automated</b></td></tr>
+      </tbody>
+    </table>
+    <div class="cols c2 mt-m">
+      <div class="card"><h4>Señal 1 · el link</h4><p>El test automatizado se vincula al <span class="mono">Test</span> manual que automatiza con el link type <span class="mono">test_automation</span> (outward <i>"automation test for"</i>), resuelto por slug, nunca literal.</p></div>
+      <div class="card"><h4>Señal 2 · los labels</h4><p><b>+ automated</b> y <b>− automation-candidate</b> en el <span class="mono">Test</span>: son mutuamente excluyentes. Se cambian en <span class="mono">merged</span>, cuando el TC llega de verdad a Automated, nunca en un merge al trunk.</p></div>
+    </div>
+    <div class="callout warn"><h4>Mergear al trunk NO es Automated</h4><p>Las transiciones salen por <span class="mono">/test-documentation</span> + <span class="mono">[ISSUE_TRACKER_TOOL]</span>, con cada slug resuelto contra <span class="mono">.agents/jira-workflows.json</span>. ¿Slug sin mapear? El fallback de <span class="mono">artifact-lifecycle.md</span> §4: lista las transiciones vivas, pregunta una vez, dispara el id vivo con tu OK. Nunca se salta en silencio.</p></div>
+    <div class="notes">Canon: agentic-qa-core/references/artifact-lifecycle.md §1, fila Test. Antes de esta skill, test-documentation dejó el TC en Candidate (approve_to_automate). En un batch fleet, estas escrituras en Jira son solo del conductor: dos sesiones transicionando el mismo TC dejan un historial contradictorio.</div>
+  </section>
+
+  <!-- 16c · BATCH FLEET -->
+  <section class="slide" data-title="Batch fleet">
+    <p class="kicker">a escala · batch fleet, segundo ejecutor opcional</p>
+    <h2 class="h2" data-anim="fade-up">Un lote corre en serie; en paralelo solo si los <span class="grad">módulos</span> no se tocan</h2>
+    <p class="small dim">Por defecto un batch corre en esta sesión, un Work Package a la vez, Plan → Code → Review cada uno. La flota se ofrece solo si la pides o si el lote tiene 3+ Work Packages sobre <b>módulos disjuntos</b>; nunca se entra en silencio.</p>
+    <div class="cols c2 mt-m anim-stagger-list">
+      <div class="card"><h4>Work Package = un <span class="mono">test-specs/&lt;ID&gt;/</span></h4><p>Su <span class="mono">spec.md</span> + <span class="mono">automation-plan.md</span> + <span class="mono">atc/*.md</span>. Un lote es una lista de WPs, nunca de archivos ni de TCs. Sin <span class="mono">spec.md</span>, el WP no se despacha.</p></div>
+      <div class="card"><h4>Partición por módulo, no por ticket</h4><p>Un worker es dueño de los componentes de un módulo; los WPs del mismo módulo corren en serie dentro de él. Nunca dos workers en un módulo: comparten Pages, Apis y fixtures.</p></div>
+      <div class="card"><h4>Un worktree por worker</h4><p>Esta skill escribe código, y dos sesiones en un checkout pelean por el índice de git. El conductor crea el worktree y lo provisiona (<span class="mono">bun run worktree:provision</span>) antes de lanzar al worker.</p></div>
+      <div class="card"><h4>Lo que queda con el conductor</h4><p><span class="mono">api:login</span>, <span class="mono">api:sync</span>, las escrituras en Jira/TMS (transiciones, labels, links) y <span class="mono">bun run kata:manifest</span> en cada integración: el manifest se regenera, nunca se mergea a mano. Integra una branch a la vez y re-corre la suite sobre el estado mergeado.</p></div>
+    </div>
+    <div class="callout"><h4>Con o sin orquestador, el mismo payload</h4><p>El conductor siempre escribe <span class="mono">launch.txt</span>: una línea autocontenida por worker. Con orquestador esas líneas se lanzan solas; sin él, la persona las pega en terminales. La ausencia del orquestador no se reporta en ninguna parte. Sin conductor vivo, el lote corre aquí, WP por WP, en el orden que daría la partición.</p></div>
+    <div class="notes">Protocolo completo (algoritmo de partición, tabla de colisiones, brief por worker, orden de integración, reglas de git por estrategia): .agents/skills/test-automation/references/batch-fleet.md. El transporte (lanzar, supervisar, cerrar workers) vive en orca-orchestration, nunca en esta skill. Los conflictos en ApiFixture.ts / UiFixture.ts se resuelven de forma aditiva: se conservan ambos registros.</div>
+  </section>
+
+  <!-- 16d · VERIFICADOR DE CIERRE -->
+  <section class="slide" data-title="Verificador de cierre">
+    <p class="kicker">light stage verifier · cierra el stage Automation</p>
+    <h2 class="h2" data-anim="fade-up">Antes de decir "listo", <span class="grad">ocho líneas</span> en YES o N/A</h2>
+    <div class="cols c2 mt-m">
+      <div class="card"><h4>La plantilla común</h4><p>Artefactos por KEY · links presentes · estados esperados (con la transición disparada) · assignee en lo creado · parent QA epic + components · campos y comments escritos · checkpoint en <span class="mono">progress.md</span> · session footer en el chat.</p><p style="margin-top:8px"><b>Ligero</b> = se responde con lo que el stage ya hizo, más como máximo UNA lectura extra. Cada línea es YES o un N/A con su motivo; una línea en blanco es una falla. Cualquier NO = <b>NEEDS REVISION</b>.</p></div>
+      <div class="term" style="margin:0"><div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>líneas propias de Automation</span></div>
+<pre><span class="c">[ ] TCs del scope en in_automation o más allá</span>
+<span class="o">    (start_automation disparado)</span>
+<span class="c">[ ] TCs vinculados con el link test_automation</span>
+<span class="c">[ ] Labels cambiados en su estado: +automated</span>
+<span class="o">    -automation-candidate en merged, nunca</span>
+<span class="o">    en el merge al trunk</span>
+<span class="c">[ ] Ningún TC en candidate con código ya escrito</span>
+<span class="c">[ ] Slug sin mapear pasó por el fallback §4</span>
+<span class="o">    (se preguntó), nunca un salto silencioso</span></pre></div>
+    </div>
+    <p class="small dim2 mt-m">Canon: <span class="mono">agentic-qa-core/references/artifact-lifecycle.md</span> §5. Va después del ACCEPT de Phase 3 y del verificador separado; con REJECT no se llega aquí.</p>
+    <div class="notes">El verificador no es una re-auditoría: no recorre otra vez los links que acaba de crear. Su trabajo es atrapar lo que se saltó en silencio. Un estado sin mapear que el usuario eligió saltar en el fallback §4 es un N/A legítimo; uno que nadie preguntó es un NO.</div>
+  </section>
+
+  <!-- 16e · SESSION FOOTER -->
+  <section class="slide" data-title="Session footer">
+    <p class="kicker">session footer · gate de calidad del cierre, solo en el chat</p>
+    <h2 class="h2" data-anim="fade-up">La sesión no termina hasta imprimir <span class="grad">dos bloques</span></h2>
+    <div class="cols c2 mt-m">
+      <div class="card"><h4>1 · Screenshots (rutas relativas)</h4><p>Cada captura se anuncia con su ruta relativa al repo <b>en el mismo turno en que aparece</b>, y al cierre va la lista consolidada: anotaciones de bugs primero, solo archivos verificados en disco. En esta skill suelen ser pocas; si no hay, el bloque no lleva encabezados vacíos.</p></div>
+      <div class="card"><h4>2 · Footer de herramientas y niveles</h4><p>Skills cargadas, MCPs realmente llamados, CLIs invocadas, niveles de testing tocados con un <b>"none"</b> explícito para cada nivel esperado que no se tocó, y la línea <span class="mono">Refinements proposed:</span>.</p></div>
+    </div>
+    <div class="term mt-m">
+      <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>framing Authoring · ejemplo</span></div>
+<pre><span class="c">Testing levels touched:</span>
+<span class="o">- API: cobertura automatizada nueva en OrdersApi (L3 component) + spec</span>
+<span class="o">- E2E/UI: none (fuera del scope de este ticket)</span>
+<span class="o">- Unit: none</span>
+<span class="c">Refinements proposed: 0</span></pre>
+    </div>
+    <div class="callout"><h4>Framing de esta skill: Authoring</h4><p>"Niveles tocados" significa qué niveles recibieron cobertura automatizada <b>nueva</b> (Unit, API, E2E/UI) y en qué capa KATA aterrizó el código (L2 base, L3 component, Steps, fixture, spec). Nunca va en un comment de Jira ni en un ATR. Las lecciones se <b>proponen</b> en <span class="mono">.session/test-automation/&lt;scope&gt;/refinements.md</span>, nunca se aplican a la skill viva.</p></div>
+    <div class="notes">Canon: agentic-qa-core/references/session-footer-contract.md. Con varios subagentes, cada reporte de stage trae los cinco campos (skills_loaded, mcps_used, clis_used, testing_levels_touched, screenshots_captured) y el orquestador compila el footer UNA vez, al final.</div>
   </section>
 
   <!-- 16b · CONTRATO AGÉNTICO -->
@@ -750,7 +849,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <p class="kicker">quién decide qué — el contrato de Automation</p>
     <h2 class="h2" data-anim="fade-up">El agente ejecuta. La evidencia prueba. <span class="grad">La persona decide.</span></h2>
     <ul class="blist anim-stagger-list">
-      <li><b>El agente hace:</b> escribe <span class="mono">spec.md</span> + <span class="mono">automation-plan.md</span>, después el código KATA con <span class="mono">@atc</span>, corre los tres verificadores y abre el PR.</li>
+      <li><b>El agente hace:</b> escribe <span class="mono">spec.md</span> + <span class="mono">automation-plan.md</span>, después el código KATA con <span class="mono">@atc</span>, corre los tres verificadores y deja el handoff a <span class="mono">/git-flow-master</span>, que abre el PR contra la base de <span class="mono">git_strategy:</span>. <span class="mono">/test-automation</span> nunca corre git por su cuenta.</li>
       <li><b>La persona firma:</b> el plan <b>antes de una línea de código</b>, el merge, y la llamada en el tercer loop de revisión.</li>
       <li><b>La evidencia que sobrevive:</b> tests verdes, types limpios, lint limpio, ids <span class="mono">@atc</span> que resuelven a tickets reales, manifest fresco.</li>
       <li><b>Autonomía CSA 2 → 3</b>, y solo dentro del plan aprobado. Ningún stage del pipeline pasa de 3.</li>
@@ -765,7 +864,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <p class="kicker">cierre — cómo invocarlo y qué deja</p>
     <h2 class="h2" data-anim="fade-up"><span class="mono grad">/test-automation</span> — planéalo, codéalo por capas, pásalo en verde</h2>
     <div class="cols c3 mt-m anim-stagger-list">
-      <div class="card"><h4>Cómo se invoca</h4><p><span class="kbd">/test-automation</span> o frases como <i>"write test"</i>, <i>"automate ticket"</i>, <i>"create API test"</i>, <i>"KATA"</i>, <i>"review test code"</i>. Siempre se carga ANTES de escribir código de test.</p></div>
+      <div class="card"><h4>Cómo se invoca</h4><p><span class="kbd">/test-automation</span> (modo <span class="mono">automate</span>) o <span class="kbd">/test-automation explain</span> en Claude Code; en OpenCode y Codex, en prosa: <i>"carga la skill test-automation, modo explain"</i>. También por frases como <i>"automate ticket"</i>, <i>"create API test"</i>, <i>"break-down-tests"</i>. Siempre se carga ANTES de escribir código de test.</p></div>
       <div class="card"><h4>Artefactos clave</h4><p><span class="mono">spec.md</span> + <span class="mono">automation-plan.md</span> + <span class="mono">atc/*.md</span> · componentes y tests en <span class="mono">tests/**</span> · <span class="mono">kata-manifest.json</span> regenerado · sesión archivada.</p></div>
       <div class="card"><h4>En el pipeline</h4><p>← <span class="mono">/test-documentation</span> (Documentation, veredictos Candidate) · → <span class="mono">/git-flow-master</span> (branch + PR) · → <span class="mono">/regression-testing</span> (Regression, CI).</p></div>
     </div>
@@ -774,7 +873,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="notes">Cierre: la skill no reemplaza la metodología — ejecuta exactamente esta metodología, más rápido, con el humano aprobando el plan y revisando las fallas.</div>
   </section>
 
-  <div class="deck-footer"><span class="mono">/test-automation · Plan → Code → Review · KATA</span><span class="slide-number" data-current="1" data-total="18"></span></div>
+  <div class="deck-footer"><span class="mono">/test-automation · Plan → Code → Review · KATA</span><span class="slide-number" data-current="1" data-total="23"></span></div>
 
 </div>
 
