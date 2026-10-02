@@ -165,6 +165,20 @@ framework_gates_pre_push() {
     && framework_gate_varlock_warn
 }
 
+# Gate that runs on the COMMIT MESSAGE (`.husky/commit-msg`, which passes the
+# message file git hands it as $1). WARN-ONLY by contract: the forensic-trailer
+# check (AGENTS.md Critical Rule #3, canon in git-flow-master §3.2) prints what
+# is missing or forbidden and never blocks, so a human commit, a merge or an
+# emergency fix always lands. The script ships in the `scripts` component, a
+# separate sync phase from this file, so a project that has this function but
+# not the script yet is skipped silently rather than broken.
+framework_gates_commit_msg() {
+  if [ -f scripts/check-commit-trailers.ts ]; then
+    bun scripts/check-commit-trailers.ts "$1" || true
+  fi
+  return 0
+}
+
 # The warn-only env-schema validation described above. A function so the
 # `&&` chain in framework_gates_pre_push stays one expression: this never
 # returns non-zero, because a red here is advice, not a block, until the
