@@ -13,5 +13,6 @@ bun run onboarding    # the same portal, opened on "Empezar aquí"
 | `docs/core/` | The boilerplate. Synced by `bun run up`; do not edit it in a project, your changes would be offered for overwrite. |
 | `docs/assets/`, `docs/index.html`, `docs/README.md` | The boilerplate (shared CSS/JS, the portal shell, this file). |
 | Any other folder under `docs/` | Your project. Never written by the updater; it shows up in the sidebar on refresh. |
+| The "Mapas de contexto" sidebar folder | Nobody under `docs/`: it is virtual. `bun run docs` serves each context map from its own skill (`.agents/skills/<slug>/references/*.html`, the list is `CONTEXT_MAP_SKILLS` in `cli/lib/context-maps.ts`) at `mapas-de-contexto/<slug>.html`. The folder appears only when at least one map exists on disk, and an ungenerated map says which command creates it. `bun run docs:build` does not include it, so a static copy of `docs/` carries no maps. |
 
 A page is one HTML file with a `<title>` and a `<meta name="description">` (both required by `bun run docs:check`), optional `<meta name="docs-order">`, linking `docs/assets/docs.css` and `docs/assets/docs.js`. A folder's `index.html` names the folder with `<meta name="docs-section-title">`. `bun run docs:build` writes the generated `docs/manifest.json` for static hosting.

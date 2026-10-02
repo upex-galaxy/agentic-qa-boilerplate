@@ -8,7 +8,7 @@
  * reader strips `<svg>`, `<style>`, `<script>` and the `<head>`, and prints each
  * `<section>` as markdown-shaped text with its id, its date and its sources.
  * No dependency: regexes over the fixed anatomy the generator writes
- * (`project-context/references/map-anatomy.md`).
+ * (`agentic-qa-core/references/business-context-maps.md` §2 "Anatomy").
  *
  * USAGE
  *   bun run context:map <skill-slug | path/to/map.html>

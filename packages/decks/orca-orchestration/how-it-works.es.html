@@ -2147,12 +2147,12 @@ preamble; channel = orca orchestration, never SendMessage/AskUserQuestion.</div>
 </script>
 
 <script>
-/* deck :: mobile scale-to-fit — fixed 16:9 layout scaled into narrow/short viewports.
+/* deck :: mobile scale-to-fit — fixed 1440x900 layout (the desktop reference viewport) scaled into narrow/short viewports.
    Desktop (vw>=1024 && vh>=640) is left untouched (native fluid). Preview iframes skipped. */
 (function(){
   try{
     if (new URLSearchParams(location.search).has('preview')) return;
-    var BASE_W = 1280, BASE_H = 720;
+    var BASE_W = 1440, BASE_H = 900;
     var deck = document.querySelector('.deck');
     if (!deck) return;
     function fit(){

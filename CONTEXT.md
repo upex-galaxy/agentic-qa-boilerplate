@@ -35,7 +35,7 @@ agentic-qa-boilerplate/
 │   ├── project.yaml        → Tool-agnostic project + Jira config (any harness reads this)
 │   ├── skills/             → Workflow skills (task instructions + references), committed; list: REGISTRY.md
 │   └── hooks/              → Shared personality-reinject emitter (one file, three adapters)
-├── .context/               → Documentation THAT the AI reads (context)
+├── .context/               → Gitignored cache (Jira, reports) + the few files this repo owns
 ├── docs/                   → Human documentation site (`bun run docs`)
 └── tests/                  → KATA Architecture implementation
 ```
@@ -47,7 +47,7 @@ agentic-qa-boilerplate/
 | `AGENTS.md` | Operational rules + project state | Every session automatically |
 | `.agents/project.yaml` + Jira catalogs | Tool-agnostic project config (`project.yaml`, `jira-fields.json`, `jira-required.yaml`) | When the AI needs to resolve `{{VAR}}` or `{{jira.<slug>}}` |
 | `.agents/skills/` | Task instructions + references (what to do, step by step) | When AI loads a skill for a specific task |
-| `.context/` | Facts about the system (what exists, how it works) | When AI needs to understand the system |
+| `.context/` | Regenerable caches (the Jira PBI tree via `bun run context:hydrate`, reports) plus the files this repo owns (ADRs, `project-config.md`, `test-specs/`). The AI's synthesized knowledge of the app lives in the context skills, read with `bun run context:map` | When a skill reads a ticket, an ADR or an automation plan |
 | `docs/` | HTML site for humans (`bun run docs`); `docs/core/` ships with the boilerplate, other folders are project-owned | When humans need to learn |
 
 ### 2.1 Host harnesses: one source, three consumers
@@ -83,7 +83,7 @@ The repo runs on **Claude Code, OpenCode, and Codex (CLI + Desktop)**. There is 
 
 `bun run agents:compat:check` validates the whole contract (shim bytes, alias target, no project command named like a skill, hook adapters, MCP parity), prints the alias status line on every run and groups errors per surface. It runs inside `bun run repo:check`, in the pre-push hook, and conditionally in pre-commit.
 
-**Project-owned commands and the updater.** A project's own slash commands are plain harness command files it edits by hand (`.claude/commands/`, `.opencode/commands/`). The old overlay `.agents/compatibility/command-aliases.project.json` is inert: nothing reads it, and `bun run up` names it once in an informational row. A command named like a repo skill would hide that skill's instructions, so `agents:compat:check` fails on it and `bun run agents:compat` (also run by `bun run up` and `bun run setup`) moves it to `.backups/shadowing-commands/<same path>`, gitignored and recoverable. `bun run up` (8.2) closes with one "Estado por superficie" table (one row per surface, `SURFACE_ORDER` in `cli/lib/updater-parity.ts`) and ONE parity prompt saved to `.agents/prompts/parity-plan.md`: numbered rows with evidence, one per path, each awaiting `keep project | take upstream | merge` before the AI edits anything; `take upstream` is suggested only where the project lacks the content entirely, and every `merge` on a watched file says what to port and what to keep. `--strict` turns a blocking parity finding into exit 1; an aborted run prints `Abortado.` and exits 1; `.claude/settings.json`, `.codex/` and the husky hooks ship once when missing and then sit on the protected watchlist next to `AGENTS.md`, `.mcp.json`, `opencode.jsonc` and `.codex/config.toml`, never overwritten. A project extends that watchlist through `updater.protected_paths` in `.agents/project.yaml`. On the migration run the `.claude/skills` alias waits for the migration commit (`bun run agents:compat` creates it).
+**Project-owned commands and the updater.** A project's own slash commands are plain harness command files it edits by hand (`.claude/commands/`, `.opencode/commands/`). The old overlay `.agents/compatibility/command-aliases.project.json` is inert: nothing reads it, and `bun run up` names it once in an informational row. A command named like a repo skill would hide that skill's instructions, so `agents:compat:check` fails on it and `bun run agents:compat` (also run by `bun run up` and `bun run setup`) moves it to `.backups/shadowing-commands/<same path>`, gitignored and recoverable. `bun run up` closes with one "Estado por superficie" table (one row per surface, `SURFACE_ORDER` in `cli/lib/updater-parity.ts`) and ONE parity prompt saved to `.agents/prompts/parity-plan.md`: numbered rows with evidence, one per path, each awaiting `keep project | take upstream | merge` before the AI edits anything; `take upstream` is suggested only where the project lacks the content entirely, and every `merge` on a watched file says what to port and what to keep. `--strict` turns a blocking parity finding into exit 1; an aborted run prints `Abortado.` and exits 1; `.claude/settings.json`, `.codex/` and the husky hooks ship once when missing and then sit on the protected watchlist next to `AGENTS.md`, `.mcp.json`, `opencode.jsonc` and `.codex/config.toml`, never overwritten. A project extends that watchlist through `updater.protected_paths` in `.agents/project.yaml`. On the migration run the `.claude/skills` alias waits for the migration commit (`bun run agents:compat` creates it).
 
 **Two harness-specific facts worth knowing.** Codex loads project `.codex/` config and hooks only in a repository marked trusted, and `bun run setup:doctor` reports that trust separately because it is runtime state no file read can verify. Codex Desktop consumes the same repository config as the CLI — no second convention, no extra directory.
 
@@ -120,7 +120,7 @@ The boilerplate intentionally separates two configuration substrates. They have 
 |--|--------|------------------------|
 | **Purpose** | Playwright / KATA **runtime** secrets and config | AI **context-engineering** variables for `{{VAR}}` resolution |
 | **Consumers** | The test runner (`bun run test`, fixtures, login helpers) | AI agents (Claude Code, Cursor, Codex, Copilot, OpenCode) — when resolving skill / template / doc references |
-| **Examples** | `LOCAL_USER_EMAIL`, `STAGING_USER_PASSWORD`, `XRAY_CLIENT_SECRET`, `ATLASSIAN_API_TOKEN`, `HEADLESS`, `DEFAULT_TIMEOUT` | `PROJECT_KEY`, `WEB_URL`, `API_URL`, `ATLASSIAN_URL`, `DB_MCP`, `default_env` |
+| **Examples** | `LOCAL_USER_EMAIL`, `STAGING_USER_PASSWORD`, `XRAY_CLIENT_SECRET`, `ATLASSIAN_API_TOKEN`, `HEADLESS`, `DEFAULT_TIMEOUT` | `PROJECT_KEY`, `WEB_URL`, `API_URL`, `issue_tracker.atlassian_url`, `DB_MCP`, `default_env` |
 | **Secrets?** | Yes (passwords, tokens, API keys) | No — must remain commit-safe |
 | **Committed?** | Gitignored (`.env.example` is committed as a template) | Committed |
 | **Lifecycle** | Edited per developer / per CI runner | Edited once when adopting the boilerplate; rarely changes after |
@@ -131,7 +131,7 @@ Two systems, two consumers, two lifecycles. Use the right substrate for the righ
 
 ## 4. Directory Structure
 
-### .context/ - AI Context
+### .context/ - caches and owned files
 
 ```
 .context/
@@ -214,7 +214,7 @@ These files have stable names and locations. Reference them confidently:
 | `.context/ADR/README.md` | Test-architecture decision log — when to write one, status lifecycle, index (append-only) |
 | `/test-automation` skill | Entry point for writing tests (KATA) |
 | `/sprint-testing` skill | QA workflow orchestrator (plan + execute + report) |
-| `/project-discovery` skill | Generate project documentation + `.context/` |
+| `/project-discovery` skill | Reverse-engineer the target repo into the domain and infra maps (inside their context skills) + `.context/project-config.md` |
 
 ---
 
@@ -252,19 +252,19 @@ bun run api:sync            → api/schemas/ (TypeScript types from OpenAPI)
 The maps are HTML: a human opens them in a browser or in `bun run docs` (folder "Mapas de contexto"); the AI reads them with `bun run context:map <slug> [--section <id>]`, never raw. A second run regenerates only the stale sections.
 
 
-> **`.context/ADR/` is the exception — append-only, never regenerated.** Architecture Decision Records are the one `.context/` artifact that is authored (by a human QA architect, or an AI workflow drafting for human approval — `/project-discovery` architecture/infra phases, `/framework-development`, `/sprint-testing` + `/test-automation` Stage 1) and **never re-run**. Each captures one important, hard-to-reverse test-architecture decision (runner, fixtures, isolation, auth-in-tests, selector contract, flake policy). Superseded by a newer ADR that links back — never overwritten or deleted. See `.context/ADR/README.md`.
+> **`.context/ADR/` is the exception — append-only, never regenerated.** Architecture Decision Records are the one `.context/` artifact that is authored (by a human QA architect, or an AI workflow drafting for human approval — `/project-discovery` architecture/infra phases, `/framework-development`, `/sprint-testing` + `/test-automation` planning) and **never re-run**. Each captures one important, hard-to-reverse test-architecture decision (runner, fixtures, isolation, auth-in-tests, selector contract, flake policy). Superseded by a newer ADR that links back — never overwritten or deleted. See `.context/ADR/README.md`.
 
 ### QA Stages (Per User Story)
 
 | Stage | Activity | Skill |
 |-------|----------|-------|
-| **Stage 0** | Pre-sprint Shift-Left: AC refinement on backlog Stories, gap-spotting, pre-sprint ATP (outline maturity, authored into the `{{jira.acceptance_test_plan}}` field; the Test Plan item is created by `/sprint-testing` Stage 1), batch grooming | `/shift-left-testing` |
-| **Stage 1** | Planning (in-sprint, AC validation, full ATP; short-circuits the early planning phases when a recent Stage 0 pass exists, window in `/sprint-testing`) | `/sprint-testing` |
-| **Stage 2** | Execution (exploratory + smoke + trifuerza) | `/sprint-testing` |
-| **Stage 3** | Reporting (ATR, QA comment, bug reports) | `/sprint-testing` |
-| **Stage 4** | TMS documentation + ROI prioritization (Candidate / Manual / Deferred) | `/test-documentation` |
-| **Stage 5** | Automation: plan → code → review (KATA on Playwright + TS) | `/test-automation` |
-| **Stage 6** | Regression execution + failure classification + GO/NO-GO | `/regression-testing` |
+| **Shift-Left** | Pre-sprint: AC refinement on backlog Stories, gap-spotting, pre-sprint ATP (outline maturity, authored into the `{{jira.acceptance_test_plan}}` field; the Test Plan item is created by `/sprint-testing` Planning), batch grooming | `/shift-left-testing` |
+| **Planning** | In-sprint: AC validation, ATS, full ATP; short-circuits the early planning phases when a recent Shift-Left pass exists (window in `/sprint-testing`) | `/sprint-testing` |
+| **Execution** | Exploratory + smoke + trifuerza | `/sprint-testing` |
+| **Reporting** | ATR, QA comment, bug reports | `/sprint-testing` |
+| **Documentation** | TMS documentation + ROI prioritization (Candidate / Manual / Deferred) | `/test-documentation` |
+| **Automation** | Plan → code → review (KATA on Playwright + TS) | `/test-automation` |
+| **Regression** | Regression execution + failure classification + GO/NO-GO | `/regression-testing` |
 | **Onboarding** | 4-phase reverse-engineering of an existing target repo | `/project-discovery` + `/test-framework-adaptation` |
 
 ---
@@ -358,7 +358,7 @@ Never write the update into `CLAUDE.md`: it is a generated one-line shim, and `a
 ### When to Record an ADR
 
 - A hard-to-reverse **test-architecture** decision is made (test runner, fixture / test-data strategy, isolation & parallelization model, auth-in-tests, selector contract, flake-retry policy)
-- It passes the two-gate test (architectural **AND** hard to reverse) → author `.context/ADR/ADR-NNNN-<slug>.md` (append-only; supersede, never edit). AI drafts `Proposed`; the human approves → `Accepted`
+- It passes the two-gate test (architectural **AND** hard to reverse) → author `.context/ADR/ADR-NNNN-<slug>.md` (append-only; supersede, never edit). A decision the human already approved is written `Accepted`, citing the approval; `Proposed` only while a question is still open
 - Ticket-local test trade-offs stay in the ticket's plan, not an ADR. Detection + authoring: `agentic-qa-core/references/adr-doctrine.md`; convention: `.context/ADR/README.md`
 
 ---
