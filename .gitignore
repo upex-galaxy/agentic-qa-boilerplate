@@ -17,6 +17,8 @@ node_modules/
 # writes into the current directory when no filename is given. Session state
 # belongs in /.auth/ (agentic-qa-core/references/browser-sessions.md).
 .playwright/profiles/
+# `playwright-cli` snapshots, console logs and screenshots when no path is given.
+.playwright-cli/
 storage-state-*.json
 **/evidence/
 

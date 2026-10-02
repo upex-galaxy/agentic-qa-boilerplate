@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
-import { lintDocs } from './lint-docs.ts';
+import { lintDocs, resolvePublishedLink, sitePathOf } from './lint-docs.ts';
 
 let root: string;
 
@@ -189,5 +189,63 @@ describe('lint-docs roster and scripts', () => {
     write('packages/cli-pkg/README.md', '`bun run repo:check`, then `bun run build`, never `bun run gone`.');
     const findings = lintDocs(root).findings.filter(f => f.kind === 'script');
     expect(findings.map(f => `${f.file}:${f.target}`)).toEqual(['packages/cli-pkg/README.md:gone']);
+  });
+});
+
+describe('lint-docs published site (Pages portal and decks)', () => {
+  test('maps a published file to its site path; markdown and unpublished files have none', () => {
+    expect(sitePathOf('packages/pages-home/index.html')).toBe('index.html');
+    expect(sitePathOf('packages/decks/a/how-it-works.es.html')).toBe('decks/a/how-it-works.es.html');
+    expect(sitePathOf('docs/core/x.html')).toBe('docs/core/x.html');
+    expect(sitePathOf('docs/README.md')).toBeNull();
+    expect(sitePathOf('README.md')).toBeNull();
+  });
+
+  test('resolves a portal link the way the site serves it', () => {
+    expect(resolvePublishedLink('index.html', './decks/a/x.html')).toBe('packages/decks/a/x.html');
+    expect(resolvePublishedLink('index.html', './docs/')).toBe('docs');
+    expect(resolvePublishedLink('index.html', './kata/')).toBe('packages/kata-academy');
+    expect(resolvePublishedLink('index.html', './harnesses.es.html')).toBe('packages/pages-home/harnesses.es.html');
+    expect(resolvePublishedLink('decks/a/x.html', '../../index.html')).toBe('packages/pages-home/index.html');
+    expect(resolvePublishedLink('index.html', './staging/regression/')).toBe('skip');
+    expect(resolvePublishedLink('docs/core/x.html', '../../../README.md')).toBe('outside');
+  });
+
+  test('a dead portal link fails; a live one, a report tree and a link back from a deck pass', () => {
+    write('packages/pages-home/index.html', [
+      '<a href="./decks/a/x.html">ok</a>',
+      '<a href="./docs/">docs</a>',
+      '<a href="./staging/regression/">report</a>',
+      '<a href="./decks/">no index</a>',
+      '<a href="./decks/gone/x.html">gone</a>',
+    ].join('\n'));
+    write('packages/decks/a/x.html', '<a href="../../index.html">hub</a> <a href="../a/x.html">self</a>');
+    write('docs/index.html', '<head><title>Docs</title><meta name="description" content="d" /></head>');
+    const findings = lintDocs(root).findings.filter(f => f.kind === 'link');
+    expect(findings.map(f => `${f.file}:${f.line}:${f.target}`)).toEqual([
+      'packages/pages-home/index.html:5:./decks/gone/x.html',
+    ]);
+  });
+
+  test('a docs page link that climbs out of the published site is dead even when the repo file exists', () => {
+    write('README.md', '# Readme');
+    write('docs/core/page.html', '<head><title>P</title><meta name="description" content="d" /></head><a href="../../../README.md">readme</a>');
+    const findings = lintDocs(root).findings.filter(f => f.kind === 'link');
+    expect(findings.map(f => `${f.file}:${f.target}`)).toEqual(['docs/core/page.html:../../../README.md']);
+  });
+
+  test('bun run names inside decks and the portal are checked; escapes and prose about the command are not names', () => {
+    write('package.json', JSON.stringify({ scripts: { 'docs': 'x', 'pw:install': 'y' } }));
+    write('packages/decks/a/x.html', [
+      '<code>bun run docs</code> <code>bun run gone:one</code>',
+      '<script>const s = "bun run pw:install\\n\\nbun run docs\\n";</script>',
+      '<p>bun install = npm install, bun run = npm run</p>',
+    ].join('\n'));
+    write('packages/pages-home/index.html', '<code>bun run missing-two</code>');
+    const findings = lintDocs(root).findings.filter(f => f.kind === 'script');
+    expect(findings.map(f => `${f.file}:${f.line}:${f.target}`)).toEqual([
+      'packages/decks/a/x.html:1:gone:one',
+      'packages/pages-home/index.html:1:missing-two',
+    ]);
   });
 });

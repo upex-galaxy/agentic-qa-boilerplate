@@ -1,15 +1,41 @@
 name: GitHub Pages — Docs Hub
 
 # Publishes the learning hub to gh-pages:
-#   /            -> homepage dashboard (packages/pages-home)
+#   /            -> homepage dashboard + sibling pages (packages/pages-home/*.html)
 #   /kata/       -> KATA Academy build (packages/kata-academy)
 #   /decks/      -> how-it-works + curriculum decks from packages/decks/
-#   /<env>/regression/ -> Allure reports (owned by regression.yml — NEVER touched here;
-#                         keep_files: true preserves them on every deploy)
+#   /docs/       -> the human documentation site (docs/), static build
+#   /<env>/<suite>/ -> Allure reports (owned by regression.yml / smoke.yml /
+#                      sanity.yml — NEVER touched here)
 #
-# packages/decks/ is the single source for the published site. Skills under
+# packages/decks/ is the single source for the published decks. Skills under
 # .agents/skills/ hold no HTML deck copies of their own (see
 # packages/decks/README.md).
+#
+# DEPLOY + PRUNE DESIGN
+# The hub owns four surfaces on gh-pages: the root *.html files, decks/, kata/
+# and docs/. Everything else on the branch (the <env>/ report trees, written by
+# the suite workflows) belongs to someone else. The deploy therefore checks out
+# gh-pages and mirrors ONLY the hub's surfaces from _site:
+#   - decks/, kata/, docs/: `rsync --delete`, so a deck renamed or retired in
+#     packages/decks/ disappears from the site instead of living on as a stale
+#     URL;
+#   - root *.html: a file present on gh-pages and absent from _site is removed;
+#   - anything else (the <env>/ trees) is never read, staged or deleted: every
+#     `git add` is scoped to the hub's paths.
+# A peaceiris deploy with keep_files cannot delete, which is why this workflow
+# commits to the checkout itself, the same way scripts/ci/publish-allure-pages.ts
+# does for the reports. A push rejected by a concurrent report publish is
+# rebased and retried. .DS_Store files are dropped at assembly.
+#
+# DOCS PUBLISHING
+# `bun run docs:build` writes docs/manifest.json (the sidebar the static portal
+# reads; the dev server builds it in memory instead). Only docs/ is copied. The
+# context maps that `bun run docs` serves from .agents/skills/*-context/ hold
+# this repository's own project content and are NEVER published: the static
+# manifest does not list them, so the portal shows no maps folder. The identity
+# guard below fails the run if _site/docs carries the project's Atlassian host,
+# project key or environment hosts from .agents/project.yaml.
 
 on:
   push:
@@ -18,6 +44,8 @@ on:
       - 'packages/kata-academy/**'
       - 'packages/pages-home/**'
       - 'packages/decks/**'
+      - 'docs/**'
+      - 'scripts/docs-manifest.ts'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -53,34 +81,140 @@ jobs:
         working-directory: packages/kata-academy
         run: bun run build
 
+      - name: Build Docs Manifest
+        run: bun run docs:build
+
       - name: Assemble Site
         run: |
-          mkdir -p _site/kata _site/decks
+          mkdir -p _site/kata _site/decks _site/docs
           touch _site/.nojekyll
 
-          # Homepage dashboard + sibling standalone pages (architecture, release notes)
+          # Homepage dashboard + sibling standalone pages (architecture, harnesses, test management)
           cp packages/pages-home/*.html _site/
 
           # KATA Academy (built with base: './' so it works under /kata/)
           cp -R packages/kata-academy/dist/. _site/kata/
 
-          # Decks: every HTML deck in packages/decks/<skill>/ -> /decks/<skill>/
+          # Decks: every HTML deck in packages/decks/<folder>/ -> /decks/<folder>/
           cp -R packages/decks/. _site/decks/
           rm -f _site/decks/README.md
+
+          # Docs site: docs/ only (manifest included), never the context maps
+          cp -R docs/. _site/docs/
+          rm -f _site/docs/README.md _site/docs/.gitignore
+
+          find _site -name '.DS_Store' -delete
 
           echo "Site tree:"
           find _site -maxdepth 2 -type d | sort
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: gh-pages
-          publish_dir: _site
-          keep_files: true
+      - name: Guard Docs Against Project Identity
+        run: |
+          # Values that identify THIS repository's own project (.agents/project.yaml).
+          # Null / placeholder values are skipped.
+          yaml_value() {
+            grep -E "^[[:space:]]*$1:" .agents/project.yaml | head -n 1 \
+              | sed -E "s/^[^:]*:[[:space:]]*//; s/[[:space:]]+#.*$//; s/^['\"]//; s/['\"]$//"
+          }
+          patterns=()
+          host=$(yaml_value atlassian_url | sed -E 's#^https?://##; s#/.*$##')
+          [ -n "$host" ] && [ "$host" != "null" ] && patterns+=("$host")
+          key=$(yaml_value project_key)
+          [ -n "$key" ] && [ "$key" != "null" ] && patterns+=("\\b${key}-[0-9]+")
+          while IFS= read -r url; do
+            h=$(printf '%s' "$url" | sed -E 's#^https?://##; s#/.*$##; s#:[0-9]+$##')
+            case "$h" in ''|null|localhost|127.0.0.1) ;; *) patterns+=("$h") ;; esac
+          done < <(grep -E '^[[:space:]]*(web_url|api_url):' .agents/project.yaml \
+            | sed -E 's/^[^:]*:[[:space:]]*//; s/[[:space:]]+#.*$//')
+          if [ ${#patterns[@]} -eq 0 ]; then
+            echo "No project identity values set: nothing to guard."
+            exit 0
+          fi
+          leaks=0
+          for p in "${patterns[@]}"; do
+            if grep -rIniE "$p" _site/docs; then leaks=1; fi
+          done
+          if [ "$leaks" -ne 0 ]; then
+            echo "::error::_site/docs carries project identity from .agents/project.yaml (hits above). Remove it from docs/ before publishing."
+            exit 1
+          fi
+          echo "Identity guard: 0 hits across ${#patterns[@]} pattern(s)."
+
+      - name: Checkout gh-pages
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          remote="https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+          if git ls-remote --exit-code --heads "$remote" gh-pages >/dev/null; then
+            # Partial clone: full commit graph (so a rebase on a concurrent publish
+            # works) without downloading every historical report blob.
+            git clone --filter=blob:none --branch gh-pages "$remote" gh-pages
+          else
+            git init -b gh-pages gh-pages
+            git -C gh-pages remote add origin "$remote"
+          fi
+
+      - name: Sync Hub Surfaces (prune included)
+        id: sync
+        run: |
+          cd gh-pages
+
+          # Root *.html: drop what the hub no longer ships, then copy the current set.
+          pruned_root=""
+          for f in *.html; do
+            [ -e "$f" ] || continue
+            if [ ! -f "../_site/$f" ]; then
+              rm -f "$f"
+              pruned_root="$pruned_root $f"
+            fi
+          done
+          cp ../_site/*.html .
+          cp ../_site/.nojekyll .
+
+          # decks/, kata/, docs/: exact mirror of _site.
+          for dir in decks kata docs; do
+            mkdir -p "$dir"
+            rsync -a --delete --exclude '.DS_Store' "../_site/$dir/" "$dir/"
+          done
+
+          # Stage ONLY the hub's paths: the <env>/ report trees are never touched.
+          git add -A -- decks kata docs .nojekyll ':(glob)*.html'
+          pruned=$(git diff --cached --name-only --diff-filter=D)
+          {
+            echo "## Docs Hub deploy"
+            if [ -n "$pruned" ]; then
+              echo "Pruned (no longer in source):"
+              echo '```'
+              echo "$pruned"
+              echo '```'
+            else
+              echo "Pruned: nothing."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No changes to publish."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git commit -q -m "pages: docs hub from ${GITHUB_SHA::7}"
+          fi
+
+      - name: Push gh-pages
+        if: steps.sync.outputs.changed == 'true'
+        working-directory: gh-pages
+        run: |
+          # A suite workflow may publish a report between our clone and our push.
+          for attempt in 1 2 3; do
+            if git push origin HEAD:gh-pages; then exit 0; fi
+            echo "Push rejected (attempt $attempt): rebasing on remote gh-pages…"
+            git pull --rebase origin gh-pages
+          done
+          echo "::error::Could not push gh-pages after 3 attempts."
+          exit 1
 
       - name: Post Site URL
         run: |
-          echo "## Docs Hub" >> $GITHUB_STEP_SUMMARY
-          echo "Homepage: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" >> $GITHUB_STEP_SUMMARY
-          echo "KATA Academy: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/kata/" >> $GITHUB_STEP_SUMMARY
+          base="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
+          echo "Homepage: $base/" >> $GITHUB_STEP_SUMMARY
+          echo "Docs: $base/docs/" >> $GITHUB_STEP_SUMMARY
+          echo "KATA Academy: $base/kata/" >> $GITHUB_STEP_SUMMARY
