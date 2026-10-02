@@ -432,7 +432,7 @@ table.tbl .mono{font-size:13px}
 
 <div class="deck">
 
-  <div class="deck-footer"><span class="mono">upex-galaxy · agentic-qa-boilerplate</span><span class="slide-number" data-current="1" data-total="17"></span></div>
+  <div class="deck-footer"><span class="mono">upex-galaxy · agentic-qa-boilerplate</span><span class="slide-number" data-current="1" data-total="22"></span></div>
 
   <!-- 1. PORTADA -->
   <section class="slide is-active" data-title="Portada">
@@ -467,7 +467,9 @@ table.tbl .mono{font-size:13px}
         <span class="wf-arr">→</span>
         <div class="wf-node"><b>plan.md</b><small>plan-first</small></div>
         <span class="wf-arr">→</span>
-        <div class="wf-node"><b>Trigger</b><small>gh workflow run</small></div>
+        <div class="wf-node gate"><b>RTR</b><small>find-or-create, antes del CI</small></div>
+        <span class="wf-arr">→</span>
+        <div class="wf-node"><b>Trigger</b><small>-f execution_key=RTR</small></div>
         <span class="wf-arr">→</span>
         <div class="wf-node"><b>RUN_ID</b><small>persistir ya</small></div>
         <span class="wf-arr">→</span>
@@ -495,14 +497,23 @@ table.tbl .mono{font-size:13px}
         <div class="wf-node caution"><b>CAUTION 4–6</b></div>
         <div class="wf-node nogo"><b>NO-GO &lt;4</b></div>
         <span class="wf-arr">→</span>
-        <div class="wf-node"><b>Report</b><small>.context/reports/</small></div>
+        <div class="wf-node"><b>Veredicto en el RTR</b><small>comentario → complete · reporte [LOCAL]</small></div>
       </div>
       <div class="wf-row">
         <span class="wf-lbl alt">ADYACENTES</span>
         <div class="wf-node nogo"><small>NO-GO → <b>Jira Bug/Defect</b> vía /acli → fix → re-run ⟲ Fase 1</small></div>
-        <div class="wf-node"><small>ENVIRONMENT → re-run tras infra-check</small></div>
-        <div class="wf-node"><small>TMS sync <b>RTP/RTR</b> (STR solo al cierre del sprint; /xray-cli · /acli)</small></div>
-        <div class="wf-node"><small>Archive session + memoria</small></div>
+        <div class="wf-node"><small>ENVIRONMENT → re-run tras infra-check (mismo RTR)</small></div>
+        <div class="wf-node"><small>Clusters de fallos → <b>un worktree por cluster</b> (opcional)</small></div>
+      </div>
+      <div class="wf-row">
+        <span class="wf-lbl alt">CIERRE</span>
+        <div class="wf-node"><small><b>RTR</b> → close · RTP queda ready (STR solo al cierre del sprint)</small></div>
+        <span class="wf-arr">→</span>
+        <div class="wf-node"><small>Verificador ligero</small></div>
+        <span class="wf-arr">→</span>
+        <div class="wf-node"><small>Session footer (chat)</small></div>
+        <span class="wf-arr">→</span>
+        <div class="wf-node"><small>Archive + memoria</small></div>
       </div>
       <div class="wf-row">
         <span class="wf-lbl alt">HANDOFFS</span>
@@ -528,7 +539,7 @@ table.tbl .mono{font-size:13px}
         <tr><td><b>GitHub Actions Secrets</b></td><td><span class="tag ok">REQUIRED</span></td><td>El runner usa <span class="mono">secrets.&lt;ENV&gt;_USER_EMAIL/_PASSWORD</span> + <span class="mono">XRAY_*</span>/<span class="mono">ATLASSIAN_*</span>. Verificar con <span class="mono">gh secret list</span> — el gap silencioso más común.</td></tr>
         <tr><td><b>Allure local</b></td><td><span class="tag ok">REQUIRED</span></td><td><span class="mono">bunx allure</span> resuelve (devDep, versión en package.json, sin install global) + <span class="mono">allurerc.mjs</span> presente para <span class="mono">bun allure:agent</span>.</td></tr>
         <tr><td><b>Env activo confirmado</b></td><td><span class="tag ok">REQUIRED</span></td><td>Confirmar el target antes de un run largo (default: <span class="mono">staging</span>).</td></tr>
-        <tr><td><b>[TMS_TOOL] · [ISSUE_TRACKER_TOOL]</b></td><td><span class="tag wr">OPTIONAL</span></td><td><span class="mono">/xray-cli</span> solo si hay sync TMS; <span class="mono">/acli</span> solo si el veredicto obliga a abrir issues.</td></tr>
+        <tr><td><b>[TMS_TOOL] · [ISSUE_TRACKER_TOOL]</b></td><td><span class="tag wr">OPTIONAL</span></td><td>TMS solo si <span class="mono">testing.tms_cli</span> está en <span class="mono">.agents/project.yaml</span>: entonces la Fase 1 crea el RTR antes del trigger (<span class="mono">/xray-cli</span> en jira-xray). <span class="mono">/acli</span> solo si el veredicto obliga a abrir issues.</td></tr>
       </tbody>
     </table>
     <div class="callout mt-m"><h4>Dos leyes del gate</h4><p><b>args-as-answers</b> — suite, env y grep/test_file ya vienen como argumentos: pregunta solo los huecos. <b>probe, don't assume</b> — cada capacidad se prueba con un comando real. Gaps + REDs se presentan en UNA checklist; cualquier RED bloqueante → STOP.</p></div>
@@ -546,7 +557,7 @@ table.tbl .mono{font-size:13px}
       </div>
       <div class="card acc">
         <h4>El caso estrella: re-attach del RUN_ID</h4>
-        <p>Si el Monitor murió a mitad del watch pero <span class="mono">plan.md</span> ya capturó el <span class="mono">RUN_ID</span>, la skill se <b>re-engancha</b> al run vivo en lugar de re-disparar el CI — ahorra decenas de minutos de reloj.</p>
+        <p>Si el Monitor murió a mitad del watch pero <span class="mono">plan.md</span> ya capturó el <span class="mono">RUN_ID</span>, la skill se <b>re-engancha</b> al run vivo en lugar de re-disparar el CI: se ahorra la corrida entera. El <span class="mono">RTR_KEY</span> también vive en <span class="mono">plan.md</span>, así la sesión retomada sabe en qué Execution importó CI.</p>
       </div>
     </div>
     <div class="term mt-m">
@@ -563,11 +574,11 @@ table.tbl .mono{font-size:13px}
     <p class="kicker">fase 1 · execute — elegir la suite</p>
     <h2 class="h2">La suite equivocada da la señal equivocada</h2>
     <table class="tbl mt-m">
-      <thead><tr><th>Suite</th><th>Workflow</th><th>Duración (orden de magnitud)</th><th>Usar cuando</th></tr></thead>
+      <thead><tr><th>Suite</th><th>Workflow</th><th>Duración</th><th>Usar cuando</th></tr></thead>
       <tbody>
-        <tr><td><b>regression</b></td><td class="mono">regression.yml</td><td>20–60 min</td><td>Validación pre-release, corrida nocturna completa</td></tr>
-        <tr><td><b>smoke</b></td><td class="mono">smoke.yml</td><td>2–5 min</td><td>Health check post-deploy, solo tests <span class="mono">@critical</span></td></tr>
-        <tr><td><b>sanity</b></td><td class="mono">sanity.yml</td><td>1–10 min</td><td>Una feature / un archivo / un patrón <span class="mono">grep</span></td></tr>
+        <tr><td><b>regression</b></td><td class="mono">regression.yml</td><td>larga (lee la del último <span class="mono">gh run view</span>)</td><td>Validación pre-release, corrida nocturna completa. Única suite con RTR.</td></tr>
+        <tr><td><b>smoke</b></td><td class="mono">smoke.yml</td><td>corta</td><td>Health check post-deploy, solo tests <span class="mono">@critical</span></td></tr>
+        <tr><td><b>sanity</b></td><td class="mono">sanity.yml</td><td>variable</td><td>Una feature / un archivo / un patrón <span class="mono">grep</span></td></tr>
       </tbody>
     </table>
     <div class="cards c2 mt-m">
@@ -577,27 +588,61 @@ table.tbl .mono{font-size:13px}
     <div class="notes">Un smoke verde de 3 minutos NO es un release gate. Emparejar la suite con la pregunta que el usuario está haciendo es el primer acto de criterio del workflow.</div>
   </section>
 
-  <!-- 6. FASE 1 · TRIGGER -->
+  <!-- 6a. FASE 1 · RTR ANTES DEL TRIGGER -->
+  <section class="slide" data-title="Fase 1 · RTR antes del trigger">
+    <p class="kicker">fase 1 · execute: el registro de la corrida nace antes que la corrida</p>
+    <h2 class="h2">Primero el RTR, después el CI</h2>
+    <p class="lede" style="font-size:17px">El <b>RTR</b> (Regression Test Results) es una Test Execution <span class="mono">RTR: {scope-id}: Regression Testing</span>, con scope-id <span class="mono">&lt;env&gt;-&lt;YYYY-MM-DD&gt;</span> o un tag de release. CI importa en <b>su</b> key, nunca en un secret compartido. Solo la suite <b>regression</b> tiene RTR.</p>
+    <div class="cards c2 mt-m" style="align-items:start">
+      <div class="card acc">
+        <span class="num">1</span>
+        <h4>Resolver el RTP</h4>
+        <p>Buscar el Test Plan <span class="mono">RTP: {PROJECT_KEY}: Regression Test Plan</span>. Si falta, <b>no se crea aquí</b> (es la promoción de <span class="mono">/test-documentation</span>): el RTR nace sin <span class="mono">testPlan</span>, el hueco queda como N/A declarado en el verificador y en el reporte, y se recomienda correr la promoción.</p>
+      </div>
+      <div class="card acc">
+        <span class="num">2</span>
+        <h4>Find-or-create del RTR</h4>
+        <p>Parent <b>QA Test Artifacts</b>, Test Environment = env activo, assignee = uno mismo, <span class="mono">testPlan</span> → RTP. Un RTR del mismo scope todavía activo (re-run por ENVIRONMENT, sesión retomada) se <b>reutiliza</b>. Si ya está cerrado con veredicto, la corrida nueva es un RTR <b>nuevo</b> con <span class="mono">#2</span> en el scope-id.</p>
+      </div>
+      <div class="card acc">
+        <span class="num">3</span>
+        <h4>Persistir y pasar a CI</h4>
+        <p><span class="mono">RTR_KEY</span> va a <span class="mono">plan.md §Inputs</span>, en la línea donde después cae el <span class="mono">RUN_ID</span>, y sale hacia CI como <span class="mono">-f execution_key=$RTR_KEY</span>. Ese input pisa el secret <span class="mono">STP_EXECUTION_KEY</span>, que queda solo para corridas programadas sin key.</p>
+      </div>
+      <div class="card acc">
+        <span class="num">4</span>
+        <h4>Variantes</h4>
+        <p><b>Cierre de sprint</b>: el objetivo es el STR <span class="mono">STR: Sprint#{N}: Regression Testing</span> (<span class="mono">testPlan</span> → STP y → RTP), con <span class="mono">N</span> dado por el usuario o por el STP, nunca inventado. <b>jira-native</b>: no hay RTR; el trigger va sin <span class="mono">execution_key</span>.</p>
+      </div>
+    </div>
+    <div class="callout bad mt-m"><h4>Un RTR por veredicto, y nunca se reabre</h4><p>Un RTR cerrado no vuelve atrás (la transición <span class="mono">reactive</span> no se usa). Una corrida posterior al veredicto, por ejemplo el re-run de un NO-GO ya corregido, abre su propio RTR.</p></div>
+    <div class="notes">Fuente: SKILL.md Fase 1 §Create the RTR (before the trigger) y §TMS sync. El RTR existe antes de que CI arranque para que el workflow reciba su key e importe ahí. El RTP es el plan long-lived que alimenta /test-documentation; esta skill solo lo consume como destino del testPlan y jamás escribe en él.</div>
+  </section>
+
+  <!-- 6b. FASE 1 · TRIGGER -->
   <section class="slide" data-title="Fase 1 · Trigger">
-    <p class="kicker">fase 1 · execute — plan, trigger, RUN_ID</p>
+    <p class="kicker">fase 1 · execute: plan, RTR, trigger, RUN_ID</p>
     <h2 class="h2">Plan primero, dispara después, persiste el RUN_ID ya</h2>
     <div class="term mt-m">
       <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">fase-1 · trigger</span></div>
 <pre><span class="cm"># 1 · preflight de fase (siempre)</span>
 <span class="p">$</span> gh auth status &amp;&amp; gh repo view --json name,owner &amp;&amp; gh workflow list
 <span class="cm"># 2 · escribir .session/regression-testing/&lt;scope&gt;/plan.md ANTES del trigger</span>
-<span class="cm"># 3 · disparar la suite con inputs explícitos</span>
-<span class="p">$</span> gh workflow run regression.yml -f environment=staging -f video_record=false -f generate_allure=true
-<span class="cm"># sanity: grep O test_file — nunca ambos</span>
-<span class="p">$</span> gh workflow run sanity.yml -f environment=staging -f test_type=e2e -f grep=<span class="hi">"@auth"</span>
-<span class="cm"># 4 · capturar RUN_ID (esperar 3–5s: el run no es consultable al instante)</span>
+<span class="cm"># 3 · crear el RTR (slide anterior) → RTR_KEY en plan.md §Inputs</span>
+<span class="cm"># 4 · disparar la suite con inputs explícitos</span>
+<span class="p">$</span> gh workflow run regression.yml -f environment=staging -f execution_key=<span class="hi">$RTR_KEY</span> \
+    -f video_record=false -f generate_allure=true
+<span class="cm"># smoke y sanity: sin RTR y sin execution_key (nunca escriben en una Execution de regresión)</span>
+<span class="p">$</span> gh workflow run smoke.yml -f environment=staging -f generate_allure=true
+<span class="p">$</span> gh workflow run sanity.yml -f environment=staging -f test_type=e2e -f grep=<span class="hi">"@auth"</span>   <span class="cm"># grep O test_file, nunca ambos</span>
+<span class="cm"># 5 · capturar RUN_ID (esperar unos segundos: el run no es consultable al instante)</span>
 <span class="p">$</span> RUN_ID=$(gh run list --workflow=regression.yml --limit=1 --json databaseId -q '.[0].databaseId')</pre>
     </div>
     <div class="cards c2 mt-m">
-      <div class="callout"><h4>Checkpoint crítico</h4><p>El <span class="mono">RUN_ID</span> se añade a <span class="mono">plan.md §Inputs</span> + entrada en <span class="mono">progress.md</span>. Trigger sin RUN_ID persistido = resume sin re-attach.</p></div>
-      <div class="callout warn"><h4>Anti-patrón R5</h4><p>Nunca disparar sin <span class="mono">--ref &lt;commit-sha&gt;</span> fijado — commit distinto = baseline distinta. Y el video (<span class="mono">video_record=true</span>) infla artefactos 5–10×: solo para debug.</p></div>
+      <div class="callout"><h4>Checkpoint crítico</h4><p>El <span class="mono">RUN_ID</span> se añade a <span class="mono">plan.md §Inputs</span>, junto al <span class="mono">RTR_KEY</span>, y <span class="mono">progress.md</span> registra ambos. Sin RUN_ID persistido no hay re-attach; sin RTR_KEY una sesión retomada no sabe en qué Execution importó CI. En jira-native se omite <span class="mono">execution_key</span> en todas las suites.</p></div>
+      <div class="callout warn"><h4>Anti-patrón R5</h4><p>Nunca disparar sin <span class="mono">--ref &lt;commit-sha&gt;</span> fijado: commit distinto, baseline distinta. Y <span class="mono">video_record=true</span> infla mucho los artefactos: solo para depurar.</p></div>
     </div>
-    <div class="notes">La condición de carrera es real: gh workflow run retorna antes de que el run exista en la API — de ahí los 3-5s. Video solo al depurar flakiness o capturar evidencia de un bug puntual.</div>
+    <div class="notes">La condición de carrera es real: gh workflow run retorna antes de que el run exista en la API, de ahí la espera corta antes de gh run list. Los inputs que se muestran son los que declaran regression.yml, smoke.yml y sanity.yml en .github/workflows/. Video solo al depurar flakiness o capturar evidencia de un bug puntual.</div>
   </section>
 
   <!-- 7. FASE 1 · MONITOR -->
@@ -626,9 +671,10 @@ table.tbl .mono{font-size:13px}
     <h2 class="h2">Recoge la evidencia antes de que expire la retención</h2>
     <div class="term mt-m">
       <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">fase-2 · collect</span></div>
-<pre><span class="cm"># inline (hilo principal): contexto + SOLO logs fallidos (--log completo puede pasar 50MB)</span>
+<pre><span class="cm"># inline (hilo principal): contexto + SOLO logs fallidos (--log completo vuelca cada step)</span>
 <span class="p">$</span> gh run view <span class="hi">&lt;RUN_ID&gt;</span> --log-failed
-<span class="cm"># tres subagentes en paralelo, uno por artefacto (cap = 3)</span>
+<span class="p">$</span> gh run view <span class="hi">&lt;RUN_ID&gt;</span> --json artifacts --jq '.artifacts[].name'
+<span class="cm"># subagentes en paralelo: uno por artefacto que lista el comando anterior</span>
 <span class="p">$</span> gh run download <span class="hi">&lt;RUN_ID&gt;</span> -n merged-allure-results-staging -D ./analysis/            <span class="cm"># A</span>
 <span class="p">$</span> gh run download <span class="hi">&lt;RUN_ID&gt;</span> -n e2e-failure-evidence          -D ./analysis/evidence/   <span class="cm"># B</span>
 <span class="p">$</span> gh run download <span class="hi">&lt;RUN_ID&gt;</span> -n e2e-playwright-report         -D ./analysis/playwright/ <span class="cm"># C</span>
@@ -637,7 +683,7 @@ table.tbl .mono{font-size:13px}
 <span class="p">$</span> gh run download $PREV -n merged-allure-results-staging -D ./analysis/previous/</pre>
     </div>
     <div class="callout bad mt-m"><h4>Anti-patrón R4</h4><p>Nunca saltes la descarga de Allure en builds rojos — screenshots, traces y videos desaparecen al vencer la ventana de retención. Evidencia primero, análisis después.</p></div>
-    <div class="notes">Los metadata-reads (gh run view) quedan inline porque son cortos; solo las tres descargas justifican dispatch. Para triage local previo: bun allure:agent emite markdown legible por la IA sin parsear HTML.</div>
+    <div class="notes">Los metadata-reads (gh run view) quedan inline porque son cortos; solo las descargas justifican dispatch, un subagente por artefacto listado. Para triage local previo: bun allure:agent emite markdown legible por la IA sin parsear HTML.</div>
   </section>
 
   <!-- 9. FASE 2 · PARSE + MÉTRICAS -->
@@ -684,7 +730,7 @@ table.tbl .mono{font-size:13px}
       <div class="callout bad"><h4>La misclasificación #1</h4><p>NUNCA marques REGRESSION sin revisar el historial primero. Y un primer fallo sin historia no es regresión: es NEW TEST — se verifica a mano una vez antes de clasificar.</p></div>
       <div class="callout"><h4>Dispatch por volumen</h4><p>&gt;10 fallos → chunks de ~10 con un subagente clasificador por chunk (cap 10), merge de JSONs en el hilo principal. ≤10 → inline: el overhead no se justifica.</p></div>
     </div>
-    <div class="notes">Flakiness necesita mínimo 10 runs de historial — con menos, se anota "insufficient history" y se reevalúa el próximo sprint (nunca se adivina). R1: jamás FLAKY sin re-ejecutar en aislamiento.</div>
+    <div class="notes">Para poder decir FLAKY hacen falta al menos 5 runs de historial: con menos, se anota "insufficient history" y se reevalúa el próximo sprint (nunca se adivina). El porcentaje de fallo se calcula sobre una ventana más ancha, los últimos N = min(10, disponibles) runs: 5 es el piso para tener señal, 10 es la ventana. R1: jamás FLAKY sin re-ejecutar en aislamiento.</div>
   </section>
 
   <!-- 11. FASE 2 · CATEGORÍA → ACCIÓN -->
@@ -725,6 +771,28 @@ table.tbl .mono{font-size:13px}
     </table>
     <div class="callout mt-m"><h4>Salida de la Fase 2</h4><p>Bloque de análisis: tabla de métricas + delta de tendencia, una sección por categoría (Regressions primero), detalle por test fallido (nombre, ATC ID, suite, error, last-pass, screenshot) y un veredicto preliminar.</p></div>
     <div class="notes">Estos dos ejes se cruzan en la Fase 3: una REGRESSION con severidad HIGH/CRITICAL es veto duro por sí sola, sin importar el score.</div>
+  </section>
+
+  <!-- 12b. FLEET SEAM -->
+  <section class="slide" data-title="Flota por cluster">
+    <p class="kicker">después de la fase 2 · fleet seam (opcional)</p>
+    <h2 class="h2">Varios clusters de fallos, <span class="grad">un worktree por cluster</span></h2>
+    <p class="lede" style="font-size:17px">El triage nunca se reparte entre sesiones: una sola sesión conductora lee el run, clasifica y es dueña del veredicto. La flota sirve para lo que viene después, cuando la clasificación deja varios clusters independientes que necesitan código, y solo si el usuario pide trabajarlos a la vez.</p>
+    <div class="cards c2 mt-m" style="align-items:start">
+      <div class="card acc">
+        <h4>Topología</h4>
+        <p>Un cluster = un worker = un worktree = una rama. Nunca dos workers sobre el mismo cluster: dos sesiones en un mismo checkout se pisan el índice de git aunque toquen archivos distintos. Cada fix se escribe bajo <span class="mono">/test-automation</span> (Plan → Code → Review) y aterriza según <span class="mono">git_strategy</span>.</p>
+      </div>
+      <div class="card acc">
+        <h4>launch.txt, siempre</h4>
+        <p>La conductora escribe <span class="mono">.session/regression-testing/&lt;scope&gt;/launch.txt</span>, una línea autocontenida por cluster, exista o no un orquestador en la máquina. Lanzar y supervisar es cosa de <span class="mono">/orca-orchestration</span>; si nada puede lanzarlas, esas líneas se pegan a mano en terminales.</p>
+      </div>
+    </div>
+    <div class="cards c2 mt-m">
+      <div class="callout bad"><h4>El veredicto no se mueve</h4><p>GO / CAUTION / NO-GO, las métricas, el RTR (o el STR de cierre de sprint) y toda escritura en Jira quedan con la conductora. Un worker arregla su cluster y reporta: no re-puntúa el run, no archiva el defecto, no transiciona el RTR.</p></div>
+      <div class="callout"><h4>Regla de silencio</h4><p>Si no hay transporte de orquestación, la skill no lo menciona: ni en el preflight, ni en el bloque de entorno, ni en el reporte. El <span class="mono">launch.txt</span> es el fallback y ya está escrito.</p></div>
+    </div>
+    <div class="notes">Fuente: SKILL.md §Fleet seam (optional). La flota es una opción para paralelizar arreglos, no para paralelizar el juicio. Un fix de regresión no está exento del gate de automatización: pasa por /test-automation como cualquier otro código de tests.</div>
   </section>
 
   <!-- 13. FASE 3 · SCORE + VEREDICTO -->
@@ -777,25 +845,84 @@ table.tbl .mono{font-size:13px}
 
   <!-- 15. FASE 3 · REPORTE + TMS + ARCHIVE -->
   <section class="slide" data-title="Fase 3 · Reporte y cierre">
-    <p class="kicker">fase 3 · report &amp; decide — reporte, TMS sync, archive</p>
-    <h2 class="h2">El entregable: un reporte que un PM puede leer en frío</h2>
+    <p class="kicker">fase 3 · report &amp; decide: veredicto en el RTR, reporte local, archive</p>
+    <h2 class="h2">Lo que queda es el RTR con su veredicto; el reporte es local</h2>
     <div class="cards c2 mt-m" style="align-items:start">
-      <div class="term">
-        <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">.context/reports/regression-{env}-{date}.md</span></div>
-<pre><span class="hi"># Regression Quality Report — staging — 2026-07-06</span>
-<span class="okc">## Executive Summary</span>   Verdict + score/9 + 1 línea
-<span class="okc">## Metrics</span>             Pass Rate·Regressions·Critical·Flaky vs umbral
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">cierre del RTR (pseudocódigo de la skill)</span></div>
+<pre><span class="cm"># el RTR existe desde la Fase 1 y CI ya importó en él</span>
+[TMS_TOOL] Update Test Execution <span class="hi">&lt;&lt;RTR_KEY&gt;&gt;</span>
+  results: solo lo que el import de CI no dejó
+[ISSUE_TRACKER_TOOL] Add Comment <span class="hi">&lt;&lt;RTR_KEY&gt;&gt;</span>
+  body: <span class="okc">GO</span> / <span class="hi">CAUTION</span> / <span class="bad">NO-GO</span>, score, blockers, links
+[ISSUE_TRACKER_TOOL] Transition complete   <span class="cm"># active → close</span>
+<span class="cm"># RTP: queda en ready, nunca se completa</span></pre>
+        </div>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">.context/reports/regression-{env}-{date}.md · [LOCAL]</span></div>
+<pre><span class="okc">## Executive Summary</span>   Verdict + score/9 + 1 línea
 <span class="okc">## Release Blockers</span>    si NO-GO: regressions + owner + ETA
 <span class="okc">## Failure Details</span>     Regressions → Flaky → Known → Blocked → Env
-<span class="okc">## Trend</span>               últimos 5 runs · <span class="okc">## Links</span> · <span class="okc">## Recommendations</span></pre>
+<span class="okc">## Trend</span> · <span class="okc">## Links</span> (RTR key) · <span class="okc">## Recommendations</span></pre>
+        </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:10px">
-        <div class="callout"><h4>TMS sync (opcional, items-first)</h4><p><b>STP</b> = Test Plan <span class="mono">STP: Sprint#{N}: {objetivo}</span> → epic QA Master Test Plan — lo crea <span class="mono">/sprint-testing</span> al inicio del sprint; aquí se <b>consume</b> (find-or-create solo como fallback si falta) · <b>STR</b> = Test Execution <span class="mono">STR: Sprint#{N}: Regression Testing</span> → epic QA Test Artifacts — se crea al cierre del sprint: el primero que llega (sprint-testing batch-close o esta regresión) lo crea, el otro lo completa. Es el recap del sprint, no el registro de cada corrida. · <b>RTP</b> = el <b>Regression Test Plan (RTP)</b> long-lived <span class="mono">RTP: {PROJECT_KEY|module}: Regression Test Plan</span> → epic QA Master Test Plan — lo crea <span class="mono">/test-documentation</span> al promover cada TC <span class="mono">regression-candidate</span>; aquí se <b>consume</b>: la lista de tests de cada corrida sale de su membership y el RTP se deja en <span class="mono">ready</span> — una corrida de regresión nunca completa el plan del que salió. · <b>RTR</b> = Test Execution <span class="mono">RTR: {scope-id}: Regression Testing</span> (scope-id <span class="mono">{env}-{YYYY-MM-DD}</span> o un tag de release) → epic QA Test Artifacts, <span class="mono">testPlan</span> → RTP: el registro de cada corrida regular de regresión. Lo crea esta skill en Fase 1, antes del trigger de CI, y lo cierra tras el veredicto; 1 por veredicto. El update de resultados por ATC apunta al RTR (al STR solo en la corrida de cierre de sprint), vía <span class="mono">/xray-cli</span>. En jira-native no hay item RTR: se declara el skip y los resultados van al status de cada Test vía <span class="mono">/acli</span>.</p></div>
-        <div class="callout"><h4>Post-decisión</h4><p><b>GO</b> → candidato aprobado + smoke post-deploy · <b>CAUTION</b> → revisión con el lead, riesgos por escrito · <b>NO-GO</b> → bloquear, asignar issues, planificar re-run.</p></div>
-        <div class="callout warn"><h4>Archive de sesión</h4><p>Tras el veredicto: <span class="mono">.session/…/&lt;scope&gt;/</span> → <span class="mono">.session/.archive/</span> + resumen a memoria. Con NO-GO, el archive espera a que termine la creación de issues.</p></div>
+        <div class="callout"><h4>El registro durable</h4><p>Es el <b>RTR</b> en el TMS (el STR solo en la corrida de cierre de sprint) más el comentario GO / CAUTION / NO-GO publicado en él. El RTR se cierra vía <span class="mono">complete</span> <b>después</b> del comentario, nunca antes y nunca queda abierto. En <b>jira-native</b> no hay RTR: los resultados son escrituras de status por Test, el veredicto va al reporte local y a un comentario en el issue de Release si existe, con el skip declarado.</p></div>
+        <div class="callout warn"><h4>El reporte vive en una sola máquina</h4><p><span class="mono">.context/reports/</span> está en <span class="mono">.gitignore</span>: es salida <b>[LOCAL]</b> generada y solo existe donde corrió la suite. Nada downstream puede depender de ese archivo; sirve para leer el run en frío, no como entregable.</p></div>
+        <div class="callout"><h4>Post-decisión</h4><p><b>GO</b> → candidato aprobado + smoke post-deploy · <b>CAUTION</b> → revisión con el lead, riesgos por escrito · <b>NO-GO</b> → bloquear, asignar issues, planificar re-run (con un RTR nuevo).</p></div>
+        <div class="callout warn"><h4>Archive de sesión</h4><p>Tras el veredicto: <span class="mono">.session/regression-testing/&lt;scope&gt;/</span> → <span class="mono">.session/.archive/</span> + resumen a memoria. Con NO-GO, el archive espera a que termine la creación de issues.</p></div>
       </div>
     </div>
-    <div class="notes">El reporte canónico queda commiteado en .context/reports/ como entregable; el estado de sesión se archiva aparte. Misma estructura en cada run para que stakeholders aprendan a escanearla.</div>
+    <div class="notes">Fuente: SKILL.md §TMS sync, §Post-decision actions y §Per-phase progress + Archive, más .context/reports/README.md. El reporte se genera en cada run con la misma estructura, para que se pueda escanear rápido, pero el archivo es [LOCAL]: lo que el equipo ve desde otra máquina es el RTR y su comentario de veredicto. STP y STR solo entran en la corrida que ES el cierre del sprint: el STP lo crea /sprint-testing y aquí se consume; el STR lo crea el primero que llega al cierre y el otro lo completa.</div>
+  </section>
+
+  <!-- 15a. VERIFICADOR LIGERO + SESSION FOOTER -->
+  <section class="slide" data-title="Verificador y footer">
+    <p class="kicker">cierre del stage · light stage verifier + session footer</p>
+    <h2 class="h2">Antes de decir "listo": un checklist y dos bloques en el chat</h2>
+    <div class="cards c2 mt-m" style="align-items:start">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="callout"><h4>Verificador ligero (artifact-lifecycle.md §5)</h4><p>Ocho líneas comunes: artefactos por KEY, links, statuses, assignee, parent + components, campos y comentarios escritos, checkpoint en <span class="mono">progress.md</span>, footer impreso. Cada una es <b>YES</b> o un <b>N/A declarado</b> con su motivo; una línea en blanco es un verificador fallido y cualquier <b>NO</b> deja el stage en NEEDS REVISION. "Ligero" significa que se responde con lo que el stage ya hizo, más como mucho UNA lectura extra.</p></div>
+        <div class="term">
+          <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">líneas propias de Regression</span></div>
+<pre>[ ] RTR por KEY, creado ANTES del trigger (salió como execution_key)
+[ ] RTR con Test Environment, assignee self, parent QA Test Artifacts
+[ ] RTR → RTP vía testPlan <span class="cm">(RTP ausente = N/A declarado)</span>
+[ ] Comentario de veredicto EN el RTR <span class="cm">(no el archivo local)</span>
+[ ] RTR en close vía complete, DESPUÉS del veredicto; nunca reactive
+[ ] Cierre de sprint: STR → STP y → RTP, cerrado tras el veredicto
+[ ] RTP intacto en ready
+[ ] jira-native: skip declarado + status por Test + reporte [LOCAL]
+[ ] Slug sin mapear → fallback §4 (preguntado), nunca skip mudo</pre>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="callout"><h4>Bloque 1 · Screenshots (rutas relativas)</h4><p>Cada captura se nombra en el chat en el turno en que aparece, y al cierre va la lista completa: rutas relativas al repo, verificadas con <span class="mono">ls</span>, anotaciones de bugs primero. Aquí suelen ser la evidencia que se adjunta al defecto, sacada de <span class="mono">./analysis/evidence/</span>.</p></div>
+        <div class="callout"><h4>Bloque 2 · Session Footer, encuadre <b>Execution</b></h4><p>Skills cargadas, MCPs llamados y CLIs invocados de verdad (<span class="mono">gh</span>, <span class="mono">bunx allure</span>, <span class="mono">acli</span>...), más los niveles de la pirámide que la suite de CI ejercitó, con <b>"none"</b> explícito en los que no tocó, y la línea <span class="mono">Refinements proposed:</span> con lo que quedó propuesto en <span class="mono">refinements.md</span>.</p></div>
+        <div class="callout warn"><h4>Solo en el chat</h4><p>Ninguno de los dos bloques va a un comentario de Jira ni al cuerpo del RTR. Con subagentes, cada reporte de stage trae los cinco campos del footer y la conductora lo compila UNA vez al cierre.</p></div>
+      </div>
+    </div>
+    <div class="notes">Fuentes: agentic-qa-core/references/artifact-lifecycle.md §5, agentic-qa-core/references/session-footer-contract.md y SKILL.md §Post-decision actions y §Gotchas. El verificador existe para atrapar lo que se saltó en silencio, por ejemplo un RTR que quedó activo o un veredicto que solo existe en el archivo local. Los aprendizajes de la sesión se proponen en .session/regression-testing/&lt;scope&gt;/refinements.md y nunca se aplican a la skill viva.</div>
+  </section>
+
+  <!-- 15a2. REPORTES PUBLICADOS: PAGES O PORTAL PRIVADO -->
+  <section class="slide" data-title="Reportes publicados">
+    <p class="kicker">dónde se ve el Allure de CI · github pages o portal privado</p>
+    <h2 class="h2">Público por defecto, <span class="grad">privado con login</span> cuando la evidencia no puede ser pública</h2>
+    <table class="tbl mt-m">
+      <thead><tr><th>Ruta</th><th>Qué es</th><th>Cómo se activa</th></tr></thead>
+      <tbody>
+        <tr><td><b>GitHub Pages</b></td><td>Default. <span class="mono">scripts/ci/publish-allure-pages.ts</span> publica en <span class="mono">gh-pages</span>; la URL <span class="mono">/{env}/{suite}/</span> abre el último run.</td><td>Habilitar Pages una vez: <span class="mono">references/github-pages-setup.md</span>.</td></tr>
+        <tr><td><b>Test Report Portal</b></td><td>Privado: Vercel (login) + Supabase (índice de runs) + bucket R2 privado. Login con email del trabajo, filtrado por dominio; retención en el portal.</td><td>El publish de <span class="mono">regression.yml</span>, <span class="mono">smoke.yml</span> y <span class="mono">sanity.yml</span> ya es dual: va al portal si existe el secret <span class="mono">PORTAL_URL</span>. Solo se cablean secrets.</td></tr>
+        <tr><td><b>GitHub Enterprise</b></td><td>Atajo sin infraestructura: visibilidad de Pages en Private.</td><td>Se ofrece primero, si la org lo tiene.</td></tr>
+      </tbody>
+    </table>
+    <div class="cards c2 mt-m">
+      <div class="callout"><h4>Protocolo que ejecuta la IA</h4><p><span class="mono">references/private-hosting-setup.md</span>: la IA corre cada paso (<span class="mono">supabase</span>, <span class="mono">wrangler</span>, <span class="mono">vercel</span>, <span class="mono">gh secret set</span>) y solo se detiene en los HUMAN CHECKPOINT: altas de cuentas, handshakes de login, OAuth opcional. Empieza detectando si el repo ya está cableado y cierra con un checklist de verificación (el viewUrl sin login devuelve 401, nunca bytes).</p></div>
+      <div class="callout warn"><h4>Version-currency de Allure, obligatorio</h4><p>En cualquier setup de Allure o de Pages, primero: <span class="mono">npm view allure version</span> contra <span class="mono">package.json</span>. Mismo major atrasado → resumir novedades y ofrecer <span class="mono">bun update</span>. Major nuevo → nunca subir en silencio: breaking changes y aprobación explícita.</p></div>
+    </div>
+    <div class="notes">Fuentes: SKILL.md §Specific tasks y §Allure version-currency check, references/private-hosting-setup.md, references/github-pages-setup.md (Step 0). Se pide con frases como "reportes privados", "protege los reportes con login" o "no publiques evidencia pública". En modo portal gh-pages deja de usarse; borrar esa rama exige confirmación explícita (Critical Rule #6). El portal se despliega una vez por organización y cada repo solo agrega sus secrets.</div>
   </section>
 
   <!-- 15b. CONTRATO AGÉNTICO + OBSERVATION -->
@@ -804,33 +931,53 @@ table.tbl .mono{font-size:13px}
     <h2 class="h2">El agente ejecuta. La evidencia prueba. <span class="grad">La persona decide.</span></h2>
     <div class="cards c2 mt-m" style="align-items:start">
       <div class="callout"><h4>El contrato de Regression</h4><p>El <b>agente</b> corre la suite, clasifica cada fallo, computa pass-rate y tendencia, emite GO / CAUTION / NO-GO y escribe el RTR (el STR solo en la corrida de cierre de sprint). La <b>persona</b> firma el veredicto CAUTION, y nunca deja que el agente invente el número de sprint. La <b>evidencia que sobrevive</b>: el reporte Allure, el RTR enlazado a su RTP, y la historia de corridas que autoriza la palabra FLAKY.</p></div>
-      <div class="callout"><h4>Autonomía CSA <b>3</b>, y <b>4</b> para un GO limpio</h4><p>Decide dentro de límites declarados y escala fuera de ellos; con un GO sin fallos la supervisión es por monitoreo, no por aprobación. <b>Sin verificador separado</b>: el único stage que lo exige es Automation, que es también el único que sube su autonomía a 3 dentro de un plan aprobado. Ningún stage del pipeline pasa de 3.</p></div>
+      <div class="callout"><h4>Autonomía CSA <b>3</b>, y <b>4</b> para un GO limpio</h4><p>Decide dentro de límites declarados y escala fuera de ellos; con un GO sin fallos la supervisión es por monitoreo, no por aprobación. <b>Sin verificador separado</b>: el único stage que lo exige es Automation. Regression es la excepción deliberada al techo de 3 del pipeline: un run sin fallos no necesita aprobación humana para avanzar, mientras que todo CAUTION o NO-GO lo firma una persona.</p></div>
     </div>
     <div class="callout mt-m"><h4>Y después del GO viene <b>Observation</b></h4><p>El pipeline no termina cuando la suite pasa. <b>Observation</b> es el octavo stage: producción, capacidad <b>L4</b>. No tiene skill — su unidad operativa es una <b>rutina agéntica</b> que vigila SLOs, error budget, RUM y señales de canary, abre items al backlog y alimenta el próximo Shift-Left. La persona firma los SLOs, la política de error budget y la decisión de frenar releases. Está <b>declarado, no implementado</b>: sin skill propio (el estado vive en <span class="mono">agentic-qa-core/references/stage-gates.md</span>), y decirlo así es parte de la honestidad del método.</p></div>
     <div class="notes">Fuente: agentic-qa-core/references/stage-gates.md — contrato agéntico por stage y escala CSA 0-5. El punto pedagógico: el DoD dice qué tiene que ser verdad; el contrato dice quién tuvo permiso de hacerlo. Un orquestador que avanza un stage sin honrar el contrato se salteó un gate exactamente igual que uno que tildó un DoD que no verificó. Y Observation existe para que nadie crea que el ciclo cierra en CI.</div>
   </section>
 
+  <!-- 15c. INVOCACIÓN EN TRES HOSTS -->
+  <section class="slide" data-title="Invocación en tres hosts">
+    <p class="kicker run">cómo se invoca · claude code, opencode, codex</p>
+    <h2 class="h2">Un nombre de skill, tres hosts, <span class="grad">sin modos</span></h2>
+    <p class="lede" style="font-size:17px">La skill no declara modos: lo que viaja después del nombre son <b>args-as-answers</b> (suite, env, grep o test_file). El preflight solo pregunta lo que falte; sin suite, "run regression" pelado corre <b>regression</b> en el env por defecto.</p>
+    <table class="tbl mt-m">
+      <thead><tr><th>Host</th><th>Cómo se invoca</th><th>Ejemplo</th></tr></thead>
+      <tbody>
+        <tr><td><b>Claude Code</b></td><td>Slash command con la skill, args detrás</td><td class="mono">/regression-testing smoke staging</td></tr>
+        <tr><td><b>OpenCode</b></td><td>Sin slash commands: se nombra en prosa</td><td>"carga la skill <span class="mono">regression-testing</span>, suite smoke en staging"</td></tr>
+        <tr><td><b>Codex</b></td><td>Igual que OpenCode, en prosa</td><td>"carga la skill <span class="mono">regression-testing</span> y corre sanity con grep @auth"</td></tr>
+      </tbody>
+    </table>
+    <div class="cards c2 mt-m">
+      <div class="callout"><h4>Frases que la disparan</h4><p>"run regression", "smoke suite", "analyze test results", "GO/NO-GO decision", "release readiness", "quality report", "flaky tests", "pass rate".</p></div>
+      <div class="callout"><h4>Rutas que no son modos</h4><p>Los reportes privados se piden con una frase: "reportes privados", "protege los reportes con login", "no publiques evidencia pública". Lo mismo GitHub Pages ("publish the reports site") y el version-currency check ("is Allure up to date?").</p></div>
+    </div>
+    <div class="notes">Fuente: SKILL.md (frontmatter description, §Readiness Preflight Gate y §Specific tasks) y AGENTS.md §5 Skill modes. La skill no tiene sección Mode routing, así que en Claude Code el primer token no selecciona un modo: todo lo que va después del nombre se lee como respuesta del preflight. En OpenCode y Codex no existen slash commands, se pide en prosa nombrando la skill.</div>
+  </section>
+
   <!-- 16. CIERRE -->
   <section class="slide" data-title="Cierre">
-    <p class="kicker run">cierre — cómo se invoca y qué sigue</p>
+    <p class="kicker run">cierre: qué entra, qué sale, qué queda</p>
     <h2 class="h2">Cinco clasificaciones + una, tres vetos, <span class="grad">una decisión</span></h2>
     <div class="cards c3 mt-m" style="align-items:start">
       <div class="card acc">
         <h4>Invocación</h4>
-        <p><span class="mono">/regression-testing</span> — o "run regression", "smoke suite", "analyze test results", "GO/NO-GO decision", "release readiness", "quality report".</p>
+        <p><span class="mono">/regression-testing</span> en Claude Code; "carga la skill <span class="mono">regression-testing</span>" en OpenCode y Codex. Detalle en la slide anterior.</p>
       </div>
       <div class="card acc">
         <h4>Handoffs</h4>
-        <p>Entra desde <span class="mono">/test-automation</span> (Automation: escribe los tests y el marker <span class="mono">@blocked</span>). Sale hacia <span class="mono">/sprint-testing</span> (verificar el fix a mano) y de vuelta a <span class="mono">/test-automation</span> (estabilizar flaky, nuevos tests). Tras un <b>GO</b>, el ciclo no termina: entra en <b>Observation</b>.</p>
+        <p>Entra desde <span class="mono">/test-automation</span> (Automation: escribe los tests y el marker <span class="mono">@blocked</span>) y desde <span class="mono">/test-documentation</span> (promueve el RTP). Sale hacia <span class="mono">/sprint-testing</span> (verificar el fix a mano) y de vuelta a <span class="mono">/test-automation</span> (estabilizar flaky, nuevos tests). Tras un <b>GO</b>, el ciclo no termina: entra en <b>Observation</b>.</p>
       </div>
       <div class="card acc">
         <h4>Artefactos clave</h4>
-        <p><span class="mono">plan.md + progress.md</span> (sesión) · <span class="mono">./analysis/</span> (artefactos CI) · <span class="mono">.context/reports/regression-&lt;env&gt;-&lt;date&gt;.md</span> · issues Jira (Bug/Defect) · RTP/RTR en el TMS (STP/STR solo al cierre del sprint).</p>
+        <p><b>Entregable</b>: el RTR en el TMS con su comentario de veredicto (el STR solo al cierre del sprint) e issues Jira (Bug/Defect). <b>Salida local</b>: <span class="mono">.context/reports/regression-&lt;env&gt;-&lt;date&gt;.md</span> [LOCAL], <span class="mono">./analysis/</span> (artefactos CI), <span class="mono">plan.md + progress.md</span> (sesión).</p>
       </div>
     </div>
-    <div class="callout mt-m"><h4>Profundizar</h4><p><span class="mono">references/failure-classification.md</span> (catálogo de patrones de error) · <span class="mono">references/ci-cd-integration.md</span> (workflows, sharding, secrets) · <span class="mono">references/github-pages-setup.md</span> (publicar los reportes Allure — correr antes el version-currency check).</p></div>
+    <div class="callout mt-m"><h4>Profundizar</h4><p><span class="mono">references/failure-classification.md</span> (catálogo de patrones de error) · <span class="mono">references/ci-cd-integration.md</span> (workflows, sharding, secrets, <span class="mono">execution_key</span>) · <span class="mono">references/github-pages-setup.md</span> (publicar los reportes Allure) · <span class="mono">references/private-hosting-setup.md</span> (portal privado). Antes de cualquier setup de Allure o Pages: el version-currency check.</p></div>
     <p class="lede mt-m" style="font-size:18px">Clasifica con honestidad, respeta los vetos, y el veredicto no lo discute nadie.</p>
-    <div class="notes">Cierre: esta skill no escribe tests (eso es test-automation) ni re-testea fixes a mano (eso es sprint-testing). Ejecuta, analiza y decide — con el humano dueño del veredicto.</div>
+    <div class="notes">Cierre: esta skill no escribe tests (eso es test-automation) ni re-testea fixes a mano (eso es sprint-testing). Ejecuta, analiza y decide, con el humano dueño del veredicto.</div>
   </section>
 
 </div>
