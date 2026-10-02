@@ -132,7 +132,7 @@
       .nav {
         display: flex;
         align-items: center;
-        gap: 22px;
+        gap: 15px;
         min-width: 0;
         overflow-x: auto;
         scrollbar-width: none;
@@ -142,7 +142,7 @@
       }
       .nav a {
         position: relative;
-        font-size: 0.84rem;
+        font-size: 0.8rem;
         font-weight: 500;
         color: var(--fg-3);
         text-decoration: none;
@@ -432,7 +432,7 @@
         color: var(--fg-2);
       }
       .d-pipeline {
-        min-width: 900px;
+        min-width: 1000px;
       }
       .d-ladder {
         min-width: 660px;
@@ -691,6 +691,16 @@
       .deck:hover {
         border-color: var(--line-2);
       }
+      .cat-group {
+        margin-top: 30px;
+      }
+      .cat-k {
+        font-family: var(--mono);
+        font-size: 0.7rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--amber);
+      }
       .deck .tag {
         grid-column: 1 / -1;
         font-family: var(--mono);
@@ -911,13 +921,14 @@
           <a href="#pipeline" data-sec="pipeline">Pipeline</a>
           <a href="#artefactos" data-sec="artefactos">Artefactos</a>
           <a href="#harnesses" data-sec="harnesses">Harnesses</a>
+          <a href="#decks" data-sec="decks">Decks</a>
           <a href="#academia" data-sec="academia">Academia</a>
           <a href="#curriculum" data-sec="curriculum">Currículum</a>
           <a href="#reportes" data-sec="reportes">Reportes</a>
         </nav>
         <div class="topbar-end">
+          <a href="./docs/">Docs</a>
           <a href="./test-management.es.html">Test Management</a>
-          <a href="./arquitectura.es.html">Arquitectura</a>
           <a
             class="pill"
             href="https://github.com/upex-galaxy/agentic-qa-boilerplate"
@@ -943,6 +954,7 @@
             </p>
             <div class="cta-row">
               <a class="btn btn-primary" href="./kata/">Entrar a KATA Academy →</a>
+              <a class="btn btn-ghost" href="./docs/">Leer la documentación</a>
               <a
                 class="btn btn-ghost"
                 href="https://github.com/upex-galaxy/agentic-qa-boilerplate"
@@ -953,8 +965,8 @@
             </div>
             <div class="stat-rail">
               <div class="stat">
-                <div class="n">7</div>
-                <div class="t">stages</div>
+                <div class="n">IQL</div>
+                <div class="t">ocho stages con nombre</div>
               </div>
               <div class="stat">
                 <div class="n">Decks</div>
@@ -996,7 +1008,8 @@
                 </li>
               </ul>
               <p class="qs-note">
-                Requisitos duros: Bun y al menos uno de Claude Code, OpenCode o Codex.
+                Requisitos duros: Bun, Node, git y tar, más al menos uno de Claude Code, OpenCode o
+                Codex.
               </p>
             </div>
           </div>
@@ -1008,12 +1021,12 @@
         <div class="wrap">
           <div class="sec-head">
             <p class="eyebrow">01 · El pipeline</p>
-            <h2>Siete stages, un skill dueño por stage, un solo hilo de trazabilidad</h2>
+            <h2>Ocho stages con nombre, un skill dueño por stage, un solo hilo de trazabilidad</h2>
             <p>
-              No son seis carpetas sueltas: es una secuencia. Cada stage recibe el artefacto del
+              No son carpetas sueltas: es la secuencia del IQL. Cada stage recibe el artefacto del
               anterior y produce el que el siguiente necesita. Lo que empieza como un acceptance
               criterion ambiguo en el backlog termina siendo un test automatizado que vota en la
-              decisión de release.
+              decisión de release. Los stages se nombran con palabras, nunca con números.
             </p>
           </div>
 
@@ -1022,9 +1035,9 @@
             <div class="fig-scroll">
               <svg
                 class="diagram d-pipeline"
-                viewBox="0 0 1180 192"
+                viewBox="0 0 1336 192"
                 role="img"
-                aria-label="Pipeline de siete stages: Stage 0 Shift-Left QA ejecutado por shift-left-testing; Stages 1 a 3 Planning, Execution y Reporting ejecutados por sprint-testing; Stage 4 Documentation por test-documentation; Stage 5 Automation por test-automation; Stage 6 Regression por regression-testing. Cada stage produce artefactos que alimentan al siguiente."
+                aria-label="Los ocho stages del IQL: Shift-Left, antes del sprint, ejecutado por shift-left-testing; Planning, Execution y Reporting, dentro del sprint, ejecutados por sprint-testing; Documentation por test-documentation, Automation por test-automation y Regression por regression-testing, en el cierre y release; Observation, en producción, declarado y sin skill. Cada stage produce artefactos que alimentan al siguiente."
               >
                 <defs>
                   <marker
@@ -1040,12 +1053,11 @@
                   </marker>
                 </defs>
 
-                <!-- fases -->
-                <text class="t-phase" x="74" y="12" text-anchor="middle">PRE-SPRINT</text>
-                <text class="t-phase" x="512" y="12" text-anchor="middle">EN SPRINT · MANUAL</text>
-                <text class="t-phase" x="1028" y="12" text-anchor="middle">
-                  AUTOMATIZACIÓN + CI
-                </text>
+                <!-- momentos -->
+                <text class="t-phase" x="74" y="12" text-anchor="middle">ANTES DEL SPRINT</text>
+                <text class="t-phase" x="434" y="12" text-anchor="middle">DENTRO DEL SPRINT</text>
+                <text class="t-phase" x="926" y="12" text-anchor="middle">CIERRE Y RELEASE</text>
+                <text class="t-phase" x="1262" y="12" text-anchor="middle">PRODUCCIÓN</text>
 
                 <!-- bandas de skill dueño -->
                 <rect class="band" x="9" y="26" width="130" height="26" rx="6" />
@@ -1058,35 +1070,33 @@
                 <text class="band-t" x="950" y="43" text-anchor="middle">/test-automation</text>
                 <rect class="band" x="1041" y="26" width="130" height="26" rx="6" />
                 <text class="band-t" x="1106" y="43" text-anchor="middle">/regression-testing</text>
+                <rect class="dashed" x="1197" y="26" width="130" height="26" rx="6" />
+                <text class="t-mono" x="1262" y="43" text-anchor="middle">sin skill</text>
 
                 <!-- stages -->
                 <rect class="box" x="9" y="76" width="130" height="62" rx="8" />
-                <text class="t-mono" x="74" y="98" text-anchor="middle">STAGE 0</text>
-                <text class="t-name" x="74" y="119" text-anchor="middle">Shift-Left QA</text>
+                <text class="t-name" x="74" y="112" text-anchor="middle">Shift-Left</text>
 
                 <rect class="box" x="213" y="76" width="130" height="62" rx="8" />
-                <text class="t-mono" x="278" y="98" text-anchor="middle">STAGE 1</text>
-                <text class="t-name" x="278" y="119" text-anchor="middle">Planning</text>
+                <text class="t-name" x="278" y="112" text-anchor="middle">Planning</text>
 
                 <rect class="box" x="369" y="76" width="130" height="62" rx="8" />
-                <text class="t-mono" x="434" y="98" text-anchor="middle">STAGE 2</text>
-                <text class="t-name" x="434" y="119" text-anchor="middle">Execution</text>
+                <text class="t-name" x="434" y="112" text-anchor="middle">Execution</text>
 
                 <rect class="box" x="525" y="76" width="130" height="62" rx="8" />
-                <text class="t-mono" x="590" y="98" text-anchor="middle">STAGE 3</text>
-                <text class="t-name" x="590" y="119" text-anchor="middle">Reporting</text>
+                <text class="t-name" x="590" y="112" text-anchor="middle">Reporting</text>
 
                 <rect class="box" x="681" y="76" width="130" height="62" rx="8" />
-                <text class="t-mono" x="746" y="98" text-anchor="middle">STAGE 4</text>
-                <text class="t-name" x="746" y="119" text-anchor="middle">Documentation</text>
+                <text class="t-name" x="746" y="112" text-anchor="middle">Documentation</text>
 
                 <rect class="box" x="885" y="76" width="130" height="62" rx="8" />
-                <text class="t-mono" x="950" y="98" text-anchor="middle">STAGE 5</text>
-                <text class="t-name" x="950" y="119" text-anchor="middle">Automation</text>
+                <text class="t-name" x="950" y="112" text-anchor="middle">Automation</text>
 
                 <rect class="box" x="1041" y="76" width="130" height="62" rx="8" />
-                <text class="t-mono" x="1106" y="98" text-anchor="middle">STAGE 6</text>
-                <text class="t-name" x="1106" y="119" text-anchor="middle">Regression</text>
+                <text class="t-name" x="1106" y="112" text-anchor="middle">Regression</text>
+
+                <rect class="dashed" x="1197" y="76" width="130" height="62" rx="8" />
+                <text class="t-name" x="1262" y="112" text-anchor="middle">Observation</text>
 
                 <!-- flechas -->
                 <line class="flow" x1="144" y1="107" x2="204" y2="107" marker-end="url(#ah)" />
@@ -1097,11 +1107,12 @@
                 <line class="flow" x1="816" y1="107" x2="876" y2="107" marker-end="url(#ah)" />
                 <text class="t-mono" x="846" y="70" text-anchor="middle">verdict: Candidate</text>
                 <line class="flow" x1="1020" y1="107" x2="1032" y2="107" marker-end="url(#ah)" />
+                <line class="dashed" x1="1176" y1="107" x2="1192" y2="107" />
 
                 <!-- artefactos que produce cada stage -->
-                <text class="t-mono" x="74" y="160" text-anchor="middle">ATP · outline</text>
+                <text class="t-mono" x="74" y="160" text-anchor="middle">ATP en el campo</text>
                 <text class="t-mono" x="74" y="175" text-anchor="middle">ACs refinados</text>
-                <text class="t-mono" x="278" y="160" text-anchor="middle">ATP · ATS · ATR</text>
+                <text class="t-mono" x="278" y="160" text-anchor="middle">ATS · ATP · ATR</text>
                 <text class="t-mono" x="278" y="175" text-anchor="middle">test cases</text>
                 <text class="t-mono" x="434" y="160" text-anchor="middle">
                   evidencia UI · API · DB
@@ -1110,33 +1121,36 @@
                 <text class="t-mono" x="590" y="160" text-anchor="middle">ATR final</text>
                 <text class="t-mono" x="590" y="175" text-anchor="middle">comentario QA</text>
                 <text class="t-mono" x="746" y="160" text-anchor="middle">Test issues</text>
-                <text class="t-mono" x="746" y="175" text-anchor="middle">score ROI</text>
+                <text class="t-mono" x="746" y="175" text-anchor="middle">veredicto ROI</text>
                 <text class="t-mono" x="950" y="160" text-anchor="middle">ATCs + PR</text>
                 <text class="t-mono" x="950" y="175" text-anchor="middle">KATA · Playwright</text>
                 <text class="t-mono t-green" x="1106" y="160" text-anchor="middle">
                   GO / CAUTION / NO-GO
                 </text>
-                <text class="t-mono" x="1106" y="175" text-anchor="middle">Allure + CI</text>
+                <text class="t-mono" x="1106" y="175" text-anchor="middle">RTR + Allure</text>
+                <text class="t-mono" x="1262" y="160" text-anchor="middle">rutina agéntica</text>
+                <text class="t-mono" x="1262" y="175" text-anchor="middle">capacidad L4</text>
               </svg>
             </div>
             <figcaption>
               La secuencia real y quién la ejecuta. Las bandas superiores son el skill dueño:
-              <code>/sprint-testing</code> cubre tres stages seguidos, el resto uno cada uno. Abajo,
-              lo que cada stage deja escrito. Los dos saltos anchos son los únicos handoffs con
-              condición: una Story sale del backlog cuando el shift-left la firma, y un test case
-              cruza a automatización solo con verdict <em>Candidate</em>.
+              <code>/sprint-testing</code> cubre tres stages seguidos, el resto uno cada uno, y
+              Observation está declarado sin skill (su unidad es una rutina agéntica). Abajo, lo que
+              cada stage deja escrito. Los dos saltos anchos son los handoffs con condición: una
+              Story sale del backlog cuando el shift-left la firma, y un test case cruza a
+              automatización solo con verdict <em>Candidate</em>.
             </figcaption>
           </figure>
 
           <div class="rail">
             <article class="rail-item">
-              <div class="rail-stage">Stage 0</div>
+              <div class="rail-stage">Shift-Left</div>
               <div class="rail-body">
                 <h3><span class="sl">/</span>shift-left-testing</h3>
                 <p>
                   Refina los acceptance criteria del backlog antes de que la Story entre al sprint:
-                  gaps, ambigüedades y el ATP a nivel outline escrito directo en el custom field de
-                  Jira. El defecto se previene en el requisito, no se detecta después.
+                  gaps, ambigüedades y el ATP escrito directo en el custom field de la Story, sin
+                  crear todavía ningún item en el TMS. El defecto se previene en el requisito.
                 </p>
                 <ul class="emits">
                   <li>ATP (field)</li>
@@ -1150,13 +1164,13 @@
             </article>
 
             <article class="rail-item">
-              <div class="rail-stage">Stages 1-3</div>
+              <div class="rail-stage">Planning · Execution · Reporting</div>
               <div class="rail-body">
                 <h3><span class="sl">/</span>sprint-testing</h3>
                 <p>
-                  QA manual por ticket, de punta a punta: planning con la familia ATP / ATS / ATR,
-                  ejecución explorando con la Trifuerza (UI · API · DB) y reporte final con los bugs
-                  clasificados y trazados a la Story.
+                  QA manual por ticket, de punta a punta: planning con la familia ATS / ATP / ATR,
+                  ejecución explorando con la Trifuerza (UI · API · DB) y reporte final con los
+                  hallazgos clasificados y trazados a la Story.
                 </p>
                 <ul class="emits">
                   <li>ATS</li>
@@ -1169,13 +1183,13 @@
             </article>
 
             <article class="rail-item">
-              <div class="rail-stage">Stage 4</div>
+              <div class="rail-stage">Documentation</div>
               <div class="rail-body">
                 <h3><span class="sl">/</span>test-documentation</h3>
                 <p>
-                  Documenta los test cases en el TMS y los puntúa por ROI: qué se automatiza, qué
-                  queda manual y qué se difiere. El verdict <em>Candidate</em> es la única puerta
-                  hacia el Stage 5.
+                  Documenta los test cases en el TMS y les da un veredicto de ROI: qué se
+                  automatiza, qué queda manual y qué se difiere. El verdict <em>Candidate</em> es la
+                  única puerta hacia Automation.
                 </p>
                 <ul class="emits">
                   <li>Test issues</li>
@@ -1189,7 +1203,7 @@
             </article>
 
             <article class="rail-item">
-              <div class="rail-stage">Stage 5</div>
+              <div class="rail-stage">Automation</div>
               <div class="rail-body">
                 <h3><span class="sl">/</span>test-automation</h3>
                 <p>
@@ -1209,7 +1223,7 @@
             </article>
 
             <article class="rail-item">
-              <div class="rail-stage">Stage 6</div>
+              <div class="rail-stage">Regression</div>
               <div class="rail-body">
                 <h3><span class="sl">/</span>regression-testing</h3>
                 <p>
@@ -1219,6 +1233,7 @@
                 </p>
                 <ul class="emits">
                   <li class="go">GO / CAUTION / NO-GO</li>
+                  <li>RTR</li>
                   <li>reporte Allure</li>
                 </ul>
               </div>
@@ -1226,33 +1241,34 @@
                 >Ver deck →</a
               >
             </article>
+
+            <article class="rail-item">
+              <div class="rail-stage">Observation</div>
+              <div class="rail-body">
+                <h3>Sin skill</h3>
+                <p>
+                  Producción le devuelve al backlog lo que aprendió. El stage existe en la
+                  metodología y está declarado vacío en el repo: su unidad de trabajo es una rutina
+                  agéntica, no un workflow skill.
+                </p>
+              </div>
+              <a class="rail-link" href="./docs/#/core/metodologia/observation.html"
+                >Leer en la doc →</a
+              >
+            </article>
           </div>
 
           <div class="tool-strip">
             <div>
-              <div class="k">Herramienta transversal</div>
-              <h3><span class="sl">/</span>xray-cli</h3>
+              <div class="k">Metodología</div>
+              <h3>IQL · Integrated Quality Lifecycle</h3>
               <p>
-                Test management de Xray desde la terminal: tests, planes, ejecuciones e import de
-                resultados. Es el brazo que escribe en el TMS lo que los stages deciden.
+                Fases, stages, steps y la escalera de artefactos, explicados en la documentación del
+                repo. Las skills de soporte (tooling, orquestación, handoff) están en el
+                <a href="#decks" style="color: var(--amber)">catálogo de decks</a>.
               </p>
             </div>
-            <a class="rail-link" href="./decks/xray-cli/how-it-works.es.html">Ver deck →</a>
-          </div>
-
-          <div class="tool-strip">
-            <div>
-              <div class="k">Herramienta transversal</div>
-              <h3><span class="sl">/</span>orca-orchestration</h3>
-              <p>
-                Un conductor coordinando una flota de sesiones worker: una por historia, por módulo
-                o por cluster de fallos. Cada workflow skill sigue dueño del QUÉ; este skill es el
-                CÓMO. Opcional: sin runtime, el launch file se escribe igual y lo pega un humano.
-              </p>
-            </div>
-            <a class="rail-link" href="./decks/orca-orchestration/how-it-works.es.html"
-              >Ver deck →</a
-            >
+            <a class="rail-link" href="./docs/#/core/metodologia/iql.html">Leer la metodología →</a>
           </div>
         </div>
       </section>
@@ -1373,9 +1389,9 @@
           </figure>
 
           <p class="prose" style="margin-top: 22px; color: var(--fg-2); font-size: 0.92rem">
-            El release de agosto reescribió esta parte: el árbol PBI dejó de commitearse en git,
-            apareció el ATS y el modelo de coverage se verificó en vivo contra una instancia real de
-            Xray.
+            El release de arquitectura cuenta por qué el árbol PBI dejó de commitearse en git, cómo
+            apareció el ATS y cómo se verificó el modelo de coverage en vivo contra una instancia
+            real de Xray.
             <a href="./arquitectura.es.html" style="color: var(--amber)"
               >Leer el release de arquitectura →</a
             >
@@ -1494,10 +1510,256 @@
         </div>
       </section>
 
+      <section id="decks">
+        <div class="wrap">
+          <div class="sec-head">
+            <p class="eyebrow">04 · Cómo funciona</p>
+            <h2>Un deck por skill, para entenderla antes de invocarla</h2>
+            <p>
+              Cada deck explica una skill de punta a punta: cuándo se usa, qué lee, qué escribe y
+              dónde frena para que decidas. Están agrupados por el momento del trabajo en que te
+              hacen falta.
+            </p>
+          </div>
+
+          <div class="cat-group">
+            <p class="cat-k">Empezar</p>
+            <div class="decks">
+              <a class="deck" href="./decks/agentic-qa-onboard/how-it-works.es.html">
+                <span class="tag">Primera parada</span>
+                <h3>agentic-qa-onboard · Cómo funciona</h3>
+                <span class="go">→</span>
+                <p>
+                  Un recorrido en palabras simples por el repo, el pipeline y el camino de proyecto
+                  nuevo, que termina en la skill que te toca.
+                </p>
+              </a>
+            </div>
+          </div>
+
+          <div class="cat-group">
+            <p class="cat-k">Los stages del pipeline</p>
+            <div class="decks">
+              <a class="deck" href="./decks/shift-left-testing/how-it-works.es.html">
+                <span class="tag">Shift-Left</span>
+                <h3>Shift-Left Testing · Cómo funciona</h3>
+                <span class="go">→</span>
+                <p>
+                  El backlog refinado antes del sprint: gaps, el ATP en el campo de la Story y la
+                  Story lista para estimar.
+                </p>
+              </a>
+              <a class="deck" href="./decks/sprint-testing/how-it-works.es.html">
+                <span class="tag">Planning · Execution · Reporting</span>
+                <h3>Sprint Testing · Cómo funciona</h3>
+                <span class="go">→</span>
+                <p>QA manual por ticket: plan, exploración con la Trifuerza y reporte trazado.</p>
+              </a>
+              <a class="deck" href="./decks/test-documentation/how-it-works.es.html">
+                <span class="tag">Documentation</span>
+                <h3>Test Documentation · Cómo funciona</h3>
+                <span class="go">→</span>
+                <p>Test cases en el TMS y un veredicto de ROI por escenario.</p>
+              </a>
+              <a class="deck" href="./decks/test-automation/how-it-works.es.html">
+                <span class="tag">Automation</span>
+                <h3>Test Automation · Cómo funciona</h3>
+                <span class="go">→</span>
+                <p>Plan, código y revisión sobre KATA + Playwright, solo para los Candidate.</p>
+              </a>
+              <a class="deck" href="./decks/regression-testing/how-it-works.es.html">
+                <span class="tag">Regression</span>
+                <h3>Regression Testing · Cómo funciona</h3>
+                <span class="go">→</span>
+                <p>Suites por CI, cada fallo clasificado y el veredicto de release.</p>
+              </a>
+            </div>
+          </div>
+
+          <div class="cat-group">
+            <p class="cat-k">Preparar un proyecto</p>
+            <div class="decks">
+              <a class="deck" href="./decks/project-discovery/how-it-works.es.html">
+                <span class="tag">Descubrimiento</span>
+                <h3>project-discovery · Cómo funciona</h3>
+                <span class="go">→</span>
+                <p>
+                  Del repo desconocido al proyecto testeable: fases, mapas de dominio e
+                  infraestructura y el handoff a <code>project-context</code>.
+                </p>
+              </a>
+              <a class="deck" href="./decks/project-context/how-it-works.es.html">
+                <span class="tag">Mapas de negocio</span>
+                <h3>project-context · Cómo funciona</h3>
+                <span class="go">→</span>
+                <p>
+                  Cómo la IA genera y actualiza los mapas de datos, API y E2E y el Master Test Plan,
+                  sección por sección y con tu aprobación.
+                </p>
+              </a>
+              <a class="deck" href="./decks/context-skills/how-it-works.es.html">
+                <span class="tag">Categoría</span>
+                <h3>Context skills · Cómo funciona</h3>
+                <span class="go">→</span>
+                <p>
+                  Por qué existen las <code>&lt;aspect&gt;-context</code>, cómo se arma su mapa,
+                  quién lo genera y cómo un proyecto crea las suyas.
+                </p>
+              </a>
+              <a class="deck" href="./decks/test-framework-adaptation/how-it-works.es.html">
+                <span class="tag">Adaptación</span>
+                <h3>test-framework-adaptation · Cómo funciona</h3>
+                <span class="go">→</span>
+                <p>
+                  Conecta el boilerplate a tu proyecto: análisis y plan sin escribir, tu aprobación,
+                  y recién ahí auth, entidad, CI y MCPs.
+                </p>
+              </a>
+              <a class="deck" href="./decks/jira-administration/how-it-works.es.html">
+                <span class="tag">Jira</span>
+                <h3>jira-administration · Cómo funciona</h3>
+                <span class="go">→</span>
+                <p>
+                  Components alineados con la app real y migración de sitio de Atlassian, cada
+                  cambio leído, mostrado y aprobado antes de escribirse.
+                </p>
+              </a>
+            </div>
+          </div>
+
+          <div class="cat-group">
+            <p class="cat-k">Revisar y entregar</p>
+            <div class="decks">
+              <a class="deck" href="./decks/git-flow-master/how-it-works.es.html">
+                <span class="tag">Git</span>
+                <h3>git-flow-master · Cómo funciona</h3>
+                <span class="go">→</span>
+                <p>
+                  Ramas, commits, push y PRs adaptados a la estrategia declarada en
+                  <code>git_strategy:</code>, con trailers forenses, paridad de rulesets, PRs
+                  encadenados y worktrees.
+                </p>
+              </a>
+              <a class="deck" href="./decks/pr-review-lead/how-it-works.es.html">
+                <span class="tag">Revisión de PR</span>
+                <h3>pr-review-lead · Cómo funciona</h3>
+                <span class="go">→</span>
+                <p>
+                  Revisión de QA Lead sobre un PR de automatización: rigor elegido, cada hallazgo
+                  con su cita, nota calibrada y nada publicado sin tu OK.
+                </p>
+              </a>
+              <a class="deck" href="./decks/judgment-day/how-it-works.es.html">
+                <span class="tag">Revisión adversarial</span>
+                <h3>judgment-day · Cómo funciona</h3>
+                <span class="go">→</span>
+                <p>
+                  Dos jueces ciegos revisan el mismo cambio en paralelo; lo que confirman los dos se
+                  arregla y se vuelve a juzgar hasta APPROVED o ESCALATED.
+                </p>
+              </a>
+              <a class="deck" href="./decks/bug-screenshot-annotation/how-it-works.es.html">
+                <span class="tag">Evidencia</span>
+                <h3>bug-screenshot-annotation · Cómo funciona</h3>
+                <span class="go">→</span>
+                <p>
+                  Convierte una captura cruda en evidencia anotada (óvalo, flecha, recuadro,
+                  etiqueta BUG) renderizada en local, lista para el bug de Jira.
+                </p>
+              </a>
+            </div>
+          </div>
+
+          <div class="cat-group">
+            <p class="cat-k">Herramientas y sesiones</p>
+            <div class="decks">
+              <a class="deck" href="./decks/tooling/how-it-works.es.html">
+                <span class="tag">Categoría</span>
+                <h3>Tooling · Cómo funciona</h3>
+                <span class="go">→</span>
+                <p>
+                  Cómo las skills llegan a Jira, Xray, el navegador y la web: etiquetas, skills de
+                  utilidad (<code>acli</code>, <code>xray-cli</code>), skills de comunidad y
+                  capacidades MCP.
+                </p>
+              </a>
+              <a class="deck" href="./decks/orca-orchestration/how-it-works.es.html">
+                <span class="tag">Orquestación</span>
+                <h3>Orca Orchestration · Cómo funciona</h3>
+                <span class="go">→</span>
+                <p>
+                  Un conductor coordinando una flota de sesiones worker: una por historia, por
+                  módulo o por cluster de fallos. Opcional: sin runtime, las líneas de lanzamiento
+                  las pega una persona.
+                </p>
+              </a>
+              <a class="deck" href="./decks/session-handoff/how-it-works.es.html">
+                <span class="tag">Sesiones largas</span>
+                <h3>session-handoff · Cómo funciona</h3>
+                <span class="go">→</span>
+                <p>
+                  Cuando la ventana de contexto se llena, la sesión se compacta en un archivo y una
+                  sesión nueva sigue exactamente donde quedó.
+                </p>
+              </a>
+            </div>
+          </div>
+
+          <div class="cat-group" id="mantenedores">
+            <p class="cat-k">Para mantenedores</p>
+            <div class="decks">
+              <a class="deck" href="./decks/framework-development/how-it-works.es.html">
+                <span class="tag">Evolucionar el boilerplate</span>
+                <h3>Framework Development · Cómo funciona</h3>
+                <span class="go">→</span>
+                <p>
+                  Cómo se cambia el boilerplate mismo: plan aprobado, código por lotes,
+                  verificaciones en paralelo y la doc en el mismo PR.
+                </p>
+              </a>
+              <a
+                class="deck"
+                href="https://github.com/upex-galaxy/agentic-qa-boilerplate#keeping-your-project-in-sync-with-the-boilerplate"
+                target="_blank"
+                rel="noopener"
+              >
+                <span class="tag">Updater</span>
+                <h3>Mantener un proyecto al día con <code>bun run up</code></h3>
+                <span class="go">→</span>
+                <p>
+                  Qué sincroniza el updater, qué archivos del proyecto protege y cómo leer la tabla
+                  por superficie y el prompt de paridad con que cierra.
+                </p>
+              </a>
+              <a class="deck" href="./harnesses.es.html#migracion">
+                <span class="tag">Migración</span>
+                <h3>De la era Claude a tres harnesses</h3>
+                <span class="go">→</span>
+                <p>
+                  Qué hace <code>bun run up</code> la primera vez sobre un repo con el layout viejo.
+                </p>
+              </a>
+            </div>
+          </div>
+
+          <div class="tool-strip">
+            <div>
+              <div class="k">Documentación</div>
+              <h3>Metodología, fundamentos y setup</h3>
+              <p>
+                El sitio de documentación del repo: empezar, la metodología IQL, los fundamentos
+                agénticos, el setup de Jira, Xray, DBHub y OpenAPI, y las variables de entorno.
+              </p>
+            </div>
+            <a class="rail-link" href="./docs/">Abrir la documentación →</a>
+          </div>
+        </div>
+      </section>
+
       <section id="academia" class="sec-minor">
         <div class="wrap">
           <div class="sec-head">
-            <p class="eyebrow">04 · Academia</p>
+            <p class="eyebrow">05 · Academia</p>
             <h2>Doctrina aplicada</h2>
             <p>
               Los decks que explican el porqué detrás de cada stage: cómo se nombra, cómo se
@@ -1525,36 +1787,42 @@
               <p>El contrato de voz del agente: qué dice, con cuánto detalle y en qué registro.</p>
             </a>
             <a class="deck" href="./decks/shift-left-testing/shift-left-craft.es.html">
-              <span class="tag">Stage 0</span>
+              <span class="tag">Shift-Left</span>
               <h3>El Arte del Shift-Left</h3>
               <span class="go">→</span>
               <p>Prevenir, no detectar: los defectos que mueren en los requisitos.</p>
             </a>
             <a class="deck" href="./decks/sprint-testing/triforce-exploration.es.html">
-              <span class="tag">Stage 2</span>
+              <span class="tag">Execution</span>
               <h3>La Trifuerza — UI · API · DB</h3>
               <span class="go">→</span>
               <p>Lo que se ve, lo que viaja y lo que queda, probados por separado.</p>
             </a>
             <a class="deck" href="./decks/sprint-testing/defect-management.es.html">
-              <span class="tag">Stages 2-3</span>
+              <span class="tag">Execution · Reporting</span>
               <h3>Defect Management</h3>
               <span class="go">→</span>
               <p>Bug vs Defect vs Improvement, severidad, prioridad y traza a la Story.</p>
             </a>
             <a class="deck" href="./decks/test-documentation/test-case-craft.es.html">
-              <span class="tag">Stage 4</span>
+              <span class="tag">Documentation</span>
               <h3>El Arte de Documentar Test Cases</h3>
               <span class="go">→</span>
               <p>Del hallazgo suelto al test case que otro pueda ejecutar sin preguntarte.</p>
             </a>
             <a class="deck" href="./decks/regression-testing/ci-pipelines-fundamentals.es.html">
-              <span class="tag">Stage 6 · mini-curso en 2 partes</span>
-              <h3>CI para Testing: pipelines con GitHub Actions</h3>
+              <span class="tag">Regression · mini-curso, parte I</span>
+              <h3>CI para Testing: fundamentos de GitHub Actions</h3>
+              <span class="go">→</span>
+              <p>Triggers, jobs, secrets y artifacts sobre nuestros workflows reales.</p>
+            </a>
+            <a class="deck" href="./decks/regression-testing/ci-pipelines-architecture.es.html">
+              <span class="tag">Regression · mini-curso, parte II</span>
+              <h3>CI para Testing: arquitectura de suites y pipeline</h3>
               <span class="go">→</span>
               <p>
-                Triggers, jobs, secrets y artifacts sobre nuestros workflows reales; luego la
-                estrategia smoke / sanity / regression, el write-back al TMS y el gate a producción.
+                La estrategia smoke / sanity / regression, el write-back al TMS y el gate a
+                producción.
               </p>
             </a>
           </div>
@@ -1564,7 +1832,7 @@
       <section id="curriculum" class="sec-minor">
         <div class="wrap">
           <div class="sec-head">
-            <p class="eyebrow">05 · Currículum</p>
+            <p class="eyebrow">06 · Currículum</p>
             <h2>De cero a KATA</h2>
             <p>
               Ruta pedagógica secuencial para testers que arrancan sin código. Se sigue en orden:
@@ -1624,12 +1892,15 @@
       <section id="reportes" class="sec-minor">
         <div class="wrap">
           <div class="sec-head">
-            <p class="eyebrow">06 · CI/CD en vivo</p>
+            <p class="eyebrow">07 · CI/CD en vivo</p>
             <h2>Reportes de regresión</h2>
           </div>
           <div class="report">
             <div class="who"><i></i>Allure · staging</div>
-            <p class="what">Último reporte publicado por el workflow de regresión.</p>
+            <p class="what">
+              Último reporte publicado en este sitio por el workflow de regresión. Un proyecto con
+              el portal privado de reportes lo publica allí, no acá.
+            </p>
             <a class="rail-link" href="./staging/regression/">Ver reporte →</a>
           </div>
         </div>

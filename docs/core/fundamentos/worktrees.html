@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Worktrees</title>
+    <meta
+      name="description"
+      content="Trabajar en un worktree de git sin perder nada: qué le falta a un worktree nuevo, cómo se prepara, dónde se escribe el estado que tiene que sobrevivir y qué revisar antes de borrarlo."
+    />
+    <meta name="docs-order" content="45" />
+    <link rel="stylesheet" href="../../assets/docs.css" />
+    <script src="../../assets/docs.js"></script>
+  </head>
+  <body>
+    <article class="doc">
+      <header class="doc-header">
+        <nav class="breadcrumbs">
+          <span>Core</span><span>Fundamentos agénticos</span><span>Worktrees</span>
+        </nav>
+        <h1>Worktrees</h1>
+        <p class="lede">
+          Un worktree es una segunda carpeta del mismo repo, con su propia rama. Sirve para que dos
+          sesiones trabajen a la vez sin pisarse. El precio es que nace sin nada de lo que git
+          ignora, y que todo lo ignorado que se escriba adentro muere cuando se borra.
+        </p>
+        <div class="meta-row">
+          <span class="badge accent">Fundamentos</span><span class="badge">Git</span
+          ><span class="badge">Workers</span><span class="badge">Estado</span>
+        </div>
+      </header>
+
+      <nav class="toc">
+        <strong>En esta página</strong>
+        <ol>
+          <li><a href="#que-es">Qué es y cuándo conviene</a></li>
+          <li><a href="#que-falta">Qué le falta a un worktree nuevo</a></li>
+          <li><a href="#preparar">Prepararlo</a></li>
+          <li><a href="#dos-raices">Dos raíces: el worktree y el checkout principal</a></li>
+          <li><a href="#antes-de-borrar">Antes de borrarlo</a></li>
+          <li><a href="#updater">El updater corre solo en el checkout principal</a></li>
+          <li><a href="#este-repo">Así lo hace este repo</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="que-es">Qué es y cuándo conviene</h2>
+      <p>
+        <code>git worktree add</code> crea otra carpeta que comparte el mismo <code>.git</code> que
+        tu checkout. Cada carpeta tiene su rama y sus cambios sin commitear, así que una sesión
+        puede estar a mitad de una historia mientras otra arregla un bug en otra rama, y ninguna ve
+        el desorden de la otra.
+      </p>
+      <p>
+        Conviene cuando hay trabajo en paralelo: un worker supervisado por historia (cada worker de
+        <code>/orca-orchestration</code> trabaja en su propio worktree), un hotfix mientras una
+        feature está abierta, o un experimento que no quieres mezclar con lo que tienes en curso.
+        Para una tarea corta en la rama actual no hace falta.
+      </p>
+      <p>
+        Un worktree aparece de varias maneras: Orca lo crea para cada worker, Claude Code con
+        <code>--worktree</code>, la app de Codex con sus worktrees gestionados, o tú a mano con
+        <code>git worktree add</code>. La mecánica de git es la misma en todos los casos.
+      </p>
+
+      <h2 id="que-falta">Qué le falta a un worktree nuevo</h2>
+      <p>
+        Un worktree recién creado tiene todo lo que git versiona y nada de lo que git ignora. Ese
+        hueco nunca se presenta como lo que es: aparece disfrazado de otro problema.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Falta</th>
+              <th>Cómo se nota</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>.env</code></td>
+              <td>
+                En silencio: un MCP arranca con el texto literal <code>${VAR}</code> en vez del
+                valor y muere en su primera llamada autenticada (regla crítica 10 de
+                <code>AGENTS.md</code>).
+              </td>
+            </tr>
+            <tr>
+              <td><code>node_modules/</code></td>
+              <td><code>Cannot find module</code>, que parece un import roto.</td>
+            </tr>
+            <tr>
+              <td>El alias <code>.claude/skills</code></td>
+              <td>En Claude Code, <code>Unknown skill</code>. OpenCode y Codex no lo necesitan.</td>
+            </tr>
+            <tr>
+              <td>La caché de Jira (<code>.context/PBI/</code>)</td>
+              <td>En silencio: el agente trabaja con el título del ticket y nada más.</td>
+            </tr>
+            <tr>
+              <td><code>.session/</code></td>
+              <td>
+                Los planes, el progreso y los handoffs no están. Y no se copian: se leen del
+                checkout principal (ver <a href="#dos-raices">Dos raíces</a>).
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        La tabla completa, con cómo se recupera cada fila, está en
+        <code>.agents/skills/orca-orchestration/references/provisioning.md</code>.
+      </p>
+
+      <h2 id="preparar">Prepararlo</h2>
+      <p>
+        <code>bun run worktree:provision</code> cierra los huecos reparables en una sola llamada:
+        copia desde el checkout principal los archivos ignorados que una sesión necesita
+        (<code>.env</code>, los ajustes del harness, <code>.auth/</code>, el spec de OpenAPI
+        sincronizado...), corre <code>bun install</code> y <code>bun run agents:compat</code>, que
+        crea el alias de skills. Sin argumento prepara la carpeta actual; con una ruta, esa ruta. Se
+        niega a correr sobre el checkout principal.
+      </p>
+      <pre
+        data-lang="bash"
+      ><code>bun run worktree:provision                       # la carpeta actual
+bun run worktree:provision /ruta/al/worktree     # otra carpeta
+bun run worktree:provision /ruta/al/wt --dry-run # muestra qué haría, sin tocar nada</code></pre>
+      <p>
+        Qué archivos copia lo dice <code>.worktreeinclude</code>, en la raíz del repo. Claude Code y
+        la app de Codex leen ese mismo archivo cuando crean sus propios worktrees, y un test
+        mantiene la lista igual a la del script. Si tu proyecto necesita otro archivo ignorado en
+        cada worktree, agrégalo debajo de las líneas que trae el boilerplate.
+      </p>
+      <dl class="defs">
+        <dt>En Orca, solo</dt>
+        <dd>
+          <code>orca.yaml</code> está versionado y declara dos hooks del repo:
+          <code>setup</code> corre <code>bun run worktree:provision</code> en cada worktree nuevo y
+          <code>archive</code> corre <code>bun run worktree:audit --rescue</code> antes de borrarlo.
+          Nadie tiene que configurarlos en la app.
+        </dd>
+        <dt>Credenciales</dt>
+        <dd>
+          Que exista el <code>.env</code> no alcanza para un worker lanzado sin terminal: Claude
+          Code y OpenCode leen las superficies que genera <code>bun run harness:env</code>. Córrelo
+          en el checkout principal después de cada cambio en <code>.env</code> y reinicia la sesión
+          del agente, porque los MCPs leen las credenciales al arrancar.
+        </dd>
+      </dl>
+
+      <h2 id="dos-raices">Dos raíces: el worktree y el checkout principal</h2>
+      <p>
+        Dentro de un worktree hay dos carpetas que importan, y el repo les da nombre con dos
+        variables de sesión:
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Variable</th>
+              <th>Es</th>
+              <th>Se usa para</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>&lt;&lt;REPO_ROOT&gt;&gt;</code></td>
+              <td>Este checkout: el worktree, si hay uno.</td>
+              <td>
+                Lo versionado: código, skills, docs, configuración, los <code>test-specs/</code>.
+              </td>
+            </tr>
+            <tr>
+              <td><code>&lt;&lt;PRIMARY_ROOT&gt;&gt;</code></td>
+              <td>El checkout principal, el mismo valor desde cualquier worktree.</td>
+              <td>
+                El estado ignorado que tiene que sobrevivir: <code>.session/</code> (planes,
+                progreso, handoffs), las carpetas <code>evidence/</code> de la caché de Jira,
+                <code>.context/reports/</code>.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        En el checkout principal las dos son la misma carpeta. En un worktree no, y por eso las
+        skills escriben y retoman su estado en <code>&lt;&lt;PRIMARY_ROOT&gt;&gt;</code> con ruta
+        absoluta. Una sesión que buscara su <code>progress.md</code> en el
+        <code>.session/</code> del worktree no lo encontraría y volvería a empezar un trabajo que ya
+        estaba hecho. La definición está en <code>.agents/README.md</code>, sección "Checkout
+        roots".
+      </p>
+
+      <h2 id="antes-de-borrar">Antes de borrarlo</h2>
+      <p>
+        Borrar un worktree (<code>git worktree remove</code>, la limpieza del harness, el borrado de
+        Orca) elimina todo lo ignorado que tenga adentro y termina con éxito. Nada te avisa que una
+        captura de evidencia o un reporte se fueron con él.
+      </p>
+      <p>
+        <code>bun run worktree:audit</code> lista lo que el worktree todavía guarda y git no, y lo
+        clasifica: estado (pertenece al checkout principal), caché (un comando lo reconstruye),
+        descartable (se puede perder) o desconocido (ninguna regla lo cubre: revísalo a mano). Con
+        <code>--rescue</code> copia el estado a la misma ruta en el checkout principal.
+      </p>
+      <pre
+        data-lang="bash"
+      ><code>bun run worktree:audit                    # audita la carpeta actual, solo lectura
+bun run worktree:audit --rescue           # copia el estado al checkout principal
+bun run worktree:audit --rescue --dry-run # muestra qué copiaría
+bun run worktree:audit --json             # para que lo lea un agente</code></pre>
+      <ul>
+        <li>
+          <code>--rescue</code> nunca sobreescribe: si el archivo ya está en el principal con los
+          mismos bytes cuenta como rescatado; con bytes distintos queda como conflicto para una
+          persona.
+        </li>
+        <li>
+          Sale con 0 cuando no queda nada durable, con 1 cuando queda estado o algo desconocido, y
+          con 2 si le pasas el checkout principal o algo que no es un checkout.
+        </li>
+        <li>Imprime rutas, nunca el contenido de los archivos.</li>
+      </ul>
+      <div class="callout warn">
+        <span class="callout-title">Si borras desde Orca a mano</span>
+        <p>
+          El hook <code>archive</code> de <code>orca.yaml</code> corre cuando Orca borra el
+          worktree, y aunque falle Orca lo borra igual: por eso rescata en vez de solo avisar.
+          <code>orca worktree rm</code> se salta los hooks de archive salvo que le pases
+          <code>--run-hooks</code>.
+        </p>
+      </div>
+
+      <h2 id="updater">El updater corre solo en el checkout principal</h2>
+      <p>
+        <code>bun run up</code> guarda dentro del checkout los backups que usa
+        <code>--rollback</code>, sus marcadores y los prompts de paridad. En un worktree todo eso se
+        perdería al borrarlo, y la siguiente corrida en el principal no vería nada. Por eso, en un
+        worktree, el updater se niega, te dice la ruta del checkout principal y sale sin tocar nada.
+        Trae las novedades del boilerplate desde el principal y después lleva los cambios a tus
+        ramas como cualquier otro commit.
+      </p>
+
+      <h2 id="este-repo">Así lo hace este repo</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Pieza</th>
+              <th>Dónde vive</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Qué falta en un worktree nuevo, fila por fila</td>
+              <td><code>.agents/skills/orca-orchestration/references/provisioning.md</code></td>
+            </tr>
+            <tr>
+              <td>Preparar un worktree</td>
+              <td>
+                <code>bun run worktree:provision</code> (<code>scripts/provision-worktree.ts</code>)
+                y la lista <code>.worktreeinclude</code>
+              </td>
+            </tr>
+            <tr>
+              <td>Auditar y rescatar antes de borrar</td>
+              <td>
+                <code>bun run worktree:audit</code> (<code>scripts/worktree-audit.ts</code>); las
+                clases salen de una sola tabla en <code>cli/lib/worktree.ts</code>
+              </td>
+            </tr>
+            <tr>
+              <td>Los hooks de Orca</td>
+              <td><code>orca.yaml</code></td>
+            </tr>
+            <tr>
+              <td>Las dos raíces</td>
+              <td><code>.agents/README.md</code>, sección "Checkout roots"</td>
+            </tr>
+            <tr>
+              <td>Worktrees a mano, ciclo completo y reglas multi-sesión</td>
+              <td><code>.agents/skills/git-flow-master/references/worktrees.md</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Una regla vale con o sin worktrees: nunca un descarte global de git (<code
+          >git restore .</code
+        >, <code>git reset --hard</code>, un <code>git stash</code> sin rutas). Varias sesiones
+        pueden compartir un árbol, y un descarte global borra el trabajo sin commitear de otra sin
+        forma de recuperarlo (regla crítica 15 de <code>AGENTS.md</code>).
+      </p>
+
+      <footer class="doc-footer">
+        Páginas relacionadas: <a href="orquestacion.html">Orquestación</a>,
+        <a href="context.html">Context engineering</a>,
+        <a href="agentic-dev.html">Agentic development</a>. Fuente canónica:
+        <code>.agents/skills/orca-orchestration/references/provisioning.md</code> y
+        <code>.agents/README.md</code>.
+      </footer>
+    </article>
+  </body>
+</html>

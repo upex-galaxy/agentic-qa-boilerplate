@@ -96,7 +96,9 @@
       }
       .header-links {
         display: flex;
-        gap: 18px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 4px 18px;
         font-size: 0.82rem;
         color: var(--text-2);
       }
@@ -334,6 +336,10 @@
         color: var(--text-3);
         line-height: 2;
       }
+      footer code {
+        white-space: normal;
+        overflow-wrap: anywhere;
+      }
       footer a {
         color: var(--text-2);
       }
@@ -347,6 +353,7 @@
           <a href="./">Inicio</a>
           <a href="./arquitectura.es.html">Arquitectura</a>
           <a href="./harnesses.es.html">Harnesses</a>
+          <a href="./docs/">Docs</a>
           <a href="https://github.com/upex-galaxy/agentic-qa-boilerplate">GitHub</a>
         </nav>
       </div>
@@ -1756,10 +1763,12 @@
 │     ├─ acceptance-test-results.md ← espejo del ATR
 │     └─ test-cases/                ← los Test, colocados por la cascade
 │
-├─ <b>test-plans/</b>       FTP-&lt;KEY&gt;-&lt;slug&gt;.md · STP-&lt;KEY&gt;-&lt;slug&gt;.md · ATP-&lt;KEY&gt;-&lt;slug&gt;.md
-├─ <b>test-executions/</b>  STR-&lt;KEY&gt;-&lt;slug&gt;.md · ATR-&lt;KEY&gt;-&lt;slug&gt;.md · RETEST-&lt;KEY&gt;-&lt;slug&gt;.md
+├─ <b>test-plans/</b>       FTP- · STP- · RTP- · ATP-&lt;KEY&gt;-&lt;slug&gt;.md
+├─ <b>test-executions/</b>  STR- · ATR- · RTR- · RETEST-&lt;KEY&gt;-&lt;slug&gt;.md
 ├─ <b>test-sets/</b> · <b>preconditions/</b>
-└─ <b>qa-artifacts/</b>_index.md    ← registro de los cuatro epics de proceso</pre
+└─ <b>qa-artifacts/</b>
+   ├─ _index.md                 ← registro de los cuatro epics de proceso
+   └─ master-test-plan.md       ← espejo del MTP (descripción del epic)</pre
         >
 
         <div class="grid grid-3">
@@ -2158,8 +2167,8 @@
             </text>
           </svg>
           <p class="caption">
-            Fig. 4 — el circuito. Los once primeros saltos son sólidos; el último, el retorno de
-            resultados, es el que hay que mantener encendido.
+            Fig. 4 — el circuito. Todos los saltos menos el último son sólidos; el último, el
+            retorno de resultados, es el que hay que mantener encendido.
           </p>
         </div>
       </div>
@@ -2275,7 +2284,9 @@
         Agentic QA Boilerplate ·
         <a href="https://github.com/upex-galaxy/agentic-qa-boilerplate"
           >upex-galaxy/agentic-qa-boilerplate</a
-        ><br />
+        >
+        · <a href="./">Hub</a> · <a href="./arquitectura.es.html">Arquitectura</a> ·
+        <a href="./harnesses.es.html">Harnesses</a><br />
         Doctrina: <code>.agents/skills/agentic-qa-core/references/planning-ladder.md</code> ·
         <code>.agents/skills/agentic-qa-core/references/traceability-linking.md</code><br />
         Decisión de caché: <code>.context/ADR/ADR-0001-artifact-ladder-local-cache.md</code>

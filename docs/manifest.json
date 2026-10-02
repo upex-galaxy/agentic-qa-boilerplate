@@ -1,0 +1,202 @@
+{
+  "generatedAt": "2026-10-02T06:12:03.715Z",
+  "children": [
+    {
+      "type": "folder",
+      "path": "core",
+      "title": "Boilerplate",
+      "description": "La documentación que trae el boilerplate: empezar, setup, metodología, exploración y la personalidad de la IA.",
+      "order": 10,
+      "index": "core/index.html",
+      "children": [
+        {
+          "type": "page",
+          "path": "core/empezar-aqui.html",
+          "title": "Empezar aquí",
+          "description": "Instalación, ciclo de vida en cinco fases, skills, MCPs, Engram y la chuleta de comandos y scripts del boilerplate de QA agéntico.",
+          "order": 10
+        },
+        {
+          "type": "page",
+          "path": "core/variables-de-entorno.html",
+          "title": "Variables de entorno",
+          "description": "Los tres alcances de las variables (framework, tooling, proyecto bajo prueba), qué valida varlock y dónde, qué lee cada harness, la validación en el punto de uso, qué MCPs se conectan a nivel del harness y los logins de CLI.",
+          "order": 15
+        },
+        {
+          "type": "folder",
+          "path": "core/setup",
+          "title": "Setup",
+          "description": "Guías para conectar el repo con Jira y Xray, con la base de datos (DBHub) y con la API (OpenAPI).",
+          "order": 20,
+          "index": "core/setup/index.html",
+          "children": [
+            {
+              "type": "page",
+              "path": "core/setup/jira-xray.html",
+              "title": "Jira y Xray",
+              "description": "Cómo preparar Jira Cloud y Xray Cloud para este repo: work types, workflows, credenciales, catálogos locales y la CLI de Xray.",
+              "order": 10
+            },
+            {
+              "type": "page",
+              "path": "core/setup/dbhub.html",
+              "title": "DBHub",
+              "description": "Cómo conectar la base de datos del proyecto al agente con el MCP de DBHub: dbhub.toml, las variables DBHUB_*, las herramientas y los errores de conexión.",
+              "order": 20
+            },
+            {
+              "type": "page",
+              "path": "core/setup/openapi.html",
+              "title": "OpenAPI",
+              "description": "El MCP de OpenAPI para leer el contrato de la API, bun run api:login para el token y curl para las requests autenticadas.",
+              "order": 30
+            }
+          ]
+        },
+        {
+          "type": "folder",
+          "path": "core/metodologia",
+          "title": "Metodología",
+          "description": "El IQL (Integrated Quality Lifecycle): sus fases, sus stages y cómo los implementa este repo.",
+          "order": 30,
+          "index": "core/metodologia/index.html",
+          "children": [
+            {
+              "type": "page",
+              "path": "core/metodologia/iql.html",
+              "title": "IQL",
+              "description": "Resumen del Integrated Quality Lifecycle: 3 fases, 8 stages, 15 steps, 5 ciclos y 4 altitudes, con el contrato agéntico de cada stage, las modalidades y la escalera de artefactos.",
+              "order": 10
+            },
+            {
+              "type": "page",
+              "path": "core/metodologia/early-game.html",
+              "title": "Early-Game",
+              "description": "Fase de prevención del IQL (steps 1-4, QA Analyst): los stages Shift-Left, Planning, Execution y Reporting, el ATP pre-sprint en el campo de la historia y el workflow de la User Story en Jira.",
+              "order": 20
+            },
+            {
+              "type": "page",
+              "path": "core/metodologia/mid-game.html",
+              "title": "Mid-Game",
+              "description": "Fase de detección del IQL (steps 5-9, QA Automation Engineer): los stages Documentation y Automation, el gate de ROI, el orden set-first TC → ATS → ATP → ATR y las capas de KATA con @atc.",
+              "order": 30
+            },
+            {
+              "type": "page",
+              "path": "core/metodologia/late-game.html",
+              "title": "Late-Game",
+              "description": "Fase de observación del IQL (steps 10-15, QA + DevOps): el stage Regression con su clasificación de fallas y el veredicto GO / CAUTION / NO-GO, los 6 steps, el nivel de madurez y las métricas de producción.",
+              "order": 40
+            },
+            {
+              "type": "page",
+              "path": "core/metodologia/observation.html",
+              "title": "Observation",
+              "description": "El stage de producción del IQL: canary, A/B, RUM, chaos engineering y feedback loop, con SLOs, error budget y las métricas del Late-Game. Declarado, sin skill todavía en este repo.",
+              "order": 50
+            },
+            {
+              "type": "page",
+              "path": "core/metodologia/este-repo.html",
+              "title": "Este repo y el IQL",
+              "description": "Cómo este boilerplate implementa el IQL: los 8 stages y sus skills, la escalera de artefactos, dónde vive la doctrina, las integraciones, los MCPs y el árbol .context/PBI.",
+              "order": 60
+            }
+          ]
+        },
+        {
+          "type": "folder",
+          "path": "core/exploracion",
+          "title": "Exploración",
+          "description": "Herramientas para explorar a mano la API y la base de datos: Postman y un cookbook de SQL.",
+          "order": 40,
+          "index": "core/exploracion/index.html",
+          "children": [
+            {
+              "type": "page",
+              "path": "core/exploracion/postman.html",
+              "title": "Postman",
+              "description": "Exploración manual de APIs con Postman (colecciones, environments, variables, auth y scripts), cómo correr colecciones en CI con el Postman CLI o Newman, y el lugar del Postman MCP en el repo.",
+              "order": 10
+            },
+            {
+              "type": "page",
+              "path": "core/exploracion/sql-cookbook.html",
+              "title": "Cookbook SQL",
+              "description": "Validar datos con SQL a través de DBHub: huérfanos, duplicados, totales, timestamps, integridad referencial y comparaciones antes/después de una acción.",
+              "order": 20
+            }
+          ]
+        },
+        {
+          "type": "folder",
+          "path": "core/fundamentos",
+          "title": "Fundamentos agénticos",
+          "description": "Las ideas detrás del trabajo con agentes de IA: prompting, contexto, harness, orquestación, testing y desarrollo agéntico.",
+          "order": 50,
+          "index": "core/fundamentos/index.html",
+          "children": [
+            {
+              "type": "page",
+              "path": "core/fundamentos/prompting.html",
+              "title": "Prompting",
+              "description": "Cómo escribir instrucciones para un agente: tarea clara, contexto, restricciones, ejemplos y formato de salida; few-shot contra zero-shot, cuándo pedir razonamiento y por qué los prompts se versionan como código.",
+              "order": 10
+            },
+            {
+              "type": "page",
+              "path": "core/fundamentos/context.html",
+              "title": "Context engineering",
+              "description": "La ventana de contexto como presupuesto: qué se carga siempre, qué bajo demanda y qué vive fuera, con lazy loading de skills, compact rules, memoria persistente, handoffs y cachés locales.",
+              "order": 20
+            },
+            {
+              "type": "page",
+              "path": "core/fundamentos/harness.html",
+              "title": "Harness engineering",
+              "description": "Qué es un harness (instrucciones, hooks, skills, MCP, memoria y gates alrededor del modelo), cómo este repo mantiene un solo cuerpo de instrucciones para Claude Code, OpenCode y Codex, y qué gates impiden que se desincronice.",
+              "order": 30
+            },
+            {
+              "type": "page",
+              "path": "core/fundamentos/orquestacion.html",
+              "title": "Orquestación",
+              "description": "Subagentes y orquestación: la sesión principal como command center, el briefing de 7 componentes, los patrones de ejecución, los workers supervisados y los errores que cuestan caro.",
+              "order": 40
+            },
+            {
+              "type": "page",
+              "path": "core/fundamentos/worktrees.html",
+              "title": "Worktrees",
+              "description": "Trabajar en un worktree de git sin perder nada: qué le falta a un worktree nuevo, cómo se prepara, dónde se escribe el estado que tiene que sobrevivir y qué revisar antes de borrarlo.",
+              "order": 45
+            },
+            {
+              "type": "page",
+              "path": "core/fundamentos/agentic-testing.html",
+              "title": "Agentic testing",
+              "description": "El ciclo de stages del repo visto desde la IA: qué hace el agente, qué firma la persona, qué evidencia queda, la escala de autonomía 0-5, el verificador light, el lifecycle de artefactos y la doctrina de diseño de tests.",
+              "order": 50
+            },
+            {
+              "type": "page",
+              "path": "core/fundamentos/agentic-dev.html",
+              "title": "Agentic development",
+              "description": "Cómo evoluciona un harness agéntico como este repo: skills como unidad de cambio, propuestas de refinamiento con OK humano, evals y gates, el updater con paridad, feedback hacia upstream y ADRs.",
+              "order": 60
+            }
+          ]
+        },
+        {
+          "type": "page",
+          "path": "core/personalidad.html",
+          "title": "Personalidad de la IA",
+          "description": "Cómo habla y cómo razona el agente en este repo: caveman, Butler, PM Voice, Visual Mapping, cómo te pide decidir, el idioma y cómo cambiar cada comportamiento.",
+          "order": 60
+        }
+      ]
+    }
+  ]
+}
