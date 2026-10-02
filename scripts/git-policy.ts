@@ -63,14 +63,14 @@ const RULESET_NAME = 'ProtectPublic';
 // Types
 // ---------------------------------------------------------------------------
 
-interface AcceptedDivergence {
+export interface AcceptedDivergence {
   field: string
   enforced?: string
   reason?: string
   accepted?: string
 }
 
-interface GitStrategy {
+export interface GitStrategy {
   strategy: string
   branches: { production: string | null, integration: string | null, ephemeral_pattern: string | null }
   protected: string[]
@@ -93,7 +93,7 @@ interface PullRequestParams {
   allowed_merge_methods: string[]
 }
 
-interface Rule { type: string, parameters?: Record<string, unknown> }
+export interface Rule { type: string, parameters?: Record<string, unknown> }
 
 interface BypassActor { actor_type: string, bypass_mode: string }
 
@@ -111,7 +111,7 @@ export type BypassAssessment
   = | { known: true, actors: BypassActor[], hasAdminBypass: boolean }
     | { known: false, reason: string, currentUserCanBypass: string | null };
 
-interface Finding {
+export interface Finding {
   severity: 'drift' | 'accepted' | 'info'
   field: string
   declared: string
@@ -361,6 +361,33 @@ interface HostReading {
   classicStatus: 'configured' | 'not-configured' | 'forbidden'
 }
 
+/**
+ * Move every drift whose field is listed in `policy.accepted_divergences` to
+ * `accepted`, and append an `info` finding for each STALE entry (one that no
+ * longer matches any drift) so the list cannot silently accumulate dead
+ * exceptions. Mutates `findings`; returns the accepted entries keyed by field.
+ */
+export function classifyAccepted(findings: Finding[], accepted: AcceptedDivergence[]): Map<string, AcceptedDivergence> {
+  const acceptedByField = new Map(accepted.filter(a => a?.field).map(a => [a.field, a]));
+  for (const f of findings) {
+    if (f.severity === 'drift' && acceptedByField.has(f.field)) { f.severity = 'accepted'; }
+  }
+  const matched = new Set(findings.filter(f => f.severity === 'accepted').map(f => f.field));
+  // A field whose host side could not be READ cannot prove its acceptance stale.
+  const undeterminable = new Set(findings.filter(f => f.unknown === true).map(f => f.field));
+  for (const a of acceptedByField.keys()) {
+    if (!matched.has(a) && !undeterminable.has(a)) {
+      findings.push({
+        severity: 'info',
+        field: a,
+        declared: 'accepted divergence (policy.accepted_divergences)',
+        enforced: 'no matching drift — STALE entry, remove it from the yaml',
+      });
+    }
+  }
+  return acceptedByField;
+}
+
 function readHost(slug: string, branch: string): HostReading {
   const rules = (gh(`repos/${slug}/rules/branches/${branch}`) as Rule[] | null) ?? [];
   const code = ghExitCode(`repos/${slug}/branches/${branch}/protection`);
@@ -519,25 +546,7 @@ function verify(gs: GitStrategy, slug: string, stamp: boolean): number {
   }
 
   // --- accepted divergences: declared drift the project has formally signed off ---
-  const acceptedByField = new Map(accepted.filter(a => a?.field).map(a => [a.field, a]));
-  for (const f of findings) {
-    if (f.severity === 'drift' && acceptedByField.has(f.field)) { f.severity = 'accepted'; }
-  }
-  // A stale entry accepts a divergence that no longer exists — surface it so the
-  // list cannot silently accumulate dead exceptions.
-  const matched = new Set(findings.filter(f => f.severity === 'accepted').map(f => f.field));
-  // A field whose host side could not be READ cannot prove its acceptance stale.
-  const undeterminable = new Set(findings.filter(f => f.unknown === true).map(f => f.field));
-  for (const a of acceptedByField.keys()) {
-    if (!matched.has(a) && !undeterminable.has(a)) {
-      findings.push({
-        severity: 'info',
-        field: a,
-        declared: 'accepted divergence (policy.accepted_divergences)',
-        enforced: 'no matching drift — STALE entry, remove it from the yaml',
-      });
-    }
-  }
+  const acceptedByField = classifyAccepted(findings, accepted);
 
   // --- report ---
   const drifts = findings.filter(f => f.severity === 'drift');
