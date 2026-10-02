@@ -39,7 +39,8 @@ Phase 9 is the engine: the same detection signals that close the loop on a fresh
 ┌─ NO WRITES ─────────────────────────────────────────────────────────────┐
 │ Phase 0  Prereq + genericness gate     → block on missing context        │
 │ Phase 1  Analysis + questionnaire       → resolve auth, OpenAPI, entity   │
-│ Phase 2  Write plan                     → .context/reports/adapt-...md     │
+│ Phase 2  Write plan                     → test-framework-adaptation-plan.md│
+│                                            (under .context/reports/)       │
 │                                            Status: PENDING APPROVAL. WAIT. │
 └──────────────────────────────────────────────────────────────────────────┘
                       ↓ (explicit user approval on the plan file)

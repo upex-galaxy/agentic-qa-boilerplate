@@ -2,7 +2,7 @@
 name: pr-review-lead
 description: "Acts as a QA Lead / QA Architect reviewing a pull request's test-automation work against this repo's KATA doctrine (or the target repo's own doctrine, if it has one) and general QA best practices — grounding every finding in a concrete doctrine citation or code location, never a guess. Use whenever the user wants to review, audit, or give feedback on a colleague's or a teammate's PR, whether it lives in THIS repo or an external repo the user points at (owner/repo#PR via gh). Triggers on: revisa este PR, review this PR, revisá este pull request, dame feedback de este PR, actúa de QA lead, haz de QA lead reviewer, audita este pull request, pr-review-lead, revisión de PR externo, review external repo PR, dale feedback a este trabajo de automatización, evalúa este PR contra KATA, is this PR any good, cómo quedó este PR de automatización. Always runs a strictness preflight first (Flexible / Standard / Strict) before analyzing anything, and never posts a comment to GitHub without the user's explicit final OK. Do NOT use for reviewing your own uncommitted working-tree diff before opening a PR (that's the default code-review flow), for a blind dual-adversarial pass/fail review (that's `/judgment-day`), or for opening/merging the PR itself (that's `/git-flow-master`)."
 license: MIT
-compatibility: [claude-code, opencode]
+compatibility: [claude-code, codex, opencode]
 complementary_categories: [meta-skill]
 metadata:
   kind: workflow
@@ -118,7 +118,7 @@ Once the user confirms which findings and (if they haven't already established a
 
 Show the complete drafted feedback and wait for an explicit go-ahead ("post it", "dale", "sí, postea", or equivalent) — never infer approval from silence or from the user having approved a draft earlier for a *different* PR in the same session. Only after that, post it:
 
-- This repo: post as a PR review comment on the current repo's PR.
+- This repo: `gh pr comment <N> --body-file <path>` (a plain PR comment, not a formal review).
 - External repo: `gh pr comment <N> --repo <owner>/<repo> --body-file <path>`.
 
 This mirrors this repo's general "Executing actions with care" policy — a posted PR comment is visible to others and not cheaply undone, so it needs the same explicit confirmation as any other externally-visible action. Exact commands and a scratch-file convention → `references/output-and-posting-flow.md`.

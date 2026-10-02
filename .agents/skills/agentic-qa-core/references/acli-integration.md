@@ -13,7 +13,7 @@
 | Tag | Resolution | Notes |
 |---|---|---|
 | `[ISSUE_TRACKER_TOOL]` | **Always** `/acli` | Generic Jira: Story, Bug, Epic, Task. Resolution is unconditional in QA boilerplate (Atlassian MCP is opt-in only — `mcp-atlassian-optin.md`). |
-| `[TMS_TOOL]` | `/acli` **only in Modality `jira-native`** | When `.agents/project.yaml` `testing.tms_cli` is `jira-native` (no Xray plugin). In Modality `jira-xray`, `[TMS_TOOL]` routes to `/xray-cli` instead. |
+| `[TMS_TOOL]` | `/acli` **only in Modality `jira-native`** | When the modality resolves to `jira-native` (no Xray plugin: `.agents/project.yaml` `testing.tms_cli` unset or `acli`; resolver: `test-documentation/SKILL.md` §Phase 0). In Modality `jira-xray` (`testing.tms_cli` names an Xray CLI, e.g. `bun xray`), `[TMS_TOOL]` routes to `/xray-cli` instead. |
 
 Workflow skills MUST NOT invoke `acli` directly. They invoke the pseudocode tag, the AI resolves the tag, then loads the matching skill (this file plus `acli/SKILL.md`). The indirection is what lets the methodology survive a future tool swap.
 
@@ -41,7 +41,7 @@ When the project operates without the Xray plugin (Modality `jira-native` resolv
 
 ### Role in TMS Modality `jira-xray`
 
-When `.agents/project.yaml` `testing.tms_cli` is `jira-xray`, TMS operations (Test / Test Plan / Test Execution / Pre-Condition) route to `/xray-cli` instead. In that mode, `acli` handles only `[ISSUE_TRACKER_TOOL]` operations (Story, Bug, Epic). Never invoke `acli` for Test issues under `jira-xray` — see anti-pattern Q3 below.
+When the modality resolves to `jira-xray` (`.agents/project.yaml` `testing.tms_cli` names an Xray CLI, e.g. `bun xray`; resolver: `test-documentation/SKILL.md` §Phase 0), TMS operations (Test / Test Plan / Test Execution / Pre-Condition) route to `/xray-cli` instead. In that mode, `acli` handles only `[ISSUE_TRACKER_TOOL]` operations (Story, Bug, Epic). Never invoke `acli` for Test issues under `jira-xray` — see anti-pattern Q3 below.
 
 ---
 

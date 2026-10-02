@@ -24,7 +24,7 @@ A site migration reassigns custom-field IDs instead of preserving them. The old 
 
 That is why this mode has two halves. Repointing the URL is the easy half. Regenerating the `.agents/` catalogs is the half that prevents silent corruption.
 
-A second silent failure sits alongside it: `.env` and the `acli` session are independent. Change one and not the other, and REST calls hit the new instance while `acli` keeps reading the old one, with no error to tell you.
+A second silent failure sits alongside it: `.agents/project.yaml` and the `acli` session are independent. Change one and not the other, and REST calls hit the new instance while `acli` keeps reading the old one, with no error to tell you.
 
 ---
 
@@ -59,7 +59,7 @@ Three outcomes:
 
 Normalize both to the bare host (`site.atlassian.net`, no scheme, no trailing slash). Then confirm as one line and wait:
 
-> Migrating `<source>` -> `<target>`. Three places change: `.env`, `.agents/project.yaml`, and your machine-global `acli` session. Confirm?
+> Migrating `<source>` -> `<target>`. Two places change: `.agents/project.yaml` (the only place the host is written) and your machine-global `acli` session. Any stale `ATLASSIAN_URL` the probes found gets deleted, not updated. Confirm?
 
 **Verify the target is reachable and populated before proceeding.** Migrating into an empty or half-provisioned instance regenerates empty catalogs and publishes them, which is worse than doing nothing:
 
