@@ -769,16 +769,20 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <h2 class="h2" data-anim="fade-up">Preparar el Testing de la Capa API</h2>
   <div class="terminal mt-s">
     <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>auth una vez, reutiliza</span></div>
-<pre><span class="cmt"># credenciales SIEMPRE desde .env — nunca hardcodear</span>
-<span class="kw">POST</span> /auth/v1/token
-  body: { email: {{env.STAGING_USER_EMAIL}}, password: {{env.STAGING_USER_PASSWORD}} }
-  store: <span class="fn">access_token</span>, <span class="fn">refresh_token</span>, <span class="fn">user.id</span>
+<pre><span class="cmt"># 1 · SCHEMA (solo lectura): OpenAPI MCP</span>
+<span class="fn">list-api-endpoints</span> · <span class="fn">get-api-endpoint-schema</span>   <span class="cmt"># nunca invoke-api-endpoint</span>
+
+<span class="cmt"># 2 · TOKEN: credenciales SIEMPRE desde .env, nunca a mano</span>
+<span class="kw">bun run</span> api:login staging [--role admin]   <span class="cmt"># → .auth/tokens.env</span>
+
+<span class="cmt"># 3 · EJECUTAR: curl, en la misma llamada que carga el token</span>
+<span class="kw">source</span> .auth/tokens.env &amp;&amp; curl -H <span class="str">"Authorization: Bearer $API_TOKEN_USER_STAGING"</span> <span class="str">"$API_BASE_URL/&lt;path&gt;"</span>
 
 <span class="cmt"># registra los endpoints del ticket en una tabla en memory:</span>
 <span class="cmt"># | Method | Endpoint | Purpose | AC |</span></pre>
   </div>
   <div class="callout warn mt-m"><h4>Gotcha de propagación de token</h4><p>Algunos backends scopean el token por workspace/tenant. Si un request da <b>200 para un usuario y 403 para otro con el mismo rol</b>, la propagación es la sospechosa — anótalo como <b>descubrimiento</b>, no como bug, hasta confirmarlo con el equipo.</p></div>
-  <div class="notes">Token una vez desde .env, reutilizar. La gotcha de propagación: mismo rol, distinto resultado = problema de scoping, no necesariamente bug. Confirmar antes de reportar.</div>
+  <div class="notes">Tres herramientas, un trabajo cada una (agentic-qa-core/references/api-testing-doctrine.md): el MCP lee el contrato, <code>bun run api:login</code> obtiene el token, curl ejecuta. Token una vez, reutilizar. La gotcha de propagación: mismo rol, distinto resultado = problema de scoping, no necesariamente bug. Confirmar antes de reportar.</div>
 </section>
 
 <!-- 17. STATUS-CODE MATRIX -->

@@ -767,32 +767,34 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <p class="kicker">suite 0: no prueba la app, prueba el repo de pruebas</p>
     <h2 class="h2"><span class="grad">build.yml</span>: el gate del Pull Request</h2>
     <div class="split eq">
-      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>build.yml</b> · steps Validate env schema (varlock) … TypeScript Check … Validate Playwright Config</span><span class="badge real">real</span></div>
-<pre class="sm"><span class="ln">40</span>      - <span class="key">name</span>: <span class="str">Validate env schema (varlock)</span>
-<span class="ln">41</span>        <span class="key">uses</span>: <span class="str">dmno-dev/varlock-action@v1.0.5</span>
-<span class="ln">42</span>        <span class="key">with</span>:
-<span class="ln">43</span>          <span class="key">fail-on-error</span>: <span class="kw">true</span>
-<span class="ln">44</span>          <span class="key">show-summary</span>: <span class="kw">true</span>
-<span class="ln">45</span>        <span class="c"># First gate, before any dependency is installed: loads .env.schema +</span>
-<span class="ln">46</span>        <span class="c"># .env.core.schema against the job's env block above (TEST_ENV=staging,</span>
-<span class="ln">47</span>        <span class="c"># so the staging test-user secrets are the required items) and writes a</span>
-<span class="ln">48</span>        <span class="c"># REDACTED summary to the job page. A PR from a fork has no secrets and</span>
-<span class="ln">49</span>        <span class="c"># fails here, exactly as it already failed at test:env:check below; …</span>
-<span class="ln">62</span>      - <span class="key">name</span>: <span class="str">Validate Test Environment Variables</span>
-<span class="ln">63</span>        <span class="key">run</span>: bun run test:env:check
-<span class="ln">65</span>      - <span class="key">name</span>: <span class="str">TypeScript Check</span>
-<span class="ln">66</span>        <span class="key">run</span>: bun run types:check
-<span class="ln">68</span>      - <span class="key">name</span>: <span class="str">ESLint Check</span>
-<span class="ln">69</span>        <span class="key">run</span>: bun run lint:check
-<span class="ln">71</span>      - <span class="key">name</span>: <span class="str">Skill Activation Evals Check</span>
-<span class="ln">72</span>        <span class="key">run</span>: bun run skills:evals
-<span class="ln">78</span>      - <span class="key">name</span>: <span class="str">Playwright Compile Check</span>
-<span class="ln">79</span>        <span class="key">run</span>: bunx playwright test --list</pre></div>
+      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">extracto de <b>.github/workflows/build.yml</b></span><span class="badge real">real</span></div>
+<pre class="sm">      - <span class="key">name</span>: <span class="str">Validate env schema (varlock)</span>
+        <span class="key">uses</span>: <span class="str">dmno-dev/varlock-action@v1.0.5</span>
+        <span class="key">with</span>:
+          <span class="key">fail-on-error</span>: <span class="kw">true</span>
+          <span class="key">show-summary</span>: <span class="kw">true</span>
+        <span class="c"># First gate, before any dependency is installed: loads .env.schema +</span>
+        <span class="c"># .env.core.schema against the job's env block above and writes a</span>
+        <span class="c"># REDACTED summary to the job page. The only required item is TEST_ENV</span>
+        <span class="c"># (it has a default); project credentials are optional typed examples,</span>
+        <span class="c"># so a PR from a fork, which has no secrets, passes here and at</span>
+        <span class="c"># test:env:check below. …</span>
+      <span class="c"># … Setup Bun · Install Dependencies</span>
+      - <span class="key">name</span>: <span class="str">Validate Test Environment Variables</span>
+        <span class="key">run</span>: bun run test:env:check
+      - <span class="key">name</span>: <span class="str">TypeScript Check</span>
+        <span class="key">run</span>: bun run types:check
+      - <span class="key">name</span>: <span class="str">ESLint Check</span>
+        <span class="key">run</span>: bun run lint:check
+      - <span class="key">name</span>: <span class="str">Skill Activation Evals Check</span>
+        <span class="key">run</span>: bun run skills:evals
+      - <span class="key">name</span>: <span class="str">Playwright Compile Check</span>
+        <span class="key">run</span>: bunx playwright test --list</pre></div>
       <div>
         <ul class="blist" style="margin-top:0">
           <li><b>Contesta «¿este PR rompe el framework?».</b> Un test que no compila no falla: no existe. Por eso <code class="k">playwright test --list</code> es el step clave: compila cada spec sin ejecutarlo y sin credenciales de app.</li>
           <li><b>Mismo orden que la Rule #7 del repo:</b> tests (compilación) → types → lint. Lo que corrés en local antes de commitear, corre aquí antes de mergear. Sin sorpresas.</li>
-          <li><b>El step Validate env schema (varlock) va primero</b>, antes de <code class="k">bun install</code>: valida que el bloque <code class="k">env</code> del job cumpla <code class="k">.env.schema</code>. Un PR de fork no tiene secrets y muere aquí en 5 segundos, con un summary redactado en vez de un stack trace.</li>
+          <li><b>El step Validate env schema (varlock) va primero</b>, antes de <code class="k">bun install</code>: valida que el bloque <code class="k">env</code> del job cumpla <code class="k">.env.schema</code> y deja un summary redactado en la página del job. Lo único requerido es <code class="k">TEST_ENV</code> (tiene default); el par de test-user es opcional, así que un PR de fork, que no tiene secrets, pasa aquí y en <code class="k">test:env:check</code>.</li>
           <li><b>Cancelable</b> (<code class="k">cancel-in-progress: true</code>): un push nuevo invalida al anterior y nada quedó publicado.</li>
           <li><b>El timeout más corto de las suites</b> (ver <code class="k">timeout-minutes</code> en build.yml): si tarda más, algo está mal en la máquina, no en el código.</li>
         </ul>
@@ -810,10 +812,10 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <h2 class="h2"><span class="grad">smoke.yml</span>: ¿la app está viva?</h2>
     <div class="split eq">
       <div>
-        <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>smoke.yml</b> step Run Smoke Tests (@critical) · <b>playwright.config.ts</b> proyectos smoke-*</span><span class="badge real">real</span></div>
+        <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">extracto de <b>.github/workflows/smoke.yml</b> step Run Smoke Tests (@critical) · <b>playwright.config.ts</b> proyectos smoke-*</span><span class="badge real">real</span></div>
 <pre class="sm"><span class="c"># smoke.yml</span>
-<span class="ln">99</span>      - <span class="key">name</span>: <span class="str">Run Smoke Tests (@critical) on <span class="ex">${{ env.TEST_ENV }}</span></span>
-<span class="ln">100</span>        <span class="key">run</span>: bun run test:smoke
+      - <span class="key">name</span>: <span class="str">Run Smoke Tests (@critical) on <span class="ex">${{ env.TEST_ENV }}</span></span>
+        <span class="key">run</span>: bun run test:smoke
 
 <span class="c"># package.json</span>
 "test:smoke": "playwright test --project=smoke-ui --project=smoke-api"
@@ -846,32 +848,32 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <p class="kicker">suite 2: la única que siempre necesita que le digas qué</p>
     <h2 class="h2"><span class="grad">sanity.yml</span>: ¿funciona ESTE cambio?</h2>
     <div class="split">
-      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>sanity.yml</b> · step Run Sanity Tests</span><span class="badge real">real</span></div>
-<pre class="sm"><span class="ln">126</span>      - <span class="key">name</span>: <span class="str">Run Sanity Tests on <span class="ex">${{ env.TEST_ENV }}</span></span>
-<span class="ln">127</span>        <span class="key">shell</span>: bash
-<span class="ln">128</span>        <span class="key">env</span>:
-<span class="ln">129</span>          <span class="key">GREP_INPUT</span>: <span class="ex">${{ github.event.inputs.grep }}</span>
-<span class="ln">130</span>          <span class="key">TEST_FILE</span>: <span class="ex">${{ github.event.inputs.test_file }}</span>
-<span class="ln">131</span>          <span class="key">TEST_TYPE</span>: <span class="ex">${{ github.event.inputs.test_type }}</span>
-<span class="ln">132</span>        <span class="key">run</span>: |
-<span class="ln">133</span>          grep_args=()
-<span class="ln">134</span>          if [ -n "$GREP_INPUT" ]; then
-<span class="ln">135</span>            grep_args=(--grep "$GREP_INPUT")
-<span class="ln">136</span>          fi
-<span class="ln">138</span>          <span class="c"># Determine which test command to run</span>
-<span class="ln">139</span>          if [ -n "$TEST_FILE" ]; then
-<span class="ln">140</span>            echo "Running specific test file: $TEST_FILE"
-<span class="ln">141</span>            bun run test "$TEST_FILE" "${grep_args[@]}"
-<span class="ln">142</span>          elif [ "$TEST_TYPE" == "e2e" ]; then
-<span class="ln">143</span>            echo "Running E2E tests"
-<span class="ln">144</span>            bun run test:e2e "${grep_args[@]}"
-<span class="ln">145</span>          elif [ "$TEST_TYPE" == "integration" ]; then
-<span class="ln">146</span>            echo "Running Integration tests"
-<span class="ln">147</span>            bun run test:integration "${grep_args[@]}"
-<span class="ln">148</span>          else
-<span class="ln">149</span>            echo "Running all tests"
-<span class="ln">150</span>            bun run test "${grep_args[@]}"
-<span class="ln">151</span>          fi</pre></div>
+      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">extracto de <b>.github/workflows/sanity.yml</b> · step Run Sanity Tests</span><span class="badge real">real</span></div>
+<pre class="sm">      - <span class="key">name</span>: <span class="str">Run Sanity Tests on <span class="ex">${{ env.TEST_ENV }}</span></span>
+        <span class="key">shell</span>: bash
+        <span class="key">env</span>:
+          <span class="key">GREP_INPUT</span>: <span class="ex">${{ github.event.inputs.grep }}</span>
+          <span class="key">TEST_FILE</span>: <span class="ex">${{ github.event.inputs.test_file }}</span>
+          <span class="key">TEST_TYPE</span>: <span class="ex">${{ github.event.inputs.test_type }}</span>
+        <span class="key">run</span>: |
+          grep_args=()
+          if [ -n "$GREP_INPUT" ]; then
+            grep_args=(--grep "$GREP_INPUT")
+          fi
+          <span class="c"># Determine which test command to run</span>
+          if [ -n "$TEST_FILE" ]; then
+            echo "Running specific test file: $TEST_FILE"
+            bun run test "$TEST_FILE" "${grep_args[@]}"
+          elif [ "$TEST_TYPE" == "e2e" ]; then
+            echo "Running E2E tests"
+            bun run test:e2e "${grep_args[@]}"
+          elif [ "$TEST_TYPE" == "integration" ]; then
+            echo "Running Integration tests"
+            bun run test:integration "${grep_args[@]}"
+          else
+            echo "Running all tests"
+            bun run test "${grep_args[@]}"
+          fi</pre></div>
       <div>
         <table class="tbl tight">
           <tr><th>Input</th><th>Tipo</th><th>Efecto</th></tr>
@@ -1009,28 +1011,28 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <p class="kicker">un reporte por run, no uno por job</p>
     <h2 class="h2">Merge: <span class="grad">dos artifacts entran, un reporte sale</span></h2>
     <div class="split">
-      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>regression.yml</b> · steps Download … Allure Results, Merge Allure Results</span><span class="badge real">real</span></div>
-<pre class="sm"><span class="ln">280</span>      - <span class="key">name</span>: <span class="str">Download Integration Allure Results</span>
-<span class="ln">281</span>        <span class="key">uses</span>: <span class="str">actions/download-artifact@v4</span>
-<span class="ln">282</span>        <span class="key">with</span>:
-<span class="ln">283</span>          <span class="key">name</span>: integration-allure-results
-<span class="ln">284</span>          <span class="key">path</span>: regression-artifacts/integration-allure-results
-<span class="ln">285</span>        <span class="key">continue-on-error</span>: <span class="kw">true</span>
-<span class="ln">287</span>      - <span class="key">name</span>: <span class="str">Download E2E Allure Results</span>
-<span class="ln">…</span>        <span class="c">(idéntico, e2e-allure-results)</span>
-<span class="ln">294</span>      - <span class="key">name</span>: <span class="str">Merge Allure Results</span>
-<span class="ln">295</span>        <span class="key">id</span>: merge_results
-<span class="ln">297</span>        <span class="key">run</span>: |
-<span class="ln">298</span>          mkdir -p merged-allure-results
-<span class="ln">301</span>          if [ -d "regression-artifacts/integration-allure-results" ] &amp;&amp; [ -n "$(ls -A …)" ]; then
-<span class="ln">303</span>            cp -r regression-artifacts/integration-allure-results/. merged-allure-results/
-<span class="ln">…</span>          <span class="c">(lo mismo para e2e)</span>
-<span class="ln">316</span>      - <span class="key">name</span>: <span class="str">Check Allure Results</span>
-<span class="ln">317</span>        <span class="key">id</span>: check_allure
-<span class="ln">322</span>            echo "has_results=true" &gt;&gt; $GITHUB_OUTPUT
-<span class="ln">328</span>      - <span class="key">name</span>: <span class="str">Upload Merged Allure Results</span>
-<span class="ln">329</span>        <span class="key">if</span>: steps.check_allure.outputs.has_results == 'true'
-<span class="ln">332</span>          <span class="key">name</span>: merged-allure-results-<span class="ex">${{ env.TEST_ENV }}</span></pre></div>
+      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">extracto de <b>.github/workflows/regression.yml</b> · steps Download … Allure Results, Merge Allure Results</span><span class="badge real">real</span></div>
+<pre class="sm">      - <span class="key">name</span>: <span class="str">Download Integration Allure Results</span>
+        <span class="key">uses</span>: <span class="str">actions/download-artifact@v4</span>
+        <span class="key">with</span>:
+          <span class="key">name</span>: integration-allure-results
+          <span class="key">path</span>: regression-artifacts/integration-allure-results
+        <span class="key">continue-on-error</span>: <span class="kw">true</span>
+      - <span class="key">name</span>: <span class="str">Download E2E Allure Results</span>
+<span class="c">…</span>        <span class="c">(idéntico, e2e-allure-results)</span>
+      - <span class="key">name</span>: <span class="str">Merge Allure Results</span>
+        <span class="key">id</span>: merge_results
+        <span class="key">run</span>: |
+          mkdir -p merged-allure-results
+          if [ -d "regression-artifacts/integration-allure-results" ] &amp;&amp; [ -n "$(ls -A …)" ]; then
+            cp -r regression-artifacts/integration-allure-results/. merged-allure-results/
+<span class="c">…</span>          <span class="c">(lo mismo para e2e)</span>
+      - <span class="key">name</span>: <span class="str">Check Allure Results</span>
+        <span class="key">id</span>: check_allure
+            echo "has_results=true" &gt;&gt; $GITHUB_OUTPUT
+      - <span class="key">name</span>: <span class="str">Upload Merged Allure Results</span>
+        <span class="key">if</span>: steps.check_allure.outputs.has_results == 'true'
+          <span class="key">name</span>: merged-allure-results-<span class="ex">${{ env.TEST_ENV }}</span></pre></div>
       <div>
         <ul class="blist" style="margin-top:0">
           <li><b>Allure results son archivos sueltos</b> (un JSON por test, más attachments). Fusionar dos carpetas es copiar todo en una: <code class="k">cp -r</code>. Allure genera después UN reporte con las dos suites como <i>suites</i> distintas dentro.</li>
@@ -1051,29 +1053,29 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <p class="kicker">del artifact a una URL con historia</p>
     <h2 class="h2">Publicar: <span class="grad">gh-pages, tendencias y la URL predecible</span></h2>
     <div class="split">
-      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>regression.yml</b> · steps Get Allure History, Build &amp; Publish Allure Report</span><span class="badge real">real</span></div>
-<pre class="sm"><span class="ln">272</span>      - <span class="key">name</span>: <span class="str">Get Allure History</span>
-<span class="ln">273</span>        <span class="key">uses</span>: <span class="str">actions/checkout@v4</span>
-<span class="ln">274</span>        <span class="key">with</span>:
-<span class="ln">275</span>          <span class="key">ref</span>: gh-pages                 <span class="c"># la rama publicada, no main</span>
-<span class="ln">276</span>          <span class="key">path</span>: gh-pages
-<span class="ln">277</span>          <span class="key">fetch-depth</span>: <span class="kw">1</span>
-<span class="ln">278</span>        <span class="key">continue-on-error</span>: <span class="kw">true</span>        <span class="c"># primer run: la rama no existe</span>
-<span class="ln">352</span>      - <span class="key">name</span>: <span class="str">Build &amp; Publish Allure Report (Allure 3)</span>
-<span class="ln">353</span>        <span class="key">if</span>: steps.check_allure.outputs.has_results == 'true'
-<span class="ln">354</span>        <span class="key">env</span>:
-<span class="ln">355</span>          <span class="key">PORTAL_URL</span>: <span class="ex">${{ secrets.PORTAL_URL }}</span>   <span class="c"># + PORTAL_*, R2_* (modo privado)</span>
-<span class="ln">362</span>        <span class="key">run</span>: |
-<span class="ln">363</span>          if [ -n "$PORTAL_URL" ]; then
-<span class="ln">364</span>            bun scripts/ci/publish-allure-portal.ts …      <span class="c"># portal privado (R2)</span>
-<span class="ln">368</span>          else
-<span class="ln">369</span>            bun scripts/ci/publish-allure-pages.ts \
-<span class="ln">370</span>              --env "<span class="ex">${{ env.TEST_ENV }}</span>" --suite regression \
-<span class="ln">371</span>              --run "<span class="ex">${{ github.run_number }}</span>" \
-<span class="ln">372</span>              --results merged-allure-results --pages gh-pages --keep 10
-<span class="ln">373</span>            echo "## Allure Report" &gt;&gt; $GITHUB_STEP_SUMMARY
-<span class="ln">374</span>            echo "View the report: https://<span class="ex">${{ github.repository_owner }}</span>.github.io/<span class="ex">${{ … }}</span>/<span class="ex">${{ env.TEST_ENV }}</span>/regression/" &gt;&gt; $GITHUB_STEP_SUMMARY
-<span class="ln">375</span>          fi</pre></div>
+      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">extracto de <b>.github/workflows/regression.yml</b> · steps Get Allure History, Build &amp; Publish Allure Report</span><span class="badge real">real</span></div>
+<pre class="sm">      - <span class="key">name</span>: <span class="str">Get Allure History</span>
+        <span class="key">uses</span>: <span class="str">actions/checkout@v4</span>
+        <span class="key">with</span>:
+          <span class="key">ref</span>: gh-pages                 <span class="c"># la rama publicada, no main</span>
+          <span class="key">path</span>: gh-pages
+          <span class="key">fetch-depth</span>: <span class="kw">1</span>
+        <span class="key">continue-on-error</span>: <span class="kw">true</span>        <span class="c"># primer run: la rama no existe</span>
+      - <span class="key">name</span>: <span class="str">Build &amp; Publish Allure Report (Allure 3)</span>
+        <span class="key">if</span>: steps.check_allure.outputs.has_results == 'true'
+        <span class="key">env</span>:
+          <span class="key">PORTAL_URL</span>: <span class="ex">${{ secrets.PORTAL_URL }}</span>   <span class="c"># + PORTAL_*, R2_* (modo privado)</span>
+        <span class="key">run</span>: |
+          if [ -n "$PORTAL_URL" ]; then
+            bun scripts/ci/publish-allure-portal.ts …      <span class="c"># portal privado (R2)</span>
+          else
+            bun scripts/ci/publish-allure-pages.ts \
+              --env "<span class="ex">${{ env.TEST_ENV }}</span>" --suite regression \
+              --run "<span class="ex">${{ github.run_number }}</span>" \
+              --results merged-allure-results --pages gh-pages --keep 10
+            echo "## Allure Report" &gt;&gt; $GITHUB_STEP_SUMMARY
+            echo "View the report: https://<span class="ex">${{ github.repository_owner }}</span>.github.io/<span class="ex">${{ … }}</span>/<span class="ex">${{ env.TEST_ENV }}</span>/regression/" &gt;&gt; $GITHUB_STEP_SUMMARY
+          fi</pre></div>
       <div>
         <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">lo que <b>publish-allure-pages.ts</b> deja en gh-pages</span><span class="badge real">real</span></div>
 <pre class="sm">{env}/{suite}/
