@@ -75,7 +75,7 @@ Per skill, the registry stores one block in this shape:
 **Read full SKILL.md when**: introducing a new mocking style not covered above, or when the user disputes a TDD verdict.
 ```
 
-The block is at most ~20 lines including blank lines. Anything longer means the orchestrator should consider that skill "too rich for compact" and the subagent must read the full SKILL.md.
+An EXTRACTED block (Strategy A or B below) aims for at most ~20 lines including blank lines. An extracted block longer than that means the orchestrator should consider that skill "too rich for compact" and the subagent must read the full SKILL.md. A block sourced from frontmatter `compact_rules:` is exempt: it is used verbatim, with no cap and no truncation (see "Frontmatter-first" below).
 
 ---
 
