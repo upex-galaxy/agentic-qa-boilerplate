@@ -128,6 +128,10 @@ The conductor keeps using SUBAGENTS for its own reads and verifications: that is
 | Background | Long-running | Test suite + plan next ticket |
 | Single | Simple task | One file edit + verification |
 
+**VALUE PROVENANCE**: Rule #11 (scripts come from `package.json`) holds for EVERY project value. A claim about this project's configuration (an env URL, a Jira field id or transition slug, a git policy, a `playwright.config.ts` setting, a TMS modality) names the file it was read from, in the same turn. A value seen in a skill reference, a template, a worked example or another project's file is illustrative: never report it, brief it or test against it as this project's state. Composes with Rule #16 (verify at the destination) and Rule #17 (prose names the source).
+
+**RULE REACHABILITY**: an executor sees its briefing, the compact rules the resolver pasted into it, and the files the briefing names. It does NOT browse `references/`. A rule that must BIND the executor (a prohibition, a gate, a credential or evidence duty, a cleanup duty) lives in all three places: full text in the owning `references/*.md`, one bullet in the owning `SKILL.md` `## Compact Rules` (so `REGISTRY.md` carries it), and component 7 of every briefing whose dispatch can trigger it. A rule that exists only in a reference is documentation, not a constraint.
+
 **ERROR PROTOCOL**: Subagent error → STOP, report full context, NO fix without approval, offer retry/skip/abort.
 
 **WORKFLOW SKILL COMPLIANCE**: every skill marked `metadata.stage_owner: true` in its frontmatter (the stage-owning workflow skills) MUST have `## Subagent Dispatch Strategy` using 7-component briefing, AND close their final stage per `agentic-qa-core/references/session-footer-contract.md`. Every other skill (reference / utility / generator) is EXEMPT. `bun run skills:check` (`STAGE-OWNER-DISPATCH`) enforces the section on every flagged skill; `.agents/skills/REGISTRY.md` lists which skills carry the flag.

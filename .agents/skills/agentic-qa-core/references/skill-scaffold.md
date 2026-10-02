@@ -98,5 +98,6 @@ Lessons land as proposals per `agentic-qa-core/references/skill-refinement-proto
 
 - `bun run skills:check` green (kind declared, suffix matches, no stale path)
 - `bun run skills:registry` regenerated; `bun run skills:registry:check` green
+- every rule the skill means to BIND an executor (a prohibition, a gate, a credential, evidence or cleanup duty) has its bullet in `## Compact Rules`, not only a paragraph in `references/` (`AGENTS.md` §3 "RULE REACHABILITY")
 - `AGENTS.md` §5 row (T1 only), and a loader: which flow loads it and when (`agentic-qa-onboard` table rule: an install nothing loads should not exist)
 - `evals/evals.json` for a workflow skill (validated by `scripts/run-skill-evals.ts`); optional for the other kinds at creation
