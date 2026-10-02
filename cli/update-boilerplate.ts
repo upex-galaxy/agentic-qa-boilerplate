@@ -236,8 +236,8 @@ export const COMPONENTS: Component[] = [
   { name: 'docs', type: 'directory', paths: [...DOCS_SHIPPED_PATHS, ...DOCS_LEGACY_PATHS] },
   { name: 'cli', type: 'directory', paths: ['cli'] },
   { name: 'vscode', type: 'directory', paths: ['.vscode'] },
-  // `.husky/pre-commit` and `.husky/pre-push` are on PROTECTED_WATCHLIST (the
-  // project's gates and their ordering live there): delivered once when missing,
+  // `.husky/pre-commit`, `.husky/pre-push` and `.husky/commit-msg` are on
+  // PROTECTED_WATCHLIST (the project's gates and their ordering live there): delivered once when missing,
   // never overwritten. Everything else under `.husky/` keeps syncing — which is
   // exactly how `framework-gates.sh` reaches a project scaffolded earlier: the
   // gates upstream owns sit in that synced file, and each hook sources it.
@@ -369,7 +369,7 @@ REPORTE DE PARIDAD (al final de cada corrida, incluido --dry-run):
   portar (lo que upstream agrego) y que conservar (lo que solo tiene el
   proyecto). Los archivos protegidos (AGENTS.md, .agents/project.yaml,
   .mcp.json, opencode.jsonc, .codex/config.toml, .claude/settings.json,
-  .husky/pre-commit, .husky/pre-push, allurerc.mjs, playwright.config.ts, las
+  .husky/pre-commit, .husky/pre-push, .husky/commit-msg, allurerc.mjs, playwright.config.ts, las
   bases KATA de tests/components/, los workflows de CI, …) nunca se
   sobrescriben: solo aparecen en ese reporte. .claude/settings.json, .codex/ y
   los hooks de .husky/ se entregan UNA vez si faltan. El proyecto suma sus
@@ -1188,6 +1188,7 @@ const PROTECTED_WATCHLIST: ProtectedWatchEntry[] = [
   // stay watched for what is genuinely theirs: ordering, and their own gates.
   { path: '.husky/pre-commit', reason: 'project gates and their ordering live here; the gates upstream owns come from the synced .husky/framework-gates.sh, so a hook that does not source it never sees another one' },
   { path: '.husky/pre-push', reason: 'project gates and their ordering live here; the gates upstream owns come from the synced .husky/framework-gates.sh, so a hook that does not source it never sees another one' },
+  { path: '.husky/commit-msg', reason: 'project commit-message checks live here (commitlint, ...); the warn-only checks upstream owns (forensic trailers) come from the synced .husky/framework-gates.sh, so a hook that does not source it never sees another one' },
 ];
 
 /**

@@ -161,10 +161,10 @@ describe('protected watchlist', () => {
     for (const p of ['.mcp.json', 'opencode.jsonc', '.codex/config.toml', '.claude/settings.json']) {
       expect(byPath[p]).toMatchObject({ source: 'upstream' });
     }
-    // Both hooks stay watched for what is genuinely theirs (ordering + their own
+    // Every hook stays watched for what is genuinely its own (ordering + its own
     // gates); the reason has to name the synced file the framework gates come
     // from, since that sentence is what the drift row shows the operator.
-    for (const hook of ['.husky/pre-commit', '.husky/pre-push']) {
+    for (const hook of ['.husky/pre-commit', '.husky/pre-push', '.husky/commit-msg']) {
       expect(byPath[hook]).toMatchObject({ source: 'upstream' });
       expect(byPath[hook]?.reason).toContain('.husky/framework-gates.sh');
     }
