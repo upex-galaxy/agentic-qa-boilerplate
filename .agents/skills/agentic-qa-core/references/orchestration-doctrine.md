@@ -55,6 +55,13 @@ The conductor keeps using SUBAGENTS for its own reads and verifications — that
 
 A rule that exists only in a reference is documentation, not a constraint: the executor that needed it never read it. A new skill proves this at creation (`./skill-scaffold.md` §5).
 
+**SESSION MATERIAL IN A DISPATCH**: QA logs in on purpose (several roles, several environments), so it does not ban session material from disk: its sanctioned store is `.auth/`, gitignored, `chmod 600`, one writer per fleet (`./browser-sessions.md` §3, §7; tokens: `./api-testing-doctrine.md`). What the contract adds is accountability per dispatch:
+
+- A dispatch that logs in, loads a state file, captures traffic (HAR, trace, network log) or dumps a database returns `secrets_materialized` and `cleaned` in its report (field values: `./briefing-template.md` component 6).
+- Material written anywhere but `.auth/` (the session scratch, the evidence folder, the repo tree, a temp dir) is deleted before the report, or the report says `cleaned: no` with the reason, and the orchestrator surfaces that as a blocker.
+- Material is never echoed into a report, plan, commit, PR or tracker comment.
+- A trace or HAR attached as evidence is scrubbed first (`./evidence-conventions.md` §1): a Playwright trace carries request headers, cookies, storage and every typed value.
+
 **ERROR PROTOCOL**: On subagent error → STOP, report full context, DO NOT fix without approval, offer retry/skip/abort.
 
 **WORKFLOW SKILL COMPLIANCE**: every skill marked `metadata.stage_owner: true` in its frontmatter MUST have a `## Subagent Dispatch Strategy` section using the 7-component briefing. Every other skill (reference / utility / generator) is EXEMPT (no dispatch table needed); the split mirrors `AGENTS.md` §3.
