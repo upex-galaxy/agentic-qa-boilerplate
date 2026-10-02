@@ -4,12 +4,17 @@
  *
  * Scans `docs/**` (`.html` and `.md`), the root `README.md`, `INSTALLER.md`
  * and `CONTEXT.md`, the nested READMEs (`.context/README.md` and the
- * `README.md` of each direct child of `.context/` and `packages/`), and
- * `packages/decks/**` (`.html`), and fails when:
+ * `README.md` of each direct child of `.context/` and `packages/`), and the
+ * HTML that GitHub Pages publishes (`packages/decks/**`, `packages/pages-home/**`),
+ * and fails when:
  *
  *   - a RELATIVE link (`href="…"`, `src="…"`, markdown `](…)`) does not
  *     resolve to an existing file or directory, relative to the file that
- *     holds it;
+ *     holds it. A published page (`PUBLISHED_MOUNTS`) is resolved the way the
+ *     Pages site serves it: `./decks/x.html` from the portal is
+ *     `packages/decks/x.html` in the repo, `./docs/` is `docs/`, and a link
+ *     into a report tree the suite workflows publish (`REPORT_ROOTS`) is
+ *     skipped, because no source file backs it;
  *   - an inline-code path (`` `docs/…` ``, `<code>docs/…</code>`) that starts
  *     with a known repo root does not exist, resolved from the repo root;
  *   - an HTML page under `docs/` lacks a `<title>` or a
@@ -30,9 +35,10 @@
  *     `REGISTRY.md`, because enumerating the skills there is the mutable-set
  *     copy Critical Rule #17 forbids.
  *   - a `bun run <name>` quoted in `AGENTS.md` or in the doc surface (fenced
- *     blocks included; decks excluded) names a script `package.json` does not
- *     declare (`script`). Placeholders and file runs (`bun run scripts/x.ts`)
- *     are ignored.
+ *     blocks, decks and the Pages portal included) names a script
+ *     `package.json` does not declare (`script`). Placeholders, file runs
+ *     (`bun run scripts/x.ts`) and prose that only names the command
+ *     (`bun run = npm run`) are ignored.
  *
  * External URLs, `mailto:` / `tel:` / `data:` / `javascript:`, bare anchors
  * and template placeholders are ignored; a `#fragment` or `?query` is stripped
@@ -48,7 +54,7 @@
  * before anyone creates them (`OPTIONAL_PATHS`). The inline-path check does
  * not run on `packages/decks/**`: deck slides quote illustrative paths from
  * teaching examples, and other fronts add decks the gate must not trip on.
- * Their relative links ARE checked.
+ * Their relative links and their `bun run` names ARE checked.
  *
  * Usage: bun scripts/lint-docs.ts   (exit 1 on any finding)
  */
@@ -125,6 +131,64 @@ export const OPTIONAL_PATHS = new Set<string>([
   '.agents/compatibility/command-aliases.project.json',
 ]);
 
+/**
+ * Where each published surface lives on the GitHub Pages site
+ * (`.github/workflows/pages.yml` assembles it): site prefix -> repo directory.
+ * The empty prefix is the site root, served from `packages/pages-home/`.
+ * Longest prefix wins.
+ */
+export const PUBLISHED_MOUNTS: ReadonlyArray<readonly [site: string, repo: string]> = [
+  ['decks/', 'packages/decks/'],
+  ['docs/', 'docs/'],
+  ['kata/', 'packages/kata-academy/'],
+  ['', 'packages/pages-home/'],
+];
+
+/**
+ * Top-level site folders no source file backs: the Allure trees the suite
+ * workflows publish per environment (`<env>/<suite>/`). A link into one is a
+ * runtime URL, not a repo path.
+ */
+export const REPORT_ROOTS = ['local', 'qa', 'staging', 'production'] as const;
+
+/** Repo path (posix, relative) -> site path, or null when the file is not published HTML. */
+export function sitePathOf(rel: string): string | null {
+  if (!rel.endsWith('.html')) { return null; }
+  for (const [site, repo] of PUBLISHED_MOUNTS) {
+    if (repo !== '' && rel.startsWith(repo)) { return site + rel.slice(repo.length); }
+  }
+  return null;
+}
+
+/**
+ * Resolve a relative link the way the Pages site does, for a published page.
+ * Returns the repo path that backs the target, `'skip'` for a report tree, or
+ * `'outside'` when the link climbs above the site root.
+ */
+export function resolvePublishedLink(siteFile: string, target: string): string | 'skip' | 'outside' {
+  const parts = siteFile.split('/').slice(0, -1);
+  for (const seg of target.split('/')) {
+    if (seg === '' || seg === '.') { continue; }
+    if (seg === '..') {
+      if (parts.length === 0) { return 'outside'; }
+      parts.pop();
+      continue;
+    }
+    parts.push(seg);
+  }
+  const site = parts.join('/') + (target.endsWith('/') && parts.length > 0 ? '/' : '');
+  if ((REPORT_ROOTS as readonly string[]).includes(parts[0] ?? '')) { return 'skip'; }
+  const sorted = [...PUBLISHED_MOUNTS].sort((a, b) => b[0].length - a[0].length);
+  for (const [prefix, repo] of sorted) {
+    const bare = prefix.replace(/\/$/, '');
+    if (prefix === '' || site === bare || site.startsWith(prefix)) {
+      const rest = prefix === '' ? site : site.slice(Math.min(site.length, prefix.length));
+      return (repo + rest).replace(/\/$/, '') || repo.replace(/\/$/, '');
+    }
+  }
+  return 'outside';
+}
+
 const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'build', '.svelte-kit']);
 
 function walk(dir: string, exts: string[], out: string[]): void {
@@ -163,6 +227,7 @@ export function collectDocFiles(root: string): string[] {
   const files: string[] = [];
   walk(join(root, 'docs'), ['.html', '.md'], files);
   walk(join(root, 'packages', 'decks'), ['.html'], files);
+  walk(join(root, 'packages', 'pages-home'), ['.html'], files);
   for (const name of ['README.md', 'INSTALLER.md', 'CONTEXT.md']) {
     const full = join(root, name);
     if (existsSync(full)) { files.push(full); }
@@ -221,11 +286,20 @@ export function lintDocFile(root: string, file: string): DocFinding[] {
       if (!isCheckableLink(target)) { continue; }
       const clean = stripSuffix(target);
       if (clean === '') { continue; }
-      const resolved = resolve(dirname(file), decodeURIComponent(clean));
+      const site = sitePathOf(rel);
+      let resolved = resolve(dirname(file), decodeURIComponent(clean));
+      let outside = false;
+      if (site !== null) {
+        const published = resolvePublishedLink(site, decodeURIComponent(clean));
+        if (published === 'skip') { continue; }
+        // A link above the site root has no target once published: always dead.
+        outside = published === 'outside';
+        if (!outside) { resolved = join(root, published); }
+      }
       const fromRoot = toPosix(relativePosix(root, resolved));
       // A link that climbs into a root this checkout does not have is skipped.
-      if (!fromRoot.startsWith('..') && !rootExists(root, fromRoot)) { continue; }
-      if (!existsSync(resolved)) {
+      if (!outside && !fromRoot.startsWith('..') && !rootExists(root, fromRoot)) { continue; }
+      if (outside || !existsSync(resolved)) {
         const key = `link:${match.index}`;
         if (!seen.has(key)) {
           seen.add(key);
@@ -300,7 +374,7 @@ export function lintRoster(root: string): DocFinding[] {
   return findings;
 }
 
-const BUN_RUN = /\bbun run(?:\s+--silent)?\s+([^\s`'"<>()[\]|,;]+)/g;
+const BUN_RUN = /\bbun run(?:\s+--silent)?\s+([^\s`'"<>()[\]|,;\\]+)/g;
 
 /** `script` findings: `bun run <name>` citations whose name `package.json` does not declare. */
 function scriptNames(pkgFile: string): string[] {
@@ -315,14 +389,14 @@ export function lintScripts(root: string, files: string[]): DocFinding[] {
   const findings: DocFinding[] = [];
   for (const file of files) {
     const rel = relativePosix(root, file);
-    if (rel.startsWith('packages/decks/')) { continue; }
-    // A package README quotes its own scripts as well as the root ones.
-    const pkg = /^packages\/([^/]+)\//.exec(rel);
+    // A package README quotes its own scripts as well as the root ones. Decks
+    // and the Pages portal live under packages/ but teach the root scripts.
+    const pkg = sitePathOf(rel) === null ? /^packages\/([^/]+)\//.exec(rel) : null;
     const scripts = new Set(pkg ? [...rootScripts, ...scriptNames(join(root, 'packages', pkg[1], 'package.json'))] : rootScripts);
     const text = readFileSync(file, 'utf8');
     for (const match of text.matchAll(BUN_RUN)) {
       const name = match[1].replace(/[.:]+$/, '');
-      if (name === '' || name.includes('/') || /\.[cm]?[jt]sx?$/.test(name) || PATTERN_CHARS.test(name)) { continue; }
+      if (!/^[a-z0-9]/i.test(name) || name.includes('/') || /\.[cm]?[jt]sx?$/.test(name) || PATTERN_CHARS.test(name)) { continue; }
       if (!scripts.has(name)) { findings.push({ file: rel, line: lineOf(text, match.index ?? 0), kind: 'script', target: name }); }
     }
   }
