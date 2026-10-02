@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Shift-Left Testing · Cómo funciona</title>
+<title>project-discovery · Cómo funciona</title>
 <style>
 /* ============================================================
    Self-contained deck — html-ppt assets inlined (fonts, base,
    tokyo-night theme, animations) + deck-local styles.
-   Source: ~/.agents/skills/html-ppt (tokyo-night harness).
+   Source: ~/.agents/skills/html-ppt (shell mirrored from packages/decks/git-flow-master).
    ============================================================ */
 
 /* ---- fonts.css ---- */
@@ -334,581 +334,503 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 }
 
 
-/* ---- deck-local (shift-left-testing · workflow paso a paso) ---- */
-.slide{padding:52px 80px}
-.h1{font-size:72px;line-height:1.04;color:var(--text-1)}
-.h2{font-size:40px;line-height:1.1;margin-bottom:8px;color:var(--text-1)}
-h4,.h4{font-size:17px;color:var(--text-1)}
-.mono-title{font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-weight:700;letter-spacing:-.03em}
-.kicker{font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-size:14px;font-weight:600;text-transform:none;letter-spacing:.02em}
-.kicker::before{content:"// ";opacity:.7}
-.grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
-.lede{font-size:21px;max-width:66ch}
-.sm{font-size:14px;line-height:1.55;color:var(--text-2);margin:0}
-.sm b,.sm strong{color:var(--text-1)}
-.above{position:relative;z-index:1}
-.fx-host{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.45}
-.slide code,.slide kbd{font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-size:.9em;
-  background:rgba(122,162,247,.12);border:1px solid rgba(122,162,247,.25);border-radius:6px;
-  padding:1px 6px;color:#9cc2ff;white-space:nowrap}
+/* ---- deck-local ---- */
+/* ===== Deck-local: TIPOGRAFÍA GRANDE + más aire para exposición en proyector ===== */
+  .slide{padding:64px 84px}
+  .h1{font-size:88px;line-height:1.02}
+  .h2{font-size:62px;line-height:1.06;margin-bottom:10px}
+  .h4{font-size:26px}
+  .kicker{font-size:17px;letter-spacing:.1em}
+  .lede{font-size:30px;line-height:1.5;max-width:60ch;font-weight:400}
+  .small{font-size:19px;line-height:1.55}
+  .dim{color:var(--text-2)}
+  .card{padding:26px 28px;background:var(--surface);border:1px solid var(--border-strong)}
+  .card-soft{background:var(--grad-soft)}
+  .card-accent{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset,var(--shadow)}
+  .lbl{font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-2);font-weight:700}
+  ul.big{font-size:21px;line-height:2.05;margin:0;padding-left:1.1em}
+  ul.big li{margin-bottom:2px}
 
-/* ---- chips ---- */
-.chip{display:inline-flex;align-items:center;gap:9px;padding:9px 15px;border-radius:10px;font-size:14.5px;
-  font-weight:600;background:var(--surface);border:1px solid var(--border-strong);color:var(--text-1)}
-.cdot{display:inline-block;width:10px;height:10px;border-radius:50%;flex:none}
+  /* schematic mockups — monospace forzado sobre tema sans */
+  .mk{font-family:'JetBrains Mono','IBM Plex Mono',ui-monospace,monospace;font-size:18px;line-height:1.5;
+      white-space:pre;background:#16161e;border:1px solid var(--border-strong);
+      border-radius:14px;padding:24px 26px;color:#c0caf5;overflow:auto;box-shadow:var(--shadow)}
 
-/* ---- cards ---- */
-.card{padding:20px 22px;border:1px solid var(--border-strong)}
-.card h4{margin:0 0 8px}
-.card-accent{border-top:3px solid var(--accent)}
+  /* etiquetas tipo issue Jira — grandes */
+  .tag{display:inline-block;padding:5px 14px;border-radius:8px;font-size:17px;font-weight:700;
+       letter-spacing:.02em;border:1px solid transparent}
+  .tag-test{background:rgba(122,162,247,.18);color:#9cc2ff;border-color:rgba(122,162,247,.5)}
+  .tag-plan{background:rgba(158,206,106,.16);color:#b9e08a;border-color:rgba(158,206,106,.5)}
+  .tag-exec{background:rgba(224,175,104,.16);color:#f0c886;border-color:rgba(224,175,104,.5)}
+  .tag-bug{background:rgba(247,118,142,.18);color:#ff9bac;border-color:rgba(247,118,142,.5)}
+  .tag-story{background:rgba(192,202,245,.14);color:#c0caf5;border-color:var(--border-strong)}
+  /* chips dentro de un título: escalan con el heading para no verse diminutos */
+  .h2 .tag{font-size:.46em;padding:.18em .5em;border-radius:.28em;vertical-align:middle;
+           position:relative;top:-.06em}
 
-/* ---- bullet list ---- */
-.blist{list-style:none;padding:0;margin:14px 0 0}
-.blist li{position:relative;padding:8px 0 8px 26px;font-size:14.5px;color:var(--text-2);line-height:1.5;border-bottom:1px solid var(--border)}
-.blist li:last-child{border-bottom:none}
-.blist li::before{content:"\25B8";position:absolute;left:2px;top:8px;color:var(--accent);font-weight:700}
-.blist li b{color:var(--text-1);font-weight:600}
-.blist.tight li{padding:6px 0 6px 26px;font-size:13.5px}
+  /* chips de estado grandes */
+  .chip{display:inline-flex;align-items:center;gap:10px;padding:12px 20px;border-radius:12px;
+        font-size:20px;font-weight:700;background:var(--surface);border:1px solid var(--border-strong)}
+  .dot{display:inline-block;width:16px;height:16px;border-radius:50%}
+  .q{font-size:58px;font-weight:800;line-height:1.04;letter-spacing:-.01em}
 
-/* ---- data table ---- */
-.dtable{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px}
-.dtable th{text-align:left;padding:9px 12px;color:var(--accent-2);font-weight:700;font-size:12px;
-  text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border-strong)}
-.dtable td{padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text-2);vertical-align:top;line-height:1.45}
-.dtable tr:last-child td{border-bottom:none}
-.dtable td b{color:var(--text-1);font-weight:600}
-.dtable td.ok{color:var(--good);font-weight:700;white-space:nowrap}
-.dtable td.opt{color:var(--warn);font-weight:700;white-space:nowrap}
+  table.tt{width:100%;border-collapse:separate;border-spacing:0 10px;font-size:20px}
+  table.tt th{color:var(--accent-2);font-weight:800;font-size:16px;letter-spacing:.08em;
+              text-transform:uppercase;text-align:left;padding:0 16px 4px}
+  table.tt td{background:var(--surface);border-top:1px solid var(--border-strong);
+              border-bottom:1px solid var(--border-strong);padding:16px 16px;vertical-align:top}
+  table.tt td:first-child{border-left:1px solid var(--border-strong);border-radius:12px 0 0 12px}
+  table.tt td:last-child{border-right:1px solid var(--border-strong);border-radius:0 12px 12px 0}
 
-/* ---- terminal ---- */
-.term{background:#16161e;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;
-  font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-size:13.5px;line-height:1.62;box-shadow:var(--shadow)}
-.term .bar{display:flex;align-items:center;gap:7px;padding:9px 14px;background:#1f2335;
-  border-bottom:1px solid var(--border);font-size:11.5px;color:var(--text-3)}
-.term .tdot{width:10px;height:10px;border-radius:50%;background:#f7768e;flex:none}
-.term .tdot:nth-child(2){background:#e0af68}
-.term .tdot:nth-child(3){background:#9ece6a}
-.term pre{margin:0;padding:16px 20px;color:#c0caf5;overflow:auto;white-space:pre}
-.term .p{color:#9ece6a;font-weight:700}
-.term .c{color:#c0caf5}
-.term .o{color:#a9b1d6}
-.term .cmt{color:#565f89;font-style:italic}
-.term .kw{color:#f7768e}
-.term .str{color:#9ece6a}
-.term .fn{color:#bb9af7}
-.term .num{color:#ff9e64}
+  .fx-host{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.45}
+  .above{position:relative;z-index:1}
+  .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
 
-/* ---- callout ---- */
-.callout{border-left:3px solid var(--accent);background:rgba(122,162,247,.08);padding:13px 18px;
-  border-radius:0 10px 10px 0;margin-top:14px}
-.callout h4{font-size:14.5px;margin:0 0 4px;color:var(--accent)}
-.callout p{font-size:13.5px;color:var(--text-2);line-height:1.55;margin:0}
-.callout.warn{border-left-color:var(--warn);background:rgba(224,175,104,.09)}
-.callout.warn h4{color:var(--warn)}
+  /* ===== workflow map (slide 2) ===== */
+  .wf-row{display:flex;align-items:stretch;gap:8px}
+  .wf-node{flex:1;min-width:0;background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;padding:10px 12px}
+  .wf-node p{margin:0}
+  .wf-node .n{font-size:12px;font-weight:800;letter-spacing:.1em;color:var(--accent-2);text-transform:uppercase}
+  .wf-node .t{font-size:17px;font-weight:700;line-height:1.25;margin-top:2px}
+  .wf-node .c{font-family:var(--font-mono);font-size:12px;color:var(--text-3);margin-top:5px;line-height:1.5}
+  .wf-node.gate{border-color:var(--warn);box-shadow:0 0 0 1px var(--warn) inset}
+  .wf-node.alt{background:var(--grad-soft)}
+  .wf-arr{align-self:center;color:var(--accent);font-size:20px;font-weight:800;flex:none}
+  .wf-lane{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-3);font-weight:700;margin:16px 0 8px}
+  /* slides densos: cards compactas + heading contenido */
+  .slide.compact .card{padding:16px 20px}
+  .slide.compact .h2{font-size:46px}
+  .slide.compact .small{font-size:18px;line-height:1.5}
 
-/* ---- numbered step cards ---- */
-.steps{display:grid;gap:24px 18px;margin-top:30px}
-.steps.s3{grid-template-columns:repeat(3,1fr)}
-.steps.s4{grid-template-columns:repeat(4,1fr)}
-.step{position:relative;padding:22px 18px 16px;border:1px solid var(--border-strong);border-radius:12px;background:var(--surface)}
-.step .num{position:absolute;top:-15px;left:16px;width:32px;height:32px;border-radius:9px;background:var(--grad);
-  color:#16161e;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;
-  font-family:'JetBrains Mono',monospace}
-.step h4{margin:8px 0 6px;font-size:15px}
-.step p{font-size:13px;color:var(--text-2);line-height:1.5;margin:0}
-
-/* ---- do / don't comparison ---- */
-.vs{display:grid;grid-template-columns:1fr 52px 1fr;gap:16px;align-items:stretch;margin-top:18px}
-.vs .mid{font-size:34px;font-weight:800;color:var(--text-3);display:flex;align-items:center;justify-content:center}
-.vs .bad-side{border-top:3px solid var(--bad)}
-.vs .good-side{border-top:3px solid var(--good)}
-.vs h3{font-size:17px;margin:0 0 10px;color:var(--text-1)}
-.vs ul{padding-left:17px;margin:0;font-size:13.5px;line-height:1.7;color:var(--text-2)}
-.vs .bad-side li::marker{color:var(--bad)}
-.vs .good-side li::marker{color:var(--good)}
-
-/* ---- workflow map (slide 2) ---- */
-.wf{position:relative;margin-top:16px}
-.wf::before{content:"";position:absolute;left:17px;top:16px;bottom:16px;width:2px;
-  background:linear-gradient(180deg,var(--warn),var(--accent) 30%,var(--accent-2) 70%,var(--good));opacity:.45}
-.wf-row{display:grid;grid-template-columns:216px 1fr 270px;gap:14px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--border)}
-.wf-row:last-child{border-bottom:none}
-.wf-node{display:flex;align-items:center;gap:11px;font-weight:700;font-size:15px;color:var(--text-1);position:relative;z-index:1}
-.wf-num{flex:none;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;
-  font-family:'JetBrains Mono',monospace;font-weight:800;font-size:15px;background:var(--surface);
-  border:1px solid var(--accent);color:var(--accent);box-shadow:0 0 0 4px var(--bg)}
-.wf-node.gatey .wf-num{border-color:var(--warn);color:var(--warn)}
-.wf-node.okey .wf-num{border-color:var(--good);color:var(--good)}
-.wf-what{font-size:13.5px;color:var(--text-2);line-height:1.45}
-.wf-what b{color:var(--text-1);font-weight:600}
-.wf-side{display:flex;flex-direction:column;gap:5px;align-items:flex-end}
-.gate,.fb,.hand{display:inline-block;padding:3px 10px;border-radius:7px;font-family:'JetBrains Mono',monospace;font-size:11.5px;white-space:nowrap}
-.gate{background:rgba(224,175,104,.14);border:1px solid rgba(224,175,104,.5);color:var(--warn)}
-.fb{background:transparent;border:1px dashed var(--border-strong);color:var(--text-3)}
-.hand{background:rgba(158,206,106,.13);border:1px solid rgba(158,206,106,.5);color:var(--good)}
+  /* ===== project-discovery: diagramas SVG inline (tokens del tema) ===== */
+  .dg{width:100%;height:auto;display:block}
+  .dg text{font-family:var(--font-sans);fill:var(--text-1)}
+  .dg .t-s{font-size:13px;fill:var(--text-2)}
+  .dg .t-m{font-family:var(--font-mono);font-size:13px;fill:var(--accent-3)}
+  .dg .t-b{font-size:15px;font-weight:700}
+  .dg .t-l{font-size:11px;font-weight:800;letter-spacing:.12em;fill:var(--accent-2)}
+  .dg .bx{fill:var(--surface);stroke:var(--border-strong);stroke-width:1.2}
+  .dg .bx-acc{fill:var(--surface);stroke:var(--accent);stroke-width:1.6}
+  .dg .bx-good{fill:var(--surface);stroke:var(--good);stroke-width:1.6}
+  .dg .bx-warn{fill:var(--surface);stroke:var(--warn);stroke-width:1.6}
+  .dg .bx-bad{fill:var(--surface);stroke:var(--bad);stroke-width:1.6}
+  .dg .bx-soft{fill:var(--surface-2);stroke:var(--border);stroke-width:1}
+  .dg .ln{stroke:var(--accent);stroke-width:2;fill:none}
+  .dg .ln-d{stroke:var(--text-3);stroke-width:1.6;fill:none;stroke-dasharray:5 5}
+  .dg .yes{fill:var(--good);font-size:12px;font-weight:800}
+  .dg .no{fill:var(--bad);font-size:12px;font-weight:800}
+  .dg .ar{fill:var(--accent)}
+  .dg .ar-d{fill:var(--text-3)}
+  .lane-good{color:var(--good)} .lane-warn{color:var(--warn)} .lane-bad{color:var(--bad)}
+  table.tt.tight{font-size:15px;border-spacing:0 5px}
+  table.tt.tight td{padding:8px 14px}
+  table.tt.tight th{font-size:13px}
+  /* modo escalado (scale-to-fit a 1280x720 en pantallas chicas): más compacto para que cada slide entre entero */
+  @media (max-width:1023px),(max-height:639px){
+    .slide{padding:30px 52px}
+    .slide.compact .h2{font-size:36px}
+    .slide.compact .small{font-size:15.5px;line-height:1.4}
+    .slide.compact .card{padding:10px 16px}
+    .slide.compact .card p{margin-top:2px;margin-bottom:2px}
+    .slide.compact .mt-m{margin-top:10px}
+    .slide.compact .mt-s{margin-top:4px}
+    .slide.compact ul.big{font-size:15.5px!important;line-height:1.5!important}
+    .slide.compact .stack{gap:8px!important}
+    .slide.compact .grid{gap:14px!important}
+    .slide.compact table.tt.tight{border-spacing:0 4px}
+    .slide.compact table.tt.tight td{padding:5px 12px}
+    .slide.compact .mk{padding:12px 16px}
+    .slide.compact .wf-node{padding:8px 10px}
+    .slide.compact .lbl{font-size:13px}
+    .wf-lane{margin:10px 0 6px}
+  }
 </style>
 </head>
 <body>
 
 <div class="deck">
 
-<!-- 1. PORTADA -->
-<section class="slide is-active" data-title="Portada">
-  <div class="fx-host" data-fx="constellation"></div>
-  <div class="above">
-    <p class="eyebrow">AGENTIC QA · WORKFLOW SKILL · SHIFT-LEFT</p>
-    <h1 class="h1 mono-title anim-rise-in" data-anim="rise-in"><span class="grad">/</span>shift-left-testing</h1>
-    <p class="lede mt-m">QA pre-sprint sobre un lote de Stories del backlog: refina los Acceptance Criteria, saca a la luz gaps y ambigüedades, y deja redactado el ATP real de cada Story en madurez outline. Los defectos se <b>previenen en los requisitos</b>, antes de que alguien escriba una línea de la feature.</p>
-    <div class="row wrap mt-l" style="gap:10px">
-      <span class="chip"><span class="cdot" style="background:var(--accent)"></span>Shift-Left <span class="dim">(históricamente Stage 0)</span> · Pre-sprint</span>
-      <span class="chip"><span class="cdot" style="background:var(--accent-2)"></span>Batch de 1-12 Stories</span>
-      <span class="chip"><span class="cdot" style="background:var(--warn)"></span>Sin ejecución: la feature no existe</span>
-      <span class="chip"><span class="cdot" style="background:var(--good)"></span>Jira es canónico</span>
+  <!-- 1. PORTADA -->
+  <section class="slide is-active" data-title="Portada">
+    <p class="eyebrow" style="margin-bottom:20px">Agentic QA · Skill de workflow</p>
+    <h1 class="h1 mono anim-rise-in" data-anim="rise-in" style="font-size:86px;letter-spacing:-.02em"><span class="grad">/</span>project-discovery</h1>
+    <p class="lede mt-m">Convierte un código que QA todavía no conoce en un proyecto <b>testeable</b>: lee el repo objetivo, pregunta lo ambiguo y deja escritos el dominio y la infraestructura donde el resto de las skills los va a buscar.</p>
+    <div class="row wrap mt-l" style="gap:12px">
+      <span class="chip"><span class="dot" style="background:var(--accent)"></span>Solo lectura sobre el repo objetivo</span>
+      <span class="chip"><span class="dot" style="background:var(--warn)"></span>Fases en orden, con tu OK entre cada una</span>
+      <span class="chip"><span class="dot" style="background:var(--good)"></span>Lo no verificable va a <span class="mono" style="font-size:17px">discovery-gaps</span></span>
     </div>
-  </div>
-  <div class="notes">Bienvenidos. Este deck recorre el workflow real del skill /shift-left-testing paso a paso: qué entra, qué hace la IA, qué gates esperan tu aprobación y qué artefactos salen. Regla de oro: corregir un defecto en los requisitos cuesta 1; en desarrollo, 10; en producción, 100.</div>
-</section>
+    <div class="notes">Deck de la skill project-discovery: el onboarding de un proyecto bajo test. Es ingeniería inversa: describe lo que el sistema hace, nunca lo que producto quisiera que haga. Pulsá → para avanzar, S para modo presentador, O para overview, F para pantalla completa.</div>
+  </section>
 
-<!-- 2. MAPA DEL WORKFLOW -->
-<section class="slide" data-title="Mapa del workflow">
-  <p class="kicker">el mapa completo: índice mental del deck</p>
-  <h2 class="h2" data-anim="fade-up">Un pipeline, tres fases <span class="grad">+ gates humanos</span></h2>
-  <div class="wf anim-stagger-list">
-    <div class="wf-row">
-      <div class="wf-node gatey"><span class="wf-num">!</span>Preflight Gate</div>
-      <div class="wf-what">Readiness de tooling + contexto: los mapas tienen que estar <b>generados</b>, no solo presentes. <b>Args-as-answers</b> · <b>probe, don't assume</b>. Un solo checklist de gaps; RED bloqueante → STOP.</div>
-      <div class="wf-side"><span class="fb">RED → arregla .env + reinicia</span><span class="fb">placeholder → project-context</span></div>
-    </div>
-    <div class="wf-row">
-      <div class="wf-node"><span class="wf-num">0</span>Session Init</div>
-      <div class="wf-what">Resume check · modalidad TMS A/B · carga <b>/acli</b> · verifica <b>contexto</b> · resuelve candidatos · crea <b>.session/&lt;batch-id&gt;/</b></div>
-      <div class="wf-side"><span class="fb">falta contexto → STOP + handoff</span></div>
-    </div>
-    <div class="wf-row">
-      <div class="wf-node"><span class="wf-num">1</span>Selection</div>
-      <div class="wf-what">Sync-read por candidato → filtro de tipo → frescura de label → <b>veto</b> → <b>risk score</b> → tabla ranqueada · tras el OK, subtask <b>[QA] Shift-Left Review</b> por Story</div>
-      <div class="wf-side"><span class="gate">GATE · OK del usuario</span><span class="fb">no-Story → rechazo en voz alta</span></div>
-    </div>
-    <div class="wf-row">
-      <div class="wf-node"><span class="wf-num">2</span>Refinement ×N</div>
-      <div class="wf-what">1 subagente por Story, <b>SECUENCIAL</b> · playbook en alcance outline → buffer <b>shift-left-refinement.md</b> + resumen por Story</div>
-      <div class="wf-side"><span class="gate">GATE · OK por Story</span><span class="fb">fleet opcional: 1 worker/Story</span></div>
-    </div>
-    <div class="wf-row">
-      <div class="wf-node"><span class="wf-num">3</span>Handoff ×N</div>
-      <div class="wf-what">Mutaciones Jira por Story · labels · qa_assignee · transición <b>Backlog → Shift-Left QA → Estimation</b> y STOP · <b>light stage verifier</b></div>
-      <div class="wf-side"><span class="fb">campo ausente → comment fallback</span><span class="fb">subtask → Close vía complete</span></div>
-    </div>
-    <div class="wf-row">
-      <div class="wf-node okey"><span class="wf-num">✓</span>Batch report</div>
-      <div class="wf-what">Agrega preguntas PO/Dev (dedupe) → <b>batch-report.md</b> → comment en el epic padre si comparten uno · archiva la sesión · <b>session footer</b> en el chat</div>
-      <div class="wf-side"><span class="hand">→ /sprint-testing · cortocircuito</span></div>
-    </div>
-  </div>
-  <p class="dim2 mt-s" style="font-size:13px"><span class="gate">GATE</span> espera aprobación humana &nbsp;·&nbsp; <span class="fb">caja punteada</span> fallback / camino adyacente &nbsp;·&nbsp; <span class="hand">→</span> handoff a otra skill</p>
-  <div class="callout mt-m"><h4>El contrato agéntico de Shift-Left</h4><p>El <b>agente</b> reescribe los ACs como Given/When/Then con datos concretos, saca a la luz gaps y ambigüedades, redacta el ATP pre-sprint en el campo de la Story y aplica el Test-Design Checklist. La <b>persona</b> firma el lote de Stories candidatas y el resumen por Story, y nunca deja pasar una Story a <span class="mono">Estimation</span> sin eso. <b>Evidencia que sobrevive</b>: los ACs reescritos, los gaps como preguntas abiertas a PO/Dev, la label fechada y la subtask de revisión. Autonomía CSA <b>2</b> y <b>sin verificador separado</b>: el PO o el dev que refina la Story es el revisor natural.</p></div>
-  <div class="notes">Memoriza esta columna: Preflight → Init → Selection → Refinement → Handoff → Batch report. Cada fila es una sección del deck; al final vienen el verificador de cierre, el session footer y el fleet opcional. A la derecha viven los caminos adyacentes: gates de aprobación, fallbacks y handoffs hacia otras skills.</div>
-</section>
-
-<!-- 3. PREFLIGHT GATE -->
-<section class="slide" data-title="Preflight Gate">
-  <p class="kicker">antes de la Phase 0: readiness gate</p>
-  <h2 class="h2" data-anim="fade-up">Preflight: <span class="grad">probar, no asumir</span></h2>
-  <div class="grid g2 mt-m anim-stagger-list">
-    <div class="card card-accent"><h4>Ley 1 · Args-as-answers</h4><p class="sm">Lo que el usuario ya dijo (los IDs de Story, la modalidad, "groom the backlog") cuenta como respuesta dada. Solo se preguntan los gaps reales, todos juntos, en UN checklist.</p></div>
-    <div class="card card-accent"><h4>Ley 2 · Probe, don't assume</h4><p class="sm">Cada capacidad se verifica con un probe real. Un RED bloqueante detiene la sesión: la skill nombra la env var exacta, apunta a <code>.env</code> y pide reiniciar la sesión del agente.</p></div>
-  </div>
-  <table class="dtable">
-    <thead><tr><th>Capacidad</th><th>Necesidad</th><th>Probe / por qué</th></tr></thead>
-    <tbody>
-      <tr><td><b>/acli</b> (issue tracker)</td><td class="ok">REQUIRED</td><td><code>bun run jira:check</code>: todo el output del refinamiento aterriza en Jira</td></tr>
-      <tr><td><b>Modalidad TMS resuelta</b></td><td class="ok">REQUIRED</td><td>A: Xray · B: Jira-native. Se persiste para <code>/sprint-testing</code>; el ATP pre-sprint vive en el campo en AMBAS</td></tr>
-      <tr><td><b>/xray-cli</b> + creds <code>XRAY_*</code></td><td class="opt">N/A</td><td>No se usa pre-sprint: el ATP es field-first y el Test Plan item lo crea <code>/sprint-testing</code> Planning desde el campo</td></tr>
-      <tr><td><b>Mapas de negocio + MTP</b></td><td class="ok">REQUIRED</td><td><code>business-data-context</code>, <code>business-api-context</code> y <code>business-e2e-context</code> existen Y están generados: <code>bun run context:map &lt;slug&gt; --list</code> lista secciones, sin aviso de placeholder. Más <code>master-test-plan.md</code>. Falta la skill → <code>bun run up</code> · placeholder → el modo de <code>project-context</code> · falta el MTP → <code>bun run context:hydrate</code> (y si el Epic no tiene plan, modo <code>test-plan</code>)</td></tr>
-      <tr><td><b>Lista de candidatos</b></td><td class="ok">REQUIRED</td><td>IDs explícitos o JQL de backlog, tamaño confirmado con el usuario</td></tr>
-    </tbody>
-  </table>
-  <div class="callout"><h4>Gate ligero por diseño</h4><p>Shift-left nunca ejecuta contra un sistema vivo: env de la app, credenciales de test-user, DBHub, OpenAPI, Playwright y resend son N/A aquí. La viabilidad se establece LEYENDO código, APIs y schema, jamás corriendo la app.</p></div>
-  <div class="notes">El preflight corre antes que todo, incluso antes del resume check. Sus dos leyes evitan los dos fallos clásicos: interrogar al usuario por cosas que ya dijo, y asumir que una CLI está autenticada sin probarla. Y un mapa placeholder pasa un chequeo de "el archivo existe" sin traer nada: por eso el probe es --list.</div>
-</section>
-
-<!-- 4. PHASE 0 -->
-<section class="slide" data-title="Phase 0 · Session Init">
-  <p class="kicker">phase 0: session resume check + init</p>
-  <h2 class="h2" data-anim="fade-up">Phase 0 · Arrancar <span class="grad">o retomar</span> la sesión</h2>
-  <div class="grid g2 mt-m" style="align-items:start;gap:30px">
-    <ul class="blist tight anim-stagger-list" style="margin-top:0">
-      <li><b>0.0 Resume check.</b> ¿Existe <code>progress.md</code> del batch? → ofrecer <b>resume / restart / abort</b>. Restart archiva lo anterior como <code>-aborted</code>.</li>
-      <li><b>0.1 Modalidad TMS.</b> El mismo probe automático de <code>test-documentation</code> §Phase 0 (A: Xray · B: Jira-native); solo pregunta si fallan los chequeos. Se persiste en <code>plan.md</code> §Inputs.</li>
-      <li><b>0.2 Tool skills.</b> <code>/acli</code> siempre (escrituras + búsqueda trivial). Lecturas de detalle → <code>bun run jira:sync-issues</code>, nunca <code>acli view</code>.</li>
-      <li><b>0.3 Contexto generado.</b> <code>bun run context:map &lt;slug&gt; --list</code> por cada mapa de negocio + el master test plan. Que el archivo exista no alcanza: un placeholder pasa ese chequeo vacío. Aviso de placeholder o plan ausente → STOP → <b>/project-discovery</b> o el modo de <code>project-context</code>.</li>
-      <li><b>0.4 Candidatos.</b> IDs explícitos (UPEX-100,101,102) o JQL de backlog. Sweet spot 1-12; &gt;12 se divide en sesiones.</li>
-      <li><b>0.5 Carpeta de sesión</b> + <code>plan.md</code> (Goal · Inputs · fases · riesgos) + primer entry en <code>progress.md</code>.</li>
-    </ul>
-    <div class="term">
-      <div class="bar"><span class="tdot"></span><span class="tdot"></span><span class="tdot"></span><span>estado de sesión: dónde vive cada cosa</span></div>
-<pre><span class="fn">.session/shift-left-testing/2026-07-06-payments/</span>
-├─ plan.md          <span class="cmt"># canónico: modalidad + candidatos + fases</span>
-├─ progress.md      <span class="cmt"># append-only, 1 entry por fase → resume</span>
-├─ candidates.md    <span class="cmt"># output de Phase 1</span>
-└─ batch-report.md  <span class="cmt"># output de Phase 3</span>
-
-<span class="cmt"># buffer [LOCAL] por Story (gitignored, desechable</span>
-<span class="cmt"># una vez que Phase 3 lo publica en el campo ATP):</span>
-<span class="fn">.context/PBI/epics/EPIC-&lt;KEY&gt;-&lt;slug&gt;/stories/</span>
-<span class="fn">  STORY-&lt;KEY&gt;-&lt;slug&gt;/</span>shift-left-refinement.md
-
-<span class="cmt"># al cerrar: mv → .session/.archive/&lt;fecha&gt;-...-&lt;batch-id&gt;/</span></pre>
-    </div>
-  </div>
-  <div class="notes">La sesión es resumible por diseño: plan.md es el registro canónico de decisiones y progress.md permite retomar a mitad de lote sin repetir Stories ya refinadas. El descriptor kebab-case permite dos sesiones el mismo día.</div>
-</section>
-
-<!-- 5. PHASE 1 · EMBUDO -->
-<section class="slide" data-title="Phase 1 · Selection">
-  <p class="kicker">phase 1: selection · el embudo de triage</p>
-  <h2 class="h2" data-anim="fade-up">Selection: leer bien, <span class="grad">filtrar en voz alta</span></h2>
-  <div class="term mt-s">
-    <div class="bar"><span class="tdot"></span><span class="tdot"></span><span class="tdot"></span><span>lectura de detalle: regla reads-vs-writes</span></div>
-<pre><span class="p">$ </span><span class="c">bun run jira:sync-issues get UPEX-100 --include-comments</span>   <span class="cmt"># 1 Story: ACs + custom fields + comments</span>
-<span class="p">$ </span><span class="c">bun run jira:sync-issues jql "project = UPEX AND issueType = Story AND status in (Backlog, ...)"</span>
-<span class="cmt"># NUNCA `acli view` para custom fields: devuelve null. `acli search` solo para la lista trivial.</span></pre>
-  </div>
-  <div class="steps s4 anim-stagger-list">
-    <div class="step"><div class="num">1</div><h4>Filtro de tipo</h4><p>Solo Stories. Bug / Spike / Sub-task / Tech-debt → rechazo CON motivo de una línea, nunca en silencio.</p></div>
-    <div class="step"><div class="num">2</div><h4>Frescura de label</h4><p>¿Ya <code>shift-left-reviewed</code> y una label fechada de &lt;30 días? Se muestra aparte: el usuario decide skip o refresh.</p></div>
-    <div class="step"><div class="num">3</div><h4>Tabla de veto</h4><p>Money / auth / data-integrity / integración / state machine → FORZAR FULL. CSS puro / copy / docs → SKIP.</p></div>
-    <div class="step"><div class="num">4</div><h4>Risk score</h4><p>Solo sin veto. Feature nueva +3 · datos dinámicos +3 · AC-light +2 · esfuerzo +2 · &gt;5 comentarios +1…</p></div>
-  </div>
-  <div class="callout"><h4>5 · Escaneo de viabilidad de datos (solo HIGH)</h4><p>Lectura de los mapas de datos y API (<code>bun run context:map</code>) y del <code>master-test-plan</code>, sin queries ni API calls. Si el modelo de datos no soporta los ACs → flag <code>DATA-FEASIBILITY-RISK</code> (suave: no bloquea, se vuelve pregunta crítica al PO).</p></div>
-  <div class="notes">El embudo va en orden estricto: tipo antes que label, label antes que veto, veto antes que score. El rechazo ruidoso ES valor: a menudo revela que el tablero está mal etiquetado. La frescura sale de la label fechada, nunca del timestamp updated de la issue (cualquier comentario lo resetea).</div>
-</section>
-
-<!-- 6. PHASE 1 · VETO vs SCORE + GATE -->
-<section class="slide" data-title="Phase 1 · Veto y gate">
-  <p class="kicker">phase 1: el veto vence al score · gate de candidatos</p>
-  <h2 class="h2" data-anim="fade-up">El juicio anula la aritmética, <span class="grad">y tú apruebas el set</span></h2>
-  <div class="grid g2 mt-m" style="align-items:start;gap:30px">
-    <div>
-      <table class="dtable" style="margin-top:0">
-        <thead><tr><th>Score</th><th>Nivel</th><th>Profundidad de refinamiento</th></tr></thead>
-        <tbody>
-          <tr><td><b>0-3</b></td><td>LOW</td><td>SKIP: PO/Dev escriben los ACs sin QA</td></tr>
-          <tr><td><b>4-7</b></td><td>MEDIUM</td><td>Refinamiento estándar (Fases 1-3 + outlines)</td></tr>
-          <tr><td><b>8+</b></td><td>HIGH</td><td>Extendido: más caza de ambigüedades y edge cases; set de preguntas ampliado</td></tr>
-        </tbody>
-      </table>
-      <div class="callout" style="margin-top:12px"><h4>El score es orientativo</h4><p>El usuario puede rescatar una LOW si huele complejidad oculta. Y el VETO cortocircuita: una Story de refunds es refinamiento obligatorio aunque puntúe 2; un retoque de CSS es skip aunque toque cinco archivos.</p></div>
-    </div>
-    <div class="card" style="border-top:3px solid var(--warn)">
-      <h4 style="color:var(--warn)">GATE: presenta la tabla y ESPERA el OK</h4>
-      <p class="sm mt-s">Phase 1 termina con una tabla ranqueada: <b>Accepted</b> (riesgo · score · veto override · data-feasibility), <b>Rejected</b> (no-Story, con motivo), <b>Skipped</b> (LOW), <b>Already Reviewed</b> (skip/refresh?), orden recomendado y preguntas abiertas.</p>
-      <p class="sm mt-s"><b>No se refina nada</b> hasta que el humano confirme el set. Puede vetar Stories, rescatar LOWs o cambiar el orden. La lista aceptada se persiste en <code>plan.md</code> §Inputs y se registra el checkpoint en <code>progress.md</code>.</p>
-      <p class="sm mt-s"><b>Tras el OK</b>, por cada Story aceptada: find-or-create de la subtask <code>[QA] Shift-Left Review</code> con <b>assignee = self</b> desde el create. Nace en <code>{{jira.status.subtask.active}}</code> (status <code>ACTIVE</code>) y ahí queda hasta Phase 3; si ya existía cerrada, se reabre con <code>reactive</code>. Sin work type subtask en el catálogo → skip con warning, nunca bloquea.</p>
-    </div>
-  </div>
-  <div class="notes">La selección es una propuesta y el humano decide. Este gate mantiene al humano dirigiendo el lote, con el mismo patrón que el Story Explanation gate de sprint-testing. La subtask hace visible en el tablero el trabajo pre-sprint de QA y después recibe las anotaciones largas, para que la Story quede limpia.</div>
-</section>
-
-<!-- 7. PHASE 2 · EL LOOP OUTLINE -->
-<section class="slide" data-title="Phase 2 · Loop outline">
-  <p class="kicker">phase 2: refinement · un subagente por story, secuencial</p>
-  <h2 class="h2" data-anim="fade-up">Refinement: el playbook, en <span class="grad">alcance outline</span></h2>
-  <p class="sm" style="max-width:100ch">Reuso deliberado: la mayor parte de la lógica vive en <code>sprint-testing/references/acceptance-test-planning.md</code> §Fases 1-3; el subagente la cita y aplica el <b>delta shift-left</b>. Secuencial por diseño: presentas cada resumen al usuario antes de despachar la siguiente Story.</p>
-  <div class="vs">
-    <div class="card good-side">
-      <h3>Corre (alcance outline)</h3>
-      <ul>
-        <li><b>Fase 1 · Critical Analysis</b>: contexto negocio + técnico; lecturas de código LIGERAS (¿es viable?), sin reproducción</li>
-        <li><b>Fase 2 · Story Quality Analysis</b>: el corazón (siguiente slide)</li>
-        <li><b>Fase 3 · Refined ACs</b>: Given/When/Then con datos específicos</li>
-        <li><b>Fase 4 · outlines</b>: solo NOMBRES + coverage estimate (guía la estimación del PO)</li>
-        <li><b>Fase 5 · edge cases</b>: solo nombres + criticidad</li>
-      </ul>
-    </div>
-    <div class="mid">vs</div>
-    <div class="card bad-side">
-      <h3>Difiere o prohíbe</h3>
-      <ul>
-        <li>Tablas de parametrización, test-data JSON, recetas Faker → in-sprint (<code>/sprint-testing</code>)</li>
-        <li>Creación de TCs → <code>/sprint-testing</code> o Documentation (<code>/test-documentation</code>), según la modalidad</li>
-        <li>Mutaciones Jira → las hace Phase 3, nunca el subagente</li>
-        <li>Ejecución: smoke, queries DB, API calls → NADA corre</li>
-        <li>Git: sin branch ni commit, Jira es canónico</li>
-        <li>Carpeta <code>evidence/</code>: no hay nada que capturar</li>
-      </ul>
-    </div>
-  </div>
-  <div class="notes">La disciplina outline separa shift-left del diseño de tests ejecutable: títulos de outline y conteo de cobertura, nunca los datos. El ATP que se escribe ya es el real, en madurez outline. Generar recetas de Faker ahora sería trabajo desperdiciado que se rehace in-sprint.</div>
-</section>
-
-<!-- 8. PHASE 2 · EL CORAZÓN -->
-<section class="slide" data-title="Phase 2 · El corazón">
-  <p class="kicker">phase 2: story quality analysis + doctrina de diseño</p>
-  <h2 class="h2" data-anim="fade-up">El corazón: <span class="grad">lo que la Story calla</span></h2>
-  <div class="grid g2 mt-m anim-stagger-list" style="align-items:start">
-    <div class="card card-accent">
-      <h4>Qué cazas (Fase 2 del playbook)</h4>
-      <ul class="blist tight">
-        <li><b>Ambigüedades</b>: ubicación + pregunta a PO/Dev + impacto en testing + aclaración sugerida</li>
-        <li><b>Gaps</b>: AC / regla de negocio faltante, por qué es crítico, riesgo si se omite</li>
-        <li><b>Edge cases no escritos</b>: escenario + comportamiento probable + criticidad</li>
-        <li><b>Contradicciones</b>: "la descripción dice X pero el AC3 dice Y", explícito</li>
-        <li><b>Testeabilidad</b>: Yes / Partial / No, listando cada AC vago o dependencia no aislable</li>
-      </ul>
-      <p class="sm mt-s">Toolkit: <code>refinement-questions.md</code>, catálogo por arquetipo (auth, money, search, state machine, integración, RBAC).</p>
-    </div>
-    <div class="card card-accent">
-      <h4>Doctrina de diseño (vinculante)</h4>
-      <ul class="blist tight">
-        <li><b>Los ACs son el PISO</b>: el refinamiento empuja más allá del happy path</li>
-        <li><b>1:N por defecto</b>: un AC no trivial implica varios outlines; colapsar a 1 exige justificación escrita "trivially atomic"</li>
-        <li><b>Técnica por gatillo</b>: rangos → BVA · estados → State-Transition · condiciones que interactúan → Decision Table · 3+ factores → Pairwise</li>
-        <li><b>Todo escenario inferido</b> lleva el marcador <code>NEEDS PO/DEV CONFIRMATION</code>, textual, hasta Jira</li>
-        <li><b>Una Story limpia es resultado válido</b>: cero preguntas forzadas; relleno y sub-derivación son AMBOS fallos</li>
-      </ul>
-    </div>
-  </div>
-  <div class="notes">Aquí es donde el shift-left crea valor: el PO todavía puede actuar. Cada ambigüedad cazada es un defecto de producción borrado antes de nacer, y cada gap es también un outline que falta.</div>
-</section>
-
-<!-- 9. PHASE 2 · BUFFER + GATE -->
-<section class="slide" data-title="Phase 2 · Buffer y gate">
-  <p class="kicker">phase 2: el buffer de staging + gate por story</p>
-  <h2 class="h2" data-anim="fade-up">shift-left-refinement.md <span class="grad">y tu OK por Story</span></h2>
-  <div class="grid g2 mt-m" style="align-items:start;gap:30px">
-    <div class="term" style="font-size:12.5px">
-      <div class="bar"><span class="tdot"></span><span class="tdot"></span><span class="tdot"></span><span>shift-left-refinement.md: esqueleto + ejemplo</span></div>
-<pre>├─ Phase 1 · Critical Analysis
-├─ Phase 2 · Story Quality Analysis   <span class="cmt">← el corazón</span>
-├─ Phase 3 · Refined ACs
-│   <span class="kw">Given</span> user with active OTP &lt;5 min
-│   <span class="kw">When</span>  submits code <span class="str">"000000"</span> (wrong)
-│   <span class="kw">Then</span>  UI <span class="str">"Invalid code"</span> · API <span class="num">401</span> · DB no session
-│   <span class="fn">NEEDS PO/DEV CONFIRMATION</span> <span class="cmt">← si fue inferido</span>
-├─ Phase 4 · Test Outlines (pre-sprint) <span class="cmt">← nombres + coverage</span>
-├─ Phase 5 · Edge Cases (pre-sprint)    <span class="cmt">← nombres + criticidad</span>
-├─ Story Quality Assessment · Critical Questions for PO
-├─ Technical Questions for Dev · Suggested Improvements
-└─ Data feasibility flags · Recommended testing strategy</pre>
-    </div>
-    <div>
-      <ul class="blist tight" style="margin-top:0">
-        <li><b>Buffer [LOCAL], no entregable.</b> Se escribe a mano en la carpeta PBI de la Story, bajo <code>.context/PBI/**</code> (gitignored): existe solo en la máquina que corrió el lote. Phase 3 publica su body completo en el campo ATP y desde ahí la copia canónica es la de Jira.</li>
-        <li><b>Nada depende de que esté en disco.</b> <code>/sprint-testing</code> cortocircuita leyendo el <code>acceptance-test-plan.md</code> SINCRONIZADO, nunca este archivo. Los espejos Jira (<code>story.md</code>, <code>acceptance-criteria.md</code>) solo los genera el sync.</li>
-        <li><b>Bootstrap</b>: si la carpeta PBI no existe, el subagente la crea con un <code>context.md</code> mínimo. Sin <code>evidence/</code>.</li>
-        <li><b>Convención de outline</b>: <code>Should &lt;behavior&gt; &lt;condition&gt;</code>, agrupados por tipo con tabla de coverage (Positive / Negative / Boundary / Integration).</li>
-        <li><b>Retorno al orquestador</b>: JSON compacto con quality, #gaps, #preguntas PO/Dev, outlines por tipo, flags.</li>
-        <li><b>GATE</b>: el orquestador presenta el resumen, espera tu OK, registra el checkpoint <code>Phase 2.&lt;n&gt;</code> en <code>progress.md</code> y recién entonces despacha la siguiente Story.</li>
-      </ul>
-    </div>
-  </div>
-  <div class="notes">El orden de secciones es estructural: se convierte en el bloque que el PO lee en Jira. El checkpoint por Story permite retomar un lote a la mitad sin repetir trabajo. Si el cortocircuito de sprint-testing dependiera de este archivo local, en cualquier otra máquina se degradaría en silencio a un re-run completo.</div>
-</section>
-
-<!-- 10. PHASE 3 · 6 MUTACIONES -->
-<section class="slide" data-title="Phase 3 · Handoff">
-  <p class="kicker">phase 3: handoff · 6 mutaciones jira por story (vía /acli)</p>
-  <h2 class="h2" data-anim="fade-up">Handoff: <span class="grad">seis mutaciones</span>, en orden</h2>
-  <div class="steps s3 anim-stagger-list">
-    <div class="step"><div class="num">1</div><h4>ACs → campo</h4><p>Refined ACs al campo <code>acceptance_criteria</code>. Fallback si no existe: comentario "## Acceptance Criteria". Verifica con re-sync.</p></div>
-    <div class="step"><div class="num">2</div><h4>Descripción</h4><p>Append de "QA Refinements (Shift-Left Analysis)": edge cases + reglas aclaradas + preguntas. Leer primero, NUNCA sobrescribir.</p></div>
-    <div class="step"><div class="num">3</div><h4>ATP</h4><p>Puebla el campo <code>acceptance_test_plan</code> con el ATP pre-sprint (madurez outline), <b>field-first</b>: el Test Plan item <b>"ATP: {STORY-KEY}: {título}"</b> NO se crea aquí; lo crea <code>/sprint-testing</code> Planning desde este MISMO campo, sin variante de título. Fallback si el campo no existe: comentario "## Acceptance Test Plan (ATP)".</p></div>
-    <div class="step"><div class="num">4</div><h4>Comentario</h4><p>UN comentario de handoff: puntero al campo (@PO / @Dev-lead solo si están en <code>project.yaml</code>). Body completo inline SOLO si el campo no existe.</p></div>
-    <div class="step"><div class="num">5</div><h4>Labels + QA Assignee</h4><p><code>shift-left-reviewed</code> + <code>shift-left-{YYYY-MM-DD}</code>. <code>qa_assignee</code> = self, read-before-write, vía REST PUT (acli no escribe customfields).</p></div>
-    <div class="step"><div class="num">6</div><h4>Transición + subtask + traza</h4><p>analyze → estimate y STOP en Estimation. La subtask <b>[QA] Shift-Left Review</b> recibe las anotaciones exhaustivas de sesión y se cierra con <code>complete</code> → <code>Close</code> (la Story queda limpia). Re-sync: el ATP aterrizó en el campo y el comentario es un PUNTERO; el body inline solo aplica en modo fallback. <code>test-documentation</code> modo <code>repair-traceability</code> lo audita después.</p></div>
-  </div>
-  <div class="callout" style="margin-top:24px"><h4>Ni ADF a mano ni Markdown crudo</h4><p>Los cuerpos rich-text (ATP, ATR, descripción del Test) se escriben en Markdown, se convierten y validan con el conversor <code>.agents/skills/acli/scripts/md-to-adf.ts</code>, y lo que se publica es el ADF JSON resultante; por la vía CLI, <code>acli</code> nunca convierte Markdown solo. Markdown crudo se ve en Jira con <code>#</code> y <code>**</code> literales; ADF artesanal se aleja del contenido que audita <code>repair-traceability</code>.</p></div>
-  <div class="notes">Secuencial, una Story a la vez, para que revises el estado de Jira antes de la siguiente mutación. El subagente devuelve un log por Story: atp_container (campo o comentario fallback), subtask, labels, transiciones, light_verifier y trace_status.</div>
-</section>
-
-<!-- 11. PHASE 3 · GUARDRAILS -->
-<section class="slide" data-title="Phase 3 · Guardrails">
-  <p class="kicker">phase 3: guardrails de transición + resume</p>
-  <h2 class="h2" data-anim="fade-up">STOP en Estimation, <span class="grad">y todo re-ejecutable</span></h2>
-  <div class="grid g2 mt-m" style="align-items:start;gap:30px">
-    <div>
-      <table class="dtable" style="margin-top:0">
-        <thead><tr><th>Status actual</th><th>Acción</th></tr></thead>
-        <tbody>
-          <tr><td><b>Backlog</b></td><td><code>analyze</code> → Shift-Left QA, luego <code>estimate</code> → Estimation</td></tr>
-          <tr><td><b>Shift-Left QA</b></td><td>solo <code>estimate</code></td></tr>
-          <tr><td><b>Estimation</b></td><td>nada: ya está en el objetivo</td></tr>
-          <tr><td><b>Más allá</b> (Ready For Dev…)</td><td>SKIP + warning: el refinamiento aterriza igual, el workflow no se toca</td></tr>
-        </tbody>
-      </table>
-      <div class="callout warn" style="margin-top:12px"><h4>La estimación es del PO + Dev lead</h4><p>QA jamás avanza <code>estimate → ready_for_dev</code> ni compromete la Story a un sprint. Y NUNCA se transiciona a Estimation sin el ATP pre-sprint poblado: ese ATP es lo que hace estimable a la Story (anti-patrón L5).</p></div>
-    </div>
-    <div class="card">
-      <h4>Resume seguro: cada paso es idempotente</h4>
-      <ul class="blist tight">
-        <li>Sección ya en la descripción → skip · campo ATP → overwrite OK · comentario ya existente → skip</li>
-        <li>Labels son set-based · transición lee el status antes de aplicar</li>
-        <li>Subtask <b>[QA] Shift-Left Review</b>: se busca por título exacto, nunca se duplica; si ya está en <code>Close</code> no se re-transiciona y las anotaciones van como comentario nuevo (sin subtasks en el proyecto → skip con warning)</li>
-        <li><b>Error de subagente</b> → STOP, estado parcial reportado, opciones retry / skip / abort. Sin auto-rollback: las mutaciones quedan registradas en el batch report para retomar.</li>
-      </ul>
-    </div>
-  </div>
-  <div class="notes">Dos innegociables: parar en Estimation (la estimación es decisión de negocio) y ambos labels siempre; sin ellos se rompe el cortocircuito de /sprint-testing el próximo sprint.</div>
-</section>
-
-<!-- 12. PHASE 3 · LIGHT STAGE VERIFIER + DoD -->
-<section class="slide" data-title="Phase 3 · Light verifier">
-  <p class="kicker">phase 3: cierre de cada story · light stage verifier + definition of done</p>
-  <h2 class="h2" data-anim="fade-up">Cada Story cerrada <span class="grad">se verifica línea por línea</span></h2>
-  <div class="grid g2 mt-m" style="align-items:start;gap:30px">
-    <div>
-      <div class="term" style="font-size:12.5px">
-        <div class="bar"><span class="tdot"></span><span class="tdot"></span><span class="tdot"></span><span>light stage verifier: líneas propias de Shift-Left</span></div>
-<pre>[ ] Story en <span class="fn">{{jira.status.story.estimation}}</span>
-    vía analyze → estimate, y STOP ahí
-    <span class="cmt">(ya más allá: refinamiento sí, transición no)</span>
-[ ] Subtask [QA] Shift-Left Review en <span class="fn">Close</span>
-    vía complete
-    <span class="cmt">(N/A declarado si no hay work type subtask)</span>
-[ ] Assignee de la subtask = self, desde el create
-[ ] Todo slug sin mapear pasó por el fallback §4
-    <span class="cmt">(se preguntó; nunca un skip en silencio)</span>
-<span class="cmt"># + las líneas comunes del template:</span>
-<span class="cmt"># artifact-lifecycle.md §5</span></pre>
+  <!-- 2. CUÁNDO SÍ / CUÁNDO NO -->
+  <section class="slide compact" data-title="Cuándo usarla">
+    <p class="kicker">Decidir · 2 de 15</p>
+    <h2 class="h2">¿Es un proyecto que QA todavía <span class="grad">no conoce</span>?</h2>
+    <div class="grid g2 mt-m" style="gap:28px;grid-template-columns:1fr 1.25fr;align-items:start">
+      <div class="card card-accent">
+        <p class="lbl" style="color:var(--good)">Usala para</p>
+        <ul class="big" style="font-size:18px;line-height:1.75">
+          <li>Arrancar con un producto nuevo: <i>"set up this project"</i>, <i>"onboard this repo"</i>, <i>"connect to project"</i>.</li>
+          <li>Descubrir la arquitectura desde el código: <i>"discover architecture"</i>.</li>
+          <li>Adoptar este boilerplate para testear una app.</li>
+          <li>Completar huecos de un proyecto ya documentado.</li>
+          <li>Refrescar <b>sus</b> dos mapas, sección por sección.</li>
+        </ul>
       </div>
-      <p class="sm mt-m">Cada línea es <b>YES</b> o un <b>N/A declarado</b> con su motivo; una línea en blanco cuenta como fallo. Un <b>NO</b> deja el stage en <b>NEEDS REVISION</b>: se arregla o se reporta, nunca se avanza. "Ligero" quiere decir lo que el agente ya hizo, más a lo sumo UNA lectura de la Story.</p>
-    </div>
-    <div class="card card-accent">
-      <h4>Definition of Done del stage (<code>stage-gates.md</code>)</h4>
-      <p class="sm">El orquestador la verifica contra el reporte del subagente y lo que hay en Jira ANTES de escribir el checkpoint <code>status: completed</code>:</p>
-      <ul class="blist tight">
-        <li>ACs refinados en Given/When/Then con datos concretos</li>
-        <li>Gaps, ambigüedades y edge cases como preguntas a PO/Dev</li>
-        <li>Test-Design Checklist aplicado: cada AC no trivial explotado por técnica, o justificación <code>trivially atomic</code></li>
-        <li>Coverage estimate con el 1:N real, sin conteo minimizado</li>
-        <li>Inferidos marcados <code>NEEDS PO/DEV CONFIRMATION</code></li>
-        <li>Ninguna entidad TMS creada; label + transición aplicadas</li>
-        <li>Statuses según el lifecycle; light verifier corrido</li>
-      </ul>
-    </div>
-  </div>
-  <div class="callout warn"><h4>Status sin mapear: se pregunta, nunca se saltea</h4><p>Si el proyecto renombró los status y falta un slug (por ejemplo el <code>complete</code> de la subtask), la skill lista las transiciones VIVAS de la issue, hace UNA pregunta con la mejor candidata, dispara el id vivo con tu OK y recomienda <code>bun run jira:sync-workflows</code>. <code>.agents/jira-workflows.json</code> es generado: nunca se edita a mano.</p></div>
-  <div class="notes">Un stage no termina cuando el subagente devuelve: termina cuando su Definition of Done está cumplida. El verificador ligero existe para atrapar lo que se saltó en silencio, sin re-auditar todo lo que se acaba de crear.</div>
-</section>
-
-<!-- 13. BATCH REPORT + ARCHIVE -->
-<section class="slide" data-title="Batch report">
-  <p class="kicker">phase 3: cierre de sesión · batch report + archive</p>
-  <h2 class="h2" data-anim="fade-up">El batch report: <span class="grad">lo único que el grooming lee</span></h2>
-  <div class="grid g2 mt-m anim-stagger-list" style="align-items:start">
-    <div class="card card-accent">
-      <h4>Qué agrega</h4>
-      <ul class="blist tight">
-        <li>Metadatos de sesión: candidatos / aceptadas / rechazadas / saltadas / refinadas</li>
-        <li>Línea por Story: riesgo · #gaps · #preguntas PO · #tech Qs · #outlines · status final · traza</li>
-        <li><b>Preguntas al PO dedupeadas</b> y ranqueadas por cuántas Stories bloquea cada una</li>
-        <li>Distribución de riesgo + bloqueadores <code>DATA-FEASIBILITY</code> con pre-work requerido</li>
-        <li>Orden recomendado de sprint planning (riesgo + dependencias)</li>
-      </ul>
-    </div>
-    <div class="card card-accent">
-      <h4>Adónde va, y el cierre</h4>
-      <ul class="blist tight">
-        <li>Siempre: <code>.session/shift-left-testing/&lt;batch-id&gt;/batch-report.md</code></li>
-        <li>Si TODAS las Stories comparten epic padre → se publica como comentario en ese epic; si no, se entrega inline al usuario</li>
-        <li>Nunca se publica en cada Story: el comentario per-Story ya existe (paso 4)</li>
-        <li>Entry final en <code>progress.md</code> → <b>Archive</b>: la carpeta de sesión se mueve a <code>.session/.archive/</code></li>
-        <li>Cierre de memoria: <code>mem_session_summary</code> con el resumen + ruta del archive</li>
-      </ul>
-    </div>
-  </div>
-  <div class="notes">"Esta pregunta bloquea tres Stories" es exactamente cómo un PO quiere triagear. Si publicar en el epic falla, no aborta: el reporte local es autoritativo.</div>
-</section>
-
-<!-- 14. SESSION FOOTER -->
-<section class="slide" data-title="Cierre · Session footer">
-  <p class="kicker">cierre de sesión: session footer + mejoras propuestas</p>
-  <h2 class="h2" data-anim="fade-up">Lo que se usó, <span class="grad">dicho en el chat</span></h2>
-  <div class="grid g2 mt-m" style="align-items:start;gap:30px">
-    <div class="term" style="font-size:12.5px">
-      <div class="bar"><span class="tdot"></span><span class="tdot"></span><span class="tdot"></span><span>session footer · framing Execution (ejemplo)</span></div>
-<pre><span class="fn">### Session Footer: Tools &amp; Testing Levels</span>
-Skills loaded: shift-left-testing, acli
-MCPs used: none
-CLIs used: acli, bun (jira:sync-issues, context:map)
-Testing levels touched:
-- UI/E2E: none <span class="cmt">(pre-sprint, la feature no existe)</span>
-- API/Integration: none
-- Database: none
-- Unit: none
-Refinements proposed: 1 →
-  .session/shift-left-testing/&lt;batch-id&gt;/refinements.md</pre>
-    </div>
-    <ul class="blist tight" style="margin-top:0">
-      <li><b>Capturas</b>: cada ruta se muestra apenas la captura existe, y al cierre va la lista consolidada con rutas relativas verificadas en disco. En shift-left lo normal es no tener ninguna, porque no hay <code>evidence/</code>.</li>
-      <li><b>Framing Execution</b>: niveles de la pirámide ejercitados, con "none" explícito en cada nivel esperado y no tocado. Nunca se rellena cobertura que no ocurrió.</li>
-      <li><b>Lo compila el orquestador UNA vez</b>: cada subagente reporta sus campos (skills, MCPs, CLIs, niveles, capturas) y el footer se arma al final.</li>
-      <li><b>Solo en el chat</b>: nunca en un comentario de Jira ni en un ATR.</li>
-      <li><b>Refinements proposed</b>: las lecciones de la sesión se PROPONEN en <code>refinements.md</code> y nunca se aplican a la skill en vivo (<code>skill-refinement-protocol.md</code>).</li>
-    </ul>
-  </div>
-  <div class="callout"><h4>Si la que falló es la skill</h4><p>Un paso equivocado, un verificador faltante o una regla vieja se reporta upstream según <code>agentic-qa-core/references/upstream-feedback.md</code>: borrador redactado en local, se publica solo con tu OK explícito y se verifica con <code>gh issue view</code>.</p></div>
-  <div class="notes">El footer es la última línea del verificador ligero: sin él, el stage no está cerrado. Es el lugar donde se ve qué niveles de la pirámide quedaron en "none" y si la sesión dejó mejoras propuestas para revisar.</div>
-</section>
-
-<!-- 15. FLEET SEAM -->
-<section class="slide" data-title="Fleet seam (opcional)">
-  <p class="kicker">opcional · lotes grandes · fleet seam</p>
-  <h2 class="h2" data-anim="fade-up">Un worker por Story, <span class="grad">el mismo gate</span></h2>
-  <p class="sm" style="max-width:100ch">El refinamiento es secuencial por defecto y así se queda. El fleet (una sesión de worker persistente por Story y un conductor que junta sus reportes) entra solo cuando el usuario lo pide explícitamente para un lote grande.</p>
-  <div class="grid g2 mt-m anim-stagger-list">
-    <div class="card card-accent"><h4>Topología: el mismo checkout</h4><p class="sm">La skill solo escribe en Jira: sin código, sin branch, sin índice git en disputa. Un worktree por Story sería puro costo.</p></div>
-    <div class="card card-accent"><h4><code>launch.txt</code>, siempre</h4><p class="sm">El conductor escribe <code>.session/shift-left-testing/&lt;batch-id&gt;/launch.txt</code>, una línea autocontenida por Story, haya o no transporte de orquestación en la máquina. Lanzar, supervisar y cerrar esas sesiones es de <code>orca-orchestration</code>; si nada puede lanzarlas, una persona pega esas líneas.</p></div>
-    <div class="card card-accent"><h4>El OK por Story se muda al conductor</h4><p class="sm">El conductor presenta el resumen de cada worker a medida que llega y espera el mismo approve / veto antes del handoff de Phase 3 de esa Story. Un fleet que se saltea esto ya no está corriendo esta skill.</p></div>
-    <div class="card card-accent"><h4>Un escritor por Story</h4><p class="sm">Dos workers nunca refinan la misma Story, y toda escritura Jira de una Story es de su worker. El batch report y el comentario en el epic quedan en el conductor.</p></div>
-  </div>
-  <div class="callout"><h4>Regla de silencio</h4><p>Cuando la máquina no tiene transporte de orquestación, la skill no lo menciona: no aparece en el preflight, ni en el batch report, ni en el chat. El <code>launch.txt</code> queda escrito igual.</p></div>
-  <div class="notes">La paralelización no compra velocidad a costa del humano: el gate por Story sigue existiendo, solo cambia quién lo presenta. Por defecto la skill corre secuencial, que es el ritmo de un grooming en equipo.</div>
-</section>
-
-<!-- 16. CIERRE -->
-<section class="slide" data-title="Cierre">
-  <p class="kicker">cómo invocar · qué sigue en el pipeline</p>
-  <h2 class="h2" data-anim="fade-up">Dispara la skill, <span class="grad">y qué viene después</span></h2>
-  <div class="grid g2 mt-m" style="align-items:start;gap:30px">
-    <div>
-      <div class="term">
-        <div class="bar"><span class="tdot"></span><span class="tdot"></span><span class="tdot"></span><span>invocación · tres hosts</span></div>
-<pre><span class="cmt"># Claude Code: slash + la lista de Stories como args</span>
-<span class="p">&gt; </span><span class="c">/shift-left-testing UPEX-100,101,102</span>
-<span class="cmt"># OpenCode y Codex: la skill se nombra en prosa</span>
-<span class="p">&gt; </span><span class="c">cargá la skill shift-left-testing para UPEX-100,101,102</span>
-<span class="cmt"># sin IDs, arma la JQL de backlog:</span>
-<span class="p">&gt; </span><span class="c">groom the backlog</span></pre>
-      </div>
-      <p class="sm mt-s">Sin modos: la skill no tiene <code>## Mode routing</code> ni modo single-issue. Los args son la lista de Stories; para una urgente, una lista de largo 1.</p>
-      <div class="row wrap mt-m" style="gap:8px">
-        <span class="chip" style="font-size:12.5px">Refined ACs en Jira</span>
-        <span class="chip" style="font-size:12.5px">ATP pre-sprint en el campo</span>
-        <span class="chip" style="font-size:12.5px">2 labels</span>
-        <span class="chip" style="font-size:12.5px">Status: Estimation</span>
-        <span class="chip" style="font-size:12.5px">Subtask en Close</span>
-        <span class="chip" style="font-size:12.5px">batch-report.md</span>
+      <div>
+        <p class="lbl" style="color:var(--bad)">No es para esto: va a</p>
+        <table class="tt tight mt-s">
+          <tr><td class="small">Mapa de datos, de API o E2E, o el Master Test Plan</td><td class="small mono">project-context</td></tr>
+          <tr><td class="small">Adaptar KATA al stack del proyecto</td><td class="small mono">/test-framework-adaptation</td></tr>
+          <tr><td class="small">Escribir tests automatizados</td><td class="small mono">/test-automation</td></tr>
+          <tr><td class="small">Documentar casos en el TMS</td><td class="small mono">/test-documentation</td></tr>
+          <tr><td class="small">Correr suites</td><td class="small mono">/regression-testing</td></tr>
+          <tr><td class="small">Tipos exactos de la API desde OpenAPI</td><td class="small mono">bun run api:sync</td></tr>
+        </table>
+        <p class="small dim mt-s">Un PRD o SRS "a futuro" tampoco: eso es crear producto, y discovery solo describe lo que ya existe.</p>
       </div>
     </div>
-    <table class="dtable" style="margin-top:0">
-      <thead><tr><th>Después necesitas…</th><th>Skill</th></tr></thead>
-      <tbody>
-        <tr><td>La Story llega a <b>Ready For QA</b></td><td><code>/sprint-testing</code>: lee <code>shift-left-reviewed</code> (&lt;30 días) y cortocircuita sus fases de planning</td></tr>
-        <tr><td>TCs formales + ROI, cuando la Story shippea</td><td><code>/test-documentation</code> (Documentation)</td></tr>
-        <tr><td>Código de test automatizado</td><td><code>/test-automation</code> (Automation) · luego <code>/regression-testing</code> (Regression)</td></tr>
-        <tr><td>Falta contexto de negocio</td><td><code>/project-discovery</code> + <code>/project-context</code> (modos <code>data</code> / <code>e2e</code> / <code>api</code> y <code>test-plan</code>)</td></tr>
-        <tr><td>Revisión adversarial del refinamiento (opcional)</td><td><code>/judgment-day</code>, nunca auto-invocado</td></tr>
-      </tbody>
+    <div class="notes">La frontera con project-context es la que más se confunde. project-discovery genera solo dos mapas: el de dominio y el de infraestructura. Los mapas de datos, API y E2E y el plan de testing maestro son modos de project-context, que es dueño de su diff y de su aprobación.</div>
+  </section>
+
+  <!-- 3. MAPA -->
+  <section class="slide" data-title="Mapa de la skill">
+    <p class="kicker">Mapa · 3 de 15</p>
+    <h2 class="h2" style="font-size:42px">Cuatro fases en orden, con un <span class="grad">gate</span> entre cada una</h2>
+    <p class="wf-lane">Antes de la Fase 1</p>
+    <div class="wf-row">
+      <div class="wf-node gate"><p class="n">Fase 0</p><p class="t">¿Hay una sesión a medias?</p><p class="c">.session/project-discovery/<br>resume · restart · abort</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node gate"><p class="n">Repo objetivo</p><p class="t">Fijar dónde vive</p><p class="c">monorepo · repos hermanos<br>remoto: pedir el clon</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node gate"><p class="n">Alcance</p><p class="t">Elegir el escenario</p><p class="c">lo confirmás vos<br>queda en plan.md</p></div>
+    </div>
+    <p class="wf-lane">Las fases (cada una espera tu "Phase N complete")</p>
+    <div class="wf-row">
+      <div class="wf-node"><p class="n">Fase 1</p><p class="t">Constitución</p><p class="c">project-config.md<br>evaluación en AGENTS.md<br>mapa business-domain-context</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node"><p class="n">Fase 2</p><p class="t">Arquitectura</p><p class="c">mapa infra-context:<br>overview · architecture<br>external-services · nfr-*</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node"><p class="n">Fase 3</p><p class="t">Infraestructura</p><p class="c">mapa infra-context:<br>backend · frontend<br>environments · ci-cd</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node"><p class="n">Fase 4</p><p class="t">Especificación</p><p class="c">no escribe archivos<br>bun run jira:check</p></div>
+    </div>
+    <p class="wf-lane">Después, en otra sesión</p>
+    <div class="wf-row">
+      <div class="wf-node alt"><p class="n">Handoff</p><p class="t">project-context, modo refresh-all</p><p class="c">data → e2e → api → test-plan</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node alt"><p class="n">Luego</p><p class="t">test-framework-adaptation</p><p class="c">cablea KATA al stack</p></div>
+    </div>
+    <div class="notes">Nunca encadena fases sola: al cerrar cada una muestra lo que escribió y espera la confirmación. El handoff final tampoco se ejecuta en la misma sesión, porque generar los mapas de negocio necesita su propio presupuesto de tokens y su propio ciclo de aprobaciones.</div>
+  </section>
+
+  <!-- 4. ANTES DE EMPEZAR -->
+  <section class="slide compact" data-title="Antes de empezar">
+    <p class="kicker">Antes de la Fase 1 · 4 de 15</p>
+    <h2 class="h2">Primero, <span class="grad">dónde</span> está el código y dónde quedó la sesión</h2>
+    <div class="grid g2 mt-m" style="gap:28px;grid-template-columns:1.3fr 1fr;align-items:start">
+      <div>
+        <p class="lbl">El repo objetivo (nunca este boilerplate)</p>
+        <table class="tt tight mt-s">
+          <tr><th style="width:170px">Layout</th><th>Qué se declara</th></tr>
+          <tr><td class="small"><b>Monorepo</b></td><td class="small">Una ruta. Se detecta por <span class="mono">pnpm-workspace.yaml</span>, <span class="mono">turbo.json</span>, <span class="mono">nx.json</span>, <span class="mono">lerna.json</span> o un <span class="mono">package.json</span> raíz sin dependencias propias.</td></tr>
+          <tr><td class="small"><b>Repos hermanos</b></td><td class="small">Una ruta por repo. La Fase 1 corre una vez por repo y todo se une en <b>un</b> <span class="mono">project-config.md</span>, sin intercalar.</td></tr>
+          <tr><td class="small"><b>Remoto</b></td><td class="small">URL y rama, y te pide clonarlo. Desde una URL no se descubre nada: hace falta el código en disco.</td></tr>
+        </table>
+        <p class="small dim mt-s">Si la ruta es ambigua, la Fase 1 queda bloqueada hasta resolverla.</p>
+      </div>
+      <div class="stack" style="gap:14px">
+        <div class="card card-accent"><p class="lbl">Fase 0 · retomar</p><p class="small mt-s">Si existe <span class="mono">.session/project-discovery/progress.md</span>, te muestra alcance, repo, última fase cerrada, la siguiente y los gaps abiertos. Vos elegís <b>resume</b>, <b>restart</b> o <b>abort</b>.</p></div>
+        <div class="card"><p class="lbl">Por qué importa</p><p class="small mt-s">Un onboarding completo lleva horas. Sin retomar, la próxima sesión rehace la Fase 1 y vuelve a preguntarte rutas que ya confirmaste. <b>restart</b> archiva lo anterior en <span class="mono">.session/.archive/</span>.</p></div>
+      </div>
+    </div>
+    <div class="notes">La ruta resuelta queda registrada en la sección Repositories de .context/project-config.md durante la Fase 1, y cada referencia posterior al repo objetivo apunta a esa ruta.</div>
+  </section>
+
+  <!-- 5. ALCANCE -->
+  <section class="slide compact" data-title="Elegir el alcance">
+    <p class="kicker">Alcance · 5 de 15</p>
+    <h2 class="h2">Mismas fases, distinta <span class="grad">profundidad</span></h2>
+    <table class="tt tight mt-m">
+      <tr><th style="width:220px">Escenario</th><th style="width:230px">Fases</th><th>Después</th><th style="width:250px">Peso</th></tr>
+      <tr><td class="small"><b>Onboarding desde cero</b></td><td class="small mono">1 → 2 → 3 → 4</td><td class="small"><span class="mono">project-context</span> modo <span class="mono">refresh-all</span>, y luego <span class="mono">test-framework-adaptation</span></td><td class="small">Pesado: un subagente por fase para leer el código</td></tr>
+      <tr><td class="small"><b>Adopción del boilerplate</b></td><td class="small"><span class="mono">1 → 3</span>; la 2 y la 4 se saltean solo si sus artefactos ya existen</td><td class="small"><span class="mono">project-context</span> para los mapas que falten</td><td class="small">Medio: la Fase 1 siempre completa</td></tr>
+      <tr><td class="small"><b>Brownfield</b></td><td class="small"><span class="mono">2 → 3 → 4</span>, solo los huecos</td><td class="small"><span class="mono">project-context</span> para los mapas viejos</td><td class="small">Liviano: sesión principal</td></tr>
+      <tr><td class="small"><b>Refresco de contexto</b></td><td class="small">Fase 1 o Fases 2-3 en UPDATE; Fase 4 si cambió el backlog</td><td class="small">Mapas de negocio o MTP: el modo de <span class="mono">project-context</span> que corresponda</td><td class="small">Mínimo: casi siempre un handoff</td></tr>
     </table>
-  </div>
-  <p class="dim2 mt-m" style="font-size:13px">← → navegar · O overview · S presentador · N notas · F pantalla completa</p>
-  <div class="notes">Recuerda tres cosas: prevenir antes que detectar; el veto vence al score y la señal vence al volumen; un comando conduce las tres fases con un gate humano en cada paso de consecuencia. El label que pones en el refinamiento le ahorra trabajo al equipo el próximo sprint.</div>
-</section>
+    <div class="grid g2 mt-m" style="gap:22px">
+      <div class="card card-accent"><p class="lbl">Ante la duda</p><p class="small mt-s">Onboarding desde cero. El alcance se confirma con vos antes de la Fase 1 y queda escrito en <span class="mono">.session/project-discovery/plan.md</span>.</p></div>
+      <div class="card"><p class="lbl">El handoff no es una fase</p><p class="small mt-s">El plan termina en la Fase 4. <span class="mono">project-context refresh-all</span> se anota como paso siguiente, no como parte de discovery.</p></div>
+    </div>
+    <div class="notes">En la adopción del boilerplate la Fase 1 corre entera porque el mapa de dominio es requisito de test-framework-adaptation. Antes de pasar a esa skill hay que verificar los archivos en disco.</div>
+  </section>
 
-  <div class="deck-footer"><span class="mono">/shift-left-testing · Shift-Left · Pre-sprint QA</span><span class="slide-number" data-current="1" data-total="16"></span></div>
+  <!-- 6. FASE 1 -->
+  <section class="slide compact" data-title="Fase 1 · Constitución">
+    <p class="kicker">Fase 1 · 6 de 15</p>
+    <h2 class="h2">Constitución: quién, qué y <span class="grad">por qué</span></h2>
+    <div class="wf-row mt-m">
+      <div class="wf-node"><p class="n">1 · Conexión</p><p class="t">Repos, stack, entornos, herramientas</p><p class="c">→ .context/project-config.md</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node"><p class="n">2 · Evaluación</p><p class="t">Madurez de testing, docs, calidad, CI/CD, riesgos</p><p class="c">→ ## Project Assessment (Phase 1)<br>en AGENTS.md</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node"><p class="n">3 · Modelo de negocio</p><p class="t">Problema, usuarios, propuesta de valor</p><p class="c">→ overview · business-model</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node"><p class="n">4 · Glosario</p><p class="t">Entidades, etiquetas de UI, enums</p><p class="c">→ term-&lt;slug&gt; · enumerations<br>discovery-gaps</p></div>
+    </div>
+    <p class="small dim mt-s">Ningún sub-paso arranca hasta que existe la salida del anterior. Los pasos 3 y 4 escriben el mapa de <span class="mono">business-domain-context</span>.</p>
+    <div class="grid g3 mt-m" style="gap:20px">
+      <div class="card"><p class="lbl">Pregunta de a una</p><p class="small mt-s">Primero el repo, después el stack, después los entornos. Detecta lo que puede desde <span class="mono">package.json</span>, <span class="mono">.env.example</span> o los workflows antes de preguntarte.</p></div>
+      <div class="card" style="border-color:var(--bad)"><p class="lbl" style="color:var(--bad)">Riesgos HIGH</p><p class="small mt-s">Sin tests o con un secreto hardcodeado: fila en <span class="mono">### Identified Risks</span>, con la <b>ruta</b>, nunca el valor. Viajan al cierre como semilla del Master Test Plan.</p></div>
+      <div class="card card-accent"><p class="lbl">Gate</p><p class="small mt-s"><span class="mono">bun run context:map business-domain-context --list</span> muestra secciones y ningún aviso de placeholder, <span class="mono">project-config.md</span> tiene <span class="mono">## Tech Stack</span> y <span class="mono">## Environments</span>, y vos decís "Phase 1 complete, continue".</p></div>
+    </div>
+    <div class="notes">La evaluación usa escalas simples: madurez de testing de 0 a 4, estado de documentación y madurez de CI/CD. No se escribe un archivo de riesgos aparte. Si se juntan sin tests, secretos hardcodeados y sin CI, el avance se frena: hay que resolver los secretos y re-evaluar antes de la Fase 2.</div>
+  </section>
+
+  <!-- 7. EL MAPA DE DOMINIO -->
+  <section class="slide compact" data-title="El mapa de dominio">
+    <p class="kicker">Fase 1 · 7 de 15</p>
+    <h2 class="h2">El mapa de dominio: el <span class="grad">vocabulario</span> de todo QA</h2>
+    <div class="grid g2 mt-s" style="gap:28px;grid-template-columns:1.15fr 1fr;align-items:start">
+      <div class="stack" style="gap:12px">
+        <p class="lbl">Una sección <span class="mono">term-&lt;slug&gt;</span> por entidad (ejemplo)</p>
+        <div class="mk" style="font-size:14px">Business name | Code identifier | UI label | Table  | Found in
+Customer      | user            | Cliente  | users  | prisma/schema.prisma
+Purchase      | order           | Compra   | orders | prisma/schema.prisma</div>
+        <p class="small">Esa fila es el puente entre cómo habla el código y cómo habla el negocio. Las etiquetas salen de los archivos i18n que se publican, no del JSX.</p>
+        <p class="small dim">Atributos, relaciones y estados <b>no</b> van acá: la sección apunta a <span class="mono">business-data-context</span> o deja el gap mientras ese mapa sea placeholder.</p>
+      </div>
+      <div class="stack" style="gap:14px">
+        <div class="card"><p class="lbl"><span class="mono">business-model</span></p><p class="small mt-s">El Business Model Canvas como tabla <span class="mono">Block | Finding | Found in | Confidence</span>. Un bloque sin evidencia dice "Unknown" y va a <span class="mono">discovery-gaps</span>. Copy de marketing baja la confianza.</p></div>
+        <div class="card card-accent"><p class="lbl">Quién lo usa</p><p class="small mt-s"><span class="mono">/sprint-testing</span> lo carga para planificar el ATP y los casos; <span class="mono">/test-documentation</span>, para nombrar los TCs. Por eso el glosario nunca se saltea.</p></div>
+        <div class="card"><p class="lbl">Schema antes que ORM</p><p class="small mt-s">Si hay migraciones y modelos ORM, mandan las migraciones: el ORM se desvía del esquema vivo.</p></div>
+      </div>
+    </div>
+    <div class="notes">Los valores de la tabla son ilustrativos (la skill usa user como Customer y order como Purchase de ejemplo). Cada entidad central del esquema tiene su sección term-, y cada enum su tabla en enumerations, con el valor de la constante del código y no el texto libre.</div>
+  </section>
+
+  <!-- 8. FASE 2 -->
+  <section class="slide compact" data-title="Fase 2 · Arquitectura">
+    <p class="kicker">Fase 2 · 8 de 15</p>
+    <h2 class="h2">Arquitectura: cómo está <span class="grad">construido</span>, leído del código</h2>
+    <div class="grid g2 mt-s" style="gap:28px;grid-template-columns:1.1fr 1fr;align-items:start">
+      <table class="tt tight">
+        <tr><th style="width:190px">Sección de <span class="mono">infra-context</span></th><th>Qué lleva</th></tr>
+        <tr><td class="small mono">overview</td><td class="small">Patrón, tabla del stack, forma del deploy.</td></tr>
+        <tr><td class="small mono">architecture</td><td class="small">Componentes, flujo de datos, flujo de login, base de datos a nivel arquitectura, seguridad. Suele llevar la figura principal.</td></tr>
+        <tr><td class="small mono">external-services</td><td class="small">Servicios de terceros, su punto de integración y el nombre (solo el nombre) de su variable de entorno.</td></tr>
+        <tr><td class="small mono">nfr-&lt;slug&gt;</td><td class="small">Una por categoría con evidencia: <span class="mono">nfr-performance</span>, <span class="mono">nfr-security</span>, <span class="mono">nfr-reliability</span>…</td></tr>
+      </table>
+      <div class="stack" style="gap:14px">
+        <div class="card card-accent"><p class="lbl">La API no se documenta acá</p><p class="small mt-s">Solo registra dónde está la spec en <span class="mono">project-config.md</span>. Los tipos son de <span class="mono">bun run api:sync</span>; el ángulo de negocio, de <span class="mono">project-context</span> modo <span class="mono">api</span>.</p></div>
+        <div class="card"><p class="lbl" style="color:var(--warn)">Números con evidencia</p><p class="small mt-s">"P95 &lt; 500ms" sin una prueba que lo respalde es un gap, no un requisito.</p></div>
+        <div class="card"><p class="lbl">ADRs</p><p class="small mt-s">Una decisión de arquitectura de tests difícil de revertir (runner, aislamiento, fixtures y datos, auth en tests, contrato de selectores, sharding en CI) se vuelve <span class="mono">.context/ADR/ADR-NNNN-&lt;slug&gt;.md</span>, en <span class="mono">Proposed</span>. La aceptás vos.</p></div>
+      </div>
+    </div>
+    <p class="small dim mt-s"><b>Gate:</b> <span class="mono">bun run context:map infra-context --list</span> muestra <span class="mono">architecture</span> y al menos una <span class="mono">nfr-</span>, la fuente del contrato de API está en <span class="mono">project-config.md</span>, y vos decís "Phase 2 complete".</p>
+    <div class="notes">Personas, journeys y specs funcionales tampoco son de esta fase: los arma project-context modo e2e. Si no hay spec de OpenAPI, se anota en discovery-gaps y se recomienda correr project-context modo api cuando termine discovery; nunca se escribe un contrato de API a mano.</div>
+  </section>
+
+  <!-- 9. FASE 3 -->
+  <section class="slide compact" data-title="Fase 3 · Infraestructura">
+    <p class="kicker">Fase 3 · 9 de 15</p>
+    <h2 class="h2">Infraestructura: que el proyecto <span class="grad">corra</span> para testear</h2>
+    <div class="grid g2 mt-m" style="gap:20px">
+      <div class="card card-accent"><p class="lbl"><span class="mono">backend</span></p><p class="small mt-s">Runtime, scripts, dependencias, variables de entorno (requeridas, opcionales, de servicios externos), base de datos y migraciones, receta local de instalación y arranque, y el <b>flujo de login real</b>: endpoint, payload, qué devuelve y dónde vive la sesión.</p></div>
+      <div class="card"><p class="lbl"><span class="mono">frontend</span></p><p class="small mt-s">Build y modo de salida, variables públicas (un secreto con prefijo público es un hallazgo de seguridad), routing, estado, cliente de auth y la estrategia de test IDs, con <span class="mono">data-testid</span> como preferida.</p></div>
+      <div class="card"><p class="lbl"><span class="mono">environments</span></p><p class="small mt-s">Matriz de entornos (URL, rama, auto-deploy, aprobación), variables por entorno, dónde se guardan los secretos (nunca sus valores), monitoreo y cómo se hace rollback.</p></div>
+      <div class="card"><p class="lbl"><span class="mono">ci-cd</span></p><p class="small mt-s">Workflows, triggers, deploy, IaC o "Not present", y los comandos <b>exactos</b> que corre CI: mandan sobre los scripts locales, que pueden desviarse.</p></div>
+    </div>
+    <div class="grid g2 mt-m" style="gap:20px">
+      <p class="small dim">Detecta y después confirma: nunca te pregunta "¿qué stack es?". Con <span class="mono">docker-compose.yml</span>, el inventario de servicios sale de ahí antes que del código.</p>
+      <p class="small dim">En un monorepo corre por paquete (<span class="mono">backend-&lt;pkg&gt;</span>, <span class="mono">frontend-&lt;pkg&gt;</span>); <span class="mono">environments</span> y <span class="mono">ci-cd</span> quedan a nivel proyecto. <b>Gate:</b> las cuatro secciones listadas y tu "Phase 3 complete".</p>
+    </div>
+    <div class="notes">El flujo de login en backend es el insumo más importante para test-framework-adaptation: le da un contrato concreto para la autenticación de los tests. Si el proyecto no tiene ningún framework de tests, se documenta como gap y no se instala nada en el repo objetivo.</div>
+  </section>
+
+  <!-- 10. FASE 4 -->
+  <section class="slide compact" data-title="Fase 4 · Especificación">
+    <p class="kicker">Fase 4 · 10 de 15</p>
+    <h2 class="h2">Especificación: probar que el backlog <span class="grad">responde</span></h2>
+    <div class="wf-row mt-m">
+      <div class="wf-node"><p class="n">1</p><p class="t">Tracker identificado</p><p class="c">de project-config.md<br>o una pregunta</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node"><p class="n">2</p><p class="t">Una lectura</p><p class="c">Get Issue<br>{{PROJECT_KEY}}-1</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node"><p class="n">3</p><p class="t">Project key</p><p class="c">.agents/project.yaml<br>bun run agents:setup</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node gate"><p class="n">4</p><p class="t">Catálogo de campos</p><p class="c">bun run jira:check<br>(antes jira:sync-fields si falta)</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node"><p class="n">5</p><p class="t">Jerarquía declarada</p><p class="c">.agents/jira-required.yaml<br>work_types · sync:</p></div>
+    </div>
+    <div class="grid g3 mt-m" style="gap:20px">
+      <div class="card card-accent"><p class="lbl">No escribe ningún archivo</p><p class="small mt-s">Ni <span class="mono">.context/PBI/README.md</span> ni los <span class="mono">templates/</span>. La receta de acceso ya existe; la fase verifica que funcione para este proyecto.</p></div>
+      <div class="card"><p class="lbl">No copia el backlog</p><p class="small mt-s">Jira es la fuente de verdad. El PBI de cada ticket lo sincroniza después <span class="mono">/sprint-testing</span> con <span class="mono">bun run jira:sync-issues</span>, como caché de solo lectura.</p></div>
+      <div class="card"><p class="lbl">Credenciales</p><p class="small mt-s"><span class="mono">ATLASSIAN_EMAIL</span> y <span class="mono">ATLASSIAN_API_TOKEN</span> en <span class="mono">.env</span>. El host vive en <span class="mono">issue_tracker.atlassian_url</span> de <span class="mono">.agents/project.yaml</span>.</p></div>
+    </div>
+    <p class="small dim mt-s"><b>Gate:</b> <span class="mono">bun run jira:check</span> en verde, o el motivo (sin acceso, sin token, otro tracker) anotado en <span class="mono">## Discovery Gaps</span> de <span class="mono">project-config.md</span>. Vos decís "Phase 4 complete".</p>
+    <div class="notes">Jira se opera con /acli y GitHub Issues con gh issue; otro tracker no tiene skill dedicada y queda como gap. Si una muestra de stories recientes viene con ACs vacíos, eso también es un gap: es la oportunidad de shift-left para QA. Nunca se inventan ACs, IDs de campos ni nombres de estados.</div>
+  </section>
+
+  <!-- 11. CÓMO VIVE UN MAPA -->
+  <section class="slide compact" data-title="Cómo vive un mapa">
+    <p class="kicker">Mapas · 11 de 15</p>
+    <h2 class="h2">Un mapa es HTML dentro de su <span class="grad">skill</span></h2>
+    <div class="grid g2 mt-s" style="gap:28px;grid-template-columns:1.25fr 1fr;align-items:start">
+      <svg class="dg" style="max-height:400px" viewBox="0 0 640 400" role="img" aria-label="Qué hace la fase según el estado del mapa">
+        <defs><marker id="pd-a11" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="ar"/></marker></defs>
+        <rect class="bx-acc" x="150" y="10" width="340" height="58" rx="10"/>
+        <text class="t-l" x="168" y="32">ANTES DE ESCRIBIR</text>
+        <text class="t-m" x="168" y="54">bun run context:map &lt;slug&gt; --list</text>
+        <path class="ln" d="M220 68L95 118" marker-end="url(#pd-a11)"/>
+        <path class="ln" d="M320 68V118" marker-end="url(#pd-a11)"/>
+        <path class="ln" d="M420 68L540 118" marker-end="url(#pd-a11)"/>
+        <rect class="bx-bad" x="10" y="120" width="190" height="104" rx="10"/>
+        <text class="t-b" x="26" y="146">Falta la carpeta</text>
+        <text class="t-s" x="26" y="168">STOP: la skill la entrega</text>
+        <text class="t-m" x="26" y="188">bun run up</text>
+        <text class="t-s" x="26" y="210">nunca se crea acá</text>
+        <rect class="bx-warn" x="222" y="120" width="196" height="104" rx="10"/>
+        <text class="t-b" x="238" y="146">Placeholder</text>
+        <text class="t-s" x="238" y="168">CREATE: arma todas</text>
+        <text class="t-s" x="238" y="188">las secciones desde</text>
+        <text class="t-s" x="238" y="208">las fuentes</text>
+        <rect class="bx-good" x="440" y="120" width="190" height="104" rx="10"/>
+        <text class="t-b" x="456" y="146">Ya generado</text>
+        <text class="t-s" x="456" y="168">UPDATE: chequeo de</text>
+        <text class="t-s" x="456" y="188">vigencia por sección</text>
+        <text class="t-s" x="456" y="208">(data-sources)</text>
+        <path class="ln" d="M535 224V262" marker-end="url(#pd-a11)"/>
+        <rect class="bx" x="300" y="264" width="330" height="58" rx="10"/>
+        <text class="t-b" x="316" y="288">Regenera solo lo viejo</text>
+        <text class="t-s" x="316" y="308">y te muestra el diff por sección</text>
+        <path class="ln" d="M465 322V350" marker-end="url(#pd-a11)"/>
+        <rect class="bx-acc" x="300" y="352" width="330" height="40" rx="10"/>
+        <text class="t-b" x="316" y="378">Escribe con tu aprobación</text>
+        <text class="t-s" x="10" y="290">Nunca regenera un mapa</text>
+        <text class="t-s" x="10" y="310">generado entero: la sección</text>
+        <text class="t-s" x="10" y="330">es la unidad de edición.</text>
+      </svg>
+      <div class="stack" style="gap:12px">
+        <div class="card card-accent"><p class="lbl">Dónde vive y cómo se lee</p><p class="small mt-s"><span class="mono">.agents/skills/&lt;slug&gt;/references/&lt;map&gt;.html</span>, sin copia en <span class="mono">.context/</span> ni gemelo markdown. Se lee con <span class="mono" style="white-space:nowrap">bun run context:map &lt;slug&gt;</span> (o <span class="mono" style="white-space:nowrap">--section &lt;id&gt;</span>, <span class="mono" style="white-space:nowrap">--list</span>), nunca el HTML crudo. <span class="mono">bun run docs</span> lo muestra en "Mapas de contexto".</p></div>
+        <div class="card"><p class="lbl">Markdown viejo</p><p class="small mt-s">Los <span class="mono">.md</span> legacy de <span class="mono">.context/</span> se leen como insumo y se citan en <span class="mono">data-migrated-from</span>. Nunca se borran.</p></div>
+        <div class="card"><p class="lbl">Figuras</p><p class="small mt-s">Con la skill <span class="mono">diagram-design</span> (capacidad <span class="mono">diagrams</span>). Si falta, frena y te dice cómo instalarla.</p></div>
+      </div>
+    </div>
+    <div class="notes">Cada sección del mapa es un section plano con id estable, data-sources y data-updated; la última siempre es discovery-gaps. El chequeo de vigencia mira si los paths de data-sources tuvieron commits desde data-updated, si cambió el contrato de la API o el esquema. Una sección sin fuentes se informa como unknown, nunca como vigente.</div>
+  </section>
+
+  <!-- 12. SALVAGUARDAS -->
+  <section class="slide compact" data-title="Salvaguardas">
+    <p class="kicker">Salvaguardas · 12 de 15</p>
+    <h2 class="h2">Lo que <span class="grad">nunca</span> hace</h2>
+    <table class="tt mt-m" style="font-size:16px;border-spacing:0 5px">
+      <tr><th style="width:64px">#</th><th>Regla</th></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">P1</b></td><td style="padding:8px 16px" class="small">Inventar entidades, flujos o requisitos que no estén en el código o el PRD. Lo no verificado va a <span class="mono">discovery-gaps</span>.</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">P2</b></td><td style="padding:8px 16px" class="small">Saltear la Fase 1 en un arranque desde cero: lo que viene después queda sin base.</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">P3</b></td><td style="padding:8px 16px" class="small">Llenar los mapas de datos, API o E2E. Solo genera <span class="mono">business-domain-context</span> e <span class="mono">infra-context</span>.</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">P4</b></td><td style="padding:8px 16px" class="small">Mezclarse con <span class="mono">test-framework-adaptation</span> en la misma sesión: sus límites de escritura son distintos.</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">P5</b></td><td style="padding:8px 16px" class="small">Refrescar los mapas de otra skill. Los suyos, sección por sección, nunca enteros.</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">P6</b></td><td style="padding:8px 16px" class="small">Saltear el glosario: <span class="mono">/sprint-testing</span> y <span class="mono">/test-documentation</span> lo cargan como precondición.</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">P7</b></td><td style="padding:8px 16px" class="small">Inventar IDs de campos o estados de Jira / Xray: se sincronizan con <span class="mono">bun run jira:sync-fields --force</span> y se citan como <span class="mono">{{jira.&lt;slug&gt;}}</span>.</td></tr>
+    </table>
+    <div class="grid g3 mt-s" style="gap:16px">
+      <p class="small dim"><b>Repo objetivo intacto:</b> no escribe ni instala nada ahí.</p>
+      <p class="small dim"><b>Sin secretos:</b> nombra la clave de <span class="mono">.env</span> o la ruta, nunca el valor.</p>
+      <p class="small dim"><b>Sin auto-encadenar:</b> cada fase espera tu confirmación.</p>
+    </div>
+    <div class="notes">Los anti-patrones del SKILL.md, más tres reglas compactas. Antes de usar una capacidad declarada (db, api-schema, diagrams) corre el chequeo en el punto de uso: si ninguna herramienta disponible la provee, frena y nombra la capacidad y cómo habilitarla, sin caer en silencio a otra herramienta.</div>
+  </section>
+
+  <!-- 13. LEE / ESCRIBE -->
+  <section class="slide compact" data-title="Lo que lee y escribe">
+    <p class="kicker">Entradas y salidas · 13 de 15</p>
+    <h2 class="h2">Lee mucho, escribe en pocos <span class="grad">lugares</span></h2>
+    <div class="grid g2 mt-m" style="gap:28px;align-items:start">
+      <div class="card">
+        <p class="lbl">Lee</p>
+        <ul class="big" style="font-size:17px;line-height:1.7">
+          <li>El repo objetivo: código, <span class="mono">README.md</span>, PRD si lo hay.</li>
+          <li>Lo que ya se descubrió: <span class="mono">bun run context:map &lt;slug&gt; --list</span>, <span class="mono">.context/project-config.md</span>, markdown legacy.</li>
+          <li><span class="mono">.agents/project.yaml</span> y <span class="mono">.env.example</span>.</li>
+          <li><span class="mono">kata-manifest.json</span>, para registrar los huecos con coherencia.</li>
+          <li>La base de datos (solo lectura) y la spec de OpenAPI, si están.</li>
+          <li>Docs de negocio que le pases (Confluence, Notion, wikis).</li>
+        </ul>
+      </div>
+      <div class="stack" style="gap:14px">
+        <div class="card card-accent">
+          <p class="lbl">Escribe solo</p>
+          <ul class="big" style="font-size:17px;line-height:1.7">
+            <li><span class="mono">.context/project-config.md</span></li>
+            <li>El bloque <span class="mono">## Project Assessment (Phase 1)</span> de <span class="mono">AGENTS.md</span></li>
+            <li><span class="mono">.context/ADR/</span>, en <span class="mono">Proposed</span></li>
+            <li>El mapa de <span class="mono">business-domain-context</span> y el de <span class="mono">infra-context</span></li>
+          </ul>
+        </div>
+        <div class="card"><p class="lbl">Y su propio estado</p><p class="small mt-s"><span class="mono">.session/project-discovery/plan.md</span> y <span class="mono">progress.md</span>, una entrada por fase cerrada. Al terminar la Fase 4 se archivan.</p></div>
+      </div>
+    </div>
+    <div class="notes">Capacidades declaradas en el frontmatter: db, api-schema y diagrams, cada una con su chequeo en el punto de uso. Las consultas a la base son de solo lectura durante discovery. Si la sesión se rechaza en un gate, no se archiva: queda lista para retomar desde ese gate.</div>
+  </section>
+
+  <!-- 14. CIERRE DE DISCOVERY -->
+  <section class="slide compact" data-title="Al terminar">
+    <p class="kicker">Handoff · 14 de 15</p>
+    <h2 class="h2">Al terminar: el <span class="grad">siguiente paso</span> y lo que propone</h2>
+    <div class="grid g2 mt-s" style="gap:24px;grid-template-columns:1fr 1fr;align-items:start">
+      <div class="stack" style="gap:12px">
+        <div class="card card-accent"><p class="lbl">Próxima skill, en una sesión limpia</p><p class="small mt-s"><span class="mono">project-context</span> modo <span class="mono">refresh-all</span>: <span class="mono">data → e2e → api → test-plan</span>, cada una con su aprobación. Los riesgos HIGH de la Fase 1 van como semilla del Master Test Plan.</p></div>
+        <div class="card"><p class="lbl">Propone criterio, no lo escribe</p><p class="small mt-s">Una línea por cada skill de contexto con mapa: el criterio que una sesión necesitaría (un término que el equipo y el código nombran distinto, un comportamiento que solo pasa en un entorno). Se vuelve regla fechada recién sobre un mapa aprobado. "No candidate yet" vale.</p></div>
+        <div class="card"><p class="lbl">Propone otras skills de contexto</p><p class="small mt-s">Aspectos del proyecto que merecerían su propia <span class="mono">&lt;aspect&gt;-context</span>. Las crea después <span class="mono">project-context</span> modo <span class="mono">context-skill</span>, con <span class="mono">skill-creator</span>.</p></div>
+      </div>
+      <div>
+        <p class="lbl">Antes de <span class="mono">test-framework-adaptation</span></p>
+        <table class="tt tight mt-s">
+          <tr><td class="small">Mapa de <span class="mono">business-domain-context</span> generado</td><td class="small dim">Fase 1</td></tr>
+          <tr><td class="small">Mapa de <span class="mono">infra-context</span> con <span class="mono">backend</span> y <span class="mono">frontend</span></td><td class="small dim">Fases 2-3</td></tr>
+          <tr><td class="small"><span class="mono">.context/project-config.md</span></td><td class="small dim">Fase 1</td></tr>
+          <tr><td class="small">Mapa de <span class="mono">business-data-context</span> generado</td><td class="small dim">project-context</td></tr>
+          <tr><td class="small">Fuente de la API: tipos, spec o mapa de API</td><td class="small dim">api:sync o project-context</td></tr>
+          <tr><td class="small"><span class="mono">.env.example</span></td><td class="small dim">proyecto</td></tr>
+        </table>
+        <p class="small dim mt-s">Lo que falta vuelve a su fase o al modo de <span class="mono">project-context</span> que lo genera.</p>
+      </div>
+    </div>
+    <div class="notes">El bloque de cierre se imprime tal cual al confirmar la Fase 4: lista lo poblado con los comandos para leerlo, el resultado de jira:check, la próxima skill, la semilla de riesgos y las propuestas. No encadena el handoff en la misma sesión.</div>
+  </section>
+
+  <!-- 15. INVOCACIÓN Y HANDOFFS -->
+  <section class="slide compact" data-title="Cierre">
+    <p class="kicker">Cierre · 15 de 15</p>
+    <h2 class="h2">Invocación y <span class="grad">handoffs</span></h2>
+    <div class="grid g3 mt-m" style="gap:22px;align-items:start">
+      <div class="card">
+        <p class="lbl">Cómo se invoca</p>
+        <p class="small mt-s"><b>Claude Code:</b> <span class="mono">/project-discovery</span>.<br><b>OpenCode y Codex:</b> cargá la skill <span class="mono">project-discovery</span>.</p>
+        <p class="small mt-s">No tiene modos: el alcance se elige en la conversación. También se activa con <i>"onboard this repo"</i> o <i>"set up this project"</i>.</p>
+      </div>
+      <div class="card">
+        <p class="lbl">Antes y después</p>
+        <p class="small mt-s"><span class="mono">/agentic-qa-onboard</span> te deriva acá ante un repo nuevo.<br>Después: <span class="mono">project-context</span> (<span class="mono">refresh-all</span>) y luego <span class="mono">/test-framework-adaptation</span>.<br>Si preguntás por qué el proceso tiene esta forma: <span class="mono">iql-context</span>.</p>
+      </div>
+      <div class="card">
+        <p class="lbl">Quién consume los mapas</p>
+        <p class="small mt-s"><a href="../sprint-testing/how-it-works.es.html"><span class="mono">/sprint-testing</span></a>: planifica con el glosario.<br><a href="../test-documentation/how-it-works.es.html"><span class="mono">/test-documentation</span></a>: nombra los TCs.<br><span class="mono">/test-framework-adaptation</span>: toma el flujo de login y el stack.</p>
+      </div>
+    </div>
+    <div class="card card-accent mt-m">
+      <p class="lbl">Lo que deja la skill</p>
+      <p class="small mt-s"><span class="mono">.context/project-config.md</span> · la evaluación en <span class="mono">AGENTS.md</span> · el mapa de dominio y el de infraestructura, legibles con <span class="mono">bun run context:map</span> · ADRs en <span class="mono">Proposed</span> · una lista honesta de <span class="mono">discovery-gaps</span> · el backlog verificado.</p>
+    </div>
+    <p class="small dim mt-m">Canon: <span class="mono">.agents/skills/project-discovery/SKILL.md</span> y sus <span class="mono">references/</span> (una por fase). Anatomía de los mapas: <span class="mono">agentic-qa-core/references/business-context-maps.md</span>.</p>
+    <div class="notes">Fin del recorrido. El mapa del slide 3 resume todo: retomar si hay sesión, fijar el repo y el alcance, recorrer las fases con tu confirmación y entregar el resto a project-context en una sesión nueva.</div>
+  </section>
+
+  <div class="deck-footer"><span class="mono">/project-discovery · onboarding del proyecto</span><span class="slide-number" data-current="1" data-total="15"></span></div>
 </div>
+
 <!-- keyboard-nav hint (ported from defect-management deck) -->
 <div id="help-hint">← → navegar · O resumen · S presentador · N notas · F pantalla</div>
 <style id="upex-hint-style">
@@ -1882,152 +1804,14 @@ Refinements proposed: 1 →
 })();
 
 </script>
-<script>
-/* ---- animations/fx-runtime.js (self-contained variant) ----
- * Canvas FX lifecycle manager.
- * - FX modules are INLINED on window.HPX below (no external fetch — the deck
- *   is a single self-contained file, so the upstream FX_LIST autoloader would
- *   404 on every module; here `ready` resolves immediately instead).
- * - Initializes [data-fx] elements when their slide becomes active
- * - Calls handle.stop() when the slide leaves (MutationObserver on .slide class)
- */
-(function(){
-  'use strict';
-
-  /* ===== inlined FX modules ===== */
-  window.HPX = window.HPX || {};
-  window.HPX.constellation = function(host){
-    var canvas = document.createElement('canvas');
-    canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%';
-    host.appendChild(canvas);
-    var ctx = canvas.getContext('2d');
-    var raf = 0, running = true;
-    var N = 70, LINK = 130, pts = [];
-    function size(){
-      canvas.width = host.clientWidth || 1280;
-      canvas.height = host.clientHeight || 720;
-    }
-    size();
-    for (var i = 0; i < N; i++){
-      pts.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        vx: (Math.random() - .5) * .35,
-        vy: (Math.random() - .5) * .35,
-        r: Math.random() * 1.8 + .6
-      });
-    }
-    function tick(){
-      if (!running) return;
-      if (canvas.width !== (host.clientWidth || canvas.width) ||
-          canvas.height !== (host.clientHeight || canvas.height)) size();
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      var i, a, b, p;
-      for (i = 0; i < N; i++){
-        p = pts[i];
-        p.x += p.vx; p.y += p.vy;
-        if (p.x < 0 || p.x > canvas.width)  p.vx *= -1;
-        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, 6.2832);
-        ctx.fillStyle = 'rgba(122,162,247,.8)';
-        ctx.fill();
-      }
-      for (a = 0; a < N; a++) for (b = a + 1; b < N; b++){
-        var dx = pts[a].x - pts[b].x, dy = pts[a].y - pts[b].y, d2 = dx*dx + dy*dy;
-        if (d2 < LINK * LINK){
-          ctx.strokeStyle = 'rgba(187,154,247,' + (0.35 * (1 - Math.sqrt(d2) / LINK)).toFixed(3) + ')';
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(pts[a].x, pts[a].y);
-          ctx.lineTo(pts[b].x, pts[b].y);
-          ctx.stroke();
-        }
-      }
-      raf = requestAnimationFrame(tick);
-    }
-    raf = requestAnimationFrame(tick);
-    return { stop: function(){
-      running = false;
-      cancelAnimationFrame(raf);
-      if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
-    } };
-  };
-
-  /* ===== lifecycle (same contract as upstream fx-runtime.js) ===== */
-  const ready = Promise.resolve();
-
-  window.__hpxActive = window.__hpxActive || new Map();
-
-  function initFxIn(root){
-    if (!window.HPX) return;
-    const els = root.querySelectorAll('[data-fx]');
-    els.forEach((el) => {
-      if (window.__hpxActive.has(el)) return;
-      const name = el.getAttribute('data-fx');
-      const fn = window.HPX[name];
-      if (typeof fn !== 'function') return;
-      try {
-        const handle = fn(el, {}) || { stop(){} };
-        window.__hpxActive.set(el, handle);
-      } catch(e){ console.warn('[hpx-fx]', name, e); }
-    });
-  }
-
-  function stopFxIn(root){
-    const els = root.querySelectorAll('[data-fx]');
-    els.forEach((el) => {
-      const h = window.__hpxActive.get(el);
-      if (h && typeof h.stop === 'function'){
-        try{ h.stop(); }catch(e){}
-      }
-      window.__hpxActive.delete(el);
-    });
-  }
-
-  function reinitFxIn(root){
-    stopFxIn(root);
-    initFxIn(root);
-  }
-  window.__hpxReinit = reinitFxIn;
-
-  function boot(){
-    ready.then(() => {
-      const active = document.querySelector('.slide.is-active') || document.querySelector('.slide');
-      if (active) initFxIn(active);
-
-      // Watch all slides for class changes
-      const slides = document.querySelectorAll('.slide');
-      slides.forEach((sl) => {
-        const mo = new MutationObserver((muts) => {
-          for (const m of muts){
-            if (m.attributeName === 'class'){
-              if (sl.classList.contains('is-active')) initFxIn(sl);
-              else stopFxIn(sl);
-            }
-          }
-        });
-        mo.observe(sl, { attributes: true, attributeFilter: ['class'] });
-      });
-    });
-  }
-
-  if (document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', boot);
-  } else {
-    boot();
-  }
-})();
-
-</script>
 
 <script>
-/* deck :: mobile scale-to-fit — fixed 1440x900 layout (the desktop reference viewport) scaled into narrow/short viewports.
+/* deck :: mobile scale-to-fit — fixed 16:9 layout scaled into narrow/short viewports.
    Desktop (vw>=1024 && vh>=640) is left untouched (native fluid). Preview iframes skipped. */
 (function(){
   try{
     if (new URLSearchParams(location.search).has('preview')) return;
-    var BASE_W = 1440, BASE_H = 900;
+    var BASE_W = 1280, BASE_H = 720;
     var deck = document.querySelector('.deck');
     if (!deck) return;
     function fit(){
