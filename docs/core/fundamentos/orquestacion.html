@@ -538,8 +538,10 @@ Rules: no tocar archivos fuera del directorio de reportes; no correr git.</code>
         </dd>
         <dt>Las skills de workflow</dt>
         <dd>
-          Las skills de workflow (la lista está en <code>AGENTS.md</code> §3) deben tener una
-          sección <code>## Subagent Dispatch Strategy</code> con briefings de 7 componentes.
+          Las skills de workflow que son dueñas de un stage (las que llevan
+          <code>metadata.stage_owner: true</code> en su frontmatter; <code>REGISTRY.md</code> dice
+          cuáles son) deben tener una sección <code>## Subagent Dispatch Strategy</code> con
+          briefings de 7 componentes. <code>bun run skills:check</code> lo hace cumplir.
         </dd>
         <dt>Los workers supervisados</dt>
         <dd>
@@ -547,7 +549,17 @@ Rules: no tocar archivos fuera del directorio de reportes; no correr git.</code>
           Comprueba tres estados (sin binario, binario sin runtime, listo) y en los dos primeros las
           skills de workflow no mencionan el orquestador. Sus valores por defecto (máximo de
           workers, agente, modelo) están en el bloque <code>orchestration:</code> de
-          <code>.agents/project.yaml</code>.
+          <code>.agents/project.yaml</code>. Cada worker trabaja en su propio worktree, que se
+          prepara y se revisa solo antes de borrarse; cómo funciona está en
+          <a href="worktrees.html">Worktrees</a>.
+        </dd>
+        <dt>Las rutinas sin supervisión</dt>
+        <dd>
+          El modo AUTOMATION de la misma skill corre un prompt versionado con un disparador tipo
+          cron, sin una persona del otro lado. Es un conductor que despacha y no produce: abre los
+          workers que hacen el trabajo, no publica ni aprueba nada, y lo ambiguo lo reporta en vez
+          de adivinarlo. Las recetas que encajan en este repo están en
+          <code>.agents/skills/orca-orchestration/references/automations.md</code>.
         </dd>
       </dl>
       <p>Cinco de las hard rules de esa skill recogen los errores de la sección anterior:</p>
@@ -613,8 +625,8 @@ Rules: no tocar archivos fuera del directorio de reportes; no correr git.</code>
           <a href="https://code.claude.com/docs/en/sub-agents" target="_blank" rel="noopener"
             >Create custom subagents</a
           >
-          (documentación de Claude Code). Cómo se definen y se configuran los subagentes en el
-          harness que usa este repo.
+          (documentación de Claude Code). Cómo se definen y se configuran los subagentes en uno de
+          los tres harnesses que usa este repo; OpenCode y Codex tienen su propio mecanismo.
         </li>
         <li>
           <a

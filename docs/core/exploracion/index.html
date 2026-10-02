@@ -48,6 +48,13 @@
           probar juntos en tu propio Chrome. La respuesta queda en <code>.agents/project.yaml</code>
           (<code>testing.browser.pair_mode</code>) y se cambia editando esa línea.
         </p>
+        <p>
+          Qué sesión abre, con qué identidad y en qué navegador (anónima, usuario de prueba, tu
+          perfil persistente o pair testing) lo decide
+          <code>.agents/skills/agentic-qa-core/references/browser-sessions.md</code>, que el agente
+          lee antes del primer <code>open</code>. El porqué de cada regla está en
+          <code>.context/ADR/ADR-0008-browser-session-isolation.md</code>.
+        </p>
       </div>
     </article>
   </body>

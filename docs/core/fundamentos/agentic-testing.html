@@ -303,11 +303,12 @@
 
       <h2 id="lifecycle">Lifecycle de artefactos</h2>
       <p>
-        Un artefacto creado y nunca movido no se distingue de uno que nadie trabajó. Antes de que
-        existiera esta regla, pasaba en todos los proyectos: ATP congelados en
+        Un artefacto creado y nunca movido no se distingue de uno que nadie trabajó. Sin un
+        lifecycle declarado para cada tipo de trabajo, eso pasa: ATP congelados en
         <code>Planning</code>, Test Sets en <code>Designing</code>, Test Executions en
-        <code>ACTIVE</code>. La causa era que el harness no declaraba lifecycle para esos tipos de
-        trabajo. Cada fila dice dónde nace el artefacto, qué stage lo mueve y dónde termina.
+        <code>ACTIVE</code>. Cada fila dice dónde nace el artefacto, qué stage lo mueve y dónde
+        termina; el canon es
+        <code>.agents/skills/agentic-qa-core/references/artifact-lifecycle.md</code>.
       </p>
 
       <figure>

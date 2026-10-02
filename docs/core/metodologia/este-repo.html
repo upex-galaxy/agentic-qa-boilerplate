@@ -212,11 +212,11 @@
       <p>
         Cada stage tiene además un contrato agéntico: qué hace el agente, qué firma la persona, qué
         evidencia tiene que sobrevivir, cuánta autonomía tiene y si hace falta un verificador
-        separado. Ningún stage pasa de 3 en la escala de autonomía. Automation, el único que llega a
-        3 dentro de su plan, es también el único con verificador obligatorio (<code
-          >/pr-review-lead</code
-        >
-        o <code>/judgment-day</code> en contexto limpio).
+        separado. Ningún stage pasa de 3 en la escala de autonomía, salvo Regression, que puede
+        llegar a 4 en un GO limpio (una corrida sin fallas no necesita firma; un CAUTION o un NO-GO
+        sí). Automation es el único con verificador obligatorio (<code>/pr-review-lead</code> o
+        <code>/judgment-day</code> en contexto limpio). El contrato completo está en
+        <code>.agents/skills/agentic-qa-core/references/stage-gates.md</code>.
       </p>
 
       <h2 id="perfiles">Perfil manual y perfil agéntico</h2>
@@ -396,32 +396,29 @@ components    -&gt;  módulo del producto  (qué parte del producto toca)</code>
 
       <h2 id="quality-gate">El quality gate: GO / CAUTION / NO-GO</h2>
       <p>
-        El veredicto de release lo emite <code>regression-testing</code> (los umbrales exactos son
-        los de su <code>SKILL.md</code>) con un puntaje ponderado (máximo 9) a partir de cuatro
-        factores: pass rate, regresiones, tests críticos y tests flaky.
+        El veredicto de release lo emite <code>regression-testing</code> con un puntaje ponderado a
+        partir de cuatro factores: pass rate, regresiones, tests críticos y tests flaky. La tabla de
+        puntos, los umbrales de cada veredicto y los vetos viven en su <code>SKILL.md</code>
+        (fase Report &amp; Decide); esta página no los copia para que no queden viejos.
       </p>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Puntaje</th>
               <th>Veredicto</th>
               <th>Qué pasa</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td>7 o más</td>
               <td><span class="badge green">GO</span></td>
               <td>Release aprobado</td>
             </tr>
             <tr>
-              <td>4 a 6</td>
               <td><span class="badge warn">CAUTION</span></td>
               <td>Revisión manual y riesgos aceptados documentados; la persona decide</td>
             </tr>
             <tr>
-              <td>Menos de 4</td>
               <td><span class="badge">NO-GO</span></td>
               <td>Release bloqueado: se arreglan las regresiones y se vuelve a correr</td>
             </tr>
@@ -431,9 +428,10 @@ components    -&gt;  módulo del producto  (qué parte del producto toca)</code>
       <p>
         Hay vetos que ignoran el puntaje: nunca hay GO automático si falla un test
         <code>@critical</code>, si existe una regresión de severidad alta o crítica, o si el pass
-        rate está por debajo de 90%. Cada falla se clasifica como REGRESSION, FLAKY, KNOWN,
-        ENVIRONMENT o NEW TEST, y la palabra FLAKY solo se permite con al menos cinco corridas de
-        historial.
+        rate queda por debajo del mínimo que fija el skill. Cada falla cae en una sola de las clases
+        que define el skill (KNOWN se parte en KNOWN-BLOCKED y KNOWN ISSUE; ver
+        <a href="late-game.html#clases-de-falla">Late-Game</a>), y la palabra FLAKY solo se permite
+        con al menos cinco corridas de historial.
       </p>
 
       <h2 id="doctrina">Dónde vive la doctrina</h2>
@@ -465,6 +463,16 @@ components    -&gt;  módulo del producto  (qué parte del producto toca)</code>
           La biblioteca compartida de doctrina: un archivo por tema, y cada uno abre diciendo qué
           regla lo cita. La lista es la de la carpeta (<code>ls</code>).
         </dd>
+        <dt><code>iql-context</code></dt>
+        <dd>
+          La skill que le da al agente el índice de esta metodología: por qué el proceso tiene los
+          stages que tiene, qué es cada artefacto de la escalera, dónde se hace cumplir cada
+          invariante. Es conocimiento puro, nunca ejecuta un stage, y se carga sola cuando preguntas
+          "¿por qué se hace así?". Cada proyecto la adapta en dos lugares:
+          <code>qa.methodology</code> en <code>.agents/project.yaml</code> (qué stages corre y con
+          qué rigor) y <code>.agents/skills/iql-context/references/project-overrides.md</code> (sus
+          reglas y excepciones propias).
+        </dd>
       </dl>
 
       <h2 id="skills">Skills</h2>
@@ -474,7 +482,8 @@ components    -&gt;  módulo del producto  (qué parte del producto toca)</code>
         descripción, o la invocas por nombre. Las de la comunidad las instala
         <code>cli/install.ts</code> a nivel de proyecto y no están versionadas en el repo. El
         catálogo es <code>.agents/skills/REGISTRY.md</code> (generado por
-        <code>bun run skills:registry</code>; <code>AGENTS.md</code> §5 tiene la misma tabla).
+        <code>bun run skills:registry</code>). <code>AGENTS.md</code> §5 es el router de frases
+        disparadoras que el agente usa para elegir skill, no el inventario.
       </p>
 
       <h2 id="comandos">Comandos</h2>
