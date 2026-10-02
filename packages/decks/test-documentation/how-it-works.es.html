@@ -470,18 +470,18 @@ kbd,.kbd{font-family:var(--font-mono);font-size:12.5px;padding:2px 8px;border-ra
     <h1 class="cover-cmd anim-rise-in" data-anim="rise-in"><span class="grad">/</span>test-documentation</h1>
     <p class="lede" style="margin:0 auto;max-width:64ch">El puente entre la QA manual y la automatización: analiza, prioriza con ROI y documenta test cases en el TMS con trazabilidad completa.</p>
     <div class="chips">
-      <span class="chip"><span class="dot" style="background:var(--accent)"></span>Documentation <span class="dim">(históricamente Stage 4)</span> — TMS docs + ROI</span>
+      <span class="chip"><span class="dot" style="background:var(--accent)"></span>Documentation <span class="dim">(históricamente Stage 4)</span>: TMS docs + ROI</span>
       <span class="chip"><span class="dot" style="background:var(--good)"></span>Analyze → Prioritize → Document</span>
-      <span class="chip"><span class="dot" style="background:var(--accent-2)"></span>US↔ATP↔ATR↔TC</span>
+      <span class="chip"><span class="dot" style="background:var(--accent-2)"></span>US↔ATS↔ATP↔ATR↔TC</span>
       <span class="chip"><span class="dot" style="background:var(--warn)"></span>Candidate · Manual · Deferred</span>
     </div>
   </div>
-  <div class="notes">Deck del workflow del skill /test-documentation. Regla de la casa: la mayoría de los escenarios NO se automatizan — el veredicto por defecto es Deferred. Navegación: → avanzar, S presentador, O vista general, N notas.</div>
+  <div class="notes">Deck del workflow del skill /test-documentation. Regla de la casa: la mayoría de los escenarios NO se automatizan; el veredicto por defecto es Deferred. Navegación: → avanzar, S presentador, O vista general, N notas.</div>
 </section>
 
 <!-- 2 · MAPA DEL WORKFLOW -->
 <section class="slide" data-title="Mapa del workflow">
-  <p class="kicker">el mapa completo — índice mental del deck</p>
+  <p class="kicker">el mapa completo: índice mental del deck</p>
   <h2 class="h2" data-anim="fade-up">Del comportamiento validado al repositorio de <span class="grad">regression</span></h2>
   <div class="lane">
     <span class="lane-tag in">ENTRADA</span>
@@ -495,7 +495,7 @@ kbd,.kbd{font-family:var(--font-mono);font-size:12.5px;padding:2px 8px;border-ra
     <span class="arr">→</span>
     <div class="node"><span class="nb">-1</span><h5>Resume check</h5><p><span class="mono">.session/…/progress.md</span></p><span class="br">resume · restart · abort</span></div>
     <span class="arr">→</span>
-    <div class="node"><span class="nb">0</span><h5>Modalidad TMS</h5><p>gate: ¿Xray licenciado?</p><span class="br warn">jira-xray | jira-native</span></div>
+    <div class="node"><span class="nb">0</span><h5>Modalidad TMS</h5><p>gate: ¿Xray licenciado? + <span class="mono">{{TC_CREATION_STAGE}}</span></p><span class="br warn">jira-xray | jira-native</span></div>
     <span class="arr">→</span>
     <div class="node"><span class="nb">S</span><h5>Alcance</h5><p>module · ticket · bug · ad-hoc</p><span class="br">plan.md escrito</span></div>
     <span class="arr">→</span>
@@ -503,47 +503,67 @@ kbd,.kbd{font-family:var(--font-mono);font-size:12.5px;padding:2px 8px;border-ra
     <span class="arr">→</span>
     <div class="node"><span class="nb">2</span><h5>Prioritize</h5><p>3 filtros + fórmula ROI</p><span class="br warn">C · M · D</span></div>
     <span class="arr">→</span>
-    <div class="node"><span class="nb">3</span><h5>Document</h5><p>crear / promover + enlazar</p><span class="br">&gt;10 TCs → paralelo</span></div>
+    <div class="node"><span class="nb">3</span><h5>Document</h5><p>crear / promover + enlazar + RTP</p><span class="br">&gt;10 TCs → paralelo</span></div>
     <span class="arr">→</span>
-    <div class="node"><span class="nb">✓</span><h5>Archive</h5><p>coverage matrix + sesión</p><span class="br ok">mem_session_summary</span></div>
+    <div class="node"><span class="nb">✓</span><h5>Cierre</h5><p>reportes, Deferred a Jira, verificador, footer</p><span class="br ok">archive + mem_session_summary</span></div>
   </div>
   <div class="adjacent">
     <div class="mini"><b>Gates.</b> Preflight con RED bloqueante → STOP; la modalidad se auto-resuelve en 3 sondeos y solo pregunta si los tres fallan.</div>
     <div class="mini"><b>Fallbacks.</b> Sin work type <span class="mono">Test Plan</span>/<span class="mono">Test Execution</span> → ATP/ATR como campos de la Story; campo ausente → comment estructurado.</div>
     <div class="mini"><b>Loops.</b> Bulk create interrumpido → resume despacha solo los chunks faltantes; rework de TC vía <span class="mono">back_from_&lt;state&gt;</span>.</div>
-    <div class="mini"><b>Handoffs.</b> Candidate → <span class="mono">/test-automation</span> · Manual → suite manual · Deferred → solo reporte (terminal).</div>
+    <div class="mini"><b>Handoffs.</b> Candidate → <span class="mono">/test-automation</span> · Manual → suite manual · Deferred → reporte + comment en Jira (terminal).</div>
   </div>
   <div class="lane">
     <span class="lane-tag out">SALIDA</span>
-    <span class="chip s">TCs trazables <b>US↔ATP↔ATR↔TC</b></span>
-    <span class="chip s"><span class="mono">test-cases/*.md</span> (caché local)</span>
-    <span class="chip s">coverage matrix en <span class="mono">.context/reports/</span></span>
+    <span class="chip s">TCs trazables <b>US↔ATS↔ATP↔ATR↔TC</b></span>
+    <span class="chip s">Candidates en el <b>RTP</b>, agrupados en flujos e2e</span>
+    <span class="chip s">comment <b>Deferred</b> en Jira</span>
     <span class="chip s">veredicto por TC: C / M / D</span>
   </div>
-  <div class="notes">Este mapa es el índice del deck: cada nodo del camino principal es una sección que sigue. Camino principal: Gate → Resume → Modalidad → Alcance → Analyze → Prioritize → Document → Archive. Los caminos adyacentes (gates, fallbacks, loops, handoffs) están en la franja inferior.</div>
+  <div class="notes">Este mapa es el índice del deck: cada nodo del camino principal es una sección que sigue. Camino principal: Gate → Resume → Modalidad → Alcance → Analyze → Prioritize → Document → Cierre. Los caminos adyacentes (gates, fallbacks, loops, handoffs) están en la franja inferior. Este es el modo document (el default); el modo repair-traceability no recorre este camino y tiene su propia slide.</div>
 </section>
 
-<!-- 3 · GATES DE ENTRADA -->
+<!-- 3 · MODOS + INVOCACIÓN -->
+<section class="slide" data-title="Modos e invocación">
+  <p class="kicker">mode routing: se resuelve antes del preflight</p>
+  <h2 class="h2" data-anim="fade-up"><span class="mono">document</span> por defecto · <span class="grad">repair-traceability</span> sellado</h2>
+  <div class="grid g2 mt-m">
+    <div class="card"><h4><span class="mono">document</span> (default)</h4><p class="small dim">Documentación normal en el TMS: Analyze → Prioritize (ROI) → Document, con veredicto Candidate / Manual / Deferred. Es el camino del mapa y del resto del deck.</p><span class="tag mt-s">workflow completo</span></div>
+    <div class="card"><h4><span class="mono">repair-traceability</span></h4><p class="small dim">Solo con primer token <span class="mono">repair-traceability</span>, la frase «fix-traceability» o un pedido explícito de reparar la trazabilidad de un ticket. Carga únicamente <span class="mono">references/repair-traceability.md</span>. Sin ticket key, pregunta antes de tocar el TMS. No arranca Analyze → Prioritize → Document, no crea TCs ajenos ni amplía el alcance.</p><span class="tag warn mt-s">audit → plan → aprobación explícita → apply → verify</span></div>
+  </div>
+  <table class="dtable tight">
+    <thead><tr><th>Host</th><th>Cómo se invoca</th></tr></thead>
+    <tbody>
+      <tr><td><b>Claude Code</b></td><td><span class="mono">/test-documentation UPEX-101</span> · <span class="mono">/test-documentation repair-traceability UPEX-101</span></td></tr>
+      <tr><td><b>OpenCode · Codex</b></td><td>en prosa: «cargá la skill <span class="mono">test-documentation</span>, modo <span class="mono">repair-traceability</span>, ticket UPEX-101»</td></tr>
+      <tr><td><b>Regla</b></td><td>el primer token que coincide con un modo ES el modo y el resto se reenvía; sin modo → <span class="mono">document</span> para trabajo de documentación; si el pedido podría ser cualquiera de los dos, <b>pregunta</b></td></tr>
+    </tbody>
+  </table>
+  <div class="callout warn"><h4>Un ticket solo no ve la falla que más importa</h4><p>Un link de coverage invertido es invisible en su Story: el link existe y el panel queda vacío. Por eso, al auditar un ticket, el modo <b>ofrece también el barrido project-wide</b> de dirección mixta (varias keys o una JQL → una sola worklist). Corregir dirección es <b>borrar antes de recrear</b>: Jira deduplica par + tipo, así que agregar el link corregido sin borrar es un no-op silencioso. El plan que aprobás dice qué links se borran, por id, y repara hacia el camino del ATS, nunca con links directos TC→Story en masa.</p></div>
+  <div class="notes">Mode routing de SKILL.md. repair-traceability recorre la cascade en orden: ① TC en ATS y ATS→Story (llena el panel) ② TC solo vía ATP (ubicado, sin coverage) ③ TC→Story directo (last resort válido) ④ sin camino (huérfano). Canon de dirección, borrar-antes-de-recrear y barrido: agentic-qa-core/references/traceability-linking.md §4 y §10. Credenciales faltantes siguen siendo un STOP duro (Critical Rule #10).</div>
+</section>
+
+<!-- 4 · GATES DE ENTRADA -->
 <section class="slide" data-title="Gates de entrada">
-  <p class="kicker">antes de la fase 1 — tres candados</p>
+  <p class="kicker">antes de la fase 1: tres candados</p>
   <h2 class="h2" data-anim="fade-up">Nada se documenta sin pasar los gates</h2>
   <div class="grid g3 mt-m anim-stagger-list">
-    <div class="card"><h4>Prerrequisito duro</h4><p class="small dim">Solo comportamiento <b>ya validado</b>: Story QA Approved, bug cerrado, o sesión exploratoria terminada. El TMS documenta y protege regression — <b>no es una herramienta de exploración</b> (explorar es de <span class="mono">/sprint-testing</span>).</p></div>
+    <div class="card"><h4>Prerrequisito duro</h4><p class="small dim">Solo comportamiento <b>ya validado</b>: Story QA Approved, bug cerrado, o sesión exploratoria terminada. El TMS documenta y protege regression, <b>no es una herramienta de exploración</b> (explorar es de <span class="mono">/sprint-testing</span>).</p></div>
     <div class="card"><h4>Preflight Gate</h4><p class="small dim"><b>REQUIRED:</b> issue-tracker operativo (<span class="mono">/acli</span>, valida con <span class="mono">bun run jira:check</span>) + modalidad TMS resoluble (jira-xray → <span class="mono">/xray-cli</span> + creds <span class="mono">XRAY_*</span>). <b>OPTIONAL:</b> repos fuente legibles. No toca entorno vivo → sin probes de DB/API/browser. Gaps → UNA checklist; RED bloqueante → STOP.</p></div>
     <div class="card"><h4>Fase -1 · Resume check</h4><p class="small dim">Lee <span class="mono">.session/test-documentation/&lt;scope&gt;/progress.md</span>. Si existe: muestra scope, modalidad, última fase completada y chunks pendientes → ofrece <b>resume / restart / abort</b> (restart archiva primero).</p></div>
   </div>
   <div class="callout warn"><h4>El caso de resume que más importa</h4><p>Bulk create de la Fase 3 interrumpido a mitad de lote: <span class="mono">progress.md</span> registra cada chunk completado (uno por subagente), así que resume salta los TCs ya creados y despacha <b>solo los chunks faltantes</b>.</p></div>
-  <div class="notes">Los tres candados corren en orden: prerequisito de comportamiento validado (conceptual), preflight de capacidades (mecánico: acli + TMS), y resume de sesión. El skill no ejecuta contra un sistema vivo — su gate se centra en poder ESCRIBIR en el TMS.</div>
+  <div class="notes">Los tres candados corren en orden: prerequisito de comportamiento validado (conceptual), preflight de capacidades (mecánico: acli + TMS), y resume de sesión. El skill no ejecuta contra un sistema vivo; su gate se centra en poder ESCRIBIR en el TMS.</div>
 </section>
 
-<!-- 4 · FASE 0 MODALIDAD -->
+<!-- 5 · FASE 0 MODALIDAD -->
 <section class="slide" data-title="Fase 0 · Modalidad TMS">
-  <p class="kicker">fase 0 — gate obligatorio, se resuelve UNA vez</p>
+  <p class="kicker">fase 0: gate obligatorio, se resuelve UNA vez</p>
   <h2 class="h2" data-anim="fade-up">¿Xray licenciado? Mismos conceptos, distintos <span class="grad">contenedores</span></h2>
   <div class="steps s3 anim-stagger-list">
     <div class="step"><div class="num">1</div><h4>Config</h4><p><span class="mono">{{TMS_CLI}}</span> = <span class="mono">bun xray</span> → jira-xray; <span class="mono">acli</span>-solo o sin definir → jira-native.</p></div>
     <div class="step"><div class="num">2</div><h4>Issue types</h4><p>¿Existen <span class="mono">Test Plan / Test Execution / Test Set / Pre-Condition</span>? Sí → jira-xray; no → jira-native.</p></div>
-    <div class="step"><div class="num">3</div><h4>Preguntar</h4><p>Solo si los dos sondeos fallan. Persistir en <span class="mono">plan.md</span>; sticky — drift a mitad de sesión → STOP y pregunta.</p></div>
+    <div class="step"><div class="num">3</div><h4>Preguntar</h4><p>Solo si los dos sondeos fallan. Persistir en <span class="mono">plan.md</span>; sticky; drift a mitad de sesión → STOP y pregunta.</p></div>
   </div>
   <table class="dtable tight">
     <thead><tr><th>Artefacto</th><th>jira-xray</th><th>jira-native (sin Xray)</th></tr></thead>
@@ -551,14 +571,34 @@ kbd,.kbd{font-family:var(--font-mono);font-size:12.5px;padding:2px 8px;border-ra
       <tr><td><b>ATP</b></td><td>Issue <b>Test Plan</b> «ATP: {STORY}: {título}»</td><td>Mismo issue Test Plan <b>por excelencia</b>; fallback: campo de la Story → comment</td></tr>
       <tr><td><b>ATR</b></td><td>Issue <b>Test Execution</b> con Test Runs por TC</td><td>Mismo issue Test Execution; fallback: campo de la Story → comment</td></tr>
       <tr><td><b>TC</b></td><td>Xray <b>Test</b> (Manual / Cucumber / Generic)</td><td>Issue type <b>Test</b> nativo; la Description lleva el template completo</td></tr>
-      <tr><td><b>ATS (Test Set) / Pre-Condition</b></td><td>First-class; membership Xray-internal (GraphQL, nunca issue link)</td><td>Work type presente → mismo item, membership = links <span class="mono">TC→ATS</span>; ausente → links directos TC↔Story</td></tr>
+      <tr><td><b>ATS (Test Set) / Pre-Condition</b></td><td>First-class; membership = link <span class="mono">TC→ATS</span> <b>+</b> la membership Xray-internal (GraphQL), nunca en lugar del link</td><td>Work type presente → mismo item, membership = los mismos links <span class="mono">TC→ATS</span>; ausente → sin ATS, links directos TC→Story</td></tr>
       <tr><td><b>Result sync (CI)</b></td><td><span class="mono">Import Results</span> JUnit/Cucumber → runs auto</td><td>Script actualiza Test Status + comment por build</td></tr>
     </tbody>
   </table>
-  <div class="notes">Items-first en AMBAS modalidades: Test Plan y Test Execution son work types nativos de Jira, independientes de Xray — el campo de la Story es un fallback degradado solo cuando el work type no existe en la instancia. Nunca mezclar modalidades dentro de una misma Story (anti-patrón D5).</div>
+  <div class="notes">Items-first en AMBAS modalidades: Test Plan y Test Execution son work types nativos de Jira, independientes de Xray; el campo de la Story es un fallback degradado solo cuando el work type no existe en la instancia. Nunca mezclar modalidades dentro de una misma Story (anti-patrón D5). TC en ATS es siempre un link TC→ATS en ambas modalidades (canon: traceability-linking.md §9).</div>
 </section>
 
-<!-- 5 · ALCANCES -->
+<!-- 6 · FASE 0 TC_CREATION_STAGE -->
+<section class="slide" data-title="Fase 0 · quién crea los TCs">
+  <p class="kicker">fase 0: el mismo gate resuelve un segundo valor</p>
+  <h2 class="h2" data-anim="fade-up"><span class="mono">{{TC_CREATION_STAGE}}</span> elige el <span class="grad">verbo</span> de la Fase 3</h2>
+  <p class="lede">La modalidad dice qué herramienta TMS está viva. <span class="mono">testing.tc_creation_stage</span> en <span class="mono">.agents/project.yaml</span> dice si este skill <b>crea</b> los Tests Candidate / Manual o <b>refina y promueve</b> los que <span class="mono">/sprint-testing</span> ya hizo. Sin definir o no reconocido → <span class="mono">auto</span>.</p>
+  <table class="dtable">
+    <thead><tr><th>Valor resuelto</th><th>Verbo de la Fase 3 para un escenario Candidate / Manual</th></tr></thead>
+    <tbody>
+      <tr><td><b><span class="mono">auto</span></b> (default)</td><td>jira-xray → <b>promover + enriquecer</b> un Test de sprint existente · jira-native → <b>crear</b> el Test acá</td></tr>
+      <tr><td><b><span class="mono">sprint-testing</span></b></td><td><b>promover + enriquecer</b> en AMBAS modalidades: los items ya existen y crear otro duplica el repositorio</td></tr>
+      <tr><td><b><span class="mono">test-documentation</span></b></td><td><b>crear</b> en AMBAS modalidades: no hay items de sprint para promover</td></tr>
+    </tbody>
+  </table>
+  <div class="grid g2 mt-m">
+    <div class="callout warn" style="margin-top:0"><h4>Promover sin Test de sprint → crear</h4><p>Si el verbo dice promover pero el escenario no tiene Test de sprint (Story testeada antes de fijar el valor, o escenario derivado recién ahora), se <b>crea</b> para ese escenario y se anota en <span class="mono">progress.md</span>. Nunca se salta el TC.</p></div>
+    <div class="callout" style="margin-top:0"><h4>Los TCs de sprint son borradores</h4><p>Se escribieron para correr una vez. Antes de entrar a regression se refinan: título canónico, pasos repetibles, precondiciones construibles desde un entorno frío, variables en lugar de ids, split o merge por identidad. Cada TC refinado lleva una línea <b>Refinement Notes</b>.</p></div>
+  </div>
+  <div class="notes">Modalidad y {{TC_CREATION_STAGE}} se persisten juntos en plan.md §Inputs y son sticky. La tabla completa del knob vive en sprint-testing/SKILL.md §"Which stage creates the TCs"; test-documentation solo la consume. Cualquiera sea el verbo, la regla del título canónico es la misma (ver la slide de promoción al RTP).</div>
+</section>
+
+<!-- 7 · ALCANCES -->
 <section class="slide" data-title="Alcances">
   <p class="kicker">elige el alcance por la ENTRADA, no por la salida</p>
   <h2 class="h2" data-anim="fade-up">Cuatro alcances, un solo pipeline</h2>
@@ -567,60 +607,60 @@ kbd,.kbd{font-family:var(--font-mono);font-size:12.5px;padding:2px 8px;border-ra
     <tbody>
       <tr><td><b>Module-driven</b></td><td>un módulo explorado de punta a punta</td><td>20-100+ escenarios</td><td>la mayoría terminará Deferred</td></tr>
       <tr><td><b>Ticket-driven</b></td><td>una Story QA Approved del sprint</td><td>3-8 escenarios</td><td>ATP/ATR por Story</td></tr>
-      <tr><td><b>Bug-driven</b></td><td>un bug cerrado con fix verificado</td><td>0-2 escenarios</td><td>ROI sesgado ARRIBA — «falló una vez, puede fallar de nuevo»</td></tr>
+      <tr><td><b>Bug-driven</b></td><td>un bug cerrado con fix verificado</td><td>0-2 escenarios</td><td>ROI sesgado ARRIBA, «falló una vez, puede fallar de nuevo»</td></tr>
       <tr><td><b>Ad-hoc / Exploratory</b></td><td>escenarios nuevos de exploración</td><td>1-10 escenarios</td><td>aplica los 3 filtros con dureza</td></tr>
     </tbody>
   </table>
-  <div class="callout"><h4>Al confirmar el alcance, la IA escribe el plan</h4><p><span class="mono">&lt;scope&gt;</span> = <span class="mono">&lt;JIRA-KEY&gt;</span> (ticket/bug) · <span class="mono">&lt;module-slug&gt;</span> · <span class="mono">&lt;YYYY-MM-DD&gt;-adhoc</span>. Escribe <span class="mono">.session/test-documentation/&lt;scope&gt;/plan.md</span>: goal (scope + modalidad + nº de TCs esperados), inputs (PBI, ATP, bugs previos), fases, riesgos y checklist de verificación — y registra el checkpoint en <span class="mono">progress.md</span>.</p></div>
+  <div class="callout"><h4>Al confirmar el alcance, la IA escribe el plan</h4><p><span class="mono">&lt;scope&gt;</span> = <span class="mono">&lt;JIRA-KEY&gt;</span> (ticket/bug) · <span class="mono">&lt;module-slug&gt;</span> · <span class="mono">&lt;YYYY-MM-DD&gt;-adhoc</span>. Escribe <span class="mono">.session/test-documentation/&lt;scope&gt;/plan.md</span>: goal (scope + modalidad + nº de TCs esperados), inputs (PBI, ATP, bugs previos), fases, riesgos y checklist de verificación, y registra el checkpoint en <span class="mono">progress.md</span>.</p></div>
   <p class="foot-note">Un ID de Story → ticket-driven · un ID de bug → bug-driven · un nombre de módulo → module-driven · notas de sesión → ad-hoc.</p>
   <div class="notes">Los cuatro alcances comparten el pipeline Analyze → Prioritize → Document; solo cambian la fuente de entrada y los defaults. El plan-first es obligatorio (contrato de sesión): nada se crea en el TMS sin plan.md escrito.</div>
 </section>
 
-<!-- 6 · REGLA DE ORO BUG-DRIVEN -->
+<!-- 8 · REGLA DE ORO BUG-DRIVEN -->
 <section class="slide" data-title="Bug-driven · regla de oro">
-  <p class="kicker">alcance bug-driven — la regla que vale oro</p>
+  <p class="kicker">alcance bug-driven: la regla que vale oro</p>
   <h2 class="h2" data-anim="fade-up">Un bug importante DEBE terminar con un <span class="grad">Test</span></h2>
   <div class="flow anim-stagger-list">
     <div class="stage"><div class="sx">1</div><div><h4>¿Es candidato de regression?</h4><p>Aplica los filtros de la Fase 0 + ROI (el bug previo sesga hacia arriba). <b>NO</b> → trátalo como un test fallido: el fix ya se verificó en sprint-testing → <b>Deferred, sin Test nuevo</b>. <b>SÍ</b> → paso 2.</p></div></div>
-    <div class="stage"><div class="sx">2</div><div><h4>¿Vino de un Test ya ejecutado que falló?</h4><p><b>SÍ</b> → <b>REUTILIZA</b> ese Test: enlázalo al bug (<span class="mono">tests / is tested by</span>) y promuévelo a regression — <b>nunca dupliques</b>. <b>NO</b> → <b>CREA</b> + diseña el Test (native: issue <span class="mono">Test</span>; xray: Xray <span class="mono">Test</span> + Test Plan / Test Set).</p></div></div>
+    <div class="stage"><div class="sx">2</div><div><h4>¿Vino de un Test ya ejecutado que falló?</h4><p><b>SÍ</b> → <b>REUTILIZA</b> ese Test: enlázalo al bug (<span class="mono">tests / is tested by</span>) y promuévelo a regression, <b>nunca dupliques</b>. <b>NO</b> → <b>CREA</b> + diseña el Test (native: issue <span class="mono">Test</span>; xray: Xray <span class="mono">Test</span> + Test Plan / Test Set).</p></div></div>
   </div>
   <div class="grid g2 mt-m">
-    <div class="callout warn" style="margin-top:0"><h4>Anula «el bug es el test case»</h4><p>Esa frase de <span class="mono">/sprint-testing</span> cubre solo el retest inmediato del sprint — NO la regression futura. Esta regla decide si debe existir un Test <i>persistente</i> para que el bug nunca regrese en silencio.</p></div>
-    <div class="callout" style="margin-top:0"><h4>Nunca reabras un bug cerrado (D8)</h4><p>La historia del bug es inmutable. Crea el TC nuevo y enlázalo vía <span class="mono">tests / is tested by</span> — no adjuntes regression reabriendo el issue.</p></div>
+    <div class="callout warn" style="margin-top:0"><h4>Anula «el bug es el test case»</h4><p>Esa frase de <span class="mono">/sprint-testing</span> cubre solo el retest inmediato del sprint, NO la regression futura. Esta regla decide si debe existir un Test <i>persistente</i> para que el bug nunca regrese en silencio.</p></div>
+    <div class="callout" style="margin-top:0"><h4>Nunca reabras un bug cerrado (D8)</h4><p>La historia del bug es inmutable. Crea el TC nuevo y enlázalo vía <span class="mono">tests / is tested by</span>, no adjuntes regression reabriendo el issue.</p></div>
   </div>
-  <div class="notes">Un bug cerrado es evidencia empírica fuerte de que el área regresa: la mayoría califica y se inclina a Candidate — pero no todos (un typo puntual en un área estable se difiere). La decisión reuse-or-create evita duplicar Tests que ya existen en el set.</div>
+  <div class="notes">Un bug cerrado es evidencia empírica fuerte de que el área regresa: la mayoría califica y se inclina a Candidate, aunque no todos (un typo puntual en un área estable se difiere). La decisión reuse-or-create evita duplicar Tests que ya existen en el set.</div>
 </section>
 
-<!-- 7 · FASE 1 INPUTS -->
-<section class="slide" data-title="Fase 1 · Analyze — inputs">
-  <p class="kicker">fase 1 — analyze · qué entra</p>
-  <h2 class="h2" data-anim="fade-up">Reúne las fuentes — y luego <span class="grad">lee el código</span></h2>
+<!-- 9 · FASE 1 INPUTS -->
+<section class="slide" data-title="Fase 1 · Analyze: inputs">
+  <p class="kicker">fase 1: analyze · qué entra</p>
+  <h2 class="h2" data-anim="fade-up">Reúne las fuentes, y luego <span class="grad">lee el código</span></h2>
   <table class="dtable tight">
     <thead><tr><th>Fuente</th><th>Qué se lee</th><th>Por qué</th></tr></thead>
     <tbody>
       <tr><td><b>Story / Epic</b></td><td>carpeta sincronizada completa: <span class="mono">story.md</span>, <span class="mono">acceptance-criteria.md</span>, scope, business rules, <span class="mono">comments.md</span></td><td>identificar escenarios + señales de riesgo</td></tr>
       <tr><td><b>Bugs cerrados enlazados</b></td><td>summary, causa raíz, área del fix</td><td>regla de priorización por bug previo</td></tr>
-      <tr><td><b>ATP / ATR existentes</b></td><td>lectura modality-aware vía <span class="mono">bun run jira:sync-issues get &lt;KEY&gt; --include-comments</span> → leer el <span class="mono">.md</span> sincronizado</td><td>escenarios y resultados que ya existen — no reinventar ni re-ejecutar</td></tr>
+      <tr><td><b>ATP / ATR existentes</b></td><td>lectura modality-aware vía <span class="mono">bun run jira:sync-issues get &lt;KEY&gt; --include-comments</span> → leer el <span class="mono">.md</span> sincronizado</td><td>escenarios y resultados que ya existen, no reinventar ni re-ejecutar</td></tr>
       <tr><td><b>Implementation plan + código</b></td><td>archivos reales, APIs, test IDs</td><td>validar diseño vs implementación</td></tr>
       <tr><td><b><span class="mono">business-domain-context</span></b></td><td>nombres canónicos de entidades y procesos (<span class="mono">bun run context:map business-domain-context</span>)</td><td>vocabulario de títulos, pasos y precondiciones</td></tr>
     </tbody>
   </table>
-  <div class="callout warn"><h4>Validación contra código fuente — obligatoria antes de documentar</h4><p>El ATP se escribió ANTES de que el código existiera. Grep a <span class="mono">data-testid=</span>, route handlers, rutas de API y formatos de texto; toda divergencia va a una sección <b>Refinement Notes</b> del TC. Saltarse este paso es la causa nº1 de tests automatizados inválidos después.</p></div>
+  <div class="callout warn"><h4>Validación contra código fuente: obligatoria antes de documentar</h4><p>El ATP se escribió ANTES de que el código existiera. Grep a <span class="mono">data-testid=</span>, route handlers, rutas de API y formatos de texto; toda divergencia va a una sección <b>Refinement Notes</b> del TC. Saltarse este paso es la causa nº1 de tests automatizados inválidos después.</p></div>
   <div class="notes">Lecturas detalladas SIEMPRE por el script de sync (acli view devuelve null en custom fields). Discrepancias típicas: una API asumida que en realidad es SSR/DB directa; "based on N reviews" vs el real "(N reviews)"; IDs hardcodeados vs patrón de variable.</div>
 </section>
 
-<!-- 8 · FASE 1 CRAFT: IDENTIDAD + CROSS-CUTTING -->
+<!-- 10 · FASE 1 CRAFT: IDENTIDAD + CROSS-CUTTING -->
 <section class="slide" data-title="Fase 1 · identidad del TC">
-  <p class="kicker">fase 1 — analyze · las dos reglas portantes</p>
+  <p class="kicker">fase 1: analyze · las dos reglas portantes</p>
   <h2 class="h2" data-anim="fade-up">Una (Precondición + Acción) = un TC</h2>
   <div class="vs">
-    <div class="card side good-side"><h3>✓ MISMO TC — 5 aserciones</h3><ul>
+    <div class="card side good-side"><h3>✓ MISMO TC: 5 aserciones</h3><ul>
       <li>pre <b>credenciales válidas</b>, acción <b>enviar login</b></li>
       <li>redirección + token + perfil vía <span class="mono">/auth/me</span> + cookie + bienvenida</li>
-      <li>todas las validaciones viven en UN TC — dividir «panel A / B / C» es el antipatrón más diagnosticado</li>
+      <li>todas las validaciones viven en UN TC, dividir «panel A / B / C» es el antipatrón más diagnosticado</li>
     </ul></div>
     <div class="mid">≠</div>
-    <div class="card side alt-side"><h3>✓ TC DISTINTOS — la precondición difiere</h3><ul>
+    <div class="card side alt-side"><h3>✓ TC DISTINTOS: la precondición difiere</h3><ul>
       <li>credenciales válidas → éxito (TC-A)</li>
       <li>cuenta bloqueada → 423 (TC-B)</li>
       <li>credenciales inválidas → 401 (TC-C)</li>
@@ -630,15 +670,15 @@ kbd,.kbd{font-family:var(--font-mono);font-size:12.5px;padding:2px 8px;border-ra
     <thead><tr><th>Cross-cutting (NO es un TC)</th><th>Se valida…</th></tr></thead>
     <tbody>
       <tr><td>Responsive · XSS · performance · a11y · contrato de API · «manejo de errores» genérico</td><td>dentro de cada test (viewport móvil, datos con caracteres especiales, aserciones de tiempo/a11y/schema) o en una <b>suite a nivel de app</b></td></tr>
-      <tr><td><b>Deferral ≠ omission</b></td><td>mover un rasgo transversal fuera del alcance es un <b>handoff explícito</b>: nombra la suite receptora o registra el gap (TC Deferred o nota en el ATR) — nunca se evapora</td></tr>
+      <tr><td><b>Deferral ≠ omission</b></td><td>mover un rasgo transversal fuera del alcance es un <b>handoff explícito</b>: nombra la suite receptora o registra el gap (TC Deferred o nota en el ATR), nunca se evapora</td></tr>
     </tbody>
   </table>
-  <div class="notes">Un escenario real es un flujo de usuario: objetivo de negocio claro, precondición + acción concretas, resultado verificable. Los rasgos transversales se prueban DENTRO de otros tests o en suites app-level — promover "prevención XSS" a TC propio es error clásico.</div>
+  <div class="notes">Un escenario real es un flujo de usuario: objetivo de negocio claro, precondición + acción concretas, resultado verificable. Los rasgos transversales se prueban DENTRO de otros tests o en suites app-level; promover "prevención XSS" a TC propio es error clásico.</div>
 </section>
 
-<!-- 9 · FASE 1 DERIVACIÓN 1:N -->
+<!-- 11 · FASE 1 DERIVACIÓN 1:N -->
 <section class="slide" data-title="Fase 1 · derivación 1:N">
-  <p class="kicker">fase 1 — analyze · doctrina de diseño (test-design-doctrine.md)</p>
+  <p class="kicker">fase 1: analyze · doctrina de diseño (test-design-doctrine.md)</p>
   <h2 class="h2" data-anim="fade-up">Un AC → N candidatos, elegidos por la <span class="grad">forma</span> del AC</h2>
   <table class="dtable tight">
     <thead><tr><th>Disparador en el AC</th><th>Técnica (obligatoria)</th><th>Qué produce</th></tr></thead>
@@ -652,14 +692,14 @@ kbd,.kbd{font-family:var(--font-mono);font-size:12.5px;padding:2px 8px;border-ra
   </table>
   <div class="grid g2 mt-m">
     <div class="callout" style="margin-top:0"><h4>Candidatos ≠ items del TMS</h4><p>Derivar amplio es gratis; <b>persistir está gateado por ROI</b> (Fase 2). Colapsar un AC a un solo TC exige justificación escrita «trivially atomic». El mapa AC→TC es el <b>piso</b>, no la cobertura.</p></div>
-    <div class="callout ok" style="margin-top:0"><h4>Improvement bridge</h4><p>Un test-beyond-AC expone un gap porque el AC estaba <b>infra-especificado</b> → el artefacto correcto es un issue <b>Improvement</b> (doctrina de defect-management) — NO un TC de regression ni ensanchar los ACs de la Story después del hecho.</p></div>
+    <div class="callout ok" style="margin-top:0"><h4>Improvement bridge</h4><p>Un test-beyond-AC expone un gap porque el AC estaba <b>infra-especificado</b> → el artefacto correcto es un issue <b>Improvement</b> (doctrina de defect-management), NO un TC de regression ni ensanchar los ACs de la Story después del hecho.</p></div>
   </div>
-  <div class="notes">EP sin BVA pierde el off-by-one. La regla de identidad (pre+acción) solo fusiona DENTRO de una partición — nunca a través de particiones, límites o estados. Canon: agentic-qa-core/references/test-design-doctrine.md.</div>
+  <div class="notes">EP sin BVA pierde el off-by-one. La regla de identidad (pre+acción) solo fusiona DENTRO de una partición, nunca a través de particiones, límites o estados. Canon: agentic-qa-core/references/test-design-doctrine.md.</div>
 </section>
 
-<!-- 10 · FASE 2 ROI -->
+<!-- 12 · FASE 2 ROI -->
 <section class="slide" data-title="Fase 2 · ROI">
-  <p class="kicker">fase 2 — prioritize · el gate que nunca se salta</p>
+  <p class="kicker">fase 2: prioritize · el gate que nunca se salta</p>
   <h2 class="h2" data-anim="fade-up">Tres filtros, luego la <span class="grad">fórmula</span></h2>
   <div class="grid g2t mt-m">
     <div>
@@ -672,11 +712,15 @@ kbd,.kbd{font-family:var(--font-mono);font-size:12.5px;padding:2px 8px;border-ra
     </div>
     <div>
       <div class="mk">ROI = (Frequency × Impact × Stability)
-      ─────────────────────────────────
+      ─────────────────────────────────  / 10
            (Effort × Dependencies)
 
+  / 10 = constante de normalización
+  todo en 3 → 0.3 → Deferred (el default)
+
 Component Value = ROI × (1 + 0.2 × N)
-  N = flujos E2E que reutilizan el TC</div>
+  N = flujos E2E que reutilizan el TC
+  estimado, tope N = 3 (máx. ×1.6)</div>
       <table class="dtable tight" style="margin-top:10px">
         <thead><tr><th>Factor (1-5)</th><th>1</th><th>5</th></tr></thead>
         <tbody>
@@ -689,42 +733,42 @@ Component Value = ROI × (1 + 0.2 × N)
       </table>
     </div>
   </div>
-  <div class="notes">Effort y Dependencies son DIVISORES: un "flujo crítico" caro y acoplado DEBE puntuar bajo — es la fórmula funcionando, no un bug. Component Value rescata átomos reutilizables: authenticateSuccessfully con ROI 1.5 reutilizado en 5 flujos → 1.5 × 2.0 = 3.0 → Candidate.</div>
+  <div class="notes">Effort y Dependencies son DIVISORES: un "flujo crítico" caro y acoplado DEBE puntuar bajo, y eso es la fórmula funcionando. El "/ 10" no es un sexto factor: lleva el cociente crudo (0.04 a 125) a la escala de los umbrales (0.004 a 12.5). Component Value rescata átomos reutilizables: authenticateSuccessfully con ROI 2.0 reutilizado en 3 flujos → 2.0 × 1.6 = 3.2 → Candidate. N es una estimación cualitativa (nadie cuenta call-sites), con tope 3; se anota en el comment de ROI. Bandas autoritativas: references/tms-conventions.md §9.</div>
 </section>
 
-<!-- 11 · FASE 2 VEREDICTOS -->
+<!-- 13 · FASE 2 VEREDICTOS -->
 <section class="slide" data-title="Fase 2 · veredictos">
-  <p class="kicker">fase 2 — prioritize · exactamente uno de tres, no hay cuarto</p>
-  <h2 class="h2" data-anim="fade-up">Candidate · Manual · Deferred — la modalidad cambia el <span class="grad">verbo</span></h2>
+  <p class="kicker">fase 2: prioritize · exactamente uno de tres, no hay cuarto</p>
+  <h2 class="h2" data-anim="fade-up">Candidate · Manual · Deferred: la modalidad cambia el <span class="grad">verbo</span></h2>
   <table class="dtable tight">
-    <thead><tr><th>Veredicto</th><th>Lo dispara</th><th>A dónde va</th><th>Fase 3: jira-native</th><th>Fase 3: jira-xray</th></tr></thead>
+    <thead><tr><th>Veredicto</th><th>Lo dispara</th><th>A dónde va</th><th>Fase 3 (<span class="mono">auto</span>): jira-native</th><th>Fase 3 (<span class="mono">auto</span>): jira-xray</th></tr></thead>
     <tbody>
-      <tr><td><b>Candidate</b></td><td>ROI &gt; 3.0 · O 1.5-3.0 + bug previo · O happy path crítico</td><td>alimenta <span class="mono">/test-automation</span></td><td rowspan="2">se <b>CREA</b> el work item <span class="mono">Test</span> (solo C + M)</td><td rowspan="2">el <span class="mono">Test</span> ya existe (Planning de sprint-testing) → se <b>PROMUEVE</b> al <b>Regression Test Plan (RTP)</b> + Test Set, label <span class="mono">regression-candidate</span>, y se <b>ENRIQUECE</b> (Gherkin rico, parametrización, edge cases)</td></tr>
+      <tr><td><b>Candidate</b></td><td>ROI &gt; 3.0 · O 1.5-3.0 + bug previo · O happy path crítico</td><td>alimenta <span class="mono">/test-automation</span></td><td rowspan="2">se <b>CREA</b> el work item <span class="mono">Test</span> (solo C + M)</td><td rowspan="2">el <span class="mono">Test</span> ya existe (Planning de sprint-testing) → se <b>PROMUEVE</b> al <b>Regression Test Plan (RTP)</b> (+ <span class="mono">TS:</span> de feature opcional), label <span class="mono">regression-candidate</span>, y se <b>ENRIQUECE</b> (Gherkin rico, parametrización, edge cases)</td></tr>
       <tr><td><b>Manual</b></td><td>ROI 0.5-1.5 y no automatizable, o solo-manual explícito</td><td>suite de regression manual (terminal)</td></tr>
-      <tr><td><b>Deferred</b></td><td>ROI &lt; 0.5 · O falló un filtro · O validación one-time</td><td>fuera de regression (terminal, revisitable)</td><td><b>NO se crea</b> — queda solo en el reporte</td><td>el Test de sprint queda <b>sin promover</b> — no se borra</td></tr>
+      <tr><td><b>Deferred</b></td><td>ROI &lt; 0.5 · O falló un filtro · O validación one-time · O no encaja en ninguna fila de arriba (es el bucket por defecto)</td><td>fuera de regression (terminal, revisitable)</td><td><b>NO se crea</b>: queda en el reporte y en el comment de Jira</td><td>el Test de sprint queda <b>sin promover</b>; no se borra</td></tr>
     </tbody>
   </table>
-  <div class="callout ok"><h4>Tres filtros, tres conteos — la forma saludable</h4><p><span class="grad"><b>analizados 80 → documentados 12 → automatizados 8</b></span>. Un test entra al repositorio porque será re-ejecutado, nunca para alcanzar un conteo. Si &gt;50% termina Candidate/Manual → reaplica los filtros con más rigor: <b>la mayoría debe ser Deferred</b>.</p></div>
+  <div class="callout ok"><h4>Tres capas, tres conteos: la forma saludable</h4><p><span class="grad"><b>analizados 80 → documentados 12 → automatizados 8</b></span>. Un test entra al repositorio porque será re-ejecutado, nunca para alcanzar un conteo. Si &gt;50% termina Candidate/Manual → reaplica los filtros con más rigor: <b>la mayoría debe ser Deferred</b>.</p></div>
   <div class="callout"><h4>El agente puntúa. La persona firma.</h4><p>El agente deriva escenarios por técnica, calcula el ROI y <b>propone</b> el veredicto. <b>Cada veredicto lo firma la persona</b>, igual que la épica de regresión y el Test Set. Autonomía CSA <b>2</b>, verificador separado <b>recomendado</b>: un segundo agente re-lee los veredictos contra el ATR. La alarma del &gt;50% Candidate/Manual se responde, no se ignora.</p></div>
-  <div class="notes">El veredicto (aritmética) es idéntico en ambas modalidades; lo que cambia es el verbo de la Fase 3: CREAR (native) vs PROMOVER + ENRIQUECER (xray). Deferred nunca es un borrado. Anti-patrón D4: nunca saltarse el scoring de ROI. Contrato agéntico del stage: agentic-qa-core/references/stage-gates.md.</div>
+  <div class="notes">El veredicto (aritmética) es idéntico en ambas modalidades; lo que cambia es el verbo de la Fase 3: con {{TC_CREATION_STAGE}} = auto, CREAR (native) vs PROMOVER + ENRIQUECER (xray); los otros dos valores fijan el verbo en ambas. Deferred nunca es un borrado. Anti-patrón D4: nunca saltarse el scoring de ROI. Contrato agéntico del stage: agentic-qa-core/references/stage-gates.md.</div>
 </section>
 
-<!-- 12 · FASE 3 CONTENEDORES -->
+<!-- 14 · FASE 3 CONTENEDORES -->
 <section class="slide" data-title="Fase 3 · contenedores">
-  <p class="kicker">fase 3 — document · preflight de contenedores</p>
-  <h2 class="h2" data-anim="fade-up">Epic · Test Set · Test Plan — tres cosas distintas</h2>
+  <p class="kicker">fase 3: document · preflight de contenedores</p>
+  <h2 class="h2" data-anim="fade-up">Epic · Test Set · Test Plan: tres cosas distintas</h2>
   <div class="grid g3 mt-m anim-stagger-list">
-    <div class="card"><h4>Regression Epic</h4><p class="small dim">= el epic de proceso <b>«QA Test Repository»</b>. Resolver <i>found-or-created</i> por JQL (<span class="mono">type = Epic AND summary ~ "QA Test Repository"</span>); si falta, <b>pregunta antes de crear</b> y cachea la key en <span class="mono">.agents/project.yaml</span>. Todo TC documentado se parenta aquí — nunca a un epic de producto.</p><span class="tag mt-s">paraguas del repositorio</span></div>
-    <div class="card"><h4>Test Set — dos altitudes</h4><p class="small dim"><b>ATS per-Story (obligatorio)</b>: <span class="mono">ATS: {US_ID}: {story title}</span> — tercer artefacto de la familia ATP/ATR/ATS, parent «QA Test Artifacts», components heredados de la Story. Su link <span class="mono">is tested by</span> a la Story es lo que llena el panel de coverage. <b><span class="mono">TS:</span> feature-level (opcional)</b>: <span class="mono">TS: {EPIC|module}: Validate {feature}</span> — agrupa smoke/regression, components opcional. Native sin work type Test Set → links directos TC↔Story.</p><span class="tag mt-s">coverage</span></div>
-    <div class="card"><h4>Test Plan</h4><p class="small dim"><b>Alcance de ejecución / regression</b> — el conjunto de Tests que corre para un release o ciclo. El ATP en jira-xray ES un issue Test Plan (parent: epic «QA Master Test Plan»). El <b>RTP</b> (<span class="mono">RTP: {PROJECT_KEY|module}: Regression Test Plan</span>) es el Test Plan long-lived de regression bajo ese mismo epic: destino de cada TC promovido con label <span class="mono">regression-candidate</span>, y nunca se completa: cada corrida regular de <span class="mono">/regression-testing</span> escribe su <b>RTR</b> (Test Execution <span class="mono">RTR: {scope-id}: Regression Testing</span>) contra él; el STR queda para el cierre del sprint.</p><span class="tag mt-s">ejecución</span></div>
+    <div class="card"><h4>Regression Epic</h4><p class="small dim">= el epic de proceso <b>«QA Test Repository»</b>. Resolver <i>found-or-created</i> por JQL (<span class="mono">type = Epic AND summary ~ "QA Test Repository"</span>); si falta, <b>pregunta antes de crear</b> y cachea la key en <span class="mono">.agents/project.yaml</span>. Todo TC documentado se parenta aquí, nunca a un epic de producto.</p><span class="tag mt-s">paraguas del repositorio</span></div>
+    <div class="card"><h4>Test Set, dos altitudes</h4><p class="small dim"><b>ATS per-Story (obligatorio)</b>: <span class="mono">ATS: {US_ID}: {story title}</span>, tercer artefacto de la familia ATP/ATR/ATS, parent «QA Test Artifacts», components heredados de la Story. Su link <span class="mono">is tested by</span> a la Story es lo que llena el panel de coverage. <b><span class="mono">TS:</span> feature-level (opcional)</b>: <span class="mono">TS: {EPIC|module}: Validate {feature}</span>, agrupa smoke/regression, components opcional. Native sin work type Test Set → links directos TC↔Story.</p><span class="tag mt-s">coverage</span></div>
+    <div class="card"><h4>Test Plan</h4><p class="small dim"><b>Alcance de ejecución / regression</b>, el conjunto de Tests que corre para un release o ciclo. El ATP en jira-xray ES un issue Test Plan (parent: epic «QA Master Test Plan»). El <b>RTP</b> (<span class="mono">RTP: {PROJECT_KEY|module}: Regression Test Plan</span>) es el Test Plan long-lived de regression bajo ese mismo epic: destino de cada TC promovido con label <span class="mono">regression-candidate</span>, y nunca se completa: cada corrida regular de <span class="mono">/regression-testing</span> escribe su <b>RTR</b> (Test Execution <span class="mono">RTR: {scope-id}: Regression Testing</span>) contra él; el STR queda para el cierre del sprint.</p><span class="tag mt-s">ejecución</span></div>
   </div>
-  <div class="callout"><h4>Modelo de tres ejes (defect-management-doctrine.md)</h4><p><b>Parent</b> = bucket de proceso QA (Test → «QA Test Repository» · ATP → «QA Master Test Plan» · ATR y ATS → «QA Test Artifacts») · <b>issue-link</b> = la Story origen · <b>components</b> = el módulo de producto afectado. Tres ejes separados — el parent nunca lleva la traza de producto.</p></div>
+  <div class="callout"><h4>Modelo de tres ejes (defect-management-doctrine.md)</h4><p><b>Parent</b> = bucket de proceso QA (Test → «QA Test Repository» · ATP → «QA Master Test Plan» · ATR y ATS → «QA Test Artifacts») · <b>issue-link</b> = la Story origen · <b>components</b> = el módulo de producto afectado. Tres ejes separados; el parent nunca lleva la traza de producto.</p></div>
   <div class="notes">La gente fusiona estos contenedores rutinariamente. Epic = repositorio completo; ATS = el Set per-Story que da coverage (TS: opcional agrupa por feature); Test Plan = alcance de ejecución. En jira-native con work type Test Set el ATS existe igual (membership = links TC→ATS); sin work type, links directos TC↔Story + Regression Epic + label.</div>
 </section>
 
-<!-- 13 · FASE 3 ENLAZADO + NAMING -->
+<!-- 15 · FASE 3 ENLAZADO + NAMING -->
 <section class="slide" data-title="Fase 3 · enlazado + naming">
-  <p class="kicker">fase 3 — document · el orden no es opcional</p>
+  <p class="kicker">fase 3: document · el orden no es opcional</p>
   <h2 class="h2" data-anim="fade-up">Set-first: ATS → ATP → ATR → <span class="grad">recién entonces</span> cada TC</h2>
   <div class="grid g2t mt-m">
     <div class="mk">1  Find-or-create ATS → link a la US
@@ -736,11 +780,12 @@ Component Value = ROI × (1 + 0.2 × N)
 3  ATR → link a la US (administrativo)
      + link ATP↔ATR (plan/results, 1:1)
 4  por cada TC:
-     membership TC ∈ ATS
-     (xray: GraphQL / native: link TC→ATS)
+     link TC→ATS (ambas modalidades)
+     + xray: membership Xray-internal
      listas de ATP/ATR derivadas del ATS
      TC→Story directo = last resort válido
 5  por cada TC PROMOVIDO:
+     PRIMERO título re-derivado y verificado
      xray  → TS: feature (opcional) + RTP
              + label regression-candidate
      native→ label de feature/Epic</div>
@@ -750,44 +795,44 @@ Component Value = ROI × (1 + 0.2 × N)
         <tbody>
           <tr><td><b>ATP</b></td><td><span class="mono">ATP: {STORY-KEY}: {story title}</span></td></tr>
           <tr><td><b>ATR</b></td><td><span class="mono">ATR: {STORY-KEY}: Story Testing</span></td></tr>
-          <tr><td><b>ATS</b></td><td><span class="mono">ATS: {US_ID}: {story title}</span> — obligatorio per-Story, aunque tenga 1 TC</td></tr>
-          <tr><td><b>RTP</b></td><td><span class="mono">RTP: {PROJECT_KEY|module}: Regression Test Plan</span> — plan long-lived de regression, uno por proyecto: destino de cada TC promovido</td></tr>
-          <tr><td><b>TC</b></td><td><span class="mono">{US_ID}: TC#: should &lt;outcome&gt; [when &lt;condition&gt;] [given &lt;pre&gt;]</span> — prefijo SIEMPRE el US key, en toda modalidad</td></tr>
-          <tr><td><b>Agrupación</b></td><td><span class="mono">TS: {EPIC|module}: Validate {feature}</span> — agrupador feature-level opcional (Test Set / <span class="mono">describe()</span>)</td></tr>
+          <tr><td><b>ATS</b></td><td><span class="mono">ATS: {US_ID}: {story title}</span>, obligatorio per-Story, aunque tenga 1 TC</td></tr>
+          <tr><td><b>RTP</b></td><td><span class="mono">RTP: {PROJECT_KEY|module}: Regression Test Plan</span>, plan long-lived de regression, uno por proyecto: destino de cada TC promovido</td></tr>
+          <tr><td><b>TC</b></td><td><span class="mono">{US_ID}: TC#: should &lt;outcome&gt; [when &lt;condition&gt;] [given &lt;pre&gt;]</span>, prefijo SIEMPRE el US key, en toda modalidad</td></tr>
+          <tr><td><b>Agrupación</b></td><td><span class="mono">TS: {EPIC|module}: Validate {feature}</span>, agrupador feature-level opcional (Test Set / <span class="mono">describe()</span>)</td></tr>
         </tbody>
       </table>
       <div class="callout warn" style="margin-top:12px"><h4>Huérfano = TC sin NINGÚN camino a la Story</h4><p>Ni ATS, ni ATP, ni link directo → <span class="mono">test-documentation</span> modo <span class="mono">repair-traceability</span> verifica la cascade <span class="mono">TC→ATS→Story → TC→ATP→Story → TC→Story</span>. D7: un ATR nunca se enlaza a dos ATPs (1:1). Rechaza títulos «Login test», «Login - error», «TC1: Test form».</p></div>
     </div>
   </div>
-  <div class="notes">Coverage verificado live: SOLO el link ATS→Story (o los links directos Test↔Story) llenan el panel; los links ATP→Story y ATR→Story son trazabilidad administrativa. Cascade de resolución: TC→ATS→Story (primaria) → TC→ATP→Story (placement, no cubre panel) → TC→Story directo (last resort válido — el defecto es no tener ningún camino). En xray la membership es Xray-internal (GraphQL); en native se expresa como links TC→ATS.</div>
+  <div class="notes">Coverage verificado live: SOLO el link ATS→Story (o los links directos Test↔Story) llenan el panel; los links ATP→Story y ATR→Story son trazabilidad administrativa. Cascade de resolución: TC→ATS→Story (primaria) → TC→ATP→Story (placement, no cubre panel) → TC→Story directo (last resort válido; el defecto es no tener ningún camino). La membership TC en ATS es siempre un link TC→ATS en ambas modalidades; jira-xray además escribe la membership Xray-internal (GraphQL vía /xray-cli), nunca en lugar del link. TC en ATP / ATR sigue siendo Xray-internal. Canon: traceability-linking.md §9.</div>
 </section>
 
-<!-- 14 · FASE 3 CREAR TCs -->
+<!-- 16 · FASE 3 CREAR TCs -->
 <section class="slide" data-title="Fase 3 · crear los TCs">
-  <p class="kicker">fase 3 — document · el verbo por modalidad, TC por TC</p>
-  <h2 class="h2" data-anim="fade-up">Crear los TCs — matriz por modalidad</h2>
+  <p class="kicker">fase 3: document · el verbo por modalidad, TC por TC</p>
+  <h2 class="h2" data-anim="fade-up">Crear los TCs: matriz por modalidad</h2>
   <table class="dtable tight">
     <thead><tr><th>Stack</th><th>Test manual</th><th>Candidate (automatizable)</th></tr></thead>
     <tbody>
-      <tr><td><b>Xray on Jira</b></td><td><b>Dos pasos</b>: (1) <span class="mono">Create Test type=Manual</span> <b>SIN</b> steps inline — Xray Cloud los descarta en silencio — (2) <span class="mono">Add Test Step</span> uno a uno (verifica con <span class="mono">Get Test</span>), luego <span class="mono">Update Issue</span> con la Description completa</td><td><span class="mono">Create Test type=Cucumber gherkin=…</span> + <span class="mono">Update Issue</span> con el template de Description</td></tr>
+      <tr><td><b>Xray on Jira</b></td><td><b>Dos pasos</b>: (1) <span class="mono">Create Test type=Manual</span> <b>SIN</b> steps inline (Xray Cloud los descarta en silencio), (2) <span class="mono">Add Test Step</span> uno a uno (verifica con <span class="mono">Get Test</span>), luego <span class="mono">Update Issue</span> con la Description completa</td><td><span class="mono">Create Test type=Cucumber gherkin=…</span> + <span class="mono">Update Issue</span> con el template de Description</td></tr>
       <tr><td><b>Jira native</b></td><td><span class="mono">Create Issue issueType=Test</span>, Description = tabla de pasos</td><td><span class="mono">Create Issue issueType=Test</span>, Description = Gherkin + template completo</td></tr>
     </tbody>
   </table>
   <div class="grid g2 mt-m">
-    <div class="callout warn" style="margin-top:0"><h4>La regla de las dos llamadas de Xray</h4><p>Una <span class="mono">Create Test</span> (registra en Xray) + una <span class="mono">Update Issue</span> (pega la Description). Saltarse la segunda deja un TC sin documentación legible en Jira — el fallo silencioso más común.</p></div>
-    <div class="callout" style="margin-top:0"><h4>Anti-patrones D1 · D6</h4><p><b>Nunca</b> escribas ADF JSON a mano (usa la ruta md→ADF de <span class="mono">/acli</span>). <b>Nunca</b> fabriques <span class="mono">customfield_NNNNN</span>: corre <span class="mono">bun run jira:sync-fields --force</span> y resuelve por <span class="mono">{{jira.&lt;slug&gt;}}</span>.</p></div>
+    <div class="callout warn" style="margin-top:0"><h4>La regla de las dos llamadas de Xray</h4><p>Una <span class="mono">Create Test</span> (registra en Xray) + una <span class="mono">Update Issue</span> (pega la Description). Saltarse la segunda deja un TC sin documentación legible en Jira: el fallo silencioso más común.</p></div>
+    <div class="callout" style="margin-top:0"><h4>Anti-patrones D1 · D6</h4><p><b>Nunca</b> escribas ADF JSON a mano: los cuerpos rich-text (ATP, ATR, descripción del Test) se escriben en Markdown, se convierten y validan con el conversor <span class="mono">.agents/skills/acli/scripts/md-to-adf.ts</span>, y lo que se publica es el ADF JSON resultante; por la vía CLI, <span class="mono">acli</span> nunca convierte Markdown solo. <b>Nunca</b> fabriques <span class="mono">customfield_NNNNN</span>: corre <span class="mono">bun run jira:sync-fields --force</span> y resuelve por <span class="mono">{{jira.&lt;slug&gt;}}</span>.</p></div>
   </div>
-  <p class="foot-note">Description siempre con el template completo: Related Story · Priority · ROI · Prior bugs · Test Design (gherkin/steps) · Variables · Implementation Code · Architecture · Test IDs · Preconditions · Expected Results.</p>
+  <p class="foot-note">Description siempre con el template completo: Related Story · Priority · ROI · Prior bugs · Test Design (gherkin/steps) · Variables · Implementation Code · Architecture · Test IDs · Preconditions · Expected Results. Cada TC creado: parent «QA Test Repository», <b>components</b> = módulo de producto afectado, <b>assignee</b> = el usuario de la sesión, puesto al crear.</p>
   <div class="notes">La dispatch de esta fase es la única paralela: N &gt; 10 TCs → subagentes en chunks de 5-10 (ver slide de orquestación). Cada subagente carga /xray-cli o /acli según modalidad y corre este flujo serial para su chunk.</div>
 </section>
 
-<!-- 15 · FASE 3 GHERKIN -->
+<!-- 17 · FASE 3 GHERKIN -->
 <section class="slide" data-title="Fase 3 · Gherkin de calidad">
-  <p class="kicker">fase 3 — document · el artefacto que viaja a automatización</p>
+  <p class="kicker">fase 3: document · el artefacto que viaja a automatización</p>
   <h2 class="h2" data-anim="fade-up">Gherkin de alta calidad: <span class="grad">variables, nunca datos duros</span></h2>
   <div class="grid g2t mt-m">
     <div class="terminal">
-      <div class="bar"><span class="td"></span><span class="td"></span><span class="td"></span><span>TC — UPEX-101.feature</span></div>
+      <div class="bar"><span class="td"></span><span class="td"></span><span class="td"></span><span>TC · UPEX-101.feature</span></div>
 <pre><span class="cmt">@critical @regression @automation-candidate @UPEX-101</span>
 <span class="kw">Scenario Outline:</span> should show auth error when password is incorrect
   <span class="cmt">"""  Bugs covered: UPEX-202 · Related Story: UPEX-101 · ROI: 4.0  """</span>
@@ -803,7 +848,7 @@ Component Value = ROI × (1 + 0.2 × N)
     <ul class="blist" style="margin-top:0">
       <li><b>Variables, nunca hardcode.</b> <span class="mono">{mentor_id}</span>, no <span class="mono">550e8400-…</span>. Tabla de Variables con cómo obtener cada valor en runtime.</li>
       <li><b>Tags siempre:</b> prioridad (<span class="mono">@critical…@low</span>) + suite (<span class="mono">@regression</span>, <span class="mono">@smoke</span> si ruta crítica) + <span class="mono">@automation-candidate</span> + <span class="mono">@{US_ID}</span>.</li>
-      <li><b>Comentarios estructurados</b> — PRECONDITIONS / ACTION / VALIDATIONS / EQUIVALENT PARTITIONS.</li>
+      <li><b>Comentarios estructurados:</b> PRECONDITIONS / ACTION / VALIDATIONS / EQUIVALENT PARTITIONS.</li>
       <li><b>Docstring con metadata:</b> story, bugs cubiertos, ROI.</li>
       <li><b>Parametriza por partición:</b> variantes de mismo comportamiento → UN Test con <span class="mono">Examples</span>, no N Tests.</li>
     </ul>
@@ -811,82 +856,182 @@ Component Value = ROI × (1 + 0.2 × N)
   <div class="notes">Los datos de staging cambian con los años: un UUID o email literal pudre el test. Cada variable lleva su query de obtención ({email} → SELECT email FROM users WHERE active=true LIMIT 1). Este Gherkin es exactamente lo que /test-automation consumirá.</div>
 </section>
 
-<!-- 16 · FASE 3 ESTADOS + CIERRE -->
-<section class="slide" data-title="Fase 3 · estados + cierre">
-  <p class="kicker">fase 3 — document · workflow del TC y cierre limpio</p>
-  <h2 class="h2" data-anim="fade-up">Cómo un TC recorre su vida — sin saltarse estados</h2>
+<!-- 18 · FASE 3 ESTADOS -->
+<section class="slide" data-title="Fase 3 · veredicto → estado">
+  <p class="kicker">fase 3: el veredicto decide la rama del workflow</p>
+  <h2 class="h2" data-anim="fade-up">Cada veredicto es un <span class="grad">estado</span>, ninguno es «dejarlo donde esté»</h2>
   <div class="mk">Draft ──start_design──▶ In Design ──ready_to_run──▶ Ready ──┬── for_manual ─────────────────▶ Manual     (terminal)
                                                             └── automation_review_from_ready ▶ In Review ──approve_to_automate──▶ Candidate → /test-automation</div>
+  <table class="dtable tight">
+    <thead><tr><th>Veredicto</th><th>Transiciones a disparar</th><th>El TC termina en</th></tr></thead>
+    <tbody>
+      <tr><td><b>Candidate</b></td><td><span class="mono">automation_review_from_ready</span> y luego <span class="mono">approve_to_automate</span></td><td><span class="mono">candidate</span>: lo que toma <span class="mono">/test-automation</span></td></tr>
+      <tr><td><b>Manual</b></td><td><span class="mono">for_manual</span>, <b>desde <span class="mono">ready</span></b>, nunca vía <span class="mono">in_review</span>: esa arista no existe en el catálogo. Un TC ya en <span class="mono">candidate</span> baja con <span class="mono">manual_execution_from_candidate</span></td><td><span class="mono">manual</span></td></tr>
+      <tr><td><b>Deferred</b></td><td>ninguna</td><td><span class="mono">ready</span> (jira-xray: el Test de sprint sin promover · jira-native: no se creó TC)</td></tr>
+    </tbody>
+  </table>
   <ul class="blist anim-stagger-list">
-    <li><b>Nunca saltes estados.</b> Rework solo vía <span class="mono">back_from_&lt;state&gt;</span>. Slugs desde <span class="mono">.agents/jira-workflows.json</span> (<span class="mono">{{jira.transition.test_case.&lt;slug&gt;}}</span>) — nunca nombres literales hardcodeados.</li>
+    <li><b>Nunca saltes estados.</b> Rework solo vía <span class="mono">back_from_&lt;state&gt;</span>. Slugs desde <span class="mono">.agents/jira-workflows.json</span> (<span class="mono">{{jira.transition.test_case.&lt;slug&gt;}}</span>), nunca nombres literales hardcodeados.</li>
+    <li><b>Slug sin mapear</b> (estados renombrados o catálogo viejo): fallback de <span class="mono">artifact-lifecycle.md</span> §4. Lista las transiciones vivas, propone el sinónimo más cercano en UNA pregunta, dispara el id vivo si decís que sí y recomienda <span class="mono">bun run jira:sync-workflows</span>. Nunca queda un TC en <span class="mono">draft</span> por un slug que no resolvió.</li>
     <li><b>Labels base por TC.</b> alcance: <span class="mono">regression</span> casi siempre, <span class="mono">smoke</span> solo ruta crítica (10-20% de la suite), + <span class="mono">e2e</span>/<span class="mono">integration</span>/<span class="mono">functional</span> · estado: <span class="mono">automation-candidate</span> ↔ <span class="mono">manual-only</span> excluyentes; al mergear → <span class="mono">automated</span>.</li>
-    <li><b>Caché local (hand-authored, no synced).</b> un md por TC en <span class="mono">…/stories/STORY-&lt;KEY&gt;-&lt;slug&gt;/test-cases/{TC-ID}-{slug}.md</span> — carpeta <span class="mono">test-cases/</span>, NO <span class="mono">tests/</span> (esa la posee el sync). Evita releer el TMS y da handoff inmediato.</li>
-    <li><b>Checkpoint + Archive.</b> cada fase (y cada chunk paralelo) apéndice en <span class="mono">progress.md</span>; tras el reporte final + coverage matrix → archivar a <span class="mono">.session/.archive/…</span> + <span class="mono">mem_session_summary</span>. Falla parcial (429s) → NO se archiva: resume retoma los chunks.</li>
   </ul>
-  <div class="notes">Dos campos independientes: Test Status (workflow — dónde está en su vida) vs Execution Status (la última run). "Candidate" con última run FAIL es una combinación válida. La coverage matrix queda en .context/reports/ como entregable comprometido.</div>
+  <div class="notes">Dos campos independientes: Test Status (workflow: dónde está en su vida) vs Execution Status (la última run). "Candidate" con última run FAIL es una combinación válida. Canon del mapa veredicto → estado: agentic-qa-core/references/artifact-lifecycle.md §1 y §1.1.</div>
 </section>
 
-<!-- 17 · ORQUESTACIÓN + HERRAMIENTAS -->
+<!-- 19 · FASE 3 PROMOCIÓN AL RTP -->
+<section class="slide" data-title="Fase 3 · promoción al RTP">
+  <p class="kicker">fase 3: el último paso, a dónde van los Candidates</p>
+  <h2 class="h2" data-anim="fade-up">Promover: título primero, label y membership <span class="grad">al final</span></h2>
+  <div class="steps s4 anim-stagger-list">
+    <div class="step"><div class="num">1</div><h4>Re-derivar</h4><p>El título sale de Precondición + Acción + resultado verificable del TC, nunca de la redacción del outline de sprint.</p></div>
+    <div class="step"><div class="num">2</div><h4>Conservar el prefijo</h4><p><span class="mono">{US_ID}: TC#:</span> no cambia. <span class="mono">#</span> es un índice estable dentro de la Story: si un hermano quedó Deferred, el hueco queda.</p></div>
+    <div class="step"><div class="num">3</div><h4>Reescribir</h4><p>Si el summary vivo difiere, <span class="mono">[ISSUE_TRACKER_TOOL] Update Issue</span>: el summary es un campo de Jira, nunca pasa por <span class="mono">[TMS_TOOL]</span>.</p></div>
+    <div class="step"><div class="num">4</div><h4>Verificar, recién ahí promover</h4><p>Título válido → label <span class="mono">regression-candidate</span> + RTP. El cambio viejo → nuevo queda en <span class="mono">progress.md</span>.</p></div>
+  </div>
+  <div class="grid g2 mt-l">
+    <div class="card"><h4>El RTP, uno por proyecto</h4><p class="small dim"><span class="mono">RTP: {PROJECT_KEY|module}: Regression Test Plan</span>, parent «QA Master Test Plan», find-or-create (pregunta antes de crear). <b>Assignee = vos al crear</b>: Xray rechaza ediciones de membership en un Test Plan que no es tuyo; si aparece uno ajeno, pregunta antes de reasignar. Pasa a <span class="mono">ready</span> con la primera promoción y <b>ahí se queda</b>, nunca <span class="mono">complete</span>. Manual entra al mismo RTP con <span class="mono">manual-only</span>; Deferred nunca. <span class="mono">/test-automation</span> y <span class="mono">/regression-testing</span> leen de ahí: un Candidate fuera del RTP no existe downstream.</p></div>
+    <div class="card"><h4>Agrupar en flujos e2e</h4><p class="small dim">Un grupo = un journey que un spec corre de punta a punta, con nombre de journey («Checkout, compra de invitado», no «Checkout tests»). Un TC que usan 2+ flujos es un componente atómico (un Steps module en KATA): se lista bajo cada flujo y su cuenta es la <span class="mono">N</span> del Component value. Se escribe en la <b>descripción del RTP, sección <span class="mono">## Regression flows</span></b> (la copia durable) y como columna en <span class="mono">COVERAGE-MATRIX</span>. Un Candidate sin flujo es una alarma, no una categoría.</p></div>
+  </div>
+  <div class="notes">Secciones "Title on promotion" y del RTP handoff en SKILL.md. La regla del título vale para todo camino de escritura: jira-xray (un Test de sprint seleccionado al RTP) y jira-native (un Test de Stage 4 creado desde un outline de sprint). En jira-native la promoción también viaja en labels del Test; /regression-testing describe cómo lo lee. Ciclo de vida: RTP nace en planning, designed → ready, nunca complete; feature TS queda en designing hasta que cierra su Epic; Preconditions quedan en active.</div>
+</section>
+
+<!-- 20 · FASE 3 REPORTES + REGISTRO DURABLE -->
+<section class="slide" data-title="Fase 3 · reportes y registro durable">
+  <p class="kicker">fase 3: dos archivos locales y un registro que sobrevive</p>
+  <h2 class="h2" data-anim="fade-up">Los reportes son <span class="mono">[LOCAL]</span>; lo que queda es el <span class="grad">TMS</span></h2>
+  <table class="dtable tight">
+    <thead><tr><th>Archivo (<span class="mono">.context/reports/</span>, gitignored)</th><th>Contiene</th></tr></thead>
+    <tbody>
+      <tr><td><b><span class="mono">COVERAGE-MATRIX-&lt;scope&gt;.md</span></b></td><td>AC → escenario → TC key → veredicto, más el flujo e2e de cada Candidate; los ACs sin cubrir</td></tr>
+      <tr><td><b><span class="mono">PRIORITIZATION-&lt;scope&gt;.md</span></b></td><td>cada escenario con sus cinco factores, el score y el veredicto</td></tr>
+    </tbody>
+  </table>
+  <div class="grid g2t mt-m">
+    <div>
+      <div class="mk">[ISSUE_TRACKER_TOOL] Add comment:
+  issue: {SCOPE_KEY}
+  body: |
+    ## Prioritization — Deferred scenarios
+
+    | Scenario | ROI | Why deferred |
+    |---|---|---|
+    | &lt;scenario&gt; | &lt;score&gt; | &lt;gate / band / one-time&gt; |</div>
+      <p class="foot-note">Read-before-write: si el comment ya existe de una corrida anterior sobre el mismo scope, se <b>reemplaza</b>, no se apila otro. Scope de módulo sin issue dueño → va al Regression Epic.</p>
+    </div>
+    <ul class="blist" style="margin-top:0">
+      <li><b>Ningún reporte es entregable.</b> Existen solo en la máquina que corrió la sesión; nada downstream depende de ellos. Un re-run sobre el mismo <span class="mono">&lt;scope&gt;</span> sobrescribe su propio par.</li>
+      <li><b>Registro durable.</b> Candidate y Manual: los Tests con su comment de ROI. Deferred no crea item, así que su lista se espeja en el comment de la izquierda.</li>
+      <li><b><span class="mono">test-cases/</span> es caché <span class="mono">[SYNC]</span>.</b> El skill corre <span class="mono">bun run jira:sync-issues get &lt;STORY_KEY&gt;</span> y LEE <span class="mono">test-cases/TEST-&lt;KEY&gt;-&lt;slug&gt;.md</span>; nunca escribe ahí. Se recupera con <span class="mono">bun run context:hydrate</span>. Lo Xray-internal (Preconditions, membership de Test Set) lo completa <span class="mono">bun xray test enrich</span>.</li>
+      <li><b>Checkpoint + Archive.</b> Cada fase y cada chunk paralelo se apendan a <span class="mono">progress.md</span>; con los dos reportes y el comment Deferred listos, la sesión se archiva en <span class="mono">.session/.archive/…</span> + <span class="mono">mem_session_summary</span>. Falla parcial (429s) → no se archiva: resume retoma los chunks.</li>
+    </ul>
+  </div>
+  <div class="notes">&lt;scope&gt; es el mismo valor que la carpeta de sesión: &lt;JIRA-KEY&gt;, &lt;module-slug&gt; o &lt;YYYY-MM-DD&gt;-adhoc. .context/reports/README.md explica por qué la carpeta está ignorada. bun xray test enrich es un comando de /xray-cli: cargá ese skill antes de invocarlo.</div>
+</section>
+
+<!-- 21 · CIERRE DEL STAGE -->
+<section class="slide" data-title="Cierre del stage · verificador + footer">
+  <p class="kicker">cierre del stage Documentation: dos cosas antes de decir «listo»</p>
+  <h2 class="h2" data-anim="fade-up">Verificador liviano + <span class="grad">footer de sesión</span></h2>
+  <div class="grid g2t mt-m">
+    <div>
+      <div class="mk">Light stage verifier: Documentation (líneas propias)
+[ ] cada TC existe por KEY · parent QA Test Repository
+    · components · assignee = self
+[ ] cada TC salió de draft: Candidate en candidate,
+    Manual en manual, Deferred dejado en ready a propósito
+[ ] título canónico verificado ANTES de label y RTP
+[ ] RTP en ready · assignee = self · NO completado
+[ ] promovidos en el RTP (y TS: opcional), membership ok
+[ ] cada Candidate en un flujo e2e con nombre, escrito
+    en ## Regression flows del RTP
+[ ] Preconditions en active (sin transición: N/A)
+[ ] slug sin mapear → fallback §4 preguntado</div>
+      <p class="foot-note">Más las ocho líneas comunes de <span class="mono">artifact-lifecycle.md</span> §5. Cada línea es YES o un N/A con motivo; un solo NO deja el stage en <b>NEEDS REVISION</b>.</p>
+    </div>
+    <div>
+      <div class="terminal">
+        <div class="bar"><span class="td"></span><span class="td"></span><span class="td"></span><span>footer, solo en el chat</span></div>
+<pre><span class="o">Skills loaded: test-documentation, acli, xray-cli
+MCPs used: none
+CLIs used: acli, bun (xray, jira:sync-issues)
+Testing levels touched:
+- API: 6 Candidates
+- UI/E2E: 2 Candidates, 1 Manual
+- Unit: none
+Refinements proposed: 0</span></pre>
+      </div>
+      <ul class="blist">
+        <li><b>Framing: curación.</b> «Testing levels» dice cómo se reparten por nivel los TCs procesados en la sesión; un nivel esperado y no tocado dice <b>none</b>.</li>
+        <li><b>Capturas</b>, si las hay: ruta relativa al instante y consolidada al cierre. Footer y capturas van <b>solo al chat</b>, nunca a un comment de Jira ni al ATR.</li>
+        <li><b>Lecciones</b> se proponen en <span class="mono">.session/test-documentation/&lt;scope&gt;/refinements.md</span>; nunca se aplican a la skill viva.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="notes">Canon: agentic-qa-core/references/artifact-lifecycle.md §5 (verificador) y session-footer-contract.md (footer). En sesiones con subagentes, cada reporte de stage trae los cinco campos del footer y el orquestador lo compila una sola vez al cierre.</div>
+</section>
+
+<!-- 22 · ORQUESTACIÓN + HERRAMIENTAS -->
 <section class="slide" data-title="Orquestación + herramientas">
-  <p class="kicker">quién hace qué — centro de comando + subagentes</p>
+  <p class="kicker">quién hace qué: centro de comando + subagentes</p>
   <h2 class="h2" data-anim="fade-up">El hilo principal decide; los subagentes escriben</h2>
   <div class="grid g3 mt-m anim-stagger-list">
-    <div class="card"><h4>Inline (orquestador)</h4><p class="small dim">Fases -1, 0, 1 y 2: resume, modalidad, análisis y veredictos viven en el hilo principal — planificar y decidir no se delega.</p><span class="tag mt-s">criterio</span></div>
+    <div class="card"><h4>Inline (orquestador)</h4><p class="small dim">Fases -1, 0, 1 y 2: resume, modalidad, análisis y veredictos viven en el hilo principal; planificar y decidir no se delega.</p><span class="tag mt-s">criterio</span></div>
     <div class="card"><h4>Paralelo (Fase 3, N &gt; 10)</h4><p class="small dim">Chunks de ~5-10 TCs por subagente, <b>cap = 10 subagentes</b> (Jira/Xray throttlean y devuelven 429; el cap está en SKILL.md §Subagent Dispatch). Cada subagente carga <span class="mono">/xray-cli</span> o <span class="mono">/acli</span>. N ≤ 10 → inline.</p><span class="tag mt-s">fan-out</span></div>
     <div class="card"><h4>Error protocol</h4><p class="small dim">Fallo de subagente → <b>STOP</b>, reporta el estado parcial (qué TCs aterrizaron, cuáles no, con keys/errores) y ofrece <b>retry / skip / abort</b>. Sin auto-fix, sin rollback.</p><span class="tag mt-s">seguridad</span></div>
   </div>
   <table class="dtable tight">
     <thead><tr><th>Necesidad</th><th>Herramienta</th><th>Nota</th></tr></thead>
     <tbody>
-      <tr><td>Lecturas detalladas (custom fields, ACs, ATP/ATR, comments)</td><td><span class="mono">bun run jira:sync-issues get &lt;KEY&gt; --include-comments</span></td><td>leer el <span class="mono">.md</span> sincronizado — <span class="mono">acli view</span> devuelve null en custom fields</td></tr>
+      <tr><td>Lecturas detalladas (custom fields, ACs, ATP/ATR, comments)</td><td><span class="mono">bun run jira:sync-issues get &lt;KEY&gt; --include-comments</span></td><td>leer el <span class="mono">.md</span> sincronizado, <span class="mono">acli view</span> devuelve null en custom fields</td></tr>
       <tr><td>Escrituras TMS (Test / Plan / Execution / link / transición)</td><td><span class="mono">/xray-cli</span> (jira-xray) · <span class="mono">/acli</span> (jira-native + Jira genérico)</td><td>cargar el skill ANTES de invocar el binario</td></tr>
       <tr><td>IDs de campos / workflows</td><td><span class="mono">bun run jira:sync-fields</span> + <span class="mono">{{jira.&lt;slug&gt;}}</span></td><td>anti-patrón D6</td></tr>
-      <tr><td>Validación de código fuente</td><td>Grep / Read sobre el repo</td><td>sin entorno vivo — solo lectura de código</td></tr>
+      <tr><td>Validación de código fuente</td><td>Grep / Read sobre el repo</td><td>sin entorno vivo, solo lectura de código</td></tr>
     </tbody>
   </table>
   <div class="notes">La división es deliberada: el criterio queda en el centro de comando; las escrituras crudas de API se reparten con tope de concurrencia. El enlazado de trazabilidad y la matriz de cobertura corren inline al final porque necesitan el estado agregado de todo lo creado.</div>
 </section>
 
-<!-- 18 · CORRIDA REALISTA -->
+<!-- 23 · CORRIDA REALISTA -->
 <section class="slide" data-title="Una corrida realista">
   <p class="kicker">todo el mapa, en una invocación bug-driven</p>
   <h2 class="h2" data-anim="fade-up">Una corrida de documentación, de punta a punta</h2>
   <div class="terminal mt-m">
     <div class="bar"><span class="td"></span><span class="td"></span><span class="td"></span><span>claude-code</span></div>
-<pre><span class="p">&gt; </span><span class="c">/test-documentation — turn closed bug UPEX-202 into a regression test</span>
+<pre><span class="p">&gt; </span><span class="c">/test-documentation UPEX-202 (turn this closed bug into a regression test)</span>
 
-<span class="o">[Preflight] acli OK (bun run jira:check) · modalidad resoluble → GREEN</span>
-<span class="o">[Fase -1]   Sin sesión previa para UPEX-202 — empezando de cero.</span>
-<span class="o">[Fase 0]    Modalidad: jira-native (sin issue types de Xray). Sticky en plan.md.</span>
-<span class="o">[Alcance]   bug-driven · plan.md escrito en .session/test-documentation/UPEX-202/</span>
+<span class="o">[Modo]      document (default). [Preflight] acli + xray-cli OK → GREEN.</span>
+<span class="o">[Fase -1]   Sin sesión previa para UPEX-202. [Fase 0] jira-xray ({{TMS_CLI}} = bun xray)</span>
+<span class="o">            · TC_CREATION_STAGE auto → verbo: promover. Ambos sticky en plan.md.</span>
 <span class="o">[Fase 1]    jira:sync-issues get UPEX-202 + Story UPEX-101 (--include-comments).</span>
 <span class="o">            Grep: data-testid="login-error" confirmado · ruta /api/auth/login.</span>
-<span class="o">[Fase 2]    Filtro F2: bug previo = SÍ. ROI = (4×5×4)/(2×1) = 40 → CANDIDATE.</span>
-<span class="o">            Regla de oro: sin Test fallido de origen → CREAR uno.</span>
-<span class="o">[Fase 3]    Regression Epic «QA Test Repository» (UPEX-9) encontrado.</span>
-<span class="o">            Plan: crear UPEX-540 «UPEX-101: TC2: should show auth error when</span>
-<span class="o">            password is incorrect» · links is tested by → UPEX-101, tests → UPEX-202</span>
-<span class="o">            · labels regression, automation-candidate, epic-UPEX-3. ¿Procedo?</span>
+<span class="o">[Fase 2]    F2 bug previo = SÍ. ROI = (4×5×4)/(2×1)/10 = 4.0 → CANDIDATE.</span>
+<span class="o">            Regla de oro: no vino de un Test fallido → CREAR (anotado en progress.md).</span>
+<span class="o">[Fase 3]    Plan: Test Cucumber «UPEX-101: TC2: should show auth error when password</span>
+<span class="o">            is incorrect» · parent QA Test Repository · components Auth · assignee yo</span>
+<span class="o">            · link TC→ATS UPEX-410 + membership Xray · tests → UPEX-202</span>
+<span class="o">            · RTP UPEX-12 + regression-candidate · flujo «Login, usuario registrado». ¿Procedo?</span>
 <span class="p">&gt; </span><span class="c">y</span>
-<span class="o">  Hecho. 1 Candidate · transiciones Draft→…→Candidate · caché test-cases/ escrito.</span></pre>
+<span class="o">  UPEX-540 creado (Create Test + Update Issue) · draft → … → candidate · RTP en ready.</span>
+<span class="o">  sync get UPEX-101 → test-cases/TEST-UPEX-540-….md leído. Reportes [LOCAL] escritos;</span>
+<span class="o">  Deferred: ninguno. Verificador: todo YES o N/A · footer impreso en el chat.</span></pre>
   </div>
-  <div class="notes">Cada regla del deck es visible aquí: preflight, resume, gate de modalidad, plan-first, lectura por sync script, grep de código, regla del bug previo, aritmética de ROI, regla de oro reuse-or-create, naming, parenting al Regression Epic, enlazado, labels y caché local — todo detrás de una confirmación antes de escribir.</div>
+  <div class="notes">Cada regla del deck es visible aquí: modo, preflight, resume, gate de modalidad + {{TC_CREATION_STAGE}}, plan-first, lectura por sync script, grep de código, regla del bug previo, ROI con su /10, regla de oro reuse-or-create (y el fallback de promover a crear cuando no hay Test de sprint), naming, parent + components + assignee, link TC→ATS más la membership Xray, promoción al RTP con flujo e2e, lectura del caché sincronizado, reportes locales, verificador y footer. Todo detrás de una confirmación antes de escribir. El ATS UPEX-410 ya existía desde la Planning de /sprint-testing.</div>
 </section>
 
-<!-- 19 · CIERRE -->
+<!-- 24 · CIERRE -->
 <section class="slide" data-title="Cierre">
-  <p class="kicker">cierre — dónde encaja y cómo se invoca</p>
+  <p class="kicker">cierre: dónde encaja y cómo se invoca</p>
   <h2 class="h2" data-anim="fade-up">Deriva amplio · documenta lo repetible · <span class="grad">automatiza los pocos</span></h2>
   <div class="grid g3 mt-m anim-stagger-list">
-    <div class="card"><h4>Cómo invocarlo</h4><p class="small dim"><kbd>/test-documentation</kbd> o frases naturales: «document tests», «ROI analysis», «which tests to automate», «Candidate vs Manual», «turn this bug into a regression test», «documentation stage».</p></div>
+    <div class="card"><h4>Cómo invocarlo</h4><p class="small dim">Claude Code: <kbd>/test-documentation &lt;KEY&gt;</kbd> o <kbd>/test-documentation repair-traceability &lt;KEY&gt;</kbd>. OpenCode y Codex: «cargá la skill <span class="mono">test-documentation</span>, modo <span class="mono">&lt;modo&gt;</span>». También por frases: «document tests», «ROI analysis», «which tests to automate», «fix-traceability».</p></div>
     <div class="card"><h4>Handoffs en el pipeline</h4><p class="small dim"><b>Entra</b> desde <span class="mono">/sprint-testing</span> (Story QA Approved, bug cerrado). <b>Sale</b> hacia <span class="mono">/test-automation</span>, que re-alcanza los Candidates: module → Macro · ticket → Medium · bug → Micro (ad-hoc entra donde encaje). Manual y Deferred son terminales.</p></div>
-    <div class="card"><h4>Artefactos que deja</h4><p class="small dim">TCs enlazados US↔ATS↔ATP↔ATR↔TC en el TMS · ATS per-Story + TS/labels de feature · coverage matrix en <span class="mono">.context/reports/</span> · un md por TC en <span class="mono">test-cases/</span> · sesión archivada en <span class="mono">.session/.archive/</span>.</p></div>
+    <div class="card"><h4>Artefactos que deja</h4><p class="small dim"><b>Durable, en el TMS:</b> TCs enlazados US↔ATS↔ATP↔ATR↔TC con su comment de ROI · Candidates en el RTP con <span class="mono">## Regression flows</span> · comment <span class="mono">Prioritization</span> con los Deferred. <b>Local:</b> los dos reportes <span class="mono">[LOCAL]</span> de <span class="mono">.context/reports/</span>, el caché <span class="mono">[SYNC]</span> de <span class="mono">test-cases/</span> (se lee, no se escribe) y la sesión archivada en <span class="mono">.session/.archive/</span>.</p></div>
   </div>
-  <div class="callout ok"><h4>Las tres reglas para llevar</h4><p><b>1.</b> Por defecto, Deferred — 3 filtros + ROI = (F×I×S)/(E×D). <b>2.</b> Una (precondición + acción) = un TC; los rasgos transversales viven dentro de los tests. <b>3.</b> Set-first: ATS → ATP → ATR → TC, y un bug importante siempre termina con un Test.</p></div>
-  <div class="notes">Cierre: Documentation es el puente entre la QA manual (Planning · Execution · Reporting) y la automatización (Automation). La IA acelera el oficio — el criterio y las confirmaciones siguen siendo del humano.</div>
+  <div class="callout ok"><h4>Las tres reglas para llevar</h4><p><b>1.</b> Por defecto, Deferred: 3 filtros + ROI = (F×I×S)/(E×D)/10. <b>2.</b> Una (precondición + acción) = un TC; los rasgos transversales viven dentro de los tests. <b>3.</b> Set-first: ATS → ATP → ATR → TC, y un bug importante siempre termina con un Test.</p></div>
+  <div class="notes">Cierre: Documentation es el puente entre la QA manual (Planning · Execution · Reporting) y la automatización (Automation). La IA acelera el oficio; el criterio y las confirmaciones siguen siendo del humano.</div>
 </section>
 
-<div class="deck-footer"><span class="mono">/test-documentation · Documentation · TMS + ROI</span><span class="slide-number" data-current="1" data-total="19"></span></div>
+<div class="deck-footer"><span class="mono">/test-documentation · Documentation · TMS + ROI</span><span class="slide-number" data-current="1" data-total="24"></span></div>
 </div>
 <!-- keyboard-nav hint -->
 <div id="help-hint">← → navegar · O resumen · S presentador · N notas · F pantalla completa</div>
@@ -1942,12 +2087,12 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
 </script>
 
 <script>
-/* deck :: mobile scale-to-fit — fixed 16:9 layout scaled into narrow/short viewports.
+/* deck :: mobile scale-to-fit — fixed 1440x900 layout (the desktop reference viewport) scaled into narrow/short viewports.
    Desktop (vw>=1024 && vh>=640) is left untouched (native fluid). Preview iframes skipped. */
 (function(){
   try{
     if (new URLSearchParams(location.search).has('preview')) return;
-    var BASE_W = 1280, BASE_H = 720;
+    var BASE_W = 1440, BASE_H = 900;
     var deck = document.querySelector('.deck');
     if (!deck) return;
     function fit(){
