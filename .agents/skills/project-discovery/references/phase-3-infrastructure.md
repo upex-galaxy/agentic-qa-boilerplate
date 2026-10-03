@@ -23,6 +23,31 @@ Commands go in `<pre><code>` blocks inside the section; tables are `<table>`. Be
 
 ---
 
+## The SUT's `/qa` page (read first when present)
+
+Some systems under test publish their own testability page at `/qa`. An app built with the agentic-dev boilerplate generates one (DEV skill `testability-guide`; its section layout is that skill's `references/page-structure.md`), and a practice platform keeps it public on purpose. When the SUT has one, read it BEFORE the stack detection below: it is the dev team's own map of what a tester needs. When it does not, nothing changes: this section is an optional input, and its absence is not a discovery gap.
+
+**Finding it.** Two places, either is enough: the route in the target repo (`app/qa/page.tsx` or the framework's equivalent, plus the config object it renders from), or the rendered page on an environment URL already known from Phase 2 or `.agents/project.yaml` (`curl` for a server-rendered page, a `/playwright-cli` snapshot when it renders client-side). The rendered page is what is DEPLOYED; the route is what is merged. A 404, a login redirect or a page without the `data-testid="qa-page"` root is "not found", never an error: production often gates it.
+
+**What it seeds, and where it goes.**
+
+| What the page shows | Phase 3 target |
+|---|---|
+| Architecture boxes and the repos block (monorepo or polyrepo) | stack detection, `backend` / `frontend` split, the monorepo per-package rule |
+| `.env` slot NAMES and how the app loads them | `backend` Environment Variables |
+| Database engine, QA roles, pooler port, row-level-security probe | `backend` Database Configuration |
+| The real auth requests (method, path, token shape) | `backend` Auth Flow |
+| OpenAPI spec URL and the docs UI route | the API contract source Phase 2 recorded; confirm it or flag the mismatch |
+| Environment URLs | `environments` matrix |
+| Demo users and their roles | the role count the preflight "User roles" row asks for (`agentic-qa-core/references/preflight-gate.md` §4) |
+| The credentials button | `environments` Secrets Management: the LOCATION of the credentials artifact (a Jira Epic by default), never its content |
+
+**Hint, not truth.** The page is written by the people who built the app, and it is only as fresh as its last regeneration. Every value it gives is cross-checked against the code and config this phase reads anyway. They agree: cite both. They disagree: the code wins, and the disagreement goes to `discovery-gaps` as a finding (a stale `/qa` page misleads every tester who reads it, so it is worth reporting to the dev team). A section of the page that is missing or reshaped yields "not found" for that row of the table, never a value guessed from the surrounding text.
+
+**Never copy a value from it into a committed file.** The page holds placeholders by design (`<API_BASE_URL>`, `<see credentials source>`): a placeholder is not a value, so it never lands in the map as one. A shared demo password the page shows inline still never goes into the map, `.agents/project.yaml` or any doc; slot names do. Real values live in the credentials artifact and reach `.env` through the user (Critical Rule #1). A section seeded from the page carries `route:/qa` in its `data-sources`, next to the repo paths that confirmed it.
+
+---
+
 ## Stack detection — decision tree
 
 Run this BEFORE any discovery step. Never ask the user "what stack is this?" — detect, then confirm.
