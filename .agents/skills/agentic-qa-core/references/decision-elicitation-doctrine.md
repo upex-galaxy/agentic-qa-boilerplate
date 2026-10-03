@@ -106,9 +106,18 @@ The returned JSON is the **execution contract**. Execute what it says.
 
 ## 6 · What this is not for
 
-- **Not for a decision the AI should simply make.** A routine judgement call with an obvious default is
-  not a decision point; making the human confirm it is noise disguised as diligence.
+This file picks the instrument. WHETHER a question reaches a person at all is decided first, by
+`./decision-protocol.md`: search the record, follow what is settled, decide the technical call inside the
+approved plan, and escalate only its four kinds (§5 there).
+
+- **Not for a decision the AI should simply make.** A technical call inside an approved plan is the
+  agent's (`./decision-protocol.md` §4); making the human confirm it is noise disguised as diligence.
 - **Not for gathering requirements.** That is a conversation.
 - **Not for a decision already taken.** Re-opening a settled question through a nicer interface is still
-  re-opening it.
-- **Not for an unattended routine.** Nobody is watching.
+  re-opening it. Search the record before drafting the deck (`./decision-protocol.md` §2), and when an
+  item exists only to supersede a prior ruling, show that ruling inside it.
+- **Not for an unattended routine.** Nobody is watching. The assumption a routine may state and proceed
+  on (§1, last row) is a technical one; a question of the four kinds is parked and reported, never
+  assumed (`./decision-protocol.md` §5).
+- **Write the answers down** where `./decision-protocol.md` §6 says, as soon as they arrive, so the
+  next session finds them in its search instead of asking again.
