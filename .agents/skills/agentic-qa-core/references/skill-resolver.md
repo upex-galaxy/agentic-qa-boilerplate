@@ -9,7 +9,7 @@ Subagents that re-read every relevant `SKILL.md` before they act burn tokens red
 
 Net effect:
 
-- Subagents trust a 5-15-line "Compact Rules" block instead of opening the full SKILL.md.
+- Subagents trust a short "Compact Rules" block instead of opening the full SKILL.md.
 - Token cost per dispatch drops by an order of magnitude when multiple skills overlap.
 - Orchestration stays auditable — the rules pasted into a briefing are the same rules the orchestrator itself read.
 
@@ -50,7 +50,7 @@ Per skill, the registry stores one block in this shape:
 - DO NOT: <prohibition>
 - WHEN <condition>: <action>
 - WHEN <condition>: <action>
-- (5 to 15 bullets total — no more)
+- (aim for 5 to 15 bullets; an authored section is carried whole, never truncated)
 
 **Read full SKILL.md when**: <when full read is necessary>
 ```
@@ -75,7 +75,7 @@ Per skill, the registry stores one block in this shape:
 **Read full SKILL.md when**: introducing a new mocking style not covered above, or when the user disputes a TDD verdict.
 ```
 
-An EXTRACTED block (Strategy A or B below) aims for at most ~20 lines including blank lines. An extracted block longer than that means the orchestrator should consider that skill "too rich for compact" and the subagent must read the full SKILL.md. A block sourced from frontmatter `compact_rules:` is exempt: it is used verbatim, with no cap and no truncation (see "Frontmatter-first" below).
+A block aims for at most ~20 lines including blank lines. An AUTHORED block (a `## Compact Rules` section, Strategy A, or a frontmatter `compact_rules:` field) is used whole, with no cap and no truncation, because every binding rule is put there on purpose (AGENTS.md §3 RULE REACHABILITY); a long one costs briefing tokens, never a rule. Only the blind Strategy B scrape is capped (see "Failure modes"), and a capped scrape means the subagent must read the full SKILL.md.
 
 ---
 
@@ -131,19 +131,19 @@ When a subagent's task hits any of the above, the briefing must explicitly tell 
 | Registry file missing AND build script not present      | Orchestrator inlines the briefing without the auto-resolved section, but flags it as a degraded run.               |
 | Build script errors (e.g. malformed frontmatter)        | Orchestrator continues with stale registry if available; otherwise degraded run as above.                          |
 | Skill has no extractable rules (empty body, no bullets) | Registry emits a stub block: `**Compact Rules**: (none extracted — read full SKILL.md)`. Subagent reads full file. |
-| Compact rule block exceeds 15 bullets                   | Script truncates to 15 + appends `(truncated — read full SKILL.md for the rest)`.                                  |
+| Strategy B scrape finds more than 15 bullets            | Script keeps the first 15 + appends `(truncated — read full SKILL.md for the rest)`. An authored `## Compact Rules` section (Strategy A) or a frontmatter `compact_rules:` field is NEVER truncated, whatever its length. |
 | Subagent dispatched without `## Project Standards`      | Acceptable if the dispatch is trivial (Anti-pattern: quick lookup). Required for any dispatch loading >=1 skill.   |
 
 ---
 
 ## Practical contract for skill authors
 
-**Frontmatter-first (authoritative).** A SKILL.md whose frontmatter carries a `compact_rules:` field owns its registry block outright: the build script uses those rules VERBATIM — no extraction, no 15-rule cap, no truncation — and stamps the entry `source: frontmatter`. Accepted shapes: a YAML list of strings (one rule per item), or a block scalar where each non-empty line is one rule (a leading `- ` is stripped). Use it for skills whose binding doctrine outgrows the extraction cap; the author is then responsible for keeping the field in sync with the body, and `bun run skills:registry` picks changes up on the next rebuild (`skills:registry:check` flags staleness). Without the field, extraction applies as below.
+**Frontmatter-first (authoritative).** A SKILL.md whose frontmatter carries a `compact_rules:` field owns its registry block outright: the build script uses those rules VERBATIM — no extraction, no cap, no truncation — and stamps the entry `source: frontmatter`. Accepted shapes: a YAML list of strings (one rule per item), or a block scalar where each non-empty line is one rule (a leading `- ` is stripped). Use it when the compact block must differ from the body section (a skill whose body has no `## Compact Rules`, or whose binding rules are worded for briefings); the author is then responsible for keeping the field in sync with the body, and `bun run skills:registry` picks changes up on the next rebuild (`skills:registry:check` flags staleness). Without the field, extraction applies as below.
 
 To make a skill registry-friendly, authors SHOULD (but are not required to):
 
 1. Add an explicit `## Compact Rules` (or `## Standards`) section near the top of the SKILL.md body. The build script's Strategy A picks this up verbatim; otherwise it falls back to bullet extraction (Strategy B), which is best-effort.
-2. Keep that section to 5-15 bullets, each starting with `DO:`, `DO NOT:`, or `WHEN <cond>:`.
+2. Aim for 5-15 bullets, each starting with `DO:`, `DO NOT:`, or `WHEN <cond>:`. The section is carried WHOLE, never truncated: every bullet in it reaches every briefing (AGENTS.md §3 RULE REACHABILITY), so a long section costs briefing tokens, not rules.
 3. End the section with a single line `**Read full SKILL.md when**: ...` so the registry passes the trigger through verbatim.
 
 Skills that don't follow this still work — Strategy B extracts whatever bullets it finds. But Strategy A is faster, cleaner, and gives the author full control over what subagents see.

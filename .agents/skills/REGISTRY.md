@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-10-03T02:19:39.118Z`
+> Generated: `2026-10-03T02:53:45.011Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -431,7 +431,9 @@ Skills indexed: 26
 - WHEN Phase 2 or 3 settles a test-architecture decision that is architectural AND hard to reverse (runner, isolation/parallelization, fixture and test-data strategy, auth-in-tests, selector contract, CI sharding): record it as an append-only ADR under `.context/ADR/`, drafted `Proposed` for the human to accept.
 - DO NOT: mix a discovery session with `test-framework-adaptation`, and do not use this skill for incremental map refreshes — the write boundaries differ.
 - DO NOT: skip Phase 1 or its domain glossary on a fresh start. Downstream skills load `business-domain-context` as a precondition for ATP authoring and TC naming.
-- (truncated — read full SKILL.md for the rest)
+- WHEN both a DB schema/migrations and ORM models exist: prefer the schema or migrations. ORM definitions drift from the live schema.
+- DO: mention the IQL methodology only if the user asks why the discovery is structured this way — never lecture someone who just wants the artifact.
+- DO: before any step that uses a declared capability (`metadata.requires_capabilities`: `db`, `api-schema`, `diagrams`), run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8: resolve by tool-name suffix, and when no available tool provides it STOP and name the capability + how to enable it, never a silent fallback.
 
 **Read full SKILL.md when**: running any phase's sub-steps, applying a completion gate's content checks, or resolving the pre-`test-framework-adaptation` prerequisite list.
 
@@ -459,7 +461,8 @@ Skills indexed: 26
 - DO NOT: import a regular regression run into the sprint STR, and never let smoke or sanity write into a regression execution: they import only when an execution key is passed explicitly.
 - DO: close the RTR (or the sprint-close STR) via `complete` only AFTER the verdict comment is posted on it, and leave the RTP at its ready status: a suite run never completes the plan it ran from.
 - DO NOT: invent a sprint number. The RTR needs none (its scope-id is `{env}-{YYYY-MM-DD}` or a release tag). `N` matters only for the sprint-close STR: take it from the user or from the STP's own scope-id, and ask before creating anything at sprint altitude.
-- (truncated — read full SKILL.md for the rest)
+- DO NOT: skip the artifact download on a red build (evidence vanishes after the retention window), and never merge smoke and regression results into one pass-rate — their SLOs differ.
+- DO: inspect traces and screenshots with `/playwright-cli` (`[AUTOMATION_TOOL]`); it is the only browser path, no MCP backs it.
 
 **Read full SKILL.md when**: driving the CI commands, applying the GO/CAUTION/NO-GO scoring table, resolving a borderline classification, wiring the TMS artifacts, or writing the report.
 
@@ -651,7 +654,10 @@ Skills indexed: 26
 - WHEN a Jira-fallback path created the container without authenticated Xray: the Xray layer never registered the tests and runs come back empty. Reconcile with the per-entity sync (or the bulk repair scan) before importing results.
 - DO: import results onto an existing Execution key, never scoped to a project — the import API cannot set a parent, so a project-scoped import mints a fresh unparented Execution on every run, outside the artifact ladder.
 - DO NOT: hand-craft Xray JSON payloads outside this CLI, or reuse a bearer token past its 24h TTL. A stale token produces silent 401s mid-import that read like network blips.
-- (truncated — read full SKILL.md for the rest)
+- DO: dry-run any import or backup restore before applying. Both write irreversibly across hundreds of tests and runs.
+- WHEN moving between sites: restore in sync-by-key mode (GraphQL ids are re-assigned per site, keys are not), re-authenticate between export and restore because auth holds ONE site at a time, and finish with the Jira instance-migration flow — field ids are reassigned and an old id silently resolves to a different field.
+- DO NOT: push run results for TCs the ROI verdict marked terminal-Manual. It creates audit noise and breaks the Candidate / Manual / Deferred reporting.
+- WHEN Xray credentials are missing or broken: STOP per Critical Rule #10 — name `XRAY_CLIENT_ID` / `XRAY_CLIENT_SECRET`, point at `.env`, ask for a session restart. Nothing reaches the Xray GraphQL layer without them.
 
 **Read full SKILL.md when**: composing a specific command, wiring the canonical end-to-end Story flow, running backup/restore or a cross-site migration, or enriching the synced PBI cache.
 
