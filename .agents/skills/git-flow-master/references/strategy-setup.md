@@ -140,7 +140,7 @@ Once branches are materialized and decisions captured, persist in this order:
 1. **Write the `git_strategy:` block in `.agents/project.yaml`** (in place — create the block if absent; overwrite the relevant fields if it exists; preserve the rest of the file, which holds project identity + env config). NEVER write a separate file. Populate the fields that apply to the resolved strategy (all nested under `git_strategy`):
    - `strategy` — the resolved slug.
    - `branches` — `production` (release/default branch), `integration` (long-lived integration branch name or `null`), `ephemeral_pattern` (strategy-specific on-demand trunk pattern or `null`).
-   - `protected` — branches requiring explicit confirm before a direct push.
+   - `protected` — branches whose direct pushes are gated by `policy.direct_push_to_protected` (not always a confirm: `allowed` is standing authorization).
    - `decisions` — `promote_method` / `feature_merge` / `hotfix_policy`, each captured from Q1/Q2/Q3 or left `n/a` when the question does not apply.
    - `policy` — `direct_push_to_protected` / `admin_bypass` / `require_pr_reviews`, captured from Q4 (applies to every strategy; defaults are per-strategy).
    - `branch_prefixes` — `precedence` + naming patterns (carry the defaults unless the user overrides).

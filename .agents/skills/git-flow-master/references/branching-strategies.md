@@ -36,7 +36,7 @@ Eight strategies are supported. Each one tells the skill where new branches star
 
 **PR base**: `main` (when PRs are used at all — solo-main often skips PRs entirely).
 
-**Protected branches**: `main`. Confirm before any push.
+**Protected branches**: `main`. A direct push follows `git_strategy.policy.direct_push_to_protected` (`allowed` = push without asking, `confirm` = ask every push, `forbidden` = PR).
 
 **Release model**: continuous; every push is a release.
 
