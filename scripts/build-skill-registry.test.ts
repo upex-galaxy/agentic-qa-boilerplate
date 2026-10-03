@@ -6,7 +6,9 @@
  *
  * What they guard: the LOW-CONFIDENCE marker on Strategy-B blocks. It is the
  * only signal a subagent gets that the rules it was handed were scraped rather
- * than authored, and it is easy to lose in a render refactor.
+ * than authored, and it is easy to lose in a render refactor. And the
+ * no-truncation contract on an authored `## Compact Rules` section: a cap
+ * there once dropped the tail rules of three skills from every briefing.
  */
 
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
@@ -100,5 +102,27 @@ describe('build-skill-registry low-confidence marker', () => {
 
     expect(output).not.toContain(MARKER);
     expect(output).toContain('extraction strategy: A');
+  });
+});
+
+describe('build-skill-registry authored rules are never truncated', () => {
+  const rules = Array.from({ length: 20 }, (_, index) => `- DO: authored rule number ${index + 1}.`);
+
+  test('every bullet of a Compact Rules section longer than 15 reaches the registry', () => {
+    const output = render(fixture('rich-skill', ['## Compact Rules', '', ...rules].join('\n')));
+
+    expect(output).toContain('extraction strategy: A');
+    expect(output).toContain('- DO: authored rule number 16.');
+    expect(output).toContain('- DO: authored rule number 20.');
+    expect(output).not.toContain('(truncated');
+  });
+
+  test('the blind Strategy B scrape stays capped at 15 and says so', () => {
+    const output = render(fixture('long-scrape', ['## Notes', '', ...rules].join('\n')));
+
+    expect(output).toContain('extraction strategy: B');
+    expect(output).toContain('- DO: authored rule number 15.');
+    expect(output).not.toContain('- DO: authored rule number 16.');
+    expect(output).toContain('(truncated');
   });
 });

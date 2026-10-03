@@ -13,7 +13,9 @@
 6. **Report format** — what the subagent returns to the orchestrator. Either a JSON object with named fields, or a bullet list with explicit headings. Avoid free-form prose. For workflow-skill stage dispatches, append the mandatory session-footer fields (`skills_loaded`, `mcps_used`, `clis_used`, `testing_levels_touched`, `screenshots_captured`) per `agentic-qa-core/references/session-footer-contract.md` §Briefing snippet — the orchestrator unions them into ONE session-close footer. A dispatch that logs in, loads a state file, captures traffic (HAR, trace, network log) or dumps a database ALSO returns two session-material fields (`AGENTS.md` §3 "SESSION MATERIAL IN A DISPATCH"):
    - `secrets_materialized`: `none`, or the kinds and paths written (`storage state .auth/staging-admin.json`, `trace <evidence path>`), never the values.
    - `cleaned`: `yes` (nothing left outside `.auth/`), `kept-in-auth` (only the sanctioned store holds it), or `no (<reason>)`. The orchestrator treats `no` as a blocker and surfaces it; a missing field on such a dispatch counts as `no`.
-7. **Rules** — constraints (relevant Critical Rules from `AGENTS.md`, project-specific guardrails, Git rules, env-selection rules).
+7. **Rules** — constraints (relevant Critical Rules from `AGENTS.md`, project-specific guardrails, Git rules, env-selection rules). Two rules ride in component 7 of every dispatch they can bind (`AGENTS.md` §3 RULE REACHABILITY), because the executor never opens the reference that owns them:
+   - **Decisions** (any dispatch that can meet a fork or a question for a person): run `agentic-qa-core/references/decision-protocol.md` before asking. Follow what the record settles, decide a technical call inside the approved plan and report it as DECIDED with the option it beat, and escalate only the four kinds of §5 (product behaviour, a new security posture, an irreversible or outward action, what the stage's "The person signs" column lists). A subagent escalates to the orchestrator, never to the user directly.
+   - **Identity** (any dispatch that logs in, loads a state file or acts as a role): every role signs in through the app's own login only (UI form → `.auth/<env>-<role>.json`, or `bun run api:login --role <role>`). NEVER obtain a session through a service-role / admin key, an admin user-management API, a server-generated magic link or reset token, a locally signed JWT or a database session row; seeding test DATA through API / DB stays allowed. A check that seems to need a shortcut is a blocker to report. Canon: `agentic-qa-core/references/browser-sessions.md` §4.
 
 ## Filled template (skeleton)
 
@@ -50,6 +52,8 @@ Report format:
 Rules:
   - <Critical Rule reference>
   - <project guardrail>
+  - Decisions: decision-protocol.md before any question; technical calls inside the plan are decided and reported, only the four §5 kinds escalate (to the orchestrator).
+  - Identity (dispatch logs in or acts as a role): the app's own login only; never a service-role / admin key, admin user API, server-made magic link or reset token, locally signed JWT or DB session row (browser-sessions.md §4).
 ```
 
 > The `Project Standards (auto-resolved)` section is built by the orchestrator from `.agents/skills/REGISTRY.md` (see `agentic-qa-core/references/skill-resolver.md` for the protocol). The subagent treats those bullets as authoritative for the listed conventions and skips re-reading full SKILL.md files unless the briefing explicitly says otherwise.

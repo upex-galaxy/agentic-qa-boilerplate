@@ -367,6 +367,18 @@ Q3: Does the change have shared scaffolding (new types, new base classes, new sc
          A monolithic non-mechanical change without shared scaffolding is a planning smell.
 ```
 
+**Answering it is the deliverable, not the label.** Callers gate on this decision and reject a bare strategy name (`SKILL.md` Compact Rules, the chained-PR rule). Record each answer with the concrete reason drawn from THIS change, stop at the leaf, and return this three-line block:
+
+```
+Chain strategy: feature-branch-chain
+Decision trace: Q1=No (new fixture API and Page components, not a rename or formatter run) ·
+                Q2=No (the specs in slice 2 cannot compile without the fixture added in slice 1) ·
+                Q3=Yes (shared fixture + api/schemas types consumed by slices 2-4) → feature-branch-chain
+Decided by: /git-flow-master §Chained-PR decision tree (branching-strategies.md)
+```
+
+A `Yes` at Q1 ends the walk: write `Q2=n/a · Q3=n/a`; a `Yes` at Q2 writes `Q3=n/a`. Answers that do not lead to the stated leaf, or a "trace" that only repeats the conclusion, are malformed and count as no decision. A re-run (the real diff outgrew the estimate) replaces the whole block; it never appends a second leaf to the old trace.
+
 **Strategy outputs**:
 
 - `stacked-to-main` — 2 to 4 PRs, each branched off the strategy's default base. Each PR is self-contained; base always works after each merge.
