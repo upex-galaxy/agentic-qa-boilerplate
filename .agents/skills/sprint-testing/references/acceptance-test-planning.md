@@ -135,15 +135,22 @@ Triage decides whether the ticket deserves a full ATP. **Vetoes beat risk score.
 
 ### 0.0 Shift-Left short-circuit (check FIRST)
 
-Before running the veto + risk score, check whether the Story already passed through `/shift-left-testing`:
+Before running the veto + risk score, check whether the Story already passed through `/shift-left-testing`.
 
-1. Read the Story labels from the synced `story.md` (or a trivial `[ISSUE_TRACKER_TOOL]` lookup for labels only).
-2. Look for label `shift-left-reviewed` AND a dated label `shift-left-{YYYY-MM-DD}`.
-3. Parse the date. If `today - date < 30 days` AND the Story's description has not changed since that date → **short-circuit mode**. <!-- volatile-ok: `today` is the run date inside a formula -->
+This gate is **fail-closed** (`agentic-qa-core/references/orchestration-doctrine.md`, FAIL-CLOSED GATES). The labels only SAY a pre-sprint pass happened; the ATP body it published is the pass. So the default is the full flow, and short-circuit mode opens only when every row below holds, each with its evidence noted in the session:
+
+| Condition | Evidence to cite | When it is missing or doubtful |
+|---|---|---|
+| The Story carries `shift-left-reviewed` AND a dated `shift-left-{YYYY-MM-DD}` | the labels in the synced `story.md` | no Shift-Left pass: normal in-sprint flow, go to §0.1 |
+| The dated label is less than 30 days old | the date parsed from that label against the run date | full flow |
+| A pre-sprint ATP body exists in Jira | after `bun run jira:sync-issues get <STORY_KEY> --include-comments`: the synced `acceptance-test-plan.md` carries an ATP body (refined ACs, outline names). When that file is the "field not configured" stub, the body is the `## Acceptance Test Plan (ATP)` comment in the synced `comments.md` | full flow. A label with no body is a marker, not evidence |
+| The refined ACs still match the current Story description | the comparison done in the validation step below | full flow |
+
+Only `/shift-left-testing` produces this evidence. Stage 1 never adds the Shift-Left labels and never writes the ATP field before this check, so it cannot open its own gate.
 
 Short-circuit mode action:
 
-- SYNC then READ `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/acceptance-test-plan.md` — run `bun run jira:sync-issues get <STORY_KEY>` first so the file reflects Jira.
+- READ the ATP body cited above: `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/acceptance-test-plan.md` (or the fallback comment), from the sync just run, so it reflects Jira.
 
   > **Read the synced ATP, never a local scratch file.** Shift-Left wrote its refinement into the Jira `acceptance_test_plan` field (field-first — pre-sprint the ATP lives ONLY in that field; the Test Plan ITEM is born in THIS stage, find-or-created from the field), so `acceptance-test-plan.md` IS the pre-sprint refinement at this point in the flow. A local staging file under a gitignored path (such as `shift-left-refinement.md`) does not exist on a teammate's machine or in a fresh session, so a short-circuit that reads it silently degrades to a full re-run and the pre-sprint savings evaporate with no error. Jira is the only copy every session can reach.
 
@@ -152,9 +159,7 @@ Short-circuit mode action:
 - ALSO continue with Phase 5 (test-data generation strategy + Faker recipes) — also skipped pre-sprint.
 - The ATP authored here is a SUPERSET of the pre-sprint body, written back to the SAME `acceptance_test_plan` field AND into the Test Plan item this stage finds-or-creates FROM that field (pre-sprint there is no item — shift-left is field-first by design). One ATP per Story: the in-sprint version supersedes the pre-sprint one by design, and the `shift-left-{YYYY-MM-DD}` label records when the early pass happened.
 
-If validation fails (refined ACs no longer match the current Story OR the dated label is >30 days old OR `acceptance-test-plan.md` is empty after the sync), fall through to the standard Phase 0 below — run veto + risk + Phases 1-3 again. Re-running is cheaper than acting on stale refinement.
-
-If the Story has NO `shift-left-reviewed` label, this is normal in-sprint flow — proceed to §0.1.
+If any row of the table fails, or its evidence cannot be cited (refined ACs no longer match the current Story, the dated label is 30 days old or more, no ATP body after the sync), fall through to the standard Phase 0 below: run veto + risk + Phases 1-3 again. Re-running is cheaper than acting on stale or missing refinement.
 
 ### 0.1 Veto table
 
