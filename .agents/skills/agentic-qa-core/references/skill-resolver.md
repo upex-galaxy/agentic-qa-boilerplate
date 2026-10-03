@@ -13,7 +13,7 @@ Net effect:
 - Token cost per dispatch drops by an order of magnitude when multiple skills overlap.
 - Orchestration stays auditable — the rules pasted into a briefing are the same rules the orchestrator itself read.
 
-This is a token-saving protocol, not a behavioral one. Subagents are still allowed to read the full SKILL.md when the compact rules are insufficient (see "Limits" below).
+The protocol saves tokens, and it is also the only channel through which a skill's rules reach an executor: a subagent or worker reads its briefing and the files the briefing names, never a skill's `references/` on its own. So a rule meant to BIND an executor is a compact rule (and a component-7 line), not only a reference paragraph: `AGENTS.md` §3 "RULE REACHABILITY", full text in `./orchestration-doctrine.md`. Subagents may still read the full SKILL.md when the compact rules are insufficient (see "Limits" below).
 
 ---
 

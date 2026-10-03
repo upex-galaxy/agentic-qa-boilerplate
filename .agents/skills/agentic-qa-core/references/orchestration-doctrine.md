@@ -43,6 +43,25 @@ The conductor keeps using SUBAGENTS for its own reads and verifications — that
 | Background | Long-running | Test suite + plan next ticket |
 | Single | Simple task | One file edit + verification |
 
+**VALUE PROVENANCE**: Rule #11 (scripts come from `package.json`) holds for EVERY project value. A claim about this project's configuration (an env URL, a Jira field id or transition slug, a git policy, a `playwright.config.ts` setting, a TMS modality) names the file it was read from, in the same turn. A value seen in a skill reference, a template, a worked example or another project's file is illustrative: never report it, brief it or test against it as this project's state. This is what keeps an orchestrator from briefing a worker with the example yaml of a reference instead of the project's own; it composes with Rule #16 (verify at the destination) and Rule #17 (prose names the source).
+
+**RULE REACHABILITY**: an executor sees its briefing, the compact rules the resolver pasted into it, and the files the briefing names. It does NOT browse `references/`. A rule that must BIND the executor (a prohibition, a gate, a credential or evidence duty, a cleanup duty) therefore lives in all three places:
+
+| Where | Why |
+|---|---|
+| owning `references/*.md` | the full text, with its reason and its edge cases |
+| owning `SKILL.md` `## Compact Rules` | `bun run skills:registry` copies it into `REGISTRY.md`, so the resolver can paste it into a briefing (`./skill-resolver.md`) |
+| component 7 (Rules) of the briefing | the dispatch that can trigger it carries it, even when its skill is not in component 3 |
+
+A rule that exists only in a reference is documentation, not a constraint: the executor that needed it never read it. A new skill proves this at creation (`./skill-scaffold.md` §5).
+
+**SESSION MATERIAL IN A DISPATCH**: QA logs in on purpose (several roles, several environments), so it does not ban session material from disk: its sanctioned store is `.auth/`, gitignored, `chmod 600`, one writer per fleet (`./browser-sessions.md` §3, §7; tokens: `./api-testing-doctrine.md`). What the contract adds is accountability per dispatch:
+
+- A dispatch that logs in, loads a state file, captures traffic (HAR, trace, network log) or dumps a database returns `secrets_materialized` and `cleaned` in its report (field values: `./briefing-template.md` component 6).
+- Material written anywhere but `.auth/` (the session scratch, the evidence folder, the repo tree, a temp dir) is deleted before the report, or the report says `cleaned: no` with the reason, and the orchestrator surfaces that as a blocker.
+- Material is never echoed into a report, plan, commit, PR or tracker comment.
+- A trace or HAR attached as evidence is scrubbed first (`./evidence-conventions.md` §1): a Playwright trace carries request headers, cookies, storage and every typed value.
+
 **ERROR PROTOCOL**: On subagent error → STOP, report full context, DO NOT fix without approval, offer retry/skip/abort.
 
 **WORKFLOW SKILL COMPLIANCE**: every skill marked `metadata.stage_owner: true` in its frontmatter MUST have a `## Subagent Dispatch Strategy` section using the 7-component briefing. Every other skill (reference / utility / generator) is EXEMPT (no dispatch table needed); the split mirrors `AGENTS.md` §3.
