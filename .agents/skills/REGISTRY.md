@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-10-03T02:01:32.635Z`
+> Generated: `2026-10-03T02:06:11.827Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -51,6 +51,7 @@ Skills indexed: 26
 - WHEN filing any bug / defect / improvement: `references/defect-management-doctrine.md` is mandatory reading first.
 - WHEN dispatching a subagent: use the 7-component briefing in `references/briefing-template.md` and pick the pattern via `references/dispatch-patterns.md`. A subagent that must answer the user directly also loads `references/behavioral-layer.md` — it inherits no register from the orchestrator.
 - WHEN closing a workflow stage: verify that stage's Definition of Done in `references/stage-gates.md` BEFORE advancing.
+- WHEN about to ask a person to decide, or to pick between defensible options: run `references/decision-protocol.md` first. Search the record (session plan, `.session/decisions/`, ADRs, the synced ticket comments, Engram) and follow what is settled; decide a technical call inside the approved plan and report it as decided; escalate only product behaviour, a new security posture, an irreversible or outward action, and what the stage's "The person signs" column lists. An unattended routine parks those four, never assumes them.
 - DO edit the owning skill's `references/*.md` when a rule changes, then run `bun run skills:registry`, then refresh the deck under `packages/decks/agentic-qa-core/`. That order keeps prose, registry, and decks from drifting.
 - DO treat this boilerplate as clone-in-full. Copying a single skill directory in isolation leaves it without the foundation files it depends on, and it will not function.
 
