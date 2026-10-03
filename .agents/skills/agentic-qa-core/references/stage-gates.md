@@ -107,6 +107,11 @@ approval to advance, while any CAUTION or NO-GO is signed by a person.
 Read the table with the DoD checklist of the same stage, not instead of it: the
 DoD is the exit bar, the contract is the operating licence.
 
+The "The person signs" column is also the fourth escalation kind of
+`decision-protocol.md` §5: what it lists for the running stage goes to a person,
+and a technical call inside the approved plan that it does not list is the
+agent's, decided and reported. The protocol changes no Autonomy value.
+
 ### Feedforward and feedback
 
 Every stage is governed on two paths. A stage with only one of them is not
