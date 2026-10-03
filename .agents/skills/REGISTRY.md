@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-10-03T02:14:52.403Z`
+> Generated: `2026-10-03T02:19:39.118Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -448,7 +448,7 @@ Skills indexed: 26
 - DO: clear the readiness preflight before triggering anything — `gh` authenticated, the suite's workflow file present, GitHub Actions secrets set, Allure resolvable, active env confirmed. A long run that 401s mid-way is the expensive failure.
 - DO: persist `RUN_ID` the moment the trigger returns, before anything else. Resume re-attaches to a live run instead of re-triggering CI; a trigger that landed without the id saved costs the whole run again.
 - DO NOT: mark a failure REGRESSION without checking its history first — the single most common misclassification. A first-ever failure with no history is NEW TEST, unverified, not a regression.
-- DO: classify every failure into exactly one of KNOWN-BLOCKED / KNOWN ISSUE / ENVIRONMENT / NEW TEST / FLAKY / REGRESSION, and assess severity on a separate axis — a FLAKY test on checkout is still CRITICAL.
+- DO: classify every failure into exactly one of KNOWN-BLOCKED / KNOWN ISSUE / ENVIRONMENT / NEW TEST / FLAKY / REGRESSION, and assess severity on a separate axis — a FLAKY test on checkout is still CRITICAL. Classification is fail-closed: every class but REGRESSION cites its evidence (the `@blocked:{BUG-KEY}` marker; a ticket created BEFORE the run; the matching log line plus the other failures on that host; the empty history query; the ids and results of at least 5 runs on an unchanged build). No citation, or a ticket this session filed, = REGRESSION.
 - DO: exclude `@blocked:{BUG-KEY}` tests from the gating pass-rate and report their count with each blocking key. They are parked behind an already-filed bug: never REGRESSION, and never a new bug.
 - DO NOT: use ENVIRONMENT as a scapegoat. Many unrelated tests failing on one host is environment; one test failing on an endpoint other tests reach fine is more likely a REGRESSION.
 - DO NOT: call a test flaky on fewer than 5 runs of history — mark "insufficient history" and re-evaluate rather than guessing.
@@ -537,6 +537,7 @@ Skills indexed: 26
 - Three stages, always in order: Stage 1 Planning → Stage 2 Execution → Stage 3 Reporting. Hand off Stages 4/5/6 to `test-documentation` / `test-automation` / `regression-testing`.
 - Jira is source of truth. Read tickets via `bun run jira:sync-issues get <KEY> --include-comments`, then the synced `.md`. NEVER `acli workitem view` for custom fields (returns `null`).
 - Bugs run the veto + triage + risk-score decision tree BEFORE any ATP is written.
+- Stage 1's Shift-Left short-circuit is fail-closed: the `shift-left-reviewed` + dated labels alone run the FULL flow. Phases 1-3 are skipped only on cited evidence: a pre-sprint ATP body in the synced `acceptance-test-plan.md` (or its `## Acceptance Test Plan (ATP)` fallback comment), a dated label under 30 days old, refined ACs that still match the Story. Stage 1 never writes those labels or that field before the check (`references/acceptance-test-planning.md` §0.0).
 - Execution = smoke pass first, then trifuerza (UI/API/DB) exploration; capture evidence under the PBI folder.
 - API testing = three-tool maneuver: OpenAPI MCP for schema (READ-ONLY) → `bun run api:login` for the token (→ `.auth/tokens.env`) → **curl** for authenticated requests. NEVER execute via the OpenAPI MCP. Canon: `agentic-qa-core/references/api-testing-doctrine.md`.
 - Every role signs in through the app's own login only (UI form → `.auth/<env>-<role>.json`, or `bun run api:login --role <role>`). NEVER obtain a session through a service-role / admin key, an admin user-management API, a server-generated magic link or reset token, a locally signed JWT or a database session row; seeding test DATA through API / DB stays allowed. An auth story runs end to end through a real inbox (`/resend-cli`); `production` = dedicated synthetic QA accounts only. A check that seems to need a shortcut is a blocker to report. Canon: `agentic-qa-core/references/browser-sessions.md` §4.

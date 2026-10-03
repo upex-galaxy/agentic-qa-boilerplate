@@ -38,7 +38,7 @@ Three phases, always in this order: **Execute → Analyze → Report**. Do not s
 - DO: clear the readiness preflight before triggering anything — `gh` authenticated, the suite's workflow file present, GitHub Actions secrets set, Allure resolvable, active env confirmed. A long run that 401s mid-way is the expensive failure.
 - DO: persist `RUN_ID` the moment the trigger returns, before anything else. Resume re-attaches to a live run instead of re-triggering CI; a trigger that landed without the id saved costs the whole run again.
 - DO NOT: mark a failure REGRESSION without checking its history first — the single most common misclassification. A first-ever failure with no history is NEW TEST, unverified, not a regression.
-- DO: classify every failure into exactly one of KNOWN-BLOCKED / KNOWN ISSUE / ENVIRONMENT / NEW TEST / FLAKY / REGRESSION, and assess severity on a separate axis — a FLAKY test on checkout is still CRITICAL.
+- DO: classify every failure into exactly one of KNOWN-BLOCKED / KNOWN ISSUE / ENVIRONMENT / NEW TEST / FLAKY / REGRESSION, and assess severity on a separate axis — a FLAKY test on checkout is still CRITICAL. Classification is fail-closed: every class but REGRESSION cites its evidence (the `@blocked:{BUG-KEY}` marker; a ticket created BEFORE the run; the matching log line plus the other failures on that host; the empty history query; the ids and results of at least 5 runs on an unchanged build). No citation, or a ticket this session filed, = REGRESSION.
 - DO: exclude `@blocked:{BUG-KEY}` tests from the gating pass-rate and report their count with each blocking key. They are parked behind an already-filed bug: never REGRESSION, and never a new bug.
 - DO NOT: use ENVIRONMENT as a scapegoat. Many unrelated tests failing on one host is environment; one test failing on an endpoint other tests reach fine is more likely a REGRESSION.
 - DO NOT: call a test flaky on fewer than 5 runs of history — mark "insufficient history" and re-evaluate rather than guessing.
@@ -369,14 +369,16 @@ Failed test
   └── Passed in last ≤ 5 runs, now fails? ───► REGRESSION   (release blocker)
 ```
 
-| Category | Impact | Action |
-|----------|--------|--------|
-| KNOWN-BLOCKED | LOW | Already tracked by `{BUG-KEY}` — exclude from gating pass-rate, list in report with the blocking bug key. **No new Jira bug** (the marker already names the open bug) |
-| REGRESSION | HIGH | Block release, file Jira Bug/Defect (Phase 3 §File defects in Jira, doctrine Part 1), assign |
-| FLAKY | MEDIUM | Schedule stabilization, do not block — **no Jira bug** |
-| KNOWN ISSUE | LOW | Document against existing ticket, do not block — **no new Jira bug** |
-| ENVIRONMENT | MEDIUM | Re-run after infra check — **no Jira bug** |
-| NEW TEST | LOW | Manual verification → if a genuine product defect, file Jira Bug/Defect; else accept or fix |
+| Category | Impact | Action | Evidence the classification must cite |
+|----------|--------|--------|------|
+| KNOWN-BLOCKED | LOW | Already tracked by `{BUG-KEY}` — exclude from gating pass-rate, list in report with the blocking bug key. **No new Jira bug** (the marker already names the open bug) | the `@blocked:{BUG-KEY}` tag in the spec and its bug key |
+| REGRESSION | HIGH | Block release, file Jira Bug/Defect (Phase 3 §File defects in Jira, doctrine Part 1), assign | none: it is the closed value |
+| FLAKY | MEDIUM | Schedule stabilization, do not block — **no Jira bug** | the run ids and results of at least 5 runs, and the build each ran on (unchanged across them) |
+| KNOWN ISSUE | LOW | Document against existing ticket, do not block — **no new Jira bug** | the ticket key, created before this run started, that names the ATC ID or test title |
+| ENVIRONMENT | MEDIUM | Re-run after infra check — **no Jira bug** | the log line matching an environment pattern, plus the other tests that failed on the same host in the same run |
+| NEW TEST | LOW | Manual verification → if a genuine product defect, file Jira Bug/Defect; else accept or fix | the history query (Allure history, TMS runs) that returned no earlier execution |
+
+**Classification is a fail-closed gate** (`agentic-qa-core/references/orchestration-doctrine.md`, FAIL-CLOSED GATES). Every class except REGRESSION lets a failure past the release gate, and the classifier is the one who picks it, so a non-blocking class stands only with its citation from the last column. No citation, an empty one, or a ticket this session filed to make the failure "known" → the failure counts as REGRESSION. The same holds for a parallel chunk: a classification returned without its `evidence` is merged as REGRESSION (`references/failure-classification.md` §Parallel classification).
 
 > **KNOWN-BLOCKED — consuming the blocked-test marker.** The `@blocked:{BUG-KEY}`
 > tag + `test.fail('Blocked by {BUG-KEY}')` marker is **defined in
