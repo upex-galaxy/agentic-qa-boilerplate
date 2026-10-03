@@ -103,6 +103,39 @@ This step is NON-BLOCKING:
 | Issue-tracker unavailable | Log warning, note "Comments not loaded", continue |
 | Step 1 failed entirely | Skip Step 1b, continue to Step 2 |
 
+### Step 1c — Deploy check (the deployed environment is truth, the tracker is a hint)
+
+Step 0 proved the environment answers. This step proves it runs the change under test. A status of
+{{jira.status.story.ready_for_qa}} says someone moved the ticket; it does not say the build on the
+active environment contains the merge. Testing a build without the change produces failures that get
+filed as defects against code that was never deployed, or passes that prove nothing about the ticket.
+For a Bug, the change is the FIX: the same check applies before retesting it.
+
+Gather two values, read-only:
+
+1. **The change's merge commit.** The PR linked from the ticket: the development panel, a remote
+   link, or a PR URL in the synced `comments.md`. Several PRs → every one of them.
+2. **The build the active environment runs.** Whatever the environment itself reports first (a
+   version or health endpoint, a response header, the build id in the app footer, a testability page
+   when the SUT exposes one); else the deploy record for that environment (the CI deploy job or the
+   hosting platform's deployment, with its commit). Where this project exposes it is the
+   `infra-context` map (`bun run context:map infra-context`); never a value copied from another
+   project.
+
+Compare them in the SUT repository: `git merge-base --is-ancestor <merge> <deployed>` in a clone
+(exit 0 = contained), or `gh api repos/<owner>/<repo>/compare/<merge>...<deployed> --jq .status`
+(`ahead` or `identical` = contained). Then one verdict:
+
+| Verdict | What happens |
+|---|---|
+| **CONTAINED** | continue. Record the deployed build id in `test-session-memory.md` §Environment; Stage 3 carries it into the ATR's environment line |
+| **NOT CONTAINED** | STOP before any ATP or Jira write. Surface it to the user with both ids: the tracker says ready, the environment does not have it. Never test it and never file a defect against the feature, because the feature is not there. The ticket is not testable yet |
+| **UNVERIFIED** (no build id exposed, or no merge linked) | do not block. Say which value was missing, record `deploy: UNVERIFIED (<what was missing>)` in `test-session-memory.md` §Environment, and include it in Step 2's explanation. Stage 2's smoke test becomes the first evidence: a smoke failure in this state is triaged as "not deployed?" before it is filed as a defect |
+
+A worker in a fleet reports the verdict in its stage report. An unattended routine that selects
+Stories for testing runs this check BEFORE opening a worker: `orca-orchestration/references/automations.md`
+§2.5.
+
 ### Step 2 — Explain the story to the user (REQUIRED, then WAIT)
 
 Stop and explain the story to the user. Provide a brief, easy-to-understand summary:
@@ -298,7 +331,7 @@ Context loaded / Code explored / Environment
 | Ticket not found | Verify ID, check the issue tracker |
 | Env unreachable (404/410/5xx on root, dead deployment) | STOP at Step 0, surface to user, do NOT author an ATP; offer a session env override (Step 6b) |
 | Inbox send-only (email/auth story) | STOP at Step 0, surface to user; cannot complete magic-link flow without a receiving inbox |
-| Ticket not ready for testing | Wait for deployment |
+| Ticket not ready for testing, or Step 1c verdict NOT CONTAINED | Wait for deployment; surface both build ids to the user |
 | No ACs defined | Request ACs before testing |
 | No test data found | Expand query, ask user for alternatives |
 | Code not found | Search with alternative terms |
@@ -336,7 +369,7 @@ After Session Start, run Stages 1 -> 2 -> 3 for the story. Then hand off to Stag
 
 - [ ] Session Start executed.
 - [ ] Story is "{{jira.status.story.ready_for_qa}}".
-- [ ] Feature deployed to the active env (`{{WEB_URL}}` / `{{API_URL}}`).
+- [ ] Feature deployed to the active env (`{{WEB_URL}}` / `{{API_URL}}`): Step 1c verdict CONTAINED, or UNVERIFIED and stated.
 - [ ] Project context files loaded.
 
 ### Stage 1 — Planning (overview)
@@ -478,7 +511,7 @@ After Session Start, run Phase 1 -> Phase 2 -> Phase 3. Bugs use the same PBI fo
 
 | Ticket Status | Use this workflow? |
 |---------------|-------------------|
-| Deployed to staging | Yes — ready to retest |
+| Fix deployed to the active env (Step 1c verdict CONTAINED, or UNVERIFIED and stated) | Yes — ready to retest |
 | In Progress / Dev Complete (not yet {{jira.status.story.ready_for_qa}}) | No — wait for deployment |
 | Already tested | No — already verified |
 
