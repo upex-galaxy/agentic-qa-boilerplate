@@ -500,6 +500,7 @@ Rules:
   - Do NOT file the bug in the issue tracker yet — Stage 3 handles filing per the bug-report template in reporting-templates.md.
   - Do NOT modify production data; for write-side checks use staging entities flagged in the ATP.
   - Critical Rule #1 (Login Credentials): credentials always from .env; never hardcode.
+  - Identity: every role signs in through the app's own login only (UI form → `.auth/<env>-<role>.json`, or `bun run api:login --role <role>`). NEVER obtain a session through a service-role / admin key, an admin user-management API, a server-generated magic link or reset token, a locally signed JWT or a database session row; seeding test DATA through API / DB stays allowed. An auth story runs end to end through a real inbox (`/resend-cli`). A check that seems to need a shortcut is a blocker to report, not a step to take (`agentic-qa-core/references/browser-sessions.md` §4).
   - A blocking finding (env down, auth failure, infra issue, data corruption, security-exploitable) STOPS the pass — surface to orchestrator, do NOT auto-retry. A non-blocking finding does NOT stop the pass — log it, finish the remaining TCs, and report it at the end (set pass_completed=true).
 ```
 
