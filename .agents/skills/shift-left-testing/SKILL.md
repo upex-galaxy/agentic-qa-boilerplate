@@ -56,7 +56,7 @@ The skill is **batch-by-design**: one session refines N Stories from the backlog
 | Execution | Smoke + UI / API / DB exploration | NONE — feature does not exist yet |
 | Code reads | Deep, targeted (reproduce / verify) | Light (feasibility only — does the codebase support this?) |
 | TC creation | Yes, per the modality (see `/sprint-testing` §"TC creation timing") | No — `/sprint-testing` or Stage 4 (`test-documentation`) creates them, per the modality |
-| Sprint-testing later | Runs full pipeline | Short-circuits Phases 1-3 (label `shift-left-reviewed` detected) and just validates |
+| Sprint-testing later | Runs full pipeline | Short-circuits Phases 1-3 and just validates, only when the synced ATP body this skill published is present (the labels alone never open it, `sprint-testing/references/acceptance-test-planning.md` §0.0) |
 
 The reuse story is **deliberate**: most of the refinement logic already lives in `sprint-testing/references/acceptance-test-planning.md` Phases 1-3. This skill cites that reference instead of duplicating it — see Phase 2 below.
 
@@ -174,8 +174,9 @@ Phase 3 — Handoff
 
 ---> Cross-skill handoff (NOT this skill):
        When each Story later reaches Ready For QA:
-         /sprint-testing reads label `shift-left-reviewed` and short-circuits
-         Phases 1-3 to validation-only (sprint-testing/references/acceptance-test-planning.md §Phase 0).
+         /sprint-testing short-circuits Phases 1-3 to validation-only ONLY on
+         evidence: fresh `shift-left-*` labels AND the synced ATP body this skill
+         published (sprint-testing/references/acceptance-test-planning.md §0.0, fail-closed).
          Stage 1 ALSO creates the Test Plan item (`ATP: {STORY-KEY}: {title}`)
          FROM the {{jira.acceptance_test_plan}} field content — the item is
          in-sprint work, never pre-sprint.
@@ -415,7 +416,7 @@ Contents (see `references/handoff-protocol.md` §Batch report template):
 - Risk distribution chart (LOW / MEDIUM / HIGH counts)
 - Blockers (Stories that surfaced data feasibility gaps — flagged for PO before sprint planning)
 - Recommended sprint-planning order (by risk + dependency)
-- Cross-skill pointer: "When each Story reaches Ready For QA, run `/sprint-testing` — it will short-circuit Phases 1-3 thanks to the `shift-left-reviewed` label."
+- Cross-skill pointer: "When each Story reaches Ready For QA, run `/sprint-testing` — it short-circuits Phases 1-3 when it finds the ATP body published here in the synced `acceptance-test-plan.md` (the labels alone do not open it)."
 
 If all Stories in the batch share a single parent epic, ALSO post the batch report as a comment on that epic. Otherwise, deliver inline to the user as the session-closing message.
 
@@ -434,7 +435,7 @@ After the batch report lands, append the final progress entry `## Phase 3 — Ha
 7. **No execution.** This skill does not run smoke, does not query DBs for data presence, does not run the app. Feasibility is established by READING code + APIs + DB schema only.
 8. **Sequential Phase 2.** One refinement subagent at a time, even if the user is impatient. Parallelism would prevent per-Story user OK and break the grooming cadence.
 9. **Transition guardrail.** Never advance beyond `{{jira.status.story.estimation}}`. PO/Dev lead owns `estimate -> ready_for_dev`. If a Story is already past `estimation` when the session starts, log a warning and SKIP the transition step — refinement still lands on Jira, but the workflow stays untouched.
-10. **Label hygiene.** Always add BOTH `shift-left-reviewed` AND `shift-left-{{YYYY-MM-DD}}`. The dated label lets `/sprint-testing` decide whether the refinement is still fresh (<30 days) and short-circuit, or whether to redo Phases 1-3.
+10. **Label hygiene.** Always add BOTH `shift-left-reviewed` AND `shift-left-{{YYYY-MM-DD}}`. The dated label lets `/sprint-testing` decide whether the refinement is still fresh (<30 days); the short-circuit itself opens only on the published ATP body (`sprint-testing/references/acceptance-test-planning.md` §0.0), so a label without that body still means a full Phases 1-3 run.
 11. **Jira is canonical.** No git commit, no test branch. Local `shift-left-refinement.md` is a working artifact — gitignored under `.context/PBI/**`. The populated `{{jira.acceptance_test_plan}}` field (or its `## Acceptance Test Plan (ATP)` fallback comment when the field is absent) is the contract `test-documentation` mode `repair-traceability` checks later.
 12. **Language**: artifacts + Jira content always English. Mirror the user's language only in conversation (per AGENTS.md §1 Rule #14).
 13. **Session-footer contract (mandatory at close).** The final phase is not done until the two chat-facing blocks from `../agentic-qa-core/references/session-footer-contract.md` are printed: (1) consolidated screenshot list — repo-relative paths, verified on disk, bug annotations first — plus in-flow surfacing of every capture's path the instant it lands; (2) Session Footer listing skills/MCPs/CLIs actually used + testing levels touched, with explicit "none" entries for expected-but-untouched levels. Framing for this skill: execution. Multi-subagent sessions: each stage report carries the five footer fields (`skills_loaded`, `mcps_used`, `clis_used`, `testing_levels_touched`, `screenshots_captured`); the orchestrator compiles the footer ONCE at close. Chat only — never in a Jira comment or ATR body. Lessons noticed during the session are PROPOSED to `.session/<skill-slug>/<scope>/refinements.md` and never applied to a live skill, per `../agentic-qa-core/references/skill-refinement-protocol.md`; the footer's `Refinements proposed:` line counts them.
@@ -446,7 +447,7 @@ After the batch report lands, append the final progress entry `## Phase 3 — Ha
 
 **L1.** NEVER force ambiguity questions onto a Story to fill a checklist — raise PO/Dev questions ONLY when a genuine gap, ambiguity, or untestable AC exists. Per AGENTS.md §1 Rule #4: shift-left adds value by surfacing real risk, not by inflating question counts. A clean Story exits with an empty question list and that is a valid outcome.
 
-**L2.** NEVER skip the `shift-left-reviewed` label when transitioning a Story out of Phase 3. `/sprint-testing` Phase 0 inspects that label to short-circuit Phases 1-3 of in-sprint planning; missing the label forces redundant work later and breaks the cadence this skill exists to enable.
+**L2.** NEVER skip the `shift-left-reviewed` label when transitioning a Story out of Phase 3. `/sprint-testing` Phase 0 requires that label (with its dated twin) AND the ATP body published to Jira before it short-circuits Phases 1-3 (`sprint-testing/references/acceptance-test-planning.md` §0.0); missing either forces redundant work later and breaks the cadence this skill exists to enable.
 
 **L3.** NEVER mix Story refinement with bug retest in the same batch. `/shift-left-testing` accepts Stories only (Phase 1 type filter is a hard reject). Bugs are reactive — they have no upstream ACs to refine and belong to `/sprint-testing` instead.
 
@@ -467,7 +468,7 @@ After the batch report lands, append the final progress entry `## Phase 3 — Ha
 | After Phase 3 you need... | Load this skill / command | Reason |
 |---------------------------|---------------------------|--------|
 | Wait for Dev to estimate + commit the Story into a sprint | (manual / PO) | This skill stops at `{{jira.status.story.estimation}}`. PO + Dev lead drive `estimate -> ready_for_dev` and sprint commitment. |
-| In-sprint manual QA once the Story reaches `Ready For QA` | `/sprint-testing` | Will detect label `shift-left-reviewed`, validate the refinement is still fresh, short-circuit Phases 1-3, and run Phases 4-8 + Stages 2 + 3 normally. Stage 1 also creates the Test Plan ITEM from the `{{jira.acceptance_test_plan}}` field this skill populated. |
+| In-sprint manual QA once the Story reaches `Ready For QA` | `/sprint-testing` | Will check the `shift-left-*` labels are fresh AND that the synced ATP body this skill published exists (fail-closed, `sprint-testing/references/acceptance-test-planning.md` §0.0), short-circuit Phases 1-3 only then, and run Phases 4-8 + Stages 2 + 3 normally. Stage 1 also creates the Test Plan ITEM from the `{{jira.acceptance_test_plan}}` field this skill populated. |
 | Formal TC creation + ROI scoring after Story ships | `/test-documentation` | Stage 4 turns the outlines + refined ACs into formal Xray TCs (Modality jira-xray) or Jira Test issues (Modality jira-native) with ROI scoring. |
 | Automated test code | `/test-automation` | Stage 5. |
 | Regression suite execution | `/regression-testing` | Stage 6. |
@@ -527,5 +528,5 @@ All references are self-contained. Load one at a time.
 - [ ] Batch report written + posted to parent epic (if applicable)
 - [ ] Archive: `.session/shift-left-testing/<batch-id>/` moved to `.session/.archive/<YYYY-MM-DD>-shift-left-testing-<batch-id>/` and `mem_session_summary` called
 - [ ] No git commit (Jira is canonical for this skill)
-- [ ] User informed: when each Story reaches `Ready For QA`, run `/sprint-testing` (will short-circuit thanks to `shift-left-reviewed`)
+- [ ] User informed: when each Story reaches `Ready For QA`, run `/sprint-testing` (it short-circuits on the published ATP body, not on the label alone)
 - [ ] Session footer + consolidated screenshot list printed in chat per session-footer-contract (never in a Jira comment)

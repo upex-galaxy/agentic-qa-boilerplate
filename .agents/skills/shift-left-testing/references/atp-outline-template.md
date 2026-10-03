@@ -240,7 +240,7 @@ If Partial / No, list issues:
 - [ ] PO answers Critical Questions before sprint planning
 - [ ] Dev answers Technical Questions before estimation
 - [ ] Story enters sprint at status `{{jira.status.story.ready_for_dev}}` once estimated
-- [ ] When Story reaches `{{jira.status.story.ready_for_qa}}`, `/sprint-testing` will short-circuit refinement (label `shift-left-reviewed` detected)
+- [ ] When Story reaches `{{jira.status.story.ready_for_qa}}`, `/sprint-testing` will short-circuit refinement on this published ATP body plus the fresh `shift-left-*` labels (never on the label alone)
 ```
 
 ---
