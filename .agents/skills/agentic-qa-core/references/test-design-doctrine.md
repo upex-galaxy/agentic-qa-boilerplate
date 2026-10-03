@@ -187,6 +187,25 @@ huge payloads, Unicode/emoji, expired token, clock skew, network drop. Frame
 exploration as a **charter** (a time-boxed mission against a specific risk area),
 not aimless clicking. Charters complement — never replace — the systematic cases.
 
+#### Trigger: a state the test seeds but the product may never produce
+
+**When it fires**: a case's precondition is put in place by a shortcut (an API call, a DB seed, a
+fixture row, an admin edit) instead of the product flow that creates it in real use, AND the screen
+or report under test DERIVES something from it: a badge, a status, a total, a counter, a filter
+result.
+
+**The risk**: the case reads a field that only the seed ever writes. The test passes on seeded data
+while in real use nothing fills that field, so the feature is dead in production under a green
+suite: a counter stuck at zero, a status nobody can reach, an AC that cannot be satisfied. Naming the
+field in the AC, the ticket or a decision comment is not evidence that any user action or background
+job writes it.
+
+**Required case**: at least one case produces that state through the real path (the user action,
+the lifecycle step, the scheduled job that sets it in production) and then asserts the derived
+value. Seeded cases stay; they are fast and they cover the variants. When no real path exists in the
+target environment, the case is `BLOCKED — unreachable precondition` with what it would take, per
+the section below, and the gap itself may be the report worth filing.
+
 ### Unreachable preconditions — the empty state on a shared, long-lived account
 
 A derived case is only real if the environment can be put into the state it needs. The
@@ -296,6 +315,9 @@ a justified N/A) to each is not done.
          first-time / zero-quota states either have a fixture identity or are
          declared `BLOCKED — unreachable precondition` with what it would take?
          (or N/A: no case needs a state the environment cannot produce)
+[ ] SEED A derived value read from seeded state → at least one case produces that
+         state through the real product path and asserts the value?
+         (or N/A: every precondition comes from the product flow itself)
 ```
 
 **N/A is a valid answer — but it must be a deliberate, stated N/A, not a skipped
