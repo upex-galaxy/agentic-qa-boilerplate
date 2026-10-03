@@ -91,6 +91,27 @@ playwright-cli -s=<KEY> goto <app url>
 
 A ticket that needs two roles opens two sessions (`-s=<KEY>-admin`, `-s=<KEY>-member`), each loading its own file. A login page after `goto` means the state expired: regenerate the file through its producer, never log in inside the exploration session itself.
 
+### Only the real login produces a session
+
+Testing as an admin, a seller or a guest is normal QA work, and each of those roles gets its session the way a real user of that role would: the application's login form (the producers above) or its public authentication endpoint (`bun run api:login`, `api-testing-doctrine.md`). Login, MFA, account status and role claims are part of the system under test. A session that skipped them yields results about a user nobody can be, which is the same false PASS as testing under the wrong role.
+
+So these are never used to OBTAIN or ASSUME a session, in any environment, for any role:
+
+- a privileged backend credential: a service-role or secret API key, an admin SDK, a superuser database role;
+- an admin or user-management API used to look up, create, reset or impersonate the account the test runs as;
+- an out-of-band login artifact: a magic link or reset token generated server-side, a JWT signed locally, a session or refresh-token row written into the database, a cookie built by hand.
+
+What stays allowed, and why it is different:
+
+| Situation | Rule |
+|---|---|
+| Seeding TEST DATA (rows, fixtures, an order to look at) through the API or the database | Allowed: it shapes the scenario, not the identity running it (`db-testing-doctrine.md`). |
+| The story under test IS the auth flow (magic link, password reset, invite, email verification) | Run it end to end: trigger it from the app and open the link from a real inbox with `/resend-cli` (the "Email (`resend`)" row of `preflight-gate.md`). Generating the link server-side skips exactly what the story asks you to test. |
+| `production` | Only a dedicated synthetic QA account per role, provisioned for testing. Never a real customer's account, a staff account or the owner's own login (`preflight-gate.md`, "User roles" row). |
+| The KATA suite's setup minting sessions for speed | A per-project test-architecture decision, recorded as an ADR (`adr-doctrine.md`). This section binds agentic sessions and neither grants nor refuses it. |
+
+A check that seems to need one of the forbidden routes is a blocker to report, not a step to take: name the role and ask for a provisioned account with that role, or record that the feature has no testable login path.
+
 ---
 
 ## 5. Case (c): the owner's persistent profile

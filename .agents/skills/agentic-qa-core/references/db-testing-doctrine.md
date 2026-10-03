@@ -153,4 +153,5 @@ a miss a bug.
 - **NEVER** run `UPDATE` / `DELETE` against a shared environment to "fix" test data without the
   owner's OK. Seed through the API or a fixture instead.
 - **NEVER** paste a connection string with a password into a command, artifact or chat.
+- **NEVER** use the database to log in as someone: no session or refresh-token row written or read to obtain a session. Seeding the rows a scenario needs is this doctrine; the session it runs in comes from the real login (`browser-sessions.md` §4).
 - **NEVER** report a data mismatch as a bug before ruling out replication lag or a clock skew.
