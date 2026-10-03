@@ -90,6 +90,8 @@ It authenticates the env+role's credentials (from `.env`) and writes:
 
 Nothing is written to `.env`, and **no credential enters any MCP** — so there is **no restart** after login.
 
+`api:login` is also the ONLY way an agentic session gets a token: it authenticates through the application's own login endpoint, as the role whose credentials it read. A token obtained any other way (a service-role or admin key, an admin user-management call, a locally signed JWT, a session row read out of the database) tests a user nobody can be. The full list, and what stays allowed (seeding data through the API, the auth story exercised through a real inbox), is `browser-sessions.md` §4 "Only the real login produces a session".
+
 ---
 
 ## Step 3 — Execute with curl (authenticated)
@@ -142,6 +144,7 @@ The OpenAPI MCP (its `--tools` mode is pinned in `.mcp.json`) exposes `list-api-
 - **NEVER** expect `$API_TOKEN_...` to survive across separate Bash calls — always `source .auth/tokens.env` in the same call as the curl.
 - **NEVER** hardcode or paste a raw token into a command, artifact, commit, or chat. It lives only in `.auth/` (gitignored).
 - **NEVER** write the token back into `.env` or inject it into an MCP.
+- **NEVER** obtain a token around the login: no service-role / admin key, no admin user-management API, no locally signed JWT, no token copied from a database session table. Seeding test data through the API is fine; the identity is not seeded (`browser-sessions.md` §4).
 - **NEVER** "fix" an expired JWT by editing `.mcp.json` (or `opencode.jsonc` / `.codex/config.toml`). The MCP holds no credential by design; a stale token is refreshed by `bun run api:login` into `.auth/tokens.env`, nothing else.
 - **NEVER** report a schema-vs-target mismatch as a bug without first checking for dev/target schema drift.
 
