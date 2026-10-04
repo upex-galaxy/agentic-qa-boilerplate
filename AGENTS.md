@@ -265,7 +265,7 @@ Repo organizes skills in 4 tiers with different discovery + load rules:
 
 Full contract: `.agents/skills/agentic-qa-core/references/skill-composition-strategy.md`
 
-**gentle-ai install scope**: `cli/install.ts` runs `gentle-ai install --preset minimal` → installs ONLY the `engram` component (persistent memory). SDD-* skills are NOT installed by default: our workflow skills (`/sprint-testing`, `/test-automation`, `/test-documentation`, `/regression-testing`) cover Plan → Code → Verify natively without SDD ceremony. Users who explicitly want the SDD suite for framework evolution work can add it manually: `gentle-ai install --components engram,sdd --agent <a>`.
+**Memory install scope**: `cli/install.ts` wires Engram (persistent memory) per agent with the engram binary's own `engram setup <agent>` and never runs `gentle-ai install`: gentle-ai's orchestrator, agent-routing and hook layer competes with §3. The boilerplate does not use gentle-ai's workflow layer (no SDD, no gentle-ai orchestrator): our workflow skills (`/sprint-testing`, `/test-automation`, `/test-documentation`, `/regression-testing`) cover Plan → Code → Verify natively. Detail: `INSTALLER.md`.
 
 ### Skills (lazy-loaded by trigger phrase)
 
@@ -275,7 +275,7 @@ This table is the trigger ROUTER, not the inventory: tiers, kinds, flags and ful
 |---|---|---|
 | `agentic-qa-core` | (auto, cited by other skills) | Foundation: passive reference host for shared doctrine (briefing template, dispatch patterns, orchestration, skill-composition strategy). Loaded on demand by workflow skills. |
 | `agentic-qa-onboard` | `/agentic-qa-onboard` | First-time orientation tour. Explains stack + 6-stage pipeline + MCPs. Hands off to right downstream skill. ALSO the teaching front-desk for confused users: suspends caveman, explains in plain human language, and offers to open the per-skill `how-it-works.es.html` visual decks in the browser (ask first). |
-| `framework-development` | `/framework-development` | Framework-evolution orchestrator for the boilerplate itself (KATA bases, fixtures, cli/, scripts/, api/schemas/ pipeline). NOT for per-ticket QA. Self-contained Plan → Code → Verify → Archive pipeline; runs under `gentle-ai install --preset minimal` (no SDD-* skills required). |
+| `framework-development` | `/framework-development` | Framework-evolution orchestrator for the boilerplate itself (KATA bases, fixtures, cli/, scripts/, api/schemas/ pipeline). NOT for per-ticket QA. Self-contained Plan → Code → Verify → Archive pipeline; needs nothing outside the repo (no SDD-* skills). |
 | `project-discovery` | `/project-discovery` | 4-phase discovery (Constitution → Architecture → Infrastructure → Specification) → generates the `business-domain-context` map (Phase 1) and the `infra-context` map (Phases 2-3), `.context/project-config.md`, and a backlog connection check (Phase 4, writes no file). Reverse-engineering only. |
 | `project-context` | `project-context`, "business data map", "business API map", "business E2E map", "business feature map", "master test plan" | Generates the business maps inside their context skills (modes `data` / `api` / `e2e`, synonym `features`) and the test plan, through isolated modes or ordered `refresh-all`. UPDATE regenerates only stale sections and requires approval before writing. |
 | `business-data-context` | (auto, kind `context`: DB, SQL, entities, status transitions, triggers, jobs, "how does it work under the hood") | The data map of the SUT (entities, flows, state machines, automatic processes, integrations) as HTML in its `references/`, read via `bun run context:map business-data-context`. Delivered once as a placeholder, then project-owned; proposes one-section edits on evidence, applies on approval. |
@@ -610,15 +610,11 @@ Mechanism doc: `.agents/skills/git-flow-master/references/ruleset-parity.md` §2
 
 ## 12. PROACTIVE MEMORY TRIGGERS
 
-Engram MCP configured. Call `mem_save` IMMEDIATELY (no user prompt needed) after ANY of:
+The Engram protocol itself (tools, save format, conflict handling) arrives with the Engram MCP server's own instructions and, on Claude Code, the plugin's session hooks. Only this repo's delta lives here:
 
-- **Architecture / design decision made** (tradeoffs chosen, alternative rejected).
-- **Convention or workflow established** (naming, structure, branch policy).
-- **Bug fix completed**: include root cause, not just fix.
-- **Non-obvious discovery, gotcha, or edge case** found.
+- **Save triggers apply**: call `mem_save` without being asked after an architecture / design decision, an established convention or workflow, a completed bug fix (with root cause), or a non-obvious discovery or gotcha.
 - **Session close**: MANDATORY `mem_session_summary` before saying "done" / "listo".
-
-Self-check after every task: *did I make decision, fix bug, learn something non-obvious, or establish convention? If yes → `mem_save` NOW.*
+- **Search with keywords, not questions**: Engram search is lexical and every term must match by default. Query `mem_search` with two or three English keywords that would appear in a memory's title, never the full natural-language question. Zero results → retry with `match_mode: "any"` or with synonyms before concluding nothing exists.
 
 ---
 
