@@ -1489,8 +1489,10 @@
           <ul class="points">
             <li>
               <b>Instrucciones</b>
-              <code>AGENTS.md</code> es el único cuerpo. <code>CLAUDE.md</code> es un shim generado
-              que solo lo importa: prosa operativa ahí adentro es drift y falla el check.
+              <code>AGENTS.md</code> es la única entrada: carga siempre y su router nombra las
+              secciones de <code>.agents/instructions/</code> que se leen a pedido.
+              <code>CLAUDE.md</code> es un shim generado que solo lo importa: prosa operativa ahí
+              adentro es drift y falla el check.
             </li>
             <li>
               <b>Skills</b>
@@ -1681,6 +1683,16 @@
                   Cómo las skills llegan a Jira, Xray, el navegador y la web: etiquetas, skills de
                   utilidad (<code>acli</code>, <code>xray-cli</code>), skills de comunidad y
                   capacidades MCP.
+                </p>
+              </a>
+              <a class="deck" href="./decks/progressive-disclosure/how-it-works.es.html">
+                <span class="tag">Categoría</span>
+                <h3>Progressive disclosure · Cómo funciona</h3>
+                <span class="go">→</span>
+                <p>
+                  Cómo cargan las instrucciones del agente: <code>AGENTS.md</code> siempre, cada
+                  sección de <code>.agents/instructions/</code> cuando el router o una línea
+                  <code>ROUTE:</code> la nombra.
                 </p>
               </a>
               <a class="deck" href="./decks/orca-orchestration/how-it-works.es.html">

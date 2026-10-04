@@ -729,11 +729,20 @@
           </p>
           <p>
             Por eso la relación se invirtió.
-            <b><code>AGENTS.md</code> es el único cuerpo de instrucciones</b> y
+            <b><code>AGENTS.md</code> es la única entrada al cuerpo de instrucciones</b> y
             <code>CLAUDE.md</code> quedó en once bytes. Ese <code>@</code> es la sintaxis de import
             documentada de Claude Code: trae el archivo al contexto de la sesión. Se eligió por
             encima de un symlink justamente porque un checkout de Windows lo trata igual que uno de
             macOS o Linux.
+          </p>
+          <p>
+            Ese cuerpo además está en capas. <code>AGENTS.md</code> carga en cada sesión y guarda
+            solo lo que ata en cada turno, más un router; cada tema vive en su propio archivo bajo
+            <code>.agents/instructions/</code> y se lee cuando el router, o una línea
+            <code>ROUTE:</code> que agrega el hook, lo nombra. Los tres hosts siguen leyendo el
+            mismo archivo de entrada; lo que cambió es cuánto carga siempre. El mecanismo:
+            <a href="./decks/progressive-disclosure/how-it-works.es.html">Progressive disclosure</a
+            >.
           </p>
 
           <figure>
