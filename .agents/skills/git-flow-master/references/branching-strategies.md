@@ -303,7 +303,7 @@ The combined detection runs in this order. Stop at the first definitive answer.
 2. Inspect `git branch -a`:
    - Only `main` (or `master`) → solo-main.
    - `main` + exactly one of {staging, dev, develop, integration} → main-integration.
-     Record the integration branch name in the second marker.
+     Record the integration branch name in `git_strategy.branches.integration`.
    - `main` + `develop` (Driessen-style) → check for `release/*` or `hotfix/*`.
      If present → gitflow. If only `develop` and `feature/*` → main-integration with develop.
    - `main` + `pre-production` and/or `production` → gitlab-flow.

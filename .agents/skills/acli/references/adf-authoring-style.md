@@ -139,7 +139,7 @@ After:   > [!WARNING]
 The style choices above are authored as Markdown, then converted and published through the standard path — there is no separate mechanism for "rich" content:
 
 1. Author the field content as Markdown (using the palette above).
-2. Convert + validate: `bun scripts/md-to-adf.ts field.md field.adf.json` (the validator gates structure before publish).
+2. Convert + validate: `bun .agents/skills/acli/scripts/md-to-adf.ts field.md field.adf.json` (the validator gates structure before publish).
 3. Publish via the matching surface (`--description-file`, `comment create -F`, `--from-json` `additionalAttributes`, or REST `PUT` for a custom field on an existing item). Full recipe table in `SKILL.md` → "Publishing rich text".
 
 Two failure modes that bite at publish time, not author time — read `references/gotchas.md` before publishing ADF:

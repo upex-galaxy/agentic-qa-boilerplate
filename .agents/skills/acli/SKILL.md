@@ -27,7 +27,7 @@ This skill teaches how to drive `acli` for any intent: one-off commands, batch m
 - DO NOT: expect `workitem edit` to set an issue's COMPONENTS either. There is no flag and no `--from-json` key, so the edit succeeds while leaving components untouched and says nothing. Set them at create time, or change them through the same REST PUT path as custom fields.
 - DO NOT: copy an example out of the vendor's own `--help`. Several omit the subcommand the flags actually live on (`workitem comment --key …` instead of `workitem comment create --key …`) and fail with `unknown flag`. The forms in this skill's references are the tested ones.
 - DO NOT: hardcode a `customfield_NNNNN` id in a script or in generated output. Resolve it through the host project's slug catalog — ids differ per workspace, slugs travel.
-- DO NOT: read the Atlassian host from an environment variable. It lives in `.agents/project.yaml` under `issue_tracker.atlassian_url` and is resolved through the accessor; a stale inherited copy once pointed the sync scripts at a dead site.
+- DO NOT: read the Atlassian host from an environment variable. It lives in `.agents/project.yaml` under `issue_tracker.atlassian_url` and is resolved through the accessor; an inherited copy in the environment goes stale and points scripts at the wrong site.
 - WHEN creating an issue link: `--out` / `--in` are empirically INVERTED against Jira's semantics — `--out` takes the prerequisite, `--in` the dependent. Verify the direction by listing the link afterwards, and recreate with swapped flags if it landed backwards.
 - DO: capture and surface the trace id from any backend failure. It is the only debug signal, and Atlassian Support needs it.
 - WHEN the operation is a known blind spot (enumerate custom fields, edit custom-field values, manage workflows / issue types / versions / components, attachments, watchers, add an item to a sprint): route through REST or the opt-in Atlassian MCP rather than forcing the CLI.
@@ -256,7 +256,7 @@ Rich-block syntax cheat-sheet:
 | `{status:green\|DONE}` (colors: `neutral` `purple` `blue` `red` `yellow` `green`) | `status` node — the coloured lozenge/pill for transition states. `localId` not required (Jira injects none on publish) |
 | `@[Display Name](accountId)` | `mention` node. The `accountId` is supplied explicitly (resolve it via `/rest/api/3/user/search` — see `references/adf-authoring-style.md` §mentions); a bare `@name` is NOT converted |
 
-**Media (images / videos)** are NOT Markdown — `![](path)` does not work, because an ADF media node needs the opaque media-services UUID of an uploaded file. Use the bundled helper `scripts/jira-attach-media.ts` instead (upload → resolve UUID → emit/publish the `mediaSingle > media` node). Example: `bun scripts/jira-attach-media.ts BUG-123 ./repro.png --caption "Repro step 3" --publish`. Full recipe + when-to-use in `references/adf-authoring-style.md` §media.
+**Media (images / videos)** are NOT Markdown — `![](path)` does not work, because an ADF media node needs the opaque media-services UUID of an uploaded file. Use the bundled helper `scripts/jira-attach-media.ts` instead (upload → resolve UUID → emit/publish the `mediaSingle > media` node). Example: `bun .agents/skills/acli/scripts/jira-attach-media.ts BUG-123 ./repro.png --caption "Repro step 3" --publish`. Full recipe + when-to-use in `references/adf-authoring-style.md` §media.
 
 **Out of scope** (extend the converter if your project needs them): `nestedExpand` (expand inside a table cell).
 
@@ -360,9 +360,8 @@ This is the **only** working path: there is no acli-native channel for editing c
 
 The site host is **not** an env var. It lives in `.agents/project.yaml` ->
 `issue_tracker.atlassian_url`, and the recipes below read it with
-`$(bun run --silent jira:url)`. It was pulled out of `.env` because a stale copy
-inherited from the parent shell silently shadowed the file and pointed the sync
-scripts at a dead Jira site. Never reintroduce `ATLASSIAN_URL` as a shell
+`$(bun run --silent jira:url)`. A copy in `.env` goes stale, and one inherited
+from the parent shell silently shadows the file. Never reintroduce `ATLASSIAN_URL` as a shell
 variable in a recipe — resolve the host, do not interpolate it.
 
 **Recipe.**

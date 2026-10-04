@@ -2,7 +2,7 @@
 
 `git_strategy` in `.agents/project.yaml` says what the team decided. The host says what is actually enforced. This file owns the mapping between them and the tool that reconciles it: `bun run git:policy`.
 
-> **Why a tool and not a procedure.** SKILL.md Step 1b has always specified this reconciliation in prose, for an agent to carry out by hand. It kept not happening. The boilerplate itself shipped `require_pr_reviews: 0` against a host demanding one approval plus a code-owner review, and nobody noticed until a merge was refused with `the base branch policy prohibits the merge`. A script performs every query on every run, which is the one property prose cannot guarantee.
+> **Why a tool and not a procedure.** A script performs every query on every run, which is the one property prose cannot guarantee.
 
 ---
 

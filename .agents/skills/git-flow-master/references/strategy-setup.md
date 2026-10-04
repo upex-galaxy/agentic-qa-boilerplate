@@ -19,7 +19,7 @@ Run after the strategy slug is resolved (Step 2). Ask the questions in order. Fo
   2. **Merge commit (`--no-ff`)** — promotion creates a merge commit on production. Branches are NOT byte-identical; the ancestor invariant does not hold.
   3. **Squash** — promotion squashes integration into one commit on production. Rewrites SHAs; invariant does not hold.
 - **Persisted as**: `git_strategy.decisions.promote_method: ff-only|merge-commit|squash`
-- **Drives**: the release runbook block, and whether the "production is an ancestor of integration" invariant is rendered (only for `ff-only`).
+- **Drives**: the promotion command shape in `references/branching-strategies.md`, and whether the "production is an ancestor of integration" invariant holds (only for `ff-only`).
 
 ### Q2 — Merge method, work-branch → integration (or → trunk)
 
@@ -30,7 +30,7 @@ Run after the strategy slug is resolved (Step 2). Ask the questions in order. Fo
   2. **Squash** — one commit per work-branch on integration; linear history, loses intermediate commits.
   3. **Rebase + merge** — replays work-branch commits onto integration; linear history, preserves individual commits.
 - **Persisted as**: `git_strategy.decisions.feature_merge: merge-commit|squash|rebase-merge`
-- **Drives**: how integration history accrues; referenced by the merge-methods table in the runbook.
+- **Drives**: how integration history accrues; the merge command shape lives in `references/branching-strategies.md`.
 
 ### Q3 — Hotfix policy
 
@@ -41,7 +41,7 @@ Run after the strategy slug is resolved (Step 2). Ask the questions in order. Fo
   2. **Always via integration** — hotfix flows through integration like any change; slower but no back-merge to forget.
   3. **No policy** — decide per incident (records intent to NOT standardize).
 - **Persisted as**: `git_strategy.decisions.hotfix_policy: branch-off-prod-backmerge|via-integration|none`
-- **Drives**: the hotfix runbook block + the invariant-maintenance note.
+- **Drives**: the hotfix command shape in `references/branching-strategies.md` + the invariant-maintenance note.
 - **Note (one-direction flows)**: for `gitlab-flow` the "back-merge to integration" is realized as a forward-port / cherry-pick up the environment chain (`production` → `pre-production` → `main`), not a literal merge back — gitlab-flow has no back-merges.
 
 > The defaults (ff-only / merge-commit / branch-off-prod-backmerge) are the `main-integration` worked-example choices. They are DEFAULTS. Always present them as overridable, never auto-select without showing the alternatives.

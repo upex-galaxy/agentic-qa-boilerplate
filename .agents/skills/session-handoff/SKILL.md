@@ -61,7 +61,7 @@ Do NOT write one when the remaining work fits comfortably in the window. A hando
 
 ## Hard rules
 
-1. **Label every claim `measured` or `predicted`.** The predecessor's guesses about what the successor will find are useful and are also the first thing to go stale. A predicted branch stated as fact sends the successor down a path that no longer exists. Measured means: this session ran it and read the output.
+1. **Label every claim `measured`, `read` or `predicted`.** The predecessor's guesses about what the successor will find are useful and are also the first thing to go stale. A predicted branch stated as fact sends the successor down a path that no longer exists. Measured means: this session ran it and read the output. Read means: it came from a document and was believed.
 2. **Mark perishable state `PERISHABLE`, with the wall-clock time it was measured.** Running workers, open mailboxes, in-flight PRs and live runs decay between writing and reading. The successor's instruction for anything marked perishable is: re-verify before acting, not act then discover.
 3. **Perishable beats priority.** If a perishable item needs attention before the priority list, say so in the same line. A successor that follows a stale priority order while a live worker waits has done exactly what the handoff was supposed to prevent.
 4. **Ids are copied, never described.** A run id, a dispatch id, a terminal handle, a session id, a PR number, a tracker key, a commit SHA: verbatim, in backticks, in a form that can be pasted. "the worker from earlier" is not an id.

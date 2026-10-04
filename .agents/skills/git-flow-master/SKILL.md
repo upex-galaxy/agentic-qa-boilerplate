@@ -9,16 +9,6 @@ metadata:
   kind: workflow
 ---
 
-<!-- Model preferences (advisory; dispatchers may use to route) -->
-<!--
-model_preferences:
-  foundation: opus       # high-leverage architectural work
-  planning: sonnet       # structured writing
-  implementation: sonnet # default for code work
-  review: opus           # critical analysis
-  archive: haiku         # mechanical close-out
--->
-
 # Git Flow Master — One Skill for Branches, Commits, Pushes, PRs, and Conflicts
 
 This skill is the project's single entry point for everything that happens on the version-control layer: creating branches, writing commits, pushing safely, opening pull requests, resolving conflicts, and planning chained / stacked PRs when a change outgrows the review budget.
@@ -124,7 +114,7 @@ bun run git:policy verify --stamp  # same, and records the reconciliation when c
 
 It queries BOTH GitHub protection mechanisms for every branch in `git_strategy.branches` / `protected`, compares the union against the declared policy, and prints each divergence as `declared` vs `enforced`. The strategy-to-ruleset mapping and what the tool deliberately does not manage: `references/ruleset-parity.md`.
 
-**Why a tool rather than a checklist.** This reconciliation existed only as prose in the sibling boilerplate and kept not happening — that repo shipped `require_pr_reviews: 0` against a host demanding one approval plus a code-owner review, and it surfaced months later as a refused merge. This repo had the identical divergence. A script performs every query on every run; a procedure performs the ones the reader remembered.
+**Why a tool rather than a checklist.** A script performs every query on every run; a checklist performs only the ones the reader remembers.
 
 **Facts that still bind you when reading its output:**
 
@@ -155,7 +145,7 @@ The skill supports eight strategies (see `references/branching-strategies.md` fo
 
 Apply in order; stop at the first definitive answer:
 
-1. **`git_strategy:` block in `.agents/project.yaml`** — read it. If `git_strategy.strategy` is non-null (one of the eight slugs), it + `git_strategy.branches` (production / integration / ephemeral_pattern) + `git_strategy.decisions` (promote_method / feature_merge / hotfix_policy) ARE the persisted decision — use them. Each `git_strategy.decisions.*` field whose value is NOT `n/a`/empty means Strategy Setup SKIPS that question on re-run (idempotent — idempotency is keyed off the `git_strategy.decisions.*` fields, not markers). **Inherited-template guard:** the boilerplate ships the block FILLED (`strategy: solo-main`) and a scaffolded project INHERITS it verbatim (the scaffolder only patches `project.project_name` / `project.project_key`). So a non-null `git_strategy.strategy` is only authoritative when the project is actually onboarded. Read `git_strategy.meta.strategy_source` FIRST: `chosen` means Strategy Setup ran for THIS repo, so the block is confirmed and the `project_name` test below never runs. Only when `strategy_source` is `inherited` or absent, read `project.project_name` in the SAME file: if `git_strategy.strategy` is non-null BUT `project.project_name` is `null`, the block was INHERITED from the template (not chosen for THIS project) — treat the strategy as UNCONFIRMED and route to the Bootstrap trigger's inherited case (it still operates under the inherited strategy if the offer is declined). If `project.project_name` is set, the block is confirmed → use it normally, no nudge.
+1. **`git_strategy:` block in `.agents/project.yaml`** — read it. If `git_strategy.strategy` is non-null (one of the eight slugs), it + `git_strategy.branches` (production / integration / ephemeral_pattern) + `git_strategy.decisions` (promote_method / feature_merge / hotfix_policy) ARE the persisted decision — use them. Each `git_strategy.decisions.*` field whose value is NOT `n/a`/empty means Strategy Setup SKIPS that question on re-run (idempotent — idempotency is keyed off the `git_strategy.decisions.*` fields, not markers). **Inherited-template guard:** the boilerplate ships the block FILLED (`strategy: solo-main`) and a scaffolded project INHERITS it verbatim (the scaffolder only patches `project.project_name` / `project.project_key`). So a non-null `git_strategy.strategy` is only authoritative when the project is actually onboarded. Read `git_strategy.meta.strategy_source` FIRST: `chosen` means Strategy Setup ran for THIS repo, so the block is confirmed and the `project_name` test below never runs. When `strategy_source` is `inherited` or absent, the block was INHERITED from the template (not chosen for THIS project), whatever `project.project_name` holds — treat the strategy as UNCONFIRMED and route to the Bootstrap trigger's inherited case (it still operates under the inherited strategy if the offer is declined).
 2. **Single-branch heuristic** — `git branch -a` shows only `main` (or `master`) and no integration branch in the remote → `solo-main`.
 3. **Two-branch heuristic** — exactly `main` (or `master`) + one of `{staging, dev, develop, integration}` exists upstream → `main-integration` (record the integration branch name).
 4. **Multi-branch heuristic** — `main` + integration + active `feature/*` or `release/*` branches in `git branch -a` → `enterprise`.
@@ -190,20 +180,20 @@ At the top of any git intent, after Step 1 (repo state) and Step 2 detection hav
 
 > **(a) Unset** — `git_strategy.strategy` in `.agents/project.yaml` is null (or the `git_strategy:` block is absent) AND the repo **looks fresh** — any of: only `main`/`master` exists locally and on the remote; fewer than ~3 commits; or a boilerplate sentinel file is present (e.g. `.agents/project.yaml`).
 >
-> **(b) Inherited** — `git_strategy.strategy` is non-null, `git_strategy.meta.strategy_source` is NOT `chosen` (it is `inherited` or absent), AND `project.project_name` (same file) is `null`. The block was INHERITED from the boilerplate template (this project has not been onboarded yet) — it was NOT chosen for THIS project. Treat it as UNCONFIRMED.
+> **(b) Inherited** — `git_strategy.strategy` is non-null and `git_strategy.meta.strategy_source` is NOT `chosen` (it is `inherited` or absent), whatever `project.project_name` (same file) holds. The block was INHERITED from the boilerplate template — it was NOT chosen for THIS project. Treat it as UNCONFIRMED.
 
 If EITHER condition is true, **OFFER** (do not auto-execute, do not silently pick a strategy), using the matching prompt:
 
 > _(unset case (a))_ "No git strategy is set up yet. Want me to run Strategy Setup — pick the flow, create the branches it needs, and write the `git_strategy:` block in `.agents/project.yaml`? (Y/N)"
 
-> _(inherited case (b))_ "This project's `git_strategy` looks inherited from the boilerplate (project not onboarded yet — `project.project_name` is null). Want to run Strategy Setup to define this project's own flow? (Y/N)"
+> _(inherited case (b))_ "This project's `git_strategy` looks inherited from the boilerplate (`meta.strategy_source` is not `chosen`). Want to run Strategy Setup to define this project's own flow? (Y/N)"
 
 Rules:
 
 - **Offer once per session**, then cache the answer. Do not re-prompt every git intent in the same session.
 - **Never auto-run.** A `No` proceeds with the requested operation under the detected (case a) or inherited (case b) strategy without writing the block.
 - A `Yes` enters Strategy Setup (3.6) before continuing with the original git intent.
-- The boilerplate ships `.agents/project.yaml` with the `git_strategy:` block FILLED (`strategy: solo-main`); a scaffolded project INHERITS it verbatim (the scaffolder patches only `project.project_name` / `project.project_key`, and the updater freezes the file via `bootstrapOnlyPaths`). So the unset case (a) and the inherited case (b) are the two ways a project reaches a real git intent without having confirmed its own flow → the offer fires on first real use — by design (template-trap guard). `git_strategy.meta.strategy_source: chosen` confirms the strategy before `project.project_name` is even read, so NEITHER case fires on it; without it, a set `project.project_name` confirms it the same way.
+- The boilerplate ships `.agents/project.yaml` with the `git_strategy:` block FILLED (`strategy: solo-main`); a scaffolded project INHERITS it verbatim (the scaffolder patches only `project.project_name` / `project.project_key`, and the updater freezes the file via `bootstrapOnlyPaths`). So the unset case (a) and the inherited case (b) are the two ways a project reaches a real git intent without having confirmed its own flow → the offer fires on first real use — by design (template-trap guard). `git_strategy.meta.strategy_source: chosen` confirms the strategy before `project.project_name` is even read, so NEITHER case fires on it.
 
 ---
 
@@ -396,12 +386,12 @@ The first five operations *adapt to* a strategy that already exists. Strategy Se
 **When it runs**
 
 - **Explicit**: the user asks — "set up our git strategy", "bootstrap branching", "configura el flujo de git", "materialize the flow".
-- **Bootstrap offer** (see "Bootstrap trigger" below): a git intent arrives and EITHER `git_strategy.strategy` is null (or the block is absent) with a fresh-looking repo, OR `git_strategy.strategy` is non-null, `meta.strategy_source` is not `chosen`, and `project.project_name` is null (inherited template — not onboarded). The skill OFFERS to run setup. It never auto-runs.
+- **Bootstrap offer** (see "Bootstrap trigger" below): a git intent arrives and EITHER `git_strategy.strategy` is null (or the block is absent) with a fresh-looking repo, OR `git_strategy.strategy` is non-null and `meta.strategy_source` is not `chosen` (inherited template). The skill OFFERS to run setup. It never auto-runs.
 
 **Six-step flow** (mechanics live in `references/strategy-setup.md` — do not inline them here):
 
 1. **Read repo state** — Step 1 (already always runs).
-2. **Resolve strategy** — reuse Step 2 detection. If still undetermined, ask the 7-option question (one slug out).
+2. **Resolve strategy** — reuse Step 2 detection. If still undetermined, ask the strategy question (the slugs in the Step 2 table; on a test-automation repo, `sdet` first as the recommended option).
 3. **Decision questionnaire** — run Q1/Q2/Q3/Q4 below, capturing merge methods + hotfix policy + protection policy. SKIP any question that does not apply to the resolved strategy, and SKIP any question whose decision field is already populated (idempotent re-run — see Step 2 extension). Q4 applies to ALL strategies.
 4. **Materialize** — conditional on the resolved strategy: create an integration branch ONLY if the strategy needs one and it is missing; ff-sync the integration/production pair if one is a pure ancestor of the other (NEVER `--force`); set up local tracking. Full materialization table + sync mechanics in `references/strategy-setup.md`.
 5. **Persist** — write the `git_strategy:` block in `.agents/project.yaml` (the structured source of truth) with the fields that apply to the resolved strategy, preserving the rest of the file. NEVER write a separate file. Do NOT render a prose runbook anywhere — the operational HOW lives in this skill's references (`branching-strategies.md` catalogue + `sdet-integration-trunk.md`), read on demand. Per-strategy field values in `references/branching-strategies.md` → "git_strategy field rules (per strategy)".

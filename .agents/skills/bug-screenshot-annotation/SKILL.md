@@ -30,12 +30,9 @@ A workflow skill (`metadata.kind: workflow`) with no dispatch of its own: it is 
 
 ## Why 100% local — the security rationale (binding)
 
-An earlier design routed screenshots through external generative image-editing services. Both attempts failed, one dangerously:
+QA screenshots carry real product, customer and competitor data. A screenshot sent to an external image service has already landed in that service's public bucket, and the agent runtime's data-exfiltration classifier blocks such uploads even when the user authorizes them in chat.
 
-- A quota-walled image MCP was simply unavailable (429 across every tier). Not a design problem — just dead.
-- A second generative service got hard-blocked by the agent runtime's own data-exfiltration classifier, because QA screenshots carry real product/customer/competitor data and the destination was not a trusted host. Critically, **explicit user authorization in chat did not lift the block** — and one screenshot had already leaked to the service's public S3/CloudFront bucket before the second attempt was caught.
-
-The standing lesson: **QA evidence containing real product or customer data never routes through an external image service, generative or otherwise.** This skill sidesteps the risk entirely — everything happens with HTML+CSS rendered by an HTTP server bound to `127.0.0.1`, captured by a local browser-automation CLI; nothing leaves the machine. If a genuinely unhandleable case appears (e.g. annotating a photo of physical signage), go back to the user and talk through anonymization first — NEVER quietly pipe a real screenshot to an external service.
+So: **QA evidence containing real product or customer data never routes through an external image service, generative or otherwise.** This skill sidesteps the risk entirely — everything happens with HTML+CSS rendered by an HTTP server bound to `127.0.0.1`, captured by a local browser-automation CLI; nothing leaves the machine. If a genuinely unhandleable case appears (e.g. annotating a photo of physical signage), go back to the user and talk through anonymization first — NEVER quietly pipe a real screenshot to an external service.
 
 ## Scope
 

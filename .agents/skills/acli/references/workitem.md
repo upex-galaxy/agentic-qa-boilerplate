@@ -345,7 +345,7 @@ acli jira workitem comment --key "{{PROJECT_KEY}}-1" --body "..."
 so the vendor's own example exits non-zero. Always spell the subcommand. The
 forms in this file are the tested ones; `--help` is the authority when they disagree.
 
-`comment create` accepts ADF via `-F, --body-file`. The flag's `--help` text reads "Plain text file with text or Atlassian Document Format (ADF)"; when the file begins with `{`, `acli` forwards the content as ADF. The legacy two-step workaround (create placeholder body → `comment update --body-adf`) is not required. To author rich comments:
+`comment create` accepts ADF via `-F, --body-file`. The flag's `--help` text reads "Plain text file with text or Atlassian Document Format (ADF)"; when the file begins with `{`, `acli` forwards the content as ADF. To author rich comments:
 
 ```bash
 bun .agents/skills/acli/scripts/md-to-adf.ts notes.md notes.adf.json

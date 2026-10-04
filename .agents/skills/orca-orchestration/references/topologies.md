@@ -87,7 +87,7 @@ checklist: `git-flow-master/references/worktrees.md`.
 ### Own worktree
 
 - `git fetch origin` then verify the new worktree's SHA against `origin/<base>`. A base-ref flag
-  resolves LOCAL refs, so a worktree can be born behind the remote; this was paid for twice, and the
+  resolves LOCAL refs, so a worktree can be born behind the remote; the
   fix is the verification, not the merge. Never hide it behind `|| true`.
 - Bring the base in with an ADDITIVE merge. Never rebase or amend anything already pushed
   (Critical Rule #6).

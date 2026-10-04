@@ -247,11 +247,9 @@ The global `acli auth login` (interactive OAuth) is the exception — it covers 
 
 **Fix.** In sites with heavy team-managed project use, fall back to REST with an explicit issue-type ID for the project. Or consolidate issue-type names across projects.
 
-## <a id="comment-adf"></a>14. `comment create` accepts ADF via `-F` (previous claim was outdated)
+## <a id="comment-adf"></a>14. `comment create` accepts ADF via `-F`
 
-**Previous claim (incorrect for v1.3.18+).** Older skill documentation stated `comment create` had no ADF input and required a two-step workaround: create placeholder body → `comment update --body-adf`. This was based on `comment update` having a dedicated `--body-adf` flag while `comment create` had only `--body` and `--body-file`.
-
-**Current behavior.** `comment create -F <file>` (alias `--body-file <file>`) accepts both plain text and ADF JSON. The flag's `--help` text states: "Plain text file with text or Atlassian Document Format (ADF)". When the file content begins with a JSON object (`{`), `acli` forwards it as ADF to the underlying REST call. Validated against Jira Cloud on `acli` v1.3.18.
+`comment create -F <file>` (alias `--body-file <file>`) accepts both plain text and ADF JSON. The flag's `--help` text states: "Plain text file with text or Atlassian Document Format (ADF)". When the file content begins with a JSON object (`{`), `acli` forwards it as ADF to the underlying REST call. Validated against Jira Cloud on `acli` v1.3.18.
 
 The plain `-b, --body` flag remains plain text only — Markdown syntax is stored literally as a single ADF paragraph.
 
@@ -262,14 +260,12 @@ bun .agents/skills/acli/scripts/md-to-adf.ts notes.md notes.adf.json
 acli jira workitem comment create --key {{PROJECT_KEY}}-123 -F notes.adf.json
 ```
 
-The legacy two-step pattern still works and may be useful if you want a placeholder visible before composing the final body:
+A two-step pattern also works, when you want a placeholder visible before composing the final body:
 
 ```bash
 CID=$(acli jira workitem comment create --key {{PROJECT_KEY}}-123 --body "init" --json | jq -r '.id')
 acli jira workitem comment update --key {{PROJECT_KEY}}-123 --id "$CID" --body-adf formatted.json
 ```
-
-It is no longer required for rich-text creation.
 
 ## <a id="trace"></a>15. Trace IDs are the only debug signal
 

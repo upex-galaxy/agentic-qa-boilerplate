@@ -180,7 +180,7 @@ gh pr merge --merge
 
 - Prefix by content type per the repo branch convention: `docs/` (markdown, context, skills), `chore/` (tooling, config, deps), `fix/` (bugfixes). **Never `test/`** — that prefix is reserved for automation ticket branches.
 - One Plus Branch may batch several unrelated adjacent changes as long as they share a content type by predominance. If two content types are large, split into two Plus Branches.
-- **Working-tree carry-along caveat**: uncommitted changes follow you across `git checkout -b`. If you leave adjacent changes uncommitted while cutting a ticket branch, `git add .` discipline is required to avoid sweeping them into the ticket commit. When in doubt, `git stash` before cutting a ticket branch and pop onto a Plus Branch later.
+- **Working-tree carry-along caveat**: uncommitted changes follow you across `git checkout -b`. If you leave adjacent changes uncommitted while cutting a ticket branch, explicit-path `git add <path>` discipline is required to avoid sweeping them into the ticket commit. When in doubt, stash only your own paths (`git stash push -- <paths>`) before cutting a ticket branch and pop them onto a Plus Branch later — never an untargeted `git stash` (Critical Rule #15).
 
 > Owner-direct-to-`main` interaction: a project's standing "owner pushes docs directly to `main`" exception (if it has one) applies to adjacent work done **outside** an active suite. While a suite is in flight, adjacent work rides a Plus Branch into the trunk so the final `trunk → main` diff stays coherent.
 
@@ -269,7 +269,7 @@ A suite spans many ticket branches and multiple `/test-automation` invocations. 
 1. Pick the trunk name: `test/<module>-suite` (e.g. `test/monthly-statement-suite`).
 2. Cut it off `main` and push it so ticket PRs have a target. (The Branch operation does this on demand — the trunk is NOT created by Strategy Setup.)
 3. Confirm any prerequisite upstream PRs the trunk base already contains are queued to merge to `main` so the sync gate can later cancel them.
-4. Park current adjacent uncommitted work for a later Plus Branch (or `git stash` it) — keep it out of ticket branches.
+4. Park current adjacent uncommitted work for a later Plus Branch (or `git stash push -- <paths>` it) — keep it out of ticket branches.
 
 ## Per-ticket checklist
 
