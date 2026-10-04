@@ -16,6 +16,18 @@ below names which one it applies to:
 
 ## Unreleased — Boilerplate
 
+### Changed (instruction sections get readable `agent-` names)
+- **Every file in `.agents/instructions/` but `README.md` is named `agent-<topic>.md`, with no
+  number**: `80-git.md` is `agent-git.md`, `project.md` is `agent-project.md`, the stub is
+  `agent-project.md.template`. Frontmatter `id`s are unchanged, so `ROUTE:` lines keep their tags;
+  the ROUTER's row order is the reading order. `instructions:check` fails a file without the prefix
+  and an `id` that is not the file stem without `agent-`. The L0 rule pointer `→ 01` is now
+  `Full: agent-critical-rules.md#<n>`.
+- **`bun run up` migrates a project on the numbered names**: the numbered copies are retired through
+  `deprecatedFiles`, each saved to `.backups/` first (a merge kept with `updater.protected_paths`
+  survives there); a `project.md` with no `agent-project.md` beside it is moved byte for byte, never
+  regenerated from the stub; with both present nothing moves and a parity row asks for the merge.
+
 ### Changed (`.context/` becomes a cache, BREAKING for discovery readers)
 - **`.context/` holds only script caches plus the few files this repo owns.** `.context/*` is
   ignored by default and re-includes `README.md`, `project-config.md`, `ADR/`,
