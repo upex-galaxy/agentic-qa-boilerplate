@@ -2,7 +2,7 @@
 id: code-quickref
 title: 'KATA quick reference'
 load_when: 'writing or reviewing test code, KATA layers, fixtures, a Page / Api / Steps module, scripts/ path handling'
-triggers: ['\bKATA\b', '\bATC\b', '\bfixtures?\b', '\bPage\b', '\bApiBase\b', '\bUiBase\b', '\bTestContext\b', '\bspec\.ts\b', '\bplaywright\b', '\btests?/']
+triggers: ['\bKATA\b', '\bATC\b', '\bfixtures?\b', '\bPage\b', '\bApiBase\b', '\bUiBase\b', '\bTestContext\b', '\bspec\.ts\b', '\bplaywright(?!-cli)\b', '\btests?/']
 paths: ['tests/', 'api/schemas/', 'scripts/']
 ---
 

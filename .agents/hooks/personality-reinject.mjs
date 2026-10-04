@@ -2,8 +2,10 @@
  * @fileoverview ONE prompt-time emitter for the three harnesses.
  *
  * Claude Code and Codex run this file as a `UserPromptSubmit` command hook and
- * read its stdout; OpenCode imports the same exports from its plugin adapter
- * (`.opencode/plugins/personality-reinject.js`). The emitter carries three
+ * read its stdout, and run it again on `SessionStart` (matcher `compact`) to
+ * re-arm the routes; OpenCode imports the same exports from its plugin adapter
+ * (`.opencode/plugins/personality-reinject.js`): OpenCode 1 also routes from
+ * `chat.message`, OpenCode 2 is router-only. The emitter carries four
  * payloads, in this order (the AGENTS.md §2 output contract is not one of them:
  * the harness loads it once per session):
  *
@@ -15,6 +17,11 @@
  *   3. At most ONE setup warning: `MISSING_ENV_LINE` when the checkout has no
  *      `.env`, else `UNPROVISIONED_WORKTREE_LINE` when it is a linked worktree
  *      that never ran `bun run worktree:provision`.
+ *   4. `ROUTE: read <file>` lines: the instruction files the prompt needs and
+ *      this session has not been routed to yet, classified with the router of
+ *      `AGENTS.md` and each section's frontmatter (see `routeLines`). 0 bytes
+ *      when nothing new matches. A `SessionStart` with source `compact`
+ *      re-arms them and prints nothing.
  *
  * Verified sources only. Claude Code: the hook input carries `session_id`,
  * `prompt` and an optional `session_title`, and the JSON output supports
@@ -30,9 +37,10 @@
  * hook must finish well inside its 5 s budget on every prompt.
  */
 
-import { existsSync, readFileSync, statSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { delimiter, join } from 'node:path';
+import { createHash } from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { homedir, tmpdir } from 'node:os';
+import { delimiter, dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 /** Prefix of the forensic identity line. Consumed by `git-flow-master`. */
@@ -361,11 +369,353 @@ export function worktreeUnprovisioned(options = {}) {
   }
 }
 
+/**
+ * Instruction router: `ROUTE:` lines (progressive disclosure, recall rank 1).
+ *
+ * `AGENTS.md` (L0) carries a fixed router table between the two markers below;
+ * each row names the files to load for one KIND of request. The section files
+ * under `.agents/instructions/` carry their own `triggers:` (case-insensitive
+ * regexes over the prompt) and `paths:` (repo-relative prefixes a prompt may
+ * name) in their frontmatter. Both are read HERE at runtime, never copied
+ * into this file, so the table the model reads and the table the classifier
+ * runs cannot drift.
+ *
+ * A row fires when the prompt matches its ANCHOR, the first file of its Read
+ * cell (the section files it names in backticks come before its `@` imports);
+ * every file of a fired row is routed. Anchoring keeps a file shared by two rows from dragging the
+ * other row's files in: `40-project-variables.md` opens the variables row and
+ * rides along in the tracker row, so a prompt about environments loads the
+ * variables, not the PBI cache. A target outside the sections folder (the
+ * Claude Code imports `@package.json`, `@.agents/project.yaml`) has no
+ * frontmatter: it is routed with its row, or by `IMPORT_ROW_TRIGGERS` when it
+ * anchors the row alone.
+ *
+ * One line per newly routed file. The per-session state (keyed by session id)
+ * remembers what was routed, so a prompt that needs nothing new costs 0 bytes;
+ * `SessionStart` with source `compact` or `clear` re-arms it, because the
+ * routed files left the context with the compacted messages.
+ */
+export const ROUTE_PREFIX = 'ROUTE: read';
+export const ROUTER_START = '<!-- router:start -->';
+export const ROUTER_END = '<!-- router:end -->';
+export const L0_FILE = 'AGENTS.md';
+export const SECTIONS_DIR = '.agents/instructions';
+
+/**
+ * Triggers for a router row whose only target is an import with no
+ * frontmatter to carry them: the scripts row (`@package.json`). Generic on
+ * purpose, identical in every repo that ships this emitter: every one of them
+ * has `package.json` scripts. Every other trigger lives in a section file.
+ */
+export const IMPORT_ROW_TRIGGERS = {
+  'package.json': [
+    'package\\.json',
+    '\\b(?:bun|npm|pnpm|yarn)\\s+(?:run|test)\\b',
+    '\\bbunx?\\s+[a-z]',
+    '\\bscripts?\\b',
+    '\\b[a-z]+:(?:check|fix)\\b',
+    '\\b(?:typecheck|type-check|tsc)\\b',
+    '\\bhow (?:do|can) (?:i|we|you) (?:run|build|test|lint|start|install)\\b',
+    '\\b(?:run|rerun|re-run)\\s+(?:the\\s+|all\\s+)?(?:tests?|lint|linter|build|gates?|checks?|type ?checks?|suite)\\b',
+    '\\b(?:corr[aeé]|correr|ejecut[aeá]|ejecutar|lanz[aeá])\\s+(?:el\\s+|la\\s+|los\\s+|las\\s+|todos\\s+los\\s+)?(?:tests?|lint|linter|build|gates?|checks?|chequeos?|suite)\\b',
+    'c[oó]mo (?:se )?(?:corro|corre|ejecuto|ejecuta|compilo|compila|buildeo|levanto|levanta|instalo|testeo)\\b',
+    '\\bcomandos?\\b',
+  ],
+};
+
+/** A YAML scalar as the frontmatter writes it: double-quoted (JSON escapes), single-quoted, or bare. */
+function yamlScalar(raw) {
+  const value = raw.trim();
+  if (value.startsWith('"')) {
+    try { return JSON.parse(value); }
+    catch { return value.slice(1, -1); }
+  }
+  if (value.startsWith('\'')) { return value.slice(1, -1).replace(/''/g, '\''); }
+  return value.replace(/\s+#.*$/, '');
+}
+
+/** `[a, "b", 'c']` → items, quotes and commas inside a quoted item respected. */
+function yamlFlowList(raw) {
+  const body = raw.trim().replace(/^\[/, '').replace(/\]\s*(?:#.*)?$/, '');
+  const items = [];
+  let current = '';
+  let quote = '';
+  for (let index = 0; index < body.length; index++) {
+    const character = body[index];
+    if (quote === '"' && character === '\\') {
+      current += character + (body[index + 1] ?? '');
+      index++;
+      continue;
+    }
+    if (quote === '\'' && character === '\'' && body[index + 1] === '\'') {
+      current += '\'\'';
+      index++;
+      continue;
+    }
+    if (quote) {
+      if (character === quote) { quote = ''; }
+      current += character;
+      continue;
+    }
+    if (character === '"' || character === '\'') { quote = character; }
+    if (character === ',') {
+      if (current.trim()) { items.push(yamlScalar(current)); }
+      current = '';
+      continue;
+    }
+    current += character;
+  }
+  if (current.trim()) { items.push(yamlScalar(current)); }
+  return items;
+}
+
+/**
+ * The subset of YAML a section frontmatter uses: `key: scalar`, `key: [flow,
+ * list]` and `key:` followed by `- item` lines. No dependency, because this
+ * runs on every prompt; `cli/lib/instruction-router.test.ts` pins it to the
+ * `yaml` parser over every real section file.
+ */
+export function parseSectionFrontmatter(text) {
+  const match = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(text);
+  if (!match) { return null; }
+  const data = {};
+  let listKey = '';
+  for (const line of match[1].split(/\r?\n/)) {
+    const item = /^\s*-\s(.*)$/.exec(line);
+    if (listKey && item) {
+      data[listKey].push(yamlScalar(item[1]));
+      continue;
+    }
+    const pair = /^([a-z_][\w-]*):(.*)$/i.exec(line);
+    if (!pair) { continue; }
+    const [, key, raw = ''] = pair;
+    listKey = '';
+    if (raw.trim() === '' || raw.trim().startsWith('#')) {
+      data[key] = [];
+      listKey = key;
+    }
+    else {
+      data[key] = raw.trim().startsWith('[') ? yamlFlowList(raw) : yamlScalar(raw);
+    }
+  }
+  return data;
+}
+
+/**
+ * Router rows between the markers: `{ kind, targets }`, or null without
+ * markers. Same grammar as `scripts/lib/instructions.ts` (`routerRows`,
+ * `sectionRefs`, `importRefs`): the first table row is the header, a section
+ * is named in backticks by its file name and resolved under the sections
+ * folder, an import is a plain-text `@path` outside any code span.
+ */
+export function parseRouterRows(l0) {
+  const lines = l0.split(/\r?\n/);
+  const start = lines.findIndex(line => line.trim() === ROUTER_START);
+  const end = lines.findIndex(line => line.trim() === ROUTER_END);
+  if (start === -1 || end === -1 || end < start) { return null; }
+  const rows = [];
+  let seenHeader = false;
+  for (const raw of lines.slice(start + 1, end)) {
+    const line = raw.trim();
+    if (!line.startsWith('|') || /^\|[\s:|-]+\|$/.test(line)) { continue; }
+    if (!seenHeader) {
+      seenHeader = true;
+      continue;
+    }
+    const cells = line.slice(1, -1).split('|').map(cell => cell.trim());
+    const read = cells[1] ?? '';
+    const targets = [
+      ...[...read.matchAll(/`([\w.-]+\.md)`/g)].map(found => `${SECTIONS_DIR}/${found[1]}`),
+      ...[...read.replace(/`[^`]*`/g, '').matchAll(/(?:^|\s)@([\w./-]*[\w-])/g)].map(found => found[1]),
+    ];
+    rows.push({ kind: cells[0] ?? '', targets });
+  }
+  return rows;
+}
+
+function compileTriggers(sources) {
+  const compiled = [];
+  for (const source of Array.isArray(sources) ? sources : []) {
+    if (typeof source !== 'string' || source.length === 0) { continue; }
+    try { compiled.push(new RegExp(source, 'i')); }
+    catch { continue; }
+  }
+  return compiled;
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function pathPrefixes(prefixes) {
+  return (Array.isArray(prefixes) ? prefixes : []).filter(prefix => typeof prefix === 'string' && prefix.length > 0);
+}
+
+/**
+ * A `paths:` prefix named in the prompt as a path (not as the tail of a
+ * longer one). The longest prefix wins: `.context/` does not fire on
+ * `.context/PBI/...` when another file owns `.context/PBI/`.
+ */
+function compilePath(prefix, allPrefixes) {
+  const longer = allPrefixes
+    .filter(other => other.length > prefix.length && other.toLowerCase().startsWith(prefix.toLowerCase()))
+    .map(other => escapeRegExp(other.slice(prefix.length)));
+  const exclusion = longer.length > 0 ? `(?!${longer.join('|')})` : '';
+  return new RegExp(`(?<![\\w./-])(?:\\./)?${escapeRegExp(prefix)}${exclusion}`, 'i');
+}
+
+/**
+ * Read the router from the checkout: L0 rows plus, for each target, the
+ * matchers it brings. Null when `AGENTS.md` or its router markers are absent:
+ * a repo without progressive disclosure routes nothing.
+ */
+export function loadInstructionRouter(root, read = readFileSync) {
+  let l0;
+  try { l0 = String(read(join(root, L0_FILE), 'utf8')); }
+  catch { return null; }
+  const rows = parseRouterRows(l0);
+  if (!rows) { return null; }
+  const metas = new Map();
+  for (const row of rows) {
+    for (const path of row.targets) {
+      if (metas.has(path)) { continue; }
+      let meta = {};
+      if (path.startsWith(`${SECTIONS_DIR}/`) && path.endsWith('.md')) {
+        try { meta = parseSectionFrontmatter(String(read(join(root, path), 'utf8'))) ?? {}; }
+        catch { /* an unreadable section routes with its row only */ }
+      }
+      else if (row.targets[0] === path && Object.hasOwn(IMPORT_ROW_TRIGGERS, path)) {
+        meta = { triggers: IMPORT_ROW_TRIGGERS[path] };
+      }
+      metas.set(path, meta);
+    }
+  }
+  const allPrefixes = [...metas.values()].flatMap(meta => pathPrefixes(meta.paths));
+  const targets = new Map();
+  for (const [path, meta] of metas) {
+    targets.set(path, {
+      path,
+      id: typeof meta.id === 'string' ? meta.id : '',
+      triggers: compileTriggers(meta.triggers),
+      paths: pathPrefixes(meta.paths).map(prefix => compilePath(prefix, allPrefixes)),
+    });
+  }
+  return { rows, targets };
+}
+
+/** Every target of every row whose anchor the prompt matches, in router order, each once. */
+export function classifyPrompt(router, prompt) {
+  if (!router || typeof prompt !== 'string' || prompt.trim().length === 0) { return []; }
+  const hit = new Set();
+  for (const target of router.targets.values()) {
+    if (target.triggers.some(trigger => trigger.test(prompt)) || target.paths.some(path => path.test(prompt))) {
+      hit.add(target.path);
+    }
+  }
+  const routed = [];
+  for (const row of router.rows) {
+    if (!hit.has(row.targets[0])) { continue; }
+    for (const path of row.targets) {
+      if (!routed.includes(path)) { routed.push(path); }
+    }
+  }
+  return routed;
+}
+
+export function routeLine(router, path) {
+  const id = router?.targets.get(path)?.id;
+  return id ? `${ROUTE_PREFIX} ${path} (${id})` : `${ROUTE_PREFIX} ${path}`;
+}
+
+/**
+ * Where the routed set of one session lives: the OS temp dir, one file per
+ * (checkout, session). Never in the repo: it is per-session runtime state.
+ */
+export function routeStatePath(root, sessionId, temp = tmpdir()) {
+  const checkout = createHash('sha1').update(resolve(root)).digest('hex').slice(0, 12);
+  const session = String(sessionId).replace(/[^\w.-]/g, '_').slice(0, 120);
+  return join(temp, 'agentic-instruction-routes', `${checkout}-${session}.json`);
+}
+
+/** File-backed routed set, or null without a session id (no dedupe: each prompt routes what it matches). */
+export function fileRouteState(root, sessionId, temp = tmpdir()) {
+  if (!text(sessionId)) { return null; }
+  const path = routeStatePath(root, sessionId, temp);
+  return {
+    read() {
+      const stored = readJson(path);
+      return Array.isArray(stored?.routed) ? stored.routed.filter(entry => typeof entry === 'string') : [];
+    },
+    write(routed) {
+      try {
+        mkdirSync(dirname(path), { recursive: true });
+        writeFileSync(path, `${JSON.stringify({ routed })}\n`);
+      }
+      catch { /* a read-only temp dir costs dedupe, never the prompt */ }
+    },
+    clear() {
+      try { rmSync(path, { force: true }); }
+      catch { /* nothing to re-arm */ }
+    },
+  };
+}
+
+/** Walk up from `start` to the checkout root: the nearest directory holding `.git`. */
+function checkoutRootOf(start) {
+  let dir = start;
+  for (let depth = 0; depth < 64 && dir; depth++) {
+    if (existsSync(join(dir, '.git'))) { return dir; }
+    const parent = dirname(dir);
+    if (parent === dir) { return ''; }
+    dir = parent;
+  }
+  return '';
+}
+
+/** The checkout whose `AGENTS.md` the session loaded: the nearest `.git` above the session directory. */
+function routerRoot(options) {
+  if (options.repoRoot) { return options.repoRoot; }
+  const { env = process.env, hookInput = {} } = options;
+  const directory = text(env.CLAUDE_PROJECT_DIR) || text(env.CODEX_PROJECT_DIR) || text(hookInput.cwd) || process.cwd();
+  return checkoutRootOf(directory) || directory;
+}
+
+/**
+ * `ROUTE:` lines for this prompt that this session has not received yet, and
+ * the routed set updated. Empty (0 bytes) when nothing new matches.
+ */
+export function routeLines(options = {}) {
+  const root = routerRoot(options);
+  const router = options.router ?? loadInstructionRouter(root);
+  const matched = classifyPrompt(router, options.prompt ?? '');
+  if (matched.length === 0) { return []; }
+  const state = options.routeState === undefined
+    ? fileRouteState(root, options.sessionId ?? options.identity?.sessionId ?? '')
+    : options.routeState;
+  const seen = new Set(state ? state.read() : []);
+  const fresh = matched.filter(path => !seen.has(path));
+  if (fresh.length === 0) { return []; }
+  if (state) { state.write([...seen, ...fresh]); }
+  return fresh.map(path => routeLine(router, path));
+}
+
+/** After a compaction (or `/clear`) the routed files left the context: route them again on demand. */
+export function rearmRoutes(options = {}) {
+  const state = options.routeState === undefined
+    ? fileRouteState(routerRoot(options), options.sessionId ?? '')
+    : options.routeState;
+  if (state) { state.clear(); }
+}
+
 export function identityLine(identity) {
   return `${IDENTITY_PREFIX} worktree=${identity.worktree} session=${identity.label} harness=${identity.harness}`;
 }
 
-/** The lines every harness injects, in order. OpenCode pushes them as-is. */
+/**
+ * The lines every harness injects, in order. OpenCode pushes them as-is. The
+ * `ROUTE:` lines come last and only when a `prompt` is passed: the OpenCode
+ * system transform has no prompt, so its adapter routes in `chat.message`.
+ */
 export function agentContextLines(options = {}) {
   const { env = process.env } = options;
   const identity = options.identity ?? resolveAgentIdentity(options);
@@ -374,6 +724,9 @@ export function agentContextLines(options = {}) {
   if (orca) { lines.push(ORCA_CONTEXT_LINE); }
   if (options.envMissing ?? envFileMissing({ env })) { lines.push(MISSING_ENV_LINE); }
   else if (options.worktreeUnprovisioned ?? worktreeUnprovisioned({ env })) { lines.push(UNPROVISIONED_WORKTREE_LINE); }
+  if (typeof options.prompt === 'string') {
+    lines.push(...routeLines({ ...options, sessionId: options.sessionId ?? identity.sessionId }));
+  }
   return lines;
 }
 
@@ -416,12 +769,20 @@ function titleFromPrompt(prompt) {
  */
 export function renderHookOutput(options = {}) {
   const { env = process.env, hookInput = {}, home = homedir() } = options;
+  const event = text(hookInput.hook_event_name) || 'UserPromptSubmit';
+  if (event === 'SessionStart') {
+    // Wired with the `compact` matcher only: re-arm the routes, add nothing.
+    if (text(hookInput.source) === 'compact' || text(hookInput.source) === 'clear') {
+      rearmRoutes({ ...options, env, hookInput, sessionId: text(hookInput.session_id) });
+    }
+    return '';
+  }
   const identity = resolveAgentIdentity({ env, hookInput, home });
-  const context = agentContextLines({ env, hookInput, home, identity }).join('\n');
+  const prompt = options.prompt ?? (event === 'UserPromptSubmit' ? text(hookInput.prompt) : undefined);
+  const context = agentContextLines({ ...options, env, hookInput, home, identity, prompt }).join('\n');
   if (identity.harness !== 'claude-code' && identity.harness !== 'codex') {
     return context;
   }
-  const event = text(hookInput.hook_event_name) || 'UserPromptSubmit';
   const hookSpecificOutput = { hookEventName: event, additionalContext: context };
   if (identity.harness === 'claude-code' && event === 'UserPromptSubmit') {
     const title = proposeSessionTitle({ prompt: text(hookInput.prompt), identity });

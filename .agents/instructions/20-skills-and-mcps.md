@@ -2,7 +2,7 @@
 id: skills-and-mcps
 title: 'Skills, modes and MCP capability rules'
 load_when: 'skills, tiers, modes, the skill trigger router, MCP capabilities, adding or renaming a skill'
-triggers: ['\bskills?\b', '\bSKILL\.md\b', '\btier\b', '\bT[1-4]\b', '\bmodo?s?\b.*\bskill', '\bMCPs?\b', '\bcapabilit', 'REGISTRY\.md']
+triggers: ['\bskills?\b', '\bSKILL\.md\b', '\btier\b', '\bT[1-4]\b', '\bmodo?s?\b.*\bskill', '(?<![.\w])MCPs?\b', '\bcapabilit', 'REGISTRY\.md']
 paths: ['.agents/skills/']
 ---
 

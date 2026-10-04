@@ -2,7 +2,7 @@
 id: project-variables
 title: 'Project variables and the instance-identity anchor'
 load_when: 'a {{VAR}} or <<VAR>>, an environment, the Jira host or a Jira field, .agents/project.yaml, any project value'
-triggers: ['\{\{[^}]+\}\}', '<<[A-Z_]+>>', 'project\.yaml', '\benvironment', '\bentorno', '\bstaging\b', '\bproduction\b', '\bATLASSIAN', '\bjira\.', '\bactive_env\b', '\bvariab']
+triggers: ['\{\{[^}]+\}\}', '<<[A-Z_]+>>', 'project\.yaml', '\benvironment', '\bentorno', '\bstaging\b', '\bproduction\b', '\bATLASSIAN', '\b(?:jira|atlassian) (?:host|url|site)\b', '\b(?:host|url|sitio) de (?:jira|atlassian)\b', '\bjira\.', '\bactive_env\b', '\bvariab']
 paths: ['.agents/project.yaml', '.agents/jira-required.yaml', 'config/variables.ts', '.env.example']
 ---
 

@@ -2,7 +2,7 @@
 id: tool-resolution
 title: 'Tool resolution and CLI to skill mapping'
 load_when: 'a [TAG_TOOL] in a skill, an MCP call, a TMS modality, or a mapped CLI (gh, acli, playwright-cli, bunx allure, resend, jq, bun xray, supabase, wrangler, vercel, orca)'
-triggers: ['\[[A-Z_]+_TOOL\]', '\bacli\b', '\bxray\b', '\bplaywright-cli\b', '\ballure\b', '\bresend\b', '\bjq\b', '\bgh\b', '\borca\b', '\bsupabase\b', '\bwrangler\b', '\bvercel\b', '\bMCP\b', '\bmodality\b', '\bcontext7\b', '\bweb ?search\b']
+triggers: ['\[[A-Z_]+_TOOL\]', '\bacli\b', '\bxray\b', '\bplaywright-cli\b', '\ballure\b', '\bresend\b', '\bjq\b', '\bgh\b', '\borca\b', '\bsupabase\b', '\bwrangler\b', '\bvercel\b', '(?<![.\w])MCP\b', '\bmodality\b', '\bcontext7\b', '\bweb ?search\b']
 paths: []
 ---
 
