@@ -226,7 +226,7 @@ The orchestrator presents the per-Story summary to the user, waits for OK, then 
 - **No Jira mutations.** All updates land in Phase 3.
 - **No test execution.** No smoke, no DB queries, no API calls. Refinement is doc-only.
 - **No parametrization tables, no test-data JSON, no Faker recipes.** Deferred to in-sprint planning.
-- **No TC creation.** TCs are formalized in Stage 4 (`/test-documentation`).
+- **No TC creation.** `/sprint-testing` Stage 1 (Modality jira-xray) or Stage 4 `/test-documentation` (Modality jira-native) creates them, per `sprint-testing/SKILL.md` §"TC creation timing".
 - **No git operations.** No branch, no commit.
 - **No new ATP / ATR Jira issues.** Phase 3 publishes the ATP to the `{{jira.acceptance_test_plan}}` field only — nobody in this skill creates TMS items. The Test Plan issue is created later by `/sprint-testing` Stage 1 from the field content.
 - **No subtask mutations.** The `[QA] Shift-Left Review` tracking subtask is owned by the orchestrator (Phase 1: find-or-create → `{{jira.status.subtask.active}}`; Phase 3: annotations + `{{jira.status.subtask.close}}`) — the Refinement subagent never touches it.

@@ -342,9 +342,9 @@ Context loaded / Code explored / Environment
 ### Behaviour reminders
 
 1. Always explain the story before proceeding.
-2. WAIT for user confirmation; never auto-advance (except sprint-wide sub-agent mode).
+2. WAIT for user confirmation; never auto-advance (a sub-agent, in either mode, writes the explanation to `test-session-memory.md` instead).
 3. All documentation and TMS content in English.
-4. ALWAYS load / create module context — do not skip exploration.
+4. Always load module context, or create and publish it when missing (Step 4).
 5. Persist everything into the PBI folder.
 6. Credentials always from `.env` — never hardcode.
 

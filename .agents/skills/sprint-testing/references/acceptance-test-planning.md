@@ -124,7 +124,7 @@ Read every item before planning. Fail fast if any project-wide context file is m
 ```
 
 Also:
-- Author the ATP body → write it to the Story's `{{jira.acceptance_test_plan}}` field (or `fallback:` comment) via `[ISSUE_TRACKER_TOOL]`; append the refined AC section to the ticket description; add label `shift-left-reviewed`.
+- Author the ATP body → write it to the Story's `{{jira.acceptance_test_plan}}` field (or `fallback:` comment) via `[ISSUE_TRACKER_TOOL]`; append the refined AC section to the ticket description.
 - Run `bun run jira:sync-issues get <KEY> --include-comments` to materialize `acceptance-test-plan.md`; read it back to confirm. The synced file is a read-only cache — do not hand-edit or commit hand-written ATP content.
 
 ---
@@ -212,7 +212,7 @@ Anchor the ticket to business + technical context.
 
 ### Technical context
 - Frontend: components, pages/routes, state management (if any)
-- Backend: endpoints from the `business-api-context` map / `api/schemas/` / `api-contracts.yaml`, services, DB tables
+- Backend: endpoints from the `business-api-context` map / `api/schemas/`, services, DB tables
 - External services (if any)
 - Integration points specific to this ticket
 
@@ -371,8 +371,6 @@ Append "QA Refinements (Shift-Left Analysis)" section to the ticket description:
 - Edge Cases Identified (Phase 2)
 - Clarified Business Rules (Phase 2)
 
-Add label `shift-left-reviewed`.
-
 ### Create ATP + ATR — branch on TMS modality
 
 The modality was resolved in Session Start (§0) and persisted into `test-session-memory.md`. Apply the matching branch. Full reference: `test-documentation/references/tms-architecture.md` §Container per modality.
@@ -466,7 +464,6 @@ This branch is the **degraded fallback** (Test Plan / Test Execution work types 
   issue: {STORY_KEY}
   fields:
     {{jira.acceptance_test_plan}}: {full ATP body}
-  labels: +shift-left-reviewed
 
 # Fallback only if {{jira.acceptance_test_plan}} is absent in .agents/jira-fields.json:
 [ISSUE_TRACKER_TOOL] Add Comment:
@@ -569,7 +566,7 @@ See SKILL.md veto rules — veto beats risk score for bugs too.
 2. **Specific data in scenarios** — "valid email" is not enough; write `"john+test@example.com"`.
 3. **Edge cases flagged for PO** — if you invented the expected behavior, mark it **NEEDS PO/DEV CONFIRMATION** and call it out in the final report.
 4. **Explode by default; justify any collapse (not the reverse)** — the count is whatever the Phase 4 techniques yield. A trivially-atomic AC may legitimately collapse to 1-2 outlines *with a stated reason* (`trivially atomic`); a money/range/stateful AC almost never does. Anti-padding = never add an outline that explores nothing a sibling does not — NOT "default to the smallest number". Both forcing 10 empty outlines and stopping at 2 when boundaries/states are untested are failures.
-5. **Traceability now, TCs later** — this skill produces the ATP only. Stage 4 `test-documentation` turns these outlines into Xray TCs with ROI scoring. When TCs do exist, the TC body = the `Test` issue's `description` (synced in both modalities); the Xray Gherkin / Test-Steps plugin field is NOT synced — it only mirrors the description.
+5. **TC timing follows the modality** — `SKILL.md` §"TC creation timing" decides it (jira-xray: sprint `Test` issues created + executed in Stage 1; jira-native: outlines only, Stage 4 `test-documentation` creates the regression-worthy ones with ROI scoring). When TCs do exist, the TC body = the `Test` issue's `description` (synced in both modalities); the Xray Gherkin / Test-Steps plugin field is NOT synced — it only mirrors the description.
 6. **Epic inheritance beats duplication** — if the feature plan already answered a risk or integration point, cite it, do not re-derive.
 7. **Language** — artifacts + commit messages in English; conversation mirrors the user's language.
 8. **Data feasibility is a blocker** — if a critical AC has no reachable data, stop and surface the blocker before writing outlines.
@@ -585,7 +582,6 @@ See SKILL.md veto rules — veto beats risk score for bugs too.
 - [ ] Phases 1-4 produced with realistic scenario + outline counts
 - [ ] Edge cases labeled, PO-confirmation flags on any inferred behavior
 - [ ] Refined ACs + Edge Cases appended to ticket description
-- [ ] Label `shift-left-reviewed` added
 - [ ] ATP content written to `{{jira.acceptance_test_plan}}` (or `## Acceptance Test Plan (ATP)` fallback comment)
 - [ ] jira-xray: Set-first order honored — ATP item find-or-created FROM the field · ATS created/updated with ALL the Story's TCs + linked to the Story via the `test` slug (components inherited) · ATP/ATR test lists derived from the ATS membership
 - [ ] jira-xray: ATR created WITH the Test Environment (`active_env`) — no environment, no ATR

@@ -108,7 +108,7 @@ Keep to 5-10 bullets. The goal is to anchor risk analysis, not reproduce the bus
 From the API map (`business-api-context`) + the infra map (`infra-context`: `architecture`, `backend`, `frontend`) + `api/schemas/` + backend/frontend code exploration:
 
 - Frontend components / pages / routes touched
-- Backend endpoints + services (reference section ids from the `business-api-context` map, `api/schemas/`, or `api-contracts.yaml`)
+- Backend endpoints + services (reference section ids from the `business-api-context` map or `api/schemas/`)
 - Database tables + critical queries
 - External services (payment, email, auth provider, webhooks)
 - Integration points table (internal: FE↔API, API↔DB, API↔Auth; external: API↔Stripe, API↔Email, …)
@@ -282,7 +282,7 @@ Else:
 1. **Keep the plan feature-level.** Zero test outlines, zero literal test data. All of that is ATP territory.
 2. **Do not forbid low counts.** A 2-line story may legitimately need 1 test. Force-fitting "at least 5 per story" produces low-value tests.
 3. **Team Discussion is non-blocking.** Extract PO / Dev answers from epic comments, but never wait for them synchronously — timebox Section 4 to "mark open and move on".
-4. **Traceability**: once per-story ATPs exist, link back `{STORY_ATP} ← {EPIC_FTP}` via a line at the top of each ATP. Sprint-testing Stage 1 does not create Xray TCs yet (`test-documentation` owns that in Stage 4).
+4. **Traceability**: once per-story ATPs exist, link back `{STORY_ATP} ← {EPIC_FTP}` via a line at the top of each ATP. Stage 1 TC timing follows `SKILL.md` §"TC creation timing" (jira-xray creates sprint `Test` issues; jira-native defers to Stage 4 `test-documentation`).
 5. **Hand-off to ATP**: feature plan is input to every child story's `acceptance-test-planning.md` run. Each child ATP MUST cite the shared risks, integration points, and personas from the feature plan rather than rediscovering them.
 6. **Regeneration**: if requirements change mid-sprint, re-run with updated inputs and overwrite. Do not amend previous comments — add a fresh dated comment with changes called out.
 7. **Language**: artifacts in English; user-facing conversation can mirror the user's language.

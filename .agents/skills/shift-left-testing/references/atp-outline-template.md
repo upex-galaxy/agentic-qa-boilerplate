@@ -254,8 +254,7 @@ If Partial / No, list issues:
 | Phase 4 numbered test steps | YES | NO (titles + 1-line precondition + 1-line expected only) |
 | Phase 5 test-data generation strategy | YES | NO |
 | Phase 5 Faker recipes | YES | NO |
-| TC creation in Xray (Modality jira-xray) | YES (Phase 6) | NO — TCs created in Stage 4 `/test-documentation` |
-| Commit on `test/{KEY}/...` branch | YES | NO — Jira is canonical |
+| TC creation in Xray (Modality jira-xray) | YES — sprint `Test` issues in Stage 1 | NO — no TC work items pre-sprint |
 | Bug variant section | YES | NO — bugs out of scope |
 | Status flag at top | "Test Analysis — Ready for Execution" | "Refined — Awaiting PO Estimation" |
 
@@ -273,7 +272,7 @@ When `/sprint-testing` later runs Stage 1 on a Story with `shift-left-reviewed` 
 ## Gotchas
 
 1. **The skeleton above is canonical.** Do not reorder sections. Section names map 1:1 to the Jira description block PO sees during planning.
-2. **NEEDS PO/DEV CONFIRMATION** marker is verbatim — never paraphrased. Tooling later greps for this string.
+2. **NEEDS PO/DEV CONFIRMATION** marker is verbatim — never paraphrased. The Stage 0 DoD (`agentic-qa-core/references/stage-gates.md`) checks for it.
 3. **Empty sections stay**, just with "None identified." — easier for the reviewer to verify completeness than to discover an absent section.
 4. **Coverage estimate table** must show 0 for empty Types. Hidden zeros bias PO estimation.
 5. **Mirror discipline**: the local file is the source of truth for what gets pushed to Jira in Phase 3. Diff = error.
