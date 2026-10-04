@@ -833,6 +833,9 @@ const STALE_PATH_ALLOWED = new Set<string>([
   // Gitignored generated/config artifacts (see .gitignore)
   'api/openapi.json',
   'api/.openapi-config.json',
+  // Gitignored single-use prompts `bun run up` writes (cited by the updater-parity reference)
+  '.agents/prompts/parity-plan.md',
+  '.agents/prompts/pbi-cache-migration.md',
   // Illustrative examples (docs teach a naming shape, not a real file)
   'tests/components/UsersPage.ts',
   'tests/components/AdminFixture.ts',
