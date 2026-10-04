@@ -31,6 +31,14 @@
  *     prohibition) or `` enforced: `bun run <script>` `` (a gate in
  *     `package.json`).
  *
+ *   - SKILLS: a skill the project authored is routed from the `## Project
+ *     context skills` table of `project.md`, never from the synced skills
+ *     section. A row there whose `.agents/skills/<slug>/SKILL.md` does not
+ *     exist is an error; a filled table while `project.md` has no `triggers`
+ *     is a warning (the hook never routes the file by keyword); a project-local
+ *     skill (`isProjectLocalSkillPath`, the shipped context map skills aside)
+ *     in `20-skills-and-mcps.md` is a warning (`bun run up` overwrites that
+ *     file and the row is lost).
  *   - STUB: `project.md.template`, the generic `project.md` a downstream project
  *     receives, carries none of this repo's identity (`stubLeaks`: the
  *     `project.schema.yaml` identity patterns, the own Git Strategy heading,
@@ -49,6 +57,8 @@
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { isMaintainerCopy } from '../cli/lib/agents-schema.ts';
+import { contextMapSkill } from '../cli/lib/context-maps.ts';
+import { isProjectLocalSkillPath } from '../cli/lib/updater-core.ts';
 import { PROJECT_INSTRUCTIONS, PROJECT_INSTRUCTIONS_TEMPLATE, stubLeaks } from '../cli/lib/updater-instructions.ts';
 import {
   importRefs,
@@ -56,8 +66,12 @@ import {
   L0_FILE,
   listSections,
   PROJECT_SECTION,
+  PROJECT_SKILLS_HEADING,
   routerRows,
   sectionRefs,
+  SKILL_ROUTER_HEADING,
+  SKILLS_SECTION,
+  skillTableRows,
 } from './lib/instructions.ts';
 
 /** Target for the boilerplate's L0: over it is a warning, so the number stays visible. */
@@ -73,7 +87,7 @@ export const RULES_SECTION = '01-critical-rules.md';
 export interface InstructionFinding {
   file: string
   line: number
-  kind: 'budget' | 'router' | 'unrouted' | 'frontmatter' | 'trigger' | 'rule' | 'binding' | 'stub'
+  kind: 'budget' | 'router' | 'unrouted' | 'frontmatter' | 'trigger' | 'rule' | 'binding' | 'skills' | 'stub'
   severity: 'error' | 'warning'
   detail: string
 }
@@ -293,6 +307,28 @@ export function lintInstructions(root: string): InstructionReport {
       if (binding.length > 0 && binding.every(x => l0Norm.includes(x))) { return; }
       findings.push({ severity: 'error', file: s.rel, line: i + 1, kind: 'binding', detail: 'NEVER/MUST line with no binding id: add `Rule #N`, binding: `/<skill>`, enforced: `bun run <script>`, or put the sentence in L0' });
     });
+  }
+
+  // SKILLS: the project's own skills are routed from project.md, the one file `bun run up` never overwrites.
+  const project = sections.find(s => s.name === PROJECT_SECTION);
+  const projectRel = `${INSTRUCTIONS_DIR}/${PROJECT_SECTION}`;
+  const projectRows = project ? skillTableRows(project.text, PROJECT_SKILLS_HEADING) ?? [] : [];
+  for (const row of projectRows) {
+    if (!existsSync(join(root, '.agents', 'skills', row.slug, 'SKILL.md'))) {
+      findings.push({ severity: 'error', file: projectRel, line: row.line, kind: 'skills', detail: `\`${row.slug}\` has no .agents/skills/${row.slug}/SKILL.md: remove the row or create the skill` });
+    }
+  }
+  const projectTriggers = project?.frontmatter?.triggers;
+  if (project && projectRows.length > 0 && Array.isArray(projectTriggers) && projectTriggers.length === 0) {
+    findings.push({ severity: 'warning', file: project.rel, line: 1, kind: 'skills', detail: 'the Project context skills table has rows but `triggers` is empty: add each skill\'s trigger phrases as regex sources so the hook routes this file' });
+  }
+  const skillsSection = sections.find(s => s.name === SKILLS_SECTION);
+  const skillsRel = `${INSTRUCTIONS_DIR}/${SKILLS_SECTION}`;
+  for (const row of skillsSection ? skillTableRows(skillsSection.text, SKILL_ROUTER_HEADING) ?? [] : []) {
+    // The context map skills ship their rows upstream; every other project-local `<aspect>-context` is the project's.
+    if (isProjectLocalSkillPath(`.agents/skills/${row.slug}/SKILL.md`) && contextMapSkill(row.slug) === undefined) {
+      findings.push({ severity: 'warning', file: skillsRel, line: row.line, kind: 'skills', detail: `\`${row.slug}\` is project-owned but routed from a synced file \`bun run up\` overwrites: move the row to ${INSTRUCTIONS_DIR}/${PROJECT_SECTION} \`## Project context skills\`` });
+    }
   }
 
   // STUB: the generic project.md a downstream project receives carries none of this repo's identity.

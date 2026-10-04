@@ -24,6 +24,17 @@ export const SKILLS_SECTION = '20-skills-and-mcps.md';
 export const INSTRUCTIONS_README = 'README.md';
 /** Project-owned overlay section: delivered once as a stub, never synced. */
 export const PROJECT_SECTION = 'project.md';
+/**
+ * The skill router table's heading in the skills section (or a pre-split `AGENTS.md`).
+ * That file is synced: `bun run up` overwrites it, so it holds upstream skills only.
+ */
+export const SKILL_ROUTER_HEADING = /^### Skills \(lazy-loaded by trigger phrase\)/m;
+/**
+ * The table in `project.md` where a project routes the skills it authored
+ * (`project-context` mode `context-skill`, adaptation). Project-owned, so the
+ * rows survive `bun run up`.
+ */
+export const PROJECT_SKILLS_HEADING = /^## Project context skills\s*$/m;
 export const ROUTER_START = '<!-- router:start -->';
 export const ROUTER_END = '<!-- router:end -->';
 
@@ -88,6 +99,39 @@ export function skillRouterSource(root: string): { rel: string, path: string } |
   const l0 = join(root, L0_FILE);
   if (existsSync(l0)) { return { rel: L0_FILE, path: l0 }; }
   return null;
+}
+
+export interface SkillTableRow {
+  /** Skill slug from the first column (backticked). */
+  slug: string
+  /** 1-based line in the file. */
+  line: number
+}
+
+/**
+ * Rows of the skill table under `heading`, up to the next heading of level 1-3,
+ * one per first-column backticked slug. Null when the heading is missing.
+ */
+export function skillTableRows(text: string, heading: RegExp): SkillTableRow[] | null {
+  const start = text.search(heading);
+  if (start < 0) { return null; }
+  const firstLine = text.slice(0, start).split('\n').length;
+  const after = text.slice(start).split('\n').slice(1);
+  const next = after.findIndex(line => /^#{1,3} /.test(line));
+  const body = next < 0 ? after : after.slice(0, next);
+  const rows: SkillTableRow[] = [];
+  body.forEach((line, i) => {
+    const cell = /^\|\s*`([a-z0-9][a-z0-9-]*)`\s*\|/.exec(line);
+    if (cell) { rows.push({ slug: cell[1], line: firstLine + 1 + i }); }
+  });
+  return rows;
+}
+
+/** The project's own skill rows (`## Project context skills` in `project.md`), or null when the file or the heading is missing. */
+export function projectSkillRows(root: string): SkillTableRow[] | null {
+  const file = join(root, INSTRUCTIONS_DIR, PROJECT_SECTION);
+  if (!existsSync(file)) { return null; }
+  return skillTableRows(readFileSync(file, 'utf8'), PROJECT_SKILLS_HEADING);
 }
 
 export interface RouterRow {

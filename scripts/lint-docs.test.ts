@@ -167,6 +167,25 @@ describe('lint-docs roster and scripts', () => {
     ]);
   });
 
+  test('a skill the project added is routed from its own project.md table, which bun run up never overwrites', () => {
+    skill('alpha-flow');
+    skill('beta-flow');
+    skill('ghost-flow');
+    write('.agents/instructions/20-skills-and-mcps.md', router(['alpha-flow']));
+    write('.agents/instructions/project.md', [
+      '# Project',
+      '## Project context skills',
+      '| Skill | Trigger | Purpose |',
+      '|---|---|---|',
+      '| `beta-flow` | "beta" | Project workflow. |',
+      '## Other',
+      '| `ghost-flow` | a table under another heading does not route |',
+      '',
+    ].join('\n'));
+    const findings = lintDocs(root).findings.filter(f => f.kind === 'roster');
+    expect(findings.map(f => `${f.file}:${f.target}`)).toEqual(['.agents/instructions/20-skills-and-mcps.md:ghost-flow']);
+  });
+
   test('the human pages are not a skill list: a README that names no skill passes (Critical Rule #17)', () => {
     write('packages/create-agentic-qa/package.json', '{}');
     skill('alpha-flow');

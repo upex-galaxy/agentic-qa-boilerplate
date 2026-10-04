@@ -31,8 +31,11 @@
  *   - a repo skill (a committed `.agents/skills/<slug>/SKILL.md`) is missing
  *     from the skill router table (`roster`), read from
  *     `.agents/instructions/20-skills-and-mcps.md` (or `AGENTS.md` in a repo
- *     that has not split its instructions; `skillRouterSource`). A project-local
- *     `<aspect>-context` skill is exempt (`isProjectLocalSkillPath`). The human
+ *     that has not split its instructions; `skillRouterSource`). A row in the
+ *     project's own `## Project context skills` table (`project.md`) counts
+ *     too: the skills section is synced, so a skill the project added is
+ *     routed from there. A project-local `<aspect>-context` skill is exempt
+ *     (`isProjectLocalSkillPath`). The human
  *     pages are NOT checked for a skill list: they point to the generated
  *     `REGISTRY.md`, because enumerating the skills there is the mutable-set
  *     copy Critical Rule #17 forbids.
@@ -66,7 +69,7 @@ import type { VolatileKind } from './lib/volatile-facts.ts';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { isProjectLocalSkillPath } from '../cli/lib/updater-core.ts';
-import { listSections, skillRouterSource } from './lib/instructions.ts';
+import { listSections, projectSkillRows, SKILL_ROUTER_HEADING, skillRouterSource, skillTableRows } from './lib/instructions.ts';
 import { relativePosix, toPosix } from './lib/posix-path.ts';
 import { isVolatileExemptPath, scanVolatile, volatileRemedy } from './lib/volatile-facts.ts';
 
@@ -331,21 +334,10 @@ export function lintDocFile(root: string, file: string): DocFinding[] {
   return findings;
 }
 
-const ROUTER_HEADING = /^### Skills \(lazy-loaded by trigger phrase\)/m;
-
 /** Slugs in the first column of the skill router table, or null when the table is missing. */
 export function routerSlugs(agentsMd: string): Set<string> | null {
-  const start = agentsMd.search(ROUTER_HEADING);
-  if (start < 0) { return null; }
-  const after = agentsMd.slice(start).split('\n').slice(1);
-  const next = after.findIndex(line => /^#{1,3} /.test(line));
-  const section = next < 0 ? after : after.slice(0, next);
-  const slugs = new Set<string>();
-  for (const line of section) {
-    const cell = /^\|\s*`([a-z0-9][a-z0-9-]*)`\s*\|/.exec(line);
-    if (cell) { slugs.add(cell[1]); }
-  }
-  return slugs;
+  const rows = skillTableRows(agentsMd, SKILL_ROUTER_HEADING);
+  return rows === null ? null : new Set(rows.map(row => row.slug));
 }
 
 /** Repo skills: committed skill folders (a gitignored community install does not count). */
@@ -372,6 +364,8 @@ export function lintRoster(root: string): DocFinding[] {
   if (router === null) {
     return [{ file: source.rel, line: 1, kind: 'roster', target: 'skill router table (### Skills heading not found)' }];
   }
+  // A skill the project authored is routed from its own `project.md` table, which `bun run up` never overwrites.
+  for (const row of projectSkillRows(root) ?? []) { router.add(row.slug); }
   for (const slug of skills) {
     if (!router.has(slug)) { findings.push({ file: source.rel, line: 1, kind: 'roster', target: slug }); }
   }

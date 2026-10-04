@@ -546,7 +546,7 @@ Scrub the example identity (`upexgalaxy` / `UPEX-` / `dojo` values, the example 
 - Any folder under `docs/` other than `docs/core/` and `docs/assets/`: the project's own pages.
 - **Never** `docs/core/**`, `docs/assets/**`, `docs/index.html` or `docs/README.md`: the updater owns them and would offer the edit for overwrite on the next `bun run up`. Project-specific human documentation goes in a new folder under `docs/` (it appears in the portal sidebar on refresh).
 
-Close with `bun run docs:check` (dead paths, page metadata, every repo skill in the `.agents/instructions/20-skills-and-mcps.md` router, every quoted `bun run` script declared in `package.json`). A skill the project added gets its §5 router row here.
+Close with `bun run docs:check` (dead paths, page metadata, every repo skill in the `.agents/instructions/20-skills-and-mcps.md` router or in the project's own table, every quoted `bun run` script declared in `package.json`). A skill the project added gets its router row in the `## Project context skills` table of `.agents/instructions/project.md`, with its trigger phrases in that file's `triggers:`; never in `20-skills-and-mcps.md`, which `bun run up` overwrites.
 
 ### 9.4 Close
 

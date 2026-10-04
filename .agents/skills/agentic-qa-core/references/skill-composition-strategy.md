@@ -5,7 +5,8 @@
 > **Home**: `.agents/skills/agentic-qa-core/references/skill-composition-strategy.md` — meta-doctrine consumed by all T1 skills, sibling to `briefing-template.md`, `dispatch-patterns.md`, `orchestration-doctrine.md`.
 >
 > **Companion files**:
-> - `AGENTS.md` (project memory — top-level rules and skill mentions)
+> - `AGENTS.md` (always-on project memory: top-level rules and the router to its sections)
+> - `.agents/instructions/20-skills-and-mcps.md` (the skill router table: tiers and skill mentions; a project's own skills route from the `## Project context skills` table of `.agents/instructions/project.md`)
 > - `.agents/skills/*/SKILL.md` (per-skill instructions; reference this doc relatively as `agentic-qa-core/references/skill-composition-strategy.md`)
 > - `cli/install.ts` (installer — declares project-level vs user-level skill installs; source-of-truth for T2/T3/T4 names)
 > - `.agents/skills/agentic-qa-core/references/{briefing-template,dispatch-patterns,orchestration-doctrine}.md` (sibling meta-doctrine references)
@@ -24,7 +25,7 @@ The repo ships the T1 and T2 skills `.agents/skills/REGISTRY.md` lists (`.agents
 
 Gaps the strategy resolves:
 
-1. Community user-level skills get deprecated / replaced / renamed by their authors. Naming them in AGENTS.md is fragile.
+1. Community user-level skills get deprecated / replaced / renamed by their authors. Naming them in the skill router is fragile.
 2. SDD-* skills are seductively useful, but applied per-ticket they double the cost of `test-automation` (which already has Plan → Code → Review). Without a gate, AI orchestrators chain SDD into per-ticket flows, inflating token spend and rewriting per-test specs that should not exist.
 3. No formal contract for when a project-owned skill should "borrow" capabilities from a sister skill (project-level community or user-level community).
 4. SDD bundle is project-dependency level (installed by `install.ts`) but treated as foreign code with no clear ownership of WHEN it may legitimately fire.
@@ -37,11 +38,11 @@ Four tiers. Different discovery and load rules per tier.
 
 | Tier | Location | Examples | Discovery | Load behavior |
 |--|--|--|--|--|
-| **T1 — Project-owned** | `.agents/skills/` (committed) | every committed skill `.agents/skills/REGISTRY.md` lists as T1 | Named in AGENTS.md "Skills" registry | Silent (load on trigger, no ask) |
-| **T2 — Vendored** | `.agents/skills/` (committed, upstream attribution in frontmatter) | `judgment-day` (gentle-ai, Apache-2.0) | Named in AGENTS.md | Silent on explicit user trigger (`/judgment-day`, `juzgar`) or when cited by host orchestrator (`test-automation` Phase 3, `git-flow-master` pre-PR) |
+| **T1 — Project-owned** | `.agents/skills/` (committed) | every committed skill `.agents/skills/REGISTRY.md` lists as T1 | Named in the skill router table (`20-skills-and-mcps.md`; a project's own skills in `project.md`) | Silent (load on trigger, no ask) |
+| **T2 — Vendored** | `.agents/skills/` (committed, upstream attribution in frontmatter) | `judgment-day` (gentle-ai, Apache-2.0) | Named in the skill router table | Silent on explicit user trigger (`/judgment-day`, `juzgar`) or when cited by host orchestrator (`test-automation` Phase 3, `git-flow-master` pre-PR) |
 | **T2-opt — Optional SDD bundle (user-installed outside this repo)** | `~/.claude/skills/sdd-*` (only if present on the machine, e.g. left by an older gentle-ai release) | any `sdd-*` skill (its upstream owns the bundle) | NOT installed by `bun run setup`. Discovered at runtime from system-reminder skill list when present | Silent **inside** `framework-development` only — see §4 anti-leak contract. NEVER silent inside `shift-left-testing`, `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing` |
-| **T3 — Community project-level** | `.agents/skills/` (installed by `install.ts` PROJECT_LEVEL_SKILLS, not committed) | `PROJECT_LEVEL_SKILLS` in `cli/install.ts` | Named **by category** in AGENTS.md (not by skill name). Discovered at runtime from system-reminder skill list | Silent if matched by category (e.g. user writes a Playwright test → load `playwright-best-practices`) |
-| **T4 — Community user-level** | `~/.claude/skills/` (installed by `install.ts` USER_LEVEL_SKILLS) | `USER_LEVEL_SKILLS` in `cli/install.ts` | **NOT named in AGENTS.md**. Discovered at runtime from system-reminder skill list. Auto-match by task domain | **ASK user before load** (may not be installed, or user may not want it for this task) |
+| **T3 — Community project-level** | `.agents/skills/` (installed by `install.ts` PROJECT_LEVEL_SKILLS, not committed) | `PROJECT_LEVEL_SKILLS` in `cli/install.ts` | Named **by category** in the skill router (not by skill name). Discovered at runtime from system-reminder skill list | Silent if matched by category (e.g. user writes a Playwright test → load `playwright-best-practices`) |
+| **T4 — Community user-level** | `~/.claude/skills/` (installed by `install.ts` USER_LEVEL_SKILLS) | `USER_LEVEL_SKILLS` in `cli/install.ts` | **NOT named in the skill router**. Discovered at runtime from system-reminder skill list. Auto-match by task domain | **ASK user before load** (may not be installed, or user may not want it for this task) |
 
 ### Tier decision rule
 
@@ -276,7 +277,7 @@ ELIF the skill is a community skill useful across many of the user's projects   
 
 Promotion path (T4 → T3): when a user-level skill turns out to be load-bearing for THIS repo's QA work and no clone should run without it. Move from `USER_LEVEL_SKILLS` to `PROJECT_LEVEL_SKILLS` in `install.ts` and add a brief note in `.agents/instructions/20-skills-and-mcps.md`.
 
-Demotion path (T3 → T4): when a project-level skill turns out to be useful elsewhere AND no longer load-bearing here. Move and remove from AGENTS.md.
+Demotion path (T3 → T4): when a project-level skill turns out to be useful elsewhere AND no longer load-bearing here. Move and remove from `.agents/instructions/20-skills-and-mcps.md`.
 
 ---
 
@@ -318,7 +319,7 @@ Demotion path (T3 → T4): when a project-level skill turns out to be useful els
 The four-tier model is not bureaucracy. Each tier solves a real failure:
 
 - **T1 vs T2-opt**: T1 is our doctrine. T2-opt is a third-party planning bundle. Mixing them means our QA workflows could be silently rewritten by an upstream SDD release. The gate (§4) means SDD only fires where we explicitly authorized it.
-- **T2 vs T3**: T2 is vendored and committed (`judgment-day`, attribution in frontmatter, no upstream dependency). T3 is community-managed via `bunx skills add`. Different install paths, different upgrade cadences, different breakage modes. AGENTS.md must NOT pretend they are equivalent.
+- **T2 vs T3**: T2 is vendored and committed (`judgment-day`, attribution in frontmatter, no upstream dependency). T3 is community-managed via `bunx skills add`. Different install paths, different upgrade cadences, different breakage modes. The skill router must NOT pretend they are equivalent.
 - **T3 vs T4**: T3 ships with every clone of this repo. T4 may or may not be installed. Asking before T4 use is what prevents "I cleared my `~/.claude/skills/` and now QA is broken" support tickets.
 - **Categories vs names**: Community skill authors rename and abandon things. A QA repo that hardcodes `playwright-best-practices` by exact name breaks the day the author republishes as `playwright-patterns`. Categories survive renames.
 
@@ -336,7 +337,7 @@ The script is wired in `package.json` as `"skills:check": "bun run scripts/lint-
 
 ## 10. What Lives Where
 
-| Rule | AGENTS.md | SKILL.md (per-skill) | This doc (`skill-composition-strategy.md`) |
+| Rule | Skill router (`20-skills-and-mcps.md`) | SKILL.md (per-skill) | This doc (`skill-composition-strategy.md`) |
 |--|--|--|--|
 | Skill tier model | Brief mention + link here | — | Authoritative |
 | Skill Composition Protocol | Summary + link | Per-skill `complementary_categories` frontmatter + load behavior | Authoritative full protocol |
@@ -347,7 +348,7 @@ The script is wired in `package.json` as `"skills:check": "bun run scripts/lint-
 | T2 vendored skill names (`judgment-day`) | §5 (named, with citation context) | host skill SKILL.md references it in its review steps (required-verifier option or optional gate: §11 decision 3) | Reference only |
 | T2-opt SDD bundle names | §5 (named, with anti-leak note + manual-install pointer) | framework-development SKILL.md references SDD skills by name in delegation points | Reference only |
 | T3 skill names (community project-level) | §5 (mention `playwright-cli`, `playwright-best-practices` by name; small list, low fragility) | — | Reference only |
-| T4 skill names (community user-level) | NOT named in AGENTS.md. Auto-discovered at runtime per this doc | — | Reference only — name list only in installer |
+| T4 skill names (community user-level) | NOT named in the skill router. Auto-discovered at runtime per this doc | — | Reference only — name list only in installer |
 
 ---
 
