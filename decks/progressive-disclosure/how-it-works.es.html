@@ -575,7 +575,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <ol class="steps mt-m">
       <li><b>Antes de actuar</b>, el pedido se compara contra el router y se lee cada archivo de sección que coincide y todavía no está en la conversación.</li>
       <li><b>Una línea <code>ROUTE:</code></b> que inyecta el hook es obligatoria y gana sobre el criterio propio del modelo.</li>
-      <li><b>Una sección ya leída no se relee</b>, salvo que una compactación la haya sacado del contexto.</li>
+      <li><b>Una sección ya leída no se relee</b>, salvo que una compactación o un <code>/clear</code> la haya sacado del contexto.</li>
       <li><b>Ante la duda, se lee.</b> Una sección salteada es justo la falla que este diseño evita.</li>
       <li><b>Una sección obliga</b> exactamente igual que <code>AGENTS.md</code>.</li>
       <li><b>Una cita <code>§N</code></b>, en cualquier lado, nombra el heading numerado que se conserva textual en el archivo que el router lista para ella.</li>
@@ -614,7 +614,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 <span class="k">ROUTE: read</span> package.json</div>
         <table class="tt tight">
           <tr><th style="width:120px">Host</th><th>Cómo llega la línea</th></tr>
-          <tr><td class="small"><b>Claude Code</b></td><td class="small"><code>UserPromptSubmit</code> corre el emisor; <code>SessionStart</code> <code>compact</code> lo re-arma.</td></tr>
+          <tr><td class="small"><b>Claude Code</b></td><td class="small"><code>UserPromptSubmit</code> corre el emisor; <code>SessionStart</code> <code>compact</code> o <code>clear</code> lo re-arma.</td></tr>
           <tr><td class="small"><b>Codex</b></td><td class="small">Lo mismo, y solo en un repositorio de confianza.</td></tr>
           <tr><td class="small"><b>OpenCode 1</b></td><td class="small"><code>chat.message</code> clasifica, la system transform empuja las líneas, <code>session.compacting</code> re-arma.</td></tr>
           <tr><td class="small"><b>OpenCode 2</b></td><td class="small">Solo router: ningún hook le pasa el pedido. Degradación declarada.</td></tr>
@@ -625,7 +625,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <tr><td class="small"><b>Ancla</b></td><td class="small">Una fila se dispara cuando el pedido coincide con su primer archivo de <code>Read</code>, y entonces se rutean todos los de la fila. Así un archivo que comparten dos filas no arrastra los de la otra.</td></tr>
         <tr><td class="small"><b>Disparadores</b></td><td class="small">Cada sección declara en su frontmatter <code>triggers:</code> (regex sin distinguir mayúsculas, en inglés y en español) y <code>paths:</code> (rutas del repo que el pedido nombra). Un import que ancla solo su fila (<code>@package.json</code>) usa <code>IMPORT_ROW_TRIGGERS</code> del emisor. Ajustar el ruteo es editar esas listas, nunca L0.</td></tr>
         <tr><td class="small"><b>Dedupe por sesión</b></td><td class="small">Un JSON por checkout y por sesión, en <code>agentic-instruction-routes/</code> bajo el temp del sistema, recuerda qué se ruteó. Un pedido que no necesita nada nuevo no agrega nada.</td></tr>
-        <tr><td class="small"><b>Re-armado</b></td><td class="small">Tras una compactación, el emisor borra ese estado y no imprime nada: lo que la compactación sacó se vuelve a rutear la próxima vez que haga falta.</td></tr>
+        <tr><td class="small"><b>Re-armado</b></td><td class="small">Tras una compactación o un <code>/clear</code>, el emisor borra ese estado y no imprime nada: lo que salió del contexto se vuelve a rutear la próxima vez que haga falta.</td></tr>
       </table>
     </div>
     <div class="notes">Un emisor, tres adaptadores: Claude Code y Codex lo ejecutan como command hook, OpenCode lo importa desde .opencode/plugins/personality-reinject.js. El estado de ruteo nunca vive en el repo: es estado de sesión. La confianza de Codex es estado de runtime, por eso setup:doctor la reporta aparte (10-harnesses.md, Codex trust).</div>
