@@ -166,10 +166,10 @@
               </td>
             </tr>
             <tr>
-              <td><strong>gentle-ai</strong></td>
+              <td><strong>engram</strong></td>
               <td>
-                la mínima que exige <code>bun run setup</code> (<code>MIN_GENTLE_AI_VERSION</code>
-                en <code>cli/install.ts</code>)
+                la mínima que exige <code>bun run setup</code> (<code>MIN_ENGRAM_VERSION</code> en
+                <code>cli/install.ts</code>)
               </td>
               <td>
                 Aviso. Sin él no se instala Engram (memoria entre sesiones); el resto funciona.
@@ -247,15 +247,15 @@ bun run setup</code></pre>
         <li>
           <strong>Detección</strong>
           <p>
-            Comprueba Bun y las dependencias, detecta gentle-ai y te deja elegir qué harness
-            configurar: Claude Code, OpenCode o Codex.
+            Comprueba Bun y las dependencias, detecta el binario <code>engram</code> y te deja
+            elegir qué harness configurar: Claude Code, OpenCode o Codex.
           </p>
         </li>
         <li>
           <strong>Instalación</strong>
           <p>
             <code>bun install</code>, los navegadores de Playwright (<code>bun run pw:install</code
-            >), Engram con <code>gentle-ai install --preset minimal</code> y los skills de la
+            >), Engram con <code>engram setup</code> en cada harness elegido y los skills de la
             comunidad con <code>bunx skills add</code>.
           </p>
         </li>
@@ -829,10 +829,15 @@ subagente (contexto limpio)
       <h2 id="engram">Engram: memoria entre sesiones</h2>
       <p>
         Engram es un servidor MCP que guarda memoria estructurada y sobrevive a sesiones y
-        compactaciones. Lo instala <code>bun run setup</code> con
-        <code>gentle-ai install --preset minimal</code>, a nivel de usuario, fuera del repo. Ese
-        preset instala solo Engram: los skills SDD de gentle-ai no vienen, porque los skills de
-        workflow ya cubren Plan, Code y Verify.
+        compactaciones. <code>bun run setup</code> lo conecta a cada harness con
+        <code>engram setup</code>, a nivel de usuario, fuera del repo. Ese comando registra el
+        servidor de memoria y nada más. El boilerplate no usa la capa de workflow de gentle-ai: los
+        skills de workflow ya cubren Plan, Code y Verify.
+      </p>
+      <p>
+        Dos cosas conviene saber. El agente guarda solo cuando él llama a <code>mem_save</code>;
+        nada se guarda solo. Y la búsqueda compara palabras, no significado: dos o tres palabras
+        clave del título de la memoria encuentran más que la pregunta entera.
       </p>
       <div class="table-wrap">
         <table>
@@ -867,7 +872,7 @@ subagente (contexto limpio)
           </tbody>
         </table>
       </div>
-      <p>Si saltas gentle-ai, todo sigue funcionando, pero cada sesión empieza sin memoria.</p>
+      <p>Si saltas Engram, todo sigue funcionando, pero cada sesión empieza sin memoria.</p>
 
       <h2 id="chuleta">Chuleta: quiero X, ejecuto Y</h2>
       <p>

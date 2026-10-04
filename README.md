@@ -71,7 +71,7 @@ Before running `bunx create-agentic-qa@latest` or `bun install && bun run setup`
 
 | Tool          | Min version | Why                                                                                                                                                                                                       | Install                                                                                                                                                                            |
 | ------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **gentle-ai** | `MIN_GENTLE_AI_VERSION` in `cli/install.ts` | Installs the Engram persistent memory component via `--preset minimal`. Framework still runs without it, but cross-session memory is off. SDD-\* skills are NOT installed by default — all shipped workflow skills (`/framework-development`, `/sprint-testing`, `/test-automation`, etc.) run self-contained without them. | macOS: `brew install gentle-ai` · Linux: `go install github.com/Gentleman-Programming/gentle-ai/cmd/gentle-ai@latest` · [repo](https://github.com/Gentleman-Programming/gentle-ai) |
+| **engram** | `MIN_ENGRAM_VERSION` in `cli/install.ts` | Persistent memory across sessions. The installer wires it into each selected agent with `engram setup`. Framework still runs without it, but cross-session memory is off. The boilerplate does not use gentle-ai's workflow layer: every shipped workflow skill runs self-contained. | Homebrew (macOS / Linux): `brew trust gentleman-programming/tap && brew install gentleman-programming/tap/engram` · Go: `go install github.com/Gentleman-Programming/engram/v3/cmd/engram@latest` · [install docs](https://github.com/Gentleman-Programming/engram/blob/main/docs/INSTALLATION.md) |
 
 ### Per-skill CLIs (lazy-required — needed when the skill runs, not at setup)
 
@@ -106,7 +106,7 @@ Nothing blocks install, update or `setup:doctor`: a value is validated by the co
 | Stage                    | Check depth                                                                                                                     | Behavior                                                                                                                                                                                                  |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Preflight                | Version compare — reads `Bun.version`, parses semver, requires the floor `cli/doctor.ts` sets. Also checks `node_modules/@inquirer/prompts` exists. | Hard exit 1 with explicit `Fix:` command before any other step.                                                                                                                                           |
-| `2-gentle-ai-detect`     | Version compare — runs `gentle-ai version`, parses semver, requires the minimum `cli/install.ts` enforces (`MIN_GENTLE_AI_VERSION`).                                                | Missing: prints brew + go install commands + docs URL, asks exit-or-continue. Too old: warns and continues with `gentle-ai update` hint.                                                                  |
+| `2-gentle-ai-detect`     | Version compare — runs `engram version`, parses semver, requires the minimum `cli/install.ts` enforces (`MIN_ENGRAM_VERSION`). The step key keeps its older name for state compatibility.                                                | Missing: prints brew + go install commands + docs URL, asks exit-or-continue. Too old: warns with a `brew upgrade engram` hint and asks whether to try anyway.                                                                  |
 | `4-agent-detect`         | Detects Claude Code, OpenCode and Codex (config directory, binary on PATH, or `.codex/config.toml`), then prompts which to configure. | None of the three found: prints all three docs URLs, hard exit 1.                                                                                                                                     |
 | `11-verify-clis`         | PATH probe — runs `which <name>` (POSIX) or `where <name>` (Windows). Presence only, no version check.                          | Prints `found`/`missing` table; for missing entries adds `quick:` install command (when cross-platform) + `docs:` URL. Non-blocking.                                                                      |
 | direnv (optional)        | Presence + `.envrc` allow status + shell-rc hook line.                                                                          | Pure convenience nudge — the `bun run claude` / `bun run opencode` / `bun run codex` wrappers already work without it. If absent, lists `system_install` action with install command; safe to decline (recommended on Windows). |
@@ -155,7 +155,7 @@ What it does:
 2. Rewrites `package.json` name + `.agents/project.yaml` `project.project_name` (and `project.project_key` when `--project-key` is passed).
 3. Initializes a fresh `git init -b main` with an initial commit.
 4. Runs `bun install`.
-5. Hands off to `bun run setup` — gentle-ai, the committed skills under `.agents/skills/`, community skills, the MCP servers `.mcp.json` declares, `.env`, direnv autoload, optional `gh repo create`.
+5. Hands off to `bun run setup` — Engram memory, the committed skills under `.agents/skills/`, community skills, the MCP servers `.mcp.json` declares, `.env`, direnv autoload, optional `gh repo create`.
 
 Useful flags (full list in [`packages/create-agentic-qa/README.md`](packages/create-agentic-qa/README.md)):
 
@@ -255,7 +255,7 @@ Prefer to start your project **on GitHub from day one** (your own repo, your own
 
    ```bash
    bun install
-   bun run setup        # gentle-ai, skills, community skills, .env wiring, MCPs
+   bun run setup        # Engram, skills, community skills, .env wiring, MCPs
    ```
 
    The template copies the boilerplate's own filled `.agents/project.yaml` (its `MAINTAINER COPY:` header line says so). The project-metadata step (`bun run agents:setup`) detects it and offers to replace it with the blank template before asking anything; accept. Without a TTY, pass the consent explicitly: `bun run agents:setup --non-interactive --reseed`.
@@ -285,7 +285,7 @@ cp .env.example .env   # fill in the values, then: bun run harness:env, then res
 # 5. (Optional) Visual orientation — close tab + Ctrl-C when done.
 bun run onboarding
 
-# 6. Run the interactive setup (gentle-ai, skills, MCPs, .env, direnv)
+# 6. Run the interactive setup (Engram, skills, MCPs, .env, direnv)
 bun run setup
 
 # 7. Validate the install
@@ -654,7 +654,7 @@ Every skill belongs to one of four tiers. Each tier has different discovery and 
 | ------ | -------------------------------------- | ----------------------------------------------------- | ----------------------------------------------------------- |
 | T1     | Project-owned (this repo)              | `.agents/skills/`                                     | Silent — load on trigger                                    |
 | T2     | Vendored (upstream, attribution kept)  | `.agents/skills/judgment-day/`                        | Silent on explicit trigger or host orchestrator citation    |
-| T2-opt | Optional gentle-ai SDD (user-installed)| `~/.claude/skills/sdd-*` only if manually installed   | Silent inside `/framework-development` only — see anti-leak |
+| T2-opt | Optional SDD bundle (user-installed)   | `~/.claude/skills/sdd-*` only if present on the machine | Silent inside `/framework-development` only — see anti-leak |
 | T3     | Community project-level                | Installed by `install.ts` `PROJECT_LEVEL_SKILLS`      | Silent if matched by category                               |
 | T4     | Community user-level (global)          | Installed by `install.ts` `USER_LEVEL_SKILLS`         | **ASK** user before load (cross-project, not always wanted) |
 

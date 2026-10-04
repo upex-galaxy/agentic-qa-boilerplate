@@ -1,7 +1,7 @@
 # The installer — what `bun run setup` configures
 
-> **Audience**: QA engineers cloning `agentic-qa-boilerplate` for the first time, or anyone wanting to understand what `bun run setup` configures (gentle-ai, community skills, MCPs, local skills) and what is optional.
-> This document is the **contract that `cli/install.ts` implements**. The four layers of the workstation — gentle-ai (Engram only, minimal preset), community skills via `bunx skills`, locally committed workflow skills (including the vendored `judgment-day`), and the MCP servers `.mcp.json` declares — are documented below in that order.
+> **Audience**: QA engineers cloning `agentic-qa-boilerplate` for the first time, or anyone wanting to understand what `bun run setup` configures (Engram memory, community skills, MCPs, local skills) and what is optional.
+> This document is the **contract that `cli/install.ts` implements**. The four layers of the workstation — Engram persistent memory (wired per agent with `engram setup`), community skills via `bunx skills`, locally committed workflow skills (including the vendored `judgment-day`), and the MCP servers `.mcp.json` declares — are documented below in that order.
 
 ---
 
@@ -11,7 +11,7 @@
 
 ### Phase 1 — DETECTION
 
-Probes the environment before touching anything. Detects gentle-ai (version + compatibility), loads or creates `.template/installer.state.json`, and prompts for agent selection across the three supported harnesses — **Claude Code, OpenCode, Codex**. Everything detected is pre-checked; you tick off whatever you don't want configured. Exits early if none of the three is present, or if the user asks for the gentle-ai install guide.
+Probes the environment before touching anything. Detects the `engram` binary (version + compatibility), loads or creates `.template/installer.state.json`, and prompts for agent selection across the three supported harnesses — **Claude Code, OpenCode, Codex**. Everything detected is pre-checked; you tick off whatever you don't want configured. Exits early if none of the three is present, or if the user asks for the engram install guide.
 
 Detection per harness:
 
@@ -29,7 +29,7 @@ Downloads and installs all software dependencies:
 
 - `bun install` — project Node/Bun packages including `@playwright/test`
 - `bun run pw:install` — Playwright browser binaries (Chromium)
-- `gentle-ai install --preset minimal` — Engram persistent memory only (one batched call per agent). SDD-* and foundation skills are NOT installed — see [What `gentle-ai install` adds](#what-gentle-ai-install-adds) below.
+- `engram setup <agent>` — wires Engram persistent memory into each selected agent (one call per agent) — see [What `engram setup` adds](#what-engram-setup-adds) below.
 - `bunx skills add` — project-level skills (`PROJECT_LEVEL_SKILLS` in `cli/install.ts`) and user-level skills (`USER_LEVEL_SKILLS`, cross-project utilities)
 
 ### Phase 3 — CONFIGURATION
@@ -125,9 +125,11 @@ Under WSL, keep the project on the Linux filesystem (`~/projects/...`). On a `/m
 
 | Tool          | Min version | Enforced at                   | What happens on miss                                                                                                                                                                                                                                                                                                                                                                                                        |
 | ------------- | ----------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **gentle-ai** | `MIN_GENTLE_AI_VERSION` in `cli/install.ts` | `detectGentleAi` in `cli/install.ts` (step `2-gentle-ai-detect`) | Prints `gentle-ai not detected on PATH.` then offers two paths: (a) show install commands (`brew install gentle-ai` on macOS, `go install github.com/Gentleman-Programming/gentle-ai/cmd/gentle-ai@latest` on Linux) and exit, or (b) continue without gentle-ai. Older-than-min version triggers `gentle-ai X.Y.Z is older than required <min>. Upgrade with: gentle-ai update` and the setup continues with the warning. |
+| **engram** | `MIN_ENGRAM_VERSION` in `cli/install.ts` | `detectEngram` in `cli/install.ts` (step `2-gentle-ai-detect`, key name kept for state compatibility) | Prints `engram not detected on PATH.` then offers two paths: (a) show install commands (Homebrew on macOS / Linux: `brew trust gentleman-programming/tap && brew install gentleman-programming/tap/engram`; any OS with Go: `go install github.com/Gentleman-Programming/engram/v3/cmd/engram@latest`) and exit, or (b) continue without Engram. A version below the minimum (or a `go install` build that reports no release version) asks whether to try anyway. |
 
-If you skip gentle-ai, Engram persistent memory is NOT installed (no cross-session memory). The committed skills keep working, and the MCP servers `.mcp.json` declares are still configured.
+Homebrew refuses formulas from a tap it does not trust, which is why the tap is trusted first. Upgrade later with `brew upgrade engram`.
+
+If you skip Engram, persistent memory is NOT wired (no cross-session memory). The committed skills keep working, and the MCP servers `.mcp.json` declares are still configured.
 
 ### Per-skill CLIs — lazy-required, non-blocking at setup
 
@@ -183,7 +185,7 @@ Not in `.env` at all: MCP servers that run at harness level (web search, Postman
 | `bun run setup:doctor --preflight` | Fast Bun / deps check only — exit 0 if green, 1 with explicit fix command otherwise                                  |
 | `bun run setup:doctor`             | Full report: env vars, deps, Playwright browsers, direnv hook, MCP config files, pending actions with `where` URLs   |
 | `bun run setup:doctor --json`      | Same as above as machine-readable JSON for an agent to consume                                                       |
-| `bun run setup`                    | Re-run the interactive installer end-to-end (idempotent — gentle-ai snapshots configs, MCP overwrites are confirmed) |
+| `bun run setup`                    | Re-run the interactive installer end-to-end (idempotent — completed steps are skipped, MCP overwrites are confirmed) |
 
 ---
 
@@ -250,7 +252,7 @@ Then `bun run setup:doctor --json` to confirm.
 
 | Env var                       | Effect                           |
 | ----------------------------- | -------------------------------- |
-| `INSTALL_SKIP_GENTLE_AI=1`    | Treat gentle-ai as skipped       |
+| `INSTALL_SKIP_ENGRAM=1`       | Treat Engram as skipped (legacy alias: `INSTALL_SKIP_GENTLE_AI=1`) |
 | `INSTALL_SKIP_DEPS=1`         | Skip `bun install`               |
 | `INSTALL_SKIP_PLAYWRIGHT=1`   | Skip `bun run pw:install`        |
 | `INSTALL_SKIP_AGENTS_SETUP=1` | Skip `bun run agents:setup`      |
@@ -266,7 +268,7 @@ Then `bun run setup:doctor --json` to confirm.
 | `--force`                      | Clear all step timestamps — re-run everything |
 | `--force-step <key>`           | Re-run one step by key                        |
 | `INSTALL_FORCE_ALL=1`          | Same as `--force`                             |
-| `INSTALL_FORCE_GENTLE_AI=1`    | Re-run gentle-ai skill install                |
+| `INSTALL_FORCE_ENGRAM=1`       | Re-run `engram setup` (legacy alias: `INSTALL_FORCE_GENTLE_AI=1`) |
 | `INSTALL_FORCE_COMMUNITY=1`    | Re-run community skill install                |
 | `INSTALL_FORCE_GITHUB=1`       | Re-run GitHub remote setup                    |
 | `INSTALL_FORCE_AGENTS_SETUP=1` | Re-run agents:setup                           |
@@ -340,53 +342,51 @@ Docs: https://github.com/sirmalloc/ccstatusline
 
 ---
 
-## What is gentle-ai and why this repo uses it
+## Engram, and why the installer wires it directly
 
-[gentle-ai](https://github.com/Gentleman-Programming/gentle-ai) is a user-level installer that configures AI agents (Claude Code, OpenCode, Cursor, etc.) with curated skills, an MCP-based persistent memory layer (Engram), and an optional SDD (Spec-Driven Development) orchestrator. It does not install agents themselves — it tunes the agents you already have.
+[Engram](https://github.com/Gentleman-Programming/engram) is a local persistent-memory binary with an MCP server. Agents call its tools to store and recall decisions, bug root causes and conventions across sessions. Memories live in a local SQLite database under `~/.engram` by default.
 
-This repo uses gentle-ai exclusively for **Engram persistent memory**. We invoke `gentle-ai install --preset minimal`, which installs ONLY the `engram` component (binary + MCP adapter + agent frontmatter wiring). No SDD-* skills, no foundation skills.
+The installer wires Engram with the binary's own `engram setup <agent>`, not with `gentle-ai install`: even with its minimal preset, gentle-ai writes more than memory into the user-level agent config: its own orchestrator and agent-routing instructions, review agents, hooks and telemetry, which compete with this repo's orchestration doctrine (`AGENTS.md` §3). `engram setup` registers the memory server and nothing else. The boilerplate does not use gentle-ai's workflow layer: the committed workflow skills cover Plan → Code → Verify, and adversarial review is the vendored `judgment-day` skill under `.agents/skills/judgment-day/`.
 
-**Rationale**: this is a QA repo. Our workflow skills (`/sprint-testing`, `/test-automation`, `/test-documentation`, `/regression-testing`) already cover Plan → Code → Verify natively. SDD ceremony was designed for software-design workflows (specs, archives, strict TDD) that don't apply to authoring E2E/API tests. Adding them at install time would create overlap and confusion. Adversarial review is covered by the vendored `judgment-day` skill committed under `.agents/skills/judgment-day/` — no upstream dependency.
+The integration is **not strict**. If you skip Engram, the repo still works: workflow skills committed locally keep functioning, and the MCP servers `.mcp.json` declares are still configured. What you lose is persistent cross-session memory.
 
-The integration is **not strict**. If you choose to skip gentle-ai, the repo still works: workflow skills committed locally keep functioning, and the MCP servers `.mcp.json` declares are still configured. What you lose is persistent cross-session memory (engram).
+### How memory behaves
+
+- **Saving is agent-driven.** Nothing is stored automatically: a memory exists only when the agent calls `mem_save` (or `mem_session_summary` at session close). `AGENTS.md` §12 lists when the agent is expected to save.
+- **Search is lexical, not semantic.** Engram matches words (full-text search with trigram matching and BM25 ranking), and by default every term must match. A whole natural-language question usually returns nothing; two or three keywords that would appear in a memory title work. For OR matching, pass `match_mode: "any"` to `mem_search`, or `--match any` to `engram search`.
 
 ---
 
-## What `gentle-ai install` adds
+## What `engram setup` adds
 
-`bun run setup` dispatches one batched call per agent:
+`bun run setup` runs one call per selected agent:
 
 ```bash
-gentle-ai install --agent <agent> --preset minimal
+engram setup claude-code --protocol=slim
+engram setup opencode
+engram setup codex
 ```
 
-This installs:
+Each call registers the `engram` MCP server for that agent (on Claude Code through `claude mcp add`, into the user config). `--protocol=slim` keeps Claude Code's session-start protocol short and writes no block into your instructions file.
 
-| Slug     | Type      | What it does                                                                                                |
-| -------- | --------- | ----------------------------------------------------------------------------------------------------------- |
-| `engram` | Component | Persistent memory across sessions. Auto-saves decisions, bugs, conventions; auto-recalls on session resume. |
+On Claude Code, the session hooks (such as the memory context injected at session start) come from the Engram plugin, which the MCP registration does not install. Add it once per machine:
 
-That's it for the minimal preset. No SDD-* skills, no `skill-registry`, no `judgment-day` (we use the vendored copy), no `issue-creation`, no `cognitive-doc-design`, no `comment-writer`.
+```bash
+claude plugin marketplace add Gentleman-Programming/engram
+claude plugin install engram@engram
+```
+
+The plugin ships no MCP server of its own, so you need both: `engram setup` for the server, the plugin for the hooks.
 
 ### Re-run safety
 
-Re-runs are safe: gentle-ai snapshots existing config files before overwriting. They DO re-apply, they don't skip. There is no `--yes` flag on `install` (`gentle-ai install --help` lists the flags it exposes). Internal prompts auto-default when stdin is not a TTY.
-
-### Want the SDD suite? Install manually
-
-The minimal preset is sufficient for every shipped workflow skill — `/framework-development` included. Install SDD manually only if you want the explicit SDD ceremony (explore → propose → spec → design → tasks → apply → verify → archive) for an architectural change of your own:
-
-```bash
-gentle-ai install --agent <agent> --components engram,sdd
-```
-
-This adds the SDD suite: its skills, the shared runtime, its slash commands and the SDD orchestrator injection (the gentle-ai docs list them). Restart your agent after install so the new skills appear in the system-reminder list.
+`--force-step 8-skills-gentle-ai` (or `INSTALL_FORCE_ENGRAM=1`) re-runs `engram setup` for every selected agent. `engram setup` without an agent opens an interactive menu, so the installer always passes the agent slug.
 
 ---
 
 ## What gets installed via `bunx skills` CLI
 
-Independent of gentle-ai, the installer also runs the official Anthropic `bunx skills add` CLI to fetch community skills from upstream repos. Two lists, both defined as `const` arrays in `cli/install.ts`:
+Independent of Engram, the installer also runs the official Anthropic `bunx skills add` CLI to fetch community skills from upstream repos. Two lists, both defined as `const` arrays in `cli/install.ts`:
 
 ### Project-level
 
@@ -493,7 +493,7 @@ Skills that are workflow-specific to this boilerplate live in `.agents/skills/` 
 
 The catalogue is `.agents/skills/REGISTRY.md` (generated by `bun run skills:registry`: one row per committed skill with its trigger and purpose); `AGENTS.md` §5 carries the same table for the agent.
 
-These skills evolve with the repo and are versioned in git. The split is intentional: gentle-ai owns persistent memory (Engram); this repo owns the **vertical** workflow (specific to the IQL stages) plus a small set of vendored helpers (`judgment-day`).
+These skills evolve with the repo and are versioned in git. The split is intentional: Engram owns persistent memory; this repo owns the **vertical** workflow (specific to the IQL stages) plus a small set of vendored helpers (`judgment-day`).
 
 ### Invoking a skill mode
 
@@ -550,7 +550,7 @@ Example: "Test UPEX-277 — empty states on the user-list filter." Ticket is `Re
 
 The right choice when the change is to the boilerplate's own infrastructure (KATA layers, fixtures, installer, OpenAPI sync pipeline, skill doctrine), not to a per-ticket test. Examples: "add a new `{ admin }` fixture", "refactor the OpenAPI sync to support v3.1 schemas", "modify `UiBase` to support shared selectors". This is internal QA infrastructure, not test authoring.
 
-`/framework-development` ships self-contained: Phase 0 (path self-check) → Phase 1 Plan (single subagent writes `.session/framework-development/<change>/plan.md`) → Phase 2 Code (sequential per task batch) → Phase 3 Verify (the parallel verifiers the skill lists) → Phase 4 Archive (inline). No SDD-\* skills required; runs under the minimal preset out of the box.
+`/framework-development` ships self-contained: Phase 0 (path self-check) → Phase 1 Plan (single subagent writes `.session/framework-development/<change>/plan.md`) → Phase 2 Code (sequential per task batch) → Phase 3 Verify (the parallel verifiers the skill lists) → Phase 4 Archive (inline). It needs nothing outside the repo.
 
 ---
 
@@ -559,7 +559,9 @@ The right choice when the change is to the boilerplate's own infrastructure (KAT
 - **`jira:sync-fields` / `jira:sync-workflows` skipped with "not an Administrator"** — your authenticated Jira user does not have `ADMINISTER` (global) or `ADMINISTER_PROJECTS` (project-scoped) permission. The scripts pre-flight `/rest/api/3/mypermissions` to avoid mid-run 403s. The installer records `state.postInstall.jiraSync* = "skipped-no-admin"` and exits step `13-jira-sync` cleanly — repo stays usable (any missing catalog gets an empty `{}` placeholder, see below). Two recovery paths: (a) ask a Jira admin to run the scripts and commit the resulting `.agents/jira-*.json` to the team repo; (b) re-run `bun run setup --force-step 13-jira-sync` and pick the **UPEX-Galaxy standard** source — or run `bun run jira:sync-fields --upex && bun run jira:sync-workflows --upex` directly to pull the UPEX-standard catalog from `upex-galaxy/agentic-qa-boilerplate@main` (no admin, no Jira API calls — just a GitHub raw fetch).
 - **Pre-push rejected — `lint:skills` STALE-PATH: `.agents/jira-fields.json` / `jira-workflows.json` does not exist on disk** — the bootstrap scaffolder prunes those two catalogs from a fresh project, and a no-admin / skipped Jira sync left the SKILL.md-referenced paths dangling. Setup writes an empty `{}` placeholder for any missing catalog (step `13-jira-sync`), so a fresh `bun run setup` self-heals this. If you hit it on a project set up before that step existed, just create the files: `echo '{}' > .agents/jira-fields.json` and the same for `jira-workflows.json` (then optionally `bun run jira:sync-fields` to populate). The `{}` form is valid JSON, satisfies the lint, and is treated as "unpopulated" so a later sync fills it without `--force`.
 - **`--upex` flag** — every `jira:sync-*` script (`fields`, `workflows`, `link-types`) accepts `--upex` to download the UPEX-standard reference JSON from the upstream boilerplate repo. URL is hardcoded per script and pinned to `main`. Bypasses ATLASSIAN_* env vars, `project_key`, `jira-required.yaml` and all Jira REST calls; only network requirement is GitHub raw access. Useful when (a) you have no Jira admin, (b) you want a working catalog without setting up auth, or (c) you want to compare against the canonical UPEX standard before custom-syncing.
-- **gentle-ai not detected after install** — re-run `bun run setup`. The detector probes `which gentle-ai` plus `gentle-ai version`; if either fails the installer falls back to the "skip gentle-ai" branch. Confirm the binary is on PATH (`which gentle-ai` should return a path under `/usr/local/bin/`, `~/bin/`, `~/go/bin/`, or a Homebrew prefix).
+- **engram not detected after install** — re-run `bun run setup`. The detector probes `which engram` plus `engram version`; if the binary is missing the installer falls back to the "skip Engram" branch. Confirm the binary is on PATH (`which engram` should return a path under `/usr/local/bin/`, `~/bin/`, `~/go/bin/`, or a Homebrew prefix).
+- **`brew install` says `Refusing to load formula ... from untrusted tap`** — run `brew trust gentleman-programming/tap` first, then repeat the install.
+- **`mem_search` finds nothing you know was saved** — search is lexical: retry with two or three keywords from the memory's title, or with `match_mode: "any"`.
 - **MCPs returning 401/403** — the matching env var in `.env` is unset or wrong. All three MCP configs (`.mcp.json`, `opencode.jsonc`, `.codex/config.toml`) are committed with placeholders; real values live in `.env`. Open `.env`, fill the var, run `bun run harness:env`, and **restart the agent session** — env vars are read once at MCP-server spawn time. See `AGENTS.md` Critical Rule #10.
 - **MCPs not loading at all** — run `bun run setup:doctor`: it reports drift between `.env` and the harness surfaces (`.claude/settings.local.json` `env` block for Claude Code, `.auth/opencode/*` for OpenCode); `bun run harness:env` regenerates them. For Codex, confirm `bun install` ran (the `.env` loader is the `dotenv-cli` devDependency), `.env` exists at the project root, and the repository is trusted: every server in `.codex/config.toml` starts through that loader, so a missing `.env` or `dotenv-cli` stops all of them.
 - **Codex ignores `.codex/config.toml` and the hook never fires** — the repository is not marked trusted. Codex loads project `.codex/` config and hooks only in a trusted repo, and that is runtime state no file check can see. `bun run setup:doctor` reports it on its own line; approve trust in Codex, then restart the session.
@@ -568,22 +570,20 @@ The right choice when the change is to the boilerplate's own infrastructure (KAT
 - **`direnv allow` produced `dotenv_if_exists: command not found`** — this would mean the `.envrc` is using a newer direnv feature than your version supports. The committed `.envrc` uses portable POSIX loading (works on direnv 2.21+), so if you see this, your `.envrc` has been edited locally — restore it from `git checkout .envrc`.
 - **Skills not appearing in autocomplete** — restart Claude Code (or your agent of choice). MCP and skill configs are cached at agent startup. On Claude Code specifically, also confirm the `.claude/skills` alias exists; if a checkout dropped it, `bun run agents:compat` recreates it.
 - **`/agentic-qa-onboard` does not trigger on natural language** — use the explicit slash command: `/agentic-qa-onboard`. The natural-language triggers (`onboard me to QA`, `primer vez en QA`) are advisory, not guaranteed.
-- **How do I uninstall gentle-ai engram?** — `gentle-ai uninstall --agent <agent> --components engram --yes` removes the engram component for one agent. `gentle-ai uninstall --all --yes` removes everything gentle-ai-managed for every supported agent. Note the asymmetry vs `install`: `uninstall` accepts `--yes`/`-y` (skip confirmation) but does NOT accept `--skill(s)`. Backups are created automatically before uninstall.
+- **How do I remove Engram from an agent?** — remove the `engram` MCP server from that agent's config (on Claude Code: `claude mcp remove engram`; on Claude Code also `claude plugin uninstall engram@engram` if you added the plugin). Your memories stay in `~/.engram` until you delete that directory.
+- **I installed Engram through gentle-ai earlier** — that install also wrote gentle-ai's own instructions, agents and hooks into your user-level agent config. The repo does not need them; remove them with gentle-ai's own uninstall if they get in the way, then run `bun run setup --force-step 8-skills-gentle-ai` to wire Engram directly.
 
 ---
 
 ## How to opt out
 
-If you prefer not to use gentle-ai, the installer accepts a "skip" choice. To make it permanent:
-
-1. Edit `.template/installer.state.json` and set `"gentleAi": { "status": "skipped" }`.
-2. Re-run `bun run setup`. The installer detects the skipped state and only configures the MCP servers `.mcp.json` declares.
+If you prefer not to use Engram, answer "No" when the installer offers the install commands, or run it with `INSTALL_SKIP_ENGRAM=1`. The installer then wires no memory and still configures the MCP servers `.mcp.json` declares.
 
 What you lose:
 
 - **Persistent memory (Engram)** — no cross-session recall, no `mem_save` / `mem_search`. Each session starts blind.
 
-What you keep: every skill committed in this repo and every MCP server `.mcp.json` declares. The Atlassian MCP is opt-in: `.agents/skills/agentic-qa-core/references/mcp-atlassian-optin.md` has the block for each host. The repo is fully usable without gentle-ai — the integration is additive.
+What you keep: every skill committed in this repo and every MCP server `.mcp.json` declares. The Atlassian MCP is opt-in: `.agents/skills/agentic-qa-core/references/mcp-atlassian-optin.md` has the block for each host. The repo is fully usable without Engram — the integration is additive.
 
 ---
 
