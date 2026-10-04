@@ -194,6 +194,18 @@
       "expect": ["orchestration-detail", "package.json"]
     },
     {
+      "prompt": "run the full type checks before pushing",
+      "expect": ["git", "package.json"]
+    },
+    {
+      "prompt": "corré la regresión completa y dame el GO/NO-GO",
+      "expect": ["context-map", "package.json"]
+    },
+    {
+      "prompt": "ejecutá los gates de calidad antes de abrir el PR",
+      "expect": ["git", "package.json"]
+    },
+    {
       "prompt": "can I hardcode the password? does rule 1 allow it?",
       "expect": ["critical-rules"]
     },
