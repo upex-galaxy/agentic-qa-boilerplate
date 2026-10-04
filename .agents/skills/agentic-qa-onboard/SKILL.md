@@ -209,7 +209,7 @@ Run the interactive installer once after cloning:
 bun run setup
 ```
 
-This bootstraps `.agents/`, installs the gentle-ai `engram` component (minimal preset), configures the MCPs in `.mcp.json`, downloads Playwright browsers, installs the community skills `cli/install.ts` declares (`USER_LEVEL_SKILLS` + `PROJECT_LEVEL_SKILLS`), verifies the `${VAR}` placeholders in the committed `.mcp.json` against your `.env`, and generates the per-harness credential surfaces from it (the same thing `bun run harness:env` does). Full details in [`INSTALLER.md`](../../../INSTALLER.md).
+This bootstraps `.agents/`, wires Engram persistent memory into each selected agent (`engram setup`), configures the MCPs in `.mcp.json`, downloads Playwright browsers, installs the community skills `cli/install.ts` declares (`USER_LEVEL_SKILLS` + `PROJECT_LEVEL_SKILLS`), verifies the `${VAR}` placeholders in the committed `.mcp.json` against your `.env`, and generates the per-harness credential surfaces from it (the same thing `bun run harness:env` does). Full details in [`INSTALLER.md`](../../../INSTALLER.md).
 
 After setup, fill `.env` with the credentials the rest of the workflow expects (see "Critical env vars" below), then run `bun run harness:env` and restart the agent session: MCP servers read credentials at startup. `bun run setup:doctor` is the health check.
 
@@ -289,7 +289,7 @@ You confirm at the gates.
 | Authoring new automated test for a Candidate TC                            | `/test-automation`                                                   |
 | Refactor of the boilerplate itself — KATA bases, fixtures, cli/, scripts/  | `/framework-development`                                             |
 
-`/framework-development` covers framework evolution (changes to the boilerplate's own infrastructure, not per-ticket test writing). Self-contained Plan → Code → Verify → Archive pipeline; works under the minimal install preset (no SDD-* skills required).
+`/framework-development` covers framework evolution (changes to the boilerplate's own infrastructure, not per-ticket test writing). Self-contained Plan → Code → Verify → Archive pipeline; needs nothing outside the repo.
 
 ---
 
@@ -347,17 +347,11 @@ The committed skills, with their triggers and purpose, are listed in `AGENTS.md`
 
 ---
 
-## What `bun run setup` installs via gentle-ai
+## Persistent memory (Engram)
 
-`bun run setup` runs `gentle-ai install --preset minimal` — installs ONLY the **`engram`** component (persistent memory binary + MCP adapter + agent config). No SDD-* skills, no foundation skills.
+`bun run setup` wires **Engram** into each selected agent with the engram binary's own `engram setup <agent>`: it registers the Engram MCP server and nothing else. The boilerplate does not use gentle-ai's workflow layer; its own workflow skills (`/shift-left-testing`, `/sprint-testing`, `/test-automation`, `/test-documentation`, `/regression-testing`) cover Plan → Code → Verify natively.
 
-Rationale: this repo already covers Plan → Code → Verify natively in its workflow skills (`/shift-left-testing`, `/sprint-testing`, `/test-automation`, `/test-documentation`, `/regression-testing`). SDD ceremony does not apply to test authoring.
-
-Want the explicit SDD ceremony for an architectural change of your own? Run manually:
-
-```bash
-gentle-ai install --components engram,sdd --agent <claude-code|opencode|cursor>
-```
+Two things worth telling a new user: the agent saves memories only when it decides to (`mem_save`), and search matches keywords, not meaning, so a short keyword query finds more than a full question.
 
 Full details in [`INSTALLER.md`](../../../INSTALLER.md).
 

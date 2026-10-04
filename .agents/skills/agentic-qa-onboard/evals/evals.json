@@ -18,7 +18,7 @@
       "name": "should-trigger-explain-this-repo",
       "prompt": "Explain what this repo does and how the QA flow works.",
       "expected_skill": "agentic-qa-onboard",
-      "expected_behavior": "Activates agentic-qa-onboard. Describes the boilerplate purpose (QA-only Playwright + KATA scaffold), the named IQL stages (Shift-Left → Planning, Execution, Reporting → Documentation → Automation → Regression), the QA Jira state machine read from `.agents/jira-workflows.json` rather than from memory, the local skills vs gentle-ai skills, and the MCPs. No testing or automation work.",
+      "expected_behavior": "Activates agentic-qa-onboard. Describes the boilerplate purpose (QA-only Playwright + KATA scaffold), the named IQL stages (Shift-Left → Planning, Execution, Reporting → Documentation → Automation → Regression), the QA Jira state machine read from `.agents/jira-workflows.json` rather than from memory, the local skills vs community skills, Engram memory, and the MCPs. No testing or automation work.",
       "category": "positive"
     },
     {

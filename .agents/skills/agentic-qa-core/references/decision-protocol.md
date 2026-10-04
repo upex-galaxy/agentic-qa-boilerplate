@@ -60,7 +60,7 @@ question is already answered. Sources, nearest first:
 | 3 | Test-architecture records | `.context/ADR/` (`./adr-doctrine.md`): runner, fixtures, isolation, auth-in-tests, selector contract, flake policy |
 | 4 | The ticket and its neighbours | through the synced cache, never `acli view` for content: `bun run jira:sync-issues get <KEY> --include-comments`, then the Story's `comments.md`, `acceptance-criteria.md`, `acceptance-test-plan.md`, the Epic's `module-context.md`, and the sibling Stories. A PO or Dev answer to a Shift-Left question lives in a comment, and a ruling on a sibling usually governs the whole batch |
 | 5 | AI rulings on the SUT's tickets | read with source 4; handled by §3.1 |
-| 6 | Engram | `mem_search` with the shape of the question: cross-session conventions and gotchas |
+| 6 | Engram | `mem_search` with two or three keywords from the shape of the question (search is lexical: `AGENTS.md` §12): cross-session conventions and gotchas |
 | 7 | The owning skill | its `SKILL.md` and the `references/` for the stage you are in |
 
 Search for the SHAPE of the question, not its wording. "Which role runs this case" and "whose login does
