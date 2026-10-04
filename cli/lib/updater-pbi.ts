@@ -1,7 +1,7 @@
 /**
  * @fileoverview PBI cache migration advisory (afterApply hook).
  *
- * `.context/PBI/` is a GITIGNORED CACHE of Jira (AGENTS.md §9): Jira is the
+ * `.context/PBI/` is a GITIGNORED CACHE of Jira (`.agents/instructions/60-local-context-pbi.md` §9): Jira is the
  * source of truth, the tree regenerates via `bun run context:hydrate`, and only
  * a small committed allowlist is versioned (`README.md`, `templates/**`,
  * `epics/<epic>/test-specs/**`). A project scaffolded BEFORE that rule existed may
@@ -30,7 +30,7 @@ import * as path from 'node:path';
 
 /**
  * The `[COMMIT]` tier of `.context/PBI/` — the ONLY paths that belong in git
- * (mirrors the gitignore ladder documented in AGENTS.md §9):
+ * (mirrors the gitignore ladder documented in `.agents/instructions/60-local-context-pbi.md` §9):
  *   - `.context/PBI/README.md`            (tier rules + gitignore ladder)
  *   - `.context/PBI/templates/**`         (skeletons)
  *   - `.context/PBI/epics/<epic>/test-specs/**` (automation plans, versioned with code)
@@ -82,7 +82,7 @@ export function filterPbiTrackedPaths(trackedPaths: string[]): string[] {
 
 /**
  * Build the migration prompt handed to the consumer's AI agent. Written FOR an
- * agent: exact commands, exact allowlist, and the why (AGENTS.md §9 tiers).
+ * agent: exact commands, exact allowlist, and the why (`.agents/instructions/60-local-context-pbi.md` §9 tiers).
  */
 export function buildPbiMigrationPrompt(outOfAllowlist: string[]): string {
   const quoted = outOfAllowlist.map(p => `"${p}"`).join(' ');
@@ -109,7 +109,7 @@ export function buildPbiMigrationPrompt(outOfAllowlist: string[]): string {
   return [
     'Migrate this repository\'s `.context/PBI/` tree from git-tracked to gitignored-cache.',
     '',
-    'WHY: `.context/PBI/` is a GITIGNORED CACHE of Jira (see AGENTS.md §9). Every path in',
+    'WHY: `.context/PBI/` is a GITIGNORED CACHE of Jira (see `.agents/instructions/60-local-context-pbi.md` §9). Every path in',
     'it is exactly one of three tiers: [SYNC] (source of truth is Jira; rebuilt by',
     '`bun run context:hydrate`), [COMMIT] (versioned in this repo — ONLY the allowlist',
     'below), or [LOCAL] (disposable, machine-only). Tracking [SYNC] files in git makes two',
