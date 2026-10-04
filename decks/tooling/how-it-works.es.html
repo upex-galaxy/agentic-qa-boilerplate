@@ -459,9 +459,9 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="wf-row mt-m">
       <div class="wf-node"><p class="n">Skill de flujo</p><p class="t">Escribe pseudocódigo</p><p class="c">[ISSUE_TRACKER_TOOL]<br>[TMS_TOOL] · [AUTOMATION_TOOL]</p></div>
       <span class="wf-arr">→</span>
-      <div class="wf-node gate"><p class="n">AGENTS.md §6</p><p class="t">Resuelve la etiqueta</p><p class="c">primario CLI · MCP de respaldo<br>según modalidad y capacidad</p></div>
+      <div class="wf-node gate"><p class="n">30-tool-resolution.md §6</p><p class="t">Resuelve la etiqueta</p><p class="c">primario CLI · MCP de respaldo<br>según modalidad y capacidad</p></div>
       <span class="wf-arr">→</span>
-      <div class="wf-node gate"><p class="n">AGENTS.md §6.5</p><p class="t">Carga la skill dueña</p><p class="c">antes de invocar el binario<br>gate duro, no sugerencia</p></div>
+      <div class="wf-node gate"><p class="n">30-tool-resolution.md §6.5</p><p class="t">Carga la skill dueña</p><p class="c">antes de invocar el binario<br>gate duro, no sugerencia</p></div>
       <span class="wf-arr">→</span>
       <div class="wf-node"><p class="n">Herramienta</p><p class="t">Ejecuta</p><p class="c">acli · bun xray · playwright-cli<br>un MCP resuelto por sufijo</p></div>
     </div>
@@ -471,12 +471,12 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="wf-node alt"><p class="n">Comunidad · slides 13 a 15</p><p class="t">Instaladas a nivel proyecto</p><p class="c">cli/install.ts<br>PROJECT_LEVEL_SKILLS</p></div>
       <div class="wf-node alt"><p class="n">MCP · slides 16 a 18</p><p class="t">Capacidades</p><p class="c">mcp-capabilities.md<br>sufijo del nombre de la tool</p></div>
     </div>
-    <div class="notes">La indirección es el punto: la metodología sobrevive a un cambio de herramienta porque el CÓMO vive detrás de la etiqueta. Si mañana el TMS cambia, cambia la resolución en AGENTS.md §6 y la skill de utilidad, no las skills de flujo.</div>
+    <div class="notes">La indirección es el punto: la metodología sobrevive a un cambio de herramienta porque el CÓMO vive detrás de la etiqueta. Si mañana el TMS cambia, cambia la resolución en .agents/instructions/30-tool-resolution.md y la skill de utilidad, no las skills de flujo.</div>
   </section>
 
   <!-- 3. ETIQUETAS -->
   <section class="slide compact" data-title="Quién resuelve qué">
-    <p class="kicker">AGENTS.md §6 · 3 de 19</p>
+    <p class="kicker">30-tool-resolution.md §6 · 3 de 19</p>
     <h2 class="h2">Cada etiqueta tiene un <span class="grad">dueño</span></h2>
     <table class="tt tight mt-m">
       <tr><th style="width:250px">Etiqueta</th><th>Primario</th><th>Si no está</th></tr>
@@ -493,7 +493,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 
   <!-- 4. AUTO-LOAD -->
   <section class="slide compact" data-title="CLI → skill">
-    <p class="kicker">AGENTS.md §6.5 · 4 de 19</p>
+    <p class="kicker">30-tool-resolution.md §6.5 · 4 de 19</p>
     <h2 class="h2">Antes del binario, la <span class="grad">skill</span></h2>
     <div class="grid g2 mt-m" style="gap:28px;align-items:start">
       <div class="stack" style="gap:14px">
@@ -553,7 +553,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <tr><td class="small"><b>Trazabilidad</b> (grafo de links, estado de runs)</td><td class="small"><span class="mono">/acli</span> · <span class="mono">/xray-cli</span></td><td class="small">el sync no refleja el estado de cobertura ni de runs de Xray</td></tr>
     </table>
     <div class="card card-soft mt-s"><p class="small">Lo sincronizado vive en <span class="mono">.context/PBI/</span>: caché de Jira, sin commit y sin edición a mano. <span class="mono">bun run context:hydrate</span> reconstruye el árbol.</p></div>
-    <div class="notes">Un archivo sincronizado no se escribe a mano: se publica el contenido en Jira y se vuelve a sincronizar. Esta es la excepción de lecturas contra escrituras de AGENTS.md §6. La regla corta: si necesitás el contenido de un campo custom, nunca acli view, sincronizalo. La misma idea en acli-integration.md (Q6).</div>
+    <div class="notes">Un archivo sincronizado no se escribe a mano: se publica el contenido en Jira y se vuelve a sincronizar. Esta es la excepción de lecturas contra escrituras de .agents/instructions/30-tool-resolution.md. La regla corta: si necesitás el contenido de un campo custom, nunca acli view, sincronizalo. La misma idea en acli-integration.md (Q6).</div>
   </section>
 
   <!-- 7. AUTH -->
@@ -863,7 +863,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <tr><td class="small"><b>Codex CLI / Desktop</b></td><td class="small">carga la config del proyecto solo en un repo <b>confiable</b>. Reiniciar.</td></tr>
     </table>
     <p class="small dim mt-s"><span class="mono">bun run setup:doctor</span> informa qué servidores de nivel harness declaran las configs de usuario de la máquina; un conector en la nube no deja archivo y figura como no detectable, no como faltante.</p>
-    <div class="notes">Búsqueda web: Exa primero, Tavily segundo (cuando no hay Exa o el usuario lo pide). Las referencias a variables mantienen la sintaxis de cada host: ${VAR} en .mcp.json, {file:.auth/opencode/VAR} en opencode.jsonc, env_vars / bearer_token_env_var en .codex/config.toml. Detalle en AGENTS.md §4.5.</div>
+    <div class="notes">Búsqueda web: Exa primero, Tavily segundo (cuando no hay Exa o el usuario lo pide). Las referencias a variables mantienen la sintaxis de cada host: ${VAR} en .mcp.json, {file:.auth/opencode/VAR} en opencode.jsonc, env_vars / bearer_token_env_var en .codex/config.toml. Detalle en .agents/instructions/10-harnesses.md.</div>
   </section>
 
   <!-- 19. CIERRE -->
