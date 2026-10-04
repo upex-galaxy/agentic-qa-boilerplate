@@ -846,11 +846,90 @@ export function validateHookCompatibility(root = process.cwd()): string[] {
         errors.push(`Duplicated personality hook must be removed: ${duplicate}`);
       }
     }
+    errors.push(...validateInstructionRouterHooks(resolvedRoot));
   }
   catch (error) {
     errors.push(error instanceof Error ? error.message : String(error));
   }
 
+  return errors;
+}
+
+/**
+ * Instruction router (progressive disclosure): the emitter classifies each
+ * prompt with the router table of `AGENTS.md` and prints one `ROUTE:` line per
+ * newly matched instruction file. These are the exports and markers its
+ * adapters and the eval rely on.
+ */
+export const HOOK_ROUTER_EXPORTS = ['routeLines', 'rearmRoutes', 'loadInstructionRouter', 'classifyPrompt'] as const;
+export const HOOK_ROUTE_MARKER = 'ROUTE: read';
+export const ROUTER_START_MARKER = '<!-- router:start -->';
+/** Codex `project_doc_max_bytes` default: the always-on file past it is cut at the byte, silently. */
+export const CODEX_PROJECT_DOC_MAX_BYTES = 32 * 1024;
+/** The OpenCode 2 degradation, declared in the adapter in so many words. */
+export const OPENCODE_ROUTER_ONLY_MARKER = 'ROUTER-ONLY';
+
+function hasCompactSessionStart(settings: JsonObject, command: string, windows?: string): boolean {
+  const groups = settings.hooks && typeof settings.hooks === 'object' ? (settings.hooks as JsonObject).SessionStart : undefined;
+  if (!Array.isArray(groups)) { return false; }
+  return groups.some((group) => {
+    if (!group || typeof group !== 'object' || (group as JsonObject).matcher !== 'compact') { return false; }
+    const hooks = (group as JsonObject).hooks;
+    return Array.isArray(hooks) && hooks.some(hook => hook && typeof hook === 'object'
+      && (hook as JsonObject).command === command
+      && (windows === undefined || (hook as JsonObject).commandWindows === windows));
+  });
+}
+
+/**
+ * Binds once `AGENTS.md` carries the router markers (a repo still on the
+ * single-file layout has nothing to route). Each host must re-arm the routes
+ * after a compaction, the OpenCode adapter must classify in `chat.message`
+ * (OpenCode 1) and declare its OpenCode 2 degradation, and the always-on file
+ * must fit the Codex project-doc budget whole.
+ */
+export function validateInstructionRouterHooks(root = process.cwd()): string[] {
+  const resolvedRoot = resolve(root);
+  const l0Path = join(resolvedRoot, 'AGENTS.md');
+  if (!existsSync(l0Path)) { return []; }
+  const l0 = readFileSync(l0Path, 'utf8');
+  if (!l0.includes(ROUTER_START_MARKER)) { return []; }
+
+  const errors: string[] = [];
+  const shared = readFileSync(join(resolvedRoot, '.agents', 'hooks', 'personality-reinject.mjs'), 'utf8');
+  for (const name of HOOK_ROUTER_EXPORTS) {
+    if (!shared.includes(`export function ${name}`)) {
+      errors.push(`Shared hook emitter must export ${name}(): the ROUTE: lines have one classifier.`);
+    }
+  }
+  for (const marker of [HOOK_ROUTE_MARKER, ROUTER_START_MARKER]) {
+    if (!shared.includes(marker)) {
+      errors.push(`Shared hook emitter must read the AGENTS.md router and emit "${marker}" lines.`);
+    }
+  }
+
+  if (!hasCompactSessionStart(parseJson(join(resolvedRoot, '.claude', 'settings.json')), CLAUDE_HOOK_COMMAND)) {
+    errors.push(`claude must re-arm the routes after compaction: a SessionStart group with matcher "compact" running ${CLAUDE_HOOK_COMMAND}`);
+  }
+  if (!hasCompactSessionStart(parseJson(join(resolvedRoot, '.codex', 'hooks.json')), CODEX_HOOK_COMMAND, CODEX_HOOK_COMMAND_WINDOWS)) {
+    errors.push('codex must re-arm the routes after compaction: a SessionStart group with matcher "compact" running the Codex hook command (and its Windows variant).');
+  }
+
+  const plugin = readFileSync(join(resolvedRoot, '.opencode', 'plugins', 'personality-reinject.js'), 'utf8');
+  if (!plugin.includes('\'chat.message\'') || !plugin.includes('routeLines')) {
+    errors.push('OpenCode personality adapter must classify the prompt in chat.message with the shared routeLines (OpenCode 1).');
+  }
+  if (!plugin.includes('experimental.session.compacting') || !plugin.includes('rearmRoutes')) {
+    errors.push('OpenCode personality adapter must re-arm the routes in experimental.session.compacting (OpenCode 1).');
+  }
+  if (!plugin.includes(OPENCODE_ROUTER_ONLY_MARKER)) {
+    errors.push(`OpenCode personality adapter must declare the OpenCode 2 degradation (${OPENCODE_ROUTER_ONLY_MARKER}: no hook carries the prompt).`);
+  }
+
+  const bytes = Buffer.byteLength(l0);
+  if (bytes > CODEX_PROJECT_DOC_MAX_BYTES) {
+    errors.push(`AGENTS.md is ${bytes} bytes: Codex cuts the always-on file at ${CODEX_PROJECT_DOC_MAX_BYTES} bytes, router included.`);
+  }
   return errors;
 }
 
