@@ -2,7 +2,7 @@
 id: harnesses
 title: 'Host harnesses: one source, three consumers'
 load_when: 'harness files (CLAUDE.md, .claude/, .codex/, .opencode/, MCP configs), hooks, husky, the updater (bun run up), cli/, root configs, the project schema'
-triggers: ['\bharness', 'CLAUDE\.md', '\bopencode\b', '\bcodex\b', '\.mcp\.json', '\bhooks?\b', '\bhusky\b', '\bbun run up\b', '\bupdater\b', '\bparity\b', '\bagents:(compat|schema)', 'project\.schema\.yaml', '\beslint\.config', '\btsconfig']
+triggers: ['\bharness', 'CLAUDE\.md', '\bopencode\b', '\bcodex\b', '\.mcp\.json', '\bMCPs?\b.*\bconfigur', '\bconfigur\w*\b.*\bMCPs?\b', '\bhooks?\b', '\bhusky\b', '\bbun run up\b', '\bupdater\b', '\bparity\b', '\bagents:(compat|schema)', 'project\.schema\.yaml', '\beslint\.config', '\btsconfig']
 paths: ['CLAUDE.md', '.claude/', '.codex/', '.opencode/', '.mcp.json', 'opencode.jsonc', '.husky/', 'cli/', '.agents/hooks/', 'eslint.config.base.js', 'tsconfig.base.json', 'config/variables.core.ts', '.agents/project.schema.yaml']
 ---
 

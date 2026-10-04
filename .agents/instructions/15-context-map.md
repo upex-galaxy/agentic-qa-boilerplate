@@ -2,7 +2,7 @@
 id: context-map
 title: 'Context loading map: task to skill to context'
 load_when: 'any workflow task (onboard, discover, adapt, shift-left, sprint testing, documentation, automation, regression, maps, defects, decisions, handoff, browser, Jira) or "which skill / what to read for X"'
-triggers: ['\bonboard', '\bshift.?left', '\bsprint', '\bregression', '\bautomat', '\bdocument (the )?tests?\b', '\bROI\b', '\bADR\b', '\bhandoff\b', '\bscreenshot', '\bmaster test plan\b', '\bcoverage\b', '\bqu[eé] skill\b', '\bwhich skill\b', '\bc[oó]mo funciona\b', '\bhow does .+ work\b']
+triggers: ['\bonboard', '\bshift.?left', '\bsprint', '\bregression', '\bregresi[oó]n', '\b(?:re)?test(?:ing)? (?:this|the|a) (?:story|ticket|bug)\b', '\bretest', '\bprob[aá]r? (?:la|esta|el|este) (?:historia|ticket|bug)\b', '\b(?:write|draft|create|escrib\w*|cre[aá]\w*) (?:the |an? |el |la )?AT[PR]\b', '\bbusiness (?:data|feature|api|domain|e2e|infra) map\b', '\bmapa de (?:datos|negocio|features?|api)\b', '\bautomat', '\bdocument (the )?tests?\b', '\bROI\b', '\bADR\b', '\bhandoff\b', '\bscreenshot', '\bmaster test plan\b', '\bcoverage\b', '\bqu[eé] skill\b', '\bwhich skill\b', '\bc[oó]mo funciona\b', '\bhow does .+ work\b']
 paths: []
 ---
 

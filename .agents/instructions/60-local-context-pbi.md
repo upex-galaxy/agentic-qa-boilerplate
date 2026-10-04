@@ -2,7 +2,7 @@
 id: local-context-pbi
 title: 'Local context: the PBI cache of Jira'
 load_when: 'Jira or Xray reads, the .context/PBI/ cache, sync, hydrate, ATP / ATR / TC files, a ticket folder'
-triggers: ['\.context/PBI', '\bPBI\b', '\bjira\b', '\bxray\b', '\bsync', '\bhydrate\b', '\bepic\b', '\bATP\b', '\bATR\b', '\bATS\b', '\btest-specs\b', '\b[A-Z][A-Z0-9]+-\d+\b']
+triggers: ['\.context/PBI', '\bPBI\b', '\bjira\b', '\bxray\b', '\bsync', '\bhydrate\b', '\bepic\b', '\bATS\b', '\btest-specs\b', '\b[A-Z][A-Z0-9]+-\d+\b']
 paths: ['.context/PBI/', 'scripts/sync-jira-issues.ts']
 ---
 
