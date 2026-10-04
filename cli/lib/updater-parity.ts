@@ -94,6 +94,17 @@ export interface ParityFinding {
   note?: string
 }
 
+/** A row about the instruction sections (`makeInstructionsHook`): the `project.md` stub, a pre-split AGENTS.md. Never blocking. */
+export interface InstructionRowInput {
+  path: string
+  evidence: string
+  suggested: ParitySuggestion
+  /** Set when the row is a contest between two copies (`ParityFinding.side`). */
+  side?: 'kept' | 'overwritten'
+  /** Repeated under the row in the saved file (the old-heading map). */
+  note?: string
+}
+
 /** A synced file the project had edited that this run overwrote (`RunSummary.localEditsOverwritten`). */
 export interface LocalEditInput {
   path: string
@@ -164,6 +175,8 @@ export interface ParityInput {
   doctrineDebt?: string | null
   /** The file that row is about. Defaults to `AGENTS.md` (`DOCTRINE_FILE`). */
   doctrineFile?: string
+  /** Rows from the instruction-sections hook (`InstructionRowInput`). */
+  instructionRows?: InstructionRowInput[]
   /** Project-edited synced files this run overwrote. */
   localEdits?: LocalEditInput[]
   /** `package.json` keys kept at the project's value while upstream differs. */
@@ -1392,6 +1405,12 @@ export function collectParityFindings(input: ParityInput): ParityFinding[] {
 
   findings.push(...[...drifted.values()].map(({ projectOnly: _projectOnly, ...finding }) => finding), ...compat);
 
+  // The instruction sections: the `project.md` stub this run delivered (or
+  // refused) and the heading map for an AGENTS.md that predates the split.
+  for (const row of input.instructionRows ?? []) {
+    findings.push({ surface: 'instructions', path: row.path, evidence: row.evidence, suggested: row.suggested, blocking: false, ...(row.side ? { side: row.side } : {}), ...(row.note ? { note: row.note } : {}) });
+  }
+
   // 3. Archived skills: the migration kept the legacy copy because upstream owns the name.
   for (const skill of input.archivedSkills) {
     const archived = path.join(input.archivedSkillsDir, skill);
@@ -1544,7 +1563,7 @@ export function collectParityFindings(input: ParityInput): ParityFinding[] {
     const isSkillPath = edit.path.startsWith('.agents/skills/');
     const registryHint = isSkillPath ? '; after restoring, run bun run skills:registry' : '';
     findings.push({
-      surface: isSkillPath ? 'skills' : 'components',
+      surface: isSkillPath ? 'skills' : edit.path.startsWith('.agents/instructions/') ? 'instructions' : 'components',
       path: edit.path,
       evidence: `project edit overwritten; backup: ${backupRel ?? 'none'}; ${diff ? `${formatStats(stats)} vs applied` : 'backup unavailable'}; ${PROTECT_HINT}${registryHint}`,
       suggested: 'merge',

@@ -31,9 +31,17 @@
  *     prohibition) or `` enforced: `bun run <script>` `` (a gate in
  *     `package.json`).
  *
- * A repo without `.agents/instructions/` has not adopted the split yet: the
- * gate prints a note and passes, because being behind upstream is not a broken
- * repo.
+ *   - STUB: `project.md.template`, the generic `project.md` a downstream project
+ *     receives, carries none of this repo's identity (`stubLeaks`: the
+ *     `project.schema.yaml` identity patterns, the own Git Strategy heading,
+ *     a copy of the maintainers' own `project.md`). Required in the
+ *     maintainers' copy.
+ *
+ * A repo without `.agents/instructions/` has not adopted the split yet, and a
+ * project whose `AGENTS.md` has no ROUTER still runs its pre-split monolith
+ * (the sync delivers the sections; moving AGENTS.md is the project's own merge,
+ * named in the parity report): the gate prints a note and passes, because
+ * being behind upstream is not a broken repo.
  *
  * Usage: bun scripts/lint-instructions.ts   (exit 1 on any error; warnings print and pass)
  */
@@ -41,6 +49,7 @@
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { isMaintainerCopy } from '../cli/lib/agents-schema.ts';
+import { PROJECT_INSTRUCTIONS, PROJECT_INSTRUCTIONS_TEMPLATE, stubLeaks } from '../cli/lib/updater-instructions.ts';
 import {
   importRefs,
   INSTRUCTIONS_DIR,
@@ -64,13 +73,15 @@ export const RULES_SECTION = '01-critical-rules.md';
 export interface InstructionFinding {
   file: string
   line: number
-  kind: 'budget' | 'router' | 'unrouted' | 'frontmatter' | 'trigger' | 'rule' | 'binding'
+  kind: 'budget' | 'router' | 'unrouted' | 'frontmatter' | 'trigger' | 'rule' | 'binding' | 'stub'
   severity: 'error' | 'warning'
   detail: string
 }
 
 export interface InstructionReport {
   adopted: boolean
+  /** A project with the sections but a pre-split `AGENTS.md` (no ROUTER): nothing is checked yet. */
+  pendingMigration: boolean
   l0Bytes: number
   /** The ceiling that applies to this repo: `L0_BUDGET` in the maintainers' copy, else `L0_PROJECT_BUDGET`. */
   budget: number
@@ -166,7 +177,8 @@ export function lintInstructions(root: string): InstructionReport {
   const yamlPath = join(root, '.agents', 'project.yaml');
   const maintainer = existsSync(yamlPath) && isMaintainerCopy(readFileSync(yamlPath, 'utf8'));
   const budget = maintainer ? L0_BUDGET : L0_PROJECT_BUDGET;
-  if (!adopted) { return { adopted, l0Bytes, budget, sections: 0, rows: 0, findings }; }
+  if (!adopted) { return { adopted, pendingMigration: false, l0Bytes, budget, sections: 0, rows: 0, findings }; }
+  if (!maintainer && routerRows(l0) === null) { return { adopted, pendingMigration: true, l0Bytes, budget, sections: 0, rows: 0, findings }; }
 
   // BUDGET
   const overBudget = budgetFinding(l0Bytes, maintainer);
@@ -283,7 +295,19 @@ export function lintInstructions(root: string): InstructionReport {
     });
   }
 
-  return { adopted, l0Bytes, budget, sections: sections.length, rows: rows?.length ?? 0, findings };
+  // STUB: the generic project.md a downstream project receives carries none of this repo's identity.
+  const stubPath = join(root, PROJECT_INSTRUCTIONS_TEMPLATE);
+  if (existsSync(stubPath)) {
+    const own = maintainer && existsSync(join(root, PROJECT_INSTRUCTIONS)) ? readFileSync(join(root, PROJECT_INSTRUCTIONS), 'utf8') : null;
+    for (const reason of stubLeaks(readFileSync(stubPath, 'utf8'), own)) {
+      findings.push({ severity: 'error', file: PROJECT_INSTRUCTIONS_TEMPLATE, line: 1, kind: 'stub', detail: `the stub would leak to every project: ${reason}` });
+    }
+  }
+  else if (maintainer) {
+    findings.push({ severity: 'error', file: PROJECT_INSTRUCTIONS_TEMPLATE, line: 1, kind: 'stub', detail: `missing: a project without ${PROJECT_INSTRUCTIONS} has no generic stub to receive` });
+  }
+
+  return { adopted, pendingMigration: false, l0Bytes, budget, sections: sections.length, rows: rows?.length ?? 0, findings };
 }
 
 if (import.meta.main) {
@@ -292,6 +316,10 @@ if (import.meta.main) {
   const report = lintInstructions(root);
   if (!report.adopted) {
     console.log(`- instructions:check skipped: no ${INSTRUCTIONS_DIR}/ in this repo (progressive disclosure not adopted yet)`);
+    process.exit(0);
+  }
+  if (report.pendingMigration) {
+    console.log(`- instructions:check skipped: ${L0_FILE} has no ROUTER yet (pre-split monolith); move it to the L0 + ${INSTRUCTIONS_DIR}/ layout, see the parity report of \`bun run up\``);
     process.exit(0);
   }
   const errors = report.findings.filter(f => f.severity === 'error');

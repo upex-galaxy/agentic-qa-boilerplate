@@ -110,6 +110,7 @@ describe('lint-instructions', () => {
     write('AGENTS.md', L0({ extra: 'y'.repeat(L0_BUDGET) }));
     expect(kinds()).toEqual([]);
     write('.agents/project.yaml', MAINTAINER_YAML);
+    write('.agents/instructions/project.md.template', '# Project\n');
     expect(kinds()).toEqual(['budget:AGENTS.md']);
     write('AGENTS.md', L0({ extra: 'y'.repeat(L0_PROJECT_BUDGET) }));
     write('.agents/project.yaml', 'project: {}\n');
@@ -134,10 +135,38 @@ describe('lint-instructions', () => {
     ]);
   });
 
-  test('missing router markers fail once, without flagging every section as unrouted', () => {
+  test('missing router markers fail once in the maintainers\' copy, without flagging every section as unrouted', () => {
     scaffold();
+    write('.agents/project.yaml', MAINTAINER_YAML);
+    write('.agents/instructions/project.md.template', '# Project\n');
     write('AGENTS.md', L0().replace('<!-- router:start -->', ''));
     expect(kinds()).toEqual(['router:AGENTS.md']);
+  });
+
+  test('a project that received the sections but still runs its pre-split AGENTS.md is pending, not broken', () => {
+    scaffold();
+    write('AGENTS.md', `# AGENTS.md\n\n## 9. LOCAL CONTEXT (PBI)\n\n${'x'.repeat(CODEX_PROJECT_DOC_MAX_BYTES)}\n`);
+    const report = lintInstructions(root);
+    expect(report.pendingMigration).toBe(true);
+    expect(report.findings).toEqual([]);
+  });
+
+  test('stub: an identity pattern, the own Git Strategy heading or a copy of the own project.md fails', () => {
+    scaffold();
+    write('.agents/instructions/project.md.template', '# Project\n\nPushes bypass the ProtectPublic ruleset.\n\n## Git Strategy (this repository)\n');
+    expect(kinds()).toEqual(['stub:.agents/instructions/project.md.template', 'stub:.agents/instructions/project.md.template']);
+    write('.agents/project.yaml', MAINTAINER_YAML);
+    write('.agents/instructions/project.md.template', `${fm('project', '[]')}# Project\n`);
+    expect(kinds()).toEqual(['stub:.agents/instructions/project.md.template']);
+    write('.agents/instructions/project.md.template', '# A generic stub\n');
+    expect(kinds()).toEqual([]);
+  });
+
+  test('stub: required in the maintainers\' copy, optional in a project', () => {
+    scaffold();
+    expect(kinds()).toEqual([]);
+    write('.agents/project.yaml', MAINTAINER_YAML);
+    expect(kinds()).toEqual(['stub:.agents/instructions/project.md.template']);
   });
 
   test('frontmatter shape: missing block, bad id, duplicate id, empty triggers and a trigger that does not compile', () => {

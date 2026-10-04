@@ -29,6 +29,14 @@
  *  - It clears itself with no ceremony: write the section, and the next run
  *    finds it and drops it from the ledger.
  *
+ * L0 HEADINGS ONLY, by construction. Upstream's `AGENTS.md` is the always-on
+ * L0: the doctrine that moved into `.agents/instructions/` arrives synced
+ * (the `instructions` component), so it can never be debt. A pre-split
+ * project's ledger entries for the old numbered sections resolve on the first
+ * run against the L0 (upstream no longer has them in this file), and what it
+ * still lacks are the L0 headings themselves (`LOAD PROTOCOL`, `ROUTER`): the
+ * migration row (`updater-instructions.ts`) maps the rest.
+ *
  * SCOPED TO `AGENTS.md` ONLY. The argument for the ledger is that this one file
  * is loaded by every session and cited by every skill, so its divergence is
  * silent and compounding. No other watched file has that property: a KATA base,

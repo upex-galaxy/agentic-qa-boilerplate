@@ -125,4 +125,13 @@ describe('the unresolved-doctrine ledger tracks content, not the sha marker', ()
     write(upstream, DOCTRINE_FILE, '# Memory\n\n## 9. DOCTRINE\n\nnew\n');
     expect(runDoctrineLedger(root, upstream)).toBeNull();
   });
+
+  test('against the split L0, only L0 headings are debt; old sections that moved into a synced section resolve', () => {
+    const monolith = '# AGENTS.md\n\n## 1. CRITICAL RULES\n\nr\n\n## 9. LOCAL CONTEXT (PBI)\n\np\n\n## 12. MEMORY\n\nm\n';
+    const l0 = '# AGENTS.md\n\n## LOAD PROTOCOL\n\nl\n\n## 1. CRITICAL RULES\n\nr\n\n## ROUTER\n\nt\n\n## 12. MEMORY\n\nm\n';
+    const previous = { '4.5. HOST HARNESSES': { runs: 3, since: '2026-01-01' } };
+    const debt = reconcileDoctrineLedger(monolith, l0, previous, '2026-02-01');
+    expect(debt.outstanding.sort()).toEqual(['LOAD PROTOCOL', 'ROUTER']);
+    expect(debt.resolved).toEqual(['4.5. HOST HARNESSES']);
+  });
 });
