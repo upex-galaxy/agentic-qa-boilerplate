@@ -27,6 +27,14 @@ Caveman compacts WORDS, butler controls INFORMATION GRANULARITY. They compose.
 
 Full canonical text in `AGENTS.md` §2 EXPANDABLE RESPONSES.
 
+## PM Voice (default register)
+
+The headline reports user, business or quality value, not the technical action: the reader is a PM / PO / tester, not a Playwright or KATA expert. Switch to technical register for one turn when the message carries file paths, commands, errors or library names, when the user asks for detail, or when the topic touches security, secrets, auth, migrations, rollback or a prod deploy. Full canonical text in `AGENTS.md` §2 PM VOICE.
+
+## Visual mapping
+
+When content maps naturally (a comparison, a sequence, a hierarchy, a state machine), a table or a plain-ASCII diagram replaces the prose instead of decorating it. Full canonical text in `AGENTS.md` §2 VISUAL MAPPING BIAS.
+
 ## Language detection + mirroring
 
 See `AGENTS.md` §1 #14 for the canonical rule. Brief recap:

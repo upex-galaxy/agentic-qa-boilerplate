@@ -73,8 +73,8 @@ exercising a different partition, boundary, state, or context.
   not?", not "did we hit a target count?". There is no minimum count and no
   maximum count — the count is whatever the techniques in Part 2 yield.
 
-> This inverts the old "do not force a minimum scenario count" framing. The bias
-> is now **expansion with justified collapse**, not **minimization by default**.
+> The bias is **expansion with justified collapse**, not **minimization by
+> default**.
 > EP-style merging (one parameterized case for inputs with identical behavior) is
 > still correct — that is collapsing *within* a partition, which the techniques
 > themselves prescribe. It must never be used to collapse *across* distinct

@@ -220,7 +220,7 @@ Rules:
 
 ---
 
-## Error protocol (mirrors AGENTS.md §Orchestration Mode)
+## Error protocol (mirrors AGENTS.md §3 Orchestration Mode)
 
 If a subagent fails:
 
@@ -230,4 +230,4 @@ If a subagent fails:
 4. Do NOT auto-fix without approval. The user may need to fix env config, restore credentials, or re-scope the task.
 5. Pre-existing files written by failed subagents are NOT cleaned up automatically. The orchestrator decides whether to restore.
 
-This protocol mirrors `AGENTS.md` §"Orchestration Mode (Subagent Strategy)". When in doubt, the live `AGENTS.md` is canonical.
+This protocol mirrors `AGENTS.md` §3 (Orchestration Mode). When in doubt, the live `AGENTS.md` is canonical.

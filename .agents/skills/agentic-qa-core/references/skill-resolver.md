@@ -19,10 +19,9 @@ The protocol saves tokens, and it is also the only channel through which a skill
 
 ## The protocol
 
-1. **Build (or read) the registry, once per session.**
-   - At the first significant subagent dispatch (i.e. the first dispatch where `Skills to load` is non-empty), the orchestrator runs `bun scripts/build-skill-registry.ts`.
-   - The script scans `.agents/skills/*/SKILL.md`, extracts compact rules per skill, and writes `.agents/skills/REGISTRY.md`.
-   - If `.agents/skills/REGISTRY.md` already exists AND every `SKILL.md` mtime is older than the registry's mtime, the orchestrator skips the rebuild and reads the cached file directly.
+1. **Read the registry.**
+   - `.agents/skills/REGISTRY.md` is committed. `bun run skills:registry` scans `.agents/skills/*/SKILL.md`, extracts compact rules per skill, and rewrites the file in full on every run.
+   - `bun run skills:registry:check` reports when the committed registry is stale. Rebuild only when it does; otherwise read the file as it is.
 
 2. **Inject `## Project Standards (auto-resolved)` into every briefing.**
    - For each subagent dispatch, the orchestrator picks the relevant skills (see "How orchestrator picks relevant skills" below).
@@ -84,11 +83,10 @@ A block aims for at most ~20 lines including blank lines. An AUTHORED block (a `
 Heuristic, applied per dispatch in order of priority:
 
 1. **Explicit skill mentions in the briefing.** If `Skills to load` lists `/unit-testing`, the registry block for `unit-testing` is included verbatim.
-2. **User-named slugs.** If the user says "use sprint-development for this", the orchestrator includes `sprint-development` even if no skill is loaded.
-3. **Name-match heuristic on the Goal + Context.** The orchestrator scans the dispatch's `Goal` and `Context docs` paths for known skill slugs. Match → include. (E.g. a goal that says "scaffold the bootstrap" includes `project-bootstrap`.)
-4. **Phase-match.** Each SKILL.md frontmatter declares `phase:` (`bootstrap`, `foundation`, `implementation`, etc.). If the orchestrator's current workflow phase matches the briefing's intent, include skills with that phase.
-5. **Context skills: only the aspect the dispatch touches.** A `metadata.kind: context` skill (slug `<aspect>-context`) is injected when the dispatch's Goal, Context docs or touched files name its aspect, by testing level: a task that seeds or asserts on data, writes SQL or reasons about an entity's lifecycle gets `business-data-context`; one that writes API tests or reasons about endpoints, auth or status codes gets `business-api-context`; one that writes UI / E2E tests, scopes a smoke or explores a user flow gets `business-e2e-context`; one that names or labels domain concepts (authoring an ATP, naming test cases, refining ACs in business vocabulary) gets `business-domain-context`; one that wires the framework to the stack, touches environments, CI or auth-in-tests, or sets performance / NFR budgets gets `infra-context`; one that must explain or apply the methodology gets `iql-context`; a project-owned `<aspect>-context` joins on its own aspect. For a context map skill (`CONTEXT_MAP_SKILLS`, `cli/lib/context-maps.ts`) the briefing injects its read COMMAND (`bun run context:map <slug> --section <id>` when the dispatch touches one entity, journey, endpoint group, term or NFR), never the map file path: the raw HTML is mostly SVG (`./business-context-maps.md` §3). Never all of them: the resolver is a token-saving protocol, and a subagent that touches one aspect pays for one. The relevance call is the orchestrator's, so a dispatch that names no aspect gets no context skill; when in doubt, name the aspect in the Goal.
-6. **Cap at 5 skills per briefing.** Beyond five, the briefing becomes too noisy. The orchestrator picks the top 5 by relevance and lists the rest under "Other skills available — load on demand:".
+2. **User-named slugs.** A skill the user names for the task is included even if no skill is loaded.
+3. **Name-match heuristic on the Goal + Context.** The orchestrator scans the dispatch's `Goal` and `Context docs` paths for known skill slugs. Match → include.
+4. **Context skills: only the aspect the dispatch touches.** A `metadata.kind: context` skill (slug `<aspect>-context`) is injected when the dispatch's Goal, Context docs or touched files name its aspect, by testing level: a task that seeds or asserts on data, writes SQL or reasons about an entity's lifecycle gets `business-data-context`; one that writes API tests or reasons about endpoints, auth or status codes gets `business-api-context`; one that writes UI / E2E tests, scopes a smoke or explores a user flow gets `business-e2e-context`; one that names or labels domain concepts (authoring an ATP, naming test cases, refining ACs in business vocabulary) gets `business-domain-context`; one that wires the framework to the stack, touches environments, CI or auth-in-tests, or sets performance / NFR budgets gets `infra-context`; one that must explain or apply the methodology gets `iql-context`; a project-owned `<aspect>-context` joins on its own aspect. For a context map skill (`CONTEXT_MAP_SKILLS`, `cli/lib/context-maps.ts`) the briefing injects its read COMMAND (`bun run context:map <slug> --section <id>` when the dispatch touches one entity, journey, endpoint group, term or NFR), never the map file path: the raw HTML is mostly SVG (`./business-context-maps.md` §3). Never all of them: the resolver is a token-saving protocol, and a subagent that touches one aspect pays for one. The relevance call is the orchestrator's, so a dispatch that names no aspect gets no context skill; when in doubt, name the aspect in the Goal.
+5. **Cap at 5 skills per briefing.** Beyond five, the briefing becomes too noisy. The orchestrator picks the top 5 by relevance and lists the rest under "Other skills available — load on demand:".
 
 Skills NOT matched are simply not pasted. The subagent can still load any skill at runtime if the registered rules are insufficient.
 
@@ -96,14 +94,11 @@ Skills NOT matched are simply not pasted. The subagent can still load any skill 
 
 ## Cache invalidation
 
-The registry is regenerated when any of these is true:
+Run `bun run skills:registry` when any of these is true:
 
 - **No registry file** at `.agents/skills/REGISTRY.md`.
-- **A SKILL.md is newer than the registry.** The script compares mtimes; any skill with `mtime > registry.mtime` triggers a full rebuild.
-- **A new skill directory exists under `.agents/skills/`** that the registry does not list.
-- **A skill directory was removed.** The registry still references a skill that no longer has a SKILL.md → rebuild and drop the orphan.
-- **The user runs `bun scripts/build-skill-registry.ts`** explicitly. Manual override always rebuilds.
-- **Session start.** A fresh session always re-checks invalidation conditions before reusing the cache.
+- **`bun run skills:registry:check` reports it stale**: a SKILL.md changed, a skill directory was added, or one was removed since the last build.
+- **The user asks for a rebuild.**
 
 The script is idempotent — re-running it on an unchanged repo produces a byte-identical file.
 
