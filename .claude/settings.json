@@ -115,6 +115,16 @@
             "timeout": 5
           }
         ]
+      },
+      {
+        "matcher": "clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.agents/hooks/personality-reinject.mjs\"",
+            "timeout": 5
+          }
+        ]
       }
     ]
   },

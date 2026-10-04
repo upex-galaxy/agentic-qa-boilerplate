@@ -435,9 +435,10 @@
         pedido necesita y la sesión todavía no leyó, suma una línea
         <code>ROUTE: read &lt;archivo&gt;</code>. Claude Code y Codex lo ejecutan como hook de
         comando en el evento <code>UserPromptSubmit</code>, y un <code>SessionStart</code> con
-        matcher <code>compact</code> re-arma las rutas después de compactar. OpenCode no tiene hooks
-        de comando, así que su plugin importa las mismas funciones y las empuja al prompt de
-        sistema; en OpenCode 2, que no le pasa el texto del pedido, queda solo el router.
+        matcher <code>compact</code> o <code>clear</code> re-arma las rutas después de compactar o
+        de un <code>/clear</code>. OpenCode no tiene hooks de comando, así que su plugin importa las
+        mismas funciones y las empuja al prompt de sistema; en OpenCode 2, que no le pasa el texto
+        del pedido, queda solo el router.
       </p>
 
       <h3 id="aliases">Una skill, un modo</h3>

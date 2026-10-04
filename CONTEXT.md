@@ -63,7 +63,7 @@ The repo runs on **Claude Code, OpenCode, and Codex (CLI + Desktop)**. There is 
 | **Instructions** | `CLAUDE.md` → `@AGENTS.md` **[generated shim]** | `AGENTS.md` (native) | `AGENTS.md` (native) |
 | **Skills** | `.claude/skills` **[generated alias]** | `.agents/skills/` (native) | `.agents/skills/` (native) |
 | **Commands** | none: `/<skill> <mode>` through `.claude/skills` | none: name the skill and the mode in prose | none: name the skill and the mode in prose |
-| **Hook** | `.claude/settings.json` → `UserPromptSubmit` + `SessionStart` (`compact`) | `.opencode/plugins/personality-reinject.js` | `.codex/hooks.json` → `UserPromptSubmit` + `SessionStart` (`compact`) |
+| **Hook** | `.claude/settings.json` → `UserPromptSubmit` + `SessionStart` (`compact`, `clear`) | `.opencode/plugins/personality-reinject.js` | `.codex/hooks.json` → `UserPromptSubmit` + `SessionStart` (`compact`, `clear`) |
 | **MCP** | `.mcp.json` | `opencode.jsonc` | `.codex/config.toml` |
 
 **Instructions.** `AGENTS.md` plus the section files it routes to under `.agents/instructions/` are the only instruction body. OpenCode and Codex load `AGENTS.md` natively. Claude Code loads `CLAUDE.md`, which is exactly `@AGENTS.md` plus one newline — a documented import rather than a symlink, so it survives a Windows checkout. Writing operational prose into `CLAUDE.md` is structural drift, and `agents:compat:check` fails on it.

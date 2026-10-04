@@ -4,7 +4,7 @@
 
 ## LOAD PROTOCOL
 
-Before acting on a request, match it against the ROUTER and read every matched section file not already in this conversation. A `ROUTE:` line injected by the hook is binding and wins over your own judgment. A section once read is not re-read unless compaction removed it. Unsure whether a section applies → read it: a skipped section is the failure this design guards against. A section binds exactly like this file. A `§N` citation anywhere names the numbered heading kept verbatim in the file the ROUTER lists for it.
+Before acting on a request, match it against the ROUTER and read every matched section file not already in this conversation. A `ROUTE:` line injected by the hook is binding and wins over your own judgment. A section once read is not re-read unless compaction or `/clear` removed it. Unsure whether a section applies → read it: a skipped section is the failure this design guards against. A section binds exactly like this file. A `§N` citation anywhere names the numbered heading kept verbatim in the file the ROUTER lists for it.
 
 ---
 

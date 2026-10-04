@@ -206,7 +206,7 @@ describe('ROUTE: lines and the per-session state', () => {
     expect(fileRouteState(routerFixture(), '')).toBeNull();
   });
 
-  test('the Claude Code wire: ROUTE lines last, after identity; SessionStart compact re-arms and prints nothing', () => {
+  test('the Claude Code wire: ROUTE lines last, after identity; SessionStart compact or clear re-arms and prints nothing', () => {
     const root = routerFixture();
     const sessionId = `route-test-${process.pid}-${Date.now()}`;
     const options = { repoRoot: root, env: { CLAUDE_PROJECT_DIR: root }, home: temporaryRoot('home '), orca: false, envMissing: false, worktreeUnprovisioned: false };
@@ -216,8 +216,12 @@ describe('ROUTE: lines and the per-session state', () => {
       expect(first.at(-2)).toStartWith('AGENT IDENTITY:');
       expect(first.at(-1)).toBe(`${ROUTE_PREFIX} .agents/instructions/80-git.md (git)`);
       expect(prompt('push it').some(line => line.startsWith(ROUTE_PREFIX))).toBe(false);
-      expect(renderHookOutput({ ...options, hookInput: { session_id: sessionId, hook_event_name: 'SessionStart', source: 'compact' } })).toBe('');
-      expect(prompt('push it').at(-1)).toBe(`${ROUTE_PREFIX} .agents/instructions/80-git.md (git)`);
+      for (const source of ['compact', 'clear']) {
+        expect(renderHookOutput({ ...options, hookInput: { session_id: sessionId, hook_event_name: 'SessionStart', source } })).toBe('');
+        expect(prompt('push it').at(-1)).toBe(`${ROUTE_PREFIX} .agents/instructions/80-git.md (git)`);
+      }
+      expect(renderHookOutput({ ...options, hookInput: { session_id: sessionId, hook_event_name: 'SessionStart', source: 'resume' } })).toBe('');
+      expect(prompt('push it').some(line => line.startsWith(ROUTE_PREFIX))).toBe(false);
     }
     finally {
       rmSync(routeStatePath(root, sessionId), { force: true });
