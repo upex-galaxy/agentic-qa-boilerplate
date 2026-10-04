@@ -692,10 +692,11 @@ bun run codex      # Codex CLI (Codex Desktop usa la misma config del repo)</cod
               <td><code>bun run docs:check</code></td>
               <td>En cada commit (pre-commit y <code>bun run repo:check</code>).</td>
               <td>
-                Falla si un skill del repo falta en el router de <code>AGENTS.md</code> §5 o si un
-                doc cita un <code>bun run</code> que <code>package.json</code> no tiene. Lo que pide
-                criterio lo cierra <code>/framework-development</code> en el boilerplate y la fase
-                9.3 de <code>/test-framework-adaptation</code> en tu proyecto.
+                Falla si un skill del repo falta en el router de
+                <code>.agents/instructions/20-skills-and-mcps.md</code> o si un doc cita un
+                <code>bun run</code> que <code>package.json</code> no tiene. Lo que pide criterio lo
+                cierra <code>/framework-development</code> en el boilerplate y la fase 9.3 de
+                <code>/test-framework-adaptation</code> en tu proyecto.
               </td>
             </tr>
             <tr>
@@ -794,7 +795,8 @@ subagente (contexto limpio)
       <h3 id="circuito-cli">Circuito 3: auto-carga de skills por CLI</h3>
       <p>
         Antes de ejecutar un binario, el agente carga el skill que sabe usarlo (flags, auth,
-        paginación, errores). La tabla binario → skill vive en <code>AGENTS.md</code> §6.5.
+        paginación, errores). La tabla binario → skill vive en
+        <code>.agents/instructions/30-tool-resolution.md</code> (§6.5).
       </p>
       <h2 id="mcps">Los MCPs del repo</h2>
       <p>
@@ -806,11 +808,11 @@ subagente (contexto limpio)
         la herramienta principal.
       </p>
       <p>
-        Qué hace cada uno y cuándo se usa está en la tabla de MCPs de <code>AGENTS.md</code> §5; las
-        variables que cada server necesita en <code>.env</code> las lista
-        <code>bun run setup:doctor</code> (y <code>.env.example</code> las comenta). Las guías de
-        <a href="setup/dbhub.html">DBHub</a> y <a href="setup/openapi.html">OpenAPI</a> explican los
-        que leen valores del proyecto.
+        Qué hace cada uno y cuándo se usa está en la tabla de MCPs de
+        <code>.agents/instructions/20-skills-and-mcps.md</code>; las variables que cada server
+        necesita en <code>.env</code> las lista <code>bun run setup:doctor</code> (y
+        <code>.env.example</code> las comenta). Las guías de <a href="setup/dbhub.html">DBHub</a> y
+        <a href="setup/openapi.html">OpenAPI</a> explican los que leen valores del proyecto.
       </p>
       <p>
         La búsqueda web y Postman no están en <code>.mcp.json</code> a propósito: son servers
@@ -1073,12 +1075,13 @@ subagente (contexto limpio)
       <h2 id="skills">Catálogo de skills</h2>
       <p>
         El catálogo es <code>.agents/skills/REGISTRY.md</code> (generado por
-        <code>bun run skills:registry</code>). <code>AGENTS.md</code> §5 es otra cosa: el router de
-        frases disparadoras que usa el agente para elegir skill, no el inventario. Hay tres tipos:
-        propios del repo, vendorizados (como <code>judgment-day</code>, de gentle-ai) y de la
-        comunidad, que instala <code>bun run setup</code> a nivel de proyecto. Además hay skills de
-        usuario (la lista <code>USER_LEVEL_SKILLS</code> de <code>cli/install.ts</code>) que el
-        agente solo carga si le das permiso.
+        <code>bun run skills:registry</code>).
+        <code>.agents/instructions/20-skills-and-mcps.md</code> es otra cosa: el router de frases
+        disparadoras que usa el agente para elegir skill, no el inventario. Hay tres tipos: propios
+        del repo, vendorizados (como <code>judgment-day</code>, de gentle-ai) y de la comunidad, que
+        instala <code>bun run setup</code> a nivel de proyecto. Además hay skills de usuario (la
+        lista <code>USER_LEVEL_SKILLS</code> de <code>cli/install.ts</code>) que el agente solo
+        carga si le das permiso.
       </p>
 
       <h3 id="skills-workflow">Workflow: los stages del pipeline</h3>
@@ -1337,8 +1340,8 @@ subagente (contexto limpio)
 
       <footer class="doc-footer">
         Fuentes canónicas: <code>README.md</code>, <code>INSTALLER.md</code>,
-        <code>AGENTS.md</code> (§3 a §6), <code>package.json</code>, <code>.env.example</code> y
-        <code>scripts/harness-env.ts</code>.
+        <code>AGENTS.md</code> (§3), <code>.agents/instructions/</code>, <code>package.json</code>,
+        <code>.env.example</code> y <code>scripts/harness-env.ts</code>.
       </footer>
     </article>
   </body>

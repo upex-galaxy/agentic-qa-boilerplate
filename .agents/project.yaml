@@ -38,7 +38,7 @@ issue_tracker:
   # project identity, not a per-developer override, and it is the value that goes stale
   # after a site migration — a stale host silently overwrites .context/PBI/ and the
   # .agents/*.json catalogs with another site's content. ATLASSIAN_URL is NOT a .env
-  # variable (AGENTS.md §7): if a stale copy is loose in the environment, the yaml wins
+  # variable (.agents/instructions/40-project-variables.md): if a stale copy is loose in the environment, the yaml wins
   # and the scripts print a warning naming both values.
   atlassian_url: https://upexgalaxy72.atlassian.net # Atlassian site base URL (e.g. https://company.atlassian.net)
 

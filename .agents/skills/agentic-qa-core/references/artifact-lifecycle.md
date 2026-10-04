@@ -117,7 +117,7 @@ Every `Test` → **QA Test Repository** · every Test Plan (ATP / STP / FTP / RT
 Master Test Plan** · every Test Execution, Test Set and Precondition → **QA Test
 Artifacts** · every bug / defect / improvement → **QA Defect Management**. Never a
 product or dev epic. Three axes, never collapsed: **parent** = QA bucket · **link** =
-source coverable · **components** = product module. Canon: `AGENTS.md` §9 +
+source coverable · **components** = product module. Canon: `.agents/instructions/60-local-context-pbi.md` +
 `defect-management-doctrine.md` Part 4.
 
 ---

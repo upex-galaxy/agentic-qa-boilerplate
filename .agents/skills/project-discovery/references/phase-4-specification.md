@@ -4,7 +4,7 @@
 
 > **Per-ticket PBI is NOT a Phase-4 output.** It is materialized later by `/sprint-testing` via `bun run jira:sync-issues get <KEY> --include-comments`, which syncs Jira issues into the canonical tree `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/` (Module = Epic, 1:1). Those local `.md` files are a READ-ONLY cache of Jira (Jira = source of truth).
 
-> **The access recipe already exists.** How the backlog is reached, cached and re-hydrated is framework doctrine in `.context/PBI/README.md` and AGENTS.md §9. Phase 4 NEVER writes `.context/PBI/README.md` or the committed `templates/`; it checks that the recipe works for this project.
+> **The access recipe already exists.** How the backlog is reached, cached and re-hydrated is framework doctrine in `.context/PBI/README.md` and `.agents/instructions/60-local-context-pbi.md`. Phase 4 NEVER writes `.context/PBI/README.md` or the committed `templates/`; it checks that the recipe works for this project.
 
 ---
 

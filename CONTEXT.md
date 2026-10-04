@@ -298,7 +298,7 @@ Every other skill (reference, utility, generator) is exempt from the dispatch-ta
 | **Pre-sprint AC refinement / backlog grooming** | `/shift-left-testing` (SKILL.md) + the business context maps (`bun run context:map <slug>`) | Skill `references/` (backlog-selection, refinement-playbook, atp-outline-template) |
 | **Exploratory Testing** | `/sprint-testing` (SKILL.md) + `.context/PBI/qa-artifacts/master-test-plan.md` | Skill `references/` (exploration patterns, session entry points) |
 | **Understand System** | `bun run context:map business-data-context` (and `business-api-context`, `business-e2e-context`) | `bun run context:map business-domain-context` (vocabulary), `bun run context:map infra-context` (stack, environments) |
-| **Use MCP** | `AGENTS.md` §5 "MCPs (decision rules)" + §6 "Tool Resolution" | The owning CLI skill (`/acli`, `/xray-cli`, `/playwright-cli`) |
+| **Use MCP** | `.agents/instructions/20-skills-and-mcps.md` "MCPs (decision rules)" + `.agents/instructions/30-tool-resolution.md` | The owning CLI skill (`/acli`, `/xray-cli`, `/playwright-cli`) |
 
 ### By Role
 
