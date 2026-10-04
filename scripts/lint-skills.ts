@@ -41,7 +41,8 @@
  *      regression-testing, test-documentation), EXCEPT inside the
  *      "Forbidden invocations" section which legitimately mentions it.
  *
- *   7. TIER-MISMATCH — skill named in AGENTS.md §5 but absent from
+ *   7. TIER-MISMATCH — skill named in the §5 skill router table
+ *      (`.agents/instructions/20-skills-and-mcps.md`, else AGENTS.md) but absent from
  *      cli/install.ts matching tier array, or vice versa. T1 + T4 skills
  *      exempt (T1 lives in .agents/skills/; T4 is auto-discovered at runtime).
  *      install.ts is the tier authority for community skills: one committed
@@ -164,6 +165,7 @@ import type { VolatileKind } from './lib/volatile-facts';
 import { existsSync, lstatSync, readdirSync, readFileSync, statSync } from 'node:fs';
 
 import { dirname, join } from 'node:path';
+import { skillRouterSource } from './lib/instructions';
 import { relativePosix } from './lib/posix-path';
 import { isVolatileExemptPath, scanVolatile, volatileRemedy } from './lib/volatile-facts';
 
@@ -177,6 +179,10 @@ const REPO_ROOT = process.env.LINT_SKILLS_ROOT ?? join(import.meta.dir, '..');
 const SKILLS_DIR = join(REPO_ROOT, '.agents/skills');
 const INSTALL_TS = join(REPO_ROOT, 'cli/install.ts');
 const AGENTS_MD = join(REPO_ROOT, 'AGENTS.md');
+// The skill router table: `.agents/instructions/20-skills-and-mcps.md`, or
+// `AGENTS.md` in a repo that has not split its instructions yet.
+const SKILL_ROUTER = skillRouterSource(REPO_ROOT);
+const SKILL_ROUTER_LABEL = `${SKILL_ROUTER?.rel ?? 'AGENTS.md'} §5`;
 
 /**
  * Authoritative category list — mirrors §5.1 of
@@ -248,7 +254,7 @@ const KIND_SUFFIX_RULES: ReadonlyArray<{ kind: string, suffixes: readonly string
 const KNOWN_CAPABILITIES = new Set(['web-search', 'library-docs', 'db', 'api-schema', 'diagrams']);
 
 /**
- * Resolution tag → capability it resolves to (AGENTS.md §6). Drives the
+ * Resolution tag → capability it resolves to (`.agents/instructions/30-tool-resolution.md`). Drives the
  * CAPABILITY-UNDECLARED heuristic (check 19): a SKILL.md body using the tag
  * without declaring the capability is a WARN. `[AUTOMATION_TOOL]` is absent on
  * purpose: it resolves to `/playwright-cli`, a CLI, so no MCP capability backs it.
@@ -705,7 +711,7 @@ function parseAgentsMdSkillsRegistry(agentsMdPath: string): {
   if (entries.length === 0) {
     return {
       entries: [],
-      parseError: 'AGENTS.md §5 table extracted 0 skill rows — format may have drifted',
+      parseError: `${SKILL_ROUTER_LABEL} table extracted 0 skill rows — format may have drifted`,
     };
   }
   return { entries };
@@ -722,7 +728,7 @@ function checkTierMismatch(
   const agentsNames = new Set(agentsEntries.map(e => e.name));
 
   // T4 USER_LEVEL_SKILLS are auto-discovered at runtime and MUST NOT appear in
-  // AGENTS.md §5 by doctrine (see skill-composition-strategy.md §10). Exclude
+  // the §5 skill router table by doctrine (see skill-composition-strategy.md §10). Exclude
   // them from this check; include only T2 + T3 in the install-side set.
   const checkedSlugs = new Set<string>([...t2Slugs, ...t3Slugs]);
 
@@ -734,7 +740,7 @@ function checkTierMismatch(
       result.push({
         severity: 'WARN',
         scope: entry.name,
-        msg: `TIER-MISMATCH: skill is in AGENTS.md §5 (line ${entry.sourceLine}) but absent from cli/install.ts tier arrays`,
+        msg: `TIER-MISMATCH: skill is in ${SKILL_ROUTER_LABEL} (line ${entry.sourceLine}) but absent from cli/install.ts tier arrays`,
       });
     }
   }
@@ -746,7 +752,7 @@ function checkTierMismatch(
       result.push({
         severity: 'WARN',
         scope: slug,
-        msg: 'TIER-MISMATCH: skill is in cli/install.ts tier arrays but absent from AGENTS.md §5',
+        msg: `TIER-MISMATCH: skill is in cli/install.ts tier arrays but absent from ${SKILL_ROUTER_LABEL}`,
       });
     }
   }
@@ -1328,7 +1334,7 @@ function main(): void {
     // A community skill committed as a real directory in the store (downstream
     // projects commit their `bunx skills add` output) is still the tier
     // install.ts says. Classifying it T1 linted a vendor body as if the project
-    // authored it and exempted it from the AGENTS.md §5 cross-check.
+    // authored it and exempted it from the §5 skill router cross-check.
     if (t3Slugs.has(entry) || t4Slugs.has(entry)) { committedCommunity.add(entry); continue; }
 
     const content = readFileSync(skillMd, 'utf8');
@@ -1473,11 +1479,11 @@ function main(): void {
   // ---- Checks 7–10 (new) ----
 
   // Check 7: TIER-MISMATCH
-  if (!existsSync(AGENTS_MD)) {
+  if (SKILL_ROUTER === null) {
     violation('ERROR', '[lint-skills]', 'AGENTS.md missing at repo root — TIER-MISMATCH check skipped');
   }
   else {
-    const { entries, parseError } = parseAgentsMdSkillsRegistry(AGENTS_MD);
+    const { entries, parseError } = parseAgentsMdSkillsRegistry(SKILL_ROUTER.path);
     if (parseError) {
       violation('WARN', '[lint-skills]', `TIER-MISMATCH parse failure: ${parseError}`);
     }
@@ -1533,7 +1539,7 @@ function main(): void {
     'category vocabulary (only when declared)',
     '`framework-development` exclusivity',
     'anti-leak (`/sdd-` outside Forbidden invocations)',
-    'TIER-MISMATCH (AGENTS.md §5 vs install.ts)',
+    'TIER-MISMATCH (skill router table §5 vs install.ts)',
     'STALE-PATH (inline-code path references in SKILL.md + references/*.md bodies)',
     'DUPLICATE-TIER (skill slug in multiple tier arrays)',
     'SESSION-BANNER-MISSING (retrofitted SKILL.md missing session-management banner)',

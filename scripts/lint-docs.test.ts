@@ -153,6 +153,20 @@ describe('lint-docs roster and scripts', () => {
     expect(findings.map(f => `${f.file}:${f.target}`)).toEqual(['AGENTS.md:ghost-flow']);
   });
 
+  test('once the instructions are split, the router is read from the skills section, not from AGENTS.md', () => {
+    skill('alpha-flow');
+    skill('ghost-flow');
+    write('AGENTS.md', router(['alpha-flow', 'ghost-flow']));
+    write('.agents/instructions/20-skills-and-mcps.md', router(['alpha-flow']));
+    write('.agents/instructions/30-tools.md', 'Run `bun run gone-script`.');
+    write('package.json', '{"scripts":{}}');
+    const findings = lintDocs(root).findings.filter(f => f.kind === 'roster' || f.kind === 'script');
+    expect(findings.map(f => `${f.file}:${f.target}`)).toEqual([
+      '.agents/instructions/20-skills-and-mcps.md:ghost-flow',
+      '.agents/instructions/30-tools.md:gone-script',
+    ]);
+  });
+
   test('the human pages are not a skill list: a README that names no skill passes (Critical Rule #17)', () => {
     write('packages/create-agentic-qa/package.json', '{}');
     skill('alpha-flow');

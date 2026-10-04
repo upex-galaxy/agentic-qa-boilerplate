@@ -29,12 +29,15 @@
  *     line marked `volatile-ok: <reason>` is kept. Severity per family in
  *     `VOLATILE_SEVERITY` (both families fail the gate).
  *   - a repo skill (a committed `.agents/skills/<slug>/SKILL.md`) is missing
- *     from the `AGENTS.md` section 5 skill router (`roster`). A project-local
+ *     from the skill router table (`roster`), read from
+ *     `.agents/instructions/20-skills-and-mcps.md` (or `AGENTS.md` in a repo
+ *     that has not split its instructions; `skillRouterSource`). A project-local
  *     `<aspect>-context` skill is exempt (`isProjectLocalSkillPath`). The human
  *     pages are NOT checked for a skill list: they point to the generated
  *     `REGISTRY.md`, because enumerating the skills there is the mutable-set
  *     copy Critical Rule #17 forbids.
- *   - a `bun run <name>` quoted in `AGENTS.md` or in the doc surface (fenced
+ *   - a `bun run <name>` quoted in `AGENTS.md`, in an instruction section or in
+ *     the doc surface (fenced
  *     blocks, decks and the Pages portal included) names a script
  *     `package.json` does not declare (`script`). Placeholders, file runs
  *     (`bun run scripts/x.ts`) and prose that only names the command
@@ -63,6 +66,7 @@ import type { VolatileKind } from './lib/volatile-facts.ts';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { isProjectLocalSkillPath } from '../cli/lib/updater-core.ts';
+import { listSections, skillRouterSource } from './lib/instructions.ts';
 import { relativePosix, toPosix } from './lib/posix-path.ts';
 import { isVolatileExemptPath, scanVolatile, volatileRemedy } from './lib/volatile-facts.ts';
 
@@ -329,7 +333,7 @@ export function lintDocFile(root: string, file: string): DocFinding[] {
 
 const ROUTER_HEADING = /^### Skills \(lazy-loaded by trigger phrase\)/m;
 
-/** Slugs in the first column of the AGENTS.md section 5 router table, or null when the table is missing. */
+/** Slugs in the first column of the skill router table, or null when the table is missing. */
 export function routerSlugs(agentsMd: string): Set<string> | null {
   const start = agentsMd.search(ROUTER_HEADING);
   if (start < 0) { return null; }
@@ -358,18 +362,18 @@ function repoSkills(root: string): string[] {
     .sort();
 }
 
-/** `roster` findings: repo skills missing from the AGENTS.md section 5 router. */
+/** `roster` findings: repo skills missing from the skill router table. */
 export function lintRoster(root: string): DocFinding[] {
-  const agentsFile = join(root, 'AGENTS.md');
+  const source = skillRouterSource(root);
   const skills = repoSkills(root);
-  if (!existsSync(agentsFile) || skills.length === 0) { return []; }
+  if (source === null || skills.length === 0) { return []; }
   const findings: DocFinding[] = [];
-  const router = routerSlugs(readFileSync(agentsFile, 'utf8'));
+  const router = routerSlugs(readFileSync(source.path, 'utf8'));
   if (router === null) {
-    return [{ file: 'AGENTS.md', line: 1, kind: 'roster', target: 'section 5 skill router table (### Skills heading not found)' }];
+    return [{ file: source.rel, line: 1, kind: 'roster', target: 'skill router table (### Skills heading not found)' }];
   }
   for (const slug of skills) {
-    if (!router.has(slug)) { findings.push({ file: 'AGENTS.md', line: 1, kind: 'roster', target: slug }); }
+    if (!router.has(slug)) { findings.push({ file: source.rel, line: 1, kind: 'roster', target: slug }); }
   }
   return findings;
 }
@@ -426,8 +430,9 @@ export function lintDocs(root: string): { files: number, findings: DocFinding[] 
   const ignored = gitIgnored(root, [...new Set(refs.map(resolvedOf))]);
   const findings = raw.filter(f => !isRef(f) || !ignored.has(resolvedOf(f)));
   const agentsFile = join(root, 'AGENTS.md');
+  const instructionFiles = listSections(root).map(s => join(root, s.rel));
   findings.push(...lintRoster(root));
-  findings.push(...lintScripts(root, existsSync(agentsFile) ? [agentsFile, ...files] : files));
+  findings.push(...lintScripts(root, [...(existsSync(agentsFile) ? [agentsFile] : []), ...instructionFiles, ...files]));
   return { files: files.length, findings };
 }
 

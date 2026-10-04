@@ -8,7 +8,7 @@
  * `bunx skills add` output).
  */
 
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 
@@ -179,6 +179,17 @@ describe('lint-skills tier classification', () => {
     expect(output).not.toMatch(KIND_VIOLATION);
     expect(output).toContain(`Scanning .agents/skills ... ${T1_SKILLS.length} T1 skills (+ 1 community skills committed in the store, tiers from cli/install.ts)`);
     expect(output).toContain('lint:skills passed');
+    expect(exitCode).toBe(0);
+  });
+
+  test('once the instructions are split, TIER-MISMATCH reads the §5 table from the skills section and names it', () => {
+    const root = fixture({ listCommunityInAgentsMd: false });
+    write(root, '.agents/instructions/20-skills-and-mcps.md', readFileSync(join(root, 'AGENTS.md'), 'utf8'));
+    write(root, 'AGENTS.md', '# AGENTS.md\n\n## 1. CRITICAL RULES\n');
+    const { exitCode, output } = runLint(root);
+
+    expect(output).toContain('[resend-cli] TIER-MISMATCH: skill is in cli/install.ts tier arrays but absent from .agents/instructions/20-skills-and-mcps.md §5');
+    expect(output).not.toContain('TIER-MISMATCH parse failure');
     expect(exitCode).toBe(0);
   });
 
