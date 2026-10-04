@@ -327,11 +327,11 @@
       <p>
         Un proyecto creado desde este boilerplate recibe las mejoras con <code>bun run up</code>,
         que ejecuta <code>cli/update-boilerplate.ts</code>. El updater sincroniza por componentes y
-        nunca pisa los archivos que son identidad del proyecto: <code>AGENTS.md</code>, las
-        configuraciones de MCP de cada harness, los hooks de husky,
-        <code>.agents/project.yaml</code> y cualquier ruta que el proyecto declare en
-        <code>updater.protected_paths</code>. Corre solo en el checkout principal: en un worktree se
-        niega, porque sus backups y marcadores morirían con él (ver
+        nunca pisa los archivos que son identidad del proyecto: <code>AGENTS.md</code>,
+        <code>.agents/instructions/project.md</code>, las configuraciones de MCP de cada harness,
+        los hooks de husky, <code>.agents/project.yaml</code> y cualquier ruta que el proyecto
+        declare en <code>updater.protected_paths</code>. Corre solo en el checkout principal: en un
+        worktree se niega, porque sus backups y marcadores morirían con él (ver
         <a href="worktrees.html#updater">Worktrees</a>).
       </p>
       <p>
@@ -530,7 +530,7 @@
         <a href="context.html">Contexto</a>, <a href="agentic-testing.html">Agentic testing</a> y el
         <a href="index.html">índice de Fundamentos agénticos</a>. Fuentes canónicas: las referencias
         de <code>.agents/skills/agentic-qa-core/references/</code> citadas arriba y la sección 4.5
-        de <code>AGENTS.md</code>.
+        (<code>.agents/instructions/10-harnesses.md</code>).
       </footer>
     </article>
   </body>

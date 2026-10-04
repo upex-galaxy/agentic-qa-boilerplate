@@ -28,7 +28,10 @@
         <span class="callout-title">De dónde sale esta página</span>
         <p>
           El contrato que el agente cumple en tiempo de ejecución es <code>AGENTS.md</code> §2
-          (Behavioral Layer), que el agente carga en cada sesión. Esta página es su espejo para
+          (Behavioral Layer), que el agente carga en cada sesión. Las instrucciones del repo cargan
+          en capas: la mayoría de los temas vive en <code>.agents/instructions/</code> y se lee a
+          pedido, pero §2 se queda entero en <code>AGENTS.md</code>, la capa que carga siempre,
+          porque el comportamiento tiene que valer en cada turno. Esta página es su espejo para
           personas y se actualiza cuando §2 cambia. Si alguna vez no coinciden, manda
           <code>AGENTS.md</code>.
         </p>
@@ -569,7 +572,12 @@
           <tbody>
             <tr>
               <td><code>AGENTS.md</code></td>
-              <td>Reglas críticas (§1), capa de comportamiento (§2), modo de orquestación (§3)</td>
+              <td>
+                La frase obligatoria de cada regla crítica (§1; el texto entero está en
+                <code>.agents/instructions/01-critical-rules.md</code>), la capa de comportamiento
+                entera (§2), el núcleo del modo de orquestación (§3) y el router a las secciones de
+                <code>.agents/instructions/</code>
+              </td>
               <td>
                 En cada sesión. Claude Code lo lee a través de <code>CLAUDE.md</code>, que solo lo
                 importa.
@@ -588,8 +596,10 @@
             <tr>
               <td><code>.agents/hooks/personality-reinject.mjs</code></td>
               <td>
-                Reinyecta el contrato de §2 en cada turno para que PM Voice y Butler no se diluyan
-                en sesiones largas
+                Agrega la línea <code>AGENT IDENTITY:</code> y, cuando el pedido necesita una
+                sección de <code>.agents/instructions/</code> que la sesión todavía no leyó, una
+                línea <code>ROUTE:</code> que la nombra. No reinyecta §2: §2 ya carga en cada sesión
+                con <code>AGENTS.md</code>
               </td>
               <td>
                 En cada turno, con un adaptador por harness: <code>.claude/settings.json</code>,

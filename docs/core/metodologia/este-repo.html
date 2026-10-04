@@ -442,11 +442,12 @@ components    -&gt;  módulo del producto  (qué parte del producto toca)</code>
       <dl class="defs">
         <dt><code>AGENTS.md</code></dt>
         <dd>
-          La memoria del agente, cargada en cada sesión: reglas críticas (§1), capa de
-          comportamiento (§2, espejo humano en
-          <a href="../personalidad.html">Personalidad de la IA</a>), modo de orquestación (§3), mapa
-          de qué cargar por tarea (§4), registro de skills y MCPs (§5) y resolución de herramientas
-          (§6).
+          La memoria del agente, en capas. <code>AGENTS.md</code> carga en cada sesión: la frase
+          obligatoria de cada regla crítica (§1), la capa de comportamiento entera (§2, espejo
+          humano en <a href="../personalidad.html">Personalidad de la IA</a>), el núcleo del modo de
+          orquestación (§3) y un router. El router nombra las secciones de
+          <code>.agents/instructions/</code> que se leen a pedido: mapa de qué cargar por tarea
+          (§4), registro de skills y MCPs (§5), resolución de herramientas (§6) y el resto.
         </dd>
         <dt><code>.agents/skills/REGISTRY.md</code></dt>
         <dd>

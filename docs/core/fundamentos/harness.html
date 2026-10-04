@@ -140,6 +140,18 @@
         leen de forma nativa; Claude Code lee <code>CLAUDE.md</code>, así que en este repo ese
         archivo contiene una sola línea, <code>@AGENTS.md</code>, que importa el original.
       </p>
+      <p>
+        Ese cuerpo está en capas. <code>AGENTS.md</code> carga en cada sesión y guarda solo lo que
+        ata en cada turno, más un router; cada tema vive en su propio archivo bajo
+        <code>.agents/instructions/</code> y se lee cuando el router, o una línea
+        <code>ROUTE:</code> del hook, lo nombra. Así ningún host paga en cada sesión lo que no usa,
+        y Codex, que corta las instrucciones del proyecto en su tope de bytes, recibe el archivo
+        entero. El mecanismo está en el deck
+        <a
+          href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/progressive-disclosure/how-it-works.es.html"
+          >Progressive disclosure</a
+        >.
+      </p>
 
       <figure class="harness-fig">
         <div class="frame">
@@ -368,7 +380,8 @@
 
       <h2 id="este-repo">Así lo hace este repo</h2>
       <p>
-        La sección 4.5 de <code>AGENTS.md</code> describe el contrato completo. Este es el mapa por
+        La sección 4.5, en <code>.agents/instructions/10-harnesses.md</code> (el router de
+        <code>AGENTS.md</code> la nombra), describe el contrato completo. Este es el mapa por
         superficie:
       </p>
       <div class="table-wrap">
@@ -384,9 +397,12 @@
           <tbody>
             <tr>
               <td>Instrucciones</td>
-              <td><code>CLAUDE.md</code> (generado, importa <code>AGENTS.md</code>)</td>
-              <td><code>AGENTS.md</code></td>
-              <td><code>AGENTS.md</code></td>
+              <td>
+                <code>CLAUDE.md</code> (generado, importa <code>AGENTS.md</code>), más las secciones
+                de <code>.agents/instructions/</code> a pedido
+              </td>
+              <td><code>AGENTS.md</code>, más las secciones a pedido</td>
+              <td><code>AGENTS.md</code>, más las secciones a pedido</td>
             </tr>
             <tr>
               <td>Skills</td>
@@ -413,12 +429,15 @@
       <h3 id="hook-unico">Un emisor, tres adaptadores</h3>
       <p>
         El texto del hook vive una sola vez, en <code>.agents/hooks/personality-reinject.mjs</code>.
-        En cada prompt reinyecta el contrato de estilo de salida para que no se diluya en una sesión
-        larga, agrega una línea <code>AGENT IDENTITY:</code> (worktree, sesión y harness, que luego
-        terminan en los trailers de cada commit) y avisa si falta el <code>.env</code>. Claude Code
-        y Codex lo ejecutan como hook de comando en el evento <code>UserPromptSubmit</code>.
-        OpenCode no tiene hooks de comando, así que su plugin importa las mismas funciones y las
-        empuja al prompt de sistema.
+        En cada prompt agrega una línea <code>AGENT IDENTITY:</code> (worktree, sesión y harness,
+        que luego terminan en los trailers de cada commit), avisa si falta el <code>.env</code> y
+        clasifica el pedido contra el router de <code>AGENTS.md</code>: por cada sección que el
+        pedido necesita y la sesión todavía no leyó, suma una línea
+        <code>ROUTE: read &lt;archivo&gt;</code>. Claude Code y Codex lo ejecutan como hook de
+        comando en el evento <code>UserPromptSubmit</code>, y un <code>SessionStart</code> con
+        matcher <code>compact</code> re-arma las rutas después de compactar. OpenCode no tiene hooks
+        de comando, así que su plugin importa las mismas funciones y las empuja al prompt de
+        sistema; en OpenCode 2, que no le pasa el texto del pedido, queda solo el router.
       </p>
 
       <h3 id="aliases">Una skill, un modo</h3>

@@ -92,9 +92,10 @@
             <title id="zonas-title">La ventana de contexto como presupuesto</title>
             <desc id="zonas-desc">
               Tres zonas. Dentro de la ventana, una franja pequeña siempre cargada con AGENTS.md y
-              las descripciones de skills, y una franja bajo demanda con compact rules, SKILL.md y
-              references. Fuera de la ventana, la caché .context, la memoria Engram y los archivos
-              de sesión y handoffs, que entran solo cuando un paso los pide.
+              las descripciones de skills, y una franja bajo demanda con las secciones que nombra el
+              router, compact rules, SKILL.md y references. Fuera de la ventana, la caché .context,
+              la memoria Engram y los archivos de sesión y handoffs, que entran solo cuando un paso
+              los pide.
             </desc>
             <defs>
               <marker
@@ -134,7 +135,7 @@
               Siempre cargado
             </text>
             <text x="50" y="88" font-size="12" fill="currentColor">
-              AGENTS.md (reglas y mapa de carga)
+              AGENTS.md (reglas, conducta y router)
             </text>
             <text x="50" y="106" font-size="12" fill="currentColor">
               name + description de cada skill
@@ -152,10 +153,10 @@
               Bajo demanda (según la tarea)
             </text>
             <text x="50" y="178" font-size="12" style="fill: var(--text-2)">
-              compact rules del REGISTRY en el briefing
+              secciones de .agents/instructions/ (router)
             </text>
             <text x="50" y="198" font-size="12" style="fill: var(--text-2)">
-              SKILL.md de la skill que se activó
+              compact rules o SKILL.md de la skill activa
             </text>
             <text x="50" y="218" font-size="12" style="fill: var(--text-2)">
               una reference concreta de esa skill
@@ -485,9 +486,12 @@
               <td><code>AGENTS.md</code></td>
               <td>
                 Se carga en cada sesión (Claude Code lo lee a través de <code>CLAUDE.md</code>, que
-                solo importa <code>@AGENTS.md</code>). Su propia cabecera manda el detalle a las
-                <code>references/</code> de cada skill, y la sección 4 es una tabla de tarea → skill
-                → contexto que se lee antes de responder.
+                solo importa <code>@AGENTS.md</code>). Guarda solo lo que ata en cada turno: la
+                frase obligatoria de cada regla, la capa de conducta, el núcleo de orquestación y un
+                router. El resto vive en una sección por tema bajo
+                <code>.agents/instructions/</code>, que se lee cuando el router o una línea
+                <code>ROUTE:</code> del hook la nombra; la tabla de tarea → skill → contexto es
+                <code>15-context-map.md</code>.
               </td>
             </tr>
             <tr>
@@ -599,11 +603,11 @@
       </div>
       <p>
         El resultado práctico: una sesión de QA arranca con <code>AGENTS.md</code> y las
-        descripciones de skills, carga <code>/sprint-testing</code> cuando le piden probar un
-        ticket, sincroniza ese ticket a <code>.context/PBI/</code> y lee solo los archivos de esa
-        historia. Si delega, el subagente recibe compact rules en lugar de skills completas. Para
-        ver el ciclo entero en contexto, revisa
-        <a href="../metodologia/este-repo.html">el IQL en este repo</a>.
+        descripciones de skills, lee las secciones que el router le nombra, carga
+        <code>/sprint-testing</code> cuando le piden probar un ticket, sincroniza ese ticket a
+        <code>.context/PBI/</code> y lee solo los archivos de esa historia. Si delega, el subagente
+        recibe compact rules en lugar de skills completas. Para ver el ciclo entero en contexto,
+        revisa <a href="../metodologia/este-repo.html">el IQL en este repo</a>.
       </p>
 
       <div class="callout warn" id="errores">
@@ -677,7 +681,9 @@
 
       <footer class="doc-footer">
         <p>
-          Fuentes en el repo: <code>AGENTS.md</code> (secciones 3, 4, 9 y 12),
+          Fuentes en el repo: <code>AGENTS.md</code> (secciones 3 y 12),
+          <code>.agents/instructions/15-context-map.md</code> (sección 4),
+          <code>.agents/instructions/60-local-context-pbi.md</code> (sección 9),
           <code>.agents/skills/agentic-qa-core/references/skill-resolver.md</code>,
           <code>.agents/skills/agentic-qa-core/references/session-management.md</code>. Páginas
           relacionadas: <a href="prompting.html">Prompting</a>,
