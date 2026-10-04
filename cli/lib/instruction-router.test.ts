@@ -146,6 +146,14 @@ describe('classification', () => {
     expect(classifyPrompt(router, '¿cómo levanto el server?')).toEqual(['package.json']);
   });
 
+  test('a run/corré request reaches the scripts row through one qualifier word and the Spanish regression form', () => {
+    const router = loadInstructionRouter(routerFixture());
+    expect(classifyPrompt(router, 'run the regression suite and give me a GO/NO-GO')).toContain('package.json');
+    expect(classifyPrompt(router, 'dispatch a subagent to run the verification gates')).toContain('package.json');
+    expect(classifyPrompt(router, 'corré la regresión de smoke en staging')).toContain('package.json');
+    expect(classifyPrompt(router, 'run a quick review of the story')).not.toContain('package.json');
+  });
+
   test('paths: a named path fires its section, the longest prefix wins, a path tail does not', () => {
     const root = routerFixture();
     write(root, '.agents/instructions/80-git.md', '---\nid: git\ntitle: Git\nload_when: git\ntriggers: ["\\\\bnever-matches-anything\\\\b"]\npaths: [".context/", ".husky/"]\n---\n');

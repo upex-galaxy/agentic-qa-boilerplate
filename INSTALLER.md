@@ -417,10 +417,10 @@ The installer configures whichever of **Claude Code, OpenCode, and Codex** you s
 | **Instructions** | `CLAUDE.md` → `@AGENTS.md` **[generated shim]** | `AGENTS.md` (native) | `AGENTS.md` (native) |
 | **Skills** | `.claude/skills` **[generated alias]** | `.agents/skills/` (native) | `.agents/skills/` (native) |
 | **Commands** | none: `/<skill> <mode>` through `.claude/skills` | none: name the skill and the mode in prose | none: name the skill and the mode in prose |
-| **Hook** | `.claude/settings.json` → `UserPromptSubmit` | `.opencode/plugins/personality-reinject.js` | `.codex/hooks.json` → `UserPromptSubmit` |
+| **Hook** | `.claude/settings.json` → `UserPromptSubmit` + `SessionStart` (`compact`) | `.opencode/plugins/personality-reinject.js` | `.codex/hooks.json` → `UserPromptSubmit` + `SessionStart` (`compact`) |
 | **MCP** | `.mcp.json` | `opencode.jsonc` | `.codex/config.toml` |
 
-- **Instructions.** `AGENTS.md` is the only instruction body. OpenCode and Codex load it natively; Claude Code loads `CLAUDE.md`, which is exactly `@AGENTS.md` plus one newline. A documented import rather than a symlink, so it survives a Windows checkout.
+- **Instructions.** `AGENTS.md` plus the section files it routes to under `.agents/instructions/` are the only instruction body: `AGENTS.md` loads every session, a section when its ROUTER row or a hook `ROUTE:` line names it (`.agents/instructions/README.md`). OpenCode and Codex load `AGENTS.md` natively; Claude Code loads `CLAUDE.md`, which is exactly `@AGENTS.md` plus one newline. A documented import rather than a symlink, so it survives a Windows checkout.
 - **Skills.** Every committed skill lives in `.agents/skills/`, and the community project-level skills install into the same store. Claude Code reaches that tree through `.claude/skills`, a POSIX symlink (Windows junction) that is generated and gitignored: never committed, never hand-edited.
 - **Commands.** No harness gets command files. A skill is invoked by its own name plus a mode: `/<skill> <mode>` on Claude Code, the skill and the mode named in prose on OpenCode and Codex (see [Invoking a skill mode](#invoking-a-skill-mode)).
 - **Hook.** `.agents/hooks/personality-reinject.mjs` holds the contract text once. Claude and Codex run it as a command hook; OpenCode imports the constant from a thin plugin.
@@ -589,7 +589,7 @@ What you keep: every skill committed in this repo and every MCP server `.mcp.jso
 
 ## See also
 
-- [AGENTS.md](./AGENTS.md) — the single instruction body every harness loads; §4.5 covers the multi-harness contract
+- [AGENTS.md](./AGENTS.md) — the always-on instruction layer every harness loads; its ROUTER names the sections under `.agents/instructions/`, and `10-harnesses.md` (§4.5) covers the multi-harness contract
 - [CONTEXT.md](./CONTEXT.md) — context-engineering strategy and the surface-by-harness map
 - [.agents/skills/agentic-qa-onboard/SKILL.md](./.agents/skills/agentic-qa-onboard/SKILL.md) — the orientation skill itself, entry point for `/agentic-qa-onboard`
 - `bun run docs` — the human documentation site (`docs/`); its Setup section covers [Jira and Xray](./docs/core/setup/jira-xray.html), [DBHub](./docs/core/setup/dbhub.html) and [OpenAPI](./docs/core/setup/openapi.html)

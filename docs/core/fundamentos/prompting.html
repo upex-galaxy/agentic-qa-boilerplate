@@ -372,7 +372,10 @@
                 <code>AGENTS.md</code> (Claude Code lo lee a través de <code>CLAUDE.md</code>, que
                 solo contiene <code>@AGENTS.md</code>)
               </td>
-              <td>Rol, reglas y restricciones que se cargan en cada sesión</td>
+              <td>
+                Rol, reglas y restricciones que se cargan en cada sesión; el detalle de cada tema
+                está en <code>.agents/instructions/</code> y se lee cuando el router lo nombra
+              </td>
             </tr>
             <tr>
               <td>Skills</td>
@@ -432,11 +435,11 @@
       <h3 id="repo-variables">Pseudocódigo y variables</h3>
       <p>
         Las skills no escriben el comando concreto de Jira ni la URL del entorno. Escriben
-        <code>[ISSUE_TRACKER_TOOL]</code> o <code>[AUTOMATION_TOOL]</code>, y la sección 6 de
-        <code>AGENTS.md</code> resuelve cada etiqueta a una herramienta (<code>/acli</code>,
-        <code>/playwright-cli</code>) con su alternativa. Los valores del proyecto usan
-        <code>{{PROJECT_KEY}}</code> o <code>{{WEB_URL}}</code>, que salen de
-        <code>.agents/project.yaml</code>; los de sesión usan
+        <code>[ISSUE_TRACKER_TOOL]</code> o <code>[AUTOMATION_TOOL]</code>, y la sección 6
+        (<code>.agents/instructions/30-tool-resolution.md</code>) resuelve cada etiqueta a una
+        herramienta (<code>/acli</code>, <code>/playwright-cli</code>) con su alternativa. Los
+        valores del proyecto usan <code>{{PROJECT_KEY}}</code> o <code>{{WEB_URL}}</code>, que salen
+        de <code>.agents/project.yaml</code>; los de sesión usan
         <code>&lt;&lt;ISSUE_KEY&gt;&gt;</code>. La misma skill sirve en cualquier proyecto, y
         <code>bun run vars:check</code> falla si una skill referencia una variable que no está
         declarada.
@@ -451,11 +454,13 @@
         que la skill se active de verdad; el propio script lo aclara en su cabecera.
       </p>
       <p>
-        Hay además un hook, <code>.agents/hooks/personality-reinject.mjs</code>, que vuelve a
-        inyectar el contrato de estilo de <code>AGENTS.md</code> en cada turno para que no se diluya
-        en sesiones largas. Es la respuesta del repo a un problema conocido: una instrucción del
-        principio pierde peso a medida que la conversación crece. El detalle de ese tema está en
-        <a href="context.html">Contexto</a>.
+        Hay además un hook, <code>.agents/hooks/personality-reinject.mjs</code>, que en cada turno
+        compara el pedido con el router de <code>AGENTS.md</code> y agrega una línea
+        <code>ROUTE: read &lt;archivo&gt;</code> por cada sección de
+        <code>.agents/instructions/</code> que el pedido necesita y la sesión todavía no leyó. Es la
+        respuesta del repo a un problema conocido: una tabla que el modelo tiene que acordarse de
+        consultar pierde peso a medida que la conversación crece, y una línea escrita en el turno
+        no. El detalle de ese tema está en <a href="context.html">Contexto</a>.
       </p>
 
       <h2 id="errores">Errores comunes</h2>

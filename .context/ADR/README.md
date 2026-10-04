@@ -71,6 +71,7 @@ Who authors: a human QA architect / lead directly, **or** an AI workflow that de
 | [ADR-0006](./ADR-0006-forensic-measurements-ledger.md) | Doctrine keeps the why; the measured figures and dates live here | Accepted | — | — |
 | [ADR-0007](./ADR-0007-mtp-in-jira.md) | The Master Test Plan lives in Jira; the local file is a cache | Accepted | ADR-0001 (§Consequences MTP follow-up only) | — |
 | [ADR-0008](./ADR-0008-browser-session-isolation.md) | Browser sessions are isolated in memory; persistence and the human's browser are explicit | Accepted | — | — |
+| [ADR-0009](./ADR-0009-progressive-disclosure-of-instructions.md) | Progressive disclosure of the project instructions: an always-on L0, routed sections, a hook that names what to read | Accepted | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first.
 

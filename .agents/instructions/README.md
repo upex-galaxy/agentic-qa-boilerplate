@@ -4,6 +4,23 @@
 
 Everything else lives here, one file per topic. A model reads a section when the ROUTER in `AGENTS.md` names it for the request at hand, or when the per-prompt hook injects a `ROUTE:` line naming it. A section binds exactly like `AGENTS.md` once it applies.
 
+## How a section reaches the model
+
+Two paths, and the LOAD PROTOCOL in `AGENTS.md` makes both binding:
+
+1. **The ROUTER.** The table between `<!-- router:start -->` and `<!-- router:end -->` in `AGENTS.md`. Its rows are request kinds, not features, so it stays fixed: a new topic grows a section and its `triggers:`, not a row.
+2. **The `ROUTE:` line.** `.agents/hooks/personality-reinject.mjs` reads that same table and every section's frontmatter from disk on each prompt, classifies the prompt, and adds one line per file the session has not been routed to yet: `ROUTE: read .agents/instructions/80-git.md (git)`, or `ROUTE: read package.json` for an import. There is no generated copy of the router, so the table the model reads and the one the classifier runs cannot drift.
+
+The classifier rules:
+
+- A row fires when the prompt matches its ANCHOR, the first file of its `Read` cell; every file of a fired row is routed. A file shared by two rows therefore does not drag the other row in.
+- A section matches through its `triggers:` (regex sources, case-insensitive, English and Spanish) or its `paths:` (a repo path named in the prompt). An import that anchors a row alone (`@package.json`) has no frontmatter and uses the generic `IMPORT_ROW_TRIGGERS` in the emitter, kept identical across the boilerplates.
+- **Per-session dedupe.** A state file per checkout and session, under the system temp directory, remembers what was routed: a prompt that needs nothing new adds nothing.
+- **Re-arm after compaction.** `SessionStart` with matcher `compact` (Claude Code, Codex) or `experimental.session.compacting` (OpenCode 1) clears that state, so a file the compaction dropped is routed again the next time a prompt needs it.
+- **OpenCode 2 is router-only**: no documented hook hands a plugin the prompt text, so the model follows the ROUTER and the LOAD PROTOCOL with no `ROUTE:` cue. A declared degradation, re-verified on OpenCode upgrades.
+
+A miss is fixed in the section's `triggers:` and the prompt is added to the labelled set in `cli/lib/fixtures/instruction-router-eval.json`, whose `targets` (recall, precision) `cli/lib/instruction-router.test.ts` asserts. Relabelling a prompt to hide a false hit is not a fix.
+
 ## How a section is shaped
 
 Each file opens with a frontmatter block the hook and the lint read:
