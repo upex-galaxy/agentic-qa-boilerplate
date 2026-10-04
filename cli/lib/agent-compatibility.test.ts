@@ -9,7 +9,6 @@ import {
   agentContextLines,
   MISSING_ENV_LINE,
   orcaAvailable,
-  PERSONALITY_CONTRACT,
   proposeSessionTitle,
   resolveWorktree,
   sessionLabel,
@@ -460,20 +459,15 @@ function repositoryFixture(): string {
 }
 
 describe('shared personality hook', () => {
-  test('emits the contract plus the identity line and exits successfully', () => {
+  test('emits the identity line, not the output contract, and exits successfully', () => {
     const result = runEmitter();
 
     expect(result.exitCode).toBe(0);
     expect(result.stderr).toBe('');
     // No harness payload, no CLAUDE_*/CODEX_* variables: plain text, no JSON.
-    expect(result.stdout).toContain(PERSONALITY_CONTRACT);
+    expect(result.stdout).not.toContain('OUTPUT CONTRACT');
     expect(result.stdout).toContain(`${HOOK_IDENTITY_MARKER} worktree=primary session=unknown harness=unknown`);
     expect(result.stdout).not.toContain(HOOK_ORCA_MARKER);
-  });
-
-  test('names AGENTS.md as canonical, never CLAUDE.md', () => {
-    expect(PERSONALITY_CONTRACT).toContain('AGENTS.md');
-    expect(PERSONALITY_CONTRACT).not.toContain('CLAUDE.md');
   });
 
   test('OpenCode 1 (server entrypoint) mutates the system array in place with the same payload', async () => {
@@ -489,9 +483,8 @@ describe('shared personality hook', () => {
     expect(output.system).toBe(originalArray);
     expect(output.system.length).toBe(afterFirst);
     expect(output.system[0]).toBe('base system');
-    expect(output.system[1]).toBe(PERSONALITY_CONTRACT);
     // The label degrades to the raw id: OpenCode exposes no session name.
-    expect(output.system[2]).toContain('session=test harness=opencode');
+    expect(output.system[1]).toContain('session=test harness=opencode');
   });
 
   test('OpenCode 2 (setup entrypoint) registers a context hook that pushes text parts once', async () => {
@@ -510,8 +503,7 @@ describe('shared personality hook', () => {
     expect(Object.keys(hooks)).toEqual(['context']);
     expect(event.system).toBe(originalArray);
     expect(event.system.length).toBe(afterFirst);
-    expect(event.system[1]).toEqual({ type: 'text', text: PERSONALITY_CONTRACT });
-    expect(event.system[2].text).toContain('session=test harness=opencode');
+    expect(event.system[1].text).toContain('session=test harness=opencode');
   });
 });
 
@@ -526,7 +518,7 @@ describe('agent identity', () => {
     expect(run.exitCode).toBe(0);
     const output = hookSpecificOutput(run.stdout);
     expect(output.hookEventName).toBe('UserPromptSubmit');
-    expect(output.additionalContext).toContain(PERSONALITY_CONTRACT);
+    expect(output.additionalContext).not.toContain('OUTPUT CONTRACT');
     expect(output.additionalContext).toContain(
       `${HOOK_IDENTITY_MARKER} worktree=primary session=agentic-qa-boilerplate-7 (${CLAUDE_SESSION_ID.slice(0, 8)}) harness=claude-code`,
     );
@@ -739,7 +731,7 @@ describe('Codex hook portability', () => {
     });
 
     expect(result.exitCode).toBe(0);
-    expect(result.stdout.toString()).toContain(PERSONALITY_CONTRACT);
+    expect(result.stdout.toString()).toContain(HOOK_IDENTITY_MARKER);
   });
 
   test('renders a Windows command with Git-root and Join-Path resolution', () => {
@@ -845,10 +837,9 @@ describe('hook adapters', () => {
   test('rejects an OpenCode adapter that reassigns output.system', () => {
     const root = contractFixture();
     write(root, '.opencode/plugins/personality-reinject.js', [
-      'import { PERSONALITY_CONTRACT } from \'../../.agents/hooks/personality-reinject.mjs\';',
       'export const PersonalityReinject = async () => ({',
       '  \'experimental.chat.system.transform\': async (_input, output) => {',
-      '    output.system = [...output.system, PERSONALITY_CONTRACT];',
+      '    output.system = [...output.system, \'line\'];',
       '  },',
       '});',
       '',

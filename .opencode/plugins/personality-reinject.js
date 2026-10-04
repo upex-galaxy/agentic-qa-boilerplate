@@ -1,7 +1,7 @@
 import { agentContextLines } from '../../.agents/hooks/personality-reinject.mjs';
 
 // OpenCode has no command hook: the plugin imports the shared emitter and
-// pushes the same lines (output contract, `AGENT IDENTITY:`, `ORCA:` when the
+// pushes the same lines (`AGENT IDENTITY:`, `ORCA:` when the
 // binary is there) into the system prompt, in place and without duplicating.
 // OpenCode exposes no session NAME to a plugin, only the id, so the label
 // degrades to the raw id here.
