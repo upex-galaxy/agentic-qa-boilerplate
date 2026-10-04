@@ -482,11 +482,11 @@ metadata:
       </div>
       <div class="stack" style="gap:14px">
         <div class="card card-accent"><p class="lbl">Tier T2: vendorizada</p><p class="small mt-s">Copiada desde gentle-ai y commiteada en <span class="mono">.agents/skills/judgment-day/</span>. La licencia y la atribución viajan en el frontmatter; <span class="mono">metadata.vendored_from</span> apunta al upstream.</p></div>
-        <div class="card"><p class="lbl">Sin dependencia del upstream</p><p class="small mt-s">El instalador corre gentle-ai con el preset <span class="mono">minimal</span>, que instala solo Engram. Esta skill no lo necesita: ya está en el repo.</p></div>
+        <div class="card"><p class="lbl">Sin dependencia del upstream</p><p class="small mt-s">El instalador no corre gentle-ai: conecta Engram con <span class="mono">engram setup</span>. Esta skill tampoco necesita gentle-ai: ya está en el repo.</p></div>
         <div class="card card-soft"><p class="lbl">Dos etiquetas, dos preguntas</p><p class="small mt-s">El tier dice de dónde viene (T2). El <span class="mono">kind</span> dice qué hace (<span class="mono">workflow</span>). Una no implica la otra.</p></div>
       </div>
     </div>
-    <div class="notes">Fuentes: frontmatter de .agents/skills/judgment-day/SKILL.md; agentic-qa-core/references/skill-composition-strategy.md (tier T2, "No upstream dependency", las tres etiquetas independientes); AGENTS.md §5 (gentle-ai install scope). La versión upstream también está en el frontmatter; no la copiamos acá porque cambia.</div>
+    <div class="notes">Fuentes: frontmatter de .agents/skills/judgment-day/SKILL.md; agentic-qa-core/references/skill-composition-strategy.md (tier T2, "No upstream dependency", las tres etiquetas independientes); AGENTS.md §5 (Memory install scope). La versión upstream también está en el frontmatter; no la copiamos acá porque cambia.</div>
   </section>
 
   <!-- 4. MAPA -->
