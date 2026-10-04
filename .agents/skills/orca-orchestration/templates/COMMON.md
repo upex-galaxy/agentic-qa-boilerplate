@@ -131,5 +131,5 @@ fails rather than the command, so you go mute while believing you reported.
 - Project variables: `.agents/project.yaml`. Variable syntax: `.agents/README.md`.
 - Tracker catalogs: `.agents/jira-fields.json`, `.agents/jira-workflows.json`,
   `.agents/jira-required.yaml`.
-- Tests and KATA: `tests/`, `kata-manifest.json`. CLI: `cli/` (import-closed — see AGENTS.md §4.5).
+- Tests and KATA: `tests/`, `kata-manifest.json`. CLI: `cli/` (import-closed — see `.agents/instructions/10-harnesses.md`).
 - Scripts: read `package.json` directly. Never quote a command from a doc.

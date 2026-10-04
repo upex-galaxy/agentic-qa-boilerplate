@@ -540,7 +540,7 @@ If risk is HIGH, add an extended-edge-cases callout and recommend a pre-implemen
 
 ## Phase 8 — No commit
 
-Nothing to commit in this stage. The ATP is canonical in Jira; the local `acceptance-test-plan.md` is a gitignored synced cache rebuilt by `bun run jira:sync-issues` (see `AGENTS.md` §9). Never `git add` it — and never `git add -f` it, which would re-commit a generated Jira mirror.
+Nothing to commit in this stage. The ATP is canonical in Jira; the local `acceptance-test-plan.md` is a gitignored synced cache rebuilt by `bun run jira:sync-issues` (see `.agents/instructions/60-local-context-pbi.md`). Never `git add` it — and never `git add -f` it, which would re-commit a generated Jira mirror.
 
 ---
 

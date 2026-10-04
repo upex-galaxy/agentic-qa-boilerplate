@@ -240,7 +240,7 @@ Skip skills that are not configured for the project.
 ### Step 6 — Create the PBI structure
 
 ```
-.context/PBI/                          # ENTIRELY gitignored — a Jira cache (AGENTS.md §9)
+.context/PBI/                          # ENTIRELY gitignored — a Jira cache (`.agents/instructions/60-local-context-pbi.md`)
   templates/                           # do not edit (committed)
     module-context-template.md
   epics/

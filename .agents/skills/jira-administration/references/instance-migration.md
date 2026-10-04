@@ -183,7 +183,7 @@ Project issue type "Task" exists in <KEY> but is not declared in
 
 So a stale manifest declaring 3 work types regenerates a catalog with 3 work types, exits `0`, and reports success. The migration looks clean and the catalog is missing everything the manifest forgot to ask for. Same silent-success failure this whole command exists to prevent, entering through the input side.
 
-The manifest goes stale quietly because **the updater never overwrites it** (`bootstrapOnly`, so `bun run up` never touches the project's customizations) and reports structural gaps only as informational rows (`AGENTS.md` §4.5; `bun run jira:baseline` warns when it declares fewer work types than upstream's baseline). A project scaffolded from an older boilerplate can be many versions behind with only that warning as signal.
+The manifest goes stale quietly because **the updater never overwrites it** (`bootstrapOnly`, so `bun run up` never touches the project's customizations) and reports structural gaps only as informational rows (`.agents/instructions/10-harnesses.md`; `bun run jira:baseline` warns when it declares fewer work types than upstream's baseline). A project scaffolded from an older boilerplate can be many versions behind with only that warning as signal.
 
 Compare against upstream before regenerating:
 

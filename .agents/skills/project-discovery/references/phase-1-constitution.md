@@ -208,7 +208,7 @@ grep -rE "(api[_-]?key|secret|password|token)\s*[:=]\s*['\"]" <repo-root>/src
 
 ### Output
 
-Append to `AGENTS.md` (canonical; `CLAUDE.md` is a one-line `@AGENTS.md` import shim, AGENTS.md §4.5) in a `## Project Assessment (Phase 1)` block:
+Append to `AGENTS.md` (canonical; `CLAUDE.md` is a one-line `@AGENTS.md` import shim, `.agents/instructions/10-harnesses.md`) in a `## Project Assessment (Phase 1)` block:
 
 ```markdown
 ## Project Assessment (Phase 1)

@@ -1,30 +1,34 @@
 # AGENTS.md: AI Persistent Memory
 
-> AI memory. Loads EVERY session. Heavy detail → skill `references/`. Project values → `.agents/project.yaml`. Scripts → READ `package.json`. User-facing setup → `README.md` / `docs/`.
+> Always-on layer (L0). Detail lives in section files under `.agents/instructions/`, loaded through the ROUTER (progressive disclosure). Edit a section file, never paste section prose back here; project rules go in `.agents/instructions/project.md`.
+
+## LOAD PROTOCOL
+
+Before acting on a request, match it against the ROUTER and read every matched section file not already in this conversation. A `ROUTE:` line injected by the hook is binding and wins over your own judgment. A section once read is not re-read unless compaction removed it. Unsure whether a section applies → read it: a skipped section is the failure this design guards against. A section binds exactly like this file. A `§N` citation anywhere names the numbered heading kept verbatim in the file the ROUTER lists for it.
 
 ---
 
 ## 1. CRITICAL RULES: ALWAYS APPLY
 
-1. **CREDENTIALS**: ALWAYS read from `.env`. NEVER hardcode/guess. Example keys: `LOCAL_USER_EMAIL`, `STAGING_USER_PASSWORD` (project-scope examples: the adopting repo renames or deletes them; the framework never requires them, `config.testUser` fails by name at the point of use). Scope of every variable → `cli/lib/variables-manifest.ts`; doctrine → `.context/ADR/ADR-0005-validation-scope.md`.
-2. **PLAN BEFORE CODING**: Produce test plan (`spec.md` / impl plan) BEFORE writing test code. Flow: Plan → Code → Review.
-3. **NO AI ATTRIBUTION**: NEVER include "Generated with AI", harness branding, or AI `Co-Authored-By` trailers in commits. Commits look human-authored. **Forensic trailers are the one MANDATORY exception and are NOT attribution**: every commit ends with `Worktree: <name|primary>` then `Session: <label>` — harness-agnostic provenance that answers "which checkout and which session produced this line", not "who wrote it" (canon + label rule: `/git-flow-master`). `Claude-Session:` and every other harness-branded trailer stay FORBIDDEN.
-4. **SHIFT-LEFT**: Evaluate ACs for clarity, testability, completeness. Raise questions ONLY when genuine gaps exist, never force questions to fill checklist.
-5. **PUSH TO PROTECTED = RESOLVE `git_strategy.policy.direct_push_to_protected`** (`.agents/project.yaml`; protected list = `git_strategy.protected`): `forbidden` → NEVER direct-push, route through a PR. `confirm` → ask explicit user confirmation before EVERY push. `allowed` → standing authorization, push without asking. `git_strategy` block missing or null (fresh scaffold) → behave as `confirm` (safe default: ask). NEVER hardcode the answer here — the variable is the decision.
-6. **GIT HISTORY (INVARIANTS, not strategy choices — no `git_strategy` value relaxes them)**: NEVER rewrite pushed history (rebase/amend on pushed commits). NEVER force-push a branch others may share — at minimum every branch in `git_strategy.protected`, plus integration/ephemeral trunks in `git_strategy.branches`. NEVER delete remote branches without confirmation. ALWAYS add forward (new commits, not rewrite). ALWAYS preserve merge history.
-7. **QUALITY VERIFICATION**: After code changes, verify in order: tests → types → lint. No skip steps.
-8. **FILE OPERATIONS**: ALWAYS read file before edit. Preserve formatting + indent. NEVER overwrite without reading.
-9. **SKILLS-FIRST**: All workflows live in `.agents/skills/`. NEVER paste instructions inline. Invoke matching skill, let it self-load detail. Use `[TAG_TOOL]` pseudocode + `{{VARIABLES}}` for dynamic content.
-10. **MCP CREDENTIAL FAILURE = STOP IMMEDIATELY**: MCP fail auth or env var missing. **ALL THREE HOSTS FAIL SILENTLY EXCEPT CODEX** (measured on all three; ADR-0006): `.mcp.json` `${VAR}` unset → Claude Code passes the LITERAL `${VAR}` through and the server dies later on its first authenticated call, NOT a parse error (`claude mcp list` warns; startup does not. It is also a false NEGATIVE: it ignores the `env` block of `.claude/settings.local.json`, so a server a session connects fine can list as failed. `/mcp` inside a session is the check). `opencode.jsonc` reads `{file:.auth/opencode/VAR}`: an existing empty placeholder (`bun install` creates them) → empty string, a missing file → OpenCode config error. `dbhub.toml` `${VAR}` unset → literal string, then a connection failure that reads as a database problem. `.codex/config.toml` is the ONLY loud one: a missing `bearer_token_env_var` is a hard error naming the server. **So a 401/403 or a mystery tool failure is the signal on every host but Codex** — never wait for a parse error that will not come. NO workaround. STOP, tell user exact env var, point to `.env` / `.env.example`, ask fix `.env` + **RESTART AGENT SESSION** (env cached at MCP-spawn time, no refresh mid-session). **MCP UNAVAILABLE = SAME STOP, AT THE POINT OF USE**: a skill step or user prompt that needs a capability no available tool provides (resolve by tool-name SUFFIX, never by server prefix: a claude.ai connector or a user-level server satisfies it too) STOPS before the step and names the capability + how to enable it; never a silent fallback to another tool, and never an alarm at session start for a server someone disabled: canon `agentic-qa-core/references/mcp-capabilities.md`.
-11. **SCRIPTS = READ `package.json` DIRECTLY**. NEVER quote test/build commands from this file or any doc: drift kills. Open `package.json` first, then answer.
-12. **KATA MANIFEST = SOURCE OF TRUTH**. `kata-manifest.json` (root) is authoritative registry of every existing Component + ATC. Before proposing new `Page`, `Api`, `Steps` module, or `@atc('PROJ-XXX')` ID: MUST load `kata-manifest.json` and check it. Anti-duplication gate. Stale manifest blocks commits via `.husky/pre-commit`. Regenerate: `bun run kata:manifest`. Validate: `bun run kata:manifest:check`.
-13. **DEFAULT COMMUNICATION MODE: CAVEMAN**: If the `caveman@caveman` plugin is installed user-level (under `~/.claude/plugins/`), respond caveman level `full` by default (drop articles, fillers, pleasantries; fragments OK; technical terms exact; code/commits/PRs/security warnings always write normal English: caveman built-in boundary). Revert verbose ONLY when user explicitly say "normal mode", "habla normal", "stop caveman", "speak normally", "be verbose", "más detallado" or clear semantic equivalent. If the caveman plugin is not installed, rule = no-op.
-14. **LANGUAGE DETECTION + MIRRORING**: At start of every conversation, READ FULL USER MESSAGE (not just opening words) to detect user's working language. Mirror that language in ALL conversational replies (questions, summaries, explanations, status updates). Repo artifacts ALWAYS English regardless of conversation language: code, code comments, commits, PR titles + bodies, branch names, file names, test names, configuration values, + any external action artifact (Jira issues/comments, GitHub issues/PRs/comments, Slack messages, emails, deploy notes, MCP tool inputs). Override: if user explicitly request another language for specific artifact ("crea el ticket en español", "write this PR description in Spanish"), honor that request only for that artifact + continue defaulting to English for next ones unless re-requested.
-15. **NO GLOBAL DISCARDS (MULTI-SESSION SAFETY)**: PROHIBITED to run repo-wide destructive git commands: `git restore .`, `git checkout -- .`, `git reset --hard`, untargeted `git stash`, `git clean -f`. Multiple agent sessions may share this working tree without worktrees: a global discard silently destroys another session's uncommitted work, unrecoverably. Discard ONLY explicit paths YOU modified in THIS session (`git restore <path>...` / `git stash push <path>...`). Unsure who modified a file → do NOT restore it: ask the user.
+Each line is the rule's binding sentence; `→ 01` = full text in `.agents/instructions/01-critical-rules.md`, same number.
 
-16. **A SUCCESS CODE DESCRIBES THE CALL, NEVER THE OUTCOME — VERIFY AT THE DESTINATION**: `ok: true`, exit 0, `accepted`, `delivered` and a returned id all say the REQUEST was well formed. None of them says the thing happened. Measured on four surfaces in one day: a message delivered to the WRONG session by prefix match and returned success; a terminal created for a command that died in the shell; a send receipt carrying `"delivered_at": null, "read": 0` in the same payload that proved acceptance; a dispatch still reading `dispatched` against a terminal that had been replaced. **A green receipt is the most dangerous kind of green, because the successful receipt SUPPRESSES the verification that would have caught the failure.** So: a write is verified by READING IT BACK from the destination, a message by the recipient answering it, a transition by re-reading the issue's status, a file write by re-parsing the file, a dispatch by the worker's own first report. This is not orchestration-specific — it binds subagent reports, `[ISSUE_TRACKER_TOOL]` writes, MCP calls, the updater and every CLI in §6.5. Where the cost of verifying is genuinely high, SAY the claim is unverified rather than letting the receipt stand in for it.
-
-17. **COMMITTED PROSE NAMES THE SOURCE OF TRUTH, NEVER ITS CURRENT VALUE**: text that is committed (this file, `.agents/**`, `docs/**`, `README.md`, `INSTALLER.md`, `.env.example`, the decks) NEVER states a fact that changes with the normal life of the repo or the tracker. Forbidden: a COUNT that moves (tests, ATCs, skills, aliases, MCP servers, Jira fields / components / work types / statuses, files, rows, gates `N/N`, tokens); an ENUMERATION of a mutable set owned elsewhere (the skill list, the alias list, the server list, the custom-field list, the test-file list); a `file:line` citation (a path, a symbol or a heading is fine); a CURRENT-STATE claim ("today", "currently", "newest", "as of <date>", a measured size or timing, a tool version, a PR or issue number as live state); and EDIT-HISTORY narration inside doctrine ("since <version>", "correcting an earlier claim"). Every one goes stale within weeks, and then every session either trusts a wrong value or burns a turn reporting the drift. Write the NAME of the owner instead and let the reader resolve it: a file (`.mcp.json`), a command (`bun run skills:registry`), a generated artifact (`REGISTRY.md`), a constant (`CONFIG_BLOCK_READERS`). STABLE names that change only by decision are fine: stage names, KATA layers, rule numbers, file and command names, "three hosts". EXEMPT: gitignored files and `.session/**`, generated artifacts (the business context maps inside their skills included), ADRs / changelogs / dated reports (a number "at the time" is right forever), test fixtures, code constants, example output inside fenced blocks. A fact that must be stated with its date goes to an ADR and the doctrine links to it; the measurements behind this repo's own doctrine are in `.context/ADR/ADR-0006-forensic-measurements-ledger.md`. `scripts/lint-skills.ts` and `scripts/lint-docs.ts` flag the two regex-visible families (`FILE-LINE`, `CURRENT-STATE`); a line that must carry one is marked `volatile-ok: <reason>`. Canon + examples: `agentic-qa-core/references/volatile-facts.md`.
+1. **CREDENTIALS**: ALWAYS read from `.env`. NEVER hardcode/guess. → 01
+2. **PLAN BEFORE CODING**: Produce test plan (`spec.md` / impl plan) BEFORE writing test code. → 01
+3. **NO AI ATTRIBUTION**: NEVER include "Generated with AI", harness branding, or AI `Co-Authored-By` trailers in commits. **Forensic trailers are the one MANDATORY exception and are NOT attribution**: every commit ends with `Worktree: <name|primary>` then `Session: <label>`. → 01
+4. **SHIFT-LEFT**: Evaluate ACs for clarity, testability, completeness. → 01
+5. **PUSH TO PROTECTED = RESOLVE `git_strategy.policy.direct_push_to_protected`** (`.agents/project.yaml`; protected list = `git_strategy.protected`): `forbidden` → NEVER direct-push, route through a PR. `confirm` → ask explicit user confirmation before EVERY push. `allowed` → standing authorization, push without asking. `git_strategy` block missing or null (fresh scaffold) → behave as `confirm` (safe default: ask). → 01
+6. **GIT HISTORY (INVARIANTS, not strategy choices — no `git_strategy` value relaxes them)**: NEVER rewrite pushed history (rebase/amend on pushed commits). NEVER force-push a branch others may share. NEVER delete remote branches without confirmation. → 01
+7. **QUALITY VERIFICATION**: After code changes, verify in order: tests → types → lint. → 01
+8. **FILE OPERATIONS**: ALWAYS read file before edit. Preserve formatting + indent. NEVER overwrite without reading. → 01
+9. **SKILLS-FIRST**: All workflows live in `.agents/skills/`. NEVER paste instructions inline. → 01
+10. **MCP CREDENTIAL FAILURE = STOP IMMEDIATELY**: NO workaround. STOP, tell user exact env var, point to `.env` / `.env.example`, ask fix `.env` + **RESTART AGENT SESSION** (env cached at MCP-spawn time, no refresh mid-session). **MCP UNAVAILABLE = SAME STOP, AT THE POINT OF USE**. → 01
+11. **SCRIPTS = READ `package.json` DIRECTLY**. NEVER quote test/build commands from this file or any doc: drift kills. → 01
+12. **KATA MANIFEST = SOURCE OF TRUTH**. Before proposing new `Page`, `Api`, `Steps` module, or `@atc('PROJ-XXX')` ID: MUST load `kata-manifest.json` and check it. → 01
+13. **DEFAULT COMMUNICATION MODE: CAVEMAN**: If the `caveman@caveman` plugin is installed user-level (under `~/.claude/plugins/`), respond caveman level `full` by default. → 01
+14. **LANGUAGE DETECTION + MIRRORING**: Mirror that language in ALL conversational replies (questions, summaries, explanations, status updates). Repo artifacts ALWAYS English regardless of conversation language. → 01
+15. **NO GLOBAL DISCARDS (MULTI-SESSION SAFETY)**: PROHIBITED to run repo-wide destructive git commands: `git restore .`, `git checkout -- .`, `git reset --hard`, untargeted `git stash`, `git clean -f`. Discard ONLY explicit paths YOU modified in THIS session. → 01
+16. **A SUCCESS CODE DESCRIBES THE CALL, NEVER THE OUTCOME — VERIFY AT THE DESTINATION**: a write is verified by READING IT BACK from the destination, a message by the recipient answering it, a transition by re-reading the issue's status, a file write by re-parsing the file, a dispatch by the worker's own first report. → 01
+17. **COMMITTED PROSE NAMES THE SOURCE OF TRUTH, NEVER ITS CURRENT VALUE**: text that is committed (this file, `.agents/**`, `docs/**`, `README.md`, `INSTALLER.md`, `.env.example`, the decks) NEVER states a fact that changes with the normal life of the repo or the tracker. → 01
 
 ---
 
@@ -97,18 +101,6 @@ Example: ❌ "Added `waitForResponse('**/api/auth/login')` before toast assertio
 
 **NO SUBAGENTS FOR**: quick lookups, memory reads/writes, task tracking, asking user, planning.
 
-**TWO EXECUTORS.** One-shot subagents are the DEFAULT executor and nothing below changes that. A second, OPTIONAL executor exists: the **supervised worker** — a persistent agent session coordinated through `/orca-orchestration` (conductor ↔ worker mailbox). It is gated on the orchestration binary AND a reachable runtime; when either is missing the repo is SILENT about it and the work runs on subagents plus the `launch.txt` lines a human pastes. Never name it to the user from a workflow skill when the gate fails.
-
-| | One-shot subagent (default) | Supervised worker (optional) |
-|---|---|---|
-| Lifetime | inside the turn | until it is explicitly closed |
-| Context | lost when it reports | persists; you keep talking to it |
-| Communication | none until it finishes | ask / reply / send at any moment, both ways |
-| Git | the orchestrator's index | own worktree, or the shared checkout under declared file ownership |
-| Best for | reading, mapping, verifying; one-shot tasks | writing + integrating alone, a whole story, work the owner wants to step into |
-
-The conductor keeps using SUBAGENTS for its own reads and verifications: that is what keeps the coordinating context clean. A supervised worker is warranted when the unit of work is a whole scope (one story, one module) that writes and integrates by itself. Doctrine: `agentic-qa-core/references/orchestration-doctrine.md`; transport: `/orca-orchestration`.
-
 **7-COMPONENT BRIEFING (MANDATORY every dispatch)**: canonical template + filled examples: `agentic-qa-core/references/briefing-template.md`.
 
 1. **Goal**: one sentence
@@ -119,492 +111,35 @@ The conductor keeps using SUBAGENTS for its own reads and verifications: that is
 6. **Report format**: what to return (files changed, tests passed, blockers)
 7. **Rules**: relevant Critical Rules to follow
 
-**EXECUTION PATTERNS**:
-
-| Pattern | When | Example |
-|---|---|---|
-| Parallel | Independent tasks | Read 3 context files at once |
-| Sequential | Dependent tasks | Plan → Code → Test |
-| Background | Long-running | Test suite + plan next ticket |
-| Single | Simple task | One file edit + verification |
-
-**VALUE PROVENANCE**: Rule #11 (scripts come from `package.json`) holds for EVERY project value. A claim about this project's configuration (an env URL, a Jira field id or transition slug, a git policy, a `playwright.config.ts` setting, a TMS modality) names the file it was read from, in the same turn. A value seen in a skill reference, a template, a worked example or another project's file is illustrative: never report it, brief it or test against it as this project's state. Composes with Rule #16 (verify at the destination) and Rule #17 (prose names the source).
-
 **RULE REACHABILITY**: an executor sees its briefing, the compact rules the resolver pasted into it, and the files the briefing names. It does NOT browse `references/`. A rule that must BIND the executor (a prohibition, a gate, a credential or evidence duty, a cleanup duty) lives in all three places: full text in the owning `references/*.md`, one bullet in the owning `SKILL.md` `## Compact Rules` (so `REGISTRY.md` carries it), and component 7 of every briefing whose dispatch can trigger it. A rule that exists only in a reference is documentation, not a constraint.
-
-**FAIL-CLOSED GATES**: a gate that opens on a value the gated agent wrote itself (a label it added, a failure class it picked) is open by construction. A QA gate opens only on EVIDENCE cited next to the value: the work product itself or something the agent cannot mint in the same run (a synced Jira body, a log line, CI run ids, an issue key that predates the run), never a marker claiming the work happened, and only for an actor allowed to decide it; a decision owned by another stage or a person (`stage-gates.md` "person signs") gets only the closed value from the agent. Missing, empty or self-made evidence = the closed value: the full flow runs, the failure counts as REGRESSION. Canon + the QA gates written this way: `agentic-qa-core/references/orchestration-doctrine.md`.
-
-**SESSION MATERIAL IN A DISPATCH**: QA logs in on purpose, so its sanctioned store is `.auth/` (gitignored, `chmod 600`, one writer per fleet: `agentic-qa-core/references/browser-sessions.md` §3, §7), never the session scratch or the evidence folder. A dispatch that logs in, loads a state file, captures traffic (HAR, trace, network log) or dumps a database returns `secrets_materialized` and `cleaned` in its report (`agentic-qa-core/references/briefing-template.md` component 6); material left outside `.auth/` is a blocker the orchestrator surfaces. Never echo it into a report, plan, commit, PR or tracker comment, and never attach a trace or HAR as evidence unscrubbed (`agentic-qa-core/references/evidence-conventions.md` §1).
 
 **ERROR PROTOCOL**: Subagent error → STOP, report full context, NO fix without approval, offer retry/skip/abort.
 
-**WORKFLOW SKILL COMPLIANCE**: every skill marked `metadata.stage_owner: true` in its frontmatter (the stage-owning workflow skills) MUST have `## Subagent Dispatch Strategy` using 7-component briefing, AND close their final stage per `agentic-qa-core/references/session-footer-contract.md`. Every other skill (reference / utility / generator) is EXEMPT. `bun run skills:check` (`STAGE-OWNER-DISPATCH`) enforces the section on every flagged skill; `.agents/skills/REGISTRY.md` lists which skills carry the flag.
-
-**DEEP DETAIL** (subagent-cacheable) → `.agents/skills/agentic-qa-core/references/` (briefing-template, dispatch-patterns, orchestration-doctrine).
+Executors, patterns, value provenance, fail-closed gates, session material, skill compliance → `90-orchestration-detail.md`.
 
 ---
 
-## 4. CONTEXT LOADING MAP: TASK → WHAT TO LOAD
+## ROUTER
 
-> BEFORE responding to any task: identify task type → load matching skill → read listed context. NEVER guess scripts/commands: READ `package.json` DIRECTLY.
+Files live in `.agents/instructions/`. Rows are fixed request kinds; a section grows through its own `triggers:` frontmatter, never through new rows.
 
-| Task | Trigger phrase | Load skill | Read context | Primary tool |
-|---|---|---|---|---|
-| First-time orientation **OR user is lost / wants to understand a skill** | "onboard me", "first time using this", "I don't know how to use this", "how does `<skill>` work", "explain/teach me how X works", "no sé cómo usar", "no entiendo cómo funciona", "cómo funciona este skill" | `/agentic-qa-onboard` | (skill self-loads) | - *onboard enters teaching mode: SUSPEND caveman, explain in plain human language, and OFFER to open the per-skill `how-it-works.es.html` deck in the browser (ask first)* |
-| Onboard target project | "onboard this repo", "set up project" | `/project-discovery` | target repo code, `.context/` if exists | Read + Grep |
-| Adapt KATA to stack | "adapt framework", "wire fixtures", "test framework adaptation" | `/test-framework-adaptation` | the context maps (`bun run context:map <slug>`: `business-domain-context`, `infra-context`, the business maps), `.context/project-config.md`, `.agents/project.yaml` | Code edit |
-| Shift-Left batch grooming | "shift-left these stories", "groom the backlog", "pre-sprint QA", "refine these N stories" | `/shift-left-testing` | business context maps (`bun run context:map <slug>`), `.context/PBI/qa-artifacts/master-test-plan.md`, `.context/PBI/epics/EPIC-*/stories/STORY-*/` | `[ISSUE_TRACKER_TOOL]` |
-| Sprint testing issue | "test this", "QA this story", "verify bug", "process sprint N" | `/sprint-testing` | `.context/PBI/epics/EPIC-*/stories/STORY-*/` | `[AUTOMATION_TOOL]` + `[ISSUE_TRACKER_TOOL]` |
-| TMS documentation / ROI | "document tests", "ROI", "automate priority" | `/test-documentation` | `.context/PBI/qa-artifacts/master-test-plan.md`, `.agents/jira-required.yaml`, `.agents/jira-fields.json` | `[TMS_TOOL]` |
-| Write automated test | "automate", "E2E test", "API test" | `/test-automation` | `kata-manifest.json`, `tests/components/`, `.context/PBI/.../implementation-plan.md`, skill `references/` | Code edit |
-| Derive test cases / coverage from ACs (ANY of the 4 testing skills) | "design test cases", "what to test", "cover this AC", "is this enough coverage" | (the active testing skill) | **`agentic-qa-core/references/test-design-doctrine.md` (MANDATORY)** | - |
-| Report a bug / defect / improvement | "report bug", "file defect", "raise improvement", "found an error in the app" | (the active testing skill) | **`agentic-qa-core/references/defect-management-doctrine.md` (MANDATORY)** | `[ISSUE_TRACKER_TOOL]` |
-| Annotate a bug screenshot (visual/positional defect) | "annotate bug screenshot", "mark up evidence", "anota este bug", "marca la captura" | `/bug-screenshot-annotation` | `agentic-qa-core/references/evidence-conventions.md` | `/playwright-cli` + local HTTP |
-| Ask the user to decide (batch of decisions, or one dense one) | "decide", "which option", "necesito que decidas", "opciones", a report the user must react to point by point | - | **`agentic-qa-core/references/decision-protocol.md` (MANDATORY, first: whether the question reaches the user at all)**, then **`agentic-qa-core/references/decision-elicitation-doctrine.md` (MANDATORY: how to ask)** | `mkd` decision deck; harness prompt below the threshold or when `mkd` is absent |
-| Discovery / inventory | "what components exist", "list ATCs", "is TC-X automated", "coverage map", "what's tested", "qué está cubierto" | - | `kata-manifest.json`; coverage map + gaps → `bun run tests:map` (reads `.context/PBI/`, offline) | Read / `bun run tests:map` |
-| Regression / release | "run regression", "GO/NO-GO" | `/regression-testing` | `.context/PBI/qa-artifacts/master-test-plan.md`, CI logs | `gh` + Allure |
-| Private report hosting (login-walled Allure) | "reportes privados", "make reports private", "protect test evidence", "login para los reportes" | `/regression-testing` | **`regression-testing/references/private-hosting-setup.md` (AI-executed protocol)**: AI clones + deploys the Test Report Portal (Supabase/R2/Vercel) and wires this repo's secrets; suite workflows are already dual-mode | CLIs (`supabase`, `wrangler`, `vercel`, `gh`) |
-| Test-architecture decision (record/supersede) | "record an ADR", "document our fixture/runner/isolation decision", "architecture decision record" |: (see `.context/ADR/README.md`) | `.context/ADR/`, `agentic-qa-core/references/adr-doctrine.md` | Read + Write |
-| Why the QA process is shaped this way (methodology, not a procedure) | "why do we create an ATS per story", "what is a stage / step / phase / altitude", "Early-Game / Mid-Game / Late-Game", "TMLC / TALC", "light mode", "what does IQL mean here" | `iql-context` (auto, kind `context`) | `.agents/project.yaml` → `qa.methodology`; `iql-context/references/project-overrides.md` | - *knowledge only: never runs a stage* |
-| Refresh project maps / test strategy | "refresh context", "business data/API/E2E map", "feature map", "user journeys", "master test plan" | `/project-context` (selected mode) | target code, `.context/`, live read-only sources; the map lands inside its business context skill | Read + approved section write |
-| Understand the SUT (data, API, journeys, vocabulary, stack) | "how does X work", "which endpoint", "what does a user do", "entity lifecycle", "what does <term> mean", "how is it deployed" | the matching context map skill (auto, kind `context`: the business maps, `business-domain-context` for vocabulary, `infra-context` for stack and environments) | `bun run context:map <slug> [--section <id>]`, never the raw HTML | - *knowledge + a proposal path: a contradicted section is PROPOSED, applied on approval* |
-| Sync AI repository context (docs follow-through) | "sync AI context", "sync AI memory", "update the docs after this change" | `/framework-development` (boilerplate change) or `/test-framework-adaptation` Phase 9.3 (project-owned docs) | `README.md`, this file, `package.json`; `bun run docs:check` proves the router and the quoted scripts | Edit |
-| Orchestrate several sessions (fleet of workers) | "orchestrate", "fleet", "workers", "one session per story", "resume the run", "automation routine", "orquestar", "lanza workers", "una sesión por historia", "comunícate con el worker" | `/orca-orchestration` | `.agents/project.yaml` → `orchestration:` block (defaults); the skill self-loads its references | `[ORCHESTRATION_TOOL]` (gate: binary + reachable runtime; silent when absent) |
-| Hand this session to a fresh one (context window filling up) | "hagamos el handoff", "handoff", "pasa el contexto a otra sesión", "continúa esto en otra sesión", "hand this session over", "write a handoff" | `/session-handoff` | `<<PRIMARY_ROOT>>/.session/handoffs/` (the lineage so far, in the primary checkout even from a worktree); the skill self-loads its capture contract | terminal of the SAME harness in the SAME worktree (runtime optional: without it the owner pastes the line) |
-| Git / PR work | any git intent | `/git-flow-master` (auto) | `git status`, `git log` | `git` + `gh` |
-| Browser action | "screenshot", "trace", "record", "log in as <role>", "pair testing", "use my browser" | `/playwright-cli` | **`agentic-qa-core/references/browser-sessions.md` (MANDATORY before the first `open`)**: whose login, which browser, `testing.browser.pair_mode` | Playwright CLI |
-| Jira / Xray operation | "Jira issue", "Xray import" | `/acli` or `/xray-cli` | `.agents/jira-required.yaml`, `.agents/jira-fields.json` | CLI |
-| Any script / build / test command question | "what command runs X", "how do I run tests" | - | **READ `package.json` FIRST** | - |
-
-**Key paths**:
-
-- `agentic-qa-core/references/test-design-doctrine.md`: **canonical test-design doctrine** (5 principles: AC-verify ≠ testing · AC = floor not ceiling · criterion-vs-test-case · 1:N explode-default/justify-collapse · risk-outside-criterion; + formal techniques EP/BVA/State-Transition/Decision-Tables/Pairwise/Error-Guessing with binding triggers; + Test-Design Checklist). Cited by all four testing skills; load BEFORE deriving any coverage from ACs.
-- `agentic-qa-core/references/defect-management-doctrine.md`: **canonical defect-management doctrine** (Bug/Defect/Improvement classification by the FEATURE's lifecycle stage · QA Assignee self-set + never-overwrite · mandatory Components · three-axis model parenting quality issues to the QA process epic, NOT a product/dev epic · mandatory field matrix + Severity→Priority auto-derive). Cited by all four testing skills; load BEFORE filing any quality report.
-- `agentic-qa-core/references/decision-elicitation-doctrine.md`: **canonical decision-elicitation doctrine** (the ladder from harness prompt to `mkd` deck to plan mode · the threshold: >3 decisions or one dense one · what makes a deck worth the round trip · the non-silent gate and its fallback · delivery, including the worktree-bound browser tab and the one-copy rule · reading the returned contract, where a "did not understand" note means DO NOT EXECUTE). Load BEFORE asking a user to decide anything in batch.
-- `agentic-qa-core/references/artifact-lifecycle.md`: **canonical artifact lifecycle** — which status every artifact is created in, which skill/stage moves it where via which transition slug, terminal status (§1) · the three edges the catalog does NOT have (§1.1) · assignee-at-create on every QA artifact, because Xray refuses membership edits on a Test Plan the caller does not own (§2) · the **unmapped-status fallback protocol** (§4: list the LIVE transitions, ONE `AskUserQuestion`, fire the live id, recommend `bun run jira:sync-workflows` — never a silent skip) · the **light stage verifier** template every stage closes with (§5). Load BEFORE any transition.
-- `.context/`: what a SCRIPT pulls from a source of truth (the PBI cache, reports) plus the few files this repo owns (ADRs, `project-config.md`, the PBI README + templates + `test-specs/`). Ignored by default with explicit re-includes: `.gitignore` owns the list. What an AI SYNTHESIZES lives in a skill: every map is HTML inside its context map skill (`CONTEXT_MAP_SKILLS`, `cli/lib/context-maps.ts`), generated by `/project-discovery` (domain, infra) or `/project-context` (data, api, e2e), read with `bun run context:map <slug>` (`agentic-qa-core/references/business-context-maps.md`). Legacy `.context/business/`, `PRD/`, `SRS/`, `infrastructure/` files stay tracked and are read only as generator input.
-- `docs/`: the HUMAN documentation site (HTML, Spanish), served by `bun run docs` (`bun run onboarding` opens its "Empezar aquí" page). `docs/core/` + `docs/assets/` + the portal files are shipped and synced by `bun run up`; every other folder under `docs/` is project-owned and never written by the updater. The AI does not load it: canon lives in `.agents/skills/` references.
-- `.context/ADR/`: Test-architecture decision records (append-only). Hard-to-reverse test-arch decision (runner, fixtures, isolation, auth-in-tests, selector contract, flake policy) → record `ADR-NNNN-<slug>.md`; supersede, never delete. When-to-write + template → `.context/ADR/README.md`; AI detection/authoring → `agentic-qa-core/references/adr-doctrine.md`. Seeded by `/project-discovery`, `/framework-development`, `/sprint-testing`+`/test-automation` (Stage 1). NOT for flaky-fixes, local spec tweaks, or naming.
-- `.agents/project.yaml`: `{{VAR}}` source-of-truth (load ONCE per session, cache)
-- `.agents/jira-fields.json` · `jira-workflows.json` · `jira-required.yaml`: Jira catalogs
-- `api/schemas/`: OpenAPI-derived TypeScript types (refresh: `bun run api:sync`)
-- `tests/components/`: KATA L2 + L3 (Api / Page / Steps). `tests/e2e/`, `tests/integration/`: spec files.
-- `kata-manifest.json`: Component + ATC registry. Source of truth (Rule #12). Regenerate: `bun run kata:manifest`. Validate: `bun run kata:manifest:check`.
-- `bun run tests:map`: coverage map — renders the synced `.context/PBI/` tree (Epic → Story → Test, orphan pile, component rollup) as one HTML page (`.context/reports/test-map.html`; `--json` for the gap summary). Disk-only, no Jira calls; hydrate first if stale.
-- `bun run jira:baseline`: warns when `.agents/jira-required.yaml` declares fewer work types than upstream's baseline (`scripts/lib/jira-required-baseline.ts`). `jira:sync-workflows` catalogs only what the manifest declares, so a stale manifest silently regenerates a truncated `jira-workflows.json` and every transition on the missing types falls into the unmapped-status fallback. **Warn-only, never blocking**: a legitimate omission is not an error. Also printed inline by `bun run jira:check` and by `bun run setup:doctor`.
-
----
-
-## 4.5. HOST HARNESSES: ONE SOURCE, THREE CONSUMERS
-
-> This repo runs on **Claude Code, OpenCode, and Codex (CLI + Desktop)**. There is exactly ONE copy of every instruction and every skill. Where the harnesses genuinely differ (MCP file format, hook API) each keeps a THIN versioned adapter. Nothing is duplicated.
-
-**INSTRUCTIONS.** `AGENTS.md` (this file) is the only instruction body. OpenCode and Codex load it natively. Claude Code loads `CLAUDE.md`, which is **exactly** `@AGENTS.md` plus one newline — a documented import, not a symlink, so it survives a Windows checkout. NEVER write operational prose into `CLAUDE.md`: that is structural drift, and `agents:compat:check` fails on it.
-
-| Surface | Claude Code | OpenCode | Codex CLI + Desktop |
+<!-- router:start -->
+| When the request involves | Read | Was | Then |
 |---|---|---|---|
-| Instructions | `CLAUDE.md` → `@AGENTS.md` **[generated shim]** | `AGENTS.md` (native) | `AGENTS.md` (native) |
-| Skills | `.claude/skills` **[generated alias]** | `.agents/skills/` (native) | `.agents/skills/` (native) |
-| Commands | none: `/<skill> <mode>` (the skill slash, through `.claude/skills`) | none: name the skill and mode in prose | none: name the skill and mode in prose |
-| Hook | `.claude/settings.json` → `UserPromptSubmit` | `.opencode/plugins/personality-reinject.js` | `.codex/hooks.json` → `UserPromptSubmit` |
-| MCP | `.mcp.json` | `opencode.jsonc` | `.codex/config.toml` |
-
-**GENERATED vs VERSIONED (hard rule).** Bold `[generated]` cells above are OUTPUT. NEVER hand-edit `CLAUDE.md` (shim), `.claude/skills` (alias, gitignored, never committed) or `.agents/project.schema.yaml` (generated from `.agents/project.yaml`). Edit the source (`AGENTS.md`, `.agents/skills/`, `.agents/hooks/`), then regenerate:
-
-| Generated artifact | Its source | Regenerate |
-|---|---|---|
-| `CLAUDE.md` (one-line `@AGENTS.md` shim, never prose) | `AGENTS.md` | `bun run agents:compat` |
-| `.claude/skills` (POSIX symlink / Windows junction) | `.agents/skills/` | `bun run agents:compat` |
-| `.husky/framework-gates.sh` (the gates upstream owns; each hook sources it in one guarded block) | upstream, synced by `bun run up` | never hand-edit it downstream; your own gates and their ordering go in the hooks |
-| `.agents/project.schema.yaml` (the TEMPLATE a project's own yaml is compared against; SYNCED downstream, generated only in the boilerplate) | `.agents/project.yaml` | `bun run agents:schema` |
-
-**`.agents/project.yaml` IS COMPARED AGAINST A SCHEMA, NOT AGAINST THE MAINTAINER'S COPY.** The file is `bootstrapOnly` — the sync never overwrites it, because it holds project identity — while upstream keeps ADDING blocks to it, so a project scaffolded before a block existed never learns it should have one. ONE schema-driven hook back-fills every key, so a block upstream adds later needs no hook of its own. `bun run agents:schema` generates `.agents/project.schema.yaml` from this repo's yaml, which is FILLED for dogfooding: it blanks every identity leaf back to `null` whatever this repo holds (`IDENTITY_PATHS` in `cli/lib/agents-schema.ts`: project, stacks, tracker, environments, cached QA epic keys), keeps the methodology defaults, and REPLACES the git-strategy values and comments that are this repo's own (its ruleset id, its dates, its standing push authorization); a leak gate refuses to emit the file when a real date, ruleset, Atlassian host or one of this repo's own URLs or issue keys survives. The yaml's header carries a `MAINTAINER COPY:` line the schema drops: a repo made with GitHub "Use this template" inherits the filled file, and `bun run agents:setup` detects that line there and reseeds the file from the schema after one confirm (`setup:doctor` warns on it). `bun run agents:schema:check` gates the pair in `repo:check` and pre-commit, so a key added to the yaml and forgotten in the schema fails the commit by name. **`agents:schema` runs only in the boilerplate**: downstream the schema is a plainly synced file, and regenerating it there would blank the project's own yaml over the template and then report zero gaps forever.
-
-Three consumers, three severities: `bun run up` offers to INSERT what a project lacks (insert-only, never an edit to an existing line, one prompt per top-level block, `--auto` warns and mutates nothing), `bun run setup:doctor` and `bun run agents:schema --project` DIAGNOSE it, and `repo:check` never fails on it — being behind upstream is not a broken repo, and a red CI on every upstream key addition is how a team learns `--no-verify`. Keys are compared to full depth with `environments.*` wildcarded (a project running `uat` and no `qa` is not nagged), values are never compared, project-only keys are silent, and an unparseable yaml says so instead of degrading to a narrower key set. A project that deliberately deleted a block silences it with `updater.schema_exempt: [<block>]` in its own yaml. Every write is a parser-located string splice re-parsed to verify: **NEVER `parseDocument(...).toString()` on a file under `.agents/`** — it rewraps folded scalars and rewrites `[main]` as `[ main ]`, and on `jira-required.yaml` it grows the file by kilobytes while changing nothing (ADR-0006). `.agents/jira-required.yaml` keeps its two hand-written back-fill hooks and the 2-level walk: same drift, richer shape, its own follow-up.
-
-`bun run agents:compat:check` validates the whole contract: shim bytes, alias target, no harness command named like a skill, hook adapters, MCP parity, and the eslint block wiring. It runs in `repo:check`, in `pre-push`, and conditionally in `pre-commit`. The check and `setup:doctor` always print the alias status line (created / OK / deferred until the migration commit / missing) and group errors per surface (`COMPATIBILITY_GROUP_ORDER` in `cli/lib/agent-compatibility.ts`).
-
-**A SKILL IS INVOKED BY NAME PLUS MODE; THERE ARE NO COMMAND FILES.** The boilerplate ships no `.claude/commands/` or `.opencode/commands/`: a skill plus a mode is the one invocation form on every harness (§5). A project MAY keep its own command files there; they are plain harness commands it edits by hand, and nothing generates or validates their body. The one refusal: a command whose name equals a repo skill hides that skill's instructions (Claude Code registers both under the same slash name and the command body wins), so `agents:compat:check` fails on it and `bun run agents:compat` (also run by `bun run up` and `bun run setup`) MOVES it to `.backups/shadowing-commands/<same path>`, recoverable, never deleted. The old alias overlay `.agents/compatibility/command-aliases.project.json` is inert: nothing reads it, and the updater names it once in an informational row.
-
-**UPDATER END-OF-RUN.** `bun run up` closes with one per-surface status table and ONE parity prompt, saved to `.agents/prompts/parity-plan.md`. When handed that prompt: present the table, WAIT for a per-row decision `keep project | take upstream | merge`, apply only the chosen rows, then tests → types → lint. Suggest `take upstream` only where the project lacks the content entirely: a row naming project-only servers, keys, headings or edits says `merge`, and applying `take upstream` there deletes project content. Row semantics, the protected watchlist, abort cases, the `.claude/settings.json` merge, `CONFIG_BLOCK_READERS` / `PATH_PREREQUISITES` and the `AGENTS.md` doctrine ledger: `agentic-qa-core/references/updater-parity.md`.
-
-**`cli/` IS IMPORT-CLOSED (binding invariant).** NOTHING under `cli/` may import from a sibling top-level directory — not `scripts/`, `config/`, `tests/`, `api/`, `packages/`, and not through a `@alias`. `cli/` is the updater's self-update component: `runUpdate` refreshes those files in place and re-execs the process BEFORE any other component is synced, so the NEW `cli/` runs against the target repo's OWN, old copy of everything else. An escaping import therefore bricks `bun run up` for anyone jumping more than one release — and because the failure is at module load, it takes `up --rollback`, `setup` and `setup:doctor` down with it, leaving no in-repo way out. Shared code goes in `cli/lib/`; a `scripts/` file that needs it imports FROM `cli/` (that direction is safe: `scripts/` is synced later, never re-exec'd mid-run). Enforced by the `no-restricted-imports` block scoped to `cli/**`, defined as `CLI_IMPORT_CLOSURE` in `eslint.config.base.js` and spread by `eslint.config.js`, so `lint:check` catches it in CI, pre-push, and `repo:check`.
-
-**HOOK: one emitter, three adapters.** `.agents/hooks/personality-reinject.mjs` is the per-prompt emitter. Claude and Codex execute it as a command hook (stdout becomes developer context on both); OpenCode imports it from a thin plugin. The output contract itself is NOT re-injected: §2 and the user-level output style already load once per session. The emitter injects one `AGENT IDENTITY:` line per prompt (worktree · session label · harness — the value `git-flow-master` copies into the `Worktree:` / `Session:` commit trailers of Rule #3) and, ONLY when the orchestration binary is present on the machine, one extra line naming `/orca-orchestration`. Binary absent = no line at all, which is the silence rule of the optional executor (§3). Still one emitter and three adapters: no second hook file, no per-harness copy of the text. Contract enforced by `cli/lib/agent-compatibility-contracts.ts`: no absolute personal paths, no duplicated hook file, OpenCode must mutate `output.system` in place. Codex's adapter carries `commandWindows` for PowerShell and resolves the repo via `git rev-parse --show-toplevel`.
-
-**HUSKY: one synced gates file, project-owned hooks.** `.husky/pre-commit` and `.husky/pre-push` are on the protected watchlist, so the project's own gates and their ordering survive every sync and nothing upstream overwrites them. The gates UPSTREAM owns are not in them: they live in `.husky/framework-gates.sh`, which IS synced, and each hook sources it and calls one function (`framework_gates_pre_commit` / `framework_gates_pre_push`). That is the only way a gate added upstream reaches a project scaffolded earlier — a never-overwritten hook cannot grow one, which is how four gates ended up running nowhere downstream. `lint-staged` stays in the hook, above the call: it REWRITES staged files, so it must finish before anything reads the staged list. The source is `[ -f ]`-guarded because `.husky/_/h` runs hooks under `sh -e`: sourcing a file that is not there would kill the hook, and a rollback or a half-applied sync can legitimately leave the hooks present and the gates file gone. A hook that predates the split gets a parity row with the exact block to paste. `.husky/commit-msg` follows the same split (watched, delivered once when missing, `framework_gates_commit_msg "$1"`) and runs the forensic-trailer check of Rule #3 (`scripts/check-commit-trailers.ts`, one copy shared byte-identical with the dev boilerplate) WARN-only: a commit missing `Worktree:` / `Session:` or carrying `Claude-Session:` prints a warning and still lands.
-
-**ROOT CONFIGS AND THE VARIABLES MODULE SHIP IN HALVES.** `tsconfig.base.json` and `eslint.config.base.js` are SYNCED and hold the path aliases, the `cli/` import-closure rule (`CLI_IMPORT_CLOSURE`) and the KATA alias-import rule that forbids `./` and `../` under `tests/**` (`KATA_IMPORT_ALIASES`), while `tsconfig.json` and `eslint.config.js` stay project-owned and extend or spread them. `config/variables.core.ts` is the same shape for the variables module: synced resolver and framework blocks, project-owned environment and URL map in `config/variables.ts`. Never hand-edit a `*.base.*` or `*.core.ts` file in a consumer repo — edit the project half. And note the asymmetry that makes a synced rule fail quietly: the base is SYNCED, but `eslint.config.js` is PROJECT-OWNED and never overwritten, so a block upstream adds arrives on disk while the wiring that activates it does not. `validateEslintBlockWiring` (`cli/lib/agent-compatibility-contracts.ts`) fails `agents:compat:check` when `eslint.config.js` does not name every scoped block `eslint.config.base.js` exports — without it, a shipped rule enforces nothing and `lint:check` stays green.
-
-**MCP: one declared set, three formats, semantic parity.** The canonical server set is whatever `.mcp.json` declares: every server there must exist in `opencode.jsonc` and `.codex/config.toml` with the same `.env` dependencies and the same literal env settings, and a server present in one host only fails naming the server and the host. Parity is checked by NORMALIZING each native format (JSON / JSONC / TOML) into a common shape (transport, command, args, url, `.env` dependencies, literal env, enabled) then comparing. The servers the boilerplate ships (`KNOWN_MCP_IDS` in `cli/lib/agent-compatibility-contracts.ts`: every one a LOCAL stdio server) additionally get a strict per-host shape check whenever the project declares them; any other server gets the generic check only, so a downstream project may drop or add servers freely. Remote servers whose only project-side content was an API key (web search, Postman) are NOT committed: they run at harness level (a claude.ai connector, a user-scope MCP, the OpenCode / Codex user config), skills resolve them by capability, and `cli/lib/harness-level-mcps.ts` is the one list of them (ADR-0005). A downstream project that keeps one sees a parity row, never an overwrite; the same holds for a local server upstream RETIRED (`RETIRED_MCPS` in `cli/lib/updater-parity.ts`: the browser MCP, retired because browser automation is `/playwright-cli` only). Env references keep each host's own syntax: `${VAR}` (`.mcp.json`), `{file:.auth/opencode/VAR}` (`opencode.jsonc`: placeholder files `bun install` creates, never an env reference), `env_vars` / `bearer_token_env_var` (`.codex/config.toml`, which never expands placeholders, so every Codex stdio server starts through a `.env` loader, `CODEX_ENV_LOADER_*` in `cli/lib/agent-compatibility-contracts.ts`: a Codex Desktop launch has no process environment for `env_vars` to forward; a missing loader or startup budget fails `agents:compat:check` in the boilerplate and is a WARNING downstream, naming the file and what to add, because `.codex/` is bootstrap-only and a sync can never deliver the fix); Critical Rule #10 applies to all three. Per-MCP decision rules → §5.
-
-**HARNESS-SPECIFIC GOTCHAS.**
-
-- **Codex trust**: project `.codex/` config and hooks load ONLY in a trusted repository. `bun run setup:doctor` reports trust separately from file correctness, because trust is runtime state that cannot be verified by reading files.
-- **Codex Desktop** consumes the same repository config as the CLI. No second convention, no extra directory.
-- **OpenCode hook API** uses `experimental.chat.system.transform`. Official but experimental: re-verify on OpenCode upgrades. Claude and Codex sit on stable hook APIs.
-- **Launch with `bun run claude` / `bun run opencode` / `bun run codex`** — each wraps `dotenv -o -e .env`, which forces `.env` to WIN over an inherited process variable. Launching the bare executable skips that and can leave a stale inherited value shadowing the file (§7).
-
----
-
-## 5. SKILLS + MODES + MCPs REGISTRY
-
-### Skill tiers (T1-T4)
-
-Repo organizes skills in 4 tiers with different discovery + load rules:
-
-- **T1**: Project-owned, committed in `.agents/skills/`. Listed below in "Workflow Skills". Load silent on trigger.
-- **T2**: Project-vendored. Committed in `.agents/skills/` from upstream (e.g. `judgment-day` from gentle-ai). License + attribution preserved in frontmatter. Load silent on explicit trigger.
-- **T3**: Community project-level. Installed by `install.ts` into `.agents/skills/` (not committed). Load silent if category matches task domain. `skill-creator` is T3 since the context-skills layer: it is ALWAYS the builder when this repo scaffolds a skill (`/framework-development` for a boilerplate skill, `project-context` mode `context-skill` for a consumer's `<aspect>-context`), so no clone runs without it.
-- **T4**: Community user-level. Installed globally. ALWAYS ASK before loading.
-- **Context skills** (`metadata.kind: context`, slug `<aspect>-context`): judgment over ONE aspect, citing `.context/` caches, never restating them (`agentic-qa-core/references/skill-scaffold.md` §3). Upstream ships `iql-context` (the methodology index; adapted per project through `qa.methodology` in `.agents/project.yaml` and the bootstrap-only `references/project-overrides.md`) and the context map skills (`CONTEXT_MAP_SKILLS`, `cli/lib/context-maps.ts`, each naming its generator): placeholders whose folder `bun run up` delivers ONCE when absent, each holding its generated HTML map and allowed to write only its own `references/` (`metadata.writes`, lint `CONTEXT-WRITES`). Every other `*-context` is project-local by construction: `bun run up` never delivers, overwrites or deletes it (`isProjectLocalSkillPath`, `cli/lib/updater-core.ts`). `project-discovery` PROPOSES them at close; `project-context` mode `context-skill` CREATES them through `skill-creator`; the skill resolver injects into a briefing only the context skills whose aspect the dispatch touches (`agentic-qa-core/references/skill-resolver.md`).
-
-> **Orchestration vendor stubs are T4, OPTIONAL to HAVE and MANDATORY to LOAD when present.** The orchestration binary ships its own guides and installs them user-level; which ones is `orchestration.orchestrator_skills` in `.agents/project.yaml`, never a name hardcoded in a skill. They still gate NOTHING — availability is decided by the binary plus a reachable runtime, and a machine without them is fully capable because T1 `orca-orchestration` asks the binary for its grammar. They are loaded ALONGSIDE the T1 skill rather than fetched on demand, because they are small and a fetch-on-demand posture once cost a live fleet an iteration spent correcting an invented flag (ADR-0006). `install.ts` still does not install them — the binary owns that.
-
-> Layout convention: T1 repo skills → `.agents/skills/<slug>/` (committed source). T3 community skills share that project store. Claude Code discovers the same tree through the generated `.claude/skills` alias; user-level T4 skills remain harness-specific. `install.ts` targets the canonical store for project skills and passes `--agent` only for user-level installs.
-
-Full contract: `.agents/skills/agentic-qa-core/references/skill-composition-strategy.md`
-
-**Memory install scope**: `cli/install.ts` wires Engram (persistent memory) per agent with the engram binary's own `engram setup <agent>` and never runs `gentle-ai install`: gentle-ai's orchestrator, agent-routing and hook layer competes with §3. The boilerplate does not use gentle-ai's workflow layer (no SDD, no gentle-ai orchestrator): our workflow skills (`/sprint-testing`, `/test-automation`, `/test-documentation`, `/regression-testing`) cover Plan → Code → Verify natively. Detail: `INSTALLER.md`.
-
-### Skills (lazy-loaded by trigger phrase)
-
-This table is the trigger ROUTER, not the inventory: tiers, kinds, flags and full descriptions live in `.agents/skills/REGISTRY.md` (generated by `bun run skills:registry`) and in each `SKILL.md` frontmatter. `bun run skills:check` (`TIER-MISMATCH`) warns when a community skill declared in `cli/install.ts` has no row here (and when a row names a skill `cli/install.ts` does not declare), so the drift is surfaced on every run, never hand-reconciled.
-
-| Skill | Trigger | Purpose |
-|---|---|---|
-| `agentic-qa-core` | (auto, cited by other skills) | Foundation: passive reference host for shared doctrine (briefing template, dispatch patterns, orchestration, skill-composition strategy). Loaded on demand by workflow skills. |
-| `agentic-qa-onboard` | `/agentic-qa-onboard` | First-time orientation tour. Explains stack + 6-stage pipeline + MCPs. Hands off to right downstream skill. ALSO the teaching front-desk for confused users: suspends caveman, explains in plain human language, and offers to open the per-skill `how-it-works.es.html` visual decks in the browser (ask first). |
-| `framework-development` | `/framework-development` | Framework-evolution orchestrator for the boilerplate itself (KATA bases, fixtures, cli/, scripts/, api/schemas/ pipeline). NOT for per-ticket QA. Self-contained Plan → Code → Verify → Archive pipeline; needs nothing outside the repo (no SDD-* skills). |
-| `project-discovery` | `/project-discovery` | 4-phase discovery (Constitution → Architecture → Infrastructure → Specification) → generates the `business-domain-context` map (Phase 1) and the `infra-context` map (Phases 2-3), `.context/project-config.md`, and a backlog connection check (Phase 4, writes no file). Reverse-engineering only. |
-| `project-context` | `project-context`, "business data map", "business API map", "business E2E map", "business feature map", "master test plan" | Generates the business maps inside their context skills (modes `data` / `api` / `e2e`, synonym `features`) and the test plan, through isolated modes or ordered `refresh-all`. UPDATE regenerates only stale sections and requires approval before writing. |
-| `business-data-context` | (auto, kind `context`: DB, SQL, entities, status transitions, triggers, jobs, "how does it work under the hood") | The data map of the SUT (entities, flows, state machines, automatic processes, integrations) as HTML in its `references/`, read via `bun run context:map business-data-context`. Delivered once as a placeholder, then project-owned; proposes one-section edits on evidence, applies on approval. |
-| `business-api-context` | (auto, kind `context`: API tests, endpoints, auth, status codes, "which endpoint does X") | The API map: endpoint groups by business meaning, auth model, cross-endpoint flows, error semantics. Same read path, delivery and self-update contract. |
-| `business-e2e-context` | (auto, kind `context`: E2E / UI tests, user flows, smoke scope, "what can a user do") | The E2E map: personas and user journeys first, then the feature catalog. Same read path, delivery and self-update contract. |
-| `business-domain-context` | (auto, kind `context`: domain vocabulary, business model, "what does <term> mean", TC / ATP naming) | The domain map: what the product is for, the business model, one section per domain term (meaning, UI label, code identifier). Generated by `project-discovery` Phase 1; same read path (`--section term-<slug>`), delivery and self-update contract. |
-| `infra-context` | (auto, kind `context`: stack, environments, CI/CD, auth flow, NFR budgets, "how is it deployed") | The infra map: architecture, external services, backend and frontend stacks, environments, CI/CD, NFR budgets. Generated by `project-discovery` Phases 2-3; same read path, delivery and self-update contract. |
-| `diagram-design` | (loaded by the map generators and the context map skills when a figure is drawn) | Editorial HTML/SVG diagrams for the context maps; capability `diagrams`, point-of-use STOP when absent. Style is its own `.diagram-design` marker at the repo root, nothing else. *(community: installed at PROJECT level by `cli/install.ts`; not committed in repo)* |
-| `test-framework-adaptation` | `/test-framework-adaptation` | Idempotent KATA adaptation with no-write analysis and plan before explicit approval and mutation. |
-| `jira-administration` | `jira-administration`, "sync Jira components", "Jira instance migration" | Isolated Components and instance-migration modes, each sealed behind read-first analysis and explicit approval. |
-| `shift-left-testing` | `/shift-left-testing` | Stage 0: pre-sprint Shift-Left QA on a batch of backlog Stories. Refines ACs, surfaces gaps/ambiguities, authors the Story's ATP early field-first into `{{jira.acceptance_test_plan}}` (no Test Plan item pre-sprint — `/sprint-testing` Stage 1 creates the item from the field and refines; no separate DRAFT artifact), tracks each Story's pass via a `[QA] Shift-Left Review` subtask (In Progress → Done; session notes live there, Story stays clean), transitions `backlog → shift_left_qa → estimation`. Adds labels `shift-left-reviewed` + `shift-left-{YYYY-MM-DD}` to mark the pass; `/sprint-testing` Stage 1 short-circuits Phases 1-3 later only when the published ATP body backs them (fail-closed: the labels alone open nothing). |
-| `sprint-testing` | `/sprint-testing` | Stages 1-3: manual QA per issue (Planning, Execution, Reporting). Two modes: `single-issue` (one key) and `sprint-wide` (a sprint number → JQL over the project's OWN declared coverable work types). Produces PBI folder, ATP, ATR, bug reports; sprint-wide state is the STP in Jira (description = plan, comments = append-only progress), local scaffolding only in `.session/sprint-testing/sprint-<N>/{plan,progress}.md`. |
-| `test-documentation` | `/test-documentation` | Stage 4: TMS docs + ROI scoring. Produces Candidate / Manual / Deferred verdicts. |
-| `test-automation` | `/test-automation` | Stage 5: Plan → Code → Review on KATA + Playwright + TypeScript. |
-| `regression-testing` | `/regression-testing` | Stage 6: regression / smoke / sanity via CI/CD. Classifies failures. Emits GO / CAUTION / NO-GO. |
-| `playwright-cli` | `/playwright-cli` | Browser CLI: screenshots, tracing, video, session mgmt, request mocking. *(community: installed at PROJECT level by `cli/install.ts`; not committed in repo)* |
-| `playwright-best-practices` | `/playwright-best-practices` | Reference skill: flaky-test fixes, POM, accessibility (axe-core), auth/OAuth, fixtures, tags (`@smoke`/`@critical`), perf budgets, i18n, component testing. Auto-loads alongside `/test-automation`. *(community: installed at PROJECT level by `cli/install.ts`; not committed in repo)* |
-| `bug-screenshot-annotation` | "annotate bug screenshot", "mark up evidence", "anota este bug", "marca la captura" | Turns a raw bug screenshot into QA-style annotated evidence (circles/arrows/callouts/corner badge/axis ticks) via HTML+CSS overlays rendered 100% locally (loopback HTTP + playwright-cli capture, NEVER an external image service). Loaded inline by `/sprint-testing` Stage 2 for visual/positional bugs; can auto-embed the result into the Jira bug via the acli media helper. |
-| `skill-creator` | (loaded by `/framework-development` when the change IS a skill, and by `project-context` mode `context-skill`) | The builder of every skill this repo scaffolds: draft, test prompts, evals, description pass; the scaffold contract itself lives in `agentic-qa-core/references/skill-scaffold.md`. *(community: installed at PROJECT level by `cli/install.ts`; not committed in repo)* |
-| `resend-cli` | `/resend-cli` | Resend email testing CLI. Pairs with the `resend` external binary. *(community: installed at PROJECT level by `cli/install.ts`; not committed in repo)* |
-| `xray-cli` | `/xray-cli` | Xray Cloud test management. |
-| `acli` | `/acli` | Atlassian CLI. Resolves `[ISSUE_TRACKER_TOOL]` and `[TMS_TOOL]` (Modality jira-native). |
-| `git-flow-master` | (auto on git/PR intents) | End-to-end Git operator. Auto-detects branching strategy. Owns branch / commit / push / PR / conflict / chained-PR. |
-| `orca-orchestration` | `/orca-orchestration`, "orchestrate", "fleet", "workers", "resume the run", "orquestar", "lanza workers", "una sesión por historia", "comunícate con el worker" | Multi-session orchestration layer (CONDUCTOR / WORKER / AUTOMATION modes) over the `orca` binary: launches persistent supervised workers, coordinates them through the run mailbox, owns worktree provisioning and the claims protocol. OPTIONAL by construction — gate = binary + reachable runtime; workflow skills stay silent and fall back to their `launch.txt` when it fails. Owns the `orchestration:` block in `.agents/project.yaml`. |
-| `session-handoff` | `/session-handoff`, "hagamos el handoff", "handoff", "pasa el contexto a otra sesión", "hand this session over", "continue this in a fresh session" | Compacts a whole session into `<<PRIMARY_ROOT>>/.session/handoffs/<session-name>-handoff-NN.md` (the primary checkout, so the lineage survives a removed worktree) so a NEW session resumes exactly where this one stopped, then launches that successor in the SAME worktree and the SAME harness. Ownership transfer of a SESSION: no Run, no Task, no Dispatch, no mailbox. Primary trigger is manual by owner preference; what each harness does and does not expose about context size is settled with citations in the skill's `references/auto-trigger.md`. |
-| `judgment-day` | `/judgment-day`, `juzgar`, `dual review` | T2 vendored from gentle-ai (Apache-2.0). Adversarial dual-judge review (2 blind judges in parallel, synthesis, fix loop, re-judge). Cited by `/test-automation` Phase 3 as one of the two options for its required separate verifier (the other: `/pr-review-lead`) and by `/git-flow-master` as an optional pre-PR gate. Never auto-invoked. |
-| `iql-context` | (auto, kind `context`: "why is the process shaped this way", "what is a stage / phase / altitude", "IQL", "TMLC / TALC", "light mode") | The methodology index: eight named stages, the artifact ladder (MTP / FTP / STP / ATP / ATS / ATR / STR / RTP / RTR), the invariants and where each is enforced, the agentic contract; cites `agentic-qa-core/references/*` and the official site, restates nothing. Shipped upstream; adapted per project through `qa.methodology` (`.agents/project.yaml`) + the bootstrap-only `references/project-overrides.md`. Knowledge only: never runs a stage. |
-| `pr-review-lead` | `pr-review-lead`, "review this PR", "revisa este PR" | QA Lead / QA Architect review of a PR's test-automation work against KATA doctrine (or the target repo's own doctrine) — every finding grounded in a doctrine citation or code location. Works on this repo or external repos (`owner/repo#PR` via `gh`). Runs a strictness preflight (Flexible / Standard / Strict); never posts to GitHub without explicit final OK. NOT for reviewing your own uncommitted diff (default code-review flow) or blind dual review (`/judgment-day`). |
-
-### Skill modes
-
-A multi-mode skill lists its modes in its own `## Mode routing` section, and that section is the only list. Invoke it by name plus mode: `/project-context data` on Claude Code, "load `project-context`, mode `data`" on OpenCode and Codex. The first token of `$ARGUMENTS` that matches a mode IS the mode and the rest is forwarded; no matching token means the skill asks (or applies its declared default). A former command name (`break-down-tests`, `business-data-map`) survives only as a trigger phrase in its skill's `description`.
-
-### MCPs (decision rules)
-
-Each row is a CAPABILITY skills declare (`metadata.requires_capabilities`) and resolve by tool-name suffix, so a user-level server or a claude.ai connector exposing the same tools satisfies the row; the committed server that provides it is whatever `.mcp.json` declares (`KNOWN_MCP_IDS` in `cli/lib/agent-compatibility-contracts.ts`): canon `agentic-qa-core/references/mcp-capabilities.md`.
-
-| Capability | Use for | Rule |
-|---|---|---|
-| `api-schema` | API **schema** read-only (endpoint discovery, request/response contracts) | `[API_TOOL]` schema-read leg ONLY. Authenticated execution is `curl`, NOT the MCP: see `agentic-qa-core/references/api-testing-doctrine.md`. |
-| `db` | DB queries, data validation | `[DB_TOOL]` primary |
-| `library-docs` | Library official docs ("how to use X") | `[DOCS_TOOL]` primary. **MANDATORY** for any library / framework / SDK / API / CLI doc lookup (React, Next, Playwright, Prisma, Tailwind, Express, etc.). PREFER OVER built-in `WebSearch` / `WebFetch`: a library-docs MCP returns current versioned docs; built-in web search returns stale blog posts. |
-| `web-search` (HARNESS-LEVEL: a claude.ai connector or a user-scope server, not `.mcp.json`) | Community solutions ("how to solve X"), troubleshooting, non-doc web research | `[WEB_SEARCH_TOOL]` primary. **MANDATORY** for any general web search: community fixes, error message lookups, "how to solve X". PREFER OVER built-in `WebSearch` / `WebFetch`: a search MCP returns ranked + summarized results; built-in is shallower. No provider available → point-of-use STOP (Rule #10). |
-
----
-
-## 6. TOOL RESOLUTION ([TAG_TOOL] pseudocode)
-
-> Skills use `[TAG_TOOL]` pseudocode. Resolve via this table. **PRIORITY**: CLI tools first (fewer tokens). MCP = fallback only.
-
-| Tag | Domain | Primary | Fallback |
-|---|---|---|---|
-| `[ISSUE_TRACKER_TOOL]` | Jira Cloud (story / bug / epic) | `/acli` | MCP Atlassian (opt-in: `agentic-qa-core/references/mcp-atlassian-optin.md`) |
-| `[TMS_TOOL]` | Test management | Modality jira-xray: `/xray-cli`. Modality jira-native: `/acli` | MCP Atlassian (opt-in: `agentic-qa-core/references/mcp-atlassian-optin.md`) |
-| `[AUTOMATION_TOOL]` | Browser automation | `/playwright-cli` (the only path: no browser MCP) | none: `/playwright-cli` missing → point-of-use STOP |
-| `[DB_TOOL]` | Database | DBHub MCP | Supabase MCP / raw SQL |
-| `[API_TOOL]` | API testing | **Schema read**: OpenAPI MCP (read-only). **Execute**: `curl` (token via `bun run api:login` → `.auth/tokens.env`). Canon: `agentic-qa-core/references/api-testing-doctrine.md` | Postman (a harness-level MCP the user connects; never in the project MCP files) |
-| `[DOCS_TOOL]` | Library / framework / SDK / API / CLI official docs | Capability `library-docs`: any MCP tool whose name ENDS in `resolve-library-id` → `query-docs`, whichever server exposes it (project `.mcp.json` → `mcp__context7__…`; a claude.ai connector → `mcp__claude_ai_<name>__…`) | built-in `WebSearch` / `WebFetch` ONLY when the user chooses it after the point-of-use STOP |
-| `[WEB_SEARCH_TOOL]` | General web search, community fixes, troubleshooting, non-doc research | Capability `web-search`, Exa FIRST: any MCP tool whose name ENDS in `web_search_exa` / `web_fetch_exa`; Tavily SECOND (`tavily_search` / `tavily_extract` / `tavily_research`) when no Exa tool is available or the user asks for Tavily; whichever server exposes it (a claude.ai connector → `mcp__claude_ai_<name>__…`; a user-scope server → `mcp__<its name>__…`). The server lives at HARNESS level, never in the project MCP files (ADR-0005) | built-in `WebSearch` / `WebFetch` ONLY when the user chooses it after the point-of-use STOP |
-| `[ORCHESTRATION_TOOL]` | Multi-session orchestration: launch / supervise / message / close persistent workers, worktrees, runs, automations | `/orca-orchestration` (owns the `orca` binary grammar; gate = binary + reachable runtime) | one-shot subagents (§3) + the skill's `launch.txt` lines pasted into terminals by hand |
-
-> **Reads-vs-writes carve-out**: the `[ISSUE_TRACKER_TOOL]` / `[TMS_TOOL]` rows resolve to the WRITE / transition / link / trivial-lookup tool. DETAILED CONTENT reads (custom fields, ACs, ATP/ATR, comments) instead route through `bun run jira:sync-issues get <KEY> --include-comments` / `jql "<query>"`: read the synced `.md` (`acli view` returns null for `customfield_*`). Traceability link-graph + Xray run status stay on `/acli` / `/xray-cli`. See §9 and `agentic-qa-core/references/acli-integration.md`.
-
-**MANDATORY**: LOAD owning skill BEFORE invoking its tool. Skills = WHEN/WHAT. HOW (syntax, flags, auth, errors) lives in skill's `references/`. A tool-name PREFIX is a server name, the SUFFIX is the capability: resolve every MCP capability by suffix, never by prefix (`mcp__tavily__tavily_search`, `mcp__claude_ai_<name>__tavily_search` and a user-level server's `…__tavily_search` all provide `web-search`); no available tool provides it → STOP at the point of use per `agentic-qa-core/references/preflight-gate.md` §8, canon `agentic-qa-core/references/mcp-capabilities.md`.
-
-- Before any `[ISSUE_TRACKER_TOOL] ...` → load `/acli`
-- Before any `[TMS_TOOL] ...` Modality jira-xray → load `/xray-cli`
-- Before any `[TMS_TOOL] ...` Modality jira-native → load `/acli`
-- Before any `[AUTOMATION_TOOL] ...` → load `/playwright-cli`, and read `agentic-qa-core/references/browser-sessions.md` before the first `open` (named session, whose login, pair mode)
-- Before any `[API_TOOL] ...` → the OpenAPI MCP is **schema-read-only** (discover endpoints + read schemas); load `agentic-qa-core/references/api-testing-doctrine.md` for the schema → `bun run api:login` → `curl` maneuver. Execute authenticated requests with curl, NEVER via the MCP.
-- Before any `[DOCS_TOOL] ...` → use the `library-docs` tools directly, any prefix (no skill load: MCP self-documents). NEVER substitute with `WebSearch` / `WebFetch` for library docs.
-- Before any `[WEB_SEARCH_TOOL] ...` → use the `web-search` tools directly (any prefix). NEVER substitute with built-in `WebSearch` / `WebFetch` on your own: no provider → point-of-use STOP, the user chooses.
-- Before any `[ORCHESTRATION_TOOL] ...` → load `/orca-orchestration`. Workflow skills write the pseudocode and NEVER the literal command; the HOW (verbs, flags, gate, cleanup) lives in that skill's `references/`. Gate fails → no mention, no recommendation: run the documented fallback.
-
-**TMS modality fallback** (resolved by `test-documentation/SKILL.md` §Phase 0):
-
-| Modality | `[TMS_TOOL]` resolves to | TMS entities |
-|---|---|---|
-| A: Xray on Jira | `/xray-cli` for Xray entities; `[ISSUE_TRACKER_TOOL]` for generic Jira | Test, Test Plan, Test Execution, Pre-Condition |
-| B: Jira-native (no Xray) | NOT resolvable → falls through to `[ISSUE_TRACKER_TOOL]` (`/acli`) | ATP/ATR = Story custom fields + comments; TCs = Jira `Test` issues. See `test-documentation/references/jira-setup.md` |
-
-Skills using `[TMS_TOOL]` MUST include parallel pseudocode branches for both modalities (labeled "Modality jira-native").
-
-**Pseudocode value types**: `Literal` (fixed domain) · `{per convention}` (consult skill ref) · `{{PROJECT_VAR}}` (from `.agents/project.yaml`) · `{from analysis}` (runtime-derived).
-
----
-
-## 6.5. CLI → SKILL AUTO-LOAD MAPPING
-
-> Bash invokes these binaries → LOAD matching skill BEFORE running. Skill holds WHEN/WHAT; binary executes HOW. Missing load = flying blind on syntax, flags, auth, errors.
-
-| CLI invoked | Skill(s) to load BEFORE invoking |
-|---|---|
-| `gh` | `/git-flow-master` (in-repo, when command is git/PR-shaped) |
-| `acli` | `/acli` (in-repo) |
-| `playwright-cli` | `/playwright-cli` (community PROJECT) + `/playwright-best-practices` (community PROJECT) |
-| `bunx allure` (run/agent/generate/open/watch) | `/regression-testing` (in-repo) + `/test-automation` (in-repo) |
-| `resend` | `/resend-cli` (community PROJECT) |
-| `jq` | `/acli` (primary consumer of jq pipelines) |
-| `bun` | `/bun` (community USER) |
-| `bun xray` | `/xray-cli` (in-repo). `test enrich` backfills the synced Test `.md` cache with the Xray-internal associations the REST sync cannot see: inlined Preconditions + Test Set membership |
-| `supabase` / `wrangler` / `vercel` | `/regression-testing` (in-repo — private report hosting; protocol: `regression-testing/references/private-hosting-setup.md`) |
-| `orca` | `/orca-orchestration` (in-repo). That skill holds WHEN/WHAT; the stubs in `orchestration.orchestrator_skills` load ALONGSIDE it (they are small), and the DEEP topics stay served by the binary on demand, never copied into the repo |
-
-**RULE**: Before any Bash call naming these binaries, check matching skill loaded. If not → load via Skill tool first. Hard gate, not suggestion.
-
----
-
-## 7. PROJECT VARIABLES: POINTER
-
-> ALL variable syntax + Jira field references documented in **`.agents/README.md`**. READ ONCE per session, cache values.
-
-Project values live in **`.agents/project.yaml`**: load once per session, cache. NEVER hardcode identity, env URLs, Jira URL, project key, MCP names.
-
-**Variable syntaxes** (full ref → `.agents/README.md`):
-
-- `{{VAR_NAME}}` → static project var (flat or env-scoped via `environments[active_env].<var>`). Examples: `{{PROJECT_KEY}}`, `{{WEB_URL}}`, `{{environments.<env>.web_url}}`.
-- `<<VAR_NAME>>` → session var computed at runtime (e.g. `<<ISSUE_KEY>>` from git branch). Never persisted.
-- `{{jira.*}}` → Jira custom fields + workflow refs (see `.agents/jira-fields.json`, `jira-workflows.json`, `jira-required.yaml`). Sub-forms: `{{jira.<slug>.<option>}}`, `{{jira.work_type.<slug>}}`, `{{jira.transition.<work_type>.<slug>}}`.
-
-**Active env**: `active_env` defaults to `testing.default_env` in `.agents/project.yaml`. User says "test against production" → switch `active_env` to `production` for that session, ignore `default_env` until session ends.
-
-**INSTANCE-IDENTITY ANCHOR (binding)**: the Atlassian host is `.agents/project.yaml` → `issue_tracker.atlassian_url` and **NOWHERE ELSE locally**. `ATLASSIAN_URL` is NOT a `.env` variable: it is absent from `.env` and `.env.example` on purpose, because a second copy is what goes stale. Canonical resolver: `cli/lib/atlassian-instance.ts`, never read `process.env.ATLASSIAN_URL` directly in a new script. From a shell, call the accessor: `bun run --silent jira:url` (base URL) / `--slug` (bare host for `acli --site`; NEVER hand-strip `https://`). This binds the TEST RUNTIME too: `config/variables.ts` resolves the host through the same resolver, so `config.tms.jira.url` — which the Jira-Direct TMS provider uses to WRITE results back onto issues — cannot be misdirected by an inherited variable. The resolver still reads the env var LAST as a transitional fallback for a repo whose yaml is unset; on disagreement the yaml wins AND a warning names both values, because a hit there means a stale copy is loose in the environment. **Deliberate inversion vs. `project_key`**, where the env var wins: a project key is a legitimate per-run override, the host is project identity that changes on site migrations: the exact value that goes stale. Credentials (`ATLASSIAN_EMAIL`, `ATLASSIAN_API_TOKEN`) stay env-only and are NEVER mirrored into the versioned yaml; the host is a public hostname, not a secret, so the reverse split is safe. `scripts/agents-setup.ts` refuses to seed this one field from the environment (`envVar: null`) so an unattended run can never overwrite the versioned value. The NAME survives only as an optional CI variable, pushed FROM the yaml by `bun run setup --variables` (manifest `valueSource: 'atlassian-instance'`); `regression.yml` deliberately has no `ATLASSIAN_URL` secret, since CI reads the checked-out yaml. Class-wide guard: `bun run vars:env:check` fails on ANY `.env`-sourced manifest var whose process value differs from `.env`, and warns when a yaml-sourced var still has a dead line in `.env`. Applies the test: **does a stale value here corrupt data in silence, or fail loudly?** Silent corruption → one versioned source, no local duplicate, is not optional. Since the variables split, `config/variables.ts` resolves the host through `config/variables.core.ts`, which is SYNCED, so a project that adapted its environment map still receives resolver fixes.
-
----
-
-## 8. AI BEHAVIOR DURING TESTING
-
-1. **EXPLAIN THE STORY**: once ticket understood, briefly state: what feature is, how works (simple terms), what will be tested.
-2. **WAIT FOR CONFIRMATION**: after important explanations, WAIT for user response before continuing.
-3. **EXPLAIN DEFECTS**: bug / unexpected behavior → describe observed, explain why problem, suggest impact (severity, affected users, business risk).
-4. **TEST-DESIGN DOCTRINE (binding)**: verifying ACs is the FLOOR, not testing. Coverage = AC-conformance + risk-beyond-AC. One AC → multiple cases by default (1:N); collapse to one only with a written `trivially atomic` justification. Derive cases by technique-trigger: EP always; BVA on ranges/limits; State-Transition on status fields; Decision Table on 2+ interacting conditions; Pairwise on 3+ factors. Never report "% of ACs verified" as completeness. Canon: `agentic-qa-core/references/test-design-doctrine.md`.
-5. **DEFECT-MANAGEMENT DOCTRINE (binding)**: classify every quality issue as Bug / Defect / Improvement by the FEATURE's lifecycle stage, NOT where it was found (Bug = feature already live above Staging; Defect = still pre-release; Improvement = not a broken AC: an enhancement or under-/un-specified AC surfaced by a test-beyond-AC). Set `qa_assignee` to self (never overwrite an existing owner: read-before-write) on every work item (story / tech_story / tech_debt / bug / defect / improvement). Components are mandatory (affected product module). Parent quality issues to the QA PROCESS epic: "QA Defect Management" for bug/defect/improvement, "QA Test Repository" for Test issues, "QA Master Test Plan" for Test Plans (FTP/STP/ATP/RTP), "QA Test Artifacts" for Test Executions (STR/ATR/RTR) + Preconditions + Test Sets (mandatory per-Story `ATS: {US_ID}` Acceptance Test Set, components inherited from the Story; feature-level `TS:` optional; real, parentable Jira issues — but their Test associations / Set membership are Xray-internal, read via `bun xray test enrich`), NEVER a product/dev epic; carry the source Story via an issue-link. Fill the mandatory field matrix; auto-derive Priority from Severity. Canon: `agentic-qa-core/references/defect-management-doctrine.md`.
-6. **ARTIFACT LIFECYCLE (binding)**: every artifact the harness creates has a DECLARED lifecycle and MUST leave the status Jira's `create` transition dropped it in. An ATP frozen at `Planning`, an ATS at `Designing`, an ATR at `ACTIVE` or a TC at `Draft` after the stage that owns it closed is a DEFECT, not cosmetics: it tells the team the work never happened. Set `assignee` = self on every QA artifact AT CREATE TIME (Xray refuses membership edits on a Test Plan the caller does not own — an unassigned Plan is a blocker waiting to happen); ask before touching one someone else owns. Slug missing for this project → run the unmapped-status fallback: list the LIVE transitions, propose the closest synonym in ONE `AskUserQuestion`, fire the live id on the user's OK, then recommend `bun run jira:sync-workflows`. NEVER skip silently, NEVER guess an id, NEVER hand-edit `.agents/jira-workflows.json`. Every stage closes with the light stage verifier (artifacts · links · statuses · assignee · parent+components · fields written · progress checkpoint · session footer), each line YES or a STATED N/A. Canon: `agentic-qa-core/references/artifact-lifecycle.md`.
-7. **LANGUAGE**: see §1 #14 LANGUAGE DETECTION + MIRRORING (canonical rule).
-8. **SESSION CLOSE (every workflow skill, unprompted)**: surface repo-relative paths of every screenshot/bug-annotation captured (in-flow, the instant one exists, never wait to be asked) + a session-close footer of skills/MCPs/CLIs used and testing-pyramid levels touched (explicit "none" per untouched level). Printed in CHAT only, never in a Jira comment/ATR. Full contract + templates: `agentic-qa-core/references/session-footer-contract.md`.
-
-**ENVIRONMENT SELECTION**: canonical environment identifiers are `local` · `qa` · `staging` · `production` (lowercase, no abbreviations, never `prod`, `stg`, `uat`, unless a project genuinely adds its own). Default **staging** unless user specifies otherwise. Ask when ambiguous. URLs from `.agents/project.yaml`. Credentials from `.env`.
-
-**CONTEXT EFFICIENCY**: main conversation stays lean. Subagents do heavy reading. Skills load only references current phase needs.
-
----
-
-## 9. LOCAL CONTEXT (PBI)
-
-> **`.context/PBI/` is a GITIGNORED CACHE of Jira, owned by `scripts/sync-jira-issues.ts`.** Module = Epic (1:1). Jira is the source of truth. NEVER hand-write a Jira-mirrored file: generate content, push it to the Jira field (or fallback), then run the sync. Rebuild the whole tree with `bun run context:hydrate`.
-
-> **WHY IT IS NOT COMMITTED**: this content regenerates. Two sessions that re-sync at different times produce conflicting commits of the same generated text, and a 3-way merge over a full-file rewrite is meaningless. Jira already is the versioned, shared, cloud-hosted copy — committing it duplicates the database into git and buys nothing.
-
-**THREE TIERS** — every path under `.context/PBI/` is exactly one of these. Check before creating any file:
-
-| Tier | Source of truth | In git? | Recovered by |
-|---|---|---|---|
-| `[SYNC]` | Jira | No | `bun run context:hydrate` |
-| `[COMMIT]` | This repo | **Yes** | `git checkout` |
-| `[LOCAL]` | Nothing durable | No | Not recovered — disposable by design |
-
-`[LOCAL]` files may be hand-written, but **nothing downstream may depend on one existing**: it lives only on the machine that made it. A skill that needs to read it on another machine must put the content in Jira instead. `test-session-memory.md` is NOT in this tree — it lives at `.session/sprint-testing/<scope>/` so a re-sync cannot clobber it.
-
-**GITIGNORE LADDER** (git cannot re-include a file whose parent dir is excluded, so it descends level by level — collapsing this to a plain `.context/PBI/` silently drops `test-specs/` from version control):
-
-The lines are in `.gitignore` (the `.context/` block): `.context/*` is ignored by default, the files this repo owns are re-included by name, and the PBI part descends one exclude and one re-include per level, down to `epics/*/test-specs/`.
-
-Verify any change with `git check-ignore -v` on both a `test-specs/` file (must NOT be ignored) and a `stories/.../story.md` (must be ignored).
-
-> **QA-process parenting (3-axis model).** In Jira, every `bug` / `defect` / `improvement` parents to the QA process epic **"QA Defect Management"** (every `Test` issue to **"QA Test Repository"**, every **Test Plan** FTP/STP/ATP/RTP to **"QA Master Test Plan"** (itself an Epic, not a Test Plan work type), and every **Test Execution** STR/ATR/RTR + Precondition + Test Set to **"QA Test Artifacts"** — incl. the mandatory per-Story `ATS: {US_ID}` Acceptance Test Set (components inherited from the Story; feature-level `TS:` optional)), NEVER a product/dev epic. Preconditions + Test Sets are real Jira issues (parentable via `acli`); their Test↔Precondition association and Test Set membership are Xray-internal — read via `bun xray test enrich`. Traceability to the source Story is carried by an **issue-link**, and the affected product area by **components**: three separate axes (parent = QA bucket · link = source Story · components = product module). Canon: `agentic-qa-core/references/defect-management-doctrine.md`.
-
-**Canonical tree** (Epic-centric; `<KEY>` = Jira key, `<slug>` from summary):
-
-```
-.context/PBI/
-  README.md                                      [COMMIT] tier rules + gitignore ladder
-  templates/                                     [COMMIT] skeletons
-  epic-tree.md                                   [SYNC] master index
-  epics/EPIC-<KEY>-<slug>/
-    epic.md                                      [SYNC]
-    module-context.md                            [SYNC ← '## Module Context (QA)' section of the Epic description]
-    feature-implementation-plan.md               [SYNC ← Jira field / stub]
-    feature-test-plan.md                         [SYNC ← Jira field / stub]
-    test-specs/                                  [COMMIT] automation plans, versioned with the test code
-      ROADMAP.md  PROGRESS.md
-      <ID>/ spec.md  automation-plan.md  atc/*.md
-    stories/STORY-<KEY>-<slug>/
-      story.md                                   [SYNC]
-      acceptance-criteria.md  business-rules.md  scope.md  out-of-scope.md
-      workflow.md  mockup.md  implementation-plan.md
-      acceptance-test-plan.md  acceptance-test-results.md   [SYNC ← Jira fields / stub]
-      comments.md                                [SYNC, --include-comments]
-      test-cases/                                [SYNC ← the Test issues linked to this Story]
-      test-executions/{ATR|STR|RTR|RETEST}-<KEY>-<slug>.md   [SYNC - only when >1 Execution linked; non-conforming titles keep TESTEXEC-/RETESTEXEC-]
-      defects/DEFECT-<KEY>-<slug>.md             [SYNC - one md file per linked defect]
-      context.md                                 [LOCAL] notes about the repo, not the ticket
-      evidence/                                  [LOCAL] screenshots
-      shift-left-refinement.md                   [LOCAL] staging buffer for the shift-left publish
-  epics/_orphans/                                [SYNC - parentless Stories, plus tests/: orphan Tests with no issue-link to any coverable — a visible traceability worklist]
-  qa-artifacts/_index.md                         [SYNC - register of the QA-bucket Epics (label `QA-Artifact`): bucket name → key; no per-epic folders. Their content is distributed: coverables + Tests under what they cover, higher-altitude Plans/Runs into test-plans/ + test-executions/ below]
-  qa-artifacts/master-test-plan.md               [SYNC ← '## Master Test Plan' section of the QA Master Test Plan Epic description: the MTP itself, mastered in Jira (ADR-0007)]
-  bugs/BUG-<KEY>-<slug>/                         [SYNC - coverable folder: bug.md + ATP + ATR + test-executions/ + defects/]
-  improvements/IMPROVEMENT-<KEY>-<slug>/         [SYNC - coverable folder: improvement.md + ATP + ATR + …]
-  tech-stories/TECHSTORY-<KEY>-<slug>/           [SYNC - coverable folder: tech-story.md + ATP + ATR + …]
-  tech-debts/TECHDEBT-<KEY>-<slug>/              [SYNC - coverable folder: tech-debt.md + ATP + ATR + …]
-  defects/                                       [SYNC - standalone defect issues]
-  test-plans/{FTP|STP|RTP|ATP}-<KEY>-<slug>.md             [SYNC - filename mirrors the title acronym; non-conforming titles keep TESTPLAN-]
-  test-executions/{STR|ATR|RTR|RETEST}-<KEY>-<slug>.md     [SYNC - same rule; non-conforming titles keep TESTEXEC-/RETESTEXEC-]
-  test-sets/ preconditions/                                [SYNC - TESTSET-/PRECONDITION-<KEY>-<slug>.md]
-  ^ all four: Xray container issues (jira-xray); description holds the ATP/ATR body. Higher altitudes arrive via the QA-process-epic sweep, NOT the Story walk. Test↔Precondition association + the Xray side of Test Set membership are Xray-internal (GraphQL only), invisible to the REST sync: read via `bun xray test enrich`. Membership of the Story's ATS is ALSO a `TC→ATS` issue link in both modalities, which the sync reads (`agentic-qa-core/references/traceability-linking.md` §9)
-```
-
-**`pull` scope is declared per work type via `work_types.*.sync` in `.agents/jira-required.yaml`** (shipped default: Epic + Story + Bug); `--types` / `JIRA_SYNC_TYPES` extend it. **Coverable** types (Story, Bug, Defect, Improvement, Tech Story, Tech Debt) each get their OWN folder: body md + `acceptance-test-plan.md` + `acceptance-test-results.md` + `test-executions/` (only when >1 Execution linked) + nested `defects/`. **ATP/ATR precedence** (items-first: a **Test Plan** item for ATP / **Test Execution** item for ATR by excellence; the Story custom field is fallback only): linked Xray Test Plan desc (ATP) / Test Execution / Re-Test Execution desc (ATR) OVERRIDE the Story custom-field copy → else issue field → else Jira comment (only `--include-comments`) → else silent. **The two tiebreaks are ASYMMETRIC — "newest wins" is the ATR rule only**: with several Executions linked the ATR is the one with the most recent `fields.updated`, but with several Test Plans linked the ATP is simply the FIRST in raw Jira link order (a warning names the chosen key). So re-linking a Story's Test Plans in a different order silently changes which ATP body becomes canonical — read that warning, do not assume recency decided it. Sync emits end-of-run **traceability WARNINGS** for ATP/ATR linked via the wrong link type, atypical Defect links, and orphan Defects with no coverable parent.
-
-**HIGHER-ALTITUDE SWEEP**: FTP / STP / STR sit ABOVE a Story, so the coverage walk structurally cannot reach them — and the Story-altitude guard is right to keep skipping them there, because an FTP linked to a Story is not that Story's ATP. An unfiltered `pull` therefore ALSO sweeps the CHILDREN of the four QA-process Epics (resolved by the `QA-Artifact` label → cached `qa.qa_epics.*.key` → `QA ` name prefix; no new config), materializing the higher-altitude Plans and Runs plus Test Sets and Preconditions into the dirs above. Coverables, Tests and Story-altitude `ATP:` Plans are excluded: each already has a canonical home, and sweeping them would write a second copy of the same body. Skip with `--no-qa-artifacts`; a project with no QA-process Epics runs zero extra queries. Rationale: `.context/ADR/ADR-0001-artifact-ladder-local-cache.md`.
-
-**`sync:` is a declaration, not a hint**: `default` = swept by a plain `pull` · `discovery` = materializes only on an explicit `get`/`jql`, through a link, or via the QA-epic sweep · `never` = the sync REFUSES to write it and names the declaration that stopped it.
-
-**`[SYNC]` files = forbidden to hand-write** (overwritten on every sync: NO file is hard-protected; Jira is the source of truth). **Rule of thumb**: file mirrors a Jira/Xray field → read the synced copy, never author it locally. File holds info NOT in Jira → author it locally, then decide its tier: does another machine need it? `[COMMIT]`. Only this session? `[LOCAL]`.
-
-**MODULE CONTEXT → EPIC DESCRIPTION.** No custom field: skills APPEND a `## Module Context (QA)` section to the Epic `description` (read-first, never overwrite the PO's text) and the sync splits that section out into `module-context.md`. `description` exists on every Jira instance, so this works on a project that provisions zero custom fields.
-
-**TESTS APPEAR EXACTLY ONCE.** A `Test` reachable from a coverable issue materializes under that issue's `test-cases/`; placement resolves by the cascade `TC→ATS→Story` (primary) → `TC→ATP→Story` (placement-only) → direct `TC→Story` (last-resort) → else `epics/_orphans/tests/` (cascade implemented by the Session-B sync work; doctrine canon: traceability-linking). Orphans — Tests with no path to any coverable — are themselves a coverage smell worth seeing; re-linking one in Jira moves it under its Story on the next sync.
-
-**ONE ATP PER STORY.** Field-first: `/shift-left-testing` authors the pre-sprint ATP ONLY into `{{jira.acceptance_test_plan}}` (no Test Plan item yet); `/sprint-testing` Stage 1 creates the Test Plan item FROM that field and refines the SAME field + item into the executable superset. No `(Shift-Left DRAFT)` title variant. The pre-sprint pass is marked by the `shift-left-reviewed` + `shift-left-{YYYY-MM-DD}` labels. Stage 1's short-circuit reads the SYNCED `acceptance-test-plan.md` — never a local scratch file, which would be missing on any other machine and would degrade the short-circuit silently.
-
-**DETAILED READS via the script** (replaces `acli view` for custom fields):
-- `bun run jira:sync-issues get <KEY> --include-comments` → one issue, ALL custom fields + comments → read the generated `.md`.
-- `bun run jira:sync-issues jql "<query>"` → batch. `pull --epic <KEY>` / `--story <KEY>` → scoped. New flags: `--sprint <active|current|closed|>=N|7,8,10>` (sprint filter), `--types <csv>` (extra coverable types), `--no-defects` (skip defect discovery), `--no-qa-artifacts` (skip the QA-process-epic sweep), `--project <KEY>` (override key). Env defaults: `JIRA_SYNC_SPRINTS`, `JIRA_SYNC_TYPES` (flag > env > default).
-- Traceability (link graph Story↔ATP↔ATR↔TC) + Xray run status STAY on `acli`/`xray-cli`: the script only mirrors field content.
-
-**FALLBACK**: if a custom field a skill must fill is absent from the instance, the skill writes the content as a structured Jira comment (`## <label>`) per `.agents/jira-required.yaml` → `fallback:`. The sync then emits a pointer stub for that field's `.md`. Never block on a missing field.
-
-**COLD CLONE**: a fresh checkout has an almost-empty `.context/PBI/` (this README, `templates/`, committed `test-specs/`). That is the intended state. `bun run context:hydrate` rebuilds the cache; it needs `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` in `.env` plus the host from `.agents/project.yaml` → `issue_tracker.atlassian_url` (§7 anchor; validate with `bun run jira:check`). Someone without Jira access keeps an empty cache and can still review `test-specs/`, run the suite, and work on framework code — but not per-ticket QA.
-
-**ENTRY POINT**: invoke `/sprint-testing`: syncs the ticket (`jira:sync-issues get`), explains story, loads the synced PBI, explores code.
-
-**RESUME SESSION**: invoke `/test-automation`. Skill reads `PROGRESS.md` + `ROADMAP.md` automatically, picks up where left off.
-
-**Project-wide context** (Level 1, generated; the maps are read with `bun run context:map <slug>`, never raw). The Master Test Plan is NOT here: `project-context` mode `test-plan` writes it to the `QA Master Test Plan` Epic description, and the sync caches it at `.context/PBI/qa-artifacts/master-test-plan.md`.
-
-```
-.agents/skills/business-data-context/references/business-data-map.html   (project-context mode data)
-.agents/skills/business-api-context/references/business-api-map.html     (project-context mode api)
-.agents/skills/business-e2e-context/references/business-e2e-map.html     (project-context mode e2e)
-.agents/skills/business-domain-context/references/business-domain-map.html (project-discovery Phase 1)
-.agents/skills/infra-context/references/infra-map.html                   (project-discovery Phases 2-3)
-api/schemas/                                 (bun run api:sync)
-```
-
----
-
-## 10. KATA QUICK-REFERENCE
-
-> **FULL KATA + TypeScript rules**: `.agents/skills/test-automation/references/kata-architecture.md` + `.../typescript-patterns.md`. LOAD `/test-automation` BEFORE writing or reviewing any test code.
-
-KATA layer flow:
-
-```
-TestContext (L1: config, faker, agnostic utils)
-  ↓ extends
-ApiBase / UiBase (L2: HTTP / Playwright helpers)
-  ↓ extends
-YourApi / YourPage (L3: ATCs live here)
-  ↓ used by
-TestFixture (L4: dependency injection)
-  ↓ used by
-Test files (orchestrate ATCs)
-```
-
-**Hard rules** (full detail in skill refs: load `/test-automation`):
-
-- ATC = complete mini-flow, atomic, NEVER calls another ATC. Reusable chains → Steps module.
-- Max 2 positional params. 3+ → object param.
-- Locators inline in ATC. Extract only if used 2+ times.
-- Imports use aliases (`@api/`, `@schemas/`, `@utils/`). No relative imports.
-- Public methods: fail fast. Utilities: silent fail (return null).
-- Fixture selection: API only → `{ api }` (no browser). UI only → `{ ui }`. Hybrid → `{ test }`.
-- **Repo-relative paths in `scripts/` go through `scripts/lib/posix-path.ts`** (`toPosix` / `relativePosix`). `relative()` and `join()` emit `\` on Windows, and this repo has shipped that bug repeatedly (ADR-0006; downstream issue #26). **Exception: path GUARDS compare in the platform's own `sep`, never normalised**, because normalising a traversal prefix is how a `\` candidate slips past a `/` prefix.
-- `scripts/api-login.project.ts` may export an optional `authenticate` hook that replaces the core's single POST for auth flows a single request cannot express. It is a LAST RESORT: a project that adopts it stops receiving upstream improvements to the request phase. Prefer `buildAuthPayload`.
-- DRY scope: `api/schemas/` = OpenAPI facades. `tests/utils/` = agnostic utilities only. `UiBase` = all Playwright/Page helpers. `ApiBase` = all HTTP helpers. `TestContext` = shared across both.
-
----
-
-## 11. GIT WORKFLOW: POINTERS
-
-Git / PR work → `/git-flow-master` auto-loads. Details in `.agents/skills/git-flow-master/`. **No legacy git-flow doc applies**: the live policy is the `git_strategy:` block in `.agents/project.yaml`, enforced by `bun run git:policy verify` (the removed doc and its `staging` assumption: ADR-0006).
-
-**Active strategy + branch policy = the `git_strategy:` block in `.agents/project.yaml`** (source of truth; see `## Git Strategy` below).
-
-**Protected branches** (`/git-flow-master` reads `git_strategy.protected` in `.agents/project.yaml`; falls back to detecting whatever branches exist on the remote):
-
-| Branch | Status | Role |
-|---|---|---|
-| `main` | Always | Production + default branch. The only branch in `git_strategy.protected`. In a `solo-main` flow work lands by DIRECT push when `git_strategy.policy.direct_push_to_protected` is `allowed` (see `## Git Strategy`); a PR from a semantic branch is optional, for when a review gate is wanted. |
-| `staging` | Optional | Only if team adopts a main-integration flow. Integration branch for AI commits + pre-release validation. Does NOT exist on `origin` by default: do not assume it. |
-
-**Critical commit rules**:
-
-- Semantic prefixes: `feat:` / `fix:` / `docs:` / `test:` / `refactor:` / `chore:`
-- One commit = one responsibility. Clear messages.
-- **NO AI attribution** in commits.
-- **Forensic trailers, every commit, every strategy**: last two lines are `Worktree: <name|primary>` then `Session: <label>`, taken from the `AGENT IDENTITY:` context line the hook injects (§4.5); `unknown` when nothing resolves. Provenance, not attribution (Rule #3) — and never `Claude-Session:` or any harness-branded key. Label rule + per-harness resolution: `/git-flow-master`.
-- **Push policy = Critical Rule #5**: resolve `git_strategy.policy.direct_push_to_protected`.
-- Test-automation PRs use `.agents/skills/git-flow-master/references/pr-test-automation.md` (auto-loaded by `/git-flow-master` on `test/*` branches). Title format: `{type}({ISSUE-KEY}): {description}`.
-
----
-
-## Git Strategy
-
-> **Source of truth: the `git_strategy:` block in `.agents/project.yaml`.** `git-flow-master` reads it before any git/gh operation and adapts every branch / commit / push / PR / conflict-fix to the strategy declared there. NEVER define branch policy in this AGENTS.md: edit the `git_strategy:` block.
->
-> `git_strategy.strategy` ships **`solo-main`**, not null. That is a DEFAULT, not a decision, and `meta.strategy_source: inherited` is what records the difference. `git-flow-master` OFFERS "Strategy Setup" when a project has filled in its `project_name` and `strategy_source` is still `inherited` — a real project running a strategy nobody chose. `.agents/project.yaml` is frozen by `bun run up` (updater `bootstrapOnlyPaths`), so every project keeps its own. Downstream test-automation projects typically choose `sdet` (chained suites; see `.agents/skills/git-flow-master/references/sdet-integration-trunk.md`).
-
-This repository's strategy is chosen, not inherited (`meta.strategy_source` in the yaml records it; ADR-0006 records when): do not re-offer Strategy Setup here unless the user asks to change the strategy.
-
-### Accepted divergence — declared policy vs enforced ruleset
-
-The one intended disagreement between yaml and host is **formally declared in `git_strategy.policy.accepted_divergences`** (`.agents/project.yaml`) — that entry, not this prose, is what `bun run git:policy verify` reads:
-
-```
-main.direct_push_to_protected   declared: allowed   enforced: blocked (pull_request rule)
-```
-
-The ruleset named in `git_strategy.policy.accepted_divergences` requires a pull request on `main`. This repo pushes directly anyway, because the push credential sits in that ruleset's bypass list (the ruleset id: ADR-0006). The remote line `Bypassed rule violations ... Changes must be made through a pull request` is expected here and is not an error. The yaml stays `allowed` because that is how work actually lands (standing authorization — Critical Rule #5 resolves to it); the host rule keeps protecting every non-bypass contributor. Both sides are correct on purpose.
-
-Operational consequences:
-
-- **`verify` reports it under `ACCEPTED`, exits 0**, and warns if the entry ever goes stale (no matching drift). It runs automatically in the pre-push hook and in `bun run repo:check`; only UNACCEPTED drift blocks. Unreachable host = warn + exit 0 (absence of data is not drift).
-- **`verify --stamp` records `meta.policy_source: accepted`** — distinct from `verified`, which still means "host matches the yaml exactly".
-- **`bun run git:policy apply` preserves the host's side of accepted fields** (the `pull_request` rule is carried forward verbatim instead of being derived away), so applying no longer risks opening `main`. Still: always read the dry run before `--yes`.
-
-Mechanism doc: `.agents/skills/git-flow-master/references/ruleset-parity.md` §2b.
+| about to break, unsure about, or asked about a Critical Rule | `01-critical-rules.md` | §1 | - |
+| any workflow task (onboard, shift-left, sprint, docs, automation, regression, maps, decisions, handoff, browser) or "which skill for X" | `05-task-map.md` | §4 | the matched skill |
+| harness files, hooks, husky, MCP configs, updater, `cli/`, root configs | `10-harnesses.md` | §4.5 | `/framework-development` |
+| skills, tiers, modes, the skill table, MCP capabilities | `20-skills-and-mcps.md` | §5 | `.agents/skills/REGISTRY.md` |
+| a `[TAG_TOOL]`, an MCP call, a TMS modality, or a mapped CLI | `30-tool-resolution.md` | §6, §6.5 | the owning skill |
+| a `{{VAR}}`, an environment, the Jira host or fields, any project value | whenever any of these apply, read @.agents/project.yaml and `40-project-variables.md`, NEVER hardcode identity, env URLs, Jira URL, project key, MCP names | §7 | - |
+| testing a story or bug, test design, defects, artifact lifecycle | `50-ticket-work.md`, `60-local-context-pbi.md` | §8, §9 | the stage skill |
+| Jira or Xray reads, `.context/PBI/`, sync | `60-local-context-pbi.md`, `40-project-variables.md` | §9, §7 | `/acli`, `/xray-cli` |
+| writing or reviewing test code, KATA, `scripts/` paths | `70-code-quickref.md` | §10 | `/test-automation` |
+| git: branch, commit, push, PR, conflict, strategy | `80-git.md` | §11 | `/git-flow-master` |
+| orchestration detail: executors, workers, fleets, gates | `90-orchestration-detail.md` | §3 | `/orca-orchestration` |
+| a script, a command, "how do I run X" | whenever any of these apply, read @package.json first, never a command quoted in a doc | Rule #11 | - |
+| anything specific to this project | `project.md` | - | project context skills |
+<!-- router:end -->
 
 ---
 
