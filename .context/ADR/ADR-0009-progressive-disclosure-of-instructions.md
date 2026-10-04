@@ -103,3 +103,10 @@ Not yet measured: model compliance with `ROUTE:`, the share of routed prompts af
 - `cli/lib/fixtures/instruction-router-eval.json`, `cli/lib/instruction-router.test.ts`, `scripts/lib/hook-router-parity.test.ts`
 - Human explanation: `packages/decks/progressive-disclosure/how-it-works.es.html`
 - Twin decision in agentic-dev: its ADR-0009 (same design, dev vocabulary)
+
+## Amendments
+
+Appended, never rewritten: the decision above stays as accepted, and each line records what changed after it.
+
+- 2026-10-04 (Q-U5, #102): a `SessionStart` with matcher `clear` re-arms the routes too, on Claude Code and Codex (both hosts emit source `clear` after `/clear`, which drops the routed files from the context like a compaction does). Decision 5 and the hook entry under References name only `compact`; both hosts now register `compact` and `clear`, and `cli/lib/agent-compatibility-contracts.ts` (`REARM_SESSION_START_SOURCES`) fails a host that registers one without the other.
+- 2026-10-04 (Q-U6): a skill the project authored is routed from the `## Project context skills` table of the project-owned `.agents/instructions/project.md` (its trigger phrases in that file's `triggers:`), never from the synced `20-skills-and-mcps.md`, which `bun run up` overwrites. The hook needed no change: it already reads `project.md`'s frontmatter like any routed section. `instructions:check` fails a row whose skill does not exist and warns on a project-local skill left in the synced section; `docs:check` counts the table's rows in its roster.
