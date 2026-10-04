@@ -693,9 +693,9 @@ bun run codex      # Codex CLI (Codex Desktop usa la misma config del repo)</cod
               <td>En cada commit (pre-commit y <code>bun run repo:check</code>).</td>
               <td>
                 Falla si un skill del repo falta en el router de
-                <code>.agents/instructions/20-skills-and-mcps.md</code> (o, si lo creó tu proyecto,
-                en la tabla <code>Project context skills</code> de
-                <code>.agents/instructions/project.md</code>) o si un doc cita un
+                <code>.agents/instructions/agent-skills-and-mcps.md</code> (o, si lo creó tu
+                proyecto, en la tabla <code>Project context skills</code> de
+                <code>.agents/instructions/agent-project.md</code>) o si un doc cita un
                 <code>bun run</code> que <code>package.json</code> no tiene. Lo que pide criterio lo
                 cierra <code>/framework-development</code> en el boilerplate y la fase 9.3 de
                 <code>/test-framework-adaptation</code> en tu proyecto.
@@ -798,7 +798,7 @@ subagente (contexto limpio)
       <p>
         Antes de ejecutar un binario, el agente carga el skill que sabe usarlo (flags, auth,
         paginación, errores). La tabla binario → skill vive en
-        <code>.agents/instructions/30-tool-resolution.md</code> (§6.5).
+        <code>.agents/instructions/agent-tool-resolution.md</code> (§6.5).
       </p>
       <h2 id="mcps">Los MCPs del repo</h2>
       <p>
@@ -811,7 +811,7 @@ subagente (contexto limpio)
       </p>
       <p>
         Qué hace cada uno y cuándo se usa está en la tabla de MCPs de
-        <code>.agents/instructions/20-skills-and-mcps.md</code>; las variables que cada server
+        <code>.agents/instructions/agent-skills-and-mcps.md</code>; las variables que cada server
         necesita en <code>.env</code> las lista <code>bun run setup:doctor</code> (y
         <code>.env.example</code> las comenta). Las guías de <a href="setup/dbhub.html">DBHub</a> y
         <a href="setup/openapi.html">OpenAPI</a> explican los que leen valores del proyecto.
@@ -1078,7 +1078,7 @@ subagente (contexto limpio)
       <p>
         El catálogo es <code>.agents/skills/REGISTRY.md</code> (generado por
         <code>bun run skills:registry</code>).
-        <code>.agents/instructions/20-skills-and-mcps.md</code> es otra cosa: el router de frases
+        <code>.agents/instructions/agent-skills-and-mcps.md</code> es otra cosa: el router de frases
         disparadoras que usa el agente para elegir skill, no el inventario. Hay tres tipos: propios
         del repo, vendorizados (como <code>judgment-day</code>, de gentle-ai) y de la comunidad, que
         instala <code>bun run setup</code> a nivel de proyecto. Además hay skills de usuario (la

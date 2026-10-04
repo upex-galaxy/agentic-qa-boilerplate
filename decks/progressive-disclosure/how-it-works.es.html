@@ -516,13 +516,13 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
           <text class="t-s" x="40" y="72">siempre, en cada host · reglas que atan, §2 entero, §3 núcleo, router, LOAD PROTOCOL</text>
           <rect class="bx-l1" x="20" y="125" width="220" height="70" rx="10"/>
           <text class="t-b" x="38" y="155">L1 · una sección</text>
-          <text class="t-m" x="38" y="177">80-git.md</text>
+          <text class="t-m" x="38" y="177">agent-git.md</text>
           <rect class="bx-l1" x="270" y="125" width="220" height="70" rx="10"/>
           <text class="t-b" x="288" y="155">L1 · otra sección</text>
-          <text class="t-m" x="288" y="177">60-local-context-pbi.md</text>
+          <text class="t-m" x="288" y="177">agent-ticket-work.md</text>
           <rect class="bx-l1" x="520" y="125" width="220" height="70" rx="10"/>
           <text class="t-b" x="538" y="155">L1 · del proyecto</text>
-          <text class="t-m" x="538" y="177">project.md</text>
+          <text class="t-m" x="538" y="177">agent-project.md</text>
           <rect class="bx-l2" x="20" y="225" width="470" height="56" rx="10"/>
           <text class="t-b" x="38" y="250">L2 · references/ de las skills</text>
           <text class="t-s" x="38" y="270">a pedido, cuando una sección o una skill las nombra</text>
@@ -545,7 +545,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <p class="lbl">Una vez que aplica</p>
       <p class="small mt-s">Una sección obliga <b>exactamente igual</b> que <code>AGENTS.md</code>. Leerla a pedido cambia cuándo entra al contexto, no cuánto pesa lo que dice.</p>
     </div>
-    <div class="notes">L0 es lo único que carga siempre. L1 son los archivos de .agents/instructions/: además de las secciones de tema están project.md (lo propio del proyecto), project.md.template y el README. L2 ya existía antes de partir: son las references de cada skill. La regla de que una sección obliga igual que AGENTS.md está en el LOAD PROTOCOL y en .agents/instructions/README.md.</div>
+    <div class="notes">L0 es lo único que carga siempre. L1 son los archivos de .agents/instructions/: además de las secciones de tema están agent-project.md (lo propio del proyecto), agent-project.md.template y el README. L2 ya existía antes de partir: son las references de cada skill. La regla de que una sección obliga igual que AGENTS.md está en el LOAD PROTOCOL y en .agents/instructions/README.md.</div>
   </section>
 
   <!-- 4. ROUTER -->
@@ -556,7 +556,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <table class="tt tight mt-m">
       <tr><th style="width:250px">Columna</th><th>Qué dice</th><th style="width:330px">Ejemplo (fila de git)</th></tr>
       <tr><td class="mono">When the request involves</td><td class="small">el tipo de pedido que dispara la fila</td><td class="small mono">git: branch, commit, push, PR, conflict, strategy</td></tr>
-      <tr><td class="mono">Read</td><td class="small">los archivos a leer: cada sección por su nombre de archivo entre backticks, que resuelve bajo <code>.agents/instructions/</code>. El primero es el <b>ancla</b> de la fila</td><td class="small"><code>80-git.md</code></td></tr>
+      <tr><td class="mono">Read</td><td class="small">los archivos a leer: cada sección por su nombre de archivo entre backticks, que resuelve bajo <code>.agents/instructions/</code>. El primero es el <b>ancla</b> de la fila</td><td class="small"><code>agent-git.md</code></td></tr>
       <tr><td class="mono">Was</td><td class="small">el número de § que tenía ese contenido antes de partir, para que una cita <code>§N</code> siga resolviendo</td><td class="small"><code>§11</code></td></tr>
       <tr><td class="mono">Then</td><td class="small">la skill o el archivo que se carga después</td><td class="small"><code>/git-flow-master</code></td></tr>
     </table>
@@ -610,7 +610,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
           <path class="ln" d="M355 104V132" marker-end="url(#pd-a2)"/>
         </svg>
         <div class="hookline"><span class="c"># después de AGENT IDENTITY:, y de ORCA: si el binario está</span>
-<span class="k">ROUTE: read</span> .agents/instructions/80-git.md (git)
+<span class="k">ROUTE: read</span> .agents/instructions/agent-git.md (git)
 <span class="k">ROUTE: read</span> package.json</div>
         <table class="tt tight">
           <tr><th style="width:120px">Host</th><th>Cómo llega la línea</th></tr>
@@ -628,7 +628,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <tr><td class="small"><b>Re-armado</b></td><td class="small">Tras una compactación o un <code>/clear</code>, el emisor borra ese estado y no imprime nada: lo que salió del contexto se vuelve a rutear la próxima vez que haga falta.</td></tr>
       </table>
     </div>
-    <div class="notes">Un emisor, tres adaptadores: Claude Code y Codex lo ejecutan como command hook, OpenCode lo importa desde .opencode/plugins/personality-reinject.js. El estado de ruteo nunca vive en el repo: es estado de sesión. La confianza de Codex es estado de runtime, por eso setup:doctor la reporta aparte (10-harnesses.md, Codex trust).</div>
+    <div class="notes">Un emisor, tres adaptadores: Claude Code y Codex lo ejecutan como command hook, OpenCode lo importa desde .opencode/plugins/personality-reinject.js. El estado de ruteo nunca vive en el repo: es estado de sesión. La confianza de Codex es estado de runtime, por eso setup:doctor la reporta aparte (agent-harnesses.md, Codex trust).</div>
   </section>
 
   <!-- 7. REGLAS CRÍTICAS -->
@@ -636,8 +636,8 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <p class="kicker">06 · Reglas · 7 de 14</p>
     <h2 class="h2">Reglas críticas: la frase que ata en L0, el <span class="grad">texto entero</span> aparte</h2>
     <p class="small dim mt-s">Una regla que obliga tiene que estar donde el agente siempre lee. Su fundamento, sus casos borde y sus mediciones no necesitan ocupar cada turno.</p>
-    <div class="hookline mt-m"><span class="c"># cada regla en L0: número, nombre, su frase textual y el puntero → 01</span>
-7. <span class="k">**QUALITY VERIFICATION**</span>: After code changes, verify in order: tests → types → lint. → 01</div>
+    <div class="hookline mt-m"><span class="c"># cada regla en L0: número, nombre, su frase textual y el puntero Full:</span>
+7. <span class="k">**QUALITY VERIFICATION**</span>: After code changes, verify in order: tests → types → lint. Full: agent-critical-rules.md#7</div>
     <div class="grid g3 mt-m" style="gap:22px;align-items:stretch">
       <div class="card">
         <p class="lbl">En L0</p>
@@ -647,15 +647,15 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="card card-accent">
         <p class="lbl">En L1</p>
         <h4 class="h4 mt-s">El texto entero, en un archivo</h4>
-        <p class="small mt-s"><code>01-critical-rules.md</code> tiene cada regla bajo <code>## N. NOMBRE</code>, con la regla completa, su fundamento y sus mediciones. El router lo manda a leer cuando el agente está por romper una regla, duda o le preguntan por ella.</p>
+        <p class="small mt-s"><code>agent-critical-rules.md</code> tiene cada regla bajo <code>## N. NOMBRE</code>, con la regla completa, su fundamento y sus mediciones. El router lo manda a leer cuando el agente está por romper una regla, duda o le preguntan por ella.</p>
       </div>
       <div class="card" style="border-color:var(--warn)">
         <p class="lbl" style="color:var(--warn)">Al editar</p>
         <h4 class="h4 mt-s">Dos lugares, a propósito</h4>
-        <p class="small mt-s">Cambiar una regla es tocar su texto en <code>01-critical-rules.md</code> y su frase en <code>AGENTS.md</code>. <code>bun run instructions:check</code> verifica que cada frase siga textual y termine en <code>→ 01</code>.</p>
+        <p class="small mt-s">Cambiar una regla es tocar su texto en <code>agent-critical-rules.md</code> y su frase en <code>AGENTS.md</code>. <code>bun run instructions:check</code> verifica que cada frase siga textual y termine en <code>Full: agent-critical-rules.md#N</code>.</p>
       </div>
     </div>
-    <div class="notes">El ejemplo es la regla 7 tal como está en AGENTS.md. El "→ 01" es el puntero al archivo de la regla completa. El lint compara número, nombre y cada frase contra el heading del mismo número en 01-critical-rules.md.</div>
+    <div class="notes">El ejemplo es la regla 7 tal como está en AGENTS.md. El "Full: agent-critical-rules.md#7" es el puntero al archivo de la regla completa, con su número. El lint compara número, nombre y cada frase contra el heading del mismo número en agent-critical-rules.md.</div>
   </section>
 
   <!-- 8. IMPORTS -->
@@ -664,7 +664,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <h2 class="h2">Dos imports para Claude, una <span class="grad">instrucción reforzada</span> para los otros</h2>
     <p class="small dim mt-s"><code>package.json</code> y <code>.agents/project.yaml</code> son los dos archivos de datos que más se consultan. Las dos filas del router que los nombran hacen dos cosas a la vez.</p>
     <div class="hookline mt-m"><span class="c"># celda Read de la fila de variables</span>
-whenever any of these apply, read <span class="k">@.agents/project.yaml</span> and `40-project-variables.md`, NEVER hardcode identity, ...
+whenever any of these apply, read <span class="k">@.agents/project.yaml</span> and `agent-project-variables.md`, NEVER hardcode identity, ...
 <span class="c"># celda Read de la fila de scripts</span>
 whenever any of these apply, read <span class="k">@package.json</span> first, never a command quoted in a doc</div>
     <table class="tt tight mt-m">
@@ -676,7 +676,7 @@ whenever any of these apply, read <span class="k">@package.json</span> first, ne
       <p class="lbl" style="color:var(--warn)">Costo</p>
       <p class="small mt-s"><b>En Claude Code los dos imports cargan siempre</b>: suman al arranque de la sesión aunque no cuentan contra el presupuesto de L0, que mide los bytes de <code>AGENTS.md</code>. La medición está en ADR-0009. <code>bun run instructions:check</code> falla si un <code>@</code> de una fila del router no resuelve desde la raíz del repo.</p>
     </div>
-    <div class="notes">El ancla de la fila de variables es 40-project-variables.md, porque las secciones entre backticks van antes que los imports: un pedido sobre entornos carga las variables y el yaml. La fila de scripts no tiene sección, así que su ancla es @package.json y la dispara IMPORT_ROW_TRIGGERS. En los hosts con hook, la línea "ROUTE: read package.json" refuerza la misma instrucción.</div>
+    <div class="notes">El ancla de la fila de variables es agent-project-variables.md, porque las secciones entre backticks van antes que los imports: un pedido sobre entornos carga las variables y el yaml. La fila de scripts no tiene sección, así que su ancla es @package.json y la dispara IMPORT_ROW_TRIGGERS. En los hosts con hook, la línea "ROUTE: read package.json" refuerza la misma instrucción.</div>
   </section>
 
   <!-- 9. LO QUE NUNCA SALE DE L0 -->
@@ -693,28 +693,28 @@ whenever any of these apply, read <span class="k">@package.json</span> first, ne
       <div class="card card-accent"><p class="lbl">§2 · entero</p><h4 class="h4 mt-s">La capa comportamental</h4><p class="small mt-s">El reparto de capas (caveman, §2, OUTPUT STYLE), Think before coding, Simplicity first, Surgical changes, Goal-driven execution, Butler, cómo se le pide al humano que decida, PM Voice y Visual Mapping.</p></div>
       <div class="card"><p class="lbl">§3 · núcleo</p><h4 class="h4 mt-s">La orquestación</h4><p class="small mt-s">Qué va a subagentes y qué queda en la conversación principal, el briefing de siete componentes, la alcanzabilidad de las reglas y el protocolo de error. Gobierna cada despacho, sea cual sea el pedido.</p></div>
     </div>
-    <div class="notes">El detalle de orquestación que no es núcleo (executors, workers, gates) está en 90-orchestration-detail.md. §2 entero es lo que deja a L0 por encima del objetivo de 16 KiB: se ve en el slide de presupuestos. Su espejo para humanos es docs/core/personalidad.html.</div>
+    <div class="notes">El detalle de orquestación que no es núcleo (executors, workers, gates) está en agent-orchestration-detail.md. §2 entero es lo que deja a L0 por encima del objetivo de 16 KiB: se ve en el slide de presupuestos. Su espejo para humanos es docs/core/personalidad.html.</div>
   </section>
 
   <!-- 10. CÓMO SE EDITA -->
   <section class="slide compact" data-title="Cómo se edita">
     <p class="kicker">09 · Edición · 10 de 14</p>
     <h2 class="h2">Cómo se <span class="grad">edita</span></h2>
-    <p class="small dim mt-s">Las secciones son doctrina compartida: <code>bun run up</code> las sincroniza como una skill. <code>project.md</code> es del proyecto y nunca se sincroniza; un proyecto sin él lo recibe una vez desde <code>project.md.template</code>. Regla de oro: el texto va al archivo dueño, nunca de vuelta a <code>AGENTS.md</code>.</p>
+    <p class="small dim mt-s">Las secciones son doctrina compartida: <code>bun run up</code> las sincroniza como una skill. <code>agent-project.md</code> es del proyecto y nunca se sincroniza; un proyecto sin él lo recibe una vez desde <code>agent-project.md.template</code>. Regla de oro: el texto va al archivo dueño, nunca de vuelta a <code>AGENTS.md</code>.</p>
     <table class="tt tight mt-m">
       <tr><th style="width:330px">Quiero cambiar</th><th>Dónde</th></tr>
       <tr><td class="small">el detalle de un tema</td><td class="small">su archivo en <code>.agents/instructions/</code></td></tr>
       <tr><td class="small">cuándo se rutea una sección</td><td class="small">sus <code>triggers:</code> y <code>paths:</code> en el frontmatter</td></tr>
-      <tr><td class="small">una regla crítica</td><td class="small">su texto en <code>01-critical-rules.md</code> y su frase textual en <code>AGENTS.md</code></td></tr>
-      <tr><td class="small">una regla que solo tiene este proyecto</td><td class="small"><code>.agents/instructions/project.md</code> (o una context skill, si es conocimiento del sistema bajo prueba)</td></tr>
-      <tr><td class="small">una línea con NEVER o MUST en una sección</td><td class="small">que siga alcanzable: frase textual en L0 o en <code>01-critical-rules.md</code>, o <code>Rule #N</code>, <code>binding: `/&lt;skill&gt;`</code>, <code>enforced: `bun run &lt;script&gt;`</code></td></tr>
+      <tr><td class="small">una regla crítica</td><td class="small">su texto en <code>agent-critical-rules.md</code> y su frase textual en <code>AGENTS.md</code></td></tr>
+      <tr><td class="small">una regla que solo tiene este proyecto</td><td class="small"><code>.agents/instructions/agent-project.md</code> (o una context skill, si es conocimiento del sistema bajo prueba)</td></tr>
+      <tr><td class="small">una línea con NEVER o MUST en una sección</td><td class="small">que siga alcanzable: frase textual en L0 o en <code>agent-critical-rules.md</code>, o <code>Rule #N</code>, <code>binding: `/&lt;skill&gt;`</code>, <code>enforced: `bun run &lt;script&gt;`</code></td></tr>
       <tr><td class="small"><code>CLAUDE.md</code></td><td class="small">nada a mano: es el shim generado por <code>bun run agents:compat</code></td></tr>
     </table>
     <div class="card card-accent mt-m">
       <p class="lbl">Gate</p>
       <p class="small mt-s"><b><code>bun run instructions:check</code></b> revisa presupuesto, stub, router, frontmatter, triggers que compilan, frases de las reglas y que cada NEVER o MUST sea alcanzable. Corre dentro de <code>bun run repo:check</code>. La guía completa está en <code>.agents/instructions/README.md</code>.</p>
     </div>
-    <div class="notes">La regla de oro está en la cabecera de AGENTS.md y en "Editing rules" del README de instrucciones. Lo de CLAUDE.md sale de 10-harnesses.md, GENERATED vs VERSIONED: se edita la fuente y se regenera, y agents:compat:check falla si alguien le escribe prosa.</div>
+    <div class="notes">La regla de oro está en la cabecera de AGENTS.md y en "Editing rules" del README de instrucciones. Lo de CLAUDE.md sale de agent-harnesses.md, GENERATED vs VERSIONED: se edita la fuente y se regenera, y agents:compat:check falla si alguien le escribe prosa.</div>
   </section>
 
   <!-- 11. PRESUPUESTOS -->
@@ -726,7 +726,7 @@ whenever any of these apply, read <span class="k">@package.json</span> first, ne
       <tr><th style="width:330px">Nivel</th><th style="width:330px">Constante</th><th>Si se pasa</th></tr>
       <tr><td class="small">Objetivo · 16 KiB</td><td class="small"><code>L0_TARGET</code></td><td class="small">aviso: el número queda a la vista</td></tr>
       <tr><td class="small">Techo · 24 KiB</td><td class="small"><code>L0_BUDGET</code></td><td class="small">error en el L0 del boilerplate: el detalle va a una sección</td></tr>
-      <tr><td class="small">Con agregados del proyecto · 28 KiB</td><td class="small"><code>L0_PROJECT_BUDGET</code></td><td class="small">error en un proyecto: su texto va a <code>project.md</code> o a una context skill</td></tr>
+      <tr><td class="small">Con agregados del proyecto · 28 KiB</td><td class="small"><code>L0_PROJECT_BUDGET</code></td><td class="small">error en un proyecto: su texto va a <code>agent-project.md</code> o a una context skill</td></tr>
       <tr><td class="small">Tope de Codex · 32 KiB</td><td class="small"><code>CODEX_PROJECT_DOC_MAX_BYTES</code></td><td class="small">error siempre, digan lo que digan los otros: es el valor por defecto de <code>project_doc_max_bytes</code></td></tr>
     </table>
     <div class="card mt-m" style="border-color:var(--warn)">
@@ -766,7 +766,7 @@ whenever any of these apply, read <span class="k">@package.json</span> first, ne
       <a href="https://github.com/upex-galaxy/agentic-qa-boilerplate/blob/main/.context/ADR/ADR-0009-progressive-disclosure-of-instructions.md">ADR-0009<span>la decisión, las mediciones y las alternativas descartadas</span></a>
     </div>
     <div class="grid g2 mt-m" style="gap:22px">
-      <div class="card"><p class="lbl">Una fuente, tres harnesses</p><p class="small mt-s">La página <code>harnesses.es.html</code> del sitio publicado: cómo cada host lee las instrucciones y el hook. En el repo, el contrato está en <code>.agents/instructions/10-harnesses.md</code>.</p></div>
+      <div class="card"><p class="lbl">Una fuente, tres harnesses</p><p class="small mt-s">La página <code>harnesses.es.html</code> del sitio publicado: cómo cada host lee las instrucciones y el hook. En el repo, el contrato está en <code>.agents/instructions/agent-harnesses.md</code>.</p></div>
       <div class="card"><p class="lbl">La capa comportamental</p><p class="small mt-s">Lo que L0 nunca recorta, §2, tiene su espejo para humanos en <code>docs/core/personalidad.html</code>.</p></div>
     </div>
     <div class="notes">Los tres primeros son los archivos fuente. La página de harnesses y la de personalidad explican lo mismo para lectores humanos; cuando divergen, gana el archivo fuente.</div>
@@ -778,7 +778,7 @@ whenever any of these apply, read <span class="k">@package.json</span> first, ne
     <h2 class="h2">Qué cambia según <span class="grad">quién sos</span></h2>
     <div class="grid g3 mt-m" style="gap:22px;align-items:stretch">
       <div class="card"><p class="lbl">Si usás el agente</p><p class="small mt-s">Nada: el router y el hook deciden qué leer, y el LOAD PROTOCOL hace que el modelo lo lea antes de actuar. En OpenCode 2 no hay hook de ruteo, y el modelo sigue el router solo.</p></div>
-      <div class="card card-accent"><p class="lbl">Si editás instrucciones</p><p class="small mt-s">El texto va al archivo dueño, nunca de vuelta a <code>AGENTS.md</code>. Lo propio del proyecto va a <code>project.md</code>. Antes de commitear, <code>bun run instructions:check</code>.</p></div>
+      <div class="card card-accent"><p class="lbl">Si editás instrucciones</p><p class="small mt-s">El texto va al archivo dueño, nunca de vuelta a <code>AGENTS.md</code>. Lo propio del proyecto va a <code>agent-project.md</code>. Antes de commitear, <code>bun run instructions:check</code>.</p></div>
       <div class="card"><p class="lbl">Si algo no rutea</p><p class="small mt-s">Se ajustan los <code>triggers:</code> de la sección y el pedido entra a <code>cli/lib/fixtures/instruction-router-eval.json</code>, para que el eval lo vigile desde ahí.</p></div>
     </div>
     <div class="card card-soft mt-m">
