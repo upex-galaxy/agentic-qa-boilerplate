@@ -7,14 +7,14 @@
  *
  *   PHASE 1 — DETECTION
  *     1-repo-verify     Verify repo root (package.json name / installer.lock.json)
- *     2-gentle-ai-detect  Detect gentle-ai (presence + version)
- *     3-gentle-ai-install gentle-ai install / skip decision
+ *     2-gentle-ai-detect  Detect the engram binary (presence + version)
+ *     3-gentle-ai-install engram install instructions / skip decision
  *     4-agent-detect    Detect agents (Claude Code / OpenCode / Codex) and prompt selection
  *
  *   PHASE 2 — INSTALLATION
  *     5-deps-install    Install dependencies (`bun install`)
  *     6-playwright      Install Playwright browsers (`bun run pw:install`)
- *     8-skills-gentle-ai Install engram via gentle-ai minimal preset (or skip)
+ *     8-skills-gentle-ai Wire Engram memory per agent via `engram setup` (or skip)
  *     9-skills-community Install community skills via `bunx skills add`
  *
  *   PHASE 3 — CONFIGURATION
@@ -33,6 +33,10 @@
  *                         any catalog still missing (anti STALE-PATH)
  *     14-jira-check     `bun run jira:check`
  *
+ * The `*-gentle-ai*` step keys predate the switch to `engram setup`; they keep
+ * their names so `.template/installer.state.json` and `--force-step` stay
+ * backward compatible.
+ *
  * Idempotency: each step writes an ISO timestamp to state.steps[<key>] on success.
  * Re-runs skip completed steps unless overridden via:
  *   INSTALL_FORCE_ALL=1                  Clear all step timestamps before running
@@ -50,12 +54,12 @@
  *
  * Non-interactive env vars:
  *   INSTALL_AGENTS=claude-code,opencode,codex   Comma-list of agents to configure
- *   INSTALL_SKIP_GENTLE_AI=1              Treat gentle-ai as skipped
+ *   INSTALL_SKIP_ENGRAM=1                 Treat Engram as skipped (legacy alias: INSTALL_SKIP_GENTLE_AI=1)
  *   INSTALL_SKIP_DEPS=1                   Skip `bun install`
  *   INSTALL_SKIP_PLAYWRIGHT=1             Skip `bun run pw:install`
  *   INSTALL_SKIP_AGENTS_SETUP=1           Skip `bun run agents:setup`
  *   INSTALL_FORCE_AGENTS_SETUP=1          Re-run agents:setup even if state shows it ran
- *   INSTALL_FORCE_GENTLE_AI=1             Re-run gentle-ai engram install even if state shows it ran
+ *   INSTALL_FORCE_ENGRAM=1                Re-run `engram setup` even if state shows it ran (legacy alias: INSTALL_FORCE_GENTLE_AI=1)
  *   INSTALL_FORCE_COMMUNITY=1             Re-run community skill install even if state shows it ran
  *   INSTALL_FORCE_GITHUB=1                Re-run GitHub remote setup even if a remote is already wired
  *   INSTALL_SKIP_COMMUNITY=1              Skip `bunx skills add` step
@@ -101,7 +105,7 @@ type McpStatus = 'configured-with-key' | 'configured-no-key' | 'placeholder' | '
 
 type CliStatus = 'found' | 'missing';
 
-interface GentleAiInfo {
+interface EngramInfo {
   found: boolean
   version?: string
   compatible?: boolean
@@ -132,8 +136,17 @@ interface InstallState {
   version: 1
   installedAt: string
   agents: AgentId[]
-  gentleAi: {
-    status: GentleAiInfo['status']
+  engram: {
+    status: EngramInfo['status']
+    version?: string
+    checkedAt: string
+  }
+  /**
+   * Legacy: state files written while the installer drove `gentle-ai install`.
+   * Read-only; nothing writes it any more.
+   */
+  gentleAi?: {
+    status: EngramInfo['status']
     version?: string
     checkedAt: string
   }
@@ -201,24 +214,24 @@ const ENV_EXAMPLE_PATH = join(REPO_ROOT, '.env.example');
 
 const REPO_NAME = 'agentic-qa-boilerplate';
 
-const MIN_GENTLE_AI_VERSION = [1, 26, 5] as const;
+const MIN_ENGRAM_VERSION = [3, 0, 0] as const;
 
 const ENGRAM_COMPONENT = 'engram';
 
 /**
- * gentle-ai install uses the `minimal` preset → installs ONLY the engram
- * component (persistent memory binary + MCP adapter + agent config wiring).
+ * Engram (persistent memory) is wired per agent with the engram binary's own
+ * `engram setup <agent>`, which registers the Engram MCP server for that agent
+ * and nothing else. Claude Code gets `--protocol=slim`: the session protocol
+ * then arrives through the Engram plugin's hooks instead of a block written
+ * into the user's instructions file.
  *
- * Rationale: this is a QA repo. Our workflow skills (sprint-testing,
- * test-automation, test-documentation, regression-testing) already provide
- * Plan → Code → Verify natively. SDD-* skills target software-design workflows
- * (specs, archives, strict TDD) that don't apply to E2E/API test authoring.
- * The vendored `judgment-day` skill (committed under .agents/skills/) provides
- * adversarial dual-review without needing the SDD bundle.
- *
- * If you want the full SDD suite for `/framework-development` framework
- * evolution work, run manually:
- *   gentle-ai install --agent <a> --components engram,sdd
+ * Rationale: the installer no longer runs `gentle-ai install`. Even with the
+ * minimal preset it writes its own orchestrator / agent-routing instructions,
+ * review agents, hooks and telemetry into the user-level agent config, which
+ * compete with this repo's orchestration doctrine (AGENTS.md §3). The repo's
+ * workflow skills cover Plan → Code → Verify natively, and adversarial review
+ * is the vendored `judgment-day` skill, so nothing from gentle-ai's workflow
+ * layer is needed.
  */
 
 // The servers the three project MCP files declare. Remote servers whose only
@@ -490,12 +503,12 @@ const DRY_RUN = process.argv.includes('--dry-run');
 // --yes: pre-approve remote secret writes (required for non-interactive remote push).
 const YES = process.argv.includes('--yes');
 
-const SKIP_GENTLE_AI = process.env.INSTALL_SKIP_GENTLE_AI === '1';
+const SKIP_ENGRAM = process.env.INSTALL_SKIP_ENGRAM === '1' || process.env.INSTALL_SKIP_GENTLE_AI === '1';
 const SKIP_DEPS = process.env.INSTALL_SKIP_DEPS === '1';
 const SKIP_PLAYWRIGHT = process.env.INSTALL_SKIP_PLAYWRIGHT === '1';
 const SKIP_AGENTS_SETUP = process.env.INSTALL_SKIP_AGENTS_SETUP === '1';
 const FORCE_AGENTS_SETUP = process.env.INSTALL_FORCE_AGENTS_SETUP === '1';
-const FORCE_GENTLE_AI = process.env.INSTALL_FORCE_GENTLE_AI === '1';
+const FORCE_ENGRAM = process.env.INSTALL_FORCE_ENGRAM === '1' || process.env.INSTALL_FORCE_GENTLE_AI === '1';
 // --sync-skills: standalone repair mode. Re-installs project community skills
 // into `.agents/skills/` and global community skills into each selected
 // harness's user-level store. Implies a forced community re-run.
@@ -649,10 +662,10 @@ async function verifyRepoRoot(): Promise<void> {
 }
 
 // ============================================================================
-// Phase 1 — Step 2 (2-gentle-ai-detect): detect gentle-ai
+// Phase 1 — Step 2 (2-gentle-ai-detect): detect the engram binary
 // ============================================================================
 
-function parseGentleAiVersion(output: string): string | undefined {
+function parseEngramVersion(output: string): string | undefined {
   const match = output.match(/(\d+)\.(\d+)\.(\d+)/);
   return match ? `${match[1]}.${match[2]}.${match[3]}` : undefined;
 }
@@ -661,24 +674,26 @@ function isCompatible(version: string): boolean {
   const parts = version.split('.').map(n => Number.parseInt(n, 10));
   for (let i = 0; i < 3; i++) {
     const got = parts[i] ?? 0;
-    const min = MIN_GENTLE_AI_VERSION[i];
+    const min = MIN_ENGRAM_VERSION[i];
     if (got > min) { return true; }
     if (got < min) { return false; }
   }
   return true;
 }
 
-function detectGentleAi(): GentleAiInfo {
-  if (SKIP_GENTLE_AI) {
+function detectEngram(): EngramInfo {
+  if (SKIP_ENGRAM) {
     return { found: false, status: 'skipped' };
   }
-  const path = which('gentle-ai');
+  const path = which('engram');
   if (!path) { return { found: false, status: 'missing' }; }
 
-  const result = tryRun('gentle-ai', ['version']);
+  const result = tryRun('engram', ['version']);
   if (!result.ok) { return { found: true, status: 'incompatible' }; }
 
-  const version = parseGentleAiVersion(result.stdout);
+  // A `go install` build reports `dev` instead of a semver: no version to
+  // compare, so it lands in `incompatible` and the user decides.
+  const version = parseEngramVersion(result.stdout);
   if (!version) { return { found: true, status: 'incompatible' }; }
 
   const compatible = isCompatible(version);
@@ -691,31 +706,34 @@ function detectGentleAi(): GentleAiInfo {
 }
 
 // ============================================================================
-// Phase 1 — Step 3 (3-gentle-ai-install): gentle-ai install instructions / skip
+// Phase 1 — Step 3 (3-gentle-ai-install): engram install instructions / skip
 // ============================================================================
 
-async function handleMissingGentleAi(): Promise<'show-and-exit' | 'skip'> {
-  log.warn('gentle-ai not detected on PATH.');
-  log.info('gentle-ai installs engram (persistent memory) into your agent via the minimal preset.');
+const ENGRAM_INSTALL_DOCS = 'https://github.com/Gentleman-Programming/engram/blob/main/docs/INSTALLATION.md';
+
+async function handleMissingEngram(): Promise<'show-and-exit' | 'skip'> {
+  log.warn('engram not detected on PATH.');
+  log.info('engram is the persistent-memory binary; the installer wires it into each selected agent with `engram setup`.');
   log.info('See INSTALLER.md for what gets installed and what stays local.');
   process.stdout.write('\n');
 
   const choice = await maybeConfirm(
-    'Show install commands and exit so you can install it? (No = continue without gentle-ai)',
+    'Show install commands and exit so you can install it? (No = continue without Engram)',
     true,
   );
 
   if (choice) {
-    log.banner('Install gentle-ai with one of these commands:');
-    process.stdout.write('  macOS  : brew install gentle-ai\n');
-    process.stdout.write('  Linux  : go install github.com/Gentleman-Programming/gentle-ai/cmd/gentle-ai@latest\n\n');
-    log.dim('  Docs: https://github.com/Gentleman-Programming/gentle-ai');
+    log.banner('Install engram with one of these commands:');
+    // Homebrew refuses formulas from an untrusted tap, so the tap is trusted first.
+    process.stdout.write('  macOS / Linux (Homebrew) : brew trust gentleman-programming/tap && brew install gentleman-programming/tap/engram\n');
+    process.stdout.write('  Any OS with Go           : go install github.com/Gentleman-Programming/engram/v3/cmd/engram@latest\n\n');
+    log.dim(`  Docs: ${ENGRAM_INSTALL_DOCS}`);
     log.dim('After installing, re-run: bun run setup');
     return 'show-and-exit';
   }
 
-  log.warn('Continuing without gentle-ai. Engram will NOT be installed.');
-  log.dim('  To install them later, install gentle-ai (https://github.com/Gentleman-Programming/gentle-ai)');
+  log.warn('Continuing without Engram. Cross-session memory will NOT be wired.');
+  log.dim(`  To add it later, install engram (${ENGRAM_INSTALL_DOCS})`);
   log.dim('  and re-run: bun run setup');
   return 'skip';
 }
@@ -883,23 +901,27 @@ async function runPlaywrightInstall(state: InstallState, forceKeys: Set<string>)
 }
 
 // ============================================================================
-// Phase 2 — Step 8 (8-skills-gentle-ai): install skills via gentle-ai
+// Phase 2 — Step 8 (8-skills-gentle-ai): wire Engram per agent
 // ============================================================================
 
-function runGentleAiInstall(args: string[]): { ok: boolean, reason?: string } {
-  // gentle-ai uses Go's `flag` package with a fixed schema
-  // (--agent(s), --component(s), --skill(s), --persona, --preset,
-  // --sdd-mode, --dry-run). There is NO --yes flag — passing one
-  // yields `flag provided but not defined: -yes`. Internal prompts
-  // (e.g. "Add to allowlist? (y/N)") auto-pick their default answer
-  // when stdin is not a TTY, so subprocess calls are effectively
-  // non-interactive without any extra flag.
-  const result = tryRun('gentle-ai', args);
+/**
+ * `engram setup` argument list per agent. The agent slugs this installer
+ * uses (claude-code / opencode / codex) are the slugs `engram setup` accepts.
+ * Passing the agent explicitly skips its interactive menu.
+ */
+export function engramSetupArgs(agent: AgentId): string[] {
+  return agent === 'claude-code'
+    ? ['setup', agent, '--protocol=slim']
+    : ['setup', agent];
+}
+
+function runEngramSetup(agent: AgentId): { ok: boolean, reason?: string } {
+  const result = tryRun('engram', engramSetupArgs(agent));
   if (result.ok) { return { ok: true }; }
   return { ok: false, reason: result.stderr.trim() || result.stdout.trim() || 'unknown error' };
 }
 
-async function installSkillsViaGentleAi(
+async function installEngramPerAgent(
   agents: AgentId[],
   state: InstallState,
   forceKeys: Set<string>,
@@ -909,19 +931,16 @@ async function installSkillsViaGentleAi(
     log.info('No agents selected, skipping engram install.');
     return;
   }
-  if (!shouldRunStep(state, key, forceKeys) && !FORCE_GENTLE_AI) {
-    log.dim(`  gentle-ai engram already installed at ${state.steps[key]}.`);
-    log.dim('  Set INSTALL_FORCE_GENTLE_AI=1 or --force-step 8-skills-gentle-ai to re-run.');
+  if (!shouldRunStep(state, key, forceKeys) && !FORCE_ENGRAM) {
+    log.dim(`  Engram already wired at ${state.steps[key]}.`);
+    log.dim('  Set INSTALL_FORCE_ENGRAM=1 or --force-step 8-skills-gentle-ai to re-run.');
     return;
   }
 
-  // One batched gentle-ai call per agent: installs the engram component
-  // only (minimal preset). gentle-ai snapshots existing config files before
-  // overwriting (compressed tar.gz, deduped, last 5 retained), so re-runs
-  // are safe and idempotent — they DO re-apply, they don't skip. The
-  // `engram::<agent>` state keys stay for the closing summary and doctor
-  // script.
-  log.info(`This will run ${agents.length} gentle-ai install command(s) — one batched call per agent.`);
+  // One `engram setup <agent>` call per agent. It registers the Engram MCP
+  // server for that agent and writes nothing else. The `engram::<agent>`
+  // state keys feed the closing summary.
+  log.info(`This will run ${agents.length} \`engram setup\` command(s) — one per agent.`);
 
   const proceed = await maybeConfirm('Continue with engram installation?', true);
   if (!proceed) {
@@ -934,18 +953,12 @@ async function installSkillsViaGentleAi(
   }
 
   for (const agent of agents) {
-    log.banner(`Installing engram for: ${agent}`);
+    log.banner(`Wiring engram for: ${agent}`);
 
     const s = tui.spinner();
-    s.start(`Installing engram (minimal preset) for ${agent}…`);
+    s.start(`Running engram ${engramSetupArgs(agent).join(' ')}…`);
 
-    const result = runGentleAiInstall([
-      'install',
-      '--agent',
-      agent,
-      '--preset',
-      'minimal',
-    ]);
+    const result = runEngramSetup(agent);
 
     const status: InstallStatus = result.ok ? 'installed' : 'failed';
     if (result.ok) {
@@ -953,6 +966,12 @@ async function installSkillsViaGentleAi(
     }
     else {
       s.stop(`Failed: engram (${agent}) — ${result.reason}`);
+    }
+    if (result.ok && agent === 'claude-code') {
+      // `engram setup` registers the MCP server only; the session hooks ship
+      // in the Claude Code plugin, which the user installs once per machine.
+      log.dim('  For Engram session hooks in Claude Code, install the plugin once:');
+      log.dim('    claude plugin marketplace add Gentleman-Programming/engram && claude plugin install engram@engram');
     }
 
     state.skills[`${ENGRAM_COMPONENT}::${agent}`] = status;
@@ -1965,6 +1984,9 @@ export function buildInitialState(prior: InstallState | null): InstallState {
     return {
       ...prior,
       agents: migrateAgentIds(prior.agents),
+      // State written before the `engram setup` switch has only `gentleAi`,
+      // which recorded the gentle-ai binary, not engram: start engram fresh.
+      engram: prior.engram ?? { status: 'missing', checkedAt: new Date().toISOString() },
       steps: prior.steps,
       skills: prior.skills ?? {},
       mcps: prior.mcps ?? {},
@@ -1976,7 +1998,7 @@ export function buildInitialState(prior: InstallState | null): InstallState {
     version: 1,
     installedAt: new Date().toISOString(),
     agents: [],
-    gentleAi: { status: 'missing', checkedAt: new Date().toISOString() },
+    engram: { status: 'missing', checkedAt: new Date().toISOString() },
     steps: {},
     skills: {},
     mcps: {},
@@ -2662,11 +2684,11 @@ function missingCriticalVarNames(): string[] {
 
 function printClosingSummary(state: InstallState): void {
   const allSkillEntries = Object.entries(state.skills);
-  const gentleAiSkills = allSkillEntries.filter(([k]) => k.includes('::'));
+  const engramAgents = allSkillEntries.filter(([k]) => k.startsWith(`${ENGRAM_COMPONENT}::`));
   const projectCommunity = allSkillEntries.filter(([k]) => k.startsWith('community:project:'));
   const userCommunity = allSkillEntries.filter(([k]) => k.startsWith('community:global:'));
 
-  const gentleAiInstalled = gentleAiSkills.filter(([, s]) => s === 'installed').length;
+  const engramInstalled = engramAgents.filter(([, s]) => s === 'installed').length;
   const projectInstalled = projectCommunity.filter(([, s]) => s === 'installed').length;
   const userInstalled = userCommunity.filter(([, s]) => s === 'installed').length;
 
@@ -2701,7 +2723,7 @@ function printClosingSummary(state: InstallState): void {
   process.stdout.write(tui.table(
     ['Category', 'Installed', 'Total', 'Status'],
     [
-      ['gentle-ai skills', `${gentleAiInstalled}`, `${gentleAiSkills.length}`, statusFor(gentleAiInstalled, gentleAiSkills.length)],
+      ['Engram (per agent)', `${engramInstalled}`, `${engramAgents.length}`, statusFor(engramInstalled, engramAgents.length)],
       ['Project skills', `${projectInstalled}`, `${projectCommunity.length}`, statusFor(projectInstalled, projectCommunity.length)],
       ['User skills', `${userInstalled}`, `${userCommunity.length}`, statusFor(userInstalled, userCommunity.length)],
       ['MCPs configured', `${mcpConfigured}`, `${mcpTotal}`, `${statusFor(mcpConfigured, mcpTotal)}${mcpPlaceholder > 0 ? ` (${mcpPlaceholder} placeholder)` : ''}`],
@@ -3086,21 +3108,24 @@ async function main(): Promise<void> {
   tui.section('Step 1: Verifying repo root');
   await verifyRepoRoot();
 
-  tui.section('Step 2: Detecting gentle-ai');
-  const gentleAi = detectGentleAi();
-  if (gentleAi.found && gentleAi.version) {
-    if (gentleAi.compatible) {
-      log.success(`gentle-ai ${gentleAi.version} detected (>= ${MIN_GENTLE_AI_VERSION.join('.')}).`);
+  tui.section('Step 2: Detecting engram');
+  const engram = detectEngram();
+  if (engram.found && engram.version) {
+    if (engram.compatible) {
+      log.success(`engram ${engram.version} detected (>= ${MIN_ENGRAM_VERSION.join('.')}).`);
     }
     else {
-      log.warn(`gentle-ai ${gentleAi.version} is older than required ${MIN_GENTLE_AI_VERSION.join('.')}. Upgrade with: gentle-ai update`);
+      log.warn(`engram ${engram.version} is older than required ${MIN_ENGRAM_VERSION.join('.')}. Upgrade with: brew upgrade engram (or re-run the go install command in INSTALLER.md).`);
     }
   }
-  else if (gentleAi.status === 'skipped') {
-    log.info('gentle-ai detection skipped via INSTALL_SKIP_GENTLE_AI=1.');
+  else if (engram.status === 'skipped') {
+    log.info('engram detection skipped via INSTALL_SKIP_ENGRAM=1.');
+  }
+  else if (engram.found) {
+    log.warn('engram found but `engram version` reported no release version (a local or `go install` build?).');
   }
   else {
-    log.info('gentle-ai not found.');
+    log.info('engram not found.');
   }
 
   const prior = await loadPriorState();
@@ -3108,40 +3133,40 @@ async function main(): Promise<void> {
   // Apply --force: clear all step timestamps
   if (FORCE_ALL) { state.steps = {}; }
   state.installedAt = new Date().toISOString();
-  state.gentleAi = {
-    status: gentleAi.status,
-    version: gentleAi.version,
+  state.engram = {
+    status: engram.status,
+    version: engram.version,
     checkedAt: new Date().toISOString(),
   };
 
-  tui.section('Step 3: gentle-ai install / skip decision');
+  tui.section('Step 3: engram install / skip decision');
   let runSkillInstall = false;
-  if (gentleAi.status === 'installed') {
+  if (engram.status === 'installed') {
     runSkillInstall = true;
   }
-  else if (gentleAi.status === 'incompatible') {
+  else if (engram.status === 'incompatible') {
     const contRaw = await tui.confirm({
-      message: 'gentle-ai is installed but version is older than required. Try anyway?',
+      message: 'engram is installed but its version could not be confirmed as compatible. Try anyway?',
       initialValue: false,
     });
     if (tui.isCancel(contRaw)) { throw Object.assign(new Error('Aborted by user.'), { name: 'ExitPromptError' }); }
     runSkillInstall = contRaw;
   }
-  else if (gentleAi.status === 'skipped') {
+  else if (engram.status === 'skipped') {
     log.dim('  Skipped.');
   }
   else {
     if (NON_INTERACTIVE) {
-      log.warn('gentle-ai missing in non-interactive mode; treating as skipped.');
-      state.gentleAi.status = 'skipped';
+      log.warn('engram missing in non-interactive mode; treating as skipped.');
+      state.engram.status = 'skipped';
     }
     else {
-      const decision = await handleMissingGentleAi();
+      const decision = await handleMissingEngram();
       if (decision === 'show-and-exit') {
         await writeInstallState(state);
         process.exit(0);
       }
-      state.gentleAi.status = 'skipped';
+      state.engram.status = 'skipped';
     }
     runSkillInstall = false;
   }
@@ -3167,12 +3192,12 @@ async function main(): Promise<void> {
   tui.section('Step 6: Installing Playwright browsers');
   await runPlaywrightInstall(state, forceKeys);
 
-  tui.section('Step 8: Installing engram via gentle-ai (minimal preset)');
+  tui.section('Step 8: Wiring Engram memory (engram setup)');
   if (runSkillInstall) {
-    await installSkillsViaGentleAi(agents, state, forceKeys);
+    await installEngramPerAgent(agents, state, forceKeys);
   }
   else {
-    log.dim('  No compatible gentle-ai — skipping engram install.');
+    log.dim('  No compatible engram binary — skipping Engram wiring.');
     for (const agent of agents) {
       const k = `${ENGRAM_COMPONENT}::${agent}`;
       if (!state.skills[k]) { state.skills[k] = 'skipped'; }

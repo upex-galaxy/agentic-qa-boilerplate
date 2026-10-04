@@ -11,6 +11,7 @@ import {
   buildCommunitySkillArgs,
   detectAgents,
   discoverRequiredEnvVars,
+  engramSetupArgs,
   launchCommandsForAgents,
   migrateAgentIds,
   parseAgentsEnv,
@@ -141,6 +142,12 @@ describe('installer Codex lifecycle', () => {
         'codex',
         '--yes',
       ]);
+  });
+
+  test('wires Engram per agent with engram setup, slim protocol on Claude Code only', () => {
+    expect(engramSetupArgs('claude-code')).toEqual(['setup', 'claude-code', '--protocol=slim']);
+    expect(engramSetupArgs('opencode')).toEqual(['setup', 'opencode']);
+    expect(engramSetupArgs('codex')).toEqual(['setup', 'codex']);
   });
 
   test('discovers Codex MCP environment contracts and exposes launch guidance', async () => {
