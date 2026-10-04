@@ -1,0 +1,24 @@
+---
+id: ticket-work
+title: 'AI behavior during testing'
+load_when: 'testing a story or bug, test design, filing a defect, artifact lifecycle, environment selection, session close of a workflow skill'
+triggers: ['\btest(ing)? (this|the|a) (story|ticket|bug)', '\bQA\b', '\bprueba', '\bprobar\b', '\bstory\b', '\bhistoria\b', '\bbug\b', '\bdefect', '\bimprovement\b', '\bATP\b', '\bATR\b', '\btest cases?\b', '\bcasos? de prueba']
+paths: []
+---
+
+# Ticket work
+
+## 8. AI BEHAVIOR DURING TESTING
+
+1. **EXPLAIN THE STORY**: once ticket understood, briefly state: what feature is, how works (simple terms), what will be tested.
+2. **WAIT FOR CONFIRMATION**: after important explanations, WAIT for user response before continuing.
+3. **EXPLAIN DEFECTS**: bug / unexpected behavior → describe observed, explain why problem, suggest impact (severity, affected users, business risk).
+4. **TEST-DESIGN DOCTRINE (binding)**: verifying ACs is the FLOOR, not testing. Coverage = AC-conformance + risk-beyond-AC. One AC → multiple cases by default (1:N); collapse to one only with a written `trivially atomic` justification. Derive cases by technique-trigger: EP always; BVA on ranges/limits; State-Transition on status fields; Decision Table on 2+ interacting conditions; Pairwise on 3+ factors. Never report "% of ACs verified" as completeness. Canon: `agentic-qa-core/references/test-design-doctrine.md`.
+5. **DEFECT-MANAGEMENT DOCTRINE (binding)**: classify every quality issue as Bug / Defect / Improvement by the FEATURE's lifecycle stage, NOT where it was found (Bug = feature already live above Staging; Defect = still pre-release; Improvement = not a broken AC: an enhancement or under-/un-specified AC surfaced by a test-beyond-AC). Set `qa_assignee` to self (never overwrite an existing owner: read-before-write) on every work item (story / tech_story / tech_debt / bug / defect / improvement). Components are mandatory (affected product module). Parent quality issues to the QA PROCESS epic: "QA Defect Management" for bug/defect/improvement, "QA Test Repository" for Test issues, "QA Master Test Plan" for Test Plans (FTP/STP/ATP/RTP), "QA Test Artifacts" for Test Executions (STR/ATR/RTR) + Preconditions + Test Sets (mandatory per-Story `ATS: {US_ID}` Acceptance Test Set, components inherited from the Story; feature-level `TS:` optional; real, parentable Jira issues — but their Test associations / Set membership are Xray-internal, read via `bun xray test enrich`), NEVER a product/dev epic; carry the source Story via an issue-link. Fill the mandatory field matrix; auto-derive Priority from Severity. Canon: `agentic-qa-core/references/defect-management-doctrine.md`. (binding: `/sprint-testing`)
+6. **ARTIFACT LIFECYCLE (binding)**: every artifact the harness creates has a DECLARED lifecycle and MUST leave the status Jira's `create` transition dropped it in. An ATP frozen at `Planning`, an ATS at `Designing`, an ATR at `ACTIVE` or a TC at `Draft` after the stage that owns it closed is a DEFECT, not cosmetics: it tells the team the work never happened. Set `assignee` = self on every QA artifact AT CREATE TIME (Xray refuses membership edits on a Test Plan the caller does not own — an unassigned Plan is a blocker waiting to happen); ask before touching one someone else owns. Slug missing for this project → run the unmapped-status fallback: list the LIVE transitions, propose the closest synonym in ONE `AskUserQuestion`, fire the live id on the user's OK, then recommend `bun run jira:sync-workflows`. NEVER skip silently, NEVER guess an id, NEVER hand-edit `.agents/jira-workflows.json`. Every stage closes with the light stage verifier (artifacts · links · statuses · assignee · parent+components · fields written · progress checkpoint · session footer), each line YES or a STATED N/A. Canon: `agentic-qa-core/references/artifact-lifecycle.md`. (binding: `/agentic-qa-core`)
+7. **LANGUAGE**: see §1 #14 LANGUAGE DETECTION + MIRRORING (canonical rule).
+8. **SESSION CLOSE (every workflow skill, unprompted)**: surface repo-relative paths of every screenshot/bug-annotation captured (in-flow, the instant one exists, never wait to be asked) + a session-close footer of skills/MCPs/CLIs used and testing-pyramid levels touched (explicit "none" per untouched level). Printed in CHAT only, never in a Jira comment/ATR. Full contract + templates: `agentic-qa-core/references/session-footer-contract.md`.
+
+**ENVIRONMENT SELECTION**: canonical environment identifiers are `local` · `qa` · `staging` · `production` (lowercase, no abbreviations, never `prod`, `stg`, `uat`, unless a project genuinely adds its own). Default **staging** unless user specifies otherwise. Ask when ambiguous. URLs from `.agents/project.yaml`. Credentials from `.env`.
+
+**CONTEXT EFFICIENCY**: main conversation stays lean. Subagents do heavy reading. Skills load only references current phase needs.
