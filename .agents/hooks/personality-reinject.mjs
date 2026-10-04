@@ -2,12 +2,12 @@
  * @fileoverview ONE prompt-time emitter for the three harnesses.
  *
  * Claude Code and Codex run this file as a `UserPromptSubmit` command hook and
- * read its stdout, and run it again on `SessionStart` (matcher `compact`) to
- * re-arm the routes; OpenCode imports the same exports from its plugin adapter
- * (`.opencode/plugins/personality-reinject.js`): OpenCode 1 also routes from
- * `chat.message`, OpenCode 2 is router-only. The emitter carries four
- * payloads, in this order (the AGENTS.md §2 output contract is not one of them:
- * the harness loads it once per session):
+ * read its stdout, and run it again on `SessionStart` to re-arm the routes
+ * (see "Re-arm sources" below); OpenCode imports the same exports from its
+ * plugin adapter (`.opencode/plugins/personality-reinject.js`): OpenCode 1
+ * also routes from `chat.message`, OpenCode 2 is router-only. The emitter
+ * carries four payloads, in this order (the AGENTS.md §2 output contract is
+ * not one of them: the harness loads it once per session):
  *
  *   1. The `AGENT IDENTITY:` line — worktree, session label, harness. It is
  *      forensic metadata: `git-flow-master` copies it into the `Worktree:` /
@@ -20,8 +20,20 @@
  *   4. `ROUTE: read <file>` lines: the instruction files the prompt needs and
  *      this session has not been routed to yet, classified with the router of
  *      `AGENTS.md` and each section's frontmatter (see `routeLines`). 0 bytes
- *      when nothing new matches. A `SessionStart` with source `compact`
- *      re-arms them and prints nothing.
+ *      when nothing new matches. A re-arm (below) clears them and prints
+ *      nothing.
+ *
+ * Re-arm sources, exactly what each host config registers:
+ *   - Claude Code, `.claude/settings.json`: `SessionStart` groups with matcher
+ *     `compact` and matcher `clear`.
+ *   - Codex, `.codex/hooks.json`: the same two `SessionStart` groups (Codex
+ *     emits `startup | resume | clear | compact | fork`; only these two drop
+ *     the routed files from the context).
+ *   - OpenCode 1, `.opencode/plugins/personality-reinject.js`: the
+ *     `experimental.session.compacting` event only; OpenCode 2 is router-only
+ *     and keeps no state to re-arm.
+ *   `bun run agents:compat:check` asserts the two command-host lists
+ *   (`REARM_SESSION_START_SOURCES` in `cli/lib/agent-compatibility-contracts.ts`).
  *
  * Verified sources only. Claude Code: the hook input carries `session_id`,
  * `prompt` and an optional `session_title`, and the JSON output supports
@@ -392,8 +404,8 @@ export function worktreeUnprovisioned(options = {}) {
  *
  * One line per newly routed file. The per-session state (keyed by session id)
  * remembers what was routed, so a prompt that needs nothing new costs 0 bytes;
- * `SessionStart` with source `compact` or `clear` re-arms it, because the
- * routed files left the context with the compacted messages.
+ * a `SessionStart` with source `compact` or `clear` re-arms it, because the
+ * routed files left the context with the compacted or cleared messages.
  */
 export const ROUTE_PREFIX = 'ROUTE: read';
 export const ROUTER_START = '<!-- router:start -->';
@@ -771,7 +783,7 @@ export function renderHookOutput(options = {}) {
   const { env = process.env, hookInput = {}, home = homedir() } = options;
   const event = text(hookInput.hook_event_name) || 'UserPromptSubmit';
   if (event === 'SessionStart') {
-    // Wired with the `compact` matcher only: re-arm the routes, add nothing.
+    // Wired with the `compact` and `clear` matchers: re-arm the routes, add nothing.
     if (text(hookInput.source) === 'compact' || text(hookInput.source) === 'clear') {
       rearmRoutes({ ...options, env, hookInput, sessionId: text(hookInput.session_id) });
     }
