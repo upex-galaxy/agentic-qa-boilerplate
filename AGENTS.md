@@ -1,6 +1,6 @@
 # AGENTS.md: AI Persistent Memory
 
-> Always-on layer (L0). Detail lives in section files under `.agents/instructions/`, loaded through the ROUTER (progressive disclosure). Edit a section file, never paste section prose back here; project rules go in `.agents/instructions/project.md`.
+> Always-on layer (L0). Detail lives in section files under `.agents/instructions/`, loaded through the ROUTER (progressive disclosure). Edit a section file, never paste section prose back here; project rules go in `.agents/instructions/agent-project.md`.
 
 ## LOAD PROTOCOL
 
@@ -10,25 +10,25 @@ Before acting on a request, match it against the ROUTER and read every matched s
 
 ## 1. CRITICAL RULES: ALWAYS APPLY
 
-Each line is the rule's binding sentence; `→ 01` = full text in `.agents/instructions/01-critical-rules.md`, same number.
+Each line is the rule's binding sentence; `Full: agent-critical-rules.md#n` = its full text in `.agents/instructions/agent-critical-rules.md`, under the heading `## n.`
 
-1. **CREDENTIALS**: ALWAYS read from `.env`. NEVER hardcode/guess. → 01
-2. **PLAN BEFORE CODING**: Produce test plan (`spec.md` / impl plan) BEFORE writing test code. → 01
-3. **NO AI ATTRIBUTION**: NEVER include "Generated with AI", harness branding, or AI `Co-Authored-By` trailers in commits. **Forensic trailers are the one MANDATORY exception and are NOT attribution**: every commit ends with `Worktree: <name|primary>` then `Session: <label>`. → 01
-4. **SHIFT-LEFT**: Evaluate ACs for clarity, testability, completeness. → 01
-5. **PUSH TO PROTECTED = RESOLVE `git_strategy.policy.direct_push_to_protected`** (`.agents/project.yaml`; protected list = `git_strategy.protected`): `forbidden` → NEVER direct-push, route through a PR. `confirm` → ask explicit user confirmation before EVERY push. `allowed` → standing authorization, push without asking. `git_strategy` block missing or null (fresh scaffold) → behave as `confirm` (safe default: ask). → 01
-6. **GIT HISTORY (INVARIANTS, not strategy choices — no `git_strategy` value relaxes them)**: NEVER rewrite pushed history (rebase/amend on pushed commits). NEVER force-push a branch others may share. NEVER delete remote branches without confirmation. → 01
-7. **QUALITY VERIFICATION**: After code changes, verify in order: tests → types → lint. → 01
-8. **FILE OPERATIONS**: ALWAYS read file before edit. Preserve formatting + indent. NEVER overwrite without reading. → 01
-9. **SKILLS-FIRST**: All workflows live in `.agents/skills/`. NEVER paste instructions inline. → 01
-10. **MCP CREDENTIAL FAILURE = STOP IMMEDIATELY**: NO workaround. STOP, tell user exact env var, point to `.env` / `.env.example`, ask fix `.env` + **RESTART AGENT SESSION** (env cached at MCP-spawn time, no refresh mid-session). **MCP UNAVAILABLE = SAME STOP, AT THE POINT OF USE**. → 01
-11. **SCRIPTS = READ `package.json` DIRECTLY**. NEVER quote test/build commands from this file or any doc: drift kills. → 01
-12. **KATA MANIFEST = SOURCE OF TRUTH**. Before proposing new `Page`, `Api`, `Steps` module, or `@atc('PROJ-XXX')` ID: MUST load `kata-manifest.json` and check it. → 01
-13. **DEFAULT COMMUNICATION MODE: CAVEMAN**: If the `caveman@caveman` plugin is installed user-level (under `~/.claude/plugins/`), respond caveman level `full` by default. → 01
-14. **LANGUAGE DETECTION + MIRRORING**: Mirror that language in ALL conversational replies (questions, summaries, explanations, status updates). Repo artifacts ALWAYS English regardless of conversation language. → 01
-15. **NO GLOBAL DISCARDS (MULTI-SESSION SAFETY)**: PROHIBITED to run repo-wide destructive git commands: `git restore .`, `git checkout -- .`, `git reset --hard`, untargeted `git stash`, `git clean -f`. Discard ONLY explicit paths YOU modified in THIS session. → 01
-16. **A SUCCESS CODE DESCRIBES THE CALL, NEVER THE OUTCOME — VERIFY AT THE DESTINATION**: a write is verified by READING IT BACK from the destination, a message by the recipient answering it, a transition by re-reading the issue's status, a file write by re-parsing the file, a dispatch by the worker's own first report. → 01
-17. **COMMITTED PROSE NAMES THE SOURCE OF TRUTH, NEVER ITS CURRENT VALUE**: text that is committed (this file, `.agents/**`, `docs/**`, `README.md`, `INSTALLER.md`, `.env.example`, the decks) NEVER states a fact that changes with the normal life of the repo or the tracker. → 01
+1. **CREDENTIALS**: ALWAYS read from `.env`. NEVER hardcode/guess. Full: agent-critical-rules.md#1
+2. **PLAN BEFORE CODING**: Produce test plan (`spec.md` / impl plan) BEFORE writing test code. Full: agent-critical-rules.md#2
+3. **NO AI ATTRIBUTION**: NEVER include "Generated with AI", harness branding, or AI `Co-Authored-By` trailers in commits. **Forensic trailers are the one MANDATORY exception and are NOT attribution**: every commit ends with `Worktree: <name|primary>` then `Session: <label>`. Full: agent-critical-rules.md#3
+4. **SHIFT-LEFT**: Evaluate ACs for clarity, testability, completeness. Full: agent-critical-rules.md#4
+5. **PUSH TO PROTECTED = RESOLVE `git_strategy.policy.direct_push_to_protected`** (`.agents/project.yaml`; protected list = `git_strategy.protected`): `forbidden` → NEVER direct-push, route through a PR. `confirm` → ask explicit user confirmation before EVERY push. `allowed` → standing authorization, push without asking. `git_strategy` block missing or null (fresh scaffold) → behave as `confirm` (safe default: ask). Full: agent-critical-rules.md#5
+6. **GIT HISTORY (INVARIANTS, not strategy choices — no `git_strategy` value relaxes them)**: NEVER rewrite pushed history (rebase/amend on pushed commits). NEVER force-push a branch others may share. NEVER delete remote branches without confirmation. Full: agent-critical-rules.md#6
+7. **QUALITY VERIFICATION**: After code changes, verify in order: tests → types → lint. Full: agent-critical-rules.md#7
+8. **FILE OPERATIONS**: ALWAYS read file before edit. Preserve formatting + indent. NEVER overwrite without reading. Full: agent-critical-rules.md#8
+9. **SKILLS-FIRST**: All workflows live in `.agents/skills/`. NEVER paste instructions inline. Full: agent-critical-rules.md#9
+10. **MCP CREDENTIAL FAILURE = STOP IMMEDIATELY**: NO workaround. STOP, tell user exact env var, point to `.env` / `.env.example`, ask fix `.env` + **RESTART AGENT SESSION** (env cached at MCP-spawn time, no refresh mid-session). **MCP UNAVAILABLE = SAME STOP, AT THE POINT OF USE**. Full: agent-critical-rules.md#10
+11. **SCRIPTS = READ `package.json` DIRECTLY**. NEVER quote test/build commands from this file or any doc: drift kills. Full: agent-critical-rules.md#11
+12. **KATA MANIFEST = SOURCE OF TRUTH**. Before proposing new `Page`, `Api`, `Steps` module, or `@atc('PROJ-XXX')` ID: MUST load `kata-manifest.json` and check it. Full: agent-critical-rules.md#12
+13. **DEFAULT COMMUNICATION MODE: CAVEMAN**: If the `caveman@caveman` plugin is installed user-level (under `~/.claude/plugins/`), respond caveman level `full` by default. Full: agent-critical-rules.md#13
+14. **LANGUAGE DETECTION + MIRRORING**: Mirror that language in ALL conversational replies (questions, summaries, explanations, status updates). Repo artifacts ALWAYS English regardless of conversation language. Full: agent-critical-rules.md#14
+15. **NO GLOBAL DISCARDS (MULTI-SESSION SAFETY)**: PROHIBITED to run repo-wide destructive git commands: `git restore .`, `git checkout -- .`, `git reset --hard`, untargeted `git stash`, `git clean -f`. Discard ONLY explicit paths YOU modified in THIS session. Full: agent-critical-rules.md#15
+16. **A SUCCESS CODE DESCRIBES THE CALL, NEVER THE OUTCOME — VERIFY AT THE DESTINATION**: a write is verified by READING IT BACK from the destination, a message by the recipient answering it, a transition by re-reading the issue's status, a file write by re-parsing the file, a dispatch by the worker's own first report. Full: agent-critical-rules.md#16
+17. **COMMITTED PROSE NAMES THE SOURCE OF TRUTH, NEVER ITS CURRENT VALUE**: text that is committed (this file, `.agents/**`, `docs/**`, `README.md`, `INSTALLER.md`, `.env.example`, the decks) NEVER states a fact that changes with the normal life of the repo or the tracker. Full: agent-critical-rules.md#17
 
 ---
 
@@ -115,7 +115,7 @@ Example: ❌ "Added `waitForResponse('**/api/auth/login')` before toast assertio
 
 **ERROR PROTOCOL**: Subagent error → STOP, report full context, NO fix without approval, offer retry/skip/abort.
 
-Executors, patterns, value provenance, fail-closed gates, session material, skill compliance → `90-orchestration-detail.md`.
+Executors, patterns, value provenance, fail-closed gates, session material, skill compliance → `agent-orchestration-detail.md`.
 
 ---
 
@@ -126,19 +126,19 @@ Files live in `.agents/instructions/`. Rows are fixed request kinds; a section g
 <!-- router:start -->
 | When the request involves | Read | Was | Then |
 |---|---|---|---|
-| about to break, unsure about, or asked about a Critical Rule | `01-critical-rules.md` | §1 | - |
-| harness files, hooks, husky, MCP configs, updater, `cli/`, root configs | `10-harnesses.md` | §4.5 | `/framework-development` |
-| any workflow task (onboard, shift-left, sprint, docs, automation, regression, maps, decisions, handoff, browser) or "which skill for X" | `15-context-map.md` | §4 | the matched skill |
-| skills, tiers, modes, the skill table, MCP capabilities | `20-skills-and-mcps.md` | §5 | `.agents/skills/REGISTRY.md` |
-| a `[TAG_TOOL]`, an MCP call, a TMS modality, or a mapped CLI | `30-tool-resolution.md` | §6, §6.5 | the owning skill |
-| a `{{VAR}}`, an environment, the Jira host or fields, any project value | whenever any of these apply, read @.agents/project.yaml and `40-project-variables.md`, NEVER hardcode identity, env URLs, Jira URL, project key, MCP names | §7 | - |
-| testing a story or bug, test design, defects, artifact lifecycle | `50-ticket-work.md`, `60-local-context-pbi.md` | §8, §9 | the stage skill |
-| Jira or Xray reads, `.context/PBI/`, sync | `60-local-context-pbi.md`, `40-project-variables.md` | §9, §7 | `/acli`, `/xray-cli` |
-| writing or reviewing test code, KATA, `scripts/` paths | `70-code-quickref.md` | §10 | `/test-automation` |
-| git: branch, commit, push, PR, conflict, strategy | `80-git.md` | §11 | `/git-flow-master` |
-| orchestration detail: executors, workers, fleets, gates | `90-orchestration-detail.md` | §3 | `/orca-orchestration` |
+| about to break, unsure about, or asked about a Critical Rule | `agent-critical-rules.md` | §1 | - |
+| harness files, hooks, husky, MCP configs, updater, `cli/`, root configs | `agent-harnesses.md` | §4.5 | `/framework-development` |
+| any workflow task (onboard, shift-left, sprint, docs, automation, regression, maps, decisions, handoff, browser) or "which skill for X" | `agent-context-map.md` | §4 | the matched skill |
+| skills, tiers, modes, the skill table, MCP capabilities | `agent-skills-and-mcps.md` | §5 | `.agents/skills/REGISTRY.md` |
+| a `[TAG_TOOL]`, an MCP call, a TMS modality, or a mapped CLI | `agent-tool-resolution.md` | §6, §6.5 | the owning skill |
+| a `{{VAR}}`, an environment, the Jira host or fields, any project value | whenever any of these apply, read @.agents/project.yaml and `agent-project-variables.md`, NEVER hardcode identity, env URLs, Jira URL, project key, MCP names | §7 | - |
+| testing a story or bug, test design, defects, artifact lifecycle | `agent-ticket-work.md`, `agent-local-context-pbi.md` | §8, §9 | the stage skill |
+| Jira or Xray reads, `.context/PBI/`, sync | `agent-local-context-pbi.md`, `agent-project-variables.md` | §9, §7 | `/acli`, `/xray-cli` |
+| writing or reviewing test code, KATA, `scripts/` paths | `agent-code-quickref.md` | §10 | `/test-automation` |
+| git: branch, commit, push, PR, conflict, strategy | `agent-git.md` | §11 | `/git-flow-master` |
+| orchestration detail: executors, workers, fleets, gates | `agent-orchestration-detail.md` | §3 | `/orca-orchestration` |
 | a script, a command, "how do I run X" | whenever any of these apply, read @package.json first, never a command quoted in a doc | Rule #11 | - |
-| anything specific to this project | `project.md` | - | project context skills |
+| anything specific to this project | `agent-project.md` | - | project context skills |
 <!-- router:end -->
 
 ---

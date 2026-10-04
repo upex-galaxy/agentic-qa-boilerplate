@@ -136,7 +136,7 @@ describe('buildPbiMigrationPrompt', () => {
     expect(prompt).toContain('.context/PBI/README.md');
     expect(prompt).toContain('.context/PBI/templates/**');
     expect(prompt).toContain('.context/PBI/epics/*/test-specs/**');
-    expect(prompt).toContain('`.agents/instructions/60-local-context-pbi.md` §9');
+    expect(prompt).toContain('`.agents/instructions/agent-local-context-pbi.md` §9');
     expect(prompt).not.toContain('AGENTS.md §9');
   });
 

@@ -263,6 +263,8 @@ export interface DeprecatedFile {
   component: string
   reason: string
   deprecatedSince: string
+  /** Copy the file to the run's `.backups/` directory before removing it: set when a project may have edited it. */
+  backup?: boolean
 }
 
 export interface GitVersion {

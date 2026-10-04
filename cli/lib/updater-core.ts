@@ -2345,6 +2345,8 @@ export function dropDeprecatedDeletes<T extends { path: string, classification: 
 
 /**
  * Remove files in `cfg.deprecatedFiles` from the local repo. Honors dryRun.
+ * A file marked `backup` is copied into the run's backup directory first
+ * (`ensureBackup`), and is kept when that copy fails.
  * Returns the count of files actually removed (or that would be removed in dry-run).
  */
 export function cleanupDeprecated(
@@ -2352,6 +2354,7 @@ export function cleanupDeprecated(
   repoRoot: string,
   dryRun: boolean,
   logger: CoreLogger = silentLogger,
+  ensureBackup?: () => string,
 ): number {
   const present = cfg.deprecatedFiles.filter(d => fs.existsSync(path.join(repoRoot, d.path)));
   if (present.length === 0) { return 0; }
@@ -2364,6 +2367,11 @@ export function cleanupDeprecated(
       continue;
     }
     try {
+      if (dep.backup === true && ensureBackup) {
+        const saved = path.join(ensureBackup(), dep.path);
+        fs.mkdirSync(path.dirname(saved), { recursive: true });
+        fs.cpSync(path.join(repoRoot, dep.path), saved);
+      }
       fs.unlinkSync(path.join(repoRoot, dep.path));
       pruneEmptyParents(repoRoot, dep.path);
       logger.success(`Eliminado: ${dep.path}`);
@@ -3493,7 +3501,7 @@ export async function runUpdate(
 
   // Deprecated cleanup runs AFTER apply, BEFORE state write (and before the
   // afterApply hooks). A dry-run lists what it would remove and writes nothing.
-  cleanupDeprecated(cfg, repoRoot, opts.dryRun, makeCoreLoggerFromSink(sink));
+  cleanupDeprecated(cfg, repoRoot, opts.dryRun, makeCoreLoggerFromSink(sink), ensureBackup);
 
   // Compute advancement
   const advancement = computeComponentAdvancement(

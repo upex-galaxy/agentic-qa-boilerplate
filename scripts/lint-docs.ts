@@ -30,9 +30,9 @@
  *     `VOLATILE_SEVERITY` (both families fail the gate).
  *   - a repo skill (a committed `.agents/skills/<slug>/SKILL.md`) is missing
  *     from the skill router table (`roster`), read from
- *     `.agents/instructions/20-skills-and-mcps.md` (or `AGENTS.md` in a repo
+ *     `.agents/instructions/agent-skills-and-mcps.md` (or `AGENTS.md` in a repo
  *     that has not split its instructions; `skillRouterSource`). A row in the
- *     project's own `## Project context skills` table (`project.md`) counts
+ *     project's own `## Project context skills` table (`agent-project.md`) counts
  *     too: the skills section is synced, so a skill the project added is
  *     routed from there. A project-local `<aspect>-context` skill is exempt
  *     (`isProjectLocalSkillPath`). The human
@@ -364,7 +364,7 @@ export function lintRoster(root: string): DocFinding[] {
   if (router === null) {
     return [{ file: source.rel, line: 1, kind: 'roster', target: 'skill router table (### Skills heading not found)' }];
   }
-  // A skill the project authored is routed from its own `project.md` table, which `bun run up` never overwrites.
+  // A skill the project authored is routed from its own `agent-project.md` table, which `bun run up` never overwrites.
   for (const row of projectSkillRows(root) ?? []) { router.add(row.slug); }
   for (const slug of skills) {
     if (!router.has(slug)) { findings.push({ file: source.rel, line: 1, kind: 'roster', target: slug }); }

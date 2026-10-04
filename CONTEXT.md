@@ -2,7 +2,7 @@
 
 > **Purpose**: Explain the context engineering strategy for AI-driven test automation. Top-level reference alongside `README.md`, `AGENTS.md`, and `INSTALLER.md`.
 > **Audience**: Humans learning the system + AI when needing to understand "why".
-> **Related**: `AGENTS.md` is the always-on layer of the instructions, loaded each session; the rest lives in section files under `.agents/instructions/`, read when the ROUTER in `AGENTS.md` or a hook `ROUTE:` line names them (progressive disclosure, §8.1 below). `CLAUDE.md` is a one-line shim (`@AGENTS.md`) that Claude Code follows to reach it. Operational prose belongs in the section that owns the topic (this project's own rules in `.agents/instructions/project.md`), never in the shim. See §2.1 below.
+> **Related**: `AGENTS.md` is the always-on layer of the instructions, loaded each session; the rest lives in section files under `.agents/instructions/`, read when the ROUTER in `AGENTS.md` or a hook `ROUTE:` line names them (progressive disclosure, §8.1 below). `CLAUDE.md` is a one-line shim (`@AGENTS.md`) that Claude Code follows to reach it. Operational prose belongs in the section that owns the topic (this project's own rules in `.agents/instructions/agent-project.md`), never in the shim. See §2.1 below.
 > **Sync**: A change to the context architecture updates this file in the same PR (`framework-development` docs follow-through); `bun run docs:check` guards its paths.
 
 ---
@@ -46,7 +46,7 @@ agentic-qa-boilerplate/
 | Directory | Contains | When Loaded |
 |-----------|----------|-------------|
 | `AGENTS.md` | The binding sentence of each critical rule, the behavioural layer, the orchestration core, the ROUTER, memory triggers | Every session automatically |
-| `.agents/instructions/` | One section per topic (harnesses, skills, tool resolution, variables, PBI cache, KATA, git, ...) plus this project's own `project.md` | When its ROUTER row or a hook `ROUTE:` line names it |
+| `.agents/instructions/` | One section per topic (harnesses, skills, tool resolution, variables, PBI cache, KATA, git, ...) plus this project's own `agent-project.md` | When its ROUTER row or a hook `ROUTE:` line names it |
 | `.agents/project.yaml` + Jira catalogs | Tool-agnostic project config (`project.yaml`, `jira-fields.json`, `jira-required.yaml`) | When the AI needs to resolve `{{VAR}}` or `{{jira.<slug>}}` |
 | `.agents/skills/` | Task instructions + references (what to do, step by step) | When AI loads a skill for a specific task |
 | `.context/` | Regenerable caches (the Jira PBI tree via `bun run context:hydrate`, reports) plus the files this repo owns (ADRs, `project-config.md`, `test-specs/`). The AI's synthesized knowledge of the app lives in the context skills, read with `bun run context:map` | When a skill reads a ticket, an ADR or an automation plan |
@@ -207,7 +207,7 @@ These files have stable names and locations. Reference them confidently:
 | File / Skill | Purpose |
 |--------------|---------|
 | `AGENTS.md` | Project memory's always-on layer, loaded every session: LOAD PROTOCOL, binding rules, behaviour, ROUTER |
-| `.agents/instructions/` | The instruction sections the ROUTER names (synced from upstream), plus `project.md` (this project's own, never synced); guide in its `README.md` |
+| `.agents/instructions/` | The instruction sections the ROUTER names (synced from upstream), plus `agent-project.md` (this project's own, never synced); guide in its `README.md` |
 | `CLAUDE.md` | One-line shim (`@AGENTS.md`) so Claude Code reaches `AGENTS.md`. Never holds prose of its own |
 | `.agents/hooks/personality-reinject.mjs` | Shared hook emitter; the three harness adapters call into it |
 | `.agents/project.yaml` | Tool-agnostic project variables (`{{VAR}}` source of truth) |
@@ -313,7 +313,7 @@ The prompt hook classifies every prompt against the ROUTER and the sections' `tr
 | **Pre-sprint AC refinement / backlog grooming** | `/shift-left-testing` (SKILL.md) + the business context maps (`bun run context:map <slug>`) | Skill `references/` (backlog-selection, refinement-playbook, atp-outline-template) |
 | **Exploratory Testing** | `/sprint-testing` (SKILL.md) + `.context/PBI/qa-artifacts/master-test-plan.md` | Skill `references/` (exploration patterns, session entry points) |
 | **Understand System** | `bun run context:map business-data-context` (and `business-api-context`, `business-e2e-context`) | `bun run context:map business-domain-context` (vocabulary), `bun run context:map infra-context` (stack, environments) |
-| **Use MCP** | `.agents/instructions/20-skills-and-mcps.md` "MCPs (decision rules)" + `.agents/instructions/30-tool-resolution.md` | The owning CLI skill (`/acli`, `/xray-cli`, `/playwright-cli`) |
+| **Use MCP** | `.agents/instructions/agent-skills-and-mcps.md` "MCPs (decision rules)" + `.agents/instructions/agent-tool-resolution.md` | The owning CLI skill (`/acli`, `/xray-cli`, `/playwright-cli`) |
 
 ### By Role
 
@@ -351,9 +351,9 @@ The prompt hook classifies every prompt against the ROUTER and the sections' `tr
 ### When to Update AGENTS.md or a section
 
 - Detail on a topic → the section file that owns it under `.agents/instructions/`; when it should load is that section's `triggers:` / `paths:`, never a new ROUTER row unless no row's request kind covers it
-- This project's own rule (project identity, testing decisions, an accepted divergence) → `.agents/instructions/project.md`, which `bun run up` never overwrites
+- This project's own rule (project identity, testing decisions, an accepted divergence) → `.agents/instructions/agent-project.md`, which `bun run up` never overwrites
 - New MCPs configured — add the server to all three configs (`.mcp.json`, `opencode.jsonc`, `.codex/config.toml`), then run `bun run agents:compat:check`
-- New CLI tools added → `.agents/instructions/30-tool-resolution.md`
+- New CLI tools added → `.agents/instructions/agent-tool-resolution.md`
 - `AGENTS.md` itself only for what must bind on every turn; `bun run instructions:check` fails past its byte ceiling
 
 Never write the update into `CLAUDE.md`: it is a generated one-line shim, and `agents:compat:check` fails when it holds prose.

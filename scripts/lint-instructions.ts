@@ -16,33 +16,38 @@
  *   - ROUTER: the markers exist, every row names at least one section file or
  *     Claude import, every named file resolves, and every section file is named
  *     by some row (an unrouted section is unreachable).
- *   - FRONTMATTER: every section opens with `id` (kebab, unique), `title`,
- *     `load_when`, `triggers` (regex sources that compile, case-insensitive)
- *     and `paths`. Only `project.md` may leave `triggers` empty.
- *   - RULES: every L0 critical rule ends with its `→ 01` pointer, has the same
- *     number and name as a heading in `01-critical-rules.md`, and each of its
+ *   - NAMES: every file in the folder but `README.md` carries the
+ *     `SECTION_PREFIX` (`agent-`), so a reader knows it comes from the agent
+ *     setup. Names carry no number: the router row order is the order.
+ *   - FRONTMATTER: every section opens with `id` (kebab, unique, and equal to
+ *     the file stem without `agent-`: `agent-git.md` -> `id: git`, the tag a
+ *     `ROUTE:` line carries), `title`, `load_when`, `triggers` (regex sources
+ *     that compile, case-insensitive) and `paths`. Only `agent-project.md` may
+ *     leave `triggers` empty.
+ *   - RULES: every L0 critical rule ends with its `Full: agent-critical-rules.md#<n>` pointer, has the same
+ *     number and name as a heading in `agent-critical-rules.md`, and each of its
  *     sentences is a verbatim fragment of that rule's full text (so L0 can be
  *     shortened, never reworded).
  *   - BINDING: a `NEVER` / `MUST` line in a section binds only if the actor can
  *     reach it from where it always looks. It passes when its sentence is
  *     verbatim in L0, when it sits under a numbered rule heading of
- *     `01-critical-rules.md`, or when it carries one id: `Rule #N` (an L0
+ *     `agent-critical-rules.md`, or when it carries one id: `Rule #N` (an L0
  *     rule), `` binding: `/<skill>` `` (a skill whose compact rules carry a
  *     prohibition) or `` enforced: `bun run <script>` `` (a gate in
  *     `package.json`).
  *
  *   - SKILLS: a skill the project authored is routed from the `## Project
- *     context skills` table of `project.md`, never from the synced skills
+ *     context skills` table of `agent-project.md`, never from the synced skills
  *     section. A row there whose `.agents/skills/<slug>/SKILL.md` does not
- *     exist is an error; a filled table while `project.md` has no `triggers`
+ *     exist is an error; a filled table while `agent-project.md` has no `triggers`
  *     is a warning (the hook never routes the file by keyword); a project-local
  *     skill (`isProjectLocalSkillPath`, the shipped context map skills aside)
- *     in `20-skills-and-mcps.md` is a warning (`bun run up` overwrites that
+ *     in `agent-skills-and-mcps.md` is a warning (`bun run up` overwrites that
  *     file and the row is lost).
- *   - STUB: `project.md.template`, the generic `project.md` a downstream project
+ *   - STUB: `agent-project.md.template`, the generic `agent-project.md` a downstream project
  *     receives, carries none of this repo's identity (`stubLeaks`: the
  *     `project.schema.yaml` identity patterns, the own Git Strategy heading,
- *     a copy of the maintainers' own `project.md`). Required in the
+ *     a copy of the maintainers' own `agent-project.md`). Required in the
  *     maintainers' copy.
  *
  * A repo without `.agents/instructions/` has not adopted the split yet, and a
@@ -54,7 +59,7 @@
  * Usage: bun scripts/lint-instructions.ts   (exit 1 on any error; warnings print and pass)
  */
 
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { isMaintainerCopy } from '../cli/lib/agents-schema.ts';
 import { contextMapSkill } from '../cli/lib/context-maps.ts';
@@ -63,11 +68,14 @@ import { PROJECT_INSTRUCTIONS, PROJECT_INSTRUCTIONS_TEMPLATE, stubLeaks } from '
 import {
   importRefs,
   INSTRUCTIONS_DIR,
+  INSTRUCTIONS_README,
   L0_FILE,
   listSections,
   PROJECT_SECTION,
   PROJECT_SKILLS_HEADING,
   routerRows,
+  SECTION_PREFIX,
+  sectionId,
   sectionRefs,
   SKILL_ROUTER_HEADING,
   SKILLS_SECTION,
@@ -82,12 +90,12 @@ export const L0_BUDGET = 24 * 1024;
 export const L0_PROJECT_BUDGET = 28 * 1024;
 /** Codex `project_doc_max_bytes` default: past it the file is cut at the byte, silently. */
 export const CODEX_PROJECT_DOC_MAX_BYTES = 32 * 1024;
-export const RULES_SECTION = '01-critical-rules.md';
+export const RULES_SECTION = 'agent-critical-rules.md';
 
 export interface InstructionFinding {
   file: string
   line: number
-  kind: 'budget' | 'router' | 'unrouted' | 'frontmatter' | 'trigger' | 'rule' | 'binding' | 'skills' | 'stub'
+  kind: 'budget' | 'router' | 'unrouted' | 'name' | 'frontmatter' | 'trigger' | 'rule' | 'binding' | 'skills' | 'stub'
   severity: 'error' | 'warning'
   detail: string
 }
@@ -141,13 +149,14 @@ function l0Rules(l0: string): Map<number, { name: string, rest: string, line: nu
   for (let i = start + 1; i < lines.length && !lines[i].startsWith('## '); i++) {
     const m = /^(\d+)\. \*\*([^*]+)\*\*(.*)$/.exec(lines[i]);
     if (!m) { continue; }
-    const pointer = /\s→ 01$/.test(m[3]);
-    rules.set(Number(m[1]), { name: m[2], rest: m[3].replace(/\s*→ 01$/, ''), line: i + 1, pointer });
+    const full = /\s+Full: (\S+)#(\d+)$/.exec(m[3]);
+    const pointer = full !== null && full[1] === RULES_SECTION && full[2] === m[1];
+    rules.set(Number(m[1]), { name: m[2], rest: full ? m[3].slice(0, full.index) : m[3], line: i + 1, pointer });
   }
   return rules;
 }
 
-/** `01-critical-rules.md` headings: number → { name, body, line }. */
+/** `agent-critical-rules.md` headings: number → { name, body, line }. */
 function fullRules(text: string): Map<number, { name: string, body: string, line: number }> {
   const rules = new Map<number, { name: string, body: string, line: number }>();
   const lines = text.split('\n');
@@ -201,6 +210,14 @@ export function lintInstructions(root: string): InstructionReport {
   const sections = listSections(root);
   const names = new Set(sections.map(s => s.name));
 
+  // NAMES: readable, prefixed, unnumbered.
+  for (const name of readdirSync(join(root, INSTRUCTIONS_DIR))) {
+    if (name === INSTRUCTIONS_README || name.startsWith('.')) { continue; }
+    if (!name.startsWith(SECTION_PREFIX)) {
+      findings.push({ severity: 'error', file: `${INSTRUCTIONS_DIR}/${name}`, line: 1, kind: 'name', detail: `every file here but ${INSTRUCTIONS_README} starts with \`${SECTION_PREFIX}\`: rename it to ${SECTION_PREFIX}${name.replace(/^\d+-/, '')}` });
+    }
+  }
+
   // ROUTER
   const rows = routerRows(l0);
   const routed = new Set<string>();
@@ -241,6 +258,7 @@ export function lintInstructions(root: string): InstructionReport {
     }
     const isProject = s.name === PROJECT_SECTION;
     if (typeof fm.id !== 'string' || !KEBAB.test(fm.id)) { findings.push({ severity: 'error', file: s.rel, line: 1, kind: 'frontmatter', detail: '`id` must be a kebab-case string' }); }
+    else if (s.name.startsWith(SECTION_PREFIX) && fm.id !== sectionId(s.name)) { findings.push({ severity: 'error', file: s.rel, line: 1, kind: 'frontmatter', detail: `\`id: ${fm.id}\` must be the file stem without \`${SECTION_PREFIX}\`: \`id: ${sectionId(s.name)}\`` }); }
     else if (ids.has(fm.id)) { findings.push({ severity: 'error', file: s.rel, line: 1, kind: 'frontmatter', detail: `\`id: ${fm.id}\` duplicates ${ids.get(fm.id)}` }); }
     else { ids.set(fm.id, s.rel); }
     for (const key of ['title', 'load_when'] as const) {
@@ -270,7 +288,7 @@ export function lintInstructions(root: string): InstructionReport {
   else {
     for (const [n, rule] of rules) {
       const target = full.get(n);
-      if (!rule.pointer) { findings.push({ severity: 'error', file: L0_FILE, line: rule.line, kind: 'rule', detail: `rule ${n} does not end with its "→ 01" pointer` }); }
+      if (!rule.pointer) { findings.push({ severity: 'error', file: L0_FILE, line: rule.line, kind: 'rule', detail: `rule ${n} does not end with its "Full: ${RULES_SECTION}#${n}" pointer` }); }
       if (!target) { findings.push({ severity: 'error', file: L0_FILE, line: rule.line, kind: 'rule', detail: `rule ${n} has no "## ${n}." heading in ${RULES_SECTION}` }); continue; }
       if (target.name !== rule.name) { findings.push({ severity: 'error', file: rulesSection.rel, line: target.line, kind: 'rule', detail: `rule ${n} is named "${target.name}" here but "${rule.name}" in L0` }); }
       const body = norm(target.body);
@@ -309,7 +327,7 @@ export function lintInstructions(root: string): InstructionReport {
     });
   }
 
-  // SKILLS: the project's own skills are routed from project.md, the one file `bun run up` never overwrites.
+  // SKILLS: the project's own skills are routed from agent-project.md, the one file `bun run up` never overwrites.
   const project = sections.find(s => s.name === PROJECT_SECTION);
   const projectRel = `${INSTRUCTIONS_DIR}/${PROJECT_SECTION}`;
   const projectRows = project ? skillTableRows(project.text, PROJECT_SKILLS_HEADING) ?? [] : [];
@@ -331,7 +349,7 @@ export function lintInstructions(root: string): InstructionReport {
     }
   }
 
-  // STUB: the generic project.md a downstream project receives carries none of this repo's identity.
+  // STUB: the generic agent-project.md a downstream project receives carries none of this repo's identity.
   const stubPath = join(root, PROJECT_INSTRUCTIONS_TEMPLATE);
   if (existsSync(stubPath)) {
     const own = maintainer && existsSync(join(root, PROJECT_INSTRUCTIONS)) ? readFileSync(join(root, PROJECT_INSTRUCTIONS), 'utf8') : null;

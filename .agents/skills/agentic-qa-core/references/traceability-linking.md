@@ -39,7 +39,7 @@ Workspace link-type names are workspace-specific. NEVER hardcode the English lit
 - `{{jira.link_types.<slug>}}.outward` → the outward phrase (read from the source issue).
 - `{{jira.link_types.<slug>}}.inward` → the inward phrase (read from the target issue).
 
-Resolution source is `.agents/jira-link-types.json` (workspace state), keyed by slug. Slug syntax follows `.agents/instructions/40-project-variables.md` / `agentic-qa-core/references/acli-integration.md` §Slug-catalog.
+Resolution source is `.agents/jira-link-types.json` (workspace state), keyed by slug. Slug syntax follows `.agents/instructions/agent-project-variables.md` / `agentic-qa-core/references/acli-integration.md` §Slug-catalog.
 
 **Hard-fail rule**: if a slug fails to resolve, or `exists_in_workspace` is `false` for that slug, STOP. Do not fall back to a literal name and do not guess the ID. Report the missing entry to the user and re-run:
 

@@ -94,7 +94,7 @@ export interface ParityFinding {
   note?: string
 }
 
-/** A row about the instruction sections (`makeInstructionsHook`): the `project.md` stub, a pre-split AGENTS.md. Never blocking. */
+/** A row about the instruction sections (`makeInstructionsHook`): the `agent-project.md` stub, a pre-split AGENTS.md. Never blocking. */
 export interface InstructionRowInput {
   path: string
   evidence: string
@@ -1403,7 +1403,7 @@ export function collectParityFindings(input: ParityInput): ParityFinding[] {
     }
   }
 
-  // The instruction sections: the `project.md` stub this run delivered (or
+  // The instruction sections: the `agent-project.md` stub this run delivered (or
   // refused) and the heading map for an AGENTS.md that predates the split.
   // A row about a file that also drifted REPLACES that row's heading advice:
   // "keep project-only headings" is wrong for headings that now live in a

@@ -10,7 +10,7 @@
   // automation is the playwright-cli, not an MCP. Remote servers whose only
   // project-side content was an API key (web search, Postman) are connected at
   // harness level instead: ~/.config/opencode/opencode.json for OpenCode. Skills
-  // resolve them by capability, whatever the prefix (.agents/instructions/30-tool-resolution.md).
+  // resolve them by capability, whatever the prefix (.agents/instructions/agent-tool-resolution.md).
   //
   // WHY {file:} AND NOT {env:}. {env:VAR} resolves from the OpenCode PROCESS
   // environment, which only exists when OpenCode was launched from a shell that

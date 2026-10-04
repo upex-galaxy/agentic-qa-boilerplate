@@ -353,7 +353,7 @@ Two files are updated during Stage 2: `test-session-memory.md` (live log, in the
   test-session-memory.md      # Stage 2 live log (hand-authored)
 ```
 
-The whole PBI tree is a gitignored Jira cache (`.agents/instructions/60-local-context-pbi.md`). The live log sits in `.session/` so a re-sync cannot clobber it mid-execution.
+The whole PBI tree is a gitignored Jira cache (`.agents/instructions/agent-local-context-pbi.md`). The live log sits in `.session/` so a re-sync cannot clobber it mid-execution.
 
 ### 5.2 `test-session-memory.md` stage 2 block
 

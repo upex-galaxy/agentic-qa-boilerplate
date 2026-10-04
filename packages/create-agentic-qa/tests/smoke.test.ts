@@ -463,25 +463,25 @@ describe('seedProjectInstructionsFromTemplate', () => {
   // The boilerplate's own overlay: its push flow, which no other repo has.
   const OWN = `${STUB}\n## Git Strategy (this repository)\n\nThis repo bypasses the ProtectPublic ruleset.\n\n## Other own rule\n\nkeep\n`;
   const instructions = (): string => join(dir, '.agents', 'instructions');
-  const readProject = (): string => readFileSync(join(instructions(), 'project.md'), 'utf8');
+  const readProject = (): string => readFileSync(join(instructions(), 'agent-project.md'), 'utf8');
 
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), 'seed-instructions-'));
     mkdirSync(instructions(), { recursive: true });
-    writeFileSync(join(instructions(), 'project.md'), OWN);
-    writeFileSync(join(instructions(), 'project.md.template'), STUB);
+    writeFileSync(join(instructions(), 'agent-project.md'), OWN);
+    writeFileSync(join(instructions(), 'agent-project.md.template'), STUB);
   });
 
   afterEach(() => { rmSync(dir, { recursive: true, force: true }); });
 
-  test('the stub becomes the project\'s project.md; nothing of the boilerplate\'s own travels', async () => {
+  test('the stub becomes the project\'s agent-project.md; nothing of the boilerplate\'s own travels', async () => {
     expect(await seedProjectInstructionsFromTemplate(dir)).toBe(true);
     expect(readProject()).toBe(STUB);
     expect(readProject()).not.toContain('ProtectPublic');
   });
 
   test('a template without the stub cuts the own Git Strategy section instead', async () => {
-    rmSync(join(instructions(), 'project.md.template'));
+    rmSync(join(instructions(), 'agent-project.md.template'));
     expect(await seedProjectInstructionsFromTemplate(dir)).toBe(false);
     expect(readProject()).not.toContain('Git Strategy (this repository)');
     expect(readProject()).not.toContain('ProtectPublic');
@@ -489,7 +489,7 @@ describe('seedProjectInstructionsFromTemplate', () => {
   });
 
   test('a stub that carries the section is refused and the cut applies', async () => {
-    writeFileSync(join(instructions(), 'project.md.template'), OWN);
+    writeFileSync(join(instructions(), 'agent-project.md.template'), OWN);
     expect(await seedProjectInstructionsFromTemplate(dir)).toBe(false);
     expect(readProject()).not.toContain('ProtectPublic');
   });

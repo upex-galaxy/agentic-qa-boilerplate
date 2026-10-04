@@ -4,17 +4,22 @@
  *
  * Ownership, one line each:
  *
- *  - every file in `.agents/instructions/` except `project.md` is upstream's
+ *  - every file in `.agents/instructions/` except `agent-project.md` is upstream's
  *    and syncs like a skill (overwrite, `.backups/` copy, an "overwritten
  *    edit" row, `updater.protected_paths` to keep a merge);
- *  - `project.md` is the project's own and is never synced. A project that
+ *  - `agent-project.md` is the project's own and is never synced. A project that
  *    has none receives it ONCE, written from the generic stub upstream ships
- *    beside it (`project.md.template`), never from upstream's own `project.md`,
+ *    beside it (`agent-project.md.template`), never from upstream's own `agent-project.md`,
  *    which carries the boilerplate's own exceptions (its Git Strategy);
+ *  - the sections were once named with a number (`80-git.md`) and the overlay
+ *    `project.md`: the numbered copies leave through `deprecatedFiles` with a
+ *    `.backups/` copy (`RETIRED_SECTION_FILES`), and a `project.md` with no
+ *    `agent-project.md` beside it is MOVED there byte for byte
+ *    (`moveLegacyProjectInstructions`), never regenerated from the stub;
  *  - `AGENTS.md` (L0) stays the project's, on the watchlist. A project
  *    scaffolded before the split keeps its monolith: it gets one row mapping
  *    each old heading to the section that now carries it, and naming the
- *    headings that are its own and belong in `project.md`.
+ *    headings that are its own and belong in `agent-project.md`.
  *
  * Both deliveries of the stub (this module for `bun run up`, the scaffolder in
  * `packages/create-agentic-qa`) and `instructions:check` refuse a stub that
@@ -28,9 +33,41 @@ import { IDENTITY_PATTERNS } from './agents-schema';
 export const INSTRUCTIONS_COMPONENT = 'instructions';
 export const INSTRUCTIONS_DIR = '.agents/instructions';
 /** The project-owned overlay: never synced, delivered once from the stub. */
-export const PROJECT_INSTRUCTIONS = `${INSTRUCTIONS_DIR}/project.md`;
+export const PROJECT_INSTRUCTIONS = `${INSTRUCTIONS_DIR}/agent-project.md`;
 /** The generic stub upstream ships for it. Not `.md`, so no section reader takes it for a section. */
-export const PROJECT_INSTRUCTIONS_TEMPLATE = `${INSTRUCTIONS_DIR}/project.md.template`;
+export const PROJECT_INSTRUCTIONS_TEMPLATE = `${INSTRUCTIONS_DIR}/agent-project.md.template`;
+/** Where the overlay lived before the sections carried the `agent-` prefix. Moved, never synced. */
+export const LEGACY_PROJECT_INSTRUCTIONS = `${INSTRUCTIONS_DIR}/project.md`;
+/**
+ * The upstream section files as they were named before the `agent-` prefix,
+ * old name -> new name. The overlay `project.md` is not here: it is the
+ * project's own and moves (`moveLegacyProjectInstructions`) instead of leaving.
+ */
+export const RENAMED_SECTION_FILES: Readonly<Record<string, string>> = {
+  '01-critical-rules.md': 'agent-critical-rules.md',
+  '10-harnesses.md': 'agent-harnesses.md',
+  '15-context-map.md': 'agent-context-map.md',
+  '20-skills-and-mcps.md': 'agent-skills-and-mcps.md',
+  '30-tool-resolution.md': 'agent-tool-resolution.md',
+  '40-project-variables.md': 'agent-project-variables.md',
+  '50-ticket-work.md': 'agent-ticket-work.md',
+  '60-local-context-pbi.md': 'agent-local-context-pbi.md',
+  '70-code-quickref.md': 'agent-code-quickref.md',
+  '80-git.md': 'agent-git.md',
+  '90-orchestration-detail.md': 'agent-orchestration-detail.md',
+  'project.md.template': 'agent-project.md.template',
+};
+/** Why a numbered copy is removed (the `deprecatedFiles` reason line). */
+export const RETIRED_SECTION_REASON = 'instruction sections renamed to readable agent-<topic> names; the new file arrived synced and the old copy is saved under .backups/';
+/** The numbered copies `bun run up` retires, each saved to `.backups/` first. */
+export const RETIRED_SECTION_FILES = Object.keys(RENAMED_SECTION_FILES).map(name => ({
+  path: `${INSTRUCTIONS_DIR}/${name}`,
+  component: 'instructions',
+  reason: RETIRED_SECTION_REASON,
+  deprecatedSince: '8.5',
+  backup: true,
+}));
+
 /** The heading under which a repository records its own reading of its git strategy (never in a stub). */
 export const PROJECT_GIT_HEADING = '## Git Strategy (this repository)';
 /** Marker of an L0 that has the ROUTER, i.e. a project already on progressive disclosure. */
@@ -44,7 +81,7 @@ export const ROUTER_MARKER = '<!-- router:start -->';
  * Why a stub must not ship, empty when it may. A stub carries the
  * boilerplate's identity when it holds an identity pattern (the same list the
  * `project.schema.yaml` gate uses), the boilerplate's own Git Strategy
- * heading, or is byte-equal to the boilerplate's own `project.md` (`own`,
+ * heading, or is byte-equal to the boilerplate's own `agent-project.md` (`own`,
  * when the caller has it): a copy of that file is not a stub.
  */
 export function stubLeaks(stub: string, own?: string | null): string[] {
@@ -58,9 +95,32 @@ export function stubLeaks(stub: string, own?: string | null): string[] {
     reasons.push(`it carries the boilerplate's own "${PROJECT_GIT_HEADING.replace(/^## /, '')}" section`);
   }
   if (typeof own === 'string' && own.trim() !== '' && own.trim() === stub.trim()) {
-    reasons.push('it is a copy of the boilerplate\'s own project.md, not a stub');
+    reasons.push('it is a copy of the boilerplate\'s own agent-project.md, not a stub');
   }
   return reasons;
+}
+
+// ============================================================================
+// PROJECT.MD -> AGENT-PROJECT.MD (the rename, once)
+// ============================================================================
+
+export type LegacyProjectOutcome
+  = | { kind: 'none' }
+    | { kind: 'moved', dryRun: boolean }
+    | { kind: 'both' };
+
+/**
+ * Move a project's `project.md` to `agent-project.md`, content byte for byte,
+ * when only the old name exists. When both exist nothing is touched: the
+ * project has two overlays and the caller reports it for a hand merge.
+ */
+export function moveLegacyProjectInstructions(root: string, opts: { dryRun?: boolean } = {}): LegacyProjectOutcome {
+  const legacy = path.join(root, LEGACY_PROJECT_INSTRUCTIONS);
+  if (!fs.existsSync(legacy)) { return { kind: 'none' }; }
+  if (fs.existsSync(path.join(root, PROJECT_INSTRUCTIONS))) { return { kind: 'both' }; }
+  if (opts.dryRun === true) { return { kind: 'moved', dryRun: true }; }
+  fs.renameSync(legacy, path.join(root, PROJECT_INSTRUCTIONS));
+  return { kind: 'moved', dryRun: false };
 }
 
 // ============================================================================
@@ -74,7 +134,7 @@ export type ProjectInstructionsOutcome
     | { kind: 'refused', reasons: string[] };
 
 /**
- * Write `project.md` from upstream's stub when the project has none. Never
+ * Write `agent-project.md` from upstream's stub when the project has none. Never
  * touches an existing file, and never writes a stub the leak gate refuses.
  * Under `dryRun` it reports what the real run would do and writes nothing.
  */
@@ -111,20 +171,20 @@ export interface HeadingHome {
  * and the number is what skills cite (`§9`).
  */
 export const LEGACY_HEADING_HOMES: readonly HeadingHome[] = [
-  { match: /^1\.\s/, home: 'L0 (each rule\'s binding sentence) + `01-critical-rules.md` (full text)' },
+  { match: /^1\.\s/, home: 'L0 (each rule\'s binding sentence) + `agent-critical-rules.md` (full text)' },
   { match: /^2\.\s/, home: 'L0, whole' },
-  { match: /^3\.\s/, home: 'L0 (core) + `90-orchestration-detail.md`' },
-  { match: /^4\.\s/, home: '`15-context-map.md`' },
-  { match: /^4\.5\.?\s/, home: '`10-harnesses.md`' },
-  { match: /^5\.\s/, home: '`20-skills-and-mcps.md`' },
-  { match: /^6\.\s/, home: '`30-tool-resolution.md`' },
-  { match: /^6\.5\.?\s/, home: '`30-tool-resolution.md`' },
-  { match: /^7\.\s/, home: '`40-project-variables.md`' },
-  { match: /^8\.\s/, home: '`50-ticket-work.md`' },
-  { match: /^9\.\s/, home: '`60-local-context-pbi.md`' },
-  { match: /^10\.\s/, home: '`70-code-quickref.md`' },
-  { match: /^11\.\s/, home: '`80-git.md`' },
-  { match: /^Git Strategy$/i, home: '`80-git.md` (the shared doctrine) + `project.md` → `Git Strategy (this repository)` (this project\'s own reading and any accepted divergence)' },
+  { match: /^3\.\s/, home: 'L0 (core) + `agent-orchestration-detail.md`' },
+  { match: /^4\.\s/, home: '`agent-context-map.md`' },
+  { match: /^4\.5\.?\s/, home: '`agent-harnesses.md`' },
+  { match: /^5\.\s/, home: '`agent-skills-and-mcps.md`' },
+  { match: /^6\.\s/, home: '`agent-tool-resolution.md`' },
+  { match: /^6\.5\.?\s/, home: '`agent-tool-resolution.md`' },
+  { match: /^7\.\s/, home: '`agent-project-variables.md`' },
+  { match: /^8\.\s/, home: '`agent-ticket-work.md`' },
+  { match: /^9\.\s/, home: '`agent-local-context-pbi.md`' },
+  { match: /^10\.\s/, home: '`agent-code-quickref.md`' },
+  { match: /^11\.\s/, home: '`agent-git.md`' },
+  { match: /^Git Strategy$/i, home: '`agent-git.md` (the shared doctrine) + `agent-project.md` → `Git Strategy (this repository)` (this project\'s own reading and any accepted divergence)' },
   { match: /^12\.\s/, home: 'L0, whole' },
 ];
 
@@ -141,7 +201,7 @@ export function hasRouter(agents: string): boolean {
 export interface LegacyMigrationPlan {
   /** Old heading -> its new home, in the project's order. */
   moved: Array<{ heading: string, home: string }>
-  /** Headings no upstream file owns: the project's own, which belong in `project.md`. */
+  /** Headings no upstream file owns: the project's own, which belong in `agent-project.md`. */
   projectOwn: string[]
 }
 
@@ -174,7 +234,7 @@ export function legacyMigrationRow(plan: LegacyMigrationPlan): { evidence: strin
     'informational: AGENTS.md predates progressive disclosure (no ROUTER); upstream ships a short always-on L0 plus the sections in .agents/instructions/, which this sync delivered',
     `${plan.moved.length} old heading(s) now live in a section and arrive synced from here on`,
     own,
-    'merge = replace AGENTS.md with upstream\'s L0, then copy this project\'s own rules into project.md (the map is in the saved file); AGENTS.md is never rewritten by the updater',
+    'merge = replace AGENTS.md with upstream\'s L0, then copy this project\'s own rules into agent-project.md (the map is in the saved file); AGENTS.md is never rewritten by the updater',
   ].join('; ');
   const note = [
     'Where each heading of this AGENTS.md lives now (sections are under .agents/instructions/):',
@@ -182,7 +242,7 @@ export function legacyMigrationRow(plan: LegacyMigrationPlan): { evidence: strin
     '| Old heading | New home |',
     '|---|---|',
     ...plan.moved.map(m => `| ${m.heading} | ${m.home} |`),
-    ...plan.projectOwn.map(h => `| ${h} | \`project.md\` (this project's own) |`),
+    ...plan.projectOwn.map(h => `| ${h} | \`agent-project.md\` (this project's own) |`),
     '',
     'After the move, `bun run instructions:check` proves the new L0 is routed and under budget.',
   ].join('\n');

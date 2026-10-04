@@ -150,7 +150,7 @@ Once branches are materialized and decisions captured, persist in this order:
    Per-strategy field values: `references/branching-strategies.md` → "git_strategy field rules (per strategy)".
 2. **Set up local tracking** for any newly-ensured branch (`git branch --set-upstream-to=origin/<branch> <branch>` or `git checkout -b <branch> origin/<branch>`), so later operations don't re-detect.
 
-The `## Git Strategy` section of `.agents/instructions/80-git.md` is a shipped pointer to `.agents/project.yaml` (`git_strategy:` block) — NEVER write strategy policy there. The block is the source of truth; its `git_strategy.description` field is the human summary. A later Strategy Setup re-run re-reads the block and only fills the `git_strategy.decisions.*` / `git_strategy.policy.*` fields still unset.
+The `## Git Strategy` section of `.agents/instructions/agent-git.md` is a shipped pointer to `.agents/project.yaml` (`git_strategy:` block) — NEVER write strategy policy there. The block is the source of truth; its `git_strategy.description` field is the human summary. A later Strategy Setup re-run re-reads the block and only fills the `git_strategy.decisions.*` / `git_strategy.policy.*` fields still unset.
 
 ---
 

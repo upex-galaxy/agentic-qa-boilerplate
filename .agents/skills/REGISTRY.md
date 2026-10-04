@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-10-04T14:20:19.562Z`
+> Generated: `2026-10-04T17:02:33.712Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -203,7 +203,7 @@ Skills indexed: 26
 - DO: verify with all four checks (test, types, lint, skills) and treat any non-zero exit as REJECT — present retry / skip-and-document / abort, never auto-fix. A skill that itself broke (a wrong step, a missing verifier, a stale rule) is reported upstream per `../agentic-qa-core/references/upstream-feedback.md`: drafted and redacted locally, filed only on explicit OK, verified with `gh issue view`.
 - WHEN the change IS a skill (a new or restructured `.agents/skills/<slug>/`): scaffold it per `../agentic-qa-core/references/skill-scaffold.md` (frontmatter incl. `metadata.kind`, per-kind files and sections, Definition of Done). `skill-creator` (T3, installed at project level) is ALWAYS the builder: load it for the draft, the test prompts, the evals and the description pass; the scaffold contract stays this repo's. Missing on the machine → scaffold from the reference's template and say so. Consumer SUT context skills are NOT this skill's job: `project-context` mode `context-skill` owns them.
 - DO NOT: let a subagent write `progress.md`; it is orchestrator-only. Code subagents return one-line summaries per task, and the orchestrator does not read their diffs.
-- DO: close every change that adds, renames or retires a skill, a `package.json` script or a doc path with the docs follow-through (Phase 3): patch `.agents/instructions/15-context-map.md` and `.agents/instructions/20-skills-and-mcps.md`, `README.md`, `INSTALLER.md`, `CONTEXT.md` and the `docs/core/` pages in the same PR. `bun run docs:check` proves the router and the quoted scripts; the prose is judgment.
+- DO: close every change that adds, renames or retires a skill, a `package.json` script or a doc path with the docs follow-through (Phase 3): patch `.agents/instructions/agent-context-map.md` and `.agents/instructions/agent-skills-and-mcps.md`, `README.md`, `INSTALLER.md`, `CONTEXT.md` and the `docs/core/` pages in the same PR. `bun run docs:check` proves the router and the quoted scripts; the prose is judgment.
 - DO: archive the session directory only after all four verifiers pass. On REJECT it stays in place so the run can be debugged or resumed.
 
 **Read full SKILL.md when**: writing the plan artifact, batching Code-phase tasks, resuming an interrupted session, or reading the ALLOWED/FORBIDDEN path tables themselves.
@@ -394,14 +394,14 @@ Skills indexed: 26
 
 **Compact Rules**:
 - Exactly ONE mode per run: `data` · `e2e` (synonym `features`) · `api` · `test-plan` · `refresh-all` · `context-skill`. Load only that mode's reference; never open a second one in the same pass.
-- `context-skill` scaffolds a project-owned `<aspect>-context` for an aspect the shipped context map skills (`CONTEXT_MAP_SKILLS`) do not cover (`../agentic-qa-core/references/skill-scaffold.md` §3): it cites its sources and never copies them. `refresh-all` never includes it. Its router row goes in the `## Project context skills` table of `.agents/instructions/project.md`, its trigger phrases in that file's `triggers:`; NEVER in `20-skills-and-mcps.md`, which `bun run up` overwrites.
+- `context-skill` scaffolds a project-owned `<aspect>-context` for an aspect the shipped context map skills (`CONTEXT_MAP_SKILLS`) do not cover (`../agentic-qa-core/references/skill-scaffold.md` §3): it cites its sources and never copies them. `refresh-all` never includes it. Its router row goes in the `## Project context skills` table of `.agents/instructions/agent-project.md`, its trigger phrases in that file's `triggers:`; NEVER in `agent-skills-and-mcps.md`, which `bun run up` overwrites.
 - Mode → reference → output: see the Mode routing table. A map mode writes ONLY its own skill's `references/<map>.html`; the legacy markdown files a project may hold (the skill's `legacy` list in `CONTEXT_MAP_SKILLS`, `cli/lib/context-maps.ts`) are read as input and never deleted. Domain vocabulary and architecture come from the maps `project-discovery` generates: `bun run context:map business-domain-context` and `bun run context:map infra-context`, never a `.context/` file. `test-plan` → `references/test-plan.md` → the `## Master Test Plan` section of the `QA Master Test Plan` Epic description in Jira (cached by the sync at `.context/PBI/qa-artifacts/master-test-plan.md`; never a local file).
 - User did not name a mode → ASK. NEVER infer `refresh-all` from a generic "refresh the context" request.
 - `refresh-all` runs strictly `data` → `e2e` → `api` → `test-plan`, one at a time. Each reference's own validation and approval gate must close before the next is loaded. Never skip ahead.
 - Artifact missing (or a placeholder map) = CREATE mode: may write once the analysis completes. Artifact exists = UPDATE mode: generate a candidate (for a map: only its stale sections), show the diff summary, WAIT for explicit approval. NEVER overwrite an existing artifact without that approval, and NEVER regenerate a whole generated map.
 - Stop the run on a hard dependency failure or a rejected overwrite. A missing SOFT dependency is not a stop: record it as a Discovery Gap and continue, exactly as the selected reference defines.
 - NEVER invent business facts. Read every source the selected reference requires; anything unverified belongs under the output's mandatory discovery-gaps section, not asserted in the body.
-- After a successful artifact write, add the pointer to `.agents/instructions/project.md` ONLY when that pointer is missing. NEVER write it into `AGENTS.md` (boilerplate-owned, size-budgeted) or add operational prose to `CLAUDE.md`.
+- After a successful artifact write, add the pointer to `.agents/instructions/agent-project.md` ONLY when that pointer is missing. NEVER write it into `AGENTS.md` (boilerplate-owned, size-budgeted) or add operational prose to `CLAUDE.md`.
 - Mode from `$ARGUMENTS`: when its first token matches a mode in the Mode routing table, that token IS the mode and the rest is forwarded to it unchanged (`/project-context data` on Claude Code, "project-context mode data" in prose on OpenCode and Codex). No matching first token → ASK which mode.
 - Before any step that uses a declared capability (`metadata.requires_capabilities`: `db`, `api-schema`, `diagrams` for the maps' figures), run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8: resolve by tool-name suffix, and when no available tool provides it STOP and name the capability + how to enable it, never a silent fallback.
 

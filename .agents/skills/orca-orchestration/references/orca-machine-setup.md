@@ -39,7 +39,7 @@ orca skills installed
 ```
 
 These are **optional and never required**. The stubs teach WHEN, not HOW; the grammar is served by
-the binary on demand (`orca skills get <topic>`), which is what this repo's references ask for on the DEEP topics; the stubs themselves are loaded, not fetched (`.agents/instructions/20-skills-and-mcps.md`).
+the binary on demand (`orca skills get <topic>`), which is what this repo's references ask for on the DEEP topics; the stubs themselves are loaded, not fetched (`.agents/instructions/agent-skills-and-mcps.md`).
 Install them if you want the user-level trigger words; skip them and nothing breaks.
 
 Note `orca skills install --local` installs into the current project instead of globally. In THIS

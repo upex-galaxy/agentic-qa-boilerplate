@@ -14,7 +14,7 @@
 
 ## The tool: DBHub MCP
 
-`[DB_TOOL]` resolves to the DBHub MCP (`.agents/instructions/30-tool-resolution.md`); Supabase MCP or raw SQL are the fallback.
+`[DB_TOOL]` resolves to the DBHub MCP (`.agents/instructions/agent-tool-resolution.md`); Supabase MCP or raw SQL are the fallback.
 DBHub names its tools `{tool}_{source_id}`. `dbhub.toml` ships one source with `id = "primary"`,
 so the tools are:
 

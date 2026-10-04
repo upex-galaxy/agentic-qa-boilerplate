@@ -17,7 +17,7 @@ The gate is a **clause**, not a phase rewrite. It runs, it clears, then the skil
 
 ## 3. Gate sequence (run in order)
 
-1. **Resolve the environment.** From the invocation arg if present; else default **staging** (per `.agents/instructions/50-ticket-work.md`); ask only when genuinely ambiguous. Persist as `<<ACTIVE_ENV>>` for the session.
+1. **Resolve the environment.** From the invocation arg if present; else default **staging** (per `.agents/instructions/agent-ticket-work.md`); ask only when genuinely ambiguous. Persist as `<<ACTIVE_ENV>>` for the session.
 2. **Assemble the required-capability set.** Each skill ships its own matrix (§"Required capabilities" in its SKILL.md) plus the MCP capabilities its frontmatter declares (`metadata.requires_capabilities`, vocabulary in `./mcp-capabilities.md`; those are verified at the point of use, §8, not alarmed here). Drop capabilities that the resolved scope makes irrelevant (e.g. no DB surface in this ticket → DBHub is OPTIONAL).
 3. **Probe every required capability** (§4 table) → build a GREEN / RED status list.
 4. **Branch:**
@@ -42,7 +42,7 @@ Each skill therefore declares ONLY its **specific capability delta**: the REQUIR
 
 ## 4. Capability probe table
 
-Probe only what the skill's matrix lists. `[TAG_TOOL]` resolve per `.agents/instructions/30-tool-resolution.md`.
+Probe only what the skill's matrix lists. `[TAG_TOOL]` resolve per `.agents/instructions/agent-tool-resolution.md`.
 
 | Capability | GREEN probe | Typical RED remedy |
 |---|---|---|

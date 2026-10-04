@@ -21,7 +21,7 @@ What an AI **synthesizes** (the business model, the glossary, the architecture, 
 | `regression-history/` | repo-owned | the hand-curated known-failures list `/regression-testing` reads | `git checkout` |
 | `README.md` (this file), `reports/README.md` | repo-owned | this repo | `git checkout` |
 
-The PBI tree has its own tier rules (`[SYNC]` / `[COMMIT]` / `[LOCAL]`): `PBI/README.md` and `.agents/instructions/60-local-context-pbi.md`.
+The PBI tree has its own tier rules (`[SYNC]` / `[COMMIT]` / `[LOCAL]`): `PBI/README.md` and `.agents/instructions/agent-local-context-pbi.md`.
 
 ## Ignored by default
 
@@ -49,10 +49,10 @@ A project scaffolded before this layout may still hold `business/`, `PRD/`, `SRS
 - Where a context skill replaces one, its generator reads the old file as input the first time it builds the map (each skill's `legacy` list in `CONTEXT_MAP_SKILLS`). After that, the map is the one to read.
 - Nothing upstream ships deletes them: `bun run up` and `bun run setup:doctor` only name them in an informational line. Removing them is the project's own decision, made after the matching map is generated.
 
-The outputs that were retired without a replacement file (`PRD/executive-summary.md`, `risk-assessment.md`, `PBI/ACCESS.md`) have no reader any more: product risks travel in the Master Test Plan in Jira, and the backlog recipe is `PBI/README.md` plus `.agents/instructions/60-local-context-pbi.md`.
+The outputs that were retired without a replacement file (`PRD/executive-summary.md`, `risk-assessment.md`, `PBI/ACCESS.md`) have no reader any more: product risks travel in the Master Test Plan in Jira, and the backlog recipe is `PBI/README.md` plus `.agents/instructions/agent-local-context-pbi.md`.
 
 ## References
 
-- `AGENTS.md` (always on, read by Claude Code through the generated `CLAUDE.md` shim) and the sections it routes to: `.agents/instructions/15-context-map.md` (key paths) and `.agents/instructions/60-local-context-pbi.md` (local context).
+- `AGENTS.md` (always on, read by Claude Code through the generated `CLAUDE.md` shim) and the sections it routes to: `.agents/instructions/agent-context-map.md` (key paths) and `.agents/instructions/agent-local-context-pbi.md` (local context).
 - `../CONTEXT.md`: the context-engineering rationale.
 - `.agents/skills/`: every workflow and context skill self-describes in its `SKILL.md`.
