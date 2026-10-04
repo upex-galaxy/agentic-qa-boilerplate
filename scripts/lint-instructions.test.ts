@@ -28,7 +28,7 @@ const L0 = (opts: { rule1?: string, rows?: string[], extra?: string } = {}): str
   '',
   '## 1. CRITICAL RULES: ALWAYS APPLY',
   '',
-  opts.rule1 ?? '1. **CREDENTIALS**: ALWAYS read from `.env`. NEVER hardcode/guess. → 01',
+  opts.rule1 ?? '1. **CREDENTIALS**: ALWAYS read from `.env`. NEVER hardcode/guess. Full: agent-critical-rules.md#1',
   '',
   '## ROUTER',
   '',
@@ -36,10 +36,10 @@ const L0 = (opts: { rule1?: string, rows?: string[], extra?: string } = {}): str
   '| When | Read | Was | Then |',
   '|---|---|---|---|',
   ...(opts.rows ?? [
-    '| a rule | `01-critical-rules.md` | §1 | - |',
-    '| git | `80-git.md` | §11 | - |',
+    '| a rule | `agent-critical-rules.md` | §1 | - |',
+    '| git | `agent-git.md` | §11 | - |',
     '| scripts | whenever any of these apply, read @package.json first | Rule #11 | - |',
-    '| project | `project.md` | - | - |',
+    '| project | `agent-project.md` | - | - |',
   ]),
   '<!-- router:end -->',
   '',
@@ -51,9 +51,9 @@ const RULES = `${fm('critical-rules', '[\'\\brule\']')}# Critical rules\n\n## 1.
 function scaffold(): void {
   write('package.json', JSON.stringify({ scripts: { 'skills:check': 'x' } }));
   write('AGENTS.md', L0());
-  write('.agents/instructions/01-critical-rules.md', RULES);
-  write('.agents/instructions/80-git.md', `${fm('git')}# Git\n\nBranch from main.\n`);
-  write('.agents/instructions/project.md', `${fm('project', '[]')}# Project\n`);
+  write('.agents/instructions/agent-critical-rules.md', RULES);
+  write('.agents/instructions/agent-git.md', `${fm('git')}# Git\n\nBranch from main.\n`);
+  write('.agents/instructions/agent-project.md', `${fm('project', '[]')}# Project\n`);
   write('.agents/instructions/README.md', '# Guide\n\nNEVER routed, no frontmatter.\n');
 }
 
@@ -110,7 +110,7 @@ describe('lint-instructions', () => {
     write('AGENTS.md', L0({ extra: 'y'.repeat(L0_BUDGET) }));
     expect(kinds()).toEqual([]);
     write('.agents/project.yaml', MAINTAINER_YAML);
-    write('.agents/instructions/project.md.template', '# Project\n');
+    write('.agents/instructions/agent-project.md.template', '# Project\n');
     expect(kinds()).toEqual(['budget:AGENTS.md']);
     write('AGENTS.md', L0({ extra: 'y'.repeat(L0_PROJECT_BUDGET) }));
     write('.agents/project.yaml', 'project: {}\n');
@@ -119,26 +119,26 @@ describe('lint-instructions', () => {
 
   test('an unrouted section, a dead row and a dead @import fail by name', () => {
     scaffold();
-    write('.agents/instructions/30-tools.md', `${fm('tools')}# Tools\n`);
+    write('.agents/instructions/agent-tools.md', `${fm('tools')}# Tools\n`);
     write('AGENTS.md', L0({ rows: [
-      '| a rule | `01-critical-rules.md` | §1 | - |',
-      '| git | `80-git.md`, `85-gone.md` | §11 | - |',
+      '| a rule | `agent-critical-rules.md` | §1 | - |',
+      '| git | `agent-git.md`, `85-gone.md` | §11 | - |',
       '| scripts | read @missing.json first | - | - |',
-      '| project | `project.md` | - | - |',
+      '| project | `agent-project.md` | - | - |',
       '| nothing | read the docs | - | - |',
     ] }));
     expect(kinds().sort()).toEqual([
       'router:AGENTS.md',
       'router:AGENTS.md',
       'router:AGENTS.md',
-      'unrouted:.agents/instructions/30-tools.md',
+      'unrouted:.agents/instructions/agent-tools.md',
     ]);
   });
 
   test('missing router markers fail once in the maintainers\' copy, without flagging every section as unrouted', () => {
     scaffold();
     write('.agents/project.yaml', MAINTAINER_YAML);
-    write('.agents/instructions/project.md.template', '# Project\n');
+    write('.agents/instructions/agent-project.md.template', '# Project\n');
     write('AGENTS.md', L0().replace('<!-- router:start -->', ''));
     expect(kinds()).toEqual(['router:AGENTS.md']);
   });
@@ -151,14 +151,14 @@ describe('lint-instructions', () => {
     expect(report.findings).toEqual([]);
   });
 
-  test('stub: an identity pattern, the own Git Strategy heading or a copy of the own project.md fails', () => {
+  test('stub: an identity pattern, the own Git Strategy heading or a copy of the own agent-project.md fails', () => {
     scaffold();
-    write('.agents/instructions/project.md.template', '# Project\n\nPushes bypass the ProtectPublic ruleset.\n\n## Git Strategy (this repository)\n');
-    expect(kinds()).toEqual(['stub:.agents/instructions/project.md.template', 'stub:.agents/instructions/project.md.template']);
+    write('.agents/instructions/agent-project.md.template', '# Project\n\nPushes bypass the ProtectPublic ruleset.\n\n## Git Strategy (this repository)\n');
+    expect(kinds()).toEqual(['stub:.agents/instructions/agent-project.md.template', 'stub:.agents/instructions/agent-project.md.template']);
     write('.agents/project.yaml', MAINTAINER_YAML);
-    write('.agents/instructions/project.md.template', `${fm('project', '[]')}# Project\n`);
-    expect(kinds()).toEqual(['stub:.agents/instructions/project.md.template']);
-    write('.agents/instructions/project.md.template', '# A generic stub\n');
+    write('.agents/instructions/agent-project.md.template', `${fm('project', '[]')}# Project\n`);
+    expect(kinds()).toEqual(['stub:.agents/instructions/agent-project.md.template']);
+    write('.agents/instructions/agent-project.md.template', '# A generic stub\n');
     expect(kinds()).toEqual([]);
   });
 
@@ -166,51 +166,68 @@ describe('lint-instructions', () => {
     scaffold();
     expect(kinds()).toEqual([]);
     write('.agents/project.yaml', MAINTAINER_YAML);
-    expect(kinds()).toEqual(['stub:.agents/instructions/project.md.template']);
+    expect(kinds()).toEqual(['stub:.agents/instructions/agent-project.md.template']);
   });
 
-  test('frontmatter shape: missing block, bad id, duplicate id, empty triggers and a trigger that does not compile', () => {
+  test('frontmatter shape: missing block, bad id, an id off its file name, empty triggers and a trigger that does not compile', () => {
     scaffold();
-    write('.agents/instructions/80-git.md', '# Git without frontmatter\n');
-    write('.agents/instructions/90-a.md', fm('Bad_Id'));
-    write('.agents/instructions/91-b.md', fm('critical-rules'));
-    write('.agents/instructions/92-c.md', fm('c', '[]'));
-    write('.agents/instructions/93-d.md', fm('d', '[\'(unclosed\']'));
+    write('.agents/instructions/agent-git.md', '# Git without frontmatter\n');
+    write('.agents/instructions/agent-a.md', fm('Bad_Id'));
+    write('.agents/instructions/agent-b.md', fm('critical-rules'));
+    write('.agents/instructions/agent-c.md', fm('c', '[]'));
+    write('.agents/instructions/agent-d.md', fm('d', '[\'(unclosed\']'));
+    write('.agents/instructions/agent-e.md', fm('not-e'));
     write('AGENTS.md', L0({ rows: [
-      '| a rule | `01-critical-rules.md` | §1 | - |',
-      '| git | `80-git.md`, `90-a.md`, `91-b.md`, `92-c.md`, `93-d.md` | §11 | - |',
-      '| project | `project.md` | - | - |',
+      '| a rule | `agent-critical-rules.md` | §1 | - |',
+      '| git | `agent-git.md`, `agent-a.md`, `agent-b.md`, `agent-c.md`, `agent-d.md`, `agent-e.md` | §11 | - |',
+      '| project | `agent-project.md` | - | - |',
     ] }));
     expect(kinds().sort()).toEqual([
-      'frontmatter:.agents/instructions/80-git.md',
-      'frontmatter:.agents/instructions/90-a.md',
-      'frontmatter:.agents/instructions/91-b.md',
-      'frontmatter:.agents/instructions/92-c.md',
-      'trigger:.agents/instructions/93-d.md',
+      'frontmatter:.agents/instructions/agent-a.md',
+      'frontmatter:.agents/instructions/agent-b.md',
+      'frontmatter:.agents/instructions/agent-c.md',
+      'frontmatter:.agents/instructions/agent-e.md',
+      'frontmatter:.agents/instructions/agent-git.md',
+      'trigger:.agents/instructions/agent-d.md',
     ]);
+    const details = lintInstructions(root).findings.map(f => f.detail);
+    expect(details).toContain('`id: critical-rules` must be the file stem without `agent-`: `id: b`');
+    expect(details).toContain('`id: not-e` must be the file stem without `agent-`: `id: e`');
+  });
+
+  test('names: every file but README.md carries the agent- prefix, numbered or not', () => {
+    scaffold();
+    write('.agents/instructions/80-git.md', `${fm('git')}# Git\n`);
+    write('.agents/instructions/notes.md.template', '# Notes\n');
+    write('.agents/instructions/.DS_Store', '');
+    const names = lintInstructions(root).findings.filter(f => f.kind === 'name');
+    expect(names.map(f => f.file).sort()).toEqual(['.agents/instructions/80-git.md', '.agents/instructions/notes.md.template']);
+    expect(names.find(f => f.file.endsWith('80-git.md'))?.detail).toContain('rename it to agent-git.md');
   });
 
   test('an L0 rule must keep its pointer, its name and verbatim sentences of the full text', () => {
     scaffold();
     write('AGENTS.md', L0({ rule1: '1. **CREDENTIALS**: ALWAYS read from `.env`. NEVER hardcode/guess.' }));
     expect(kinds()).toEqual(['rule:AGENTS.md']);
-    write('AGENTS.md', L0({ rule1: '1. **SECRETS**: ALWAYS read from `.env`. → 01' }));
-    expect(kinds()).toEqual(['rule:.agents/instructions/01-critical-rules.md']);
-    write('AGENTS.md', L0({ rule1: '1. **CREDENTIALS**: ALWAYS read secrets from `.env`. → 01' }));
+    write('AGENTS.md', L0({ rule1: '1. **CREDENTIALS**: ALWAYS read from `.env`. NEVER hardcode/guess. Full: agent-critical-rules.md#2' }));
+    expect(kinds()).toEqual(['rule:AGENTS.md']);
+    write('AGENTS.md', L0({ rule1: '1. **SECRETS**: ALWAYS read from `.env`. Full: agent-critical-rules.md#1' }));
+    expect(kinds()).toEqual(['rule:.agents/instructions/agent-critical-rules.md']);
+    write('AGENTS.md', L0({ rule1: '1. **CREDENTIALS**: ALWAYS read secrets from `.env`. Full: agent-critical-rules.md#1' }));
     expect(kinds()).toEqual(['rule:AGENTS.md']);
   });
 
   test('a full rule with no binding sentence in L0 fails', () => {
     scaffold();
-    write('.agents/instructions/01-critical-rules.md', `${RULES}\n## 2. PLAN\n\n2. **PLAN**: plan first.\n`);
-    expect(kinds()).toEqual(['rule:.agents/instructions/01-critical-rules.md']);
+    write('.agents/instructions/agent-critical-rules.md', `${RULES}\n## 2. PLAN\n\n2. **PLAN**: plan first.\n`);
+    expect(kinds()).toEqual(['rule:.agents/instructions/agent-critical-rules.md']);
   });
 
   test('a NEVER/MUST line binds through L0 verbatim, a rule id, a skill compact rule or a gate', () => {
     scaffold();
     write('.agents/skills/git-flow-master/SKILL.md', '# Git\n\n## Compact Rules\n\n- DO NOT force-push.\n\n## Other\n');
     write('.agents/skills/empty-skill/SKILL.md', '# Empty\n\n## Compact Rules\n\n- Be nice.\n');
-    write('.agents/instructions/80-git.md', [
+    write('.agents/instructions/agent-git.md', [
       fm('git'),
       'NEVER hardcode/guess.',
       'NEVER rebase main (Rule #1).',
@@ -229,26 +246,26 @@ describe('lint-instructions', () => {
     expect(lines).toEqual([18, 19, 20, 21]);
   });
 
-  test('lines under a numbered rule heading of 01-critical-rules.md are bound by that rule', () => {
+  test('lines under a numbered rule heading of agent-critical-rules.md are bound by that rule', () => {
     scaffold();
-    write('.agents/instructions/01-critical-rules.md', `${RULES}\nNEVER commit the .env file.\n`);
+    write('.agents/instructions/agent-critical-rules.md', `${RULES}\nNEVER commit the .env file.\n`);
     expect(kinds()).toEqual([]);
   });
 
-  test('skills: a project skill row lives in project.md; a dead row fails, a row without triggers or in the synced section warns', () => {
+  test('skills: a project skill row lives in agent-project.md; a dead row fails, a row without triggers or in the synced section warns', () => {
     scaffold();
     const table = (slugs: string[]): string => ['| Skill | Trigger | Purpose |', '|---|---|---|', ...slugs.map(slug => `| \`${slug}\` | "x" | y |`)].join('\n');
     write('.agents/skills/billing-context/SKILL.md', '# billing');
-    write('.agents/instructions/project.md', `${fm('project', '[]')}# Project\n\n## Project context skills\n\n${table(['billing-context'])}\n`);
+    write('.agents/instructions/agent-project.md', `${fm('project', '[]')}# Project\n\n## Project context skills\n\n${table(['billing-context'])}\n`);
     const skills = (): string[] => lintInstructions(root).findings.filter(f => f.kind === 'skills').map(f => `${f.severity}:${f.file}:${f.line}`);
-    expect(skills()).toEqual(['warning:.agents/instructions/project.md:1']);
+    expect(skills()).toEqual(['warning:.agents/instructions/agent-project.md:1']);
 
-    write('.agents/instructions/project.md', `${fm('project', '[\'\\bbilling\\b\']')}# Project\n\n## Project context skills\n\n${table(['billing-context', 'ghost-context'])}\n`);
-    expect(skills()).toEqual(['error:.agents/instructions/project.md:16']);
+    write('.agents/instructions/agent-project.md', `${fm('project', '[\'\\bbilling\\b\']')}# Project\n\n## Project context skills\n\n${table(['billing-context', 'ghost-context'])}\n`);
+    expect(skills()).toEqual(['error:.agents/instructions/agent-project.md:16']);
 
-    write('.agents/instructions/project.md', `${fm('project', '[\'\\bbilling\\b\']')}# Project\n\n## Project context skills\n\n${table(['billing-context'])}\n`);
-    write('.agents/instructions/20-skills-and-mcps.md', `${fm('skills-and-mcps', '[\'\\bskills?\\b\']')}### Skills (lazy-loaded by trigger phrase)\n\n${table(['iql-context', 'infra-context', 'billing-context'])}\n`);
-    expect(skills()).toEqual(['warning:.agents/instructions/20-skills-and-mcps.md:15']);
+    write('.agents/instructions/agent-project.md', `${fm('project', '[\'\\bbilling\\b\']')}# Project\n\n## Project context skills\n\n${table(['billing-context'])}\n`);
+    write('.agents/instructions/agent-skills-and-mcps.md', `${fm('skills-and-mcps', '[\'\\bskills?\\b\']')}### Skills (lazy-loaded by trigger phrase)\n\n${table(['iql-context', 'infra-context', 'billing-context'])}\n`);
+    expect(skills()).toEqual(['warning:.agents/instructions/agent-skills-and-mcps.md:15']);
   });
 });
 
@@ -256,12 +273,12 @@ describe('instructions helper', () => {
   test('router rows skip the header and the separator; refs and plain-text imports are extracted', () => {
     const rows = routerRows(L0()) ?? [];
     expect(rows.map(r => r.cells[1])).toEqual([
-      '`01-critical-rules.md`',
-      '`80-git.md`',
+      '`agent-critical-rules.md`',
+      '`agent-git.md`',
       'whenever any of these apply, read @package.json first',
-      '`project.md`',
+      '`agent-project.md`',
     ]);
-    expect(sectionRefs('`10-a.md`, `project.md` and `x.ts`')).toEqual(['10-a.md', 'project.md']);
+    expect(sectionRefs('`10-a.md`, `agent-project.md` and `x.ts`')).toEqual(['10-a.md', 'agent-project.md']);
     expect(importRefs('read @.agents/project.yaml and @package.json, not `@README.md`')).toEqual(['.agents/project.yaml', 'package.json']);
   });
 
@@ -269,8 +286,8 @@ describe('instructions helper', () => {
     expect(skillRouterSource(root)).toBeNull();
     write('AGENTS.md', '# x');
     expect(skillRouterSource(root)?.rel).toBe('AGENTS.md');
-    write('.agents/instructions/20-skills-and-mcps.md', '# s');
-    expect(skillRouterSource(root)?.rel).toBe('.agents/instructions/20-skills-and-mcps.md');
+    write('.agents/instructions/agent-skills-and-mcps.md', '# s');
+    expect(skillRouterSource(root)?.rel).toBe('.agents/instructions/agent-skills-and-mcps.md');
   });
 
   test('a skill table ends at the next heading; a missing heading is null, not an empty table', () => {

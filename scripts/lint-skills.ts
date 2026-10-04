@@ -42,7 +42,7 @@
  *      "Forbidden invocations" section which legitimately mentions it.
  *
  *   7. TIER-MISMATCH — skill named in the §5 skill router table
- *      (`.agents/instructions/20-skills-and-mcps.md`, else AGENTS.md) but absent from
+ *      (`.agents/instructions/agent-skills-and-mcps.md`, else AGENTS.md) but absent from
  *      cli/install.ts matching tier array, or vice versa. T1 + T4 skills
  *      exempt (T1 lives in .agents/skills/; T4 is auto-discovered at runtime).
  *      install.ts is the tier authority for community skills: one committed
@@ -179,7 +179,7 @@ const REPO_ROOT = process.env.LINT_SKILLS_ROOT ?? join(import.meta.dir, '..');
 const SKILLS_DIR = join(REPO_ROOT, '.agents/skills');
 const INSTALL_TS = join(REPO_ROOT, 'cli/install.ts');
 const AGENTS_MD = join(REPO_ROOT, 'AGENTS.md');
-// The skill router table: `.agents/instructions/20-skills-and-mcps.md`, or
+// The skill router table: `.agents/instructions/agent-skills-and-mcps.md`, or
 // `AGENTS.md` in a repo that has not split its instructions yet.
 const SKILL_ROUTER = skillRouterSource(REPO_ROOT);
 const SKILL_ROUTER_LABEL = `${SKILL_ROUTER?.rel ?? 'AGENTS.md'} §5`;
@@ -254,7 +254,7 @@ const KIND_SUFFIX_RULES: ReadonlyArray<{ kind: string, suffixes: readonly string
 const KNOWN_CAPABILITIES = new Set(['web-search', 'library-docs', 'db', 'api-schema', 'diagrams']);
 
 /**
- * Resolution tag → capability it resolves to (`.agents/instructions/30-tool-resolution.md`). Drives the
+ * Resolution tag → capability it resolves to (`.agents/instructions/agent-tool-resolution.md`). Drives the
  * CAPABILITY-UNDECLARED heuristic (check 19): a SKILL.md body using the tag
  * without declaring the capability is a WARN. `[AUTOMATION_TOOL]` is absent on
  * purpose: it resolves to `/playwright-cli`, a CLI, so no MCP capability backs it.

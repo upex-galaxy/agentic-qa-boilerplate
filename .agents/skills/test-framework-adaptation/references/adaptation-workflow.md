@@ -528,15 +528,15 @@ Run every detection signal and print a per-subsystem **GENERIC / ADAPTED** table
 | Env schema | `bun run vars:schema:check` exits 0 **AND** every variable the project added or renamed is declared in `.env.schema` |
 | dbhub | `DBHUB_*` populated in `.env` if `db_type` set (else `dbhub` MCP disabled in all three harness configs) |
 | allurerc | `allurerc.mjs` `name` != `Agentic QA Boilerplate` |
-| project.md | resolved auth strategy / first entity / OpenAPI source present in `.agents/instructions/project.md` (not generic template wording); `AGENTS.md` carries no project facts; `CLAUDE.md` remains exactly `@AGENTS.md` |
+| agent-project.md | resolved auth strategy / first entity / OpenAPI source present in `.agents/instructions/agent-project.md` (not generic template wording); `AGENTS.md` carries no project facts; `CLAUDE.md` remains exactly `@AGENTS.md` |
 | Project docs | `grep -rnE 'upexgalaxy\|dojo\.' README.md CONTEXT.md INSTALLER.md` returns only lines the project kept on purpose (§9.3) |
 | Full gate | `bun run repo:check` exits 0 |
 
-### 9.2 Update project.md
+### 9.2 Update agent-project.md
 
-Edit `.agents/instructions/project.md` in place, one heading per topic: record the resolved auth strategy, the first entity wired, the OpenAPI source, and any open Discovery Gaps. `AGENTS.md` is NOT edited: it is the boilerplate-owned always-on layer, synced by `bun run up` and held to a size budget by `bun run instructions:check`; `project.md` is the project-owned overlay the router loads on demand. Never add operational prose to `CLAUDE.md`; it must remain exactly `@AGENTS.md` plus one newline.
+Edit `.agents/instructions/agent-project.md` in place, one heading per topic: record the resolved auth strategy, the first entity wired, the OpenAPI source, and any open Discovery Gaps. `AGENTS.md` is NOT edited: it is the boilerplate-owned always-on layer, synced by `bun run up` and held to a size budget by `bun run instructions:check`; `agent-project.md` is the project-owned overlay the router loads on demand. Never add operational prose to `CLAUDE.md`; it must remain exactly `@AGENTS.md` plus one newline.
 
-The branching strategy is NOT recorded in `project.md` either: it lives in the `git_strategy:` block of `.agents/project.yaml`, which the project owns and `bun run up` never overwrites. When `git_strategy.meta.strategy_source` still reads `inherited`, offer `/git-flow-master` Strategy Setup as the next step instead of writing a strategy here.
+The branching strategy is NOT recorded in `agent-project.md` either: it lives in the `git_strategy:` block of `.agents/project.yaml`, which the project owns and `bun run up` never overwrites. When `git_strategy.meta.strategy_source` still reads `inherited`, offer `/git-flow-master` Strategy Setup as the next step instead of writing a strategy here.
 
 ### 9.3 Project-owned docs
 
@@ -546,7 +546,7 @@ Scrub the example identity (`upexgalaxy` / `UPEX-` / `dojo` values, the example 
 - Any folder under `docs/` other than `docs/core/` and `docs/assets/`: the project's own pages.
 - **Never** `docs/core/**`, `docs/assets/**`, `docs/index.html` or `docs/README.md`: the updater owns them and would offer the edit for overwrite on the next `bun run up`. Project-specific human documentation goes in a new folder under `docs/` (it appears in the portal sidebar on refresh).
 
-Close with `bun run docs:check` (dead paths, page metadata, every repo skill in the `.agents/instructions/20-skills-and-mcps.md` router or in the project's own table, every quoted `bun run` script declared in `package.json`). A skill the project added gets its router row in the `## Project context skills` table of `.agents/instructions/project.md`, with its trigger phrases in that file's `triggers:`; never in `20-skills-and-mcps.md`, which `bun run up` overwrites.
+Close with `bun run docs:check` (dead paths, page metadata, every repo skill in the `.agents/instructions/agent-skills-and-mcps.md` router or in the project's own table, every quoted `bun run` script declared in `package.json`). A skill the project added gets its router row in the `## Project context skills` table of `.agents/instructions/agent-project.md`, with its trigger phrases in that file's `triggers:`; never in `agent-skills-and-mcps.md`, which `bun run up` overwrites.
 
 ### 9.4 Close
 
@@ -571,7 +571,7 @@ Done only when **every** box is true (all map to a Phase 9 signal):
 - [ ] MCP servers consistent across `.mcp.json`, `opencode.jsonc` and `.codex/config.toml` (local stdio only); `harness:env` re-run and the session restarted after any MCP value changed; `allurerc.mjs` renamed
 - [ ] Every variable the project added or renamed declared in `.env.schema`; `vars:schema:check` exits 0
 - [ ] CI workflow env options + secret names + smoke tag reconciled; GitHub Secrets list emitted
-- [ ] `.agents/instructions/project.md` updated, `AGENTS.md` and the `CLAUDE.md` shim unchanged; branching strategy left to `git_strategy:` in `.agents/project.yaml`
+- [ ] `.agents/instructions/agent-project.md` updated, `AGENTS.md` and the `CLAUDE.md` shim unchanged; branching strategy left to `git_strategy:` in `.agents/project.yaml`
 - [ ] Project-owned docs scrubbed (§9.3) or the pass explicitly deferred; `docs/core/**` untouched
 - [ ] `.context/reports/test-framework-adaptation-plan.md` marked `COMPLETED`
 

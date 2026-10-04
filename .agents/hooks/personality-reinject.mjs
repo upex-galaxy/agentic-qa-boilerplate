@@ -395,7 +395,7 @@ export function worktreeUnprovisioned(options = {}) {
  * A row fires when the prompt matches its ANCHOR, the first file of its Read
  * cell (the section files it names in backticks come before its `@` imports);
  * every file of a fired row is routed. Anchoring keeps a file shared by two rows from dragging the
- * other row's files in: `40-project-variables.md` opens the variables row and
+ * other row's files in: `agent-project-variables.md` opens the variables row and
  * rides along in the tracker row, so a prompt about environments loads the
  * variables, not the PBI cache. A target outside the sections folder (the
  * Claude Code imports `@package.json`, `@.agents/project.yaml`) has no

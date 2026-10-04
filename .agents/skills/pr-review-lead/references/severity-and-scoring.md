@@ -24,7 +24,7 @@ The level is a lens on what gets *reported*, not a license to invent findings. A
 
 ## Worked example (why this doctrine exists)
 
-During a real review session, an initial pass flagged a nested-decorator pattern — a helper method inside an ATC's flow was itself decorated `@atc` and invoked from inside another `@atc` method, which the repo's own doctrine (`.agents/instructions/70-code-quickref.md`: *"ATC... NEVER calls another ATC. Reusable chains → Steps module."*) states as a hard rule — and scored it as "Crítico." The user pushed back: most engineers don't implement any architecture 100% by the book, and a pattern deviation that doesn't actually break anything shouldn't be framed as an "error" the way a real bug is. The correct call, once recalibrated to Standard strictness, was:
+During a real review session, an initial pass flagged a nested-decorator pattern — a helper method inside an ATC's flow was itself decorated `@atc` and invoked from inside another `@atc` method, which the repo's own doctrine (`.agents/instructions/agent-code-quickref.md`: *"ATC... NEVER calls another ATC. Reusable chains → Steps module."*) states as a hard rule — and scored it as "Crítico." The user pushed back: most engineers don't implement any architecture 100% by the book, and a pattern deviation that doesn't actually break anything shouldn't be framed as an "error" the way a real bug is. The correct call, once recalibrated to Standard strictness, was:
 
 > "El patrón KATA profesional separa esto con `@step` para no anidar ATCs — funciona igual, simplemente el patrón documentado dice otra cosa. Se lo menciono como comparación de patrón, no como error."
 

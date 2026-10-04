@@ -2,7 +2,7 @@
 
 > Loaded when someone wants MCP-level Jira / Confluence access, or when an MCP change fails
 > `bun run agents:compat:check`. The default tools for every Jira, Confluence and TMS action are
-> `/acli`, `/xray-cli` and `bun run jira:sync-issues` (`.agents/instructions/30-tool-resolution.md`). This MCP is a fallback the
+> `/acli`, `/xray-cli` and `bun run jira:sync-issues` (`.agents/instructions/agent-tool-resolution.md`). This MCP is a fallback the
 > repo never enables on its own.
 
 ## When to enable it
@@ -19,7 +19,7 @@ same way the committed configs pin every `bunx` package: pin the version you ins
 
 | Variable the server reads | Where the value comes from |
 |---|---|
-| `JIRA_URL` | the site host in `.agents/project.yaml` → `issue_tracker.atlassian_url`. Print it with `bun run --silent jira:url` and paste the LITERAL value. It is not an env var and never a `{{ATLASSIAN_URL}}` token: an MCP config cannot run a command, and a second env copy of the host is exactly what goes stale (`.agents/instructions/40-project-variables.md`). |
+| `JIRA_URL` | the site host in `.agents/project.yaml` → `issue_tracker.atlassian_url`. Print it with `bun run --silent jira:url` and paste the LITERAL value. It is not an env var and never a `{{ATLASSIAN_URL}}` token: an MCP config cannot run a command, and a second env copy of the host is exactly what goes stale (`.agents/instructions/agent-project-variables.md`). |
 | `JIRA_USERNAME` | `ATLASSIAN_EMAIL` in `.env` |
 | `JIRA_API_TOKEN` | `ATLASSIAN_API_TOKEN` in `.env` |
 

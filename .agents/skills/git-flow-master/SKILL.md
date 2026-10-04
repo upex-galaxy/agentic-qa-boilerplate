@@ -122,7 +122,7 @@ It queries BOTH GitHub protection mechanisms for every branch in `git_strategy.b
 - **A push that succeeds is not evidence of an absent rule.** Org owners and anyone on the ruleset bypass list push through while the rule still binds everyone else. When a push prints `Changes must be made through a pull request`, that was a BYPASS: report it as one, never as permission. With `git_strategy.policy.admin_bypass: true` (or the divergence listed in `git_strategy.policy.accepted_divergences`), the `Bypassed rule violations` remote line is the DOCUMENTED norm — mention it in the report as expected, do NOT treat it as an anomaly, do NOT stall asking for confirmation, and NEVER open a PR to "satisfy" the rule.
 - **`require_code_owner_review: true` with no `CODEOWNERS` file is unsatisfiable, not strict.** Nobody outside the bypass list can clear it, so every merge becomes a bypass.
 
-**On drift, report — never auto-correct.** Three legitimate resolutions: update `.agents/project.yaml` to match the host, change the host (`bun run git:policy apply`, dry run until `--yes`), or accept the divergence in `git_strategy.policy.accepted_divergences` and record WHY in this project's own `.agents/instructions/project.md` (`## Git Strategy (this repository)`). Editing either side needs the user's choice.
+**On drift, report — never auto-correct.** Three legitimate resolutions: update `.agents/project.yaml` to match the host, change the host (`bun run git:policy apply`, dry run until `--yes`), or accept the divergence in `git_strategy.policy.accepted_divergences` and record WHY in this project's own `.agents/instructions/agent-project.md` (`## Git Strategy (this repository)`). Editing either side needs the user's choice.
 
 ---
 
@@ -168,7 +168,7 @@ git_strategy:
 
 The block is the source of truth; its `git_strategy.description` field is the one-paragraph human summary. The user can edit it; the next invocation re-reads it.
 
-The `## Git Strategy` section of `.agents/instructions/80-git.md` is **just a pointer** to `.agents/project.yaml` (`git_strategy:` block) — NEVER write strategy policy or branch decisions into `AGENTS.md` or an instruction section. A repository's own reading of its strategy goes in its project-owned `.agents/instructions/project.md` (`## Git Strategy (this repository)`).
+The `## Git Strategy` section of `.agents/instructions/agent-git.md` is **just a pointer** to `.agents/project.yaml` (`git_strategy:` block) — NEVER write strategy policy or branch decisions into `AGENTS.md` or an instruction section. A repository's own reading of its strategy goes in its project-owned `.agents/instructions/agent-project.md` (`## Git Strategy (this repository)`).
 
 If the strategy uses an integration branch with a non-default name (anything other than `staging`), record it under `git_strategy.branches.integration` so commits don't have to re-detect.
 
@@ -264,7 +264,7 @@ Group changes by responsibility, not by file type:
 
 - One commit = one responsibility. Never bundle unrelated changes.
 - Never `git add -A` or `git add .` — list explicit paths to avoid leaking secrets (`.env`, credentials) or unrelated work.
-- **PBI ladder guard (repos running the `.context/PBI/` cache, `.agents/instructions/60-local-context-pbi.md`).** After staging, run `git diff --cached --name-only | grep '^\.context/'`. Anything staged there must be one of the three `[COMMIT]`-tier paths (`.context/PBI/README.md`, `.context/PBI/templates/**`, `.context/PBI/epics/*/test-specs/**`); every other match is `[SYNC]` cache that leaked past the ignore ladder — a directory like `stories/` reads as untracked in `git status` and an explicit-path `git add` descends straight past the exclusion. Unstage it (`git restore --staged <path>`) before the commit proceeds. A commit that touches no `.context/` path skips this check.
+- **PBI ladder guard (repos running the `.context/PBI/` cache, `.agents/instructions/agent-local-context-pbi.md`).** After staging, run `git diff --cached --name-only | grep '^\.context/'`. Anything staged there must be one of the three `[COMMIT]`-tier paths (`.context/PBI/README.md`, `.context/PBI/templates/**`, `.context/PBI/epics/*/test-specs/**`); every other match is `[SYNC]` cache that leaked past the ignore ladder — a directory like `stories/` reads as untracked in `git status` and an explicit-path `git add` descends straight past the exclusion. Unstage it (`git restore --staged <path>`) before the commit proceeds. A commit that touches no `.context/` path skips this check.
 - **No AI attribution.** No `Generated with Claude Code`, no `Co-Authored-By: Claude`, no equivalent line. Commits look human-authored. (Critical Reminder #3 in `AGENTS.md`.)
 - If a pre-commit hook fails, **stop, fix the underlying issue, create a NEW commit**. Never `--amend` a commit the hook rejected — `--amend` operates on the previous commit, which destroys context.
 

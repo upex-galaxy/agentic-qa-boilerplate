@@ -110,7 +110,7 @@ A tool that can silently open `main` is a worse problem than the drift it fixes.
 
 **`verify` also runs automatically**: the pre-push hook and `bun run repo:check` both invoke it, so unaccepted drift blocks a push instead of escaping out the back door. Unreachable host = warn + exit 0 there (see §1).
 
-**Never `apply` to fix a `verify` failure you have not read.** Drift has three legitimate resolutions and only one of them is "change the host": the yaml may be the wrong side, or the divergence may be intended — in which case record it in `git_strategy.policy.accepted_divergences` (§2b) with a reason, and summarize the WHY in the project's own `.agents/instructions/project.md` → `## Git Strategy (this repository)` if it needs prose context.
+**Never `apply` to fix a `verify` failure you have not read.** Drift has three legitimate resolutions and only one of them is "change the host": the yaml may be the wrong side, or the divergence may be intended — in which case record it in `git_strategy.policy.accepted_divergences` (§2b) with a reason, and summarize the WHY in the project's own `.agents/instructions/agent-project.md` → `## Git Strategy (this repository)` if it needs prose context.
 
 ---
 

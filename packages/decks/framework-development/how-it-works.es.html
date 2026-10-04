@@ -651,13 +651,13 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="grid g2 mt-m" style="gap:28px;align-items:start">
       <div class="stack" style="gap:14px">
         <div class="card card-accent"><p class="lbl">Cuándo</p><p class="small mt-s">El cambio agrega, renombra o retira una skill, un script de <code>package.json</code> o una ruta de doc.</p></div>
-        <div class="card"><p class="lbl">Qué se toca</p><p class="small mt-s"><code>.agents/instructions/15-context-map.md</code> y <code>20-skills-and-mcps.md</code>, <code>README.md</code>, <code>INSTALLER.md</code>, <code>CONTEXT.md</code> y <code>docs/core/</code>, en el mismo PR.</p></div>
+        <div class="card"><p class="lbl">Qué se toca</p><p class="small mt-s"><code>.agents/instructions/agent-context-map.md</code> y <code>agent-skills-and-mcps.md</code>, <code>README.md</code>, <code>INSTALLER.md</code>, <code>CONTEXT.md</code> y <code>docs/core/</code>, en el mismo PR.</p></div>
         <div class="card"><p class="lbl">Sin listas copiadas</p><p class="small mt-s">Las páginas humanas apuntan a <code>.agents/skills/REGISTRY.md</code> y nunca enumeran las skills (Rule #17).</p></div>
       </div>
       <div class="stack" style="gap:10px">
         <p class="lbl">Qué prueba <code>bun run docs:check</code></p>
         <table class="tt tight">
-          <tr><td class="small">Cada skill del repo tiene su fila en el router de <code>.agents/instructions/20-skills-and-mcps.md</code>.</td></tr>
+          <tr><td class="small">Cada skill del repo tiene su fila en el router de <code>.agents/instructions/agent-skills-and-mcps.md</code>.</td></tr>
           <tr><td class="small">Cada <code>bun run &lt;script&gt;</code> citado en <code>AGENTS.md</code>, en sus secciones de <code>.agents/instructions/</code> o en los docs existe en <code>package.json</code>.</td></tr>
           <tr><td class="small">Cada link relativo y cada ruta citada existe.</td></tr>
           <tr><td class="small">Sin citas <code>archivo:línea</code> ni afirmaciones sobre el presente (Rule #17).</td></tr>
@@ -666,7 +666,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <p class="small dim">Docs de un proyecto downstream: <code>test-framework-adaptation</code>, Fase 9.3.</p>
       </div>
     </div>
-    <div class="notes">.agents/instructions/15-context-map.md rutea "sync AI context" / "sync AI memory" a /framework-development cuando el cambio es del boilerplate. docs:check corre dentro de bun run repo:check.</div>
+    <div class="notes">.agents/instructions/agent-context-map.md rutea "sync AI context" / "sync AI memory" a /framework-development cuando el cambio es del boilerplate. docs:check corre dentro de bun run repo:check.</div>
   </section>
 
   <!-- 11. FASE 4 ARCHIVE -->
@@ -707,13 +707,13 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <table class="tt tight">
           <tr><td class="small"><code>bun run skills:check</code> en verde: tipo declarado, sufijo coherente, sin rutas viejas.</td></tr>
           <tr><td class="small"><code>bun run skills:registry</code> regenerado y <code>bun run skills:registry:check</code> en verde.</td></tr>
-          <tr><td class="small">Fila en <code>.agents/instructions/20-skills-and-mcps.md</code> (solo T1) y un cargador: qué flujo la carga y cuándo.</td></tr>
+          <tr><td class="small">Fila en <code>.agents/instructions/agent-skills-and-mcps.md</code> (solo T1) y un cargador: qué flujo la carga y cuándo.</td></tr>
           <tr><td class="small"><code>evals/evals.json</code> para una skill de tipo workflow.</td></tr>
         </table>
         <div class="card card-soft"><p class="small">Las context skills de un proyecto consumidor <b>no</b> pasan por acá: las crea <code>project-context</code>, modo <code>context-skill</code>, con el mismo constructor.</p></div>
       </div>
     </div>
-    <div class="notes">El docs follow-through de la slide 10 aplica también: una skill nueva necesita su fila en el router de .agents/instructions/20-skills-and-mcps.md, y docs:check falla si falta.</div>
+    <div class="notes">El docs follow-through de la slide 10 aplica también: una skill nueva necesita su fila en el router de .agents/instructions/agent-skills-and-mcps.md, y docs:check falla si falta.</div>
   </section>
 
   <!-- 13. KATA INVARIANTS -->
@@ -745,7 +745,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 
   <!-- 14. CLI IMPORT CLOSURE -->
   <section class="slide compact" data-title="cli/ cerrado a imports">
-    <p class="kicker">.agents/instructions/10-harnesses.md · 14 de 17</p>
+    <p class="kicker">.agents/instructions/agent-harnesses.md · 14 de 17</p>
     <h2 class="h2"><code>cli/</code> no importa <span class="grad">nada de afuera</span></h2>
     <div class="grid g2 mt-m" style="gap:28px;align-items:start">
       <div class="stack" style="gap:14px">
@@ -757,7 +757,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <div class="card"><p class="lbl">Quién lo hace cumplir</p><p class="small mt-s">El bloque <code>CLI_IMPORT_CLOSURE</code> de <code>eslint.config.base.js</code>, así que <code>bun run lint:check</code> lo atrapa en CI, en pre-push y en <code>bun run repo:check</code>. Al lado vive <code>KATA_IMPORT_ALIASES</code>, que prohíbe <code>./</code> y <code>../</code> bajo <code>tests/</code>.</p></div>
       </div>
     </div>
-    <div class="notes">Fuentes: .agents/instructions/10-harnesses.md (cli/ IS IMPORT-CLOSED; root configs ship in halves) y la regla F7 de la skill: refactorizar cli/install.ts exige probar la instalación completa en un clon limpio, porque verificar en un repo ya instalado no prueba nada. Como eslint.config.js es del proyecto y no se sobrescribe, validateEslintBlockWiring hace fallar agents:compat:check cuando un bloque exportado por la base no está cableado en el consumidor.</div>
+    <div class="notes">Fuentes: .agents/instructions/agent-harnesses.md (cli/ IS IMPORT-CLOSED; root configs ship in halves) y la regla F7 de la skill: refactorizar cli/install.ts exige probar la instalación completa en un clon limpio, porque verificar en un repo ya instalado no prueba nada. Como eslint.config.js es del proyecto y no se sobrescribe, validateEslintBlockWiring hace fallar agents:compat:check cuando un bloque exportado por la base no está cableado en el consumidor.</div>
   </section>
 
   <!-- 15. RIELES -->
@@ -801,7 +801,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
           <tr><td class="small">Plan, progreso y archivo</td><td class="small"><code>.session/</code> (local)</td></tr>
           <tr><td class="small">ADR, cuando aplica</td><td class="small"><code>.context/ADR/</code></td></tr>
           <tr><td class="small">El cambio</td><td class="small">solo rutas ALLOWED de <code>kata-invariants.md</code> §10</td></tr>
-          <tr><td class="small">La doc</td><td class="small"><code>.agents/instructions/</code> (<code>15-context-map.md</code>, <code>20-skills-and-mcps.md</code>), <code>README.md</code>, <code>INSTALLER.md</code>, <code>CONTEXT.md</code>, <code>docs/core/</code></td></tr>
+          <tr><td class="small">La doc</td><td class="small"><code>.agents/instructions/</code> (<code>agent-context-map.md</code>, <code>agent-skills-and-mcps.md</code>), <code>README.md</code>, <code>INSTALLER.md</code>, <code>CONTEXT.md</code>, <code>docs/core/</code></td></tr>
           
         </table>
         <p class="small dim">Lo generado se <b>regenera</b> con su comando (<code>bun run kata:manifest</code>, <code>bun run api:sync</code>).</p>

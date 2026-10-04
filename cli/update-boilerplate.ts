@@ -51,8 +51,11 @@ import {
   deliverProjectInstructions,
   INSTRUCTIONS_COMPONENT,
   INSTRUCTIONS_DIR,
+  LEGACY_PROJECT_INSTRUCTIONS,
+  moveLegacyProjectInstructions,
   PROJECT_INSTRUCTIONS,
   PROJECT_INSTRUCTIONS_TEMPLATE,
+  RETIRED_SECTION_FILES,
   runLegacyMigrationCheck,
 } from './lib/updater-instructions';
 import {
@@ -222,7 +225,11 @@ export const RETIRED_SKILL_FILES: DeprecatedFile[] = [
   ].map(path => ({ path, component: 'skills', reason: RETIRED_SYNC_REASON, deprecatedSince: '8.5' })),
 ];
 
-export const DEPRECATED_FILES: DeprecatedFile[] = [...RETIRED_COMMAND_WRAPPERS, ...RETIRED_SKILL_FILES];
+// The instruction sections once carried a number (`80-git.md`): the renamed
+// files arrive through the `instructions` component, the numbered copies leave
+// here, each saved to `.backups/` first because a project may have kept a merge
+// in one (`updater.protected_paths`).
+export const DEPRECATED_FILES: DeprecatedFile[] = [...RETIRED_COMMAND_WRAPPERS, ...RETIRED_SKILL_FILES, ...RETIRED_SECTION_FILES];
 
 export const COMPONENTS: Component[] = [
   // `skills` stays its own component (not folded into `agent-compatibility` as
@@ -230,9 +237,9 @@ export const COMPONENTS: Component[] = [
   { name: 'skills', type: 'directory', paths: [SKILLS_CANONICAL_DIR] },
   // The progressive-disclosure sections behind the AGENTS.md ROUTER. Synced
   // like a skill (overwrite, `.backups/` copy, an "overwritten edit" row,
-  // `updater.protected_paths` to keep a merge), EXCEPT `project.md`: that one
+  // `updater.protected_paths` to keep a merge), EXCEPT `agent-project.md`: that one
   // is the project's own (excludePaths below) and arrives once, written from
-  // the generic `project.md.template` this component ships
+  // the generic `agent-project.md.template` this component ships
   // (`deliverProjectInstructions`, afterApply).
   { name: INSTRUCTIONS_COMPONENT, type: 'directory', paths: [INSTRUCTIONS_DIR] },
   // One source, three harnesses: the hook emitter and the OpenCode hook
@@ -563,7 +570,7 @@ interface RunFacts {
   allowListAdded: string[]
   /** One-line evidence for the unresolved-doctrine ledger row, when AGENTS.md carries debt. */
   doctrineDebt: string | null
-  /** Rows about the instruction sections: the `project.md` stub delivery and a pre-split AGENTS.md. */
+  /** Rows about the instruction sections: the `agent-project.md` stub delivery and a pre-split AGENTS.md. */
   instructionRows: InstructionRowInput[]
   parity: { findings: ParityFinding[], report: ParityReport } | null
 }
@@ -1244,15 +1251,33 @@ export function resolveProtectedWatchlist(cwd: string, warn: (message: string) =
 
 // --- INSTRUCTION SECTIONS (afterApply hook) ---
 //
-// `project.md` is never synced (excludePaths): a project without one gets the
-// generic stub, once, behind the leak gate. A project still on the pre-split
+// `agent-project.md` is never synced (excludePaths): a project that still has
+// it under its old name `project.md` gets it moved, content kept; a project
+// without either gets the generic stub, once, behind the leak gate. A project still on the pre-split
 // monolith AGENTS.md gets one row mapping its old headings to the sections;
 // its AGENTS.md is never rewritten. Under --dry-run nothing is written.
 function makeInstructionsHook(sink: ReportSink, dryRun: boolean): () => Promise<void> {
   return async () => {
     const cwd = process.cwd();
     runFacts.instructionRows = [];
-    const outcome = deliverProjectInstructions(cwd, UPSTREAM_DIR, { dryRun });
+    const legacy = moveLegacyProjectInstructions(cwd, { dryRun });
+    if (legacy.kind === 'moved') {
+      sink.step(`${dryRun ? '[dry-run] Se movería' : 'Movido'} \`${LEGACY_PROJECT_INSTRUCTIONS}\` a \`${PROJECT_INSTRUCTIONS}\` (mismo contenido; las secciones ahora se llaman agent-<tema>).`);
+      runFacts.instructionRows.push({
+        path: PROJECT_INSTRUCTIONS,
+        evidence: `informational: ${dryRun ? 'would be' : 'was'} moved from ${LEGACY_PROJECT_INSTRUCTIONS} byte for byte (the instruction sections carry readable agent- names now); still this project's own and never synced`,
+        suggested: 'keep project',
+      });
+    }
+    else if (legacy.kind === 'both') {
+      runFacts.instructionRows.push({
+        path: LEGACY_PROJECT_INSTRUCTIONS,
+        evidence: `both ${LEGACY_PROJECT_INSTRUCTIONS} (old name) and ${PROJECT_INSTRUCTIONS} exist; only the second is read: merge the old file's rules into it by hand, then delete the old one`,
+        suggested: 'merge',
+      });
+    }
+    // A dry-run move left the file under its old name: the stub would not be delivered.
+    const outcome = legacy.kind === 'moved' ? { kind: 'present' as const } : deliverProjectInstructions(cwd, UPSTREAM_DIR, { dryRun });
     if (outcome.kind === 'delivered') {
       sink.step(`${dryRun ? '[dry-run] Se crearía' : 'Creado'} \`${PROJECT_INSTRUCTIONS}\` desde la plantilla generica (tus reglas propias van ahi).`);
       runFacts.instructionRows.push({
@@ -1984,6 +2009,9 @@ async function main(): Promise<void> {
       // Upstream's own overlay carries the boilerplate's own exceptions (its
       // Git Strategy): it never travels. A project gets the stub instead.
       PROJECT_INSTRUCTIONS,
+      // Its name before the `agent-` prefix: the project's own copy is moved by
+      // the instructions hook, never classified by the sync.
+      LEGACY_PROJECT_INSTRUCTIONS,
     ],
     // The boilerplate's own design material. `docs` is a synced component, so
     // without this every consumer project inherits our proposals and backlogs as
@@ -2035,7 +2063,7 @@ async function main(): Promise<void> {
             // hook, which folds its one row in.
             async () => { runFacts.doctrineDebt = runDoctrineLedger(process.cwd(), UPSTREAM_DIR); },
             // After the sync delivered the sections: the project's own
-            // `project.md` from the stub (once), and the migration row for a
+            // `agent-project.md` from the stub (once), and the migration row for a
             // pre-split AGENTS.md. Before the parity hook, which folds them in.
             makeInstructionsHook(sink, false),
             async () => detectEnvVarDrift(UPSTREAM_DIR, sink, nonInteractive),

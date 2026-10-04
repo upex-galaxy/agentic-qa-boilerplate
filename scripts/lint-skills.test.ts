@@ -184,11 +184,11 @@ describe('lint-skills tier classification', () => {
 
   test('once the instructions are split, TIER-MISMATCH reads the §5 table from the skills section and names it', () => {
     const root = fixture({ listCommunityInAgentsMd: false });
-    write(root, '.agents/instructions/20-skills-and-mcps.md', readFileSync(join(root, 'AGENTS.md'), 'utf8'));
+    write(root, '.agents/instructions/agent-skills-and-mcps.md', readFileSync(join(root, 'AGENTS.md'), 'utf8'));
     write(root, 'AGENTS.md', '# AGENTS.md\n\n## 1. CRITICAL RULES\n');
     const { exitCode, output } = runLint(root);
 
-    expect(output).toContain('[resend-cli] TIER-MISMATCH: skill is in cli/install.ts tier arrays but absent from .agents/instructions/20-skills-and-mcps.md §5');
+    expect(output).toContain('[resend-cli] TIER-MISMATCH: skill is in cli/install.ts tier arrays but absent from .agents/instructions/agent-skills-and-mcps.md §5');
     expect(output).not.toContain('TIER-MISMATCH parse failure');
     expect(exitCode).toBe(0);
   });

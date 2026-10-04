@@ -174,7 +174,7 @@ async function main(): Promise<number> {
       });
       if (!seeded) { await resetGitStrategyMeta(projectDir); }
       // Same decoupling for the project-owned instruction overlay: the
-      // boilerplate's own project.md never travels, the generic stub does.
+      // boilerplate's own agent-project.md never travels, the generic stub does.
       await seedProjectInstructionsFromTemplate(projectDir);
       s2.stop('Project prepared');
     }

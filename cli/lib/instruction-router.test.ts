@@ -54,14 +54,14 @@ function routerFixture(): string {
     '<!-- router:start -->',
     '| When the request involves | Read | Was | Then |',
     '|---|---|---|---|',
-    '| git work | `80-git.md` | §11 | - |',
+    '| git work | `agent-git.md` | §11 | - |',
     '| variables | whenever any of these apply, read @.agents/project.yaml and `40-vars.md` | §7 | - |',
     '| tracker | `60-pbi.md`, `40-vars.md` | §9, §7 | - |',
     '| scripts | whenever any of these apply, read @package.json first | Rule #11 | - |',
     '<!-- router:end -->',
     '',
   ].join('\n'));
-  write(root, '.agents/instructions/80-git.md', '---\nid: git\ntitle: "Git"\nload_when: "git"\ntriggers: ["\\\\bcommit", "\\\\bpush"]\npaths: [".husky/"]\n---\n\n# Git\n');
+  write(root, '.agents/instructions/agent-git.md', '---\nid: git\ntitle: "Git"\nload_when: "git"\ntriggers: ["\\\\bcommit", "\\\\bpush"]\npaths: [".husky/"]\n---\n\n# Git\n');
   write(root, '.agents/instructions/40-vars.md', '---\nid: vars\ntitle: Vars\nload_when: vars\ntriggers:\n  - "\\\\benvironments?\\\\b"\n  - \'project\\.yaml\'\npaths: []\n---\n');
   write(root, '.agents/instructions/60-pbi.md', '---\nid: pbi\ntitle: PBI\nload_when: pbi\ntriggers: ["\\\\bjira\\\\b"]\npaths: [".context/PBI/"]\n---\n');
   write(root, '.agents/project.yaml', 'project: {}\n');
@@ -105,16 +105,16 @@ describe('router source: AGENTS.md and the section frontmatter, read at runtime'
     for (const target of router.targets.values()) {
       if (!target.path.startsWith('.agents/instructions/')) { continue; }
       expect(target.id.length).toBeGreaterThan(0);
-      if (!target.path.endsWith('/project.md')) { expect(target.triggers.length).toBeGreaterThan(0); }
+      if (!target.path.endsWith('/agent-project.md')) { expect(target.triggers.length).toBeGreaterThan(0); }
     }
   });
 
   test('a router edit changes the routing with no code change: one source of truth', () => {
     const root = routerFixture();
-    expect(classifyPrompt(loadInstructionRouter(root), 'commit this')).toEqual(['.agents/instructions/80-git.md']);
-    write(root, '.agents/instructions/80-git.md', '---\nid: git\ntitle: Git\nload_when: git\ntriggers: ["\\\\bmerge"]\npaths: []\n---\n');
+    expect(classifyPrompt(loadInstructionRouter(root), 'commit this')).toEqual(['.agents/instructions/agent-git.md']);
+    write(root, '.agents/instructions/agent-git.md', '---\nid: git\ntitle: Git\nload_when: git\ntriggers: ["\\\\bmerge"]\npaths: []\n---\n');
     expect(classifyPrompt(loadInstructionRouter(root), 'commit this')).toEqual([]);
-    expect(classifyPrompt(loadInstructionRouter(root), 'merge this')).toEqual(['.agents/instructions/80-git.md']);
+    expect(classifyPrompt(loadInstructionRouter(root), 'merge this')).toEqual(['.agents/instructions/agent-git.md']);
   });
 
   test('no AGENTS.md or no markers: nothing is routed, nothing throws', () => {
@@ -125,20 +125,20 @@ describe('router source: AGENTS.md and the section frontmatter, read at runtime'
     expect(routeLines({ repoRoot: root, prompt: 'commit and push', routeState: null })).toEqual([]);
   });
 
-  test('project.md routes by its own triggers: a project skill row there survives bun run up with no code change', () => {
+  test('agent-project.md routes by its own triggers: a project skill row there survives bun run up with no code change', () => {
     const root = routerFixture();
     const agents = readFileSync(join(root, 'AGENTS.md'), 'utf8');
-    write(root, 'AGENTS.md', agents.replace('<!-- router:end -->', '| anything specific to this project | `project.md` | - | project context skills |\n<!-- router:end -->'));
-    write(root, '.agents/instructions/project.md', '---\nid: project\ntitle: Project\nload_when: project\ntriggers: []\npaths: []\n---\n\n## Project context skills\n');
+    write(root, 'AGENTS.md', agents.replace('<!-- router:end -->', '| anything specific to this project | `agent-project.md` | - | project context skills |\n<!-- router:end -->'));
+    write(root, '.agents/instructions/agent-project.md', '---\nid: project\ntitle: Project\nload_when: project\ntriggers: []\npaths: []\n---\n\n## Project context skills\n');
     expect(classifyPrompt(loadInstructionRouter(root), 'how is a billing invoice voided?')).toEqual([]);
-    write(root, '.agents/instructions/project.md', '---\nid: project\ntitle: Project\nload_when: project\ntriggers: [\'\\binvoices?\\b\']\npaths: []\n---\n\n## Project context skills\n\n| Skill | Trigger | Purpose |\n|---|---|---|\n| `billing-context` | invoice | Billing rules. |\n');
-    expect(classifyPrompt(loadInstructionRouter(root), 'how is a billing invoice voided?')).toEqual(['.agents/instructions/project.md']);
+    write(root, '.agents/instructions/agent-project.md', '---\nid: project\ntitle: Project\nload_when: project\ntriggers: [\'\\binvoices?\\b\']\npaths: []\n---\n\n## Project context skills\n\n| Skill | Trigger | Purpose |\n|---|---|---|\n| `billing-context` | invoice | Billing rules. |\n');
+    expect(classifyPrompt(loadInstructionRouter(root), 'how is a billing invoice voided?')).toEqual(['.agents/instructions/agent-project.md']);
   });
 
   test('an invalid trigger is skipped, the rest of the section still routes', () => {
     const root = routerFixture();
-    write(root, '.agents/instructions/80-git.md', '---\nid: git\ntitle: Git\nload_when: git\ntriggers: ["(unclosed", "\\\\bpush"]\npaths: []\n---\n');
-    expect(classifyPrompt(loadInstructionRouter(root), 'push it')).toEqual(['.agents/instructions/80-git.md']);
+    write(root, '.agents/instructions/agent-git.md', '---\nid: git\ntitle: Git\nload_when: git\ntriggers: ["(unclosed", "\\\\bpush"]\npaths: []\n---\n');
+    expect(classifyPrompt(loadInstructionRouter(root), 'push it')).toEqual(['.agents/instructions/agent-git.md']);
   });
 });
 
@@ -166,12 +166,12 @@ describe('classification', () => {
 
   test('paths: a named path fires its section, the longest prefix wins, a path tail does not', () => {
     const root = routerFixture();
-    write(root, '.agents/instructions/80-git.md', '---\nid: git\ntitle: Git\nload_when: git\ntriggers: ["\\\\bnever-matches-anything\\\\b"]\npaths: [".context/", ".husky/"]\n---\n');
+    write(root, '.agents/instructions/agent-git.md', '---\nid: git\ntitle: Git\nload_when: git\ntriggers: ["\\\\bnever-matches-anything\\\\b"]\npaths: [".context/", ".husky/"]\n---\n');
     const router = loadInstructionRouter(root);
-    expect(classifyPrompt(router, 'edit .husky/pre-commit')).toEqual(['.agents/instructions/80-git.md']);
-    expect(classifyPrompt(router, 'open ./.husky/pre-push')).toEqual(['.agents/instructions/80-git.md']);
+    expect(classifyPrompt(router, 'edit .husky/pre-commit')).toEqual(['.agents/instructions/agent-git.md']);
+    expect(classifyPrompt(router, 'open ./.husky/pre-push')).toEqual(['.agents/instructions/agent-git.md']);
     expect(classifyPrompt(router, 'read .context/PBI/X-1/story.md')).toEqual(['.agents/instructions/60-pbi.md', '.agents/instructions/40-vars.md']);
-    expect(classifyPrompt(router, 'read .context/ADR/0001.md')).toEqual(['.agents/instructions/80-git.md']);
+    expect(classifyPrompt(router, 'read .context/ADR/0001.md')).toEqual(['.agents/instructions/agent-git.md']);
     expect(classifyPrompt(router, 'see vendor/.husky/x')).toEqual([]);
   });
 
@@ -224,11 +224,11 @@ describe('ROUTE: lines and the per-session state', () => {
     try {
       const first = prompt('commit this');
       expect(first.at(-2)).toStartWith('AGENT IDENTITY:');
-      expect(first.at(-1)).toBe(`${ROUTE_PREFIX} .agents/instructions/80-git.md (git)`);
+      expect(first.at(-1)).toBe(`${ROUTE_PREFIX} .agents/instructions/agent-git.md (git)`);
       expect(prompt('push it').some(line => line.startsWith(ROUTE_PREFIX))).toBe(false);
       for (const source of ['compact', 'clear']) {
         expect(renderHookOutput({ ...options, hookInput: { session_id: sessionId, hook_event_name: 'SessionStart', source } })).toBe('');
-        expect(prompt('push it').at(-1)).toBe(`${ROUTE_PREFIX} .agents/instructions/80-git.md (git)`);
+        expect(prompt('push it').at(-1)).toBe(`${ROUTE_PREFIX} .agents/instructions/agent-git.md (git)`);
       }
       expect(renderHookOutput({ ...options, hookInput: { session_id: sessionId, hook_event_name: 'SessionStart', source: 'resume' } })).toBe('');
       expect(prompt('push it').some(line => line.startsWith(ROUTE_PREFIX))).toBe(false);
@@ -284,6 +284,6 @@ describe('labelled-prompt eval (bilingual)', () => {
       env: { PATH: process.env.PATH ?? '', HOME: temporaryRoot('home ') },
     });
     expect(run.exitCode).toBe(0);
-    expect(run.stdout.toString()).toContain(`${ROUTE_PREFIX} .agents/instructions/80-git.md (git)`);
+    expect(run.stdout.toString()).toContain(`${ROUTE_PREFIX} .agents/instructions/agent-git.md (git)`);
   });
 });

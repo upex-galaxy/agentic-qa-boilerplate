@@ -38,7 +38,7 @@ Git / PR work → `/git-flow-master` auto-loads. Details in `.agents/skills/git-
 >
 > `git_strategy.strategy` ships **`solo-main`**, not null. That is a DEFAULT, not a decision, and `meta.strategy_source: inherited` is what records the difference. `git-flow-master` OFFERS "Strategy Setup" when a project has filled in its `project_name` and `strategy_source` is still `inherited` — a real project running a strategy nobody chose. `.agents/project.yaml` is frozen by `bun run up` (updater `bootstrapOnlyPaths`), so every project keeps its own. Downstream test-automation projects typically choose `sdet` (chained suites; see `.agents/skills/git-flow-master/references/sdet-integration-trunk.md`).
 
-A repository's own reading of its strategy (why it chose it, and any divergence it accepted in `git_strategy.policy.accepted_divergences`) is project prose: it lives in the project-owned `.agents/instructions/project.md` under `## Git Strategy (this repository)`, never in this synced section.
+A repository's own reading of its strategy (why it chose it, and any divergence it accepted in `git_strategy.policy.accepted_divergences`) is project prose: it lives in the project-owned `.agents/instructions/agent-project.md` under `## Git Strategy (this repository)`, never in this synced section.
 
 ### Accepted divergences (mechanism)
 

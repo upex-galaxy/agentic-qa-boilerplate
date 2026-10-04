@@ -191,11 +191,11 @@ function withoutSection(text: string, heading: string): string {
 }
 
 /**
- * Seed a scaffolded `.agents/instructions/project.md` from upstream's generic
- * stub, `.agents/instructions/project.md.template`.
+ * Seed a scaffolded `.agents/instructions/agent-project.md` from upstream's generic
+ * stub, `.agents/instructions/agent-project.md.template`.
  *
  * Twin of `seedProjectYamlFromSchema`, for the same reason: the extracted
- * `project.md` is the BOILERPLATE's own overlay and carries its own
+ * `agent-project.md` is the BOILERPLATE's own overlay and carries its own
  * exceptions (its Git Strategy, a push flow no other repo has). What a new
  * project gets is the stub. A stub that itself carries that section is
  * refused (the boilerplate's `instructions:check` should never let one ship);
@@ -206,16 +206,16 @@ function withoutSection(text: string, heading: string): string {
  */
 export async function seedProjectInstructionsFromTemplate(projectDir: string): Promise<boolean> {
   const dir = join(projectDir, '.agents', 'instructions');
-  const templatePath = join(dir, 'project.md.template');
-  const projectPath = join(dir, 'project.md');
+  const templatePath = join(dir, 'agent-project.md.template');
+  const projectPath = join(dir, 'agent-project.md');
   if (existsSync(templatePath)) {
     const stub = await readFile(templatePath, 'utf8');
     if (!stub.split('\n').some(l => l.trim() === PROJECT_GIT_HEADING)) {
       await writeFile(projectPath, stub, 'utf8');
-      log.dim('  Seeded .agents/instructions/project.md from the generic stub (no boilerplate exceptions travel).');
+      log.dim('  Seeded .agents/instructions/agent-project.md from the generic stub (no boilerplate exceptions travel).');
       return true;
     }
-    log.warn('The project.md stub carries the boilerplate\'s own Git Strategy section; cutting it from project.md instead.');
+    log.warn('The agent-project.md stub carries the boilerplate\'s own Git Strategy section; cutting it from agent-project.md instead.');
   }
   if (existsSync(projectPath)) {
     const own = await readFile(projectPath, 'utf8');

@@ -6,7 +6,7 @@ The first phase of project discovery. Goal: make the project legible. Produces f
 
 ```
 1. Project Connection    -> .context/project-config.md
-2. Project Assessment    -> .agents/instructions/project.md `## Project Assessment (Phase 1)` (HIGH risks carried to the handoff)
+2. Project Assessment    -> .agents/instructions/agent-project.md `## Project Assessment (Phase 1)` (HIGH risks carried to the handoff)
 3. Business Model        -> business-domain-context map: sections `overview`, `business-model`
 4. Domain Glossary       -> business-domain-context map: sections `term-<slug>`, `enumerations`, `discovery-gaps`
 ```
@@ -208,7 +208,7 @@ grep -rE "(api[_-]?key|secret|password|token)\s*[:=]\s*['\"]" <repo-root>/src
 
 ### Output
 
-Append to `.agents/instructions/project.md` (the project-owned overlay; `AGENTS.md` stays boilerplate-owned and under its size budget, and `CLAUDE.md` stays a one-line `@AGENTS.md` import shim, `.agents/instructions/10-harnesses.md`) in a `## Project Assessment (Phase 1)` block. A rerun replaces that block in place instead of appending a second one:
+Append to `.agents/instructions/agent-project.md` (the project-owned overlay; `AGENTS.md` stays boilerplate-owned and under its size budget, and `CLAUDE.md` stays a one-line `@AGENTS.md` import shim, `.agents/instructions/agent-harnesses.md`) in a `## Project Assessment (Phase 1)` block. A rerun replaces that block in place instead of appending a second one:
 
 ```markdown
 ## Project Assessment (Phase 1)
@@ -256,7 +256,7 @@ No separate risk file is written. HIGH risks stay in the `### Identified Risks` 
 
 ### Completion criteria
 
-- `## Project Assessment (Phase 1)` section present in `.agents/instructions/project.md`.
+- `## Project Assessment (Phase 1)` section present in `.agents/instructions/agent-project.md`.
 - Every HIGH risk (if any) is a row in `### Identified Risks` with its evidence path.
 
 ---
@@ -399,7 +399,7 @@ All three land in the domain map. The glossary is tables; a figure is optional.
 Before proceeding to Phase 2:
 
 - [ ] `.context/project-config.md` exists and is non-empty.
-- [ ] `## Project Assessment (Phase 1)` block present in `.agents/instructions/project.md`.
+- [ ] `## Project Assessment (Phase 1)` block present in `.agents/instructions/agent-project.md`.
 - [ ] `business-domain-context` map generated: `overview` and `business-model` with real sources in `data-sources`, a `term-` section per core entity.
 - [ ] Every gap is listed explicitly in the map's `discovery-gaps` or `project-config.md` `## Discovery Gaps` (no silent skipping).
 - [ ] The user has confirmed "Phase 1 complete, proceed to Phase 2".

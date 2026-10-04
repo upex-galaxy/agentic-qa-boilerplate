@@ -33,7 +33,7 @@ This is **NOT** a flow description (→ `business-data-context`), a journey or f
 |--------|--------|----------------|------|
 | `business-data-context` map | **HARD REQUIREMENT** | Critical flows, state machines, automatic processes, integrations, business rules | `bun run context:map business-data-context` |
 | `business-e2e-context` map | Optional — warn if missing | Journeys, feature catalog, CRUD matrix, feature flags, high-risk tags, QA relevance matrix | `bun run context:map business-e2e-context` |
-| Discovery risk seed | If available | The HIGH risks `project-discovery` recorded in its Phase 1 assessment and carried in its handoff (severity, evidence path) | The `## Project Assessment (Phase 1)` block in `.agents/instructions/project.md` (`AGENTS.md` on a project discovered before the move), or the handoff the user pastes |
+| Discovery risk seed | If available | The HIGH risks `project-discovery` recorded in its Phase 1 assessment and carried in its handoff (severity, evidence path) | The `## Project Assessment (Phase 1)` block in `.agents/instructions/agent-project.md` (`AGENTS.md` on a project discovered before the move), or the handoff the user pastes |
 | `infra-context` map | If available | NFR sections (`nfr-<slug>`: performance, security, reliability, observability budgets), external services, environments | `bun run context:map infra-context` (`--list`, then `--section nfr-<slug>`) |
 | Domain vocabulary | If available | Business terms, so flows and risks are named the way the business names them | `bun run context:map business-domain-context` |
 | Legacy `.context/risk-assessment.md` (input only) | Only when a project still holds one | Earlier risk findings, merged into the discovery seed | Read file; never delete or rewrite it |

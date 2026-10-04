@@ -6,7 +6,7 @@
 >
 > **Companion files**:
 > - `AGENTS.md` (always-on project memory: top-level rules and the router to its sections)
-> - `.agents/instructions/20-skills-and-mcps.md` (the skill router table: tiers and skill mentions; a project's own skills route from the `## Project context skills` table of `.agents/instructions/project.md`)
+> - `.agents/instructions/agent-skills-and-mcps.md` (the skill router table: tiers and skill mentions; a project's own skills route from the `## Project context skills` table of `.agents/instructions/agent-project.md`)
 > - `.agents/skills/*/SKILL.md` (per-skill instructions; reference this doc relatively as `agentic-qa-core/references/skill-composition-strategy.md`)
 > - `cli/install.ts` (installer — declares project-level vs user-level skill installs; source-of-truth for T2/T3/T4 names)
 > - `.agents/skills/agentic-qa-core/references/{briefing-template,dispatch-patterns,orchestration-doctrine}.md` (sibling meta-doctrine references)
@@ -38,7 +38,7 @@ Four tiers. Different discovery and load rules per tier.
 
 | Tier | Location | Examples | Discovery | Load behavior |
 |--|--|--|--|--|
-| **T1 — Project-owned** | `.agents/skills/` (committed) | every committed skill `.agents/skills/REGISTRY.md` lists as T1 | Named in the skill router table (`20-skills-and-mcps.md`; a project's own skills in `project.md`) | Silent (load on trigger, no ask) |
+| **T1 — Project-owned** | `.agents/skills/` (committed) | every committed skill `.agents/skills/REGISTRY.md` lists as T1 | Named in the skill router table (`agent-skills-and-mcps.md`; a project's own skills in `agent-project.md`) | Silent (load on trigger, no ask) |
 | **T2 — Vendored** | `.agents/skills/` (committed, upstream attribution in frontmatter) | `judgment-day` (gentle-ai, Apache-2.0) | Named in the skill router table | Silent on explicit user trigger (`/judgment-day`, `juzgar`) or when cited by host orchestrator (`test-automation` Phase 3, `git-flow-master` pre-PR) |
 | **T2-opt — Optional SDD bundle (user-installed outside this repo)** | `~/.claude/skills/sdd-*` (only if present on the machine, e.g. left by an older gentle-ai release) | any `sdd-*` skill (its upstream owns the bundle) | NOT installed by `bun run setup`. Discovered at runtime from system-reminder skill list when present | Silent **inside** `framework-development` only — see §4 anti-leak contract. NEVER silent inside `shift-left-testing`, `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing` |
 | **T3 — Community project-level** | `.agents/skills/` (installed by `install.ts` PROJECT_LEVEL_SKILLS, not committed) | `PROJECT_LEVEL_SKILLS` in `cli/install.ts` | Named **by category** in the skill router (not by skill name). Discovered at runtime from system-reminder skill list | Silent if matched by category (e.g. user writes a Playwright test → load `playwright-best-practices`) |
@@ -83,7 +83,7 @@ A skill carries three independent labels. Each answers one question, is declared
 |---|---|---|
 | **context** | Loading it changes what the agent KNOWS, not what it DOES next. No stages, drives no tool. Cites `.context/` caches, never restates them. May hold its own generated map and keep it honest (the write-scope amendment below) | `-context` (mandatory) |
 | **workflow** | A procedure with stages the agent runs end-to-end: an IQL stage (shift-left, sprint, documentation, automation, regression) OR an operating flow around one (git, fleet, handoff, onboarding, review) | none |
-| **utility** | Owns ONE tool's grammar (a binary in `allowed-tools`, or an `.agents/instructions/30-tool-resolution.md` §6.5 CLI row) and has no stages of its own | `-cli` / `-tool` / `-app` (mandatory for new skills) |
+| **utility** | Owns ONE tool's grammar (a binary in `allowed-tools`, or an `.agents/instructions/agent-tool-resolution.md` §6.5 CLI row) and has no stages of its own | `-cli` / `-tool` / `-app` (mandatory for new skills) |
 | **core** | Parent of other skills: they cite its `references/`; it has no write path of its own | none |
 
 ### Rules
@@ -275,9 +275,9 @@ ELIF the skill is a community skill that EVERY clone of this repo needs         
 ELIF the skill is a community skill useful across many of the user's projects   → T4 (USER_LEVEL_SKILLS in install.ts)
 ```
 
-Promotion path (T4 → T3): when a user-level skill turns out to be load-bearing for THIS repo's QA work and no clone should run without it. Move from `USER_LEVEL_SKILLS` to `PROJECT_LEVEL_SKILLS` in `install.ts` and add a brief note in `.agents/instructions/20-skills-and-mcps.md`.
+Promotion path (T4 → T3): when a user-level skill turns out to be load-bearing for THIS repo's QA work and no clone should run without it. Move from `USER_LEVEL_SKILLS` to `PROJECT_LEVEL_SKILLS` in `install.ts` and add a brief note in `.agents/instructions/agent-skills-and-mcps.md`.
 
-Demotion path (T3 → T4): when a project-level skill turns out to be useful elsewhere AND no longer load-bearing here. Move and remove from `.agents/instructions/20-skills-and-mcps.md`.
+Demotion path (T3 → T4): when a project-level skill turns out to be useful elsewhere AND no longer load-bearing here. Move and remove from `.agents/instructions/agent-skills-and-mcps.md`.
 
 ---
 
@@ -327,7 +327,7 @@ The four-tier model is not bureaucracy. Each tier solves a real failure:
 
 ## 9. Validation (`bun run skills:check`)
 
-The validation script is `scripts/lint-skills.ts`, wired in `package.json` as `bun run skills:check`. Severity model: ERROR fails CI; WARN and INFO are reported but do not fail. **The script's header comment is the contract**: one entry per NAMED check with its severity (the tier checks over `cli/install.ts` and `.agents/instructions/20-skills-and-mcps.md`, the category cross-checks against §5.1, the `sdd-*` anti-leak audit of every T1 SKILL.md not named `framework-development`, `STALE-PATH`, `DUPLICATE-TIER`, the `KIND-*` purpose checks, the `CAPABILITY-*` checks, the `SESSION-*` checks). A new check is added there, named in the doctrine that motivates it (this file, `mcp-capabilities.md`, `session-management.md`) and cited by NAME, never by its index; this file does not keep a second copy of the list.
+The validation script is `scripts/lint-skills.ts`, wired in `package.json` as `bun run skills:check`. Severity model: ERROR fails CI; WARN and INFO are reported but do not fail. **The script's header comment is the contract**: one entry per NAMED check with its severity (the tier checks over `cli/install.ts` and `.agents/instructions/agent-skills-and-mcps.md`, the category cross-checks against §5.1, the `sdd-*` anti-leak audit of every T1 SKILL.md not named `framework-development`, `STALE-PATH`, `DUPLICATE-TIER`, the `KIND-*` purpose checks, the `CAPABILITY-*` checks, the `SESSION-*` checks). A new check is added there, named in the doctrine that motivates it (this file, `mcp-capabilities.md`, `session-management.md`) and cited by NAME, never by its index; this file does not keep a second copy of the list.
 
 Output format: human-readable summary (counts of ERROR / WARN / INFO). Exit code: non-zero on ERROR, zero on WARN/INFO only.
 
@@ -337,7 +337,7 @@ The script is wired in `package.json` as `"skills:check": "bun run scripts/lint-
 
 ## 10. What Lives Where
 
-| Rule | Skill router (`20-skills-and-mcps.md`) | SKILL.md (per-skill) | This doc (`skill-composition-strategy.md`) |
+| Rule | Skill router (`agent-skills-and-mcps.md`) | SKILL.md (per-skill) | This doc (`skill-composition-strategy.md`) |
 |--|--|--|--|
 | Skill tier model | Brief mention + link here | — | Authoritative |
 | Skill Composition Protocol | Summary + link | Per-skill `complementary_categories` frontmatter + load behavior | Authoritative full protocol |

@@ -18,19 +18,21 @@ import { parse as parseYaml } from 'yaml';
 
 export const L0_FILE = 'AGENTS.md';
 export const INSTRUCTIONS_DIR = '.agents/instructions';
+/** Every file in the folder but the README starts with it: it says the file comes from the agent setup. */
+export const SECTION_PREFIX = 'agent-';
 /** The section that holds the skill trigger router table (`### Skills ...`). */
-export const SKILLS_SECTION = '20-skills-and-mcps.md';
+export const SKILLS_SECTION = 'agent-skills-and-mcps.md';
 /** Human guide to the folder: never routed, carries no frontmatter. */
 export const INSTRUCTIONS_README = 'README.md';
 /** Project-owned overlay section: delivered once as a stub, never synced. */
-export const PROJECT_SECTION = 'project.md';
+export const PROJECT_SECTION = 'agent-project.md';
 /**
  * The skill router table's heading in the skills section (or a pre-split `AGENTS.md`).
  * That file is synced: `bun run up` overwrites it, so it holds upstream skills only.
  */
 export const SKILL_ROUTER_HEADING = /^### Skills \(lazy-loaded by trigger phrase\)/m;
 /**
- * The table in `project.md` where a project routes the skills it authored
+ * The table in `agent-project.md` where a project routes the skills it authored
  * (`project-context` mode `context-skill`, adaptation). Project-owned, so the
  * rows survive `bun run up`.
  */
@@ -72,6 +74,11 @@ export function splitFrontmatter(text: string): { data: SectionFrontmatter | nul
   catch (error) {
     return { data: null, error: (error as Error).message.split('\n')[0] };
   }
+}
+
+/** A section's frontmatter `id`: its file stem without the prefix (`agent-git.md` -> `git`). */
+export function sectionId(name: string): string {
+  return name.replace(/\.md$/, '').replace(new RegExp(`^${SECTION_PREFIX}`), '');
 }
 
 /** Every markdown file under `.agents/instructions/` except the human README, sorted. */
@@ -127,7 +134,7 @@ export function skillTableRows(text: string, heading: RegExp): SkillTableRow[] |
   return rows;
 }
 
-/** The project's own skill rows (`## Project context skills` in `project.md`), or null when the file or the heading is missing. */
+/** The project's own skill rows (`## Project context skills` in `agent-project.md`), or null when the file or the heading is missing. */
 export function projectSkillRows(root: string): SkillTableRow[] | null {
   const file = join(root, INSTRUCTIONS_DIR, PROJECT_SECTION);
   if (!existsSync(file)) { return null; }
@@ -158,7 +165,7 @@ export function routerRows(l0: string): RouterRow[] | null {
   return rows;
 }
 
-/** Section file names a router cell names in backticks (`10-harnesses.md`, `project.md`). */
+/** Section file names a router cell names in backticks (`agent-harnesses.md`, `agent-project.md`). */
 export function sectionRefs(cell: string): string[] {
   return [...cell.matchAll(/`([\w.-]+\.md)`/g)].map(m => m[1]);
 }
