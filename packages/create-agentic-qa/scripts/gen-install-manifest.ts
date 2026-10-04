@@ -58,8 +58,7 @@ const MANIFEST_PATH = resolve(import.meta.dir, '../src/installer-manifest.json')
 // ============================================================================
 
 const PURPOSES: Record<string, string> = {
-  // gentle-ai component (minimal preset installs engram only — SDD-* skills
-  // are NOT installed by default; opt-in via `gentle-ai install --components engram,sdd`)
+  // Engram persistent memory, wired per agent with `engram setup`
   'engram': 'Persistent memory across sessions.',
 
   // MCPs (CANONICAL_MCPS) — QA stack
@@ -331,10 +330,10 @@ function buildManifest(src: string): object {
   const userSkills = extractCommunitySkills(src, 'USER_LEVEL_SKILLS');
   const externalClis = extractExternalClis(src);
 
-  // gentle-ai is invoked with `--preset minimal`, which installs only the
-  // engram component. SDD-* skills are opt-in via `gentle-ai install --components engram,sdd`.
+  // Engram is wired per agent with the engram binary's own `engram setup`.
+  // The manifest key `gentleAiSkills` keeps its name for schema stability.
   const gentleAiItems: ManifestEntry[] = [
-    { name: 'engram', purpose: purposeOr('engram'), source: 'gentle-ai' },
+    { name: 'engram', purpose: purposeOr('engram'), source: 'engram setup' },
   ];
 
   // community project skills
@@ -402,7 +401,7 @@ function buildManifest(src: string): object {
       {
         name: 'internet access',
         required: true,
-        purpose: 'The scaffolder downloads the boilerplate template from GitHub and gentle-ai skills from their registries.',
+        purpose: 'The scaffolder downloads the boilerplate template from GitHub and community skills from their registries.',
         installHint: 'https://api.github.com',
       },
       {
@@ -582,7 +581,7 @@ function main(): void {
   const wontCount = parsed.willNotInstall.length;
 
   process.stdout.write(
-    `Manifest written: gentle-ai=${gentleCount}, project=${projectCount}, user=${userCount}, mcps=${mcpCount}, prereqs=${prereqCount}, won't-install=${wontCount}\n`,
+    `Manifest written: engram=${gentleCount}, project=${projectCount}, user=${userCount}, mcps=${mcpCount}, prereqs=${prereqCount}, won't-install=${wontCount}\n`,
   );
 }
 

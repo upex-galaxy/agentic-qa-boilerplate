@@ -19,7 +19,7 @@ That single command:
 4. Initializes a fresh repository on `main` and creates the initial commit.
 5. Runs `bun install`.
 6. Hands off to the boilerplate's interactive installer (`bun run setup`),
-   which runs `cli/doctor.ts --preflight` first, then configures gentle-ai,
+   which runs `cli/doctor.ts --preflight` first, then wires Engram memory,
    agent skills, MCPs, `.env`, and — at the end — optionally creates a GitHub
    repository for you via `gh`.
 
@@ -49,7 +49,7 @@ Suppress the ASCII banner with `--no-banner` (useful for CI or piped output).
 The scaffolder's doctor verifies a short list of **universal prerequisites** before you
 clone anything. This is intentionally a thin layer — the boilerplate's own
 installer (`bun run setup`, invoked at the end of this CLI) has a much bigger
-`cli/doctor.ts` that handles agent CLIs, gentle-ai, MCP credentials and the
+`cli/doctor.ts` that handles agent CLIs, Engram, MCP credentials and the
 per-skill binary matrix. See
 [INSTALLER.md](https://github.com/upex-galaxy/agentic-qa-boilerplate/blob/main/INSTALLER.md)
 for the downstream version.
@@ -79,7 +79,7 @@ The view renders these sections:
 
 1. **Prerequisites** — every binary the downstream installer expects, with a
    live `present` / `MISSING` / `n/a` status next to it.
-2. **Will install** — gentle-ai skills, community project-level skills, and
+2. **Will install** — Engram memory, community project-level skills, and
    community user-level skills (a count and the first few of each, with a drill-down
    prompt to expand any category).
 3. **Will configure** — MCP servers (with the `.env` keys each one reads),
@@ -201,7 +201,7 @@ enforces these additional preconditions:
 | Tool                                                            | Min version | Why                                                                                                                                                                                                                                                                                                                                                                                               | Behavior on miss                                                                                                                                                                                             |
 | --------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Agent** — Claude Code, OpenCode **or** Codex                  | latest      | Step `4-agent-detect` finds the config directory, the binary on PATH, or `.codex/config.toml`; exits 1 only when none is found. | **Hard exit 1** with every harness's docs URL. Install [Claude Code](https://docs.claude.com/en/docs/claude-code), [OpenCode](https://opencode.ai/docs) or [Codex](https://developers.openai.com/codex/) before re-running. |
-| **gentle-ai**                                                   | `MIN_GENTLE_AI_VERSION` in the template's `cli/install.ts` | Installs the Engram persistent-memory component (`--preset minimal`). Optional: skipping it only turns cross-session memory off. | Warns + offers the install commands and the [docs URL](https://github.com/Gentleman-Programming/gentle-ai); you can continue without it or exit and install. |
+| **engram**                                                      | `MIN_ENGRAM_VERSION` in the template's `cli/install.ts` | The Engram persistent-memory binary; the installer wires it into each selected agent with `engram setup`. Optional: skipping it only turns cross-session memory off. | Warns + offers the install commands and the [docs URL](https://github.com/Gentleman-Programming/engram/blob/main/docs/INSTALLATION.md); you can continue without it or exit and install. |
 | Per-skill CLIs                                                  | latest      | Each one is **required by a specific skill**; the list, with the owning skill and an install hint, is `EXTERNAL_CLIS` in the template's `cli/install.ts`. Missing ones are reported, never blocking. | Non-blocking — step `11-verify-clis` prints a status table with `quick:` install commands (where cross-platform) and a `docs:` URL per missing CLI. Install on-demand when the owning skill surfaces a missing-binary error. |
 | Convenience opt-in — `direnv`                                   | latest      | Pure UX. Exports `.env` into your shell, which only Codex and shell CLIs need. The `bun run claude` / `bun run opencode` / `bun run codex` wrappers load `.env` cross-platform with zero setup. | Non-blocking. Safe to decline — recommended on Windows (direnv's PowerShell support is experimental). |
 | MCP credentials                                                 | —           | The `.env` keys the MCP configs reference. The installer discovers them from the placeholders in each selected harness's config and prompts for the missing ones. | Non-blocking — `bun run setup:doctor` lists pending vars with `where` URLs (token-generation pages) until you fill them. |
