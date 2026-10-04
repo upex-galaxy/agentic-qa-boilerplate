@@ -485,9 +485,9 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <tr><td class="mono">[TMS_TOOL] · jira-native</td><td class="small"><span class="mono">/acli</span>: los artefactos de test son issues nativas de Jira</td><td class="small">MCP de Atlassian, opt-in</td></tr>
       <tr><td class="mono">[AUTOMATION_TOOL]</td><td class="small"><span class="mono">/playwright-cli</span>, el único camino (no hay MCP de navegador)</td><td class="small">ninguno: parar en el punto de uso</td></tr>
       <tr><td class="mono">[DOCS_TOOL] · [WEB_SEARCH_TOOL]</td><td class="small">capacidades <span class="mono">library-docs</span> y <span class="mono">web-search</span>, por sufijo</td><td class="small"><span class="mono">WebSearch</span> / <span class="mono">WebFetch</span> solo si el usuario lo elige</td></tr>
-      <tr><td class="mono">[DB_TOOL] · [API_TOOL]</td><td class="small">capacidades <span class="mono">db</span> y <span class="mono">api-schema</span> (el esquema); la ejecución de API es <span class="mono">curl</span></td><td class="small">según <span class="mono">AGENTS.md</span> §6</td></tr>
+      <tr><td class="mono">[DB_TOOL] · [API_TOOL]</td><td class="small">capacidades <span class="mono">db</span> y <span class="mono">api-schema</span> (el esquema); la ejecución de API es <span class="mono">curl</span></td><td class="small">según §6 (<span class="mono">.agents/instructions/30-tool-resolution.md</span>)</td></tr>
     </table>
-    <p class="small dim mt-s">La modalidad del TMS la resuelve una vez <span class="mono">/test-documentation</span> (Fase 0) y el resto del flujo la hereda; nunca se redecide a mitad de camino. Tabla completa y vigente: <span class="mono">AGENTS.md</span> §6.</p>
+    <p class="small dim mt-s">La modalidad del TMS la resuelve una vez <span class="mono">/test-documentation</span> (Fase 0) y el resto del flujo la hereda; nunca se redecide a mitad de camino. Tabla completa y vigente: §6, en <span class="mono">.agents/instructions/30-tool-resolution.md</span>.</p>
     <div class="notes">Regla general de §6: CLI primero (menos tokens), MCP solo como respaldo. Las dos filas de TMS muestran por qué la modalidad importa: la misma etiqueta va a dos skills distintas según el proyecto tenga Xray o no.</div>
   </section>
 
@@ -510,7 +510,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
           <tr><td class="mono">playwright-cli</td><td class="small"><span class="mono">/playwright-cli</span> + <span class="mono">/playwright-best-practices</span></td></tr>
           <tr><td class="mono">resend</td><td class="small"><span class="mono">/resend-cli</span></td></tr>
         </table>
-        <p class="small dim">Mapeo completo, con <span class="mono">gh</span>, <span class="mono">bunx allure</span>, <span class="mono">orca</span> y el resto: <span class="mono">AGENTS.md</span> §6.5.</p>
+        <p class="small dim">Mapeo completo, con <span class="mono">gh</span>, <span class="mono">bunx allure</span>, <span class="mono">orca</span> y el resto: §6.5, en <span class="mono">.agents/instructions/30-tool-resolution.md</span>.</p>
       </div>
     </div>
     <div class="notes">El gate existe porque los errores de estas herramientas son silenciosos: un subcomando inexistente de acli sale con código 0, una lista de Xray se trunca sin avisar. La skill es la que conoce esas trampas.</div>
@@ -887,7 +887,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     </div>
     <div class="card card-accent mt-m">
       <p class="lbl">La idea que ordena todo</p>
-      <p class="small mt-s">Las skills de flujo deciden <b>qué</b> hacer y escriben una etiqueta. <span class="mono">AGENTS.md</span> §6 decide <b>quién</b> lo hace. La skill de la herramienta sabe <b>cómo</b>, con sus trampas. Y cuando falta una herramienta, la IA para y te pregunta en lugar de improvisar.</p>
+      <p class="small mt-s">Las skills de flujo deciden <b>qué</b> hacer y escriben una etiqueta. §6 (<span class="mono">.agents/instructions/30-tool-resolution.md</span>) decide <b>quién</b> lo hace. La skill de la herramienta sabe <b>cómo</b>, con sus trampas. Y cuando falta una herramienta, la IA para y te pregunta en lugar de improvisar.</p>
     </div>
     <p class="small dim mt-m">Inventario de skills con su tier y su tipo: <span class="mono">.agents/skills/REGISTRY.md</span> (<span class="mono">bun run skills:registry</span>).</p>
     <div class="notes">Fin del recorrido. Para un flujo concreto, seguí al deck de la skill de flujo que corresponda: ahí se ve en qué fase entra cada herramienta.</div>

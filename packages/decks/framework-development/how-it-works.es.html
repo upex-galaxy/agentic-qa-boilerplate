@@ -658,7 +658,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <p class="lbl">Qué prueba <code>bun run docs:check</code></p>
         <table class="tt tight">
           <tr><td class="small">Cada skill del repo tiene su fila en el router de <code>.agents/instructions/20-skills-and-mcps.md</code>.</td></tr>
-          <tr><td class="small">Cada <code>bun run &lt;script&gt;</code> citado en <code>AGENTS.md</code> o en los docs existe en <code>package.json</code>.</td></tr>
+          <tr><td class="small">Cada <code>bun run &lt;script&gt;</code> citado en <code>AGENTS.md</code>, en sus secciones de <code>.agents/instructions/</code> o en los docs existe en <code>package.json</code>.</td></tr>
           <tr><td class="small">Cada link relativo y cada ruta citada existe.</td></tr>
           <tr><td class="small">Sin citas <code>archivo:línea</code> ni afirmaciones sobre el presente (Rule #17).</td></tr>
         </table>
@@ -801,7 +801,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
           <tr><td class="small">Plan, progreso y archivo</td><td class="small"><code>.session/</code> (local)</td></tr>
           <tr><td class="small">ADR, cuando aplica</td><td class="small"><code>.context/ADR/</code></td></tr>
           <tr><td class="small">El cambio</td><td class="small">solo rutas ALLOWED de <code>kata-invariants.md</code> §10</td></tr>
-          <tr><td class="small">La doc</td><td class="small"><code>AGENTS.md</code>, <code>README.md</code>, <code>INSTALLER.md</code>, <code>CONTEXT.md</code>, <code>docs/core/</code></td></tr>
+          <tr><td class="small">La doc</td><td class="small"><code>.agents/instructions/</code> (<code>15-context-map.md</code>, <code>20-skills-and-mcps.md</code>), <code>README.md</code>, <code>INSTALLER.md</code>, <code>CONTEXT.md</code>, <code>docs/core/</code></td></tr>
           
         </table>
         <p class="small dim">Lo generado se <b>regenera</b> con su comando (<code>bun run kata:manifest</code>, <code>bun run api:sync</code>).</p>
