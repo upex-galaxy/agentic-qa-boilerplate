@@ -102,14 +102,14 @@ If the user has not supplied the ticket key required by `repair-traceability`, a
 
 This skill is **per-scope**: `<scope>` = `<JIRA-KEY>` (ticket / bug scope), `<module-slug>` (module scope), or `<YYYY-MM-DD>-adhoc` (ad-hoc scope). Session state lives at `.session/test-documentation/<scope>/{plan.md, progress.md}` per `agentic-qa-core/references/session-management.md` §3 + §9.
 
-**Naming collision note**: this skill already owns `## Phase 0 — Resolve TMS modality` (the TMS gate). The session resume check is therefore named `## Phase -1 — Session resume check` to avoid colliding with the existing Phase 0 anchor. Resume fires FIRST, then the TMS modality gate, then the rest of the pipeline.
+**Phase order**: Phase -1 (session resume) runs first, then Phase 0 (TMS modality), then the pipeline.
 
-This skill is compliant with the doctrine in `AGENTS.md` §"Orchestration Mode (Subagent Strategy)" and the session contract in `.agents/skills/agentic-qa-core/references/session-management.md`. Every dispatch follows the 7-component briefing format defined in `.agents/skills/agentic-qa-core/references/briefing-template.md`, and the pattern selected per phase matches the decision guide in `.agents/skills/agentic-qa-core/references/dispatch-patterns.md`. Phase 1 (Analyze) and Phase 2 (Prioritize) stay inline because planning and decisions live in the orchestrator; the only Parallel hotspot is bulk TC creation in Phase 3, which is also the only step that branches per TMS modality.
+This skill is compliant with the doctrine in `AGENTS.md` §3 "Orchestration Mode" and the session contract in `.agents/skills/agentic-qa-core/references/session-management.md`. Every dispatch follows the 7-component briefing format defined in `.agents/skills/agentic-qa-core/references/briefing-template.md`, and the pattern selected per phase matches the decision guide in `.agents/skills/agentic-qa-core/references/dispatch-patterns.md`. Phase 1 (Analyze) and Phase 2 (Prioritize) stay inline because planning and decisions live in the orchestrator; the only Parallel hotspot is bulk TC creation in Phase 3, which is also the only step that branches per TMS modality.
 
 | Phase                                                  | Pattern    | Subagent role                                                                                                                                              |
 |--------------------------------------------------------|------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Phase -1 — Session resume check                        | inline     | orchestrator only; reads `.session/test-documentation/<scope>/progress.md` if present, offers resume / restart / abort per `agentic-qa-core/references/session-management.md` §4    |
-| Phase 0 — Resolve TMS modality                         | inline     | orchestrator only; existing 4-step probe — unchanged                                                                                                        |
+| Phase 0 — Resolve TMS modality                         | inline     | orchestrator only; the 3-step probe in §Phase 0                                                                                                             |
 | Phase 1 — Analyze scope                                | Single     | inline — planning lives in the orchestrator (anti-pattern to delegate)                                                                                      |
 | Phase 2 — ROI / Candidate-Manual-Deferred verdict      | Single     | inline — decisions live in the orchestrator                                                                                                                 |
 | Phase 3 — TMS TC creation (N > 10 TCs)                 | Parallel   | M subagents, chunks of ~5-10 TCs per agent; cap = 10 to avoid Jira/Xray rate limits; each subagent loads `/xray-cli` (Modality jira-xray) or `/acli` (Modality jira-native)  |
@@ -220,7 +220,7 @@ If the user gives you a story ID, use ticket-driven. If they give you a bug ID, 
 
 ### Bug-driven decision — "an important bug must have a test" (GOLDEN RULE)
 
-Not every bug becomes a regression Test — a one-time typo in a stable area is **treated like a failed test** (the fix was verified in sprint-testing) and Deferred. But run the **same analysis + prioritization** you'd run on any scenario; if the bug IS regression-worthy, it **MUST end with a Test that covers it**, in BOTH modalities. *Where there is an important bug, there must be a test that catches it again — this rule is worth gold.*
+Not every bug becomes a regression Test — a one-time typo in a stable area is **treated like a failed test** (the fix was verified in sprint-testing) and Deferred. But run the **same analysis + prioritization** you'd run on any scenario; if the bug IS regression-worthy, it **MUST end with a Test that covers it**, in BOTH modalities.
 
 ```
 1. Is this Bug/Defect a regression candidate?  (apply Phase-0 filter + ROI; the prior-bug rule biases up)
@@ -491,7 +491,7 @@ The question this answers is the one a team asks the first time Phase 2 produces
 1. **Find-or-create the project's Regression Test Plan (RTP)** — one long-lived `Test Plan` item per project, titled `RTP: {PROJECT_KEY|module}: Regression Test Plan`, parented to the **QA Master Test Plan** epic, `assignee` = self at create time (§the lifecycle table above — **Xray refuses membership edits on a Plan the caller does not own**, so an unassigned RTP cannot accept promotions later). Ask the user before creating it, same as the Regression Epic.
 2. **Every `Candidate` TC lands in it.** Title re-derived and verified (§"Title on promotion"), then `regression-candidate` applied, then added to the RTP. `Manual` TCs go to the manual regression suite — the same RTP under jira-xray, distinguished by the `manual-only` label and the `{{jira.status.test_case.manual}}` status, since a manual regression pass runs from the same plan. `Deferred` TCs never enter it; that is the whole point of the verdict.
 3. **The RTP moves to `{{jira.status.test_plan.ready}}` on the first promotion and stays there** — a regression run never completes the plan it ran from.
-4. **Downstream consumers read it from there, not from this session.** `/test-automation` picks up the TCs at `{{jira.status.test_case.candidate}}` carrying `regression-candidate`; `/regression-testing` executes the RTP's membership and writes its STR against it. Neither reads `.context/reports/` — both of those files are `[LOCAL]` and exist only on this machine. **If a Candidate is not in the RTP, it does not exist downstream.**
+4. **Downstream consumers read it from there, not from this session.** `/test-automation` picks up the TCs at `{{jira.status.test_case.candidate}}` carrying `regression-candidate`; `/regression-testing` runs the RTP's membership into an RTR (`testPlan` → RTP); an STR exists only at sprint close. Neither reads `.context/reports/` — both of those files are `[LOCAL]` and exist only on this machine. **If a Candidate is not in the RTP, it does not exist downstream.**
 
 #### Grouping Candidates into e2e regression flows
 
@@ -682,7 +682,7 @@ On Phase 3 partial failure (some chunks 429-rate-limited, some succeeded), archi
 - **Xray Manual steps are added AFTER create, never inline**: Xray Cloud **silently drops** steps passed to the create call. For a `type=Manual` Test, create it WITHOUT inline steps, then add each step one-by-one via `[TMS_TOOL] Add Test Step`; optionally verify with `[TMS_TOOL] Get Test`. Cucumber Tests are unaffected (Gherkin is a single field). Concrete CLI syntax lives in `/xray-cli`.
 - **Never hardcode UUIDs or emails** in Gherkin. Always use `{variable}` with a Variables table and a query showing how to obtain the real value at runtime.
 - **One (precondition, action) = one TC**. Multiple expected results all belong to the same TC. Splitting assertions into separate TCs is the single most-diagnosed anti-pattern in reviews.
-- **Bug-driven: evaluate first, but if regression-worthy it MUST have a Test (reuse or create).** A closed bug is strong empirical evidence the area regresses, so most qualify and lean Candidate — but not all do (a one-time typo in a stable area is treated like a failed test → Deferred, no new Test). When it qualifies, follow the Bug-driven decision: reuse the existing failed Test if the bug came from one, else create + design a new Test. Golden rule: where an important bug exists, a test must cover it.
+- **Bug-driven: evaluate first, but if regression-worthy it MUST have a Test (reuse or create).** A closed bug is strong empirical evidence the area regresses, so most qualify and lean Candidate — but not all do (a one-time typo in a stable area is treated like a failed test → Deferred, no new Test). When it qualifies, follow the Bug-driven decision: reuse the existing failed Test if the bug came from one, else create + design a new Test.
 - **Source-code validation is mandatory**: the ATP was written before code. Grep for `data-testid=`, routes, text formats. Log discrepancies in a Refinement Notes section on the TC.
 - **Derive widely, document only the repeatable, automate the few — three layers, three counts.** (1) DESIGN/derive (in `/sprint-testing` planning + exploration): consider many cases by technique (1:N) — this lives in the prioritization analysis, NOT yet in the TMS. (2) DOCUMENT (this skill): create a persistent TMS TC **only** for scenarios worth re-running — Candidate (automated regression) + Manual (manual regression). Deferred scenarios are recorded in the prioritization report and **NOT created in the TMS** (see Three outcomes). (3) AUTOMATE (`/test-automation`): the Candidates. So "analyzed 80 → documented 12 → automated 8" is the healthy shape — **never "document all 80"**. (jira-xray nuance: the 80 may already exist as sprint `Test` artifacts from `/sprint-testing` Stage 1; there "document 12" means **promote 12** into the Regression Test Plan, leaving the rest as unpromoted sprint artifacts.) The guiding principle: *a test enters the regression repository because it will be re-executed (manual or automated), never to hit a coverage count.* If most scenarios end up Candidate/Manual, re-apply Phase 0 harder — most should be Deferred.
 - **TC prefix is ALWAYS the User Story key (`{US_ID}`)** — not modality-dependent. In every modality (Jira-native, Xray with Test Sets, Xray without), the TC title is prefixed with the US key. Test Set membership is a TC→ATS issue link in both modalities, plus the Xray-internal membership under jira-xray (managed and read via `/xray-cli`, its `test enrich` command), but never in the TC title.
@@ -884,7 +884,6 @@ Resolve `[TMS_TOOL]` / `[ISSUE_TRACKER_TOOL]` via `AGENTS.md` §Tool Resolution.
   issue: {STORY_KEY}
   fields:
     {{jira.acceptance_test_plan}}: {Test Analysis body}
-  labels: +shift-left-reviewed
 
 # FALLBACK only if {{jira.acceptance_test_plan}} is absent in .agents/jira-fields.json:
 [ISSUE_TRACKER_TOOL] Add Comment:
@@ -919,8 +918,6 @@ Resolve `[TMS_TOOL]` / `[ISSUE_TRACKER_TOOL]` via `AGENTS.md` §Tool Resolution.
 [ISSUE_TRACKER_TOOL] Update Issue:
   issue: {TEST_KEY}
   description: {full Description template — includes Gherkin if Candidate}
-  fields:
-    Test Status: Draft                          # custom field per jira-setup.md
 
 # Membership: with a Test Set work type present, add the TC to the ATS via an issue link
 # (the same TC->ATS link jira-xray carries — traceability-linking.md §9):

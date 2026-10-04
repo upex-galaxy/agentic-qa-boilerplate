@@ -352,25 +352,3 @@ Before marking the ticket complete and opening the PR, **every** box below must 
 - [ ] Project-level config (`playwright.config.ts` projects array) already covers the folder the new tests live in — otherwise the tests will not run in CI.
 
 When every box is checked, the ticket is handed over to CI via the standard PR flow. If CI fails, return to Phase 2 Code; do not patch the PR with new conventions mid-review.
-
----
-
-## Appendix · Legacy code cross-reference
-
-For PR comments that reference the legacy boilerplate's flat check IDs (`.prompts/stage-5-automation/review/*`). Those flat checks were split into a shared list (`automation-standards.md` §10) plus deltas (this file). Use this table to resolve historical references.
-
-| Legacy code | Scope | New location |
-|---|---|---|
-| K-01 | KATA — component extends `UiBase`/`ApiBase` | `automation-standards.md` §10 / Component review |
-| K-02 | KATA — no direct Playwright imports in components | `automation-standards.md` §10 / Component review |
-| K-03 | KATA — imports via aliases (`@api/`, `@schemas/`, `@utils/`) | `automation-standards.md` §10 / Component review |
-| K-04 | KATA — ATCs return tuples or meaningful values | `review-checklists.md` §3.2 (A-H) + §3.2.1 |
-| K-05 | KATA — `@atc('ID')` tags present on state-changing methods | `automation-standards.md` §10 / ATC review |
-| K-06 | KATA — Steps module for reusable chains, not ATC-to-ATC calls | `automation-standards.md` §10 / Test file review |
-| K-07 | KATA — fixture selection (`{ api }` / `{ ui }` / `{ test }`) | `review-checklists.md` §2.4 + §3.6 |
-| K-08 | KATA — `TestContext` usage (config, faker) | `automation-standards.md` §10 / Component review |
-| K-09 | KATA — no duplicated helpers between components | `automation-standards.md` §10 / Component review |
-| A-01 … A-08 | ATC rules (atomicity, max 2 positional params, fixed vs test-level assertions, Equivalence Partitioning) | `automation-standards.md` §10 / ATC review |
-| T-01 … T-05 | TypeScript rules (parameter count, inline locators, alias imports, interface placement, silent-fail utilities) | `test-automation/references/typescript-patterns.md` |
-
-**Collision note**: the current local codes `A-xx` in §3 (API deltas: A-O, A-H, A-A, A-E, A-T, A-R, A-D) share a prefix with the legacy `A-01..A-08` (ATC rules) but have a different scope. Always read the containing section heading — the legacy meaning is the ATC-rules set under *shared* review (`automation-standards.md` §10), not the API delta.

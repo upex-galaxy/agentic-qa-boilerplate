@@ -657,7 +657,6 @@ For N <= 10 TCs, classify inline — the dispatch overhead is not justified. The
   issue: {STORY_KEY}
   fields:
     {{jira.acceptance_test_plan}}: {Test Analysis body}
-  labels: +shift-left-reviewed
 
 [ISSUE_TRACKER_TOOL] Add Comment:
   issue: {STORY_KEY}
@@ -685,8 +684,6 @@ For N <= 10 TCs, classify inline — the dispatch overhead is not justified. The
 [ISSUE_TRACKER_TOOL] Update Issue:
   issue: {TEST_KEY}
   description: {full TC template}
-  fields:
-    Test Status: Draft
 
 # With a Test Set work type (ATS exists): membership is a TC→ATS issue link
 [ISSUE_TRACKER_TOOL] Link Issues:
