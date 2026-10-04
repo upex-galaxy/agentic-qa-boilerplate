@@ -23,6 +23,7 @@ import {
   rewriteProjectYaml,
   sanitizeProjectName,
   scrubGitHistory,
+  seedProjectInstructionsFromTemplate,
   seedProjectYamlFromSchema,
 } from './prepare.ts';
 import { rollback } from './rollback.ts';
@@ -172,6 +173,9 @@ async function main(): Promise<number> {
         projectKey: args.projectKey,
       });
       if (!seeded) { await resetGitStrategyMeta(projectDir); }
+      // Same decoupling for the project-owned instruction overlay: the
+      // boilerplate's own project.md never travels, the generic stub does.
+      await seedProjectInstructionsFromTemplate(projectDir);
       s2.stop('Project prepared');
     }
     catch (err) {
