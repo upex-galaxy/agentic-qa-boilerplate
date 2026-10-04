@@ -23,7 +23,7 @@ Own the regenerative project-context artifacts without duplicating their workflo
 - Artifact missing (or a placeholder map) = CREATE mode: may write once the analysis completes. Artifact exists = UPDATE mode: generate a candidate (for a map: only its stale sections), show the diff summary, WAIT for explicit approval. NEVER overwrite an existing artifact without that approval, and NEVER regenerate a whole generated map.
 - Stop the run on a hard dependency failure or a rejected overwrite. A missing SOFT dependency is not a stop: record it as a Discovery Gap and continue, exactly as the selected reference defines.
 - NEVER invent business facts. Read every source the selected reference requires; anything unverified belongs under the output's mandatory discovery-gaps section, not asserted in the body.
-- After a successful artifact write, add the pointer to `AGENTS.md` ONLY when that pointer is missing. Never add operational prose to `CLAUDE.md`.
+- After a successful artifact write, add the pointer to `.agents/instructions/project.md` ONLY when that pointer is missing. NEVER write it into `AGENTS.md` (boilerplate-owned, size-budgeted) or add operational prose to `CLAUDE.md`.
 - Mode from `$ARGUMENTS`: when its first token matches a mode in the Mode routing table, that token IS the mode and the rest is forwarded to it unchanged (`/project-context data` on Claude Code, "project-context mode data" in prose on OpenCode and Codex). No matching first token → ASK which mode.
 - Before any step that uses a declared capability (`metadata.requires_capabilities`: `db`, `api-schema`, `diagrams` for the maps' figures), run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8: resolve by tool-name suffix, and when no available tool provides it STOP and name the capability + how to enable it, never a silent fallback.
 
@@ -61,6 +61,6 @@ Stop on a hard dependency failure or rejected overwrite. Do not skip ahead. Miss
 - CREATE mode may write the missing artifact after analysis.
 - UPDATE mode must generate a candidate, show the diff summary, and wait for explicit approval before overwriting.
 - Each output includes `## Discovery Gaps` for unverified facts.
-- After a successful artifact write, update the canonical instruction/context pointers in `AGENTS.md` only when a pointer is missing. Never add operational prose to `CLAUDE.md`.
+- After a successful artifact write, update the context pointers in `.agents/instructions/project.md` (the project-owned overlay) only when a pointer is missing. `AGENTS.md` is boilerplate-owned and size-budgeted, so it never receives them. Never add operational prose to `CLAUDE.md`.
 - A map mode writes into a business context skill that already exists (delivered by `bun run up`, never scaffolded here). After it writes, the mode reviews that skill's `## Rules` and gotchas against the new map and PROPOSES any change; it never rewrites a rule.
 - `$ARGUMENTS` minus the mode token are forwarded unchanged to the selected mode.

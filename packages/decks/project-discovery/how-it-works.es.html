@@ -508,7 +508,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     </div>
     <p class="wf-lane">Las fases (cada una espera tu "Phase N complete")</p>
     <div class="wf-row">
-      <div class="wf-node"><p class="n">Fase 1</p><p class="t">Constitución</p><p class="c">project-config.md<br>evaluación en AGENTS.md<br>mapa business-domain-context</p></div>
+      <div class="wf-node"><p class="n">Fase 1</p><p class="t">Constitución</p><p class="c">project-config.md<br>evaluación en project.md<br>mapa business-domain-context</p></div>
       <span class="wf-arr">→</span>
       <div class="wf-node"><p class="n">Fase 2</p><p class="t">Arquitectura</p><p class="c">mapa infra-context:<br>overview · architecture<br>external-services · nfr-*</p></div>
       <span class="wf-arr">→</span>
@@ -573,7 +573,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="wf-row mt-m">
       <div class="wf-node"><p class="n">1 · Conexión</p><p class="t">Repos, stack, entornos, herramientas</p><p class="c">→ .context/project-config.md</p></div>
       <span class="wf-arr">→</span>
-      <div class="wf-node"><p class="n">2 · Evaluación</p><p class="t">Madurez de testing, docs, calidad, CI/CD, riesgos</p><p class="c">→ ## Project Assessment (Phase 1)<br>en AGENTS.md</p></div>
+      <div class="wf-node"><p class="n">2 · Evaluación</p><p class="t">Madurez de testing, docs, calidad, CI/CD, riesgos</p><p class="c">→ ## Project Assessment (Phase 1)<br>en .agents/instructions/project.md</p></div>
       <span class="wf-arr">→</span>
       <div class="wf-node"><p class="n">3 · Modelo de negocio</p><p class="t">Problema, usuarios, propuesta de valor</p><p class="c">→ overview · business-model</p></div>
       <span class="wf-arr">→</span>
@@ -764,7 +764,7 @@ Purchase      | order           | Compra   | orders | prisma/schema.prisma</div>
           <p class="lbl">Escribe solo</p>
           <ul class="big" style="font-size:17px;line-height:1.7">
             <li><span class="mono">.context/project-config.md</span></li>
-            <li>El bloque <span class="mono">## Project Assessment (Phase 1)</span> de <span class="mono">AGENTS.md</span></li>
+            <li>El bloque <span class="mono">## Project Assessment (Phase 1)</span> de <span class="mono">.agents/instructions/project.md</span></li>
             <li><span class="mono">.context/ADR/</span>, en <span class="mono">Proposed</span></li>
             <li>El mapa de <span class="mono">business-domain-context</span> y el de <span class="mono">infra-context</span></li>
           </ul>
@@ -822,7 +822,7 @@ Purchase      | order           | Compra   | orders | prisma/schema.prisma</div>
     </div>
     <div class="card card-accent mt-m">
       <p class="lbl">Lo que deja la skill</p>
-      <p class="small mt-s"><span class="mono">.context/project-config.md</span> · la evaluación en <span class="mono">AGENTS.md</span> · el mapa de dominio y el de infraestructura, legibles con <span class="mono">bun run context:map</span> · ADRs en <span class="mono">Proposed</span> · una lista honesta de <span class="mono">discovery-gaps</span> · el backlog verificado.</p>
+      <p class="small mt-s"><span class="mono">.context/project-config.md</span> · la evaluación en <span class="mono">.agents/instructions/project.md</span> · el mapa de dominio y el de infraestructura, legibles con <span class="mono">bun run context:map</span> · ADRs en <span class="mono">Proposed</span> · una lista honesta de <span class="mono">discovery-gaps</span> · el backlog verificado.</p>
     </div>
     <p class="small dim mt-m">Canon: <span class="mono">.agents/skills/project-discovery/SKILL.md</span> y sus <span class="mono">references/</span> (una por fase). Anatomía de los mapas: <span class="mono">agentic-qa-core/references/business-context-maps.md</span>.</p>
     <div class="notes">Fin del recorrido. El mapa del slide 3 resume todo: retomar si hay sesión, fijar el repo y el alcance, recorrer las fases con tu confirmación y entregar el resto a project-context en una sesión nueva.</div>

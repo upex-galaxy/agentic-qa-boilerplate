@@ -150,11 +150,11 @@ Each phase has a **completion gate**: before moving on, the phase's sections mus
 Four sub-steps, in order:
 
 1. **Project Connection** -- repo paths, tech stack detection, environment URLs, credentials from `.env`, team contacts. Output: `.context/project-config.md`.
-2. **Project Assessment** -- current testing maturity (frameworks in place, CI presence, lint/typecheck, coverage). Output: the `## Project Assessment (Phase 1)` block. HIGH risks (a hardcoded-secret hit included, path only) are recorded there and carried to the handoff as seed input for `project-context` mode `test-plan` (the MTP). No separate risk file is written.
+2. **Project Assessment** -- current testing maturity (frameworks in place, CI presence, lint/typecheck, coverage). Output: the `## Project Assessment (Phase 1)` block in `.agents/instructions/project.md`. HIGH risks (a hardcoded-secret hit included, path only) are recorded there and carried to the handoff as seed input for `project-context` mode `test-plan` (the MTP). No separate risk file is written.
 3. **Business Model Discovery** -- problem statement, target users, value proposition, revenue model (if any). Output: the `overview` and `business-model` sections of the `business-domain-context` map.
 4. **Domain Glossary** -- core entities and concepts, UI-label vs code-identifier mapping, enumerations. Output: one `term-<slug>` section per core entity or concept, plus `enumerations` and `discovery-gaps`, in the same map.
 
-**Completion gate**: `bun run context:map business-domain-context --list` prints sections and no placeholder notice; `.context/project-config.md` exists and is non-empty; the `## Project Assessment (Phase 1)` block is in canonical `AGENTS.md`. Sanity-check content (soft gates, surfaced to the human as warnings, not hard aborts):
+**Completion gate**: `bun run context:map business-domain-context --list` prints sections and no placeholder notice; `.context/project-config.md` exists and is non-empty; the `## Project Assessment (Phase 1)` block is in `.agents/instructions/project.md`. Sanity-check content (soft gates, surfaced to the human as warnings, not hard aborts):
 - Several `term-` sections exist, one per real core entity from the schema (not one catch-all section, not only enumerations).
 - `overview` and `business-model` carry `data-sources` (the reader's `--list` shows them).
 - `project-config.md` has a `## Tech Stack` section AND a `## Environments` section.
