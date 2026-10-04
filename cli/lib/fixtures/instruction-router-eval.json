@@ -1,0 +1,229 @@
+{
+  "description": "Labelled prompts for the instruction router of .agents/hooks/personality-reinject.mjs, in this repository's own QA vocabulary. Each `expect` lists what a careful reader of the AGENTS.md router would load for the prompt: a section id (frontmatter `id`) or an import path, companions of a fired row included. Labels follow the router, not the classifier: a miss or a false hit is fixed in a section's `triggers:`, never by relabelling. Bilingual on purpose (ES/EN).",
+  "targets": {
+    "recall": 0.95,
+    "precision": 0.8
+  },
+  "prompts": [
+    {
+      "prompt": "commit and push these changes",
+      "expect": ["git"]
+    },
+    {
+      "prompt": "abrí un PR contra main con estos cambios",
+      "expect": ["git"]
+    },
+    {
+      "prompt": "tengo un conflicto al hacer rebase de la rama",
+      "expect": ["git"]
+    },
+    {
+      "prompt": "which branching strategy does this repo use?",
+      "expect": ["git"]
+    },
+    {
+      "prompt": "create a branch for the KATA fixture refactor",
+      "expect": ["git", "code-quickref"]
+    },
+    {
+      "prompt": "what's the staging URL for this project?",
+      "expect": ["project-variables", ".agents/project.yaml"]
+    },
+    {
+      "prompt": "¿qué valor tiene {{PROJECT_KEY}} acá?",
+      "expect": ["project-variables", ".agents/project.yaml"]
+    },
+    {
+      "prompt": "cambiá el default_env en project.yaml a local",
+      "expect": ["project-variables", ".agents/project.yaml"]
+    },
+    {
+      "prompt": "which DB MCP does the staging environment use?",
+      "expect": ["project-variables", ".agents/project.yaml"]
+    },
+    {
+      "prompt": "el host de Jira cambió, ¿dónde se configura?",
+      "expect": ["project-variables", ".agents/project.yaml"]
+    },
+    {
+      "prompt": "sync the Jira issues into the PBI cache",
+      "expect": ["local-context-pbi", "project-variables"]
+    },
+    {
+      "prompt": "hidratá el contexto de BK-120 desde Jira",
+      "expect": ["local-context-pbi", "project-variables"]
+    },
+    {
+      "prompt": "read .context/PBI/epics/payments/ for the ATP",
+      "expect": ["ticket-work", "local-context-pbi", "project-variables"]
+    },
+    {
+      "prompt": "list the Xray test executions for the sprint",
+      "expect": ["local-context-pbi", "project-variables", "tool-resolution"]
+    },
+    {
+      "prompt": "test this story BK-300",
+      "expect": ["context-map", "ticket-work", "local-context-pbi", "project-variables"]
+    },
+    {
+      "prompt": "probá la historia BK-301 y reportá los bugs",
+      "expect": ["context-map", "ticket-work", "local-context-pbi", "project-variables"]
+    },
+    {
+      "prompt": "retest the bug BK-412 after the fix",
+      "expect": ["context-map", "ticket-work", "local-context-pbi", "project-variables"]
+    },
+    {
+      "prompt": "write the ATP for the checkout story",
+      "expect": ["context-map", "ticket-work", "local-context-pbi"]
+    },
+    {
+      "prompt": "diseñá los casos de prueba para el login",
+      "expect": ["ticket-work", "local-context-pbi"]
+    },
+    {
+      "prompt": "file a defect for the broken export button",
+      "expect": ["ticket-work", "local-context-pbi"]
+    },
+    {
+      "prompt": "which skill should I use to document tests in Xray?",
+      "expect": ["context-map", "skills-and-mcps"]
+    },
+    {
+      "prompt": "run the regression suite and give me a GO/NO-GO",
+      "expect": ["context-map", "package.json"]
+    },
+    {
+      "prompt": "corré la regresión de smoke en staging",
+      "expect": ["context-map", "package.json", "project-variables", ".agents/project.yaml"]
+    },
+    {
+      "prompt": "onboard me to this repo",
+      "expect": ["context-map"]
+    },
+    {
+      "prompt": "hagamos el handoff de esta sesión",
+      "expect": ["context-map"]
+    },
+    {
+      "prompt": "plan the sprint QA backlog",
+      "expect": ["context-map", "ticket-work", "local-context-pbi"]
+    },
+    {
+      "prompt": "automate the login test cases with KATA",
+      "expect": ["context-map", "code-quickref"]
+    },
+    {
+      "prompt": "generá el business data map del proyecto",
+      "expect": ["context-map"]
+    },
+    {
+      "prompt": "record an ADR for the fixture change",
+      "expect": ["context-map", "code-quickref"]
+    },
+    {
+      "prompt": "add a new skill for visual testing and update the REGISTRY",
+      "expect": ["skills-and-mcps"]
+    },
+    {
+      "prompt": "¿qué tier tiene la skill playwright-cli?",
+      "expect": ["skills-and-mcps", "tool-resolution"]
+    },
+    {
+      "prompt": "which MCPs are configured for this project?",
+      "expect": ["skills-and-mcps", "harnesses"]
+    },
+    {
+      "prompt": "what does [TMS_TOOL] resolve to here?",
+      "expect": ["tool-resolution"]
+    },
+    {
+      "prompt": "use acli to transition BK-55 to In Test",
+      "expect": ["tool-resolution", "local-context-pbi", "project-variables"]
+    },
+    {
+      "prompt": "¿cómo uso bun xray para importar resultados JUnit?",
+      "expect": ["tool-resolution", "package.json"]
+    },
+    {
+      "prompt": "the husky pre-commit hook is not running",
+      "expect": ["harnesses", "git"]
+    },
+    {
+      "prompt": "update .mcp.json to add the dbhub server",
+      "expect": ["harnesses"]
+    },
+    {
+      "prompt": "corré bun run up para traer los cambios del boilerplate",
+      "expect": ["harnesses", "package.json"]
+    },
+    {
+      "prompt": "why does Codex not load my AGENTS.md?",
+      "expect": ["harnesses"]
+    },
+    {
+      "prompt": "edit cli/install.ts to add a step",
+      "expect": ["harnesses"]
+    },
+    {
+      "prompt": "write a Page component for the checkout in KATA",
+      "expect": ["code-quickref"]
+    },
+    {
+      "prompt": "revisá el spec tests/e2e/login.spec.ts",
+      "expect": ["code-quickref"]
+    },
+    {
+      "prompt": "add a fixture to TestFixture for the API client",
+      "expect": ["code-quickref"]
+    },
+    {
+      "prompt": "the ATC for BK-90 fails on the assertion",
+      "expect": ["code-quickref", "local-context-pbi", "project-variables"]
+    },
+    {
+      "prompt": "launch three workers in parallel, one per story",
+      "expect": ["orchestration-detail"]
+    },
+    {
+      "prompt": "orquestá una flota para el sprint 4",
+      "expect": ["orchestration-detail", "context-map"]
+    },
+    {
+      "prompt": "dispatch a subagent to run the verification gates",
+      "expect": ["orchestration-detail", "package.json"]
+    },
+    {
+      "prompt": "can I hardcode the password? does rule 1 allow it?",
+      "expect": ["critical-rules"]
+    },
+    {
+      "prompt": "¿qué dice la regla 15 sobre git stash?",
+      "expect": ["critical-rules", "git"]
+    },
+    {
+      "prompt": "am I allowed to push to main directly under the critical rules?",
+      "expect": ["git", "critical-rules"]
+    },
+    {
+      "prompt": "how do I run the e2e tests?",
+      "expect": ["package.json"]
+    },
+    {
+      "prompt": "¿cómo corro el lint y el typecheck?",
+      "expect": ["package.json"]
+    },
+    {
+      "prompt": "run repo:check before the PR",
+      "expect": ["package.json", "git"]
+    },
+    {
+      "prompt": "thanks, that looks good",
+      "expect": []
+    },
+    {
+      "prompt": "explicame qué hiciste en el último paso",
+      "expect": []
+    }
+  ]
+}
