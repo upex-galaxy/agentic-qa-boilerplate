@@ -128,7 +128,7 @@ Nothing blocks install, update or `setup:doctor`: a value is validated by the co
 | **Understand the methodology**                        | `bun run docs` → Metodología ([IQL](docs/core/metodologia/iql.html), [how this repo implements it](docs/core/metodologia/este-repo.html)); official site: [upexgalaxy.com/metodologia](https://www.upexgalaxy.com/metodologia) |
 | **Browse the human docs**                             | `bun run docs` — local HTML site (setup guides, methodology, exploration); add your own pages under any `docs/` folder except `docs/core/`                                                                |
 | **See what `bun run setup` configures**               | [`INSTALLER.md`](INSTALLER.md) — run `bun run setup:doctor` after setup                                                                                                                               |
-| **You're an AI agent**                                | [`AGENTS.md`](AGENTS.md) (auto-loaded each session on every supported harness)                                                                                                                         |
+| **You're an AI agent**                                | [`AGENTS.md`](AGENTS.md) (auto-loaded each session on every supported harness; it routes to `.agents/instructions/`)                                                                                    |
 
 > First-timers, use the scaffolder. It handles tarball download, git scrub, rename, `bun install`, and the interactive installer in one shot. The manual clone is for people hacking on the boilerplate itself.
 
@@ -444,6 +444,7 @@ bun run test:smoke         # smoke / @critical tests
 │   ├── jira-required.yaml        # Required Jira custom-field manifest
 │   ├── README.md                 # Variable conventions reference
 │   ├── hooks/                    # personality-reinject.mjs — one emitter, three harness adapters
+│   ├── instructions/             # AGENTS.md sections, loaded on demand by the ROUTER (project.md = this project's own)
 │   └── skills/                   # THE skill store — read by all three harnesses
 │       └── <skill>/              # one folder per skill; the catalogue is REGISTRY.md (generated)
 │
@@ -464,7 +465,7 @@ bun run test:smoke         # smoke / @critical tests
 │
 ├── playwright.config.ts          # Playwright configuration
 ├── INSTALLER.md                  # Contract for bun run setup — what each installer layer does
-├── AGENTS.md                     # AI memory — the ONLY instruction body, loaded by all three harnesses
+├── AGENTS.md                     # AI memory, always-on layer: binding rules, behaviour and the ROUTER, loaded by all three harnesses
 ├── CLAUDE.md                     # One-line shim (`@AGENTS.md`) so Claude Code reaches it. Never holds prose
 ├── .mcp.json                     # MCP config — Claude Code
 ├── opencode.jsonc                # MCP config — OpenCode
@@ -757,7 +758,7 @@ async loginSuccessfully(credentials: LoginCredentials): Promise<void> {
 Edit these files:
 
 - `package.json` — name, description, repository
-- `AGENTS.md` — the canonical AI memory, loaded by Claude Code, OpenCode and Codex alike. Never edit `CLAUDE.md`: it is the generated one-line shim that points here
+- `AGENTS.md` — the canonical AI memory's always-on layer, loaded by Claude Code, OpenCode and Codex alike; detail lives in `.agents/instructions/`, and this project's own rules go in `.agents/instructions/project.md`. Never edit `CLAUDE.md`: it is the generated one-line shim that points here
 - `.agents/project.yaml` — AI context vars (or run `bun run agents:setup` for an interactive walkthrough)
 - `config/variables.ts` — runtime URLs for Playwright (`envDataMap`)
 
@@ -810,13 +811,13 @@ This repo runs on **Claude Code, OpenCode, and Codex (CLI + Desktop)**. There is
 | **Instructions** | `CLAUDE.md` → `@AGENTS.md` **[generated shim]** | `AGENTS.md` (native) | `AGENTS.md` (native) |
 | **Skills** | `.claude/skills` **[generated alias]** | `.agents/skills/` (native) | `.agents/skills/` (native) |
 | **Commands** | none: `/<skill> <mode>` through `.claude/skills` | none: name the skill and the mode in prose | none: name the skill and the mode in prose |
-| **Hook** | `.claude/settings.json` → `UserPromptSubmit` | `.opencode/plugins/personality-reinject.js` | `.codex/hooks.json` → `UserPromptSubmit` |
+| **Hook** | `.claude/settings.json` → `UserPromptSubmit` + `SessionStart` (`compact`) | `.opencode/plugins/personality-reinject.js` | `.codex/hooks.json` → `UserPromptSubmit` + `SessionStart` (`compact`) |
 | **MCP** | `.mcp.json` | `opencode.jsonc` | `.codex/config.toml` |
 
-- **Instructions.** `AGENTS.md` is the only instruction body. OpenCode and Codex load it natively; Claude Code loads `CLAUDE.md`, which is exactly `@AGENTS.md` plus one newline: a documented import rather than a symlink, so it survives a Windows checkout. Operational prose in the shim is structural drift, and `agents:compat:check` fails on it.
+- **Instructions.** `AGENTS.md` plus the section files it routes to under `.agents/instructions/` are the only instruction body (progressive disclosure: `AGENTS.md` is the always-on layer, each section loads when its ROUTER row or a hook `ROUTE:` line names it; see `.agents/instructions/README.md`). OpenCode and Codex load `AGENTS.md` natively; Claude Code loads `CLAUDE.md`, which is exactly `@AGENTS.md` plus one newline: a documented import rather than a symlink, so it survives a Windows checkout. Operational prose in the shim is structural drift, and `agents:compat:check` fails on it.
 - **Skills.** Every committed skill lives in `.agents/skills/`, and the project-level community skills install into the same store. OpenCode and Codex read it directly; Claude Code reaches it through `.claude/skills`, a POSIX symlink (Windows junction) that is generated and gitignored: never committed, never hand-edited. Each skill still declares the hosts it supports in its `compatibility:` frontmatter per the [agentskills.io](https://agentskills.io) spec, and hosts without slash triggers auto-activate from the same `description` field.
 - **Commands.** No harness gets generated command files: a skill is invoked by its name plus a mode ([Invoking a skill mode](#invoking-a-skill-mode)). A project command named like a skill would hide that skill's instructions, so the check fails on it and `bun run agents:compat` moves it aside.
-- **Hook.** `.agents/hooks/personality-reinject.mjs` holds the contract text once. Claude and Codex run it as a command hook; OpenCode imports the constant from a thin plugin.
+- **Hook.** `.agents/hooks/personality-reinject.mjs` is the one per-prompt emitter: the `AGENT IDENTITY:` line and one `ROUTE: read <file>` line per instruction section the prompt needs and the session has not read yet. Claude and Codex run it as a command hook (plus a `SessionStart` `compact` hook that re-arms the routes); OpenCode imports it from a thin plugin.
 - **MCP.** Every server declared in `.mcp.json` must exist in the other two configs with the same `.env` dependencies. Parity is checked semantically: each native format (JSON / JSONC / TOML) is normalized into a common shape, then compared on the `.env` variables each server depends on and on its literal settings, so a server missing from one host, or present in one host only, is a failure. The servers the boilerplate ships (`KNOWN_MCP_IDS` in `cli/lib/agent-compatibility-contracts.ts`) additionally get a strict per-host shape check when declared; a downstream project with a different set passes on the generic check alone. Codex cannot expand `${VAR}`, so its adapter names every secret by variable (`bearer_token_env_var` for an HTTP server, `env_vars` for a local one).
 
 ### Regenerating and verifying

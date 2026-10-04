@@ -2,7 +2,7 @@
 
 > **Purpose**: Explain the context engineering strategy for AI-driven test automation. Top-level reference alongside `README.md`, `AGENTS.md`, and `INSTALLER.md`.
 > **Audience**: Humans learning the system + AI when needing to understand "why".
-> **Related**: `AGENTS.md` contains the operational context loaded each session. It is the only instruction body in the repo; `CLAUDE.md` is a one-line shim (`@AGENTS.md`) that Claude Code follows to reach it. Operational prose belongs in `AGENTS.md` — never in the shim. See §2.1 below.
+> **Related**: `AGENTS.md` is the always-on layer of the instructions, loaded each session; the rest lives in section files under `.agents/instructions/`, read when the ROUTER in `AGENTS.md` or a hook `ROUTE:` line names them (progressive disclosure, §8.1 below). `CLAUDE.md` is a one-line shim (`@AGENTS.md`) that Claude Code follows to reach it. Operational prose belongs in the section that owns the topic (this project's own rules in `.agents/instructions/project.md`), never in the shim. See §2.1 below.
 > **Sync**: A change to the context architecture updates this file in the same PR (`framework-development` docs follow-through); `bun run docs:check` guards its paths.
 
 ---
@@ -30,8 +30,9 @@ This repository separates concerns into distinct directories, each with a specif
 ```
 agentic-qa-boilerplate/
 │
-├── AGENTS.md               → Project memory: the only instruction body (loaded every session)
+├── AGENTS.md               → Project memory, always-on layer: binding rules, behaviour, ROUTER (loaded every session)
 ├── .agents/
+│   ├── instructions/       → AGENTS.md sections, read on demand when the ROUTER names them
 │   ├── project.yaml        → Tool-agnostic project + Jira config (any harness reads this)
 │   ├── skills/             → Workflow skills (task instructions + references), committed; list: REGISTRY.md
 │   └── hooks/              → Shared personality-reinject emitter (one file, three adapters)
@@ -44,7 +45,8 @@ agentic-qa-boilerplate/
 
 | Directory | Contains | When Loaded |
 |-----------|----------|-------------|
-| `AGENTS.md` | Operational rules + project state | Every session automatically |
+| `AGENTS.md` | The binding sentence of each critical rule, the behavioural layer, the orchestration core, the ROUTER, memory triggers | Every session automatically |
+| `.agents/instructions/` | One section per topic (harnesses, skills, tool resolution, variables, PBI cache, KATA, git, ...) plus this project's own `project.md` | When its ROUTER row or a hook `ROUTE:` line names it |
 | `.agents/project.yaml` + Jira catalogs | Tool-agnostic project config (`project.yaml`, `jira-fields.json`, `jira-required.yaml`) | When the AI needs to resolve `{{VAR}}` or `{{jira.<slug>}}` |
 | `.agents/skills/` | Task instructions + references (what to do, step by step) | When AI loads a skill for a specific task |
 | `.context/` | Regenerable caches (the Jira PBI tree via `bun run context:hydrate`, reports) plus the files this repo owns (ADRs, `project-config.md`, `test-specs/`). The AI's synthesized knowledge of the app lives in the context skills, read with `bun run context:map` | When a skill reads a ticket, an ADR or an automation plan |
@@ -61,10 +63,10 @@ The repo runs on **Claude Code, OpenCode, and Codex (CLI + Desktop)**. There is 
 | **Instructions** | `CLAUDE.md` → `@AGENTS.md` **[generated shim]** | `AGENTS.md` (native) | `AGENTS.md` (native) |
 | **Skills** | `.claude/skills` **[generated alias]** | `.agents/skills/` (native) | `.agents/skills/` (native) |
 | **Commands** | none: `/<skill> <mode>` through `.claude/skills` | none: name the skill and the mode in prose | none: name the skill and the mode in prose |
-| **Hook** | `.claude/settings.json` → `UserPromptSubmit` | `.opencode/plugins/personality-reinject.js` | `.codex/hooks.json` → `UserPromptSubmit` |
+| **Hook** | `.claude/settings.json` → `UserPromptSubmit` + `SessionStart` (`compact`) | `.opencode/plugins/personality-reinject.js` | `.codex/hooks.json` → `UserPromptSubmit` + `SessionStart` (`compact`) |
 | **MCP** | `.mcp.json` | `opencode.jsonc` | `.codex/config.toml` |
 
-**Instructions.** `AGENTS.md` is the only instruction body. OpenCode and Codex load it natively. Claude Code loads `CLAUDE.md`, which is exactly `@AGENTS.md` plus one newline — a documented import rather than a symlink, so it survives a Windows checkout. Writing operational prose into `CLAUDE.md` is structural drift, and `agents:compat:check` fails on it.
+**Instructions.** `AGENTS.md` plus the section files it routes to under `.agents/instructions/` are the only instruction body. OpenCode and Codex load `AGENTS.md` natively. Claude Code loads `CLAUDE.md`, which is exactly `@AGENTS.md` plus one newline — a documented import rather than a symlink, so it survives a Windows checkout. Writing operational prose into `CLAUDE.md` is structural drift, and `agents:compat:check` fails on it.
 
 **Skills.** Every repo skill lives committed under `.agents/skills/` (the list is `.agents/skills/REGISTRY.md`). OpenCode and Codex discover that directory natively. Claude Code reaches the same tree through `.claude/skills`, a POSIX symlink (Windows junction) that is **generated and gitignored** — never committed, never hand-edited.
 
@@ -204,7 +206,8 @@ These files have stable names and locations. Reference them confidently:
 
 | File / Skill | Purpose |
 |--------------|---------|
-| `AGENTS.md` | Project memory, loaded every session — the only instruction body |
+| `AGENTS.md` | Project memory's always-on layer, loaded every session: LOAD PROTOCOL, binding rules, behaviour, ROUTER |
+| `.agents/instructions/` | The instruction sections the ROUTER names (synced from upstream), plus `project.md` (this project's own, never synced); guide in its `README.md` |
 | `CLAUDE.md` | One-line shim (`@AGENTS.md`) so Claude Code reaches `AGENTS.md`. Never holds prose of its own |
 | `.agents/hooks/personality-reinject.mjs` | Shared hook emitter; the three harness adapters call into it |
 | `.agents/project.yaml` | Tool-agnostic project variables (`{{VAR}}` source of truth) |
@@ -290,6 +293,18 @@ Every other skill (reference, utility, generator) is exempt from the dispatch-ta
 
 ## 8. Progressive Loading Strategy
 
+### 8.1 The instruction layers (progressive disclosure)
+
+The instructions themselves load in layers, the same way a skill does (description first, body on use):
+
+| Layer | What | When it loads |
+|-------|------|---------------|
+| **L0** | `AGENTS.md`: LOAD PROTOCOL, the binding sentence of each critical rule, §2 whole, the §3 core, the ROUTER, §12 | Every session, on every host |
+| **L1** | One section file per topic under `.agents/instructions/` | When its ROUTER row matches the request, or the hook injects `ROUTE: read <file>` |
+| **L2** | Each skill's `references/` | When the section or the skill that cites them needs them |
+
+The prompt hook classifies every prompt against the ROUTER and the sections' `triggers:` / `paths:`, and names each file once per session (re-armed after a compaction). The LOAD PROTOCOL makes a `ROUTE:` line binding. Two data files are also Claude Code imports: the ROUTER rows for variables and scripts write `@.agents/project.yaml` and `@package.json` as plain text, so Claude Code loads them at launch, while OpenCode and Codex follow the same row's reinforced instruction. `bun run instructions:check` guards the L0 budget, the ROUTER, the frontmatter and the rule sentences. Mechanism: `.agents/instructions/README.md`; decision and measurements: `.context/ADR/ADR-0009-progressive-disclosure-of-instructions.md`.
+
 ### By Task Type
 
 | Task | Load First | Load If Needed |
@@ -315,7 +330,7 @@ Every other skill (reference, utility, generator) is exempt from the dispatch-ta
 
 ### DO
 
-- Load `AGENTS.md` first (automatic on every harness)
+- Load `AGENTS.md` first (automatic on every harness), then every section its ROUTER or a `ROUTE:` line names
 - Load task-specific guidelines
 - Use skills from `.agents/skills/` for structured tasks
 - Reference code in `tests/components/` as living examples
@@ -326,18 +341,20 @@ Every other skill (reference, utility, generator) is exempt from the dispatch-ta
 - Load all guidelines at once
 - Include full file trees in prompts
 - Duplicate information across files
+- Paste a section's prose back into `AGENTS.md`: every session pays for it, and Codex cuts the file at its byte cap
 - Load whole context maps for simple test writing (use `--section <id>`)
 
 ---
 
 ## 10. Maintenance Guidelines
 
-### When to Update AGENTS.md
+### When to Update AGENTS.md or a section
 
-- Project identity changes
+- Detail on a topic → the section file that owns it under `.agents/instructions/`; when it should load is that section's `triggers:` / `paths:`, never a new ROUTER row unless no row's request kind covers it
+- This project's own rule (project identity, testing decisions, an accepted divergence) → `.agents/instructions/project.md`, which `bun run up` never overwrites
 - New MCPs configured — add the server to all three configs (`.mcp.json`, `opencode.jsonc`, `.codex/config.toml`), then run `bun run agents:compat:check`
-- New CLI tools added
-- Testing decisions documented
+- New CLI tools added → `.agents/instructions/30-tool-resolution.md`
+- `AGENTS.md` itself only for what must bind on every turn; `bun run instructions:check` fails past its byte ceiling
 
 Never write the update into `CLAUDE.md`: it is a generated one-line shim, and `agents:compat:check` fails when it holds prose.
 
@@ -365,7 +382,7 @@ Never write the update into `CLAUDE.md`: it is a generated one-line shim, and `a
 
 ## Related Documentation
 
-- **AGENTS.md** - Operational context (project root), loaded by all three harnesses
+- **AGENTS.md** - Operational context (project root), always-on layer loaded by all three harnesses; sections in `.agents/instructions/`
 - **README.md** - Project overview for humans
 - `.agents/README.md` - Variable resolution contract (`{{VAR}}`, `<<VAR>>`, `{{jira.<slug>}}`)
 - `.context/ADR/README.md` - Test-architecture decision records (when to write one, status lifecycle, index)
