@@ -693,7 +693,9 @@ bun run codex      # Codex CLI (Codex Desktop usa la misma config del repo)</cod
               <td>En cada commit (pre-commit y <code>bun run repo:check</code>).</td>
               <td>
                 Falla si un skill del repo falta en el router de
-                <code>.agents/instructions/20-skills-and-mcps.md</code> o si un doc cita un
+                <code>.agents/instructions/20-skills-and-mcps.md</code> (o, si lo creó tu proyecto,
+                en la tabla <code>Project context skills</code> de
+                <code>.agents/instructions/project.md</code>) o si un doc cita un
                 <code>bun run</code> que <code>package.json</code> no tiene. Lo que pide criterio lo
                 cierra <code>/framework-development</code> en el boilerplate y la fase 9.3 de
                 <code>/test-framework-adaptation</code> en tu proyecto.
