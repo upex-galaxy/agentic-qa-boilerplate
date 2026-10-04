@@ -200,4 +200,32 @@ describe('a pre-split AGENTS.md', () => {
     expect(migration).toMatchObject({ surface: 'instructions', blocking: false, side: 'kept', suggested: 'merge' });
     expect(migration?.note).toContain('New home');
   });
+
+  test('when AGENTS.md also drifted, the migration replaces its heading advice: one row, the map attached', () => {
+    const upstream = tempRoot();
+    const project = tempRoot();
+    write(upstream, 'AGENTS.md', L0);
+    write(project, 'AGENTS.md', MONOLITH);
+    const row = runLegacyMigrationCheck(project, upstream)!;
+    const findings = collectParityFindings({
+      root: project,
+      upstreamDir: upstream,
+      drift: [{ path: 'AGENTS.md', reason: 'per-project AI memory', structural: false }],
+      compatErrors: [],
+      archivedSkills: [],
+      archivedSkillsDir: join(project, 'none'),
+      heldBack: [],
+      envNewKeys: [],
+      doctrineDebt: 'informational: 2 doctrine section(s) upstream has',
+      instructionRows: [{ path: 'AGENTS.md', evidence: row.evidence, suggested: 'merge', side: 'kept', note: row.note }],
+      contextMaps: [],
+      playwrightProfileKeys: [],
+    });
+    const rows = findings.filter(f => f.path === 'AGENTS.md');
+    expect(rows).toHaveLength(1);
+    expect(rows[0].evidence).toContain('predates progressive disclosure');
+    expect(rows[0].evidence).toContain('2 doctrine section(s)');
+    expect(rows[0].evidence).not.toContain('keep project-only headings');
+    expect(rows[0].note).toContain('New home');
+  });
 });

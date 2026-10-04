@@ -1403,11 +1403,23 @@ export function collectParityFindings(input: ParityInput): ParityFinding[] {
     }
   }
 
-  findings.push(...[...drifted.values()].map(({ projectOnly: _projectOnly, ...finding }) => finding), ...compat);
-
   // The instruction sections: the `project.md` stub this run delivered (or
   // refused) and the heading map for an AGENTS.md that predates the split.
+  // A row about a file that also drifted REPLACES that row's heading advice:
+  // "keep project-only headings" is wrong for headings that now live in a
+  // synced section. The doctrine debt stays on it.
+  const instructionRows: InstructionRowInput[] = [];
   for (const row of input.instructionRows ?? []) {
+    const existing = drifted.get(row.path);
+    if (!existing) { instructionRows.push(row); continue; }
+    existing.evidence = [row.evidence, input.doctrineDebt].filter(e => typeof e === 'string' && e !== '').join('; ');
+    existing.suggested = row.suggested;
+    if (row.note) { existing.note = row.note; }
+  }
+
+  findings.push(...[...drifted.values()].map(({ projectOnly: _projectOnly, ...finding }) => finding), ...compat);
+
+  for (const row of instructionRows) {
     findings.push({ surface: 'instructions', path: row.path, evidence: row.evidence, suggested: row.suggested, blocking: false, ...(row.side ? { side: row.side } : {}), ...(row.note ? { note: row.note } : {}) });
   }
 
