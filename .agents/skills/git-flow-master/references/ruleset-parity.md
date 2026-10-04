@@ -72,7 +72,7 @@ Effects:
 - **`verify` flags stale entries** — an accepted divergence that no longer matches any drift is reported as a NOTE so the list cannot accumulate dead exceptions.
 - **`apply`** preserves the host's side of the accepted field instead of deriving its own (for `direct_push_to_protected`: the host's `pull_request` rule is carried forward verbatim), so applying never bulldozes an accepted divergence.
 
-Acceptance is per-field and needs a reason. It is the yaml-native replacement for burying the sign-off in prose only this repo's `AGENTS.md` could hold.
+Acceptance is per-field and needs a reason. It is the yaml-native replacement for burying the sign-off in prose only this repo's own instructions could hold.
 
 ---
 
@@ -110,7 +110,7 @@ A tool that can silently open `main` is a worse problem than the drift it fixes.
 
 **`verify` also runs automatically**: the pre-push hook and `bun run repo:check` both invoke it, so unaccepted drift blocks a push instead of escaping out the back door. Unreachable host = warn + exit 0 there (see §1).
 
-**Never `apply` to fix a `verify` failure you have not read.** Drift has three legitimate resolutions and only one of them is "change the host": the yaml may be the wrong side, or the divergence may be intended — in which case record it in `git_strategy.policy.accepted_divergences` (§2b) with a reason, and summarize the WHY in the project's `AGENTS.md` → `## Git Strategy` if it needs prose context.
+**Never `apply` to fix a `verify` failure you have not read.** Drift has three legitimate resolutions and only one of them is "change the host": the yaml may be the wrong side, or the divergence may be intended — in which case record it in `git_strategy.policy.accepted_divergences` (§2b) with a reason, and summarize the WHY in the project's own `.agents/instructions/project.md` → `## Git Strategy (this repository)` if it needs prose context.
 
 ---
 
