@@ -146,7 +146,7 @@ ASCII box with project name + one-line intent ("What to test in this system, and
 
 ### 2. Executive risk map
 
-Narrative paragraph (3–5 sentences) framing the system's most fragile areas, followed by:
+A short narrative paragraph framing the system's most fragile areas, followed by:
 
 ```markdown
 | Priority  | Flow                       | Why it matters                   | Depends on / Affects         |
@@ -155,7 +155,7 @@ Narrative paragraph (3–5 sentences) framing the system's most fragile areas, f
 | HIGH      | Auth & session management  | Security, locks out every flow   | Everything gated by login    |
 ```
 
-Cap at 7–10 rows. Anything below HIGH goes to §8 as a short list.
+CRITICAL and HIGH flows only. Anything below HIGH goes to §8 as a short list.
 
 ### 3. What to test first and why
 
@@ -203,7 +203,7 @@ Grouped by theme, not by flow: concurrency, data limits, timezone / DST, permiss
 
 ### 9. Pre-release checklist (priority-ordered)
 
-Short, action-oriented. No more than 15 items. Ordered CRITICAL first, then HIGH. Each line is one check phrased as "Verify X does Y under Z". No TC IDs (those live in the TMS).
+Short, action-oriented, sized to fit the Epic's description budget. Ordered CRITICAL first, then HIGH. Each line is one check phrased as "Verify X does Y under Z". No TC IDs (those live in the TMS).
 
 ### 10. What is NOT in this plan
 

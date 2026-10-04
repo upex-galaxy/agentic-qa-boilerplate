@@ -83,7 +83,7 @@ This step prevents accidental double-work and gives the user explicit control ov
 
 ## Step 3 — Veto table (beats risk score)
 
-Apply before scoring. Same rubric as `acceptance-test-planning.md` §0.1 — duplicated here for the subagent's convenience but the source of truth is the sprint-testing reference.
+Apply before scoring. Adapted from `acceptance-test-planning.md` §0.1 for pre-sprint Stories; this table is authoritative for shift-left selection.
 
 ### SKIP REFINEMENT (drop from refinement set, log reason)
 

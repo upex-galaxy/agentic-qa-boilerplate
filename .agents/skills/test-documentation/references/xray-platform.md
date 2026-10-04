@@ -30,7 +30,7 @@ Every TMS artifact becomes one of these:
 | **Test** | Individual test case (Manual / Cucumber / Generic) | Child of Regression Epic; member of its Story's ATS (coverage reaches the Story via the ATS→Story link; a direct Test↔Story link is the cascade's last resort). |
 | **Test Set** | Two altitudes: **ATS** (per-Story, MANDATORY — holds ALL the Story's TCs, even one; its `is tested by` link to the Story fills the coverage panel) and **TS** (feature-level, OPTIONAL grouping: smoke / regression / domain) | Membership is Xray-internal (manage via `/xray-cli`, read via `bun xray test enrich`); for the ATS it is ALSO a TC→ATS issue link (`../../agentic-qa-core/references/traceability-linking.md` §9). NEVER the TC prefix (the TC prefix is always `{US_ID}`); the ATS→Story `is tested by` edge IS a Jira link and is mandatory. Titles: `ATS: {US_ID}: {story title}` / `TS: {EPIC-KEY\|module}: Validate {feature}`. Components: inherited from the Story on the ATS (mandatory); optional on the feature-level `TS:` only (a feature Set spans modules by design). Both parented to **QA Test Artifacts**. |
 | **Test Plan** | Strategic planning for a release / sprint | Planning-level container. Holds **FTP / STP / ATP / RTP** Plans (titles `FTP: …` / `STP: Sprint#{N}: {objective}` / `ATP: {STORY-KEY}: {story title}` / `RTP: {PROJECT_KEY\|module}: Regression Test Plan` — the `Regression Testing` suffix belongs to the STR, not the STP; the RTP is the long-lived product-altitude regression plan). Parented to **QA Master Test Plan**. |
-| **Test Execution** | One execution cycle; holds Test Runs | Holds **STR / ATR** Runs (titles `STR: Sprint#{N}: Regression Testing` / `ATR: {STORY-KEY}: Story Testing`; FTR retired — feature results are read from the per-Story ATRs; the STR is a sibling sprint recap, not an aggregate of them). Carries Environment, Begin/End Date. Target of CI result import. Parented to **QA Test Artifacts**. |
+| **Test Execution** | One execution cycle; holds Test Runs | Holds **STR / ATR / RTR** Runs (titles `STR: Sprint#{N}: Regression Testing` / `ATR: {STORY-KEY}: Story Testing` / `RTR: {scope-id}: Regression Testing`; FTR retired — feature results are read from the per-Story ATRs; the STR is a sibling sprint recap, not an aggregate of them). Carries Environment, Begin/End Date. Target of CI result import. Parented to **QA Test Artifacts**. |
 | **Pre-Condition** | Reusable prerequisites | Associated to Tests that share setup — an Xray-internal association (manage via `/xray-cli`, read via `bun xray test enrich`), NEVER a Jira issue link. Title: `{COMPONENT}: {required state}` (no ladder acronym) — the **title states the required state**, the **content holds the setup steps** (kept distinct), e.g. `Auth: User logged in as Admin`. Parented to **QA Test Artifacts**. |
 | **Test Run** | *Not a Jira issue* — internal entity inside a Test Execution | One per Test per Execution. Carries PASS/FAIL/TODO/BLOCKED/ABORTED/EXECUTING. |
 
@@ -85,7 +85,7 @@ A **Test Plan aggregates the LATEST status of each of its Tests, across every Ex
 
 The consequence is the load-bearing part: **results are never written INTO a Test Plan** — its status is *derived*, not stored. So the plan-altitude items (**FTP / STP / ATP / RTP**) carry the **plan** (description) plus **human observations** (comments), and the Execution-altitude items (**ATR / STR**) carry the **results**: the per-Story ATRs as the sprint runs, then the closing regression days before sprint close, which adds ONE more Execution over the plan's Tests — that Execution is the **STR**. The STP's roll-up updates itself as they accumulate; nobody maintains it.
 
-This is also why `STP_EXECUTION_KEY` (`.env` / CI) names the *plan* but must hold the **STR** key — the Test Execution linked to that STP, never the STP itself. `tests/utils/jiraSync.ts` reads the target's issue type and refuses a Test Plan outright.
+This is also why `STP_EXECUTION_KEY` (`.env` / CI) names the *plan* but must hold an Execution key — the **RTR** of a regression run (or the sprint-close **STR**), never the STP or RTP itself. `tests/utils/jiraSync.ts` reads the target's issue type and refuses a Test Plan outright.
 
 ---
 
@@ -177,7 +177,7 @@ The KATA convention `@atc('PROJ-101')` + `test('PROJ-101: should ...', ...)` ens
 | `ATLASSIAN_API_TOKEN` | Atlassian API token | Always |
 | `JIRA_PROJECT_KEY` | Default project key | Optional (fallback to `{{PROJECT_KEY}}`) |
 | `XRAY_PROJECT_KEY` | Xray project key for local sync; referenced by no workflow | Optional (local only) |
-| `STP_EXECUTION_KEY` | Target of the automated write-back: the **STR** Test Execution linked to the sprint STP — **never the STP's own key** (`tests/utils/jiraSync.ts` reads the issue type and refuses a Test Plan; see §4). Unset → each run mints a new, unparented Execution. | Xray only; required for write-back |
+| `STP_EXECUTION_KEY` | Target of the automated write-back: the **RTR** Test Execution (or the sprint-close **STR**) — **never a Test Plan's own key** (`tests/utils/jiraSync.ts` reads the issue type and refuses a Test Plan; see §4). Unset → each run mints a new, unparented Execution. | Xray only; required for write-back |
 
 Never hardcode these — always from `.env`. The `/xray-cli` skill reads them from the environment automatically.
 

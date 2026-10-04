@@ -216,7 +216,7 @@ In Settings → Branches → Branch protection:
 - Select: `TestBuild Checks / Framework Validation` (the `build.yml` job).
 - Require branches to be up to date before merging.
 
-Result: no PR merges to `main` with red integration tests.
+Result: no PR merges to `main` while the framework fails to compile or pass static checks; suite health is gated by the scheduled runs, not the PR.
 
 ---
 

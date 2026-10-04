@@ -238,7 +238,7 @@ The config reads through `config/variables.ts`, the single source of truth. It d
 | `STAGING_USER_EMAIL` / `STAGING_USER_PASSWORD` | auth setup projects | Staging credentials |
 | `AUTO_SYNC` | `jiraSync.ts`, the workflows' `Sync Results to TMS` step | Enable the TMS write-back. It runs as a step AFTER the test step, not inside the teardown (see atc-tracing reference) |
 | `TMS_PROVIDER` | `jiraSync.ts` | `xray` / `jira` / `none` |
-| `STP_EXECUTION_KEY` | `jiraSync.ts` | **Xray only.** Target of the write-back: the key of the **STR** Test Execution linked to the sprint STP — never the STP itself (the sync reads the issue type and refuses a Test Plan). Unset → each run mints a new, unparented Execution. |
+| `STP_EXECUTION_KEY` | `jiraSync.ts` | **Xray only.** Target of the write-back: the key of the **RTR** Test Execution (or the sprint-close **STR**) — never a Test Plan (the sync reads the issue type and refuses a Test Plan). Unset → each run mints a new, unparented Execution. |
 
 ### 5.1 Rules
 

@@ -106,7 +106,7 @@ Create a **Test** issue type in the Jira project with the following fields. This
 |-------|------|---------|
 | Summary | Text | TC title per naming convention. |
 | Description | Long text (rich text) | Full TC documentation (Gherkin or steps + metadata). |
-| Test Status | Select list | `Draft`, `In Design`, `READY`, `MANUAL`, `In Review`, `Candidate`, `In Automation`, `Pull Request`, `AUTOMATED`, `DEPRECATED` — exact names from `.agents/jira-workflows.json` (`work_types.test_case`), the authoritative source. |
+| Test Status | Select list | The options `test_status.options` in `.agents/jira-required.yaml` declares (Execution Status, per `tms-conventions.md` §IQL) — the workflow status lives on the Test's own workflow (`.agents/jira-workflows.json` `work_types.test_case`). |
 | Automation Candidate | Checkbox | Redundant with labels but easier to filter in JQL. |
 | Priority | Select list | `Critical`, `High`, `Medium`, `Low`. |
 | Labels | Multi-select | `regression`, `smoke`, `e2e`, `integration`, `automation-candidate`, `manual-only`, etc. |

@@ -90,7 +90,7 @@ If you are tempted to put an API helper in `tests/utils/`, stop — it depends o
 
 ## 5. Import aliases (INVARIANT)
 
-Aliases are mandatory across `tests/**`, and **this one is now a compiler, not just doctrine**. The
+Aliases are mandatory across `tests/**`, and **a lint rule enforces them, not just doctrine**. The
 alias set is declared in `tsconfig.base.json`; `KATA_IMPORT_ALIASES` in `eslint.config.base.js` is a
 core `no-restricted-imports` block scoped to `tests/**/*.ts` + `playwright.config.ts` that rejects
 every `./` and `../` import there. It is a SECOND block beside `CLI_IMPORT_CLOSURE` (which stays
@@ -99,8 +99,7 @@ scoped to `cli/**` and guards the updater's import closure); the two file sets a
 Three things a reader should know before citing it:
 
 - The rule is core ESLint (`no-restricted-imports`), not `eslint-plugin-import`. Do not
-  attribute it to a plugin nobody installed — that was the previous version of this paragraph's
-  mistake, in reverse.
+  attribute it to a plugin nobody installed.
 - **Dynamic `await import('./x')` is not caught.** The rule matches static import and export
   declarations only.
 - **`eslint.config.js` is project-owned and never overwritten by the sync**, so a downstream project
@@ -108,7 +107,7 @@ Three things a reader should know before citing it:
   (`cli/lib/agent-compatibility-contracts.ts`) fails `agents:compat:check` when a block the base
   exports is absent from the consumer, which is what stops the rule from shipping inert.
 
-Review (`/pr-review-lead`) is no longer the only enforcement point, but it still owns the half a
+Review (`/pr-review-lead`) owns the half a
 lint rule cannot judge: whether the alias chosen is the RIGHT one for the layer.
 
 The alias set is whatever `tsconfig.base.json` `paths` declares (the authority — read it, do not
@@ -117,8 +116,7 @@ FACADE-ONLY consumer.
 
 There is no `@config/*` and no `@components/*`: config is reached through `@variables`, and the
 component tree through the per-layer aliases (`@ui/*`, `@api/*`, `@steps/*`) or the named fixture /
-context entries. Earlier revisions of this file listed both; they never existed in `tsconfig.json`,
-and a framework change that assumes them will not resolve.
+context entries. A framework change that assumes either will not resolve.
 
 Rule: Domain components import from `@schemas/{domain}.types`, NEVER from `@openapi`. Only files under `api/schemas/` may import `@openapi`. Test files import `test` from `@TestFixture`, NOT from `@playwright/test`.
 
@@ -212,7 +210,7 @@ These are POLICY tables, not INVARIANT rules. They can be amended additively wit
 | Path                                                  | Why it lives here                                                                                                |
 |-------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
 | `cli/`                                                | Installer + agents:setup + vars:check — project-level tooling, ships with every clone                            |
-| `scripts/`                                            | `bun run` script implementations (`api:sync`, `kata:manifest`, `jira:sync-fields`, `lint:skills`, etc.)          |
+| `scripts/`                                            | `bun run` script implementations (`api:sync`, `kata:manifest`, `jira:sync-fields`, `skills:check`, etc.)         |
 | `.agents/` (structure changes only)                   | Schema for `project.yaml`, `jira-fields.json`, `jira-workflows.json`, `jira-required.yaml`. Values stay manual.  |
 | `tests/utils/`                                        | Agnostic utilities — Allure attach helpers, decorators, formatters. Evolution of the utility layer.              |
 | `tests/components/` (Layer 2 + 3 base classes only)   | `TestContext.ts`, `ApiBase.ts`, `UiBase.ts`. NOT per-module `*Api.ts` / `*Page.ts` (those are test-automation).  |

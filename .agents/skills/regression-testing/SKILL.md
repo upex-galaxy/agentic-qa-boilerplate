@@ -77,7 +77,7 @@ Three phases, always in this order: **Execute → Analyze → Report**. Do not s
 
 This skill is **per-run scope**: `<scope>` = `<env>-<YYYY-MM-DD>` (e.g. `staging-2026-05-20`). Session state lives at `.session/regression-testing/<scope>/{plan.md, progress.md}` per `agentic-qa-core/references/session-management.md` §3 + §9. The single highest-value resume case: if the Monitor subagent dies while watching a long CI run but `RUN_ID` was captured in `plan.md`, Phase 0 re-attaches via `gh run view <RUN_ID>` instead of re-triggering CI (saves the whole run's wall-clock; read the last `gh run view` duration).
 
-This skill is compliant with the doctrine in `AGENTS.md` §"Orchestration Mode (Subagent Strategy)" and the session contract in `.agents/skills/agentic-qa-core/references/session-management.md`. Every dispatch follows the 7-component briefing format defined in `.agents/skills/agentic-qa-core/references/briefing-template.md`, and the pattern selected per stage matches the decision guide in `.agents/skills/agentic-qa-core/references/dispatch-patterns.md`. The two CI-bound stages (long-running watch, multi-artifact download) and the high-volume failure classification step are the hotspots — everything else stays inline because the dispatch overhead is not justified.
+This skill is compliant with the doctrine in `AGENTS.md` §3 "Orchestration Mode" and the session contract in `.agents/skills/agentic-qa-core/references/session-management.md`. Every dispatch follows the 7-component briefing format defined in `.agents/skills/agentic-qa-core/references/briefing-template.md`, and the pattern selected per stage matches the decision guide in `.agents/skills/agentic-qa-core/references/dispatch-patterns.md`. The two CI-bound stages (long-running watch, multi-artifact download) and the high-volume failure classification step are the hotspots — everything else stays inline because the dispatch overhead is not justified.
 
 | Stage                                                      | Pattern    | Subagent role                                                                                                  |
 |------------------------------------------------------------|------------|----------------------------------------------------------------------------------------------------------------|
@@ -416,7 +416,7 @@ An analysis block with: metrics table, trend delta, one section per failure cate
 
 ### GO / CAUTION / NO-GO scoring
 
-Compute a weighted score from the analysis. Maximum is 9.
+Compute a weighted score from the analysis. Maximum is 10.
 
 | Factor | +3 | +1 | 0 | -1 | -2 | -3 |
 |--------|----|----|---|----|----|----|
@@ -547,7 +547,7 @@ Save to `.context/reports/regression-{env}-{date}.md`. Use `references/failure-c
 
 ## Executive Summary
 **Verdict: {GO / CAUTION / NO-GO}**
-Score: {score}/9. {one-line rationale}
+Score: {score}/10. {one-line rationale}
 
 | Metric | Value | Threshold | Status |
 |--------|-------|-----------|--------|
@@ -648,11 +648,11 @@ On Verdict = NO-GO with regressions still being filed as issues, archive WAITS u
 
 ## Anti-patterns — NEVER do these
 
-- **R1.** NEVER classify a failure as FLAKY without re-running the test in isolation — masks real regressions.
+- **R1.** NEVER classify a failure as FLAKY without the ≥5-run history citation (§Step 4 table) — masks real regressions.
 - **R2.** NEVER emit GO when known REGRESSION class > 0 — quality gate is binary: regressions block.
 - **R3.** NEVER auto-retry failing tests in CI without surfacing the retry count in the report.
 - **R4.** NEVER skip Allure artifact download on red builds — evidence vanishes after the retention window.
-- **R5.** NEVER trigger a regression workflow without `--ref <commit-sha>` pinned — different commit = different baseline.
+- **R5.** Record the tested commit (`gh run view <RUN_ID> --json headSha`) in the report; compare trends only between runs whose commits are known — different commit = different baseline.
 - **R6.** NEVER mix smoke + regression suite results into one pass-rate number — different SLOs.
 - **R7.** NEVER mark a test KNOWN-failure without a Jira ticket linking the suppression to a tracking issue.
 

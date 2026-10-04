@@ -396,10 +396,6 @@ The subagent treats `plan.md` and `progress.md` as read-only context. Only the o
 
 The ones `SESSION_RETROFITTED_SKILLS` in `scripts/lint-skills.ts` names (the constant the lint reads).
 
-### Skill that pioneered the pattern
-
-`framework-development`. The original implementation used `.scratch/framework-changes/<change>/{plan.md, apply-progress.md}`. Migrated to this doctrine at `.session/framework-development/<change>/{plan.md, progress.md}`. The `.scratch/` path is grandfathered for one release so in-flight local state does not vanish on upgrade.
-
 ### Skills explicitly excluded
 
 See §4 "Skills that opt out".

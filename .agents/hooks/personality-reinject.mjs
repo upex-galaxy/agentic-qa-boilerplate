@@ -3,17 +3,16 @@
  *
  * Claude Code and Codex run this file as a `UserPromptSubmit` command hook and
  * read its stdout; OpenCode imports the same exports from its plugin adapter
- * (`.opencode/plugins/personality-reinject.js`). The emitter carries four
- * payloads, in this order:
+ * (`.opencode/plugins/personality-reinject.js`). The emitter carries three
+ * payloads, in this order (the AGENTS.md §2 output contract is not one of them:
+ * the harness loads it once per session):
  *
- *   1. `PERSONALITY_CONTRACT` — the AGENTS.md §2 output contract, re-injected
- *      every turn so PM Voice and Butler do not dilute in a long session.
- *   2. The `AGENT IDENTITY:` line — worktree, session label, harness. It is
+ *   1. The `AGENT IDENTITY:` line — worktree, session label, harness. It is
  *      forensic metadata: `git-flow-master` copies it into the `Worktree:` /
  *      `Session:` commit trailers, which are NOT attribution.
- *   3. The `ORCA:` line — emitted only when an `orca` binary is on PATH, so a
+ *   2. The `ORCA:` line — emitted only when an `orca` binary is on PATH, so a
  *      machine without Orca never hears about it (silence rule).
- *   4. At most ONE setup warning: `MISSING_ENV_LINE` when the checkout has no
+ *   3. At most ONE setup warning: `MISSING_ENV_LINE` when the checkout has no
  *      `.env`, else `UNPROVISIONED_WORKTREE_LINE` when it is a linked worktree
  *      that never ran `bun run worktree:provision`.
  *
@@ -35,14 +34,6 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { delimiter, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-
-export const PERSONALITY_CONTRACT = [
-  'OUTPUT CONTRACT (AGENTS.md §2 plus the active user-level AGENTS.md output style):',
-  'PM Voice headline = value, never a punch phrase.',
-  'Render markdown: headings when 2+ sections, one bold anchor per block, `backticks` for paths/commands/identifiers, tables for comparisons, blank lines between blocks.',
-  'Butler bullets as `topic: fragment`.',
-  'No em dash. Vary sentence length. No closing recap.',
-].join(' ');
 
 /** Prefix of the forensic identity line. Consumed by `git-flow-master`. */
 export const IDENTITY_PREFIX = 'AGENT IDENTITY:';
@@ -379,7 +370,7 @@ export function agentContextLines(options = {}) {
   const { env = process.env } = options;
   const identity = options.identity ?? resolveAgentIdentity(options);
   const orca = options.orca ?? orcaAvailable(env);
-  const lines = [PERSONALITY_CONTRACT, identityLine(identity)];
+  const lines = [identityLine(identity)];
   if (orca) { lines.push(ORCA_CONTEXT_LINE); }
   if (options.envMissing ?? envFileMissing({ env })) { lines.push(MISSING_ENV_LINE); }
   else if (options.worktreeUnprovisioned ?? worktreeUnprovisioned({ env })) { lines.push(UNPROVISIONED_WORKTREE_LINE); }

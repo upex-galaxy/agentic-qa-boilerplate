@@ -9,16 +9,6 @@ metadata:
   kind: workflow
 ---
 
-<!-- Model preferences (advisory; dispatchers may use to route) -->
-<!--
-model_preferences:
-  foundation: opus       # high-leverage architectural work
-  planning: sonnet       # structured writing
-  implementation: sonnet # default for code work
-  review: opus           # critical analysis
-  archive: haiku         # mechanical close-out
--->
-
 # Agentic QA Onboard — First-time tour of this repo
 
 Activate when a user lands on this repo for the first time and asks "where do I start?", "how does QA work here?", or invokes `/agentic-qa-onboard`. The skill is a guided tour, not an executor: it explains the stack, the QA pipeline (the IQL stages, always by name: Shift-Left before the sprint, then Planning, Execution, Reporting, Documentation, Automation and Regression), the MCPs, and the env vars that everything depends on, then hands off to the right downstream skill.
@@ -237,7 +227,7 @@ The QA work in this boilerplate runs as named stages: Shift-Left before the spri
 | Stage | Skill | When | What happens |
 | ----- | ----- | ---- | ------------ |
 | Shift-Left | `/shift-left-testing` | PRE-SPRINT (batch) | AC refinement on a batch of backlog Stories, gap-spotting, early authoring of the Story's single ATP into the `{{jira.acceptance_test_plan}}` field (outline maturity, no Test Plan item yet: `/sprint-testing` Planning creates the item FROM that field and refines the same ATP), tracked by a `[QA] Shift-Left Review` subtask, transition `backlog → shift_left_qa → estimation`. Adds labels `shift-left-reviewed` + `shift-left-{YYYY-MM-DD}` (the dated one dates the pass for the <30-day freshness check; the Stage 1 short-circuit opens only on the published ATP body, never on the labels alone). |
-| Planning → Execution → Reporting | `/sprint-testing` | IN-SPRINT (ticket) | Per-ticket: ATS, ATP, then ATR. Smoke + trifuerza (UI/API/DB) exploration. Planning short-circuits its first phases if the Story passed Shift-Left <30 days ago. |
+| Planning → Execution → Reporting | `/sprint-testing` | IN-SPRINT (ticket) | Per-ticket: ATS, ATP, then ATR. Smoke + trifuerza (UI/API/DB) exploration. Planning short-circuits its first phases only when the Story's published ATP body backs a Shift-Left pass under 30 days old (the labels alone open nothing). |
 | Documentation | `/test-documentation` | IN-SPRINT (post-QA) | Refine the executed test cases into TMS Tests, one ROI verdict per scenario (Candidate/Manual/Deferred), Candidates added to the RTP. |
 | Automation | `/test-automation` | POST-SPRINT | KATA-compliant E2E + API tests on Playwright. Plan → Code → Review, with a required separate verifier. |
 | Regression | `/regression-testing` | PRE-RELEASE | CI suite execution. Failure classification. GO/CAUTION/NO-GO release verdict. |

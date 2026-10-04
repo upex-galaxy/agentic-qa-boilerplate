@@ -88,9 +88,9 @@ machine can tell whether you did it, which is the whole problem with a non-versi
 
 ### 3.2 · Credentials for a supervised worker: the harness surfaces, and direnv only for Codex
 
-A launch line can export variables; the native launch cannot, because it has no argv. That used to
-make direnv the only seam. It no longer is: `bun run harness:env` derives from `.env` a per-harness
-credential surface that a worker reads with NO shell involved.
+A launch line can export variables; the native launch cannot, because it has no argv. So
+`bun run harness:env` derives from `.env` a per-harness credential surface that a worker reads with
+NO shell involved.
 
 - **Claude Code workers** read the `env` block of `.claude/settings.local.json`. On macOS/Linux the
   file is resolved from the MAIN checkout's root, so every worktree inherits it with no action

@@ -63,7 +63,7 @@ bun xray import junit --file results.xml --project DEMO
 
 Every flag that takes an issue reference (`--execution`, `--plan`, `--set`, `--tests`, plus the positional argument of `exec get` / `set get`) accepts **both forms** interchangeably:
 
-- **Jira key**: `{{PROJECT_KEY}}-194` — resolved via Jira REST in-process. Requires Jira credentials configured (`auth login --jira-url --jira-email --jira-token` or the `JIRA_*` env vars).
+- **Jira key**: `{{PROJECT_KEY}}-194` — resolved via Jira REST in-process. Requires Jira credentials: `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` from `.env` with the host from `.agents/project.yaml`, or the `auth login --jira-url --jira-email --jira-token` override flags.
 - **Numeric Xray issueId**: `1042389` — used as-is, no resolution call.
 
 If only Xray credentials are configured (no Jira creds) and you pass a Jira key, the CLI fails with a guiding error pointing at the missing flags. Test Run identifiers (`run get`, `run status --id`, etc.) are GraphQL run ids — these are NOT Jira keys and resolution does not apply to them.

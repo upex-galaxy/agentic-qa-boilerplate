@@ -42,8 +42,7 @@ export const KNOWN_MCP_IDS = [
 ] as const;
 
 /**
- * The emitter carries four payloads per prompt (output contract, forensic
- * identity line, conditional Orca line, at most one setup warning), so the
+ * The emitter carries three payloads per prompt (forensic identity line, conditional Orca line, at most one setup warning), so the
  * contract pins the exports the three adapters rely on plus the markers a
  * consumer greps for. A drift here is a harness that silently lost its
  * identity line: `git-flow-master` would then write `Session: unknown` into

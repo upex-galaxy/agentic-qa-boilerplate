@@ -31,14 +31,6 @@ compact_rules: |
   - WHEN a commit is produced by any session: the forensic trailers (`Worktree:` then `Session:`) are mandatory and are NOT AI attribution. Canon: `/git-flow-master`.
 ---
 
-<!-- Model preferences (advisory; dispatchers may use to route) -->
-<!--
-model_preferences:
-  conductor: opus        # planning, arbitration, report synthesis
-  worker: sonnet         # scoped execution; opus for a whole-story or architectural scope
-  automation: opus       # unattended dispatcher (it never produces)
--->
-
 # Orca Orchestration — One Conductor, a Fleet of Sessions
 
 This skill is the transport layer for work that does not fit in one session. A **conductor** talks to the owner and coordinates **workers**; each worker is a persistent agent session that owns a scope from start to finish, reports through a mailbox, and can be interrupted, questioned and resumed. The **fleet** is all workers of one **Run**.
@@ -101,9 +93,9 @@ LAYER 1 · APP                the app running · runtime reachable · board · p
 
 **Consequence for the gate**: it is evaluated on `binary + runtime`, NEVER on "is the vendor skill installed". A machine with the binary and no stubs is fully capable, because this reference knows how to ask the binary for the grammar.
 
-**Consequence for cost.** The user-level stubs are small (measure with `wc -c` on the installed stubs; the figure that settled this, and the fact that the rule once said the opposite, are recorded in `.context/ADR/ADR-0006-forensic-measurements-ledger.md`). The trap is conflating the user-level SKILL.md STUB with the full topic payload the binary serves on demand (`{{ORCHESTRATOR_CLI}} skills get <topic>`) — those are different artifacts and only the second is large.
+**Consequence for cost.** The user-level stubs are small (measure with `wc -c` on the installed stubs; the figure that settled this is recorded in `.context/ADR/ADR-0006-forensic-measurements-ledger.md`). The trap is conflating the user-level SKILL.md STUB with the full topic payload the binary serves on demand (`{{ORCHESTRATOR_CLI}} skills get <topic>`) — those are different artifacts and only the second is large.
 
-So the rule is: **`orchestration.orchestrator_skills` load ALONGSIDE this skill, never instead of it.** This skill owns WHEN and WHAT; the vendor stubs own the command grammar. A small load up front is cheaper than one iteration spent correcting an invented flag, which is what the fetch-on-demand posture cost on a live sprint-testing fleet (see ADR-0006). The on-demand fetch stays for the DEEP topics a stub only points at.
+So the rule is: **`orchestration.orchestrator_skills` load ALONGSIDE this skill, never instead of it.** This skill owns WHEN and WHAT; the vendor stubs own the command grammar. A small load up front is cheaper than one iteration spent correcting an invented flag (measured: ADR-0006). The on-demand fetch stays for the DEEP topics a stub only points at.
 
 The list is `orchestration.orchestrator_skills` in `.agents/project.yaml`, not a hardcoded name here. Empty list = nothing installed, and this skill falls back to asking the binary for its grammar — which is still fully capable, per the gate rule above.
 
@@ -202,7 +194,7 @@ The owner speaks natural language to the conductor; the conductor translates. Th
 6. **Never acknowledge a batch you did not process.** Verified ack (the acknowledged id equals the one requested, the pending count drops), never inside a compound command. An unacknowledged batch hides everything behind it AND the runtime will not notify again.
 7. **Do not build a monitor**, and roll the wait instead. The runtime notifies the conductor when mail arrives; a homemade monitor competes with that notice, arrives late by construction, and triggers on echoes of the conductor's own messages. The harness kills a foreground command at 600 s, so a realistic round is covered by successive waits of at most 540 s, each re-armed with the verified ack in the same command — not by one long block, and never by a shell background job.
 8. **The stop verb has worktree radius: count first.** To close one terminal, close that terminal (and its tab).
-9. **A base-ref flag resolves LOCAL refs**: verify the new worktree's SHA against the remote base, with no `|| true` to hide the failure. This was paid for twice.
+9. **A base-ref flag resolves LOCAL refs**: verify the new worktree's SHA against the remote base, with no `|| true` to hide the failure.
 10. **Never name the orchestrator to the user from a workflow skill when the gate fails**, and never put it in prerequisites, in a non-bypassable probe, in the ATR environment block, or in a blocked-token sweep.
 11. **Text typed into a terminal and not sent is not an instruction.**
 12. **One dev server and one browser per worktree**; close every browser-automation session before reporting (orphaned headless browsers, measured: G37).

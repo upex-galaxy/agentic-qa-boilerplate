@@ -176,7 +176,7 @@ A test is FLAKY if its failure rate over the last N runs on unchanged applicatio
    - 0 < failure_rate ≤ 0.20 → REGRESSION candidate (unless only-in-last-run, then new failure)
    - failure_rate == 0 → not applicable (test is passing — why are you here?)
 
-5. If N < 5: output "INSUFFICIENT HISTORY" — do not guess.
+5. If N < 5: label "INSUFFICIENT HISTORY" and count it as REGRESSION for the gate (fail-closed) — re-evaluate on the next run.
 ```
 
 ### Retry-aware flakiness (conscious-divergence projects only)

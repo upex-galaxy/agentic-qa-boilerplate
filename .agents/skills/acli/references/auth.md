@@ -174,10 +174,9 @@ variable to update on a site migration and nothing to drift out of sync with the
 repo. Only the two credentials are injected: `ATLASSIAN_EMAIL` (a var) and
 `ATLASSIAN_API_TOKEN` (a secret).
 
-`--site` wants the BARE host, hence `--slug`. The old recipe derived it by
-stripping the `https://` prefix off the `ATLASSIAN_URL` variable with shell
-parameter expansion, which silently no-ops on an `http://` value and leaves a
-trailing slash in place; `jira:url --slug` handles both.
+`--site` wants the BARE host, hence `--slug`: it drops the scheme (`https://` or
+`http://`) and any trailing slash, both of which hand-stripping with shell
+parameter expansion gets wrong.
 
 If a runner genuinely cannot run `bun`, read the field directly instead — still
 from the repo, never from a CI variable:

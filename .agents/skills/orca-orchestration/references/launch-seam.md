@@ -14,9 +14,9 @@ Every workflow skill that distributes work writes a **launch file** — `launch.
 session scope, N lines, each one self-contained and ready to paste. It writes that file **always**,
 whether or not any runtime exists.
 
-**The byte-identical rule survives, with a narrower scope.** The line in `launch.txt` is the line a
+**The byte-identical rule, and its scope.** The line in `launch.txt` is the line a
 HUMAN pastes, byte for byte, and a conductor that deliberately opens an unsupervised terminal passes
-it verbatim as that terminal's command. What it can no longer be is the supervised launch: the
+it verbatim as that terminal's command. It cannot be the supervised launch: the
 runtime recognizes only agents IT started, so a terminal created from our own command line can never
 be adopted (`orca-orchestration/references/gotchas.md` G44). Supervision is the native launch, and
 the native launch takes an agent, a model and an effort level — **not a command line**.

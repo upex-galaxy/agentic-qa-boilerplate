@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-10-03T02:55:08.267Z`
+> Generated: `2026-10-04T07:09:57.689Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -26,7 +26,7 @@ Skills indexed: 26
 - DO NOT: expect `workitem edit` to set an issue's COMPONENTS either. There is no flag and no `--from-json` key, so the edit succeeds while leaving components untouched and says nothing. Set them at create time, or change them through the same REST PUT path as custom fields.
 - DO NOT: copy an example out of the vendor's own `--help`. Several omit the subcommand the flags actually live on (`workitem comment --key …` instead of `workitem comment create --key …`) and fail with `unknown flag`. The forms in this skill's references are the tested ones.
 - DO NOT: hardcode a `customfield_NNNNN` id in a script or in generated output. Resolve it through the host project's slug catalog — ids differ per workspace, slugs travel.
-- DO NOT: read the Atlassian host from an environment variable. It lives in `.agents/project.yaml` under `issue_tracker.atlassian_url` and is resolved through the accessor; a stale inherited copy once pointed the sync scripts at a dead site.
+- DO NOT: read the Atlassian host from an environment variable. It lives in `.agents/project.yaml` under `issue_tracker.atlassian_url` and is resolved through the accessor; an inherited copy in the environment goes stale and points scripts at the wrong site.
 - WHEN creating an issue link: `--out` / `--in` are empirically INVERTED against Jira's semantics — `--out` takes the prerequisite, `--in` the dependent. Verify the direction by listing the link afterwards, and recreate with swapped flags if it landed backwards.
 - DO: capture and surface the trace id from any backend failure. It is the only debug signal, and Atlassian Support needs it.
 - WHEN the operation is a known blind spot (enumerate custom fields, edit custom-field values, manage workflows / issue types / versions / components, attachments, watchers, add an item to a sprint): route through REST or the opt-in Atlassian MCP rather than forcing the CLI.
@@ -489,7 +489,7 @@ Skills indexed: 26
 - `NN` is zero-padded, two digits, starting at `01`, incrementing across the whole lineage. List `<<PRIMARY_ROOT>>/.session/handoffs/` before choosing; never assume, and never count from a worktree's own `.session/`.
 - **The successor's session name is the handoff file's basename without the extension.** That is the entire naming rule, and it makes the lineage readable from the file list alone: `<base>`, then `<base>-handoff-01`, then `<base>-handoff-01-handoff-02`. Long names are the point; a lineage you cannot read is a lineage you cannot audit.
 - A durable fact that outlives the session does not belong in the handoff. It belongs in Engram, in the repo, or in the tracker. The handoff cites it.
-- **Label every claim `measured` or `predicted`.** The predecessor's guesses about what the successor will find are useful and are also the first thing to go stale. A predicted branch stated as fact sends the successor down a path that no longer exists. Measured means: this session ran it and read the output.
+- **Label every claim `measured`, `read` or `predicted`.** The predecessor's guesses about what the successor will find are useful and are also the first thing to go stale. A predicted branch stated as fact sends the successor down a path that no longer exists. Measured means: this session ran it and read the output. Read means: it came from a document and was believed.
 - **Mark perishable state `PERISHABLE`, with the wall-clock time it was measured.** Running workers, open mailboxes, in-flight PRs and live runs decay between writing and reading. The successor's instruction for anything marked perishable is: re-verify before acting, not act then discover.
 - **Perishable beats priority.** If a perishable item needs attention before the priority list, say so in the same line. A successor that follows a stale priority order while a live worker waits has done exactly what the handoff was supposed to prevent.
 - (truncated — read full SKILL.md for the rest)

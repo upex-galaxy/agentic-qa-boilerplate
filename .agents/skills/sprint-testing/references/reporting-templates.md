@@ -349,13 +349,13 @@ for each {TEST_KEY, result} in run:
   [TMS_TOOL] Update Run:
     execution: {ATR_KEY}
     test:      {TEST_KEY}
-    status:    PASS | FAIL | BLOCKED | ABORTED | TODO  # terminal-set caveat: §2.4
+    status:    PASSED | FAILED | TODO | EXECUTING  # this instance's vocabulary; BLOCKED / ABORTED only where defined: §2.4
     comment:   "{optional note, e.g. bug key if FAIL}"
 
 # Close the Execution
 [ISSUE_TRACKER_TOOL] Transition Issue:
   issue: {ATR_KEY}
-  transition: done
+  transition: {{jira.transition.test_execution.complete}}
 ```
 
 If the run was already imported from CI via `[TMS_TOOL] Import Results`, the Test Runs are already populated — only the description + Environment + Begin/End need the manual update.

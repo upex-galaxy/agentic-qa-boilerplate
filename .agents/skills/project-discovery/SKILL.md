@@ -64,7 +64,7 @@ Canonical reading order when starting cold on a discovery run. Read in order; st
 
 This skill is **project-scope**: no `<scope>` segment. Session state lives directly at `.session/project-discovery/{plan.md, progress.md}` per `agentic-qa-core/references/session-management.md` §3 + §9. This skill runs long (hours, four hard-gate phases) and benefits most from per-phase checkpoints: if interrupted between Phase 2 (Architecture) and Phase 3 (Infrastructure), resume reads `progress.md` and skips back to the first incomplete phase without re-prompting the user for already-confirmed scope.
 
-This skill is compliant with the doctrine in `AGENTS.md` §"Orchestration Mode (Subagent Strategy)" and the session contract in `.agents/skills/agentic-qa-core/references/session-management.md`. Per-phase dispatch decisions live in `Pick the scope first` below: Fresh = heavy subagent delegation per phase; Boilerplate adoption = medium; Brownfield + Context refresh = main session only.
+This skill is compliant with the doctrine in `AGENTS.md` §3 (Orchestration Mode) and the session contract in `.agents/skills/agentic-qa-core/references/session-management.md`. Per-phase dispatch decisions live in `Pick the scope first` below: Fresh = heavy subagent delegation per phase; Boilerplate adoption = medium; Brownfield + Context refresh = main session only.
 
 ---
 

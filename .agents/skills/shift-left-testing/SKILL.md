@@ -98,13 +98,13 @@ Requires `agentic-qa-core`. Loads on demand:
 
 This skill is **per-batch scope**: `<scope>` = `<YYYY-MM-DD>-<descriptor>` (e.g. `2026-05-20-payments-area`). Session state lives at `.session/shift-left-testing/<YYYY-MM-DD>-<descriptor>/{plan.md, progress.md}` per `agentic-qa-core/references/session-management.md` §3 + §9. The per-Story `shift-left-refinement.md` files stay under each Story's PBI folder (`[LOCAL]` staging buffer for Phase 2 → Phase 3 — disposable once Phase 3 publishes to Jira; see `references/atp-outline-template.md` and `.context/PBI/README.md`).
 
-This skill is compliant with the doctrine in `AGENTS.md` §"Orchestration Mode (Subagent Strategy)" and the session contract in `.agents/skills/agentic-qa-core/references/session-management.md`. Every dispatch follows the 7-component briefing format defined in `.agents/skills/agentic-qa-core/references/briefing-template.md`, and the pattern selected per phase matches the decision guide in `.agents/skills/agentic-qa-core/references/dispatch-patterns.md`.
+This skill is compliant with the doctrine in `AGENTS.md` §3 (Orchestration Mode) and the session contract in `.agents/skills/agentic-qa-core/references/session-management.md`. Every dispatch follows the 7-component briefing format defined in `.agents/skills/agentic-qa-core/references/briefing-template.md`, and the pattern selected per phase matches the decision guide in `.agents/skills/agentic-qa-core/references/dispatch-patterns.md`.
 
 | Phase | Pattern | Subagent role |
 |-------|---------|---------------|
 | Phase 1 — Selection | Single | Backlog Selection subagent: pull candidate Stories via `[ISSUE_TRACKER_TOOL]`, apply veto + risk-score triage, return ranked candidate table. After user OK: find-or-create the `[QA] Shift-Left Review` subtask under each accepted Story with assignee = self, left at `{{jira.status.subtask.active}}` where `create` lands it (skip with warning if the catalog has no subtask work type) |
 | Phase 2 — Refinement (per Story) | Sequential — looped per Story | Refinement subagent: load `acceptance-test-planning.md` Phases 1-3 + outline-only Phase 4, write `shift-left-refinement.md`, append PO/Dev questions, return summary block. ONE subagent per Story. NEVER parallel across Stories (each subagent writes a different PBI file but the orchestrator must present each summary to the user sequentially before the next dispatch) |
-| Phase 3 — Handoff (per Story) | Sequential — looped per Story | Handoff subagent: update Jira description + `{{jira.acceptance_test_plan}}` custom field (both modalities — no Test Plan item pre-sprint) + handoff comment + labels + subtask annotations + subtask transition to Done + Story transition `backlog -> shift_left_qa -> estimation`. Returns transition log + trace verification |
+| Phase 3 — Handoff (per Story) | Sequential — looped per Story | Handoff subagent: update Jira description + `{{jira.acceptance_test_plan}}` custom field (both modalities — no Test Plan item pre-sprint) + handoff comment + labels + subtask annotations + subtask transition to `{{jira.status.subtask.close}}` + Story transition `backlog -> shift_left_qa -> estimation`. Returns transition log + trace verification |
 | Phase 3 — Batch report | Single | Batch Report subagent: aggregate per-Story summaries into `.session/shift-left-testing/<batch-id>/batch-report.md` + post to parent epic if Stories share one |
 
 > **Sequential by design**. Phase 2 refinement looks parallelizable (each Story is independent in Jira), but the orchestrator must present each Story's refinement summary to the user before moving on. This keeps the user in the loop, lets them veto a Story mid-batch, and matches the team-grooming cadence the skill is designed for. Parallelism would burn the user's attention budget.
@@ -398,7 +398,7 @@ For each refined Story, dispatch a Handoff subagent. Sequential, one Story at a 
    — the stage-specific lines are in `references/handoff-protocol.md` §Step 6b.
 ```
 
-The Handoff subagent returns a per-Story log: `{story: KEY, atp_container: <field|fallback_comment>, subtask: <done|skipped>, labels_added: [...], transitions: [...], trace_status: ok|warning|fail}`.
+The Handoff subagent returns a per-Story log: `{story: KEY, atp_container: <field|fallback_comment>, subtask: <close|skipped>, labels_added: [...], transitions: [...], trace_status: ok|warning|fail}`.
 
 ### Batch report + Archive
 
