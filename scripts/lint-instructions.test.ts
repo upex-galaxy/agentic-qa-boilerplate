@@ -3,7 +3,14 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { importRefs, routerRows, sectionRefs, skillRouterSource } from './lib/instructions.ts';
-import { BOILERPLATE_BUDGET, lintInstructions, PROJECT_BUDGET } from './lint-instructions.ts';
+import {
+  budgetFinding,
+  CODEX_PROJECT_DOC_MAX_BYTES,
+  L0_BUDGET,
+  L0_PROJECT_BUDGET,
+  L0_TARGET,
+  lintInstructions,
+} from './lint-instructions.ts';
 
 let root: string;
 
@@ -50,7 +57,9 @@ function scaffold(): void {
   write('.agents/instructions/README.md', '# Guide\n\nNEVER routed, no frontmatter.\n');
 }
 
-const kinds = (): string[] => lintInstructions(root).findings.map(f => `${f.kind}:${f.file}`);
+const kinds = (): string[] => lintInstructions(root).findings.filter(f => f.severity === 'error').map(f => `${f.kind}:${f.file}`);
+const warnings = (): string[] => lintInstructions(root).findings.filter(f => f.severity === 'warning').map(f => `${f.kind}:${f.file}`);
+const MAINTAINER_YAML = '# MAINTAINER COPY: this repo\nproject: {}\n';
 
 beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), 'lint-instructions-'));
@@ -62,7 +71,7 @@ afterEach(() => {
 
 describe('lint-instructions', () => {
   test('a repo without .agents/instructions/ has not adopted the split and passes', () => {
-    write('AGENTS.md', 'x'.repeat(PROJECT_BUDGET + 10));
+    write('AGENTS.md', 'x'.repeat(CODEX_PROJECT_DOC_MAX_BYTES + 10));
     const report = lintInstructions(root);
     expect(report.adopted).toBe(false);
     expect(report.findings).toEqual([]);
@@ -76,13 +85,34 @@ describe('lint-instructions', () => {
     expect(report.rows).toBe(4);
   });
 
-  test('L0 over the project budget fails; the maintainer copy gets the tighter boilerplate budget', () => {
+  test('the budget levels nest under the Codex cut', () => {
+    expect(L0_TARGET).toBe(16384);
+    expect(L0_BUDGET).toBe(24576);
+    expect(L0_PROJECT_BUDGET).toBe(28672);
+    expect(CODEX_PROJECT_DOC_MAX_BYTES).toBe(32768);
+    expect(L0_TARGET < L0_BUDGET && L0_BUDGET < L0_PROJECT_BUDGET && L0_PROJECT_BUDGET < CODEX_PROJECT_DOC_MAX_BYTES).toBe(true);
+  });
+
+  test('budget: over the target warns, over the ceiling fails, the Codex cut fails everywhere', () => {
+    expect(budgetFinding(L0_TARGET, true)).toBeNull();
+    expect(budgetFinding(L0_TARGET + 1, true)?.severity).toBe('warning');
+    expect(budgetFinding(L0_BUDGET + 1, true)?.severity).toBe('error');
+    expect(budgetFinding(L0_BUDGET + 1, false)?.severity).toBe('warning');
+    expect(budgetFinding(L0_PROJECT_BUDGET + 1, false)?.severity).toBe('error');
+    expect(budgetFinding(CODEX_PROJECT_DOC_MAX_BYTES + 1, false)?.detail).toContain('Codex');
+  });
+
+  test('L0 over the target warns and passes; the maintainer copy fails at the boilerplate ceiling, a project at the higher one', () => {
     scaffold();
-    write('AGENTS.md', L0({ extra: 'y'.repeat(BOILERPLATE_BUDGET) }));
+    write('AGENTS.md', L0({ extra: 'y'.repeat(L0_TARGET) }));
     expect(kinds()).toEqual([]);
-    write('.agents/project.yaml', '# MAINTAINER COPY: this repo\nproject: {}\n');
+    expect(warnings()).toEqual(['budget:AGENTS.md']);
+    write('AGENTS.md', L0({ extra: 'y'.repeat(L0_BUDGET) }));
+    expect(kinds()).toEqual([]);
+    write('.agents/project.yaml', MAINTAINER_YAML);
+    write('.agents/instructions/project.md.template', '# Project\n');
     expect(kinds()).toEqual(['budget:AGENTS.md']);
-    write('AGENTS.md', L0({ extra: 'y'.repeat(PROJECT_BUDGET) }));
+    write('AGENTS.md', L0({ extra: 'y'.repeat(L0_PROJECT_BUDGET) }));
     write('.agents/project.yaml', 'project: {}\n');
     expect(kinds()).toEqual(['budget:AGENTS.md']);
   });
@@ -105,10 +135,38 @@ describe('lint-instructions', () => {
     ]);
   });
 
-  test('missing router markers fail once, without flagging every section as unrouted', () => {
+  test('missing router markers fail once in the maintainers\' copy, without flagging every section as unrouted', () => {
     scaffold();
+    write('.agents/project.yaml', MAINTAINER_YAML);
+    write('.agents/instructions/project.md.template', '# Project\n');
     write('AGENTS.md', L0().replace('<!-- router:start -->', ''));
     expect(kinds()).toEqual(['router:AGENTS.md']);
+  });
+
+  test('a project that received the sections but still runs its pre-split AGENTS.md is pending, not broken', () => {
+    scaffold();
+    write('AGENTS.md', `# AGENTS.md\n\n## 9. LOCAL CONTEXT (PBI)\n\n${'x'.repeat(CODEX_PROJECT_DOC_MAX_BYTES)}\n`);
+    const report = lintInstructions(root);
+    expect(report.pendingMigration).toBe(true);
+    expect(report.findings).toEqual([]);
+  });
+
+  test('stub: an identity pattern, the own Git Strategy heading or a copy of the own project.md fails', () => {
+    scaffold();
+    write('.agents/instructions/project.md.template', '# Project\n\nPushes bypass the ProtectPublic ruleset.\n\n## Git Strategy (this repository)\n');
+    expect(kinds()).toEqual(['stub:.agents/instructions/project.md.template', 'stub:.agents/instructions/project.md.template']);
+    write('.agents/project.yaml', MAINTAINER_YAML);
+    write('.agents/instructions/project.md.template', `${fm('project', '[]')}# Project\n`);
+    expect(kinds()).toEqual(['stub:.agents/instructions/project.md.template']);
+    write('.agents/instructions/project.md.template', '# A generic stub\n');
+    expect(kinds()).toEqual([]);
+  });
+
+  test('stub: required in the maintainers\' copy, optional in a project', () => {
+    scaffold();
+    expect(kinds()).toEqual([]);
+    write('.agents/project.yaml', MAINTAINER_YAML);
+    expect(kinds()).toEqual(['stub:.agents/instructions/project.md.template']);
   });
 
   test('frontmatter shape: missing block, bad id, duplicate id, empty triggers and a trigger that does not compile', () => {

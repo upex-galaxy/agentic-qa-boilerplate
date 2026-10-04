@@ -7,9 +7,12 @@
  * hook's `ROUTE:` line) sends the model there. That split only works while
  * these hold, and each one is checked here:
  *
- *   - BUDGET: L0 stays under `PROJECT_BUDGET` everywhere (Codex cuts project
- *     instructions at its shared byte budget without telling the model) and
- *     under `BOILERPLATE_BUDGET` in the maintainers' copy.
+ *   - BUDGET: two levels, the same in both boilerplates. Over `L0_TARGET` is a
+ *     warning (the number stays visible); over `L0_BUDGET` fails in the
+ *     maintainers' copy, over `L0_PROJECT_BUDGET` fails in a project (its own
+ *     L0 additions included); and whatever the budgets say, L0 must stay under
+ *     `CODEX_PROJECT_DOC_MAX_BYTES`, where Codex cuts project instructions
+ *     without telling the model.
  *   - ROUTER: the markers exist, every row names at least one section file or
  *     Claude import, every named file resolves, and every section file is named
  *     by some row (an unrouted section is unreachable).
@@ -28,16 +31,25 @@
  *     prohibition) or `` enforced: `bun run <script>` `` (a gate in
  *     `package.json`).
  *
- * A repo without `.agents/instructions/` has not adopted the split yet: the
- * gate prints a note and passes, because being behind upstream is not a broken
- * repo.
+ *   - STUB: `project.md.template`, the generic `project.md` a downstream project
+ *     receives, carries none of this repo's identity (`stubLeaks`: the
+ *     `project.schema.yaml` identity patterns, the own Git Strategy heading,
+ *     a copy of the maintainers' own `project.md`). Required in the
+ *     maintainers' copy.
  *
- * Usage: bun scripts/lint-instructions.ts   (exit 1 on any finding)
+ * A repo without `.agents/instructions/` has not adopted the split yet, and a
+ * project whose `AGENTS.md` has no ROUTER still runs its pre-split monolith
+ * (the sync delivers the sections; moving AGENTS.md is the project's own merge,
+ * named in the parity report): the gate prints a note and passes, because
+ * being behind upstream is not a broken repo.
+ *
+ * Usage: bun scripts/lint-instructions.ts   (exit 1 on any error; warnings print and pass)
  */
 
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { isMaintainerCopy } from '../cli/lib/agents-schema.ts';
+import { PROJECT_INSTRUCTIONS, PROJECT_INSTRUCTIONS_TEMPLATE, stubLeaks } from '../cli/lib/updater-instructions.ts';
 import {
   importRefs,
   INSTRUCTIONS_DIR,
@@ -48,26 +60,48 @@ import {
   sectionRefs,
 } from './lib/instructions.ts';
 
-/** Always-on ceiling for a project's L0 (its own additions included), under Codex's shared project-doc budget. */
-export const PROJECT_BUDGET = 24 * 1024;
-/** Ceiling for the boilerplate's own L0: behaviour whole plus the binding sentence of every critical rule. */
-export const BOILERPLATE_BUDGET = 18 * 1024;
+/** Target for the boilerplate's L0: over it is a warning, so the number stays visible. */
+export const L0_TARGET = 16 * 1024;
+/** Ceiling for the boilerplate's own L0 (the maintainers' copy): behaviour whole plus every rule's binding sentence. */
+export const L0_BUDGET = 24 * 1024;
+/** Ceiling for a project's L0, its own additions included. */
+export const L0_PROJECT_BUDGET = 28 * 1024;
+/** Codex `project_doc_max_bytes` default: past it the file is cut at the byte, silently. */
+export const CODEX_PROJECT_DOC_MAX_BYTES = 32 * 1024;
 export const RULES_SECTION = '01-critical-rules.md';
 
 export interface InstructionFinding {
   file: string
   line: number
-  kind: 'budget' | 'router' | 'unrouted' | 'frontmatter' | 'trigger' | 'rule' | 'binding'
+  kind: 'budget' | 'router' | 'unrouted' | 'frontmatter' | 'trigger' | 'rule' | 'binding' | 'stub'
+  severity: 'error' | 'warning'
   detail: string
 }
 
 export interface InstructionReport {
   adopted: boolean
+  /** A project with the sections but a pre-split `AGENTS.md` (no ROUTER): nothing is checked yet. */
+  pendingMigration: boolean
   l0Bytes: number
+  /** The ceiling that applies to this repo: `L0_BUDGET` in the maintainers' copy, else `L0_PROJECT_BUDGET`. */
   budget: number
   sections: number
   rows: number
   findings: InstructionFinding[]
+}
+
+/** Budget for one L0 size: a Codex cut or a ceiling fails, the target only warns. */
+export function budgetFinding(bytes: number, maintainer: boolean): InstructionFinding | null {
+  const ceiling = maintainer ? L0_BUDGET : L0_PROJECT_BUDGET;
+  const at = (severity: InstructionFinding['severity'], detail: string): InstructionFinding => ({ file: L0_FILE, line: 1, kind: 'budget', severity, detail });
+  if (bytes > CODEX_PROJECT_DOC_MAX_BYTES) { return at('error', `${bytes} B > ${CODEX_PROJECT_DOC_MAX_BYTES} B: Codex cuts project instructions here without telling the model`); }
+  if (bytes > ceiling) {
+    return at('error', maintainer
+      ? `${bytes} B > ${ceiling} B boilerplate ceiling: move detail into a section file, keep only binding sentences in L0`
+      : `${bytes} B > ${ceiling} B ceiling with project additions: move project text into ${INSTRUCTIONS_DIR}/${PROJECT_SECTION} or a project context skill`);
+  }
+  if (bytes > L0_TARGET) { return at('warning', `${bytes} B > ${L0_TARGET} B target`); }
+  return null;
 }
 
 const NEVER_MUST = /\b(?:NEVER|MUST)\b/;
@@ -142,13 +176,13 @@ export function lintInstructions(root: string): InstructionReport {
   const l0Bytes = Buffer.byteLength(l0, 'utf8');
   const yamlPath = join(root, '.agents', 'project.yaml');
   const maintainer = existsSync(yamlPath) && isMaintainerCopy(readFileSync(yamlPath, 'utf8'));
-  const budget = maintainer ? BOILERPLATE_BUDGET : PROJECT_BUDGET;
-  if (!adopted) { return { adopted, l0Bytes, budget, sections: 0, rows: 0, findings }; }
+  const budget = maintainer ? L0_BUDGET : L0_PROJECT_BUDGET;
+  if (!adopted) { return { adopted, pendingMigration: false, l0Bytes, budget, sections: 0, rows: 0, findings }; }
+  if (!maintainer && routerRows(l0) === null) { return { adopted, pendingMigration: true, l0Bytes, budget, sections: 0, rows: 0, findings }; }
 
   // BUDGET
-  if (l0Bytes > budget) {
-    findings.push({ file: L0_FILE, line: 1, kind: 'budget', detail: `${l0Bytes} B > ${budget} B: move detail into a section file, keep only binding sentences in L0` });
-  }
+  const overBudget = budgetFinding(l0Bytes, maintainer);
+  if (overBudget) { findings.push(overBudget); }
 
   const sections = listSections(root);
   const names = new Set(sections.map(s => s.name));
@@ -157,29 +191,29 @@ export function lintInstructions(root: string): InstructionReport {
   const rows = routerRows(l0);
   const routed = new Set<string>();
   if (rows === null) {
-    findings.push({ file: L0_FILE, line: 1, kind: 'router', detail: 'router markers <!-- router:start --> / <!-- router:end --> missing' });
+    findings.push({ severity: 'error', file: L0_FILE, line: 1, kind: 'router', detail: 'router markers <!-- router:start --> / <!-- router:end --> missing' });
   }
   else {
-    if (rows.length === 0) { findings.push({ file: L0_FILE, line: 1, kind: 'router', detail: 'router table has no rows' }); }
+    if (rows.length === 0) { findings.push({ severity: 'error', file: L0_FILE, line: 1, kind: 'router', detail: 'router table has no rows' }); }
     for (const row of rows) {
       const read = row.cells[1] ?? '';
       const refs = sectionRefs(read);
       const imports = importRefs(read);
       if (refs.length === 0 && imports.length === 0) {
-        findings.push({ file: L0_FILE, line: row.line, kind: 'router', detail: 'row names no section file and no @import in its Read cell' });
+        findings.push({ severity: 'error', file: L0_FILE, line: row.line, kind: 'router', detail: 'row names no section file and no @import in its Read cell' });
       }
       for (const ref of refs) {
         routed.add(ref);
-        if (!names.has(ref)) { findings.push({ file: L0_FILE, line: row.line, kind: 'router', detail: `\`${ref}\` does not exist in ${INSTRUCTIONS_DIR}/` }); }
+        if (!names.has(ref)) { findings.push({ severity: 'error', file: L0_FILE, line: row.line, kind: 'router', detail: `\`${ref}\` does not exist in ${INSTRUCTIONS_DIR}/` }); }
       }
       for (const ref of imports) {
-        if (!existsSync(join(root, ref))) { findings.push({ file: L0_FILE, line: row.line, kind: 'router', detail: `@${ref} does not resolve from the repo root` }); }
+        if (!existsSync(join(root, ref))) { findings.push({ severity: 'error', file: L0_FILE, line: row.line, kind: 'router', detail: `@${ref} does not resolve from the repo root` }); }
       }
     }
   }
   for (const s of sections) {
     if (rows !== null && !routed.has(s.name)) {
-      findings.push({ file: s.rel, line: 1, kind: 'unrouted', detail: 'no ROUTER row in AGENTS.md names this section, so nothing loads it' });
+      findings.push({ severity: 'error', file: s.rel, line: 1, kind: 'unrouted', detail: 'no ROUTER row in AGENTS.md names this section, so nothing loads it' });
     }
   }
 
@@ -188,28 +222,28 @@ export function lintInstructions(root: string): InstructionReport {
   for (const s of sections) {
     const fm = s.frontmatter;
     if (fm === null) {
-      findings.push({ file: s.rel, line: 1, kind: 'frontmatter', detail: s.frontmatterError ?? 'missing leading --- frontmatter block' });
+      findings.push({ severity: 'error', file: s.rel, line: 1, kind: 'frontmatter', detail: s.frontmatterError ?? 'missing leading --- frontmatter block' });
       continue;
     }
     const isProject = s.name === PROJECT_SECTION;
-    if (typeof fm.id !== 'string' || !KEBAB.test(fm.id)) { findings.push({ file: s.rel, line: 1, kind: 'frontmatter', detail: '`id` must be a kebab-case string' }); }
-    else if (ids.has(fm.id)) { findings.push({ file: s.rel, line: 1, kind: 'frontmatter', detail: `\`id: ${fm.id}\` duplicates ${ids.get(fm.id)}` }); }
+    if (typeof fm.id !== 'string' || !KEBAB.test(fm.id)) { findings.push({ severity: 'error', file: s.rel, line: 1, kind: 'frontmatter', detail: '`id` must be a kebab-case string' }); }
+    else if (ids.has(fm.id)) { findings.push({ severity: 'error', file: s.rel, line: 1, kind: 'frontmatter', detail: `\`id: ${fm.id}\` duplicates ${ids.get(fm.id)}` }); }
     else { ids.set(fm.id, s.rel); }
     for (const key of ['title', 'load_when'] as const) {
       const value = fm[key];
-      if (typeof value !== 'string' || value.trim() === '') { findings.push({ file: s.rel, line: 1, kind: 'frontmatter', detail: `\`${key}\` must be a non-empty string` }); }
+      if (typeof value !== 'string' || value.trim() === '') { findings.push({ severity: 'error', file: s.rel, line: 1, kind: 'frontmatter', detail: `\`${key}\` must be a non-empty string` }); }
     }
     if (!Array.isArray(fm.paths) || fm.paths.some(p => typeof p !== 'string')) {
-      findings.push({ file: s.rel, line: 1, kind: 'frontmatter', detail: '`paths` must be a list of strings (may be empty)' });
+      findings.push({ severity: 'error', file: s.rel, line: 1, kind: 'frontmatter', detail: '`paths` must be a list of strings (may be empty)' });
     }
     if (!Array.isArray(fm.triggers) || fm.triggers.some(t => typeof t !== 'string')) {
-      findings.push({ file: s.rel, line: 1, kind: 'frontmatter', detail: '`triggers` must be a list of regex strings' });
+      findings.push({ severity: 'error', file: s.rel, line: 1, kind: 'frontmatter', detail: '`triggers` must be a list of regex strings' });
       continue;
     }
-    if (fm.triggers.length === 0 && !isProject) { findings.push({ file: s.rel, line: 1, kind: 'frontmatter', detail: '`triggers` is empty: the hook can never route here' }); }
+    if (fm.triggers.length === 0 && !isProject) { findings.push({ severity: 'error', file: s.rel, line: 1, kind: 'frontmatter', detail: '`triggers` is empty: the hook can never route here' }); }
     for (const t of fm.triggers as string[]) {
       try { void new RegExp(t, 'i'); }
-      catch (error) { findings.push({ file: s.rel, line: 1, kind: 'trigger', detail: `${JSON.stringify(t)} does not compile: ${(error as Error).message}` }); }
+      catch (error) { findings.push({ severity: 'error', file: s.rel, line: 1, kind: 'trigger', detail: `${JSON.stringify(t)} does not compile: ${(error as Error).message}` }); }
     }
   }
 
@@ -217,21 +251,21 @@ export function lintInstructions(root: string): InstructionReport {
   const rules = l0Rules(l0);
   const rulesSection = sections.find(s => s.name === RULES_SECTION);
   const full = rulesSection ? fullRules(rulesSection.text) : new Map<number, { name: string, body: string, line: number }>();
-  if (rules.size === 0) { findings.push({ file: L0_FILE, line: 1, kind: 'rule', detail: '`## 1.` critical rules not found in L0' }); }
-  if (!rulesSection) { findings.push({ file: `${INSTRUCTIONS_DIR}/${RULES_SECTION}`, line: 1, kind: 'rule', detail: 'full text of the critical rules is missing' }); }
+  if (rules.size === 0) { findings.push({ severity: 'error', file: L0_FILE, line: 1, kind: 'rule', detail: '`## 1.` critical rules not found in L0' }); }
+  if (!rulesSection) { findings.push({ severity: 'error', file: `${INSTRUCTIONS_DIR}/${RULES_SECTION}`, line: 1, kind: 'rule', detail: 'full text of the critical rules is missing' }); }
   else {
     for (const [n, rule] of rules) {
       const target = full.get(n);
-      if (!rule.pointer) { findings.push({ file: L0_FILE, line: rule.line, kind: 'rule', detail: `rule ${n} does not end with its "→ 01" pointer` }); }
-      if (!target) { findings.push({ file: L0_FILE, line: rule.line, kind: 'rule', detail: `rule ${n} has no "## ${n}." heading in ${RULES_SECTION}` }); continue; }
-      if (target.name !== rule.name) { findings.push({ file: rulesSection.rel, line: target.line, kind: 'rule', detail: `rule ${n} is named "${target.name}" here but "${rule.name}" in L0` }); }
+      if (!rule.pointer) { findings.push({ severity: 'error', file: L0_FILE, line: rule.line, kind: 'rule', detail: `rule ${n} does not end with its "→ 01" pointer` }); }
+      if (!target) { findings.push({ severity: 'error', file: L0_FILE, line: rule.line, kind: 'rule', detail: `rule ${n} has no "## ${n}." heading in ${RULES_SECTION}` }); continue; }
+      if (target.name !== rule.name) { findings.push({ severity: 'error', file: rulesSection.rel, line: target.line, kind: 'rule', detail: `rule ${n} is named "${target.name}" here but "${rule.name}" in L0` }); }
       const body = norm(target.body);
       for (const fragment of sentences(rule.rest.replace(/^[:.]\s*/, ''))) {
-        if (!body.includes(fragment)) { findings.push({ file: L0_FILE, line: rule.line, kind: 'rule', detail: `rule ${n}: "${fragment.slice(0, 80)}" is not verbatim in ${RULES_SECTION}` }); }
+        if (!body.includes(fragment)) { findings.push({ severity: 'error', file: L0_FILE, line: rule.line, kind: 'rule', detail: `rule ${n}: "${fragment.slice(0, 80)}" is not verbatim in ${RULES_SECTION}` }); }
       }
     }
     for (const [n, target] of full) {
-      if (!rules.has(n)) { findings.push({ file: rulesSection.rel, line: target.line, kind: 'rule', detail: `rule ${n} has no binding sentence in L0` }); }
+      if (!rules.has(n)) { findings.push({ severity: 'error', file: rulesSection.rel, line: target.line, kind: 'rule', detail: `rule ${n} has no binding sentence in L0` }); }
     }
   }
 
@@ -257,11 +291,23 @@ export function lintInstructions(root: string): InstructionReport {
       if (gates.some(g => scripts.has(g))) { return; }
       const binding = sentences(line).filter(x => NEVER_MUST.test(x));
       if (binding.length > 0 && binding.every(x => l0Norm.includes(x))) { return; }
-      findings.push({ file: s.rel, line: i + 1, kind: 'binding', detail: 'NEVER/MUST line with no binding id: add `Rule #N`, binding: `/<skill>`, enforced: `bun run <script>`, or put the sentence in L0' });
+      findings.push({ severity: 'error', file: s.rel, line: i + 1, kind: 'binding', detail: 'NEVER/MUST line with no binding id: add `Rule #N`, binding: `/<skill>`, enforced: `bun run <script>`, or put the sentence in L0' });
     });
   }
 
-  return { adopted, l0Bytes, budget, sections: sections.length, rows: rows?.length ?? 0, findings };
+  // STUB: the generic project.md a downstream project receives carries none of this repo's identity.
+  const stubPath = join(root, PROJECT_INSTRUCTIONS_TEMPLATE);
+  if (existsSync(stubPath)) {
+    const own = maintainer && existsSync(join(root, PROJECT_INSTRUCTIONS)) ? readFileSync(join(root, PROJECT_INSTRUCTIONS), 'utf8') : null;
+    for (const reason of stubLeaks(readFileSync(stubPath, 'utf8'), own)) {
+      findings.push({ severity: 'error', file: PROJECT_INSTRUCTIONS_TEMPLATE, line: 1, kind: 'stub', detail: `the stub would leak to every project: ${reason}` });
+    }
+  }
+  else if (maintainer) {
+    findings.push({ severity: 'error', file: PROJECT_INSTRUCTIONS_TEMPLATE, line: 1, kind: 'stub', detail: `missing: a project without ${PROJECT_INSTRUCTIONS} has no generic stub to receive` });
+  }
+
+  return { adopted, pendingMigration: false, l0Bytes, budget, sections: sections.length, rows: rows?.length ?? 0, findings };
 }
 
 if (import.meta.main) {
@@ -272,13 +318,21 @@ if (import.meta.main) {
     console.log(`- instructions:check skipped: no ${INSTRUCTIONS_DIR}/ in this repo (progressive disclosure not adopted yet)`);
     process.exit(0);
   }
-  if (report.findings.length === 0) {
-    console.log(`✓ instructions:check passed (L0 ${report.l0Bytes} B of ${report.budget} B, ${report.sections} sections, ${report.rows} router rows)`);
+  if (report.pendingMigration) {
+    console.log(`- instructions:check skipped: ${L0_FILE} has no ROUTER yet (pre-split monolith); move it to the L0 + ${INSTRUCTIONS_DIR}/ layout, see the parity report of \`bun run up\``);
     process.exit(0);
   }
-  for (const f of report.findings) {
+  const errors = report.findings.filter(f => f.severity === 'error');
+  for (const f of report.findings.filter(f => f.severity === 'warning')) {
+    console.warn(`  ⚠ ${f.file}:${f.line}  ${f.kind}  ${f.detail}`);
+  }
+  if (errors.length === 0) {
+    console.log(`✓ instructions:check passed (L0 ${report.l0Bytes} B; target ${L0_TARGET} B, ceiling ${report.budget} B; ${report.sections} sections, ${report.rows} router rows)`);
+    process.exit(0);
+  }
+  for (const f of errors) {
     console.error(`  ✗ ${f.file}:${f.line}  ${f.kind}  ${f.detail}`);
   }
-  console.error(`✗ instructions:check failed: ${report.findings.length} finding(s)`);
+  console.error(`✗ instructions:check failed: ${errors.length} error(s)`);
   process.exit(1);
 }

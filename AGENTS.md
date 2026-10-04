@@ -127,8 +127,8 @@ Files live in `.agents/instructions/`. Rows are fixed request kinds; a section g
 | When the request involves | Read | Was | Then |
 |---|---|---|---|
 | about to break, unsure about, or asked about a Critical Rule | `01-critical-rules.md` | §1 | - |
-| any workflow task (onboard, shift-left, sprint, docs, automation, regression, maps, decisions, handoff, browser) or "which skill for X" | `05-task-map.md` | §4 | the matched skill |
 | harness files, hooks, husky, MCP configs, updater, `cli/`, root configs | `10-harnesses.md` | §4.5 | `/framework-development` |
+| any workflow task (onboard, shift-left, sprint, docs, automation, regression, maps, decisions, handoff, browser) or "which skill for X" | `15-context-map.md` | §4 | the matched skill |
 | skills, tiers, modes, the skill table, MCP capabilities | `20-skills-and-mcps.md` | §5 | `.agents/skills/REGISTRY.md` |
 | a `[TAG_TOOL]`, an MCP call, a TMS modality, or a mapped CLI | `30-tool-resolution.md` | §6, §6.5 | the owning skill |
 | a `{{VAR}}`, an environment, the Jira host or fields, any project value | whenever any of these apply, read @.agents/project.yaml and `40-project-variables.md`, NEVER hardcode identity, env URLs, Jira URL, project key, MCP names | §7 | - |

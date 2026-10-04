@@ -53,6 +53,6 @@ The outputs that were retired without a replacement file (`PRD/executive-summary
 
 ## References
 
-- `AGENTS.md` (always on, read by Claude Code through the generated `CLAUDE.md` shim) and the sections it routes to: `.agents/instructions/05-task-map.md` (key paths) and `.agents/instructions/60-local-context-pbi.md` (local context).
+- `AGENTS.md` (always on, read by Claude Code through the generated `CLAUDE.md` shim) and the sections it routes to: `.agents/instructions/15-context-map.md` (key paths) and `.agents/instructions/60-local-context-pbi.md` (local context).
 - `../CONTEXT.md`: the context-engineering rationale.
 - `.agents/skills/`: every workflow and context skill self-describes in its `SKILL.md`.

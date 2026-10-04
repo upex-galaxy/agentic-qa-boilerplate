@@ -177,6 +177,54 @@ export async function seedProjectYamlFromSchema(projectDir: string): Promise<boo
   return true;
 }
 
+/** The boilerplate's own reading of its git strategy: never in a scaffolded project. */
+const PROJECT_GIT_HEADING = '## Git Strategy (this repository)';
+
+/** The section that starts at `heading` and runs to the next `## ` heading, removed. */
+function withoutSection(text: string, heading: string): string {
+  const lines = text.split('\n');
+  const start = lines.findIndex(l => l.trim() === heading);
+  if (start === -1) { return text; }
+  let end = start + 1;
+  while (end < lines.length && !lines[end].startsWith('## ')) { end += 1; }
+  return [...lines.slice(0, start), ...lines.slice(end)].join('\n').replace(/\n{3,}/g, '\n\n');
+}
+
+/**
+ * Seed a scaffolded `.agents/instructions/project.md` from upstream's generic
+ * stub, `.agents/instructions/project.md.template`.
+ *
+ * Twin of `seedProjectYamlFromSchema`, for the same reason: the extracted
+ * `project.md` is the BOILERPLATE's own overlay and carries its own
+ * exceptions (its Git Strategy, a push flow no other repo has). What a new
+ * project gets is the stub. A stub that itself carries that section is
+ * refused (the boilerplate's `instructions:check` should never let one ship);
+ * then, as for a template tagged before the stub existed, the section is cut
+ * from the extracted file instead, so it never travels either way.
+ *
+ * Returns false when it fell back to the cut.
+ */
+export async function seedProjectInstructionsFromTemplate(projectDir: string): Promise<boolean> {
+  const dir = join(projectDir, '.agents', 'instructions');
+  const templatePath = join(dir, 'project.md.template');
+  const projectPath = join(dir, 'project.md');
+  if (existsSync(templatePath)) {
+    const stub = await readFile(templatePath, 'utf8');
+    if (!stub.split('\n').some(l => l.trim() === PROJECT_GIT_HEADING)) {
+      await writeFile(projectPath, stub, 'utf8');
+      log.dim('  Seeded .agents/instructions/project.md from the generic stub (no boilerplate exceptions travel).');
+      return true;
+    }
+    log.warn('The project.md stub carries the boilerplate\'s own Git Strategy section; cutting it from project.md instead.');
+  }
+  if (existsSync(projectPath)) {
+    const own = await readFile(projectPath, 'utf8');
+    const cut = withoutSection(own, PROJECT_GIT_HEADING);
+    if (cut !== own) { await writeFile(projectPath, cut, 'utf8'); }
+  }
+  return false;
+}
+
 /**
  * Reset the git-strategy PROVENANCE in a freshly scaffolded `.agents/project.yaml`.
  *
