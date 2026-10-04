@@ -72,7 +72,7 @@ Also confirm scope in the same round if not already given: which PR (repo + numb
 
 Never review against remembered conventions or generic "best practices" you didn't just verify are documented here. Read first, opine second.
 
-- **This repo**: load `AGENTS.md` in full, plus the doctrine files listed under Dependencies above. This is the reference standard.
+- **This repo**: load `AGENTS.md` and the sections its router names for the PR's surface, plus the doctrine files listed under Dependencies above. This is the reference standard.
 - **External repo**: check whether the target repo ships its own `AGENTS.md` / `.agents/skills/` / `.context/` doctrine before assuming anything — many sibling projects are forked from this same boilerplate and carry (a possibly-evolved version of) the same KATA doctrine, but you cannot assume that without checking. If it has its own doctrine, that repo's doctrine is authoritative for this review, not this repo's copy. If it has none, fall back to this repo's KATA doctrine as the reference standard, and say so explicitly in the output ("this repo has no doctrine of its own, findings are graded against `agentic-qa-boilerplate`'s KATA conventions").
 
 Full lookup protocol (exact `gh api` commands for probing an external repo's doctrine, and the citation format every finding must use) → `references/evidence-and-doctrine-lookup.md`. Read it now, before Step 2.

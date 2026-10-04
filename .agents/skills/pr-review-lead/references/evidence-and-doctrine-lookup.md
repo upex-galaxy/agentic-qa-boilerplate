@@ -16,7 +16,7 @@ Every finding either points at a line of code, points at a line of doctrine, or 
 
 ### This repo
 
-Load `AGENTS.md` in full (small enough to read directly), plus the specific doctrine files under `agentic-qa-core/references/` and `test-automation/references/` relevant to what the PR touches (see `SKILL.md` Dependencies for the default set on KATA/test-automation PRs — widen it if the PR touches something else, e.g. `defect-management-doctrine.md` if the PR includes a bug report, `adr-doctrine.md` if it touches a hard-to-reverse test-architecture choice).
+Load `AGENTS.md` and the sections its router names for what the PR touches (`.agents/instructions/*.md`: `AGENTS.md` alone is only the always-on layer, so a `§N` citation is checked against the section file the router lists for it), plus the specific doctrine files under `agentic-qa-core/references/` and `test-automation/references/` relevant to what the PR touches (see `SKILL.md` Dependencies for the default set on KATA/test-automation PRs — widen it if the PR touches something else, e.g. `defect-management-doctrine.md` if the PR includes a bug report, `adr-doctrine.md` if it touches a hard-to-reverse test-architecture choice).
 
 ### External repo
 
