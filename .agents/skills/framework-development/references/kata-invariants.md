@@ -195,7 +195,7 @@ Out-of-scope surfaces. Modifying these from a framework-development task is FORB
 - **Credentials and env**: `.env`, `.env.example` (only the variable list may be appended when adding a new framework env var; never values).
 - **Playwright artifacts (gitignored)**: `test-results/`, `tests/data/downloads/`, `playwright/.auth/`.
 - **Test results / TMS sync state**: outputs of CI runs, not framework code.
-- **Skills / AGENTS.md**: a framework change that needs to surface in AI memory patches `AGENTS.md` and the docs in the same PR (the docs follow-through in `SKILL.md` Phase 3), and `bun run docs:check` proves the router and the quoted scripts.
+- **Skills / instructions**: a framework change that needs to surface in AI memory patches the section under `.agents/instructions/` that owns the fact (`AGENTS.md` itself only for an L0 rule sentence or a ROUTER row; the skill table is `20-skills-and-mcps.md`) and the docs in the same PR (the docs follow-through in `SKILL.md` Phase 3), and `bun run docs:check` proves the router and the quoted scripts.
 
 ---
 
