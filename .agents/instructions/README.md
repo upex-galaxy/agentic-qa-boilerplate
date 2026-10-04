@@ -47,7 +47,7 @@ The numeric prefix fixes the reading order; the `id` is what the hook routes. Th
 | `project.md.template` | upstream | synced: the generic stub a project's `project.md` starts from (never the boilerplate's own `project.md`, which holds its own exceptions) |
 | this `README.md` | upstream | synced |
 
-A project's own rule goes in `project.md` (or a project context skill for knowledge about the system under test), never into a synced section, where the next sync would replace it.
+A project's own rule goes in `project.md` (or a project context skill for knowledge about the system under test), never into a synced section, where the next sync would replace it. The same holds for the router row of a skill the project authored: it goes in the `## Project context skills` table of `project.md`, its trigger phrases in that file's `triggers:`.
 
 A project scaffolded before this split keeps its monolith `AGENTS.md`: the sync delivers the sections, never rewrites `AGENTS.md`, and the parity report maps each old heading to the section that now carries it and names the headings that are the project's own (they move to `project.md`). `instructions:check` skips such a project until its `AGENTS.md` has the ROUTER.
 

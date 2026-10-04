@@ -125,6 +125,16 @@ describe('router source: AGENTS.md and the section frontmatter, read at runtime'
     expect(routeLines({ repoRoot: root, prompt: 'commit and push', routeState: null })).toEqual([]);
   });
 
+  test('project.md routes by its own triggers: a project skill row there survives bun run up with no code change', () => {
+    const root = routerFixture();
+    const agents = readFileSync(join(root, 'AGENTS.md'), 'utf8');
+    write(root, 'AGENTS.md', agents.replace('<!-- router:end -->', '| anything specific to this project | `project.md` | - | project context skills |\n<!-- router:end -->'));
+    write(root, '.agents/instructions/project.md', '---\nid: project\ntitle: Project\nload_when: project\ntriggers: []\npaths: []\n---\n\n## Project context skills\n');
+    expect(classifyPrompt(loadInstructionRouter(root), 'how is a billing invoice voided?')).toEqual([]);
+    write(root, '.agents/instructions/project.md', '---\nid: project\ntitle: Project\nload_when: project\ntriggers: [\'\\binvoices?\\b\']\npaths: []\n---\n\n## Project context skills\n\n| Skill | Trigger | Purpose |\n|---|---|---|\n| `billing-context` | invoice | Billing rules. |\n');
+    expect(classifyPrompt(loadInstructionRouter(root), 'how is a billing invoice voided?')).toEqual(['.agents/instructions/project.md']);
+  });
+
   test('an invalid trigger is skipped, the rest of the section still routes', () => {
     const root = routerFixture();
     write(root, '.agents/instructions/80-git.md', '---\nid: git\ntitle: Git\nload_when: git\ntriggers: ["(unclosed", "\\\\bpush"]\npaths: []\n---\n');

@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
-import { importRefs, routerRows, sectionRefs, skillRouterSource } from './lib/instructions.ts';
+import { importRefs, PROJECT_SKILLS_HEADING, routerRows, sectionRefs, skillRouterSource, skillTableRows } from './lib/instructions.ts';
 import {
   budgetFinding,
   CODEX_PROJECT_DOC_MAX_BYTES,
@@ -234,6 +234,22 @@ describe('lint-instructions', () => {
     write('.agents/instructions/01-critical-rules.md', `${RULES}\nNEVER commit the .env file.\n`);
     expect(kinds()).toEqual([]);
   });
+
+  test('skills: a project skill row lives in project.md; a dead row fails, a row without triggers or in the synced section warns', () => {
+    scaffold();
+    const table = (slugs: string[]): string => ['| Skill | Trigger | Purpose |', '|---|---|---|', ...slugs.map(slug => `| \`${slug}\` | "x" | y |`)].join('\n');
+    write('.agents/skills/billing-context/SKILL.md', '# billing');
+    write('.agents/instructions/project.md', `${fm('project', '[]')}# Project\n\n## Project context skills\n\n${table(['billing-context'])}\n`);
+    const skills = (): string[] => lintInstructions(root).findings.filter(f => f.kind === 'skills').map(f => `${f.severity}:${f.file}:${f.line}`);
+    expect(skills()).toEqual(['warning:.agents/instructions/project.md:1']);
+
+    write('.agents/instructions/project.md', `${fm('project', '[\'\\bbilling\\b\']')}# Project\n\n## Project context skills\n\n${table(['billing-context', 'ghost-context'])}\n`);
+    expect(skills()).toEqual(['error:.agents/instructions/project.md:16']);
+
+    write('.agents/instructions/project.md', `${fm('project', '[\'\\bbilling\\b\']')}# Project\n\n## Project context skills\n\n${table(['billing-context'])}\n`);
+    write('.agents/instructions/20-skills-and-mcps.md', `${fm('skills-and-mcps', '[\'\\bskills?\\b\']')}### Skills (lazy-loaded by trigger phrase)\n\n${table(['iql-context', 'infra-context', 'billing-context'])}\n`);
+    expect(skills()).toEqual(['warning:.agents/instructions/20-skills-and-mcps.md:15']);
+  });
 });
 
 describe('instructions helper', () => {
@@ -255,5 +271,11 @@ describe('instructions helper', () => {
     expect(skillRouterSource(root)?.rel).toBe('AGENTS.md');
     write('.agents/instructions/20-skills-and-mcps.md', '# s');
     expect(skillRouterSource(root)?.rel).toBe('.agents/instructions/20-skills-and-mcps.md');
+  });
+
+  test('a skill table ends at the next heading; a missing heading is null, not an empty table', () => {
+    const text = ['# P', '## Project context skills', '| Skill | T |', '|---|---|', '| `a-context` | x |', '## Next', '| `b-context` | x |'].join('\n');
+    expect(skillTableRows(text, PROJECT_SKILLS_HEADING)).toEqual([{ slug: 'a-context', line: 5 }]);
+    expect(skillTableRows('# P\n', PROJECT_SKILLS_HEADING)).toBeNull();
   });
 });
