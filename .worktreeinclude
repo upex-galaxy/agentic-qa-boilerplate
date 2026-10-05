@@ -19,7 +19,6 @@
 # Values every harness launch and every MCP loader read, and their overrides.
 .env
 .env.local
-.envrc.local
 # Claude Code's local settings (permissions, approved MCP servers).
 .claude/settings.local.json
 # The curl token and browser state from `bun run api:login`. Never the
