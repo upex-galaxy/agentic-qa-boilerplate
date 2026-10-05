@@ -250,6 +250,17 @@ updater:
   # the updater (`readDeclinedDenies` in cli/lib/updater-settings.ts), skipped by vars:check.
   declined_denies: [] # e.g. ['Bash(env)']
 
+# Where SECRET values come from. `local` (the default) = .env / .env.local.
+# A secret manager is the ADVANCED option (ADR-0010): `bun run setup` writes the
+# committed overlay .env.provider.schema (references only, never values).
+# Read directly by the installer; not a {{VAR}} source.
+secrets:
+  provider: local # local | 1password
+  onepassword:
+    vault: null # vault the op:// references point at (e.g. myproject-dev; Private on a personal plan)
+    account: null # sign-in shorthand from `op account list`; null = the CLI default account
+    auth: app # app (desktop app locally, service account in CI) | service-account (token only)
+
 # Per-environment config. Add/remove environments freely (production, dev, qa, uat, etc.).
 # Each environment must define ALL four keys: web_url, api_url, db_mcp, api_mcp.
 # Skills referencing {{WEB_URL}} / {{API_URL}} / {{DB_MCP}} / {{API_MCP}} resolve to the

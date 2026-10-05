@@ -31,9 +31,18 @@
  * that changes the rule fails the gate instead of silently dropping every
  * core variable from validation.
  *
+ * THE OPTIONAL PROVIDER OVERLAY. The core header carries
+ * `@import(./.env.provider.schema, allowMissing=true)`: the hook a project
+ * uses when it keeps its secrets in a manager (ADR-0010). Absent overlay = a
+ * no-op, so every project without one loads unchanged. Placed HERE, in the
+ * synced half, so an existing project gains the hook with `bun run up` and
+ * never has to edit its own `.env.schema`. Measured: an overlay item beats both
+ * this file's empty declaration and a project re-declaration with an empty
+ * value. The overlay itself is `cli/lib/secret-providers.ts`.
+ *
  * `cli/` is import-closed (AGENTS.md §4.5): this module imports only from
- * `./variables-manifest.ts` and node built-ins. `scripts/env-schema.ts` is
- * the argv wrapper that imports FROM here.
+ * `./variables-manifest.ts`, `./secret-providers.ts` and node built-ins.
+ * `scripts/env-schema.ts` is the argv wrapper that imports FROM here.
  */
 
 import type { VarScope, VarSpec } from './variables-manifest.ts';
@@ -42,6 +51,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
+import { PROVIDER_SCHEMA_FILE } from './secret-providers.ts';
 import { validateVarManifest, valueSourceOf, VAR_MANIFEST, VAR_SCOPES } from './variables-manifest.ts';
 
 // ----------------------------------------------------------------------------
@@ -306,6 +316,11 @@ export function generateCoreSchema(
     '# This file declares NAMES, types, sensitivity and which items varlock refuses',
     '# to run without. It never holds a value: fill .env (or .env.local), or let a',
     '# provider resolve the sensitive ones. Validate: bunx varlock load --agent',
+    '#',
+    `# The import below is the OPTIONAL secret-manager overlay (${PROVIDER_SCHEMA_FILE},`,
+    '# references only, written by `bun run setup` when a project opts in). Absent',
+    '# = nothing changes: values come from .env / .env.local.',
+    `# @import(./${PROVIDER_SCHEMA_FILE}, allowMissing=true)`,
     '#',
     '# The two root decorators below are the defaults for THIS file\'s items; each',
     '# item states its own requiredness and sensitivity explicitly.',
