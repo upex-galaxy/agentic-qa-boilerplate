@@ -40,6 +40,7 @@
           <li><a href="#mcps">MCPs locales y MCPs a nivel del harness</a></li>
           <li><a href="#clis">Logins de CLI</a></li>
           <li><a href="#doctor">Qué te dice el doctor</a></li>
+          <li><a href="#ia">Lo que la IA puede ver</a></li>
           <li><a href="#gestores">Gestores de secretos</a></li>
         </ol>
       </nav>
@@ -429,6 +430,33 @@ resend login</code></pre>
         data-lang="bash"
       ><code>bun run setup:doctor          # tabla por alcance + servers a nivel del harness
 bun run setup:doctor --json   # env_var_scopes[] y harness_level_mcps para un agente</code></pre>
+
+      <h2 id="ia">Lo que la IA puede ver</h2>
+      <p>
+        La IA usa cada secreto por su nombre y nunca por su valor (Regla Crítica #1). Escribe
+        <code>$STAGING_USER_PASSWORD</code> dentro del comando, la terminal lo expande y en la
+        conversación solo queda el resultado. No abre <code>.env</code>, <code>.env.local</code>,
+        <code>.auth/</code> ni <code>.claude/settings.local.json</code>, y tampoco corre
+        <code>printenv</code>, <code>env</code> ni <code>curl -v</code>, porque cualquier valor que
+        aparezca en pantalla viaja al proveedor del modelo y se queda en la transcripción local.
+        <code>.env.example</code> y los dos esquemas sí los lee: solo tienen nombres.
+      </p>
+      <p>
+        Para saber si una variable está cargada, la IA corre <code>bunx varlock load --agent</code>,
+        que lista cada variable por nombre y tapa los valores <code>@sensitive</code>. Si falta un
+        secreto o está mal, te dice cuál es y lo escribes tú en tu terminal o en tu gestor de
+        secretos; nunca lo pegues en el chat. Un valor que no es secreto (una URL, una clave de
+        proyecto, un flag, un puerto) sí puede escribirlo la IA en <code>.env</code> si se lo pides.
+      </p>
+      <p>
+        Claude Code y OpenCode traen reglas de denegación para esos archivos (<code
+          >.claude/settings.json</code
+        >
+        y <code>opencode.jsonc</code>), así que un descuido se bloquea antes de leer nada. Son una
+        red de seguridad y se pueden esquivar con un subproceso; lo que obliga a la IA es la regla.
+        El detalle completo, con los comandos seguros y qué hacer si un valor se filtra, está en
+        <code>.agents/skills/agentic-qa-core/references/secret-hygiene.md</code>.
+      </p>
 
       <h2 id="gestores">Gestores de secretos</h2>
       <p>
