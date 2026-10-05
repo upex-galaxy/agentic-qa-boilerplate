@@ -1827,6 +1827,15 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
             resuelve la raíz del repositorio con <code>git rev-parse --show-toplevel</code>, en vez
             de asumir el directorio de trabajo.
           </p>
+          <p>
+            Hay un segundo hook, separado de este: <code>.agents/hooks/doc-contracts.mjs</code>.
+            Claude Code y Codex lo corren después de cada edición de archivo
+            (<code>PostToolUse</code>). Cuando la edición cae dentro de una región marcada con
+            <code>LINT.IfChange</code>, agrega una línea <code>DOCS:</code> con las páginas que
+            describen ese código, una vez por sesión. El que bloquea es el gate de pre-push y de CI;
+            el hook solo adelanta el aviso al momento de editar. OpenCode no lo registra. Vale solo
+            en el repo del boilerplate (ADR-0016).
+          </p>
         </div>
       </section>
 
