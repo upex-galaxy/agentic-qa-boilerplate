@@ -95,13 +95,30 @@ updater:
   declined_denies: ['Bash(env)'] # exact entries, written as in permissions.deny
 ```
 
-`.claude/settings.json` is never overwritten, but two of its lists grow on every `bun run up`: entries upstream has in `permissions.allow` or `permissions.deny` and the project lacks are appended after the project's own, after a backup. Nothing is removed or reordered, and `ask`, `hooks`, `env` and every other key stay as written. That is how a project scaffolded before a deny rule shipped (the secret denies, for one) receives it. An allow entry you do not want is re-expressible in `deny`, which wins; a deny entry has no stronger list, so you decline it here.
+`.claude/settings.json` is never overwritten, but two of its lists grow on every `bun run up`: entries upstream has in `permissions.allow` or `permissions.deny` and the project lacks are appended after the project's own, after a backup. Nothing is removed or reordered, and `ask`, `env` and every other key stay as written (`hooks` has its own additive merge, below). That is how a project scaffolded before a deny rule shipped (the secret denies, for one) receives it. An allow entry you do not want is re-expressible in `deny`, which wins; a deny entry has no stronger list, so you decline it here.
 
 - **Exact entries, per rule.** `Bash(env)`, not a pattern over entries. Every other upstream deny, including one a later release adds, still arrives: listing `.claude/settings.json` in `protected_paths` would not opt out (the file is already watched) and would not be the right size anyway.
 - **It never removes.** A declined entry the file already holds stays until you delete it by hand; the list only stops the updater from adding it back.
 - **A malformed value fails toward more denies.** Anything but a list of strings is reported at the run and ignored.
 - **`opencode.jsonc` is never written.** Its `permission` block is JSONC with ordered rules (the last match wins), so the upstream deny rules it lacks become one parity row on the MCP surface with the block to paste in the saved prompt. The block also carries the upstream exceptions that follow a missing deny (`"*.env.example": "allow"` after `"*.env.*": "deny"`), so pasting keeps the order. To decline one there, list the pattern yourself with another action (`"printenv*": "ask"`): a pattern the project lists, whatever its action, is never reported.
 - **Same carve-out as `protected_paths`**: read directly by the updater (`readDeclinedDenies` in `cli/lib/updater-settings.ts`), so `vars:check` skips it.
+
+### `updater.declined_hooks`
+
+Upstream hook commands this project does not want in `.claude/settings.json`.
+
+```yaml
+updater:
+  declined_hooks: ['node "$CLAUDE_PROJECT_DIR/.agents/hooks/doc-contracts.mjs"'] # exact command text
+```
+
+The `hooks` block grows on every `bun run up` too, before the compatibility check runs: an upstream hook command the project lacks under the same event and matcher is appended as a NEW group at the end of that event's list, after a backup. The project's own groups are never edited, reordered or removed. That is how a hook group `agents:compat:check` starts requiring (the route re-surface `PostToolUse` group, ADR-0017) reaches a project scaffolded before it, instead of leaving pre-commit, pre-push and CI red until someone edits the file by hand.
+
+- **Exact command text, every event.** A listed command is left out wherever upstream runs it; the run reports it as declined.
+- **A required hook stays required.** Declining a command `agents:compat:check` asserts on keeps that check red: the opt-out is for hooks the check does not require.
+- **A command whose script you lack is not added.** It is reported instead, because a hook pointing at a missing file fails on every event.
+- **A repeated key is folded, not lost.** A git auto-merge can leave `"PostToolUse"` twice in one object; `JSON.parse` keeps only the last. The merge folds both lists into one and reports it.
+- **Same carve-out as `protected_paths`**: read directly by the updater (`readDeclinedHooks` in `cli/lib/updater-settings.ts`), so `vars:check` skips it.
 
 ## `harnesses` (top-level list in `project.yaml`)
 
