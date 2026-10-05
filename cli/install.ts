@@ -2114,10 +2114,6 @@ export function buildInitialState(prior: InstallState | null): InstallState {
   };
 }
 
-export function launchCommandsForAgents(agents: AgentId[]): string[] {
-  return agents.map(agent => agent === 'claude-code' ? 'bun claude' : `bun ${agent}`);
-}
-
 function describeAgentDetection(detected: AgentDetection): string {
   const codex = detected.codexCli
     ? 'CLI found; Desktop uses repository config'
@@ -2975,10 +2971,10 @@ function printClosingSummary(state: InstallState): void {
   }
 
   process.stdout.write(`${circled[stepNum]}  ${COLORS.bold}Open the agent${COLORS.reset}\n`);
-  process.stdout.write(`    ${COLORS.cyan}bun claude${COLORS.reset}       ${COLORS.dim}(varlock loads .env)${COLORS.reset}\n`);
-  process.stdout.write(`    ${COLORS.cyan}bun opencode${COLORS.reset}     ${COLORS.dim}(varlock loads .env)${COLORS.reset}\n`);
-  process.stdout.write(`    ${COLORS.cyan}bun codex${COLORS.reset}        ${COLORS.dim}(CLI; Codex Desktop opens this same repository)${COLORS.reset}\n`);
-  process.stdout.write(`    ${COLORS.dim}The bare executable works too: every MCP server loads .env itself. Codex Desktop needs repository trust before hooks run.${COLORS.reset}\n\n`);
+  process.stdout.write(`    ${COLORS.cyan}claude${COLORS.reset}           ${COLORS.dim}(or Claude Desktop)${COLORS.reset}\n`);
+  process.stdout.write(`    ${COLORS.cyan}opencode${COLORS.reset}         ${COLORS.dim}(or the OpenCode desktop app)${COLORS.reset}\n`);
+  process.stdout.write(`    ${COLORS.cyan}codex${COLORS.reset}            ${COLORS.dim}(CLI; Codex Desktop opens this same repository)${COLORS.reset}\n`);
+  process.stdout.write(`    ${COLORS.dim}No wrapper: every MCP server loads .env itself, so no value reaches the agent's shell. Codex Desktop needs repository trust before hooks run.${COLORS.reset}\n\n`);
   stepNum++;
 
   process.stdout.write(`${circled[stepNum]}  ${COLORS.bold}Tour the stack${COLORS.reset}\n`);
