@@ -466,6 +466,225 @@ export function seedProjectSchema(root: string): boolean {
 }
 
 // ----------------------------------------------------------------------------
+// Sensitivity lint: a secret-looking key must be @sensitive
+// ----------------------------------------------------------------------------
+
+/**
+ * Name fragments that mark a key as a secret. `varlock load --agent` redacts
+ * ONLY the items the schema calls sensitive; a token declared without
+ * `@sensitive` prints in clear (the Slack token incident, 2026-10-05). Matched
+ * as whole `_`-separated segments, case-insensitive, so `GH_TOKEN` and
+ * `SLACK_MCP_XOXP_TOKEN` match and `MAX_TOKENS` does not (a number cannot be
+ * `@sensitive` in varlock, so a false positive there would have no way out).
+ * agentic-dev ships the same constant with the same list; change both.
+ */
+export const SECRET_NAME_PATTERNS: readonly string[] = [
+  'TOKEN',
+  'SECRET',
+  'SECRETS',
+  'PASSWORD',
+  'PASSWORDS',
+  'PASSWD',
+  'PWD',
+  'API_KEY',
+  'APIKEY',
+  'ACCESS_KEY',
+  'PRIVATE_KEY',
+  'CLIENT_SECRET',
+  'CREDENTIAL',
+  'CREDENTIALS',
+  'PAT',
+  'XOXP',
+  'XOXB',
+  'XAPP',
+];
+
+const SECRET_NAME_RE = new RegExp(`(?:^|_)(?:${SECRET_NAME_PATTERNS.join('|')})(?:_|$)`, 'i');
+
+export function isSecretLookingName(name: string): boolean {
+  return SECRET_NAME_RE.test(name);
+}
+
+/** What one file says about an item's sensitivity. `undefined` = says nothing. */
+type Sensitivity = true | false | 'dynamic' | undefined;
+
+interface SchemaItemDef {
+  key: string
+  line: number
+  /** From the item's own `@sensitive` / `@public`. */
+  explicit: Sensitivity
+  /** From the file's `@defaultSensitive` root decorator, applied to this key. */
+  fileDefault: Sensitivity
+}
+
+export interface ParsedSchemaFile {
+  items: SchemaItemDef[]
+  /** Raw first argument of every root `@import(...)`, in file order. */
+  imports: string[]
+}
+
+export interface SensitivityViolation {
+  key: string
+  /** Root-relative path and 1-based line of the declaration the reason names. */
+  file: string
+  line: number
+  reason: string
+}
+
+const DIVIDER = /^\s*#\s*-{3,}\s*$/;
+const COMMENT = /^\s*#/;
+const ITEM = /^\s*(?:export\s+)?([A-Za-z_]\w*)\s*=(.*)$/;
+
+/** The decorator part of a comment, or null when the comment is plain prose. */
+function decoratorText(comment: string): string | null {
+  const body = comment.replace(/^\s*#\s?/, '').trim();
+  return body.startsWith('@') ? body : null;
+}
+
+/** `@sensitive` / `@public` in one decorator string, resolved to what the item ends up as. */
+function sensitivityIn(decorators: string): Sensitivity {
+  const m = /(?:^|\s)@(sensitive|public)(?:=(\S+))?(?=\s|$)/.exec(decorators);
+  if (!m) { return undefined; }
+  const [, name, value] = m;
+  if (name === 'sensitive' && value?.startsWith('{')) { return true; }
+  const flag = value === undefined || value === 'true' ? true : value === 'false' ? false : 'dynamic';
+  if (flag === 'dynamic') { return 'dynamic'; }
+  return name === 'sensitive' ? flag : !flag;
+}
+
+/** The trailing `# ...` of an item line, skipping a quoted value. */
+function postValueComment(value: string): string | null {
+  const v = value.trimStart();
+  let rest = v;
+  const quote = v[0];
+  if (quote === '"' || quote === '\'' || quote === '`') {
+    const end = v.indexOf(quote, 1);
+    rest = end === -1 ? '' : v.slice(end + 1);
+  }
+  const hash = rest.search(/(?:^|\s)#/);
+  return hash === -1 ? null : rest.slice(hash).trim();
+}
+
+/** What `@defaultSensitive=<v>` makes of `key`. */
+function defaultFor(rootDecorators: string, key: string): Sensitivity {
+  const m = /(?:^|\s)@defaultSensitive=(\S+)/.exec(rootDecorators);
+  if (!m) { return undefined; }
+  if (m[1] === 'true') { return true; }
+  if (m[1] === 'false') { return false; }
+  const prefix = /^inferFromPrefix\((["']?)([^"')]*)\1\)$/.exec(m[1]);
+  return prefix ? !key.startsWith(prefix[2]) : 'dynamic';
+}
+
+/**
+ * Parse one env-spec file for the sensitivity lint. Static on purpose: running
+ * varlock would resolve, and could print, the very values this guards. Reads
+ * the header (the leading comment block, closed by a `# ---` divider or a blank
+ * line), the decorator comments directly above each item, and a post-value
+ * comment on the item line. A commented-out assignment is not an item.
+ */
+export function parseSchemaForSensitivity(text: string): ParsedSchemaFile {
+  const lines = normalizeEol(text).split('\n');
+
+  let headerEnd = 0;
+  if (lines.length > 0 && COMMENT.test(lines[0])) {
+    let i = 0;
+    while (i < lines.length && COMMENT.test(lines[i]) && !DIVIDER.test(lines[i])) { i++; }
+    if (i < lines.length && (DIVIDER.test(lines[i]) || lines[i].trim() === '')) { headerEnd = i + 1; }
+  }
+  const header = lines.slice(0, headerEnd).map(decoratorText).filter((d): d is string => d !== null).join(' ');
+  const imports = [...header.matchAll(/@import\(\s*([^,)\s]+)/g)].map(m => m[1].replace(/^["']|["']$/g, ''));
+
+  const items: SchemaItemDef[] = [];
+  let block: string[] = [];
+  for (let i = headerEnd; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.trim() === '' || DIVIDER.test(line)) { block = []; continue; }
+    if (COMMENT.test(line)) {
+      const dec = decoratorText(line);
+      if (dec !== null) { block.push(dec); }
+      continue;
+    }
+    const m = ITEM.exec(line);
+    if (m) {
+      const post = postValueComment(m[2]);
+      const decorators = [...block, post ? decoratorText(post) : null].filter((d): d is string => d !== null).join(' ');
+      items.push({ key: m[1], line: i + 1, explicit: sensitivityIn(decorators), fileDefault: defaultFor(header, m[1]) });
+    }
+    block = [];
+  }
+  return { items, imports };
+}
+
+/**
+ * The env schema files varlock loads from `root`: `.env.schema`, everything its
+ * `@import` chain reaches, plus the core and provider halves when present (so a
+ * broken import still gets them linted). Root-relative, deduplicated.
+ */
+export function schemaFilesIn(root: string): string[] {
+  const seen = new Set<string>();
+  const queue = [PROJECT_SCHEMA_FILE, CORE_SCHEMA_FILE, PROVIDER_SCHEMA_FILE];
+  while (queue.length > 0) {
+    const rel = path.normalize(queue.shift() as string);
+    const abs = path.join(root, rel);
+    if (seen.has(rel) || !fs.existsSync(abs) || !fs.statSync(abs).isFile()) { continue; }
+    seen.add(rel);
+    for (const imp of parseSchemaForSensitivity(fs.readFileSync(abs, 'utf8')).imports) {
+      queue.push(path.relative(root, path.resolve(path.dirname(abs), imp)));
+    }
+  }
+  return [...seen];
+}
+
+/**
+ * Every secret-looking key, across all `files`, that `varlock load --agent`
+ * could print in clear. Independent of varlock's def precedence: PASS needs no
+ * declaration calling the key non-sensitive AND (one declaration marking it
+ * `@sensitive`, OR every declaration's file defaulting it to sensitive).
+ * Names only; a schema value is never read into the result.
+ */
+export function lintSchemaSensitivity(files: ReadonlyArray<{ file: string, text: string }>): SensitivityViolation[] {
+  const defs = new Map<string, Array<SchemaItemDef & { file: string }>>();
+  for (const { file, text } of files) {
+    for (const item of parseSchemaForSensitivity(text).items) {
+      if (!isSecretLookingName(item.key)) { continue; }
+      defs.set(item.key, [...(defs.get(item.key) ?? []), { ...item, file }]);
+    }
+  }
+
+  const violations: SensitivityViolation[] = [];
+  for (const [key, list] of defs) {
+    const optOut = list.find(d => d.explicit === false);
+    if (optOut) {
+      violations.push({ key, file: optOut.file, line: optOut.line, reason: 'secret-looking name marked non-sensitive (@public / @sensitive=false)' });
+      continue;
+    }
+    const dynamic = list.find(d => d.explicit === 'dynamic');
+    if (dynamic) {
+      violations.push({ key, file: dynamic.file, line: dynamic.line, reason: '@sensitive must be a literal (bare, =true or ={...}), not an expression' });
+      continue;
+    }
+    if (list.some(d => d.explicit === true)) { continue; }
+    if (list.every(d => d.fileDefault === true)) { continue; }
+    const first = list[0];
+    violations.push({ key, file: first.file, line: first.line, reason: 'secret-looking name without @sensitive' });
+  }
+  return violations.sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line);
+}
+
+export interface SensitivityCheck {
+  ok: boolean
+  files: string[]
+  violations: SensitivityViolation[]
+}
+
+/** The sensitivity lint over the schema files `root` actually loads. */
+export function checkSchemaSensitivity(root: string): SensitivityCheck {
+  const files = schemaFilesIn(root);
+  const violations = lintSchemaSensitivity(files.map(file => ({ file, text: fs.readFileSync(path.join(root, file), 'utf8') })));
+  return { ok: violations.length === 0, files, violations };
+}
+
+// ----------------------------------------------------------------------------
 // Loading the committed pair through varlock
 // ----------------------------------------------------------------------------
 
