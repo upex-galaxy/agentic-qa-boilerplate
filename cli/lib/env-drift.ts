@@ -1,16 +1,16 @@
 /**
  * env-drift.ts — finds an inherited process variable that would shadow `.env`.
  *
- * varlock (the loader behind `bun run claude|codex|opencode` and the test
- * scripts) lets a variable ALREADY present in the process environment win over
- * the value in `.env`, and no flag inverts that. So a stale value inherited from
+ * varlock (the loader behind every MCP server and the test scripts) lets a
+ * variable ALREADY present in the process environment win over the value in
+ * `.env`, and no flag inverts that. So a stale value inherited from
  * the parent shell silently turns a corrected `.env` into a no-op, and a restart
  * does not clear it because the value is re-inherited every time. A stale
  * `ATLASSIAN_URL` once rebuilt `.context/PBI/` from a dead Jira site with exit
  * code 0 (upex-bunkai-tms, 2026-08-10); this module attacks the whole class.
  *
  * Two consumers, one rule:
- *   - `scripts/launch.ts` refuses to start a harness or a test run on a hit.
+ *   - `scripts/launch.ts` warns before a test run on a hit, and runs it.
  *   - `scripts/check-vars.ts` (`vars:env:check`, Rule 3) reports it in the gates.
  *
  * The rule:

@@ -120,7 +120,7 @@ a local variable. That matters most here: this runbook is precisely the moment a
 stale copy would still name the SOURCE site, and every "destination" check below
 would then pass by inspecting the site you are migrating away from.
 
-> **Secret hygiene (Critical Rule #1)**: never `source .env` into the agent's shell or `grep` it. The destination pair is already in the environment of a session launched through `bun run claude|codex|opencode`; otherwise run each destination check inside the loader, by name: `bunx varlock run -- sh -c 'curl -sS -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" ...'`. Canon: `agentic-qa-core/references/secret-hygiene.md`.
+> **Secret hygiene (Critical Rule #1)**: never `source .env` into the agent's shell or `grep` it. The destination pair is never in the agent's environment (the harness opens bare), so run each destination check inside the loader, by name: `bunx varlock run -- sh -c 'curl -sS -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" ...'`. Canon: `agentic-qa-core/references/secret-hygiene.md`.
 
 Below, `$SITE` / `$EMAIL` / `$TOKEN` stand for one of those pairs; run each check
 against both sites.

@@ -79,7 +79,7 @@ Credentials are validated **at the point of use**: the step that needs a role re
    playwright-cli -s=login-<env>-<role> close
    ```
 
-   The variables are in the process environment when the session was launched through the repo's harness wrappers (`bun run claude` / `opencode` / `codex` start the harness through `varlock run`). Launched bare, prefix the one command: `bunx varlock run -- sh -c 'playwright-cli -s=… --raw fill <ref> "$STAGING_ADMIN_PASSWORD"'`. Then verify WHICH account is signed in (a profile page, a role badge, `/me`) before trusting any result.
+   The variables are never in the harness process (it opens bare), so prefix the one command with the loader: `bunx varlock run -- sh -c 'playwright-cli -s=… --raw fill <ref> "$STAGING_ADMIN_PASSWORD"'`. Then verify WHICH account is signed in (a profile page, a role badge, `/me`) before trusting any result.
 
 ### Consuming it
 

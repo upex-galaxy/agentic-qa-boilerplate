@@ -22,7 +22,7 @@
  *
  * Credentials (ATLASSIAN_EMAIL · ATLASSIAN_API_TOKEN) are loaded by THIS process,
  * never exported into the calling shell: the process environment first (Bun's
- * own `.env` autoload, `bun run claude|opencode|codex`, `bunx varlock run`),
+ * own `.env` autoload, `bunx varlock run`),
  * then the repo root's `.env.local` and `.env`, so it works from any cwd. A
  * secret-manager project (`secrets.provider` != local) keeps no value in `.env`:
  * run it as `bunx varlock run -- bun <this file> ...`.

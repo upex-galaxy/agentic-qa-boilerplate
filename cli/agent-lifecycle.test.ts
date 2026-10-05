@@ -13,7 +13,6 @@ import {
   discoverRequiredEnvVars,
   ENGRAM_PLUGIN_COMMANDS,
   engramSetupArgs,
-  launchCommandsForAgents,
   mergedHarnesses,
   migrateAgentIds,
   offerEngramClaudePlugin,
@@ -225,8 +224,6 @@ describe('installer Codex lifecycle', () => {
     expect(await discoverRequiredEnvVars(['codex'], REPO_ROOT)).toEqual(expected);
     expect(await discoverRequiredEnvVars(['claude-code'], REPO_ROOT)).toEqual(expected);
     expect(await discoverRequiredEnvVars(['opencode'], REPO_ROOT)).toEqual(expected);
-    expect(launchCommandsForAgents(['claude-code', 'opencode', 'codex']))
-      .toEqual(['bun claude', 'bun opencode', 'bun codex']);
   });
 });
 

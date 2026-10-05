@@ -1063,7 +1063,7 @@ export async function runDoctor(): Promise<DoctorReport> {
     report.pending_actions.push({
       type: 'shell_command',
       target: 'bun install',
-      hint: 'Install project dependencies including varlock (needed for the Claude/OpenCode/Codex launch wrappers and the test scripts).',
+      hint: 'Install project dependencies including varlock (needed by the MCP .env loader and the test scripts).',
     });
   }
 
@@ -1384,7 +1384,7 @@ function printHuman(report: DoctorReport): void {
 
   if (report.pending_actions.length === 0) {
     process.stdout.write('\n');
-    process.stdout.write(`${tui.successBox(['All file checks green. Launch: bun run claude  /  bun run opencode  /  bun run codex', 'Codex Desktop uses the same repository configuration; approve repository trust before hooks run.'])}\n`);
+    process.stdout.write(`${tui.successBox(['All file checks green. Open the agent: claude  /  opencode  /  codex (or its desktop app)', 'Codex Desktop uses the same repository configuration; approve repository trust before hooks run.'])}\n`);
   }
 }
 

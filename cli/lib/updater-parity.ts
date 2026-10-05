@@ -1144,6 +1144,35 @@ export const PLAYWRIGHT_CLI_CONFIG = '.playwright/cli.config.json';
 export const RETIRED_ENVRC = '.envrc';
 
 /**
+ * The `package.json` scripts upstream shipped to open a harness through a
+ * loader (`dotenv -- claude`, then `scripts/launch.ts claude`). They exported
+ * every `.env` value into the AI's own process, so upstream retired them
+ * (ADR-0014): a harness opens bare and every MCP server loads `.env` itself.
+ * The package.json sync never re-adds them (it only appends keys upstream
+ * has); a project's copy is left alone and reported once per run as removable.
+ */
+export const RETIRED_HARNESS_SCRIPTS: readonly string[] = ['claude', 'codex', 'opencode'];
+
+/**
+ * The retired harness scripts this project still declares: a key named after a
+ * harness whose command loads `.env` before starting it (every shape upstream
+ * ever shipped). A project's own script with that name and another job is not
+ * reported. Empty when `package.json` is absent or unparseable.
+ */
+export function retiredHarnessScripts(root: string): string[] {
+  let scripts: unknown;
+  try {
+    scripts = (JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')) as { scripts?: unknown }).scripts;
+  }
+  catch { return []; }
+  if (scripts === null || typeof scripts !== 'object') { return []; }
+  return RETIRED_HARNESS_SCRIPTS.filter((name) => {
+    const cmd = (scripts as Record<string, unknown>)[name];
+    return typeof cmd === 'string' && /launch\.ts|varlock|dotenv|\.env\b/.test(cmd);
+  });
+}
+
+/**
  * The keys in the project's playwright-cli config that pin every session to
  * one shared on-disk profile: `browser.isolated: false` and any
  * `browser.userDataDir` (ADR-0008 removed both). Empty when the file is
@@ -1461,7 +1490,20 @@ export function collectParityFindings(input: ParityInput): ParityFinding[] {
     findings.push({
       surface: 'components',
       path: RETIRED_ENVRC,
-      evidence: 'informational: upstream retired direnv and no longer ships or reads this file; every MCP server, `bun run claude|opencode|codex` and each script load .env themselves, so secrets never need exporting into the shell. Left untouched: delete it (and `!.envrc` in .gitignore) when convenient, after moving any line of your own elsewhere',
+      evidence: 'informational: upstream retired direnv and no longer ships or reads this file; every MCP server and each script load .env themselves, so secrets never need exporting into the shell. Left untouched: delete it (and `!.envrc` in .gitignore) when convenient, after moving any line of your own elsewhere',
+      suggested: 'keep project',
+      blocking: false,
+    });
+  }
+
+  // 3c. The retired harness launch scripts (ADR-0014): one informational row,
+  //     package.json itself is never touched.
+  const harnessScripts = retiredHarnessScripts(input.root);
+  if (harnessScripts.length > 0) {
+    findings.push({
+      surface: 'package',
+      path: 'package.json',
+      evidence: `informational: upstream retired the harness launch scripts ${harnessScripts.map(name => `\`${name}\``).join(', ')}: they export every .env value into the AI's own process, where any command it runs can read them. Open the harness directly (\`claude\`, \`codex\`, \`opencode\` or the desktop app); every MCP server and the test scripts load .env themselves, and the synced scripts/launch.ts refuses a harness binary. Left untouched: delete the scripts (and any doc of yours that names them) when convenient`,
       suggested: 'keep project',
       blocking: false,
     });

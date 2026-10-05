@@ -162,10 +162,10 @@ Rules:
 6. **Validate every line before launch** with a shell syntax check (`bash -n` on a file holding the lines; `zsh -n` where the user's shell is zsh). A line that does not parse is not launched.
 7. The harness invocation itself (binary, model / effort / permission / session-name flags per harness) and which launch path supervises are owned by `orca-orchestration/references/launch-seam.md`. This skill owns only the payload: the `sprint-testing` worker prompt.
 
-Shape (Claude Code; `bun run claude -- <args>` forwards `<args>` verbatim through the launcher, `scripts/launch.ts`, see `package.json`):
+Shape (Claude Code; the line starts the harness binary bare with its own flags, and the worker gets credentials from the MCP configs' `.env` loader and each script's own loading, never from the launch line):
 
 ```
-PARALLEL_TESTING=true PARALLEL_TICKET=UPEX-123 bun run claude -- <harness flags per launch-seam.md> -n "UPEX-123-checkout-tax" "/sprint-testing UPEX-123 fleet worker env: staging. Brief: <abs path to brief.md>. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints."
+PARALLEL_TESTING=true PARALLEL_TICKET=UPEX-123 claude <harness flags per launch-seam.md> -n "UPEX-123-checkout-tax" "/sprint-testing UPEX-123 fleet worker env: staging. Brief: <abs path to brief.md>. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints."
 ```
 
 The quoted prompt is the payload. On the supervised path it is what the conductor sends to the session the moment it is ready — same text, no shell around it.

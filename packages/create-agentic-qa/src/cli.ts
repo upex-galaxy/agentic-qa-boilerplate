@@ -240,7 +240,7 @@ async function main(): Promise<number> {
     '',
     pc.bold('Next steps (in order):'),
     ...(cdCmd ? [`  1.  ${pc.cyan(cdCmd)}`] : []),
-    `  ${nextStepNum}.  ${pc.cyan('bun run claude')}     ${pc.dim('# or: bun run opencode / bun run codex')}`,
+    `  ${nextStepNum}.  ${pc.cyan('claude')}     ${pc.dim('# or: opencode / codex, or the desktop app')}`,
     `      ${pc.dim('then invoke /agentic-qa-onboard')}`,
     '',
     pc.dim('Full guide: bun run onboarding'),

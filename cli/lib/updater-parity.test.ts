@@ -36,6 +36,7 @@ import {
   RESOLVED_BY_APPLY_MARK,
   resolvedByApply,
   RETIRED_ENVRC,
+  retiredHarnessScripts,
   retiredMcpNote,
   runVerdict,
   strictVerdict,
@@ -444,6 +445,40 @@ describe('collectParityFindings', () => {
     expect(rows[0].evidence).toStartWith('informational: upstream retired direnv');
     expect(rows[0].evidence).toContain('Left untouched');
     expect(readFileSync(join(root, RETIRED_ENVRC), 'utf8')).toBe('dotenv_if_exists .env\nexport MY_OWN_PATH=/opt/tool\n');
+  });
+
+  test('a retired harness launch script gets one informational row and package.json is never touched', () => {
+    const root = temporaryRoot();
+    const upstream = temporaryRoot();
+    write(root, '.agents/project.yaml', 'git_strategy:\n  strategy: solo-main\n  meta:\n    strategy_source: chosen\n');
+    const findings = (): ReturnType<typeof collectParityFindings> => collectParityFindings({
+      root,
+      upstreamDir: upstream,
+      drift: [],
+      compatErrors: [],
+      archivedSkills: [],
+      archivedSkillsDir: join(root, '.template/pre-agents-migration/skills'),
+      heldBack: [],
+      envNewKeys: [],
+    });
+
+    // A project's own `claude` script with another job is not the retired one.
+    write(root, 'package.json', `${JSON.stringify({ scripts: { claude: 'echo hi', test: 'playwright test' } })}\n`);
+    expect(findings()).toEqual([]);
+
+    const pkg = `${JSON.stringify({ scripts: {
+      claude: 'bun --no-env-file scripts/launch.ts claude',
+      codex: 'dotenv -o -e .env -- codex',
+      opencode: 'opencode',
+    } })}\n`;
+    write(root, 'package.json', pkg);
+    expect(retiredHarnessScripts(root)).toEqual(['claude', 'codex']);
+    const rows = findings();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ surface: 'package', path: 'package.json', blocking: false, suggested: 'keep project' });
+    expect(rows[0].evidence).toStartWith('informational: upstream retired the harness launch scripts `claude`, `codex`');
+    expect(rows[0].evidence).toContain('Left untouched');
+    expect(readFileSync(join(root, 'package.json'), 'utf8')).toBe(pkg);
   });
 
   test('a playwright-cli config with the old shared profile gets one informational row; a clean, absent or broken one gets none', () => {
