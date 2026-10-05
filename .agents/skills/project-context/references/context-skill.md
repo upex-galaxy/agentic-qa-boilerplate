@@ -35,7 +35,7 @@ What it sits over MUST exist. Missing → run the owning step first; never scaff
 
 - `bun run skills:check` → `KIND-SUFFIX` and `STALE-PATH` green. STALE-PATH is STRICT for a context skill: every `.context/` path it cites must exist on disk (only `.context/PBI/` is exempt), which is why the map must exist first
 - `bun run skills:registry` → the new block appears in `REGISTRY.md`
-- A row in the `## Project context skills` table of `.agents/instructions/agent-project.md` (add the heading when an older `agent-project.md` lacks it), naming the loader: the workflow skills that touch the aspect. Its trigger phrases also go into that file's `triggers:` frontmatter, so the hook routes it. Never in `agent-skills-and-mcps.md`: that section is synced and `bun run up` overwrites the row (`bun run instructions:check` warns when one is left there)
+- A row in the `## Project context skills` table of `.agents/instructions/agent-project.md` (add the heading when an older `agent-project.md` lacks it), naming the loader: the workflow skills that touch the aspect. Its trigger phrases also go into that file's `triggers:` frontmatter, so the hook routes it. Never in `agent-skills-and-mcps.md`: that section is synced and `bun run up` overwrites the row (`bun run instructions:check` warns when one is left there). Placement rules: `framework-development/references/instructions-doctrine.md` §4
 - The skill body contains no sentence that is also in the map (spot-check three rules)
 
 ## Never

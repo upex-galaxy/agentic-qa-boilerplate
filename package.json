@@ -60,6 +60,7 @@
     "harness:env": "bun scripts/harness-env.ts",
     "harness:env:check": "bun scripts/harness-env.ts --check",
     "instructions:check": "bun scripts/lint-instructions.ts",
+    "instructions:audit": "bun scripts/instructions-audit.ts",
     "jira:check": "bun scripts/check-jira-setup.ts",
     "jira:baseline": "bun scripts/check-jira-baseline.ts",
     "jira:sync-fields": "bun scripts/sync-jira-fields.ts",
