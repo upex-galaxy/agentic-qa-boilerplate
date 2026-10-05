@@ -170,7 +170,7 @@
 STAGING_USER_EMAIL=
 
 bunx varlock load --agent      # valida .env con los valores enmascarados
-bun run vars:schema:check      # el core generado está al día y el par carga</code></pre>
+bun run vars:schema:check      # el core está al día, todo secreto es @sensitive y el par carga</code></pre>
       <div class="callout warn">
         <span class="callout-title">Un # sin comillas corta el valor</span>
         <p>
@@ -191,7 +191,10 @@ bun run vars:schema:check      # el core generado está al día y el par carga</
       </div>
       <p>
         Dónde corre cada validación: <code>bun run vars:schema:check</code> en el pre-commit y en
-        <code>repo:check</code> valida el repo, no tu <code>.env</code>.
+        <code>repo:check</code> valida el repo, no tu <code>.env</code>. También falla si una
+        variable con nombre de secreto (<code>TOKEN</code>, <code>SECRET</code>,
+        <code>PASSWORD</code>, <code>API_KEY</code>...) no lleva <code>@sensitive</code>:
+        <code>varlock load --agent</code> solo enmascara lo marcado, y el resto lo imprime tal cual.
         <code>varlock load</code> en el pre-push solo avisa. La acción de varlock en
         <code>build.yml</code> valida el esquema contra el job y pasa sin secretos, así que un PR
         desde un fork también pasa. <code>bun run test:env:check</code> comprueba la forma: que
