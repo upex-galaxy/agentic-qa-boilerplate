@@ -3025,25 +3025,6 @@ function printClosingSummary(state: InstallState): void {
   // Optional UX upgrades
   tui.section('OPTIONAL — install when you have time');
 
-  process.stdout.write('→  caveman — token compression skill (recommended)\n');
-  process.stdout.write(`   ${COLORS.dim}Cuts ~65-75% output tokens. Levels: lite | full (default) | ultra | wenyan.${COLORS.reset}\n`);
-  process.stdout.write(`   ${COLORS.dim}Stop with: "normal mode" / "habla normal".${COLORS.reset}\n`);
-  // `--no-hooks` is deliberate. The installer defaults to `--all`, which installs
-  // the Claude Code plugin AND writes a second copy of the same two hooks into
-  // ~/.claude/settings.json — both fire every turn, injecting caveman twice per
-  // prompt. The flag keeps the plugin (it registers those hooks in its own
-  // plugin.json), the multi-agent coverage this repo needs for OpenCode, and the
-  // caveman-shrink MCP proxy. On Windows `irm | iex` cannot receive arguments
-  // (caveman #565), so we call the Node installer the script delegates to anyway.
-  if (process.platform === 'win32') {
-    process.stdout.write('   npx -y github:JuliusBrussee/caveman --no-hooks\n');
-  }
-  else {
-    process.stdout.write('   curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.sh | bash -s -- --no-hooks\n');
-  }
-  process.stdout.write(`   ${COLORS.dim}--no-hooks avoids a duplicate hook registration — see INSTALLER.md.${COLORS.reset}\n`);
-  process.stdout.write(`   ${COLORS.dim}Docs: https://github.com/JuliusBrussee/caveman${COLORS.reset}\n\n`);
-
   process.stdout.write('→  ccstatusline — Claude Code statusline TUI configurator (cosmetic)\n');
   process.stdout.write(`   ${COLORS.dim}Customize the bottom statusline (model, tokens, git branch, usage, etc.).${COLORS.reset}\n`);
   process.stdout.write(`   ${COLORS.yellow}Run in a SEPARATE terminal with NO agent active${COLORS.reset} ${COLORS.dim}— concurrent TUIs fight over stdin.${COLORS.reset}\n`);
