@@ -208,7 +208,7 @@ grep -rE "(api[_-]?key|secret|password|token)\s*[:=]\s*['\"]" <repo-root>/src
 
 ### Output
 
-Append to `.agents/instructions/agent-project.md` (the project-owned overlay; `AGENTS.md` stays boilerplate-owned and under its size budget, and `CLAUDE.md` stays a one-line `@AGENTS.md` import shim, `.agents/instructions/agent-harnesses.md`) in a `## Project Assessment (Phase 1)` block. A rerun replaces that block in place instead of appending a second one:
+Append to `.agents/instructions/agent-project.md` (the project-owned overlay; `AGENTS.md` stays boilerplate-owned and under its size budget, and `CLAUDE.md` stays a one-line `@AGENTS.md` import shim, `.agents/instructions/agent-harnesses.md`) in a `## Project Assessment (Phase 1)` block. A rerun replaces that block in place instead of appending a second one. This is the one instruction write discovery makes: it follows `framework-development/references/instructions-doctrine.md` §4 and closes with `bun run instructions:check`; any other instruction change goes through `/framework-development` mode `instructions`:
 
 ```markdown
 ## Project Assessment (Phase 1)

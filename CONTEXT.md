@@ -303,7 +303,7 @@ The instructions themselves load in layers, the same way a skill does (descripti
 | **L1** | One section file per topic under `.agents/instructions/` | When its ROUTER row matches the request, or the hook injects `ROUTE: read <file>` |
 | **L2** | Each skill's `references/` | When the section or the skill that cites them needs them |
 
-The prompt hook classifies every prompt against the ROUTER and the sections' `triggers:` / `paths:`, and names each file once per session (re-armed after a compaction). The LOAD PROTOCOL makes a `ROUTE:` line binding. Two data files are also Claude Code imports: the ROUTER rows for variables and scripts write `@.agents/project.yaml` and `@package.json` as plain text, so Claude Code loads them at launch, while OpenCode and Codex follow the same row's reinforced instruction. `bun run instructions:check` guards the L0 budget, the ROUTER, the frontmatter and the rule sentences. Mechanism: `.agents/instructions/README.md`; decision and measurements: `.context/ADR/ADR-0009-progressive-disclosure-of-instructions.md`.
+The prompt hook classifies every prompt against the ROUTER and the sections' `triggers:` / `paths:`, and names each file once per session (re-armed after a compaction). The LOAD PROTOCOL makes a `ROUTE:` line binding. Two data files are also Claude Code imports: the ROUTER rows for variables and scripts write `@.agents/project.yaml` and `@package.json` as plain text, so Claude Code loads them at launch, while OpenCode and Codex follow the same row's reinforced instruction. `bun run instructions:check` guards the L0 budget, the ROUTER, the frontmatter and the rule sentences, plus three locks that keep the split from eroding: the ROUTER table is frozen behind the ADR that decided it, the router eval runs on every call, and every section ships complete (labelled prompts, a README row). `bun run instructions:audit` measures the other half from local Claude Code transcripts: how often the agent actually reads a section the hook routed. Mechanism: `.agents/instructions/README.md`; decisions and measurements: `.context/ADR/ADR-0009-progressive-disclosure-of-instructions.md` and `.context/ADR/ADR-0013-instructions-maintenance-locks.md`.
 
 ### By Task Type
 
@@ -350,7 +350,9 @@ The prompt hook classifies every prompt against the ROUTER and the sections' `tr
 
 ### When to Update AGENTS.md or a section
 
-- Detail on a topic → the section file that owns it under `.agents/instructions/`; when it should load is that section's `triggers:` / `paths:`, never a new ROUTER row unless no row's request kind covers it
+Every such change runs through `/framework-development` mode `instructions`, whose decision tree (`.agents/skills/framework-development/references/instructions-doctrine.md`) says where each sentence goes.
+
+- Detail on a topic → the section file that owns it under `.agents/instructions/`; when it should load is that section's `triggers:` / `paths:` (plus the prompts that motivated the change, added to the router eval), never a new ROUTER row unless no row's request kind covers it, and then only behind an ADR (the router lock)
 - This project's own rule (project identity, testing decisions, an accepted divergence) → `.agents/instructions/agent-project.md`, which `bun run up` never overwrites
 - New MCPs configured — add the server to all three configs (`.mcp.json`, `opencode.jsonc`, `.codex/config.toml`), then run `bun run agents:compat:check`
 - New CLI tools added → `.agents/instructions/agent-tool-resolution.md`
