@@ -66,9 +66,9 @@ paths: []
 
 12. **KATA MANIFEST = SOURCE OF TRUTH**. `kata-manifest.json` (root) is authoritative registry of every existing Component + ATC. Before proposing new `Page`, `Api`, `Steps` module, or `@atc('PROJ-XXX')` ID: MUST load `kata-manifest.json` and check it. Anti-duplication gate. Stale manifest blocks commits via `.husky/pre-commit`. Regenerate: `bun run kata:manifest`. Validate: `bun run kata:manifest:check`.
 
-## 13. DEFAULT COMMUNICATION MODE: CAVEMAN
+## 13. CONCISION COMES FROM §2, NOT FROM A PLUGIN
 
-13. **DEFAULT COMMUNICATION MODE: CAVEMAN**: If the `caveman@caveman` plugin is installed user-level (under `~/.claude/plugins/`), respond caveman level `full` by default (drop articles, fillers, pleasantries; fragments OK; technical terms exact; code/commits/PRs/security warnings always write normal English: caveman built-in boundary). Revert verbose ONLY when user explicitly say "normal mode", "habla normal", "stop caveman", "speak normally", "be verbose", "más detallado" or clear semantic equivalent. If the caveman plugin is not installed, rule = no-op.
+13. **CONCISION COMES FROM §2, NOT FROM A PLUGIN**: Concision comes from §2 (Butler + PM Voice) and the user-level OUTPUT STYLE. No communication-mode plugin is assumed or recommended. Butler controls granularity (a terse headline plus an atomic menu the user pulls from), PM Voice controls register, OUTPUT STYLE controls how the reply looks and sounds. A harness plugin that rewrites the register (a word-compression mode, a persona) is the user's own user-level choice: the repo does not install it, does not depend on it, and writes no rule whose meaning changes when it is present.
 
 ## 14. LANGUAGE DETECTION + MIRRORING
 
