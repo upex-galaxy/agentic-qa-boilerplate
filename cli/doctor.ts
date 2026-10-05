@@ -29,6 +29,7 @@
 
 import type { CompatibilityCheck, CompatibilityErrorGroup } from './lib/agent-compatibility.ts';
 import type { HarnessLevelVerdict } from './lib/harness-level-mcps.ts';
+import type { Harness } from './lib/harness-selection.ts';
 import type { GateContext, VarSpec } from './lib/variables-manifest.ts';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
@@ -64,6 +65,7 @@ import {
   OPENCODE_SECRET_DIR,
 } from './lib/harness-env.ts';
 import { harnessLevelMcpReport } from './lib/harness-level-mcps.ts';
+import { HARNESS_LABEL } from './lib/harness-selection.ts';
 import { playwrightBrowsersInstalled } from './lib/playwright-cache.ts';
 import { gateIsOn, varsFor } from './lib/variables-manifest.ts';
 import { checkoutRoots } from './lib/worktree.ts';
@@ -263,6 +265,14 @@ export interface AgentCompatibilityDiagnostic {
   errors_by_surface: Array<{ group: CompatibilityErrorGroup, label: string, errors: string[] }>
   /** The alias on its own, whatever the verdict: `deferred` is expected right after the migration. */
   alias: CompatibilityCheck['alias']
+  /**
+   * The harnesses checked (`declaredHarnesses`, ADR-0012). A harness outside
+   * this list is `not used`: its per-host flags below read `true` and no row
+   * or action names its files.
+   */
+  harnesses: Harness[]
+  /** One line per skipped harness (`CompatibilityCheck.notes`). */
+  notes: string[]
   instructions: {
     agents_md: boolean
     claude_shim: boolean
@@ -270,7 +280,7 @@ export interface AgentCompatibilityDiagnostic {
     claude_alias: boolean
   }
   hooks: { claude: boolean, opencode: boolean, codex: boolean, ok: boolean }
-  /** `expected_servers` is whatever `.mcp.json` declares, never a literal count. */
+  /** `expected_servers` is whatever the canonical MCP config declares, never a literal count. */
   mcp: { expected_servers: number, claude: boolean, opencode: boolean, codex: boolean, parity: boolean }
   codex: {
     config_exists: boolean
@@ -588,12 +598,14 @@ export function diagnoseAgentCompatibility(
 ): AgentCompatibilityDiagnostic {
   const platform = options.platform ?? process.platform;
   const compatibility = checkAgentCompatibility(root, platform);
-  const canonicalErrors = validateCanonicalSources(root);
-  const hookErrors = validateHookCompatibility(root);
-  const mcpErrors = validateMcpParity(root);
+  const harnesses = compatibility.harnesses;
+  const uses = (harness: Harness): boolean => harnesses.includes(harness);
+  const canonicalErrors = validateCanonicalSources(root, harnesses);
+  const hookErrors = validateHookCompatibility(root, harnesses);
+  const mcpErrors = validateMcpParity(root, { harnesses });
   let expectedServers = 0;
-  try { expectedServers = declaredMcpIds(root).length; }
-  catch { /* mcpErrors already carries the .mcp.json diagnostics */ }
+  try { expectedServers = declaredMcpIds(root, harnesses).length; }
+  catch { /* mcpErrors already carries the canonical MCP config diagnostics */ }
 
   const hasHookError = (needle: string): boolean => hookErrors.some(error => error.includes(needle));
   const hasMcpError = (needle: string): boolean => mcpErrors.some(error => error.includes(needle));
@@ -609,28 +621,31 @@ export function diagnoseAgentCompatibility(
     warnings: compatibility.warnings,
     errors_by_surface: groupCompatibilityErrors([...new Set(compatibility.errors)]),
     alias: compatibility.alias,
+    harnesses,
+    notes: compatibility.notes,
     instructions: {
       agents_md: !agentsError,
       claude_shim: !claudeShimError,
       canonical_skills: !skillsError,
-      claude_alias: compatibility.alias.status === 'valid',
+      claude_alias: compatibility.alias.status === 'valid' || compatibility.alias.status === 'not-used',
     },
     hooks: {
-      claude: !hasHookError('.claude/settings.json'),
-      opencode: !hasHookError('opencode.jsonc') && !hasHookError('.opencode/plugins'),
-      codex: codexHooksExist && !hasHookError('.codex/hooks.json') && !hasHookError('.codex/config.toml'),
+      claude: !uses('claude') || !hasHookError('.claude/settings.json'),
+      opencode: !uses('opencode') || (!hasHookError('opencode.jsonc') && !hasHookError('.opencode/plugins')),
+      codex: !uses('codex') || (codexHooksExist && !hasHookError('.codex/hooks.json') && !hasHookError('.codex/config.toml')),
       ok: hookErrors.length === 0,
     },
     mcp: {
       expected_servers: expectedServers,
-      claude: !hasMcpError('.mcp.json'),
-      opencode: !hasMcpError('opencode.jsonc'),
-      codex: codexConfigExists && !hasMcpError('.codex/config.toml'),
+      claude: !uses('claude') || !hasMcpError('.mcp.json'),
+      opencode: !uses('opencode') || !hasMcpError('opencode.jsonc'),
+      codex: !uses('codex') || (codexConfigExists && !hasMcpError('.codex/config.toml')),
       parity: mcpErrors.length === 0,
     },
     codex: {
       config_exists: codexConfigExists,
-      cli_detected: options.codexCliDetected ?? tryRun('codex', ['--version']).ok,
+      // Not probed when Codex is not in use: the binary is irrelevant there.
+      cli_detected: uses('codex') && (options.codexCliDetected ?? tryRun('codex', ['--version']).ok),
       repository_configured: codexConfigExists && codexHooksExist,
       desktop_uses_repository_config: true,
       trust_required: true,
@@ -1186,15 +1201,17 @@ export async function runDoctor(): Promise<DoctorReport> {
     }
   }
 
-  // .mcp.json / opencode.jsonc presence
-  if (!report.mcp_json_exists) {
+  // .mcp.json / opencode.jsonc presence, only for a harness in use: a project
+  // that dropped one deleted its config on purpose (ADR-0012).
+  const harnessInUse = (harness: Harness): boolean => agentCompatibility.harnesses.includes(harness);
+  if (!report.mcp_json_exists && harnessInUse('claude')) {
     report.pending_actions.push({
       type: 'shell_command',
       target: 'git restore .mcp.json',
       hint: '.mcp.json is missing. Restore from git — it is the committed Claude Code config.',
     });
   }
-  if (!report.opencode_jsonc_exists) {
+  if (!report.opencode_jsonc_exists && harnessInUse('opencode')) {
     report.pending_actions.push({
       type: 'shell_command',
       target: 'git restore opencode.jsonc',
@@ -1267,24 +1284,39 @@ function printHuman(report: DoctorReport): void {
 
   // File + dep checks as a table
   const compat = report.agent_compatibility;
+  const inUse = (harness: Harness): boolean => compat.harnesses.includes(harness);
+  const notUsed = `${tui.statusIcon('ok')} not used`;
   const hostList = (hosts: { claude: boolean, opencode: boolean, codex: boolean }): string =>
-    (['claude', 'opencode', 'codex'] as const).map(host => `${host}:${hosts[host] ? 'ok' : 'FAIL'}`).join(' ');
+    compat.harnesses.map(host => `${host}:${hosts[host] ? 'ok' : 'FAIL'}`).join(' ');
+  const fileRow = (exists: boolean, harness: Harness): string =>
+    !inUse(harness) ? notUsed : exists ? tui.statusIcon('ok') : tui.statusIcon('fail');
+  const harnessCount = `${compat.harnesses.length} harness${compat.harnesses.length === 1 ? '' : 'es'}`;
   const checks: string[][] = [
     ['.env file', report.env_file_exists ? tui.statusIcon('ok') : tui.statusIcon('fail')],
-    ['.mcp.json', report.mcp_json_exists ? tui.statusIcon('ok') : tui.statusIcon('fail')],
-    ['opencode.jsonc', report.opencode_jsonc_exists ? tui.statusIcon('ok') : tui.statusIcon('fail')],
-    ['AGENTS.md + CLAUDE.md shim', compat.instructions.agents_md && compat.instructions.claude_shim ? tui.statusIcon('ok') : tui.statusIcon('fail')],
-    ['Canonical .agents/skills + Claude alias', compat.instructions.canonical_skills && compat.instructions.claude_alias ? tui.statusIcon('ok') : tui.statusIcon('fail')],
-    ['Hook adapters (Claude/OpenCode/Codex)', compat.hooks.ok ? tui.statusIcon('ok') : `${tui.statusIcon('fail')} ${hostList(compat.hooks)}`],
-    [`MCP parity (${compat.mcp.expected_servers} servers x 3 harnesses)`, compat.mcp.parity ? tui.statusIcon('ok') : `${tui.statusIcon('fail')} ${hostList(compat.mcp)}`],
-    ['Codex repository config', compat.codex.repository_configured ? tui.statusIcon('ok') : tui.statusIcon('fail')],
-    ['Codex CLI executable', compat.codex.cli_detected ? tui.statusIcon('ok') : `${tui.statusIcon('warn')} not found; Desktop remains configured`],
-    ['Codex repository trust', `${tui.statusIcon('warn')} required; runtime state is not file-verifiable`],
+    ['Harnesses in use', compat.harnesses.map(h => HARNESS_LABEL[h]).join(', ')],
+    ['.mcp.json', fileRow(report.mcp_json_exists, 'claude')],
+    ['opencode.jsonc', fileRow(report.opencode_jsonc_exists, 'opencode')],
+    [inUse('claude') ? 'AGENTS.md + CLAUDE.md shim' : 'AGENTS.md', compat.instructions.agents_md && compat.instructions.claude_shim ? tui.statusIcon('ok') : tui.statusIcon('fail')],
+    [inUse('claude') ? 'Canonical .agents/skills + Claude alias' : 'Canonical .agents/skills', compat.instructions.canonical_skills && compat.instructions.claude_alias ? tui.statusIcon('ok') : tui.statusIcon('fail')],
+    [`Hook adapters (${compat.harnesses.map(h => HARNESS_LABEL[h]).join('/')})`, compat.hooks.ok ? tui.statusIcon('ok') : `${tui.statusIcon('fail')} ${hostList(compat.hooks)}`],
+    [`MCP parity (${compat.mcp.expected_servers} servers x ${harnessCount})`, compat.mcp.parity ? tui.statusIcon('ok') : `${tui.statusIcon('fail')} ${hostList(compat.mcp)}`],
+  ];
+  if (inUse('codex')) {
+    checks.push(
+      ['Codex repository config', compat.codex.repository_configured ? tui.statusIcon('ok') : tui.statusIcon('fail')],
+      ['Codex CLI executable', compat.codex.cli_detected ? tui.statusIcon('ok') : `${tui.statusIcon('warn')} not found; Desktop remains configured`],
+      ['Codex repository trust', `${tui.statusIcon('warn')} required; runtime state is not file-verifiable`],
+    );
+  }
+  else {
+    checks.push(['Codex', notUsed]);
+  }
+  checks.push(
     ['node_modules', report.deps_installed ? tui.statusIcon('ok') : tui.statusIcon('fail')],
     ['Git hooks (.husky/_)', report.git_hooks_installed ? tui.statusIcon('ok') : `${tui.statusIcon('fail')} no hook runs`],
     ['Playwright browsers', report.playwright_browsers ? tui.statusIcon('ok') : tui.statusIcon('warn')],
     [`direnv binary${report.direnv.version ? ` (${report.direnv.version})` : ''}`, report.direnv.installed ? tui.statusIcon('ok') : tui.statusIcon('warn')],
-  ];
+  );
   if (report.direnv.installed) {
     checks.push(['  .envrc allowed', report.direnv.envrc_allowed ? tui.statusIcon('ok') : tui.statusIcon('warn')]);
     checks.push([`  shell hook${report.direnv.rc_file ? ` (in ${report.direnv.rc_file})` : ''}`, report.direnv.hook_in_rc ? tui.statusIcon('ok') : tui.statusIcon('warn')]);
@@ -1445,7 +1477,7 @@ function printHuman(report: DoctorReport): void {
     tui.section('Cross-harness compatibility errors');
     // The alias line stands on its own: right after the migration it is
     // deferred on purpose, and that must not read as one more broken contract.
-    process.stdout.write(`  ${tui.statusIcon(compat.alias.status === 'valid' ? 'ok' : compat.alias.status === 'deferred' ? 'warn' : 'fail')} ${describeAliasStatus(compat.alias)}\n`);
+    process.stdout.write(`  ${tui.statusIcon(compat.alias.status === 'valid' || compat.alias.status === 'not-used' ? 'ok' : compat.alias.status === 'deferred' ? 'warn' : 'fail')} ${describeAliasStatus(compat.alias)}\n`);
     for (const bucket of compat.errors_by_surface) {
       process.stdout.write(`  [${bucket.group}] ${bucket.label}\n`);
       for (const error of bucket.errors) {
