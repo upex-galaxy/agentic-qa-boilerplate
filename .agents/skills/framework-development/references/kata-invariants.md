@@ -195,7 +195,7 @@ Out-of-scope surfaces. Modifying these from a framework-development task is FORB
 - **Credentials and env**: `.env`, `.env.example` (only the variable list may be appended when adding a new framework env var; never values).
 - **Playwright artifacts (gitignored)**: `test-results/`, `tests/data/downloads/`, `playwright/.auth/`.
 - **Test results / TMS sync state**: outputs of CI runs, not framework code.
-- **Skills / instructions**: a framework change that needs to surface in AI memory patches the section under `.agents/instructions/` that owns the fact (`AGENTS.md` itself only for an L0 rule sentence or a ROUTER row; the skill table is `agent-skills-and-mcps.md`) and the docs in the same PR (the docs follow-through in `SKILL.md` Phase 3), and `bun run docs:check` proves the router and the quoted scripts.
+- **Skills / instructions**: a framework change that needs to surface in AI memory patches the section under `.agents/instructions/` that owns the fact through mode `instructions` and the decision tree in `instructions-doctrine.md` (`AGENTS.md` itself only for an L0 rule sentence or a ROUTER row, and a row only behind an ADR; the skill table is `agent-skills-and-mcps.md`) and the docs in the same PR (the docs follow-through in `SKILL.md` Phase 3), and `bun run docs:check` proves the router and the quoted scripts.
 
 ---
 
@@ -219,6 +219,8 @@ These are POLICY tables, not INVARIANT rules. They can be amended additively wit
 | `package.json` deps + scripts                         | Dependency upgrades, script registry, engines. Not test specs in `tests/`.                                       |
 | `.agents/skills/agentic-qa-core/references/`          | Briefing template, dispatch patterns, orchestration doctrine, skill-composition-strategy.                        |
 | `.agents/skills/framework-development/`               | This skill itself — references, scripts, agents/.                                                                |
+| `AGENTS.md`, `.agents/instructions/` (mode `instructions`) | The instruction layers: L0 sentences, sections, the ROUTER (behind its ADR lock), `triggers:`; placement per `instructions-doctrine.md`. |
+| `cli/lib/fixtures/instruction-router-eval.json`       | The router eval's labelled prompts: grows with every trigger miss, never relabelled to hide one.                 |
 
 ### 10.2 FORBIDDEN paths (redirect map)
 
