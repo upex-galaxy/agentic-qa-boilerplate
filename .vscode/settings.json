@@ -335,8 +335,7 @@
     "conftest.py": "test-jsx",
     "pytest.ini": "test-py",
     "requirements.txt": "requirements",
-    ".env*": "dotenv",
-    ".envrc": "dotenv"
+    ".env*": "dotenv"
   },
   "material-icon-theme.folders.associations": {
     "utils": "tools",
