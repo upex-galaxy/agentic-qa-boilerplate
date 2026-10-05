@@ -549,6 +549,9 @@ export const IDENTITY_PATHS: readonly string[] = [
   'testing.tms_cli',
   'qa.qa_epics.*.key',
   'environments.*.*',
+  // Which harnesses THIS repo runs on: the boilerplate checks all three, a
+  // project declares its own or leaves it null to detect (ADR-0012).
+  'harnesses',
 ];
 
 /** Whether a dotted path matches one `IDENTITY_PATHS` pattern, segment by segment. */
@@ -629,6 +632,7 @@ export const FILLED_ELSEWHERE: Readonly<Record<string, string>> = {
   'testing.browser.pair_mode': 'asked once, the first time an agentic browser session starts (agentic-qa-core/references/browser-sessions.md, Agentic Pair Testing)',
   'secrets.onepassword.vault': 'the secret-manager choice of `bun run setup` (cli/lib/secret-providers.ts; null while secrets.provider is local)',
   'secrets.onepassword.account': 'the secret-manager choice of `bun run setup` (optional: null = the 1Password CLI default account)',
+  'harnesses': 'the agent selection of `bun run setup` (`recordHarnessSelection` in cli/install.ts; null = detect from the files present, ADR-0012)',
 };
 
 /**
