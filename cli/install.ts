@@ -316,8 +316,8 @@ const EXTERNAL_CLIS: ReadonlyArray<{ name: string, install?: string, docs: strin
     // which is what `bun run vars:schema:check`, the pre-push warning and
     // `setup:doctor` run through `bunx`; that copy is NOT on the PATH a
     // harness gives an MCP server (measured: `bunx varlock` resolves from the
-    // project, a bare `varlock` does not). The binary is optional until the
-    // MCP wrapping phase makes it the server command on every host.
+    // project, a bare `varlock` does not). The binary stays optional: the MCP
+    // `.env` loader runs `bunx -p varlock@<pin>`, which needs only bun.
     //
     // Install paths, per varlock.dev and the 1.20.0 release assets:
     //   macOS        brew install dmno-dev/tap/varlock
@@ -448,6 +448,11 @@ const USER_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [
 export const MCP_VAR_PATTERN = /\$\{([A-Z][A-Z0-9_]*)(?::-[^}]*)?\}/g;
 // Matches OpenCode {env:VAR} placeholders in opencode.jsonc.
 export const OPENCODE_VAR_PATTERN = /\{env:([A-Z][A-Z0-9_]*)\}/g;
+// Matches the `.env` loader's `"--filter", "A,B"` pair, spelled the same in the
+// three MCP configs (JSON, JSONC and TOML arrays). The names it lists are what
+// the server reads from `.env` (MCP_ENV_LOADER_* in
+// cli/lib/agent-compatibility-contracts.ts).
+export const MCP_FILTER_PATTERN = /"--filter"\s*,\s*"([A-Z][A-Z0-9_,]*)"/g;
 const SECRET_NAME_HINTS = ['TOKEN', 'KEY', 'SECRET', 'PASSWORD'];
 
 // Map MCP server → env vars its secrets depend on. Servers with empty arrays
@@ -1097,6 +1102,13 @@ function stripJsoncComments(input: string): string {
     .replace(/^\s*\/\/.*$/gm, '');
 }
 
+/** Every name a `.env` loader `--filter` lists in `content`. */
+function collectFilterNames(content: string, seen: Set<string>): void {
+  for (const m of content.matchAll(MCP_FILTER_PATTERN)) {
+    for (const name of m[1].split(',')) { if (name.length > 0) { seen.add(name); } }
+  }
+}
+
 function collectCodexMcpEnvVars(value: unknown, seen: Set<string>): void {
   if (Array.isArray(value)) {
     for (const entry of value) { collectCodexMcpEnvVars(entry, seen); }
@@ -1123,15 +1135,18 @@ export async function discoverRequiredEnvVars(
   if (agents.includes('claude-code') && existsSync(claudeMcpPath)) {
     const content = await readFile(claudeMcpPath, 'utf8');
     for (const m of content.matchAll(MCP_VAR_PATTERN)) { seen.add(m[1]); }
+    collectFilterNames(content, seen);
   }
   if (agents.includes('opencode') && existsSync(openCodeConfigPath)) {
     const raw = await readFile(openCodeConfigPath, 'utf8');
     const content = stripJsoncComments(raw);
     for (const m of content.matchAll(OPENCODE_VAR_PATTERN)) { seen.add(m[1]); }
+    collectFilterNames(content, seen);
   }
   if (agents.includes('codex') && existsSync(codexConfigPath)) {
-    const parsed = Bun.TOML.parse(await readFile(codexConfigPath, 'utf8'));
-    collectCodexMcpEnvVars(parsed, seen);
+    const raw = await readFile(codexConfigPath, 'utf8');
+    collectCodexMcpEnvVars(Bun.TOML.parse(raw), seen);
+    collectFilterNames(raw.replace(/^\s*#.*$/gm, ''), seen);
   }
   return [...seen].sort();
 }
@@ -2884,7 +2899,6 @@ function printClosingSummary(state: InstallState): void {
       process.stdout.write(`    ${COLORS.cyan}Edit .env → set: ${state.pendingEnvVars.join(', ')}${COLORS.reset}\n`);
     }
     process.stdout.write(`    ${COLORS.dim}Without these, MCP servers will 401/403 silently.${COLORS.reset}\n`);
-    process.stdout.write(`    ${COLORS.cyan}Then: bun run harness:env${COLORS.reset}  ${COLORS.dim}(regenerates the credential files Claude and OpenCode read at startup)${COLORS.reset}\n`);
     process.stdout.write(`    ${COLORS.cyan}Then restart the agent session${COLORS.reset}  ${COLORS.dim}(MCP servers read credentials at startup, not later)${COLORS.reset}\n\n`);
     stepNum++;
   }
@@ -3382,22 +3396,15 @@ async function main(): Promise<void> {
   await runInitialConfigurationPhase(state);
   await writeInstallState(state);
 
-  // Per-harness credential surfaces. LAST, because it reads the `.env` every
-  // step above may have written to.
+  // Retire the plaintext MCP credential copies an older install generated
+  // (`.claude/settings.local.json` env block, `.auth/opencode/`). LAST, because
+  // it compares them with the `.env` every step above may have written to. MCP
+  // servers read `.env` themselves now, through the `.env` loader in the three
+  // MCP configs (ADR-0011), so a fresh clone has nothing to retire.
   //
-  // Why the installer has to do this at all: a harness reads its config and
-  // spawns its MCP servers BEFORE any hook runs, so the only thing that reaches
-  // a server on a launch with no command line (a desktop harness, a natively
-  // launched supervised worker) is a file the harness reads at startup. And
-  // `opencode.jsonc` now points at `.auth/opencode/<VAR>` value files: measured
-  // on OpenCode 1.18.30, a MISSING `{file:}` target invalidates the WHOLE config
-  // and not just that one server, so those files have to exist before anyone
-  // runs `opencode`. This call is what guarantees they do on a fresh clone.
-  //
-  // DYNAMIC import on purpose: `cli/lib/harness-env.ts` imports the placeholder
-  // patterns from THIS file, and a static import here would close that cycle.
-  // Same pattern `cli/doctor.ts` already uses to reach this module.
-  await generateHarnessEnv();
+  // DYNAMIC import on purpose: `cli/lib/harness-env.ts` imports from THIS file,
+  // and a static import here would close that cycle.
+  await retireHarnessCopies();
 
   // Closing summary
   tui.section('Installation summary');
@@ -3405,35 +3412,33 @@ async function main(): Promise<void> {
 }
 
 /**
- * Generate the per-harness credential surfaces. Never fatal: a failure here
+ * Retire the stale plaintext MCP credential copies. Never fatal: a failure
  * leaves the repo exactly as it was and the installer still finishes, because
- * `bun run setup:doctor` reports the same drift and `bun run harness:env` fixes
- * it. Prints variable NAMES only, never a value.
+ * `bun run setup:doctor` reports the same copies and `bun run harness:env`
+ * retires them. Prints variable NAMES only, never a value.
  */
-async function generateHarnessEnv(): Promise<void> {
-  tui.section('Step 15: Harness credential surfaces');
+async function retireHarnessCopies(): Promise<void> {
+  tui.section('Step 15: Plaintext MCP credential copies');
   try {
-    const { generate } = await import('./lib/harness-env.ts');
-    const result = generate();
-    if (result.refused !== undefined) {
-      log.warn(`Harness credential surfaces NOT written: ${result.refused}`);
+    const { retire } = await import('./lib/harness-env.ts');
+    const result = retire();
+    if (result.errors.length > 0) {
+      log.warn(`Copies NOT retired, an MCP config could not be parsed: ${result.errors.join('; ')}`);
       return;
     }
-    log.success(
-      `${result.changed ? 'Wrote' : 'Already in sync:'} ${result.emitted.length} of `
-      + `${result.declared.length} declared variables `
-      + `(${result.excluded.length} not referenced by any MCP config, so not copied).`,
-    );
-    if (result.emitted.length > 0) {
-      process.stdout.write(`  emitted: ${result.emitted.join(', ')}\n`);
+    if (!result.changed) {
+      log.success('None on disk: every MCP server reads .env itself through the .env loader.');
+      return;
     }
-    if (result.claude.skipped.length > 0) {
-      process.stdout.write(`  empty in .env, left out of the Claude env block: ${result.claude.skipped.join(', ')}\n`);
+    const surfaces = [...result.claude, ...(result.opencode === null ? [] : [result.opencode])];
+    log.success(`Retired: ${surfaces.flatMap(s => [...s.removed, ...s.backedUp]).join(', ')}`);
+    if (result.backupDirs.length > 0) {
+      log.warn(`.env did not reproduce some of them; they wait in ${result.backupDirs.join(', ')}. Put the right value in .env yourself, then delete that directory.`);
     }
   }
   catch (err) {
-    log.warn(`Could not generate the harness credential surfaces: ${(err as Error).message}`);
-    process.stdout.write('  Run `bun run harness:env` once .env is in place; `bun run setup:doctor` reports the same gap.\n');
+    log.warn(`Could not check for plaintext MCP credential copies: ${(err as Error).message}`);
+    process.stdout.write('  `bun run setup:doctor` reports them; `bun run harness:env` retires them.\n');
   }
 }
 

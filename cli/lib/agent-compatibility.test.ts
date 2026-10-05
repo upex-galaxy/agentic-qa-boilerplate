@@ -20,8 +20,6 @@ import {
 import opencodePlugin from '../../.opencode/plugins/personality-reinject.js';
 import {
   CLAUDE_HOOK_COMMAND,
-  CODEX_ENV_LOADER_ARGS,
-  CODEX_ENV_LOADER_COMMAND,
   CODEX_HOOK_COMMAND,
   CODEX_HOOK_COMMAND_WINDOWS,
   CODEX_PROJECT_DOC_MAX_BYTES,
@@ -32,8 +30,12 @@ import {
   HOOK_ORCA_MARKER,
   hookScriptPath,
   KNOWN_MCP_IDS,
+  LEGACY_CODEX_ENV_LOADER_ARGS,
+  MCP_ENV_LOADER_COMMAND,
+  MCP_ENV_LOADER_HEAD,
+  mcpEnvLoaderArgs,
   stripJsonComments,
-  unwrapCodexEnvLoader,
+  unwrapEnvLoader,
   validateEslintBlockWiring,
   validateHookCompatibility,
   validateInstructionRouterHooks,
@@ -215,6 +217,28 @@ const BOILERPLATE_IDS = ['context7', 'slack-aurora', 'dbhub', 'openapi'];
  */
 const PROJECT_IDS = ['context7', 'tavily', 'playwright', 'openapi', 'postman', 'supabase'];
 
+/** Each stdio server that needs `.env` values starts through the `.env` loader (MCP_ENV_LOADER_*). */
+const SLACK_VARS = ['SLACK_MCP_XOXP_TOKEN', 'SLACK_MCP_REACTION_TOOL'];
+const DBHUB_VARS = ['DBHUB_TYPE', 'DBHUB_HOST', 'DBHUB_PORT', 'DBHUB_DATABASE', 'DBHUB_USER', 'DBHUB_PASSWORD'];
+const OPENAPI_VARS = ['API_BASE_URL', 'OPENAPI_SPEC_PATH'];
+const SUPABASE_VARS = ['SUPABASE_ACCESS_TOKEN'];
+function loader(names: string[]): string[] {
+  return mcpEnvLoaderArgs(names);
+}
+/** A host array literal (JSONC / TOML) for the loader args plus the inner `bunx`. */
+function loaderLiteral(names: string[]): string {
+  return [...loader(names), 'bunx'].map(arg => JSON.stringify(arg)).join(', ');
+}
+
+/**
+ * A Codex file from before the loader: each fixture server starts bare and
+ * forwards its names through `env_vars`, which a desktop launch leaves empty.
+ */
+function withoutLoader(text: string): string {
+  return [SLACK_VARS, DBHUB_VARS, OPENAPI_VARS, SUPABASE_VARS]
+    .reduce((acc, names) => acc.replaceAll(`args = [${loaderLiteral(names)}, `, `env_vars = ${JSON.stringify(names)}\nargs = [`), text);
+}
+
 const MCP_SERVERS: Record<string, unknown> = {
   'context7': { command: 'bunx', args: ['-y', '@upstash/context7-mcp@4.0.3'] },
   'tavily': {
@@ -238,18 +262,16 @@ const MCP_SERVERS: Record<string, unknown> = {
   },
   'slack-aurora': {
     command: 'bunx',
-    args: ['-y', 'slack-mcp-server@latest', '--transport', 'stdio'],
-    env: { SLACK_MCP_XOXP_TOKEN: '${SLACK_MCP_XOXP_TOKEN}', SLACK_MCP_ADD_MESSAGE_TOOL: 'true', SLACK_MCP_REACTION_TOOL: '${SLACK_MCP_REACTION_TOOL}' },
+    args: [...loader(SLACK_VARS), 'bunx', '-y', 'slack-mcp-server@latest', '--transport', 'stdio'],
+    env: { SLACK_MCP_ADD_MESSAGE_TOOL: 'true' },
   },
   'dbhub': {
     command: 'bunx',
-    args: ['-y', '@bytebase/dbhub@1.2.1', '--config', 'dbhub.toml'],
-    env: { DBHUB_DATABASE: '${DBHUB_DATABASE}', DBHUB_HOST: '${DBHUB_HOST}', DBHUB_PASSWORD: '${DBHUB_PASSWORD}', DBHUB_PORT: '${DBHUB_PORT}', DBHUB_TYPE: '${DBHUB_TYPE}', DBHUB_USER: '${DBHUB_USER}' },
+    args: [...loader(DBHUB_VARS), 'bunx', '-y', '@bytebase/dbhub@1.2.1', '--config', 'dbhub.toml'],
   },
   'openapi': {
     command: 'bunx',
-    args: ['-y', '@ivotoby/openapi-mcp-server@1.16.1', '--tools', 'dynamic'],
-    env: { API_BASE_URL: '${API_BASE_URL}', OPENAPI_SPEC_PATH: '${OPENAPI_SPEC_PATH}' },
+    args: [...loader(OPENAPI_VARS), 'bunx', '-y', '@ivotoby/openapi-mcp-server@1.16.1', '--tools', 'dynamic'],
   },
   'postman': {
     type: 'http',
@@ -258,8 +280,8 @@ const MCP_SERVERS: Record<string, unknown> = {
   },
   'supabase': {
     command: 'bunx',
-    args: ['-y', '@supabase/mcp-server-supabase@latest', '--read-only'],
-    env: { SUPABASE_ACCESS_TOKEN: '${SUPABASE_ACCESS_TOKEN}', LOG_LEVEL: 'error' },
+    args: [...loader(SUPABASE_VARS), 'bunx', '-y', '@supabase/mcp-server-supabase@latest', '--read-only'],
+    env: { LOG_LEVEL: 'error' },
   },
 };
 
@@ -296,36 +318,22 @@ const OPENCODE_SERVERS: Record<string, string> = {
     },`,
   'slack-aurora': `    "slack-aurora": {
       "type": "local",
-      "command": ["bunx", "-y", "slack-mcp-server@latest", "--transport", "stdio"],
+      "command": ["bunx", ${loaderLiteral(SLACK_VARS)}, "-y", "slack-mcp-server@latest", "--transport", "stdio"],
       "enabled": true,
       "environment": {
-        "SLACK_MCP_XOXP_TOKEN": "{file:.auth/opencode/SLACK_MCP_XOXP_TOKEN}",
         "SLACK_MCP_ADD_MESSAGE_TOOL": "true",
-        "SLACK_MCP_REACTION_TOOL": "{file:.auth/opencode/SLACK_MCP_REACTION_TOOL}",
       },
     },`,
   'dbhub': `    "dbhub": {
       "type": "local",
-      "command": ["bunx", "-y", "@bytebase/dbhub@1.2.1", "--config", "dbhub.toml"],
+      "command": ["bunx", ${loaderLiteral(DBHUB_VARS)}, "-y", "@bytebase/dbhub@1.2.1", "--config", "dbhub.toml"],
       "enabled": true,
-      "environment": {
-        "DBHUB_DATABASE": "{env:DBHUB_DATABASE}",
-        "DBHUB_HOST": "{env:DBHUB_HOST}",
-        "DBHUB_PASSWORD": "{env:DBHUB_PASSWORD}",
-        "DBHUB_PORT": "{env:DBHUB_PORT}",
-        "DBHUB_TYPE": "{env:DBHUB_TYPE}",
-        "DBHUB_USER": "{env:DBHUB_USER}",
-      },
     },`,
   'openapi': `    // schema-read-only: no token here
     "openapi": {
       "type": "local",
-      "command": ["bunx", "-y", "@ivotoby/openapi-mcp-server@1.16.1", "--tools", "dynamic"],
+      "command": ["bunx", ${loaderLiteral(OPENAPI_VARS)}, "-y", "@ivotoby/openapi-mcp-server@1.16.1", "--tools", "dynamic"],
       "enabled": true,
-      "environment": {
-        "API_BASE_URL": "{env:API_BASE_URL}",
-        "OPENAPI_SPEC_PATH": "{env:OPENAPI_SPEC_PATH}",
-      },
     },`,
   'postman': `    "postman": {
       "type": "remote",
@@ -337,24 +345,20 @@ const OPENCODE_SERVERS: Record<string, string> = {
     },`,
   'supabase': `    "supabase": {
       "type": "local",
-      "command": ["bunx", "-y", "@supabase/mcp-server-supabase@latest", "--read-only"],
+      "command": ["bunx", ${loaderLiteral(SUPABASE_VARS)}, "-y", "@supabase/mcp-server-supabase@latest", "--read-only"],
       "enabled": true,
       "environment": {
-        "SUPABASE_ACCESS_TOKEN": "{env:SUPABASE_ACCESS_TOKEN}",
         "LOG_LEVEL": "error",
       },
     },`,
 };
-
-/** The `.env` loader every Codex stdio fixture starts through (CODEX_ENV_LOADER_*). */
-const CODEX_LOADER = [...CODEX_ENV_LOADER_ARGS, CODEX_ENV_LOADER_COMMAND].map(arg => JSON.stringify(arg)).join(', ');
 
 const CODEX_SERVERS: Record<string, string> = {
   'context7': `[mcp_servers.context7]
 command = "bunx"
 enabled = true
 startup_timeout_sec = 30
-args = [${CODEX_LOADER}, "-y", "@upstash/context7-mcp@4.0.3"]
+args = ["-y", "@upstash/context7-mcp@4.0.3"]
 `,
   'tavily': `[mcp_servers.tavily]
 url = "https://mcp.tavily.com/mcp/"
@@ -364,14 +368,13 @@ enabled = true
   'playwright': `[mcp_servers.playwright]
 command = "bunx"
 enabled = true
-args = [${CODEX_LOADER}, "@playwright/mcp@0.0.79", "--caps", "vision,pdf,testing,tracing,tabs", "--timeout-action", "10000", "--timeout-navigation", "30000", "--viewport-size", "1920x1080"]
+args = ["@playwright/mcp@0.0.79", "--caps", "vision,pdf,testing,tracing,tabs", "--timeout-action", "10000", "--timeout-navigation", "30000", "--viewport-size", "1920x1080"]
 `,
   'slack-aurora': `[mcp_servers.slack-aurora]
 command = "bunx"
 enabled = true
 startup_timeout_sec = 30
-args = [${CODEX_LOADER}, "-y", "slack-mcp-server@latest", "--transport", "stdio"]
-env_vars = ["SLACK_MCP_XOXP_TOKEN", "SLACK_MCP_REACTION_TOOL"]
+args = [${loaderLiteral(SLACK_VARS)}, "-y", "slack-mcp-server@latest", "--transport", "stdio"]
 
 [mcp_servers.slack-aurora.env]
 SLACK_MCP_ADD_MESSAGE_TOOL = "true"
@@ -380,15 +383,13 @@ SLACK_MCP_ADD_MESSAGE_TOOL = "true"
 command = "bunx"
 enabled = true
 startup_timeout_sec = 30
-args = [${CODEX_LOADER}, "-y", "@bytebase/dbhub@1.2.1", "--config", "dbhub.toml"]
-env_vars = ["DBHUB_DATABASE", "DBHUB_HOST", "DBHUB_PASSWORD", "DBHUB_PORT", "DBHUB_TYPE", "DBHUB_USER"]
+args = [${loaderLiteral(DBHUB_VARS)}, "-y", "@bytebase/dbhub@1.2.1", "--config", "dbhub.toml"]
 `,
   'openapi': `[mcp_servers.openapi]
 command = "bunx"
 enabled = true
 startup_timeout_sec = 30
-args = [${CODEX_LOADER}, "-y", "@ivotoby/openapi-mcp-server@1.16.1", "--tools", "dynamic"]
-env_vars = ["API_BASE_URL", "OPENAPI_SPEC_PATH"]
+args = [${loaderLiteral(OPENAPI_VARS)}, "-y", "@ivotoby/openapi-mcp-server@1.16.1", "--tools", "dynamic"]
 `,
   'postman': `[mcp_servers.postman]
 url = "https://mcp.postman.com/mcp"
@@ -398,8 +399,7 @@ enabled = true
   'supabase': `[mcp_servers.supabase]
 command = "bunx"
 enabled = true
-args = [${CODEX_LOADER}, "-y", "@supabase/mcp-server-supabase@latest", "--read-only"]
-env_vars = ["SUPABASE_ACCESS_TOKEN"]
+args = [${loaderLiteral(SUPABASE_VARS)}, "-y", "@supabase/mcp-server-supabase@latest", "--read-only"]
 
 [mcp_servers.supabase.env]
 LOG_LEVEL = "error"
@@ -1120,11 +1120,11 @@ describe('MCP semantic parity', () => {
     const root = contractFixture();
     const configPath = join(root, 'opencode.jsonc');
     writeFileSync(configPath, readFileSync(configPath, 'utf8')
-      .replace('{env:API_BASE_URL}', '{file:certs/ca.pem}'));
+      .replace('"--tools", "dynamic"]', '"--tools", "dynamic", "{file:certs/ca.pem}"]'));
 
     const errors = validateMcpParity(root);
-    // Still an error, because the openapi server genuinely lost its API_BASE_URL
-    // dependency — but it is reported as a LITERAL, not as a dependency on `pem`.
+    // Still an error, because the openapi command genuinely changed — but the
+    // path is reported as a LITERAL argument, not as a dependency on `pem`.
     expect(errors.some(error => error.includes('opencode MCP openapi mismatch'))).toBe(true);
     expect(errors.some(error => error.includes('certs/ca.pem'))).toBe(true);
     expect(errors.some(error => error.toLowerCase().includes('"pem"'))).toBe(false);
@@ -1142,7 +1142,7 @@ describe('MCP semantic parity', () => {
   test('reports a forwarded variable that Codex renamed', () => {
     const root = contractFixture();
     const configPath = join(root, '.codex/config.toml');
-    writeFileSync(configPath, readFileSync(configPath, 'utf8').replace('"OPENAPI_SPEC_PATH"', '"OPENAPI_SPEC_URL"'));
+    writeFileSync(configPath, readFileSync(configPath, 'utf8').replace('"API_BASE_URL,OPENAPI_SPEC_PATH"', '"API_BASE_URL,OPENAPI_SPEC_URL"'));
 
     const errors = validateMcpParity(root);
     expect(errors.some(error => error.includes('codex MCP openapi mismatch') && error.includes('OPENAPI_SPEC_URL'))).toBe(true);
@@ -1206,7 +1206,7 @@ describe('project-declared MCP set', () => {
     const root = contractFixture(undefined, PROJECT_IDS);
     const configPath = join(root, '.codex/config.toml');
     // Strip the loader from every server: the unknown `supabase` still needs a variable.
-    writeFileSync(configPath, readFileSync(configPath, 'utf8').replaceAll(`${CODEX_LOADER}, `, ''));
+    writeFileSync(configPath, withoutLoader(readFileSync(configPath, 'utf8')));
 
     const errors = validateMcpParity(root, { schemaOwner: true });
     expect(errors.some(e => e.startsWith('codex MCP supabase must launch through the .env loader'))).toBe(true);
@@ -1218,7 +1218,7 @@ describe('project-declared MCP set', () => {
   test('downstream, a missing Codex loader is a warning that names the file and what to add', () => {
     const root = contractFixture(undefined, PROJECT_IDS);
     const configPath = join(root, '.codex/config.toml');
-    writeFileSync(configPath, readFileSync(configPath, 'utf8').replaceAll(`${CODEX_LOADER}, `, ''));
+    writeFileSync(configPath, withoutLoader(readFileSync(configPath, 'utf8')));
 
     const { errors, warnings } = validateMcpParityFindings(root, { schemaOwner: false });
     expect(errors).toEqual([]);
@@ -1226,15 +1226,13 @@ describe('project-declared MCP set', () => {
     // ONE launch warning, never a second one from the generic rule.
     const supabase = warnings.filter(w => w.startsWith('codex MCP supabase '));
     expect(supabase).toHaveLength(1);
-    expect(supabase[0]).toContain('starts without the .env loader in .codex/config.toml');
-    expect(supabase[0]).toContain(`set command = "${CODEX_ENV_LOADER_COMMAND}"`);
-    expect(supabase[0]).toContain(JSON.stringify(CODEX_ENV_LOADER_ARGS));
+    expect(supabase[0]).toContain('must launch through the .env loader in .codex/config.toml');
+    expect(supabase[0]).toContain(`${MCP_ENV_LOADER_COMMAND} ${mcpEnvLoaderArgs(SUPABASE_VARS).join(' ')}`);
     const openapi = warnings.filter(w => w.startsWith('codex MCP openapi '));
     expect(openapi).toHaveLength(1);
-    expect(openapi[0]).toStartWith('codex MCP openapi launch is out of date in .codex/config.toml: set command = ');
-    // context7 needs no variable, but it is a known server: its pinned shape
-    // carries the loader, so it is warned about too.
-    expect(warnings.some(w => w.startsWith('codex MCP context7 launch is out of date'))).toBe(true);
+    expect(openapi[0]).toStartWith(`codex MCP openapi launch is out of date in .codex/config.toml: launch it as \`${MCP_ENV_LOADER_COMMAND} `);
+    // context7 needs no variable and its pinned shape has no loader: nothing to say.
+    expect(warnings.some(w => w.startsWith('codex MCP context7'))).toBe(false);
     // The compat error group stays MCP, so the doctor and the updater place it.
     expect(warnings.every(w => /\bMCP\b/.test(w))).toBe(true);
   });
@@ -1242,7 +1240,7 @@ describe('project-declared MCP set', () => {
   test('ownership comes from package.json: the boilerplate errors, any other name warns', () => {
     const root = contractFixture(undefined, PROJECT_IDS);
     const configPath = join(root, '.codex/config.toml');
-    writeFileSync(configPath, readFileSync(configPath, 'utf8').replaceAll(`${CODEX_LOADER}, `, ''));
+    writeFileSync(configPath, withoutLoader(readFileSync(configPath, 'utf8')));
 
     expect(validateMcpParity(root)).toEqual([]);
     write(root, 'package.json', JSON.stringify({ name: 'my-qa-project' }));
@@ -1272,7 +1270,7 @@ describe('project-declared MCP set', () => {
     const budget = validateMcpParityFindings(root, { schemaOwner: false });
     expect(budget.errors).toEqual([]);
     expect(budget.warnings).toEqual([
-      `codex MCP openapi launch is out of date in .codex/config.toml: set startup_timeout_sec = ${CODEX_STARTUP_TIMEOUT_SEC} (Codex's 10-second default is too short for a bunx-fetched server on a cold cache). Upstream never overwrites this file, so add it by hand.`,
+      `codex MCP openapi launch is out of date in .codex/config.toml: set startup_timeout_sec = ${CODEX_STARTUP_TIMEOUT_SEC} (Codex's 10-second default is too short for a bunx-fetched server on a cold cache). Upstream never overwrites this file, so change it by hand.`,
     ]);
 
     writeFileSync(configPath, readFileSync(configPath, 'utf8').replace('"--tools", "dynamic"]', '"--tools", "dynamic", "--read-only"]'));
@@ -1282,25 +1280,69 @@ describe('project-declared MCP set', () => {
     expect(shape.errors[0]).toStartWith('codex MCP openapi mismatch: expected ');
   });
 
-  test('reads a loader-wrapped Codex command as the server it starts', () => {
-    expect(unwrapCodexEnvLoader('bunx', [...CODEX_ENV_LOADER_ARGS, 'bunx', '-y', 'pkg@1'])).toEqual({ command: 'bunx', args: ['-y', 'pkg@1'], envLoader: true });
-    expect(unwrapCodexEnvLoader('bunx', ['-y', 'pkg@1'])).toEqual({ command: 'bunx', args: ['-y', 'pkg@1'], envLoader: false });
+  test('reads a loader-wrapped command as the server it starts, with its filter', () => {
+    expect(unwrapEnvLoader('bunx', [...mcpEnvLoaderArgs(['A_X', 'B_Y']), 'bunx', '-y', 'pkg@1'])).toEqual({ command: 'bunx', args: ['-y', 'pkg@1'], envLoader: true, filter: ['A_X', 'B_Y'] });
+    expect(unwrapEnvLoader('bunx', ['-y', 'pkg@1'])).toEqual({ command: 'bunx', args: ['-y', 'pkg@1'], envLoader: false, filter: null });
+    // The unfiltered loader Codex used before: still a loader, no filter.
+    expect(unwrapEnvLoader('bunx', [...LEGACY_CODEX_ENV_LOADER_ARGS, 'bunx', '-y', 'pkg@1'])).toEqual({ command: 'bunx', args: ['-y', 'pkg@1'], envLoader: true, filter: null });
     // A prefix with nothing after it is not a launch.
-    expect(unwrapCodexEnvLoader('bunx', [...CODEX_ENV_LOADER_ARGS]).envLoader).toBe(false);
+    expect(unwrapEnvLoader('bunx', mcpEnvLoaderArgs(['A_X'])).envLoader).toBe(false);
+    expect(unwrapEnvLoader('bunx', [...LEGACY_CODEX_ENV_LOADER_ARGS]).envLoader).toBe(false);
+  });
+
+  test('a filter must list exact names: a glob cannot be compared across hosts', () => {
+    expect(() => unwrapEnvLoader('bunx', [...mcpEnvLoaderArgs(['STRIPE_*']), 'bunx', 'pkg'])).toThrow('exact variable names');
   });
 
   test('pins the loader to the exact varlock version the repo installs', () => {
     const pkg = JSON.parse(readFileSync(join(REPO_ROOT, 'package.json'), 'utf8')) as { devDependencies: Record<string, string> };
-    expect(CODEX_ENV_LOADER_ARGS[1] as string).toBe(`varlock@${pkg.devDependencies.varlock}`);
+    expect(MCP_ENV_LOADER_HEAD[1] as string).toBe(`varlock@${pkg.devDependencies.varlock}`);
+    expect(LEGACY_CODEX_ENV_LOADER_ARGS[1] as string).toBe(`varlock@${pkg.devDependencies.varlock}`);
     // JSON-RPC on stdio: varlock must not redact (rewrite) the server's output.
-    expect(CODEX_ENV_LOADER_ARGS).toContain('--no-redact-stdout');
+    expect(MCP_ENV_LOADER_HEAD).toContain('--no-redact-stdout');
+    // Least privilege: only the named variables, and no blob holding them all.
+    expect(MCP_ENV_LOADER_HEAD.slice(-3)).toEqual(['--inject', 'vars', '--filter']);
+  });
+
+  test('a loader-launched server that also takes a variable from the host fails in the boilerplate, warns downstream', () => {
+    const root = contractFixture(undefined, PROJECT_IDS);
+    const configPath = join(root, '.mcp.json');
+    const config = JSON.parse(readFileSync(configPath, 'utf8'));
+    config.mcpServers.supabase.env.SUPABASE_ACCESS_TOKEN = '\${SUPABASE_ACCESS_TOKEN}';
+    writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`);
+
+    const owner = validateMcpParity(root, { schemaOwner: true });
+    expect(owner.some(e => e.startsWith('claude MCP supabase launches through the .env loader but also takes SUPABASE_ACCESS_TOKEN from the host'))).toBe(true);
+    const downstream = validateMcpParityFindings(root, { schemaOwner: false });
+    expect(downstream.errors).toEqual([]);
+    expect(downstream.warnings.some(w => w.startsWith('claude MCP supabase launches through the .env loader but also takes'))).toBe(true);
+  });
+
+  test('downstream, the pre-loader shape of a known server is one warning per host naming the exact launch', () => {
+    const root = contractFixture(undefined, BOILERPLATE_IDS);
+    const configPath = join(root, '.mcp.json');
+    const config = JSON.parse(readFileSync(configPath, 'utf8'));
+    config.mcpServers.openapi = {
+      command: 'bunx',
+      args: ['-y', '@ivotoby/openapi-mcp-server@1.16.1', '--tools', 'dynamic'],
+      env: { API_BASE_URL: '\${API_BASE_URL}', OPENAPI_SPEC_PATH: '\${OPENAPI_SPEC_PATH}' },
+    };
+    writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`);
+
+    const { errors, warnings } = validateMcpParityFindings(root, { schemaOwner: false });
+    expect(errors).toEqual([]);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toStartWith('claude MCP openapi launch is out of date in .mcp.json: launch it as `bunx -p varlock@');
+    expect(warnings[0]).toContain('--filter API_BASE_URL,OPENAPI_SPEC_PATH');
+    expect(warnings[0]).toContain('drop the host-side reference to API_BASE_URL, OPENAPI_SPEC_PATH');
+    expect(validateMcpParity(root, { schemaOwner: true }).some(e => e.startsWith('claude MCP openapi mismatch'))).toBe(true);
   });
 
   test('compares the .env contract of an unknown server across hosts', () => {
     const root = contractFixture(undefined, PROJECT_IDS);
     const configPath = join(root, '.codex/config.toml');
     writeFileSync(configPath, readFileSync(configPath, 'utf8')
-      .replace('env_vars = ["SUPABASE_ACCESS_TOKEN"]', 'env_vars = ["SUPABASE_ACCESS_TOKEN", "SUPABASE_PROJECT_REF"]'));
+      .replace('"--filter", "SUPABASE_ACCESS_TOKEN"', '"--filter", "SUPABASE_ACCESS_TOKEN,SUPABASE_PROJECT_REF"'));
 
     expect(validateMcpParity(root)).toEqual([
       'MCP supabase env contract differs between claude and codex: {"dependsOn":["SUPABASE_ACCESS_TOKEN"],"literalEnv":{"LOG_LEVEL":"error"}} vs {"dependsOn":["SUPABASE_ACCESS_TOKEN","SUPABASE_PROJECT_REF"],"literalEnv":{"LOG_LEVEL":"error"}}',
@@ -1525,7 +1567,7 @@ describe('checkAgentCompatibility', () => {
     const root = repositoryFixture();
     repairClaudeSkillsAlias(root, 'linux');
     const configPath = join(root, '.codex/config.toml');
-    writeFileSync(configPath, readFileSync(configPath, 'utf8').replaceAll(`${CODEX_LOADER}, `, ''));
+    writeFileSync(configPath, withoutLoader(readFileSync(configPath, 'utf8')));
 
     const downstream = checkAgentCompatibility(root, 'linux');
     expect(downstream.ok).toBe(true);

@@ -79,7 +79,7 @@ export const MISSING_ENV_LINE = [
   'CREDENTIALS: no `.env` in this checkout, so every MCP server in this session',
   'started without one. They are already running; this session cannot be repaired.',
   'Fix and restart: in a worktree run `bun run worktree:provision <this path>` from',
-  'the main checkout; in a fresh clone run `bun run setup`. Then `bun run harness:env`.',
+  'the main checkout; in a fresh clone run `bun run setup`.',
 ].join(' ');
 
 /**

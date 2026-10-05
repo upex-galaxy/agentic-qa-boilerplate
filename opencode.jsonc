@@ -1,36 +1,27 @@
 {
   // OpenCode shared team config — committed to git.
-  // Secrets are NEVER stored here. Every credential below is a {file:...} POINTER
-  // into .auth/opencode/, which is gitignored and holds one value per file at
-  // mode 0600. Those files are GENERATED from .env by `bun run harness:env`, and
-  // `bun run setup:doctor` fails when they and .env disagree.
+  // Secrets are NEVER stored here, and no plaintext copy of one is written for
+  // OpenCode to read. Every server that needs .env values starts through the
+  // .env loader:
+  //
+  //   bunx -p varlock@1.20.0 varlock run --no-redact-stdout --inject vars --filter A,B -- <server>
+  //
+  // which reads the varlock schema plus .env / .env.local (or the secret manager
+  // the schema names) from the project root at spawn time and hands the server
+  // ONLY the variables in its --filter. That works however OpenCode was started:
+  // a desktop or natively launched session has no process environment, and
+  // `{env:VAR}` would resolve to nothing there. `--no-redact-stdout` keeps the
+  // JSON-RPC stream byte-intact. The loader is the same on the three hosts
+  // (MCP_ENV_LOADER_* in cli/lib/agent-compatibility-contracts.ts, ADR-0011);
+  // never add `{env:}` or `{file:}` beside it: an empty value shadows .env.
   //
   // Only LOCAL (stdio) servers live here: the ones that read .env values
-  // (dbhub, openapi, slack-aurora) plus context7, which needs no key. Browser
-  // automation is the playwright-cli, not an MCP. Remote servers whose only
-  // project-side content was an API key (web search, Postman) are connected at
-  // harness level instead: ~/.config/opencode/opencode.json for OpenCode. Skills
-  // resolve them by capability, whatever the prefix (.agents/instructions/agent-tool-resolution.md).
-  //
-  // WHY {file:} AND NOT {env:}. {env:VAR} resolves from the OpenCode PROCESS
-  // environment, which only exists when OpenCode was launched from a shell that
-  // had it — so `bun run opencode` works and a desktop or natively-launched
-  // session does not, and no hook can fix that because the MCP servers are
-  // spawned before any hook runs. {file:path} substitutes the file's CONTENTS and
-  // needs no environment at all, so it works however OpenCode was started.
-  //
-  // MEASURED on OpenCode 1 and re-measured on OpenCode 2 (versions and dates:
-  // .context/ADR/ADR-0006-forensic-measurements-ledger.md), and worth knowing
-  // before editing this file:
-  //   - a MISSING {file:} target invalidates the WHOLE config (exit 1, "bad file
-  //     reference"), not just the one server. Never point at a file the generator
-  //     does not create.
-  //   - an EMPTY file substitutes silently to the empty string, exit 0. That is
-  //     the safe degraded state: exactly as degraded as {env:} was, never worse.
-  //     This is why the generator writes a file for every variable .env.example
-  //     declares, with or without a value.
-  //   - a trailing newline is trimmed. The generator writes none anyway, so a
-  //     value never depends on that.
+  // (dbhub, openapi, slack-aurora) plus context7, which needs no key and so no
+  // loader. Browser automation is the playwright-cli, not an MCP. Remote servers
+  // whose only project-side content was an API key (web search, Postman) are
+  // connected at harness level instead: ~/.config/opencode/opencode.json for
+  // OpenCode. Skills resolve them by capability, whatever the prefix
+  // (.agents/instructions/agent-tool-resolution.md).
   //
   // V1 SYNTAX ON PURPOSE ("mcp", "enabled", "permission"). OpenCode 2 migrates
   // these keys on load ("mcp" -> "mcp.servers", "enabled" -> "disabled",
@@ -38,10 +29,7 @@
   // the V1 file is the one both generations read. Revisit when V1 support ends.
   //
   // Syntax notes (OpenCode-specific, different from Claude Code's .mcp.json):
-  //   - File substitution uses {file:path}, env expansion {env:VAR_NAME} (NOT ${VAR})
-  //   - {file:} paths are relative to THIS file's directory, so in a worktree they
-  //     resolve to the worktree's own .auth/. Deliberately unlike Claude Code,
-  //     which reads .claude/settings.local.json from the MAIN checkout's root.
+  //   - env expansion is {env:VAR_NAME} (NOT ${VAR}); not used here, see above
   //   - MCP root key is "mcp"                  (NOT "mcpServers")
   //   - MCP env field is "environment"         (NOT "env")
   "$schema": "https://opencode.ai/config.json",
@@ -63,32 +51,56 @@
     // committed. An empty SLACK_MCP_REACTION_TOOL leaves reactions off.
     "slack-aurora": {
       "type": "local",
-      "command": ["bunx", "-y", "slack-mcp-server@latest", "--transport", "stdio"],
+      "command": [
+        "bunx",
+        "-p",
+        "varlock@1.20.0",
+        "varlock",
+        "run",
+        "--no-redact-stdout",
+        "--inject",
+        "vars",
+        "--filter",
+        "SLACK_MCP_XOXP_TOKEN,SLACK_MCP_REACTION_TOOL",
+        "--",
+        "bunx",
+        "-y",
+        "slack-mcp-server@latest",
+        "--transport",
+        "stdio"
+      ],
       "enabled": true,
       "environment": {
-        "SLACK_MCP_XOXP_TOKEN": "{file:.auth/opencode/SLACK_MCP_XOXP_TOKEN}",
-        "SLACK_MCP_ADD_MESSAGE_TOOL": "true",
-        "SLACK_MCP_REACTION_TOOL": "{file:.auth/opencode/SLACK_MCP_REACTION_TOOL}"
+        "SLACK_MCP_ADD_MESSAGE_TOOL": "true"
       }
     },
     // dbhub.toml reads these six through ${VAR} interpolation, but only from the
-    // environment the server is LAUNCHED with. Declaring them here is what puts
-    // them there on every host — Codex forwards nothing it was not told to.
-    // An EMPTY value file leaves the variable empty and dbhub then fails on
-    // connect rather than at startup, which reads like a database problem: check
-    // the DBHUB_* values in .env first. See .agents/skills/agentic-qa-core/references/db-testing-doctrine.md.
+    // environment the server is LAUNCHED with: the loader's filter puts them
+    // there. An EMPTY value leaves the variable empty and dbhub then fails on
+    // connect rather than at startup, which reads like a database problem:
+    // `bunx varlock load --agent` shows which DBHUB_* is unset, redacted. See
+    // .agents/skills/agentic-qa-core/references/db-testing-doctrine.md.
     "dbhub": {
       "type": "local",
-      "command": ["bunx", "-y", "@bytebase/dbhub@1.2.1", "--config", "dbhub.toml"],
-      "enabled": true,
-      "environment": {
-        "DBHUB_DATABASE": "{file:.auth/opencode/DBHUB_DATABASE}",
-        "DBHUB_HOST": "{file:.auth/opencode/DBHUB_HOST}",
-        "DBHUB_PASSWORD": "{file:.auth/opencode/DBHUB_PASSWORD}",
-        "DBHUB_PORT": "{file:.auth/opencode/DBHUB_PORT}",
-        "DBHUB_TYPE": "{file:.auth/opencode/DBHUB_TYPE}",
-        "DBHUB_USER": "{file:.auth/opencode/DBHUB_USER}"
-      }
+      "command": [
+        "bunx",
+        "-p",
+        "varlock@1.20.0",
+        "varlock",
+        "run",
+        "--no-redact-stdout",
+        "--inject",
+        "vars",
+        "--filter",
+        "DBHUB_TYPE,DBHUB_HOST,DBHUB_PORT,DBHUB_DATABASE,DBHUB_USER,DBHUB_PASSWORD",
+        "--",
+        "bunx",
+        "-y",
+        "@bytebase/dbhub@1.2.1",
+        "--config",
+        "dbhub.toml"
+      ],
+      "enabled": true
     },
     // SCHEMA-READ-ONLY: no API_TOKEN / Authorization header is injected here.
     // The OpenAPI MCP is used ONLY to discover endpoints + read schemas
@@ -98,12 +110,25 @@
     // requirement for API auth. OPENAPI_SPEC_PATH may be a local file OR a URL.
     "openapi": {
       "type": "local",
-      "command": ["bunx", "-y", "@ivotoby/openapi-mcp-server@1.16.1", "--tools", "dynamic"],
-      "enabled": true,
-      "environment": {
-        "API_BASE_URL": "{file:.auth/opencode/API_BASE_URL}",
-        "OPENAPI_SPEC_PATH": "{file:.auth/opencode/OPENAPI_SPEC_PATH}"
-      }
+      "command": [
+        "bunx",
+        "-p",
+        "varlock@1.20.0",
+        "varlock",
+        "run",
+        "--no-redact-stdout",
+        "--inject",
+        "vars",
+        "--filter",
+        "API_BASE_URL,OPENAPI_SPEC_PATH",
+        "--",
+        "bunx",
+        "-y",
+        "@ivotoby/openapi-mcp-server@1.16.1",
+        "--tools",
+        "dynamic"
+      ],
+      "enabled": true
     }
   },
 

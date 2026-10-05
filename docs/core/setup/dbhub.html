@@ -95,7 +95,8 @@
               </td>
               <td>
                 El server <code>dbhub</code>, que arranca <code>dbhub --config dbhub.toml</code> (la
-                versión está fijada en <code>.mcp.json</code>) y le pasa esas variables
+                versión está fijada en <code>.mcp.json</code>) detrás del loader de
+                <code>.env</code>, que le pasa esas variables
               </td>
               <td>Sí, ya viene declarado</td>
             </tr>
@@ -114,10 +115,12 @@ password = "${DBHUB_PASSWORD}"
 sslmode = "require"</code></pre>
       <p>
         La sustitución de <code>${...}</code> la hace el propio <code>dbhub</code>, con el entorno
-        del proceso que lo lanzó. Por eso cada harness declara esas variables en su bloque del MCP:
-        <code>env</code> en <code>.mcp.json</code> (Claude Code), <code>environment</code> con
-        archivos <code>{file:.auth/opencode/...}</code> en <code>opencode.jsonc</code> (OpenCode) y
-        <code>env_vars</code> en <code>.codex/config.toml</code> (Codex).
+        del proceso que lo lanzó. Por eso los tres harnesses (<code>.mcp.json</code>,
+        <code>opencode.jsonc</code> y <code>.codex/config.toml</code>) arrancan
+        <code>dbhub</code> con el mismo loader delante,
+        <code>varlock run ... --filter DBHUB_TYPE,...,DBHUB_PASSWORD -- &lt;dbhub&gt;</code>: lee
+        <code>.env</code> desde la raíz del proyecto al arrancar el server y le pasa exactamente
+        esas seis variables, aunque abras el harness desde la app de escritorio.
       </p>
 
       <h2 id="configurar">Configurarlo paso a paso</h2>
@@ -146,19 +149,6 @@ DBHUB_PASSWORD=</code></pre>
           </p>
         </li>
         <li>
-          <strong>Regenera las credenciales por harness</strong>
-          <p>
-            <code>bun run harness:env</code> copia las credenciales de <code>.env</code> a los
-            archivos que leen los harness al arrancar: el bloque <code>env</code> de
-            <code>.claude/settings.local.json</code> y los archivos de <code>.auth/opencode/</code>.
-            Así el MCP recibe las variables aunque abras el harness desde la app de escritorio.
-            Codex no necesita este paso: cada MCP de <code>.codex/config.toml</code> arranca con un
-            loader que lee <code>.env</code> directamente. <code>bun run harness:env:check</code> te
-            dice si <code>.env</code> y esos archivos están desalineados. Ninguno de los dos imprime
-            valores, solo nombres.
-          </p>
-        </li>
-        <li>
           <strong>Arranca el agente con el wrapper</strong>
           <p>
             Lanza la sesión con <code>bun run claude</code>, <code>bun run opencode</code> o
@@ -184,9 +174,10 @@ DBHUB_PASSWORD=</code></pre>
         <p>
           Si falta una variable, <code>dbhub</code> no se detiene: sustituye el texto literal (por
           ejemplo <code>${DBHUB_PASSWORD}</code>) y la conexión falla en la primera query, con un
-          error que parece de la base de datos. Ante cualquier fallo raro de DBHub, revisa primero
-          las <code>DBHUB_*</code> de <code>.env</code>, ejecuta <code>bun run harness:env</code> y
-          reinicia la sesión.
+          error que parece de la base de datos. Ante cualquier fallo raro de DBHub, mira primero qué
+          <code>DBHUB_*</code> están definidas con
+          <code>bunx varlock load --agent --filter 'DBHUB_*'</code> (sin mostrar valores), corrige
+          <code>.env</code> y reinicia la sesión.
         </p>
       </div>
 
@@ -301,10 +292,7 @@ sslmode = "require"</code></pre>
                 Usuario o contraseña incorrectos, o llegó al servidor el texto literal
                 <code>${DBHUB_PASSWORD}</code>
               </td>
-              <td>
-                Las <code>DBHUB_*</code> de <code>.env</code>, luego
-                <code>bun run harness:env</code> y reiniciar la sesión
-              </td>
+              <td>Las <code>DBHUB_*</code> de <code>.env</code>, luego reiniciar la sesión</td>
             </tr>
             <tr>
               <td><code>Cannot open database</code></td>

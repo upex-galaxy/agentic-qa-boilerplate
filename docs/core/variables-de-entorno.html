@@ -201,61 +201,70 @@ bun run vars:schema:check      # el core generado está al día y el par carga</
 
       <h2 id="harness">Qué lee cada harness</h2>
       <p>
-        Un harness arranca sus servidores MCP antes de que corra cualquier hook, así que la
-        credencial tiene que estar donde el harness mira al arrancar. Solo se copian las variables
-        que algún MCP del proyecto usa, nunca el <code>.env</code> entero.
+        Un harness arranca sus servidores MCP antes de que corra cualquier hook, y una app de
+        escritorio o un worker lanzado de forma nativa no trae variables en su entorno. Por eso los
+        tres harnesses leen igual: cada MCP que necesita valores de <code>.env</code> arranca con el
+        mismo loader delante, en <code>.mcp.json</code>, <code>opencode.jsonc</code> y
+        <code>.codex/config.toml</code>.
       </p>
+      <pre
+        data-lang="bash"
+      ><code>bunx -p varlock@&lt;pin&gt; varlock run --no-redact-stdout --inject vars --filter A,B -- &lt;server&gt;</code></pre>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Harness</th>
-              <th>Lee</th>
-              <th>Lo escribe</th>
-              <th>Si falta una variable</th>
+              <th>Pieza</th>
+              <th>Qué hace</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td>Claude Code</td>
-              <td>El bloque <code>env</code> de <code>.claude/settings.local.json</code></td>
-              <td><code>bun run harness:env</code>, a partir de <code>.env</code></td>
-              <td>No falla al arrancar: el server muere en su primera llamada autenticada</td>
+              <td><code>--filter A,B</code></td>
+              <td>
+                El server recibe solo esas variables: una clave del esquema heredada que no está en
+                la lista se quita, y la validación mira solo la lista. Es también la lista de
+                dependencias que <code>bun run agents:compat:check</code> compara entre los tres
+                hosts
+              </td>
             </tr>
             <tr>
-              <td>OpenCode</td>
-              <td>
-                Archivos en <code>.auth/opencode/</code>, referenciados con <code>{file:...}</code>
-              </td>
-              <td><code>bun run harness:env</code>, a partir de <code>.env</code></td>
-              <td>Un archivo vacío sustituye una cadena vacía, sin error</td>
+              <td><code>--inject vars</code></td>
+              <td>Variables sueltas, sin el blob <code>__VARLOCK_ENV</code></td>
             </tr>
             <tr>
-              <td>Codex</td>
+              <td><code>--no-redact-stdout</code></td>
               <td>
-                El propio <code>.env</code>: cada MCP arranca con
-                <code>varlock run --no-redact-stdout --</code> delante, así que no depende de cómo
-                abriste Codex
+                No toca la salida: el server habla JSON-RPC por stdio y varlock, por defecto,
+                redacta lo que sale por una tubería
               </td>
+            </tr>
+            <tr>
+              <td><code>bunx -p varlock@&lt;pin&gt;</code></td>
               <td>
-                Nadie: el loader lo lee al arrancar el server (necesita <code>bun install</code>)
+                La versión exacta de la devDependency: basta con <code>bun install</code> una vez,
+                sin el binario suelto
               </td>
-              <td>Es el único que falla al arrancar nombrando el server</td>
             </tr>
           </tbody>
         </table>
       </div>
       <p>
-        Para ver si un MCP de Claude Code conecta, usa <code>/mcp</code> dentro de la sesión.
-        <code>claude mcp list</code> no lee el bloque <code>env</code> de
-        <code>.claude/settings.local.json</code>, así que puede marcar como fallido un server que en
-        la sesión funciona bien.
+        El loader lee el esquema y <code>.env</code> / <code>.env.local</code> (o el gestor de
+        secretos que nombre el esquema) desde la raíz del proyecto, no depende de cómo abriste el
+        harness y no deja ninguna copia en texto plano. Si falta una variable, ningún harness falla
+        al arrancar: el server muere en su primera llamada autenticada. Un valor que no pasa el
+        esquema frena solo al server que lo filtra. Para ver si un MCP conecta, usa
+        <code>/mcp</code> dentro de la sesión de Claude Code u <code>opencode mcp list</code>.
       </p>
       <p>
-        Después de tocar <code>.env</code>: <code>bun run harness:env</code> y reinicia el agente.
-        En Windows los tres wrappers (<code>bun run claude</code>, <code>bun run opencode</code>,
-        <code>bun run codex</code>) cargan <code>.env</code> igual; direnv es opcional en todas las
-        plataformas y en Windows está documentado, no medido.
+        Después de tocar <code>.env</code>, reinicia el agente. Si una versión anterior de
+        <code>bun run harness:env</code> dejó copias en el bloque <code>env</code> de
+        <code>.claude/settings.local.json</code> o en <code>.auth/opencode/</code>, el comando de
+        ahora las retira y <code>setup:doctor</code> las reporta. En Windows los tres wrappers
+        (<code>bun run claude</code>, <code>bun run opencode</code>, <code>bun run codex</code>)
+        cargan <code>.env</code> igual; direnv es opcional en todas las plataformas y en Windows
+        está documentado, no medido.
       </p>
 
       <h2 id="punto-de-uso">Validar en el punto de uso</h2>
@@ -434,7 +443,7 @@ resend login</code></pre>
         la consume, y añade una sección con los servers a nivel del harness que encuentra en tu
         configuración de usuario. Un conector de claude.ai no deja archivo, así que ahí dice "no
         detectable", nunca "falta". El código de salida solo cambia por hallazgos estructurales: no
-        hay <code>.env</code>, las superficies por harness están desincronizadas, el esquema no
+        hay <code>.env</code>, queda una copia en texto plano de una credencial MCP, el esquema no
         carga.
       </p>
       <pre

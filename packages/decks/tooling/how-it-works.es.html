@@ -835,7 +835,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <text class="t-s" x="10" y="350">Mismo trato para un pedido directo: "buscá en la web" sin proveedor = el mismo STOP.</text>
       </svg>
       <div class="stack" style="gap:14px">
-        <div class="card" style="border-color:var(--bad)"><p class="lbl" style="color:var(--bad)">Regla #10 · credenciales</p><p class="small mt-s">Servidor activo pero 401/403 o una falla misteriosa: es el caso de credencial. Con una variable sin setear, Claude Code, OpenCode y DBHub arrancan igual y fallan <b>en silencio</b> en la primera llamada; solo Codex falla fuerte nombrando el servidor. Nombrar la variable, apuntar a <span class="mono">.env</span> y pedir reinicio: los valores se leen al arrancar el MCP.</p></div>
+        <div class="card" style="border-color:var(--bad)"><p class="lbl" style="color:var(--bad)">Regla #10 · credenciales</p><p class="small mt-s">Servidor activo pero 401/403 o una falla misteriosa: es el caso de credencial. Con una variable sin setear, el loader de <span class="mono">.env</span> arranca el servidor igual en los tres hosts y falla <b>en silencio</b> en la primera llamada; ninguno falla fuerte al arrancar. Nombrar la variable, apuntar a <span class="mono">.env</span> y pedir reinicio: los valores se leen al arrancar el MCP.</p></div>
         <div class="card"><p class="lbl">Sin degradar por cuenta propia</p><p class="small mt-s"><span class="mono">WebSearch</span> / <span class="mono">WebFetch</span> integrados no son respaldo silencioso de <span class="mono">web-search</span> ni de <span class="mono">library-docs</span>, y leer archivos de rutas no reemplaza a <span class="mono">api-schema</span>.</p></div>
       </div>
     </div>
@@ -858,12 +858,12 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     </div>
     <table class="tt tight mt-m">
       <tr><th style="width:180px">Host</th><th>Activar o revisar</th></tr>
-      <tr><td class="small"><b>Claude Code</b></td><td class="small"><span class="mono">/mcp</span> dentro de la sesión (habilitar, autenticar, reconectar). Lanzar con <span class="mono">bun run claude</span> para que <span class="mono">.env</span> alimente las <span class="mono">${VAR}</span>. <span class="mono">claude mcp list</span> puede marcar como roto un servidor que anda.</td></tr>
-      <tr><td class="small"><b>OpenCode</b></td><td class="small"><span class="mono">enabled: true</span> en <span class="mono">opencode.jsonc</span>; los secretos se leen de <span class="mono">.auth/opencode/</span>. Reiniciar.</td></tr>
+      <tr><td class="small"><b>Claude Code</b></td><td class="small"><span class="mono">/mcp</span> dentro de la sesión (habilitar, autenticar, reconectar). Los servidores del proyecto leen <span class="mono">.env</span> a través del loader, se lance como se lance la sesión.</td></tr>
+      <tr><td class="small"><b>OpenCode</b></td><td class="small"><span class="mono">enabled: true</span> en <span class="mono">opencode.jsonc</span>; los secretos se leen de <span class="mono">.env</span> a través del loader. Reiniciar.</td></tr>
       <tr><td class="small"><b>Codex CLI / Desktop</b></td><td class="small">carga la config del proyecto solo en un repo <b>confiable</b>. Reiniciar.</td></tr>
     </table>
     <p class="small dim mt-s"><span class="mono">bun run setup:doctor</span> informa qué servidores de nivel harness declaran las configs de usuario de la máquina; un conector en la nube no deja archivo y figura como no detectable, no como faltante.</p>
-    <div class="notes">Búsqueda web: Exa primero, Tavily segundo (cuando no hay Exa o el usuario lo pide). Las referencias a variables mantienen la sintaxis de cada host: ${VAR} en .mcp.json, {file:.auth/opencode/VAR} en opencode.jsonc, env_vars / bearer_token_env_var en .codex/config.toml. Detalle en .agents/instructions/agent-harnesses.md.</div>
+    <div class="notes">Búsqueda web: Exa primero, Tavily segundo (cuando no hay Exa o el usuario lo pide). Los tres hosts arrancan cada MCP que necesita valores de .env con el mismo loader delante (varlock run ... --filter A,B -- servidor): el --filter nombra sus variables y no hay ${VAR}, {file:} ni env_vars a su lado. Detalle en .agents/instructions/agent-harnesses.md.</div>
   </section>
 
   <!-- 19. CIERRE -->

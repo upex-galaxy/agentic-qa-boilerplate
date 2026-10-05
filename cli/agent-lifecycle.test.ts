@@ -150,14 +150,13 @@ describe('installer Codex lifecycle', () => {
     expect(engramSetupArgs('codex')).toEqual(['setup', 'codex']);
   });
 
-  test('discovers Codex MCP environment contracts and exposes launch guidance', async () => {
-    // The six DBHUB_* arrive through `env_vars` on the dbhub server: Codex
-    // inherits only `core`, so anything dbhub.toml interpolates has to be
-    // forwarded by name. The two SLACK_MCP_* arrive the same way on the
-    // slack-aurora server. None is core scope (project or tooling), so the
-    // installer defers them to `bun run setup:doctor` instead of prompting.
-    // No remote server's key appears: those servers run at harness level.
-    expect(await discoverRequiredEnvVars(['codex'], REPO_ROOT)).toEqual([
+  test('discovers the MCP environment contracts from the loader filter on every host, and exposes launch guidance', async () => {
+    // Each server names what it reads in its `.env` loader's `--filter`, the
+    // same list on all three hosts: the six DBHUB_* dbhub.toml interpolates,
+    // the two SLACK_MCP_*, the OpenAPI pair. None is core scope (project or
+    // tooling), so the installer defers them to `bun run setup:doctor` instead
+    // of prompting. No remote server's key appears: those run at harness level.
+    const expected = [
       'API_BASE_URL',
       'DBHUB_DATABASE',
       'DBHUB_HOST',
@@ -168,7 +167,10 @@ describe('installer Codex lifecycle', () => {
       'OPENAPI_SPEC_PATH',
       'SLACK_MCP_REACTION_TOOL',
       'SLACK_MCP_XOXP_TOKEN',
-    ]);
+    ];
+    expect(await discoverRequiredEnvVars(['codex'], REPO_ROOT)).toEqual(expected);
+    expect(await discoverRequiredEnvVars(['claude-code'], REPO_ROOT)).toEqual(expected);
+    expect(await discoverRequiredEnvVars(['opencode'], REPO_ROOT)).toEqual(expected);
     expect(launchCommandsForAgents(['claude-code', 'opencode', 'codex']))
       .toEqual(['bun claude', 'bun opencode', 'bun codex']);
   });

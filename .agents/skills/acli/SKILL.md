@@ -64,7 +64,7 @@ Skip step if the catalog is unavailable; log `skill_resolution: "fallback-inline
 
 ## Fallback: Atlassian MCP
 
-> **Opt-in only**: this MCP is NOT enabled in the default boilerplate. To use it, add the atlassian block from `agentic-qa-core/references/mcp-atlassian-optin.md` to `.mcp.json`, `opencode.jsonc` AND `.codex/config.toml` (parity is checked), ensure `ATLASSIAN_*` in `.env` are set, run `bun run harness:env`, and restart the agent. Behavior below applies only after opt-in.
+> **Opt-in only**: this MCP is NOT enabled in the default boilerplate. To use it, add the atlassian block from `agentic-qa-core/references/mcp-atlassian-optin.md` to `.mcp.json`, `opencode.jsonc` AND `.codex/config.toml` (parity is checked), ensure `ATLASSIAN_*` in `.env` are set, and restart the agent. Behavior below applies only after opt-in.
 
 If `acli` is not installed or authenticated, fall back to the Atlassian MCP server (MCP tool namespace: `mcp__atlassian__*` or similar — check the MCP tool list for the exact prefix in the current environment).
 

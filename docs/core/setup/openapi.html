@@ -102,16 +102,18 @@
       <h2 id="configurar">Configurar el MCP</h2>
       <p>
         El server <code>openapi</code> ya está declarado en <code>.mcp.json</code>,
-        <code>opencode.jsonc</code> y <code>.codex/config.toml</code>. Así queda en
-        <code>.mcp.json</code> (la versión del paquete está fijada ahí):
+        <code>opencode.jsonc</code> y <code>.codex/config.toml</code>, igual en los tres: arranca
+        detrás del loader de <code>.env</code>, que lee de <code>.env</code> solo las dos variables
+        de su <code>--filter</code>. Así queda en <code>.mcp.json</code> (las versiones están
+        fijadas ahí):
       </p>
       <pre data-lang="json"><code>"openapi": {
   "command": "bunx",
-  "args": ["-y", "@ivotoby/openapi-mcp-server", "--tools", "dynamic"],
-  "env": {
-    "API_BASE_URL": "${API_BASE_URL}",
-    "OPENAPI_SPEC_PATH": "${OPENAPI_SPEC_PATH}"
-  }
+  "args": [
+    "-p", "varlock@&lt;pin&gt;", "varlock", "run", "--no-redact-stdout",
+    "--inject", "vars", "--filter", "API_BASE_URL,OPENAPI_SPEC_PATH", "--",
+    "bunx", "-y", "@ivotoby/openapi-mcp-server", "--tools", "dynamic"
+  ]
 }</code></pre>
       <p>
         No tiene <code>API_HEADERS</code> ni token, y no debe tenerlos. Lo único que configuras son
@@ -164,18 +166,17 @@
         mientras el otro parece bien.
       </p>
       <dl class="defs">
-        <dt>Claude Code y OpenCode</dt>
+        <dt>Claude Code, OpenCode y Codex</dt>
         <dd>
-          Leen lo que genera <code>bun run harness:env</code>. Córrelo después de tocar
-          <code>.env</code> y reinicia la app.
+          Los tres arrancan este MCP con <code>varlock run --no-redact-stdout ... --</code> delante,
+          así que lee <code>.env</code> aunque la app no tenga variables de entorno. Hace falta
+          <code>bun install</code> una vez (el loader es la dependencia <code>varlock</code>) y un
+          <code>.env</code> con valores en la raíz del proyecto. Si cambias <code>.env</code>,
+          reinicia la app.
         </dd>
         <dt>Codex Desktop</dt>
         <dd>
-          Cada MCP de <code>.codex/config.toml</code> arranca con
-          <code>varlock run --no-redact-stdout --</code> delante, así que lee
-          <code>.env</code> aunque la app no tenga variables de entorno. Hace falta
-          <code>bun install</code> una vez (el loader es la dependencia <code>varlock</code>) y un
-          <code>.env</code> con valores en la raíz del proyecto. En un worktree que crea la app,
+          En un worktree que crea la app,
           <code>.env</code> y <code>api/openapi.json</code> llegan por el
           <code>.worktreeinclude</code> del repo, y la app corre
           <code>bun run worktree:provision</code> (dependencias incluidas) desde

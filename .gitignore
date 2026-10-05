@@ -142,8 +142,9 @@ build/
 .template/upstream-sha/
 
 # ===== MCP Configuration =====
-# .mcp.json and opencode.jsonc are COMMITTED — they reference secrets via
-# ${VAR} / {env:VAR} expansion. Real values live in .env (ignored above).
+# .mcp.json, opencode.jsonc and .codex/config.toml are COMMITTED — they name
+# variables only; each MCP server reads its values from .env (ignored above)
+# through the .env loader (`varlock run --filter`).
 # Local per-developer overrides go in *.local.* files (ignored below).
 .mcp.local.json
 opencode.local.jsonc

@@ -421,40 +421,16 @@ function printReport(rows: Map<string, VarReportRow>): void {
 }
 
 // ----------------------------------------------------------------------------
-// Harness surfaces — regenerate after `.env` changed
+// MCP servers — restart notice after `.env` changed
 // ----------------------------------------------------------------------------
 
 /**
- * Regenerate `.claude/settings.local.json` + `.auth/opencode/*` from `.env`.
- *
- * A credential written to `.env` reaches an MCP server only through those
- * generated files (a harness spawns its servers at startup, before any hook or
- * wrapper can help), so a `--variables` run that stops at `.env` leaves the
- * agent exactly as broken as before it ran. Never fatal: `bun run setup:doctor`
- * reports the same drift and `bun run harness:env` fixes it. Prints variable
- * NAMES only.
- *
- * DYNAMIC import: `harness-env.ts` imports from `../install.ts`, which imports
- * this file; a static import here would close that cycle. Same pattern
- * `cli/install.ts` uses for the same module.
+ * Every MCP server reads `.env` itself through the `.env` loader (ADR-0011),
+ * but only when the harness spawns it, so a value written here reaches a
+ * running session after a restart. No file is derived from `.env` any more.
  */
-async function regenerateHarnessSurfaces(): Promise<void> {
-  try {
-    const { generate } = await import('./harness-env.ts');
-    const result = generate();
-    if (result.refused !== undefined) {
-      tui.log.warn(`Harness credential surfaces NOT written: ${result.refused}`);
-      return;
-    }
-    tui.log.info(
-      `Harness credential surfaces ${result.changed ? 'regenerated' : 'already in sync'}: `
-      + `${result.emitted.length === 0 ? '(none emitted)' : result.emitted.join(', ')}`,
-    );
-    process.stdout.write('  Restart the agent session: MCP servers read credentials at startup, not later.\n');
-  }
-  catch (err) {
-    tui.log.warn(`Could not regenerate the harness credential surfaces: ${(err as Error).message}. Run \`bun run harness:env\`.`);
-  }
+function noticeMcpRestart(): void {
+  tui.log.info('Restart the agent session: MCP servers read .env when the harness spawns them, not later.');
 }
 
 // ----------------------------------------------------------------------------
@@ -627,7 +603,7 @@ async function runMenu(opts: VariablesFlowOptions): Promise<void> {
 
   // The menu never runs dry: every branch that reached here may have written `.env`.
   if (choice !== 'remote') {
-    await regenerateHarnessSurfaces();
+    noticeMcpRestart();
   }
 }
 
@@ -703,9 +679,9 @@ export async function runVariablesFlow(opts: VariablesFlowOptions): Promise<void
     maybeNoticeXrayAtlassian(remoteOutcome.setNames);
   }
 
-  // Only after a real local write: a dry run touched nothing, so there is
-  // nothing to derive, and a remote-only run never opened `.env` for writing.
+  // Only after a real local write: a dry run touched nothing, and a
+  // remote-only run never opened `.env` for writing.
   if (doLocal && !opts.dryRun) {
-    await regenerateHarnessSurfaces();
+    noticeMcpRestart();
   }
 }
