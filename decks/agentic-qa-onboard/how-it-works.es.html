@@ -586,7 +586,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="stack" style="gap:14px">
         <div class="card card-accent"><p class="lbl">Solo QA</p><p class="small mt-s">El repo trae skills, scripts y convenciones para llevar un ticket de Jira a casos documentados y cobertura automatizada. La app bajo prueba <b>no</b> vive acá: está en otro repo, configurado en <span class="mono">.agents/project.yaml</span>.</p></div>
         <div class="card" style="border-color:var(--warn)"><p class="lbl" style="color:var(--warn)">El stack no se cambia</p><p class="small mt-s">KATA es específico de Playwright. Si tu proyecto necesita Cypress o Robot Framework, este boilerplate no es el punto de partida, y la skill no te va a sugerir cambiarlo.</p></div>
-        <div class="card card-soft"><p class="lbl">Primer paso</p><p class="small mt-s"><span class="mono">bun run setup</span>, completar <span class="mono">.env</span>, <span class="mono">bun run harness:env</span> y reiniciar la sesión del agente: los MCP leen credenciales al arrancar. El chequeo de salud es <span class="mono">bun run setup:doctor</span>.</p></div>
+        <div class="card card-soft"><p class="lbl">Primer paso</p><p class="small mt-s"><span class="mono">bun run setup</span>, completar <span class="mono">.env</span> y reiniciar la sesión del agente: los MCP leen <span class="mono">.env</span> al arrancar. El chequeo de salud es <span class="mono">bun run setup:doctor</span>.</p></div>
       </div>
     </div>
     <div class="notes">Fuente: secciones "Welcome", "Stack" y "First-time setup" del SKILL.md, más su Compact Rule de no sugerir otro stack. El detalle de lo que instala setup está en INSTALLER.md.</div>
@@ -597,7 +597,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <p class="kicker">Proyecto nuevo · 7 de 14</p>
     <h2 class="h2"><span class="mono" style="font-size:.8em">bun run setup</span> es la <span class="grad">fase 1</span>, no todo</h2>
     <div class="wf-row mt-m">
-      <div class="wf-node"><p class="n">Fase 1 · Base</p><p class="t">Herramientas en verde</p><p class="c">setup → .env → harness:env + reinicio → agents:setup → pw:install → jira:check</p></div>
+      <div class="wf-node"><p class="n">Fase 1 · Base</p><p class="t">Herramientas en verde</p><p class="c">setup → .env → reinicio → agents:setup → pw:install → jira:check</p></div>
       <span class="wf-arr">→</span>
       <div class="wf-node"><p class="n">Fase 2 · Jira</p><p class="t">Catálogos del tracker</p><p class="c">jira:sync-fields · jira:sync-workflows · jira:sync-link-types → /jira-administration components</p></div>
       <span class="wf-arr">→</span>
@@ -698,7 +698,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <tr><td class="small">Cualquier cosa en el navegador</td><td class="small"><span class="mono">/playwright-cli</span> (no hay MCP de navegador)</td></tr>
     </table>
     <div class="grid g3 mt-m" style="gap:20px;align-items:start">
-      <div class="card card-accent"><p class="lbl">.mcp.json sin secretos</p><p class="small mt-s">Se commitea con placeholders <span class="mono">${VAR}</span>. <span class="mono">.env</span> es la única fuente y <span class="mono">bun run harness:env</span> genera lo que lee cada host. El MCP de Atlassian es opt-in.</p></div>
+      <div class="card card-accent"><p class="lbl">.mcp.json sin secretos</p><p class="small mt-s">Se commitea solo con nombres de variables: cada MCP arranca con el loader de <span class="mono">.env</span> delante y su <span class="mono">--filter</span>. <span class="mono">.env</span> es la única fuente y nadie hace copias. El MCP de Atlassian es opt-in.</p></div>
       <div class="card"><p class="lbl">Variables por alcance</p><p class="small mt-s">Cada una tiene su alcance en <span class="mono">cli/lib/variables-manifest.ts</span>. Nada bloquea la instalación: el código que la lee falla con un error que la nombra. La lista es <span class="mono">.env.example</span>.</p></div>
       <div class="card card-soft"><p class="lbl">El host de Jira no va en .env</p><p class="small mt-s">Vive en <span class="mono">.agents/project.yaml</span>; se lee con <span class="mono">bun run --silent jira:url</span>. Chequeos: <span class="mono">bun run vars:env:check</span> y <span class="mono">bun run setup:doctor</span>.</p></div>
     </div>
@@ -714,7 +714,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <ul class="big" style="font-size:18px;line-height:1.75;list-style:'☐  '">
           <li><span class="mono">bun run setup</span> corrido</li>
           <li><span class="mono">.env</span> con lo que tu trabajo necesita, y web search conectado a nivel harness</li>
-          <li><span class="mono">bun run harness:env</span> y sesión del agente reiniciada</li>
+          <li>Sesión del agente reiniciada después de completar <span class="mono">.env</span></li>
           <li><span class="mono">.agents/project.yaml</span> poblado (<span class="mono">bun run agents:setup</span>)</li>
           <li><span class="mono">bun run vars:check</span> sin errores</li>
           <li><span class="mono">bun run jira:check</span> en verde</li>

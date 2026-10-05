@@ -79,8 +79,8 @@
             <tr>
               <td><code>.env</code></td>
               <td>
-                En silencio: un MCP arranca con el texto literal <code>${VAR}</code> en vez del
-                valor y muere en su primera llamada autenticada (regla crítica 10 de
+                En silencio: el loader de cada MCP no encuentra qué pasarle, el server arranca sin
+                valores y muere en su primera llamada autenticada (regla crítica 10 de
                 <code>AGENTS.md</code>).
               </td>
             </tr>
@@ -141,10 +141,10 @@ bun run worktree:provision /ruta/al/wt --dry-run # muestra qué haría, sin toca
         </dd>
         <dt>Credenciales</dt>
         <dd>
-          Que exista el <code>.env</code> no alcanza para un worker lanzado sin terminal: Claude
-          Code y OpenCode leen las superficies que genera <code>bun run harness:env</code>. Córrelo
-          en el checkout principal después de cada cambio en <code>.env</code> y reinicia la sesión
-          del agente, porque los MCPs leen las credenciales al arrancar.
+          Cada MCP lee el <code>.env</code> del propio worktree a través de su loader, en cualquier
+          harness y aunque el worker se lance sin terminal, así que basta con que el worktree tenga
+          su <code>.env</code>. Después de cada cambio en <code>.env</code>, reinicia la sesión del
+          agente, porque los MCPs lo leen al arrancar.
         </dd>
       </dl>
 

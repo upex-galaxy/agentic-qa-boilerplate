@@ -690,8 +690,8 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="card"><p class="lbl">La lista de entornos, una sola</p><p class="small mt-s">Vive en varios archivos que tienen que coincidir: <span class="mono">config/variables.ts</span>, <span class="mono">.agents/project.yaml</span>, <span class="mono">config/validateTestEnv.ts</span>, <span class="mono">scripts/api-login.project.ts</span> y las opciones de los workflows. Se fija la lista real y se borran los entornos que el proyecto no corre.</p></div>
       <div class="card"><p class="lbl">Schema de entorno</p><p class="small mt-s"><span class="mono">.env.schema</span> es del proyecto: declara cada variable que agregó o renombró, con <span class="mono">@required=forEnv(&lt;env&gt;)</span>. <span class="mono">.env.core.schema</span> es del framework y no se edita. Si la app no tiene login, el par de usuario de prueba se borra.</p></div>
     </div>
-    <p class="small dim mt-s"><b>Valida con</b> <span class="mono">vars:check</span>, <span class="mono">vars:env:check</span>, <span class="mono">test:env:check</span>, <span class="mono">vars:schema:check</span> y <span class="mono">harness:env</span>. Después, <b>reiniciá la sesión</b>: un MCP no ve un valor escrito en <span class="mono">.env</span> a mitad de sesión.</p>
-    <div class="notes">Renombrar las credenciales toca junto la desestructuración de process.env, los dos mapas, .env.schema, .env.example y los nombres de secretos de los workflows. Después del reinicio, bun run harness:env:check confirma que los archivos de credenciales de cada host coinciden con .env.</div>
+    <p class="small dim mt-s"><b>Valida con</b> <span class="mono">vars:check</span>, <span class="mono">vars:env:check</span>, <span class="mono">test:env:check</span> y <span class="mono">vars:schema:check</span>. Después, <b>reiniciá la sesión</b>: un MCP no ve un valor escrito en <span class="mono">.env</span> a mitad de sesión.</p>
+    <div class="notes">Renombrar las credenciales toca junto la desestructuración de process.env, los dos mapas, .env.schema, .env.example y los nombres de secretos de los workflows. Después del reinicio, cada MCP lee .env a través de su loader; bun run harness:env:check confirma que no quedó ninguna copia en texto plano de una credencial MCP.</div>
   </section>
 
   <!-- 10. FASE 4 -->
@@ -847,7 +847,7 @@ repo:check</div>
       <p class="small dim"><b>Sin adivinar:</b> un obstáculo sin bypass frena y se pide.</p>
       <p class="small dim"><b>Sin secretos a la vista:</b> nombra la clave, nunca el valor.</p>
     </div>
-    <div class="notes">Reglas tomadas del contrato de fases, los Gotchas y la Fase 8 de la referencia, más las reglas críticas de AGENTS.md sobre credenciales (1 y 10). Una variable nueva en .env no llega a un MCP que ya está corriendo: harness:env y reinicio de sesión.</div>
+    <div class="notes">Reglas tomadas del contrato de fases, los Gotchas y la Fase 8 de la referencia, más las reglas críticas de AGENTS.md sobre credenciales (1 y 10). Una variable nueva en .env no llega a un MCP que ya está corriendo: reinicio de sesión.</div>
   </section>
 
   <!-- 17. CIERRE -->
