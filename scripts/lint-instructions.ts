@@ -50,6 +50,26 @@
  *     a copy of the maintainers' own `agent-project.md`). Required in the
  *     maintainers' copy.
  *
+ * Three locks keep the split from eroding (ADR-0013). Each one binds the
+ * maintainers' copy as an error; in a project it is a warning, and only once
+ * the file it reads is there (the README and the eval set are synced, the ADR
+ * folder is not, and `AGENTS.md` is the project's own):
+ *
+ *   - LOCK: the ROUTER rows are frozen. `<!-- router:lock <fingerprint>
+ *     <ADR-NNNN> -->` in `AGENTS.md` records the fingerprint of the table and
+ *     the ADR that decided it; a table that no longer matches fails, and so
+ *     does an ADR that does not exist or does not cite that fingerprint. The
+ *     escape hatch is the decision itself: write (or amend) the ADR, then
+ *     `bun run instructions:check --accept-router ADR-NNNN` rewrites the lock
+ *     and names the fingerprint the ADR must cite.
+ *   - EVAL: the labelled-prompt eval of the router (`scripts/lib/router-eval.ts`)
+ *     runs on every call, whole set in milliseconds, and must hold the recall
+ *     and precision targets, so a `triggers:` or `paths:` edit that loses a
+ *     route or floods them fails here, before any test run.
+ *   - COMPLETE: every section but `agent-project.md` ships whole: frontmatter
+ *     and a router row (checked above), at least `MIN_EVAL_PROMPTS` labelled
+ *     prompts that expect its id, and a row in the README `## Sections` table.
+ *
  * A repo without `.agents/instructions/` has not adopted the split yet, and a
  * project whose `AGENTS.md` has no ROUTER still runs its pre-split monolith
  * (the sync delivers the sections; moving AGENTS.md is the project's own merge,
@@ -57,15 +77,19 @@
  * being behind upstream is not a broken repo.
  *
  * Usage: bun scripts/lint-instructions.ts   (exit 1 on any error; warnings print and pass)
+ *        bun scripts/lint-instructions.ts --accept-router ADR-NNNN   (re-lock the ROUTER on a decided change)
  */
 
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import type { RouterEvalFixture, RouterEvalResult } from './lib/router-eval.ts';
+import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { isMaintainerCopy } from '../cli/lib/agents-schema.ts';
 import { contextMapSkill } from '../cli/lib/context-maps.ts';
 import { isProjectLocalSkillPath } from '../cli/lib/updater-core.ts';
 import { PROJECT_INSTRUCTIONS, PROJECT_INSTRUCTIONS_TEMPLATE, stubLeaks } from '../cli/lib/updater-instructions.ts';
 import {
+  ADR_DIR,
+  findAdr,
   importRefs,
   INSTRUCTIONS_DIR,
   INSTRUCTIONS_README,
@@ -73,6 +97,10 @@ import {
   listSections,
   PROJECT_SECTION,
   PROJECT_SKILLS_HEADING,
+  readmeSectionRows,
+  ROUTER_EVAL_FIXTURE,
+  routerFingerprint,
+  routerLock,
   routerRows,
   SECTION_PREFIX,
   sectionId,
@@ -80,7 +108,9 @@ import {
   SKILL_ROUTER_HEADING,
   SKILLS_SECTION,
   skillTableRows,
+  withRouterLock,
 } from './lib/instructions.ts';
+import { evaluateRouter, MIN_EVAL_PROMPTS, promptsPerLabel, readRouterEvalFixture } from './lib/router-eval.ts';
 
 /** Target for the boilerplate's L0: over it is a warning, so the number stays visible. */
 export const L0_TARGET = 16 * 1024;
@@ -95,7 +125,7 @@ export const RULES_SECTION = 'agent-critical-rules.md';
 export interface InstructionFinding {
   file: string
   line: number
-  kind: 'budget' | 'router' | 'unrouted' | 'name' | 'frontmatter' | 'trigger' | 'rule' | 'binding' | 'skills' | 'stub'
+  kind: 'budget' | 'router' | 'unrouted' | 'name' | 'frontmatter' | 'trigger' | 'rule' | 'binding' | 'skills' | 'stub' | 'lock' | 'eval' | 'complete'
   severity: 'error' | 'warning'
   detail: string
 }
@@ -109,6 +139,10 @@ export interface InstructionReport {
   budget: number
   sections: number
   rows: number
+  /** The router eval result, when the fixture and the router are both there. */
+  eval?: RouterEvalResult
+  /** The ROUTER lock as found in L0, when there is one. */
+  lock?: { fingerprint: string, adr: string }
   findings: InstructionFinding[]
 }
 
@@ -361,12 +395,150 @@ export function lintInstructions(root: string): InstructionReport {
     findings.push({ severity: 'error', file: PROJECT_INSTRUCTIONS_TEMPLATE, line: 1, kind: 'stub', detail: `missing: a project without ${PROJECT_INSTRUCTIONS} has no generic stub to receive` });
   }
 
-  return { adopted, pendingMigration: false, l0Bytes, budget, sections: sections.length, rows: rows?.length ?? 0, findings };
+  // LOCK, EVAL, COMPLETE: the three locks that keep the split from eroding.
+  const lockSeverity: InstructionFinding['severity'] = maintainer ? 'error' : 'warning';
+  const lock = rows === null ? null : routerLock(l0);
+  if (rows !== null) { findings.push(...lockFindings(root, l0, maintainer)); }
+  let fixture: RouterEvalFixture | null = null;
+  try { fixture = readRouterEvalFixture(root); }
+  catch (error) { findings.push({ severity: lockSeverity, file: ROUTER_EVAL_FIXTURE, line: 1, kind: 'eval', detail: (error as Error).message }); }
+  let evalResult: RouterEvalResult | undefined;
+  if (fixture === null) {
+    if (maintainer && !findings.some(f => f.kind === 'eval')) { findings.push({ severity: 'error', file: ROUTER_EVAL_FIXTURE, line: 1, kind: 'eval', detail: 'missing: the router eval has no labelled prompts to run' }); }
+  }
+  else if (rows !== null) {
+    evalResult = evaluateRouter(root, fixture) ?? undefined;
+    if (evalResult) { findings.push(...evalFindings(evalResult, lockSeverity)); }
+  }
+  findings.push(...completeFindings(root, sections, fixture, maintainer));
+
+  return {
+    adopted,
+    pendingMigration: false,
+    l0Bytes,
+    budget,
+    sections: sections.length,
+    rows: rows?.length ?? 0,
+    eval: evalResult,
+    lock: lock ? { fingerprint: lock.fingerprint, adr: lock.adr } : undefined,
+    findings,
+  };
+}
+
+const ACCEPT_HINT = '`bun run instructions:check --accept-router ADR-NNNN`';
+
+/** LOCK: the ROUTER table matches its lock, and the lock's ADR exists and cites the fingerprint. */
+export function lockFindings(root: string, l0: string, maintainer: boolean): InstructionFinding[] {
+  const fingerprint = routerFingerprint(l0);
+  if (fingerprint === null) { return []; }
+  const lock = routerLock(l0);
+  const severity: InstructionFinding['severity'] = maintainer ? 'error' : 'warning';
+  if (lock === null) {
+    // A project that has never locked its router opted out; the maintainers' copy cannot.
+    return maintainer
+      ? [{ severity, file: L0_FILE, line: 1, kind: 'lock', detail: `the ROUTER has no lock line: record the ADR that decided the table, then ${ACCEPT_HINT}` }]
+      : [];
+  }
+  const out: InstructionFinding[] = [];
+  if (lock.fingerprint !== fingerprint) {
+    out.push({
+      severity,
+      file: L0_FILE,
+      line: lock.line,
+      kind: 'lock',
+      detail: `ROUTER rows changed (table ${fingerprint}, lock ${lock.fingerprint}). Rows are fixed request kinds: grow a section and its \`triggers:\` instead. A new request kind is an architectural decision: write the ADR, then ${ACCEPT_HINT}`,
+    });
+  }
+  if (!maintainer) { return out; }
+  const adr = findAdr(root, lock.adr);
+  if (adr === null) {
+    out.push({ severity, file: L0_FILE, line: lock.line, kind: 'lock', detail: `the lock names ${lock.adr}, which is not in ${ADR_DIR}/` });
+  }
+  else if (!readFileSync(join(root, adr), 'utf8').includes(lock.fingerprint)) {
+    out.push({ severity, file: adr, line: 1, kind: 'lock', detail: `${lock.adr} does not cite the router fingerprint \`${lock.fingerprint}\` the lock records: add it (References, or an Amendments line)` });
+  }
+  return out;
+}
+
+/** EVAL: recall and precision hold their targets; every label names a routed id. */
+export function evalFindings(result: RouterEvalResult, severity: InstructionFinding['severity']): InstructionFinding[] {
+  const out: InstructionFinding[] = [];
+  const pct = (n: number): string => `${(n * 100).toFixed(1)}%`;
+  if (result.recall < result.targets.recall) {
+    out.push({ severity, file: ROUTER_EVAL_FIXTURE, line: 1, kind: 'eval', detail: `router recall ${pct(result.recall)} < ${pct(result.targets.recall)}: fix the section's \`triggers:\`, never the label. ${result.misses.slice(0, 5).join('; ')}` });
+  }
+  if (result.precision < result.targets.precision) {
+    out.push({ severity, file: ROUTER_EVAL_FIXTURE, line: 1, kind: 'eval', detail: `router precision ${pct(result.precision)} < ${pct(result.targets.precision)}: a trigger fires on prompts that do not need its section; narrow it` });
+  }
+  if (result.unknownLabels.length > 0) {
+    out.push({ severity, file: ROUTER_EVAL_FIXTURE, line: 1, kind: 'eval', detail: `labels no routed section or import carries: ${result.unknownLabels.join(', ')}` });
+  }
+  return out;
+}
+
+/** COMPLETE: every section but the project overlay has enough labelled prompts and a README row; no README row is stale. */
+export function completeFindings(
+  root: string,
+  sections: ReturnType<typeof listSections>,
+  fixture: RouterEvalFixture | null,
+  maintainer: boolean,
+): InstructionFinding[] {
+  const out: InstructionFinding[] = [];
+  const severity: InstructionFinding['severity'] = maintainer ? 'error' : 'warning';
+  const readmeRel = `${INSTRUCTIONS_DIR}/${INSTRUCTIONS_README}`;
+  const readmePath = join(root, readmeRel);
+  const readmeRows = existsSync(readmePath) ? readmeSectionRows(readFileSync(readmePath, 'utf8')) : null;
+  if (readmeRows === null && maintainer) {
+    out.push({ severity, file: readmeRel, line: 1, kind: 'complete', detail: 'no `## Sections` table: every section file needs a row there' });
+  }
+  const perLabel = fixture ? promptsPerLabel(fixture) : null;
+  const names = new Set(sections.map(s => s.name));
+  for (const s of sections) {
+    if (s.name === PROJECT_SECTION) { continue; }
+    const id = typeof s.frontmatter?.id === 'string' ? s.frontmatter.id : sectionId(s.name);
+    const count = perLabel?.get(id) ?? 0;
+    if (perLabel && count < MIN_EVAL_PROMPTS) {
+      out.push({ severity, file: s.rel, line: 1, kind: 'complete', detail: `${count} labelled prompt(s) expect \`${id}\` in ${ROUTER_EVAL_FIXTURE}; a section ships with at least ${MIN_EVAL_PROMPTS}` });
+    }
+    if (readmeRows && !readmeRows.some(r => r.name === s.name)) {
+      out.push({ severity, file: s.rel, line: 1, kind: 'complete', detail: `no row in the \`## Sections\` table of ${readmeRel}` });
+    }
+  }
+  for (const row of readmeRows ?? []) {
+    if (!names.has(row.name)) { out.push({ severity, file: readmeRel, line: row.line, kind: 'complete', detail: `\`${row.name}\` is not a section in ${INSTRUCTIONS_DIR}/` }); }
+  }
+  return out;
+}
+
+/**
+ * `--accept-router ADR-NNNN`: re-lock the ROUTER on a decided change. Refuses
+ * an ADR that is not on disk; writes the lock and returns the fingerprint the
+ * ADR must cite (the lint keeps failing until it does).
+ */
+export function acceptRouter(root: string, adrId: string): { ok: boolean, message: string } {
+  if (!/^ADR-\d{4}$/.test(adrId)) { return { ok: false, message: `expected an ADR id like ADR-0013, got ${JSON.stringify(adrId)}` }; }
+  const l0Path = join(root, L0_FILE);
+  const l0 = existsSync(l0Path) ? readFileSync(l0Path, 'utf8') : '';
+  const fingerprint = routerFingerprint(l0);
+  if (fingerprint === null) { return { ok: false, message: `${L0_FILE} has no ROUTER markers to lock` }; }
+  const adr = findAdr(root, adrId);
+  if (adr === null) { return { ok: false, message: `${adrId} is not in ${ADR_DIR}/: write the ADR that decides the new table first` }; }
+  writeFileSync(l0Path, withRouterLock(l0, fingerprint, adrId));
+  if (!readFileSync(join(root, adr), 'utf8').includes(fingerprint)) {
+    return { ok: false, message: `ROUTER locked at ${fingerprint} by ${adrId}; now cite it in ${adr}: add \`router fingerprint ${fingerprint}\` (References, or an Amendments line)` };
+  }
+  return { ok: true, message: `ROUTER locked at ${fingerprint} by ${adrId}` };
 }
 
 if (import.meta.main) {
   const root = process.cwd();
   if (!statSync(root).isDirectory()) { process.exit(2); }
+  const acceptAt = process.argv.indexOf('--accept-router');
+  if (acceptAt >= 0) {
+    const accepted = acceptRouter(root, process.argv[acceptAt + 1] ?? '');
+    (accepted.ok ? console.log : console.error)(`${accepted.ok ? '✓' : '✗'} ${accepted.message}`);
+    if (!accepted.ok) { process.exit(1); }
+  }
   const report = lintInstructions(root);
   if (!report.adopted) {
     console.log(`- instructions:check skipped: no ${INSTRUCTIONS_DIR}/ in this repo (progressive disclosure not adopted yet)`);
@@ -380,8 +552,13 @@ if (import.meta.main) {
   for (const f of report.findings.filter(f => f.severity === 'warning')) {
     console.warn(`  ⚠ ${f.file}:${f.line}  ${f.kind}  ${f.detail}`);
   }
+  const pct = (n: number): string => `${(n * 100).toFixed(1)}%`;
+  const evalNote = report.eval
+    ? `; router eval recall ${pct(report.eval.recall)} precision ${pct(report.eval.precision)} over ${report.eval.prompts} prompts`
+    : '';
+  const lockNote = report.lock ? `; router lock ${report.lock.fingerprint} (${report.lock.adr})` : '';
   if (errors.length === 0) {
-    console.log(`✓ instructions:check passed (L0 ${report.l0Bytes} B; target ${L0_TARGET} B, ceiling ${report.budget} B; ${report.sections} sections, ${report.rows} router rows)`);
+    console.log(`✓ instructions:check passed (L0 ${report.l0Bytes} B; target ${L0_TARGET} B, ceiling ${report.budget} B; ${report.sections} sections, ${report.rows} router rows${evalNote}${lockNote})`);
     process.exit(0);
   }
   for (const f of errors) {

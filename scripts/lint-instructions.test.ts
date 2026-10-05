@@ -1,9 +1,10 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
-import { importRefs, PROJECT_SKILLS_HEADING, routerRows, sectionRefs, skillRouterSource, skillTableRows } from './lib/instructions.ts';
+import { importRefs, PROJECT_SKILLS_HEADING, routerFingerprint, routerRows, sectionRefs, skillRouterSource, skillTableRows, withRouterLock } from './lib/instructions.ts';
 import {
+  acceptRouter,
   budgetFinding,
   CODEX_PROJECT_DOC_MAX_BYTES,
   L0_BUDGET,
@@ -61,6 +62,47 @@ const kinds = (): string[] => lintInstructions(root).findings.filter(f => f.seve
 const warnings = (): string[] => lintInstructions(root).findings.filter(f => f.severity === 'warning').map(f => `${f.kind}:${f.file}`);
 const MAINTAINER_YAML = '# MAINTAINER COPY: this repo\nproject: {}\n';
 
+const README = [
+  '# Guide',
+  '',
+  'NEVER routed, no frontmatter.',
+  '',
+  '## Sections',
+  '',
+  '| File | Holds |',
+  '|---|---|',
+  '| `agent-critical-rules.md` | rules |',
+  '| `agent-git.md` | git |',
+  '| `agent-project.md` | project |',
+  '',
+].join('\n');
+
+const evalSet = (extra: Array<{ prompt: string, expect: string[] }> = []): string => JSON.stringify({
+  targets: { recall: 0.95, precision: 0.8 },
+  prompts: [
+    { prompt: 'what does rule 3 say', expect: ['critical-rules'] },
+    { prompt: 'explain that rule', expect: ['critical-rules'] },
+    { prompt: 'is this against a rule?', expect: ['critical-rules'] },
+    { prompt: 'git status', expect: ['git'] },
+    { prompt: 'use git rebase here', expect: ['git'] },
+    { prompt: 'git log please', expect: ['git'] },
+    ...extra,
+  ],
+});
+
+/** AGENTS.md text with its router locked by `adr` at the table's own fingerprint. */
+const locked = (text: string, adr = 'ADR-0001'): string => withRouterLock(text, routerFingerprint(text)!, adr);
+
+/** The maintainers' copy: every lock's input present and consistent. */
+function maintainer(): void {
+  write('.agents/project.yaml', MAINTAINER_YAML);
+  write('.agents/instructions/agent-project.md.template', '# Project\n');
+  write('.agents/instructions/README.md', README);
+  write('cli/lib/fixtures/instruction-router-eval.json', evalSet());
+  write('.context/ADR/ADR-0001-router.md', `# ADR-0001\n\nRouter fingerprint ${routerFingerprint(L0())}.\n`);
+  write('AGENTS.md', locked(L0()));
+}
+
 beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), 'lint-instructions-'));
 });
@@ -109,8 +151,8 @@ describe('lint-instructions', () => {
     expect(warnings()).toEqual(['budget:AGENTS.md']);
     write('AGENTS.md', L0({ extra: 'y'.repeat(L0_BUDGET) }));
     expect(kinds()).toEqual([]);
-    write('.agents/project.yaml', MAINTAINER_YAML);
-    write('.agents/instructions/agent-project.md.template', '# Project\n');
+    maintainer();
+    write('AGENTS.md', locked(L0({ extra: 'y'.repeat(L0_BUDGET) })));
     expect(kinds()).toEqual(['budget:AGENTS.md']);
     write('AGENTS.md', L0({ extra: 'y'.repeat(L0_PROJECT_BUDGET) }));
     write('.agents/project.yaml', 'project: {}\n');
@@ -137,8 +179,7 @@ describe('lint-instructions', () => {
 
   test('missing router markers fail once in the maintainers\' copy, without flagging every section as unrouted', () => {
     scaffold();
-    write('.agents/project.yaml', MAINTAINER_YAML);
-    write('.agents/instructions/agent-project.md.template', '# Project\n');
+    maintainer();
     write('AGENTS.md', L0().replace('<!-- router:start -->', ''));
     expect(kinds()).toEqual(['router:AGENTS.md']);
   });
@@ -155,7 +196,7 @@ describe('lint-instructions', () => {
     scaffold();
     write('.agents/instructions/agent-project.md.template', '# Project\n\nPushes bypass the ProtectPublic ruleset.\n\n## Git Strategy (this repository)\n');
     expect(kinds()).toEqual(['stub:.agents/instructions/agent-project.md.template', 'stub:.agents/instructions/agent-project.md.template']);
-    write('.agents/project.yaml', MAINTAINER_YAML);
+    maintainer();
     write('.agents/instructions/agent-project.md.template', `${fm('project', '[]')}# Project\n`);
     expect(kinds()).toEqual(['stub:.agents/instructions/agent-project.md.template']);
     write('.agents/instructions/agent-project.md.template', '# A generic stub\n');
@@ -165,7 +206,8 @@ describe('lint-instructions', () => {
   test('stub: required in the maintainers\' copy, optional in a project', () => {
     scaffold();
     expect(kinds()).toEqual([]);
-    write('.agents/project.yaml', MAINTAINER_YAML);
+    maintainer();
+    rmSync(join(root, '.agents/instructions/agent-project.md.template'));
     expect(kinds()).toEqual(['stub:.agents/instructions/agent-project.md.template']);
   });
 
@@ -266,6 +308,119 @@ describe('lint-instructions', () => {
     write('.agents/instructions/agent-project.md', `${fm('project', '[\'\\bbilling\\b\']')}# Project\n\n## Project context skills\n\n${table(['billing-context'])}\n`);
     write('.agents/instructions/agent-skills-and-mcps.md', `${fm('skills-and-mcps', '[\'\\bskills?\\b\']')}### Skills (lazy-loaded by trigger phrase)\n\n${table(['iql-context', 'infra-context', 'billing-context'])}\n`);
     expect(skills()).toEqual(['warning:.agents/instructions/agent-skills-and-mcps.md:15']);
+  });
+});
+
+describe('lint-instructions: the three locks (ADR-0013)', () => {
+  const ROW = '| a new kind | `agent-git.md` | - | - |';
+  const withRow = (text: string): string => text.replace('<!-- router:end -->', `${ROW}\n<!-- router:end -->`);
+
+  test('the maintainers\' copy with every lock input in place passes, and reports the eval and the lock', () => {
+    scaffold();
+    maintainer();
+    const report = lintInstructions(root);
+    expect(report.findings.filter(f => f.severity === 'error')).toEqual([]);
+    expect(report.eval).toMatchObject({ prompts: 6, recall: 1, precision: 1 });
+    expect(report.lock).toEqual({ fingerprint: routerFingerprint(L0())!, adr: 'ADR-0001' });
+  });
+
+  test('lock: a router edit without a decision fails; a whitespace reflow does not', () => {
+    scaffold();
+    maintainer();
+    write('AGENTS.md', withRow(readFileSync(join(root, 'AGENTS.md'), 'utf8')));
+    expect(kinds()).toEqual(['lock:AGENTS.md']);
+    expect(lintInstructions(root).findings.find(f => f.kind === 'lock')?.detail).toContain('--accept-router ADR-NNNN');
+    write('AGENTS.md', locked(L0()).replace('| git | `agent-git.md` | §11 | - |', '|  git  |   `agent-git.md`  | §11 |   - |'));
+    expect(kinds()).toEqual([]);
+  });
+
+  test('lock: required in the maintainers\' copy; the ADR must exist and cite the fingerprint', () => {
+    scaffold();
+    maintainer();
+    write('AGENTS.md', L0());
+    expect(kinds()).toEqual(['lock:AGENTS.md']);
+    write('AGENTS.md', locked(L0(), 'ADR-0042'));
+    expect(kinds()).toEqual(['lock:AGENTS.md']);
+    write('AGENTS.md', locked(L0()));
+    write('.context/ADR/ADR-0001-router.md', '# ADR-0001\n\nNo fingerprint here.\n');
+    expect(kinds()).toEqual(['lock:.context/ADR/ADR-0001-router.md']);
+  });
+
+  test('lock: --accept-router refuses a missing ADR, re-locks, and the gate holds until the ADR cites the new fingerprint', () => {
+    scaffold();
+    maintainer();
+    write('AGENTS.md', withRow(readFileSync(join(root, 'AGENTS.md'), 'utf8')));
+    expect(acceptRouter(root, 'ADR-0002').ok).toBe(false);
+    expect(acceptRouter(root, 'adr-2').ok).toBe(false);
+    write('.context/ADR/ADR-0002-new-kind.md', '# ADR-0002\n');
+    const accepted = acceptRouter(root, 'ADR-0002');
+    const fingerprint = routerFingerprint(withRow(L0()))!;
+    expect(accepted).toEqual({ ok: false, message: expect.stringContaining(fingerprint) });
+    expect(readFileSync(join(root, 'AGENTS.md'), 'utf8')).toContain(`<!-- router:lock ${fingerprint} ADR-0002 -->`);
+    expect(kinds()).toEqual(['lock:.context/ADR/ADR-0002-new-kind.md']);
+    write('.context/ADR/ADR-0002-new-kind.md', `# ADR-0002\n\nRouter fingerprint ${fingerprint}.\n`);
+    expect(acceptRouter(root, 'ADR-0002').ok).toBe(true);
+    expect(kinds()).toEqual([]);
+  });
+
+  test('lock: a project that never locked opted out; a project lock that drifts only warns', () => {
+    scaffold();
+    expect(kinds()).toEqual([]);
+    write('AGENTS.md', withRow(locked(L0())));
+    expect(kinds()).toEqual([]);
+    expect(warnings()).toEqual(['lock:AGENTS.md']);
+  });
+
+  test('eval: a triggers edit that loses routes, or one that floods them, fails the gate', () => {
+    scaffold();
+    maintainer();
+    write('.agents/instructions/agent-git.md', `${fm('git', '[\'\\bnever-matches\\b\']')}# Git\n\nBranch from main.\n`);
+    expect(kinds()).toEqual(['eval:cli/lib/fixtures/instruction-router-eval.json']);
+    expect(lintInstructions(root).findings.find(f => f.kind === 'eval')?.detail).toContain('recall');
+    write('.agents/instructions/agent-git.md', `${fm('git', '[\'\\bgit\\b\', \'\\w\']')}# Git\n\nBranch from main.\n`);
+    expect(lintInstructions(root).findings.find(f => f.kind === 'eval')?.detail).toContain('precision');
+  });
+
+  test('eval: a label naming no routed section fails; a missing fixture fails only the maintainers\' copy', () => {
+    scaffold();
+    maintainer();
+    write('cli/lib/fixtures/instruction-router-eval.json', evalSet([{ prompt: 'git again', expect: ['git', 'ghost'] }]));
+    expect(lintInstructions(root).findings.filter(f => f.kind === 'eval').map(f => f.detail).join(' ')).toContain('ghost');
+    rmSync(join(root, 'cli/lib/fixtures/instruction-router-eval.json'));
+    expect(kinds()).toEqual(['eval:cli/lib/fixtures/instruction-router-eval.json']);
+    write('.agents/project.yaml', 'project: {}\n');
+    expect(kinds()).toEqual([]);
+  });
+
+  test('complete: a new section with frontmatter and a row but no labelled prompts and no README row fails twice', () => {
+    scaffold();
+    maintainer();
+    write('.agents/instructions/agent-tools.md', `${fm('tools', '[\'\\bacli\\b\']')}# Tools\n`);
+    write('AGENTS.md', locked(L0({ rows: [
+      '| a rule | `agent-critical-rules.md` | §1 | - |',
+      '| git | `agent-git.md` | §11 | - |',
+      '| tools | `agent-tools.md` | §6 | - |',
+      '| scripts | whenever any of these apply, read @package.json first | Rule #11 | - |',
+      '| project | `agent-project.md` | - | - |',
+    ] })));
+    write('.context/ADR/ADR-0001-router.md', `# ADR-0001\n\n${routerFingerprint(readFileSync(join(root, 'AGENTS.md'), 'utf8'))}\n`);
+    expect(kinds()).toEqual(['complete:.agents/instructions/agent-tools.md', 'complete:.agents/instructions/agent-tools.md']);
+    write('cli/lib/fixtures/instruction-router-eval.json', evalSet(['run acli view', 'acli transition', 'acli login'].map(prompt => ({ prompt, expect: ['tools'] }))));
+    write('.agents/instructions/README.md', README.replace('| `agent-project.md` |', '| `agent-tools.md` | tools |\n| `agent-project.md` |'));
+    expect(kinds()).toEqual([]);
+  });
+
+  test('complete: a README row naming a gone file fails; a missing table fails the maintainers\' copy, a project only warns', () => {
+    scaffold();
+    maintainer();
+    write('.agents/instructions/README.md', `${README}| \`agent-gone.md\` | old |\n`);
+    expect(kinds()).toEqual(['complete:.agents/instructions/README.md']);
+    write('.agents/instructions/README.md', '# Guide\n');
+    expect(kinds()).toEqual(['complete:.agents/instructions/README.md']);
+    write('.agents/project.yaml', 'project: {}\n');
+    write('.agents/instructions/README.md', README.replace('| `agent-git.md` | git |\n', ''));
+    expect(kinds()).toEqual([]);
+    expect(warnings()).toEqual(['complete:.agents/instructions/agent-git.md']);
   });
 });
 

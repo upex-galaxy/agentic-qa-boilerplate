@@ -37,6 +37,25 @@ paths: ['.husky/', '.github/']                 # paths whose edit implies this s
 
 Every file here but this `README.md` starts with `agent-`, so its name says it comes from the agent setup, and carries no number: the order of the ROUTER rows is the order. The `id` is what the hook routes and the tag a `ROUTE:` line shows. The headings inside a section keep the numbers they carry in `AGENTS.md` citations (`§9` is the `## 9.` heading of the PBI section), so a citation resolves through the ROUTER's `Was` column.
 
+## Sections
+
+One row per section file, so a reader finds a topic's home without opening every file. `instructions:check` fails a section with no row here and a row naming a file that is gone. The ROUTER in `AGENTS.md` decides when each one loads; this table only says what it holds.
+
+| File | Holds |
+|---|---|
+| `agent-critical-rules.md` | the full text of every critical rule, under the number and name its L0 binding sentence carries |
+| `agent-harnesses.md` | the multi-harness contract: instruction files, hooks, MCP configs, the updater, `cli/`, root configs |
+| `agent-context-map.md` | the task to skill to context map for every workflow request |
+| `agent-skills-and-mcps.md` | skill tiers, the skill trigger router, modes and the MCP capability rules |
+| `agent-tool-resolution.md` | `[TAG_TOOL]` resolution, TMS modalities and the CLI to skill mapping |
+| `agent-project-variables.md` | `{{VAR}}` resolution, environments and the Jira instance-identity anchor |
+| `agent-ticket-work.md` | AI behaviour while testing a story or bug: test design, defects, artifact lifecycle |
+| `agent-local-context-pbi.md` | the `.context/PBI/` cache of Jira: tiers, tree, sync and reads |
+| `agent-code-quickref.md` | the KATA quick reference for writing or reviewing test code |
+| `agent-git.md` | git workflow and the pointer to the project's `git_strategy:` |
+| `agent-orchestration-detail.md` | executors, dispatch patterns, value provenance, fail-closed gates, session material |
+| `agent-project.md` | the project's own rules and its project context skills table (project-owned) |
+
 ## Ownership
 
 | File | Owner | On `bun run up` |
@@ -53,9 +72,19 @@ A project scaffolded before this split keeps its monolith `AGENTS.md`: the sync 
 
 ## Editing rules
 
+Every change to `AGENTS.md`, a section, the ROUTER or a `triggers:` list goes through `framework-development` mode `instructions`, which places each sentence with the decision tree in `.agents/skills/framework-development/references/instructions-doctrine.md` and closes with the checks below.
+
 - Edit the section that owns the topic; never paste section prose back into `AGENTS.md`.
 - A new topic gets a ROUTER row only when no existing row's request kind covers it; usually it grows an existing section and its `triggers:` instead.
 - A `NEVER` / `MUST` line in a section must stay reachable by the actor: its sentence is verbatim in `AGENTS.md`, or it cites `Rule #N`, binding: `/<skill>` (whose compact rules carry it) or enforced: `bun run <script>` (a gate).
 - Critical rules: the binding sentence lives in `AGENTS.md` §1 verbatim; the full text lives in `agent-critical-rules.md` under the same number and name.
 
 `bun run instructions:check` proves all of the above: the L0 byte budget (a target that warns, a ceiling that fails, a higher ceiling for a project's own additions, and Codex's cut: the constants at the top of `scripts/lint-instructions.ts`), a stub that carries none of the boilerplate's identity, every file named `agent-<id>`, every section routed, every ROUTER row resolving, frontmatter shape, triggers that compile, rule sentences verbatim and every binding line reachable.
+
+It also holds three locks (ADR-0013), errors in the maintainers' copy and warnings in a project:
+
+- **ROUTER lock.** The comment `<!-- router:lock <fingerprint> <ADR-NNNN> -->` under the ROUTER records the fingerprint of the table and the ADR that decided it. Any change to a row, header included, fails until a decision covers it: write the ADR (or an Amendments line on the one that owns the router), run `bun run instructions:check --accept-router ADR-NNNN`, and cite the fingerprint it prints in that ADR. Whitespace-only reflows keep the fingerprint.
+- **Router eval.** Every run scores the hook's classifier against the labelled prompts in `cli/lib/fixtures/instruction-router-eval.json` and fails under its recall or precision target (floors in `scripts/lib/router-eval.ts`). A `triggers:` or `paths:` edit is proved here, on the same pre-commit call, before any test run.
+- **Complete section.** Every section but `agent-project.md` ships with frontmatter, a ROUTER row, at least three labelled prompts that expect its `id`, and a row in the `## Sections` table above.
+
+`bun run instructions:audit` measures the other half from local transcripts: of the `ROUTE:` lines the hook injected, how many the agent actually read in the same turn.

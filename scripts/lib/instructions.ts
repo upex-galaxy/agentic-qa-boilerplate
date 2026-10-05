@@ -12,6 +12,7 @@
  * defined once.
  */
 
+import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parse as parseYaml } from 'yaml';
@@ -162,6 +163,84 @@ export function routerRows(l0: string): RouterRow[] | null {
     if (!seenHeader) { seenHeader = true; continue; }
     rows.push({ line: i + 1, cells: line.slice(1, -1).split('|').map(c => c.trim()) });
   }
+  return rows;
+}
+
+/**
+ * The ROUTER lock, one comment line in `AGENTS.md`: the fingerprint of the
+ * table it froze and the ADR that decided that table. The rows are request
+ * kinds, fixed on purpose (ADR-0009); a change to them is an architectural
+ * decision, so the lock moves only together with an ADR that cites it.
+ */
+export const ROUTER_LOCK = /<!-- router:lock ([0-9a-f]{12}) (ADR-\d{4}) -->/;
+export const ADR_DIR = '.context/ADR';
+/** Labelled prompts for the router (recall / precision), read by the lint and `cli/lib/instruction-router.test.ts`. */
+export const ROUTER_EVAL_FIXTURE = 'cli/lib/fixtures/instruction-router-eval.json';
+/** The index in `.agents/instructions/README.md`: one row per section file. */
+export const README_SECTIONS_HEADING = /^## Sections\s*$/m;
+
+/**
+ * The ROUTER table as the lock sees it: header plus rows, separator rows
+ * dropped, every cell trimmed and its inner whitespace collapsed, so a
+ * reflowed table keeps its fingerprint and a changed cell does not.
+ */
+export function routerTableLines(l0: string): string[] | null {
+  const lines = l0.split('\n');
+  const start = lines.findIndex(l => l.trim() === ROUTER_START);
+  const end = lines.findIndex(l => l.trim() === ROUTER_END);
+  if (start < 0 || end < 0 || end < start) { return null; }
+  return lines.slice(start + 1, end)
+    .map(l => l.trim())
+    .filter(l => l.startsWith('|') && !/^\|[\s:|-]+\|$/.test(l))
+    .map(l => l.slice(1, -1).split('|').map(c => c.replace(/\s+/g, ' ').trim()).join(' | '));
+}
+
+/** First 12 hex of the sha256 of the normalized ROUTER table, or null without markers. */
+export function routerFingerprint(l0: string): string | null {
+  const lines = routerTableLines(l0);
+  return lines === null ? null : createHash('sha256').update(lines.join('\n')).digest('hex').slice(0, 12);
+}
+
+/** The lock line of `AGENTS.md`, or null when there is none. */
+export function routerLock(l0: string): { fingerprint: string, adr: string, line: number } | null {
+  const lines = l0.split('\n');
+  const index = lines.findIndex(l => ROUTER_LOCK.test(l));
+  if (index < 0) { return null; }
+  const m = ROUTER_LOCK.exec(lines[index])!;
+  return { fingerprint: m[1], adr: m[2], line: index + 1 };
+}
+
+/** `AGENTS.md` with its lock set to `fingerprint` + `adr`: replaced in place, or added right under the router end marker. */
+export function withRouterLock(l0: string, fingerprint: string, adr: string): string {
+  const lock = `<!-- router:lock ${fingerprint} ${adr} -->`;
+  if (ROUTER_LOCK.test(l0)) { return l0.replace(ROUTER_LOCK, lock); }
+  const lines = l0.split('\n');
+  const end = lines.findIndex(l => l.trim() === ROUTER_END);
+  if (end < 0) { return l0; }
+  lines.splice(end + 1, 0, lock);
+  return lines.join('\n');
+}
+
+/** Repo-relative path of `ADR-NNNN-*.md` under `.context/ADR/`, or null. */
+export function findAdr(root: string, id: string): string | null {
+  const dir = join(root, ADR_DIR);
+  if (!existsSync(dir)) { return null; }
+  const name = readdirSync(dir).find(n => n.startsWith(`${id}-`) && n.endsWith('.md'));
+  return name ? `${ADR_DIR}/${name}` : null;
+}
+
+/** Section file names the README `## Sections` table lists (first cell, backticked), or null when the table is missing. */
+export function readmeSectionRows(text: string): Array<{ name: string, line: number }> | null {
+  const start = text.search(README_SECTIONS_HEADING);
+  if (start < 0) { return null; }
+  const firstLine = text.slice(0, start).split('\n').length;
+  const after = text.slice(start).split('\n').slice(1);
+  const next = after.findIndex(line => /^#{1,2} /.test(line));
+  const rows: Array<{ name: string, line: number }> = [];
+  (next < 0 ? after : after.slice(0, next)).forEach((line, i) => {
+    const cell = /^\|\s*`([\w.-]+\.md)`\s*\|/.exec(line);
+    if (cell) { rows.push({ name: cell[1], line: firstLine + 1 + i }); }
+  });
   return rows;
 }
 

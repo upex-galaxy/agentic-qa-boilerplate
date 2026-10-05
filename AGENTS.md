@@ -1,6 +1,6 @@
 # AGENTS.md: AI Persistent Memory
 
-> Always-on layer (L0). Detail lives in section files under `.agents/instructions/`, loaded through the ROUTER (progressive disclosure). Edit a section file, never paste section prose back here; project rules go in `.agents/instructions/agent-project.md`.
+> Always-on layer (L0). Detail lives in section files under `.agents/instructions/`, loaded through the ROUTER (progressive disclosure). Edit a section file, never paste section prose back here; project rules go in `.agents/instructions/agent-project.md`. Every instruction edit goes through `/framework-development` mode `instructions`.
 
 ## LOAD PROTOCOL
 
@@ -119,7 +119,7 @@ Executors, patterns, value provenance, fail-closed gates, session material, skil
 
 ## ROUTER
 
-Files live in `.agents/instructions/`. Rows are fixed request kinds; a section grows through its own `triggers:` frontmatter, never through new rows.
+Files live in `.agents/instructions/`. Rows are fixed request kinds, locked by `instructions:check`: a section grows through its own `triggers:` frontmatter, never through new rows.
 
 <!-- router:start -->
 | When the request involves | Read | Was | Then |
@@ -138,6 +138,7 @@ Files live in `.agents/instructions/`. Rows are fixed request kinds; a section g
 | a script, a command, "how do I run X" | whenever any of these apply, read @package.json first, never a command quoted in a doc | Rule #11 | - |
 | anything specific to this project | `agent-project.md` | - | project context skills |
 <!-- router:end -->
+<!-- router:lock f4d8c1c9bcf0 ADR-0013 -->
 
 ---
 
