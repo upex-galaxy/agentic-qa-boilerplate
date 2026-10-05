@@ -129,7 +129,7 @@ This skill is compliant with the doctrine in `AGENTS.md` §3 "Orchestration Mode
 | Capability | Need | Why here |
 |---|---|---|
 | Issue-tracker (`[ISSUE_TRACKER_TOOL]`) | REQUIRED | TC / ATP / ATR creation, linking, transitions. Load `/acli`; validate via `bun run jira:check`. |
-| TMS modality + `[TMS_TOOL]` | REQUIRED | The whole Phase 0 gate. jira-xray → `/xray-cli` loaded + `XRAY_*` creds set + Xray issue types present. jira-native → `/acli` covers it. Resolve before Phase 1; ask only if all auto-checks fail. |
+| TMS modality + `[TMS_TOOL]` | REQUIRED | The whole Phase 0 gate. jira-xray → `/xray-cli` loaded + `XRAY_*` creds set + the Xray API answers (evidence, never work types alone). jira-native → `/acli` covers it. Resolve before Phase 1; ask only if all auto-checks fail. |
 | Source repos readable | OPTIONAL | Phase 1 source-code validation reads backend/frontend code, not a running env — no live-env or DB/API/browser probe needed. |
 
 Active env, test-user creds, DBHub, OpenAPI / API token, Playwright, `resend` and `kata-manifest.json` (an automation-only concern owned by `/test-automation`) are **N/A** — documentation never hits a live system nor writes test code. After the gate clears (all REQUIRED GREEN), continue to Phase -1 below.
@@ -166,9 +166,9 @@ Does this project have Xray installed and licensed on Jira?
 
 ### How to resolve it without asking (in order)
 
-1. Resolve `{{TMS_CLI}}` (`.agents/project.yaml` → `testing.tms_cli`). Value `bun xray` (or any Xray CLI) -> **Modality jira-xray**. Value is unset, `acli`-only, or `{{TMS_CLI}}` matches `{{ISSUE_TRACKER_CLI}}` -> **Modality jira-native**.
-2. If still ambiguous, list existing issue types in the project via `[ISSUE_TRACKER_TOOL] List issue types`. If the project exposes `Test Plan` / `Test Execution` / `Test Set` / `Pre-Condition`, it is **Modality jira-xray**. Otherwise **Modality jira-native**.
-3. **Only if both checks fail**, ask the user the question above. Do NOT ask by default — autoresolve first.
+1. Resolve `{{TMS_CLI}}` (`.agents/project.yaml` → `testing.tms_cli`). Value `bun xray` (or any Xray CLI) -> **candidate** jira-xray, confirmed in step 2. Value is unset, `acli`-only, or `{{TMS_CLI}}` matches `{{ISSUE_TRACKER_CLI}}` -> **Modality jira-native**.
+2. Confirm Xray by **evidence**: the Xray API answers through `[TMS_TOOL]` (`/xray-cli`: its auth status check, then one read against the project). It answers -> **Modality jira-xray**. Work types alone never decide: `Test Plan` / `Test Execution` / `Test Set` / `Pre-Condition` also exist as native Jira work types on jira-native instances (the table below uses them there "by excellence"), so their presence proves nothing about Xray. **Fail closed**: no answer from the Xray API -> never assume jira-xray. When step 1 named an Xray CLI, that is a tool or credential failure: STOP per Critical Rule #10 and name the `XRAY_*` variables.
+3. **Only if neither the config nor the evidence settles it**, ask the user the question above. Do NOT ask by default — autoresolve first.
 
 ### What changes per modality
 
