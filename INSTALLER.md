@@ -408,6 +408,8 @@ If a skill fails to install (e.g., upstream repo restructured), the failure is r
 
 The installer configures whichever of **Claude Code, OpenCode, and Codex** you selected in Phase 1, but it never duplicates content to do it. There is exactly one copy of every instruction and every skill; where the harnesses genuinely differ (MCP file format, hook API, how a skill is invoked) each keeps a thin versioned adapter.
 
+The agents you select are recorded in `.agents/project.yaml` as `harnesses:` (added to what is already there, never removed), and the installer then offers to delete the files of each harness you left out; the default keeps them. Every compatibility gate (`agents:compat:check`, `setup:doctor`, the installer itself, `bun run up`) checks only the harnesses in that list, so a team on one harness keeps only that harness's files. With `harnesses:` absent or `null` the gates detect the harnesses from the files present. The boilerplate repo itself always checks all three. Decision and details: ADR-0012, `.agents/instructions/agent-harnesses.md`.
+
 | Surface | Claude Code | OpenCode | Codex CLI + Desktop |
 |---------|-------------|----------|---------------------|
 | **Instructions** | `CLAUDE.md` → `@AGENTS.md` **[generated shim]** | `AGENTS.md` (native) | `AGENTS.md` (native) |
