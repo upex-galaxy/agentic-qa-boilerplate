@@ -46,6 +46,8 @@ A secret in a value position of a command the AI writes is still a secret in the
 
 `bunx varlock load --agent` resolves the schema and prints every item by name, with each `@sensitive` value redacted to a short prefix. It is the presence check for this repo.
 
+Never run `varlock load` (even `--agent`) against a schema you have not checked for `@sensitive` coverage: `--agent` redacts only the items the schema marks sensitive and prints every other value in clear, including one inherited from the shell. Scratch schemas are banned. The committed ones are checked by `bun run vars:schema:check`, which fails on any secret-looking key without `@sensitive`.
+
 ```bash
 bunx varlock load --agent                      # every variable, redacted
 bunx varlock load --agent --filter 'DBHUB_*'   # one family
