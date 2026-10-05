@@ -162,7 +162,7 @@ Rules:
 6. **Validate every line before launch** with a shell syntax check (`bash -n` on a file holding the lines; `zsh -n` where the user's shell is zsh). A line that does not parse is not launched.
 7. The harness invocation itself (binary, model / effort / permission / session-name flags per harness) and which launch path supervises are owned by `orca-orchestration/references/launch-seam.md`. This skill owns only the payload: the `sprint-testing` worker prompt.
 
-Shape (Claude Code; `bun run claude -- <args>` forwards `<args>` verbatim through the `dotenv` wrapper, see `package.json`):
+Shape (Claude Code; `bun run claude -- <args>` forwards `<args>` verbatim through the launcher, `scripts/launch.ts`, see `package.json`):
 
 ```
 PARALLEL_TESTING=true PARALLEL_TICKET=UPEX-123 bun run claude -- <harness flags per launch-seam.md> -n "UPEX-123-checkout-tax" "/sprint-testing UPEX-123 fleet worker env: staging. Brief: <abs path to brief.md>. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints."

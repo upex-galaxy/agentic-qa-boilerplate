@@ -196,10 +196,10 @@ bunx -y ccstatusline@latest
 
 ## Launching the agent
 
-`.env` is the single source of credentials, but no harness reads it directly. Claude Code reads the `env` block of `.claude/settings.local.json`; OpenCode reads `.auth/opencode/<VAR>` files via `{file:}`; Codex starts every MCP server through `dotenv -o -e .env` (`.codex/config.toml`), so its servers read `.env` itself however Codex was opened. `bun run harness:env` derives the first two from `.env`, and `bun run setup:doctor` reports drift. After filling `.env`: run `bun run harness:env`, then restart the agent session (MCP servers read credentials at startup). Launch via one of these:
+`.env` is the single source of credentials, but no harness reads it directly. Claude Code reads the `env` block of `.claude/settings.local.json`; OpenCode reads `.auth/opencode/<VAR>` files via `{file:}`; Codex starts every MCP server through `varlock run --no-redact-stdout` (`.codex/config.toml`), so its servers read `.env` itself however Codex was opened. `bun run harness:env` derives the first two from `.env`, and `bun run setup:doctor` reports drift. After filling `.env`: run `bun run harness:env`, then restart the agent session (MCP servers read credentials at startup). Launch via one of these:
 
 ```bash
-# Cross-platform default (uses dotenv-cli, no extra tooling required):
+# Cross-platform default (varlock, a project devDep, no extra tooling required):
 bun run claude        # Claude Code
 bun run opencode      # OpenCode
 bun run codex         # Codex CLI
@@ -213,9 +213,9 @@ set -a; source .env; set +a   # bash/zsh only — exports every .env key into th
 claude                        # now claude / opencode / codex / acli / bun xray all see the vars
 ```
 
-Each wrapper is `dotenv -o -e .env -- <binary>`. The `-o` forces `.env` to win over an inherited process variable; launching the bare executable skips that, so a stale value from the parent shell can silently shadow the file.
+Each wrapper is `bun --no-env-file scripts/launch.ts <binary>`: a preflight, then `varlock run -- <binary>`. varlock lets a variable inherited from the parent shell win over `.env`, and no flag inverts that, so the preflight asks varlock which schema items the shell overrides and compares each against `.env.local` over `.env`. A different value refuses the launch, naming the variables with their lengths only; `unset` them (or open a clean terminal) and relaunch. The test scripts (`bun run test`, `test:e2e`, ...) run the same launcher with `--warn`: they print the notice and go on, so a deliberate `AUTO_SYNC=true bun run test` still works. Launching the bare executable skips the preflight.
 
-**Codex Desktop** consumes the same repository configuration as the CLI — no second convention, no extra directory. Opened from Finder or the Dock it has no process environment, which is why every MCP server in `.codex/config.toml` starts through a `.env` loader instead of relying on `env_vars`: run `bun install` once (the loader is the `dotenv-cli` devDependency) and keep a filled `.env` at the project root. A worktree the Codex app creates gets `.env`, `.auth/` and the synced `api/openapi.json` from the committed `.worktreeinclude`. Two caveats apply to CLI and Desktop alike: Codex loads the project's `.codex/` config and hooks **only in a repository you have marked trusted** (`bun run setup:doctor` reports that trust on its own line, because it is runtime state no file check can verify), and a remote MCP you add at user level should authenticate with `codex mcp login` (OAuth), because `--bearer-token-env-var` reads the same process environment a Dock launch does not have.
+**Codex Desktop** consumes the same repository configuration as the CLI — no second convention, no extra directory. Opened from Finder or the Dock it has no process environment, which is why every MCP server in `.codex/config.toml` starts through a `.env` loader instead of relying on `env_vars`: run `bun install` once (the loader is the `varlock` devDependency) and keep a filled `.env` at the project root. A worktree the Codex app creates gets `.env`, `.auth/` and the synced `api/openapi.json` from the committed `.worktreeinclude`. Two caveats apply to CLI and Desktop alike: Codex loads the project's `.codex/` config and hooks **only in a repository you have marked trusted** (`bun run setup:doctor` reports that trust on its own line, because it is runtime state no file check can verify), and a remote MCP you add at user level should authenticate with `codex mcp login` (OAuth), because `--bearer-token-env-var` reads the same process environment a Dock launch does not have.
 
 PowerShell equivalent of that last block:
 

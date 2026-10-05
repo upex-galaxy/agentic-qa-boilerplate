@@ -439,9 +439,12 @@ bun run setup</code></pre>
 bun run opencode   # OpenCode
 bun run codex      # Codex CLI (Codex Desktop usa la misma config del repo)</code></pre>
       <p>
-        Cada wrapper es <code>dotenv -o -e .env -- &lt;binario&gt;</code>. El <code>-o</code> hace
-        que <code>.env</code> gane sobre una variable heredada de la shell; si lanzas el binario a
-        pelo, un valor viejo del entorno puede tapar el del archivo.
+        Cada wrapper pasa por <code>scripts/launch.ts</code>: compara tu shell con
+        <code>.env</code> y después arranca <code>varlock run -- &lt;binario&gt;</code>. Con varlock
+        una variable heredada de la shell gana sobre el archivo, así que si una difiere el arranque
+        se niega y nombra la variable (nunca el valor); haz <code>unset</code> o abre una terminal
+        limpia. Si lanzas el binario a pelo, nadie revisa, y un valor viejo del entorno puede tapar
+        el del archivo.
       </p>
       <div class="callout danger">
         <span class="callout-title">Un 401 es la señal</span>

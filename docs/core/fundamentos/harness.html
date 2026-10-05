@@ -542,9 +542,12 @@
         </p>
         <p>
           <strong>Lanzar el binario pelado.</strong> <code>bun run claude</code>,
-          <code>bun run opencode</code> y <code>bun run codex</code> envuelven al harness con
-          <code>dotenv -o -e .env</code>, que hace que el <code>.env</code> gane sobre una variable
-          heredada del shell. Sin eso, un valor viejo en tu terminal puede tapar el archivo.
+          <code>bun run opencode</code> y <code>bun run codex</code> arrancan el harness con
+          <code>varlock run</code>, y antes comparan tu terminal con el <code>.env</code>. Con
+          varlock una variable heredada del shell gana sobre el archivo, así que si una difiere el
+          arranque se niega y te dice cuál (solo el nombre y el largo): haz <code>unset</code> o
+          abre una terminal limpia. El binario pelado se salta esa revisión, y un valor viejo en tu
+          terminal puede tapar el archivo.
         </p>
       </div>
 
