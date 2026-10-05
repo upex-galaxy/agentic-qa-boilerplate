@@ -76,6 +76,8 @@ The rule text binds the AI; the harness deny rules are the net under it.
 | OpenCode | `opencode.jsonc` `permission.read` (path wildcards, matched against the relative path) and the secret entries at the end of `permission.bash` | `.env.example` and both schemas stay readable; `source .auth/tokens.env` asks instead of being denied |
 | Codex | `[shell_environment_policy] inherit = "core"` in `.codex/config.toml` keeps secret variables out of the shell commands Codex runs | no file-read deny is configured for Codex in this repo: the rule text is the only guard against Codex opening `.env` |
 
+A project scaffolded before a deny rule shipped receives it on the next `bun run up`: the updater appends the upstream `permissions.deny` entries `.claude/settings.json` lacks (an entry the project does not want goes in `updater.declined_denies` in `.agents/project.yaml`), and reports the OpenCode rules `opencode.jsonc` lacks as a block to paste, never a write.
+
 Deny rules match patterns, so they can be bypassed (`node -e 'console.log(process.env)'`). That is a breach of Critical Rule #1, not a loophole in it.
 
 ## 7. When a value leaks
