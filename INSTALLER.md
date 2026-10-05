@@ -39,7 +39,6 @@ Wires runtime configuration:
 - Where secret values live: `.env` is the default and comes first. The step also offers a secret manager as the ADVANCED option (adapters live in `cli/lib/secret-providers.ts`; 1Password was the first). Choosing it records `secrets:` in `.agents/project.yaml` and writes `.env.provider.schema` once (references only, committed; never overwritten), then prints the one-time setup. See "Secret manager (advanced)" below
 - `.env` population — discovers the variables each MCP server needs from the MCP config of every selected harness (the `.env` loader's `--filter` list, the same in `.mcp.json`, `opencode.jsonc` and `.codex/config.toml`; a legacy `${VAR}` / `{file:}` / `env_vars` / `bearer_token_env_var` reference is still read), then prompts for values not already set
 - Plaintext MCP credential copies (Step 15): retires what an older `bun run harness:env` generated (the `env` block of `.claude/settings.local.json`, `.auth/opencode/<VAR>`). A copy equal to `.env` is deleted, a copy `.env` does not reproduce is moved to `.auth/harness-env-backup/<VAR>` (mode 0600) and named so you put the right value in `.env` and delete the directory, and a copy a legacy host config still reads is kept. `bun run harness:env` does the same on its own (`--check` exits 1 while a stale copy remains, `--dry-run` changes nothing); `bun run setup --variables` regenerates nothing. After filling `.env`, restart the agent session (MCP servers read `.env` through the `.env` loader when the harness spawns them)
-- `direnv allow` — optional; exports `.env` into your shell, which only shell-exported CLI vars (`acli`, `curl`, `bun xray`) need (no harness does: Codex starts each MCP server through a `.env` loader). Never run on its own in a non-interactive setup
 - GitHub repository — interactive `gh repo create` (optional); hydrates `state.github` from an existing remote if already wired
 
 ### Phase 4 — VERIFICATION
@@ -159,12 +158,6 @@ jq               missing     JSON parsing in `acli` Jira pipelines (`acli ... --
 
 Missing per-skill CLIs do not exit the installer. Install them lazily when the owning skill surfaces a missing-binary error, or eagerly if you already know which workflow you want.
 
-### Convenience opt-ins — never required
-
-| Tool     | What it buys you                                                                                                                                                                                                                               | Where the installer surfaces it                                                                                                                                                                                                                                                                                                                  |
-| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `direnv` | Optional. Exports `.env` into your shell on `cd`, which only shell-exported CLI vars (`acli`, `curl`, `bun xray`) need. No harness does: every MCP server that needs `.env` values starts through a `.env` loader (`varlock run`, already a project devDep) that reads the file itself, on all three hosts. | `cli/doctor.ts` (`detectDirenv`) reports `direnv.installed`, `version`, `envrc_allowed`, `hook_in_rc` as warnings, never as needs-action. The installer offers `direnv allow` + a shell-hook nudge. **Windows users**: skip — PowerShell support is experimental (direnv 2.37+); Git Bash works but the wrapper is simpler. The installer offers the prompt anyway; decline freely. |
-
 ### Variables — what goes into `.env`, by scope
 
 `cli/lib/variables-manifest.ts` declares the `VAR_MANIFEST` that the installer, `cli/doctor.ts` and the updater read. Every entry carries a `scope` (ADR-0005), and the scope decides how its absence is reported: never as a blocker.
@@ -188,7 +181,7 @@ Optional, for a team that shares its secrets in a vault instead of each person's
 1. Install the 1Password desktop app and its CLI `op` (macOS: `brew install 1password-cli`), then enable Settings > Developer > "Integrate with 1Password CLI".
 2. Run `bun run setup` and pick 1Password. Team: a shared vault (`<project>-dev`). Personal plan: your own vault; it works locally, CI cannot read it.
 3. In the vault, one Password item per variable, titled with the variable NAME. In `.env.provider.schema`, uncomment those lines and leave the keys empty in `.env`.
-4. Check, redacted: `bunx varlock load --agent`.
+4. Check, redacted: `bunx varlock load --agent`. Bun's own `.env` autoload does not resolve the `op://` references, so a script that needs a vault secret runs through `bunx varlock run -- <cmd>`.
 5. CI (team plan): a service account with read access to the vault; its token is the GitHub secret `OP_SERVICE_ACCOUNT_TOKEN`, beside the per-variable secrets (never instead).
 
 Non-interactive: `INSTALL_SECRETS_PROVIDER=1password INSTALL_SECRETS_VAULT=<vault> bun run setup --non-interactive`. Other managers varlock supports plug into the same slot (`cli/lib/secret-providers.ts`); none ships configured.
@@ -198,7 +191,7 @@ Non-interactive: `INSTALL_SECRETS_PROVIDER=1password INSTALL_SECRETS_VAULT=<vaul
 | Command                            | What it does                                                                                                         |
 | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | `bun run setup:doctor --preflight` | Fast Bun / deps check only — exit 0 if green, 1 with explicit fix command otherwise                                  |
-| `bun run setup:doctor`             | Full report: env vars, deps, Playwright browsers, direnv hook, MCP config files, pending actions with `where` URLs   |
+| `bun run setup:doctor`             | Full report: env vars, deps, Playwright browsers, MCP config files, pending actions with `where` URLs                |
 | `bun run setup:doctor --json`      | Same as above as machine-readable JSON for an agent to consume                                                       |
 | `bun run setup`                    | Re-run the interactive installer end-to-end (idempotent — completed steps are skipped, MCP overwrites are confirmed) |
 
@@ -228,20 +221,17 @@ Exit code: `0` when everything is green, `1` when any pending action remains. JS
   "env_vars": { "ATLASSIAN_EMAIL": "set", "API_BASE_URL": "missing", ... },
   "env_var_scopes": [ { "name": "API_BASE_URL", "status": "missing", "scope": "project", "feature_gate": null, "gate_on": null, "used_by": "openapi MCP request base; curl execution after bun run api:login", "verdict": "missing-optional" }, ... ],
   "harness_level_mcps": { "verdicts": [ { "id": "tavily", "capability": "web-search", "state": "not detectable", "hosts": [], "detail": "..." } ], "sources": [] },
-  "direnv": { "installed": true, "version": "2.25.2", "envrc_allowed": true, "hook_in_rc": true, "rc_file": "/home/user/.bashrc" },
   "pending_actions": [
-    { "type": "shell_hook", "target": "~/.bashrc", "hint": "Add direnv hook ...", "where": "eval \"$(direnv hook bash)\"" }
+    { "type": "shell_command", "target": "bun run api:sync", "hint": "..." }
   ]
 }
 ```
 
-`pending_actions[].type` is one of: `credential` · `shell_hook` · `system_install` · `shell_command`. A `credential` entry appears in `pending_actions` only for a core variable with no default and no feature switch (the manifest decides which); a core credential behind a switch that is on lands in `warnings` instead, and project / tooling variables are rows in `env_var_scopes`, never actions. The AI iterates the list and picks the right tool per type:
+`pending_actions[].type` is one of: `credential` · `shell_command`. A `credential` entry appears in `pending_actions` only for a core variable with no default and no feature switch (the manifest decides which); a core credential behind a switch that is on lands in `warnings` instead, and project / tooling variables are rows in `env_var_scopes`, never actions. The AI iterates the list and picks the right tool per type:
 
 | type             | Who handles it | How                                                                                                                             |
 | ---------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | `credential`     | **User**       | AI asks the user for the value in chat (e.g. "paste your Atlassian API token from the `where` URL"). Then AI writes it to `.env`. |
-| `shell_hook`     | **AI**         | AI appends the `where` line to the `target` rc file with its Edit/Bash tool. Trivial.                                           |
-| `system_install` | **User**       | AI shows the `where` command; the user runs it (brew/winget/apt may prompt for admin password).                                 |
 | `shell_command`  | **AI**         | AI runs the `target` command via Bash.                                                                                          |
 
 ### What an AI **cannot** do (hard limits)
@@ -252,7 +242,7 @@ Exit code: `0` when everything is green, `1` when any pending action remains. JS
 
 ### `bun run setup --non-interactive` (or just `bun run setup` without a TTY)
 
-The installer auto-detects no-TTY (an agent invoking it without a terminal) and silently switches to `--non-interactive`. Prompts skip with their default answer. The closing summary ends with an explicit block `Ask the human for these N keys: ...` (names only, never values) followed by the next two steps, `bun run harness:env` and then restart the agent session; it never runs `direnv allow` on its own. Same data the doctor exposes. Use this path when the AI wants to run the full setup batch:
+The installer auto-detects no-TTY (an agent invoking it without a terminal) and silently switches to `--non-interactive`. Prompts skip with their default answer. The closing summary ends with an explicit block `Ask the human for these N keys: ...` (names only, never values) followed by the next two steps, `bun run harness:env` and then restart the agent session. Same data the doctor exposes. Use this path when the AI wants to run the full setup batch:
 
 ```bash
 INSTALL_AGENTS=claude-code,opencode,codex \
@@ -274,7 +264,6 @@ Then `bun run setup:doctor --json` to confirm.
 | `INSTALL_SKIP_COMMUNITY=1`    | Skip `bunx skills add` step      |
 | `INSTALL_SKIP_JIRA=1`         | Skip optional Jira bootstrap     |
 | `INSTALL_SKIP_API=1`          | Skip optional API auth bootstrap |
-| `INSTALL_SKIP_DIRENV=1`       | Skip direnv detection / autoload |
 | `INSTALL_SECRETS_PROVIDER=1password` | Opt in to the secret manager (default `.env`); pair with `INSTALL_SECRETS_VAULT=<vault>` |
 
 ### Force flags (re-run completed steps)
@@ -293,21 +282,11 @@ Then `bun run setup:doctor --json` to confirm.
 
 ## Launching the agent after setup
 
-`.env` is the single source of credentials, and no harness gets a copy of it. Every MCP server that needs `.env` values starts through the same `.env` loader in `.mcp.json`, `opencode.jsonc` and `.codex/config.toml` (`varlock run`, run through `bunx -p` from the project devDep), so each server reads `.env` itself, and only its own variables, even on a bare or Dock launch. `bun run setup:doctor` reports any plaintext copy an older `bun run harness:env` left behind, and `bun run harness:env` retires it. After filling `.env`, restart the agent session (MCP servers read `.env` when the harness spawns them). `bun run setup` finishes with two ways to launch, both of which put `.env` into the process environment the shell CLIs read:
+`.env` is the single source of credentials, and no harness gets a copy of it. Every MCP server that needs `.env` values starts through the same `.env` loader in `.mcp.json`, `opencode.jsonc` and `.codex/config.toml` (`varlock run`, run through `bunx -p` from the project devDep), so each server reads `.env` itself, and only its own variables, even on a bare or Dock launch. `bun run setup:doctor` reports any plaintext copy an older `bun run harness:env` left behind, and `bun run harness:env` retires it. After filling `.env`, restart the agent session (MCP servers read `.env` when the harness spawns them). `bun run setup` finishes with the launch command below. Nothing needs `.env` exported into your shell: the Bun scripts (`bun run jira:*`, `bun run api:login`, `bun xray`) read it through Bun's own autoload, `acli` uses its stored login (`acli jira auth login`) and `gh` its keyring.
 
 | Method                                              | Platform                                                                                      | One-time setup                                                                                                                                          | Usage                                                 |
 | --------------------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
 | **`bun run claude` / `bun run opencode` / `bun run codex`** (default) | Windows, macOS, Linux                                                                         | None — `varlock` is a project devDep                                                                                                                    | `bun run claude` from the repo root                   |
-| **direnv autoload** (optional; only shell CLIs such as `acli`, `curl`, `bun xray` need it) | macOS, Linux, **Windows** (Git Bash recommended; PowerShell experimental, needs direnv 2.37+) | Install direnv (`brew install direnv` / `apt install direnv` / `winget install direnv`) + add hook to your shell rc, then the installer offers `direnv allow` (never runs it unasked) | Just `acli` or `bun xray` from anywhere in the repo |
-
-### direnv hook per shell
-
-| Shell      | Line to add                               | File                                             |
-| ---------- | ----------------------------------------- | ------------------------------------------------ |
-| bash       | `eval "$(direnv hook bash)"`              | `~/.bashrc` (also works for Git Bash on Windows) |
-| zsh        | `eval "$(direnv hook zsh)"`               | `~/.zshrc`                                       |
-| fish       | `direnv hook fish \| source`              | `~/.config/fish/config.fish`                     |
-| PowerShell | `Invoke-Expression "$(direnv hook pwsh)"` | `$PROFILE` (requires direnv 2.37+, experimental) |
 
 All three MCP configs are committed with variable NAMES only: every server that needs `.env` values launches as `bunx -p varlock@<pin> varlock run --no-redact-stdout --inject vars --filter A,B -- <server>`, the same on every host. The loader reads the varlock schema plus `.env` / `.env.local` (or the secret manager the schema names) from the project root at spawn time and hands the server only the names in its `--filter`; `--no-redact-stdout` keeps the JSON-RPC stream intact. Real values live in `.env` (gitignored), and no plaintext copy is written anywhere. If a server returns 401/403 at first call, the matching env var is missing — see `AGENTS.md` Critical Rule #10 (stop, fix `.env`, restart the agent session).
 
@@ -565,7 +544,6 @@ The right choice when the change is to the boilerplate's own infrastructure (KAT
 - **Codex ignores `.codex/config.toml` and the hook never fires** — the repository is not marked trusted. Codex loads project `.codex/` config and hooks only in a trusted repo, and that is runtime state no file check can see. `bun run setup:doctor` reports it on its own line; approve trust in Codex, then restart the session.
 - **The skill slash or the `.claude/skills` alias stopped working after an edit** — you probably hand-edited or replaced the `.claude/skills` alias. Fix the source instead (`.agents/skills/`), then run `bun run agents:compat`, which recreates the alias. Verify with `bun run agents:compat:check`.
 - **A project command vanished into `.backups/shadowing-commands/`**: it had the name of a repo skill and would have hidden that skill's instructions, so `bun run agents:compat` moved it aside. Port anything worth keeping into the skill (or give the command another name), then drop the backup.
-- **`direnv allow` produced `dotenv_if_exists: command not found`** — this would mean the `.envrc` is using a newer direnv feature than your version supports. The committed `.envrc` uses portable POSIX loading (works on direnv 2.21+), so if you see this, your `.envrc` has been edited locally — restore it from `git checkout .envrc`.
 - **Skills not appearing in autocomplete** — restart Claude Code (or your agent of choice). MCP and skill configs are cached at agent startup. On Claude Code specifically, also confirm the `.claude/skills` alias exists; if a checkout dropped it, `bun run agents:compat` recreates it.
 - **`/agentic-qa-onboard` does not trigger on natural language** — use the explicit slash command: `/agentic-qa-onboard`. The natural-language triggers (`onboard me to QA`, `primer vez en QA`) are advisory, not guaranteed.
 - **How do I remove Engram from an agent?** — remove the `engram` MCP server from that agent's config (on Claude Code: `claude mcp remove engram`; on Claude Code also `claude plugin uninstall engram@engram` if you added the plugin). Your memories stay in `~/.engram` until you delete that directory.

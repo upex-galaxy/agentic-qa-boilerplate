@@ -266,8 +266,9 @@ bun run vars:schema:check      # el core está al día, todo secreto es @sensiti
         <code>.claude/settings.local.json</code> o en <code>.auth/opencode/</code>, el comando de
         ahora las retira y <code>setup:doctor</code> las reporta. En Windows los tres wrappers
         (<code>bun run claude</code>, <code>bun run opencode</code>, <code>bun run codex</code>)
-        cargan <code>.env</code> igual; direnv es opcional en todas las plataformas y en Windows
-        está documentado, no medido.
+        cargan <code>.env</code> igual. Ningún secreto se exporta a tu shell: los scripts de Bun
+        (<code>bun run jira:*</code>, <code>bun run api:login</code>, <code>bun xray</code>) leen
+        <code>.env</code> con su propio autoload y <code>acli</code> usa su login guardado.
       </p>
 
       <h2 id="punto-de-uso">Validar en el punto de uso</h2>
@@ -533,7 +534,9 @@ bun run setup:doctor --json   # env_var_scopes[] y harness_level_mcps para un ag
         <code>.env</code> o exportado en la terminal gana sobre el vault, y entonces el vault ni
         siquiera se consulta. Para leer una clave del gestor, déjala vacía (o quítala) de
         <code>.env</code>. Así un compañero sin acceso al vault sigue trabajando con su
-        <code>.env.local</code>.
+        <code>.env.local</code>. El autoload de Bun no resuelve las referencias de 1Password, así
+        que un script que necesita un secreto del vault corre con
+        <code>bunx varlock run -- &lt;comando&gt;</code>.
       </p>
       <h3>1Password, paso a paso</h3>
       <ol>

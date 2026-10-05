@@ -79,14 +79,6 @@ These are **not optional** for the workflow — each one is required by a specif
 
 The list is `EXTERNAL_CLIS` in `cli/install.ts`: each entry names the skill that needs it, a cross-platform install hint when one exists, and the official docs URL. `bun run setup` prints that table with a found / missing status per tool, and `bun run setup:doctor` re-checks it any time. Repo search (`rg`) is not on it: Claude Code bundles its own, OpenCode and Codex use the system binary (`brew install ripgrep` · `apt install ripgrep` · `winget install BurntSushi.ripgrep.MSVC`).
 
-### Convenience opt-ins (pure UX, never required)
-
-| Tool     | What it buys you                                                                                                                                                                                                                                                                          | Install                                                                                       |
-| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `direnv` | Optional. Exports `.env` into your shell on `cd`, which only shell-exported CLI vars (`acli`, `curl`, `bun xray`) need. No harness does: every MCP server that needs `.env` values starts through a `.env` loader that reads the file itself, on all three hosts. Without direnv, the `bun run claude` / `opencode` / `codex` wrappers load `.env` the same way. | macOS/Linux: `brew install direnv` / `apt install direnv` · [direnv.net](https://direnv.net/) |
-
-> **Windows users**: skip direnv. The `bun run claude` / `bun run opencode` / `bun run codex` wrappers already load `.env` cross-platform with zero setup, and every MCP server reads `.env` through its `.env` loader however the harness was launched. direnv on PowerShell needs version 2.37+ and is officially experimental; Git Bash works but at that point the wrapper is simpler. The installer will offer the direnv hook; just decline it.
-
 ### Variables and MCP credentials (`.env` keys)
 
 Each harness has its own MCP config — `.mcp.json` (Claude Code), `opencode.jsonc` (OpenCode), `.codex/config.toml` (Codex) — and all three start every server that needs `.env` values through the same `.env` loader, which reads the file itself. Every variable the repo knows carries a scope in `cli/lib/variables-manifest.ts` (the source of truth; human guide: `docs/core/variables-de-entorno.html`):
@@ -109,7 +101,6 @@ Nothing blocks install, update or `setup:doctor`: a value is validated by the co
 | `2-gentle-ai-detect`     | Version compare — runs `engram version`, parses semver, requires the minimum `cli/install.ts` enforces (`MIN_ENGRAM_VERSION`). The step key keeps its older name for state compatibility.                                                | Missing: prints brew + go install commands + docs URL, asks exit-or-continue. Too old: warns with a `brew upgrade engram` hint and asks whether to try anyway.                                                                  |
 | `4-agent-detect`         | Detects Claude Code, OpenCode and Codex (config directory, binary on PATH, or `.codex/config.toml`), then prompts which to configure. | None of the three found: prints all three docs URLs, hard exit 1.                                                                                                                                     |
 | `11-verify-clis`         | PATH probe — runs `which <name>` (POSIX) or `where <name>` (Windows). Presence only, no version check.                          | Prints `found`/`missing` table; for missing entries adds `quick:` install command (when cross-platform) + `docs:` URL. Non-blocking.                                                                      |
-| direnv (optional)        | Presence + `.envrc` allow status + shell-rc hook line.                                                                          | Pure convenience nudge — the `bun run claude` / `bun run opencode` / `bun run codex` wrappers already work without it. If absent, lists `system_install` action with install command; safe to decline (recommended on Windows). |
 | `bun run setup:doctor`   | Re-runs everything above + every MCP `.env` var the manifest declares + Playwright browser cache.                                                        | Human-readable or `--json` report. Every `pending_action` carries a `where` hint or URL — re-run any time after partial setup.                                                                            |
 
 > **TL;DR**: install **Bun** plus at least one of **Claude Code, OpenCode, or Codex** before you run setup. Everything else, the installer points you at when you hit it.
@@ -155,7 +146,7 @@ What it does:
 2. Rewrites `package.json` name + `.agents/project.yaml` `project.project_name` (and `project.project_key` when `--project-key` is passed).
 3. Initializes a fresh `git init -b main` with an initial commit.
 4. Runs `bun install`.
-5. Hands off to `bun run setup` — Engram memory, the committed skills under `.agents/skills/`, community skills, the MCP servers `.mcp.json` declares, `.env`, direnv autoload, optional `gh repo create`.
+5. Hands off to `bun run setup` — Engram memory, the committed skills under `.agents/skills/`, community skills, the MCP servers `.mcp.json` declares, `.env`, optional `gh repo create`.
 
 Useful flags (full list in [`packages/create-agentic-qa/README.md`](packages/create-agentic-qa/README.md)):
 
@@ -203,33 +194,13 @@ bunx -y ccstatusline@latest
 bun run claude        # Claude Code
 bun run opencode      # OpenCode
 bun run codex         # Codex CLI
-
-# Optional: direnv autoload (shell CLIs such as acli / bun xray; no harness needs it)
-direnv allow          # one-time per repo (the installer offers to run this)
-claude                # direct binary picks up .env from your shell
-
-# Or load .env into your CURRENT shell once, then run any binary directly:
-set -a; source .env; set +a   # bash/zsh only — exports every .env key into this session
-claude                        # now claude / opencode / codex / acli / bun xray all see the vars
 ```
 
 Each wrapper is `bun --no-env-file scripts/launch.ts <binary>`: a preflight, then `varlock run -- <binary>`. varlock lets a variable inherited from the parent shell win over `.env`, and no flag inverts that, so the preflight asks varlock which schema items the shell overrides and compares each against `.env.local` over `.env`. A different value refuses the launch, naming the variables with their lengths only; `unset` them (or open a clean terminal) and relaunch. The test scripts (`bun run test`, `test:e2e`, ...) run the same launcher with `--warn`: they print the notice and go on, so a deliberate `AUTO_SYNC=true bun run test` still works. Launching the bare executable skips the preflight.
 
 **Codex Desktop** consumes the same repository configuration as the CLI — no second convention, no extra directory. Opened from Finder or the Dock it has no process environment, which is why every MCP server that needs `.env` values starts through the `.env` loader (the same one `.mcp.json` and `opencode.jsonc` use) instead of relying on `env_vars`: run `bun install` once (the loader is the `varlock` devDependency) and keep a filled `.env` at the project root. A worktree the Codex app creates gets `.env`, `.auth/` and the synced `api/openapi.json` from the committed `.worktreeinclude`. Two caveats apply to CLI and Desktop alike: Codex loads the project's `.codex/` config and hooks **only in a repository you have marked trusted** (`bun run setup:doctor` reports that trust on its own line, because it is runtime state no file check can verify), and a remote MCP you add at user level should authenticate with `codex mcp login` (OAuth), because `--bearer-token-env-var` reads the same process environment a Dock launch does not have.
 
-PowerShell equivalent of that last block:
-
-```powershell
-Get-Content .env | Where-Object { $_ -match '^\s*[^#].*=' } | ForEach-Object {
-  $k, $v = $_ -split '=', 2
-  Set-Item -Path "Env:$($k.Trim())" -Value $v.Trim()
-}
-claude
-```
-
-> Run the snippet **inline** in the shell you are already in. Wrapping it in a script would export into a child process that exits immediately, leaving your terminal untouched — which is why `package.json` has no `env` script.
-
-direnv works on macOS / Linux / Windows. On Windows install via `winget install direnv` — Git Bash is recommended; PowerShell support is experimental and requires direnv 2.37+. See [INSTALLER.md § Launching the agent](./INSTALLER.md#launching-the-agent-after-setup) for the per-shell hook lines.
+Nothing needs `.env` exported into your shell, and no secret is: each process loads its own config. The Bun scripts (`bun run jira:*`, `bun run api:login`, `bun xray`) read `.env` through Bun's own autoload, `acli` uses its stored login (`acli jira auth login`) and `gh` its keyring.
 
 <br />
 
@@ -285,7 +256,7 @@ cp .env.example .env   # fill in the values, then restart the agent session
 # 5. (Optional) Visual orientation — close tab + Ctrl-C when done.
 bun run onboarding
 
-# 6. Run the interactive setup (Engram, skills, MCPs, .env, direnv)
+# 6. Run the interactive setup (Engram, skills, MCPs, .env)
 bun run setup
 
 # 7. Validate the install
@@ -348,7 +319,7 @@ The schema is a gate (pre-commit freshness, pre-push warn-only, first step of `b
 
 Quote any value that contains a `#` (`PASSWORD="pass#word"`): varlock cuts an unquoted value at the first `#`.
 
-**Secret manager (advanced, optional).** `.env` stays the default. A team that keeps its secrets in a vault picks 1Password in `bun run setup`, which records `secrets:` in `.agents/project.yaml` and writes `.env.provider.schema`: committed `op://` references, never values, imported by `.env.core.schema` only when present. Desktop-app auth on laptops, a service account in CI; a non-empty `.env` value still wins. Steps: `INSTALLER.md` ("Secret manager (advanced)"); decision: `.context/ADR/ADR-0010-secret-manager-advanced-option.md`.
+**Secret manager (advanced, optional).** `.env` stays the default. A team that keeps its secrets in a vault picks 1Password in `bun run setup`, which records `secrets:` in `.agents/project.yaml` and writes `.env.provider.schema`: committed `op://` references, never values, imported by `.env.core.schema` only when present. Desktop-app auth on laptops, a service account in CI; a non-empty `.env` value still wins. Bun's own `.env` autoload does not resolve the vault references, so a script that needs a vault secret runs through `bunx varlock run -- <cmd>`. Steps: `INSTALLER.md` ("Secret manager (advanced)"); decision: `.context/ADR/ADR-0010-secret-manager-advanced-option.md`.
 
 ### (b) Runtime URLs — `config/variables.ts`
 
