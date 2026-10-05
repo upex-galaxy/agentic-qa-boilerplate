@@ -109,6 +109,9 @@ if (import.meta.main) {
       transcripts: result.transcripts,
       routedSessions: result.routedSessions,
       importRoutes: result.importRoutes,
+      optionalLines: result.optionalLines,
+      reminders: result.reminders,
+      readAfterReminder: result.readAfterReminder,
       target: RECALL_TARGET,
       overall: { ...all, recall: overall },
       sections: Object.fromEntries(rows.map(([path, t]) => [path, { ...t, recall: recallOf(t) }])),
@@ -127,6 +130,7 @@ if (import.meta.main) {
     console.log(`  ${path.padEnd(width)}  ${String(t.routed).padStart(6)}  ${String(t.readInTurn).padStart(7)}  ${String(t.readBefore).padStart(6)}  ${String(t.missed).padStart(6)}  ${String(t.open).padStart(4)}  ${pct(recallOf(t)).padStart(6)}`);
   }
   console.log(`\n  overall recall ${pct(overall)} (target ${pct(RECALL_TARGET)}): ${all.readInTurn} read in turn + ${all.readBefore} already read, ${all.missed} missed; ${all.open} open; ${result.importRoutes} import route(s) not counted.`);
+  console.log(`  re-surface: ${result.reminders} ROUTE-PENDING reminder(s), ${result.readAfterReminder} routed file(s) read after one; ${result.optionalLines} ROUTE-OPTIONAL line(s) offered.`);
   console.log(overall !== null && overall >= RECALL_TARGET ? '✓ at or above target' : '⚠ below target: the agent skips routed sections; see the misses per section above');
   console.log('- OpenCode and Codex transcripts are not parsed yet.');
 }

@@ -18,6 +18,10 @@
  *     `Bash` whose `input.command` names the file with a read verb.
  * A file read earlier in the same context (before the route, after the last
  * compaction) counts as satisfied: the LOAD PROTOCOL forbids re-reading it.
+ * A `ROUTE-PENDING:` line (the Claude Code `PostToolUse` re-surface, ADR-0016)
+ * arrives the same way; it is counted, and so is every routed file read after
+ * one in the same turn, which is what the reminder bought. `ROUTE-OPTIONAL:`
+ * lines bind nothing and are counted apart, never as routes.
  * Routes in the last turn are `open` and kept out of the ratio while the
  * session may still be running; the caller closes that turn (`closeAtEnd`)
  * once the transcript has gone quiet, because a dispatched worker's whole
@@ -30,6 +34,8 @@
 
 export const SECTIONS_PREFIX = '.agents/instructions/';
 const ROUTE_LINE = /^ROUTE: read (\S+)/;
+const PENDING_LINE = /^ROUTE-PENDING:/;
+const OPTIONAL_LINE = /^ROUTE-OPTIONAL:/;
 const SECTION_IN_TEXT = /(?:\.agents\/instructions\/)?\b(agent-[\w-]+\.md)\b/g;
 const READ_VERB = /\b(?:cat|head|tail|sed|less|more|bat|awk|nl|grep|rg|diff|show)\b/;
 
@@ -49,11 +55,17 @@ export interface AuditResult {
   /** Transcripts that carried at least one section route. */
   routedSessions: number
   importRoutes: number
+  /** `ROUTE-OPTIONAL:` lines: offered, binding nothing. */
+  optionalLines: number
+  /** `ROUTE-PENDING:` reminders the re-surface hook injected. */
+  reminders: number
+  /** Routed files read in turn after a reminder named them. */
+  readAfterReminder: number
   sections: Map<string, SectionTally>
 }
 
 export function emptyAudit(): AuditResult {
-  return { transcripts: 0, routedSessions: 0, importRoutes: 0, sections: new Map() };
+  return { transcripts: 0, routedSessions: 0, importRoutes: 0, optionalLines: 0, reminders: 0, readAfterReminder: 0, sections: new Map() };
 }
 
 function tally(result: AuditResult, path: string): SectionTally {
@@ -108,6 +120,7 @@ export function auditTranscript(lines: Iterable<string>, result: AuditResult, cl
   result.transcripts += 1;
   const inContext = new Set<string>();
   const pending = new Set<string>();
+  let reminded = false;
   let routedHere = false;
   for (const line of lines) {
     if (!line.includes('"type"')) { continue; }
@@ -117,6 +130,7 @@ export function auditTranscript(lines: Iterable<string>, result: AuditResult, cl
     if (isUserPrompt(entry)) {
       for (const path of pending) { tally(result, path).missed += 1; }
       pending.clear();
+      reminded = false;
       continue;
     }
     if (entry.isCompactSummary || entry.subtype === 'compact_boundary') {
@@ -125,6 +139,15 @@ export function auditTranscript(lines: Iterable<string>, result: AuditResult, cl
     }
     if (entry.type === 'attachment' && entry.attachment?.type === 'hook_additional_context') {
       for (const route of strings(entry.attachment.content).flatMap(text => text.split('\n'))) {
+        if (PENDING_LINE.test(route.trim())) {
+          result.reminders += 1;
+          reminded = true;
+          continue;
+        }
+        if (OPTIONAL_LINE.test(route.trim())) {
+          result.optionalLines += 1;
+          continue;
+        }
         const m = ROUTE_LINE.exec(route.trim());
         if (!m) { continue; }
         if (!m[1].startsWith(SECTIONS_PREFIX)) {
@@ -144,7 +167,10 @@ export function auditTranscript(lines: Iterable<string>, result: AuditResult, cl
         if (item?.type !== 'tool_use') { continue; }
         for (const path of sectionsRead(item)) {
           inContext.add(path);
-          if (pending.delete(path)) { tally(result, path).readInTurn += 1; }
+          if (pending.delete(path)) {
+            tally(result, path).readInTurn += 1;
+            if (reminded) { result.readAfterReminder += 1; }
+          }
         }
       }
     }
