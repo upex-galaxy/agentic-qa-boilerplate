@@ -1136,6 +1136,14 @@ function compatErrorPath(message: string): string {
 export const PLAYWRIGHT_CLI_CONFIG = '.playwright/cli.config.json';
 
 /**
+ * The direnv file upstream shipped until it retired direnv: every MCP server,
+ * launcher and script loads `.env` itself, so nothing reads this file. A
+ * project's copy is left alone (it may hold the developer's own lines) and
+ * reported once per run as removable.
+ */
+export const RETIRED_ENVRC = '.envrc';
+
+/**
  * The keys in the project's playwright-cli config that pin every session to
  * one shared on-disk profile: `browser.isolated: false` and any
  * `browser.userDataDir` (ADR-0008 removed both). Empty when the file is
@@ -1444,6 +1452,18 @@ export function collectParityFindings(input: ParityInput): ParityFinding[] {
       suggested: 'decide',
       blocking: false,
       diff: diff || undefined,
+    });
+  }
+
+  // 3b. A leftover `.envrc` (direnv retired upstream): one informational row,
+  //     the file itself is never touched.
+  if (fs.existsSync(path.join(input.root, RETIRED_ENVRC))) {
+    findings.push({
+      surface: 'components',
+      path: RETIRED_ENVRC,
+      evidence: 'informational: upstream retired direnv and no longer ships or reads this file; every MCP server, `bun run claude|opencode|codex` and each script load .env themselves, so secrets never need exporting into the shell. Left untouched: delete it (and `!.envrc` in .gitignore) when convenient, after moving any line of your own elsewhere',
+      suggested: 'keep project',
+      blocking: false,
     });
   }
 

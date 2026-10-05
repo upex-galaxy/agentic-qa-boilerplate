@@ -16,7 +16,7 @@
  * would crash `cli/install.ts` at module-load time (Bun runtime present and
  * recent enough, `node_modules/@inquirer/prompts` resolvable) plus Node >= 18
  * on PATH, which the prompt hooks need on every harness. Skips env
- * vars, MCPs, direnv, external CLIs — those are install.ts's job. Uses only
+ * vars, MCPs, external CLIs — those are install.ts's job. Uses only
  * node built-ins so it runs safely before `bun install`. Wired into the
  * `setup` npm script as `bun cli/doctor.ts --preflight && bun cli/install.ts`.
  *
@@ -34,8 +34,6 @@ import type { GateContext, VarSpec } from './lib/variables-manifest.ts';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
-
-import { homedir } from 'node:os';
 
 import { join, resolve } from 'node:path';
 import {
@@ -151,7 +149,7 @@ const VAR_HINTS: Record<string, { hint: string, where: string }> = {
 // Types
 // ----------------------------------------------------------------------------
 
-type PendingActionType = 'credential' | 'shell_hook' | 'system_install' | 'shell_command';
+type PendingActionType = 'credential' | 'shell_command';
 
 /**
  * One `.env`-routed variable, with the scope that decides how its absence is
@@ -247,14 +245,6 @@ export function checkoutSetupActions(state: CheckoutSetupState): { actions: Pend
   return { actions: [], replaces: { envFile: false, deps: false, harnessEnv: false } };
 }
 
-interface DirenvState {
-  installed: boolean
-  version?: string
-  envrc_allowed?: boolean
-  hook_in_rc?: boolean
-  rc_file?: string
-}
-
 export interface AgentCompatibilityDiagnostic {
   /** Every file-verifiable part of the contract holds (alias, hooks, MCP parity, shim). */
   file_correct: boolean
@@ -338,7 +328,6 @@ interface DoctorReport {
   /** Linked worktree: the primary checkout's root; null in the primary itself. */
   worktree_of: string | null
   playwright_browsers: boolean
-  direnv: DirenvState
   /**
    * REPORTING ONLY. An outdated row never becomes a pending action and never
    * turns the overall status to `needs-action`: these skills are gitignored,
@@ -387,11 +376,8 @@ interface DoctorReport {
   pending_actions: PendingAction[]
   /**
    * OPTIONAL items, reported and never blocking: they do not turn `status` to
-   * `needs-action`. Today that is direnv (binary, `.envrc` approval, shell
-   * hook): Claude and OpenCode read their credentials from the generated
-   * harness surfaces, so direnv matters only for Codex and for CLIs that read a
-   * shell-exported variable. A correct fresh install must be able to go green
-   * without it.
+   * `needs-action` (a feature-gated variable, the OpenAPI spec, a compatibility
+   * warning). A correct fresh install must be able to go green without them.
    */
   warnings: PendingAction[]
 }
@@ -459,84 +445,6 @@ function parseEnvFile(content: string): Record<string, string> {
     out[key] = value;
   }
   return out;
-}
-
-async function detectDirenv(): Promise<DirenvState> {
-  const version = tryRun('direnv', ['version']);
-  if (!version.ok) { return { installed: false }; }
-
-  const status = tryRun('direnv', ['status']);
-  // Modern direnv prints `Found RC allowed 0` (0 = Allow); older variants used
-  // `true`. Match the numeric enum and treat 0 (or legacy true) as allowed.
-  const allowMatch = status.stdout.match(/Found RC allowed (\d+|true)/);
-  const envrcAllowed = allowMatch !== null && (allowMatch[1] === '0' || allowMatch[1] === 'true');
-
-  // Every file `shellHookLine()` may have told the user to edit. The PowerShell
-  // profiles matter on native Windows, where none of the POSIX rc files exist —
-  // without them a user who followed the pwsh instruction to the letter would
-  // still be reported as "hook missing" on every re-run.
-  const candidates = [
-    join(homedir(), '.bashrc'),
-    join(homedir(), '.zshrc'),
-    join(homedir(), '.bash_profile'),
-    join(homedir(), '.profile'),
-    join(homedir(), '.config', 'fish', 'config.fish'),
-    join(homedir(), 'Documents', 'PowerShell', 'Microsoft.PowerShell_profile.ps1'),
-    join(homedir(), 'Documents', 'WindowsPowerShell', 'Microsoft.PowerShell_profile.ps1'),
-  ];
-  let hookInRc = false;
-  let rcFile: string | undefined;
-  for (const path of candidates) {
-    if (!existsSync(path)) { continue; }
-    try {
-      const content = await readFile(path, 'utf8');
-      if (/\bdirenv\s+hook\b/.test(content)) {
-        hookInRc = true;
-        rcFile = path;
-        break;
-      }
-    }
-    catch {
-      // skip unreadable files (permissions, broken symlinks)
-    }
-  }
-
-  return {
-    installed: true,
-    version: version.stdout.trim(),
-    envrc_allowed: envrcAllowed,
-    hook_in_rc: hookInRc,
-    rc_file: rcFile,
-  };
-}
-
-function installCommandForPlatform(): string {
-  if (process.platform === 'win32') {
-    return 'winget install direnv';
-  }
-  if (process.platform === 'darwin') {
-    return 'brew install direnv';
-  }
-  return 'sudo apt install direnv  (or: dnf install direnv / pacman -S direnv)';
-}
-
-function shellHookLine(): { line: string, rc: string } {
-  const shell = (process.env.SHELL ?? '').toLowerCase();
-  if (shell.endsWith('zsh')) {
-    return { line: 'eval "$(direnv hook zsh)"', rc: '~/.zshrc' };
-  }
-  if (shell.endsWith('fish')) {
-    return { line: 'direnv hook fish | source', rc: '~/.config/fish/config.fish' };
-  }
-  if (shell.endsWith('bash')) {
-    return { line: 'eval "$(direnv hook bash)"', rc: '~/.bashrc' };
-  }
-  // No POSIX $SHELL (typical on native Windows PowerShell) — advise the pwsh hook
-  // instead of mis-instructing the user to edit ~/.bashrc.
-  if (process.platform === 'win32') {
-    return { line: 'Invoke-Expression "$(direnv hook pwsh)"', rc: '$PROFILE' };
-  }
-  return { line: 'eval "$(direnv hook bash)"', rc: '~/.bashrc' };
 }
 
 function parseBunVersion(v: string): [number, number, number] | null {
@@ -966,7 +874,6 @@ export async function runDoctor(): Promise<DoctorReport> {
       return roots?.linked === true ? roots.primaryRoot : null;
     })(),
     playwright_browsers: playwrightBrowsersInstalled(),
-    direnv: { installed: false },
     community_skills: await collectCommunitySkills(),
     harness_env: harnessEnvDiagnostic(),
     project_schema: projectSchemaDiagnostic(),
@@ -1169,38 +1076,6 @@ export async function runDoctor(): Promise<DoctorReport> {
     });
   }
 
-  // direnv: OPTIONAL, so every finding goes to `warnings`, never to
-  // `pending_actions`. Every MCP server starts through the `.env` loader, which
-  // reads `.env` itself on every host. Only shell-exported CLI
-  // variables (acli, curl, `bun xray`) still need the shell to carry `.env`.
-  report.direnv = await detectDirenv();
-  if (!report.direnv.installed) {
-    report.warnings.push({
-      type: 'system_install',
-      target: 'direnv',
-      hint: 'Optional. Every MCP server starts through the .env loader, which reads .env itself; direnv only matters for CLIs that read a shell-exported variable (acli, curl, bun xray). Launch with `bun run claude` / `bun run opencode` / `bun run codex`, or install direnv for shell autoload.',
-      where: installCommandForPlatform(),
-    });
-  }
-  else {
-    if (!report.direnv.envrc_allowed) {
-      report.warnings.push({
-        type: 'shell_command',
-        target: 'direnv allow',
-        hint: 'Optional. Approve this repo\'s .envrc so direnv auto-loads .env on cd (needed only for shell-exported CLI variables).',
-      });
-    }
-    if (!report.direnv.hook_in_rc) {
-      const hook = shellHookLine();
-      report.warnings.push({
-        type: 'shell_hook',
-        target: hook.rc,
-        hint: `Optional. Add the direnv shell hook to ${hook.rc} so 'cd' into this repo auto-loads .env.`,
-        where: hook.line,
-      });
-    }
-  }
-
   // .mcp.json / opencode.jsonc presence, only for a harness in use: a project
   // that dropped one deleted its config on purpose (ADR-0012).
   const harnessInUse = (harness: Harness): boolean => agentCompatibility.harnesses.includes(harness);
@@ -1315,12 +1190,7 @@ function printHuman(report: DoctorReport): void {
     ['node_modules', report.deps_installed ? tui.statusIcon('ok') : tui.statusIcon('fail')],
     ['Git hooks (.husky/_)', report.git_hooks_installed ? tui.statusIcon('ok') : `${tui.statusIcon('fail')} no hook runs`],
     ['Playwright browsers', report.playwright_browsers ? tui.statusIcon('ok') : tui.statusIcon('warn')],
-    [`direnv binary${report.direnv.version ? ` (${report.direnv.version})` : ''}`, report.direnv.installed ? tui.statusIcon('ok') : tui.statusIcon('warn')],
   );
-  if (report.direnv.installed) {
-    checks.push(['  .envrc allowed', report.direnv.envrc_allowed ? tui.statusIcon('ok') : tui.statusIcon('warn')]);
-    checks.push([`  shell hook${report.direnv.rc_file ? ` (in ${report.direnv.rc_file})` : ''}`, report.direnv.hook_in_rc ? tui.statusIcon('ok') : tui.statusIcon('warn')]);
-  }
   // The host is shown by VALUE, not as a set/missing tick. Reading which site
   // the repo is about to write to is the entire point — a green check that says
   // "configured" is exactly what let a dead instance go unnoticed.

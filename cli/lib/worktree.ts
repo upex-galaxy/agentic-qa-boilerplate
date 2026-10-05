@@ -105,7 +105,6 @@ export const HARNESS_ENV_BACKUP_DIR = '.auth/harness-env-backup';
 export const PROVISION_COPIES: readonly ProvisionCopy[] = [
   { path: '.env', kind: 'file', secret: true, why: 'values every harness launch and every MCP loader read' },
   { path: '.env.local', kind: 'file', secret: true, why: 'per-developer override varlock loads after .env' },
-  { path: '.envrc.local', kind: 'file', secret: true, why: 'sourced by .envrc when present' },
   { path: '.claude/settings.local.json', kind: 'file', secret: true, why: 'per-developer Claude Code settings (permissions, approved MCP servers)' },
   { path: '.auth', kind: 'dir', secret: true, why: 'the curl token and browser state from `bun run api:login`' },
   { path: 'api/.openapi-config.json', kind: 'file', secret: true, why: 'without it `bun run api:sync -c` falls into interactive prompts' },

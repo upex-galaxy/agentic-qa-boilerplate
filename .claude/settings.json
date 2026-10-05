@@ -92,7 +92,6 @@
       "Read(.env)",
       "Read(.env.local)",
       "Read(.env.*.local)",
-      "Read(.envrc.local)",
       "Read(.auth/**)",
       "Read(.claude/settings.local.json)",
       "Bash(printenv*)",

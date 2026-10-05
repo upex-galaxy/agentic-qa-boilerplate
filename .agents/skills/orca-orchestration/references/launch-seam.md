@@ -30,7 +30,7 @@ the failure this rule exists to prevent; the prompt is what must not drift.
 |---|---|---|
 | Launch | the human opens N terminals and pastes N lines from `launch.txt` | `[ORCHESTRATION_TOOL] launch: one native supervised worker per unit of work (agent + model + effort), then send the prompt into it` |
 | Prompt | it is inside the pasted line | delivered as a separate step, same text, opening with `/<workflow-skill> <KEY> fleet worker` |
-| Credentials | the pasted line runs in the user's own shell, which already has them | every MCP server reads the worktree's own `.env` through the `.env` loader on any harness; shell-exported vars need direnv in the runtime's interactive shell; the conductor VERIFIES them on screen before sending work (G45) |
+| Credentials | the pasted line runs in the user's own shell, which already has them | every MCP server reads the worktree's own `.env` through the `.env` loader on any harness, and every other process loads its own config; the conductor VERIFIES them on screen before sending work (`references/orca-machine-setup.md` §3.2) |
 | State | the workflow's own blocked-state tokens in its session memory, plus the tracker | the mailbox: wait on done / escalation / question |
 | Sibling awareness | each worker knows only its own ticket | the roster in the brief; a worker broadcasts a fact that changes someone else's decision |
 | Close | the human closes terminals | `[ORCHESTRATION_TOOL] close: release the supervised worker by dispatch` |

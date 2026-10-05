@@ -1,5 +1,5 @@
 import type { ParityFinding, ParityInput, ParityMeta } from './updater-parity.ts';
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 
 import { dirname, join } from 'node:path';
@@ -35,6 +35,7 @@ import {
   renderParityReport,
   RESOLVED_BY_APPLY_MARK,
   resolvedByApply,
+  RETIRED_ENVRC,
   retiredMcpNote,
   runVerdict,
   strictVerdict,
@@ -417,6 +418,32 @@ describe('collectParityFindings', () => {
     expect(folded[0].path).toBe('.codex/config.toml');
     expect(folded[0].blocking).toBe(true);
     expect(folded[0].evidence).toBe(`${error}; informational: ${warning}`);
+  });
+
+  test('a leftover .envrc gets one informational row and is never touched; none without it', () => {
+    const root = temporaryRoot();
+    const upstream = temporaryRoot();
+    write(root, '.agents/project.yaml', 'git_strategy:\n  strategy: solo-main\n  meta:\n    strategy_source: chosen\n');
+    const findings = (): ReturnType<typeof collectParityFindings> => collectParityFindings({
+      root,
+      upstreamDir: upstream,
+      drift: [],
+      compatErrors: [],
+      archivedSkills: [],
+      archivedSkillsDir: join(root, '.template/pre-agents-migration/skills'),
+      heldBack: [],
+      envNewKeys: [],
+    });
+
+    expect(findings()).toEqual([]);
+
+    write(root, RETIRED_ENVRC, 'dotenv_if_exists .env\nexport MY_OWN_PATH=/opt/tool\n');
+    const rows = findings();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ surface: 'components', path: '.envrc', blocking: false, suggested: 'keep project' });
+    expect(rows[0].evidence).toStartWith('informational: upstream retired direnv');
+    expect(rows[0].evidence).toContain('Left untouched');
+    expect(readFileSync(join(root, RETIRED_ENVRC), 'utf8')).toBe('dotenv_if_exists .env\nexport MY_OWN_PATH=/opt/tool\n');
   });
 
   test('a playwright-cli config with the old shared profile gets one informational row; a clean, absent or broken one gets none', () => {

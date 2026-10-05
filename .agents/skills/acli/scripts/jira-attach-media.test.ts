@@ -1,5 +1,8 @@
 import { expect, test, describe } from "bun:test";
-import { buildMediaNode, imageSize } from "./jira-attach-media.ts";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { buildMediaNode, imageSize, readCredential } from "./jira-attach-media.ts";
 import { validateAdf } from "./md-to-adf.ts";
 
 // 1x1 red PNG
@@ -52,5 +55,43 @@ describe("buildMediaNode", () => {
   test("validator rejects a media node missing id", () => {
     const bad = { type: "doc", version: 1, content: [{ type: "mediaSingle", attrs: { layout: "center" }, content: [{ type: "media", attrs: { type: "file" } }] }] };
     expect(validateAdf(bad).valid).toBe(false);
+  });
+});
+
+describe("readCredential (loaded per process, never from an exported shell)", () => {
+  function root(files: Record<string, string>): string {
+    const dir = mkdtempSync(join(tmpdir(), "attach-media-"));
+    for (const [name, body] of Object.entries(files)) writeFileSync(join(dir, name), body);
+    return dir;
+  }
+
+  test("reads the repo root's .env when the process environment is empty", () => {
+    const dir = root({ ".env": "ATLASSIAN_EMAIL=qa@example.com\nATLASSIAN_API_TOKEN='tok en'\n" });
+    try {
+      expect(readCredential("ATLASSIAN_EMAIL", {}, dir)).toBe("qa@example.com");
+      expect(readCredential("ATLASSIAN_API_TOKEN", {}, dir)).toBe("tok en");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test(".env.local wins over .env, and the process environment wins over both", () => {
+    const dir = root({ ".env": "ATLASSIAN_EMAIL=base@example.com\n", ".env.local": "ATLASSIAN_EMAIL=local@example.com\n" });
+    try {
+      expect(readCredential("ATLASSIAN_EMAIL", {}, dir)).toBe("local@example.com");
+      expect(readCredential("ATLASSIAN_EMAIL", { ATLASSIAN_EMAIL: "proc@example.com" }, dir)).toBe("proc@example.com");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("null when no source holds it (an empty value counts as unset)", () => {
+    const dir = root({ ".env": "ATLASSIAN_API_TOKEN=\n" });
+    try {
+      expect(readCredential("ATLASSIAN_API_TOKEN", {}, dir)).toBeNull();
+      expect(readCredential("ATLASSIAN_EMAIL", { ATLASSIAN_EMAIL: "" }, dir)).toBeNull();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

@@ -38,11 +38,13 @@ what it can read WITHOUT a shell:
 - **Every MCP server, on Claude Code, OpenCode and Codex alike**: the `.env` loader declared in the
   three MCP configs (`varlock run ... --filter <its vars> -- <server>`, ADR-0011) reads the
   worktree's own `.env` when the harness spawns the server. The `.env` row of §1 is all it needs.
-- **Anything inside a worker that reads a shell-exported variable** (`acli`, `curl`, `bun xray`):
-  the process environment only. Here the seam is **direnv firing in Orca's interactive shell**. On a
-  machine without it, that worker is fully provisioned, starts cleanly, and has no credentials for
-  those CLIs, and nothing says so until its first authenticated call fails with an error that reads
-  like a broken tool (gotcha G45).
+- **Every other process a worker runs loads its own config**, so nothing is exported into the
+  worker's shell: Bun scripts (`bun run jira:*`, `bun run api:login`, `bun xray`, the acli helper
+  scripts) read `.env` through Bun's autoload; `acli` uses its own stored auth and `gh` its keyring;
+  a raw `curl` that needs `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` runs inside
+  `bunx varlock run --filter ATLASSIAN_EMAIL,ATLASSIAN_API_TOKEN -- sh -c '...'`; an app-API `curl`
+  runs `source .auth/tokens.env` in the same command. Secret-manager mode: Bun's autoload does not
+  resolve 1Password references, so such a script runs through `bunx varlock run -- <cmd>`.
 
 After every `.env` change, copy it into the worktrees that need it and restart the agent session:
 MCP servers read `.env` when the harness spawns them. The plaintext copies an older
@@ -51,19 +53,11 @@ retired by the current one; no worker reads them.
 
 So for every worker launched on the native path, in this order:
 
-1. The worktree's `.env` provisioned and current. For a brief that calls shell-exported CLIs:
-   direnv installed and hooked, `.envrc` sourcing the env file, `direnv allow`
-   run once per checkout (`references/orca-machine-setup.md` §3.2). Provision runs
-   `direnv allow <worktree>` itself when direnv is installed AND the primary's `.envrc` is already
-   allowed, and prints what it did. Per machine; not versionable; invisible to the repo.
+1. The worktree's `.env` provisioned and current (`references/orca-machine-setup.md` §3.2).
 2. The conductor **reads the worker's screen and confirms credentials loaded** before sending it any
-   work (`references/coordinator-playbook.md` §1 step 5). An MCP tool listed as connected, a direnv
-   export line, or the worker's own first probe is the evidence. No evidence → fix the machine, do
-   not dispatch work.
-
-No direnv on this machine → every worker whose MCP servers are all it needs still runs supervised.
-A worker whose brief needs shell-exported variables runs on pasted custom-argv lines, which carry their
-own env loading and lose supervision (`references/launch-seam.md` §1).
+   work (`references/coordinator-playbook.md` §1 step 5). Its MCP servers listed as connected
+   (`/mcp` on Claude Code) or the worker's own first probe is the evidence. No evidence → provision
+   the `.env` and restart the session, do not dispatch work.
 
 ---
 

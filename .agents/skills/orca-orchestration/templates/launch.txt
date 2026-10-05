@@ -38,7 +38,7 @@ bun run claude -- --model <full-model-id> --effort high --permission-mode auto -
 
 # The SAME prompt, delivered on the supervised path (no argv, so no name flag and no prefix):
 #   1. launch natively:  [ORCHESTRATION_TOOL] worker-start: task + worktree + agent + model + effort
-#   2. read the screen:  status footer present AND credentials loaded (direnv), or fix the machine
+#   2. read the screen:  status footer present AND credentials loaded (MCP servers connected), or fix the worktree's .env
 #   3. send the prompt:  [ORCHESTRATION_TOOL] terminal send, the text between the quotes above
 #   4. name it:          [ORCHESTRATION_TOOL] terminal rename, tab title "<KEY> · task_<first 4 of
 #                        the task id>"; on OpenCode and Codex also terminal send '/rename <KEY>'

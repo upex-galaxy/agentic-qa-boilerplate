@@ -227,7 +227,6 @@ The removal paths that skip this on their own: `git worktree remove` without `--
 - [ ] `git branch -d <branch>` once the branch is merged.
 - [ ] `git worktree prune` if any directory was removed by hand.
 - [ ] Local `info/exclude` entries cleaned up if the worktree path is gone for good.
-- [ ] `direnv prune` if the worktree was provisioned on a machine with direnv (provisioning runs `direnv allow` on it).
 
 ---
 

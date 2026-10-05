@@ -12,10 +12,9 @@
  *   5. Every `{file:}` target the committed opencode.jsonc names EXISTS in the
  *      worktree afterwards, empty when the primary's .auth/ had no value for
  *      it (a missing target invalidates OpenCode's whole config).
- *   6. With no direnv on PATH the direnv step prints its skip line and the
- *      script still exits 0. The ALLOW path (direnv installed AND the primary's
- *      .envrc approved) is not unit-testable: it needs a real direnv and a
- *      real approval by the machine's owner, which a test must never grant.
+ *   6. The script never runs direnv, even with one on PATH: each process
+ *      loads `.env` itself, so a worktree needs its `.env` copy and nothing
+ *      approved in the shell.
  *
  * The fixture's package.json declares a trivial `agents:compat` script (`bun
  * -e "process.exit(0)"`) so the test never depends on this repo's real
@@ -24,7 +23,7 @@
  * test here, not that script's own behaviour.
  */
 
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { platform, tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 
@@ -130,20 +129,16 @@ function run(cwdArgs: string[], env: Record<string, string> = {}): { code: numbe
 }
 
 /**
- * A PATH with no `direnv` on it, but with `bun` and `git` still reachable: every
- * PATH segment that holds a direnv executable is dropped, and a temp bin dir of
- * symlinks to the real `bun` and `git` is prepended so the script's own
- * subprocesses keep working when they lived in a dropped segment.
+ * A PATH whose first segment holds a fake `direnv` that records every call in
+ * `marker`. The rest of PATH is untouched, so `bun` and `git` resolve as usual.
  */
-function pathWithoutDirenv(): string {
+function pathWithRecordingDirenv(marker: string): string {
   const bin = mkdtempSync(join(tmpdir(), 'provision-worktree-bin-'));
   temporaryRoots.push(bin);
-  for (const tool of ['bun', 'git']) {
-    const real = Bun.which(tool);
-    if (real) { symlinkSync(real, join(bin, tool)); }
-  }
-  const kept = (process.env.PATH ?? '').split(delimiter).filter(seg => seg !== '' && !existsSync(join(seg, 'direnv')));
-  return [bin, ...kept].join(delimiter);
+  const fake = join(bin, 'direnv');
+  writeFileSync(fake, `#!/bin/sh\necho "$@" >> '${marker}'\n`);
+  chmodSync(fake, 0o755);
+  return [bin, process.env.PATH ?? ''].join(delimiter);
 }
 
 describe('provision-worktree', () => {
@@ -216,13 +211,15 @@ describe('provision-worktree', () => {
     expect(existsSync(join(worktree, '.auth', 'harness-env-backup'))).toBe(false);
   });
 
-  test('with no direnv on PATH the direnv step is skipped, says so, and the run still succeeds', () => {
-    if (IS_WINDOWS) { return; } // the PATH fixture uses symlinks; documented, not measured on Windows.
+  test('never runs direnv, even with one on PATH; the .env copy is all a worktree needs', () => {
+    if (IS_WINDOWS) { return; } // the fake binary is a POSIX shell script; documented, not measured on Windows.
     const { worktree } = fixture();
-    const result = run([worktree], { PATH: pathWithoutDirenv() });
+    const marker = join(worktree, '..', 'direnv-calls.log');
+    const result = run([worktree], { PATH: pathWithRecordingDirenv(marker) });
     expect(result.code).toBe(0);
-    expect(result.out).toContain('direnv: skipped (not installed)');
-    expect(result.out).not.toContain('direnv: allowed');
+    expect(readFileSync(join(worktree, '.env'), 'utf8')).toBe('LOCAL_USER_EMAIL=test@example.com\n');
+    expect(existsSync(marker)).toBe(false);
+    expect(result.out).not.toContain('direnv');
   });
 
   test('copied secrets are mode 0600 (files) / 0700 (dirs) on POSIX', () => {
@@ -246,7 +243,7 @@ describe('provision-worktree', () => {
     expect(readFileSync(join(worktree, '.env.local'), 'utf8')).toBe('LOCAL_USER_PASSWORD=override\n');
     expect(existsSync(join(worktree, 'api', '.openapi-config.json'))).toBe(true);
     if (!IS_WINDOWS) { expect(statSync(join(worktree, '.env.local')).mode & 0o777).toBe(0o600); }
-    expect(result.out).toContain('Skipping .envrc.local (not present in primary checkout)');
+    expect(result.out).toContain('Skipping .mcp.local.json (not present in primary checkout)');
   });
 
   test('.worktreeinclude names every path the provisioner copies', () => {

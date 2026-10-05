@@ -31,6 +31,7 @@ This skill teaches how to drive `acli` for any intent: one-off commands, batch m
 - WHEN creating an issue link: `--out` / `--in` are empirically INVERTED against Jira's semantics — `--out` takes the prerequisite, `--in` the dependent. Verify the direction by listing the link afterwards, and recreate with swapped flags if it landed backwards.
 - DO: capture and surface the trace id from any backend failure. It is the only debug signal, and Atlassian Support needs it.
 - WHEN the operation is a known blind spot (enumerate custom fields, edit custom-field values, manage workflows / issue types / versions / components, attachments, watchers, add an item to a sprint): route through REST or the opt-in Atlassian MCP rather than forcing the CLI.
+- WHEN a REST fallback needs `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN`: run it inside the `.env` loader (`bunx varlock run --filter ATLASSIAN_EMAIL,ATLASSIAN_API_TOKEN -- sh -c '...'`) or through a bundled script that loads `.env` itself (`scripts/jira-attach-media.ts`). NEVER export them, `source .env` or print them in the agent's shell.
 - DO: prefer API-token auth in scripted contexts, and pin the binary to an explicit version in production pipelines — tracking `latest` has caused same-day mass failures.
 
 **Read full SKILL.md when**: composing a specific command, publishing rich text, running the REST PUT workaround, or working any surface outside Jira work items.
@@ -353,7 +354,7 @@ This pattern scales cleanly to dozens of items in one run. The bottleneck is aut
 
 This is the **only** working path: there is no acli-native channel for editing custom-field values on existing items. The recipe below is the turnkey workaround.
 
-**Prerequisites.** Two env vars must be exported in the current shell. They are loaded automatically by the project tooling (`bun claude`, `bun opencode`, or `direnv`) from `.env`:
+**Prerequisites.** Two variables set in `.env` (or in the secret manager the varlock schema names). Nothing is exported into your shell: each `curl` below runs inside the `.env` loader, `bunx varlock run --filter <names> -- sh -c '...'`, which hands the two values to that one child process and to nothing else:
 
 - `ATLASSIAN_EMAIL` — the API-token owner's email
 - `ATLASSIAN_API_TOKEN` — the API token paired with the email
@@ -381,15 +382,18 @@ bun .agents/skills/acli/scripts/md-to-adf.ts /tmp/new.md /tmp/new.adf.json
 jq -n --slurpfile adf /tmp/new.adf.json \
   '{fields: {customfield_NNNNN: $adf[0]}}' > /tmp/put.json
 
-# 4. PUT against the issue
-curl -sS -w "\nHTTP %{http_code}\n" \
-  -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
-  -X PUT "$(bun run --silent jira:url)/rest/api/3/issue/{{PROJECT_KEY}}-123" \
-  -H "Accept: application/json" \
-  -H "Content-Type: application/json" \
-  --data-binary @/tmp/put.json
+# 4. PUT against the issue, credentials loaded for this one process only
+bunx varlock run --filter ATLASSIAN_EMAIL,ATLASSIAN_API_TOKEN -- sh -c '
+  curl -sS -w "\nHTTP %{http_code}\n" \
+    -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
+    -X PUT "$(bun run --silent jira:url)/rest/api/3/issue/{{PROJECT_KEY}}-123" \
+    -H "Accept: application/json" \
+    -H "Content-Type: application/json" \
+    --data-binary @/tmp/put.json'
 # Expected: HTTP 204 (Jira returns no body on a successful PUT)
 ```
+
+**Every other REST recipe in this skill** (`references/gotchas.md`, `references/workitem.md`, `references/adf-authoring-style.md`) that names `$ATLASSIAN_EMAIL` / `$ATLASSIAN_API_TOKEN` runs the same way: wrap the command in `bunx varlock run --filter ATLASSIAN_EMAIL,ATLASSIAN_API_TOKEN -- sh -c '...'` (double quotes inside), never `export` them or `source .env` first.
 
 **Reference.** Official Atlassian REST v3 PUT endpoint:
 <https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-issues/#api-rest-api-3-issue-issueidorkey-put>
@@ -407,14 +411,16 @@ Same ADF doc through REST PUT: HTTP 204 OK.
 **Batch variant.** Loop the recipe per `--data-binary @/tmp/put-N.json` and capture HTTP codes:
 
 ```bash
-for KEY in {{PROJECT_KEY}}-1 {{PROJECT_KEY}}-2 {{PROJECT_KEY}}-3; do
-  status=$(curl -sS -o /dev/null -w "%{http_code}" \
-    -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
-    -X PUT "$(bun run --silent jira:url)/rest/api/3/issue/$KEY" \
-    -H "Content-Type: application/json" \
-    --data-binary @/tmp/put-"$KEY".json)
-  echo "$KEY -> HTTP $status"
-done
+bunx varlock run --filter ATLASSIAN_EMAIL,ATLASSIAN_API_TOKEN -- sh -c '
+  host=$(bun run --silent jira:url)
+  for KEY in {{PROJECT_KEY}}-1 {{PROJECT_KEY}}-2 {{PROJECT_KEY}}-3; do
+    status=$(curl -sS -o /dev/null -w "%{http_code}" \
+      -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
+      -X PUT "$host/rest/api/3/issue/$KEY" \
+      -H "Content-Type: application/json" \
+      --data-binary @/tmp/put-"$KEY".json)
+    echo "$KEY -> HTTP $status"
+  done'
 ```
 
 **When this becomes unnecessary.** If Atlassian adds an `additionalAttributes`-style channel to `acli workitem edit`, retire this workaround and update the recipe table.

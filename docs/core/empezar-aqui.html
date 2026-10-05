@@ -262,10 +262,8 @@ bun run setup</code></pre>
         <li>
           <strong>Configuración</strong>
           <p>
-            Pide las credenciales que usan los MCPs y las guarda en <code>.env</code>. Ofrece
-            <code>direnv allow</code> (opcional: solo lo necesitan las CLIs que leen variables de la
-            shell, como <code>acli</code>, <code>curl</code> o <code>bun xray</code>) y, si quieres,
-            crea el repo en GitHub con <code>gh</code>.
+            Pide las credenciales que usan los MCPs y las guarda en <code>.env</code>. Si quieres,
+            también crea el repo en GitHub con <code>gh</code>.
           </p>
         </li>
         <li>
@@ -1168,9 +1166,9 @@ subagente (contexto limpio)
 
       <p>
         Además está <code>prepare</code>, que instala los hooks de Husky al hacer
-        <code>bun install</code>. No hay un script <code>env</code>: para cargar
-        <code>.env</code> en tu shell actual usa
-        <code>set -a; source .env; set +a</code> directamente en la terminal.
+        <code>bun install</code>. No hay un script <code>env</code> porque nada necesita
+        <code>.env</code> exportado en tu shell: cada proceso lo carga por su cuenta (los MCP con el
+        loader de <code>.env</code>, los scripts de Bun con su propio autoload).
       </p>
 
       <h2 id="decks">Decks visuales</h2>
