@@ -129,9 +129,14 @@
 
       <h2 id="una-fuente">Una fuente, adaptadores finos</h2>
       <p>
-        Este repo funciona en tres harnesses. La tentación obvia sería mantener tres copias de todo
-        (un <code>CLAUDE.md</code> con las reglas, otras en la configuración de OpenCode, otras para
-        Codex). Cada copia empezaría igual y a la tercera semana diría algo distinto.
+        Este repo funciona en tres harnesses. Un proyecto puede declarar solo los que usa en
+        <code>harnesses:</code> (<code>.agents/project.yaml</code>): los gates revisan solo esos, y
+        el boilerplate siempre revisa los tres
+        (<code>.context/ADR/ADR-0012-declared-harnesses.md</code>,
+        <code>.agents/instructions/agent-harnesses.md</code>). La tentación obvia sería mantener
+        tres copias de todo (un <code>CLAUDE.md</code> con las reglas, otras en la configuración de
+        OpenCode, otras para Codex). Cada copia empezaría igual y a la tercera semana diría algo
+        distinto.
       </p>
       <p>
         La alternativa es tener un solo cuerpo de instrucciones y skills, y dejar en cada host un
@@ -494,7 +499,7 @@
               <td>
                 El shim de <code>CLAUDE.md</code>, el alias de skills, los comandos del proyecto que
                 tapan una skill, los adaptadores de hooks y la paridad de servidores MCP entre los
-                tres formatos
+                formatos de los harnesses en uso
               </td>
             </tr>
             <tr>
@@ -503,6 +508,24 @@
               <td>
                 Variables de proyecto mal usadas, y que <code>.env.example</code> y
                 <code>cli/lib/variables-manifest.ts</code> coincidan
+              </td>
+            </tr>
+            <tr>
+              <td><code>instructions:check</code></td>
+              <td><code>scripts/lint-instructions.ts</code></td>
+              <td>
+                El cuerpo de instrucciones: presupuesto de <code>AGENTS.md</code>, el ROUTER
+                bloqueado detrás de un ADR, el eval del router con pisos de recall y precisión en
+                cada corrida y que cada sección nueva llegue completa
+              </td>
+            </tr>
+            <tr>
+              <td><code>vars:schema:check</code></td>
+              <td><code>scripts/env-schema.ts</code></td>
+              <td>
+                Que <code>.env.core.schema</code> esté al día con el manifiesto y que toda clave con
+                nombre de secreto (TOKEN, SECRET, PASSWORD, API_KEY...) esté marcada
+                <code>@sensitive</code>
               </td>
             </tr>
             <tr>
@@ -516,6 +539,11 @@
           </tbody>
         </table>
       </div>
+      <p>
+        Aparte de los gates, <code>bun run instructions:audit</code> mide en las transcripciones
+        locales de Claude Code cuántas de las secciones que el hook ruteó leyó de verdad el agente
+        (solo nombres y conteos, nunca contenido).
+      </p>
       <p>
         No todos corren en todos lados. Qué corre en cada hook está en
         <code>.husky/framework-gates.sh</code>: el pre-push corre un subconjunto amplio, el

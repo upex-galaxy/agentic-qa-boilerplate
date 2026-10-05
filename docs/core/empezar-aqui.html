@@ -248,7 +248,9 @@ bun run setup</code></pre>
           <strong>Detección</strong>
           <p>
             Comprueba Bun y las dependencias, detecta el binario <code>engram</code> y te deja
-            elegir qué harness configurar: Claude Code, OpenCode o Codex.
+            elegir qué harness configurar: Claude Code, OpenCode o Codex. Tu elección queda en
+            <code>harnesses:</code> (<code>.agents/project.yaml</code>) y luego te ofrece borrar los
+            archivos de los harnesses que dejaste fuera (por defecto los conserva).
           </p>
         </li>
         <li>
@@ -262,8 +264,9 @@ bun run setup</code></pre>
         <li>
           <strong>Configuración</strong>
           <p>
-            Pide las credenciales que usan los MCPs y las guarda en <code>.env</code>. Si quieres,
-            también crea el repo en GitHub con <code>gh</code>.
+            Antes te pregunta dónde viven los secretos: <code>.env</code> (por defecto) o un gestor
+            (1Password, opción avanzada). Luego pide las credenciales que usan los MCPs y las guarda
+            en <code>.env</code>. Si quieres, también crea el repo en GitHub con <code>gh</code>.
           </p>
         </li>
         <li>
@@ -277,8 +280,9 @@ bun run setup</code></pre>
           <p>
             Rellena <code>.agents/project.yaml</code> (<code>agents:setup</code>), autentica
             <code>acli</code>, sincroniza los catálogos de Jira (tu workspace, el estándar de
-            UPEX-Galaxy o saltarlo) y valida con <code>jira:check</code>. Al final genera las
-            credenciales por harness (ver la sección siguiente).
+            UPEX-Galaxy o saltarlo) y valida con <code>jira:check</code>. Al final retira las copias
+            en texto plano de credenciales MCP que dejó una versión anterior (ver la sección
+            siguiente).
           </p>
         </li>
       </ol>
@@ -308,13 +312,13 @@ bun run setup</code></pre>
       <h2 id="credenciales">Credenciales y arranque del agente</h2>
       <p>
         Copia <code>.env.example</code> a <code>.env</code> (el instalador lo hace por ti) y rellena
-        lo que tu trabajo necesite. <code>.env</code> está en <code>.gitignore</code> y es la única
-        fuente de verdad de los secretos. Nada de lo que falte bloquea la instalación ni el doctor:
-        cada variable tiene un alcance (framework, tooling o proyecto bajo prueba) y la valida el
-        código que la lee, con un error que la nombra. Qué variable es de quién, qué valida varlock
-        y qué se conecta fuera de <code>.env</code> está en
-        <a href="variables-de-entorno.html">Variables de entorno</a>. Hay dos archivos que se
-        parecen y no hacen lo mismo:
+        lo que tu trabajo necesite. <code>.env</code> está en <code>.gitignore</code> y es la fuente
+        por defecto de los secretos (o el gestor de secretos, ver Variables de entorno). Nada de lo
+        que falte bloquea la instalación ni el doctor: cada variable tiene un alcance (framework,
+        tooling o proyecto bajo prueba) y la valida el código que la lee, con un error que la
+        nombra. Qué variable es de quién, qué valida varlock y qué se conecta fuera de
+        <code>.env</code> está en <a href="variables-de-entorno.html">Variables de entorno</a>. Hay
+        dos archivos que se parecen y no hacen lo mismo:
       </p>
       <div class="table-wrap">
         <table>
@@ -385,8 +389,8 @@ bun run setup</code></pre>
       <p>
         Las versiones anteriores de <code>bun run harness:env</code> copiaban las credenciales al
         bloque <code>env</code> de <code>.claude/settings.local.json</code> y a
-        <code>.auth/opencode/</code>. El comando de ahora las retira: borra la copia que coincide
-        con <code>.env</code>, mueve a <code>.auth/harness-env-backup/</code> la que
+        <code>.auth/opencode/</code>. Ese comando las retira: borra la copia que coincide con
+        <code>.env</code>, mueve a <code>.auth/harness-env-backup/</code> la que
         <code>.env</code> no reproduce (pones el valor correcto en <code>.env</code> y borras esa
         carpeta) y nunca imprime valores. <code>bun run harness:env:check</code> falla mientras
         quede una copia, y <code>bun run setup:doctor</code> lo reporta también.
@@ -607,8 +611,8 @@ codex      # Codex CLI (Codex Desktop usa la misma config del repo)</code></pre>
           <h3>/sprint-testing</h3>
           <p>
             Ticket en "Ready For QA" o un retest de bug. Planifica, explora UI, API y DB, y reporta
-            ATP, ATR, ATS y bugs en el TMS. Si la historia pasó por Shift-Left hace menos de 30
-            días, se salta parte de la planificación.
+            ATP, ATR, ATS y bugs en el TMS. Si la historia pasó por Shift-Left dentro de la ventana
+            que declara <code>/sprint-testing</code>, se salta parte de la planificación.
           </p>
         </div>
         <div class="card">
@@ -809,8 +813,10 @@ subagente (contexto limpio)
         Engram es un servidor MCP que guarda memoria estructurada y sobrevive a sesiones y
         compactaciones. <code>bun run setup</code> lo conecta a cada harness con
         <code>engram setup</code>, a nivel de usuario, fuera del repo. Ese comando registra el
-        servidor de memoria y nada más. El boilerplate no usa la capa de workflow de gentle-ai: los
-        skills de workflow ya cubren Plan, Code y Verify.
+        servidor de memoria y nada más. En Claude Code, además, ofrece instalar el plugin de Engram
+        (<code>claude plugin install engram@engram</code>), que trae los hooks de sesión. El
+        boilerplate no usa la capa de workflow de gentle-ai: los skills de workflow ya cubren Plan,
+        Code y Verify.
       </p>
       <p>
         Dos cosas conviene saber. El agente guarda solo cuando él llama a <code>mem_save</code>;
@@ -892,9 +898,15 @@ subagente (contexto limpio)
             <tr>
               <td>
                 Poner credenciales en <code>.env</code> o subirlas a GitHub Actions (al terminar
-                regenera solo las credenciales de Claude Code y OpenCode)
+                solo te recuerda reiniciar el agente)
               </td>
               <td><code>bun run setup --variables</code></td>
+            </tr>
+            <tr>
+              <td>
+                Escribir un valor NO secreto en <code>.env</code> (lo hace la IA si se lo pides)
+              </td>
+              <td><code>bun run env:set CLAVE=valor</code></td>
             </tr>
             <tr>
               <td>Aplicar a los MCP un cambio de <code>.env</code></td>
@@ -997,6 +1009,10 @@ subagente (contexto limpio)
             <tr>
               <td>Sincronizar los docs de la IA tras un cambio</td>
               <td><code>bun run docs:check</code></td>
+            </tr>
+            <tr>
+              <td>Medir si el agente lee las secciones ruteadas</td>
+              <td><code>bun run instructions:audit</code></td>
             </tr>
             <tr>
               <td>Reparar la trazabilidad US, ATP, ATR y TC</td>
@@ -1157,12 +1173,14 @@ subagente (contexto limpio)
         Se ejecutan con <code>bun run &lt;nombre&gt;</code>. La lista vive en
         <code>package.json</code> (regla 11 de <code>AGENTS.md</code>: se lee ahí, nunca de una
         copia). Se reconocen por prefijo: instalación, entorno y agentes (<code>setup</code>,
-        <code>agents:*</code>, <code>harness:env</code>, los lanzadores por harness), documentación
-        (<code>docs*</code>), Jira, Xray y caché local (<code>jira:*</code>, <code>xray</code>,
-        <code>context:*</code>, <code>tests:map</code>), tests y reportes (<code>test*</code>,
-        <code>allure:*</code>), API y KATA (<code>api:*</code>, <code>kata:*</code>) y calidad del
-        repo (<code>lint:*</code>, <code>format:*</code>, <code>types:check</code>,
-        <code>vars:*</code>, <code>skills:*</code>, <code>repo:*</code>, <code>git:policy</code>).
+        <code>agents:*</code>, <code>harness:env</code> (retira copias viejas),
+        <code>env:set</code>), instrucciones del agente (<code>instructions:*</code>), worktrees
+        (<code>worktree:*</code>), documentación (<code>docs*</code>), Jira, Xray y caché local
+        (<code>jira:*</code>, <code>xray</code>, <code>context:*</code>, <code>tests:map</code>),
+        tests y reportes (<code>test*</code>, <code>allure:*</code>), API y KATA
+        (<code>api:*</code>, <code>kata:*</code>) y calidad del repo (<code>lint:*</code>,
+        <code>format:*</code>, <code>types:check</code>, <code>vars:*</code>, <code>skills:*</code>,
+        <code>repo:*</code>, <code>git:policy</code>).
       </p>
 
       <p>
