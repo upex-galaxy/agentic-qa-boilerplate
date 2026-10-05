@@ -67,6 +67,15 @@ env:
   # checked-out .agents/project.yaml (issue_tracker.atlassian_url).
   # ATLASSIAN_EMAIL: ${{ secrets.ATLASSIAN_EMAIL }}
   # ATLASSIAN_API_TOKEN: ${{ secrets.ATLASSIAN_API_TOKEN }}
+  # Secret manager (ADVANCED, optional; ADR-0010). Only for a project that
+  # committed .env.provider.schema: the service account reads the team vault
+  # inside every step that runs through the launcher (`bun run test*`,
+  # `test:env:check`, `test:sync`). It sits BESIDE the per-variable secrets
+  # above, never instead: a per-variable secret that is set still wins, and one
+  # left unset (an empty string here) is dropped by the launcher so it cannot
+  # blank the vault value. Steps that call a tool directly (`bun xray`, the
+  # portal publisher) still read the per-variable secrets only.
+  OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
 
 jobs:
   SmokeTest:
