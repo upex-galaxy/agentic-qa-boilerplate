@@ -929,6 +929,7 @@ async function runPlaywrightInstall(state: InstallState, forceKeys: Set<string>)
 // Phase 2 — Step 8 (8-skills-gentle-ai): wire Engram per agent
 // ============================================================================
 
+// LINT.IfChange(engram-setup)
 /**
  * `engram setup` argument list per agent. The agent slugs this installer
  * uses (claude-code / opencode / codex) are the slugs `engram setup` accepts.
@@ -985,6 +986,7 @@ export async function offerEngramClaudePlugin(deps: EngramPluginDeps): Promise<E
   log.success('  Engram Claude Code plugin installed.');
   return 'installed';
 }
+// LINT.ThenChange(README.md, INSTALLER.md, docs/core/empezar-aqui.html)
 
 function runEngramSetup(agent: AgentId): { ok: boolean, reason?: string } {
   const result = tryRun('engram', engramSetupArgs(agent));

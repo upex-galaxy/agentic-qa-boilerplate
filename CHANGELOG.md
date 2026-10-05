@@ -16,6 +16,27 @@ below names which one it applies to:
 
 ## Unreleased — Boilerplate
 
+### Added (documentation contracts, ADR-0016)
+- **`LINT.IfChange(label)` / `LINT.ThenChange(pages)` region markers** on the code the docs
+  describe in prose (harness selection, MCP parity, the MCP `.env` loader, the Engram setup,
+  the router lock). `scripts/lint-doc-contracts.ts` blocks a push or a PR that changes a marked
+  region without every page it names, unless a commit carries `Docs-Checked: <label> <reason>`;
+  at commit time it only warns. The structural lint (balanced markers, unique labels, targets on
+  disk) runs inside `docs:check`. Maintainers only: a downstream project prints one line and is
+  never blocked.
+- **Edit-time `DOCS:` line**: `.agents/hooks/doc-contracts.mjs`, a `PostToolUse` hook in Claude
+  Code and Codex, names the pages the moment an edit lands inside a marked region (once per
+  session per label). OpenCode relies on the gate.
+- **`framework-development` drift sweep (V5)**: a report-only Phase 3 step that greps the doc
+  surface for prose describing the old behaviour, run only when a change touches `cli/`,
+  `scripts/`, `.husky/` or the instruction files.
+
+### Changed (documentation gates)
+- `docs:check` runs on every push (it ran at commit time only when docs were staged), and the PR
+  workflow (`build.yml`) runs `docs:check` and `skills:check`, which no CI job ran before.
+- The `framework-development` docs follow-through triggers on behaviour changes too, not only on
+  renames, and lists the decks and the Pages home.
+
 ### Changed (instruction routes the agent actually reads, ADR-0016)
 - **The prompt hook routes fewer sections and says when to read them.** Fired ROUTER rows are
   ranked (an id named in a `ROUTE-SCOPE:` sentence, then path hits, then trigger hits, then the

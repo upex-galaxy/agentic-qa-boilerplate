@@ -449,6 +449,15 @@
         empuja al prompt de sistema; en OpenCode 2, que no le pasa el texto del pedido, queda solo
         el router.
       </p>
+      <p>
+        Hay un segundo hook, aparte y mucho más chico: <code>.agents/hooks/doc-contracts.mjs</code>.
+        Claude Code y Codex lo corren después de cada edición de archivo (evento
+        <code>PostToolUse</code>). Si la edición cae dentro de una región marcada con
+        <code>LINT.IfChange</code>, suma una línea <code>DOCS:</code> con las páginas que describen
+        ese código, una vez por sesión. Es el aviso; el gate que lo hace cumplir corre en el
+        pre-push y en CI (ver la tabla de abajo). OpenCode no lo registra y depende solo del gate.
+        Vale únicamente en el repo del boilerplate: en un proyecto queda en silencio (ADR-0016).
+      </p>
 
       <h3 id="aliases">Una skill, un modo</h3>
       <p>
@@ -537,7 +546,17 @@
               <td><code>scripts/lint-docs.ts</code></td>
               <td>
                 Links relativos rotos, rutas citadas en <code>docs/</code> que no existen y páginas
-                sin <code>&lt;title&gt;</code> o descripción
+                sin <code>&lt;title&gt;</code> o descripción. Corre en cada push y en CI
+              </td>
+            </tr>
+            <tr>
+              <td>contratos de docs</td>
+              <td><code>scripts/lint-doc-contracts.ts</code></td>
+              <td>
+                Que un cambio dentro de una región <code>LINT.IfChange</code> llegue con todas las
+                páginas que nombra su <code>LINT.ThenChange</code>, o con un commit que diga
+                <code>Docs-Checked: &lt;label&gt; &lt;motivo&gt;</code>. Avisa en el commit, bloquea
+                en el push y en CI. Solo en el repo del boilerplate (ADR-0016)
               </td>
             </tr>
           </tbody>

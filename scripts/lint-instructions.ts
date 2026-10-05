@@ -428,6 +428,7 @@ export function lintInstructions(root: string): InstructionReport {
 const ACCEPT_HINT = '`bun run instructions:check --accept-router ADR-NNNN`';
 
 /** LOCK: the ROUTER table matches its lock, and the lock's ADR exists and cites the fingerprint. */
+// LINT.IfChange(router-lock)
 export function lockFindings(root: string, l0: string, maintainer: boolean): InstructionFinding[] {
   const fingerprint = routerFingerprint(l0);
   if (fingerprint === null) { return []; }
@@ -459,6 +460,7 @@ export function lockFindings(root: string, l0: string, maintainer: boolean): Ins
   }
   return out;
 }
+// LINT.ThenChange(.agents/instructions/README.md, .agents/skills/framework-development/references/instructions-doctrine.md, packages/decks/progressive-disclosure/how-it-works.es.html)
 
 /** EVAL: recall, binding recall and precision hold their targets; every label names a routed id. */
 export function evalFindings(result: RouterEvalResult, severity: InstructionFinding['severity']): InstructionFinding[] {

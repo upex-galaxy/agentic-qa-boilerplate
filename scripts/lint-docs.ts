@@ -45,6 +45,10 @@
  *     `package.json` does not declare (`script`). Placeholders, file runs
  *     (`bun run scripts/x.ts`) and prose that only names the command
  *     (`bun run = npm run`) are ignored.
+ *   - a documentation-contract marker (`LINT.IfChange` / `LINT.ThenChange`,
+ *     ADR-0016) is unbalanced, reuses a label, or names a page that does not
+ *     exist (`contract`). Maintainers' checkout only (`contractsEnforced`); the
+ *     range check itself is `scripts/lint-doc-contracts.ts`, at pre-push and in CI.
  *
  * External URLs, `mailto:` / `tel:` / `data:` / `javascript:`, bare anchors
  * and template placeholders are ignored; a `#fragment` or `?query` is stripped
@@ -69,6 +73,7 @@ import type { VolatileKind } from './lib/volatile-facts.ts';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { isProjectLocalSkillPath } from '../cli/lib/updater-core.ts';
+import { contractsEnforced, scanContracts } from './lib/doc-contracts.ts';
 import { listSections, projectSkillRows, SKILL_ROUTER_HEADING, skillRouterSource, skillTableRows } from './lib/instructions.ts';
 import { relativePosix, toPosix } from './lib/posix-path.ts';
 import { isVolatileExemptPath, scanVolatile, volatileRemedy } from './lib/volatile-facts.ts';
@@ -79,7 +84,7 @@ export const KNOWN_ROOTS = ['docs/', '.agents/', 'scripts/', 'cli/', 'tests/', '
 export interface DocFinding {
   file: string
   line: number
-  kind: 'link' | 'path' | 'meta' | 'file-line' | 'current-state' | 'roster' | 'script'
+  kind: 'link' | 'path' | 'meta' | 'file-line' | 'current-state' | 'roster' | 'script' | 'contract'
   target: string
   /** Only `meta` findings on project-owned pages are warnings; everything else fails the gate. */
   severity?: 'error' | 'warning'
@@ -413,6 +418,12 @@ function gitIgnored(root: string, paths: string[]): Set<string> {
   return new Set(result.stdout.toString().split('\n').map(line => line.trim()).filter(Boolean));
 }
 
+/** Documentation-contract markers (ADR-0016): balanced, unique labels, every target on disk. */
+export function lintContracts(root: string): DocFinding[] {
+  if (!contractsEnforced(root)) { return []; }
+  return scanContracts(root).findings.map(f => ({ file: f.file, line: f.line, kind: 'contract' as const, target: f.detail }));
+}
+
 export function lintDocs(root: string): { files: number, findings: DocFinding[] } {
   const files = collectDocFiles(root);
   const raw = files.flatMap(file => lintDocFile(root, file));
@@ -427,6 +438,7 @@ export function lintDocs(root: string): { files: number, findings: DocFinding[] 
   const instructionFiles = listSections(root).map(s => join(root, s.rel));
   findings.push(...lintRoster(root));
   findings.push(...lintScripts(root, [...(existsSync(agentsFile) ? [agentsFile] : []), ...instructionFiles, ...files]));
+  findings.push(...lintContracts(root));
   return { files: files.length, findings };
 }
 
@@ -442,6 +454,7 @@ if (import.meta.main) {
       case 'current-state': return 'CURRENT-STATE';
       case 'roster': return 'skill not listed';
       case 'script': return 'unknown script';
+      case 'contract': return 'doc contract';
       default: return 'missing';
     }
   };
