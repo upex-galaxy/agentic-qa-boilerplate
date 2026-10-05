@@ -1,5 +1,5 @@
 import type { ReportSink } from './lib/updater-types.ts';
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 
 import { dirname, join, resolve } from 'node:path';
@@ -14,6 +14,7 @@ import {
   ENGRAM_PLUGIN_COMMANDS,
   engramSetupArgs,
   launchCommandsForAgents,
+  mergedHarnesses,
   migrateAgentIds,
   offerEngramClaudePlugin,
   parseAgentsEnv,
@@ -70,6 +71,14 @@ function copyPath(root: string, relativePath: string): void {
   cpSync(join(REPO_ROOT, relativePath), destination, { recursive: true });
 }
 
+/**
+ * A project on one harness deletes the other harnesses' files (ADR-0012), so
+ * the fixture copies what this checkout has, and a test that reads a dropped
+ * harness skips.
+ */
+const HAS_CODEX = existsSync(join(REPO_ROOT, '.codex/hooks.json')) && existsSync(join(REPO_ROOT, '.codex/config.toml'));
+const HAS_ALL_HARNESSES = HAS_CODEX && existsSync(join(REPO_ROOT, 'opencode.jsonc')) && existsSync(join(REPO_ROOT, '.mcp.json'));
+
 function compatibilityFixture(): string {
   const root = temporaryRoot();
   for (const path of [
@@ -83,7 +92,7 @@ function compatibilityFixture(): string {
     '.codex/config.toml',
     '.mcp.json',
     'opencode.jsonc',
-  ]) { copyPath(root, path); }
+  ].filter(path => existsSync(join(REPO_ROOT, path)))) { copyPath(root, path); }
   return root;
 }
 
@@ -194,7 +203,7 @@ describe('installer Codex lifecycle', () => {
     });
   });
 
-  test('discovers the MCP environment contracts from the loader filter on every host, and exposes launch guidance', async () => {
+  test.skipIf(!HAS_ALL_HARNESSES)('discovers the MCP environment contracts from the loader filter on every host, and exposes launch guidance', async () => {
     // Each server names what it reads in its `.env` loader's `--filter`, the
     // same list on all three hosts: the six DBHUB_* dbhub.toml interpolates,
     // the two SLACK_MCP_*, the OpenAPI pair. None is core scope (project or
@@ -217,6 +226,14 @@ describe('installer Codex lifecycle', () => {
     expect(await discoverRequiredEnvVars(['opencode'], REPO_ROOT)).toEqual(expected);
     expect(launchCommandsForAgents(['claude-code', 'opencode', 'codex']))
       .toEqual(['bun claude', 'bun opencode', 'bun codex']);
+  });
+});
+
+describe('installer harness selection (ADR-0012)', () => {
+  test('the selection is added to the declared list, never shrinks it', () => {
+    expect(mergedHarnesses([], ['claude-code'])).toEqual(['claude']);
+    expect(mergedHarnesses(['codex', 'claude'], ['claude-code', 'opencode'])).toEqual(['codex', 'claude', 'opencode']);
+    expect(mergedHarnesses(['opencode'], [])).toEqual(['opencode']);
   });
 });
 
@@ -287,7 +304,7 @@ describe('compatibility repair lifecycle', () => {
     const root = compatibilityFixture();
     const first = repairRepositoryCompatibility(root, 'linux');
     const second = repairRepositoryCompatibility(root, 'linux');
-    expect(first.alias.status).toBe('created');
+    expect(first.alias?.status).toBe('created');
     expect(second).toMatchObject({ shadowingCommandsMoved: [], alias: { status: 'valid' } });
 
     const steps: string[] = [];
@@ -299,7 +316,7 @@ describe('compatibility repair lifecycle', () => {
 });
 
 describe('doctor and updater parity', () => {
-  test('reports file correctness separately from Codex trust and CLI availability', () => {
+  test.skipIf(!HAS_CODEX)('reports file correctness separately from Codex trust and CLI availability', () => {
     const root = compatibilityFixture();
     repairRepositoryCompatibility(root, 'linux');
     const diagnostic = diagnoseAgentCompatibility(root, { platform: 'linux', codexCliDetected: false });
@@ -320,7 +337,7 @@ describe('doctor and updater parity', () => {
     });
   });
 
-  test('reports a missing alias and grouped errors without throwing', () => {
+  test.skipIf(!HAS_CODEX)('reports a missing alias and grouped errors without throwing', () => {
     const root = compatibilityFixture();
     repairRepositoryCompatibility(root, 'linux');
     rmSync(join(root, '.claude/skills'));
