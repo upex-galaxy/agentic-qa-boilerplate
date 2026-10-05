@@ -224,7 +224,8 @@ bun run vars:schema:check      # el core generado está al día y el par carga</
               <td>Codex</td>
               <td>
                 El propio <code>.env</code>: cada MCP arranca con
-                <code>dotenv -o -e .env --</code> delante, así que no depende de cómo abriste Codex
+                <code>varlock run --no-redact-stdout --</code> delante, así que no depende de cómo
+                abriste Codex
               </td>
               <td>
                 Nadie: el loader lo lee al arrancar el server (necesita <code>bun install</code>)
@@ -446,7 +447,10 @@ bun run setup:doctor --json   # env_var_scopes[] y harness_level_mcps para un ag
         que lista cada variable por nombre y tapa los valores <code>@sensitive</code>. Si falta un
         secreto o está mal, te dice cuál es y lo escribes tú en tu terminal o en tu gestor de
         secretos; nunca lo pegues en el chat. Un valor que no es secreto (una URL, una clave de
-        proyecto, un flag, un puerto) sí puede escribirlo la IA en <code>.env</code> si se lo pides.
+        proyecto, un flag, un puerto) sí puede escribirlo la IA en <code>.env</code> si se lo pides,
+        y solo con <code>bun run env:set CLAVE=valor</code>: el script rechaza cualquier clave que
+        el schema marque <code>@sensitive</code> o cuyo nombre suene a secreto, y no imprime
+        valores.
       </p>
       <p>
         Claude Code y OpenCode traen reglas de denegación para esos archivos (<code
