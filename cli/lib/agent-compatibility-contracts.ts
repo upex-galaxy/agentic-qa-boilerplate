@@ -755,7 +755,8 @@ export function validateMcpParityFindings(root = process.cwd(), options: McpPari
     try {
       const config = readHostMcpConfig(resolvedRoot, host);
       if (config === null) {
-        errors.push(`MCP config missing for ${host}: ${MCP_CONFIG_FILE[host]} (a harness in use; declare \`harnesses:\` in .agents/project.yaml to drop it)`);
+        const why = schemaOwner ? 'the boilerplate checks all three harnesses' : 'a harness in use; declare `harnesses:` in .agents/project.yaml to drop it';
+        errors.push(`MCP config missing for ${host}: ${MCP_CONFIG_FILE[host]} (${why})`);
         continue;
       }
       configs[host] = config;

@@ -1652,6 +1652,7 @@ describe('one-harness projects (ADR-0012)', () => {
     expect(result.ok).toBe(false);
     expect(result.harnesses).toEqual(['claude', 'opencode', 'codex']);
     expect(result.errors).toContain('Hook compatibility file missing: .codex/hooks.json');
+    expect(result.errors).toContain('MCP config missing for codex: .codex/config.toml (the boilerplate checks all three harnesses)');
   });
 
   test('a two-harness project without Claude compares against the first declared harness', () => {
