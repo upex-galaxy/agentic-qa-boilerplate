@@ -35,7 +35,7 @@ agentic-qa-boilerplate/
 │   ├── instructions/       → AGENTS.md sections, read on demand when the ROUTER names them
 │   ├── project.yaml        → Tool-agnostic project + Jira config (any harness reads this)
 │   ├── skills/             → Workflow skills (task instructions + references), committed; list: REGISTRY.md
-│   └── hooks/              → Shared personality-reinject emitter (one file, three adapters)
+│   └── hooks/              → Shared personality-reinject emitter (one file, three adapters) + doc-contracts edit hook
 ├── .context/               → Gitignored cache (Jira, reports) + the few files this repo owns
 ├── docs/                   → Human documentation site (`bun run docs`)
 └── tests/                  → KATA Architecture implementation

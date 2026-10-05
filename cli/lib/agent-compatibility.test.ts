@@ -24,6 +24,7 @@ import {
   CODEX_PROJECT_DOC_MAX_BYTES,
   CODEX_STARTUP_TIMEOUT_SEC,
   declaredMcpIds,
+  DOC_CONTRACTS_HOOK,
   EXPECTED_MCP,
   HOOK_IDENTITY_MARKER,
   HOOK_ORCA_MARKER,
@@ -35,6 +36,7 @@ import {
   mcpEnvLoaderArgs,
   stripJsonComments,
   unwrapEnvLoader,
+  validateDocContractHooks,
   validateEslintBlockWiring,
   validateHookCompatibility,
   validateInstructionRouterHooks,
@@ -1728,5 +1730,22 @@ describe('compatibility report grouping', () => {
     expect(describeAliasStatus({ ...alias, status: 'valid' })).toContain('OK');
     expect(describeAliasStatus({ ...alias, status: 'missing' })).toContain('bun run agents:compat');
     expect(describeAliasStatus({ ...alias, status: 'invalid' })).toContain('not the generated symlink');
+  });
+});
+
+describe('documentation-contract hook (ADR-0016)', () => {
+  test('the real repository registers it on both command hosts', () => {
+    expect(validateDocContractHooks(REPO_ROOT)).toEqual([]);
+  });
+
+  test('binds only in the boilerplate itself', () => {
+    const root = contractFixture();
+    expect(validateDocContractHooks(root, ['claude', 'codex'], false)).toEqual([]);
+    expect(validateDocContractHooks(root, ['claude', 'codex'], true)).toEqual([`Documentation-contract hook missing: ${DOC_CONTRACTS_HOOK}`]);
+    copyFromRepo(root, DOC_CONTRACTS_HOOK);
+    const errors = validateDocContractHooks(root, ['claude', 'codex'], true);
+    expect(errors.some(e => e.startsWith('claude must register the documentation-contract hook'))).toBe(true);
+    expect(errors.some(e => e.startsWith('codex must register the documentation-contract hook'))).toBe(true);
+    expect(validateDocContractHooks(root, ['opencode'], true)).toEqual([]);
   });
 });

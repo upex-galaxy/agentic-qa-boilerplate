@@ -110,6 +110,7 @@ export interface HarnessSelectionOptions {
   schemaOwner?: boolean
 }
 
+// LINT.IfChange(harness-selection)
 export function declaredHarnesses(root = process.cwd(), options: HarnessSelectionOptions = {}): HarnessSelection {
   const resolvedRoot = resolve(root);
   if (options.schemaOwner ?? readSchemaOwner(resolvedRoot)) {
@@ -141,6 +142,7 @@ export function declaredHarnesses(root = process.cwd(), options: HarnessSelectio
   if (detected.length > 0) { return selection(detected, 'detected', warnings); }
   return selection([...HARNESSES], 'fallback', warnings);
 }
+// LINT.ThenChange(README.md, INSTALLER.md, CONTEXT.md, .agents/instructions/agent-harnesses.md, docs/core/fundamentos/harness.html, packages/pages-home/harnesses.es.html)
 
 /**
  * The host whose MCP config defines the server set the others must match:

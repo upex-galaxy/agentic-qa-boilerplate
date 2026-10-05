@@ -27,6 +27,7 @@ Git / PR work → `/git-flow-master` auto-loads. Details in `.agents/skills/git-
 - One commit = one responsibility. Clear messages.
 - **NO AI attribution** in commits.
 - **Forensic trailers, every commit, every strategy**: last two lines are `Worktree: <name|primary>` then `Session: <label>`, taken from the `AGENT IDENTITY:` context line the hook injects (§4.5); `unknown` when nothing resolves. Provenance, not attribution (Rule #3) — and never `Claude-Session:` or any harness-branded key. Label rule + per-harness resolution: `/git-flow-master`.
+- **`Docs-Checked: <label> <reason>`** (ADR-0016) goes ABOVE the two forensic trailers, only when a change touched a `LINT.IfChange(<label>)` region and the pages it names still hold. NEVER by reflex and never without the reason: it is the escape the pre-push and CI documentation-contract gate accepts, and the drift sweep counts every one. binding: `/git-flow-master`
 - **Push policy = Critical Rule #5**: resolve `git_strategy.policy.direct_push_to_protected`.
 - Test-automation PRs use `.agents/skills/git-flow-master/references/pr-test-automation.md` (auto-loaded by `/git-flow-master` on `test/*` branches). Title format: `{type}({ISSUE-KEY}): {description}`.
 
