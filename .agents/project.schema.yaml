@@ -222,6 +222,13 @@ orchestration:
 # nested list is skipped by vars:check like git_strategy and qa.qa_epics.
 updater:
   protected_paths: [] # e.g. [scripts/lint-vars.ts, .agents/skills/acli/SKILL.md]
+  # Upstream deny rules this project does NOT want appended to `.claude/settings.json`.
+  # `bun run up` appends every upstream `permissions.deny` entry the project lacks (after a
+  # backup; nothing removed or reordered); an entry listed here, by its exact text, is left
+  # out and reported as declined. It never removes an entry the file already holds. Not a
+  # list of strings = ignored with a warning (fails toward MORE denies). Read directly by
+  # the updater (`readDeclinedDenies` in cli/lib/updater-settings.ts), skipped by vars:check.
+  declined_denies: [] # e.g. ['Bash(env)']
 
 # Per-environment config. Add/remove environments freely (production, dev, qa, uat, etc.).
 # Each environment must define ALL four keys: web_url, api_url, db_mcp, api_mcp.

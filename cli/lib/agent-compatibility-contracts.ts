@@ -323,7 +323,7 @@ export function stripJsonComments(source: string): string {
  * Strips a trailing comma before `}` / `]` (outside strings) so the JSONC that
  * Prettier writes for `opencode.jsonc` parses with `JSON.parse`.
  */
-function stripTrailingCommas(source: string): string {
+export function stripTrailingCommas(source: string): string {
   let result = '';
   let inString = false;
   let escaped = false;
