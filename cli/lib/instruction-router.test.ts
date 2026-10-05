@@ -6,13 +6,19 @@ import { afterEach, describe, expect, test } from 'bun:test';
 import { parse as parseYaml } from 'yaml';
 
 import {
+  bindingRoutes,
   classifyPrompt,
   fileRouteState,
   IMPORT_ROW_TRIGGERS,
   loadInstructionRouter,
+  MAX_ROUTED_SECTIONS,
+  neutralizePaths,
   parseSectionFrontmatter,
+  pendingRouteReminder,
   rearmRoutes,
   renderHookOutput,
+  ROUTE_OPTIONAL_PREFIX,
+  ROUTE_PENDING_PREFIX,
   ROUTE_PREFIX,
   routeLines,
   routeStatePath,
@@ -70,9 +76,18 @@ function routerFixture(): string {
 }
 
 const memoryState = () => {
-  let routed: string[] = [];
-  return { read: () => routed, write: (next: string[]) => { routed = next; }, clear: () => { routed = []; } };
+  let record: Record<string, unknown> = {};
+  return { read: () => record, write: (next: Record<string, unknown>) => { record = next; }, clear: () => { record = {}; } };
 };
+
+/** The binding line the hook prints for one routed file of `routerFixture()`. */
+const SIZES: Record<string, string> = {
+  '.agents/instructions/agent-git.md': ' (git, 9 lines)',
+  '.agents/instructions/40-vars.md': ' (vars, 9 lines)',
+  '.agents/project.yaml': ' (1 lines)',
+  'package.json': ' (1 lines)',
+};
+const route = (path: string) => `${ROUTE_PREFIX} ${path}${SIZES[path] ?? ''} before acting on this prompt`;
 
 describe('router source: AGENTS.md and the section frontmatter, read at runtime', () => {
   test('the dependency-free frontmatter parser agrees with yaml on every real section', () => {
@@ -186,8 +201,8 @@ describe('ROUTE: lines and the per-session state', () => {
   test('one line per newly routed file: section with its id, import bare', () => {
     const root = routerFixture();
     expect(routeLines({ repoRoot: root, prompt: 'change project.yaml', routeState: memoryState() })).toEqual([
-      `${ROUTE_PREFIX} .agents/instructions/40-vars.md (vars)`,
-      `${ROUTE_PREFIX} .agents/project.yaml`,
+      route('.agents/instructions/40-vars.md'),
+      route('.agents/project.yaml'),
     ]);
   });
 
@@ -196,7 +211,7 @@ describe('ROUTE: lines and the per-session state', () => {
     const state = memoryState();
     expect(routeLines({ repoRoot: root, prompt: 'commit this', routeState: state })).toHaveLength(1);
     expect(routeLines({ repoRoot: root, prompt: 'and push it', routeState: state })).toEqual([]);
-    expect(routeLines({ repoRoot: root, prompt: 'push, then run the tests', routeState: state })).toEqual([`${ROUTE_PREFIX} package.json`]);
+    expect(routeLines({ repoRoot: root, prompt: 'push, then run the tests', routeState: state })).toEqual([route('package.json')]);
   });
 
   test('the file-backed state is keyed by checkout and session, and re-arms', () => {
@@ -224,14 +239,121 @@ describe('ROUTE: lines and the per-session state', () => {
     try {
       const first = prompt('commit this');
       expect(first.at(-2)).toStartWith('AGENT IDENTITY:');
-      expect(first.at(-1)).toBe(`${ROUTE_PREFIX} .agents/instructions/agent-git.md (git)`);
+      expect(first.at(-1)).toBe(route('.agents/instructions/agent-git.md'));
       expect(prompt('push it').some(line => line.startsWith(ROUTE_PREFIX))).toBe(false);
       for (const source of ['compact', 'clear']) {
         expect(renderHookOutput({ ...options, hookInput: { session_id: sessionId, hook_event_name: 'SessionStart', source } })).toBe('');
-        expect(prompt('push it').at(-1)).toBe(`${ROUTE_PREFIX} .agents/instructions/agent-git.md (git)`);
+        expect(prompt('push it').at(-1)).toBe(route('.agents/instructions/agent-git.md'));
       }
       expect(renderHookOutput({ ...options, hookInput: { session_id: sessionId, hook_event_name: 'SessionStart', source: 'resume' } })).toBe('');
       expect(prompt('push it').some(line => line.startsWith(ROUTE_PREFIX))).toBe(false);
+    }
+    finally {
+      rmSync(routeStatePath(root, sessionId), { force: true });
+    }
+  });
+});
+
+describe('adherence: scope, rank and cap, re-surface (ADR-0016)', () => {
+  /** Five one-trigger sections, one row each, so a test owns the ranking. */
+  function rankFixture(): string {
+    const root = temporaryRoot('route rank ');
+    const ids = ['alpha', 'beta', 'gamma', 'delta', 'omega'];
+    write(root, 'AGENTS.md', [
+      '<!-- router:start -->',
+      '| When | Read | Was | Then |',
+      '|---|---|---|---|',
+      ...ids.map(id => `| ${id} | \`agent-${id}.md\` | - | - |`),
+      '| alpha and omega | `agent-alpha.md`, `agent-omega.md` | - | - |',
+      '<!-- router:end -->',
+      '',
+    ].join('\n'));
+    for (const id of ids) {
+      write(root, `.agents/instructions/agent-${id}.md`, `---\nid: ${id}\ntitle: ${id}\nload_when: ${id}\ntriggers: ['\\b${id}\\b', '\\b${id}s\\b']\npaths: ['${id}/']\n---\n\n# ${id}\n`);
+    }
+    return root;
+  }
+  const file = (id: string) => `.agents/instructions/agent-${id}.md`;
+
+  test('rows rank by anchor strength: path hits, then distinct triggers, then the earliest match', () => {
+    const router = loadInstructionRouter(rankFixture());
+    expect(classifyPrompt(router, 'beta gamma, and gamma/ and gammas')).toEqual([file('gamma'), file('beta')]);
+    expect(classifyPrompt(router, 'delta then alpha')).toEqual([file('delta'), file('alpha'), file('omega')]);
+  });
+
+  test('companions rank after every anchor, so they are the first to fall past the cap', () => {
+    const router = loadInstructionRouter(rankFixture());
+    expect(classifyPrompt(router, 'alpha beta gamma')).toEqual([file('alpha'), file('beta'), file('gamma'), file('omega')]);
+    expect(bindingRoutes(router, 'alpha beta gamma')).toEqual([file('alpha'), file('beta'), file('gamma')]);
+  });
+
+  test(`at most ${MAX_ROUTED_SECTIONS} binding lines; the rest share one optional line, offered once and never recorded as routed`, () => {
+    const root = rankFixture();
+    const state = memoryState();
+    const lines = routeLines({ repoRoot: root, prompt: 'alpha beta gamma delta', routeState: state });
+    expect(lines.filter(line => line.startsWith(ROUTE_PREFIX))).toHaveLength(MAX_ROUTED_SECTIONS);
+    expect(lines.at(-1)).toBe(`${ROUTE_OPTIONAL_PREFIX} the prompt also touches ${file('delta')} (delta), ${file('omega')} (omega); read one only if the task needs it.`);
+    expect(routeLines({ repoRoot: root, prompt: 'alpha beta gamma delta', routeState: state })).toEqual([]);
+    expect(routeLines({ repoRoot: root, prompt: 'now the delta work', routeState: state })).toEqual([
+      `${ROUTE_PREFIX} ${file('delta')} (delta, 9 lines) before acting on this prompt`,
+    ]);
+  });
+
+  test('a ROUTE-SCOPE line replaces the prompt: ids route directly, words classify, none routes nothing', () => {
+    const router = loadInstructionRouter(rankFixture());
+    expect(classifyPrompt(router, 'alpha beta gamma delta\nROUTE-SCOPE: omega')).toEqual([file('omega')]);
+    expect(classifyPrompt(router, 'Do the work. ROUTE-SCOPE: delta, the beta stuff')).toEqual([file('delta'), file('beta')]);
+    expect(classifyPrompt(router, 'alpha beta\nROUTE-SCOPE: none')).toEqual([]);
+    expect(classifyPrompt(router, 'explain the `ROUTE-SCOPE:` header for beta')).toEqual([file('beta')]);
+  });
+
+  test('an orchestrator preamble is skipped: only the task block after its marker is classified', () => {
+    const router = loadInstructionRouter(rankFixture());
+    expect(classifyPrompt(router, 'You are a worker. alpha beta gamma.\n=== TASK ===\n/skill KEY fleet worker. Do the delta work.')).toEqual([file('delta')]);
+  });
+
+  test('absolute paths are locations, not intent: one into the checkout turns relative, any other is blanked', () => {
+    const root = rankFixture();
+    const router = loadInstructionRouter(root);
+    expect(classifyPrompt(router, 'read /elsewhere/alpha-repo/beta/notes.md')).toEqual([]);
+    expect(classifyPrompt(router, `edit ${router!.root}/gamma/x.ts`)).toEqual([file('gamma')]);
+    expect(neutralizePaths('run /framework-development on tests/e2e/a.spec.ts and ~/x/y')).toBe('run /framework-development on tests/e2e/a.spec.ts and  ');
+  });
+
+  test('re-surface: the first tool call that reads no routed section gets ONE ROUTE-PENDING line', () => {
+    const root = rankFixture();
+    const state = memoryState();
+    routeLines({ repoRoot: root, prompt: 'gamma beta', routeState: state });
+    const call = (toolName: string, toolInput: Record<string, unknown>) => pendingRouteReminder({ repoRoot: root, routeState: state, toolName, toolInput });
+    expect(call('Read', { file_path: `${root}/${file('gamma')}` })).toBe('');
+    expect(call('Bash', { command: 'cat NOTES.md && git status' })).toBe(`${ROUTE_PENDING_PREFIX} routed for this prompt and still unread: ${file('beta')}. Read it before the next step (AGENTS.md LOAD PROTOCOL); this reminder is not repeated.`);
+    expect(call('Bash', { command: 'git diff' })).toBe('');
+    expect(call('Bash', { command: `cat ${file('beta')}` })).toBe('');
+  });
+
+  test('re-surface stays quiet when the sections were read first, and a new prompt resets it', () => {
+    const root = rankFixture();
+    const state = memoryState();
+    routeLines({ repoRoot: root, prompt: 'gamma', routeState: state });
+    expect(pendingRouteReminder({ repoRoot: root, routeState: state, toolName: 'Bash', toolInput: { command: `sed -n 1,40p ${file('gamma')}` } })).toBe('');
+    expect(pendingRouteReminder({ repoRoot: root, routeState: state, toolName: 'Bash', toolInput: { command: 'ls' } })).toBe('');
+    routeLines({ repoRoot: root, prompt: 'nothing routable here', routeState: state });
+    expect(pendingRouteReminder({ repoRoot: root, routeState: state, toolName: 'Bash', toolInput: { command: 'ls' } })).toBe('');
+  });
+
+  test('the Claude Code PostToolUse wire: once per prompt, never for a subagent call, nothing for an unknown event', () => {
+    const root = rankFixture();
+    const sessionId = `route-pending-${process.pid}-${Date.now()}`;
+    const options = { repoRoot: root, env: { CLAUDE_PROJECT_DIR: root }, home: temporaryRoot('home '), orca: false, envMissing: false, worktreeUnprovisioned: false };
+    const post = (extra: Record<string, unknown> = {}) => renderHookOutput({ ...options, hookInput: { session_id: sessionId, hook_event_name: 'PostToolUse', tool_name: 'Bash', tool_input: { command: 'ls' }, ...extra } });
+    try {
+      renderHookOutput({ ...options, hookInput: { session_id: sessionId, prompt: 'beta', hook_event_name: 'UserPromptSubmit' } });
+      expect(post({ agent_id: 'sub-1' })).toBe('');
+      const reminder = JSON.parse(post()).hookSpecificOutput;
+      expect(reminder.hookEventName).toBe('PostToolUse');
+      expect(reminder.additionalContext).toStartWith(ROUTE_PENDING_PREFIX);
+      expect(post()).toBe('');
+      expect(renderHookOutput({ ...options, hookInput: { session_id: sessionId, hook_event_name: 'Stop' } })).toBe('');
     }
     finally {
       rmSync(routeStatePath(root, sessionId), { force: true });
@@ -243,8 +365,9 @@ describe('labelled-prompt eval (bilingual)', () => {
   const router = loadInstructionRouter(REPO_ROOT)!;
   const idOf = (path: string) => router.targets.get(path)?.id || path;
   const results = EVAL.prompts.map(({ prompt, expect: expected }) => {
-    const got = classifyPrompt(router, prompt).map(idOf);
-    return { prompt, expected, got, missed: expected.filter(id => !got.includes(id)), extra: got.filter(id => !expected.includes(id)) };
+    const named = classifyPrompt(router, prompt).map(idOf);
+    const binding = bindingRoutes(router, prompt).map(idOf);
+    return { prompt, expected, missed: expected.filter(id => !named.includes(id)), extra: binding.filter(id => !expected.includes(id)) };
   });
   const truePositives = results.reduce((sum, r) => sum + r.expected.length - r.missed.length, 0);
   const falseNegatives = results.reduce((sum, r) => sum + r.missed.length, 0);
@@ -284,6 +407,6 @@ describe('labelled-prompt eval (bilingual)', () => {
       env: { PATH: process.env.PATH ?? '', HOME: temporaryRoot('home ') },
     });
     expect(run.exitCode).toBe(0);
-    expect(run.stdout.toString()).toContain(`${ROUTE_PREFIX} .agents/instructions/agent-git.md (git)`);
+    expect(run.stdout.toString()).toMatch(/ROUTE: read \.agents\/instructions\/agent-git\.md \(git, \d+ lines\) before acting on this prompt/);
   });
 });

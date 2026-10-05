@@ -460,12 +460,16 @@ export function lockFindings(root: string, l0: string, maintainer: boolean): Ins
   return out;
 }
 
-/** EVAL: recall and precision hold their targets; every label names a routed id. */
+/** EVAL: recall, binding recall and precision hold their targets; every label names a routed id. */
 export function evalFindings(result: RouterEvalResult, severity: InstructionFinding['severity']): InstructionFinding[] {
   const out: InstructionFinding[] = [];
   const pct = (n: number): string => `${(n * 100).toFixed(1)}%`;
   if (result.recall < result.targets.recall) {
     out.push({ severity, file: ROUTER_EVAL_FIXTURE, line: 1, kind: 'eval', detail: `router recall ${pct(result.recall)} < ${pct(result.targets.recall)}: fix the section's \`triggers:\`, never the label. ${result.misses.slice(0, 5).join('; ')}` });
+  }
+  else if (result.bindingRecall < result.targets.bindingRecall) {
+    // Binding recall never exceeds recall: reported only when recall itself holds.
+    out.push({ severity, file: ROUTER_EVAL_FIXTURE, line: 1, kind: 'eval', detail: `router binding recall ${pct(result.bindingRecall)} < ${pct(result.targets.bindingRecall)}: the ranking pushes expected sections past the cap onto the optional line; a weak anchor needs a sharper trigger. ${result.demoted.slice(0, 5).join('; ')}` });
   }
   if (result.precision < result.targets.precision) {
     out.push({ severity, file: ROUTER_EVAL_FIXTURE, line: 1, kind: 'eval', detail: `router precision ${pct(result.precision)} < ${pct(result.targets.precision)}: a trigger fires on prompts that do not need its section; narrow it` });
@@ -554,7 +558,7 @@ if (import.meta.main) {
   }
   const pct = (n: number): string => `${(n * 100).toFixed(1)}%`;
   const evalNote = report.eval
-    ? `; router eval recall ${pct(report.eval.recall)} precision ${pct(report.eval.precision)} over ${report.eval.prompts} prompts`
+    ? `; router eval recall ${pct(report.eval.recall)} binding ${pct(report.eval.bindingRecall)} precision ${pct(report.eval.precision)} over ${report.eval.prompts} prompts`
     : '';
   const lockNote = report.lock ? `; router lock ${report.lock.fingerprint} (${report.lock.adr})` : '';
   if (errors.length === 0) {

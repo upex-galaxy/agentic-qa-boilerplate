@@ -19,9 +19,14 @@
  *      that never ran `bun run worktree:provision`.
  *   4. `ROUTE: read <file>` lines: the instruction files the prompt needs and
  *      this session has not been routed to yet, classified with the router of
- *      `AGENTS.md` and each section's frontmatter (see `routeLines`). 0 bytes
- *      when nothing new matches. A re-arm (below) clears them and prints
- *      nothing.
+ *      `AGENTS.md` and each section's frontmatter (see `routeLines`), capped,
+ *      plus at most one `ROUTE-OPTIONAL:` line. 0 bytes when nothing new
+ *      matches. A re-arm (below) clears them and prints nothing.
+ *
+ * Claude Code also runs it on `PostToolUse` (`.claude/settings.json`, no
+ * matcher): it prints nothing but, at most once per prompt, a `ROUTE-PENDING:`
+ * line when a routed section is still unread (see `pendingRouteReminder`).
+ * Any other event prints nothing.
  *
  * Re-arm sources, exactly what each host config registers:
  *   - Claude Code, `.claude/settings.json`: `SessionStart` groups with matcher
@@ -406,8 +411,39 @@ export function worktreeUnprovisioned(options = {}) {
  * remembers what was routed, so a prompt that needs nothing new costs 0 bytes;
  * a `SessionStart` with source `compact` or `clear` re-arms it, because the
  * routed files left the context with the compacted or cleared messages.
+ *
+ * Adherence (ADR-0016). Measured on real transcripts, an agent reads about
+ * half of a lone route and almost none of six, so the hook routes few files
+ * and says so plainly:
+ *   - SCOPE. A `ROUTE-SCOPE:` line in the prompt replaces the prompt for
+ *     classification: its comma-separated items are section ids (routed
+ *     directly) or words (classified), `none` routes nothing. Without one, a
+ *     prompt carrying an orchestrator preamble is classified on the task block
+ *     after its marker (`TASK_BLOCK_MARKERS`), because the preamble is vendor
+ *     text identical for every worker.
+ *   - RANK AND CAP. Fired rows are ranked by their anchor's strength (an id
+ *     named in the scope, then path hits, then distinct trigger hits, then the
+ *     earliest match); at most `MAX_ROUTED_SECTIONS` new section files get a
+ *     binding `ROUTE:` line, the rest collapse into one `ROUTE-OPTIONAL:` line
+ *     that is offered once and never recorded as routed, so a later prompt
+ *     about that topic still routes it. Imports never count against the
+ *     cap: Claude Code expands them at launch.
+ *   - CUE. Each binding line names the file's size and says when to read it.
+ *   - RE-SURFACE (Claude Code, `PostToolUse`). The first tool call after the
+ *     prompt that reads none of the routed sections, while some are unread,
+ *     gets ONE `ROUTE-PENDING:` line naming them. Never repeated in the turn.
  */
 export const ROUTE_PREFIX = 'ROUTE: read';
+export const ROUTE_OPTIONAL_PREFIX = 'ROUTE-OPTIONAL:';
+export const ROUTE_PENDING_PREFIX = 'ROUTE-PENDING:';
+export const ROUTE_SCOPE_PREFIX = 'ROUTE-SCOPE:';
+export const MAX_ROUTED_SECTIONS = 3;
+/**
+ * Where an orchestrator's injected preamble ends and the task begins. The
+ * Orca supervised preamble closes with this line; the text after it is what
+ * the conductor wrote.
+ */
+export const TASK_BLOCK_MARKERS = ['=== TASK ==='];
 export const ROUTER_START = '<!-- router:start -->';
 export const ROUTER_END = '<!-- router:end -->';
 export const L0_FILE = 'AGENTS.md';
@@ -588,18 +624,22 @@ export function loadInstructionRouter(root, read = readFileSync) {
   const rows = parseRouterRows(l0);
   if (!rows) { return null; }
   const metas = new Map();
+  const sizes = new Map();
   for (const row of rows) {
     for (const path of row.targets) {
       if (metas.has(path)) { continue; }
       let meta = {};
+      let content = null;
+      try { content = String(read(join(root, path), 'utf8')); }
+      catch { /* an unreadable target routes with its row only, with no size */ }
       if (path.startsWith(`${SECTIONS_DIR}/`) && path.endsWith('.md')) {
-        try { meta = parseSectionFrontmatter(String(read(join(root, path), 'utf8'))) ?? {}; }
-        catch { /* an unreadable section routes with its row only */ }
+        meta = (content === null ? null : parseSectionFrontmatter(content)) ?? {};
       }
       else if (row.targets[0] === path && Object.hasOwn(IMPORT_ROW_TRIGGERS, path)) {
         meta = { triggers: IMPORT_ROW_TRIGGERS[path] };
       }
       metas.set(path, meta);
+      sizes.set(path, content === null ? 0 : content.replace(/\r?\n$/, '').split(/\r?\n/).length);
     }
   }
   const allPrefixes = [...metas.values()].flatMap(meta => pathPrefixes(meta.paths));
@@ -608,35 +648,159 @@ export function loadInstructionRouter(root, read = readFileSync) {
     targets.set(path, {
       path,
       id: typeof meta.id === 'string' ? meta.id : '',
+      lines: sizes.get(path) ?? 0,
       triggers: compileTriggers(meta.triggers),
       paths: pathPrefixes(meta.paths).map(prefix => compilePath(prefix, allPrefixes)),
     });
   }
-  return { rows, targets };
+  return { root: resolve(root), rows, targets };
 }
 
-/** Every target of every row whose anchor the prompt matches, in router order, each once. */
-export function classifyPrompt(router, prompt) {
-  if (!router || typeof prompt !== 'string' || prompt.trim().length === 0) { return []; }
-  const hit = new Set();
-  for (const target of router.targets.values()) {
-    if (target.triggers.some(trigger => trigger.test(prompt)) || target.paths.some(path => path.test(prompt))) {
-      hit.add(target.path);
+/**
+ * An absolute path is a location, not an intent: a path into this checkout
+ * becomes repo-relative (so `paths:` can match it) and any other one is
+ * blanked, so `.../agentic-qa-boilerplate/...` never fires a `QA` trigger. A
+ * slash command (`/skill`, one segment) is not a path.
+ */
+export function neutralizePaths(text, root = '') {
+  const local = root ? text.split(`${root}/`).join('') : text;
+  return local.replace(/(?<![\w.~/-])(?:~|\/[\w.@~-]+)\/[^\s`'"()<>[\]]*/g, ' ');
+}
+
+/**
+ * The text the router classifies, and the section ids it names outright.
+ * A `ROUTE-SCOPE:` line wins (all of them, joined; it opens a line or follows
+ * a sentence, so a prompt that merely mentions it in backticks is not
+ * scoped); else the task block after the last orchestrator preamble marker;
+ * else the whole prompt. Absolute paths are neutralized in all three.
+ */
+export function routeScope(router, prompt) {
+  const scope = scopeOf(router, prompt);
+  return { text: neutralizePaths(scope.text, router?.root ?? ''), ids: scope.ids };
+}
+
+function scopeOf(router, prompt) {
+  const scoped = [...prompt.matchAll(/(?:^|[.!?])[ \t>*-]*ROUTE-SCOPE:([^\n]*)/gim)].map(found => found[1]);
+  if (scoped.length > 0) {
+    const ids = new Set();
+    const words = [];
+    const known = new Map([...(router?.targets.values() ?? [])].filter(target => target.id).map(target => [target.id.toLowerCase(), target.id]));
+    for (const item of scoped.join(',').split(',').map(part => part.trim().replace(/[.;]+$/, '')).filter(Boolean)) {
+      const id = known.get(item.toLowerCase());
+      if (id) { ids.add(id); }
+      else if (item.toLowerCase() !== 'none') { words.push(item); }
+    }
+    return { text: words.join('\n'), ids };
+  }
+  for (const marker of TASK_BLOCK_MARKERS) {
+    const at = prompt.lastIndexOf(marker);
+    if (at !== -1) { return { text: prompt.slice(at + marker.length), ids: new Set() }; }
+  }
+  return { text: prompt, ids: new Set() };
+}
+
+/**
+ * How strongly the prompt calls for one target: an id named in the scope
+ * beats any match; then each `paths:` hit counts double a distinct trigger
+ * hit. `first` is the earliest match offset. Null when nothing matches.
+ */
+function targetStrength(target, text, ids) {
+  if (target.id && ids.has(target.id)) { return { score: Number.MAX_SAFE_INTEGER, first: -1 }; }
+  let score = 0;
+  let first = Number.POSITIVE_INFINITY;
+  for (const matcher of target.triggers) {
+    const found = matcher.exec(text);
+    if (found) {
+      score += 1;
+      first = Math.min(first, found.index);
     }
   }
-  const routed = [];
-  for (const row of router.rows) {
-    if (!hit.has(row.targets[0])) { continue; }
-    for (const path of row.targets) {
-      if (!routed.includes(path)) { routed.push(path); }
+  for (const matcher of target.paths) {
+    const found = matcher.exec(text);
+    if (found) {
+      score += 2;
+      first = Math.min(first, found.index);
     }
+  }
+  return score > 0 ? { score, first } : null;
+}
+
+/**
+ * Every target of every row whose anchor the scoped prompt matches, each
+ * once: the anchors first, strongest row first (ties: earliest match, then
+ * router order), then the companions those rows bring, in the same order. An
+ * anchor is what the prompt asked for; a companion only rides along, so it is
+ * the first to fall past the cap.
+ */
+export function classifyPrompt(router, prompt) {
+  if (!router || typeof prompt !== 'string' || prompt.trim().length === 0) { return []; }
+  const { text, ids } = routeScope(router, prompt);
+  const strength = new Map();
+  for (const target of router.targets.values()) {
+    const found = targetStrength(target, text, ids);
+    if (found) { strength.set(target.path, found); }
+  }
+  const fired = router.rows
+    .map((row, order) => ({ row, order, anchor: strength.get(row.targets[0]) }))
+    .filter(entry => entry.anchor)
+    .sort((a, b) => b.anchor.score - a.anchor.score || a.anchor.first - b.anchor.first || a.order - b.order);
+  const routed = [];
+  for (const path of [...fired.map(({ row }) => row.targets[0]), ...fired.flatMap(({ row }) => row.targets.slice(1))]) {
+    if (!routed.includes(path)) { routed.push(path); }
   }
   return routed;
 }
 
+function isSection(path) {
+  return path.startsWith(`${SECTIONS_DIR}/`);
+}
+
+/**
+ * Split ranked paths into the binding ones (at most `MAX_ROUTED_SECTIONS`
+ * section files, plus every import: Claude Code expands those at launch, so
+ * they never count against the cap) and the optional rest.
+ */
+export function capRoutes(paths, max = MAX_ROUTED_SECTIONS) {
+  const binding = [];
+  const optional = [];
+  let sections = 0;
+  for (const path of paths) {
+    if (!isSection(path)) {
+      binding.push(path);
+    }
+    else if (sections < max) {
+      binding.push(path);
+      sections += 1;
+    }
+    else {
+      optional.push(path);
+    }
+  }
+  return { binding, optional };
+}
+
+/** The binding routes of one prompt with no session state: what the eval scores. */
+export function bindingRoutes(router, prompt) {
+  return capRoutes(classifyPrompt(router, prompt)).binding;
+}
+
+function describeTarget(router, path) {
+  const target = router?.targets.get(path);
+  const size = target?.lines ? `${target.lines} lines` : '';
+  return [target?.id ?? '', size].filter(Boolean).join(', ');
+}
+
 export function routeLine(router, path) {
-  const id = router?.targets.get(path)?.id;
-  return id ? `${ROUTE_PREFIX} ${path} (${id})` : `${ROUTE_PREFIX} ${path}`;
+  const detail = describeTarget(router, path);
+  return `${ROUTE_PREFIX} ${path}${detail ? ` (${detail})` : ''} before acting on this prompt`;
+}
+
+export function optionalRouteLine(router, paths) {
+  const named = paths.map((path) => {
+    const id = router?.targets.get(path)?.id;
+    return id ? `${path} (${id})` : path;
+  });
+  return `${ROUTE_OPTIONAL_PREFIX} the prompt also touches ${named.join(', ')}; read one only if the task needs it.`;
 }
 
 /**
@@ -649,19 +813,35 @@ export function routeStatePath(root, sessionId, temp = tmpdir()) {
   return join(temp, 'agentic-instruction-routes', `${checkout}-${session}.json`);
 }
 
-/** File-backed routed set, or null without a session id (no dedupe: each prompt routes what it matches). */
+/** The per-session record, normalized: whatever a missing or older file holds reads as empty. */
+export function normalizeRouteRecord(stored) {
+  const list = value => (Array.isArray(value) ? value.filter(entry => typeof entry === 'string') : []);
+  return {
+    routed: list(stored?.routed),
+    offered: list(stored?.offered),
+    pending: list(stored?.pending),
+    reminded: stored?.reminded === true,
+  };
+}
+
+/**
+ * File-backed session record, or null without a session id (no dedupe: each
+ * prompt routes what it matches). `routed`: files with a binding line this
+ * session. `offered`: files already named in a `ROUTE-OPTIONAL:` line.
+ * `pending` + `reminded`: the latest prompt's binding sections not read yet,
+ * and whether `ROUTE-PENDING:` already fired for them.
+ */
 export function fileRouteState(root, sessionId, temp = tmpdir()) {
   if (!text(sessionId)) { return null; }
   const path = routeStatePath(root, sessionId, temp);
   return {
     read() {
-      const stored = readJson(path);
-      return Array.isArray(stored?.routed) ? stored.routed.filter(entry => typeof entry === 'string') : [];
+      return normalizeRouteRecord(readJson(path));
     },
-    write(routed) {
+    write(record) {
       try {
         mkdirSync(dirname(path), { recursive: true });
-        writeFileSync(path, `${JSON.stringify({ routed })}\n`);
+        writeFileSync(path, `${JSON.stringify(normalizeRouteRecord(record))}\n`);
       }
       catch { /* a read-only temp dir costs dedupe, never the prompt */ }
     },
@@ -693,22 +873,66 @@ function routerRoot(options) {
 }
 
 /**
- * `ROUTE:` lines for this prompt that this session has not received yet, and
- * the routed set updated. Empty (0 bytes) when nothing new matches.
+ * The routing lines for this prompt: one binding `ROUTE:` line per new file
+ * up to the cap, then at most one `ROUTE-OPTIONAL:` line for the new matches
+ * past it that were never offered. Empty (0 bytes) when nothing new matches.
+ * Every prompt resets the pending set the `PostToolUse` re-surface checks.
  */
 export function routeLines(options = {}) {
   const root = routerRoot(options);
   const router = options.router ?? loadInstructionRouter(root);
   const matched = classifyPrompt(router, options.prompt ?? '');
-  if (matched.length === 0) { return []; }
   const state = options.routeState === undefined
     ? fileRouteState(root, options.sessionId ?? options.identity?.sessionId ?? '')
     : options.routeState;
-  const seen = new Set(state ? state.read() : []);
-  const fresh = matched.filter(path => !seen.has(path));
-  if (fresh.length === 0) { return []; }
-  if (state) { state.write([...seen, ...fresh]); }
-  return fresh.map(path => routeLine(router, path));
+  const record = normalizeRouteRecord(state ? state.read() : {});
+  const seen = new Set(record.routed);
+  // The cap ranks the whole prompt, already-routed files included: a file
+  // only offered before turns binding when a prompt puts it among its top
+  // sections, not because the stronger ones were routed earlier.
+  const capped = capRoutes(matched);
+  const binding = capped.binding.filter(path => !seen.has(path));
+  const offer = capped.optional.filter(path => !seen.has(path) && !record.offered.includes(path));
+  const pending = binding.filter(isSection);
+  if (state && (binding.length > 0 || offer.length > 0 || record.pending.length > 0)) {
+    state.write({ routed: [...record.routed, ...binding], offered: [...record.offered, ...offer], pending, reminded: false });
+  }
+  const lines = binding.map(path => routeLine(router, path));
+  if (offer.length > 0) { lines.push(optionalRouteLine(router, offer)); }
+  return lines;
+}
+
+/** Section files one tool call reads: `Read` by path, or a shell read verb naming the file. */
+export function sectionsReadBy(toolName, toolInput = {}) {
+  const command = text(toolInput?.command);
+  const source = toolName === 'Read'
+    ? text(toolInput?.file_path)
+    : toolName === 'Bash' && /\b(?:cat|head|tail|sed|less|more|bat|awk|nl|grep|rg)\b/.test(command) ? command : '';
+  return [...source.matchAll(/(?:\.agents\/instructions\/)?\b([\w-]+\.md)\b/g)].map(found => `${SECTIONS_DIR}/${found[1]}`);
+}
+
+/**
+ * `PostToolUse` re-surface: drop what this tool call read from the pending
+ * set; if routed sections are still unread, this call read none of them and
+ * no reminder fired yet this turn, return ONE `ROUTE-PENDING:` line. Else ''.
+ * Reads only the session record: no router, no prompt.
+ */
+export function pendingRouteReminder(options = {}) {
+  const state = options.routeState === undefined
+    ? fileRouteState(routerRoot(options), options.sessionId ?? '')
+    : options.routeState;
+  if (!state) { return ''; }
+  const record = normalizeRouteRecord(state.read());
+  if (record.pending.length === 0) { return ''; }
+  // Only a routed file counts as a read: `cat NOTES.md` reads no section.
+  const read = new Set(sectionsReadBy(options.toolName, options.toolInput).filter(path => record.pending.includes(path)));
+  const pending = record.pending.filter(path => !read.has(path));
+  const remind = pending.length > 0 && read.size === 0 && !record.reminded;
+  if (pending.length !== record.pending.length || remind) {
+    state.write({ ...record, pending, reminded: record.reminded || remind });
+  }
+  if (!remind) { return ''; }
+  return `${ROUTE_PENDING_PREFIX} routed for this prompt and still unread: ${pending.join(', ')}. Read ${pending.length === 1 ? 'it' : 'them'} before the next step (AGENTS.md LOAD PROTOCOL); this reminder is not repeated.`;
 }
 
 /** After a compaction (or `/clear`) the routed files left the context: route them again on demand. */
@@ -789,6 +1013,15 @@ export function renderHookOutput(options = {}) {
     }
     return '';
   }
+  if (event === 'PostToolUse') {
+    // A subagent's read never reaches the main context, and its calls never owe the main turn a read.
+    if (text(hookInput.agent_id)) { return ''; }
+    const reminder = pendingRouteReminder({ ...options, env, hookInput, sessionId: text(hookInput.session_id), toolName: text(hookInput.tool_name), toolInput: hookInput.tool_input });
+    return reminder ? `${JSON.stringify({ hookSpecificOutput: { hookEventName: event, additionalContext: reminder } })}\n` : '';
+  }
+  // Any other event a host config wires to this file by mistake prints nothing:
+  // identity and routes belong to the prompt.
+  if (event !== 'UserPromptSubmit') { return ''; }
   const identity = resolveAgentIdentity({ env, hookInput, home });
   const prompt = options.prompt ?? (event === 'UserPromptSubmit' ? text(hookInput.prompt) : undefined);
   const context = agentContextLines({ ...options, env, hookInput, home, identity, prompt }).join('\n');

@@ -1036,7 +1036,7 @@ export function validateHookCompatibility(root = process.cwd(), harnesses: reado
  * newly matched instruction file. These are the exports and markers its
  * adapters and the eval rely on.
  */
-export const HOOK_ROUTER_EXPORTS = ['routeLines', 'rearmRoutes', 'loadInstructionRouter', 'classifyPrompt'] as const;
+export const HOOK_ROUTER_EXPORTS = ['routeLines', 'rearmRoutes', 'loadInstructionRouter', 'classifyPrompt', 'pendingRouteReminder'] as const;
 export const HOOK_ROUTE_MARKER = 'ROUTE: read';
 export const ROUTER_START_MARKER = '<!-- router:start -->';
 /** Codex `project_doc_max_bytes` default: the always-on file past it is cut at the byte, silently. */
@@ -1051,6 +1051,24 @@ export const OPENCODE_ROUTER_ONLY_MARKER = 'ROUTER-ONLY';
  * emit these two sources, so both register one group per source.
  */
 export const REARM_SESSION_START_SOURCES = { compact: 'compaction', clear: '/clear' } as const;
+
+/**
+ * Claude Code re-surfaces an unread route once, on the first tool call that
+ * reads none of the routed sections (`ROUTE-PENDING:`, ADR-0016). Codex and
+ * OpenCode carry no such hook: their agents get the `ROUTE:` cue only.
+ */
+export const ROUTE_RESURFACE_EVENT = 'PostToolUse';
+
+/** One group of `event` with no matcher (every tool) whose hooks run `command`. */
+function hasUnmatchedGroup(settings: JsonObject, event: string, command: string): boolean {
+  const groups = settings.hooks && typeof settings.hooks === 'object' ? (settings.hooks as JsonObject)[event] : undefined;
+  if (!Array.isArray(groups)) { return false; }
+  return groups.some((group) => {
+    if (!group || typeof group !== 'object' || ((group as JsonObject).matcher ?? '*') !== '*') { return false; }
+    const hooks = (group as JsonObject).hooks;
+    return Array.isArray(hooks) && hooks.some(hook => hook && typeof hook === 'object' && (hook as JsonObject).command === command);
+  });
+}
 
 function hasSessionStart(settings: JsonObject, matcher: string, command: string, windows?: string): boolean {
   const groups = settings.hooks && typeof settings.hooks === 'object' ? (settings.hooks as JsonObject).SessionStart : undefined;
@@ -1099,6 +1117,10 @@ export function validateInstructionRouterHooks(root = process.cwd(), harnesses: 
     if (harnesses.includes('codex') && !hasSessionStart(parseJson(join(resolvedRoot, '.codex', 'hooks.json')), source, CODEX_HOOK_COMMAND, CODEX_HOOK_COMMAND_WINDOWS)) {
       errors.push(`codex must re-arm the routes after ${after}: a SessionStart group with matcher "${source}" running the Codex hook command (and its Windows variant).`);
     }
+  }
+
+  if (harnesses.includes('claude') && !hasUnmatchedGroup(parseJson(join(resolvedRoot, '.claude', 'settings.json')), ROUTE_RESURFACE_EVENT, CLAUDE_HOOK_COMMAND)) {
+    errors.push(`claude must re-surface unread routes: a ${ROUTE_RESURFACE_EVENT} group with no matcher running ${CLAUDE_HOOK_COMMAND}`);
   }
 
   if (harnesses.includes('opencode')) {
