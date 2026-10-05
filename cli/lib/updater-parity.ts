@@ -49,7 +49,7 @@ import { hasDeepWalk, walkGovernedFile } from './agents-schema.ts';
 import { contextMapAdvice, contextMapStatuses, mapRelPath } from './context-maps.ts';
 import { HARNESS_LEVEL_MCPS } from './harness-level-mcps.ts';
 import { declaredHarnesses } from './harness-selection.ts';
-import { CLAUDE_SETTINGS_FILE, DECLINED_DENIES_KEY, OPENCODE_SETTINGS_FILE, opencodeDenyGap } from './updater-settings';
+import { CLAUDE_SETTINGS_FILE, DECLINED_DENIES_KEY, DECLINED_HOOKS_KEY, OPENCODE_SETTINGS_FILE, opencodeDenyGap } from './updater-settings';
 
 // ============================================================================
 // TYPES
@@ -176,6 +176,14 @@ export interface ParityInput {
   denyListAdded?: string[]
   /** Upstream deny entries the project lacks and declined through `updater.declined_denies`. */
   denyListDeclined?: string[]
+  /** Hook commands the additive hook merge appended to `.claude/settings.json` (`formatHookCommand`). */
+  hooksAdded?: string[]
+  /** Upstream hook commands the project lacks and declined through `updater.declined_hooks`. */
+  hooksDeclined?: string[]
+  /** Upstream hook commands not appended because the script they run is missing in the project. */
+  hooksSkipped?: string[]
+  /** Keys `.claude/settings.json` repeated, folded into one list by the hook merge. */
+  settingsDuplicatesFolded?: string[]
   /** Evidence for the unresolved-doctrine ledger row (`runDoctrineLedger`), when there is debt. */
   doctrineDebt?: string | null
   /** The file that row is about. Defaults to `AGENTS.md` (`DOCTRINE_FILE`). */
@@ -1609,20 +1617,33 @@ export function collectParityFindings(input: ParityInput): ParityFinding[] {
     });
   }
 
-  // The permission-list merge is additive and already decided: it ran, and
-  // this row says what it added so nothing is a surprise. Informational, never
-  // blocking: an allow entry a project does not want is re-expressible in
-  // `deny`, and a deny entry in `updater.declined_denies`, so the row asks
-  // nothing of it.
+  // The permission-list and hook merges are additive and already decided:
+  // they ran, and this row says what they added so nothing is a surprise.
+  // Informational, never blocking: an allow entry a project does not want is
+  // re-expressible in `deny`, a deny entry in `updater.declined_denies` and a
+  // hook command in `updater.declined_hooks`, so the row asks nothing of it.
+  // A hook left out because its script is missing is news (the compat check
+  // may still name it), so it raises the row on its own; a declined entry
+  // alone is the project's standing decision and does not.
   const allowAdded = input.allowListAdded ?? [];
   const denyAdded = input.denyListAdded ?? [];
   const denyDeclined = input.denyListDeclined ?? [];
-  if (allowAdded.length > 0 || denyAdded.length > 0) {
+  const hooksAdded = input.hooksAdded ?? [];
+  const hooksDeclined = input.hooksDeclined ?? [];
+  const hooksSkipped = input.hooksSkipped ?? [];
+  const folded = input.settingsDuplicatesFolded ?? [];
+  if (allowAdded.length > 0 || denyAdded.length > 0 || hooksAdded.length > 0 || hooksSkipped.length > 0 || folded.length > 0) {
     const parts: string[] = [];
     if (allowAdded.length > 0) { parts.push(`${allowAdded.length} permission(s) added to permissions.allow: ${allowAdded.join(', ')}`); }
     if (denyAdded.length > 0) { parts.push(`${denyAdded.length} rule(s) added to permissions.deny: ${denyAdded.join(', ')}`); }
     if (denyDeclined.length > 0) { parts.push(`declined via ${DECLINED_DENIES_KEY}: ${denyDeclined.join(', ')}`); }
-    const untouched = denyAdded.length > 0 ? 'ask/hooks/env untouched' : 'deny/ask/hooks/env untouched';
+    if (hooksAdded.length > 0) { parts.push(`${hooksAdded.length} hook command(s) added as new groups: ${hooksAdded.join(', ')}`); }
+    if (hooksDeclined.length > 0) { parts.push(`declined via ${DECLINED_HOOKS_KEY}: ${hooksDeclined.join(', ')}`); }
+    if (hooksSkipped.length > 0) { parts.push(`not added, the script they run is missing: ${hooksSkipped.join(', ')}`); }
+    if (folded.length > 0) { parts.push(`repeated key(s) folded into one list (JSON keeps only the last): ${folded.join(', ')}`); }
+    const foldedUnder = (key: string): boolean => folded.some(at => at === key || at.startsWith(`${key}.`) || at.startsWith(`permissions.${key}`));
+    const touched = (key: string): boolean => (key === 'deny' && denyAdded.length > 0) || (key === 'hooks' && hooksAdded.length > 0) || foldedUnder(key);
+    const untouched = `${['deny', 'ask', 'hooks', 'env'].filter(key => !touched(key)).join('/')} untouched`;
     findings.push({
       surface: 'components',
       path: CLAUDE_SETTINGS_FILE,
