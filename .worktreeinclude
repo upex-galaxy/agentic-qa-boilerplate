@@ -20,10 +20,13 @@
 .env
 .env.local
 .envrc.local
-# Claude Code's generated env block (`bun run harness:env`).
+# Claude Code's local settings (permissions, approved MCP servers).
 .claude/settings.local.json
-# OpenCode `{file:}` values and the curl token from `bun run api:login`.
+# The curl token and browser state from `bun run api:login`. Never the
+# plaintext MCP credential copies the .env loader retired (ADR-0011).
 .auth/**
+!.auth/opencode/**
+!.auth/harness-env-backup/**
 # `bun run api:sync` config: without it `api:sync -c` falls into prompts.
 api/.openapi-config.json
 # The synced OpenAPI spec: the OpenAPI MCP exits at start without it when

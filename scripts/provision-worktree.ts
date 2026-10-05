@@ -28,13 +28,13 @@
  * fails, `bun run agents:compat` fails).
  */
 
-import { chmodSync, copyFileSync, cpSync, existsSync, mkdirSync, readdirSync, realpathSync, statSync } from 'node:fs';
+import { chmodSync, copyFileSync, cpSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { platform } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 
 // Node built-ins only on the other side, so this static import works before
 // `bun install` has run in the worktree being provisioned.
-import { PROVISION_COPIES } from '../cli/lib/worktree.ts';
+import { HARNESS_ENV_BACKUP_DIR, OPENCODE_SECRET_DIR, PROVISION_COPIES } from '../cli/lib/worktree.ts';
 
 const PREFIX = '[provision-worktree]';
 
@@ -71,8 +71,10 @@ function showHelp(): void {
      .claude/skills alias).
   5. Copies gitignored T3 skill directories under .agents/skills/.
   6. Creates an EMPTY .auth/opencode/<VAR> placeholder for every {file:}
-     reference in opencode.jsonc that the .auth/ copy did not supply (a
-     missing target breaks OpenCode's whole config; an empty file does not).
+     reference a LEGACY opencode.jsonc carries that the .auth/ copy did not
+     supply (a missing target breaks OpenCode's whole config). A config on the
+     .env loader has none. .auth/opencode/ itself is copied only for such a
+     config, and the retirement backup (.auth/harness-env-backup/) never is.
   7. Runs \`direnv allow <worktree>\` ONLY when direnv is installed AND the
      primary checkout's .envrc is already allowed; otherwise says why not.
   8. Prints a summary + a hint to run \`bun run context:hydrate\` for the
@@ -175,6 +177,18 @@ function secureChmodRecursive(target: string): void {
   }
 }
 
+/** `.auth/` children a worktree must not inherit (see `cli/lib/harness-env.ts`). */
+const RETIRED_COPIES = new Set([
+  HARNESS_ENV_BACKUP_DIR,
+  ...(opencodeReadsFileRefs(TARGET) ? [] : [OPENCODE_SECRET_DIR]),
+].map(path => path.split('/').join(sep)));
+
+/** True while the TARGET's opencode.jsonc still carries a legacy `{file:.auth/opencode/...}` reference. */
+function opencodeReadsFileRefs(root: string): boolean {
+  const path = join(root, 'opencode.jsonc');
+  return existsSync(path) && readFileSync(path, 'utf8').includes(`{file:${OPENCODE_SECRET_DIR}/`);
+}
+
 // Every entry is optional: a project with no API never syncs a spec, and most
 // developers have no `.env.local`. Absence is info, never a warning, except for
 // `.env`, without which every MCP server in the worktree starts with nothing.
@@ -193,7 +207,10 @@ for (const entry of PROVISION_COPIES) {
   const dest = join(TARGET, entry.path);
   mkdirSync(dirname(dest), { recursive: true });
   if (entry.kind === 'dir') {
-    cpSync(src, dest, { recursive: true });
+    // Never propagate a plaintext MCP credential copy the loader made obsolete:
+    // the retirement backup always stays behind, and `.auth/opencode/` travels
+    // only while the worktree's own opencode.jsonc still points at it.
+    cpSync(src, dest, { recursive: true, filter: source => !RETIRED_COPIES.has(relative(PRIMARY, source)) });
     if (entry.secret) { secureChmodRecursive(dest); }
   }
   else {

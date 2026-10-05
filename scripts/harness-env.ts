@@ -1,32 +1,36 @@
 #!/usr/bin/env bun
 /**
- * @fileoverview CLI for the per-harness credential generator.
+ * @fileoverview CLI that retires the plaintext MCP credential copies.
  *
  * Thin argv wrapper. Every decision lives in `cli/lib/harness-env.ts`, which
  * `cli/doctor.ts` imports directly — the core has to sit under `cli/` because
  * `cli/` is import-closed (AGENTS.md section 4.5: "Shared code goes in
  * `cli/lib/`; a `scripts/` file that needs it imports FROM `cli/`").
  *
+ * The command used to GENERATE two plaintext copies of every MCP credential
+ * (`.claude/settings.local.json` env block, `.auth/opencode/<VAR>`). Every MCP
+ * server now reads `.env` itself through the `.env` loader, so the command is
+ * kept as the migration path for a machine that still holds those copies, and
+ * for the `prepare` line of a project that still calls it.
+ *
  * Usage:
- *   bun run harness:env              generate both surfaces from .env
- *   bun run harness:env --check      verify .env and the surfaces agree (exit 1 on drift)
- *   bun run harness:env --dry-run    print what WOULD change, write nothing
+ *   bun run harness:env              retire the stale copies (backup notice for any .env cannot reproduce)
+ *   bun run harness:env --check      exit 1 while a stale copy remains
+ *   bun run harness:env --dry-run    print what WOULD be retired, change nothing
  *   bun run harness:env --json       machine-readable result for either mode
  *   bun scripts/harness-env.ts --placeholders
- *                                    create EMPTY .auth/opencode/<VAR> files for every {file:}
- *                                    reference opencode.jsonc carries, never overwriting one.
- *                                    Run by `prepare` on every `bun install`; reads no .env.
+ *                                    create EMPTY .auth/opencode/<VAR> files for a LEGACY opencode.jsonc
+ *                                    that still carries {file:} references. Run by `prepare`; reads no .env.
  *
  * NEVER PRINTS A VALUE. Every line below carries variable NAMES and a verdict.
  */
 
 import {
+  BACKUP_DIR,
   check,
-  CLAUDE_LOCAL_SETTINGS,
   ensureOpencodePlaceholders,
-  generate,
-  OPENCODE_CONFIG,
   OPENCODE_SECRET_DIR,
+  retire,
 } from '../cli/lib/harness-env.ts';
 
 const argv = process.argv.slice(2);
@@ -34,7 +38,6 @@ const CHECK = argv.includes('--check');
 const DRY_RUN = argv.includes('--dry-run');
 const JSON_OUT = argv.includes('--json');
 const PLACEHOLDERS = argv.includes('--placeholders');
-const ALLOW_PRIMARY_REMOVAL = argv.includes('--allow-primary-removal');
 const HELP = argv.includes('--help') || argv.includes('-h');
 
 function names(list: string[]): string {
@@ -42,42 +45,46 @@ function names(list: string[]): string {
 }
 
 if (HELP) {
-  process.stdout.write(`harness-env — generate the per-harness credential surfaces from .env
+  process.stdout.write(`harness-env — retire the plaintext MCP credential copies
 
-  bun run harness:env              generate both surfaces
-  bun run harness:env --check      verify; exit 1 when .env and the surfaces disagree
-  bun run harness:env --dry-run    report what would change, write nothing
+MCP servers no longer read a copy of .env. Each one that needs .env values starts through
+  bunx -p varlock@<pin> varlock run --no-redact-stdout --inject vars --filter <its vars> -- <server>
+in .mcp.json, opencode.jsonc and .codex/config.toml, so it reads .env (or the secret manager)
+itself, however the harness was launched. This command removes what the old generator left:
+the env block of .claude/settings.local.json and ${OPENCODE_SECRET_DIR}/.
+
+  bun run harness:env              retire the stale copies
+  bun run harness:env --check      exit 1 while a stale copy remains
+  bun run harness:env --dry-run    report what would be retired, change nothing
   bun run harness:env --json       machine-readable result
-  bun run harness:env --allow-primary-removal
-                                   in a worktree, let this run REMOVE credentials from the main
-                                   checkout's env block (refused by default; never with no .env)
-  bun scripts/harness-env.ts --placeholders
-                                   create the EMPTY ${OPENCODE_SECRET_DIR}/<VAR> files a fresh clone
-                                   lacks (run by \`prepare\` on bun install; never overwrites, reads no .env)
 
-Surfaces
-  ${CLAUDE_LOCAL_SETTINGS}   env block, merged (every key it did not put there is preserved)
-  ${OPENCODE_SECRET_DIR}/<VAR>        value files at mode 0600, referenced from ${OPENCODE_CONFIG} as {file:...}
-
-Only variables an MCP config actually references are emitted. Values are never printed.
+A copy equal to .env is deleted. A copy .env does not reproduce is moved to ${BACKUP_DIR}/
+and named: put the right value in .env yourself, then delete that directory. A copy a host
+config still reads without the loader is kept until that config changes
+(\`bun run agents:compat:check\` names the change). Values are never printed.
 `);
   process.exit(0);
 }
 
 if (PLACEHOLDERS) {
   // Runs inside `bun install` (the `prepare` script), so it must never fail the
-  // install: a missing placeholder is reported by `bun run setup:doctor` and
-  // fixed by `bun run harness:env`, while a red `bun install` blocks everything.
+  // install. It only matters for a legacy opencode.jsonc; on the loader shape it
+  // creates nothing, and it points at the retirement when copies remain.
   try {
     const result = ensureOpencodePlaceholders();
-    process.stdout.write(
-      `harness-env --placeholders: ${OPENCODE_SECRET_DIR}/ created ${result.created.length} empty `
-      + `(${names(result.created)}); kept ${result.kept.length} existing${
-        result.error === undefined ? '' : `; WARNING ${result.error}`}\n`,
-    );
+    if (result.created.length > 0 || result.error !== undefined) {
+      process.stdout.write(
+        `harness-env --placeholders: ${OPENCODE_SECRET_DIR}/ created ${result.created.length} empty `
+        + `(${names(result.created)}) for a legacy opencode.jsonc${result.error === undefined ? '' : `; WARNING ${result.error}`}\n`,
+      );
+    }
+    const stale = check().findings.filter(f => f.kind === 'stale-copy');
+    if (stale.length > 0) {
+      process.stdout.write(`harness-env: plaintext MCP credential copies still on disk (${names(stale.flatMap(f => f.names))}); run \`bun run harness:env\` to retire them.\n`);
+    }
   }
   catch (err) {
-    process.stdout.write(`harness-env --placeholders: skipped (${(err as Error).message}); run \`bun run harness:env\` once .env is in place.\n`);
+    process.stdout.write(`harness-env --placeholders: skipped (${(err as Error).message}).\n`);
   }
   process.exit(0);
 }
@@ -88,7 +95,7 @@ if (CHECK) {
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
   }
   else {
-    process.stdout.write(`harness-env --check: ${result.ok ? 'OK' : 'DRIFT'}\n`);
+    process.stdout.write(`harness-env --check: ${result.ok ? 'OK' : 'STALE COPIES'}\n`);
     process.stdout.write(`  ${result.summary}\n`);
     for (const f of result.findings) {
       const mark = f.blocking ? 'x' : 'i';
@@ -102,59 +109,35 @@ if (CHECK) {
   process.exit(result.ok ? 0 : 1);
 }
 
-const result = generate(undefined, { dryRun: DRY_RUN, allowPrimaryRemoval: ALLOW_PRIMARY_REMOVAL });
+const result = retire(undefined, { dryRun: DRY_RUN });
 
 if (JSON_OUT) {
-  // Safe by construction: `GenerateResult.env` is typed without its `values`
-  // map, so there is no credential in this object to serialise.
+  // Safe by construction: RetireResult carries names and paths, never a value.
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-  process.exit(result.refused === undefined ? 0 : 1);
+  process.exit(result.errors.length === 0 ? 0 : 1);
 }
 
-if (result.refused !== undefined) {
-  // Nothing was written, dry run or not: see `primaryRemovalRefusal`.
-  process.stdout.write(`harness-env: REFUSED, nothing written.\n  ${result.refused}\n`);
-  process.stdout.write(`  main checkout file: ${result.claude.path}\n`);
+if (result.errors.length > 0) {
+  process.stdout.write('harness-env: REFUSED, nothing changed. An MCP config could not be parsed, and it might still read a copy:\n');
+  for (const error of result.errors) { process.stdout.write(`  ${error}\n`); }
   process.exit(1);
 }
 
-const verb = DRY_RUN ? 'would write' : 'wrote';
-process.stdout.write(`harness-env: ${result.changed ? verb : 'already in sync'}\n`);
-process.stdout.write(`  allowlist (${result.allowlist.all.length}): ${names(result.allowlist.all)}\n`);
-process.stdout.write(`  excluded (${result.excluded.length} of ${result.declared.length} declared in .env.example, no MCP config references them): ${names(result.excluded)}\n`);
-
-process.stdout.write(`\n  ${CLAUDE_LOCAL_SETTINGS}\n`);
-if (result.claude.redirectedToMainCheckout) {
-  // Measured: a Claude Code session in a worktree reads the MAIN checkout's
-  // file and ignores the worktree's. Writing the local copy would be a silent
-  // no-op, so say out loud which file was touched.
-  process.stdout.write('    (worktree: written to the MAIN checkout, which is the file Claude Code reads)\n');
-  process.stdout.write(`    -> ${result.claude.path}\n`);
-  if (result.claude.divergentFromMainCheckout.length > 0) {
-    process.stdout.write(
-      '    WARNING: this worktree\'s .env disagrees with the main checkout\'s for '
-      + `${names(result.claude.divergentFromMainCheckout)}, and every worktree on this machine `
-      + 'shares that one env block.\n',
-    );
+const verb = DRY_RUN ? 'would retire' : 'retired';
+process.stdout.write(`harness-env: ${result.changed ? verb : 'nothing to retire'}${DRY_RUN ? ' (dry run, nothing changed)' : ''}\n`);
+for (const surface of [...result.claude, ...(result.opencode === null ? [] : [result.opencode])]) {
+  process.stdout.write(`\n  ${surface.path}\n`);
+  process.stdout.write(`    deleted (same value in .env): ${names(surface.removed)}\n`);
+  process.stdout.write(`    backed up (.env differs or lacks it): ${names(surface.backedUp)}\n`);
+  if (surface.kept.length > 0) {
+    process.stdout.write(`    kept (a host config still reads them without the loader): ${names(surface.kept)}\n`);
   }
 }
-process.stdout.write(`    added:     ${names(result.claude.added)}\n`);
-process.stdout.write(`    updated:   ${names(result.claude.updated)}\n`);
-process.stdout.write(`    unchanged: ${names(result.claude.unchanged)}\n`);
-process.stdout.write(`    removed:   ${names(result.claude.removed)}\n`);
-process.stdout.write(`    skipped (empty in .env): ${names(result.claude.skipped)}\n`);
-process.stdout.write(`    preserved (not ours): ${names([...result.claude.preserved, ...result.claude.preservedKeys])}\n`);
-
-process.stdout.write(`\n  ${OPENCODE_SECRET_DIR}/ + ${OPENCODE_CONFIG}\n`);
-process.stdout.write(`    value files written:   ${names(result.opencode.write)}\n`);
-process.stdout.write(`    value files unchanged: ${names(result.opencode.unchanged)}\n`);
-process.stdout.write(`    value files removed:   ${names(result.opencode.removed)}\n`);
-process.stdout.write(`    {env:} rewritten to {file:}: ${names(result.opencode.rewritten)}\n`);
-process.stdout.write(`    undeclared in .env (kept on {env:}, unchanged behaviour): ${names(result.opencode.undeclared)}\n`);
-
-if (result.allowlist.declaredNotReferenced.length > 0) {
-  process.stdout.write(`\n  note: MCP_SERVER_SECRETS declares, no config references: ${names(result.allowlist.declaredNotReferenced)}\n`);
+if (result.backupDirs.length > 0) {
+  process.stdout.write(`\n  BACKUP: ${result.backupDirs.join(', ')}\n`);
+  process.stdout.write('    These held a value .env does not have. Put the right one in .env (or the secret manager) yourself,\n');
+  process.stdout.write('    then delete the directory: it is a plaintext copy too. Never paste a value into the chat.\n');
 }
-if (result.allowlist.referencedNotDeclared.length > 0) {
-  process.stdout.write(`  note: a config references, MCP_SERVER_SECRETS does not declare: ${names(result.allowlist.referencedNotDeclared)}\n`);
+if (result.changed && !DRY_RUN) {
+  process.stdout.write('\n  Restart the agent session: MCP servers read .env when the harness spawns them.\n');
 }

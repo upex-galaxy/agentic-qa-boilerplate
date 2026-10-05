@@ -1,5 +1,5 @@
 /**
- * @fileoverview Tests for the per-harness credential generator.
+ * @fileoverview Tests for the retirement of the plaintext MCP credential copies.
  *
  * Every test runs against a throwaway repo root under `os.tmpdir()`, so nothing
  * here reads or writes this checkout's real `.env`, settings or `.auth/`.
@@ -13,20 +13,17 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync,
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, describe, expect, test } from 'bun:test';
-import { CODEX_ENV_LOADER_ARGS } from './agent-compatibility-contracts.ts';
+import { mcpEnvLoaderArgs } from './agent-compatibility-contracts.ts';
 import {
-  buildAllowlist,
+  BACKUP_DIR,
   check,
   CLAUDE_LOCAL_SETTINGS,
   claudeSettingsRoot,
-  codexNamesWithoutLoader,
   ensureOpencodePlaceholders,
-  generate,
-  OPENCODE_CONFIG,
+  hostReads,
   OPENCODE_SECRET_DIR,
-  opencodeFileRef,
-  planClaudeSettings,
   readEnvSnapshot,
+  retire,
   stripInlineComments,
 } from './harness-env.ts';
 
@@ -40,14 +37,7 @@ function makeRoot(): string {
   return root;
 }
 
-/**
- * A literal `${VAR}` placeholder, the form `.mcp.json` and `dbhub.toml` carry.
- *
- * Built here rather than written inline because a plain string containing
- * `${...}` trips `no-template-curly-in-string`, and that rule is right in
- * general: it catches a template literal someone forgot to backtick. A template
- * literal with an escaped `$` is exempt and says what it means.
- */
+/** A literal `${VAR}` placeholder, the form a legacy `.mcp.json` carries. */
 function dollarVar(name: string): string {
   return `\${${name}}`;
 }
@@ -58,6 +48,10 @@ function write(root: string, rel: string, contents: string): void {
   writeFileSync(target, contents, 'utf8');
 }
 
+function readJson(root: string, rel: string): Record<string, unknown> {
+  return JSON.parse(readFileSync(join(root, rel), 'utf8')) as Record<string, unknown>;
+}
+
 afterEach(() => {
   while (roots.length > 0) {
     const root = roots.pop();
@@ -65,65 +59,43 @@ afterEach(() => {
   }
 });
 
-/**
- * A minimal repo: one HTTP MCP with a bearer token, one local MCP with a
- * dbhub-style env block.
- *
- * `template` is the COMMITTED `.env.example`, which is what decides whether
- * `opencode.jsonc` may carry a `{file:}` reference for a variable. It defaults
- * to declaring both variables, empty, which is the shape a real template has.
- */
-function scaffold(root: string, env: string, template = 'TAVILY_API_KEY=\nDBHUB_HOST=\n'): void {
-  write(root, '.env.example', template);
-  write(root, '.mcp.json', JSON.stringify({
-    mcpServers: {
-      tavily: { type: 'http', url: 'https://example.invalid/mcp', headers: { Authorization: `Bearer ${dollarVar('TAVILY_API_KEY')}` } },
-      dbhub: { command: 'bunx', args: ['dbhub', '--config', 'dbhub.toml'], env: { DBHUB_HOST: dollarVar('DBHUB_HOST') } },
-    },
-  }, null, 2));
-  write(root, OPENCODE_CONFIG, [
-    '{',
-    '  // Docs comment mentioning {env:VAR} and {env:VAR_NAME} — noise, not variables.',
-    '  "mcp": {',
-    '    "tavily": { "headers": { "Authorization": "Bearer {env:TAVILY_API_KEY}" } },',
-    '    "dbhub": { "environment": { "DBHUB_HOST": "{env:DBHUB_HOST}" } }',
-    '  }',
-    '}',
-    '',
-  ].join('\n'));
-  write(root, '.codex/config.toml', [
-    `# Header comment naming ${dollarVar('VAR')} — noise.`,
-    '[mcp_servers.tavily]',
-    'bearer_token_env_var = "TAVILY_API_KEY"',
-    '',
-    '[mcp_servers.dbhub]',
-    'env_vars = ["DBHUB_HOST"]',
-    'env = { CODEX_LITERAL = "not-from-dotenv" }',
-    '',
-  ].join('\n'));
-  write(root, 'dbhub.toml', [
-    `# Credentials resolved via ${dollarVar('VAR')} interpolation — the word VAR here is noise.`,
-    '[[sources]]',
-    `host = "${dollarVar('DBHUB_HOST')}"`,
-    '',
-  ].join('\n'));
-  write(root, '.env', env);
+const SERVER = ['bunx', '-y', 'some-mcp@1'];
+
+/** The three MCP configs on the loader shape: one server reading TOKEN_A and HOST_B through `--filter`. */
+function loaderConfigs(root: string): void {
+  const args = [...mcpEnvLoaderArgs(['TOKEN_A', 'HOST_B']), ...SERVER];
+  write(root, '.mcp.json', JSON.stringify({ mcpServers: { srv: { command: 'bunx', args } } }));
+  write(root, 'opencode.jsonc', JSON.stringify({ mcp: { srv: { type: 'local', command: ['bunx', ...args], enabled: true } } }));
+  write(root, '.codex/config.toml', `[mcp_servers.srv]\ncommand = "bunx"\nargs = [${args.map(a => JSON.stringify(a)).join(', ')}]\n`);
+}
+
+/** The pre-loader shape: `${VAR}` in `.mcp.json`, `{file:}` in `opencode.jsonc`. */
+function legacyConfigs(root: string): void {
+  write(root, '.mcp.json', JSON.stringify({ mcpServers: { srv: { command: 'bunx', args: SERVER.slice(1), env: { TOKEN_A: dollarVar('TOKEN_A'), HOST_B: dollarVar('HOST_B') } } } }));
+  write(root, 'opencode.jsonc', JSON.stringify({ mcp: { srv: { type: 'local', command: SERVER, environment: {
+    TOKEN_A: `{file:${OPENCODE_SECRET_DIR}/TOKEN_A}`,
+    HOST_B: `{file:${OPENCODE_SECRET_DIR}/HOST_B}`,
+  } } } }));
+  write(root, '.codex/config.toml', '[mcp_servers.srv]\ncommand = "bunx"\nargs = ["-y", "some-mcp@1"]\nenv_vars = ["TOKEN_A", "HOST_B"]\n');
+}
+
+/** The copies the retired generator left behind. */
+function oldCopies(root: string, values: Record<string, string>, extraEnv: Record<string, string> = {}): void {
+  write(root, CLAUDE_LOCAL_SETTINGS, JSON.stringify({ permissions: { allow: ['Bash(ls)'] }, env: { ...values, ...extraEnv } }, null, 2));
+  for (const [name, value] of Object.entries(values)) { write(root, `${OPENCODE_SECRET_DIR}/${name}`, value); }
 }
 
 describe('stripInlineComments', () => {
   test('strips a comment after an unquoted value', () => {
-    const out = readEnvSnapshotFrom('DBHUB_TYPE=          # sqlserver | postgres\n');
-    expect(out.DBHUB_TYPE).toBe('');
+    expect(readEnvSnapshotFrom('DBHUB_TYPE=          # sqlserver | postgres\n').DBHUB_TYPE).toBe('');
   });
 
   test('keeps a quoted value whole, comment marker and all', () => {
-    const out = readEnvSnapshotFrom('A="keep # this"\n');
-    expect(out.A).toBe('keep # this');
+    expect(readEnvSnapshotFrom('A="keep # this"\n').A).toBe('keep # this');
   });
 
   test('keeps a hash with no whitespace before it', () => {
-    const out = readEnvSnapshotFrom('B=pass#word\n');
-    expect(out.B).toBe('pass#word');
+    expect(readEnvSnapshotFrom('B=pass#word\n').B).toBe('pass#word');
   });
 
   test('leaves a full-line comment alone', () => {
@@ -137,455 +109,174 @@ describe('stripInlineComments', () => {
   }
 });
 
-describe('buildAllowlist', () => {
-  test('parses every config and never picks up the comment noise', () => {
+describe('hostReads', () => {
+  test('a loader-shaped config leaves nothing for a host to read', () => {
     const root = makeRoot();
-    scaffold(root, 'TAVILY_API_KEY=tk\nDBHUB_HOST=db.invalid\n');
-    const list = buildAllowlist(root);
-    expect(list.all).toEqual(['DBHUB_HOST', 'TAVILY_API_KEY']);
-    expect(list.all).not.toContain('VAR');
-    expect(list.all).not.toContain('VAR_NAME');
+    loaderConfigs(root);
+    const reads = hostReads(root);
+    expect(reads.claude).toEqual([]);
+    expect(reads.opencode).toEqual([]);
+    expect(reads.all).toEqual(expect.arrayContaining(['HOST_B', 'TOKEN_A']));
   });
 
-  test('reports Codex variables only for servers that skip the .env loader', () => {
+  test('a legacy config still reads its names through the host', () => {
     const root = makeRoot();
-    write(root, '.codex/config.toml', [
-      '[mcp_servers.wrapped]',
-      'command = "bunx"',
-      `args = [${[...CODEX_ENV_LOADER_ARGS, 'bunx', '-y', 'pkg@1'].map(a => JSON.stringify(a)).join(', ')}]`,
-      'env_vars = ["WRAPPED_VAR"]',
-      '',
-      '[mcp_servers.bare]',
-      'command = "bunx"',
-      'args = ["-y", "pkg@1"]',
-      'env_vars = ["BARE_VAR"]',
-      '',
-      '[mcp_servers.remote]',
-      'url = "https://example.test/mcp"',
-      'bearer_token_env_var = "REMOTE_TOKEN"',
-      '',
-    ].join('\n'));
-
-    expect(codexNamesWithoutLoader(root)).toEqual(['BARE_VAR', 'REMOTE_TOKEN']);
+    legacyConfigs(root);
+    const reads = hostReads(root);
+    expect(reads.claude).toEqual(['HOST_B', 'TOKEN_A']);
+    expect(reads.opencode).toEqual(['HOST_B', 'TOKEN_A']);
   });
 
-  test('skips a Codex [mcp_servers.*].env table, whose values Codex supplies itself', () => {
+  test('a Claude dbhub without the loader still reads what dbhub.toml interpolates', () => {
     const root = makeRoot();
-    scaffold(root, '');
-    expect(buildAllowlist(root).all).not.toContain('CODEX_LITERAL');
-  });
-
-  test('scopes emitter A to .mcp.json plus dbhub.toml, and emitter B to opencode.jsonc', () => {
-    const root = makeRoot();
-    scaffold(root, '');
-    write(root, 'dbhub.toml', `[[sources]]\nport = "${dollarVar('DBHUB_PORT')}"\n`);
-    const list = buildAllowlist(root);
-    expect(list.claude).toEqual(['DBHUB_HOST', 'DBHUB_PORT', 'TAVILY_API_KEY']);
-    expect(list.opencode).toEqual(['DBHUB_HOST', 'TAVILY_API_KEY']);
-  });
-
-  test('reports an unparseable config instead of silently emitting a short allowlist', () => {
-    const root = makeRoot();
-    scaffold(root, 'TAVILY_API_KEY=tk\n');
-    write(root, '.mcp.json', '{ not json');
-    const result = check(root);
-    expect(result.ok).toBe(false);
-    expect(result.findings.some(f => f.kind === 'config-unparseable' && f.names.includes('.mcp.json'))).toBe(true);
-  });
-
-  test('cross-checks the declared MCP_SERVER_SECRETS map without failing on drift', () => {
-    const root = makeRoot();
-    scaffold(root, 'TAVILY_API_KEY=tk\nDBHUB_HOST=db.invalid\n');
-    const findings = check(root).findings.filter(f => f.surface === 'allowlist' && f.kind !== 'config-unparseable');
-    expect(findings.every(f => f.blocking === false)).toBe(true);
+    loaderConfigs(root);
+    write(root, '.mcp.json', JSON.stringify({ mcpServers: { dbhub: { command: 'bunx', args: ['-y', '@bytebase/dbhub@1', '--config', 'dbhub.toml'] } } }));
+    write(root, 'dbhub.toml', `[[sources]]\nhost = "${dollarVar('DB_HOST_X')}"\n`);
+    expect(hostReads(root).claude).toEqual(['DB_HOST_X']);
   });
 });
 
-describe('emitter A — .claude/settings.local.json', () => {
-  test('creates the env block with only the allowlisted variables', () => {
+describe('retire', () => {
+  test('deletes copies .env reproduces, drops the env block, keeps every other setting', () => {
     const root = makeRoot();
-    scaffold(
-      root,
-      'TAVILY_API_KEY=tk\nDBHUB_HOST=db.invalid\nATLASSIAN_API_TOKEN=nope\nLOCAL_USER_PASSWORD=nope\n',
-      'TAVILY_API_KEY=\nDBHUB_HOST=\nATLASSIAN_API_TOKEN=\nLOCAL_USER_PASSWORD=\n',
-    );
-    const result = generate(root);
-    const data = JSON.parse(readFileSync(join(root, CLAUDE_LOCAL_SETTINGS), 'utf8')) as { env: Record<string, string> };
-    expect(Object.keys(data.env).sort()).toEqual(['DBHUB_HOST', 'TAVILY_API_KEY']);
-    // Jira credentials and test users are declared by the template and used by
-    // no MCP, so they are never copied into a harness config.
-    expect(result.excluded).toEqual(['ATLASSIAN_API_TOKEN', 'LOCAL_USER_PASSWORD']);
-    expect(result.declared).toHaveLength(4);
-  });
+    loaderConfigs(root);
+    write(root, '.env', 'TOKEN_A=tok-literal\nHOST_B=host.invalid\n');
+    oldCopies(root, { TOKEN_A: 'tok-literal', HOST_B: 'host.invalid' });
 
-  test('the summary arithmetic closes: emitted plus excluded equals declared', () => {
-    const root = makeRoot();
-    scaffold(root, 'TAVILY_API_KEY=tk\n', 'TAVILY_API_KEY=\nDBHUB_HOST=\nATLASSIAN_API_TOKEN=\n');
-    const result = generate(root);
-    expect(result.emitted.length + result.excluded.length).toBe(result.declared.length);
-    expect(check(root).summary).toContain('emitted 2 of 3 declared variables; 1 not referenced');
-  });
-
-  test('MERGES: every key it did not put there survives', () => {
-    const root = makeRoot();
-    scaffold(root, 'TAVILY_API_KEY=tk\nDBHUB_HOST=db.invalid\n');
-    write(root, CLAUDE_LOCAL_SETTINGS, JSON.stringify({
-      permissions: { allow: ['Bash(git status)'], deny: ['Bash(rm -rf *)'] },
-      hooks: { UserPromptSubmit: [] },
-      env: { CLAUDE_CODE_SOMETHING: 'hand-placed' },
-    }, null, 2));
-    generate(root);
-    const data = JSON.parse(readFileSync(join(root, CLAUDE_LOCAL_SETTINGS), 'utf8')) as Record<string, unknown>;
-    expect(data.permissions).toEqual({ allow: ['Bash(git status)'], deny: ['Bash(rm -rf *)'] });
-    expect(data.hooks).toEqual({ UserPromptSubmit: [] });
-    expect((data.env as Record<string, string>).CLAUDE_CODE_SOMETHING).toBe('hand-placed');
-    expect(Object.keys(data.env as object).sort()).toEqual(['CLAUDE_CODE_SOMETHING', 'DBHUB_HOST', 'TAVILY_API_KEY']);
-  });
-
-  test('skips an allowlisted variable .env declares empty rather than writing an empty override', () => {
-    const root = makeRoot();
-    scaffold(root, 'TAVILY_API_KEY=tk\nDBHUB_HOST=\n');
-    const result = generate(root);
-    expect(result.claude.skipped).toEqual(['DBHUB_HOST']);
-    const data = JSON.parse(readFileSync(join(root, CLAUDE_LOCAL_SETTINGS), 'utf8')) as { env: Record<string, string> };
-    expect('DBHUB_HOST' in data.env).toBe(false);
-  });
-
-  test('removes an entry it owns once .env stops giving it a value', () => {
-    const root = makeRoot();
-    scaffold(root, 'TAVILY_API_KEY=tk\nDBHUB_HOST=db.invalid\n');
-    generate(root);
-    write(root, '.env', 'TAVILY_API_KEY=tk\nDBHUB_HOST=\n');
-    const result = generate(root);
-    expect(result.claude.removed).toEqual(['DBHUB_HOST']);
-    const data = JSON.parse(readFileSync(join(root, CLAUDE_LOCAL_SETTINGS), 'utf8')) as { env: Record<string, string> };
-    expect('DBHUB_HOST' in data.env).toBe(false);
-  });
-
-  test('refuses to rewrite a settings file it cannot parse', () => {
-    const root = makeRoot();
-    scaffold(root, 'TAVILY_API_KEY=tk\n');
-    write(root, CLAUDE_LOCAL_SETTINGS, '{ broken');
-    const { plan, content } = planClaudeSettings(root);
-    expect(content).toBeNull();
-    expect(plan.dirty).toBe(false);
-    expect(readFileSync(join(root, CLAUDE_LOCAL_SETTINGS), 'utf8')).toBe('{ broken');
-  });
-
-  test('is idempotent: a second run writes nothing', () => {
-    const root = makeRoot();
-    scaffold(root, 'TAVILY_API_KEY=tk\nDBHUB_HOST=db.invalid\n');
-    generate(root);
-    expect(generate(root).changed).toBe(false);
-  });
-
-  test('writes at mode 0600', () => {
-    if (process.platform === 'win32') { return; }
-    const root = makeRoot();
-    scaffold(root, 'TAVILY_API_KEY=tk\n');
-    generate(root);
-    expect(statSync(join(root, CLAUDE_LOCAL_SETTINGS)).mode & 0o777).toBe(0o600);
-  });
-});
-
-describe('emitter B — .auth/opencode + opencode.jsonc', () => {
-  test('writes one value file per referenced variable and rewrites the placeholders', () => {
-    const root = makeRoot();
-    scaffold(root, 'TAVILY_API_KEY=tk\nDBHUB_HOST=db.invalid\n');
-    const result = generate(root);
-    expect(result.opencode.rewritten).toEqual(['DBHUB_HOST', 'TAVILY_API_KEY']);
-    const config = readFileSync(join(root, OPENCODE_CONFIG), 'utf8');
-    expect(config).toContain(opencodeFileRef('TAVILY_API_KEY'));
-    expect(config).toContain(opencodeFileRef('DBHUB_HOST'));
-    expect(config).not.toContain('{env:TAVILY_API_KEY}');
-    expect(readFileSync(join(root, OPENCODE_SECRET_DIR, 'TAVILY_API_KEY'), 'utf8')).toBe('tk');
-  });
-
-  test('writes NO trailing newline, because {file:} substitutes contents verbatim', () => {
-    const root = makeRoot();
-    scaffold(root, 'TAVILY_API_KEY=tk\n');
-    generate(root);
-    const raw = readFileSync(join(root, OPENCODE_SECRET_DIR, 'TAVILY_API_KEY'), 'utf8');
-    expect(raw.endsWith('\n')).toBe(false);
-    expect(raw).toBe('tk');
-  });
-
-  test('keeps the config comments that document the MCP wiring', () => {
-    const root = makeRoot();
-    scaffold(root, 'TAVILY_API_KEY=tk\n');
-    generate(root);
-    expect(readFileSync(join(root, OPENCODE_CONFIG), 'utf8')).toContain('Docs comment mentioning');
-  });
-
-  test('writes an EMPTY file rather than none, because a MISSING target invalidates the WHOLE OpenCode config', () => {
-    const root = makeRoot();
-    scaffold(root, 'TAVILY_API_KEY=tk\nDBHUB_HOST=\n');
-    generate(root);
-    const target = join(root, OPENCODE_SECRET_DIR, 'DBHUB_HOST');
-    expect(existsSync(target)).toBe(true);
-    expect(readFileSync(target, 'utf8')).toBe('');
-  });
-
-  test('writes a file, and rewrites, for a variable the TEMPLATE declares even when .env omits it', () => {
-    const root = makeRoot();
-    // The fresh-clone guarantee: `.env` knows nothing about DBHUB_HOST, but
-    // `.env.example` does, so the committed config's shape does not depend on
-    // this developer's `.env` and the {file:} target still exists.
-    scaffold(root, 'TAVILY_API_KEY=tk\n');
-    const result = generate(root);
-    expect(result.opencode.write).toEqual(['DBHUB_HOST', 'TAVILY_API_KEY']);
-    expect(result.opencode.undeclared).toEqual([]);
-    expect(readFileSync(join(root, OPENCODE_SECRET_DIR, 'DBHUB_HOST'), 'utf8')).toBe('');
-    expect(readFileSync(join(root, OPENCODE_CONFIG), 'utf8')).toContain(opencodeFileRef('DBHUB_HOST'));
-  });
-
-  test('leaves {env:} alone for a variable the TEMPLATE never declares, rather than asserting a contract that does not exist', () => {
-    const root = makeRoot();
-    scaffold(root, 'TAVILY_API_KEY=tk\n', 'TAVILY_API_KEY=\n');
-    const result = generate(root);
-    expect(result.opencode.undeclared).toEqual(['DBHUB_HOST']);
-    expect(existsSync(join(root, OPENCODE_SECRET_DIR, 'DBHUB_HOST'))).toBe(false);
-    const config = readFileSync(join(root, OPENCODE_CONFIG), 'utf8');
-    expect(config).toContain('{env:DBHUB_HOST}');
-    expect(config).toContain(opencodeFileRef('TAVILY_API_KEY'));
-  });
-
-  test('an undocumented variable is reported but does not fail the check, because nothing got worse', () => {
-    const root = makeRoot();
-    scaffold(root, 'TAVILY_API_KEY=tk\n', 'TAVILY_API_KEY=\n');
-    generate(root);
-    const result = check(root);
-    expect(result.ok).toBe(true);
-    const finding = result.findings.find(f => f.kind === 'undeclared');
-    expect(finding?.names).toEqual(['DBHUB_HOST']);
-    expect(finding?.blocking).toBe(false);
-  });
-
-  test('picks the variable up once the template declares it', () => {
-    const root = makeRoot();
-    scaffold(root, 'TAVILY_API_KEY=tk\n', 'TAVILY_API_KEY=\n');
-    generate(root);
-    write(root, '.env.example', 'TAVILY_API_KEY=\nDBHUB_HOST=\n');
-    const result = generate(root);
-    expect(result.opencode.rewritten).toEqual(['DBHUB_HOST']);
-    expect(readFileSync(join(root, OPENCODE_CONFIG), 'utf8')).toContain(opencodeFileRef('DBHUB_HOST'));
-    expect(check(root).ok).toBe(true);
-  });
-
-  test('removes a stale value file nothing references any more', () => {
-    const root = makeRoot();
-    scaffold(root, 'TAVILY_API_KEY=tk\nDBHUB_HOST=db.invalid\n');
-    generate(root);
-    write(root, `${OPENCODE_SECRET_DIR}/GONE_API_KEY`, 'leftover');
-    const result = generate(root);
-    expect(result.opencode.removed).toEqual(['GONE_API_KEY']);
-    expect(existsSync(join(root, OPENCODE_SECRET_DIR, 'GONE_API_KEY'))).toBe(false);
-  });
-
-  test('writes value files at mode 0600 in a 0700 directory', () => {
-    if (process.platform === 'win32') { return; }
-    const root = makeRoot();
-    scaffold(root, 'TAVILY_API_KEY=tk\nDBHUB_HOST=db.invalid\n');
-    generate(root);
-    expect(statSync(join(root, OPENCODE_SECRET_DIR, 'TAVILY_API_KEY')).mode & 0o777).toBe(0o600);
-    expect(statSync(join(root, OPENCODE_SECRET_DIR)).mode & 0o777).toBe(0o700);
-  });
-
-  test('emits a POSIX reference path on every platform', () => {
-    expect(opencodeFileRef('TAVILY_API_KEY')).toBe('{file:.auth/opencode/TAVILY_API_KEY}');
-  });
-
-  test('still recognises the variables after the rewrite has erased every {env:} form', () => {
-    const root = makeRoot();
-    scaffold(root, 'TAVILY_API_KEY=tk\nDBHUB_HOST=db.invalid\n');
-    generate(root);
-    const config = readFileSync(join(root, OPENCODE_CONFIG), 'utf8');
-    expect(config).not.toContain('{env:TAVILY_API_KEY}');
-    expect(config).not.toContain('{env:DBHUB_HOST}');
-    // The comment's {env:VAR} prose survives, because the rewrite is driven by
-    // the PARSED allowlist and `VAR` is not in it.
-    expect(config).toContain('{env:VAR}');
-    // The emitter erased its own input. The {file:} form must count as the same
-    // declaration, or the next run deletes the value files it just wrote.
-    expect(buildAllowlist(root).opencode).toEqual(['DBHUB_HOST', 'TAVILY_API_KEY']);
-    expect(generate(root).opencode.removed).toEqual([]);
-  });
-});
-
-describe('ensureOpencodePlaceholders — the fresh-clone guarantee', () => {
-  /** A COMMITTED config after the generator has run: `{file:}` references, no `.env` anywhere. */
-  function scaffoldFreshClone(root: string): void {
-    write(root, OPENCODE_CONFIG, [
-      '{',
-      '  // Comment naming {file:.auth/opencode/VAR} — noise, not a variable.',
-      '  "mcp": {',
-      `    "tavily": { "headers": { "Authorization": "Bearer ${opencodeFileRef('TAVILY_API_KEY')}" } },`,
-      `    "dbhub": { "environment": { "DBHUB_HOST": "${opencodeFileRef('DBHUB_HOST')}" } }`,
-      '  }',
-      '}',
-      '',
-    ].join('\n'));
-  }
-
-  test('creates an EMPTY file for every {file:} reference, because a MISSING target invalidates the whole config', () => {
-    const root = makeRoot();
-    scaffoldFreshClone(root);
-    const result = ensureOpencodePlaceholders(root);
-    expect(result.created).toEqual(['DBHUB_HOST', 'TAVILY_API_KEY']);
-    expect(result.kept).toEqual([]);
-    expect(result.created).not.toContain('VAR');
-    expect(readFileSync(join(root, OPENCODE_SECRET_DIR, 'TAVILY_API_KEY'), 'utf8')).toBe('');
-    expect(existsSync(join(root, '.env'))).toBe(false);
-  });
-
-  test('never overwrites an existing file: it may hold a real credential', () => {
-    const root = makeRoot();
-    scaffoldFreshClone(root);
-    write(root, `${OPENCODE_SECRET_DIR}/TAVILY_API_KEY`, 'real-value-literal');
-    const result = ensureOpencodePlaceholders(root);
-    expect(result.kept).toEqual(['TAVILY_API_KEY']);
-    expect(result.created).toEqual(['DBHUB_HOST']);
-    expect(readFileSync(join(root, OPENCODE_SECRET_DIR, 'TAVILY_API_KEY'), 'utf8')).toBe('real-value-literal');
-  });
-
-  test('is idempotent: a second run creates nothing', () => {
-    const root = makeRoot();
-    scaffoldFreshClone(root);
-    ensureOpencodePlaceholders(root);
-    const again = ensureOpencodePlaceholders(root);
-    expect(again.created).toEqual([]);
-    expect(again.kept).toEqual(['DBHUB_HOST', 'TAVILY_API_KEY']);
-  });
-
-  test('writes at mode 0600, like every other value file', () => {
-    if (process.platform === 'win32') { return; }
-    const root = makeRoot();
-    scaffoldFreshClone(root);
-    ensureOpencodePlaceholders(root);
-    expect(statSync(join(root, OPENCODE_SECRET_DIR, 'TAVILY_API_KEY')).mode & 0o777).toBe(0o600);
-  });
-
-  test('does nothing, and says nothing broke, when there is no opencode.jsonc', () => {
-    const root = makeRoot();
-    const result = ensureOpencodePlaceholders(root);
-    expect(result).toEqual({ created: [], kept: [] });
+    const result = retire(root);
+    expect(result.changed).toBe(true);
+    expect(result.claude[0].removed).toEqual(['HOST_B', 'TOKEN_A']);
+    expect(result.opencode?.removed).toEqual(['HOST_B', 'TOKEN_A']);
+    expect(result.backupDirs).toEqual([]);
+    const settings = readJson(root, CLAUDE_LOCAL_SETTINGS);
+    expect(settings.env).toBeUndefined();
+    expect(settings.permissions).toEqual({ allow: ['Bash(ls)'] });
     expect(existsSync(join(root, OPENCODE_SECRET_DIR))).toBe(false);
+    expect(existsSync(join(root, BACKUP_DIR))).toBe(false);
+  });
+
+  test('an empty copy of a variable .env does not declare is reproducible', () => {
+    const root = makeRoot();
+    loaderConfigs(root);
+    write(root, '.env', 'TOKEN_A=tok-literal\n');
+    oldCopies(root, { TOKEN_A: 'tok-literal', HOST_B: '' });
+    expect(retire(root).opencode?.removed).toEqual(['HOST_B', 'TOKEN_A']);
+  });
+
+  test('backs up, at 0600, a copy .env does not reproduce, and never returns its value', () => {
+    const root = makeRoot();
+    loaderConfigs(root);
+    write(root, '.env', 'TOKEN_A=new-literal\nHOST_B=host.invalid\n');
+    oldCopies(root, { TOKEN_A: 'old-literal', HOST_B: 'host.invalid' });
+
+    const result = retire(root);
+    expect(result.claude[0].backedUp).toEqual(['TOKEN_A']);
+    expect(result.opencode?.backedUp).toEqual(['TOKEN_A']);
+    expect(result.backupDirs).toEqual([join(root, BACKUP_DIR)]);
+    const backup = join(root, BACKUP_DIR, 'TOKEN_A');
+    expect(readFileSync(backup, 'utf8')).toBe('old-literal');
+    if (process.platform !== 'win32') { expect(statSync(backup).mode & 0o777).toBe(0o600); }
+    expect(readJson(root, CLAUDE_LOCAL_SETTINGS).env).toBeUndefined();
+    expect(JSON.stringify(result)).not.toContain('old-literal');
+    expect(JSON.stringify(result)).not.toContain('new-literal');
+  });
+
+  test('keeps a key that is not an MCP credential', () => {
+    const root = makeRoot();
+    loaderConfigs(root);
+    write(root, '.env', 'TOKEN_A=t\nHOST_B=h\n');
+    oldCopies(root, { TOKEN_A: 't', HOST_B: 'h' }, { MY_OWN_FLAG: '1' });
+    const result = retire(root);
+    expect(result.claude[0].preserved).toEqual(['MY_OWN_FLAG']);
+    expect(readJson(root, CLAUDE_LOCAL_SETTINGS).env).toEqual({ MY_OWN_FLAG: '1' });
+  });
+
+  test('keeps every copy a legacy config still reads, so that host keeps working', () => {
+    const root = makeRoot();
+    legacyConfigs(root);
+    write(root, '.env', 'TOKEN_A=t\nHOST_B=h\n');
+    oldCopies(root, { TOKEN_A: 't', HOST_B: 'h' });
+    const result = retire(root);
+    expect(result.changed).toBe(false);
+    expect(result.claude[0].kept).toEqual(['HOST_B', 'TOKEN_A']);
+    expect(result.opencode?.kept).toEqual(['HOST_B', 'TOKEN_A']);
+    expect(readJson(root, CLAUDE_LOCAL_SETTINGS).env).toEqual({ TOKEN_A: 't', HOST_B: 'h' });
+    expect(existsSync(join(root, OPENCODE_SECRET_DIR, 'TOKEN_A'))).toBe(true);
+  });
+
+  test('a dry run changes nothing', () => {
+    const root = makeRoot();
+    loaderConfigs(root);
+    write(root, '.env', 'TOKEN_A=t\n');
+    oldCopies(root, { TOKEN_A: 'other', HOST_B: '' });
+    const before = readFileSync(join(root, CLAUDE_LOCAL_SETTINGS), 'utf8');
+    const result = retire(root, { dryRun: true });
+    expect(result.changed).toBe(true);
+    expect(result.backupDirs).toEqual([join(root, BACKUP_DIR)]);
+    expect(readFileSync(join(root, CLAUDE_LOCAL_SETTINGS), 'utf8')).toBe(before);
+    expect(existsSync(join(root, OPENCODE_SECRET_DIR, 'TOKEN_A'))).toBe(true);
+    expect(existsSync(join(root, BACKUP_DIR))).toBe(false);
+  });
+
+  test('refuses to retire anything while an MCP config does not parse', () => {
+    const root = makeRoot();
+    loaderConfigs(root);
+    write(root, '.mcp.json', '{ not json');
+    write(root, '.env', 'TOKEN_A=t\n');
+    oldCopies(root, { TOKEN_A: 't' });
+    const result = retire(root);
+    expect(result.errors.length).toBeGreaterThan(0);
+    expect(result.changed).toBe(false);
+    expect(existsSync(join(root, OPENCODE_SECRET_DIR, 'TOKEN_A'))).toBe(true);
+  });
+
+  test('nothing on disk: nothing to do', () => {
+    const root = makeRoot();
+    loaderConfigs(root);
+    const result = retire(root);
+    expect(result).toMatchObject({ claude: [], opencode: null, changed: false, errors: [] });
   });
 });
 
-describe('worktree redirection', () => {
-  test('emitter A writes the MAIN checkout, because that is the file Claude Code reads', () => {
+describe('worktree', () => {
+  test('retires the MAIN checkout\'s env block, the one Claude Code reads, from a worktree', () => {
     if (process.platform === 'win32') { return; }
     const parent = makeRoot();
     const main = join(parent, 'main');
     mkdirSync(main, { recursive: true });
     run(main, ['init', '-q']);
     run(main, ['-c', 'user.email=t@t.invalid', '-c', 'user.name=t', 'commit', '-q', '--allow-empty', '-m', 'init']);
-    scaffold(main, 'TAVILY_API_KEY=tk\nDBHUB_HOST=db.invalid\n');
     const wt = join(parent, 'wt');
     run(main, ['worktree', 'add', '-q', wt, '-b', 'probe']);
-    scaffold(wt, 'TAVILY_API_KEY=tk\nDBHUB_HOST=db.invalid\n');
+    for (const root of [main, wt]) {
+      loaderConfigs(root);
+      write(root, '.env', 'TOKEN_A=t\nHOST_B=h\n');
+    }
+    write(main, CLAUDE_LOCAL_SETTINGS, JSON.stringify({ env: { TOKEN_A: 't', HOST_B: 'h' } }));
 
     expect(claudeSettingsRoot(wt)).toBe(main);
-    const result = generate(wt);
-    expect(result.claude.redirectedToMainCheckout).toBe(true);
-    // The credential lands where the harness looks...
-    expect(existsSync(join(main, CLAUDE_LOCAL_SETTINGS))).toBe(true);
-    // ...and NOT only in the worktree, where it would be a silent no-op.
-    expect(existsSync(join(wt, CLAUDE_LOCAL_SETTINGS))).toBe(false);
-    // Emitter B stays worktree-local: its {file:} paths resolve against the
-    // worktree's own opencode.jsonc.
-    expect(existsSync(join(wt, OPENCODE_SECRET_DIR, 'TAVILY_API_KEY'))).toBe(true);
-    expect(existsSync(join(main, OPENCODE_SECRET_DIR, 'TAVILY_API_KEY'))).toBe(false);
+    const result = retire(wt);
+    expect(result.claude.map(s => s.path)).toEqual([join(main, CLAUDE_LOCAL_SETTINGS)]);
+    expect(readJson(main, CLAUDE_LOCAL_SETTINGS).env).toBeUndefined();
   });
 
-  test('warns, by NAME only, when the worktree .env disagrees with the main checkout', () => {
+  test('keeps the main env block while the MAIN checkout\'s own .mcp.json is still legacy', () => {
     if (process.platform === 'win32') { return; }
     const parent = makeRoot();
     const main = join(parent, 'main');
     mkdirSync(main, { recursive: true });
     run(main, ['init', '-q']);
     run(main, ['-c', 'user.email=t@t.invalid', '-c', 'user.name=t', 'commit', '-q', '--allow-empty', '-m', 'init']);
-    scaffold(main, 'TAVILY_API_KEY=main-value\nDBHUB_HOST=same\n');
     const wt = join(parent, 'wt');
     run(main, ['worktree', 'add', '-q', wt, '-b', 'probe']);
-    scaffold(wt, 'TAVILY_API_KEY=worktree-value\nDBHUB_HOST=same\n');
+    legacyConfigs(main);
+    loaderConfigs(wt);
+    write(main, '.env', 'TOKEN_A=t\nHOST_B=h\n');
+    write(main, CLAUDE_LOCAL_SETTINGS, JSON.stringify({ env: { TOKEN_A: 't', HOST_B: 'h' } }));
 
-    const result = generate(wt);
-    expect(result.claude.divergentFromMainCheckout).toEqual(['TAVILY_API_KEY']);
-    const finding = check(wt).findings.find(f => f.kind === 'worktree-divergence');
-    expect(finding?.blocking).toBe(false);
-    // A warning, never a block: diverging on purpose is legitimate, and this is a
-    // limitation of how Claude Code resolves that file, not a broken setup.
-    expect(check(wt).ok).toBe(true);
-    const serialised = JSON.stringify(check(wt));
-    expect(serialised).not.toContain('worktree-value');
-    expect(serialised).not.toContain('main-value');
-  });
-
-  /** A main checkout holding a real env block, and one worktree of it with no `.env`. */
-  function mainWithWorktree(): { main: string, wt: string, settings: string } {
-    const parent = makeRoot();
-    const main = join(parent, 'main');
-    mkdirSync(main, { recursive: true });
-    run(main, ['init', '-q']);
-    run(main, ['-c', 'user.email=t@t.invalid', '-c', 'user.name=t', 'commit', '-q', '--allow-empty', '-m', 'init']);
-    scaffold(main, 'TAVILY_API_KEY=tk\nDBHUB_HOST=db.invalid\n');
-    generate(main);
-    const wt = join(parent, 'wt');
-    run(main, ['worktree', 'add', '-q', wt, '-b', 'probe']);
-    scaffold(wt, '');
-    rmSync(join(wt, '.env'));
-    return { main, wt, settings: join(main, CLAUDE_LOCAL_SETTINGS) };
-  }
-
-  test('refuses to write from a worktree with no .env, and leaves the main env block intact', () => {
-    if (process.platform === 'win32') { return; }
-    const { wt, settings } = mainWithWorktree();
-    const before = readFileSync(settings, 'utf8');
-
-    const result = generate(wt);
-    expect(result.refused).toContain('bun run worktree:provision');
-    expect(result.changed).toBe(false);
-    expect(readFileSync(settings, 'utf8')).toBe(before);
-    // Emitter B is held back too: nothing is written while the run is refused.
-    expect(existsSync(join(wt, OPENCODE_SECRET_DIR))).toBe(false);
-    // No override reaches a run with nothing to generate from.
-    expect(generate(wt, { allowPrimaryRemoval: true }).refused).toBeDefined();
-    expect(readFileSync(settings, 'utf8')).toBe(before);
-  });
-
-  test('refuses a worktree .env that would strip credentials from the main block, unless overridden', () => {
-    if (process.platform === 'win32') { return; }
-    const { wt, settings } = mainWithWorktree();
-    // The shape an unprovisioned worktree invites: `.env` copied from the template.
-    write(wt, '.env', 'TAVILY_API_KEY=\nDBHUB_HOST=\n');
-    const before = readFileSync(settings, 'utf8');
-
-    const refused = generate(wt);
-    expect(refused.refused).toContain('TAVILY_API_KEY');
-    expect(refused.refused).toContain('--allow-primary-removal');
-    expect(JSON.stringify(refused)).not.toContain('db.invalid');
-    expect(readFileSync(settings, 'utf8')).toBe(before);
-
-    const allowed = generate(wt, { allowPrimaryRemoval: true });
-    expect(allowed.refused).toBeUndefined();
-    expect(allowed.claude.removed).toEqual(['DBHUB_HOST', 'TAVILY_API_KEY']);
-    expect(readFileSync(settings, 'utf8')).not.toContain('TAVILY_API_KEY');
-  });
-
-  test('a provisioned worktree is not refused', () => {
-    if (process.platform === 'win32') { return; }
-    const { wt } = mainWithWorktree();
-    write(wt, '.env', 'TAVILY_API_KEY=tk\nDBHUB_HOST=db.invalid\n');
-    expect(generate(wt).refused).toBeUndefined();
-  });
-
-  test('a plain checkout is never redirected', () => {
-    const root = makeRoot();
-    scaffold(root, 'TAVILY_API_KEY=tk\n');
-    expect(claudeSettingsRoot(root)).toBe(root);
-    expect(generate(root).claude.redirectedToMainCheckout).toBe(false);
+    const result = retire(wt);
+    expect(result.claude[0].kept).toEqual(['HOST_B', 'TOKEN_A']);
+    expect(readJson(main, CLAUDE_LOCAL_SETTINGS).env).toEqual({ TOKEN_A: 't', HOST_B: 'h' });
   });
 
   function run(cwd: string, args: string[]): void {
@@ -593,78 +284,65 @@ describe('worktree redirection', () => {
   }
 });
 
-describe('check', () => {
-  test('passes right after a generate', () => {
+describe('ensureOpencodePlaceholders', () => {
+  test('a loader-shaped opencode.jsonc needs no placeholder', () => {
     const root = makeRoot();
-    scaffold(root, 'TAVILY_API_KEY=tk\nDBHUB_HOST=db.invalid\n');
-    generate(root);
+    loaderConfigs(root);
+    expect(ensureOpencodePlaceholders(root)).toEqual({ created: [], kept: [] });
+    expect(existsSync(join(root, OPENCODE_SECRET_DIR))).toBe(false);
+  });
+
+  test('a legacy {file:} target gets an EMPTY file, and an existing one is never overwritten', () => {
+    const root = makeRoot();
+    legacyConfigs(root);
+    write(root, `${OPENCODE_SECRET_DIR}/TOKEN_A`, 'real-literal');
+    const result = ensureOpencodePlaceholders(root);
+    expect(result).toEqual({ created: ['HOST_B'], kept: ['TOKEN_A'] });
+    expect(readFileSync(join(root, OPENCODE_SECRET_DIR, 'HOST_B'), 'utf8')).toBe('');
+    expect(readFileSync(join(root, OPENCODE_SECRET_DIR, 'TOKEN_A'), 'utf8')).toBe('real-literal');
+  });
+});
+
+describe('check', () => {
+  test('ok with no copy on disk', () => {
+    const root = makeRoot();
+    loaderConfigs(root);
     const result = check(root);
     expect(result.ok).toBe(true);
-    expect(result.summary).toContain('emitted 2 of 2 declared variables');
+    expect(result.findings).toEqual([]);
+    expect(result.summary).toContain('no plaintext MCP credential copy');
   });
 
-  test('fails when .env gains a value the surfaces do not have', () => {
+  test('a stale copy blocks, by NAME only', () => {
     const root = makeRoot();
-    scaffold(root, 'TAVILY_API_KEY=tk\nDBHUB_HOST=db.invalid\n');
-    generate(root);
-    write(root, '.env', 'TAVILY_API_KEY=rotated\nDBHUB_HOST=db.invalid\n');
+    loaderConfigs(root);
+    write(root, '.env', 'TOKEN_A=t-literal\n');
+    oldCopies(root, { TOKEN_A: 't-literal' });
     const result = check(root);
     expect(result.ok).toBe(false);
-    expect(result.findings.some(f => f.kind === 'claude-stale' && f.names.includes('TAVILY_API_KEY'))).toBe(true);
-    expect(result.findings.some(f => f.kind === 'opencode-file-stale' && f.names.includes('TAVILY_API_KEY'))).toBe(true);
+    const stale = result.findings.filter(f => f.kind === 'stale-copy');
+    expect(stale.map(f => f.surface).sort()).toEqual(['claude', 'opencode']);
+    expect(stale.every(f => f.blocking && f.names.includes('TOKEN_A'))).toBe(true);
+    expect(JSON.stringify(result)).not.toContain('t-literal');
   });
 
-  test('fails when a new MCP variable appears in a config', () => {
+  test('a copy a legacy config reads, and a waiting backup, are informational', () => {
     const root = makeRoot();
-    scaffold(root, 'TAVILY_API_KEY=tk\nDBHUB_HOST=db.invalid\nNEW_API_KEY=nk\n');
-    generate(root);
-    write(root, '.mcp.json', JSON.stringify({
-      mcpServers: { extra: { type: 'http', url: 'https://example.invalid', headers: { Authorization: `Bearer ${dollarVar('NEW_API_KEY')}` } } },
-    }, null, 2));
+    legacyConfigs(root);
+    write(root, '.env', 'TOKEN_A=t\nHOST_B=h\n');
+    oldCopies(root, { TOKEN_A: 't', HOST_B: 'h' });
+    write(root, `${BACKUP_DIR}/OLD`, 'x');
+    const result = check(root);
+    expect(result.ok).toBe(true);
+    expect(result.findings.map(f => f.kind).sort()).toEqual(['backup-present', 'legacy-config', 'legacy-config']);
+  });
+
+  test('an unparseable config blocks', () => {
+    const root = makeRoot();
+    loaderConfigs(root);
+    write(root, 'opencode.jsonc', '{ nope');
     const result = check(root);
     expect(result.ok).toBe(false);
-    expect(result.findings.some(f => f.kind === 'claude-missing' && f.names.includes('NEW_API_KEY'))).toBe(true);
-  });
-
-  test('fails when opencode.jsonc still carries an {env:} placeholder', () => {
-    const root = makeRoot();
-    scaffold(root, 'TAVILY_API_KEY=tk\nDBHUB_HOST=db.invalid\n');
-    const result = check(root);
-    expect(result.ok).toBe(false);
-    expect(result.findings.some(f => f.kind === 'opencode-placeholder')).toBe(true);
-  });
-
-  test('fails, and says so, when there is no .env at all', () => {
-    const root = makeRoot();
-    scaffold(root, '');
-    rmSync(join(root, '.env'));
-    const result = check(root);
-    expect(result.ok).toBe(false);
-    expect(result.findings[0]?.kind).toBe('env-missing');
-  });
-
-  test('never carries a value in any finding', () => {
-    const root = makeRoot();
-    scaffold(root, 'TAVILY_API_KEY=super-secret-literal\nDBHUB_HOST=db.invalid\n');
-    const serialised = JSON.stringify(check(root));
-    expect(serialised).not.toContain('super-secret-literal');
-    expect(serialised).not.toContain('db.invalid');
-  });
-
-  test('the generate result is serialisable without carrying a value', () => {
-    const root = makeRoot();
-    scaffold(root, 'TAVILY_API_KEY=super-secret-literal\nDBHUB_HOST=db.invalid\n');
-    const serialised = JSON.stringify(generate(root, { dryRun: true }));
-    expect(serialised).not.toContain('super-secret-literal');
-    expect(serialised).not.toContain('db.invalid');
-  });
-
-  test('a dry run writes nothing', () => {
-    const root = makeRoot();
-    scaffold(root, 'TAVILY_API_KEY=tk\nDBHUB_HOST=db.invalid\n');
-    generate(root, { dryRun: true });
-    expect(existsSync(join(root, CLAUDE_LOCAL_SETTINGS))).toBe(false);
-    expect(existsSync(join(root, OPENCODE_SECRET_DIR))).toBe(false);
-    expect(readFileSync(join(root, OPENCODE_CONFIG), 'utf8')).toContain('{env:TAVILY_API_KEY}');
+    expect(result.findings.some(f => f.kind === 'config-unparseable' && f.blocking)).toBe(true);
   });
 });

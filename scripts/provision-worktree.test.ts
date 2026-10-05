@@ -193,6 +193,29 @@ describe('provision-worktree', () => {
     expect(result.out).toContain('OpenCode placeholders: 1 created empty (DBHUB_HOST)');
   });
 
+  test('never copies the retired MCP credential copies into a worktree whose opencode.jsonc is on the .env loader', () => {
+    const { primary, worktree } = fixture();
+    mkdirSync(join(primary, '.auth', 'harness-env-backup'), { recursive: true });
+    writeFileSync(join(primary, '.auth', 'harness-env-backup', 'OLD_TOKEN'), 'old-literal');
+    // The worktree's own (tracked) config no longer points at .auth/opencode/.
+    writeFileSync(join(worktree, 'opencode.jsonc'), '{ "mcp": {} }\n');
+    const result = run([worktree]);
+    expect(result.code).toBe(0);
+    expect(existsSync(join(worktree, '.auth', 'tokens.env'))).toBe(true);
+    expect(existsSync(join(worktree, '.auth', 'opencode'))).toBe(false);
+    expect(existsSync(join(worktree, '.auth', 'harness-env-backup'))).toBe(false);
+  });
+
+  test('a legacy {file:} config still gets .auth/opencode/, but never the retirement backup', () => {
+    const { primary, worktree } = fixture();
+    mkdirSync(join(primary, '.auth', 'harness-env-backup'), { recursive: true });
+    writeFileSync(join(primary, '.auth', 'harness-env-backup', 'OLD_TOKEN'), 'old-literal');
+    const result = run([worktree]);
+    expect(result.code).toBe(0);
+    expect(readFileSync(join(worktree, '.auth', 'opencode', 'TAVILY_API_KEY'), 'utf8')).toBe('tk-literal');
+    expect(existsSync(join(worktree, '.auth', 'harness-env-backup'))).toBe(false);
+  });
+
   test('with no direnv on PATH the direnv step is skipped, says so, and the run still succeeds', () => {
     if (IS_WINDOWS) { return; } // the PATH fixture uses symlinks; documented, not measured on Windows.
     const { worktree } = fixture();
