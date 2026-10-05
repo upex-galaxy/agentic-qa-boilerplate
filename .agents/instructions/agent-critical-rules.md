@@ -10,9 +10,17 @@ paths: []
 
 > Each rule below carries the same number and name as its binding sentence in `AGENTS.md` §1. The binding sentence there is what binds; this file holds the full rule, its rationale and its measurements.
 
-## 1. CREDENTIALS
+## 1. CREDENTIALS = BY NAME, NEVER BY VALUE
 
-1. **CREDENTIALS**: ALWAYS read from `.env`. NEVER hardcode/guess. Example keys: `LOCAL_USER_EMAIL`, `STAGING_USER_PASSWORD` (project-scope examples: the adopting repo renames or deletes them; the framework never requires them, `config.testUser` fails by name at the point of use). Scope of every variable → `cli/lib/variables-manifest.ts`; doctrine → `.context/ADR/ADR-0005-validation-scope.md`.
+1. **CREDENTIALS = BY NAME, NEVER BY VALUE**: Reference a secret only through its variable NAME (`$STAGING_USER_PASSWORD` expanded by the shell, `process.env.X` in code, `${VAR}` in an MCP config). NEVER open, print or paste a secret value: no `Read`/`cat`/`grep` of `.env*` (except `.env.example` / `.env.schema` / `.env.core.schema`), `.auth/**` or `.claude/settings.local.json`; no `printenv`, `env`, `echo $SECRET`, `set -x`, `curl -v`, `varlock printenv|reveal`, or `varlock load` without `--agent`. To learn WHETHER a variable is set, run the repo's redacted presence check (named in the full text). In this repo that check is `bunx varlock load --agent`: it prints every variable by name and redacts each `@sensitive` value. A missing secret value is the human's to type, in a terminal or the secret manager, never through the chat; the AI MAY write a non-sensitive value (URL, project key, flag, port) when asked. NEVER hardcode or guess.
+
+   **What counts as a secret**: anything the schema marks `@sensitive` (`.env.schema`, `.env.core.schema`) and anything obviously secret even when unmarked: credentials, passwords, API keys, tokens, cookies, session state. The human types a secret in their own terminal or stores it in the secret manager; the AI names the variable and stops. A non-sensitive value (a URL, a project key, a flag, a port) is the one thing the AI may write into `.env`, and only when the human asks for it.
+
+   **Using a value without seeing it**: the shell expands `$NAME` inside the command, so the command text carries the name and the output carries only the result (`playwright-cli --raw fill <ref> "$STAGING_USER_PASSWORD"`, `source .auth/tokens.env && curl -H "Authorization: Bearer $API_TOKEN_<ROLE>_<ENV>" ...`). Sourcing a file inside the same call is using it by name; printing what it holds is not.
+
+   **Enforcement**: the deny rules in `.claude/settings.json` (`permissions.deny`) and `opencode.jsonc` (`permission.read` / `permission.bash`) refuse the common reads, `printenv` and `env`. They match command patterns, so a subprocess can still open a file: this text is what binds, the deny list is the net. Commands that print, the safe forms, the presence check and what to do when a value leaks → `.agents/skills/agentic-qa-core/references/secret-hygiene.md`.
+
+   Example keys: `LOCAL_USER_EMAIL`, `STAGING_USER_PASSWORD` (project-scope examples: the adopting repo renames or deletes them; the framework never requires them, `config.testUser` fails by name at the point of use). Scope of every variable → `cli/lib/variables-manifest.ts`; doctrine → `.context/ADR/ADR-0005-validation-scope.md`.
 
 ## 2. PLAN BEFORE CODING
 

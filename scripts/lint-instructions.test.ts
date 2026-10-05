@@ -28,7 +28,7 @@ const L0 = (opts: { rule1?: string, rows?: string[], extra?: string } = {}): str
   '',
   '## 1. CRITICAL RULES: ALWAYS APPLY',
   '',
-  opts.rule1 ?? '1. **CREDENTIALS**: ALWAYS read from `.env`. NEVER hardcode/guess. Full: agent-critical-rules.md#1',
+  opts.rule1 ?? '1. **CREDENTIALS**: Reference a secret only by its variable NAME. NEVER hardcode or guess. Full: agent-critical-rules.md#1',
   '',
   '## ROUTER',
   '',
@@ -46,7 +46,7 @@ const L0 = (opts: { rule1?: string, rows?: string[], extra?: string } = {}): str
   opts.extra ?? '',
 ].join('\n');
 
-const RULES = `${fm('critical-rules', '[\'\\brule\']')}# Critical rules\n\n## 1. CREDENTIALS\n\n1. **CREDENTIALS**: ALWAYS read from \`.env\`. NEVER hardcode/guess. Example keys live in \`.env.example\`.\n`;
+const RULES = `${fm('critical-rules', '[\'\\brule\']')}# Critical rules\n\n## 1. CREDENTIALS\n\n1. **CREDENTIALS**: Reference a secret only by its variable NAME. NEVER hardcode or guess. Example keys live in \`.env.example\`.\n`;
 
 function scaffold(): void {
   write('package.json', JSON.stringify({ scripts: { 'skills:check': 'x' } }));
@@ -207,13 +207,13 @@ describe('lint-instructions', () => {
 
   test('an L0 rule must keep its pointer, its name and verbatim sentences of the full text', () => {
     scaffold();
-    write('AGENTS.md', L0({ rule1: '1. **CREDENTIALS**: ALWAYS read from `.env`. NEVER hardcode/guess.' }));
+    write('AGENTS.md', L0({ rule1: '1. **CREDENTIALS**: Reference a secret only by its variable NAME. NEVER hardcode or guess.' }));
     expect(kinds()).toEqual(['rule:AGENTS.md']);
-    write('AGENTS.md', L0({ rule1: '1. **CREDENTIALS**: ALWAYS read from `.env`. NEVER hardcode/guess. Full: agent-critical-rules.md#2' }));
+    write('AGENTS.md', L0({ rule1: '1. **CREDENTIALS**: Reference a secret only by its variable NAME. NEVER hardcode or guess. Full: agent-critical-rules.md#2' }));
     expect(kinds()).toEqual(['rule:AGENTS.md']);
-    write('AGENTS.md', L0({ rule1: '1. **SECRETS**: ALWAYS read from `.env`. Full: agent-critical-rules.md#1' }));
+    write('AGENTS.md', L0({ rule1: '1. **SECRETS**: Reference a secret only by its variable NAME. Full: agent-critical-rules.md#1' }));
     expect(kinds()).toEqual(['rule:.agents/instructions/agent-critical-rules.md']);
-    write('AGENTS.md', L0({ rule1: '1. **CREDENTIALS**: ALWAYS read secrets from `.env`. Full: agent-critical-rules.md#1' }));
+    write('AGENTS.md', L0({ rule1: '1. **CREDENTIALS**: Reference secrets only by NAME. Full: agent-critical-rules.md#1' }));
     expect(kinds()).toEqual(['rule:AGENTS.md']);
   });
 
@@ -229,7 +229,7 @@ describe('lint-instructions', () => {
     write('.agents/skills/empty-skill/SKILL.md', '# Empty\n\n## Compact Rules\n\n- Be nice.\n');
     write('.agents/instructions/agent-git.md', [
       fm('git'),
-      'NEVER hardcode/guess.',
+      'NEVER hardcode or guess.',
       'NEVER rebase main (Rule #1).',
       'NEVER push without a PR (binding: `/git-flow-master`).',
       'MUST pass hooks (enforced: `bun run skills:check`).',
