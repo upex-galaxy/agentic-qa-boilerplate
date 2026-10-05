@@ -21,8 +21,8 @@ When in doubt, treat it as a secret. The schema is the source of truth for the `
 |---|---|
 | `.env`, `.env.local`, `.env.*.local` | `.env.example` |
 | `.envrc.local` | the committed `.env*.schema` files: `.env.schema`, `.env.core.schema` and, when a project uses a secret manager, `.env.provider.schema` (`op://` references, never a value) |
-| `.auth/**` (token files, `api-state.json`, `<env>-<role>.json`, `opencode/<VAR>` value files) | `.envrc` (the loader, no values) |
-| `.claude/settings.local.json` (its `env` block holds MCP secrets written by `bun run harness:env`) | `.mcp.json`, `opencode.jsonc`, `.codex/config.toml` (they hold `${VAR}` / `{file:}` / `env_vars` names) |
+| `.auth/**` (token files, `api-state.json`, `<env>-<role>.json`, the `opencode/<VAR>` value files an older `harness:env` wrote, `harness-env-backup/<VAR>`) | `.envrc` (the loader, no values) |
+| `.claude/settings.local.json` (an older `bun run harness:env` wrote MCP secrets into its `env` block; the current one retires them) | `.mcp.json`, `opencode.jsonc`, `.codex/config.toml` (they hold the `.env` loader's `--filter` names) |
 
 Sourcing a file inside the same command that uses it is using it by name: `source .auth/tokens.env && curl -H "Authorization: Bearer $API_TOKEN_<ROLE>_<ENV>" ...` is the API doctrine's form (`api-testing-doctrine.md`) and stays allowed. Printing what the file holds is not.
 
@@ -54,7 +54,7 @@ bunx varlock load --agent --filter NAME        # one variable; {} when it is abs
 
 It also sees keys present in `.env` but not declared in the schema (redacted), so it answers "is a stale `ATLASSIAN_URL` still in `.env`?" without opening the file. For the PROCESS environment (a value inherited from whatever spawned the session) use the `test -n "${NAME+x}"` form of §3, which prints only `set` / `unset`. `bun run vars:env:check` adds the parity view (manifest vs `.env.example`, process vs `.env`) and masks secrets; `bun run setup:doctor` runs the same schema check in its "Env schema (varlock)" section.
 
-A missing or wrong secret is the human's to fix: name the variable, say which check failed, point to `.env` (or the secret manager) and stop. Never ask the human to paste the value into the chat, and never echo one back. After the human fixes a value an MCP server reads, `bun run harness:env` and a session restart (Critical Rule #10).
+A missing or wrong secret is the human's to fix: name the variable, say which check failed, point to `.env` (or the secret manager) and stop. Never ask the human to paste the value into the chat, and never echo one back. After the human fixes a value an MCP server reads, restart the session: the server reads `.env` through the `.env` loader when the harness spawns it (Critical Rule #10).
 
 ## 5. Writing values
 

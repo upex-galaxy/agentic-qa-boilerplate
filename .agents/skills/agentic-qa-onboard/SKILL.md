@@ -199,9 +199,9 @@ Run the interactive installer once after cloning:
 bun run setup
 ```
 
-This bootstraps `.agents/`, wires Engram persistent memory into each selected agent (`engram setup`), configures the MCPs in `.mcp.json`, downloads Playwright browsers, installs the community skills `cli/install.ts` declares (`USER_LEVEL_SKILLS` + `PROJECT_LEVEL_SKILLS`), verifies the `${VAR}` placeholders in the committed `.mcp.json` against your `.env`, and generates the per-harness credential surfaces from it (the same thing `bun run harness:env` does). Full details in [`INSTALLER.md`](../../../INSTALLER.md).
+This bootstraps `.agents/`, wires Engram persistent memory into each selected agent (`engram setup`), configures the MCPs in `.mcp.json`, downloads Playwright browsers, installs the community skills `cli/install.ts` declares (`USER_LEVEL_SKILLS` + `PROJECT_LEVEL_SKILLS`), verifies the variables each MCP server's `.env` loader `--filter` names against your `.env`, and retires any plaintext MCP credential copy an older install left behind (the same thing `bun run harness:env` does). Full details in [`INSTALLER.md`](../../../INSTALLER.md).
 
-After setup, fill `.env` with the credentials the rest of the workflow expects (see "Critical env vars" below), then run `bun run harness:env` and restart the agent session: MCP servers read credentials at startup. `bun run setup:doctor` is the health check.
+After setup, fill `.env` with the credentials the rest of the workflow expects (see "Critical env vars" below), then restart the agent session: MCP servers read `.env` through the `.env` loader when the harness spawns them. `bun run setup:doctor` is the health check.
 
 ---
 
@@ -211,7 +211,7 @@ After setup, fill `.env` with the credentials the rest of the workflow expects (
 
 | Phase | Goal | How |
 | ----- | ---- | --- |
-| 1. Foundation | Tooling green on this machine | `bun run setup` → fill `.env` → `bun run harness:env` + restart the agent session → `bun run agents:setup` (project identity + environments in `.agents/project.yaml`) → `bun run pw:install` → `bun run jira:check` |
+| 1. Foundation | Tooling green on this machine | `bun run setup` → fill `.env` → restart the agent session → `bun run agents:setup` (project identity + environments in `.agents/project.yaml`) → `bun run pw:install` → `bun run jira:check` |
 | 2. Jira side | The tracker's catalogs mirrored locally | `bun run jira:sync-fields` + `jira:sync-workflows` + `jira:sync-link-types` (generate the `.agents/*.json` catalogs every skill reads) → `/jira-administration components` (reconcile Jira Components against the app's real modules). First-time Jira provisioning: `docs/core/setup/jira-xray.html` (docs site, `bun run docs`) |
 | 3. App under test | The framework knows and fits YOUR app | `/project-discovery` (reverse-engineers the target repo → the domain and infra maps inside `business-domain-context` and `infra-context`, plus `.context/project-config.md`) → `/project-context data` (the `business-data-context` map; mode `api` too when no OpenAPI spec is reachable) → `/test-framework-adaptation` (adapts KATA, config, CI, MCPs to the stack; its Phase 0 GATES on those maps through `bun run context:map <slug> --list` and on `project-config.md`, so the order is enforced) |
 | 4. Git strategy | Branch policy is a decision, not an inherited default | Ask **"set up our git strategy"** (git-flow-master's Strategy Setup: 4 questions → `git_strategy:` block in `.agents/project.yaml`), then optionally `bun run git:policy apply` to mirror it on GitHub. If you skip this, git-flow-master OFFERS it on your first real git action anyway (template-trap guard) — and `bun run git:policy verify` runs on every push via the pre-push hook |
@@ -313,7 +313,7 @@ A remote server whose only project-side content was an API key is the harness's 
 - Use `/acli` for ticket WRITES (create, transition, comment, link); for detailed READS (custom fields, ACs, ATP/ATR, comments) use `bun run jira:sync-issues get`/`jql`
 - Use `/playwright-cli` for every browser interaction, ad-hoc or scripted: there is no browser MCP
 
-`.mcp.json` lives at the repo root and is **committed**: it is secret-free, referencing secrets as `${VAR}` placeholders. The value reaches each harness from `.env` through a generated surface (`bun run harness:env`): Claude Code reads the `env` block of `.claude/settings.local.json`, OpenCode reads `.auth/opencode/<VAR>` via `{file:}`, Codex starts every stdio server through a `.env` loader declared in `.codex/config.toml` (`CODEX_ENV_LOADER_*` in `cli/lib/agent-compatibility-contracts.ts`), so even a bare or Dock launch sees the values. Only `.mcp.local.json` (personal overrides) is gitignored.
+`.mcp.json` lives at the repo root and is **committed**: it is secret-free, naming secrets only in each server's `.env` loader `--filter`. Every MCP server that needs `.env` values starts through that loader on all three hosts (`.mcp.json`, `opencode.jsonc`, `.codex/config.toml`; `MCP_ENV_LOADER_*` in `cli/lib/agent-compatibility-contracts.ts`), which reads `.env` from the project root itself, so even a desktop or Dock launch sees the values and no plaintext copy is written anywhere. Only `.mcp.local.json` (personal overrides) is gitignored.
 
 ---
 
@@ -325,7 +325,7 @@ Not in `.env`: web search and Postman are MCP servers connected at harness level
 
 `.env` is **gitignored**. Never commit it. `.agents/project.yaml` (committed) holds non-secret context (URLs, project key, environment names); `.env` holds the matching secrets.
 
-`.mcp.json` is **committed** and safe to commit: it never holds a secret value, only `${VAR}` placeholders. `.env` is the single source; `bun run harness:env` derives the Claude and OpenCode surfaces from it, and `bun run setup:doctor` reports drift. Personal overrides go in the gitignored `.mcp.local.json`.
+`.mcp.json` is **committed** and safe to commit: it never holds a secret value, only variable names in each loader's `--filter`. `.env` is the single source, read by the loader at spawn time; `bun run setup:doctor` reports any plaintext copy an older `bun run harness:env` left behind, and `bun run harness:env` retires it. Personal overrides go in the gitignored `.mcp.local.json`.
 
 Verify your config with `bun run vars:check` (should report 0 errors when fully configured). The full health check is `bun run setup:doctor`.
 
@@ -375,7 +375,7 @@ Plus the project-level community skills in the `PROJECT_LEVEL_SKILLS` array of `
 
 - [ ] Did you run `bun run setup`?
 - [ ] Did you fill `.env` with what your work needs (`.env.example` documents each variable and its scope) and connect web search at harness level?
-- [ ] Did you run `bun run harness:env` after filling `.env`, then restart the agent session?
+- [ ] Did you restart the agent session after filling `.env`?
 - [ ] Did you populate `.agents/project.yaml` (run `bun run agents:setup` if not yet)?
 - [ ] Does `bun run vars:check` exit clean (0 errors)?
 - [ ] Did you run `bun run jira:check` to verify Jira credentials?

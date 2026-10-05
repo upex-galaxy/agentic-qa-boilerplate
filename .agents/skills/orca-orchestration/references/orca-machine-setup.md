@@ -86,33 +86,35 @@ Until that override exists on a machine, a native worker launches in whatever mo
 per-agent default gives it, which is the trap gotcha G27 describes. Neither the repo nor a teammate's
 machine can tell whether you did it, which is the whole problem with a non-versionable setting.
 
-### 3.2 · Credentials for a supervised worker: the harness surfaces, and direnv only for Codex
+### 3.2 · Credentials for a supervised worker: the `.env` loader, and direnv only for shell-exported vars
 
-A launch line can export variables; the native launch cannot, because it has no argv. So
-`bun run harness:env` derives from `.env` a per-harness credential surface that a worker reads with
-NO shell involved.
+A launch line can export variables; the native launch cannot, because it has no argv. So no MCP
+server depends on the launch: every one that needs `.env` values starts through the `.env` loader
+declared in `.mcp.json`, `opencode.jsonc` and `.codex/config.toml` (`varlock run ... --filter <its
+vars> -- <server>`, ADR-0011), which reads the varlock schema plus `.env` / `.env.local` from the
+worktree root when the harness spawns the server. NO shell is involved, for Claude Code, OpenCode
+and Codex workers alike.
 
-- **Claude Code workers** read the `env` block of `.claude/settings.local.json`. On macOS/Linux the
-  file is resolved from the MAIN checkout's root, so every worktree inherits it with no action
-  (measured, G45 and ADR-0006: a session launched inside a worktree gave its MCP child the main
-  checkout's value; the worktree's own copy was ignored. Re-verify after a harness upgrade).
-- **OpenCode workers** read `.auth/opencode/<VAR>` through `{file:}` references in `opencode.jsonc`,
-  relative to the worktree. `bun run worktree:provision` copies `.auth/` from the primary (mode
-  `0600`), and `bun install` creates empty placeholders on a fresh clone so the config still loads.
-- **Codex workers** are the only ones still on the shell: `.codex/config.toml` NAMES variables and
-  reads them from the process environment at connect time. So does anything inside a worker that
-  reads a shell-exported variable (`acli`, `curl`, `bun xray`). For those, direnv in Orca's
-  **interactive shell** is the seam: with it installed and hooked, an `.envrc` that sources the repo's
-  env file fires when the worker's terminal opens. Measured (G45): a direct probe showed
+- **What the worker needs is its own `.env`.** `bun run worktree:provision` copies it from the
+  primary. A worktree without one hands every server empty values, and the hook says so on the
+  first prompt.
+- **The plaintext copies an older `bun run harness:env` generated** (the `env` block of
+  `.claude/settings.local.json`, `.auth/opencode/<VAR>`) are retired by the current one.
+  `bun run worktree:provision` copies `.auth/opencode/` only while the worktree's `opencode.jsonc`
+  still has `{file:}` references, and never copies `.auth/harness-env-backup/`.
+- **Anything inside a worker that reads a shell-exported variable** (`acli`, `curl`, `bun xray`)
+  still reads the process environment. For those, direnv in Orca's **interactive shell** is the
+  seam: with it installed and hooked, an `.envrc` that sources the repo's env file fires when the
+  worker's terminal opens. Measured (G45): a direct probe showed
   `direnv: export +ATLASSIAN_API_TOKEN +ATLASSIAN_EMAIL …` and then the probe variable reading `SET`.
 
-Without direnv, a Codex worker (or a shell-exported CLI inside any worker) has NO credentials **and
-nothing reports it**. It fails much later, at its first authenticated call, with an error that reads
-like a broken tool (gotcha G45).
+Without direnv, a shell-exported CLI inside any worker has NO credentials **and nothing reports
+it**. It fails much later, at its first authenticated call, with an error that reads like a broken
+tool (gotcha G45).
 
 ```bash
-bun run harness:env                              # after every .env change; then restart the agent session
-command -v direnv                                # Codex workers / shell-exported vars only: installed AND hooked
+# after every .env change: restart the agent session (MCP servers read .env at spawn)
+command -v direnv                                # shell-exported vars only: installed AND hooked
 cat .envrc                                       # must source the repo's env file; never commit secrets here
 direnv allow                                     # once per checkout, per machine
 ```
@@ -124,7 +126,7 @@ skipped). It never approves an `.envrc` on a machine that never approved the pri
 Two rules that follow from this being per-machine and invisible:
 
 - The conductor **verifies credentials on the worker's screen** before sending it any work
-  (`references/coordinator-playbook.md` §1 step 5), whichever surface they came from. Readiness is
+  (`references/coordinator-playbook.md` §1 step 5), whichever harness it runs. Readiness is
   not capability.
 - `.envrc` is a per-machine convenience, not a repo contract. Nothing in this repo may depend on it
   existing: the custom-argv line loads the env file through the repo's own wrapper instead, and that
@@ -175,10 +177,10 @@ find out during a real fleet, and record it in `references/gotchas.md`.
 [ ] Settings -> Agents: `claude` default args include `--permission-mode auto`
     (prerequisite of the SUPERVISED native launch; a pasted custom-argv line needs nothing)
 [ ] other agents: their documented equivalent, verified, not guessed
-[ ] `bun run harness:env` run after the last `.env` change (Claude and OpenCode workers read the
-    generated surfaces; no direnv needed for them)
+[ ] the worktree has its own `.env` and the session restarted after the last `.env` change (every
+    MCP server reads it through the `.env` loader; no direnv needed for them)
 [ ] direnv installed, hooked into the shell, `.envrc` sources the env file, `direnv allow` run
-    (Codex workers and shell-exported CLI vars only; verify on the worker's screen at launch)
+    (shell-exported CLI vars only; verify on the worker's screen at launch)
 [ ] `orca.yaml` hooks honoured: source policy not local-only, trust approved, setup run-by-default
 [ ] (optional) phone paired
 [ ] a single test worker launched and released end to end BEFORE a real fleet

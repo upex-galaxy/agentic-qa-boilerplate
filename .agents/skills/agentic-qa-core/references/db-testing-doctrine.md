@@ -8,8 +8,8 @@
  SCHEMA + QUERY               CONFIG                       CREDENTIALS
  --------------               ------                       -----------
  DBHub MCP  [DB_TOOL]         dbhub.toml (committed)       .env  DBHUB_* (see .env.example)
-  search_objects_primary       [[sources]] id = "primary"   -> declared on the MCP layer
-  execute_sql_primary          ${DBHUB_*} interpolation        of all three hosts
+  search_objects_primary       [[sources]] id = "primary"   -> the .env loader's --filter
+  execute_sql_primary          ${DBHUB_*} interpolation        on all three hosts
 ```
 
 ## The tool: DBHub MCP
@@ -32,14 +32,15 @@ A project that adds a second `[[sources]]` block with `id = "reporting"` gets
   placeholder. Never put a literal password in it and never gitignore it: the file is shared
   config, the values are not.
 - **`dbhub` itself does the interpolation**, from the environment of the process it was spawned
-  in, so the `DBHUB_*` variables `.env.example` declares must reach that process. That is why all three hosts declare
-  them on the MCP layer: `env` in `.mcp.json`, `environment` with `{file:.auth/opencode/VAR}`
-  in `opencode.jsonc`, `env_vars` in `.codex/config.toml`. Parity is checked
+  in, so the `DBHUB_*` variables `.env.example` declares must reach that process. That is why all three hosts start
+  it through the `.env` loader with those six names in its `--filter` (`.mcp.json`,
+  `opencode.jsonc`, `.codex/config.toml`): the loader reads `.env` from the project root at spawn
+  time and hands dbhub exactly those names. Parity is checked
   (`mcp-atlassian-optin.md`, MCP parity contract).
 - **It fails late and quietly.** A missing variable does not stop startup: `dbhub` substitutes
   the literal `${DBHUB_HOST}` and the connection fails on the first query, which reads like a
   database problem. Check which `DBHUB_*` variables are set with `bunx varlock load --agent --filter 'DBHUB_*'`
-  (redacted; never open `.env`), run `bun run harness:env`, then
+  (redacted; never open `.env`); once the human fixes `.env`,
   RESTART the agent session (spawn-time env, Critical Rule #10).
 - **Read-only user by default.** Validation needs `SELECT`; ask for write grants only on a
   non-production environment and only when a test must seed data directly.
@@ -145,7 +146,7 @@ a miss a bug.
 | Symptom | Likely cause | Check |
 |---|---|---|
 | `Connection refused` | database not running, wrong port, firewall | `DBHUB_HOST` / `DBHUB_PORT`; `pg_isready -h <host> -p <port>` on Postgres |
-| `password authentication failed` / login failed | wrong password or user, or a literal `${DBHUB_PASSWORD}` reached the server | `bunx varlock load --agent --filter 'DBHUB_*'` (redacted) to see which are set; the human corrects the value in `.env`; then `bun run harness:env` and restart |
+| `password authentication failed` / login failed | wrong password or user, or a literal `${DBHUB_PASSWORD}` reached the server | `bunx varlock load --agent --filter 'DBHUB_*'` (redacted) to see which are set; the human corrects the value in `.env`; then restart the session |
 | `too many connections` | parallel sessions not closing connections | fewer parallel workers; a pooler |
 | `SSL connection is required` / SSL errors | server and `sslmode` disagree | check the `sslmode` value in `dbhub.toml`; a local database without TLS needs that line changed in the project's copy |
 

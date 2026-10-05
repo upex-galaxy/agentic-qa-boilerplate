@@ -534,11 +534,11 @@
         </p>
         <p>
           <strong>Confiar en que el MCP avisa si falta una variable.</strong> Si una variable de
-          <code>.env</code> no está definida, Claude Code pasa el texto literal <code>${VAR}</code>,
-          OpenCode pasa un string vacío, y el servidor muere más tarde, en su primera llamada
-          autenticada. Solo Codex falla al arrancar. Un 401 o una tool que falla sin explicación
-          casi siempre es eso: corrige el <code>.env</code> y reinicia la sesión, porque las
-          variables se leen cuando el harness levanta los servidores.
+          <code>.env</code> no está definida, el loader de <code>.env</code> arranca el servidor sin
+          ella en los tres harnesses, y el servidor muere más tarde, en su primera llamada
+          autenticada. Ninguno falla al arrancar. Un 401 o una tool que falla sin explicación casi
+          siempre es eso: corrige el <code>.env</code> y reinicia la sesión, porque las variables se
+          leen cuando el harness levanta los servidores.
         </p>
         <p>
           <strong>Lanzar el binario pelado.</strong> <code>bun run claude</code>,

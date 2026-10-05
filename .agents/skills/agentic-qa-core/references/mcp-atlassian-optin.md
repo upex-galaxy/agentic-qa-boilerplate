@@ -32,75 +32,82 @@ The parity check (below) fails when a server exists in one host only, so the blo
 `.mcp.json`, `opencode.jsonc` and `.codex/config.toml` together. Replace
 `https://your-site.atlassian.net` with the output of `bun run --silent jira:url`.
 
-**Claude Code** (`.mcp.json`, inside `mcpServers`). `${VAR}` resolves from the process
-environment, which `bun run harness:env` feeds through the `env` block of
-`.claude/settings.local.json`:
+Every host starts the server through the same `.env` loader the shipped servers use
+(`MCP_ENV_LOADER_*` in `cli/lib/agent-compatibility-contracts.ts`): `varlock run` reads the
+schema plus `.env` / `.env.local` (or the secret manager) from the project root at spawn time,
+however the harness was launched, and hands the server only the names in its `--filter`. No
+`${VAR}`, `{env:}`, `{file:}` or `env_vars` beside it. `.env` holds `ATLASSIAN_EMAIL` /
+`ATLASSIAN_API_TOKEN` while the server reads `JIRA_USERNAME` / `JIRA_API_TOKEN`, and the loader
+has no rename, so the inner command is a one-line `sh` wrapper that renames at launch. `$VAR`
+without braces inside `args` is expanded by `sh`, not by the host, and the parity check does not
+treat it as a placeholder. The host value is a literal setting, so it goes in the host's `env`
+table.
+
+**Claude Code** (`.mcp.json`, inside `mcpServers`):
 
 ```json
 "atlassian": {
-  "command": "uvx",
-  "args": ["mcp-atlassian@0.23.1"],
+  "command": "bunx",
+  "args": [
+    "-p", "varlock@1.20.0", "varlock", "run", "--no-redact-stdout", "--inject", "vars",
+    "--filter", "ATLASSIAN_EMAIL,ATLASSIAN_API_TOKEN", "--",
+    "sh", "-c",
+    "JIRA_USERNAME=\"$ATLASSIAN_EMAIL\" JIRA_API_TOKEN=\"$ATLASSIAN_API_TOKEN\" exec uvx mcp-atlassian@0.23.1"
+  ],
   "env": {
-    "JIRA_URL": "https://your-site.atlassian.net",
-    "JIRA_USERNAME": "${ATLASSIAN_EMAIL}",
-    "JIRA_API_TOKEN": "${ATLASSIAN_API_TOKEN}"
+    "JIRA_URL": "https://your-site.atlassian.net"
   }
 }
 ```
 
-**OpenCode** (`opencode.jsonc`, inside `mcp`). Secrets are `{file:}` pointers into
-`.auth/opencode/`, never `{env:VAR}`: `{env:}` only resolves when OpenCode was launched from a
-shell that had the variable, `{file:}` works however it was started. A `{file:}` target that does
-not exist invalidates the WHOLE config, so run `bun run harness:env` right after pasting; it
-writes a value file for every variable an MCP config references.
+**OpenCode** (`opencode.jsonc`, inside `mcp`):
 
 ```jsonc
 "atlassian": {
   "type": "local",
-  "command": ["uvx", "mcp-atlassian@0.23.1"],
+  "command": [
+    "bunx", "-p", "varlock@1.20.0", "varlock", "run", "--no-redact-stdout", "--inject", "vars",
+    "--filter", "ATLASSIAN_EMAIL,ATLASSIAN_API_TOKEN", "--",
+    "sh", "-c",
+    "JIRA_USERNAME=\"$ATLASSIAN_EMAIL\" JIRA_API_TOKEN=\"$ATLASSIAN_API_TOKEN\" exec uvx mcp-atlassian@0.23.1"
+  ],
   "enabled": true,
   "environment": {
-    "JIRA_URL": "https://your-site.atlassian.net",
-    "JIRA_USERNAME": "{file:.auth/opencode/ATLASSIAN_EMAIL}",
-    "JIRA_API_TOKEN": "{file:.auth/opencode/ATLASSIAN_API_TOKEN}"
+    "JIRA_URL": "https://your-site.atlassian.net"
   }
 }
 ```
 
-**Codex CLI + Desktop** (`.codex/config.toml`). Codex never expands placeholders: secrets travel
-by NAME through `env_vars`, and `[mcp_servers.X.env]` holds literal settings only, which is
-where the host goes. `env_vars` forwards a variable under its OWN name and Codex has no rename,
-while the server reads `JIRA_USERNAME` / `JIRA_API_TOKEN`; so the command is a one-line `sh`
-wrapper that renames at launch. `$VAR` without braces inside `args` is expanded by `sh`, not by
-Codex, and the parity check does not treat it as a placeholder. The values come from the Codex
-process environment (`bun run codex`, or direnv).
+**Codex CLI + Desktop** (`.codex/config.toml`). Same launch; `startup_timeout_sec` gives a cold
+`uvx` fetch plus the loader hop the same budget the shipped servers get.
 
 ```toml
 [mcp_servers.atlassian]
-command = "sh"
+command = "bunx"
 enabled = true
+startup_timeout_sec = 30
 args = [
-  "-c",
+  "-p", "varlock@1.20.0", "varlock", "run", "--no-redact-stdout", "--inject", "vars",
+  "--filter", "ATLASSIAN_EMAIL,ATLASSIAN_API_TOKEN", "--",
+  "sh", "-c",
   "JIRA_USERNAME=\"$ATLASSIAN_EMAIL\" JIRA_API_TOKEN=\"$ATLASSIAN_API_TOKEN\" exec uvx mcp-atlassian@0.23.1",
-]
-env_vars = [
-  "ATLASSIAN_EMAIL",
-  "ATLASSIAN_API_TOKEN",
 ]
 
 [mcp_servers.atlassian.env]
 JIRA_URL = "https://your-site.atlassian.net"
 ```
 
-On Windows, where Codex has no `sh`, set `JIRA_USERNAME` / `JIRA_API_TOKEN` in the user
-environment and use `command = "uvx"` with those two names in `env_vars`; the parity check will
-then report the different `.env` dependency, which is the honest state of that machine.
+Copy the `varlock@<pin>` from the shipped servers in the same file rather than from this page: it
+tracks the `varlock` devDependency. On Windows, where there is no `sh`, add `JIRA_USERNAME` /
+`JIRA_API_TOKEN` to the schema and `.env` under those names and filter on them with
+`uvx mcp-atlassian@<version>` as the inner command; the parity check will then report the
+different `.env` dependency, which is the honest state of that machine.
 
 **Gemini CLI**: unsupported harness. This repo ships no Gemini adapter and the parity check
 does not know it.
 
-Then restart the agent session: MCP servers read their environment at spawn time (Critical
-Rule #10). Verify with `bun run agents:compat:check` and `bun run harness:env --check`.
+Then restart the agent session: MCP servers read `.env` when the harness spawns them (Critical
+Rule #10). Verify with `bun run agents:compat:check`.
 
 ## MCP parity contract
 
@@ -110,19 +117,22 @@ dependencies, literal env, enabled) and compares them. The canonical server set 
 `.mcp.json` declares; a server missing from another host, or present in one host only, fails
 naming the server and the host.
 
-- **It compares `.env` dependencies, not argument spelling.** The three hosts cannot write a
-  secret the same way: `${VAR}` in Claude, `{file:.auth/opencode/VAR}` in OpenCode, a name in
-  `env_vars` / `bearer_token_env_var` in Codex. What must match is the SET of `.env` variables
-  each host depends on, plus the literal settings. So a remote server carrying its key as an
-  HTTP header in Claude and as `bearer_token_env_var` in Codex is parity, not drift.
-- **Why Codex never gets `${VAR}`.** Codex passes placeholders inside `args` or
-  `[mcp_servers.X.env]` to the server as literal text; a `${DBHUB_HOST}` there reaches dbhub as
-  the string `${DBHUB_HOST}` and fails on connect like a bad credential. The only way in is by
-  name, so the check rejects a placeholder inside a Codex `env` table.
+- **It compares `.env` dependencies, not argument spelling.** A server behind the loader
+  declares its dependencies as the `--filter` list; that list is what must match across the
+  three hosts, plus the literal settings. A remote server that carries its key from the host
+  (an HTTP header in Claude, `bearer_token_env_var` in Codex) is compared on the same SET of
+  names, so different spellings of one name are parity, not drift.
+- **A stdio server that needs `.env` values launches through the loader on every host, and
+  only through it.** A host-side reference beside the loader (`${VAR}`, `{env:}`, `{file:}`,
+  `env_vars`) is reported: an unset `${VAR}` breaks a desktop launch, and an EMPTY inherited
+  value shadows `.env`. Codex passes placeholders inside `args` or `[mcp_servers.X.env]` as
+  literal text, so a `${DBHUB_HOST}` there would reach dbhub as that string; the check rejects a
+  placeholder inside a Codex `env` table. ERROR in the boilerplate, WARNING downstream that names
+  the exact launch to write, because the three configs are never overwritten by a sync.
 - **The shipped servers get a stricter shape check** (the ids in `KNOWN_MCP_IDS`,
   `cli/lib/agent-compatibility-contracts.ts`) when declared. Any other server, `atlassian`
   included, gets the generic comparison only, so a project may add or drop servers freely.
-- **Failure is silent on three hosts** (AGENTS.md Critical Rule #10): an unset variable becomes
-  a literal or an empty string and the server dies on its first authenticated call. A 401/403
-  from `atlassian` means check `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` in `.env`, run
-  `bun run harness:env`, restart.
+- **Failure is silent on every host** (AGENTS.md Critical Rule #10): an unset optional variable
+  reaches the server as absent or empty and the server dies on its first authenticated call. A
+  401/403 from `atlassian` means `bunx varlock load --agent` (redacted) to see whether
+  `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` are set; the human fixes `.env`; restart the session.
