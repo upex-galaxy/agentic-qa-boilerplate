@@ -26,6 +26,7 @@ import {
   declaredMcpIds,
   DOC_CONTRACTS_HOOK,
   EXPECTED_MCP,
+  HOOK_GROUP_FIX,
   HOOK_IDENTITY_MARKER,
   HOOK_ORCA_MARKER,
   hookScriptPath,
@@ -977,8 +978,8 @@ describe.skipIf(!HAS_OPENCODE)('instruction router hooks', () => {
     write(root, '.claude/settings.json', rearmSettings(CLAUDE_HOOK_COMMAND, undefined, ['compact']));
     write(root, '.codex/hooks.json', rearmSettings(CODEX_HOOK_COMMAND, CODEX_HOOK_COMMAND_WINDOWS, ['compact']));
     expect(validateInstructionRouterHooks(root)).toEqual([
-      `claude must re-arm the routes after /clear: a SessionStart group with matcher "clear" running ${CLAUDE_HOOK_COMMAND}`,
-      'codex must re-arm the routes after /clear: a SessionStart group with matcher "clear" running the Codex hook command (and its Windows variant).',
+      `claude must re-arm the routes after /clear: a SessionStart group with matcher "clear" running ${CLAUDE_HOOK_COMMAND}. Fix: ${HOOK_GROUP_FIX}`,
+      `codex must re-arm the routes after /clear: a SessionStart group with matcher "clear" running the Codex hook command (and its Windows variant). Fix: ${HOOK_GROUP_FIX}.`,
     ]);
   });
 
@@ -987,6 +988,17 @@ describe.skipIf(!HAS_OPENCODE)('instruction router hooks', () => {
     const settings = JSON.parse(rearmSettings(CLAUDE_HOOK_COMMAND));
     delete settings.hooks.PostToolUse;
     write(root, '.claude/settings.json', `${JSON.stringify(settings)}\n`);
+    expect(validateInstructionRouterHooks(root)).toEqual([
+      `claude must re-surface unread routes: a PostToolUse group with no matcher running ${CLAUDE_HOOK_COMMAND}. Fix: ${HOOK_GROUP_FIX}`,
+    ]);
+  });
+
+  test('names the fix downstream only: the boilerplate itself has no upstream to merge from', () => {
+    const root = routerFixture();
+    const settings = JSON.parse(rearmSettings(CLAUDE_HOOK_COMMAND));
+    delete settings.hooks.PostToolUse;
+    write(root, '.claude/settings.json', `${JSON.stringify(settings)}\n`);
+    write(root, 'package.json', JSON.stringify({ name: 'agentic-qa-boilerplate' }));
     expect(validateInstructionRouterHooks(root)).toEqual([
       `claude must re-surface unread routes: a PostToolUse group with no matcher running ${CLAUDE_HOOK_COMMAND}`,
     ]);

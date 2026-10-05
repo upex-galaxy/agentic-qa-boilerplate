@@ -258,6 +258,15 @@ updater:
   # list of strings = ignored with a warning (fails toward MORE denies). Read directly by
   # the updater (`readDeclinedDenies` in cli/lib/updater-settings.ts), skipped by vars:check.
   declined_denies: [] # e.g. ['Bash(env)']
+  # Upstream hook commands this project does NOT want appended to `.claude/settings.json`.
+  # `bun run up` appends every upstream hook command the project lacks under the same event
+  # and matcher, as a NEW group at the end of that event's list (after a backup; the
+  # project's own groups are never edited, reordered or removed); a command listed here, by
+  # its exact text, is left out and reported as declined, in every event that runs it. A
+  # hook `agents:compat:check` requires stays required: declining one keeps that check red.
+  # Not a list of strings = ignored with a warning (fails toward MORE hooks). Read directly
+  # by the updater (`readDeclinedHooks` in cli/lib/updater-settings.ts), skipped by vars:check.
+  declined_hooks: [] # e.g. ['node "$CLAUDE_PROJECT_DIR/.agents/hooks/doc-contracts.mjs"']
 
 # Where SECRET values come from. `local` (the default) = .env / .env.local.
 # A secret manager is the ADVANCED option (ADR-0010): `bun run setup` writes the

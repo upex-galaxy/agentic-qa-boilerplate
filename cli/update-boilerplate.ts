@@ -71,7 +71,7 @@ import {
   runVerdict,
 } from './lib/updater-parity';
 import { makePbiCacheMigrationHook } from './lib/updater-pbi';
-import { CLAUDE_SETTINGS_FILE, mergePermissionLists, readDeclinedDenies } from './lib/updater-settings';
+import { CLAUDE_SETTINGS_FILE, formatHookCommand, mergeHookGroups, mergePermissionLists, readDeclinedDenies, readDeclinedHooks } from './lib/updater-settings';
 import { parseDotEnvExampleKeys, requiredNow, VAR_MANIFEST } from './lib/variables-manifest.ts';
 import { checkoutRoots } from './lib/worktree.ts';
 
@@ -396,9 +396,11 @@ REPORTE DE PARIDAD (al final de cada corrida, incluido --dry-run):
   bases KATA de tests/components/, los workflows de CI, …) nunca se
   sobrescriben: solo aparecen en ese reporte. .claude/settings.json, .codex/ y
   los hooks de .husky/ se entregan UNA vez si faltan. De .claude/settings.json
-  solo crecen permissions.allow y permissions.deny (se agrega lo que upstream
-  tiene y falta, nunca se quita); una regla deny que el proyecto no quiere va
-  en updater.declined_denies. A opencode.jsonc nunca se le escribe: las reglas
+  solo crecen permissions.allow, permissions.deny y hooks (se agrega lo que
+  upstream tiene y falta, nunca se quita; un hook que falta llega como grupo
+  nuevo, antes del chequeo de compatibilidad); una regla deny que el proyecto
+  no quiere va en updater.declined_denies, un comando de hook en
+  updater.declined_hooks. A opencode.jsonc nunca se le escribe: las reglas
   deny que le faltan salen como bloque para pegar en el reporte. El proyecto
   suma sus propias rutas protegidas en .agents/project.yaml -> updater.protected_paths
   (archivos sincronizados que fusiono a mano): mismo trato que la lista de
@@ -577,13 +579,21 @@ interface RunFacts {
   denyListAdded: string[]
   /** Upstream deny entries left out because the project lists them in `updater.declined_denies`. */
   denyListDeclined: string[]
+  /** Hook commands the additive hook merge appended to `.claude/settings.json`, formatted (on --dry-run: would append). */
+  hooksAdded: string[]
+  /** Upstream hook commands left out because the project lists them in `updater.declined_hooks`. */
+  hooksDeclined: string[]
+  /** Upstream hook commands left out because the script they run is missing in the project. */
+  hooksSkipped: string[]
+  /** Keys `.claude/settings.json` repeated (a git auto-merge), folded into one list (on --dry-run: would fold). */
+  settingsDuplicatesFolded: string[]
   /** One-line evidence for the unresolved-doctrine ledger row, when AGENTS.md carries debt. */
   doctrineDebt: string | null
   /** Rows about the instruction sections: the `agent-project.md` stub delivery and a pre-split AGENTS.md. */
   instructionRows: InstructionRowInput[]
   parity: { findings: ParityFinding[], report: ParityReport } | null
 }
-const runFacts: RunFacts = { compat: null, envNewKeys: [], migration: null, migrationPlanned: false, aliasDeferred: false, shadowingCommandsMoved: [], gates: [], gatesSkippedReason: null, promptKept: false, pbiCache: null, allowListAdded: [], denyListAdded: [], denyListDeclined: [], doctrineDebt: null, instructionRows: [], parity: null };
+const runFacts: RunFacts = { compat: null, envNewKeys: [], migration: null, migrationPlanned: false, aliasDeferred: false, shadowingCommandsMoved: [], gates: [], gatesSkippedReason: null, promptKept: false, pbiCache: null, allowListAdded: [], denyListAdded: [], denyListDeclined: [], hooksAdded: [], hooksDeclined: [], hooksSkipped: [], settingsDuplicatesFolded: [], doctrineDebt: null, instructionRows: [], parity: null };
 
 // --- ENV-VAR DRIFT DETECTION (afterApply hook) ---
 //
@@ -707,12 +717,7 @@ function makePermissionListHook(
     if (merged === null) { return; }
     const localPath = path.join(process.cwd(), CLAUDE_SETTINGS_FILE);
     try {
-      // This run's backup dir when it made one; otherwise its own, so the
-      // pre-write backup contract holds even on a run that wrote nothing else.
-      const dir = summary.backupDir ?? createBackupDir(process.cwd());
-      const backupPath = path.join(dir, CLAUDE_SETTINGS_FILE);
-      fs.mkdirSync(path.dirname(backupPath), { recursive: true });
-      fs.copyFileSync(localPath, backupPath);
+      backupSettingsOnce(summary);
       fs.writeFileSync(localPath, merged, 'utf-8');
     }
     catch (err) {
@@ -722,6 +727,67 @@ function makePermissionListHook(
     runFacts.allowListAdded = allowAdded;
     runFacts.denyListAdded = denyAdded;
     sink.step(`Permisos agregados a ${CLAUDE_SETTINGS_FILE}: ${allowAdded.length} allow, ${denyAdded.length} deny`);
+  };
+}
+
+// The pre-write backup of `.claude/settings.json`, taken ONCE per run: the
+// hook merge and the permission merge both write the file, and a second copy
+// over the first would make `--rollback` restore the half-merged file.
+let settingsBackupTaken = false;
+
+function backupSettingsOnce(summary: RunSummary): void {
+  if (settingsBackupTaken) { return; }
+  // This run's backup dir when it made one; otherwise its own, so the
+  // pre-write backup contract holds even on a run that wrote nothing else.
+  const dir = summary.backupDir ?? createBackupDir(process.cwd());
+  const backupPath = path.join(dir, CLAUDE_SETTINGS_FILE);
+  fs.mkdirSync(path.dirname(backupPath), { recursive: true });
+  fs.copyFileSync(path.join(process.cwd(), CLAUDE_SETTINGS_FILE), backupPath);
+  settingsBackupTaken = true;
+}
+
+// --- CLAUDE HOOK GROUPS (afterApply hook, BEFORE the compatibility hook) ---
+//
+// The same additive merge for `hooks` (`mergeHookGroups`): an upstream hook
+// command the project lacks under the same event and matcher is appended as a
+// new group, and the project's own groups are never touched. It runs before
+// `makeAgentCompatibilityHook` because `agents:compat:check` REQUIRES some of
+// these groups (the route re-surface `PostToolUse` group, the `SessionStart`
+// re-arm groups): run after it, the check would judge the old file and a
+// project would leave the sync failing its own pre-commit. A command the
+// project does not want is declined by exact text in
+// `.agents/project.yaml` -> `updater.declined_hooks`. Only Claude: Codex's
+// `hooks.json` and the OpenCode plugin are framework files the sync rewrites.
+function makeHookMergeHook(
+  templateDir: string,
+  sink: ReportSink,
+  dryRun: boolean,
+): (summary: RunSummary) => Promise<void> {
+  return async (summary: RunSummary): Promise<void> => {
+    if (!declaredHarnesses(process.cwd()).harnesses.includes('claude')) { return; }
+    const declined = readDeclinedHooks(process.cwd());
+    if (declined.error) { sink.warn(`${declined.error}; se ignora y se agregan todos los hooks de upstream.`); }
+    const { added, declined: left, skipped, duplicatesFolded, merged } = mergeHookGroups(process.cwd(), templateDir, { declinedHooks: declined.entries });
+    runFacts.hooksDeclined = left.map(formatHookCommand);
+    runFacts.hooksSkipped = skipped.map(formatHookCommand);
+    if (dryRun) {
+      runFacts.hooksAdded = added.map(formatHookCommand);
+      runFacts.settingsDuplicatesFolded = duplicatesFolded;
+      return;
+    }
+    if (merged === null) { return; }
+    try {
+      backupSettingsOnce(summary);
+      fs.writeFileSync(path.join(process.cwd(), CLAUDE_SETTINGS_FILE), merged, 'utf-8');
+    }
+    catch (err) {
+      sink.warn(`No se pudieron fusionar los hooks de ${CLAUDE_SETTINGS_FILE}: ${err instanceof Error ? err.message : String(err)}`);
+      return;
+    }
+    runFacts.hooksAdded = added.map(formatHookCommand);
+    runFacts.settingsDuplicatesFolded = duplicatesFolded;
+    if (added.length > 0) { sink.step(`Hooks agregados a ${CLAUDE_SETTINGS_FILE}: ${added.length}`); }
+    if (duplicatesFolded.length > 0) { sink.step(`${CLAUDE_SETTINGS_FILE}: clave(s) repetida(s) unificada(s) en una lista: ${duplicatesFolded.join(', ')}`); }
   };
 }
 
@@ -1536,6 +1602,10 @@ function makeParityHook(sink: ReportSink, priorLockSha: string, dryRun: boolean,
       allowListAdded: runFacts.allowListAdded,
       denyListAdded: runFacts.denyListAdded,
       denyListDeclined: runFacts.denyListDeclined,
+      hooksAdded: runFacts.hooksAdded,
+      hooksDeclined: runFacts.hooksDeclined,
+      hooksSkipped: runFacts.hooksSkipped,
+      settingsDuplicatesFolded: runFacts.settingsDuplicatesFolded,
       doctrineDebt: runFacts.doctrineDebt,
       doctrineFile: DOCTRINE_FILE,
       instructionRows: runFacts.instructionRows,
@@ -2067,6 +2137,7 @@ async function main(): Promise<void> {
             sink,
             async () => { runFacts.envNewKeys = computeEnvNewKeys(UPSTREAM_DIR); },
             // Read-only: records what the real run would add, writes nothing.
+            makeHookMergeHook(UPSTREAM_DIR, sink, true),
             makePermissionListHook(UPSTREAM_DIR, sink, true),
             async () => { runFacts.doctrineDebt = runDoctrineLedger(process.cwd(), UPSTREAM_DIR, { dryRun: true }); },
             makeInstructionsHook(sink, true),
@@ -2076,13 +2147,16 @@ async function main(): Promise<void> {
           )
         : composeHooks(
             sink,
-            // Alias first: a Claude Code session opened right after
+            // Hook groups before the compat check that requires them: a
+            // sync must never leave the project failing its own gates.
+            makeHookMergeHook(UPSTREAM_DIR, sink, false),
+            // Alias next: a Claude Code session opened right after
             // the sync must already resolve skills through `.claude/skills`.
             makeAgentCompatibilityHook(sink),
             makeKataManifestHook(sink),
-            // Before the compat check reads settings.json? No: after. The merge
+            // Before the compat check reads settings.json? No: after. This merge
             // only ADDS allow and deny entries, which no compatibility contract
-            // asserts on, and running it late keeps the hook order above untouched.
+            // asserts on (the hook groups, which one does, merged first).
             makePermissionListHook(UPSTREAM_DIR, sink, false),
             // The unresolved-doctrine ledger. Content-tracked, so unlike every
             // other watched-file nudge it survives `keep project` and clears

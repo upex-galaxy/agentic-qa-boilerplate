@@ -16,6 +16,17 @@ below names which one it applies to:
 
 ## Unreleased — Boilerplate
 
+### Changed (`bun run up` appends upstream hook groups)
+- **The `hooks` of `.claude/settings.json` only grow, like its permission lists**: an upstream hook
+  command the project lacks under the same event and matcher is appended as a new group after the
+  project's own, after a backup, and BEFORE the compatibility check. A project scaffolded before the
+  route re-surface `PostToolUse` group (ADR-0017) no longer fails `agents:compat:check` at
+  pre-commit, pre-push and CI after the sync. A command the project does not want goes in
+  `updater.declined_hooks`; one whose script the project lacks is skipped and reported.
+- **A key repeated by a git auto-merge is folded, not lost**: both settings merges read the file
+  keeping every repeated list (`JSON.parse` keeps only the last) and report the fold.
+- **A downstream compat error for a missing hook group names the fix**: run `bun run up`.
+
 ### Added (documentation contracts, ADR-0016)
 - **`LINT.IfChange(label)` / `LINT.ThenChange(pages)` region markers** on the code the docs
   describe in prose (harness selection, MCP parity, the MCP `.env` loader, the Engram setup,
