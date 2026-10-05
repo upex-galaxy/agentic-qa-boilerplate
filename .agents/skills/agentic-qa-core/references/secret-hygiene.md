@@ -20,8 +20,7 @@ When in doubt, treat it as a secret. The schema is the source of truth for the `
 | Never open (no `Read`, `cat`, `grep`, `head`, `sed`, `less`) | Safe to read: names and references only |
 |---|---|
 | `.env`, `.env.local`, `.env.*.local` | `.env.example` |
-| `.envrc.local` | the committed `.env*.schema` files: `.env.schema`, `.env.core.schema` and, when a project uses a secret manager, `.env.provider.schema` (`op://` references, never a value) |
-| `.auth/**` (token files, `api-state.json`, `<env>-<role>.json`, the `opencode/<VAR>` value files an older `harness:env` wrote, `harness-env-backup/<VAR>`) | `.envrc` (the loader, no values) |
+| `.auth/**` (token files, `api-state.json`, `<env>-<role>.json`, the `opencode/<VAR>` value files an older `harness:env` wrote, `harness-env-backup/<VAR>`) | the committed `.env*.schema` files: `.env.schema`, `.env.core.schema` and, when a project uses a secret manager, `.env.provider.schema` (`op://` references, never a value) |
 | `.claude/settings.local.json` (an older `bun run harness:env` wrote MCP secrets into its `env` block; the current one retires them) | `.mcp.json`, `opencode.jsonc`, `.codex/config.toml` (they hold the `.env` loader's `--filter` names) |
 
 Sourcing a file inside the same command that uses it is using it by name: `source .auth/tokens.env && curl -H "Authorization: Bearer $API_TOKEN_<ROLE>_<ENV>" ...` is the API doctrine's form (`api-testing-doctrine.md`) and stays allowed. Printing what the file holds is not.
@@ -74,7 +73,7 @@ The rule text binds the AI; the harness deny rules are the net under it.
 
 | Host | What refuses the reads | Measured behaviour |
 |---|---|---|
-| Claude Code | `.claude/settings.json` `permissions.deny`: `Read(.env)`, `Read(.env.local)`, `Read(.env.*.local)`, `Read(.envrc.local)`, `Read(.auth/**)`, `Read(.claude/settings.local.json)`, `Bash(printenv*)`, `Bash(env)`, `Bash(varlock printenv*)`, `Bash(varlock reveal*)` and their `bunx` forms | a `Read(...)` deny refuses the Read tool and Bash `cat` / `grep` / `head` on the path, and a listing of a denied directory; it applies in every permission mode. It does NOT refuse `source FILE` / `. FILE`, nor a subprocess that opens the file itself |
+| Claude Code | `.claude/settings.json` `permissions.deny`: `Read(.env)`, `Read(.env.local)`, `Read(.env.*.local)`, `Read(.auth/**)`, `Read(.claude/settings.local.json)`, `Bash(printenv*)`, `Bash(env)`, `Bash(varlock printenv*)`, `Bash(varlock reveal*)` and their `bunx` forms | a `Read(...)` deny refuses the Read tool and Bash `cat` / `grep` / `head` on the path, and a listing of a denied directory; it applies in every permission mode. It does NOT refuse `source FILE` / `. FILE`, nor a subprocess that opens the file itself |
 | OpenCode | `opencode.jsonc` `permission.read` (path wildcards, matched against the relative path) and the secret entries at the end of `permission.bash` | `.env.example` and both schemas stay readable; `source .auth/tokens.env` asks instead of being denied |
 | Codex | `[shell_environment_policy] inherit = "core"` in `.codex/config.toml` keeps secret variables out of the shell commands Codex runs | no file-read deny is configured for Codex in this repo: the rule text is the only guard against Codex opening `.env` |
 

@@ -49,13 +49,14 @@ untracked skill directory and collide with the repo's own tier model. Global (th
 
 ---
 
-## 3 · The two native-launch prerequisites
+## 3 · The native-launch prerequisites
 
-These two items decide whether **supervision** is available on this machine at all, so they are not
-optional extras. The native launch (`worker-start --agent <agent> --model <id> --effort <level>`) is
+Item 3.1 decides whether **supervision** is available on this machine at all, so it is not an
+optional extra; item 3.2 decides whether a supervised worker has its credentials, and needs nothing
+per machine. The native launch (`worker-start --agent <agent> --model <id> --effort <level>`) is
 the ONLY supervised one: the runtime recognizes only agents it started itself, so a terminal created
 from our own command line can never be adopted (`references/gotchas.md` G44). A machine that has not
-done both items below can still run a fleet, but every worker on it is unsupervised.
+done item 3.1 can still run a fleet, but every worker on it is unsupervised.
 
 ### 3.1 · The agent's default arguments (permission mode)
 
@@ -86,14 +87,15 @@ Until that override exists on a machine, a native worker launches in whatever mo
 per-agent default gives it, which is the trap gotcha G27 describes. Neither the repo nor a teammate's
 machine can tell whether you did it, which is the whole problem with a non-versionable setting.
 
-### 3.2 · Credentials for a supervised worker: the `.env` loader, and direnv only for shell-exported vars
+### 3.2 · Credentials for a supervised worker: the `.env` loader
 
 A launch line can export variables; the native launch cannot, because it has no argv. So no MCP
 server depends on the launch: every one that needs `.env` values starts through the `.env` loader
 declared in `.mcp.json`, `opencode.jsonc` and `.codex/config.toml` (`varlock run ... --filter <its
 vars> -- <server>`, ADR-0011), which reads the varlock schema plus `.env` / `.env.local` from the
 worktree root when the harness spawns the server. NO shell is involved, for Claude Code, OpenCode
-and Codex workers alike.
+and Codex workers alike. Nothing here is set per machine: what this item needs is the worktree's own
+`.env`, which provisioning copies.
 
 - **What the worker needs is its own `.env`.** `bun run worktree:provision` copies it from the
   primary. A worktree without one hands every server empty values, and the hook says so on the
@@ -102,35 +104,28 @@ and Codex workers alike.
   `.claude/settings.local.json`, `.auth/opencode/<VAR>`) are retired by the current one.
   `bun run worktree:provision` copies `.auth/opencode/` only while the worktree's `opencode.jsonc`
   still has `{file:}` references, and never copies `.auth/harness-env-backup/`.
-- **Anything inside a worker that reads a shell-exported variable** (`acli`, `curl`, `bun xray`)
-  still reads the process environment. For those, direnv in Orca's **interactive shell** is the
-  seam: with it installed and hooked, an `.envrc` that sources the repo's env file fires when the
-  worker's terminal opens. Measured (G45): a direct probe showed
-  `direnv: export +ATLASSIAN_API_TOKEN +ATLASSIAN_EMAIL …` and then the probe variable reading `SET`.
-
-Without direnv, a shell-exported CLI inside any worker has NO credentials **and nothing reports
-it**. It fails much later, at its first authenticated call, with an error that reads like a broken
-tool (gotcha G45).
+- **Every other process a worker runs loads its own config too; no secret is ever exported into
+  the worker's shell.** Bun scripts (`bun run jira:*`, `bun run api:login`, `bun xray`, the acli
+  helper scripts) read `.env` through Bun's autoload; `acli` uses its own stored auth and `gh` its
+  keyring; a raw `curl` that needs `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` runs inside
+  `bunx varlock run --filter ATLASSIAN_EMAIL,ATLASSIAN_API_TOKEN -- sh -c '...'`; an app-API `curl`
+  runs `source .auth/tokens.env` in the same command. Secret-manager mode: Bun's autoload does not
+  resolve 1Password references, so such a script runs through `bunx varlock run -- <cmd>`.
 
 ```bash
 # after every .env change: restart the agent session (MCP servers read .env at spawn)
-command -v direnv                                # shell-exported vars only: installed AND hooked
-cat .envrc                                       # must source the repo's env file; never commit secrets here
-direnv allow                                     # once per checkout, per machine
+test -f .env && echo present || echo MISSING     # in the worker's worktree: presence only, never the content
+# Claude Code: /mcp lists every server connected; the other harnesses: their own server listing
 ```
 
-`bun run worktree:provision` runs `direnv allow <worktree>` for you, but only when direnv is
-installed AND the primary checkout's `.envrc` is already allowed, and it prints what it did (or why it
-skipped). It never approves an `.envrc` on a machine that never approved the primary.
-
-Two rules that follow from this being per-machine and invisible:
+Two rules that follow:
 
 - The conductor **verifies credentials on the worker's screen** before sending it any work
-  (`references/coordinator-playbook.md` §1 step 5), whichever harness it runs. Readiness is
-  not capability.
-- `.envrc` is a per-machine convenience, not a repo contract. Nothing in this repo may depend on it
-  existing: the custom-argv line loads the env file through the repo's own wrapper instead, and that
-  is why the human-paste path needs none of this.
+  (`references/coordinator-playbook.md` §1 step 5), whichever harness it runs: its MCP servers
+  connected and its worktree holding `.env`. Readiness is not capability.
+- Nothing in this repo may depend on a secret exported into a shell: the custom-argv line loads the
+  env file through the repo's own wrapper (`scripts/launch.ts`, `varlock run -- <bin>`), and that is
+  why the human-paste path needs none of this.
 
 ---
 
@@ -178,9 +173,8 @@ find out during a real fleet, and record it in `references/gotchas.md`.
     (prerequisite of the SUPERVISED native launch; a pasted custom-argv line needs nothing)
 [ ] other agents: their documented equivalent, verified, not guessed
 [ ] the worktree has its own `.env` and the session restarted after the last `.env` change (every
-    MCP server reads it through the `.env` loader; no direnv needed for them)
-[ ] direnv installed, hooked into the shell, `.envrc` sources the env file, `direnv allow` run
-    (shell-exported CLI vars only; verify on the worker's screen at launch)
+    MCP server reads it through the `.env` loader; verify its servers connected on the worker's
+    screen at launch)
 [ ] `orca.yaml` hooks honoured: source policy not local-only, trust approved, setup run-by-default
 [ ] (optional) phone paired
 [ ] a single test worker launched and released end to end BEFORE a real fleet
