@@ -157,7 +157,7 @@ Rules:
   - ALLOWED paths only (kata-invariants.md §10). FORBIDDEN → abort.
   - Do NOT modify generated artifacts (api/openapi-types.ts, kata-manifest.json, reports/).
   - If strict TDD is ON (read from plan §"Strict TDD flag"), every production-code task is preceded by a failing test in the same batch.
-  - On uncertainty, STOP and report — do not improvise on framework surface.
+  - Decisions: agentic-qa-core/references/decision-protocol.md before any question. A technical call inside the approved plan is decided and reported as DECIDED with the option it beat; escalate to the orchestrator only the four §5 kinds (product behaviour, a new security posture, an irreversible or outward action, what the owner reserved). Never widen the scope beyond the plan.
 ```
 
 Phase order (each phase gates the next):
