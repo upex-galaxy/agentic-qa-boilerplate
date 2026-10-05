@@ -38,7 +38,7 @@
     "agents:schema:check": "bun scripts/agents-schema.ts --check",
     "agents:compat:check": "bun scripts/agent-compatibility.ts --check",
     "agents:setup": "bun scripts/agents-setup.ts",
-    "allure:agent": "bunx allure agent -- bunx playwright test",
+    "allure:agent": "bun --no-env-file scripts/launch.ts --warn bunx allure agent -- bunx playwright test",
     "allure:generate": "bunx allure generate ./allure-results",
     "allure:open": "bunx allure open",
     "allure:run": "bunx allure run -- bun test",
