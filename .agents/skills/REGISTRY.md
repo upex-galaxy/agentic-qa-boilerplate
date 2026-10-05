@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-10-04T17:02:33.712Z`
+> Generated: `2026-10-05T05:35:42.279Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -194,7 +194,7 @@ Skills indexed: 26
 - DO: clear the readiness preflight, then run the Phase 0 path self-check against `references/kata-invariants.md` §10 before dispatching anything. A FORBIDDEN path aborts and redirects to the skill named in the row; a path in neither table is ASKED about, never assumed.
 - WHEN one change spans both ALLOWED and FORBIDDEN paths: split it. This skill changes the base; `/test-automation` migrates the consuming specs in a follow-up.
 - DO: run Plan → Code → Verify → Archive in order for every non-trivial framework change. The pipeline IS the gate; "it's a quick refactor" is not an exemption.
-- DO NOT: edit `tests/components/` from a framework-development session — those L2/L3 KATA components are per-ticket surface.
+- DO NOT: edit per-ticket tests from a framework-development session: the specs under `tests/e2e/` and `tests/integration/` and the per-module Page / Api / Steps components are `/test-automation` surface. The KATA bases (`TestContext.ts`, `ApiBase.ts`, `UiBase.ts`) and the fixture files ARE yours (`references/kata-invariants.md` §10.1).
 - DO NOT: collapse the KATA layers (TestContext / Base / Domain / Fixture) under a simplicity argument. They are framework architecture, not speculative abstraction.
 - DO NOT: add a new fixture API without updating the matching fixture file AND `kata-manifest.json` AND citing at least one existing test that consumes it. Orphan fixtures rot, and the manifest is the anti-duplication gate.
 - DO NOT: bump a major version of Playwright / Bun / TypeScript without a regression run on a representative E2E suite — lockstep upgrades hide breaks in fixture lifecycle, locator engines, and type emit.
@@ -308,9 +308,9 @@ Skills indexed: 26
 **Purpose**: Trigger: judgment day, dual review, adversarial review, juzgar.
 
 **Compact Rules**:
-- `/test-automation` — Review phase for high-risk test changes
-- `/git-flow-master` — pre-PR gate when the diff is large or touches shared fixtures / base classes
-- `/framework-development` — pre-archive review of framework evolution diffs
+- `/test-automation` — Review phase, as one of the two ways to satisfy its MANDATORY separate verifier (this skill OR `/pr-review-lead`), for every change, not only high-risk ones. That Review step counts as the explicit request above.
+- `/git-flow-master` — OPTIONAL pre-PR gate when the diff is large or touches shared fixtures / base classes
+- `/framework-development` — OPTIONAL pre-archive review of framework evolution diffs
 - The diff / files / PR / architecture slice under review — the literal target the user named.
 - `AGENTS.md` — repo conventions, Critical Rules, behavioral layer (the judges must score against these, not generic best-practice).
 - `.agents/skills/REGISTRY.md` — skill registry; resolve which project skills apply to the target's file paths + task type, and inject the same `Skills to load before work` block into both judge prompts.
@@ -428,7 +428,7 @@ Skills indexed: 26
 - DO NOT: fill the `business-data-context`, `business-api-context` or `business-e2e-context` maps, and do not write personas, journeys, the feature catalog or the master test plan here. Those are `project-context` modes, which own their diff and overwrite approval. Exact API types are `bun run api:sync`.
 - DO NOT: create per-ticket PBI content or copy the backlog. Phase 4 is a connection check and writes no file; the committed `README.md` and `templates/` under `.context/PBI/` stay untouched.
 - DO NOT: paste credentials or a detected secret into any discovery output. Reference the `.env` key or the file path only; a hardcoded-secret hit is recorded as a HIGH risk (path only) in the Phase 1 assessment.
-- WHEN Phase 2 or 3 settles a test-architecture decision that is architectural AND hard to reverse (runner, isolation/parallelization, fixture and test-data strategy, auth-in-tests, selector contract, CI sharding): record it as an append-only ADR under `.context/ADR/`, drafted `Proposed` for the human to accept.
+- WHEN Phase 2 or 3 settles a test-architecture decision that is architectural AND hard to reverse (runner, isolation/parallelization, fixture and test-data strategy, auth-in-tests, selector contract, CI sharding): record it as an append-only ADR under `.context/ADR/`, drafted `Proposed` for the human to accept. In a brownfield repo the decision was DISCOVERED, not made here: write it `Proposed`, mark it discovered (where it was found), and have the human confirm it at that phase's completion checkpoint, which flips it to `Accepted`.
 - DO NOT: mix a discovery session with `test-framework-adaptation`, and do not use this skill for incremental map refreshes — the write boundaries differ.
 - DO NOT: skip Phase 1 or its domain glossary on a fresh start. Downstream skills load `business-domain-context` as a precondition for ATP authoring and TC naming.
 - WHEN both a DB schema/migrations and ORM models exist: prefer the schema or migrations. ORM definitions drift from the live schema.

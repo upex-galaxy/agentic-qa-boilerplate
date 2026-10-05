@@ -210,11 +210,11 @@ Rules:
 ## Anti-patterns (do NOT delegate)
 
 - **Quick lookups (1-2 file reads)** — inline `Read` is faster, doesn't pay the subagent overhead.
-- **Memory reads/writes** — orchestrator owns memory. Subagents must not read or write `AGENTS.md` / `AGENTS.md` / persistent memory.
+- **Memory reads/writes** — orchestrator owns memory. Subagents never read or write persistent memory and never edit `AGENTS.md` or an instruction section. `AGENTS.md` (L0) loads by itself in every session; a subagent reads only the `.agents/instructions/` sections its briefing names.
 - **Task tracking** (TaskCreate / TaskUpdate / progress files) — orchestrator owns tasks.
-- **Asking the user for input** — only the orchestrator can prompt the user. Subagents that hit a question must STOP and report.
-  - Exception, supervised workers ONLY: a persistent worker launched through `/orca-orchestration` sends its conductor a blocking `ask` over the run mailbox instead of stopping, and still never prompts the user (nobody is watching its terminal). Subagents keep the STOP-and-report rule unchanged.
-- **Planning / decision-making** — the orchestrator decides what to do next. Subagents execute pre-decided steps.
+- **Asking the user for input** — only the orchestrator can prompt the user. A subagent that meets a question runs `decision-protocol.md` first: a technical call inside the approved plan is decided and reported as DECIDED with the option it beat, and only the four §5 kinds (product behaviour, a new security posture, an irreversible or outward action, what the stage or the owner reserves) stop the subagent and go back to the orchestrator.
+  - Exception, supervised workers ONLY: for a §5 question, a persistent worker launched through `/orca-orchestration` sends its conductor a blocking `ask` over the run mailbox instead of stopping, and still never prompts the user (nobody is watching its terminal). Subagents keep stop-and-report for the §5 kinds.
+- **Planning** — the orchestrator owns the plan and decides what to do next. Subagents execute the planned steps and decide only the technical calls inside them, reported as DECIDED.
 - **Sleeping / polling** — if you would `sleep`, you probably wanted Background pattern instead.
 - **Running tests on someone else's behalf** — verification is part of the same agent that made the change. Don't fan out a "verify" agent for a 1-step edit.
 

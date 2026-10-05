@@ -31,7 +31,7 @@ Read this ONLY when sprint-wide mode runs with **more than one executor**. The s
 Both must hold:
 
 1. The mode is **sprint-wide**. Single-issue mode never has a fleet (one issue, one executor, by definition).
-2. Either the user asked for it, or `.agents/project.yaml` → `orchestration.max_workers` is greater than 1. An explicit user instruction ALWAYS wins over the yaml default — the default only applies when the user said nothing.
+2. The user asked for it: they answered the executors question with N > 1 (or named a fleet explicitly). `.agents/project.yaml` → `orchestration.max_workers` never turns fleet mode on, whatever its value: it only caps how many workers run per round (§6) once the user has turned it on. An explicit user number for that cap wins over the yaml value.
 
 The **orchestration gate** (binary present + runtime reachable, three-state, canon in `orca-orchestration/SKILL.md`) then decides only ONE thing: who opens the sessions. Gate passes → the orchestration layer launches and supervises them, and the conductor gets a mailbox, native liveness and one-command cleanup. Gate fails → the human opens them, and the conductor keeps every other duty in this file (rounds, briefs, claims, dashboard by file, sprint-altitude record). Run the gate there; never reimplement it here.
 
@@ -327,7 +327,7 @@ Each worker closes its browser sessions before reporting done. Orphaned browsers
 
 ## 13. Checklist — fleet mode
 
-- [ ] Mode is sprint-wide AND (user asked OR `orchestration.max_workers` > 1) AND the gate was evaluated
+- [ ] Mode is sprint-wide AND the user asked for N > 1 executors (`orchestration.max_workers` caps a round, never switches the mode) AND the gate was evaluated
 - [ ] Gate failed → `launch.txt` written, user told to paste N lines, orchestration layer never named
 - [ ] `roster.md` written: one row per worker (label · issue · session label · handles · state)
 - [ ] One `brief.md` per issue in the round, with ACs **verbatim**, absolute paths, siblings, the declared test-case format, and the no-heartbeat / no-checkpoint / run-to-done / measurement-contradiction rules

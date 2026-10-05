@@ -57,7 +57,7 @@ Hard rule: never request `{ ui }` for an API-only test. Never request `{ api }` 
 
 An ATC = Acceptance Test Case = complete mini-flow mapped 1:1 to a TMS ticket via `@atc('TICKET-ID')`. The four ATC sub-rules are non-negotiable — a method violating any of them is not an ATC and must be reclassified or refactored.
 
-- **Atomic mini-flow**: precondition → action → verification → assertions → return. NEVER a single `page.click()` or single `apiGET`. A read-only GET is a Helper (no `@atc`, optional `@step`), not an ATC.
+- **Atomic mini-flow**: precondition → action → verification → assertions → return. NEVER a bare `page.click()` or a bare `apiGET` with no outcome assertion. A GET that only prepares data is a Helper (no `@atc`, optional `@step`); a GET whose response IS the business outcome under test is an ATC (`test-automation/references/kata-architecture.md` Rule 7).
 - **NEVER calls another ATC**: ATCs are atomic. Reusable chains live in the Steps module (Layer 3.5). An ATC calling `this.someOtherAtc(...)` is a CRITICAL reject.
 - **Max 2 positional params; 3+ → object param**: `fn(a, b, c, d)` is FORBIDDEN. Use `fn(args: Args)`. Applies to ATCs and to every Layer 2/3/3.5 method.
 - **Locators inline; extract only if used 2+ times**: locators default inline inside the ATC. Extract to `private readonly someLocator = () => this.page.locator(...)` arrow function on the class only when used in 2+ ATCs of the same component. NEVER extract to a separate `locators/*.ts` file.

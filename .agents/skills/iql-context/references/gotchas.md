@@ -13,7 +13,6 @@
 | G5 | **Documentation sub-phases.** The repo names Analyze / Prioritize / Document; the site names only Prioritize and Document | "phase Analyze" looks invented to a site reader | cite `agentic-qa-core/references/stage-gates.md` §"Documentation" | 2026-09-24 | `#stages` vs the reference |
 | G6 | **Who fires Draft → In Design → READY depends on the modality.** The site lists it under Documentation; in `jira-xray` Planning fires it, in `jira-native` Documentation creates the TC | a jira-xray session waits for Documentation to design cases the sprint already needs | read `agentic-qa-core/references/artifact-lifecycle.md` §1 (TC row) and resolve the modality first | 2026-09-24 | `#stages` card Documentation vs the lifecycle table |
 | G7 | **The site's sandbox Defect example links differently from the doctrine** (blocks the TC, relates to the ATR) | a Defect filed from the example carries links the traceability check does not expect | link per `agentic-qa-core/references/traceability-linking.md` §3 and §8 | 2026-09-24 | `#jira` example vs the link catalog |
-| G8 | **Subtask status names.** The site and `.agents/jira-workflows.json` say ACTIVE → Close; `.agents/instructions/agent-skills-and-mcps.md` still says In Progress → Done | a transition by the prose name is not in the catalog | the JSON wins; use the catalog slug | 2026-09-24 | `.agents/jira-workflows.json` `subtask` |
 
 ## 2 · Site-internal
 
@@ -24,4 +23,6 @@
 
 ## 3 · No longer true
 
-_(empty)_
+| # | Gotcha | Symptom | Fix | Measured | Verified against |
+|---|---|---|---|---|---|
+| G8 | **Subtask status names.** The site and `.agents/jira-workflows.json` say ACTIVE → Close; `.agents/instructions/agent-skills-and-mcps.md` said In Progress → Done | a transition by the prose name is not in the catalog | no longer true since 2026-10-05: the shift-left row cites the catalog slugs and points to the JSON | 2026-09-24 | `.agents/jira-workflows.json` `subtask` |

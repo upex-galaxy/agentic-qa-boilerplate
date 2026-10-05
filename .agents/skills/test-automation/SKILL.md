@@ -271,7 +271,7 @@ If any step fails, fix before moving to Review.
 For the test you just wrote, run Allure (`bunx allure`, version pinned in `package.json`) in **agent mode** to get a markdown report you can read directly without parsing HTML:
 
 ```bash
-bun allure:agent           # runs `bunx allure agent -- bun test`
+bun allure:agent           # runs `bunx allure agent -- bunx playwright test`
 ```
 
 Allure lives as a devDep — `bunx allure` resolves to the local `node_modules/.bin/allure`, no global install required. Use this when:
@@ -355,7 +355,7 @@ Rules:
 3. **Equivalence Partitioning.** Same expected output = one parameterized ATC. Three ATCs all returning HTTP 401 for invalid login are wrong -- merge into one `loginWithInvalidCredentials(payload)`.
 4. **ATCs do not call ATCs.** ATCs are atomic. For reusable chains, use the Steps module (`tests/components/steps/*Steps.ts`). Steps are NOT decorated with `@atc`.
 5. **Locators inline.** No `locators/*.ts` files. Put the selector in the ATC. If the same locator is used in 2+ ATCs of the same component, extract it to a `private readonly` arrow function in the class -- not to a separate file.
-6. **Helpers vs ATCs.** A read-only GET is a helper (no `@atc`, optionally `@step`). An action that changes state is an ATC (`@atc('TICKET-ID')`). A GET inside an ATC that verifies the action succeeded is fine -- but the GET alone is not an ATC.
+6. **Helpers vs ATCs.** An action that changes state is an ATC (`@atc('TICKET-ID')`). A GET is an ATC only when its response IS the business outcome under test (business data, 401, 403, 404); a GET that only prepares data is a helper (no `@atc`, optionally `@step`), and a GET that confirms an action stays inside that action's ATC. Canon: `references/kata-architecture.md` Rule 7.
 7. **Fixed assertions go inside ATCs.** Status code, required fields, URL redirect checks. Test-level assertions (flow outcomes) go in the test file.
 8. **Max 2 positional parameters.** 3+ parameters must use an object parameter (`fn(args: Args)`). Named object parameters beat positional lists for maintainability and autocomplete.
 9. **Import aliases are mandatory.** `@api/`, `@ui/`, `@utils/`, `@variables`, `@TestContext`, `@schemas/`. No relative imports (`../../../`). Lint will reject them.
