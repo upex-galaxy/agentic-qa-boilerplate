@@ -39,7 +39,9 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
+          # Full history: the documentation-contract step below diffs the PR
+          # range and reads its commit messages for `Docs-Checked:` trailers.
 
       - name: Validate env schema (varlock)
         uses: dmno-dev/varlock-action@v1.0.5
@@ -79,6 +81,16 @@ jobs:
         # scripts package.json does not declare, Critical Rule #17 facts, the
         # skill router, and (skills:check) the instruction layer with its locks
         # and router eval. Before this step no CI job ran any doc check.
+
+      - name: Documentation Contracts
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: bun scripts/lint-doc-contracts.ts --base "$BASE_SHA" --head "$HEAD_SHA"
+        # ADR-0016: a change inside a `LINT.IfChange(label)` region fails the PR
+        # unless every page its `LINT.ThenChange(...)` names changed too, or a
+        # commit in the PR carries `Docs-Checked: <label> <reason>`. Inert (one
+        # line, exit 0) outside the boilerplate's own repo.
 
       - name: Skill Activation Evals Check
         run: bun run skills:evals
