@@ -16,6 +16,27 @@ below names which one it applies to:
 
 ## Unreleased — Boilerplate
 
+### Changed (instruction routes the agent actually reads, ADR-0016)
+- **The prompt hook routes fewer sections and says when to read them.** Fired ROUTER rows are
+  ranked (an id named in a `ROUTE-SCOPE:` sentence, then path hits, then trigger hits, then the
+  earliest match; anchors before companions), at most three section files get a binding
+  `ROUTE: read <file> (<id>, <n> lines) before acting on this prompt` line, and the rest share one
+  non-binding `ROUTE-OPTIONAL:` line. Imports never count against the cap. Absolute paths are no
+  longer read as intent, and a prompt carrying an orchestrator preamble is classified on its task
+  block only.
+- **Claude Code re-surfaces an unread route once.** `.claude/settings.json` gains a `PostToolUse`
+  group running the same emitter: the first tool call that reads none of the routed sections,
+  while some are unread, gets one `ROUTE-PENDING:` line. `agents:compat:check` requires the group;
+  a project updated with `bun run up` adds it by hand (the settings file is delivered once), and
+  the parity report names it.
+- **Worker launch prompts end with `ROUTE-SCOPE: <section ids>`** (`orca-orchestration`
+  launch seam, playbook examples, brief template), and the worker contract gains rule 15: resolve
+  the `ROUTE:` lines before the brief. The LOAD PROTOCOL in `AGENTS.md` names the optional and
+  pending lines.
+- **The router eval scores three numbers**: recall (named on any line), binding recall (kept on a
+  binding line, new floor) and precision (binding lines only). `instructions:audit` also counts
+  `ROUTE-PENDING:` reminders, reads after one, and `ROUTE-OPTIONAL:` lines.
+
 ### Changed (docs follow-through for the secrets and harness changes)
 - **Critical Rule #1's by-name example names the MCP loader's `--filter` list** instead of the
   retired `${VAR}` placeholder (same words in the dev boilerplate).

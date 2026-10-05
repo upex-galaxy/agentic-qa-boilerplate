@@ -438,12 +438,16 @@
         que luego terminan en los trailers de cada commit), avisa si falta el <code>.env</code> y
         clasifica el pedido contra el router de <code>AGENTS.md</code>: por cada sección que el
         pedido necesita y la sesión todavía no leyó, suma una línea
-        <code>ROUTE: read &lt;archivo&gt;</code>. Claude Code y Codex lo ejecutan como hook de
-        comando en el evento <code>UserPromptSubmit</code>, y un <code>SessionStart</code> con
-        matcher <code>compact</code> o <code>clear</code> re-arma las rutas después de compactar o
-        de un <code>/clear</code>. OpenCode no tiene hooks de comando, así que su plugin importa las
-        mismas funciones y las empuja al prompt de sistema; en OpenCode 2, que no le pasa el texto
-        del pedido, queda solo el router.
+        <code>ROUTE: read &lt;archivo&gt;</code>, con un tope de pocas por pedido: el resto va en
+        una sola línea <code>ROUTE-OPTIONAL:</code> que no obliga. Claude Code y Codex lo ejecutan
+        como hook de comando en el evento <code>UserPromptSubmit</code>, y un
+        <code>SessionStart</code> con matcher <code>compact</code> o <code>clear</code> re-arma las
+        rutas después de compactar o de un <code>/clear</code>. En Claude Code, un
+        <code>PostToolUse</code> corre el mismo archivo y, si el agente usa una herramienta sin
+        haber leído lo ruteado, le recuerda una sola vez qué falta (<code>ROUTE-PENDING:</code>).
+        OpenCode no tiene hooks de comando, así que su plugin importa las mismas funciones y las
+        empuja al prompt de sistema; en OpenCode 2, que no le pasa el texto del pedido, queda solo
+        el router.
       </p>
 
       <h3 id="aliases">Una skill, un modo</h3>

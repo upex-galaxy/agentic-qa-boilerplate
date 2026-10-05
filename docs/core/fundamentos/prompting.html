@@ -457,10 +457,11 @@
         Hay además un hook, <code>.agents/hooks/personality-reinject.mjs</code>, que en cada turno
         compara el pedido con el router de <code>AGENTS.md</code> y agrega una línea
         <code>ROUTE: read &lt;archivo&gt;</code> por cada sección de
-        <code>.agents/instructions/</code> que el pedido necesita y la sesión todavía no leyó. Es la
-        respuesta del repo a un problema conocido: una tabla que el modelo tiene que acordarse de
-        consultar pierde peso a medida que la conversación crece, y una línea escrita en el turno
-        no. El detalle de ese tema está en <a href="context.html">Contexto</a>.
+        <code>.agents/instructions/</code> que el pedido necesita y la sesión todavía no leyó, con
+        un tope de pocas por pedido (las demás quedan en una línea opcional). Es la respuesta del
+        repo a un problema conocido: una tabla que el modelo tiene que acordarse de consultar pierde
+        peso a medida que la conversación crece, y una línea escrita en el turno no. El detalle de
+        ese tema está en <a href="context.html">Contexto</a>.
       </p>
 
       <h2 id="errores">Errores comunes</h2>
