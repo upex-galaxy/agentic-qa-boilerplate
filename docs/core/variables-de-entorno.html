@@ -130,7 +130,8 @@
       <h2 id="varlock">Qué valida varlock y dónde</h2>
       <p>
         varlock lee dos archivos versionados que declaran nombres, tipos y sensibilidad, nunca
-        valores. Los valores siguen en <code>.env</code>.
+        valores (un tercero, opcional, conecta un gestor de secretos: ver
+        <a href="#gestores">Gestores de secretos</a>). Los valores siguen en <code>.env</code>.
       </p>
       <div class="table-wrap">
         <table>
@@ -170,6 +171,15 @@ STAGING_USER_EMAIL=
 
 bunx varlock load --agent      # valida .env con los valores enmascarados
 bun run vars:schema:check      # el core generado está al día y el par carga</code></pre>
+      <div class="callout warn">
+        <span class="callout-title">Un # sin comillas corta el valor</span>
+        <p>
+          varlock corta un valor sin comillas en el primer <code>#</code>:
+          <code>PASSWORD=pass#word</code> llega como <code>pass</code>. dotenv lo conservaba, así
+          que una contraseña que funcionaba antes puede fallar ahora. Pon entre comillas cualquier
+          valor que tenga <code>#</code>: <code>PASSWORD="pass#word"</code>.
+        </p>
+      </div>
       <div class="callout warn">
         <span class="callout-title">La excepción es TEST_ENV</span>
         <p>
@@ -440,7 +450,8 @@ bun run setup:doctor --json   # env_var_scopes[] y harness_level_mcps para un ag
         <code>.auth/</code> ni <code>.claude/settings.local.json</code>, y tampoco corre
         <code>printenv</code>, <code>env</code> ni <code>curl -v</code>, porque cualquier valor que
         aparezca en pantalla viaja al proveedor del modelo y se queda en la transcripción local.
-        <code>.env.example</code> y los dos esquemas sí los lee: solo tienen nombres.
+        <code>.env.example</code> y los esquemas versionados (<code>.env*.schema</code>) sí los lee:
+        solo tienen nombres y referencias, nunca valores.
       </p>
       <p>
         Para saber si una variable está cargada, la IA corre <code>bunx varlock load --agent</code>,
@@ -464,14 +475,97 @@ bun run setup:doctor --json   # env_var_scopes[] y harness_level_mcps para un ag
 
       <h2 id="gestores">Gestores de secretos</h2>
       <p>
-        El camino recomendado para los valores sensibles es un gestor de secretos (1Password u otro
-        proveedor que varlock resuelva en tiempo de carga) en lugar de un <code>.env</code> con
-        valores en claro. El repo no trae ninguno configurado: los valores viven en
-        <code>.env</code>. Si tu proyecto conecta uno, los items marcados <code>@sensitive</code> en
-        el esquema son los que tiene que resolver el proveedor, y los alcances de esta página no
-        cambian. El dueño del esquema y de esa decisión es
-        <code>.context/ADR/ADR-0003-env-schema-owner-varlock.md</code>.
+        Es la opción <strong>avanzada</strong>. El camino por defecto es <code>.env</code>, y sigue
+        siéndolo: un clon recién hecho, un estudiante o una laptop sin internet no necesitan nada
+        más. Un gestor sirve cuando un equipo comparte los secretos de un proyecto y no quiere
+        pasarse valores por chat ni tenerlos en claro en cada máquina. El primero que trae el repo
+        es 1Password; el diseño deja el mismo hueco para cualquier otro gestor que varlock sepa
+        leer.
       </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Pieza</th>
+              <th>Qué hace</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>secrets:</code> en <code>.agents/project.yaml</code></td>
+              <td>
+                <code>provider: local | 1password</code> (por defecto <code>local</code>), el vault,
+                la cuenta y el modo de autenticación (<code>app</code> o
+                <code>service-account</code>).
+              </td>
+            </tr>
+            <tr>
+              <td><code>.env.provider.schema</code></td>
+              <td>
+                Lo escribe <code>bun run setup</code> cuando eliges el gestor, y se versiona. Tiene
+                referencias (<code>op(op://vault/VARIABLE/password)</code>), nunca un valor. Cada
+                línea viene comentada: descomentas las que tu vault tiene.
+              </td>
+            </tr>
+            <tr>
+              <td><code>.env.core.schema</code></td>
+              <td>
+                Lo importa con <code>allowMissing=true</code>. Si el archivo no existe, nada cambia.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        El orden de precedencia no cambia: un valor no vacío en <code>.env.local</code>,
+        <code>.env</code> o exportado en la terminal gana sobre el vault, y entonces el vault ni
+        siquiera se consulta. Para leer una clave del gestor, déjala vacía (o quítala) de
+        <code>.env</code>. Así un compañero sin acceso al vault sigue trabajando con su
+        <code>.env.local</code>.
+      </p>
+      <h3>1Password, paso a paso</h3>
+      <ol>
+        <li>
+          Instala la app de escritorio y su CLI, <code>op</code> (<code
+            >brew install 1password-cli</code
+          >
+          en macOS).
+        </li>
+        <li>
+          En la app: Settings &gt; Developer &gt; "Integrate with 1Password CLI". La app te pide
+          huella o contraseña al cargar; no queda ningún token en disco.
+        </li>
+        <li>
+          Corre <code>bun run setup</code> y elige 1Password. Para un equipo, el vault es uno
+          compartido (<code>&lt;proyecto&gt;-dev</code>); con un plan personal, tu propio vault.
+        </li>
+        <li>
+          En el vault, un item de tipo Password por variable, con el NOMBRE de la variable como
+          título. En <code>.env.provider.schema</code>, descomenta esas líneas.
+        </li>
+        <li>Comprueba sin ver valores: <code>bunx varlock load --agent</code>.</li>
+      </ol>
+      <p>
+        En CI hace falta un <em>service account</em> con lectura sobre el vault del equipo. Su token
+        va en el secret de GitHub <code>OP_SERVICE_ACCOUNT_TOKEN</code>, al lado de los secrets por
+        variable de siempre (nunca en su lugar): un secret por variable que tiene valor sigue
+        ganando, y uno vacío ya no tapa el valor del vault porque el launcher lo descarta antes de
+        llamar a varlock. Un plan personal no sirve para CI, porque un service account no puede leer
+        un vault personal. Los pasos que llaman a una herramienta directamente (<code>bun xray</code
+        >, el publicador del portal) siguen leyendo solo los secrets por variable.
+      </p>
+      <div class="callout warn">
+        <span class="callout-title">Otros gestores</span>
+        <p>
+          varlock 1.20.0 trae plugins para AWS Secrets Manager, Azure Key Vault, Bitwarden,
+          Dashlane, Doppler, Google Secret Manager, HashiCorp Vault, Infisical, Akeyless, KeePass,
+          Keeper, Passbolt, Proton Pass y Pass, más el Keychain de macOS integrado. Ninguno viene
+          configurado aquí. Sumar uno es añadir su id y un adaptador en
+          <code>cli/lib/secret-providers.ts</code>; el archivo, el import, el launcher y CI quedan
+          igual. La decisión completa está en
+          <code>.context/ADR/ADR-0010-secret-manager-advanced-option.md</code>.
+        </p>
+      </div>
 
       <footer class="doc-footer">
         <a href="empezar-aqui.html">Empezar aquí</a> · <a href="setup/index.html">Setup</a>. Fuente
