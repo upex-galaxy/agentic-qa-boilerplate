@@ -81,16 +81,17 @@ This is asymmetric with `acli workitem create`, which **does** accept custom fie
 
 **Fix — WORKAROUND via REST PUT** (the only working path: `acli` has no native channel for it).
 
-Prerequisites: `ATLASSIAN_EMAIL` and `ATLASSIAN_API_TOKEN` are exported in the current shell. The host is NOT an env var — `bun run --silent jira:url` reads it from `.agents/project.yaml`.
+Prerequisites: `ATLASSIAN_EMAIL` and `ATLASSIAN_API_TOKEN` set in `.env`. They are never exported into the shell: the `curl` runs inside the `.env` loader, which hands them to that one process. The host is NOT an env var — `bun run --silent jira:url` reads it from `.agents/project.yaml`.
 
 ```bash
 # Simple value (number, string, single-select)
-curl -sS -w "\nHTTP %{http_code}\n" \
-  -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
-  -X PUT "$(bun run --silent jira:url)/rest/api/3/issue/{{PROJECT_KEY}}-123" \
-  -H "Accept: application/json" \
-  -H "Content-Type: application/json" \
-  -d '{"fields": {"customfield_NNNN": 8}}'
+bunx varlock run --filter ATLASSIAN_EMAIL,ATLASSIAN_API_TOKEN -- sh -c '
+  curl -sS -w "\nHTTP %{http_code}\n" \
+    -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
+    -X PUT "$(bun run --silent jira:url)/rest/api/3/issue/{{PROJECT_KEY}}-123" \
+    -H "Accept: application/json" \
+    -H "Content-Type: application/json" \
+    -d "{\"fields\": {\"customfield_NNNN\": 8}}"'
 # Expected: HTTP 204 (no body on success)
 ```
 

@@ -20,8 +20,12 @@
  * Image dimensions are auto-detected for PNG / JPEG / GIF (zero-dependency header
  * reads); pass --width / --height to override or for formats / videos we cannot size.
  *
- * Credentials come from the shell env (loaded from .env by the project tooling):
- *   ATLASSIAN_EMAIL · ATLASSIAN_API_TOKEN
+ * Credentials (ATLASSIAN_EMAIL · ATLASSIAN_API_TOKEN) are loaded by THIS process,
+ * never exported into the calling shell: the process environment first (Bun's
+ * own `.env` autoload, `bun run claude|opencode|codex`, `bunx varlock run`),
+ * then the repo root's `.env.local` and `.env`, so it works from any cwd. A
+ * secret-manager project (`secrets.provider` != local) keeps no value in `.env`:
+ * run it as `bunx varlock run -- bun <this file> ...`.
  *
  * The INSTANCE HOST does not: it is read from `.agents/project.yaml` ->
  * issue_tracker.atlassian_url, with ATLASSIAN_URL as fallback only. See
@@ -34,15 +38,21 @@
  *   bun jira-attach-media.ts <ISSUE-KEY> <file> --publish       # post a comment with the image
  *   bun jira-attach-media.ts <ISSUE-KEY> <file> --publish --caption "Repro step 3"
  *   bun jira-attach-media.ts <ISSUE-KEY> <file> --width 800 --height 600 --layout wide
+ *   bun jira-attach-media.ts <ISSUE-KEY> <file> --dry-run       # resolve host + credentials, no request
  *
  * Module:
  *   import { uploadAttachment, resolveMediaId, buildMediaNode } from "./jira-attach-media.ts";
  */
 
+import { join } from "node:path";
 import {
   formatInstanceMismatchWarning,
   resolveAtlassianInstance,
 } from "../../../../cli/lib/atlassian-instance";
+import { parseDotEnvPairs } from "../../../../cli/lib/variables-manifest";
+
+const REPO_ROOT = join(import.meta.dir, "..", "..", "..", "..");
+const CREDENTIALS = ["ATLASSIAN_EMAIL", "ATLASSIAN_API_TOKEN"] as const;
 
 type MediaNode = {
   type: "mediaSingle";
@@ -52,11 +62,30 @@ type MediaNode = {
 
 type Attachment = { id: string; content: string; filename: string; mimeType: string };
 
+/**
+ * One credential, by name: the process environment, then `<root>/.env.local`,
+ * then `<root>/.env` (the precedence varlock and Bun use). The value stays in
+ * this process; nothing is exported, printed or written. Null when unset.
+ */
+function readCredential(
+  name: string,
+  processEnv: Record<string, string | undefined> = process.env,
+  root: string = REPO_ROOT,
+): string | null {
+  const fromProcess = processEnv[name];
+  if (fromProcess) return fromProcess;
+  for (const file of [".env.local", ".env"]) {
+    const value = parseDotEnvPairs(join(root, file)).get(name);
+    if (value) return value;
+  }
+  return null;
+}
+
 function env(name: string): string {
-  const v = process.env[name];
+  const v = readCredential(name);
   if (!v) {
     throw new Error(
-      `missing env var ${name} — load it from .env (bun claude / bun opencode / direnv) and retry`,
+      `missing ${name}: set it in .env (or run through \`bunx varlock run -- bun <this file> ...\` when a secret manager holds it) and retry`,
     );
   }
   return v;
@@ -169,7 +198,7 @@ function buildMediaNode(
   };
 }
 
-export { uploadAttachment, resolveMediaId, buildMediaNode, imageSize };
+export { uploadAttachment, resolveMediaId, buildMediaNode, imageSize, readCredential };
 
 if (import.meta.main) {
   const argv = process.argv.slice(2);
@@ -190,6 +219,14 @@ if (import.meta.main) {
   const detected = imageSize(bytes);
   const width = flag("--width") ? Number(flag("--width")) : detected?.width;
   const height = flag("--height") ? Number(flag("--height")) : detected?.height;
+
+  // Everything the upload needs, resolved without a single request: the host,
+  // and each credential as `set` / `missing` (never its value).
+  if (has("--dry-run")) {
+    const credentials = Object.fromEntries(CREDENTIALS.map(name => [name, readCredential(name) ? "set" : "missing"]));
+    process.stdout.write(JSON.stringify({ issueKey, host: instanceUrl(), credentials, file: filePath, width: width ?? null, height: height ?? null }, null, 2) + "\n");
+    process.exit(Object.values(credentials).includes("missing") ? 1 : 0);
+  }
 
   const att = await uploadAttachment(issueKey, filePath);
   const mediaId = await resolveMediaId(att.content);
