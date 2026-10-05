@@ -271,7 +271,7 @@ If any step fails, fix before moving to Review.
 For the test you just wrote, run Allure (`bunx allure`, version pinned in `package.json`) in **agent mode** to get a markdown report you can read directly without parsing HTML:
 
 ```bash
-bun allure:agent           # runs `bunx allure agent -- bun test`
+bun allure:agent           # runs `bunx allure agent -- bunx playwright test`
 ```
 
 Allure lives as a devDep — `bunx allure` resolves to the local `node_modules/.bin/allure`, no global install required. Use this when:
