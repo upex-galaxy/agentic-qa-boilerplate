@@ -149,13 +149,14 @@ DBHUB_PASSWORD=</code></pre>
           </p>
         </li>
         <li>
-          <strong>Arranca el agente con el wrapper</strong>
+          <strong>Arranca el agente</strong>
           <p>
-            Lanza la sesión con <code>bun run claude</code>, <code>bun run opencode</code> o
-            <code>bun run codex</code>. El wrapper carga <code>.env</code> con varlock y, antes, se
-            niega a arrancar si una variable heredada de tu shell difiere del archivo (con varlock
-            ganaría la heredada). Si cambias <code>.env</code> con la sesión abierta, reiníciala: el
-            MCP recibe las variables una sola vez, al arrancar.
+            Abre la sesión con <code>claude</code>, <code>opencode</code> o <code>codex</code> en la
+            carpeta del repo, o con su app de escritorio. <code>dbhub</code> lee
+            <code>.env</code> por su cuenta con el loader de varlock. Si exportaste una variable
+            <code>DBHUB_*</code> en el perfil de tu shell, esa gana sobre el archivo;
+            <code>bun run vars:env:check</code> la nombra. Si cambias <code>.env</code> con la
+            sesión abierta, reiníciala: el MCP recibe las variables una sola vez, al arrancar.
           </p>
         </li>
         <li>

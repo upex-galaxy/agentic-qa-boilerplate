@@ -16,6 +16,18 @@ below names which one it applies to:
 
 ## Unreleased — Boilerplate
 
+### Removed (harness launch scripts; a harness opens bare)
+- **`bun run claude|codex|opencode` are retired** (ADR-0014). They started the harness inside
+  `varlock run`, which exported every `.env` value into the AI's own process. Open the harness
+  directly (`claude`, `opencode`, `codex`, or the desktop app): every MCP server loads `.env`
+  itself (ADR-0011). `scripts/launch.ts` now serves the test scripts only, refuses a harness
+  binary, and its drift check warns and goes on (`--warn` is accepted and changes nothing).
+  A stale variable exported in your own shell is reported by `bun run vars:env:check`.
+  `bun run up` never re-adds the scripts and never deletes yours: a downstream one that loads
+  `.env` gets one informational parity row naming it as removable.
+- **Scaffolder** — the `create-agentic-qa` next steps name `claude` (or `opencode` / `codex`, or
+  the desktop app) instead of `bun run claude`; takes effect on the next npm release.
+
 ### Changed (MCP servers read `.env` themselves; no plaintext copies)
 - **Every MCP server that needs `.env` values starts through one filtered loader** on all three
   hosts: `bunx -p varlock@<pin> varlock run --no-redact-stdout --inject vars --filter <its vars> --

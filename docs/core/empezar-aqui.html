@@ -407,16 +407,17 @@ bun run setup</code></pre>
           </p>
         </li>
       </ol>
-      <pre data-lang="bash"><code>bun run claude     # Claude Code
-bun run opencode   # OpenCode
-bun run codex      # Codex CLI (Codex Desktop usa la misma config del repo)</code></pre>
+      <pre data-lang="bash"><code>claude     # Claude Code
+opencode   # OpenCode
+codex      # Codex CLI (Codex Desktop usa la misma config del repo)</code></pre>
       <p>
-        Cada wrapper pasa por <code>scripts/launch.ts</code>: compara tu shell con
-        <code>.env</code> y después arranca <code>varlock run -- &lt;binario&gt;</code>. Con varlock
-        una variable heredada de la shell gana sobre el archivo, así que si una difiere el arranque
-        se niega y nombra la variable (nunca el valor); haz <code>unset</code> o abre una terminal
-        limpia. Si lanzas el binario a pelo, nadie revisa, y un valor viejo del entorno puede tapar
-        el del archivo.
+        Abre el harness tal cual en la carpeta del repo, o con su app de escritorio: no hace falta
+        ningún script. Cada servidor MCP lee <code>.env</code> por su cuenta con el loader filtrado
+        de varlock, abras como abras el harness, y nada exporta <code>.env</code> a tu shell. Lo que
+        sí puede tapar el archivo es una variable del proyecto que hayas exportado tú en el perfil
+        de tu shell: gana sobre <code>.env</code> en todo lo que arranques desde esa shell.
+        <code>bun run vars:env:check</code> la nombra (solo el nombre y el largo, nunca el valor);
+        quítala del perfil o abre una terminal limpia.
       </p>
       <div class="callout danger">
         <span class="callout-title">Un 401 es la señal</span>

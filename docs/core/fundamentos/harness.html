@@ -541,13 +541,13 @@
           leen cuando el harness levanta los servidores.
         </p>
         <p>
-          <strong>Lanzar el binario pelado.</strong> <code>bun run claude</code>,
-          <code>bun run opencode</code> y <code>bun run codex</code> arrancan el harness con
-          <code>varlock run</code>, y antes comparan tu terminal con el <code>.env</code>. Con
-          varlock una variable heredada del shell gana sobre el archivo, así que si una difiere el
-          arranque se niega y te dice cuál (solo el nombre y el largo): haz <code>unset</code> o
-          abre una terminal limpia. El binario pelado se salta esa revisión, y un valor viejo en tu
-          terminal puede tapar el archivo.
+          <strong>Exportar una variable del proyecto en tu shell.</strong> El harness se abre tal
+          cual (<code>claude</code>, <code>opencode</code>, <code>codex</code> o su app de
+          escritorio) y cada servidor MCP lee <code>.env</code> por su cuenta. Pero una variable que
+          exportaste tú en el perfil de tu shell gana sobre el archivo en todo lo que arranques
+          desde esa terminal, y un valor viejo ahí tapa el <code>.env</code> corregido sin avisar.
+          <code>bun run vars:env:check</code> te dice cuál (solo el nombre y el largo): quítala del
+          perfil o abre una terminal limpia.
         </p>
       </div>
 

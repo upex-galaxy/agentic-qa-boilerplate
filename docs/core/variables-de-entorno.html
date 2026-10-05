@@ -264,11 +264,12 @@ bun run vars:schema:check      # el core está al día, todo secreto es @sensiti
         Después de tocar <code>.env</code>, reinicia el agente. Si una versión anterior de
         <code>bun run harness:env</code> dejó copias en el bloque <code>env</code> de
         <code>.claude/settings.local.json</code> o en <code>.auth/opencode/</code>, el comando de
-        ahora las retira y <code>setup:doctor</code> las reporta. En Windows los tres wrappers
-        (<code>bun run claude</code>, <code>bun run opencode</code>, <code>bun run codex</code>)
-        cargan <code>.env</code> igual. Ningún secreto se exporta a tu shell: los scripts de Bun
-        (<code>bun run jira:*</code>, <code>bun run api:login</code>, <code>bun xray</code>) leen
-        <code>.env</code> con su propio autoload y <code>acli</code> usa su login guardado.
+        ahora las retira y <code>setup:doctor</code> las reporta. En Windows es igual: abres
+        <code>claude</code>, <code>opencode</code> o <code>codex</code> (o su app de escritorio) y
+        cada MCP lee <code>.env</code> por su cuenta. Ningún secreto se exporta a tu shell: los
+        scripts de Bun (<code>bun run jira:*</code>, <code>bun run api:login</code>,
+        <code>bun xray</code>) leen <code>.env</code> con su propio autoload y <code>acli</code> usa
+        su login guardado.
       </p>
 
       <h2 id="punto-de-uso">Validar en el punto de uso</h2>
@@ -564,10 +565,11 @@ bun run setup:doctor --json   # env_var_scopes[] y harness_level_mcps para un ag
         En CI hace falta un <em>service account</em> con lectura sobre el vault del equipo. Su token
         va en el secret de GitHub <code>OP_SERVICE_ACCOUNT_TOKEN</code>, al lado de los secrets por
         variable de siempre (nunca en su lugar): un secret por variable que tiene valor sigue
-        ganando, y uno vacío ya no tapa el valor del vault porque el launcher lo descarta antes de
-        llamar a varlock. Un plan personal no sirve para CI, porque un service account no puede leer
-        un vault personal. Los pasos que llaman a una herramienta directamente (<code>bun xray</code
-        >, el publicador del portal) siguen leyendo solo los secrets por variable.
+        ganando, y uno vacío ya no tapa el valor del vault porque el launcher de los scripts de test
+        (<code>scripts/launch.ts</code>) lo descarta antes de llamar a varlock. Un plan personal no
+        sirve para CI, porque un service account no puede leer un vault personal. Los pasos que
+        llaman a una herramienta directamente (<code>bun xray</code>, el publicador del portal)
+        siguen leyendo solo los secrets por variable.
       </p>
       <div class="callout warn">
         <span class="callout-title">Otros gestores</span>
@@ -576,8 +578,8 @@ bun run setup:doctor --json   # env_var_scopes[] y harness_level_mcps para un ag
           Dashlane, Doppler, Google Secret Manager, HashiCorp Vault, Infisical, Akeyless, KeePass,
           Keeper, Passbolt, Proton Pass y Pass, más el Keychain de macOS integrado. Ninguno viene
           configurado aquí. Sumar uno es añadir su id y un adaptador en
-          <code>cli/lib/secret-providers.ts</code>; el archivo, el import, el launcher y CI quedan
-          igual. La decisión completa está en
+          <code>cli/lib/secret-providers.ts</code>; el archivo, el import, el launcher de los tests
+          y CI quedan igual. La decisión completa está en
           <code>.context/ADR/ADR-0010-secret-manager-advanced-option.md</code>.
         </p>
       </div>
