@@ -68,13 +68,16 @@ framework_gates_pre_commit() {
   # where the script exists (same two guards as the project-schema gate above).
   # `.env.core.schema` is GENERATED from cli/lib/variables-manifest.ts; the check
   # also loads the committed schema pair through the pinned varlock, so a
-  # varlock bump that breaks the import fails here, not in someone's session.
-  if echo "$_fg_staged" | grep -qE '^(cli/lib/variables-manifest\.ts$|cli/lib/env-schema\.ts$|scripts/env-schema\.ts$|\.env\.core\.schema$|\.env\.schema$|package\.json$)' \
+  # varlock bump that breaks the import fails here, not in someone's session,
+  # and fails a secret-looking key without @sensitive in ANY root .env*.schema
+  # (`varlock load --agent` would print its value in clear).
+  if echo "$_fg_staged" | grep -qE '^(cli/lib/variables-manifest\.ts$|cli/lib/env-schema\.ts$|scripts/env-schema\.ts$|\.env(\.[^/]+)?\.schema$|package\.json$)' \
     && grep -q '"vars:schema:check"' package.json 2>/dev/null; then
     bun run vars:schema:check || {
       echo ""
-      echo "❌ .env.core.schema is stale or the schema pair does not load. Fix:"
-      echo "   bun run vars:schema && git add .env.core.schema"
+      echo "❌ .env.core.schema is stale, a secret-looking key lacks @sensitive, or the schema pair does not load."
+      echo "   Stale core: bun run vars:schema && git add .env.core.schema"
+      echo "   Missing @sensitive: add it above each key the check names"
       exit 1
     }
   fi

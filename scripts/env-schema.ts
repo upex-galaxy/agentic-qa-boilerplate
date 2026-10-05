@@ -8,8 +8,9 @@
  *
  * Usage:
  *   bun run vars:schema            regenerate .env.core.schema (and seed .env.schema if absent)
- *   bun run vars:schema:check      exit 1 when .env.core.schema is stale OR the committed
- *                                  pair does not load through the pinned varlock
+ *   bun run vars:schema:check      exit 1 when .env.core.schema is stale, a secret-looking
+ *                                  key in any loaded schema lacks @sensitive, OR the
+ *                                  committed pair does not load through the pinned varlock
  *   bun run vars:schema --json     machine-readable result for either mode
  *
  * The pair-load half of `--check` is deliberate, not decoration: the layout
@@ -17,6 +18,10 @@
  * in its source and not in its public docs. This gate is what turns a varlock
  * bump that changes the rule into a red pre-commit instead of a schema that
  * silently validates nothing. No value is printed by either mode.
+ *
+ * The sensitivity half exists because `varlock load --agent` redacts ONLY the
+ * items a schema calls `@sensitive`: a token declared without it prints in
+ * clear. It is a static scan (names and decorators, never values).
  */
 
 import { existsSync } from 'node:fs';
@@ -24,6 +29,7 @@ import { join } from 'node:path';
 
 import {
   checkCoreSchema,
+  checkSchemaSensitivity,
   CORE_SCHEMA_FILE,
   loadSchemaPairThroughVarlock,
   PROJECT_SCHEMA_FILE,
@@ -46,7 +52,7 @@ if (HELP) {
   out(`env-schema — ${CORE_SCHEMA_FILE} generated from ${SCHEMA_SOURCE}
 
   bun run vars:schema            regenerate ${CORE_SCHEMA_FILE}; seed ${PROJECT_SCHEMA_FILE} when absent
-  bun run vars:schema:check      exit 1 when ${CORE_SCHEMA_FILE} is stale or the pair fails to load
+  bun run vars:schema:check      exit 1 when ${CORE_SCHEMA_FILE} is stale, a secret-looking key lacks @sensitive, or the pair fails to load
   bun run vars:schema --json     machine-readable result
 
 Validate your own values (redacted):  bunx varlock load --agent
@@ -61,13 +67,15 @@ if (!existsSync(join(root, 'package.json'))) {
 
 if (CHECK) {
   const core = checkCoreSchema(root);
+  const sensitivity = checkSchemaSensitivity(root);
   const pair = core.ok ? loadSchemaPairThroughVarlock(root) : null;
-  const ok = core.ok && pair !== null && pair.ok;
+  const ok = core.ok && sensitivity.ok && pair !== null && pair.ok;
 
   if (JSON_OUT) {
     emit({
       ok,
       core: { file: CORE_SCHEMA_FILE, state: core.state },
+      sensitivity: { ok: sensitivity.ok, files: sensitivity.files, violations: sensitivity.violations },
       pair: pair === null
         ? null
         : { ok: pair.ok, exitCode: pair.exitCode, reason: pair.reason ?? null, sources: pair.sources, resolvedKeys: pair.resolvedKeys },
@@ -78,10 +86,20 @@ if (CHECK) {
   out('Env schema (varlock)\n');
   out('====================\n');
   out(`${CORE_SCHEMA_FILE}: ${core.state}\n`);
+  if (sensitivity.ok) {
+    out(`Sensitivity: OK (${sensitivity.files.join(', ')})\n`);
+  }
+  else {
+    out(`Sensitivity: FAILED (${sensitivity.violations.length} key${sensitivity.violations.length === 1 ? '' : 's'})\n`);
+    for (const v of sensitivity.violations) { out(`  ${v.key}  ${v.file}:${v.line}  ${v.reason}\n`); }
+    out('\n`varlock load --agent` redacts only @sensitive items: these would print in clear.\n');
+    out('Fix: add @sensitive to the decorator comment above each key (in the manifest, `secret: true`, for a core key).\n');
+  }
   if (!core.ok) {
     out(`\nFix: bun run vars:schema && git add ${CORE_SCHEMA_FILE}\n`);
     process.exit(1);
   }
+  if (!sensitivity.ok) { process.exit(1); }
   if (pair === null || !pair.ok) {
     out(`Pair load through varlock: FAILED (${pair?.reason ?? 'unknown'})\n`);
     for (const line of pair?.stderrTail ?? []) { out(`  ${line}\n`); }

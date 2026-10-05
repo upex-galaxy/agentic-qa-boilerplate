@@ -297,7 +297,7 @@ The env list lives in several places that must agree (the list below). The boile
 bun run vars:check        # lint-vars: {{VAR}} refs resolve against project.yaml
 bun run vars:env:check    # check-vars: .env.example ↔ variables-manifest parity
 bun run test:env:check    # validateTestEnv: TEST_ENV is a declared env (+ TMS pair when AUTO_SYNC=true)
-bun run vars:schema:check # env schema pair is current and loads through varlock
+bun run vars:schema:check # env schema pair is current, every secret-looking key is @sensitive, loads through varlock
 ```
 
 **Restart the agent session after any `.env` change an MCP server reads.** A harness spawns its MCP servers at startup, each one that needs `.env` values through the `.env` loader declared in `.mcp.json`, `opencode.jsonc` and `.codex/config.toml`, which reads `.env` at that moment. A `DBHUB_*`, `API_BASE_URL` or `OPENAPI_SPEC_PATH` written to `.env` mid-session reaches no running server: `[DB_TOOL]` and `[API_TOOL]` keep their empty values and fail with a 401 or a connection error, not a config error (Critical Rule #10). Tell the user to restart before Phase 4 needs the `openapi` server.
@@ -484,7 +484,7 @@ Run in this exact order. Stop on the first failure; report with diagnostics; do 
 2. bun run lint:check
 3. bun run vars:check            # {{VAR}} resolution
 4. bun run vars:env:check        # .env parity
-5. bun run vars:schema:check     # env schema pair current + loads through varlock
+5. bun run vars:schema:check     # env schema pair current + secrets @sensitive + loads through varlock
 6. bun run harness:env:check     # no plaintext MCP credential copy left on disk
 7. bun run kata:manifest:check   # manifest matches disk
 8. bun run test --project=api-setup
