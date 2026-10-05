@@ -36,6 +36,7 @@ Sourcing a file inside the same command that uses it is using it by name: `sourc
 | `curl -v`, `curl --trace` | prints the `Authorization:` header | `curl -sS` (add `-o /dev/null -w '%{http_code}'` for a status probe) |
 | `varlock printenv`, `varlock reveal`, `varlock load --format env\|shell\|json\|json-full` without `--agent` | print raw values | `bunx varlock load --agent` (redacted) |
 | `grep '^NAME=' .env`, `source .env`, `set -a; . .env` | read the raw file into the agent's shell | run the step inside the loader: `bunx varlock run -- <cmd>` (wrap in `sh -c '...'` when it pipes) |
+| `sed -i ... .env`, `echo NAME=... >> .env`, a heredoc into `.env` | edits a file the AI must not open, and echoes the neighbouring lines on a mistake | `bun run env:set NAME=value` (non-sensitive keys only, §5) |
 | `gh secret set NAME --body "$NAME"` | puts the value in argv (visible in the process list) | `bunx varlock run -- sh -c 'printf %s "$NAME" \| gh secret set NAME'` |
 | `playwright-cli fill <ref> "$PASSWORD"` without `--raw` | echoes the typed value in the tool output | `playwright-cli --raw fill <ref> "$PASSWORD"` (`browser-sessions.md`) |
 
@@ -57,7 +58,13 @@ A missing or wrong secret is the human's to fix: name the variable, say which ch
 
 ## 5. Writing values
 
-The AI never writes a secret into `.env`, `.env.local`, a harness file or any committed file. It MAY write a non-sensitive value (§1, right column) into `.env` when the human asks for it, and says which line it wrote. Seeding `.env` from `.env.example` with empty slots is fine; filling the secret slots is the human's step, in their own terminal (`$EDITOR .env`) or in the secret manager.
+The AI never writes a secret into `.env`, `.env.local`, a harness file or any committed file. It MAY write a non-sensitive value (§1, right column) into `.env` when the human asks for it, and `bun run env:set KEY=value [KEY2=value2 ...]` is the ONLY sanctioned way to do it: never `sed`, a heredoc, `>>` or an editor tool on `.env`. The script (`scripts/env-set.ts`):
+
+- refuses a key the schema marks `@sensitive`, a key the schema does not declare, a key whose name reads as a secret (`PASSWORD`, `SECRET`, `TOKEN`, `API_KEY`, ...) even when the decorator is missing, and a key whose value does not live in `.env` (`ATLASSIAN_URL`). One refusal writes nothing;
+- replaces the key's active line in place (or appends it), leaving every other line byte-identical;
+- prints key NAMES only, never the new value or any other line, and says when `.env.local` also sets the key (that file wins and stays the human's).
+
+Seeding `.env` from `.env.example` with empty slots is fine; filling the secret slots is the human's step, in their own terminal (`$EDITOR .env`) or in the secret manager.
 
 ## 6. Harness enforcement
 
