@@ -1835,8 +1835,9 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
           <div class="kicker">MCP</div>
           <h2>Un solo set de servidores, tres formatos, paridad semántica</h2>
           <p class="lede">
-            Los servidores que declara <code>.mcp.json</code> existen en las tres configuraciones.
-            La comparación no puede ser textual: los archivos ni siquiera comparten lenguaje.
+            Los servidores que declara <code>.mcp.json</code> existen en las configuraciones de los
+            harnesses que usa el proyecto (las tres en el boilerplate). La comparación no puede ser
+            textual: los archivos ni siquiera comparten lenguaje.
           </p>
           <div class="servers">
             <span class="server">.mcp.json</span>
@@ -2063,7 +2064,7 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
                   font-weight="700"
                   fill="#e6edf3"
                 >
-                  cada servidor × 3 hosts
+                  cada servidor × hosts en uso
                 </text>
                 <text x="518" y="122" font-family="Inter, sans-serif" font-size="10" fill="#9aa6b2">
                   agregarlo a uno solo
@@ -2078,6 +2079,16 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
               distintos. Con él, dice si describen los mismos servidores.
             </figcaption>
           </figure>
+          <p>
+            Las credenciales llegan igual en los tres hosts: cada servidor que necesita valores de
+            <code>.env</code> arranca detrás del mismo loader,
+            <code>varlock run --inject vars --filter A,B -- &lt;server&gt;</code>, que lee
+            <code>.env</code> (o el gestor de secretos que nombre el esquema) al arrancar el
+            servidor y le pasa solo los nombres de su <code>--filter</code>. Las configuraciones
+            commiteadas llevan nombres, nunca valores, y ese <code>--filter</code> es justo el
+            conjunto de dependencias que compara la paridad
+            (<code>.context/ADR/ADR-0011-mcp-env-loader.md</code>).
+          </p>
         </div>
       </section>
 
@@ -2441,8 +2452,8 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
           <div class="kicker">Límites conocidos</div>
           <h2>Lo que todavía no está cerrado</h2>
           <p>
-            Cuatro cosas que conviene saber antes de apoyarse en esto, dichas como límites y no como
-            notas al pie.
+            Lo que conviene saber antes de apoyarse en esto, dicho como límites y no como notas al
+            pie.
           </p>
           <ul class="plain">
             <li class="warn">
@@ -2483,9 +2494,8 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
           <a href="https://github.com/upex-galaxy/agentic-qa-boilerplate">Repositorio en GitHub</a>
         </div>
         <p>
-          Todo lo descrito acá se integró en <code>main</code> en este release. El contrato completo
-          vive en <code>.agents/instructions/agent-harnesses.md</code>, y se verifica con
-          <code>bun run agents:compat:check</code>.
+          El contrato completo vive en <code>.agents/instructions/agent-harnesses.md</code>, y se
+          verifica con <code>bun run agents:compat:check</code>.
         </p>
       </div>
     </footer>

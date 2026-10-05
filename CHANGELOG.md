@@ -16,6 +16,17 @@ below names which one it applies to:
 
 ## Unreleased — Boilerplate
 
+### Changed (docs follow-through for the secrets and harness changes)
+- **Critical Rule #1's by-name example names the MCP loader's `--filter` list** instead of the
+  retired `${VAR}` placeholder (same words in the dev boilerplate).
+- README, INSTALLER, CONTEXT, the `docs/core` pages, the published harnesses page and the
+  progressive-disclosure and framework-development decks describe the changes below: what
+  `bun run setup` asks and records, the Engram plugin offer, `env:set`, the `@sensitive` gate,
+  checks scoped to the harnesses in use, the updater's permission-list merge, the instructions
+  locks and `instructions:audit`. The AI-run setup example in INSTALLER carries no secret values.
+- `.agents/README.md` documents the `harnesses:` list and the `secrets:` block. ADR-0015 records
+  the direnv removal below.
+
 ### Removed (harness launch scripts; a harness opens bare)
 - **`bun run claude|codex|opencode` are retired** (ADR-0014). They started the harness inside
   `varlock run`, which exported every `.env` value into the AI's own process. Open the harness
@@ -27,6 +38,59 @@ below names which one it applies to:
   `.env` gets one informational parity row naming it as removable.
 - **Scaffolder** — the `create-agentic-qa` next steps name `claude` (or `opencode` / `codex`, or
   the desktop app) instead of `bun run claude`; takes effect on the next npm release.
+
+### Removed (direnv; every process loads its own `.env`)
+- **`.envrc` is gone and nothing recommends a shell autoloader** (ADR-0015). The installer has no
+  `direnv allow` step (`INSTALL_SKIP_DIRENV` retired), the doctor no direnv check (its `--json`
+  loses `direnv`), and `bun run worktree:provision` copies `.env` without running direnv. A command
+  that needs a `.env` value runs inside `bunx varlock run --filter <names> --`, as the `/acli` REST
+  recipes now do. A downstream `.envrc` is never touched; `bun run up` reports it once as removable.
+
+### Added (instructions maintenance locks and `bun run instructions:audit`)
+- **`instructions:check` holds three locks** (ADR-0013): the ROUTER is fingerprinted and a row
+  change fails until an ADR covers it (`--accept-router ADR-NNNN`), the router eval runs on every
+  call against recall and precision floors (`scripts/lib/router-eval.ts`), and a new section must
+  ship complete (labelled prompts plus a row in `.agents/instructions/README.md`). Errors in the
+  boilerplate, warnings in a project.
+- **One edit path**: `/framework-development` mode `instructions`, with a placement doctrine
+  (`references/instructions-doctrine.md`).
+- **`bun run instructions:audit`** reports how often the agent read a routed section in the same
+  turn, from local Claude Code transcripts (file names and counts only).
+
+### Added (declared harnesses for one-harness projects)
+- **`harnesses:` in `.agents/project.yaml`** lists the harnesses a project uses (ADR-0012). The
+  compat check, `setup:doctor`, the installer and `bun run up` check only those (one `NOTE:` per
+  skipped harness); absent or `null` detects them from the files present. The boilerplate itself
+  always checks all three.
+- **`bun run setup` records the agents you select** (union, read back after the write) and offers
+  to delete the files of each harness left out (default keep). The updater stops delivering a
+  dropped harness's files.
+
+### Changed (caveman removed; Engram plugin offered)
+- **Critical Rule #13 is replaced in place**: concision comes from §2 and the user-level output
+  style; no communication-mode plugin is assumed or recommended. caveman leaves every skill, doc
+  and deck, and the installer's closing block.
+- **The installer offers the Engram Claude Code plugin** (`claude plugin install engram@engram`,
+  session hooks) right after `engram setup claude-code` succeeds; skipped non-interactively.
+
+### Changed (`vars:schema:check` fails a secret-looking key without `@sensitive`)
+- **A schema key whose name reads as a secret** (TOKEN, SECRET, PASSWORD, API_KEY and the rest of
+  `SECRET_NAME_PATTERNS` in `cli/lib/env-schema.ts`) must be `@sensitive`, or `vars:schema:check`
+  (and so `repo:check` and the pre-commit gate) fails naming it. `varlock load --agent` redacts only
+  what the schema marks.
+
+### Added (secret manager as the advanced option)
+- **Secret values stay in `.env` by default; 1Password is the first opt-in adapter** (ADR-0010).
+  `bun run setup` asks where secrets live, records `secrets:` in `.agents/project.yaml` and writes
+  the committed overlay `.env.provider.schema` (references only). A non-empty `.env` value still
+  wins over the vault. CI passes `OP_SERVICE_ACCOUNT_TOKEN` beside the per-variable secrets.
+  Non-interactive: `INSTALL_SECRETS_PROVIDER` + `INSTALL_SECRETS_VAULT`.
+
+### Changed (`bun run up` appends upstream deny rules)
+- **The `permissions.allow` and `permissions.deny` lists of `.claude/settings.json` only grow**:
+  upstream entries the project lacks are appended after a backup, nothing removed or reordered. A
+  deny the project does not want goes in `updater.declined_denies`. `opencode.jsonc` is never
+  written: a parity row carries the deny block to paste.
 
 ### Changed (MCP servers read `.env` themselves; no plaintext copies)
 - **Every MCP server that needs `.env` values starts through one filtered loader** on all three
@@ -43,20 +107,18 @@ below names which one it applies to:
   `bun run setup --variables` no longer regenerates anything. Existing machines: run
   `bun run harness:env` once, then restart the agent session.
 
-### Changed (agents and tests launch through varlock)
-- **`bun run claude|codex|opencode` run `scripts/launch.ts`**: a preflight, then `varlock run -- <bin>`.
+### Changed (tests launch through varlock)
+- **The `test*` scripts run `scripts/launch.ts`**: a drift notice, then `varlock run -- <bin>`.
   varlock lets a variable inherited from the shell win over `.env` (no flag inverts it), so the
-  preflight asks varlock which schema items the shell overrides and refuses the launch while one
-  differs from `.env.local` over `.env`, naming the variables with their lengths only. The `test*`
-  scripts run the same launcher with `--warn`: same notice, then the run goes on, so a deliberate
-  `AUTO_SYNC=true bun run test` keeps working. `dotenv-cli` is retired.
+  launcher asks varlock which schema items the shell overrides and warns when one differs from
+  `.env.local` over `.env`, naming the variables with their lengths only, then the run goes on, so
+  a deliberate `AUTO_SYNC=true bun run test` keeps working. `dotenv-cli` is retired. (The harness
+  launch scripts this entry first added are retired, entry above.)
 - **Codex MCP servers start through `bunx -p varlock@<pin> varlock run --no-redact-stdout --`**
   (`.codex/config.toml`). `--no-redact-stdout` keeps the JSON-RPC stream byte-intact. Since
   narrowed to one filtered loader per server on every host (entry above).
 - **`vars:env:check` Rule 3 uses the same comparison** (`cli/lib/env-drift.ts`) and runs with
   `bun --no-env-file`, so its own process holds only what it inherited.
-- **`.envrc` loads `.env.local` on top of `.env` and watches both**, matching varlock's order so the
-  preflight sees equal values; it never uses a varlock form that prints values.
 - **Quote a `.env` value that contains `#`**: varlock cuts an unquoted value at the first `#`.
 
 ### Added (`bun run env:set`)

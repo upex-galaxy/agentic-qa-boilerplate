@@ -693,14 +693,14 @@ whenever any of these apply, read <span class="k">@package.json</span> first, ne
       <div class="card card-accent"><p class="lbl">§2 · entero</p><h4 class="h4 mt-s">La capa comportamental</h4><p class="small mt-s">El reparto de capas (§2, OUTPUT STYLE), Think before coding, Simplicity first, Surgical changes, Goal-driven execution, Butler, cómo se le pide al humano que decida, PM Voice y Visual Mapping.</p></div>
       <div class="card"><p class="lbl">§3 · núcleo</p><h4 class="h4 mt-s">La orquestación</h4><p class="small mt-s">Qué va a subagentes y qué queda en la conversación principal, el briefing de siete componentes, la alcanzabilidad de las reglas y el protocolo de error. Gobierna cada despacho, sea cual sea el pedido.</p></div>
     </div>
-    <div class="notes">El detalle de orquestación que no es núcleo (executors, workers, gates) está en agent-orchestration-detail.md. §2 entero es lo que deja a L0 por encima del objetivo de 16 KiB: se ve en el slide de presupuestos. Su espejo para humanos es docs/core/personalidad.html.</div>
+    <div class="notes">El detalle de orquestación que no es núcleo (executors, workers, gates) está en agent-orchestration-detail.md. §2 entero es la razón de que L0 pueda pasar el objetivo de 16 KiB (ADR-0009): se ve en el slide de presupuestos. Su espejo para humanos es docs/core/personalidad.html.</div>
   </section>
 
   <!-- 10. CÓMO SE EDITA -->
   <section class="slide compact" data-title="Cómo se edita">
     <p class="kicker">09 · Edición · 10 de 14</p>
     <h2 class="h2">Cómo se <span class="grad">edita</span></h2>
-    <p class="small dim mt-s">Las secciones son doctrina compartida: <code>bun run up</code> las sincroniza como una skill. <code>agent-project.md</code> es del proyecto y nunca se sincroniza; un proyecto sin él lo recibe una vez desde <code>agent-project.md.template</code>. Regla de oro: el texto va al archivo dueño, nunca de vuelta a <code>AGENTS.md</code>.</p>
+    <p class="small dim mt-s">Toda edición entra por un solo camino: <code>/framework-development</code> modo <code>instructions</code>, que ubica cada frase con la doctrina de <code>references/instructions-doctrine.md</code>. Las secciones son doctrina compartida: <code>bun run up</code> las sincroniza como una skill. <code>agent-project.md</code> es del proyecto y nunca se sincroniza; un proyecto sin él lo recibe una vez desde <code>agent-project.md.template</code>. Regla de oro: el texto va al archivo dueño, nunca de vuelta a <code>AGENTS.md</code>.</p>
     <table class="tt tight mt-m">
       <tr><th style="width:330px">Quiero cambiar</th><th>Dónde</th></tr>
       <tr><td class="small">el detalle de un tema</td><td class="small">su archivo en <code>.agents/instructions/</code></td></tr>
@@ -708,11 +708,12 @@ whenever any of these apply, read <span class="k">@package.json</span> first, ne
       <tr><td class="small">una regla crítica</td><td class="small">su texto en <code>agent-critical-rules.md</code> y su frase textual en <code>AGENTS.md</code></td></tr>
       <tr><td class="small">una regla que solo tiene este proyecto</td><td class="small"><code>.agents/instructions/agent-project.md</code> (o una context skill, si es conocimiento del sistema bajo prueba)</td></tr>
       <tr><td class="small">una línea con NEVER o MUST en una sección</td><td class="small">que siga alcanzable: frase textual en L0 o en <code>agent-critical-rules.md</code>, o <code>Rule #N</code>, <code>binding: `/&lt;skill&gt;`</code>, <code>enforced: `bun run &lt;script&gt;`</code></td></tr>
+      <tr><td class="small">una fila del ROUTER</td><td class="small">solo con un ADR que la decida: <code>bun run instructions:check --accept-router ADR-NNNN</code> y la huella que imprime va a ese ADR</td></tr>
       <tr><td class="small"><code>CLAUDE.md</code></td><td class="small">nada a mano: es el shim generado por <code>bun run agents:compat</code></td></tr>
     </table>
     <div class="card card-accent mt-m">
       <p class="lbl">Gate</p>
-      <p class="small mt-s"><b><code>bun run instructions:check</code></b> revisa presupuesto, stub, router, frontmatter, triggers que compilan, frases de las reglas y que cada NEVER o MUST sea alcanzable. Corre dentro de <code>bun run repo:check</code>. La guía completa está en <code>.agents/instructions/README.md</code>.</p>
+      <p class="small mt-s"><b><code>bun run instructions:check</code></b> revisa presupuesto, stub, router, frontmatter, triggers que compilan, frases de las reglas y que cada NEVER o MUST sea alcanzable. Además sostiene tres candados (ADR-0013): el ROUTER bloqueado detrás de un ADR, el eval del router con pisos de recall y precisión en cada corrida, y que una sección nueva llegue completa. Corre dentro de <code>bun run repo:check</code>. La guía completa está en <code>.agents/instructions/README.md</code>.</p>
     </div>
     <div class="notes">La regla de oro está en la cabecera de AGENTS.md y en "Editing rules" del README de instrucciones. Lo de CLAUDE.md sale de agent-harnesses.md, GENERATED vs VERSIONED: se edita la fuente y se regenera, y agents:compat:check falla si alguien le escribe prosa.</div>
   </section>
@@ -731,7 +732,7 @@ whenever any of these apply, read <span class="k">@package.json</span> first, ne
     </table>
     <div class="card mt-m" style="border-color:var(--warn)">
       <p class="lbl" style="color:var(--warn)">El aviso es a propósito</p>
-      <p class="small mt-s"><b>§2 entra entero por decisión del dueño</b>, y eso deja al L0 de QA por encima del objetivo y por debajo del techo. El aviso queda a la vista para que nadie sume texto a L0 sin pensarlo. El tamaño actual lo imprime <code>bun run instructions:check</code>.</p>
+      <p class="small mt-s"><b>§2 entra entero por decisión del dueño</b> (ADR-0009), así que L0 puede pasar el objetivo sin pasar el techo. El aviso queda a la vista para que nadie sume texto a L0 sin pensarlo. El tamaño actual y su estado los imprime <code>bun run instructions:check</code>.</p>
     </div>
     <div class="notes">El techo del boilerplate está pensado para "el comportamiento entero más la frase de cada regla", como dice el comentario de L0_BUDGET. El tamaño real cambia con cada edición, por eso este deck no lo escribe: lo dice el gate.</div>
   </section>
@@ -743,17 +744,17 @@ whenever any of these apply, read <span class="k">@package.json</span> first, ne
     <p class="small dim mt-s">Dos preguntas distintas: si el clasificador rutea lo que tiene que rutear, y si el modelo después lee lo que le rutearon.</p>
     <table class="tt tight mt-m">
       <tr><th style="width:290px">Qué se mide</th><th>Dónde</th></tr>
-      <tr><td class="small"><b>Recall y precisión del clasificador</b></td><td class="small">Pedidos etiquetados a mano, en inglés y en español y con vocabulario de QA (shift-left, ATP y ATR, Xray, KATA, regresión, caché del PBI, handoff, flotas, <code>{{VAR}}</code>), en <code>cli/lib/fixtures/instruction-router-eval.json</code>. Los umbrales son su campo <code>targets</code> y los verifica <code>cli/lib/instruction-router.test.ts</code> dentro de <code>bun test</code>.</td></tr>
-      <tr><td class="small"><b>Que no tarde</b></td><td class="small">el mismo test exige que rutear un pedido quede muy por debajo de 50 ms</td></tr>
+      <tr><td class="small"><b>Recall y precisión del clasificador</b></td><td class="small">Pedidos etiquetados a mano, en inglés y en español y con vocabulario de QA (shift-left, ATP y ATR, Xray, KATA, regresión, caché del PBI, handoff, flotas, <code>{{VAR}}</code>), en <code>cli/lib/fixtures/instruction-router-eval.json</code>. Lo puntúa <code>bun run instructions:check</code> en cada corrida contra su campo <code>targets</code>, que nunca baja de los pisos de <code>scripts/lib/router-eval.ts</code>.</td></tr>
+      <tr><td class="small"><b>Que no tarde</b></td><td class="small"><code>cli/lib/instruction-router.test.ts</code> exige que rutear un pedido quede muy por debajo de 50 ms</td></tr>
       <tr><td class="small"><b>Que hook y lint lean igual</b></td><td class="small"><code>scripts/lib/hook-router-parity.test.ts</code> ata el parser del hook al de <code>scripts/lib/instructions.ts</code></td></tr>
       <tr><td class="small"><b>Que el hook real responda</b></td><td class="small">el test lanza el proceso del emisor con un pedido de git y espera su línea <code>ROUTE:</code></td></tr>
-      <tr><td class="small"><b>Que el modelo obedezca</b></td><td class="small">auditoría de transcripciones: cada <code>ROUTE:</code> tendría que ir seguido de una lectura del archivo ruteado antes de la primera acción. Todavía sin medir: necesita sesiones reales.</td></tr>
+      <tr><td class="small"><b>Que el modelo obedezca</b></td><td class="small"><code>bun run instructions:audit</code>: de las líneas <code>ROUTE:</code> inyectadas, cuántas leyó el agente en el mismo turno, medido sobre las transcripciones locales de Claude Code (solo nombres y conteos). Los resultados están en ADR-0013.</td></tr>
     </table>
     <div class="card card-accent mt-m">
       <p class="lbl">Si falla</p>
       <p class="small mt-s"><b>Un pedido que no rutea lo que debía</b> se arregla en los <code>triggers:</code> de la sección, y el pedido entra al set etiquetado. Etiquetar de nuevo para esconder un falso positivo no es un arreglo.</p>
     </div>
-    <div class="notes">Ojo con el comando: en este repo bun run test es Playwright; el eval corre con el runner de Bun, bun test. Los números medidos (recall, precisión, tiempo) van al ADR-0009, no al deck: cambian cada vez que se agrega un pedido al set.</div>
+    <div class="notes">Ojo con el comando: en este repo bun run test es Playwright; el eval corre dentro de instructions:check, y el test de tiempo con el runner de Bun, bun test. Los números medidos (recall, precisión, tiempo) van a los ADR, no al deck: cambian cada vez que se agrega un pedido al set.</div>
   </section>
 
   <!-- 13. DÓNDE LEER MÁS -->
@@ -778,7 +779,7 @@ whenever any of these apply, read <span class="k">@package.json</span> first, ne
     <h2 class="h2">Qué cambia según <span class="grad">quién sos</span></h2>
     <div class="grid g3 mt-m" style="gap:22px;align-items:stretch">
       <div class="card"><p class="lbl">Si usás el agente</p><p class="small mt-s">Nada: el router y el hook deciden qué leer, y el LOAD PROTOCOL hace que el modelo lo lea antes de actuar. En OpenCode 2 no hay hook de ruteo, y el modelo sigue el router solo.</p></div>
-      <div class="card card-accent"><p class="lbl">Si editás instrucciones</p><p class="small mt-s">El texto va al archivo dueño, nunca de vuelta a <code>AGENTS.md</code>. Lo propio del proyecto va a <code>agent-project.md</code>. Antes de commitear, <code>bun run instructions:check</code>.</p></div>
+      <div class="card card-accent"><p class="lbl">Si editás instrucciones</p><p class="small mt-s">Por <code>/framework-development</code> modo <code>instructions</code>. El texto va al archivo dueño, nunca de vuelta a <code>AGENTS.md</code>; lo propio del proyecto va a <code>agent-project.md</code>, y una fila del ROUTER necesita un ADR. Antes de commitear, <code>bun run instructions:check</code>.</p></div>
       <div class="card"><p class="lbl">Si algo no rutea</p><p class="small mt-s">Se ajustan los <code>triggers:</code> de la sección y el pedido entra a <code>cli/lib/fixtures/instruction-router-eval.json</code>, para que el eval lo vigile desde ahí.</p></div>
     </div>
     <div class="card card-soft mt-m">

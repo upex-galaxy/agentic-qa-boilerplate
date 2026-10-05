@@ -77,6 +77,7 @@ Who authors: a human QA architect / lead directly, **or** an AI workflow that de
 | [ADR-0012](./ADR-0012-declared-harnesses.md) | A project declares the harnesses it uses; the gates check only those, the boilerplate checks all three | Accepted | — | — |
 | [ADR-0013](./ADR-0013-instructions-maintenance-locks.md) | Progressive disclosure is held in place by a placement doctrine, one edit path (framework-development mode `instructions`), three `instructions:check` locks (router, eval, complete section) and a recall audit | Accepted | — | — |
 | [ADR-0014](./ADR-0014-retire-harness-launchers.md) | A harness opens bare; the `claude` / `codex` / `opencode` launch scripts are retired, and the credential proxy is cancelled | Accepted | — | — |
+| [ADR-0015](./ADR-0015-no-shell-autoloader.md) | No shell autoloader: each process loads its own `.env`, nothing exports it into a shell (direnv removed) | Accepted | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first.
 

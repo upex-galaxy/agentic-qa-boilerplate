@@ -117,7 +117,9 @@ A ready-to-use QA project wired for:
   AC refinement on backlog Stories, and `/sprint-testing` for per-ticket
   in-sprint manual QA.
 - **MCPs preconfigured** for all three harnesses: the servers the template's
-  `.mcp.json` declares, mirrored in `opencode.jsonc` and `.codex/config.toml`.
+  `.mcp.json` declares, mirrored in `opencode.jsonc` and `.codex/config.toml`;
+  `bun run setup` records the harnesses you select and, if you accept its
+  offer, deletes the other harnesses' files.
 - **Allure + Xray reporting** — pre-wired Allure reporter and `bun xray` CLI
   for syncing automated runs back to your test management system.
 

@@ -175,8 +175,7 @@ bun run vars:schema:check      # el core está al día, todo secreto es @sensiti
         <span class="callout-title">Un # sin comillas corta el valor</span>
         <p>
           varlock corta un valor sin comillas en el primer <code>#</code>:
-          <code>PASSWORD=pass#word</code> llega como <code>pass</code>. dotenv lo conservaba, así
-          que una contraseña que funcionaba antes puede fallar ahora. Pon entre comillas cualquier
+          <code>PASSWORD=pass#word</code> llega como <code>pass</code>. Pon entre comillas cualquier
           valor que tenga <code>#</code>: <code>PASSWORD="pass#word"</code>.
         </p>
       </div>
@@ -574,10 +573,8 @@ bun run setup:doctor --json   # env_var_scopes[] y harness_level_mcps para un ag
       <div class="callout warn">
         <span class="callout-title">Otros gestores</span>
         <p>
-          varlock 1.20.0 trae plugins para AWS Secrets Manager, Azure Key Vault, Bitwarden,
-          Dashlane, Doppler, Google Secret Manager, HashiCorp Vault, Infisical, Akeyless, KeePass,
-          Keeper, Passbolt, Proton Pass y Pass, más el Keychain de macOS integrado. Ninguno viene
-          configurado aquí. Sumar uno es añadir su id y un adaptador en
+          varlock trae plugins para otros gestores (la lista está en su documentación). Ninguno
+          viene configurado aquí. Sumar uno es añadir su id y un adaptador en
           <code>cli/lib/secret-providers.ts</code>; el archivo, el import, el launcher de los tests
           y CI quedan igual. La decisión completa está en
           <code>.context/ADR/ADR-0010-secret-manager-advanced-option.md</code>.

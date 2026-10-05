@@ -36,7 +36,7 @@ Downloads and installs all software dependencies:
 
 Wires runtime configuration:
 
-- Where secret values live: `.env` is the default and comes first. The step also offers a secret manager as the ADVANCED option (adapters live in `cli/lib/secret-providers.ts`; 1Password was the first). Choosing it records `secrets:` in `.agents/project.yaml` and writes `.env.provider.schema` once (references only, committed; never overwritten), then prints the one-time setup. See "Secret manager (advanced)" below
+- Where secret values live: `.env` is the default and comes first. The step also offers a secret manager as the ADVANCED option (adapters live in `cli/lib/secret-providers.ts`). Choosing it records `secrets:` in `.agents/project.yaml` and writes `.env.provider.schema` once (references only, committed; never overwritten), then prints the one-time setup. See "Secret manager (advanced)" below
 - `.env` population — discovers the variables each MCP server needs from the MCP config of every selected harness (the `.env` loader's `--filter` list, the same in `.mcp.json`, `opencode.jsonc` and `.codex/config.toml`; a legacy `${VAR}` / `{file:}` / `env_vars` / `bearer_token_env_var` reference is still read), then prompts for values not already set
 - Plaintext MCP credential copies (Step 15): retires what an older `bun run harness:env` generated (the `env` block of `.claude/settings.local.json`, `.auth/opencode/<VAR>`). A copy equal to `.env` is deleted, a copy `.env` does not reproduce is moved to `.auth/harness-env-backup/<VAR>` (mode 0600) and named so you put the right value in `.env` and delete the directory, and a copy a legacy host config still reads is kept. `bun run harness:env` does the same on its own (`--check` exits 1 while a stale copy remains, `--dry-run` changes nothing); `bun run setup --variables` regenerates nothing. After filling `.env`, restart the agent session (MCP servers read `.env` through the `.env` loader when the harness spawns them)
 - GitHub repository — interactive `gh repo create` (optional); hydrates `state.github` from an existing remote if already wired
@@ -170,7 +170,7 @@ project   API_BASE_URL, OPENAPI_SPEC_PATH, DBHUB_*, <ENV>_USER_* → your backen
 tooling   CI-only secrets (Slack, private report portal) → GitHub Actions, pushed by `setup --variables --remote`
 ```
 
-A value with a `#` must be quoted in `.env` (`PASSWORD="pass#word"`): varlock cuts an unquoted value at the first `#`, where dotenv kept it.
+A value with a `#` must be quoted in `.env` (`PASSWORD="pass#word"`): varlock cuts an unquoted value at the first `#`.
 
 Not in `.env` at all: MCP servers that run at harness level (web search, Postman; connect them once per machine, see the installer's closing guidance) and CLI logins (`acli auth login`, `resend login`).
 
@@ -191,7 +191,7 @@ Non-interactive: `INSTALL_SECRETS_PROVIDER=1password INSTALL_SECRETS_VAULT=<vaul
 | Command                            | What it does                                                                                                         |
 | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | `bun run setup:doctor --preflight` | Fast Bun / deps check only — exit 0 if green, 1 with explicit fix command otherwise                                  |
-| `bun run setup:doctor`             | Full report: env vars, deps, Playwright browsers, MCP config files, pending actions with `where` URLs                |
+| `bun run setup:doctor`             | Full report: env vars, deps, Playwright browsers, MCP config files for the harnesses in use (`harnesses:`), plaintext MCP credential copies an older version left, pending actions with `where` URLs |
 | `bun run setup:doctor --json`      | Same as above as machine-readable JSON for an agent to consume                                                       |
 | `bun run setup`                    | Re-run the interactive installer end-to-end (idempotent — completed steps are skipped, MCP overwrites are confirmed) |
 
@@ -231,27 +231,24 @@ Exit code: `0` when everything is green, `1` when any pending action remains. JS
 
 | type             | Who handles it | How                                                                                                                             |
 | ---------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `credential`     | **User**       | AI asks the user for the value in chat (e.g. "paste your Atlassian API token from the `where` URL"). Then AI writes it to `.env`. |
+| `credential`     | **User**       | The user types it in their own terminal (or stores it in the secret manager); the AI names the variable and the `where` URL and stops. A non-sensitive value (URL, key, flag, port) the AI may write with `bun run env:set KEY=value` when asked. |
 | `shell_command`  | **AI**         | AI runs the `target` command via Bash.                                                                                          |
 
 ### What an AI **cannot** do (hard limits)
 
-- **Generate API tokens** — Atlassian, Xray and every harness-level MCP key require an interactive web login + 2FA. The user creates and pastes them; the AI never sees the generation flow.
+- **Generate API tokens** — Atlassian, Xray and every harness-level MCP key require an interactive web login + 2FA. The user creates them and types them into `.env` or the secret manager; the AI never sees the generation flow or the value.
 - **Decide business config** — e.g. `TEST_ENV=local` vs `staging`, which modules to automate first, etc. The AI suggests; the user decides.
 - **Execute privileged installs cleanly** — `brew install`, `winget install`, `apt install` may show a sudo/admin prompt that lives outside the agent's terminal. The AI runs the command but the user clicks "allow".
 
 ### `bun run setup --non-interactive` (or just `bun run setup` without a TTY)
 
-The installer auto-detects no-TTY (an agent invoking it without a terminal) and silently switches to `--non-interactive`. Prompts skip with their default answer. The closing summary ends with an explicit block `Ask the human for these N keys: ...` (names only, never values) followed by the next two steps, `bun run harness:env` and then restart the agent session. Same data the doctor exposes. Use this path when the AI wants to run the full setup batch:
+The installer auto-detects no-TTY (an agent invoking it without a terminal) and silently switches to `--non-interactive`. Prompts skip with their default answer. The closing summary ends with an explicit block `Ask the human for these N keys: ...` (names only, never values) followed by the next two steps: the human writes them to `.env` (never through the chat), then restart the agent session. Same data the doctor exposes. Use this path when the AI wants to run the full setup batch:
 
 ```bash
-INSTALL_AGENTS=claude-code,opencode,codex \
-  ATLASSIAN_EMAIL=... \
-  ATLASSIAN_API_TOKEN=... \
-  bun run setup --non-interactive
+INSTALL_AGENTS=claude-code,opencode,codex bun run setup --non-interactive
 ```
 
-Then `bun run setup:doctor --json` to confirm.
+The command carries no secret: the human fills the credentials afterwards in `.env` or the secret manager (Critical Rule #1). Then `bun run setup:doctor --json` to confirm.
 
 ### Skip flags (per-step opt-out)
 
@@ -282,36 +279,22 @@ Then `bun run setup:doctor --json` to confirm.
 
 ## Launching the agent after setup
 
-`.env` is the single source of credentials, and no harness gets a copy of it. Every MCP server that needs `.env` values starts through the same `.env` loader in `.mcp.json`, `opencode.jsonc` and `.codex/config.toml` (`varlock run`, run through `bunx -p` from the project devDep), so each server reads `.env` itself, and only its own variables, even on a bare or Dock launch. `bun run setup:doctor` reports any plaintext copy an older `bun run harness:env` left behind, and `bun run harness:env` retires it. After filling `.env`, restart the agent session (MCP servers read `.env` when the harness spawns them). `bun run setup` finishes by printing the commands below. Nothing needs `.env` exported into your shell: the Bun scripts (`bun run jira:*`, `bun run api:login`, `bun xray`) read it through Bun's own autoload, `acli` uses its stored login (`acli jira auth login`) and `gh` its keyring.
+`.env` is the default source of credentials (a secret manager can hold them instead, see "Secret manager (advanced)"), and no harness gets a copy of it. Every MCP server that needs `.env` values starts through the same `.env` loader in `.mcp.json`, `opencode.jsonc` and `.codex/config.toml` (`varlock run`, run through `bunx -p` from the project devDep), so each server reads `.env` itself, and only its own variables, even on a bare or Dock launch. `bun run setup:doctor` reports any plaintext copy an older `bun run harness:env` left behind, and `bun run harness:env` retires it. After filling `.env`, restart the agent session (MCP servers read `.env` when the harness spawns them). `bun run setup` finishes by printing the commands below. Nothing needs `.env` exported into your shell: the Bun scripts (`bun run jira:*`, `bun run api:login`, `bun xray`) read it through Bun's own autoload, `acli` uses its stored login (`acli jira auth login`) and `gh` its keyring.
 
 Open the harness from the repo root, on Windows, macOS or Linux alike: `claude`, `opencode` or `codex`, or the desktop app (Claude Desktop, Codex Desktop, OpenCode desktop) on the project folder. No wrapper and no one-time setup beyond `bun install` (the `.env` loader is the `varlock` devDependency).
 
 All three MCP configs are committed with variable NAMES only: every server that needs `.env` values launches as `bunx -p varlock@<pin> varlock run --no-redact-stdout --inject vars --filter A,B -- <server>`, the same on every host. The loader reads the varlock schema plus `.env` / `.env.local` (or the secret manager the schema names) from the project root at spawn time and hands the server only the names in its `--filter`; `--no-redact-stdout` keeps the JSON-RPC stream intact. Real values live in `.env` (gitignored), and no plaintext copy is written anywhere. If a server returns 401/403 at first call, the matching env var is missing — see `AGENTS.md` Critical Rule #10 (stop, fix `.env`, restart the agent session).
 
-Open the harness directly: no wrapper, no script. The retired `claude` / `codex` / `opencode` scripts started it inside `varlock run`, which exported every `.env` value into the AI's own process (ADR-0014). Nothing in the repo exports `.env` into a shell any more: the test scripts (`bun run test`, `test:e2e`, ...) load it through `scripts/launch.ts`, which warns when a variable inherited from the shell differs from `.env.local` over `.env` (names and lengths only) and goes on, so a deliberate `AUTO_SYNC=true bun run test` still works. A project variable you export in your own shell profile still wins over `.env` for whatever starts from that shell, MCP servers included; `bun run vars:env:check` names it.
+Open the harness directly: no wrapper, no script. Starting it inside `varlock run` would export every `.env` value into the AI's own process, where any command it runs can read them (ADR-0014). Nothing in the repo exports `.env` into a shell: the test scripts (`bun run test`, `test:e2e`, ...) load it through `scripts/launch.ts`, which warns when a variable inherited from the shell differs from `.env.local` over `.env` (names and lengths only) and goes on, so a deliberate `AUTO_SYNC=true bun run test` still works. A project variable you export in your own shell profile still wins over `.env` for whatever starts from that shell, MCP servers included; `bun run vars:env:check` names it.
 
 ### Optional cosmetic polish
 
-Pure UX, zero behavioral change. Skip without consequence.
+Pure UX, zero behavioral change. Skip without consequence. Nothing here is auto-installed: each tool is user-level scope and changes an environment outside this repo. The repo assumes no communication-mode plugin: concision comes from `AGENTS.md` §2 and your user-level output style (Critical Rule #13).
 
 | Agent           | Tool                                                        | How                                                                                                                                                                                                                                                                                             |
 | --------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Claude Code** | [`ccstatusline`](https://github.com/sirmalloc/ccstatusline) | `bunx -y ccstatusline@latest` — interactive TUI to customize the Claude Code status line (model, tokens, context %, git branch, etc.). **Run in a plain terminal with no active agent session**; the configurator owns the terminal while it runs and will collide with a live Claude Code TUI. |
 | **OpenCode**    | `opencode-subagent-statusline` plugin                       | Optional and personal, so it is NOT in the shared `opencode.jsonc`. Add it to your global `~/.config/opencode/opencode.json` (`"plugin"` on OpenCode 1). It is a V1 plugin: OpenCode 2 refuses to load it until its author ships a V2 entrypoint. Same for `@warp-dot-dev/opencode-warp`, which Warp installs by itself. |
-
-### Optional UX upgrades
-
-One community tool changes how the terminal looks. It is recommended but **never auto-installed**: it is user-level scope and modifies an environment outside this repo. The repo assumes no communication-mode plugin: concision comes from `AGENTS.md` §2 and your user-level output style (Critical Rule #13).
-
-#### ccstatusline — Claude Code statusline TUI
-
-Configure the bottom statusline of Claude Code (model name, token usage, git branch, usage stats, etc.). Cosmetic only — no impact on agent behavior.
-
-> **WARNING**: run `ccstatusline` in a SEPARATE terminal with NO agent session active. Concurrent TUIs fight over stdin and break the agent prompt.
-
-Install + configure: `bunx -y ccstatusline@latest`
-
-Docs: https://github.com/sirmalloc/ccstatusline
 
 ---
 
@@ -399,7 +382,7 @@ The agents you select are recorded in `.agents/project.yaml` as `harnesses:` (ad
 - **Skills.** Every committed skill lives in `.agents/skills/`, and the community project-level skills install into the same store. Claude Code reaches that tree through `.claude/skills`, a POSIX symlink (Windows junction) that is generated and gitignored: never committed, never hand-edited.
 - **Commands.** No harness gets command files. A skill is invoked by its own name plus a mode: `/<skill> <mode>` on Claude Code, the skill and the mode named in prose on OpenCode and Codex (see [Invoking a skill mode](#invoking-a-skill-mode)).
 - **Hook.** `.agents/hooks/personality-reinject.mjs` holds the contract text once. Claude and Codex run it as a command hook; OpenCode imports the constant from a thin plugin.
-- **MCP.** The canonical server set is whatever `.mcp.json` declares (web search and Postman run at harness level, see `cli/lib/harness-level-mcps.ts`); every server there must exist in the other two configs. Parity is checked semantically: each native format is normalized before comparison and matched on the `.env` variables each server depends on and on its literal settings, so a server missing from one host, or present in one host only, is a failure. The boilerplate-known ids (`KNOWN_MCP_IDS` in `cli/lib/agent-compatibility-contracts.ts`) additionally get a strict per-host shape check when the project declares them; any other server gets the generic check only, so a downstream project may add or drop servers freely. A local server that needs `.env` values starts through the same `.env` loader on all three hosts, and its `--filter` list is the dependency set compared; nothing beside the loader takes names from the host (an ERROR in the boilerplate, a WARNING downstream that names the exact launch, because the three MCP configs are never overwritten by a sync). The opt-in Atlassian MCP block for all three hosts, and the parity contract in full, live in `.agents/skills/agentic-qa-core/references/mcp-atlassian-optin.md`.
+- **MCP.** The canonical server set is whatever `.mcp.json` declares (web search and Postman run at harness level, see `cli/lib/harness-level-mcps.ts`); every server there must exist in the other configs in use, and with no Claude Code the canonical set is the first declared harness's file. Parity is checked semantically: each native format is normalized before comparison and matched on the `.env` variables each server depends on and on its literal settings, so a server missing from one host, or present in one host only, is a failure. The boilerplate-known ids (`KNOWN_MCP_IDS` in `cli/lib/agent-compatibility-contracts.ts`) additionally get a strict per-host shape check when the project declares them; any other server gets the generic check only, so a downstream project may add or drop servers freely. A local server that needs `.env` values starts through the same `.env` loader on all three hosts, and its `--filter` list is the dependency set compared; nothing beside the loader takes names from the host (an ERROR in the boilerplate, a WARNING downstream that names the exact launch, because the three MCP configs are never overwritten by a sync). The opt-in Atlassian MCP block for all three hosts, and the parity contract in full, live in `.agents/skills/agentic-qa-core/references/mcp-atlassian-optin.md`.
 
 ### Regenerating and verifying
 
@@ -414,7 +397,7 @@ A project that needs its own slash commands keeps them as plain harness command 
 
 You rarely run either command by hand. `bun run setup` and `bun run up` both call the same repair internally (`repairRepositoryCompatibility` in `cli/install.ts`, and `repairAgentSurfaces` from the compatibility hook in `cli/update-boilerplate.ts`): they create or fix the alias, move aside any project command named like a skill, and then re-verify, so a clean install and a routine update both leave the contract satisfied without a manual step.
 
-`bun run agents:compat:check` validates the whole contract: shim bytes, alias target, no project command named like a skill, hook adapters, MCP parity. It runs inside `bun run repo:check`, in the pre-push hook, and conditionally in pre-commit. The alias status line is printed on every run (created, OK, deferred until the migration commit, missing) and the errors are grouped per surface (instructions, alias, commands, hooks, MCP, lint). `bun run setup:doctor` reports the same surfaces (server count derived from `.mcp.json`, `errors_by_surface` and `alias` in `--json`) plus **Codex repository trust**, which is runtime state no file read can verify: project `.codex/` config and hooks load only in a repository you have marked trusted.
+`bun run agents:compat:check` validates the whole contract for the harnesses in use (a `Harnesses checked:` line, one `NOTE:` per skipped harness): shim bytes, alias target, no project command named like a skill, hook adapters, MCP parity. It runs inside `bun run repo:check`, in the pre-push hook, and conditionally in pre-commit. The alias status line is printed on every run (created, OK, deferred until the migration commit, missing) and the errors are grouped per surface (instructions, alias, commands, hooks, MCP, lint). `bun run setup:doctor` reports the same surfaces (server count derived from `.mcp.json`, `errors_by_surface` and `alias` in `--json`) plus **Codex repository trust**, which is runtime state no file read can verify: project `.codex/` config and hooks load only in a repository you have marked trusted.
 
 ### Updating a project created before the multi-harness move
 
@@ -428,7 +411,7 @@ After that one update, the project works in Claude Code, OpenCode and Codex from
 
 The run ends with a single "Estado por superficie" table: one row per surface, with an ok or warn glyph. Below it comes ONE parity prompt, printed and saved to `.agents/prompts/parity-plan.md` (gitignored, single-use; `--dry-run` prints it and does not save it). Each row of the prompt names a surface, a file and concrete evidence: headings added, removed or changed in a watched file plus hunk counts, a server declared in `.mcp.json` but missing from a host, a skill archived under `.template/pre-agents-migration/` because of a name collision, a component held back, an env key that drifted. The prompt tells the AI to present that table and WAIT for a decision per row (`keep project | take upstream | merge`) before editing, then apply only the chosen rows and run tests, types and lint.
 
-Two flags and one watchlist shape that report. `--strict` exits 1 when the run ends with a blocking parity finding (a broken compat contract: alias, a command shadowing a skill, hooks, MCP), for CI; without it the run warns and exits 0, and drift on a protected file never blocks. `.claude/settings.json`, `.codex/` and the husky hooks are delivered once when the project lacks them (bootstrap-only) and otherwise sit on the protected watchlist (`PROTECTED_WATCHLIST` in `cli/update-boilerplate.ts`: `AGENTS.md`, `.mcp.json` and the rest): the updater never overwrites them, so project permissions, servers and hook edits survive (the `permissions.allow` and `permissions.deny` lists of `.claude/settings.json` only grow: upstream entries the project lacks are appended, a deny the project does not want is declined in `updater.declined_denies`; `opencode.jsonc` gets a paste row for the deny rules it lacks instead of a write), and any drift from upstream appears as a prompt row (a stale hook command is still caught by `agents:compat:check`). Every row is one path: a watched file that also breaks a compat contract is one blocking row with both pieces of evidence. A run that applies nothing leaves the tree byte-identical (`git status` clean, the lock untouched). An aborted run, whatever the cause (dirty tree, corrupt lock, failed clone, declined migration or self-update, a linked worktree), ends with `Abortado.` and exit 1 rather than a success line. The updater runs in the primary checkout only: its backups, markers and prompts live inside the checkout, and in a worktree they would be deleted with it.
+Two flags and one watchlist shape that report. `--strict` exits 1 when the run ends with a blocking parity finding (a broken compat contract: alias, a command shadowing a skill, hooks, MCP), for CI; without it the run warns and exits 0, and drift on a protected file never blocks. `.claude/settings.json`, `.codex/` and the husky hooks are delivered once when the project lacks them (bootstrap-only) and otherwise sit on the protected watchlist (`PROTECTED_WATCHLIST` in `cli/update-boilerplate.ts`: `AGENTS.md`, `.mcp.json` and the rest): the updater never overwrites them, so project permissions, servers and hook edits survive (the `permissions.allow` and `permissions.deny` lists of `.claude/settings.json` only grow: upstream entries the project lacks are appended, a deny the project does not want is declined in `updater.declined_denies`; `opencode.jsonc` gets a paste row for the deny rules it lacks instead of a write; the files of a harness left out of `harnesses:` leave the watchlist and are never delivered, and a leftover `.envrc` gets one informational row saying it can be deleted), and any drift from upstream appears as a prompt row (a stale hook command is still caught by `agents:compat:check`). Every row is one path: a watched file that also breaks a compat contract is one blocking row with both pieces of evidence. A run that applies nothing leaves the tree byte-identical (`git status` clean, the lock untouched). An aborted run, whatever the cause (dirty tree, corrupt lock, failed clone, declined migration or self-update, a linked worktree), ends with `Abortado.` and exit 1 rather than a success line. The updater runs in the primary checkout only: its backups, markers and prompts live inside the checkout, and in a worktree they would be deleted with it.
 
 One more thing on the migration run itself: the `.claude/skills` alias is NOT created in that invocation. The migration unindexes the committed `.claude/skills/*` tree, and git refuses to rewrite index entries behind a symlink, so an alias created right away would break `lint-staged` on the very commit that records the migration. The run prints the next step and repeats it in the closing box: commit the migration, then `bun run agents:compat` creates the alias. The compat check treats the missing alias as expected while that commit is pending (a re-run before it keeps deferring); every other contract is still enforced.
 
