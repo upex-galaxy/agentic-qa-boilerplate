@@ -1,5 +1,5 @@
 import type { ReportSink } from './lib/updater-types.ts';
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 
 import { dirname, join, resolve } from 'node:path';
@@ -14,6 +14,7 @@ import {
   ENGRAM_PLUGIN_COMMANDS,
   engramSetupArgs,
   launchCommandsForAgents,
+  mergedHarnesses,
   migrateAgentIds,
   offerEngramClaudePlugin,
   parseAgentsEnv,
@@ -70,6 +71,15 @@ function copyPath(root: string, relativePath: string): void {
   cpSync(join(REPO_ROOT, relativePath), destination, { recursive: true });
 }
 
+/**
+ * A project on one harness deletes the other harnesses' files (ADR-0012), so
+ * the fixture copies what this checkout has, and a test that reads a dropped
+ * harness skips.
+ */
+const HAS_CODEX = existsSync(join(REPO_ROOT, '.codex/hooks.json')) && existsSync(join(REPO_ROOT, '.codex/config.toml'));
+const HAS_CLAUDE = existsSync(join(REPO_ROOT, 'CLAUDE.md'));
+const HAS_ALL_HARNESSES = HAS_CODEX && existsSync(join(REPO_ROOT, 'opencode.jsonc')) && existsSync(join(REPO_ROOT, '.mcp.json'));
+
 function compatibilityFixture(): string {
   const root = temporaryRoot();
   for (const path of [
@@ -83,7 +93,7 @@ function compatibilityFixture(): string {
     '.codex/config.toml',
     '.mcp.json',
     'opencode.jsonc',
-  ]) { copyPath(root, path); }
+  ].filter(path => existsSync(join(REPO_ROOT, path)))) { copyPath(root, path); }
   return root;
 }
 
@@ -194,7 +204,7 @@ describe('installer Codex lifecycle', () => {
     });
   });
 
-  test('discovers the MCP environment contracts from the loader filter on every host, and exposes launch guidance', async () => {
+  test.skipIf(!HAS_ALL_HARNESSES)('discovers the MCP environment contracts from the loader filter on every host, and exposes launch guidance', async () => {
     // Each server names what it reads in its `.env` loader's `--filter`, the
     // same list on all three hosts: the six DBHUB_* dbhub.toml interpolates,
     // the two SLACK_MCP_*, the OpenAPI pair. None is core scope (project or
@@ -220,6 +230,14 @@ describe('installer Codex lifecycle', () => {
   });
 });
 
+describe('installer harness selection (ADR-0012)', () => {
+  test('the selection is added to the declared list, never shrinks it', () => {
+    expect(mergedHarnesses([], ['claude-code'])).toEqual(['claude']);
+    expect(mergedHarnesses(['codex', 'claude'], ['claude-code', 'opencode'])).toEqual(['codex', 'claude', 'opencode']);
+    expect(mergedHarnesses(['opencode'], [])).toEqual(['opencode']);
+  });
+});
+
 describe('compatibility repair lifecycle', () => {
   test('constructs portable POSIX and Windows alias plans', () => {
     const root = temporaryRoot();
@@ -233,7 +251,7 @@ describe('compatibility repair lifecycle', () => {
     });
   });
 
-  test('refuses to replace a real Claude skills directory', () => {
+  test.skipIf(!HAS_CLAUDE)('refuses to replace a real Claude skills directory', () => {
     const root = compatibilityFixture();
     mkdirSync(join(root, '.claude/skills'), { recursive: true });
     writeFileSync(join(root, '.claude/skills/owned.txt'), 'preserve me\n');
@@ -242,7 +260,7 @@ describe('compatibility repair lifecycle', () => {
     expect(readFileSync(join(root, '.claude/skills/owned.txt'), 'utf8')).toBe('preserve me\n');
   });
 
-  test('reclaims the skills CLI per-skill symlink shim without losing a skill body', () => {
+  test.skipIf(!HAS_CLAUDE)('reclaims the skills CLI per-skill symlink shim without losing a skill body', () => {
     // `bunx skills add` (project level) writes the body to .agents/skills/<slug>/ and then
     // creates .claude/skills/ as a REAL directory of per-skill symlinks. `bun run setup`
     // installs community skills BEFORE repairing compatibility, so this is what a clean
@@ -263,7 +281,7 @@ describe('compatibility repair lifecycle', () => {
     expect(repairClaudeSkillsAlias(root, 'linux').status).toBe('valid');
   });
 
-  test('still refuses a shim directory that also holds real content', () => {
+  test.skipIf(!HAS_CLAUDE)('still refuses a shim directory that also holds real content', () => {
     const root = compatibilityFixture();
     mkdirSync(join(root, '.agents/skills/playwright-cli'), { recursive: true });
     mkdirSync(join(root, '.claude/skills'), { recursive: true });
@@ -274,7 +292,7 @@ describe('compatibility repair lifecycle', () => {
     expect(readFileSync(join(root, '.claude/skills/hand-written.md'), 'utf8')).toBe('mine\n');
   });
 
-  test('refuses a symlink shim pointing outside the canonical skills store', () => {
+  test.skipIf(!HAS_CLAUDE)('refuses a symlink shim pointing outside the canonical skills store', () => {
     const root = compatibilityFixture();
     mkdirSync(join(root, 'elsewhere/rogue'), { recursive: true });
     mkdirSync(join(root, '.claude/skills'), { recursive: true });
@@ -283,11 +301,11 @@ describe('compatibility repair lifecycle', () => {
     expect(() => repairClaudeSkillsAlias(root, 'linux')).toThrow('Refusing to replace');
   });
 
-  test('installer and updater repairs are idempotent', async () => {
+  test.skipIf(!HAS_CLAUDE)('installer and updater repairs are idempotent', async () => {
     const root = compatibilityFixture();
     const first = repairRepositoryCompatibility(root, 'linux');
     const second = repairRepositoryCompatibility(root, 'linux');
-    expect(first.alias.status).toBe('created');
+    expect(first.alias?.status).toBe('created');
     expect(second).toMatchObject({ shadowingCommandsMoved: [], alias: { status: 'valid' } });
 
     const steps: string[] = [];
@@ -299,7 +317,7 @@ describe('compatibility repair lifecycle', () => {
 });
 
 describe('doctor and updater parity', () => {
-  test('reports file correctness separately from Codex trust and CLI availability', () => {
+  test.skipIf(!HAS_CODEX)('reports file correctness separately from Codex trust and CLI availability', () => {
     const root = compatibilityFixture();
     repairRepositoryCompatibility(root, 'linux');
     const diagnostic = diagnoseAgentCompatibility(root, { platform: 'linux', codexCliDetected: false });
@@ -320,7 +338,7 @@ describe('doctor and updater parity', () => {
     });
   });
 
-  test('reports a missing alias and grouped errors without throwing', () => {
+  test.skipIf(!HAS_CODEX)('reports a missing alias and grouped errors without throwing', () => {
     const root = compatibilityFixture();
     repairRepositoryCompatibility(root, 'linux');
     rmSync(join(root, '.claude/skills'));

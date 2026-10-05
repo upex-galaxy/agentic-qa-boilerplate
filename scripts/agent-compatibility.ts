@@ -23,11 +23,17 @@ import {
   repairClaudeSkillsAlias,
   SHADOWING_COMMANDS_BACKUP_DIR,
 } from '../cli/lib/agent-compatibility.ts';
+import { declaredHarnesses } from '../cli/lib/harness-selection.ts';
 
 export * from '../cli/lib/agent-compatibility.ts';
 
 function printCheck(result: CompatibilityCheck): void {
   console.log(describeAliasStatus(result.alias));
+  console.log(`Harnesses checked: ${result.harnesses.join(', ')}.`);
+  // Notes never fail the check: a harness the project does not use, skipped.
+  for (const note of result.notes) {
+    console.log(`  NOTE: ${note}`);
+  }
   // Warnings never fail the check: each names the file and what to add.
   for (const warning of result.warnings) {
     console.warn(`  WARN: ${warning}`);
@@ -50,8 +56,10 @@ if (import.meta.main) {
   const checkOnly = process.argv.includes('--check');
   try {
     if (!checkOnly) {
-      const alias = repairClaudeSkillsAlias();
-      console.log(describeAliasStatus(alias));
+      if (declaredHarnesses().harnesses.includes('claude')) {
+        const alias = repairClaudeSkillsAlias();
+        console.log(describeAliasStatus(alias));
+      }
       for (const moved of removeShadowingCommands()) {
         console.log(`Command shadowed a skill, moved to ${SHADOWING_COMMANDS_BACKUP_DIR}/${moved}`);
       }

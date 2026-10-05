@@ -70,8 +70,9 @@
  *   INSTALL_SECRETS_VAULT=<vault>         the vault its references point at
  */
 
+import type { Harness } from './lib/harness-selection.ts';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, rmdirSync, rmSync, writeFileSync } from 'node:fs';
 import { chmod, mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -91,6 +92,15 @@ import {
 } from './lib/atlassian-instance.ts';
 import { removeRetiredEnvLines, retiredEnvKeysIn } from './lib/env-schema.ts';
 import { CLI_LOGINS, HARNESS_LEVEL_HOWTO, HARNESS_LEVEL_MCPS } from './lib/harness-level-mcps.ts';
+import {
+  declaredHarnesses,
+  explicitHarnesses,
+  HARNESS_FILES,
+  HARNESS_LABEL,
+  HARNESSES,
+  HARNESSES_KEY,
+  withHarnesses,
+} from './lib/harness-selection.ts';
 import { playwrightBrowsersInstalled } from './lib/playwright-cache.ts';
 import {
   ADAPTERS,
@@ -2220,17 +2230,96 @@ function describeAgentDetection(detected: AgentDetection): string {
   return `Claude Code: ${detected.claudeCode ? 'found' : 'not found'} | OpenCode: ${detected.opencode ? 'found' : 'not found'} | Codex: ${codex}`;
 }
 
+/**
+ * Repair the generated surfaces and run the check. Only the harnesses in use
+ * (`declaredHarnesses`, ADR-0012) count: a harness the project dropped is
+ * never a reason to throw, and without Claude Code there is no alias to make
+ * (`alias: null`).
+ */
 export function repairRepositoryCompatibility(
   root = REPO_ROOT,
   platform: NodeJS.Platform = process.platform,
-): { alias: ReturnType<typeof repairClaudeSkillsAlias>, shadowingCommandsMoved: string[] } {
-  const alias = repairClaudeSkillsAlias(root, platform);
+): { alias: ReturnType<typeof repairClaudeSkillsAlias> | null, shadowingCommandsMoved: string[] } {
+  const alias = declaredHarnesses(root).harnesses.includes('claude') ? repairClaudeSkillsAlias(root, platform) : null;
   const shadowingCommandsMoved = removeShadowingCommands(root);
   const check = checkAgentCompatibility(root, platform);
   if (!check.ok) {
     throw new Error(`Agent compatibility repair incomplete:\n${check.errors.join('\n')}`);
   }
   return { alias, shadowingCommandsMoved };
+}
+
+/** The `harnesses:` entry of each installer agent id. */
+export function harnessOfAgent(agent: AgentId): Harness {
+  return agent === 'claude-code' ? 'claude' : agent;
+}
+
+/**
+ * The `harnesses:` list after an agent selection: the declared list plus the
+ * agents just selected, never fewer. A re-run that selects one agent must not
+ * silently drop a harness a teammate declared; dropping one is an edit to
+ * `.agents/project.yaml`.
+ */
+export function mergedHarnesses(existing: readonly Harness[], agents: readonly AgentId[]): Harness[] {
+  const out = [...existing];
+  for (const harness of agents.map(harnessOfAgent)) {
+    if (!out.includes(harness)) { out.push(harness); }
+  }
+  return out;
+}
+
+/**
+ * Write the agent selection to `harnesses:` in `.agents/project.yaml`, then
+ * OFFER to delete the files of every harness left out (default keep). The
+ * boilerplate itself checks all three and is left alone.
+ */
+export async function recordHarnessSelection(agents: readonly AgentId[], root = REPO_ROOT): Promise<void> {
+  const selection = declaredHarnesses(root);
+  if (selection.source === 'boilerplate' || agents.length === 0) { return; }
+  const yamlPath = join(root, '.agents', 'project.yaml');
+  if (!existsSync(yamlPath)) {
+    log.dim(`  .agents/project.yaml not found: ${HARNESSES_KEY} not recorded (the gates detect the harnesses from the files present).`);
+    return;
+  }
+  const existing = explicitHarnesses(root);
+  const next = mergedHarnesses(existing, agents);
+  if (next.join(',') !== existing.join(',')) {
+    const before = readFileSync(yamlPath, 'utf8');
+    writeFileSync(yamlPath, withHarnesses(before, next));
+    // Read back from the destination, not from the value just computed.
+    const written = explicitHarnesses(root);
+    if (written.join(',') !== next.join(',')) {
+      throw new Error(`${HARNESSES_KEY} in .agents/project.yaml reads [${written.join(', ')}] after writing [${next.join(', ')}]`);
+    }
+    log.success(`Harnesses in use recorded in .agents/project.yaml: ${HARNESSES_KEY}: [${next.join(', ')}]`);
+  }
+
+  for (const harness of HARNESSES.filter(h => !next.includes(h))) {
+    const present = HARNESS_FILES[harness].filter(file => existsSync(join(root, file)));
+    if (present.length === 0) { continue; }
+    const remove = await maybeConfirm(
+      `${HARNESS_LABEL[harness]} is not a harness this project uses. Delete its files (${present.join(', ')})?`,
+      false,
+    );
+    if (!remove) {
+      log.dim(`  Kept ${present.join(', ')}: not checked while ${HARNESSES_KEY} leaves out ${harness}.`);
+      continue;
+    }
+    for (const file of present) {
+      rmSync(join(root, file), { force: true });
+      removeEmptyParents(root, file);
+    }
+    log.success(`Deleted the ${HARNESS_LABEL[harness]} files: ${present.join(', ')}`);
+  }
+}
+
+/** Remove the now-empty directories above a deleted file, never the root itself. */
+function removeEmptyParents(root: string, file: string): void {
+  let dir = dirname(join(root, file));
+  while (dir !== root && dir.startsWith(root) && existsSync(dir) && readdirSync(dir).length === 0) {
+    rmdirSync(dir);
+    dir = dirname(dir);
+  }
 }
 
 // ============================================================================
@@ -3244,13 +3333,14 @@ async function main(): Promise<void> {
       log.warn('No agents selected — nothing to sync.');
       process.exit(0);
     }
+    await recordHarnessSelection(agents);
     const state = buildInitialState(await loadPriorState());
     state.agents = agents;
     const syncForceKeys = new Set<string>();
     await installCommunitySkills(agents, state, 'project', syncForceKeys);
     await installCommunitySkills(agents, state, 'global', syncForceKeys);
     const compatibility = repairRepositoryCompatibility();
-    log.success(`Repository compatibility ready (Claude alias ${compatibility.alias.status}${compatibility.shadowingCommandsMoved.length > 0 ? `; moved ${compatibility.shadowingCommandsMoved.join(', ')} to ${SHADOWING_COMMANDS_BACKUP_DIR}/ because each shadowed a skill` : ''}).`);
+    log.success(`Repository compatibility ready (Claude alias ${compatibility.alias?.status ?? 'not used'}${compatibility.shadowingCommandsMoved.length > 0 ? `; moved ${compatibility.shadowingCommandsMoved.join(', ')} to ${SHADOWING_COMMANDS_BACKUP_DIR}/ because each shadowed a skill` : ''}).`);
     await writeInstallState(state);
     log.success(`Community skills synced to: ${agents.join(', ')}.`);
     process.exit(0);
@@ -3355,6 +3445,7 @@ async function main(): Promise<void> {
     await writeInstallState(state);
     process.exit(0);
   }
+  await recordHarnessSelection(agents);
 
   // ── PHASE 2 — INSTALLATION ───────────────────────────────────────────────
   tui.phaseHeader(2, 'INSTALLATION');
@@ -3393,7 +3484,7 @@ async function main(): Promise<void> {
   }
 
   const compatibility = repairRepositoryCompatibility();
-  log.success(`Repository compatibility ready (Claude alias ${compatibility.alias.status}${compatibility.shadowingCommandsMoved.length > 0 ? `; moved ${compatibility.shadowingCommandsMoved.join(', ')} to ${SHADOWING_COMMANDS_BACKUP_DIR}/ because each shadowed a skill` : ''}).`);
+  log.success(`Repository compatibility ready (Claude alias ${compatibility.alias?.status ?? 'not used'}${compatibility.shadowingCommandsMoved.length > 0 ? `; moved ${compatibility.shadowingCommandsMoved.join(', ')} to ${SHADOWING_COMMANDS_BACKUP_DIR}/ because each shadowed a skill` : ''}).`);
 
   // ── PHASE 3 — CONFIGURATION ──────────────────────────────────────────────
   tui.phaseHeader(3, 'CONFIGURATION');

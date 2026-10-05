@@ -70,6 +70,15 @@ testing:
     # Read directly by skills (not a {{VAR}} token).
     pair_mode: null
 
+# Host harnesses this project uses (ADR-0012), any of: claude, opencode, codex.
+# Every compatibility gate (agents:compat:check, setup:doctor, the installer, `bun run up`)
+# checks only these; the files of a harness left out may be deleted. null = detect from
+# the files present (a harness is in use while ANY of its files exists). `bun run setup`
+# adds the agents you select (it never removes one); edit the list to drop one.
+# The boilerplate itself always checks all three, whatever this says.
+# Read directly by cli/lib/harness-selection.ts (not a {{VAR}} token) -> skipped by vars:check.
+harnesses: null # e.g. [claude]
+
 qa:
   formal_blocked_gate: true # When true and the substrate exposes a `blocked` story status, FAILED stories dispatch `defect_reported` (in_test -> blocked). When false (or no `blocked` slug), the skill leaves the story in `in_test` with the linked bug — non-strict fallback. See sprint-testing/references/sprint-orchestration.md Briefing 4 Step 5.
   # Jira LABEL that marks an Epic as a QA-artifact bucket rather than a product Epic.

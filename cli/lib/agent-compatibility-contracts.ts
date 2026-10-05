@@ -18,15 +18,21 @@
  * harness level and skills resolve them by capability. A project that still
  * declares one gets the generic cross-host check, nothing stricter.
  *
+ * Every contract binds only the harnesses the project uses
+ * (`declaredHarnesses`, ADR-0012): a project on one harness deletes the other
+ * two's files, and the boilerplate itself always checks all three.
+ *
  * Import-closed: only Node builtins and `cli/lib` siblings (see the header of
  * `agent-compatibility.ts` for why `cli/` must never import a sibling
  * top-level directory).
  */
 
+import type { Harness } from './harness-selection.ts';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 
 import { isSchemaOwner } from './agents-schema.ts';
+import { canonicalMcpHarness, declaredHarnesses } from './harness-selection.ts';
 
 /**
  * Servers whose per-host shape this boilerplate pins (`EXPECTED_MCP`). The
@@ -631,13 +637,19 @@ function isKnownMcpId(id: string): id is KnownMcpId {
 }
 
 /**
- * The project's canonical MCP server set: the `mcpServers` keys of `.mcp.json`,
- * sorted. Throws when the file is missing or malformed; `validateMcpParity`
- * reports that same failure as an error string.
+ * The project's canonical MCP server set, sorted: the servers of the canonical
+ * host's config (`.mcp.json` while Claude is in use, otherwise the first
+ * declared harness's file, see `canonicalMcpHarness`). Throws when that file
+ * is missing or malformed; `validateMcpParity` reports the same failure as an
+ * error string.
  */
-export function declaredMcpIds(root = process.cwd()): string[] {
-  const servers = object(parseJson(join(resolve(root), '.mcp.json')).mcpServers, '.mcp.json mcpServers');
-  return Object.keys(servers).sort();
+export function declaredMcpIds(root = process.cwd(), harnesses: readonly Harness[] = declaredHarnesses(root).harnesses): string[] {
+  const host = canonicalMcpHarness(harnesses);
+  const config = readHostMcpConfig(root, host);
+  if (config === null) {
+    throw new Error(`MCP config missing for ${host}: ${MCP_CONFIG_FILE[host]}`);
+  }
+  return Object.keys(config).sort();
 }
 
 /** What `validateMcpParityFindings` returns: errors fail the check, warnings are printed and never fail it. */
@@ -659,6 +671,8 @@ export interface McpParityOptions {
    * `<root>/package.json`.
    */
   schemaOwner?: boolean
+  /** The harnesses whose configs are compared. Defaults to `declaredHarnesses(root)`. */
+  harnesses?: readonly Harness[]
 }
 
 function readSchemaOwner(root: string): boolean {
@@ -709,16 +723,6 @@ export function validateMcpParity(root = process.cwd(), options: McpParityOption
   return validateMcpParityFindings(root, options).errors;
 }
 
-/** The three hosts' MCP configs, normalized. Throws when a file is missing or malformed. */
-function readNormalizedMcpConfigs(root = process.cwd()): Record<McpHost, NormalizedMcpConfig> {
-  const resolvedRoot = resolve(root);
-  return {
-    claude: normalizeClaude(parseJson(join(resolvedRoot, MCP_CONFIG_FILE.claude))),
-    opencode: normalizeOpenCode(parseJsonc(join(resolvedRoot, MCP_CONFIG_FILE.opencode))),
-    codex: normalizeCodex(parseToml(join(resolvedRoot, MCP_CONFIG_FILE.codex))),
-  };
-}
-
 const NORMALIZE: Record<McpHost, (root: JsonObject) => NormalizedMcpConfig> = {
   claude: normalizeClaude,
   opencode: normalizeOpenCode,
@@ -742,27 +746,45 @@ export function validateMcpParityFindings(root = process.cwd(), options: McpPari
   const errors: string[] = [];
   const warnings: string[] = [];
   const schemaOwner = options.schemaOwner ?? readSchemaOwner(resolvedRoot);
-  let configs: Record<McpHost, NormalizedMcpConfig>;
-  try {
-    configs = readNormalizedMcpConfigs(resolvedRoot);
+  const hosts = options.harnesses ?? declaredHarnesses(resolvedRoot, { schemaOwner: options.schemaOwner }).harnesses;
+  // Only the harnesses in use are read: a project on one harness has deleted
+  // the other two's files on purpose. A declared host whose file is missing or
+  // malformed fails here, under the MCP group.
+  const configs: Partial<Record<McpHost, NormalizedMcpConfig>> = {};
+  for (const host of hosts) {
+    try {
+      const config = readHostMcpConfig(resolvedRoot, host);
+      if (config === null) {
+        const why = schemaOwner ? 'the boilerplate checks all three harnesses' : 'a harness in use; declare `harnesses:` in .agents/project.yaml to drop it';
+        errors.push(`MCP config missing for ${host}: ${MCP_CONFIG_FILE[host]} (${why})`);
+        continue;
+      }
+      configs[host] = config;
+    }
+    catch (error) {
+      // The normalizers' own messages already name the file; a raw parser
+      // error does not, and without the file it would not group under MCP.
+      const message = error instanceof Error ? error.message : String(error);
+      errors.push(message.includes(MCP_CONFIG_FILE[host]) ? message : `MCP config unreadable for ${host}: ${MCP_CONFIG_FILE[host]}: ${message}`);
+    }
   }
-  catch (error) {
-    return { errors: [error instanceof Error ? error.message : String(error)], warnings };
-  }
+  if (errors.length > 0) { return { errors, warnings }; }
 
-  // The declaring host defines the set; the other two must match it exactly.
-  const declared = Object.keys(configs.claude).sort();
-  const adapters: McpHost[] = ['opencode', 'codex'];
+  // The canonical host defines the set; every other host in use must match it exactly.
+  const canonicalHost = canonicalMcpHarness(hosts);
+  const canonicalConfig = configs[canonicalHost]!;
+  const declared = Object.keys(canonicalConfig).sort();
+  const adapters = hosts.filter(host => host !== canonicalHost);
   for (const host of adapters) {
-    const actual = new Set(Object.keys(configs[host]));
+    const actual = new Set(Object.keys(configs[host]!));
     for (const id of declared) {
       if (!actual.has(id)) {
-        errors.push(`MCP ${id} missing from ${host}: declared in ${MCP_CONFIG_FILE.claude}, absent from ${MCP_CONFIG_FILE[host]}`);
+        errors.push(`MCP ${id} missing from ${host}: declared in ${MCP_CONFIG_FILE[canonicalHost]}, absent from ${MCP_CONFIG_FILE[host]}`);
       }
     }
     for (const id of [...actual].sort()) {
       if (!declared.includes(id)) {
-        errors.push(`MCP ${id} present in ${host} only: declare it in ${MCP_CONFIG_FILE.claude} or remove it from ${MCP_CONFIG_FILE[host]}`);
+        errors.push(`MCP ${id} present in ${host} only: declare it in ${MCP_CONFIG_FILE[canonicalHost]} or remove it from ${MCP_CONFIG_FILE[host]}`);
       }
     }
   }
@@ -810,13 +832,13 @@ export function validateMcpParityFindings(root = process.cwd(), options: McpPari
   // Cross-host contract for EVERY declared server: same `.env` dependencies and
   // same literal settings, whatever the transport or command each host uses.
   for (const id of declared) {
-    const baseline = describeContract(configs.claude[id]);
+    const baseline = describeContract(canonicalConfig[id]);
     for (const host of adapters) {
-      const server = configs[host][id];
+      const server = configs[host]![id];
       if (!server) { continue; }
       const contract = describeContract(server);
       if (contract !== baseline) {
-        errors.push(`MCP ${id} env contract differs between claude and ${host}: ${baseline} vs ${contract}`);
+        errors.push(`MCP ${id} env contract differs between ${canonicalHost} and ${host}: ${baseline} vs ${contract}`);
       }
     }
   }
@@ -887,14 +909,25 @@ function readHookCommand(settings: JsonObject, host: 'claude' | 'codex'): JsonOb
   return object(group.hooks[0], `${host} UserPromptSubmit command`);
 }
 
-export function validateHookCompatibility(root = process.cwd()): string[] {
+/** Each harness's hook adapter, repo-relative. */
+export const HOOK_ADAPTER_FILE: Record<Harness, string> = {
+  claude: '.claude/settings.json',
+  opencode: '.opencode/plugins/personality-reinject.js',
+  codex: '.codex/hooks.json',
+};
+
+/**
+ * The emitter plus the adapter of every harness in use (`harnesses`, default
+ * `declaredHarnesses(root)`). An adapter of a harness the project does not use
+ * is not read: its absence is the project's choice, not drift.
+ */
+export function validateHookCompatibility(root = process.cwd(), harnesses: readonly Harness[] = declaredHarnesses(root).harnesses): string[] {
   const resolvedRoot = resolve(root);
   const errors: string[] = [];
+  const uses = (harness: Harness): boolean => harnesses.includes(harness);
   const required = [
     '.agents/hooks/personality-reinject.mjs',
-    '.opencode/plugins/personality-reinject.js',
-    '.claude/settings.json',
-    '.codex/hooks.json',
+    ...(['claude', 'opencode', 'codex'] as const).filter(uses).map(harness => HOOK_ADAPTER_FILE[harness]),
   ];
   for (const path of required) {
     if (!existsSync(join(resolvedRoot, path))) {
@@ -904,22 +937,28 @@ export function validateHookCompatibility(root = process.cwd()): string[] {
   if (errors.length > 0) { return errors; }
 
   try {
-    const claude = readHookCommand(parseJson(join(resolvedRoot, '.claude', 'settings.json')), 'claude');
-    const codex = readHookCommand(parseJson(join(resolvedRoot, '.codex', 'hooks.json')), 'codex');
-    const claudeCommand = stringValue(claude.command, 'Claude hook command');
-    const codexCommand = stringValue(codex.command, 'Codex hook command');
-    const codexWindows = stringValue(codex.commandWindows, 'Codex Windows hook command');
-
-    if (claudeCommand !== CLAUDE_HOOK_COMMAND) {
-      errors.push(`Claude hook command must be repository-relative through $CLAUDE_PROJECT_DIR: ${CLAUDE_HOOK_COMMAND}`);
+    const commands: Array<[string, string]> = [];
+    if (uses('claude')) {
+      const claude = readHookCommand(parseJson(join(resolvedRoot, '.claude', 'settings.json')), 'claude');
+      const claudeCommand = stringValue(claude.command, 'Claude hook command');
+      if (claudeCommand !== CLAUDE_HOOK_COMMAND) {
+        errors.push(`Claude hook command must be repository-relative through $CLAUDE_PROJECT_DIR: ${CLAUDE_HOOK_COMMAND}`);
+      }
+      commands.push(['claude', claudeCommand]);
     }
-    if (codexCommand !== CODEX_HOOK_COMMAND) {
-      errors.push(`Codex hook command must resolve the Git root: ${CODEX_HOOK_COMMAND}`);
+    if (uses('codex')) {
+      const codex = readHookCommand(parseJson(join(resolvedRoot, '.codex', 'hooks.json')), 'codex');
+      const codexCommand = stringValue(codex.command, 'Codex hook command');
+      const codexWindows = stringValue(codex.commandWindows, 'Codex Windows hook command');
+      if (codexCommand !== CODEX_HOOK_COMMAND) {
+        errors.push(`Codex hook command must resolve the Git root: ${CODEX_HOOK_COMMAND}`);
+      }
+      if (codexWindows !== CODEX_HOOK_COMMAND_WINDOWS) {
+        errors.push(`Codex Windows hook command must resolve the Git root with Join-Path: ${CODEX_HOOK_COMMAND_WINDOWS}`);
+      }
+      commands.push(['codex', codexCommand], ['codex-windows', codexWindows]);
     }
-    if (codexWindows !== CODEX_HOOK_COMMAND_WINDOWS) {
-      errors.push(`Codex Windows hook command must resolve the Git root with Join-Path: ${CODEX_HOOK_COMMAND_WINDOWS}`);
-    }
-    for (const [host, command] of [['claude', claudeCommand], ['codex', codexCommand], ['codex-windows', codexWindows]] as const) {
+    for (const [host, command] of commands) {
       if (personalAbsolutePath(command)) {
         errors.push(`${host} hook command contains an absolute personal path.`);
       }
@@ -940,7 +979,6 @@ export function validateHookCompatibility(root = process.cwd()): string[] {
     }
 
     const shared = readFileSync(join(resolvedRoot, '.agents', 'hooks', 'personality-reinject.mjs'), 'utf8');
-    const plugin = readFileSync(join(resolvedRoot, '.opencode', 'plugins', 'personality-reinject.js'), 'utf8');
     if (!shared.includes('AGENTS.md') || shared.includes('CLAUDE.md')) {
       errors.push('Shared personality hook must reference AGENTS.md and must not treat CLAUDE.md as canonical.');
     }
@@ -954,20 +992,25 @@ export function validateHookCompatibility(root = process.cwd()): string[] {
         errors.push(`Shared hook emitter must emit the "${marker}" line.`);
       }
     }
-    if (!plugin.includes('../../.agents/hooks/personality-reinject.mjs')) {
-      errors.push('OpenCode personality adapter must import the shared hook contract.');
+    const sources: Array<[string, string]> = [['emitter', shared]];
+    if (uses('opencode')) {
+      const plugin = readFileSync(join(resolvedRoot, '.opencode', 'plugins', 'personality-reinject.js'), 'utf8');
+      if (!plugin.includes('../../.agents/hooks/personality-reinject.mjs')) {
+        errors.push('OpenCode personality adapter must import the shared hook contract.');
+      }
+      if (!plugin.includes('agentContextLines')) {
+        errors.push('OpenCode personality adapter must push the shared context lines (agentContextLines), identity line included.');
+      }
+      if (plugin.includes('output.system =')) {
+        errors.push('OpenCode personality adapter must mutate output.system in place.');
+      }
+      if (/\bevent\.system\s*=[^=]/.test(plugin)) {
+        errors.push('OpenCode personality adapter must mutate event.system in place.');
+      }
+      errors.push(...validateOpenCodePluginEntrypoints(plugin));
+      sources.push(['OpenCode adapter', plugin]);
     }
-    if (!plugin.includes('agentContextLines')) {
-      errors.push('OpenCode personality adapter must push the shared context lines (agentContextLines), identity line included.');
-    }
-    if (plugin.includes('output.system =')) {
-      errors.push('OpenCode personality adapter must mutate output.system in place.');
-    }
-    if (/\bevent\.system\s*=[^=]/.test(plugin)) {
-      errors.push('OpenCode personality adapter must mutate event.system in place.');
-    }
-    errors.push(...validateOpenCodePluginEntrypoints(plugin));
-    for (const [label, source] of [['emitter', shared], ['OpenCode adapter', plugin]] as const) {
+    for (const [label, source] of sources) {
       if (personalAbsolutePath(source)) {
         errors.push(`Shared hook ${label} contains an absolute personal path.`);
       }
@@ -977,7 +1020,7 @@ export function validateHookCompatibility(root = process.cwd()): string[] {
         errors.push(`Duplicated personality hook must be removed: ${duplicate}`);
       }
     }
-    errors.push(...validateInstructionRouterHooks(resolvedRoot));
+    errors.push(...validateInstructionRouterHooks(resolvedRoot, harnesses));
   }
   catch (error) {
     errors.push(error instanceof Error ? error.message : String(error));
@@ -1025,9 +1068,10 @@ function hasSessionStart(settings: JsonObject, matcher: string, command: string,
  * single-file layout has nothing to route). Each command host must re-arm the
  * routes after a compaction and after `/clear`, the OpenCode adapter must classify in `chat.message`
  * (OpenCode 1) and declare its OpenCode 2 degradation, and the always-on file
- * must fit the Codex project-doc budget whole.
+ * must fit the Codex project-doc budget whole. Each part binds only while its
+ * harness is in use (`harnesses`, default `declaredHarnesses(root)`).
  */
-export function validateInstructionRouterHooks(root = process.cwd()): string[] {
+export function validateInstructionRouterHooks(root = process.cwd(), harnesses: readonly Harness[] = declaredHarnesses(root).harnesses): string[] {
   const resolvedRoot = resolve(root);
   const l0Path = join(resolvedRoot, 'AGENTS.md');
   if (!existsSync(l0Path)) { return []; }
@@ -1047,30 +1091,32 @@ export function validateInstructionRouterHooks(root = process.cwd()): string[] {
     }
   }
 
-  const claudeSettings = parseJson(join(resolvedRoot, '.claude', 'settings.json'));
-  const codexHooks = parseJson(join(resolvedRoot, '.codex', 'hooks.json'));
   for (const [source, after] of Object.entries(REARM_SESSION_START_SOURCES)) {
-    if (!hasSessionStart(claudeSettings, source, CLAUDE_HOOK_COMMAND)) {
+    if (harnesses.includes('claude') && !hasSessionStart(parseJson(join(resolvedRoot, '.claude', 'settings.json')), source, CLAUDE_HOOK_COMMAND)) {
       errors.push(`claude must re-arm the routes after ${after}: a SessionStart group with matcher "${source}" running ${CLAUDE_HOOK_COMMAND}`);
     }
-    if (!hasSessionStart(codexHooks, source, CODEX_HOOK_COMMAND, CODEX_HOOK_COMMAND_WINDOWS)) {
+    if (harnesses.includes('codex') && !hasSessionStart(parseJson(join(resolvedRoot, '.codex', 'hooks.json')), source, CODEX_HOOK_COMMAND, CODEX_HOOK_COMMAND_WINDOWS)) {
       errors.push(`codex must re-arm the routes after ${after}: a SessionStart group with matcher "${source}" running the Codex hook command (and its Windows variant).`);
     }
   }
 
-  const plugin = readFileSync(join(resolvedRoot, '.opencode', 'plugins', 'personality-reinject.js'), 'utf8');
-  if (!plugin.includes('\'chat.message\'') || !plugin.includes('routeLines')) {
-    errors.push('OpenCode personality adapter must classify the prompt in chat.message with the shared routeLines (OpenCode 1).');
-  }
-  if (!plugin.includes('experimental.session.compacting') || !plugin.includes('rearmRoutes')) {
-    errors.push('OpenCode personality adapter must re-arm the routes in experimental.session.compacting (OpenCode 1).');
-  }
-  if (!plugin.includes(OPENCODE_ROUTER_ONLY_MARKER)) {
-    errors.push(`OpenCode personality adapter must declare the OpenCode 2 degradation (${OPENCODE_ROUTER_ONLY_MARKER}: no hook carries the prompt).`);
+  if (harnesses.includes('opencode')) {
+    const plugin = readFileSync(join(resolvedRoot, '.opencode', 'plugins', 'personality-reinject.js'), 'utf8');
+    if (!plugin.includes('\'chat.message\'') || !plugin.includes('routeLines')) {
+      errors.push('OpenCode personality adapter must classify the prompt in chat.message with the shared routeLines (OpenCode 1).');
+    }
+    if (!plugin.includes('experimental.session.compacting') || !plugin.includes('rearmRoutes')) {
+      errors.push('OpenCode personality adapter must re-arm the routes in experimental.session.compacting (OpenCode 1).');
+    }
+    if (!plugin.includes(OPENCODE_ROUTER_ONLY_MARKER)) {
+      errors.push(`OpenCode personality adapter must declare the OpenCode 2 degradation (${OPENCODE_ROUTER_ONLY_MARKER}: no hook carries the prompt).`);
+    }
   }
 
+  // Codex reads AGENTS.md natively and cuts it at the byte; the other two
+  // harnesses carry no such budget.
   const bytes = Buffer.byteLength(l0);
-  if (bytes > CODEX_PROJECT_DOC_MAX_BYTES) {
+  if (harnesses.includes('codex') && bytes > CODEX_PROJECT_DOC_MAX_BYTES) {
     errors.push(`AGENTS.md is ${bytes} bytes: Codex cuts the always-on file at ${CODEX_PROJECT_DOC_MAX_BYTES} bytes, router included.`);
   }
   return errors;
