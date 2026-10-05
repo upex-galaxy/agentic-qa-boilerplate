@@ -6,13 +6,14 @@
  * file in this repo.
  */
 
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 import { afterEach, describe, expect, test } from 'bun:test';
 
-import { hunkTouchesRegion, parseAcks, parseContracts, parseHunks, parseTargets, scanContracts } from './doc-contracts.ts';
+import { docsLines, editedPaths, filterOncePerSession, contractsEnforced as hookEnforced, parseContracts as hookParse, statePath } from '../../.agents/hooks/doc-contracts.mjs';
+import { contractsEnforced, hunkTouchesRegion, markerFiles, parseAcks, parseContracts, parseHunks, parseTargets, scanContracts } from './doc-contracts.ts';
 
 const REPO_ROOT = resolve(import.meta.dir, '..', '..');
 const SCRIPT = resolve(import.meta.dir, '..', 'lint-doc-contracts.ts');
@@ -207,7 +208,48 @@ describe('the gate end to end', () => {
 
 describe('this repo', () => {
   test('the seeded regions are well-formed', () => {
-    const { findings } = scanContracts(REPO_ROOT);
+    const { regions, findings } = scanContracts(REPO_ROOT);
     expect(findings).toEqual([]);
+    expect(regions.length).toBeGreaterThan(0);
+  });
+
+  test('the edit hook parses every marker file exactly as the gate does', () => {
+    for (const file of markerFiles(REPO_ROOT)) {
+      const text = readFileSync(join(REPO_ROOT, file), 'utf8');
+      expect(hookParse(file, text)).toEqual(parseContracts(file, text).regions);
+    }
+  });
+});
+
+describe('the edit hook', () => {
+  test('names the pages of a region an Edit lands in, and nothing for an edit outside it', () => {
+    const root = fixture(true);
+    const inside = docsLines(root, { file_path: join(root, 'src', 'code.ts'), old_string: 'x', new_string: 'export const b = 2;' });
+    expect(inside.map(l => l.label)).toEqual(['alpha']);
+    expect(inside[0].text).toContain('README.md, docs/page.html');
+    expect(inside[0].text).toContain('Docs-Checked: alpha');
+    expect(docsLines(root, { file_path: join(root, 'src', 'code.ts'), new_string: 'export const z = 9;' })).toEqual([]);
+    expect(docsLines(root, { file_path: join(root, 'src', 'code.ts'), content: 'whole file' }).length).toBe(1);
+  });
+
+  test('reads Codex apply_patch headers', () => {
+    expect(editedPaths({ command: '*** Begin Patch\n*** Update File: src/a.ts\n@@\n*** Add File: b.md\n+x\n*** End Patch' })).toEqual(['src/a.ts', 'b.md']);
+  });
+
+  test('tells a session about a label once', () => {
+    const root = fixture(true);
+    const session = `test-${process.pid}-${Date.now()}`;
+    const lines = [{ label: 'alpha', text: 'DOCS: a' }];
+    try {
+      expect(filterOncePerSession(lines, root, session)).toEqual(lines);
+      expect(filterOncePerSession(lines, root, session)).toEqual([]);
+    }
+    finally { rmSync(statePath(root, session), { force: true }); }
+  });
+
+  test('is inert exactly where the gate is', () => {
+    expect(hookEnforced(fixture(true))).toBe(true);
+    expect(hookEnforced(fixture(false))).toBe(false);
+    expect(hookEnforced(REPO_ROOT)).toBe(contractsEnforced(REPO_ROOT));
   });
 });
