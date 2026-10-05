@@ -54,7 +54,7 @@ agentic-qa-boilerplate/
 
 ### 2.1 Host harnesses: one source, three consumers
 
-The repo runs on **Claude Code, OpenCode, and Codex (CLI + Desktop)**. There is exactly one copy of every instruction and every skill. Where the harnesses genuinely differ — MCP file format, hook API, how a skill is invoked — each keeps a thin versioned adapter. Nothing is duplicated.
+The repo runs on **Claude Code, OpenCode, and Codex (CLI + Desktop)**. A project declares the harnesses it uses in `harnesses:` (`.agents/project.yaml`) and keeps only those files; every gate checks only those, and the boilerplate always checks all three (ADR-0012). There is exactly one copy of every instruction and every skill. Where the harnesses genuinely differ — MCP file format, hook API, how a skill is invoked — each keeps a thin versioned adapter. Nothing is duplicated.
 
 > Visual walkthrough: [**Una fuente, tres harnesses**](https://upex-galaxy.github.io/agentic-qa-boilerplate/harnesses.es.html) (Spanish, published page with diagrams).
 
@@ -74,7 +74,7 @@ The repo runs on **Claude Code, OpenCode, and Codex (CLI + Desktop)**. There is 
 
 **Hook.** `.agents/hooks/personality-reinject.mjs` holds the contract text once. Claude and Codex run it as a command hook; OpenCode imports the constant from a thin plugin. The contract is enforced by `cli/lib/agent-compatibility-contracts.ts`: no absolute personal paths, no duplicated hook file, OpenCode must mutate `output.system` in place.
 
-**MCP.** The canonical server set is whatever `.mcp.json` declares (only LOCAL stdio servers; web search and Postman run at harness level, `cli/lib/harness-level-mcps.ts`; browser automation is `/playwright-cli`, never an MCP); every server there must exist in the other two configs. Parity is checked semantically: each native format (JSON / JSONC / TOML) is normalized into a common shape and compared on the `.env` variables each server depends on and on its literal settings, so a server missing from one host, or present in one host only, is a failure. The boilerplate-known ids (`KNOWN_MCP_IDS`) additionally get a strict per-host shape check when the project declares them; any other server gets the generic check only. A server that needs `.env` values starts through the same `.env` loader on all three hosts (`varlock run ... --inject vars --filter A,B -- <server>`, `MCP_ENV_LOADER_*`), which reads `.env` itself at spawn time; its `--filter` list is the dependency set parity compares, and nothing beside it takes names from the host.
+**MCP.** The canonical server set is whatever `.mcp.json` declares (only LOCAL stdio servers; web search and Postman run at harness level, `cli/lib/harness-level-mcps.ts`; browser automation is `/playwright-cli`, never an MCP); every server there must exist in the other configs in use, and without Claude Code the first declared harness's file is canonical. Parity is checked semantically: each native format (JSON / JSONC / TOML) is normalized into a common shape and compared on the `.env` variables each server depends on and on its literal settings, so a server missing from one host, or present in one host only, is a failure. The boilerplate-known ids (`KNOWN_MCP_IDS`) additionally get a strict per-host shape check when the project declares them; any other server gets the generic check only. A server that needs `.env` values starts through the same `.env` loader on all three hosts (`varlock run ... --inject vars --filter A,B -- <server>`, `MCP_ENV_LOADER_*`), which reads `.env` itself at spawn time; its `--filter` list is the dependency set parity compares, and nothing beside it takes names from the host.
 
 **Generated versus versioned (hard rule).** Every bold `[generated]` cell above is output. Edit the source, then regenerate:
 
@@ -83,9 +83,9 @@ The repo runs on **Claude Code, OpenCode, and Codex (CLI + Desktop)**. There is 
 | `CLAUDE.md` (one-line `@AGENTS.md` shim) | `AGENTS.md` | `bun run agents:compat` |
 | `.claude/skills` (POSIX symlink / Windows junction) | `.agents/skills/` | `bun run agents:compat` |
 
-`bun run agents:compat:check` validates the whole contract (shim bytes, alias target, no project command named like a skill, hook adapters, MCP parity), prints the alias status line on every run and groups errors per surface. It runs inside `bun run repo:check`, in the pre-push hook, and conditionally in pre-commit.
+`bun run agents:compat:check` validates the whole contract for the harnesses in use (shim bytes, alias target, no project command named like a skill, hook adapters, MCP parity), prints the alias status line on every run and groups errors per surface. It runs inside `bun run repo:check`, in the pre-push hook, and conditionally in pre-commit.
 
-**Project-owned commands and the updater.** A project's own slash commands are plain harness command files it edits by hand (`.claude/commands/`, `.opencode/commands/`). The old overlay `.agents/compatibility/command-aliases.project.json` is inert: nothing reads it, and `bun run up` names it once in an informational row. A command named like a repo skill would hide that skill's instructions, so `agents:compat:check` fails on it and `bun run agents:compat` (also run by `bun run up` and `bun run setup`) moves it to `.backups/shadowing-commands/<same path>`, gitignored and recoverable. `bun run up` closes with one "Estado por superficie" table (one row per surface, `SURFACE_ORDER` in `cli/lib/updater-parity.ts`) and ONE parity prompt saved to `.agents/prompts/parity-plan.md`: numbered rows with evidence, one per path, each awaiting `keep project | take upstream | merge` before the AI edits anything; `take upstream` is suggested only where the project lacks the content entirely, and every `merge` on a watched file says what to port and what to keep. `--strict` turns a blocking parity finding into exit 1; an aborted run prints `Abortado.` and exits 1; `.claude/settings.json`, `.codex/` and the husky hooks ship once when missing and then sit on the protected watchlist next to `AGENTS.md`, `.mcp.json`, `opencode.jsonc` and `.codex/config.toml`, never overwritten. A project extends that watchlist through `updater.protected_paths` in `.agents/project.yaml`. On the migration run the `.claude/skills` alias waits for the migration commit (`bun run agents:compat` creates it).
+**Project-owned commands and the updater.** A project's own slash commands are plain harness command files it edits by hand (`.claude/commands/`, `.opencode/commands/`). The old overlay `.agents/compatibility/command-aliases.project.json` is inert: nothing reads it, and `bun run up` names it once in an informational row. A command named like a repo skill would hide that skill's instructions, so `agents:compat:check` fails on it and `bun run agents:compat` (also run by `bun run up` and `bun run setup`) moves it to `.backups/shadowing-commands/<same path>`, gitignored and recoverable. `bun run up` closes with one "Estado por superficie" table (one row per surface, `SURFACE_ORDER` in `cli/lib/updater-parity.ts`) and ONE parity prompt saved to `.agents/prompts/parity-plan.md`: numbered rows with evidence, one per path, each awaiting `keep project | take upstream | merge` before the AI edits anything; `take upstream` is suggested only where the project lacks the content entirely, and every `merge` on a watched file says what to port and what to keep. `--strict` turns a blocking parity finding into exit 1; an aborted run prints `Abortado.` and exits 1; `.claude/settings.json`, `.codex/` and the husky hooks ship once when missing and then sit on the protected watchlist next to `AGENTS.md`, `.mcp.json`, `opencode.jsonc` and `.codex/config.toml`, never overwritten; the one merge is that the `permissions.allow` and `permissions.deny` lists of `.claude/settings.json` gain the upstream entries the project lacks on every `bun run up` (opt out of a deny in `updater.declined_denies`), and `opencode.jsonc` gets a paste row for the deny rules it lacks. A project extends that watchlist through `updater.protected_paths` in `.agents/project.yaml`. On the migration run the `.claude/skills` alias waits for the migration commit (`bun run agents:compat` creates it).
 
 **Two harness-specific facts worth knowing.** Codex loads project `.codex/` config and hooks only in a repository marked trusted, and `bun run setup:doctor` reports that trust separately because it is runtime state no file read can verify. Codex Desktop consumes the same repository config as the CLI — no second convention, no extra directory.
 
@@ -99,7 +99,7 @@ Skills, commands, templates and docs reference dynamic values through three dist
 
 | File | Role | Edited by | Regenerated with |
 |------|------|-----------|------------------|
-| `.agents/project.yaml` | Per-project static config: name, repo paths, URLs (per environment), MCP server names, issue-tracker metadata, default env. | Project owner (one-time) | `bun run agents:setup` (interactive) or by hand |
+| `.agents/project.yaml` | Per-project static config: name, repo paths, URLs (per environment), MCP server names, issue-tracker metadata, default env, the secret provider (`secrets:`), the harnesses in use (`harnesses:`). | Project owner (one-time) | `bun run agents:setup` (interactive) or by hand |
 | `.agents/jira-fields.json` | Auto-generated catalog of every custom field in your Jira workspace, keyed by canonical slug. | Generated only — never edit by hand | `bun run jira:sync-fields` |
 | `.agents/jira-required.yaml` | Declarative manifest of the Jira custom fields the methodology requires (with expected types, option lists, consumers). | Methodology maintainers | Updated when a skill adds or drops a `{{jira.<slug>}}` reference |
 | `.agents/README.md` | The contract: explains the three variable syntaxes and how the resolver, linter and `jira:check` cooperate. | Methodology maintainers | — |
@@ -121,13 +121,13 @@ The boilerplate intentionally separates two configuration substrates. They have 
 | | `.env` | `.agents/project.yaml` |
 |--|--------|------------------------|
 | **Purpose** | Playwright / KATA **runtime** secrets and config | AI **context-engineering** variables for `{{VAR}}` resolution |
-| **Consumers** | The test runner (`bun run test`, fixtures, login helpers) | AI agents (Claude Code, Cursor, Codex, Copilot, OpenCode) — when resolving skill / template / doc references |
+| **Consumers** | The test runner (`bun run test`, fixtures, login helpers), the Bun scripts, and every MCP server through the filtered `.env` loader (ADR-0011) | AI agents (Claude Code, Cursor, Codex, Copilot, OpenCode) — when resolving skill / template / doc references |
 | **Examples** | `LOCAL_USER_EMAIL`, `STAGING_USER_PASSWORD`, `XRAY_CLIENT_SECRET`, `ATLASSIAN_API_TOKEN`, `HEADLESS`, `DEFAULT_TIMEOUT` | `PROJECT_KEY`, `WEB_URL`, `API_URL`, `issue_tracker.atlassian_url`, `DB_MCP`, `default_env` |
-| **Secrets?** | Yes (passwords, tokens, API keys) | No — must remain commit-safe |
+| **Secrets?** | Yes (passwords, tokens, API keys), or the secret manager holds them (ADR-0010) | No — must remain commit-safe |
 | **Committed?** | Gitignored (`.env.example` is committed as a template) | Committed |
 | **Lifecycle** | Edited per developer / per CI runner | Edited once when adopting the boilerplate; rarely changes after |
 
-Two systems, two consumers, two lifecycles. Use the right substrate for the right value — secrets in `.env`, AI context in `.agents/project.yaml`.
+Two systems, two consumers, two lifecycles. Use the right substrate for the right value — secrets in `.env` (or the secret manager, ADR-0010), AI context in `.agents/project.yaml`.
 
 ---
 
@@ -354,7 +354,7 @@ Every such change runs through `/framework-development` mode `instructions`, who
 
 - Detail on a topic → the section file that owns it under `.agents/instructions/`; when it should load is that section's `triggers:` / `paths:` (plus the prompts that motivated the change, added to the router eval), never a new ROUTER row unless no row's request kind covers it, and then only behind an ADR (the router lock)
 - This project's own rule (project identity, testing decisions, an accepted divergence) → `.agents/instructions/agent-project.md`, which `bun run up` never overwrites
-- New MCPs configured — add the server to all three configs (`.mcp.json`, `opencode.jsonc`, `.codex/config.toml`), then run `bun run agents:compat:check`
+- New MCPs configured — add the server to every harness config in use (`.mcp.json`, `opencode.jsonc`, `.codex/config.toml`; all three in the boilerplate), then run `bun run agents:compat:check`
 - New CLI tools added → `.agents/instructions/agent-tool-resolution.md`
 - `AGENTS.md` itself only for what must bind on every turn; `bun run instructions:check` fails past its byte ceiling
 
@@ -364,7 +364,7 @@ Never write the update into `CLAUDE.md`: it is a generated one-line shim, and `a
 
 - **New invocation (boilerplate)** → add a mode to the owning skill's `## Mode routing` section. There is no command layer to generate
 - **Project-owned command (a downstream project)** → a plain file under `.claude/commands/` or `.opencode/commands/`, edited by hand. One named like a repo skill fails `agents:compat:check`, and `bun run agents:compat` moves it to `.backups/shadowing-commands/`
-- **New MCP server** → declare it in `.mcp.json` first, then mirror it in `opencode.jsonc` and `.codex/config.toml` with the same `.env` dependencies (each launched through the `.env` loader with those names in `--filter`, never a `${VAR}`, `{file:}` or `env_vars` beside it). `agents:compat:check` names the server and the host that lacks it
+- **New MCP server** → declare it in `.mcp.json` first, then mirror it in every other harness config in use (`opencode.jsonc` and `.codex/config.toml` in the boilerplate) with the same `.env` dependencies (each launched through the `.env` loader with those names in `--filter`, never a `${VAR}`, `{file:}` or `env_vars` beside it). `agents:compat:check` names the server and the host that lacks it
 - **New or renamed skill** → create it under `.agents/skills/`. Nothing else to do: OpenCode and Codex read it directly, Claude Code sees it through the generated alias
 - **Hook contract text changes** → edit `.agents/hooks/personality-reinject.mjs` only. The three adapters call into it and stay untouched
 
