@@ -177,12 +177,13 @@ export function claudeSettingsRoot(root = REPO_ROOT): string {
  *
  * `parseEnvFile` (reused from the installer) does not do this, and `.env.example`
  * ships lines such as `DBHUB_TYPE=          # sqlserver | postgres | ...`. Left
- * alone, the generator would emit that comment text as the credential. Both
- * `dotenv-cli` (the `bun run claude` wrapper) and Bun's own autoload treat
- * whitespace + `#` as the start of a comment on an unquoted value, so stripping
- * here makes the generated surface agree with the launcher instead of disagreeing
- * with it. A quoted value is left entirely alone, and a `#` with no whitespace
- * before it (`pass#word`) is part of the value.
+ * alone, the generator would emit that comment text as the credential. Bun's own
+ * autoload treats whitespace + `#` as the start of a comment on an unquoted
+ * value, so stripping here makes the generated surface agree with it instead of
+ * disagreeing. A quoted value is left entirely alone, and a `#` with no
+ * whitespace before it (`pass#word`) is part of the value. varlock (behind
+ * `bun run claude`) is stricter and cuts an unquoted value at ANY `#`, which is
+ * why `.env.example` says to quote a value that contains one.
  */
 export function stripInlineComments(content: string): string {
   return content

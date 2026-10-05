@@ -2466,8 +2466,9 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
                 >Lanzá siempre con <code>bun run claude</code>, <code>bun run opencode</code> o
                 <code>bun run codex</code>.</b
               >
-              Cada uno pasa por <code>dotenv -o</code>, que fuerza que <code>.env</code> gane sobre
-              una variable heredada del proceso padre. Ejecutar el binario pelado se saltea eso y
+              Cada uno arranca con <code>varlock run</code>, donde una variable heredada del proceso
+              padre gana sobre <code>.env</code>; por eso antes compara las dos y, si difieren, se
+              niega a arrancar y te dice cuál. Ejecutar el binario pelado se saltea esa revisión y
               puede dejar un valor viejo tapando el del archivo.
             </li>
           </ul>

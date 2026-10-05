@@ -16,6 +16,29 @@ below names which one it applies to:
 
 ## Unreleased — Boilerplate
 
+### Changed (agents and tests launch through varlock)
+- **`bun run claude|codex|opencode` run `scripts/launch.ts`**: a preflight, then `varlock run -- <bin>`.
+  varlock lets a variable inherited from the shell win over `.env` (no flag inverts it), so the
+  preflight asks varlock which schema items the shell overrides and refuses the launch while one
+  differs from `.env.local` over `.env`, naming the variables with their lengths only. The `test*`
+  scripts run the same launcher with `--warn`: same notice, then the run goes on, so a deliberate
+  `AUTO_SYNC=true bun run test` keeps working. `dotenv-cli` is retired.
+- **Codex MCP servers start through `bunx -p varlock@<pin> varlock run --no-redact-stdout --`**
+  (`.codex/config.toml`, `CODEX_ENV_LOADER_*`). `--no-redact-stdout` keeps the JSON-RPC stream
+  byte-intact. A value that fails the schema now stops every server: `bunx varlock load --agent`
+  names it.
+- **`vars:env:check` Rule 3 uses the same comparison** (`cli/lib/env-drift.ts`) and runs with
+  `bun --no-env-file`, so its own process holds only what it inherited.
+- **`.envrc` loads `.env.local` on top of `.env` and watches both**, matching varlock's order so the
+  preflight sees equal values; it never uses a varlock form that prints values.
+- **Quote a `.env` value that contains `#`**: varlock cuts an unquoted value at the first `#`.
+
+### Added (`bun run env:set`)
+- **`bun run env:set KEY=value` is the only sanctioned way for the AI to write `.env`**: it refuses
+  every key the varlock schema marks `@sensitive`, does not declare, or whose name reads as a secret,
+  and a key whose value lives elsewhere (`ATLASSIAN_URL`); it upserts in place and prints names only.
+  Critical Rule #1 and `agentic-qa-core/references/secret-hygiene.md` name it.
+
 ### Changed (credentials by name, never by value)
 - **Critical Rule #1 is `CREDENTIALS = BY NAME, NEVER BY VALUE`.** The AI references a secret only
   through its variable name and never opens `.env*` (except `.env.example` and the two schemas),

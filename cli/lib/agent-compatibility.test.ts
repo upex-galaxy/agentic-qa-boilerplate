@@ -1289,10 +1289,11 @@ describe('project-declared MCP set', () => {
     expect(unwrapCodexEnvLoader('bunx', [...CODEX_ENV_LOADER_ARGS]).envLoader).toBe(false);
   });
 
-  test('pins the loader to the dotenv-cli major the repo installs', () => {
+  test('pins the loader to the exact varlock version the repo installs', () => {
     const pkg = JSON.parse(readFileSync(join(REPO_ROOT, 'package.json'), 'utf8')) as { devDependencies: Record<string, string> };
-    const pinned = CODEX_ENV_LOADER_ARGS[1].replace('dotenv-cli@', '');
-    expect(pkg.devDependencies['dotenv-cli'].replace(/^[\^~]/, '').split('.')[0]).toBe(pinned.split('.')[0]);
+    expect(CODEX_ENV_LOADER_ARGS[1] as string).toBe(`varlock@${pkg.devDependencies.varlock}`);
+    // JSON-RPC on stdio: varlock must not redact (rewrite) the server's output.
+    expect(CODEX_ENV_LOADER_ARGS).toContain('--no-redact-stdout');
   });
 
   test('compares the .env contract of an unknown server across hosts', () => {

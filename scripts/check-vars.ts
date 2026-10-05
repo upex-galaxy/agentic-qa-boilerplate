@@ -13,11 +13,11 @@
  *      UNCOMMENTED `KEY=` slot in `.env.example` (it is what humans copy).
  *   2. Every UNCOMMENTED key in `.env.example` MUST exist in the manifest
  *      (no orphan keys with no destination routing).
- *   3. No manifest var may hold a DIFFERENT value in the process environment
- *      than in the repo's `.env`. The process value silently wins at load time,
- *      so a stale one makes a corrected `.env` a no-op — see `checkEnvDrift`
- *      below for the full rationale and the diagnosis commands. Skipped when
- *      `.env` is absent (CI, fresh clone).
+ *   3. No schema item may hold a DIFFERENT value in the process environment
+ *      than in the repo's `.env` / `.env.local`. The process value silently wins
+ *      at load time, so a stale one makes a corrected `.env` a no-op — see
+ *      `checkEnvDrift` below for the full rationale and the diagnosis commands.
+ *      Skipped when neither file exists (CI, fresh clone).
  *
  * GitHub-only vars (e.g. AUTO_SYNC, SLACK_WEBHOOK_URL) are pushed to CI by the
  * installer and may stay commented locally — they are NOT required to have an
@@ -28,12 +28,11 @@
  * 1 otherwise.
  */
 
-import type { VarSpec } from '../cli/lib/variables-manifest';
 import { existsSync } from 'node:fs';
-
 import { join } from 'node:path';
+
+import { fileValues, findDrift, hasEnvFiles, loadVarlockMetadata } from '../cli/lib/env-drift';
 import {
-  envFileVars,
   parseDotEnvExampleKeys,
   parseDotEnvPairs,
   validateVarManifest,
@@ -50,9 +49,9 @@ const ENV_FILE = join(REPO_ROOT, '.env');
  * Masks a value for display. Secrets never print at all; non-secrets print in
  * full because seeing the two hosts side by side IS the diagnosis.
  */
-function display(spec: VarSpec | undefined, value: string): string {
+function display(secret: boolean, value: string): string {
   if (value === '') { return '(empty)'; }
-  if (spec?.secret) { return `${'*'.repeat(8)} (${value.length} chars)`; }
+  if (secret) { return `${'*'.repeat(8)} (${value.length} chars)`; }
   return value;
 }
 
@@ -60,26 +59,32 @@ function display(spec: VarSpec | undefined, value: string): string {
  * Rule 3 — the process environment must agree with the repo's `.env`.
  *
  * A variable that is ALREADY present in the process wins over the `.env` file
- * under both loaders this repo uses: `bun` autoloads `.env` without overriding,
- * and `dotenv-cli` does the same unless `-o` is passed. So a stale value
- * inherited from whatever spawned the shell (or an agent session) silently
- * shadows a corrected `.env`, and a full application restart does not clear it
- * because the value is re-inherited every time.
+ * under every loader this repo uses: varlock (`bun run claude|codex|opencode`,
+ * the test scripts) and `bun`'s autoload alike, and no flag inverts it. So a
+ * stale value inherited from whatever spawned the shell (or an agent session)
+ * silently shadows a corrected `.env`, and a full application restart does not
+ * clear it because the value is re-inherited every time.
  *
  * That is not hypothetical: a stale `ATLASSIAN_URL` made `jira:sync-issues`
  * overwrite `.context/PBI/` with content from a pre-migration Atlassian site
  * while reporting success (upex-bunkai-tms, 2026-08-10). Identity values are
  * anchored to `.agents/project.yaml` now (see `cli/lib/atlassian-instance.ts`),
- * but that fixes one variable. This rule attacks the whole class: ANY manifest
- * variable whose process value disagrees with `.env` fails the check loudly.
+ * but that fixes one variable. This rule attacks the whole class: ANY schema
+ * item whose process value disagrees with `.env` fails the check loudly. The
+ * comparison is `cli/lib/env-drift.ts`, the same one `scripts/launch.ts` runs
+ * as its preflight: varlock names the overridden items, the values are compared
+ * against `.env.local` over `.env`, and an empty file value shadows nothing.
+ * The script runs with `bun --no-env-file`, so its own process holds only what
+ * it inherited.
  *
  * Diagnosing a hit: walk the process ancestry with `ps eww -p <pid>` to find who
  * injected it, and test the login shell in isolation with
  * `env -i HOME=$HOME zsh -l -c 'echo $VAR'` — testing from the contaminated
  * shell inherits the bad value and gives a false negative.
  *
- * Skipped entirely when `.env` is absent (CI, fresh clone): there is nothing to
- * compare against, and the manifest⇄`.env.example` rules already cover that case.
+ * Skipped entirely when neither `.env` nor `.env.local` exists (CI, fresh clone):
+ * there is nothing to compare against, and the manifest⇄`.env.example` rules
+ * already cover that case.
  *
  * SEVERITY IS CALLER-CONTROLLED. Rules 1 and 2 describe the REPOSITORY and are
  * always fatal. Drift describes the DEVELOPER'S MACHINE, so making it fatal
@@ -88,38 +93,24 @@ function display(spec: VarSpec | undefined, value: string): string {
  * report drift without failing; `.husky/pre-push` does exactly that. Explicit
  * runs and `repo:check` leave it unset, so there it stays a hard error.
  */
-function checkEnvDrift(errors: string[], warnings: string[]): 'checked' | 'skipped' {
-  if (!existsSync(ENV_FILE)) { return 'skipped'; }
+function checkEnvDrift(errors: string[], warnings: string[]): 'checked' | 'skipped' | 'unavailable' {
+  if (!hasEnvFiles(REPO_ROOT)) { return 'skipped'; }
+
+  const meta = loadVarlockMetadata(REPO_ROOT);
+  if (meta === null) {
+    warnings.push('ENV_DRIFT_UNCHECKED: varlock printed no usable schema metadata (missing install or a schema that does not parse). Run `bunx varlock load --agent` to see why.');
+    return 'unavailable';
+  }
 
   const softFail = process.env.VARS_ENV_CHECK_DRIFT === 'warn';
   const sink = softFail ? warnings : errors;
-  const filePairs = parseDotEnvPairs(ENV_FILE);
-  // Scoped to vars actually READ from `.env`. For an externally-sourced var a
-  // process⇄file disagreement is not drift — neither side is consulted — and
-  // reporting it here would bury the STALE_IN_ENV_FILE warning that says the
-  // real thing: delete the line.
-  const specByName = new Map(envFileVars().map(s => [s.name, s]));
+  const secretByName = new Map(VAR_MANIFEST.map(s => [s.name, s.secret]));
 
-  for (const [name, fileValue] of filePairs) {
-    // Only manifest vars are in scope. An unknown key in `.env` is rule 2's job.
-    const spec = specByName.get(name);
-    if (!spec) { continue; }
-
-    // An EMPTY file value shadows nothing — the process is then the only source,
-    // which is legitimate (a secret injected by the platform, a value the user
-    // exports on purpose). Same carve-out `cli/install.ts` makes when it loads
-    // `.env`: only a non-empty file value overrides the process. Without this the
-    // rule fires on every blank slot in the template and becomes noise.
-    if (fileValue === '') { continue; }
-
-    const procValue = process.env[name];
-    // Absent from the process is fine: the loader will supply the file value.
-    if (procValue === undefined) { continue; }
-    if (procValue === fileValue) { continue; }
-
+  for (const hit of findDrift(meta, process.env, fileValues(REPO_ROOT))) {
+    const secret = hit.sensitive || secretByName.get(hit.name) === true;
     sink.push(
-      `ENV_DRIFT: '${name}' differs between the process environment and .env — `
-      + `process=${display(spec, procValue)} vs .env=${display(spec, fileValue)}. `
+      `ENV_DRIFT: '${hit.name}' differs between the process environment and .env — `
+      + `process=${display(secret, hit.processValue)} vs .env=${display(secret, hit.fileValue)}. `
       + 'The process value WINS at load time, so .env is being ignored in silence.',
     );
   }
@@ -204,7 +195,9 @@ function main(): void {
 
   const driftLabel = driftStatus === 'skipped'
     ? 'skipped (no .env)'
-    : driftSoft ? 'checked (warn-only)' : 'checked';
+    : driftStatus === 'unavailable'
+      ? 'not checked (varlock metadata unavailable)'
+      : driftSoft ? 'checked (warn-only)' : 'checked';
 
   // Report.
   console.log('Variable Manifest ⇄ .env.example Parity');
@@ -261,8 +254,9 @@ function printDriftRemedy(): void {
   }
   console.log('Testing from the contaminated shell inherits the bad value and gives a false negative.');
   console.log('Restarting the app does NOT fix it: the value is re-inherited from the same parent.');
-  console.log('Relaunch the agent session through `bun run claude` / `bun run opencode` (they pass');
-  console.log('dotenv -o, which forces .env over anything inherited).');
+  console.log('Unset it (or open a clean terminal), then relaunch the agent session with');
+  console.log('`bun run claude` / `bun run codex` / `bun run opencode`: their preflight refuses to start');
+  console.log('while an inherited value still differs from .env.');
 }
 
 main();

@@ -10,7 +10,7 @@
  *   - A stale `ATLASSIAN_URL` can live in the PROCESS environment (inherited
  *     from whatever spawned the agent session) while the `.env` file on disk
  *     holds the CORRECT, post-migration value.
- *   - `bun` autoloads `.env`, and `dotenv-cli` loads it too — but BOTH treat a
+ *   - `bun` autoloads `.env`, and varlock loads it too — but BOTH treat a
  *     variable that is already present in the process as the winner. A correct
  *     `.env` is therefore ignored in silence.
  *   - A full application restart does NOT clear it: the value is re-inherited
