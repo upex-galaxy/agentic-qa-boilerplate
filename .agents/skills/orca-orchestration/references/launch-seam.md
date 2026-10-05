@@ -56,14 +56,17 @@ for the real grammar. Only this skill spells out commands, because only this ski
 - Shape (Claude Code example; other harnesses use their own binary and their own documented flags):
 
   ```
-  bun run claude -- --model <full-model-id> --effort <level> --permission-mode auto \
+  claude --model <full-model-id> --effort <level> --permission-mode auto \
     -n "<KEY>" '<prompt>'
   ```
 
-  `bun run claude` forwards trailing arguments to the binary through the env-loading wrapper
-  (verified: `bun run claude -- --version` prints the CLI version), and the wrapper is what makes the
-  env file win over an inherited variable. `<KEY>` is the worker's roster name, the same token the
-  prompt opens with. On a harness where the launcher cannot set a session name, omit the flag: the
+  The line starts the harness binary directly, with its own flags. No launch line loads `.env` into
+  the worker's shell: every MCP server reads `.env` through the filtered loader in the MCP configs
+  (ADR-0011) and every repo script loads it itself (`references/provisioning.md` §1b), so a pasted
+  line and a supervised launch get credentials the same way. A variable the human exported in the
+  shell the line is pasted into still wins over `.env` for whatever that shell starts;
+  `bun run vars:env:check` names such a variable (names and lengths only). `<KEY>` is the worker's
+  roster name, the same token the prompt opens with. On a harness where the launcher cannot set a session name, omit the flag: the
   human types `/rename <KEY>` once the session is up, because a model cannot rename its own session.
 
 **This line is for a human, or for a terminal nobody will supervise.** Two things about it do not

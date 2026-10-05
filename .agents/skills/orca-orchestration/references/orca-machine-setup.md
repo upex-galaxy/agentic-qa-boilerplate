@@ -123,9 +123,9 @@ Two rules that follow:
 - The conductor **verifies credentials on the worker's screen** before sending it any work
   (`references/coordinator-playbook.md` §1 step 5), whichever harness it runs: its MCP servers
   connected and its worktree holding `.env`. Readiness is not capability.
-- Nothing in this repo may depend on a secret exported into a shell: the custom-argv line loads the
-  env file through the repo's own wrapper (`scripts/launch.ts`, `varlock run -- <bin>`), and that is
-  why the human-paste path needs none of this.
+- Nothing in this repo may depend on a secret exported into a shell: the custom-argv line starts the
+  harness binary bare, exactly like the native launch, so the human-paste path relies on the same
+  loaders listed above and needs the same worktree `.env`.
 
 ---
 

@@ -31,9 +31,9 @@ includes the MCP config of each host (each server's `.env` loader names its vari
 
 ## 1b · The env file is present and the supervised worker still has no credentials
 
-A launch line LOADS the env file (the repo's own wrapper does it, which is why the human-paste path
-is immune). The supervised native launch has no launch line, so a worker gets credentials only from
-what it can read WITHOUT a shell:
+No launch path loads the env file into the worker's shell: a pasted launch line starts the harness
+binary bare, and the supervised native launch has no launch line at all. Both paths therefore get
+credentials the same way, only from what a worker can read WITHOUT a shell:
 
 - **Every MCP server, on Claude Code, OpenCode and Codex alike**: the `.env` loader declared in the
   three MCP configs (`varlock run ... --filter <its vars> -- <server>`, ADR-0011) reads the

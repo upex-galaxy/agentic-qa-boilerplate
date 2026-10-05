@@ -35,6 +35,7 @@ Sourcing a file inside the same command that uses it is using it by name: `sourc
 | `curl -v`, `curl --trace` | prints the `Authorization:` header | `curl -sS` (add `-o /dev/null -w '%{http_code}'` for a status probe) |
 | `varlock printenv`, `varlock reveal`, `varlock load --format env\|shell\|json\|json-full` without `--agent` | print raw values | `bunx varlock load --agent` (redacted) |
 | `grep '^NAME=' .env`, `source .env`, `set -a; . .env` | read the raw file into the agent's shell | run the step inside the loader: `bunx varlock run -- <cmd>` (wrap in `sh -c '...'` when it pipes) |
+| starting a harness inside a loader: `varlock run -- claude`, `dotenv -- codex`, a `package.json` script that does it | exports every `.env` value into the AI's own process, where any command it runs can read them | open the harness bare (`claude`, `codex`, `opencode` or the desktop app): every MCP server and every repo script loads `.env` itself |
 | `sed -i ... .env`, `echo NAME=... >> .env`, a heredoc into `.env` | edits a file the AI must not open, and echoes the neighbouring lines on a mistake | `bun run env:set NAME=value` (non-sensitive keys only, §5) |
 | `gh secret set NAME --body "$NAME"` | puts the value in argv (visible in the process list) | `bunx varlock run -- sh -c 'printf %s "$NAME" \| gh secret set NAME'` |
 | `playwright-cli fill <ref> "$PASSWORD"` without `--raw` | echoes the typed value in the tool output | `playwright-cli --raw fill <ref> "$PASSWORD"` (`browser-sessions.md`) |
