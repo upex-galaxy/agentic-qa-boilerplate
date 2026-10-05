@@ -112,8 +112,9 @@ framework_gates_pre_commit() {
 # per-commit.
 #
 # pre-commit covers (every commit): types:check, vars:check, skills:check
-#   + conditional kata:manifest:check (when staged files affect the kata manifest)
-#   + conditional skills:registry:check (when staged files affect the registry).
+#   + conditional freshness gates (kata:manifest:check, agents:schema:check,
+#     vars:schema:check, skills:registry:check, agents:compat:check), each only
+#     when the staged files affect what it guards
 # pre-push adds the full-repo checks pre-commit skips for speed:
 #   - format:check / lint:check  full repo (lint-staged only touches staged files at commit)
 #   - vars:env:check             not run at commit time. Runs with
@@ -130,12 +131,18 @@ framework_gates_pre_commit() {
 #   - agents:compat:check        unconditional safety net for the cross-harness contract:
 #                                the generated `.claude/skills` alias, no harness command
 #                                named like a skill (it would hide the skill's instructions),
-#                                the three hook adapters, MCP parity for every server, and that eslint.config.js wires every block the synced base exports
+#                                the three hook adapters, MCP parity for every server
 #                                declared in .mcp.json across `.mcp.json` / `opencode.jsonc`
-#                                / `.codex/config.toml`. All of it is generated or mirrored,
+#                                / `.codex/config.toml`, and that eslint.config.js wires
+#                                every block the synced base exports. All of it is generated or mirrored,
 #                                so nothing else notices when a command shadows a skill or an
 #                                MCP is added to one host only.
 #                                Fix is always `bun run agents:compat` (regenerates + repairs).
+#   - docs:check                 unconditional: dead links and paths, a quoted `bun run` name
+#                                package.json does not declare, Critical Rule #17 facts. At
+#                                commit time it runs only when docs are staged, the inverse
+#                                of drift: a script renamed without touching any doc passed
+#                                every hook. Skipped where package.json lacks the key.
 #   - git:policy verify          declared git_strategy vs the host's enforced ruleset —
 #                                pre-push is exactly when that parity matters. Hook-safe by
 #                                design: an unreachable host (offline, no gh, no auth) warns
@@ -164,6 +171,7 @@ framework_gates_pre_push() {
     && bun run skills:registry:check \
     && bun run kata:manifest:check \
     && bun run agents:compat:check \
+    && framework_gate_docs_check \
     && bun run git:policy verify \
     && framework_gate_varlock_warn
 }
@@ -178,6 +186,15 @@ framework_gates_pre_push() {
 framework_gates_commit_msg() {
   if [ -f scripts/check-commit-trailers.ts ]; then
     bun scripts/check-commit-trailers.ts "$1" || true
+  fi
+  return 0
+}
+
+# `docs:check` on every push, where the script exists (a project synced to this
+# file before its package.json gained the key is skipped, never broken).
+framework_gate_docs_check() {
+  if grep -q '"docs:check"' package.json 2>/dev/null; then
+    bun run docs:check || return 1
   fi
   return 0
 }
