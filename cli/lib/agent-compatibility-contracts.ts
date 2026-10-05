@@ -1106,6 +1106,15 @@ export const REARM_SESSION_START_SOURCES = { compact: 'compaction', clear: '/cle
  */
 export const ROUTE_RESURFACE_EVENT = 'PostToolUse';
 
+/**
+ * The fix a downstream project reads next to a missing hook group. Its
+ * `.claude/settings.json` is frozen by the sync, but `bun run up` appends the
+ * upstream hook groups it lacks (`mergeHookGroups`, `cli/lib/updater-settings.ts`)
+ * and its `.codex/hooks.json` is rewritten by the sync, so re-running the
+ * update IS the fix. Not said in the boilerplate itself, which has no upstream.
+ */
+export const HOOK_GROUP_FIX = 'run `bun run up`, which adds the upstream hook groups this file lacks';
+
 /** One group of `event` with no matcher (every tool) whose hooks run `command`. */
 function hasUnmatchedGroup(settings: JsonObject, event: string, command: string): boolean {
   const groups = settings.hooks && typeof settings.hooks === 'object' ? (settings.hooks as JsonObject)[event] : undefined;
@@ -1145,6 +1154,7 @@ export function validateInstructionRouterHooks(root = process.cwd(), harnesses: 
   if (!l0.includes(ROUTER_START_MARKER)) { return []; }
 
   const errors: string[] = [];
+  const fix = readSchemaOwner(resolvedRoot) ? '' : `. Fix: ${HOOK_GROUP_FIX}`;
   const shared = readFileSync(join(resolvedRoot, '.agents', 'hooks', 'personality-reinject.mjs'), 'utf8');
   for (const name of HOOK_ROUTER_EXPORTS) {
     if (!shared.includes(`export function ${name}`)) {
@@ -1159,15 +1169,15 @@ export function validateInstructionRouterHooks(root = process.cwd(), harnesses: 
 
   for (const [source, after] of Object.entries(REARM_SESSION_START_SOURCES)) {
     if (harnesses.includes('claude') && !hasSessionStart(parseJson(join(resolvedRoot, '.claude', 'settings.json')), source, CLAUDE_HOOK_COMMAND)) {
-      errors.push(`claude must re-arm the routes after ${after}: a SessionStart group with matcher "${source}" running ${CLAUDE_HOOK_COMMAND}`);
+      errors.push(`claude must re-arm the routes after ${after}: a SessionStart group with matcher "${source}" running ${CLAUDE_HOOK_COMMAND}${fix}`);
     }
     if (harnesses.includes('codex') && !hasSessionStart(parseJson(join(resolvedRoot, '.codex', 'hooks.json')), source, CODEX_HOOK_COMMAND, CODEX_HOOK_COMMAND_WINDOWS)) {
-      errors.push(`codex must re-arm the routes after ${after}: a SessionStart group with matcher "${source}" running the Codex hook command (and its Windows variant).`);
+      errors.push(`codex must re-arm the routes after ${after}: a SessionStart group with matcher "${source}" running the Codex hook command (and its Windows variant)${fix}.`);
     }
   }
 
   if (harnesses.includes('claude') && !hasUnmatchedGroup(parseJson(join(resolvedRoot, '.claude', 'settings.json')), ROUTE_RESURFACE_EVENT, CLAUDE_HOOK_COMMAND)) {
-    errors.push(`claude must re-surface unread routes: a ${ROUTE_RESURFACE_EVENT} group with no matcher running ${CLAUDE_HOOK_COMMAND}`);
+    errors.push(`claude must re-surface unread routes: a ${ROUTE_RESURFACE_EVENT} group with no matcher running ${CLAUDE_HOOK_COMMAND}${fix}`);
   }
 
   if (harnesses.includes('opencode')) {
