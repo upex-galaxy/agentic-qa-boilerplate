@@ -85,6 +85,24 @@ updater:
 - **It silences, it does not fix.** An exempt block is still absent. `bun run agents:schema --project` prints what is silenced alongside what is missing, so the decision stays visible.
 - **Same carve-out as `protected_paths`**: read directly by the updater, so `vars:check` skips it.
 
+### `updater.declined_denies`
+
+Upstream deny rules this project does not want in `.claude/settings.json`.
+
+```yaml
+updater:
+  protected_paths: []
+  declined_denies: ['Bash(env)'] # exact entries, written as in permissions.deny
+```
+
+`.claude/settings.json` is never overwritten, but two of its lists grow on every `bun run up`: entries upstream has in `permissions.allow` or `permissions.deny` and the project lacks are appended after the project's own, after a backup. Nothing is removed or reordered, and `ask`, `hooks`, `env` and every other key stay as written. That is how a project scaffolded before a deny rule shipped (the secret denies, for one) receives it. An allow entry you do not want is re-expressible in `deny`, which wins; a deny entry has no stronger list, so you decline it here.
+
+- **Exact entries, per rule.** `Bash(env)`, not a pattern over entries. Every other upstream deny, including one a later release adds, still arrives: listing `.claude/settings.json` in `protected_paths` would not opt out (the file is already watched) and would not be the right size anyway.
+- **It never removes.** A declined entry the file already holds stays until you delete it by hand; the list only stops the updater from adding it back.
+- **A malformed value fails toward more denies.** Anything but a list of strings is reported at the run and ignored.
+- **`opencode.jsonc` is never written.** Its `permission` block is JSONC with ordered rules (the last match wins), so the upstream deny rules it lacks become one parity row on the MCP surface with the block to paste in the saved prompt. The block also carries the upstream exceptions that follow a missing deny (`"*.env.example": "allow"` after `"*.env.*": "deny"`), so pasting keeps the order. To decline one there, list the pattern yourself with another action (`"printenv*": "ask"`): a pattern the project lists, whatever its action, is never reported.
+- **Same carve-out as `protected_paths`**: read directly by the updater (`readDeclinedDenies` in `cli/lib/updater-settings.ts`), so `vars:check` skips it.
+
 ## `orchestration` (block inside `project.yaml`)
 
 Default settings for **supervised multi-session worker fleets** — one conductor session coordinating N persistent workers through the Orca runtime (or, without Orca, the same launch lines pasted by hand). Owned and read by the `orca-orchestration` skill. Unlike `git_strategy` and `updater`, this block is a **flat, top-level section like `project:` or `testing:`** — its scalar leaves ARE `{{VAR}}` template variables, resolved lexically by their bare leaf name (no `ORCHESTRATION_` prefix), per the flat-key rule in §"Variable syntax conventions" below.
