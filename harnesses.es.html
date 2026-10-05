@@ -2462,14 +2462,12 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
               disco.
             </li>
             <li class="warn">
-              <b
-                >Lanzá siempre con <code>bun run claude</code>, <code>bun run opencode</code> o
-                <code>bun run codex</code>.</b
-              >
-              Cada uno arranca con <code>varlock run</code>, donde una variable heredada del proceso
-              padre gana sobre <code>.env</code>; por eso antes compara las dos y, si difieren, se
-              niega a arrancar y te dice cuál. Ejecutar el binario pelado se saltea esa revisión y
-              puede dejar un valor viejo tapando el del archivo.
+              <b>Una variable que exportaste en tu shell gana sobre <code>.env</code>.</b>
+              El harness se abre tal cual (<code>claude</code>, <code>opencode</code>,
+              <code>codex</code> o su app de escritorio) y cada MCP lee <code>.env</code> por su
+              cuenta, pero un valor viejo exportado en el perfil de tu shell tapa el del archivo en
+              todo lo que arranques desde ahí. <code>bun run vars:env:check</code> te dice cuál, sin
+              mostrar el valor.
             </li>
           </ul>
         </div>
