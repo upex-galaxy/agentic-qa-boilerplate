@@ -55,6 +55,16 @@ This §2 WINS on content and structure of information. OUTPUT STYLE never contra
 
 **GOAL-DRIVEN EXECUTION.** Define success criteria. Loop until verified. Transform vague tasks into testable goals ("add validation" → "write tests for invalid input, then make them pass"). Multi-step → state plan with explicit `verify:` per step (observable: test passes, file exists, exit 0, type-check clean). Complements 7-component briefing (§3): doesn't replace it.
 
+**SEARCH AND BULK EDIT.** Locate before reading, script repeated edits, verify every form of what changed.
+
+- **Locate**: `git grep -n` / `rg -n` before opening a file; count before displaying (`| wc -l`), never let `| head` decide what exists. Read only the range around each hit (Read offset/limit); a file over ~300 lines is read whole only when it is the core of the answer. Stop once the chain from entry point to effect is complete.
+- **Symbol or text**: "where is this TS function / class / constant / type defined or used" → LSP `findReferences` / `goToDefinition` first (Claude Code: tool `LSP`, load it with ToolSearch `select:LSP`; right after start a result can be partial while the server indexes, so repeat once). A path, a word, anything in md/json/yaml/html/sh → grep: LSP does not see paths inside strings.
+- **A path or name that changes in many files**: never Read + Edit file by file. In this order:
+  1. Inventory with TWO counts. Literal: `git grep -n -F '<old>' | wc -l`. Variants: the same path with each separator replaced by `[^A-Za-z0-9_]{1,6}` and a leading dot escaped, nothing else changed; for `.agents/hooks` that is `git grep -n -E '\.agents[^A-Za-z0-9_]{1,6}hooks' | wc -l` (catches `a/b`, `'a', 'b'`, `a\\b`, `a\/b`). Variants > literal → `| grep -v -F '<old>'` lists the sites the literal replace will miss.
+  2. Decide the exclusions (text that must keep the old value: ADR history, changelogs, legacy constants) BEFORE replacing, and put them inside the command: `git mv <old> <new> && git grep -lz -F '<old>' -- . ':!<excluded>' | xargs -0 perl -pi -e 's#\Q<old>\E#<new>#g'`. Use `perl -pi`, not `sed -i` (it differs between macOS and Linux).
+  3. Fix each extra from step 1 (its own scripted replace, or Edit when it has few sites), then re-run both counts: only the planned exclusions may remain.
+  4. Done only when tests pass: a lint or type gate is not a test run, so run `bun test <dir>` for every top-level dir with a touched `.ts`, and `bun test` inside every touched `packages/<name>`. Report leftovers per form and the test result.
+
 **EXPANDABLE RESPONSES (BUTLER PATTERN).** Default to terse headline resolving user's literal question. Surface ALL other topics as atomic bullet menu: one specific topic per bullet, NEVER broad buckets. User pulls; don't push every detail at once.
 
 - **Atomicity**: 12 specific bullets beats 3 broad buckets. Bundling hides the one item that matters.
