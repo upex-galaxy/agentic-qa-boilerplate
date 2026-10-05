@@ -219,7 +219,7 @@ captured but not diffed (numeric IDs differ per site).
 
 ```bash
 # 0. BEFORE any auth login: inventory creds and have the USER back up the cached config
-jq -r '.jira_base_url' ~/.xray-cli/config.json ; bun run --silent jira:url ; grep -E '^XRAY_CLIENT_ID' .env
+jq -r '.jira_base_url' ~/.xray-cli/config.json ; bun run --silent jira:url ; bunx varlock load --agent --filter 'XRAY_*'   # redacted, never grep .env
 cp ~/.xray-cli/config.json ~/.xray-cli/config.SOURCE-<site>.json.bak     # user runs this
 
 # 1. Point CLI at SOURCE site, export everything

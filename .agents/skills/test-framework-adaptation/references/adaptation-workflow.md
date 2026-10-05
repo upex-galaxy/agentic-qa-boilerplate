@@ -258,7 +258,7 @@ Populate every `null` field: `project.{project_name,project_key,webapp_domain}`,
 
 ### 3.2 `.env`
 
-Copy `.env.example` → `.env` if absent. Populate the **real key scheme** (no invented keys):
+Copy `.env.example` → `.env` if absent. Populate the **real key scheme** (no invented keys). Critical Rule #1 splits who types what: the AI MAY write a non-sensitive value (a URL, a project key, a flag, a port) when the user asks; every secret (anything `@sensitive` in the schema, any password, token or API key) is typed by the user in their own terminal or secret manager, and the AI checks it by name with `bunx varlock load --agent`:
 
 - `TEST_ENV` (the active env)
 - `<ENV>_USER_EMAIL` / `<ENV>_USER_PASSWORD` per environment (`LOCAL_USER_*`, `STAGING_USER_*`, …) — **not** `TEST_USER_EMAIL`
@@ -449,7 +449,7 @@ Every suite workflow under `.github/workflows/`: the ones with a `workflow_dispa
 
 **Emit a copy-paste "GitHub repo Secrets to set" block** (these live outside the repo): `<ENV>_USER_EMAIL/_PASSWORD`, `AUTO_SYNC` (master switch — `'true'` to turn the TMS write-back on), `XRAY_CLIENT_ID/SECRET` + `ATLASSIAN_*` if `AUTO_SYNC=true`, `STP_EXECUTION_KEY`, optional `SLACK_WEBHOOK_URL`, and the `PORTAL_*` + `R2_*` set only in private-portal mode. `STP_EXECUTION_KEY` holds the key of the **STR** Test Execution linked to the sprint's STP (under the `QA Test Artifacts` epic), never the STP's own key — without it the first nightly run hits the workflow's refusal guard, skips with a warning annotation, and imports nothing. **Emit `TMS_PROVIDER` in a separate "repo Variables to set" line** (`xray` / `jira` / `none`, default `xray`): it must be a Variable, not a secret, because the `XrayImport` job gates on it in a job-level `if:`, and that context can read `vars` but never `secrets`. Note the manual external steps: create the `gh-pages` branch + enable GitHub Pages, and set `TMS_PROVIDER` under Settings → Secrets and variables → Actions → Variables.
 
-**Offer to push the CI secrets from `.env` automatically** (opt-in — ask first, never push silently): when `gh auth status` is authenticated, the values already exist in `.env`, and the user approves, set each via `gh secret set <NAME>` (add `--env <env>` for environment-scoped secrets; `gh variable set <NAME>` for non-secret config). This is the low-friction alternative to the manual copy-paste block above — the regression-testing readiness gate probes these same secrets via `gh secret list`, so setting them here means the first CI run does not 401. Skip for any value not present in `.env` (surface it instead) and never echo a secret's value back to the user.
+**Offer to push the CI secrets from `.env` automatically** (opt-in — ask first, never push silently): when `gh auth status` is authenticated, the values already exist in `.env`, and the user approves, set each by NAME so the value travels on a pipe and never through the transcript: `bunx varlock run -- sh -c 'printf %s "$NAME" | gh secret set NAME'` (add `--env <env>` for environment-scoped secrets; `gh variable set <NAME>` for non-secret config). Never pass a secret as `--body` (argv is visible) and never `grep` or `source` `.env` to get it. This is the low-friction alternative to the manual copy-paste block above — the regression-testing readiness gate probes these same secrets via `gh secret list`, so setting them here means the first CI run does not 401. Skip for any value not present in `.env` (surface it instead) and never echo a secret's value back to the user.
 
 ### 7.3 MCP registry — THREE-HARNESS sync (highest-risk surface)
 
@@ -610,7 +610,7 @@ Done only when **every** box is true (all map to a Phase 9 signal):
 ## Gotchas
 
 - Auth is the most fragile part — always test against real staging, never mocks.
-- Credentials live in `.env`. Hardcoding them is a hard stop.
+- Credentials live in `.env` and are used by NAME (Critical Rule #1). Hardcoding them, or reading their values into the chat, is a hard stop.
 - `api-login.ts` does **not** auto-refresh — it mints per run (writes `.auth/api-state.json` for Playwright AND `.auth/tokens.env` + `.auth/tokens.json` for the agentic curl maneuver). Don't document a refresh that doesn't exist. Adapt `scripts/api-login.project.ts` (`buildAuthPayload` / `extractTokenFromResponse`) to the target — a wrong token shape leaves `.auth/tokens.env` empty and every curl 401s. The CLI around it — `scripts/lib/api-login-core.ts` (synced) and `scripts/api-login.ts` (delivered once, never overwritten; adopt the split by hand if the repo pre-dates it) — is never adapted.
 - Golden KATA rule: components import from `@schemas/*`, never `@openapi`. Keep `@openapi` scoped to facades.
 - Steps (Layer 3.5) carry no `@atc` and no fixed assertions — they chain ATCs only.

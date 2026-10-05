@@ -38,7 +38,8 @@ A project that adds a second `[[sources]]` block with `id = "reporting"` gets
   (`mcp-atlassian-optin.md`, MCP parity contract).
 - **It fails late and quietly.** A missing variable does not stop startup: `dbhub` substitutes
   the literal `${DBHUB_HOST}` and the connection fails on the first query, which reads like a
-  database problem. Check the `DBHUB_*` values in `.env` first, run `bun run harness:env`, then
+  database problem. Check which `DBHUB_*` variables are set with `bunx varlock load --agent --filter 'DBHUB_*'`
+  (redacted; never open `.env`), run `bun run harness:env`, then
   RESTART the agent session (spawn-time env, Critical Rule #10).
 - **Read-only user by default.** Validation needs `SELECT`; ask for write grants only on a
   non-production environment and only when a test must seed data directly.
@@ -144,7 +145,7 @@ a miss a bug.
 | Symptom | Likely cause | Check |
 |---|---|---|
 | `Connection refused` | database not running, wrong port, firewall | `DBHUB_HOST` / `DBHUB_PORT`; `pg_isready -h <host> -p <port>` on Postgres |
-| `password authentication failed` / login failed | wrong password or user, or a literal `${DBHUB_PASSWORD}` reached the server | the `DBHUB_*` values in `.env`, then `bun run harness:env` and restart |
+| `password authentication failed` / login failed | wrong password or user, or a literal `${DBHUB_PASSWORD}` reached the server | `bunx varlock load --agent --filter 'DBHUB_*'` (redacted) to see which are set; the human corrects the value in `.env`; then `bun run harness:env` and restart |
 | `too many connections` | parallel sessions not closing connections | fewer parallel workers; a pooler |
 | `SSL connection is required` / SSL errors | server and `sslmode` disagree | check the `sslmode` value in `dbhub.toml`; a local database without TLS needs that line changed in the project's copy |
 
