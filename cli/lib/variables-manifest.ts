@@ -479,8 +479,8 @@ export const VAR_MANIFEST: VarSpec[] = [
     usedBy: 'openapi MCP (schema read-only)',
     required: false,
     critical: false,
-    obtainHint: 'path/URL to your project OpenAPI spec — set when adapting the framework.',
-    note: 'Path/URL to the OpenAPI spec for the OpenAPI MCP. Local only.',
+    obtainHint: 'the full spec URL, or a file path relative to the repo root; never the endpoint route alone — set when adapting the framework.',
+    note: 'Full URL or repo-root-relative file of the OpenAPI spec for the OpenAPI MCP. Local only.',
     schema: { example: './api/openapi.json' },
   },
   {

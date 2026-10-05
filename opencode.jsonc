@@ -107,7 +107,8 @@
     // (list-api-endpoints, get-api-endpoint-schema). Authenticated requests are
     // executed with curl (token from `bun run api:login` → .auth/tokens.env).
     // Keeping credentials out of the MCP also removes the spawn-time restart
-    // requirement for API auth. OPENAPI_SPEC_PATH may be a local file OR a URL.
+    // requirement for API auth. OPENAPI_SPEC_PATH is the full spec URL or a file
+    // path relative to the repo root, never the endpoint route alone.
     "openapi": {
       "type": "local",
       "command": [

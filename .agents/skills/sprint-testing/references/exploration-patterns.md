@@ -127,7 +127,7 @@ curl -s -H "Authorization: Bearer $API_TOKEN_<ROLE>_<ENV>" "$API_BASE_URL/<path>
 
 ```
 OpenAPI MCP  list-api-endpoints
-  - source: {OpenAPI spec — local file or live URL, commonly the localhost backend}
+  - source: {OpenAPI spec — the full spec URL (commonly the localhost backend) or a file path relative to the repo root; never the endpoint route alone}
 
 OpenAPI MCP  get-api-endpoint-schema
   - endpoint: {method + path}

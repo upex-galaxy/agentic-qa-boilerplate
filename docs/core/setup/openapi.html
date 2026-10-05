@@ -138,10 +138,13 @@
             <tr>
               <td><code>OPENAPI_SPEC_PATH</code></td>
               <td>
-                De dónde lee el MCP el schema. Puede ser un archivo local (por ejemplo
-                <code>./api/openapi.json</code>, que descarga <code>bun run api:sync</code>) o una
-                URL viva, como la ruta de OpenAPI que sirve tu backend al levantarlo en local
-                (<code>http://localhost:3000/api/openapi</code>).
+                De dónde lee el MCP el schema: la URL completa del spec
+                (<code>http://localhost:3000/api/openapi</code>, la ruta que sirve tu backend al
+                levantarlo en local) o una ruta de archivo relativa a la raíz del repo
+                (<code>./api/openapi.json</code>, que descarga <code>bun run api:sync</code>). Nunca
+                la ruta del endpoint sola: el server solo descarga lo que empieza con
+                <code>http://</code> o <code>https://</code>, así que <code>/api/openapi</code> lo
+                busca como archivo, no lo encuentra y se cierra al arrancar.
               </td>
             </tr>
           </tbody>
@@ -404,7 +407,11 @@ bun run api:sync --config                                 # con la configuració
               <td>
                 Que <code>OPENAPI_SPEC_PATH</code> apunte a algo que exista. Si es una URL, ábrela
                 en el navegador; si pide autenticación, descarga el spec con
-                <code>bun run api:sync</code> y apunta al archivo local.
+                <code>bun run api:sync</code> y apunta al archivo local. Si empieza con
+                <code>/</code> (por ejemplo <code>/api/openapi</code>), es la ruta del endpoint
+                sola: antepón el origen de <code>API_BASE_URL</code>. Una ruta relativa se resuelve
+                desde la carpeta donde arranca el server, así que abre el agente desde la raíz del
+                repo. <code>bun run setup:doctor</code> revisa las tres cosas.
               </td>
             </tr>
             <tr>
