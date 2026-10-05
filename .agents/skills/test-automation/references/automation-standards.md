@@ -85,10 +85,10 @@ An ATC represents a **complete action** that changes or validates system state. 
 
 | Type | What it does | Example | Has `@atc`? |
 |------|-------------|---------|-------------|
-| **ATC** | Action that changes system state | `authenticateSuccessfully()`, `createOrderSuccessfully()` | Yes |
-| **Helper** | Reads data (no state change) | `getOrders(filters)`, `getCurrentUser()` | No (use `@step`) |
+| **ATC** | Action that changes system state, or a GET whose response is the business outcome under test | `authenticateSuccessfully()`, `createOrderSuccessfully()`, `getOrdersUnauthorized()` | Yes |
+| **Helper** | Reads data another step needs (no outcome under test) | `getOrders(filters)`, `getCurrentUser()` | No (use `@step`) |
 
-A simple GET is a helper, not an ATC. A GET that verifies an action's outcome belongs **inside** the ATC as a verification step:
+A GET that only prepares data is a helper, not an ATC. A GET is an ATC when the TC's expected result is what that read returns (business data, 401, 403, 404; `kata-architecture.md` Rule 7). A GET that verifies an action's outcome belongs **inside** the ATC as a verification step:
 
 ```typescript
 @atc('TICKET-ID')
