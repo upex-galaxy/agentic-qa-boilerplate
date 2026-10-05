@@ -82,6 +82,17 @@ describe('probeOpenApiSpec', () => {
     const missing = await probeOpenApiSpec('./api/missing.json', root, silent);
     expect(missing?.target).toBe('bun run api:sync');
     expect(missing?.hint).toContain('./api/missing.json');
+    expect(missing?.hint).not.toContain('API route');
+  });
+
+  test('a value that starts with / and is no file reads as the API route alone', async () => {
+    const route = await probeOpenApiSpec('/api/openapi', root, silent);
+    expect(route?.target).toBe('bun run api:sync');
+    expect(route?.hint).toContain('/api/openapi');
+    expect(route?.hint).toContain('looks like an API route');
+    expect(route?.hint).toContain('origin of API_BASE_URL');
+    expect(route?.hint).toContain('relative to the repo root');
+    expect(await probeOpenApiSpec(join(root, 'api', 'openapi.json'), root, silent)).toBeNull();
   });
 
   test('a URL must answer 2xx, and the message names the host, never the full value', async () => {

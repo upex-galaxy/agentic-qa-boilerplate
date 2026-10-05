@@ -46,11 +46,11 @@ Use the MCP's dynamic meta-tools to learn the contract before sending anything:
 
 Record the endpoints relevant to the ticket into the `test-session-memory.md` API table (Method | Endpoint | Purpose | AC).
 
-**Spec source (adaptable per project).** `OPENAPI_SPEC_PATH` points the MCP at the schema, and accepts **either**:
-- a **local file** (e.g. `./api/openapi.json`, synced by `bun run api:sync`), or
-- a **live URL** — the most natural case: when QA clones the project-under-test and raises the backend locally, the backend serves its OpenAPI route (e.g. `http://localhost:3000/api/openapi`, a Swagger JSON, etc.). The MCP reads it directly.
+**Spec source (adaptable per project).** `OPENAPI_SPEC_PATH` points the MCP at the schema: the **full spec URL**, or a **file path relative to the repo root**; never the endpoint route alone.
+- a **full URL**, the most natural case: when QA clones the project-under-test and raises the backend locally, the backend serves its OpenAPI route (e.g. `http://localhost:3000/api/openapi`, a Swagger JSON, etc.). The MCP fetches it directly.
+- a **local file** relative to the repo root (e.g. `./api/openapi.json`, synced by `bun run api:sync`). It resolves against the directory the server starts in, so start the harness from the repo root.
 
-The MCP handles both; there is no loss either way.
+The server fetches only values that start with `http://` or `https://` and reads anything else as a file: `/api/openapi` alone fails with `ENOENT` and the MCP exits before its handshake. Prefix the origin of `API_BASE_URL`. `bun run setup:doctor` flags all three cases (a route alone, a missing file, a URL that does not answer).
 
 > **⚠ Schema-drift caveat (always keep in mind).** The schema you read is typically the **dev / latest** version. The environment you are *testing* (e.g. `staging`, `devstage`) may lag behind dev. So an endpoint or field present in the schema may not yet exist on the target server. On an unexpected `4xx`, a missing field, or a response shape that does not match the schema → **suspect drift first**, and verify against the actual target before filing a bug.
 

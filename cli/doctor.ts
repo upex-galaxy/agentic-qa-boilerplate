@@ -460,19 +460,27 @@ function compareVersion(a: readonly number[], b: readonly number[]): number {
   return 0;
 }
 
+// LINT.IfChange(openapi-spec-source)
 /**
  * Whether the OpenAPI MCP can find its spec, checked BEFORE a harness starts it.
  *
- * `@ivotoby/openapi-mcp-server` exits at start, before the MCP handshake, when
- * `OPENAPI_SPEC_PATH` names a file that is not there or a URL that does not
- * answer. Every host then shows a dead server and nothing says why, so the
- * doctor probes the source itself. A file path resolves against the repo root,
- * the directory every MCP config launches the server from. A URL gets one GET
- * with a short timeout: an unreachable backend reads exactly like a broken MCP.
+ * `@ivotoby/openapi-mcp-server` `fetch`es a value that starts with `http://` or
+ * `https://` and reads EVERYTHING else as a file against its own working
+ * directory. It exits at start, before the MCP handshake, when that file is not
+ * there or the URL does not answer. Every host then shows a dead server and
+ * nothing says why, so the doctor probes the source itself. A file path
+ * resolves against the repo root, the directory the documented contract names;
+ * a harness started from a subdirectory resolves it there instead, which is why
+ * the docs ask for a repo-root-relative path and a launch from the root. A URL
+ * gets one GET with a short timeout: an unreachable backend reads exactly like a
+ * broken MCP. A value that starts with `/` and is no file is almost always the
+ * API route alone (`/api/openapi`), which the server reads as a file and fails
+ * on with `ENOENT`, so it gets its own hint.
  *
  * Returns null when there is nothing to report: no value (the env row already
  * says so), an existing file, or a URL that answered 2xx. Never returns or
- * prints the value itself beyond the file path or the URL's host.
+ * prints the value itself beyond the file path or the URL's host, and never
+ * reads another variable's value.
  */
 export async function probeOpenApiSpec(
   value: string | undefined,
@@ -497,8 +505,12 @@ export async function probeOpenApiSpec(
     }
   }
   if (existsSync(resolve(root, spec))) { return null; }
+  if (spec.startsWith('/')) {
+    return { ...sync, hint: `OPENAPI_SPEC_PATH is ${spec}, which is no file here and looks like an API route: the OpenAPI MCP fetches only values that start with http:// or https:// and reads anything else as a file, so it exits at start. Put the full spec URL (the origin of API_BASE_URL followed by the route), or a file path relative to the repo root written by the sync.` };
+  }
   return { ...sync, hint: `OPENAPI_SPEC_PATH points at ${spec}, which does not exist here (a gitignored file is missing from every fresh worktree): the OpenAPI MCP exits at start without it. Run the sync to create it.` };
 }
+// LINT.ThenChange(docs/core/setup/openapi.html, .agents/skills/agentic-qa-core/references/api-testing-doctrine.md, .env.example)
 
 export function diagnoseAgentCompatibility(
   root: string,

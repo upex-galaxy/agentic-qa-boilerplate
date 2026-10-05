@@ -262,7 +262,7 @@ Copy `.env.example` → `.env` if absent. Populate the **real key scheme** (no i
 
 - `TEST_ENV` (the active env)
 - `<ENV>_USER_EMAIL` / `<ENV>_USER_PASSWORD` per environment (`LOCAL_USER_*`, `STAGING_USER_*`, …) — **not** `TEST_USER_EMAIL`
-- `API_BASE_URL` (base URL the agent uses for **curl execution** + the OpenAPI MCP request base), `OPENAPI_SPEC_PATH` (where the **schema-read-only** OpenAPI MCP reads the spec — a local file OR a live URL). The agentic API token is minted by `bun run api:login` into `.auth/tokens.env` (NOT `.env`, NOT the MCP)
+- `API_BASE_URL` (base URL the agent uses for **curl execution** + the OpenAPI MCP request base), `OPENAPI_SPEC_PATH` (where the **schema-read-only** OpenAPI MCP reads the spec — the full spec URL, or a file path relative to the repo root; never the endpoint route alone). The agentic API token is minted by `bun run api:login` into `.auth/tokens.env` (NOT `.env`, NOT the MCP)
 - `ATLASSIAN_*`, `XRAY_*`, `AUTO_SYNC`, `TMS_PROVIDER` per the TMS modality
 - `DBHUB_*` if the target has a database. Web search and Postman are harness-level MCP servers (not `.env` keys); `resend` logs in on its own. The test-user pair is a project-scope EXAMPLE: rename it to the project's own names in `config/variables.ts` too, or delete it when the app has no login (nothing requires it; `config.testUser` fails by name at the point of use)
 

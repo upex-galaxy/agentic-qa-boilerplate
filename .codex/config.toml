@@ -96,6 +96,13 @@ args = [
   "dbhub.toml",
 ]
 
+# OPENAPI_SPEC_PATH is the full spec URL or a file path relative to the repo
+# root, never the endpoint route alone. No `cwd` key on purpose: Codex passes a
+# configured `cwd` to the child process verbatim (no project-root placeholder,
+# no resolution against this file), so a relative one resolves against
+# wherever Codex was started and an absolute one only works on one machine.
+# Without it the server starts in Codex's own directory: start Codex from the
+# repo root so a relative OPENAPI_SPEC_PATH resolves there.
 [mcp_servers.openapi]
 command = "bunx"
 enabled = true
