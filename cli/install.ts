@@ -18,7 +18,7 @@
  *     9-skills-community Install community skills via `bunx skills add`
  *
  *   PHASE 3 — CONFIGURATION
- *     10-mcp-env        Wire `.env` for MCP servers + offer direnv autoload
+ *     10-mcp-env        Wire `.env` for MCP servers
  *     13-github-repo    GitHub repository (optional)
  *
  *   PHASE 4 — VERIFICATION
@@ -65,7 +65,6 @@
  *   INSTALL_SKIP_COMMUNITY=1              Skip `bunx skills add` step
  *   INSTALL_SKIP_JIRA=1                   Skip optional Jira bootstrap
  *   INSTALL_SKIP_API=1                    Skip optional API auth bootstrap
- *   INSTALL_SKIP_DIRENV=1                 Skip direnv autoload setup
  *   INSTALL_SECRETS_PROVIDER=1password    Opt in to a secret manager (default: .env); with
  *   INSTALL_SECRETS_VAULT=<vault>         the vault its references point at
  */
@@ -545,7 +544,6 @@ const FORCE_GITHUB = process.env.INSTALL_FORCE_GITHUB === '1';
 const SKIP_JIRA = process.env.INSTALL_SKIP_JIRA === '1';
 const SKIP_API = process.env.INSTALL_SKIP_API === '1';
 const SKIP_COMMUNITY = process.env.INSTALL_SKIP_COMMUNITY === '1';
-const SKIP_DIRENV = process.env.INSTALL_SKIP_DIRENV === '1';
 
 // ============================================================================
 // Logger (wraps tui + keeps inline COLORS for printClosingSummary)
@@ -1142,12 +1140,13 @@ async function installCommunitySkills(
 
 // ============================================================================
 // Phase 3 — CONFIGURATION
-// Step 10 (10-mcp-env): Wire .env for MCP servers (+ direnv autoload offer)
+// Step 10 (10-mcp-env): Wire .env for MCP servers
 // ============================================================================
 //
 // `.mcp.json` and `opencode.jsonc` are committed with `${VAR}` / `{env:VAR}`
 // expansion. The installer no longer rewrites those files — it only ensures
-// `.env` contains the required values, then optionally enables direnv.
+// `.env` contains the required values. Nothing is exported into the shell:
+// every MCP server reads `.env` itself through the `.env` loader.
 
 export function isSecretName(name: string): boolean {
   return SECRET_NAME_HINTS.some(hint => name.endsWith(hint) || name.endsWith(`_${hint}`));
@@ -1569,63 +1568,6 @@ async function configureDayZeroCredentials(state: InstallState): Promise<void> {
 }
 
 // ----------------------------------------------------------------------------
-// direnv autoload sub-step (still part of Step 10 / 10-mcp-env)
-// ----------------------------------------------------------------------------
-
-interface DirenvInfo {
-  installed: boolean
-  version?: string
-  supportsDotenvIfExists: boolean
-  supportsPwshHook: boolean
-  platform: NodeJS.Platform
-}
-
-function detectDirenv(): DirenvInfo {
-  const platform = process.platform;
-  const result = tryRun('direnv', ['version']);
-  if (!result.ok) {
-    return { installed: false, supportsDotenvIfExists: false, supportsPwshHook: false, platform };
-  }
-  const version = result.stdout.trim();
-  const parts = version.split('.').map(n => Number.parseInt(n, 10));
-  const maj = parts[0] ?? 0;
-  const min = parts[1] ?? 0;
-  const supportsDotenvIfExists = maj > 2 || (maj === 2 && min >= 30);
-  const supportsPwshHook = maj > 2 || (maj === 2 && min >= 37);
-  return { installed: true, version, supportsDotenvIfExists, supportsPwshHook, platform };
-}
-
-function installHintForPlatform(): string {
-  if (process.platform === 'win32') {
-    return 'winget install direnv  (then restart Git Bash or PowerShell)';
-  }
-  if (process.platform === 'darwin') {
-    return 'brew install direnv';
-  }
-  return 'sudo apt install direnv  (or: dnf install direnv  /  pacman -S direnv)';
-}
-
-function shellHookHint(info: DirenvInfo): string {
-  const shell = (process.env.SHELL ?? '').toLowerCase();
-  if (process.platform === 'win32' && shell.length === 0) {
-    if (info.supportsPwshHook) {
-      return 'Invoke-Expression "$(direnv hook pwsh)"  →  add to $PROFILE  (PowerShell)';
-    }
-    return 'eval "$(direnv hook bash)"  →  add to ~/.bashrc  (Git Bash; PowerShell needs direnv 2.37+)';
-  }
-  if (shell.endsWith('zsh')) {
-    return 'eval "$(direnv hook zsh)"  →  add to ~/.zshrc';
-  }
-  if (shell.endsWith('fish')) {
-    return 'direnv hook fish | source  →  add to ~/.config/fish/config.fish';
-  }
-  if (shell.endsWith('bash')) {
-    return 'eval "$(direnv hook bash)"  →  add to ~/.bashrc';
-  }
-  return 'eval "$(direnv hook <your-shell>)"  →  see https://direnv.net/docs/hook.html';
-}
-
-// ----------------------------------------------------------------------------
 // Step 10a: where SECRET values live. `.env` is the default and stays first
 // (ADR-0010); a secret manager is the advanced opt-in. Choosing one writes the
 // committed overlay `.env.provider.schema` (references only) and records the
@@ -1738,51 +1680,6 @@ async function offerSecretManager(): Promise<void> {
   }
   catch (err) {
     log.warn(`Secret manager not configured: ${(err as Error).message} Secrets stay in .env.`);
-  }
-}
-
-async function offerDirenvAutoload(): Promise<void> {
-  if (SKIP_DIRENV) {
-    log.dim('  INSTALL_SKIP_DIRENV=1, skipping direnv setup.');
-    return;
-  }
-  const info = detectDirenv();
-
-  if (!info.installed) {
-    log.info('direnv not installed (optional).');
-    log.dim('  Launch agents with: bun claude  /  bun opencode  /  bun codex  (varlock loads .env after a drift preflight).');
-    log.dim(`  Or install direnv for shell autoload: ${installHintForPlatform()}`);
-    return;
-  }
-  log.info(`direnv ${info.version} detected.`);
-  if (info.platform === 'win32') {
-    log.dim('  Tip: direnv on Windows works best in Git Bash. PowerShell support is experimental and requires direnv 2.37+.');
-  }
-
-  // `direnv allow` approves a file that EXECUTES on every `cd`. An unattended
-  // run (an AI agent, CI) must not grant that on the human's behalf: skip and
-  // say so, instead of letting `maybeConfirm`'s default-yes approve it silently.
-  if (NON_INTERACTIVE) {
-    log.dim('  skipped (non-interactive): run `direnv allow` yourself if you want shell autoload.');
-    return;
-  }
-
-  const proceed = await maybeConfirm(
-    'Run `direnv allow` so the repo\'s .envrc auto-loads .env into your shell?',
-    true,
-  );
-  if (!proceed) {
-    log.dim('  Skipped. Launch agents with: bun claude  /  bun opencode  /  bun codex.');
-    return;
-  }
-  const result = tryRun('direnv', ['allow', REPO_ROOT]);
-  if (result.ok) {
-    log.success('direnv allow succeeded — .envrc will auto-load .env on cd.');
-    log.dim(`  Reminder: add this to your shell rc if not already done: ${shellHookHint(info)}`);
-  }
-  else {
-    log.warn('direnv allow failed. Launch agents with: bun claude  /  bun opencode  /  bun codex.');
-    log.dim(`  ${(result.stderr || result.stdout).trim().slice(0, 200)}`);
   }
 }
 
@@ -3081,7 +2978,7 @@ function printClosingSummary(state: InstallState): void {
   process.stdout.write(`    ${COLORS.cyan}bun claude${COLORS.reset}       ${COLORS.dim}(varlock loads .env)${COLORS.reset}\n`);
   process.stdout.write(`    ${COLORS.cyan}bun opencode${COLORS.reset}     ${COLORS.dim}(varlock loads .env)${COLORS.reset}\n`);
   process.stdout.write(`    ${COLORS.cyan}bun codex${COLORS.reset}        ${COLORS.dim}(CLI; Codex Desktop opens this same repository)${COLORS.reset}\n`);
-  process.stdout.write(`    ${COLORS.dim}Or use the executable directly if direnv autoload is set up. Codex Desktop needs repository trust before hooks run.${COLORS.reset}\n\n`);
+  process.stdout.write(`    ${COLORS.dim}The bare executable works too: every MCP server loads .env itself. Codex Desktop needs repository trust before hooks run.${COLORS.reset}\n\n`);
   stepNum++;
 
   process.stdout.write(`${circled[stepNum]}  ${COLORS.bold}Tour the stack${COLORS.reset}\n`);
@@ -3493,7 +3390,6 @@ async function main(): Promise<void> {
   await cleanRetiredEnvKeys();
   await offerSecretManager();
   await configureMcps(agents, state);
-  await offerDirenvAutoload();
 
   tui.section('Step 10b: Day-0 credentials (Atlassian, Resend, test users)');
   await configureDayZeroCredentials(state);
