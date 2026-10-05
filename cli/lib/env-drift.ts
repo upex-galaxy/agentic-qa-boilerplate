@@ -31,6 +31,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { delimiter, join } from 'node:path';
 
+import { providerResolvedKeysIn } from './secret-providers';
 import { parseDotEnvPairs } from './variables-manifest';
 
 /**
@@ -118,4 +119,21 @@ export function findDrift(meta: VarlockOverrides, env: EnvMap, files: Map<string
     hits.push({ name, sensitive: meta.sensitive.has(name), processValue, fileValue });
   }
   return hits;
+}
+
+/**
+ * The environment with the EMPTY inherited copies of the keys the secret
+ * manager resolves removed. varlock lets any inherited variable win, an empty
+ * one included, and GitHub Actions materializes every unset `secrets.X` as an
+ * empty string: without this, a CI job that keeps today's per-variable secrets
+ * beside `OP_SERVICE_ACCOUNT_TOKEN` would blank every vault value it did not
+ * set. Only the overlay's own keys are touched, so a project without the
+ * overlay keeps exactly the old behaviour. Returns the dropped NAMES.
+ */
+export function withoutEmptyProviderShadows(root: string, env: EnvMap): { env: EnvMap, dropped: string[] } {
+  const dropped = providerResolvedKeysIn(root).filter(name => env[name] === '');
+  if (dropped.length === 0) { return { env, dropped }; }
+  const next: EnvMap = { ...env };
+  for (const name of dropped) { delete next[name]; }
+  return { env: next, dropped };
 }

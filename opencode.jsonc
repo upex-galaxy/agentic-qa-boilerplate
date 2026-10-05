@@ -116,7 +116,8 @@
   // `read` block and the secret entries at the end of `bash` mirror the
   // `Read(...)` / `Bash(printenv*)` denies of .claude/settings.json. Paths are
   // matched as wildcards against the full path, so `*.env` covers any depth.
-  // `.env.example` and the two schemas stay readable: they hold names only.
+  // `.env.example` and the committed `.env*.schema` files stay readable: they
+  // hold names and `op://` references only.
   // `source .auth/tokens.env` keeps asking (the API doctrine sources it in the
   // same call as curl, by name); reading that file directly is denied.
   "permission": {
@@ -129,7 +130,7 @@
       "*.env.*": "deny",
       "*.env.example": "allow",
       "*.env.schema": "allow",
-      "*.env.core.schema": "allow",
+      "*.env.*.schema": "allow",
       "*.envrc.local": "deny",
       "*.auth/*": "deny",
       "*.claude/settings.local.json": "deny"

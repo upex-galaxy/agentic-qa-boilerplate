@@ -20,7 +20,7 @@ When in doubt, treat it as a secret. The schema is the source of truth for the `
 | Never open (no `Read`, `cat`, `grep`, `head`, `sed`, `less`) | Safe to read: names and references only |
 |---|---|
 | `.env`, `.env.local`, `.env.*.local` | `.env.example` |
-| `.envrc.local` | `.env.schema`, `.env.core.schema` |
+| `.envrc.local` | the committed `.env*.schema` files: `.env.schema`, `.env.core.schema` and, when a project uses a secret manager, `.env.provider.schema` (`op://` references, never a value) |
 | `.auth/**` (token files, `api-state.json`, `<env>-<role>.json`, `opencode/<VAR>` value files) | `.envrc` (the loader, no values) |
 | `.claude/settings.local.json` (its `env` block holds MCP secrets written by `bun run harness:env`) | `.mcp.json`, `opencode.jsonc`, `.codex/config.toml` (they hold `${VAR}` / `{file:}` / `env_vars` names) |
 

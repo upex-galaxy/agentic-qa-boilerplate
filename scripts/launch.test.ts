@@ -7,6 +7,9 @@
  *   2. Equal values, no `.env` at all, and a failed varlock load all proceed to
  *      `varlock run -- <bin> [args...]` with the arguments untouched.
  *   3. A missing varlock and a missing binary name stop with a clear exit code.
+ *   4. With a secret-manager overlay, an EMPTY inherited copy of a key it
+ *      resolves is dropped before varlock sees it (CI's unset secrets); every
+ *      other variable reaches the child untouched.
  */
 
 import type { LaunchDeps } from './launch.ts';
@@ -23,6 +26,7 @@ const FRESH = 'fresh-secret-canary-longer';
 let root: string;
 let printed: string[];
 let spawned: Array<[string, string[]]>;
+let spawnedEnv: Array<Record<string, string | undefined>>;
 
 function deps(overrides: Partial<LaunchDeps> = {}): LaunchDeps {
   return {
@@ -30,7 +34,7 @@ function deps(overrides: Partial<LaunchDeps> = {}): LaunchDeps {
     env: { TOKEN: STALE },
     meta: () => ({ overrideKeys: ['TOKEN'], sensitive: new Set(['TOKEN']), declared: new Set(['TOKEN']) }),
     varlock: () => '/repo/node_modules/.bin/varlock',
-    spawn: (cmd, args) => { spawned.push([cmd, args]); return 0; },
+    spawn: (cmd, args, env) => { spawned.push([cmd, args]); spawnedEnv.push(env); return 0; },
     err: (line) => { printed.push(line); },
     ...overrides,
   };
@@ -40,6 +44,7 @@ beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), 'launch-'));
   printed = [];
   spawned = [];
+  spawnedEnv = [];
   writeFileSync(join(root, '.env'), `TOKEN=${FRESH}\n`);
 });
 
@@ -98,5 +103,34 @@ describe('spawn', () => {
     expect(printed.join('\n')).toContain('bun install');
     expect(launch([], deps())).toBe(2);
     expect(spawned).toEqual([]);
+  });
+});
+
+describe('secret-manager overlay', () => {
+  const overlay = [
+    '# @plugin(@varlock/1password-plugin@2.0.4)',
+    '# ---',
+    'OP_SERVICE_ACCOUNT_TOKEN=',
+    'XRAY_CLIENT_SECRET=op(op://team-dev/XRAY_CLIENT_SECRET/password)',
+    '# STAGING_USER_PASSWORD=op(op://team-dev/STAGING_USER_PASSWORD/password)',
+    '',
+  ].join('\n');
+
+  test('drops the empty inherited copies of the keys the overlay resolves', () => {
+    rmSync(join(root, '.env'));
+    writeFileSync(join(root, '.env.provider.schema'), overlay);
+    const env = { XRAY_CLIENT_SECRET: '', OP_SERVICE_ACCOUNT_TOKEN: '', STAGING_USER_PASSWORD: '', CI: 'true' };
+    expect(launch(['--warn', 'playwright', 'test'], deps({ env }))).toBe(0);
+    expect(spawnedEnv[0]).toEqual({ STAGING_USER_PASSWORD: '', CI: 'true' });
+  });
+
+  test('keeps a non-empty inherited value, and changes nothing without an overlay', () => {
+    rmSync(join(root, '.env'));
+    writeFileSync(join(root, '.env.provider.schema'), overlay);
+    launch(['claude'], deps({ env: { XRAY_CLIENT_SECRET: 'ci-value' } }));
+    expect(spawnedEnv[0]).toEqual({ XRAY_CLIENT_SECRET: 'ci-value' });
+    rmSync(join(root, '.env.provider.schema'));
+    launch(['claude'], deps({ env: { XRAY_CLIENT_SECRET: '' } }));
+    expect(spawnedEnv[1]).toEqual({ XRAY_CLIENT_SECRET: '' });
   });
 });

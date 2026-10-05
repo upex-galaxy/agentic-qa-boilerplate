@@ -66,15 +66,18 @@
  *   INSTALL_SKIP_JIRA=1                   Skip optional Jira bootstrap
  *   INSTALL_SKIP_API=1                    Skip optional API auth bootstrap
  *   INSTALL_SKIP_DIRENV=1                 Skip direnv autoload setup
+ *   INSTALL_SECRETS_PROVIDER=1password    Opt in to a secret manager (default: .env); with
+ *   INSTALL_SECRETS_VAULT=<vault>         the vault its references point at
  */
 
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { chmod, mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 
 import { checkbox, password } from '@inquirer/prompts';
+import { parse as parseYaml } from 'yaml';
 import {
   checkAgentCompatibility,
   removeShadowingCommands,
@@ -89,6 +92,14 @@ import {
 import { removeRetiredEnvLines, retiredEnvKeysIn } from './lib/env-schema.ts';
 import { CLI_LOGINS, HARNESS_LEVEL_HOWTO, HARNESS_LEVEL_MCPS } from './lib/harness-level-mcps.ts';
 import { playwrightBrowsersInstalled } from './lib/playwright-cache.ts';
+import {
+  ADAPTERS,
+  applySecretsChoice,
+  isValidVaultName,
+  PROVIDER_SCHEMA_FILE,
+  readSecretsConfig,
+  SECRET_PROVIDERS,
+} from './lib/secret-providers.ts';
 import * as tui from './lib/tui.ts';
 import { runVariablesFlow } from './lib/variables-flow.ts';
 import { criticalVars, nonCriticalVars, valueSourceOf, VAR_MANIFEST, varsFor } from './lib/variables-manifest.ts';
@@ -211,6 +222,7 @@ const OPENCODE_CONFIG_PATH = join(REPO_ROOT, 'opencode.jsonc');
 const CODEX_CONFIG_PATH = join(REPO_ROOT, '.codex', 'config.toml');
 const ENV_PATH = join(REPO_ROOT, '.env');
 const ENV_EXAMPLE_PATH = join(REPO_ROOT, '.env.example');
+const PROJECT_YAML_FILE = join(REPO_ROOT, '.agents', 'project.yaml');
 
 const REPO_NAME = 'agentic-qa-boilerplate';
 
@@ -1536,6 +1548,122 @@ function shellHookHint(info: DirenvInfo): string {
     return 'eval "$(direnv hook bash)"  →  add to ~/.bashrc';
   }
   return 'eval "$(direnv hook <your-shell>)"  →  see https://direnv.net/docs/hook.html';
+}
+
+// ----------------------------------------------------------------------------
+// Step 10a: where SECRET values live. `.env` is the default and stays first
+// (ADR-0010); a secret manager is the advanced opt-in. Choosing one writes the
+// committed overlay `.env.provider.schema` (references only) and records the
+// choice in `.agents/project.yaml` `secrets:`. Logic: cli/lib/secret-providers.ts.
+// ----------------------------------------------------------------------------
+
+function suggestedVault(): string {
+  try {
+    const name = (parseYaml(readFileSync(PROJECT_YAML_FILE, 'utf8')) as { project?: { project_name?: unknown } })?.project?.project_name;
+    const slug = typeof name === 'string' ? name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : '';
+    return `${slug || 'myproject'}-dev`;
+  }
+  catch { return 'myproject-dev'; }
+}
+
+/**
+ * A project whose `.gitignore` predates the overlay denies every `.env*`, so the
+ * new file would be ignored in silence and never reach the team. `.gitignore`
+ * is the project's (the updater does not sync it): re-include the one file,
+ * which holds references only, and say so.
+ */
+function ensureOverlayTracked(): void {
+  const ignored = spawnSync('git', ['check-ignore', '-q', PROVIDER_SCHEMA_FILE], { cwd: REPO_ROOT }).status === 0;
+  if (!ignored) { return; }
+  const gitignore = join(REPO_ROOT, '.gitignore');
+  const before = existsSync(gitignore) ? readFileSync(gitignore, 'utf8') : '';
+  const sep = before === '' || before.endsWith('\n') ? '' : '\n';
+  writeFileSync(gitignore, `${before}${sep}# The secret-manager overlay holds references only (ADR-0010): it travels.\n!${PROVIDER_SCHEMA_FILE}\n`, 'utf8');
+  log.success(`Re-included ${PROVIDER_SCHEMA_FILE} in .gitignore (it was ignored by an .env* rule).`);
+}
+
+async function offerSecretManager(): Promise<void> {
+  if (existsSync(join(REPO_ROOT, PROVIDER_SCHEMA_FILE))) {
+    log.info(`Secret manager overlay present (${PROVIDER_SCHEMA_FILE}): uncommented keys resolve from the manager; a non-empty .env value still wins.`);
+    return;
+  }
+  let config;
+  try { config = readSecretsConfig(PROJECT_YAML_FILE); }
+  catch (err) {
+    log.warn(`${(err as Error).message} Keeping secrets in .env.`);
+    return;
+  }
+
+  const requested = process.env.INSTALL_SECRETS_PROVIDER?.trim();
+  if (requested) {
+    if (!(SECRET_PROVIDERS as readonly string[]).includes(requested)) {
+      log.warn(`INSTALL_SECRETS_PROVIDER=${requested} is not one of ${SECRET_PROVIDERS.join(' | ')}; keeping secrets in .env.`);
+      return;
+    }
+    config.provider = requested as typeof config.provider;
+  }
+  const vaultFromEnv = process.env.INSTALL_SECRETS_VAULT?.trim();
+  if (vaultFromEnv) { config.onepassword.vault = vaultFromEnv; }
+
+  if (!NON_INTERACTIVE) {
+    const choice = await tui.select({
+      message: 'Where will this project keep its SECRET values?',
+      options: [
+        { label: '.env file (default: no account needed, works offline)', value: 'local' as const },
+        { label: '1Password (advanced: shared vault for the team, service account for CI)', value: '1password' as const },
+      ],
+      initialValue: config.provider,
+    });
+    if (tui.isCancel(choice)) { throw Object.assign(new Error('Aborted by user.'), { name: 'ExitPromptError' }); }
+    config.provider = choice;
+    if (config.provider === '1password') {
+      const vault = await tui.text({
+        message: '1Password vault the references point at (team: <project>-dev; personal plan: Private)',
+        initialValue: config.onepassword.vault ?? suggestedVault(),
+        validate: v => (v && isValidVaultName(v.trim()) ? undefined : 'Letters, digits, ".", "_" or "-" only.'),
+      });
+      if (tui.isCancel(vault)) { throw Object.assign(new Error('Aborted by user.'), { name: 'ExitPromptError' }); }
+      config.onepassword.vault = vault.trim();
+      const account = await tui.text({
+        message: 'Account shorthand from `op account list` (Enter = the CLI default account)',
+        initialValue: config.onepassword.account ?? '',
+      });
+      if (tui.isCancel(account)) { throw Object.assign(new Error('Aborted by user.'), { name: 'ExitPromptError' }); }
+      config.onepassword.account = account.trim() === '' ? null : account.trim();
+      const auth = await tui.select({
+        message: 'How does a laptop authenticate?',
+        options: [
+          { label: 'Desktop app (biometric; CI uses the service-account token)', value: 'app' as const },
+          { label: 'Service-account token only (no desktop app)', value: 'service-account' as const },
+        ],
+        initialValue: config.onepassword.auth,
+      });
+      if (tui.isCancel(auth)) { throw Object.assign(new Error('Aborted by user.'), { name: 'ExitPromptError' }); }
+      config.onepassword.auth = auth;
+    }
+  }
+
+  if (config.provider === 'local') {
+    applySecretsChoice(REPO_ROOT, PROJECT_YAML_FILE, config);
+    log.dim('  Secrets: .env (default). A secret manager is optional: docs/core/variables-de-entorno.html, "Gestores de secretos".');
+    return;
+  }
+
+  try {
+    const result = applySecretsChoice(REPO_ROOT, PROJECT_YAML_FILE, config);
+    const adapter = ADAPTERS[config.provider];
+    if (result.overlayWritten) {
+      log.success(`Wrote ${PROVIDER_SCHEMA_FILE} (${adapter.label} references only; commit it).`);
+      ensureOverlayTracked();
+    }
+    if (result.yamlWritten) { log.success(`Recorded secrets.provider: ${config.provider} in .agents/project.yaml.`); }
+    log.info(`${adapter.label} setup, once per person:`);
+    for (const line of adapter.setupSteps(config)) { log.dim(`  ${line}`); }
+    log.dim('  The next prompts may still offer .env: skip (Enter) every value the vault holds.');
+  }
+  catch (err) {
+    log.warn(`Secret manager not configured: ${(err as Error).message} Secrets stay in .env.`);
+  }
 }
 
 async function offerDirenvAutoload(): Promise<void> {
@@ -3227,6 +3355,7 @@ async function main(): Promise<void> {
 
   tui.section('Step 10: Wiring .env for MCP servers');
   await cleanRetiredEnvKeys();
+  await offerSecretManager();
   await configureMcps(agents, state);
   await offerDirenvAutoload();
 

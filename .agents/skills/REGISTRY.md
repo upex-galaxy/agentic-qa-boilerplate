@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-10-05T06:09:44.458Z`
+> Generated: `2026-10-05T06:34:34.111Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -49,7 +49,7 @@ Skills indexed: 26
 - WHEN a workflow skill cites `agentic-qa-core/references/*.md`: load ONLY the files that skill's `## Dependencies` block names. Never preload the whole reference set.
 - WHEN deriving test cases or coverage from acceptance criteria in ANY testing skill: `references/test-design-doctrine.md` is mandatory reading first.
 - WHEN filing any bug / defect / improvement: `references/defect-management-doctrine.md` is mandatory reading first.
-- DO use every credential, token or session file by NAME only (Critical Rule #1): NEVER open `.env*` (except `.env.example` and the two schemas), `.auth/**` or `.claude/settings.local.json`, NEVER run `printenv` / `env` / `echo $SECRET` / `set -x` / `curl -v`, check presence with `bunx varlock load --agent`, write a non-sensitive value the human asked for ONLY with `bun run env:set KEY=value` (never by editing `.env`), and leave every secret value for the human to type. Forms, presence check and leak protocol: `references/secret-hygiene.md`.
+- DO use every credential, token or session file by NAME only (Critical Rule #1): NEVER open `.env*` (except `.env.example` and the committed `.env*.schema` files), `.auth/**` or `.claude/settings.local.json`, NEVER run `printenv` / `env` / `echo $SECRET` / `set -x` / `curl -v`, check presence with `bunx varlock load --agent`, write a non-sensitive value the human asked for ONLY with `bun run env:set KEY=value` (never by editing `.env`), and leave every secret value for the human to type. Forms, presence check and leak protocol: `references/secret-hygiene.md`.
 - WHEN dispatching a subagent: use the 7-component briefing in `references/briefing-template.md` and pick the pattern via `references/dispatch-patterns.md`. A subagent that must answer the user directly also loads `references/behavioral-layer.md` — it inherits no register from the orchestrator.
 - WHEN closing a workflow stage: verify that stage's Definition of Done in `references/stage-gates.md` BEFORE advancing.
 - WHEN about to ask a person to decide, or to pick between defensible options: run `references/decision-protocol.md` first. Search the record (session plan, `.session/decisions/`, ADRs, the synced ticket comments, Engram) and follow what is settled; decide a technical call inside the approved plan and report it as decided; escalate only product behaviour, a new security posture, an irreversible or outward action, and what the stage's "The person signs" column lists. An unattended routine parks those four, never assumes them.

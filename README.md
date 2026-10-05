@@ -346,6 +346,10 @@ bun run vars:schema            # regenerate .env.core.schema after editing the m
 
 The schema is a gate (pre-commit freshness, pre-push warn-only, first step of `build.yml`; the wiring is in `.husky/framework-gates.sh` and `.github/workflows/build.yml`); the runtime still reads `.env` directly. The standalone `varlock` binary is optional: the pinned devDependency covers every gate. Install it with `brew install dmno-dev/tap/varlock` (macOS), `curl -sSfL https://varlock.dev/install.sh | sh -s` (Linux) or `npm i -g varlock` (Windows PowerShell / cmd; documented by varlock, not measured here).
 
+Quote any value that contains a `#` (`PASSWORD="pass#word"`): varlock cuts an unquoted value at the first `#`.
+
+**Secret manager (advanced, optional).** `.env` stays the default. A team that keeps its secrets in a vault picks 1Password in `bun run setup`, which records `secrets:` in `.agents/project.yaml` and writes `.env.provider.schema`: committed `op://` references, never values, imported by `.env.core.schema` only when present. Desktop-app auth on laptops, a service account in CI; a non-empty `.env` value still wins. Steps: `INSTALLER.md` ("Secret manager (advanced)"); decision: `.context/ADR/ADR-0010-secret-manager-advanced-option.md`.
+
 ### (b) Runtime URLs — `config/variables.ts`
 
 Update `envDataMap` in `config/variables.ts` with your application URLs. The `Environment` type in `config/variables.ts` lists the accepted values; extend it there when you need another environment. The shape (two environments shown):
@@ -622,6 +626,8 @@ The workflows are the files in `.github/workflows/`; each one's `on:` block is i
 The framework requires nothing but `TEST_ENV` (it has a default). The test-user pair is a project-under-test example: the suite workflows inject it as secrets, and `config.testUser` fails with a named error the first time a test reads an empty pair. Nothing validates it up front, so a fork PR with no secrets still builds.
 
 Every other variable is optional and switched on by a feature (browser tuning, the TMS sync, Xray, the Atlassian pair, reporting). `.env.example` is the annotated list, with the default of each optional one as a commented line; `cli/lib/variables-manifest.ts` declares the scope and feature switch of every variable the installer, `setup:doctor` and the updater know; each suite workflow's `env:` block shows which ones CI passes. The Atlassian site host is never one of them: it is `issue_tracker.atlassian_url` in `.agents/project.yaml`.
+
+A project on the secret manager (ADR-0010) adds one more secret, `OP_SERVICE_ACCOUNT_TOKEN`, which the suite workflows already pass. It sits beside the per-variable secrets, never instead: a per-variable secret with a value still wins, and an unset one no longer blanks the vault value (the launcher drops the empty copy). Steps that call a tool directly (`bun xray`, the portal publisher) read only the per-variable secrets.
 
 `TMS_PROVIDER` is the one of them that is **not** a secret. `.github/workflows/regression.yml` reads it as `${{ vars.TMS_PROVIDER || 'xray' }}`, so set it as a repository **Variable** (Settings → Secrets and variables → Actions → Variables), not as a secret. A job-level `if:` can read `vars` but never `secrets`, and the Xray import job gates on exactly that expression — stored as a secret it is invisible to the gate and the step stays on the default forever.
 
