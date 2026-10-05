@@ -68,7 +68,7 @@ export async function runInspect(): Promise<void> {
     process.stdout.write(`${bold(label)}  ${dim(`(${group.count})`)}\n${first}${remaining}\n\n`);
   }
 
-  summarize('Engram memory', wi.gentleAiSkills);
+  summarize('Engram memory', wi.engramMemory);
   summarize('Community skills — project-level', wi.communityProjectSkills);
   summarize('Community skills — user-level', wi.communityUserSkills);
 
@@ -119,11 +119,11 @@ export async function runInspect(): Promise<void> {
   // -------------------------------------------------------------------------
   // 5. DRILL-DOWN PROMPT
   // -------------------------------------------------------------------------
-  const drillChoice = await tui.select<'gentle' | 'project' | 'user' | 'back'>({
+  const drillChoice = await tui.select<'engram' | 'project' | 'user' | 'back'>({
     message: 'Want to see the full skill list for a category?',
     options: [
       { value: 'back', label: 'Back to menu' },
-      { value: 'gentle', label: `Expand Engram memory (${wi.gentleAiSkills.count})` },
+      { value: 'engram', label: `Expand Engram memory (${wi.engramMemory.count})` },
       { value: 'project', label: `Expand community project skills (${wi.communityProjectSkills.count})` },
       { value: 'user', label: `Expand community user skills (${wi.communityUserSkills.count})` },
     ],
@@ -134,14 +134,14 @@ export async function runInspect(): Promise<void> {
   }
 
   const target
-    = drillChoice === 'gentle'
-      ? wi.gentleAiSkills
+    = drillChoice === 'engram'
+      ? wi.engramMemory
       : drillChoice === 'project'
         ? wi.communityProjectSkills
         : wi.communityUserSkills;
 
   const categoryLabel
-    = drillChoice === 'gentle'
+    = drillChoice === 'engram'
       ? 'Engram'
       : drillChoice === 'project'
         ? 'community project'

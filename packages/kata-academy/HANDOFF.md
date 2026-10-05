@@ -47,8 +47,8 @@ y UX se cerraron en su momento; repetirlas tras cambios grandes.
    `svelte/motion` Spring + `svelte/transition`).
 4. **Idioma**: contenido en español, términos técnicos en inglés. ATC se
    expande "Acceptance Test Case" (nunca "Automated").
-5. **Registro caveman**: activo por defecto en conversación; el usuario es
-   hispanohablante.
+5. **Registro**: conciso por defecto (Butler + PM Voice de `AGENTS.md` §2);
+   el usuario es hispanohablante.
 
 ---
 

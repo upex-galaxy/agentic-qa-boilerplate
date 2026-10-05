@@ -331,8 +331,7 @@ function buildManifest(src: string): object {
   const externalClis = extractExternalClis(src);
 
   // Engram is wired per agent with the engram binary's own `engram setup`.
-  // The manifest key `gentleAiSkills` keeps its name for schema stability.
-  const gentleAiItems: ManifestEntry[] = [
+  const engramItems: ManifestEntry[] = [
     { name: 'engram', purpose: purposeOr('engram'), source: 'engram setup' },
   ];
 
@@ -418,7 +417,7 @@ function buildManifest(src: string): object {
       },
     ],
     willInstall: {
-      gentleAiSkills: { count: gentleAiItems.length, items: gentleAiItems },
+      engramMemory: { count: engramItems.length, items: engramItems },
       communityProjectSkills: { count: projectItems.length, items: projectItems },
       communityUserSkills: { count: userItems.length, items: userItems },
     },
@@ -564,7 +563,7 @@ function main(): void {
 
   const parsed = JSON.parse(generated) as {
     willInstall: {
-      gentleAiSkills: { count: number }
+      engramMemory: { count: number }
       communityProjectSkills: { count: number }
       communityUserSkills: { count: number }
     }
@@ -573,7 +572,7 @@ function main(): void {
     willNotInstall: unknown[]
   };
 
-  const gentleCount = parsed.willInstall.gentleAiSkills.count;
+  const engramCount = parsed.willInstall.engramMemory.count;
   const projectCount = parsed.willInstall.communityProjectSkills.count;
   const userCount = parsed.willInstall.communityUserSkills.count;
   const mcpCount = parsed.willConfigure.mcps.length;
@@ -581,7 +580,7 @@ function main(): void {
   const wontCount = parsed.willNotInstall.length;
 
   process.stdout.write(
-    `Manifest written: engram=${gentleCount}, project=${projectCount}, user=${userCount}, mcps=${mcpCount}, prereqs=${prereqCount}, won't-install=${wontCount}\n`,
+    `Manifest written: engram=${engramCount}, project=${projectCount}, user=${userCount}, mcps=${mcpCount}, prereqs=${prereqCount}, won't-install=${wontCount}\n`,
   );
 }
 
