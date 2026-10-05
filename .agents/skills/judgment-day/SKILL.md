@@ -14,12 +14,12 @@ metadata:
 
 Load this skill only when the user explicitly asks for Judgment Day, dual/adversarial review, or equivalent Spanish trigger (`juzgar`, `que lo juzguen`). Review a specific target: files, feature, PR, or architecture slice.
 
-Within this QA boilerplate, this skill is cited as an OPTIONAL adversarial augmentation by:
-- `/test-automation` — Review phase for high-risk test changes
-- `/git-flow-master` — pre-PR gate when the diff is large or touches shared fixtures / base classes
-- `/framework-development` — pre-archive review of framework evolution diffs
+Within this QA boilerplate, this skill is cited by:
+- `/test-automation` — Review phase, as one of the two ways to satisfy its MANDATORY separate verifier (this skill OR `/pr-review-lead`), for every change, not only high-risk ones. That Review step counts as the explicit request above.
+- `/git-flow-master` — OPTIONAL pre-PR gate when the diff is large or touches shared fixtures / base classes
+- `/framework-development` — OPTIONAL pre-archive review of framework evolution diffs
 
-It is never invoked automatically. Users opt in via explicit trigger.
+Outside the `/test-automation` verifier slot it is never invoked automatically; users opt in via explicit trigger.
 
 ## Inputs — read these first, in this order
 
