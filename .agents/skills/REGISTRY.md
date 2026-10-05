@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-10-05T09:38:57.124Z`
+> Generated: `2026-10-05T10:03:51.764Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -206,8 +206,10 @@ Skills indexed: 26
 - DO NOT: let a subagent write `progress.md`; it is orchestrator-only. Code subagents return one-line summaries per task, and the orchestrator does not read their diffs.
 - DO: close every change that adds, renames or retires a skill, a `package.json` script or a doc path with the docs follow-through (Phase 3): patch `.agents/instructions/agent-context-map.md` and `.agents/instructions/agent-skills-and-mcps.md`, `README.md`, `INSTALLER.md`, `CONTEXT.md` and the `docs/core/` pages in the same PR. `bun run docs:check` proves the router and the quoted scripts; the prose is judgment.
 - DO: archive the session directory only after all four verifiers pass. On REJECT it stays in place so the run can be debugged or resumed.
+- DO: route every change to `AGENTS.md`, a section under `.agents/instructions/`, the ROUTER or a `triggers:` list through mode `instructions`: place each sentence with `references/instructions-doctrine.md` §2, close with `bun run instructions:check`. NEVER paste section prose into `AGENTS.md`, and NEVER add a ROUTER row without the ADR that decides it (`--accept-router ADR-NNNN`, ADR-0013).
+- WHEN a trigger misses or over-fires: fix the section's `triggers:` and add the prompts to `cli/lib/fixtures/instruction-router-eval.json`; NEVER relabel a prompt to hide a miss.
 
-**Read full SKILL.md when**: writing the plan artifact, batching Code-phase tasks, resuming an interrupted session, or reading the ALLOWED/FORBIDDEN path tables themselves.
+**Read full SKILL.md when**: writing the plan artifact, batching Code-phase tasks, resuming an interrupted session, running mode `instructions`, or reading the ALLOWED/FORBIDDEN path tables themselves.
 
 > Source: `.agents/skills/framework-development/SKILL.md` · phase: `unknown` · kind: `workflow` · stage owner · extraction strategy: A
 
@@ -402,7 +404,7 @@ Skills indexed: 26
 - Artifact missing (or a placeholder map) = CREATE mode: may write once the analysis completes. Artifact exists = UPDATE mode: generate a candidate (for a map: only its stale sections), show the diff summary, WAIT for explicit approval. NEVER overwrite an existing artifact without that approval, and NEVER regenerate a whole generated map.
 - Stop the run on a hard dependency failure or a rejected overwrite. A missing SOFT dependency is not a stop: record it as a Discovery Gap and continue, exactly as the selected reference defines.
 - NEVER invent business facts. Read every source the selected reference requires; anything unverified belongs under the output's mandatory discovery-gaps section, not asserted in the body.
-- After a successful artifact write, add the pointer to `.agents/instructions/agent-project.md` ONLY when that pointer is missing. NEVER write it into `AGENTS.md` (boilerplate-owned, size-budgeted) or add operational prose to `CLAUDE.md`.
+- After a successful artifact write, add the pointer to `.agents/instructions/agent-project.md` ONLY when that pointer is missing. NEVER write it into `AGENTS.md` (boilerplate-owned, size-budgeted) or add operational prose to `CLAUDE.md`. Placement per `framework-development/references/instructions-doctrine.md` §4, then `bun run instructions:check`; any other instruction change is `/framework-development` mode `instructions`.
 - Mode from `$ARGUMENTS`: when its first token matches a mode in the Mode routing table, that token IS the mode and the rest is forwarded to it unchanged (`/project-context data` on Claude Code, "project-context mode data" in prose on OpenCode and Codex). No matching first token → ASK which mode.
 - Before any step that uses a declared capability (`metadata.requires_capabilities`: `db`, `api-schema`, `diagrams` for the maps' figures), run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8: resolve by tool-name suffix, and when no available tool provides it STOP and name the capability + how to enable it, never a silent fallback.
 
