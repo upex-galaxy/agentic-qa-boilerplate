@@ -48,7 +48,7 @@ orca terminal rename --terminal "$ORCA_TERMINAL_HANDLE" --title "conductor · <s
 #     sentence, and anything that has to be right from the first action — the session-title
 #     token and the no-stopping clause included. Which is why the briefs are written first:
 #     the spec cites them by path.
-orca orchestration task-create --display-name '<KEY>' --spec '/<workflow-skill> <KEY> fleet worker. Read <ABS>/.session/orchestration/<slug>/COMMON.md then <ABS>/.session/orchestration/<slug>/W-<label>.md and execute your brief. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints. Channel: orca orchestration. No heartbeats.' --json </dev/null
+orca orchestration task-create --display-name '<KEY>' --spec '/<workflow-skill> <KEY> fleet worker. Read <ABS>/.session/orchestration/<slug>/COMMON.md then <ABS>/.session/orchestration/<slug>/W-<label>.md and execute your brief. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints. Channel: orca orchestration. No heartbeats. ROUTE-SCOPE: <section ids>' --json </dev/null
 #     <KEY> is the worker's ROSTER NAME, one value everywhere: the ticket key (or <KEY>-<slug>) for a
 #       ticket, a kebab slug for anything else (`volatile-impl`). It is the session name, the tab title
 #       prefix, the task display name and the `Session:` trailer. One token, no extra words between it
@@ -107,12 +107,13 @@ orca terminal read --terminal <handle> --screen --json </dev/null
 #     Anything longer than a couple of sentences goes in a FILE with a one-line pointer here:
 #     a long --text is truncated and still reports accepted:true with a byte count (G60).
 orca terminal send --terminal <handle> --enter \
-  --text '/sprint-testing <KEY> fleet worker. Read <ABS>/.session/orchestration/<slug>/COMMON.md then <ABS>/.session/orchestration/<slug>/W-<label>.md and execute your brief. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints. Channel: orca orchestration. No heartbeats.' \
+  --text '/sprint-testing <KEY> fleet worker. Read <ABS>/.session/orchestration/<slug>/COMMON.md then <ABS>/.session/orchestration/<slug>/W-<label>.md and execute your brief. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints. Channel: orca orchestration. No heartbeats. ROUTE-SCOPE: <section ids>' \
   --json </dev/null
 #     The prompt MUST OPEN with `/<workflow-skill> <KEY> fleet worker`: that token is what the
 #     identity hook turns into the session name `<KEY>` on Claude Code (there is no name flag here),
 #     and what the workflow skill reads to know it is a fleet worker. Everything after it is the
-#     brief pointer plus the continuation sentence.
+#     brief pointer, the continuation sentence and, LAST, the `ROUTE-SCOPE:` sentence that tells the
+#     prompt hook which instruction sections to route (launch-seam.md §2.1b).
 #     On `agent_prompt_stalled`: the text is usually ALREADY queued. Read the screen or
 #     `worktree ps` before resending, or the worker gets the message twice (G52).
 

@@ -180,5 +180,6 @@ Then send worker_done exactly once, outcome succeeded|failed, with --files-modif
 | no explicit heartbeat prohibition | the worker obeys its injected preamble and wakes the conductor every few minutes |
 | claims listed in the brief while the protocol says "wait for the grant" | the worker cannot tell which document governs and stalls on a claim that was never disputed. Measured |
 | the continuation rule only in the brief, never in the prompt | the worker reads it as reference material and stops at the first stage boundary anyway. Measured on a real fleet (G58) |
+| a launch prompt with no closing `ROUTE-SCOPE:` sentence | the prompt hook routes on the task block's incidental words (a path, "worker", the channel name) instead of the sections the work needs, and the worker reads routes that do not matter or skips the ones that do (ADR-0017) |
 | a launch prompt containing `"` or `<` / `>` | the shell mangles the line; the terminal reports success and nothing ran |
 | "report when you are done" with no path and no shape | a prose report the conductor cannot diff, aggregate or hand to the next wave |

@@ -11,7 +11,7 @@
 
 ---
 
-## The fourteen rules
+## The fifteen rules
 
 1. **One task: the one in the brief.** Do not widen the scope. Do not create other workers. If you
    find something that changes the scope, STOP and report it — a scope correction is the conductor's
@@ -199,3 +199,11 @@ has a known failure mode:
 - [ ] The report path and the report protocol.
 - [ ] Your session label, and the rename instruction if your harness needs one.
 - [ ] The trailer reminder.
+
+15. **Resolve your `ROUTE:` lines before the brief.** Your first prompt arrives with the hook's
+    `ROUTE: read <file>` lines (`AGENTS.md` LOAD PROTOCOL): read each one first, then COMMON and your
+    brief. They are few on purpose: the hook routes on the prompt's `ROUTE-SCOPE:` sentence or, without
+    one, on the task block only, never on the injected preamble, and caps the binding lines; anything
+    else it matched sits on one `ROUTE-OPTIONAL:` line you read only if the work needs it. Before the
+    cap, worker prompts fired most sections at once and workers read almost none of them, so the
+    brief ran without the sections it depended on (measurements in ADR-0017).

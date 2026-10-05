@@ -79,6 +79,21 @@ describe('instructions audit', () => {
     expect(result.routedSessions).toBe(1);
   });
 
+  test('the new route format, the optional line and the PostToolUse reminder: reads after a reminder are counted apart', () => {
+    const hook = (event: string, text: string): string => JSON.stringify({ type: 'attachment', attachment: { type: 'hook_additional_context', hookEvent: event, content: [text] } });
+    const result = audit([
+      prompt('commit and sync jira'),
+      hook('UserPromptSubmit', `ROUTE: read ${GIT} (git, 51 lines) before acting on this prompt\nROUTE: read ${PBI} (local-context-pbi, 112 lines) before acting on this prompt\nROUTE-OPTIONAL: the prompt also touches x; read one only if the task needs it.`),
+      tool('Read', { file_path: GIT }),
+      tool('Bash', { command: 'git status' }),
+      hook('PostToolUse', `ROUTE-PENDING: routed for this prompt and still unread: ${PBI}. Read it before the next step.`),
+      tool('Read', { file_path: PBI }),
+      prompt('next'),
+    ]);
+    expect(recallOf(totals(result))).toBe(1);
+    expect([result.optionalLines, result.reminders, result.readAfterReminder]).toEqual([1, 1, 1]);
+  });
+
   test('the Claude Code project slug replaces every non-alphanumeric character', () => {
     expect(claudeProjectSlug('/Users/me/orca/workspaces/agentic-qa-boilerplate/b2-q')).toBe('-Users-me-orca-workspaces-agentic-qa-boilerplate-b2-q');
     expect(claudeProjectSlug('/tmp/a_b.c')).toBe('-tmp-a-b-c');

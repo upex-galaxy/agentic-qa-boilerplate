@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { afterEach, describe, expect, test } from 'bun:test';
-import { evalTargets, evaluateRouter, PRECISION_FLOOR, promptsPerLabel, readRouterEvalFixture, RECALL_FLOOR } from './router-eval.ts';
+import { BINDING_RECALL_FLOOR, evalTargets, evaluateRouter, PRECISION_FLOOR, promptsPerLabel, readRouterEvalFixture, RECALL_FLOOR } from './router-eval.ts';
 
 const REPO_ROOT = resolve(import.meta.dir, '..', '..');
 const roots: string[] = [];
@@ -30,6 +30,7 @@ describe('router eval (the scorer instructions:check runs)', () => {
     expect(result.unknownLabels).toEqual([]);
     expect(result.recall).toBeGreaterThanOrEqual(result.targets.recall);
     expect(result.precision).toBeGreaterThanOrEqual(result.targets.precision);
+    expect(result.bindingRecall).toBeGreaterThanOrEqual(result.targets.bindingRecall);
     expect(fixture.targets?.recall ?? 0).toBeGreaterThanOrEqual(RECALL_FLOOR);
     expect(fixture.targets?.precision ?? 0).toBeGreaterThanOrEqual(PRECISION_FLOOR);
   });
@@ -48,8 +49,24 @@ describe('router eval (the scorer instructions:check runs)', () => {
     expect([result.truePositives, result.falseNegatives, result.falsePositives]).toEqual([1, 2, 1]);
     expect(result.misses).toEqual(['push it -> missed git', 'what now -> missed ghost']);
     expect(result.unknownLabels).toEqual(['ghost']);
-    expect(result.targets).toEqual({ recall: RECALL_FLOOR, precision: PRECISION_FLOOR });
+    expect(result.targets).toEqual({ recall: RECALL_FLOOR, precision: PRECISION_FLOOR, bindingRecall: BINDING_RECALL_FLOOR });
     expect(evalTargets({ targets: { recall: 0.99 }, prompts: [] }).recall).toBe(0.99);
+  });
+
+  test('an expected section pushed past the cap is named (recall) but not bound (binding recall), and costs no precision', () => {
+    const root = fixtureRoot();
+    const write = (rel: string, text: string): void => {
+      mkdirSync(dirname(join(root, rel)), { recursive: true });
+      writeFileSync(join(root, rel), text);
+    };
+    const rows = ['a', 'b', 'c', 'd'].map(id => `| ${id} | \`agent-${id}.md\` | - | - |`);
+    write('AGENTS.md', ['<!-- router:start -->', '| When | Read | Was | Then |', '|---|---|---|---|', ...rows, '<!-- router:end -->', ''].join('\n'));
+    for (const id of ['a', 'b', 'c', 'd']) {
+      write(`.agents/instructions/agent-${id}.md`, `---\nid: ${id}\ntitle: ${id}\nload_when: ${id}\ntriggers: ['\\b${id}word\\b']\npaths: []\n---\n`);
+    }
+    const result = evaluateRouter(root, { prompts: [{ prompt: 'aword bword cword dword', expect: ['a', 'b', 'c', 'd'] }] })!;
+    expect([result.recall, result.bindingRecall, result.precision]).toEqual([1, 0.75, 1]);
+    expect(result.demoted).toEqual(['aword bword cword dword -> demoted d']);
   });
 
   test('no router means no score; per-label counts each prompt once', () => {

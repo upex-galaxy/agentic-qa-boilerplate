@@ -90,6 +90,7 @@ parts, in this order:
 /<workflow-skill> <KEY> fleet worker. Read <ABS>/<scope>/COMMON.md then <ABS>/<scope>/W-<label>.md
 and execute your brief. Run every stage without returning to the prompt until worker_done is sent;
 stage boundaries are not checkpoints. Channel: orca orchestration. No heartbeats.
+ROUTE-SCOPE: <section ids the work needs, e.g. git, harnesses; or none>
 ```
 
 - **The opening token is load-bearing.** `/<workflow-skill> <KEY> fleet worker` is what the identity
@@ -99,6 +100,15 @@ stage boundaries are not checkpoints. Channel: orca orchestration. No heartbeats
   a stage boundary with work remaining, on briefs that said "no checkpoints": the instruction works
   when it arrives as the worker's own prompt and fails as a pointer to a file. It belongs in the
   prompt, in the brief, and in `COMMON.md`.
+- **The scope sentence goes LAST and names what the worker must read.** The prompt hook
+  classifies the prompt to inject `ROUTE:` lines, and a worker prompt is the worst input it gets:
+  the injected preamble talks about workers, dispatch and rules, and the absolute paths name the
+  scope folders, so before the cap one prompt fired most sections and workers read almost none of
+  them (measurements in ADR-0017). `ROUTE-SCOPE:` replaces the prompt for that classification: list the section
+  ids (`id:` in `.agents/instructions/agent-*.md`) the brief's work needs, a few words when unsure,
+  or `none`. It runs to the end of its line, so nothing follows it. Without it the hook classifies
+  the task block alone; with it the worker gets exactly the routes the conductor chose. On a
+  pasted launch line the sentence stays on the same line, after `No heartbeats.`
 - **One prompt, one task** (`references/brief-template.md` §5). The brief lives in a FILE; the prompt
   points at it.
 
