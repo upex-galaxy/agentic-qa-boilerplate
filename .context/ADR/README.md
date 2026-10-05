@@ -75,6 +75,7 @@ Who authors: a human QA architect / lead directly, **or** an AI workflow that de
 | [ADR-0010](./ADR-0010-secret-manager-advanced-option.md) | Secret values live in `.env` by default; a secret manager is the advanced, provider-agnostic opt-in | Accepted | — | — |
 | [ADR-0011](./ADR-0011-mcp-env-loader.md) | Every MCP server reads `.env` through one filtered varlock loader; the plaintext harness copies are retired | Accepted | — | — |
 | [ADR-0012](./ADR-0012-declared-harnesses.md) | A project declares the harnesses it uses; the gates check only those, the boilerplate checks all three | Accepted | — | — |
+| [ADR-0013](./ADR-0013-instructions-maintenance-locks.md) | Progressive disclosure is held in place by a placement doctrine, one edit path (framework-development mode `instructions`), three `instructions:check` locks (router, eval, complete section) and a recall audit | Accepted | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first.
 
