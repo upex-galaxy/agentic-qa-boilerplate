@@ -108,6 +108,7 @@ export const CODEX_HOOK_COMMAND_WINDOWS = 'powershell.exe -NoProfile -Command "$
  * validation (measured). A value that fails the schema stops the server that
  * needs it: `bunx varlock load --agent` shows which, redacted.
  */
+// LINT.IfChange(mcp-env-loader)
 export const MCP_ENV_LOADER_COMMAND = 'bunx';
 export const MCP_ENV_LOADER_HEAD = ['-p', 'varlock@1.20.0', 'varlock', 'run', '--no-redact-stdout', '--inject', 'vars', '--filter'] as const;
 
@@ -115,6 +116,7 @@ export const MCP_ENV_LOADER_HEAD = ['-p', 'varlock@1.20.0', 'varlock', 'run', '-
 export function mcpEnvLoaderArgs(names: readonly string[]): string[] {
   return [...MCP_ENV_LOADER_HEAD, names.join(','), '--'];
 }
+// LINT.ThenChange(.agents/instructions/agent-critical-rules.md, .agents/instructions/agent-harnesses.md, .agents/skills/agentic-qa-core/references/mcp-atlassian-optin.md, docs/core/variables-de-entorno.html)
 
 /**
  * The loader Codex used before the filter existed: every `.env` value, no
@@ -742,6 +744,7 @@ export function readHostMcpConfig(root: string, host: McpHost): NormalizedMcpCon
   return NORMALIZE[host](PARSE[host](path));
 }
 
+// LINT.IfChange(mcp-parity)
 export function validateMcpParityFindings(root = process.cwd(), options: McpParityOptions = {}): McpParityFindings {
   const resolvedRoot = resolve(root);
   const errors: string[] = [];
@@ -846,6 +849,7 @@ export function validateMcpParityFindings(root = process.cwd(), options: McpPari
 
   return { errors, warnings };
 }
+// LINT.ThenChange(README.md, CONTEXT.md, .agents/instructions/agent-harnesses.md, packages/pages-home/harnesses.es.html)
 
 function personalAbsolutePath(command: string): boolean {
   return /(?:^|[\s"'])(?:\/Users\/|\/home\/|[A-Za-z]:[\\/]Users[\\/])/.test(command);
