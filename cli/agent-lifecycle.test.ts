@@ -11,9 +11,11 @@ import {
   buildCommunitySkillArgs,
   detectAgents,
   discoverRequiredEnvVars,
+  ENGRAM_PLUGIN_COMMANDS,
   engramSetupArgs,
   launchCommandsForAgents,
   migrateAgentIds,
+  offerEngramClaudePlugin,
   parseAgentsEnv,
   PROJECT_LEVEL_SKILLS,
   PROJECT_SKILL_DESTINATION,
@@ -148,6 +150,48 @@ describe('installer Codex lifecycle', () => {
     expect(engramSetupArgs('claude-code')).toEqual(['setup', 'claude-code', '--protocol=slim']);
     expect(engramSetupArgs('opencode')).toEqual(['setup', 'opencode']);
     expect(engramSetupArgs('codex')).toEqual(['setup', 'codex']);
+  });
+
+  describe('offerEngramClaudePlugin', () => {
+    function fakeClaude(results: Record<string, boolean> = {}) {
+      const calls: string[][] = [];
+      const run = (args: string[]) => {
+        calls.push(args);
+        return { ok: results[args.join(' ')] ?? true, stderr: 'boom' };
+      };
+      return { calls, run };
+    }
+    const yes = async () => true;
+
+    test('installs the marketplace then the plugin after a yes', async () => {
+      const claude = fakeClaude();
+      const outcome = await offerEngramClaudePlugin({ nonInteractive: false, hasClaude: () => true, confirm: yes, run: claude.run });
+      expect(outcome).toBe('installed');
+      expect(claude.calls).toEqual(ENGRAM_PLUGIN_COMMANDS);
+    });
+
+    test('never runs the binary in non-interactive mode, nor asks', async () => {
+      const claude = fakeClaude();
+      let asked = false;
+      const outcome = await offerEngramClaudePlugin({ nonInteractive: true, hasClaude: () => true, confirm: async () => { asked = true; return true; }, run: claude.run });
+      expect(outcome).toBe('skipped-non-interactive');
+      expect(asked).toBe(false);
+      expect(claude.calls).toEqual([]);
+    });
+
+    test('runs nothing when declined or when the claude CLI is missing', async () => {
+      const claude = fakeClaude();
+      expect(await offerEngramClaudePlugin({ nonInteractive: false, hasClaude: () => true, confirm: async () => false, run: claude.run })).toBe('declined');
+      expect(await offerEngramClaudePlugin({ nonInteractive: false, hasClaude: () => false, confirm: yes, run: claude.run })).toBe('no-claude-cli');
+      expect(claude.calls).toEqual([]);
+    });
+
+    test('an already-registered marketplace does not block the install; a failed install is reported, never thrown', async () => {
+      const marketplaceFails = fakeClaude({ 'plugin marketplace add Gentleman-Programming/engram': false });
+      expect(await offerEngramClaudePlugin({ nonInteractive: false, hasClaude: () => true, confirm: yes, run: marketplaceFails.run })).toBe('installed');
+      const installFails = fakeClaude({ 'plugin install engram@engram': false });
+      expect(await offerEngramClaudePlugin({ nonInteractive: false, hasClaude: () => true, confirm: yes, run: installFails.run })).toBe('failed');
+    });
   });
 
   test('discovers the MCP environment contracts from the loader filter on every host, and exposes launch guidance', async () => {

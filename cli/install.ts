@@ -932,6 +932,52 @@ export function engramSetupArgs(agent: AgentId): string[] {
     : ['setup', agent];
 }
 
+/** The Engram Claude Code plugin ships the session hooks `engram setup` does not write. */
+export const ENGRAM_PLUGIN_COMMANDS: string[][] = [
+  ['plugin', 'marketplace', 'add', 'Gentleman-Programming/engram'],
+  ['plugin', 'install', 'engram@engram'],
+];
+const ENGRAM_PLUGIN_MANUAL = 'claude plugin marketplace add Gentleman-Programming/engram && claude plugin install engram@engram';
+
+export interface EngramPluginDeps {
+  nonInteractive: boolean
+  hasClaude: () => boolean
+  confirm: (message: string) => Promise<boolean>
+  run: (args: string[]) => { ok: boolean, stderr: string }
+}
+
+export type EngramPluginOutcome = 'installed' | 'declined' | 'skipped-non-interactive' | 'no-claude-cli' | 'failed';
+
+/**
+ * Offer to install the Engram Claude Code plugin. Never fatal: every path that
+ * does not install it prints the manual command and returns. Non-interactive
+ * runs never install it, because it writes user-level Claude Code config.
+ */
+export async function offerEngramClaudePlugin(deps: EngramPluginDeps): Promise<EngramPluginOutcome> {
+  const printManual = (): void => {
+    log.dim('  For Engram session hooks in Claude Code, install the plugin once:');
+    log.dim(`    ${ENGRAM_PLUGIN_MANUAL}`);
+  };
+  if (deps.nonInteractive) { printManual(); return 'skipped-non-interactive'; }
+  if (!deps.hasClaude()) { printManual(); return 'no-claude-cli'; }
+  if (!(await deps.confirm('Install the Engram Claude Code plugin (session hooks) now?'))) {
+    printManual();
+    return 'declined';
+  }
+  const [marketplaceAdd, pluginInstall] = ENGRAM_PLUGIN_COMMANDS;
+  // A marketplace that is already registered makes `add` fail; the install
+  // below is what decides the outcome.
+  deps.run(marketplaceAdd);
+  const result = deps.run(pluginInstall);
+  if (!result.ok) {
+    log.warn(`  Engram plugin install failed: ${result.stderr.trim() || 'unknown error'}`);
+    printManual();
+    return 'failed';
+  }
+  log.success('  Engram Claude Code plugin installed.');
+  return 'installed';
+}
+
 function runEngramSetup(agent: AgentId): { ok: boolean, reason?: string } {
   const result = tryRun('engram', engramSetupArgs(agent));
   if (result.ok) { return { ok: true }; }
@@ -986,9 +1032,13 @@ async function installEngramPerAgent(
     }
     if (result.ok && agent === 'claude-code') {
       // `engram setup` registers the MCP server only; the session hooks ship
-      // in the Claude Code plugin, which the user installs once per machine.
-      log.dim('  For Engram session hooks in Claude Code, install the plugin once:');
-      log.dim('    claude plugin marketplace add Gentleman-Programming/engram && claude plugin install engram@engram');
+      // in the Claude Code plugin, installed once per machine.
+      await offerEngramClaudePlugin({
+        nonInteractive: NON_INTERACTIVE,
+        hasClaude: () => which('claude') !== null,
+        confirm: async message => maybeConfirm(message, true),
+        run: args => tryRun('claude', args),
+      });
     }
 
     state.skills[`${ENGRAM_COMPONENT}::${agent}`] = status;

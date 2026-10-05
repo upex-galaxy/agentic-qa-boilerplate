@@ -365,7 +365,7 @@ engram setup codex
 
 Each call registers the `engram` MCP server for that agent (on Claude Code through `claude mcp add`, into the user config). `--protocol=slim` keeps Claude Code's session-start protocol short and writes no block into your instructions file.
 
-On Claude Code, the session hooks (such as the memory context injected at session start) come from the Engram plugin, which the MCP registration does not install. Add it once per machine:
+On Claude Code, the session hooks (such as the memory context injected at session start) come from the Engram plugin, which the MCP registration does not install. Right after `engram setup claude-code` succeeds, the installer offers to add it (default yes). It never runs in non-interactive mode, and a declined or failed install only prints the commands, so you can add it yourself once per machine:
 
 ```bash
 claude plugin marketplace add Gentleman-Programming/engram
