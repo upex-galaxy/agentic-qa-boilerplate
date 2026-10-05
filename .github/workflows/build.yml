@@ -71,6 +71,15 @@ jobs:
       - name: ESLint Check
         run: bun run lint:check
 
+      - name: Docs Gates
+        run: |
+          bun run docs:check
+          bun run skills:check
+        # The documentation subset of `repo:check`: dead links and paths, quoted
+        # scripts package.json does not declare, Critical Rule #17 facts, the
+        # skill router, and (skills:check) the instruction layer with its locks
+        # and router eval. Before this step no CI job ran any doc check.
+
       - name: Skill Activation Evals Check
         run: bun run skills:evals
         # Structural validation of .agents/skills/*/evals/evals.json — catches
