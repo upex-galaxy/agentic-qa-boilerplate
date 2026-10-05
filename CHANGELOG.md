@@ -16,6 +16,21 @@ below names which one it applies to:
 
 ## Unreleased — Boilerplate
 
+### Changed (MCP servers read `.env` themselves; no plaintext copies)
+- **Every MCP server that needs `.env` values starts through one filtered loader** on all three
+  hosts: `bunx -p varlock@<pin> varlock run --no-redact-stdout --inject vars --filter <its vars> --
+  <server>` (`MCP_ENV_LOADER_*`, ADR-0011). It reads `.env` (or the secret manager) when the host
+  spawns the server, so a desktop or natively launched harness gets its values, and each server
+  sees only its own. `.mcp.json` drops `${VAR}`, `opencode.jsonc` drops `{file:}`, Codex drops
+  `env_vars`; context7 needs no value and launches bare. `agents:compat:check` compares the filter
+  across hosts; downstream, an old-shape config is a warning naming the exact launch.
+- **`bun run harness:env` retires the copies it used to generate** (the `env` block of
+  `.claude/settings.local.json`, `.auth/opencode/`): equal to `.env` = deleted, different = moved
+  to `.auth/harness-env-backup/` and named, still read by an old-shape config = kept.
+  `bun run setup:doctor` reports what remains; `bun run setup` retires them in its last step;
+  `bun run setup --variables` no longer regenerates anything. Existing machines: run
+  `bun run harness:env` once, then restart the agent session.
+
 ### Changed (agents and tests launch through varlock)
 - **`bun run claude|codex|opencode` run `scripts/launch.ts`**: a preflight, then `varlock run -- <bin>`.
   varlock lets a variable inherited from the shell win over `.env` (no flag inverts it), so the
@@ -24,9 +39,8 @@ below names which one it applies to:
   scripts run the same launcher with `--warn`: same notice, then the run goes on, so a deliberate
   `AUTO_SYNC=true bun run test` keeps working. `dotenv-cli` is retired.
 - **Codex MCP servers start through `bunx -p varlock@<pin> varlock run --no-redact-stdout --`**
-  (`.codex/config.toml`, `CODEX_ENV_LOADER_*`). `--no-redact-stdout` keeps the JSON-RPC stream
-  byte-intact. A value that fails the schema now stops every server: `bunx varlock load --agent`
-  names it.
+  (`.codex/config.toml`). `--no-redact-stdout` keeps the JSON-RPC stream byte-intact. Since
+  narrowed to one filtered loader per server on every host (entry above).
 - **`vars:env:check` Rule 3 uses the same comparison** (`cli/lib/env-drift.ts`) and runs with
   `bun --no-env-file`, so its own process holds only what it inherited.
 - **`.envrc` loads `.env.local` on top of `.env` and watches both**, matching varlock's order so the

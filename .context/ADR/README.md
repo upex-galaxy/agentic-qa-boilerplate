@@ -73,6 +73,7 @@ Who authors: a human QA architect / lead directly, **or** an AI workflow that de
 | [ADR-0008](./ADR-0008-browser-session-isolation.md) | Browser sessions are isolated in memory; persistence and the human's browser are explicit | Accepted | — | — |
 | [ADR-0009](./ADR-0009-progressive-disclosure-of-instructions.md) | Progressive disclosure of the project instructions: an always-on L0, routed sections, a hook that names what to read | Accepted | — | — |
 | [ADR-0010](./ADR-0010-secret-manager-advanced-option.md) | Secret values live in `.env` by default; a secret manager is the advanced, provider-agnostic opt-in | Accepted | — | — |
+| [ADR-0011](./ADR-0011-mcp-env-loader.md) | Every MCP server reads `.env` through one filtered varlock loader; the plaintext harness copies are retired | Accepted | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first.
 
