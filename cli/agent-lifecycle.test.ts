@@ -77,6 +77,7 @@ function copyPath(root: string, relativePath: string): void {
  * harness skips.
  */
 const HAS_CODEX = existsSync(join(REPO_ROOT, '.codex/hooks.json')) && existsSync(join(REPO_ROOT, '.codex/config.toml'));
+const HAS_CLAUDE = existsSync(join(REPO_ROOT, 'CLAUDE.md'));
 const HAS_ALL_HARNESSES = HAS_CODEX && existsSync(join(REPO_ROOT, 'opencode.jsonc')) && existsSync(join(REPO_ROOT, '.mcp.json'));
 
 function compatibilityFixture(): string {
@@ -250,7 +251,7 @@ describe('compatibility repair lifecycle', () => {
     });
   });
 
-  test('refuses to replace a real Claude skills directory', () => {
+  test.skipIf(!HAS_CLAUDE)('refuses to replace a real Claude skills directory', () => {
     const root = compatibilityFixture();
     mkdirSync(join(root, '.claude/skills'), { recursive: true });
     writeFileSync(join(root, '.claude/skills/owned.txt'), 'preserve me\n');
@@ -259,7 +260,7 @@ describe('compatibility repair lifecycle', () => {
     expect(readFileSync(join(root, '.claude/skills/owned.txt'), 'utf8')).toBe('preserve me\n');
   });
 
-  test('reclaims the skills CLI per-skill symlink shim without losing a skill body', () => {
+  test.skipIf(!HAS_CLAUDE)('reclaims the skills CLI per-skill symlink shim without losing a skill body', () => {
     // `bunx skills add` (project level) writes the body to .agents/skills/<slug>/ and then
     // creates .claude/skills/ as a REAL directory of per-skill symlinks. `bun run setup`
     // installs community skills BEFORE repairing compatibility, so this is what a clean
@@ -280,7 +281,7 @@ describe('compatibility repair lifecycle', () => {
     expect(repairClaudeSkillsAlias(root, 'linux').status).toBe('valid');
   });
 
-  test('still refuses a shim directory that also holds real content', () => {
+  test.skipIf(!HAS_CLAUDE)('still refuses a shim directory that also holds real content', () => {
     const root = compatibilityFixture();
     mkdirSync(join(root, '.agents/skills/playwright-cli'), { recursive: true });
     mkdirSync(join(root, '.claude/skills'), { recursive: true });
@@ -291,7 +292,7 @@ describe('compatibility repair lifecycle', () => {
     expect(readFileSync(join(root, '.claude/skills/hand-written.md'), 'utf8')).toBe('mine\n');
   });
 
-  test('refuses a symlink shim pointing outside the canonical skills store', () => {
+  test.skipIf(!HAS_CLAUDE)('refuses a symlink shim pointing outside the canonical skills store', () => {
     const root = compatibilityFixture();
     mkdirSync(join(root, 'elsewhere/rogue'), { recursive: true });
     mkdirSync(join(root, '.claude/skills'), { recursive: true });
@@ -300,7 +301,7 @@ describe('compatibility repair lifecycle', () => {
     expect(() => repairClaudeSkillsAlias(root, 'linux')).toThrow('Refusing to replace');
   });
 
-  test('installer and updater repairs are idempotent', async () => {
+  test.skipIf(!HAS_CLAUDE)('installer and updater repairs are idempotent', async () => {
     const root = compatibilityFixture();
     const first = repairRepositoryCompatibility(root, 'linux');
     const second = repairRepositoryCompatibility(root, 'linux');
