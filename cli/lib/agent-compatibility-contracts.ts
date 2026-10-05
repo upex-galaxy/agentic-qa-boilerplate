@@ -72,15 +72,20 @@ export const CODEX_HOOK_COMMAND_WINDOWS = 'powershell.exe -NoProfile -Command "$
  * `--config dbhub.toml` already resolves against) and then starts the real
  * server, so the values arrive however Codex was opened.
  *
- * `-p dotenv-cli@<pin>` names the package explicitly: a bare `bunx dotenv`
- * resolves to the `dotenv` LIBRARY when `node_modules` is absent and prints its
- * usage instead of running anything. The pin tracks the `dotenv-cli`
- * devDependency, so the cache already holds it after `bun install`. `-o` makes
- * `.env` win over an inherited value, exactly as the `bun run codex` wrapper
- * does. Measured: ADR-0006.
+ * The loader is `varlock run`, the same one behind `bun run codex`: it reads
+ * `.env.schema` + `.env.core.schema`, layers `.env` and `.env.local`, validates,
+ * and starts the server with the values. `--no-redact-stdout` is required: the
+ * server speaks JSON-RPC on stdio, and varlock redacts piped output by default,
+ * which rewrites any message that carries a sensitive value (measured: byte-
+ * identical with the flag, rewritten without it). `-p varlock@<pin>` names the
+ * package explicitly and tracks the exact `varlock` devDependency, so the cache
+ * already holds it after `bun install`. An inherited value wins over `.env`
+ * here, as everywhere varlock loads; `bun run codex` refuses to start while one
+ * differs. A value that fails the schema stops every server: `bunx varlock load
+ * --agent` shows which. Measured: ADR-0006 (the earlier dotenv loader).
  */
 export const CODEX_ENV_LOADER_COMMAND = 'bunx';
-export const CODEX_ENV_LOADER_ARGS = ['-p', 'dotenv-cli@8.0.0', 'dotenv', '-o', '-e', '.env', '--'] as const;
+export const CODEX_ENV_LOADER_ARGS = ['-p', 'varlock@1.20.0', 'varlock', 'run', '--no-redact-stdout', '--'] as const;
 
 /**
  * Splits a Codex `command` + `args` into the server it actually starts. A

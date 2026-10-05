@@ -10,17 +10,20 @@
 [shell_environment_policy]
 inherit = "core"
 
-# EVERY server below starts through a .env loader: `bunx -p dotenv-cli@8.0.0
-# dotenv -o -e .env -- <the real command>`. `env_vars` forwards variables BY
-# NAME from Codex's own process environment, and Codex Desktop opened from
-# Finder or the Dock has none, so without the loader those servers started
-# empty (the OpenAPI one exits before the handshake). The loader reads .env
-# from the project root whatever launched Codex; `-o` lets .env win over a
-# stale inherited value, like `bun run codex`. `env_vars` stays: it is what
-# `bun run agents:compat:check` compares across the three hosts.
+# EVERY server below starts through a .env loader: `bunx -p varlock@1.20.0
+# varlock run --no-redact-stdout -- <the real command>`. `env_vars` forwards
+# variables BY NAME from Codex's own process environment, and Codex Desktop
+# opened from Finder or the Dock has none, so without the loader those servers
+# started empty (the OpenAPI one exits before the handshake). The loader reads
+# the varlock schema plus .env / .env.local from the project root whatever
+# launched Codex. `--no-redact-stdout` keeps the JSON-RPC stream byte-intact
+# (varlock redacts piped output otherwise). An inherited value wins over .env
+# here; `bun run codex` refuses to start while one differs. `env_vars` stays: it
+# is what `bun run agents:compat:check` compares across the three hosts.
 #
-# Needs `bun install` once (the dotenv-cli devDependency) and a .env in the
+# Needs `bun install` once (the varlock devDependency) and a .env in the
 # checkout. A Codex-managed worktree gets its .env through .worktreeinclude.
+# A value that fails the schema stops every server: `bunx varlock load --agent`.
 #
 # `startup_timeout_sec = 30` on each: Codex waits 10 s by default, and a cold
 # `bunx` fetch plus the loader hop can pass that before the first handshake.
@@ -31,11 +34,10 @@ enabled = true
 startup_timeout_sec = 30
 args = [
   "-p",
-  "dotenv-cli@8.0.0",
-  "dotenv",
-  "-o",
-  "-e",
-  ".env",
+  "varlock@1.20.0",
+  "varlock",
+  "run",
+  "--no-redact-stdout",
   "--",
   "bunx",
   "-y",
@@ -52,11 +54,10 @@ enabled = true
 startup_timeout_sec = 30
 args = [
   "-p",
-  "dotenv-cli@8.0.0",
-  "dotenv",
-  "-o",
-  "-e",
-  ".env",
+  "varlock@1.20.0",
+  "varlock",
+  "run",
+  "--no-redact-stdout",
   "--",
   "bunx",
   "-y",
@@ -78,11 +79,10 @@ enabled = true
 startup_timeout_sec = 30
 args = [
   "-p",
-  "dotenv-cli@8.0.0",
-  "dotenv",
-  "-o",
-  "-e",
-  ".env",
+  "varlock@1.20.0",
+  "varlock",
+  "run",
+  "--no-redact-stdout",
   "--",
   "bunx",
   "-y",
@@ -111,11 +111,10 @@ enabled = true
 startup_timeout_sec = 30
 args = [
   "-p",
-  "dotenv-cli@8.0.0",
-  "dotenv",
-  "-o",
-  "-e",
-  ".env",
+  "varlock@1.20.0",
+  "varlock",
+  "run",
+  "--no-redact-stdout",
   "--",
   "bunx",
   "-y",

@@ -81,7 +81,7 @@ const REPO_ROOT = resolve(import.meta.dir, '..');
 const ENV_PATH = join(REPO_ROOT, '.env');
 const MCP_PATH = join(REPO_ROOT, '.mcp.json');
 const OPENCODE_PATH = join(REPO_ROOT, 'opencode.jsonc');
-const NODE_MODULES_DOTENV = join(REPO_ROOT, 'node_modules', 'dotenv-cli');
+const NODE_MODULES_VARLOCK = join(REPO_ROOT, 'node_modules', 'varlock');
 // --preflight mode resolves install.ts's only third-party import.
 const INQUIRER_MARKER = join(REPO_ROOT, 'node_modules', '@inquirer', 'prompts', 'package.json');
 
@@ -944,7 +944,7 @@ export async function runDoctor(): Promise<DoctorReport> {
     mcp_json_exists: existsSync(MCP_PATH),
     opencode_jsonc_exists: existsSync(OPENCODE_PATH),
     agent_compatibility: agentCompatibility,
-    deps_installed: existsSync(NODE_MODULES_DOTENV),
+    deps_installed: existsSync(NODE_MODULES_VARLOCK),
     git_hooks_installed: existsSync(join(REPO_ROOT, '.husky', '_')),
     worktree_of: ((): string | null => {
       const roots = checkoutRoots(REPO_ROOT);
@@ -1136,12 +1136,12 @@ export async function runDoctor(): Promise<DoctorReport> {
     }
   }
 
-  // node_modules / dotenv-cli
+  // node_modules / varlock
   if (!report.deps_installed && !setup.replaces.deps) {
     report.pending_actions.push({
       type: 'shell_command',
       target: 'bun install',
-      hint: 'Install project dependencies including dotenv-cli (needed for the Claude/OpenCode/Codex launch wrappers).',
+      hint: 'Install project dependencies including varlock (needed for the Claude/OpenCode/Codex launch wrappers and the test scripts).',
     });
   }
 
