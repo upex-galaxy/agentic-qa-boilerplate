@@ -17,7 +17,6 @@ import {
   UNPROVISIONED_WORKTREE_LINE,
   worktreeUnprovisioned,
 } from '../../.agents/hooks/personality-reinject.mjs';
-import opencodePlugin from '../../.opencode/plugins/personality-reinject.js';
 import {
   CLAUDE_HOOK_COMMAND,
   CODEX_HOOK_COMMAND,
@@ -66,6 +65,16 @@ import {
 
 const REPO_ROOT = resolve(import.meta.dir, '..', '..');
 const temporaryRoots: string[] = [];
+
+/**
+ * The OpenCode adapter, imported only where it exists: a project on another
+ * harness deletes it (ADR-0012), and a static import would fail `types:check`
+ * there on every commit. The tests that read it skip without it.
+ */
+const OPENCODE_PLUGIN = '.opencode/plugins/personality-reinject.js';
+const HAS_OPENCODE = existsSync(join(REPO_ROOT, OPENCODE_PLUGIN));
+// eslint-disable-next-line ts/no-explicit-any -- a plain-JS adapter with no type declarations
+const opencodePlugin: any = HAS_OPENCODE ? (await import(join(REPO_ROOT, OPENCODE_PLUGIN))).default : null;
 
 afterEach(() => {
   while (temporaryRoots.length > 0) {
@@ -440,7 +449,7 @@ function hookSettings(command: string, windows?: string): string {
 function contractFixture(prefix?: string, ids = BOILERPLATE_IDS): string {
   const root = temporaryRoot(prefix);
   copyFromRepo(root, '.agents/hooks/personality-reinject.mjs');
-  copyFromRepo(root, '.opencode/plugins/personality-reinject.js');
+  if (HAS_OPENCODE) { copyFromRepo(root, OPENCODE_PLUGIN); }
   write(root, '.claude/settings.json', hookSettings(CLAUDE_HOOK_COMMAND));
   write(root, '.codex/hooks.json', hookSettings(CODEX_HOOK_COMMAND, CODEX_HOOK_COMMAND_WINDOWS));
   write(root, '.mcp.json', mcpJson(ids));
@@ -474,7 +483,7 @@ describe('shared personality hook', () => {
     expect(result.stdout).not.toContain(HOOK_ORCA_MARKER);
   });
 
-  test('OpenCode 1 (server entrypoint) mutates the system array in place with the same payload', async () => {
+  test.skipIf(!HAS_OPENCODE)('OpenCode 1 (server entrypoint) mutates the system array in place with the same payload', async () => {
     const plugin = await opencodePlugin.server();
     const transform = plugin['experimental.chat.system.transform'];
     const output = { system: ['base system'] };
@@ -491,7 +500,7 @@ describe('shared personality hook', () => {
     expect(output.system[1]).toContain('session=test harness=opencode');
   });
 
-  test('OpenCode 2 (setup entrypoint) registers a context hook that pushes text parts once', async () => {
+  test.skipIf(!HAS_OPENCODE)('OpenCode 2 (setup entrypoint) registers a context hook that pushes text parts once', async () => {
     const hooks: Record<string, (event: { sessionID: string, system: Array<{ type: string, text: string }> }) => void> = {};
     await opencodePlugin.setup({
       session: { hook: async (name: string, callback: (typeof hooks)[string]) => { hooks[name] = callback; } },
@@ -812,7 +821,7 @@ export const KATA_IMPORT_ALIASES = { files: ['tests/**/*.ts'], rules: {} };
   });
 });
 
-describe('hook adapters', () => {
+describe.skipIf(!HAS_OPENCODE)('hook adapters', () => {
   test('accepts the three adapters wired to the shared emitter', () => {
     expect(validateHookCompatibility(contractFixture())).toEqual([]);
   });
@@ -921,7 +930,7 @@ describe('hook adapters', () => {
   });
 });
 
-describe('instruction router hooks', () => {
+describe.skipIf(!HAS_OPENCODE)('instruction router hooks', () => {
   const ROUTER_L0 = '# L0\n<!-- router:start -->\n| When the request involves | Read | Was | Then |\n|---|---|---|---|\n| git | `agent-git.md` | §11 | - |\n<!-- router:end -->\n';
 
   function rearmSettings(command: string, windows?: string, rearmOn: string[] = ['compact', 'clear']): string {
@@ -1555,7 +1564,7 @@ describe('commands shadowing a skill', () => {
   });
 });
 
-describe('checkAgentCompatibility', () => {
+describe.skipIf(!HAS_OPENCODE)('checkAgentCompatibility', () => {
   test('passes on a repository with alias, adapters and parity in place', () => {
     const root = repositoryFixture();
     repairClaudeSkillsAlias(root, 'linux');
@@ -1603,7 +1612,59 @@ describe('checkAgentCompatibility', () => {
   });
 });
 
-describe('repairAgentSurfaces', () => {
+describe('one-harness projects (ADR-0012)', () => {
+  const OPENCODE_AND_CODEX = ['opencode.jsonc', OPENCODE_PLUGIN, '.codex/config.toml', '.codex/hooks.json'];
+
+  test('a Claude-only project passes with one note per harness it dropped', () => {
+    const root = repositoryFixture();
+    repairClaudeSkillsAlias(root, 'linux');
+    for (const file of OPENCODE_AND_CODEX) { rmSync(join(root, file), { force: true }); }
+
+    const result = checkAgentCompatibility(root, 'linux');
+    expect(result).toMatchObject({ ok: true, errors: [], harnesses: ['claude'], alias: { status: 'valid' } });
+    expect(result.notes).toEqual(['opencode: none of its files present, skipped', 'codex: none of its files present, skipped']);
+  });
+
+  test('one file of a harness still in use is drift, not a choice', () => {
+    const root = repositoryFixture();
+    repairClaudeSkillsAlias(root, 'linux');
+    rmSync(join(root, '.codex/config.toml'));
+
+    expect(checkAgentCompatibility(root, 'linux').errors).toContain('MCP config missing for codex: .codex/config.toml (a harness in use; declare `harnesses:` in .agents/project.yaml to drop it)');
+  });
+
+  test.skipIf(!HAS_OPENCODE)('an OpenCode-only project needs no CLAUDE.md, no alias and no .mcp.json', () => {
+    const root = repositoryFixture();
+    for (const file of ['CLAUDE.md', '.mcp.json', '.claude/settings.json', '.codex/config.toml', '.codex/hooks.json']) { rmSync(join(root, file)); }
+    write(root, '.agents/project.yaml', 'harnesses: [opencode]\n');
+
+    expect(checkAgentCompatibility(root, 'linux')).toMatchObject({ ok: true, errors: [], harnesses: ['opencode'], alias: { status: 'not-used' } });
+    expect(declaredMcpIds(root)).toEqual([...BOILERPLATE_IDS].sort());
+  });
+
+  test('the boilerplate keeps failing on a deleted adapter', () => {
+    const root = repositoryFixture();
+    repairClaudeSkillsAlias(root, 'linux');
+    write(root, 'package.json', JSON.stringify({ name: 'agentic-qa-boilerplate' }));
+    for (const file of OPENCODE_AND_CODEX) { rmSync(join(root, file), { force: true }); }
+
+    const result = checkAgentCompatibility(root, 'linux');
+    expect(result.ok).toBe(false);
+    expect(result.harnesses).toEqual(['claude', 'opencode', 'codex']);
+    expect(result.errors).toContain('Hook compatibility file missing: .codex/hooks.json');
+  });
+
+  test('a two-harness project without Claude compares against the first declared harness', () => {
+    const root = contractFixture();
+    write(root, '.agents/project.yaml', 'harnesses: [codex, opencode]\n');
+    rmSync(join(root, '.mcp.json'));
+    write(root, 'opencode.jsonc', opencodeJsonc(BOILERPLATE_IDS.filter(id => id !== 'context7')));
+
+    expect(validateMcpParity(root)).toEqual(['MCP context7 missing from opencode: declared in .codex/config.toml, absent from opencode.jsonc']);
+  });
+});
+
+describe.skipIf(!HAS_OPENCODE)('repairAgentSurfaces', () => {
   test('creates the alias, moves a command that shadows a skill and passes the check', () => {
     const root = repositoryFixture();
     write(root, '.opencode/commands/project-context.md', 'Mine.\n');
