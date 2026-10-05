@@ -130,7 +130,7 @@
       },
       {
         "name": "slack-aurora",
-        "envVars": [],
+        "envVars": ["SLACK_MCP_XOXP_TOKEN", "SLACK_MCP_REACTION_TOOL"],
         "purpose": "Slack bot MCP — read channels, post and react from the agent (optional; token in .env)."
       },
       {
@@ -155,10 +155,6 @@
       {
         "path": ".env",
         "what": "Created from .env.example. Stores all API keys and secrets (gitignored)."
-      },
-      {
-        "path": ".envrc",
-        "what": "direnv autoload file — loads .env into the shell on cd (optional, offered interactively)."
       },
       {
         "path": ".mcp.json",

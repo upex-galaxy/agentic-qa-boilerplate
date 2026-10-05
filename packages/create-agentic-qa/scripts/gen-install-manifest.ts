@@ -135,7 +135,7 @@ function extractMcpSecrets(src: string): Record<string, string[]> {
   const block = match[1];
   const result: Record<string, string[]> = {};
   // Match each `key: [ ... ]` entry
-  for (const entry of block.matchAll(/(\w+)\s*:\s*\[([^\]]*)\]/g)) {
+  for (const entry of block.matchAll(/['"]?([\w-]+)['"]?\s*:\s*\[([^\]]*)\]/g)) {
     const key = entry[1];
     const valuesBlock = entry[2];
     const vars = [...(valuesBlock ?? '').matchAll(/['"]([^'"]+)['"]/g)]
@@ -425,7 +425,6 @@ function buildManifest(src: string): object {
       mcps: mcpEntries,
       envFiles: [
         { path: '.env', what: 'Created from .env.example. Stores all API keys and secrets (gitignored).' },
-        { path: '.envrc', what: 'direnv autoload file — loads .env into the shell on cd (optional, offered interactively).' },
         // eslint-disable-next-line no-template-curly-in-string
         { path: '.mcp.json', what: 'Already committed. Uses ${VAR} placeholders — installer ensures .env has the values.' },
         { path: 'opencode.jsonc', what: 'Already committed. Uses {env:VAR} placeholders — installer ensures .env has the values.' },
