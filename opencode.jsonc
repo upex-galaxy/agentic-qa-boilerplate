@@ -111,10 +111,29 @@
   // Rule precedence: last matching pattern wins, so deny entries are placed
   // AFTER the broad allows they override (e.g. `git *` allow, then
   // `git push --force *` deny — the deny wins for force-pushes).
+  //
+  // Secret files (Critical Rule #1, credentials by name, never by value): the
+  // `read` block and the secret entries at the end of `bash` mirror the
+  // `Read(...)` / `Bash(printenv*)` denies of .claude/settings.json. Paths are
+  // matched as wildcards against the full path, so `*.env` covers any depth.
+  // `.env.example` and the two schemas stay readable: they hold names only.
+  // `source .auth/tokens.env` keeps asking (the API doctrine sources it in the
+  // same call as curl, by name); reading that file directly is denied.
   "permission": {
     "edit": "allow",
     "webfetch": "allow",
     "websearch": "allow",
+    "read": {
+      "*": "allow",
+      "*.env": "deny",
+      "*.env.*": "deny",
+      "*.env.example": "allow",
+      "*.env.schema": "allow",
+      "*.env.core.schema": "allow",
+      "*.envrc.local": "deny",
+      "*.auth/*": "deny",
+      "*.claude/settings.local.json": "deny"
+    },
     "bash": {
       "*": "ask",
 
@@ -167,7 +186,24 @@
       "truncate *": "deny",
       "shred *": "deny",
       "dd if=*": "deny",
-      "mkfs*": "deny"
+      "mkfs*": "deny",
+
+      "* .env": "deny",
+      "* .env *": "deny",
+      "*/.env": "deny",
+      "* .env.local*": "deny",
+      "* .env.*.local*": "deny",
+      "* .envrc.local*": "deny",
+      "* .auth/*": "deny",
+      "* .claude/settings.local.json*": "deny",
+      "printenv*": "deny",
+      "env": "deny",
+      "varlock printenv*": "deny",
+      "varlock reveal*": "deny",
+      "bunx varlock printenv*": "deny",
+      "bunx varlock reveal*": "deny",
+      "source .auth/tokens.env": "ask",
+      ". .auth/tokens.env": "ask"
     }
   }
 }

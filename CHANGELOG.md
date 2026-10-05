@@ -16,6 +16,17 @@ below names which one it applies to:
 
 ## Unreleased — Boilerplate
 
+### Changed (credentials by name, never by value)
+- **Critical Rule #1 is `CREDENTIALS = BY NAME, NEVER BY VALUE`.** The AI references a secret only
+  through its variable name and never opens `.env*` (except `.env.example` and the two schemas),
+  `.auth/**` or `.claude/settings.local.json`, nor runs `printenv`, `env`, `echo $SECRET`, `set -x`
+  or `curl -v`. Presence is checked with `bunx varlock load --agent` (redacted). Secrets are typed by
+  the human; the AI may write a non-sensitive value (URL, project key, flag, port) when asked.
+- **Deny rules back it on two hosts**: `.claude/settings.json` `permissions.deny` and
+  `opencode.jsonc` `permission.read` / `permission.bash`. `source .auth/tokens.env` in the same call
+  as curl keeps working. Canon: `agentic-qa-core/references/secret-hygiene.md`; the xray-cli,
+  jira-administration, db-testing and adaptation runbooks no longer grep or source `.env`.
+
 ### Changed (instruction sections get readable `agent-` names)
 - **Every file in `.agents/instructions/` but `README.md` is named `agent-<topic>.md`, with no
   number**: `80-git.md` is `agent-git.md`, `project.md` is `agent-project.md`, the stub is

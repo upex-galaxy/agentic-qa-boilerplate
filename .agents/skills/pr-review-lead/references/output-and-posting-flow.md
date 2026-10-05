@@ -9,7 +9,7 @@ Group by bucket, severity within bucket, always include the citation column, alw
 ```
 | # | Severidad | Archivo/Ubicación | Observación (con evidencia) |
 |---|---|---|---|
-| 1 | Crítico | config/variables.ts:34 | Password fallback hardcodeada en código (`\|\| 'Demo123!'`). AGENTS.md Regla Crítica #1: "ALWAYS read from .env. NEVER hardcode/guess." |
+| 1 | Crítico | config/variables.ts:34 | Password fallback hardcodeada en código (`\|\| 'Demo123!'`). AGENTS.md Regla Crítica #1 (CREDENTIALS = BY NAME, NEVER BY VALUE): "NEVER hardcode or guess." |
 | 2 | Mayor | (PR-wide) | 97% del diff (+36k líneas) es un commit de sync de template no relacionado; dificulta la revisión aun con nota aclaratoria del autor. |
 ```
 
