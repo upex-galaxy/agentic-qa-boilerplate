@@ -104,7 +104,7 @@ ROUTE-SCOPE: <section ids the work needs, e.g. git, harnesses; or none>
   classifies the prompt to inject `ROUTE:` lines, and a worker prompt is the worst input it gets:
   the injected preamble talks about workers, dispatch and rules, and the absolute paths name the
   scope folders, so before the cap one prompt fired most sections and workers read almost none of
-  them (measurements in ADR-0016). `ROUTE-SCOPE:` replaces the prompt for that classification: list the section
+  them (measurements in ADR-0017). `ROUTE-SCOPE:` replaces the prompt for that classification: list the section
   ids (`id:` in `.agents/instructions/agent-*.md`) the brief's work needs, a few words when unsure,
   or `none`. It runs to the end of its line, so nothing follows it. Without it the hook classifies
   the task block alone; with it the worker gets exactly the routes the conductor chose. On a

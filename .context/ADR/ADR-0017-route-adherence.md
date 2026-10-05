@@ -1,4 +1,4 @@
-# ADR-0016 — Routes the agent actually reads: a scoped, ranked and capped `ROUTE:` cue, re-surfaced once on Claude Code
+# ADR-0017 — Routes the agent actually reads: a scoped, ranked and capped `ROUTE:` cue, re-surfaced once on Claude Code
 
 - **Status:** Accepted (by the owner, 2026-10-05)
 - **Date:** 2026-10-05

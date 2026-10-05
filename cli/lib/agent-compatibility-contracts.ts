@@ -1101,7 +1101,7 @@ export const REARM_SESSION_START_SOURCES = { compact: 'compaction', clear: '/cle
 
 /**
  * Claude Code re-surfaces an unread route once, on the first tool call that
- * reads none of the routed sections (`ROUTE-PENDING:`, ADR-0016). Codex and
+ * reads none of the routed sections (`ROUTE-PENDING:`, ADR-0017). Codex and
  * OpenCode carry no such hook: their agents get the `ROUTE:` cue only.
  */
 export const ROUTE_RESURFACE_EVENT = 'PostToolUse';

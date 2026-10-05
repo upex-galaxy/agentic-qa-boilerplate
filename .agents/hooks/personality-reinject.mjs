@@ -412,7 +412,7 @@ export function worktreeUnprovisioned(options = {}) {
  * a `SessionStart` with source `compact` or `clear` re-arms it, because the
  * routed files left the context with the compacted or cleared messages.
  *
- * Adherence (ADR-0016). Measured on real transcripts, an agent reads about
+ * Adherence (ADR-0017). Measured on real transcripts, an agent reads about
  * half of a lone route and almost none of six, so the hook routes few files
  * and says so plainly:
  *   - SCOPE. A `ROUTE-SCOPE:` line in the prompt replaces the prompt for

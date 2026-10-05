@@ -206,4 +206,4 @@ has a known failure mode:
     one, on the task block only, never on the injected preamble, and caps the binding lines; anything
     else it matched sits on one `ROUTE-OPTIONAL:` line you read only if the work needs it. Before the
     cap, worker prompts fired most sections at once and workers read almost none of them, so the
-    brief ran without the sections it depended on (measurements in ADR-0016).
+    brief ran without the sections it depended on (measurements in ADR-0017).

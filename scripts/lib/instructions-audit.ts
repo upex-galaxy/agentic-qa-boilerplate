@@ -18,7 +18,7 @@
  *     `Bash` whose `input.command` names the file with a read verb.
  * A file read earlier in the same context (before the route, after the last
  * compaction) counts as satisfied: the LOAD PROTOCOL forbids re-reading it.
- * A `ROUTE-PENDING:` line (the Claude Code `PostToolUse` re-surface, ADR-0016)
+ * A `ROUTE-PENDING:` line (the Claude Code `PostToolUse` re-surface, ADR-0017)
  * arrives the same way; it is counted, and so is every routed file read after
  * one in the same turn, which is what the reminder bought. `ROUTE-OPTIONAL:`
  * lines bind nothing and are counted apart, never as routes.

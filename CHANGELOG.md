@@ -37,7 +37,7 @@ below names which one it applies to:
 - The `framework-development` docs follow-through triggers on behaviour changes too, not only on
   renames, and lists the decks and the Pages home.
 
-### Changed (instruction routes the agent actually reads, ADR-0016)
+### Changed (instruction routes the agent actually reads, ADR-0017)
 - **The prompt hook routes fewer sections and says when to read them.** Fired ROUTER rows are
   ranked (an id named in a `ROUTE-SCOPE:` sentence, then path hits, then trigger hits, then the
   earliest match; anchors before companions), at most three section files get a binding

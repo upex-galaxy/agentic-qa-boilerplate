@@ -254,7 +254,7 @@ describe('ROUTE: lines and the per-session state', () => {
   });
 });
 
-describe('adherence: scope, rank and cap, re-surface (ADR-0016)', () => {
+describe('adherence: scope, rank and cap, re-surface (ADR-0017)', () => {
   /** Five one-trigger sections, one row each, so a test owns the ranking. */
   function rankFixture(): string {
     const root = temporaryRoot('route rank ');
