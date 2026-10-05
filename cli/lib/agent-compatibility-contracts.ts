@@ -74,10 +74,11 @@ export const CODEX_HOOK_COMMAND_WINDOWS = 'powershell.exe -NoProfile -Command "$
  *   bunx -p varlock@<pin> varlock run --no-redact-stdout --inject vars --filter A,B -- <server>
  *
  * WHY A LOADER. A harness spawns its MCP servers from a config file, before any
- * hook runs, with whatever environment the harness process has. A terminal
- * launch through `bun run claude|codex|opencode` has the `.env` values; a GUI
- * launch (Claude Desktop, Codex Desktop, OpenCode desktop) or a natively
- * launched supervised worker has none. The loader reads the varlock schema plus
+ * hook runs, with whatever environment the harness process has, and no
+ * launch carries the `.env` values: a terminal opens the harness bare (the
+ * loader that exported them into the AI's process is retired, ADR-0014), and a
+ * GUI launch (Claude Desktop, Codex Desktop, OpenCode desktop) or a natively
+ * launched supervised worker has no command line to wrap. The loader reads the varlock schema plus
  * `.env` / `.env.local` (or the secret manager the schema names) from the
  * launch directory, which every host sets to the project root (the same one
  * `--config dbhub.toml` resolves against), so the values arrive however the

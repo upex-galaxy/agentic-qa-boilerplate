@@ -59,8 +59,8 @@ function display(secret: boolean, value: string): string {
  * Rule 3 — the process environment must agree with the repo's `.env`.
  *
  * A variable that is ALREADY present in the process wins over the `.env` file
- * under every loader this repo uses: varlock (`bun run claude|codex|opencode`,
- * the test scripts) and `bun`'s autoload alike, and no flag inverts it. So a
+ * under every loader this repo uses: varlock (the MCP `.env` loader, the test
+ * scripts) and `bun`'s autoload alike, and no flag inverts it. So a
  * stale value inherited from whatever spawned the shell (or an agent session)
  * silently shadows a corrected `.env`, and a full application restart does not
  * clear it because the value is re-inherited every time.
@@ -254,9 +254,9 @@ function printDriftRemedy(): void {
   }
   console.log('Testing from the contaminated shell inherits the bad value and gives a false negative.');
   console.log('Restarting the app does NOT fix it: the value is re-inherited from the same parent.');
-  console.log('Unset it (or open a clean terminal), then relaunch the agent session with');
-  console.log('`bun run claude` / `bun run codex` / `bun run opencode`: their preflight refuses to start');
-  console.log('while an inherited value still differs from .env.');
+  console.log('Unset it (or open a clean terminal, removing the export from your shell profile),');
+  console.log('then restart the agent session from that terminal and run this check again:');
+  console.log('it stays red while an inherited value still differs from .env.');
 }
 
 main();

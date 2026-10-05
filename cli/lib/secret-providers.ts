@@ -272,7 +272,7 @@ export function providerSchemaTemplate(config: SecretsConfig, manifest: readonly
     '# ADVANCED, opt-in. The default home of a value is .env; this file serves the',
     `# secrets a team keeps in ${adapter.label} instead. It holds REFERENCES, never a`,
     '# value, so it is committed: each teammate resolves the same references',
-    '# through their own access when a process starts (bun run claude, bun run test).',
+    '# through their own access when a process starts (an MCP server, bun run test).',
     '#',
     '# Written once by `bun run setup` from .agents/project.yaml `secrets:`; yours',
     '# after that. Imported by .env.core.schema with allowMissing=true: delete this',

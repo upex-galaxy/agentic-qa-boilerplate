@@ -1,24 +1,28 @@
 /**
- * Regression tests for `scripts/launch.ts`, the launcher behind
- * `bun run claude|codex|opencode` and the `test*` scripts. What they guard:
- *   1. A different inherited value refuses the launch: nothing is spawned and
- *      the message names the variable with lengths only, never a value. With
- *      `--warn` (the test scripts) the same notice prints and the run goes on.
- *   2. Equal values, no `.env` at all, and a failed varlock load all proceed to
+ * Regression tests for `scripts/launch.ts`, the launcher behind the `test*`
+ * scripts. What they guard:
+ *   1. The `test*` scripts still load `.env`: every `package.json` script that
+ *      runs a test goes through this launcher, which starts the binary under
+ *      `varlock run`.
+ *   2. An AI harness (`claude`, `codex`, `opencode`, by name or path) is never
+ *      started, and no `package.json` script launches one (ADR-0014).
+ *   3. A different inherited value prints a notice naming the variable with
+ *      lengths only, never a value, and the run goes on, `--warn` or not.
+ *   4. Equal values, no `.env` at all, and a failed varlock load all proceed to
  *      `varlock run -- <bin> [args...]` with the arguments untouched.
- *   3. A missing varlock and a missing binary name stop with a clear exit code.
- *   4. With a secret-manager overlay, an EMPTY inherited copy of a key it
+ *   5. A missing varlock and a missing binary name stop with a clear exit code.
+ *   6. With a secret-manager overlay, an EMPTY inherited copy of a key it
  *      resolves is dropped before varlock sees it (CI's unset secrets); every
  *      other variable reaches the child untouched.
  */
 
 import type { LaunchDeps } from './launch.ts';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
-import { launch } from './launch.ts';
+import { HARNESS_BINARIES, launch } from './launch.ts';
 
 const STALE = 'stale-secret-canary';
 const FRESH = 'fresh-secret-canary-longer';
@@ -50,30 +54,58 @@ beforeEach(() => {
 
 afterEach(() => { rmSync(root, { recursive: true, force: true }); });
 
-describe('preflight', () => {
-  test('refuses a different inherited value and spawns nothing', () => {
-    expect(launch(['claude'], deps())).toBe(1);
+describe('package.json', () => {
+  const scripts = (JSON.parse(readFileSync(join(import.meta.dir, '..', 'package.json'), 'utf8')) as { scripts: Record<string, string> }).scripts;
+
+  test('every test script loads .env through this launcher', () => {
+    const testScripts = Object.entries(scripts).filter(([name, cmd]) => /^test(?::|$)/.test(name) && /playwright test|validateTestEnv|jiraSync/.test(cmd));
+    expect(testScripts.length).toBeGreaterThan(0);
+    for (const [, cmd] of testScripts) {
+      expect(cmd).toStartWith('bun --no-env-file scripts/launch.ts ');
+    }
+  });
+
+  test('no script starts an AI harness', () => {
+    for (const name of HARNESS_BINARIES) { expect(scripts[name]).toBeUndefined(); }
+    for (const cmd of Object.values(scripts)) {
+      for (const bin of HARNESS_BINARIES) {
+        expect(cmd).not.toMatch(new RegExp(`launch\\.ts (--warn )?${bin}\\b`));
+      }
+    }
+  });
+});
+
+describe('harness binaries', () => {
+  test('refuses claude, codex and opencode, by name or by path, and spawns nothing', () => {
+    for (const bin of [...HARNESS_BINARIES, '/usr/local/bin/claude']) {
+      expect(launch([bin], deps({ env: {} }))).toBe(2);
+      expect(launch(['--warn', bin, '--version'], deps({ env: {} }))).toBe(2);
+    }
     expect(spawned).toEqual([]);
-    const all = printed.join('\n');
-    expect(all).toContain(`TOKEN: process=${STALE.length} chars, file=${FRESH.length} chars (sensitive)`);
-    expect(all).toContain('unset TOKEN');
-    expect(all).not.toContain(STALE);
-    expect(all).not.toContain(FRESH);
+    expect(printed.join('\n')).toContain('Open it directly');
+  });
+});
+
+describe('drift notice', () => {
+  test('a different inherited value prints names and lengths, then runs the binary', () => {
+    for (const argv of [['--warn', 'playwright', 'test'], ['playwright', 'test']]) {
+      printed = [];
+      spawned = [];
+      expect(launch(argv, deps())).toBe(0);
+      expect(spawned).toEqual([['/repo/node_modules/.bin/varlock', ['run', '--', 'playwright', 'test']]]);
+      const all = printed.join('\n');
+      expect(all).toContain('WARNING');
+      expect(all).toContain(`TOKEN: process=${STALE.length} chars, file=${FRESH.length} chars (sensitive)`);
+      expect(all).toContain('unset TOKEN');
+      expect(all).not.toContain(STALE);
+      expect(all).not.toContain(FRESH);
+    }
   });
 
-  test('--warn prints the same names and lengths, then runs the binary', () => {
-    expect(launch(['--warn', 'playwright', 'test'], deps())).toBe(0);
-    expect(spawned).toEqual([['/repo/node_modules/.bin/varlock', ['run', '--', 'playwright', 'test']]]);
-    const all = printed.join('\n');
-    expect(all).toContain('WARNING');
-    expect(all).toContain(`TOKEN: process=${STALE.length} chars, file=${FRESH.length} chars (sensitive)`);
-    expect(all).not.toContain(STALE);
-    expect(all).not.toContain(FRESH);
-  });
-
-  test('passes an equal inherited value', () => {
-    expect(launch(['claude'], deps({ env: { TOKEN: FRESH } }))).toBe(0);
+  test('passes an equal inherited value in silence', () => {
+    expect(launch(['playwright', 'test'], deps({ env: { TOKEN: FRESH } }))).toBe(0);
     expect(spawned).toHaveLength(1);
+    expect(printed).toEqual([]);
   });
 
   test('skips the comparison when the checkout has no .env / .env.local', () => {
@@ -83,7 +115,7 @@ describe('preflight', () => {
   });
 
   test('defers to varlock run when the load fails', () => {
-    expect(launch(['claude'], deps({ meta: () => null }))).toBe(0);
+    expect(launch(['playwright', 'test'], deps({ meta: () => null }))).toBe(0);
     expect(spawned).toHaveLength(1);
   });
 });
@@ -95,11 +127,11 @@ describe('spawn', () => {
   });
 
   test('returns the child exit code', () => {
-    expect(launch(['claude'], deps({ env: {}, spawn: () => 3 }))).toBe(3);
+    expect(launch(['playwright', 'test'], deps({ env: {}, spawn: () => 3 }))).toBe(3);
   });
 
   test('stops when varlock is not installed or no binary is named', () => {
-    expect(launch(['claude'], deps({ varlock: () => null }))).toBe(1);
+    expect(launch(['playwright', 'test'], deps({ varlock: () => null }))).toBe(1);
     expect(printed.join('\n')).toContain('bun install');
     expect(launch([], deps())).toBe(2);
     expect(spawned).toEqual([]);
@@ -127,10 +159,10 @@ describe('secret-manager overlay', () => {
   test('keeps a non-empty inherited value, and changes nothing without an overlay', () => {
     rmSync(join(root, '.env'));
     writeFileSync(join(root, '.env.provider.schema'), overlay);
-    launch(['claude'], deps({ env: { XRAY_CLIENT_SECRET: 'ci-value' } }));
+    launch(['--warn', 'playwright', 'test'], deps({ env: { XRAY_CLIENT_SECRET: 'ci-value' } }));
     expect(spawnedEnv[0]).toEqual({ XRAY_CLIENT_SECRET: 'ci-value' });
     rmSync(join(root, '.env.provider.schema'));
-    launch(['claude'], deps({ env: { XRAY_CLIENT_SECRET: '' } }));
+    launch(['--warn', 'playwright', 'test'], deps({ env: { XRAY_CLIENT_SECRET: '' } }));
     expect(spawnedEnv[1]).toEqual({ XRAY_CLIENT_SECRET: '' });
   });
 });
