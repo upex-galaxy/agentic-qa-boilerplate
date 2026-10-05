@@ -627,6 +627,8 @@ export const FILLED_ELSEWHERE: Readonly<Record<string, string>> = {
   'git_strategy.meta.created': 'stamped by the git-flow-master Strategy Setup questionnaire',
   'git_strategy.meta.policy_verified': 'stamped by `bun run git:policy verify --stamp`',
   'testing.browser.pair_mode': 'asked once, the first time an agentic browser session starts (agentic-qa-core/references/browser-sessions.md, Agentic Pair Testing)',
+  'secrets.onepassword.vault': 'the secret-manager choice of `bun run setup` (cli/lib/secret-providers.ts; null while secrets.provider is local)',
+  'secrets.onepassword.account': 'the secret-manager choice of `bun run setup` (optional: null = the 1Password CLI default account)',
 };
 
 /**
