@@ -372,7 +372,7 @@ Rules:
   - Do NOT modify the issue in the issue tracker (read-only operation; no comments, no transitions).
   - Do NOT load all of .context/ — only the docs listed above.
   - Environment reachability was already gated orchestrator-side by Session Start §0.6 before this dispatch — do NOT re-probe the env. If the ticket is email / magic-link / auth-token dependent, set inbox_check_required=true so the orchestrator runs (or has run) the inbox receive-check before Stage 1.
-  - Critical Rule #1 (Login Credentials): if any tool needs auth, reference .env keys; never hardcode.
+  - Critical Rule #1 (credentials by NAME, never by value): if any tool needs auth, reference the variable name; never open .env, print or hardcode a value.
   - Never ask the user for confirmation — the orchestrator handles user interaction.
 ```
 
@@ -499,7 +499,7 @@ Rules:
   - `severity` is an option slug of `{{jira.severity}}` (the five impact levels of `agentic-qa-core/references/defect-management-doctrine.md` Part 5.1), never a Priority word: Priority is derived from it at filing time.
   - Do NOT file the bug in the issue tracker yet — Stage 3 handles filing per the bug-report template in reporting-templates.md.
   - Do NOT modify production data; for write-side checks use staging entities flagged in the ATP.
-  - Critical Rule #1 (Login Credentials): credentials always from .env; never hardcode.
+  - Critical Rule #1 (credentials by NAME, never by value): use each credential through its variable name; never open .env, print or hardcode a value.
   - Identity: every role signs in through the app's own login only (UI form → `.auth/<env>-<role>.json`, or `bun run api:login --role <role>`). NEVER obtain a session through a service-role / admin key, an admin user-management API, a server-generated magic link or reset token, a locally signed JWT or a database session row; seeding test DATA through API / DB stays allowed. An auth story runs end to end through a real inbox (`/resend-cli`). A check that seems to need a shortcut is a blocker to report, not a step to take (`agentic-qa-core/references/browser-sessions.md` §4).
   - A blocking finding (env down, auth failure, infra issue, data corruption, security-exploitable) STOPS the pass — surface to orchestrator, do NOT auto-retry. A non-blocking finding does NOT stop the pass — log it, finish the remaining TCs, and report it at the end (set pass_completed=true).
 ```
@@ -594,7 +594,7 @@ MEMORY UPDATE: before finishing, update the relevant section of test-session-mem
 EXIT CHECKLIST: in memory.md > Checklist > {Stage}, mark [x] every completed item.
   Leave [ ] + explanation in Observations for any uncompleted item.
 
-IMPORTANT: credentials always from .env. Never hardcode. Never ask the user for
+IMPORTANT: credentials by NAME, never by value. Never hardcode. Never ask the user for
   confirmation — the orchestrator handles user interaction.
 ```
 

@@ -169,7 +169,7 @@ Report format:
 
 Rules:
   - Critical Rule #2 (Plan Before Coding): no test code yet. Stop after writing the plans.
-  - Critical Rule #1 (Login Credentials): if the plan needs credentials, reference .env keys, never hardcode.
+  - Critical Rule #1 (credentials by NAME, never by value): if the plan needs credentials, reference the variable name, never open .env, print or hardcode a value.
   - KATA: ATC = mini-flow, NOT single interaction. ATCs do not call other ATCs.
 ```
 

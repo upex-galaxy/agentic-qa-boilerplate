@@ -76,9 +76,11 @@ to the source before anything was exported.
 Inventory all three sources and report what each one says:
 
 ```bash
-jq -r '"cached  -> \(.jira_base_url)  client=\(.client_id[0:8])..."' ~/.xray-cli/config.json
+jq -r '"cached  -> \(.jira_base_url)  client_id=\(if (.client_id // "") == "" then "unset" else "set" end)"' ~/.xray-cli/config.json
 bun run --silent jira:url    # the host: .agents/project.yaml, not .env
 bunx varlock load --agent --filter 'XRAY_*'   # which Xray keys .env holds, values redacted
+# same keys in the cache and in .env? compared inside the loader, prints only same / different
+bunx varlock run -- sh -c '[ "$(jq -r .client_id ~/.xray-cli/config.json)" = "$XRAY_CLIENT_ID" ] && echo same || echo different'
 bun xray auth status
 ```
 

@@ -538,7 +538,7 @@ Rules:
   - On 429 or 5xx: retry with exponential backoff up to 3 times.
   - On 4xx (excluding 429): stop the chunk and report partial state.
   - Critical Rule #8 (File Operations): never overwrite an existing TC silently — if the summary already exists, report and skip.
-  - Critical Rule #1 (Login Credentials): ATLASSIAN_API_TOKEN comes from .env, never hardcode.
+  - Critical Rule #1 (credentials by NAME, never by value): use ATLASSIAN_API_TOKEN by name; never open .env, print or hardcode it.
 ```
 
 ##### Aggregation in the main thread
