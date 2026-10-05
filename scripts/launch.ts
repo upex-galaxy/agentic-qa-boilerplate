@@ -4,7 +4,11 @@
  *
  *   bun --no-env-file scripts/launch.ts [--warn] <bin> [args...]
  *
- * Behind `bun run claude|codex|opencode` and the `test*` scripts. Two steps:
+ * Behind `bun run claude|codex|opencode` and the `test*` scripts. Two steps,
+ * after one quiet clean-up: when a secret-manager overlay exists
+ * (`.env.provider.schema`), the EMPTY inherited copies of the keys it resolves
+ * are dropped, because an empty variable would win over the vault and CI turns
+ * every unset secret into one (`withoutEmptyProviderShadows`).
  *
  *   1. PREFLIGHT. varlock lets an inherited process variable win over `.env`
  *      (no flag inverts it), so a stale value from the parent shell would make a
@@ -33,7 +37,7 @@ import type { DriftHit, EnvMap, VarlockOverrides } from '../cli/lib/env-drift.ts
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 
-import { fileValues, findDrift, hasEnvFiles, loadVarlockMetadata, varlockBin } from '../cli/lib/env-drift.ts';
+import { fileValues, findDrift, hasEnvFiles, loadVarlockMetadata, varlockBin, withoutEmptyProviderShadows } from '../cli/lib/env-drift.ts';
 
 const REPO_ROOT = join(import.meta.dir, '..');
 
@@ -58,7 +62,7 @@ export interface LaunchDeps {
   env: EnvMap
   meta: (root: string, env: EnvMap) => VarlockOverrides | null
   varlock: (root: string, env: EnvMap) => string | null
-  spawn: (cmd: string, args: string[]) => number
+  spawn: (cmd: string, args: string[], env: EnvMap) => number
   err: (line: string) => void
 }
 
@@ -77,18 +81,20 @@ export function launch(argv: string[], deps: LaunchDeps): number {
     return 1;
   }
 
+  const { env } = withoutEmptyProviderShadows(deps.root, deps.env);
+
   if (hasEnvFiles(deps.root)) {
     // No usable metadata (a schema that does not parse) skips the comparison:
     // `varlock run` below reports that failure itself.
-    const meta = deps.meta(deps.root, deps.env);
-    const hits = meta ? findDrift(meta, deps.env, fileValues(deps.root)) : [];
+    const meta = deps.meta(deps.root, env);
+    const hits = meta ? findDrift(meta, env, fileValues(deps.root)) : [];
     if (hits.length > 0) {
       for (const line of driftMessage(bin, hits, warnOnly)) { deps.err(line); }
       if (!warnOnly) { return 1; }
     }
   }
 
-  return deps.spawn(varlock, ['run', '--', bin, ...args]);
+  return deps.spawn(varlock, ['run', '--', bin, ...args], env);
 }
 
 if (import.meta.main) {
@@ -100,7 +106,7 @@ if (import.meta.main) {
     env: process.env,
     meta: loadVarlockMetadata,
     varlock: varlockBin,
-    spawn: (cmd, args) => spawnSync(cmd, args, { stdio: 'inherit', cwd: REPO_ROOT, env: process.env }).status ?? 1,
+    spawn: (cmd, args, env) => spawnSync(cmd, args, { stdio: 'inherit', cwd: REPO_ROOT, env: env as NodeJS.ProcessEnv }).status ?? 1,
     err: line => console.error(line),
   }));
 }
