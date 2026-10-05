@@ -236,6 +236,18 @@
     {
       "prompt": "explicame qué hiciste en el último paso",
       "expect": []
+    },
+    {
+      "prompt": "add a new rule sentence to AGENTS.md",
+      "expect": ["harnesses"]
+    },
+    {
+      "prompt": "mové este párrafo de AGENTS.md a una sección de .agents/instructions/",
+      "expect": ["harnesses"]
+    },
+    {
+      "prompt": "the router keeps missing these prompts, tune the triggers of that instruction section",
+      "expect": ["harnesses"]
     }
   ]
 }
