@@ -48,6 +48,7 @@ import { compatibilityErrorGroup, HARNESS_COMMAND_DIRS, RETIRED_COMMAND_ALIAS_OV
 import { hasDeepWalk, walkGovernedFile } from './agents-schema.ts';
 import { contextMapAdvice, contextMapStatuses, mapRelPath } from './context-maps.ts';
 import { HARNESS_LEVEL_MCPS } from './harness-level-mcps.ts';
+import { declaredHarnesses } from './harness-selection.ts';
 import { CLAUDE_SETTINGS_FILE, DECLINED_DENIES_KEY, OPENCODE_SETTINGS_FILE, opencodeDenyGap } from './updater-settings';
 
 // ============================================================================
@@ -1575,7 +1576,8 @@ export function collectParityFindings(input: ParityInput): ParityFinding[] {
   // the block to paste. A pattern the project lists with any action is its
   // decision and never reported. Folds onto the file's drift or MCP row when
   // one exists: one row per path.
-  const opencodeGap = opencodeDenyGap(input.root, input.upstreamDir);
+  // Not for a project that dropped OpenCode (ADR-0012), even when it kept the file.
+  const opencodeGap = declaredHarnesses(input.root).harnesses.includes('opencode') ? opencodeDenyGap(input.root, input.upstreamDir) : null;
   if (opencodeGap !== null) {
     const count = opencodeGap.missing.reduce((n, m) => n + m.patterns.length, 0);
     const rules = opencodeGap.missing.map(m => `${m.tool}: ${m.patterns.join(', ')}`).join('; ');

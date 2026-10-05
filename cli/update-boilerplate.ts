@@ -21,6 +21,7 @@ import * as path from 'node:path';
 import pc from 'picocolors';
 import { checkAgentCompatibility, repairAgentSurfaces, SHADOWING_COMMANDS_BACKUP_DIR, SKILLS_ALIAS_DEFERRED_MARKER } from './lib/agent-compatibility.ts';
 import { applyInsertions, planInsertions, projectDelta, SCHEMA_FILE, SCHEMA_SOURCE } from './lib/agents-schema.ts';
+import { declaredHarnesses, isUnderAny, unusedHarnessPaths } from './lib/harness-selection.ts';
 import * as tui from './lib/tui';
 import {
   cleanupTempDir,
@@ -692,6 +693,8 @@ function makePermissionListHook(
   dryRun: boolean,
 ): (summary: RunSummary) => Promise<void> {
   return async (summary: RunSummary): Promise<void> => {
+    // No Claude Code here: its settings file is not this project's (ADR-0012).
+    if (!declaredHarnesses(process.cwd()).harnesses.includes('claude')) { return; }
     const declined = readDeclinedDenies(process.cwd());
     if (declined.error) { sink.warn(`${declined.error}; se ignora y se agregan todas las reglas deny de upstream.`); }
     const { allowAdded, denyAdded, denyDeclined, merged } = mergePermissionLists(process.cwd(), templateDir, { declinedDenies: declined.entries });
@@ -1245,7 +1248,10 @@ export function resolveProtectedWatchlist(cwd: string, warn: (message: string) =
   for (const r of declared.rejected) {
     warn(`updater.protected_paths (.agents/project.yaml): entrada ignorada "${r.value}": ${r.reason}.`);
   }
-  return mergeProtectedWatchlist(PROTECTED_WATCHLIST, declared.paths);
+  // A harness the project does not use (ADR-0012): its registries are neither
+  // delivered when missing nor reported when upstream changes them.
+  const unused = unusedHarnessPaths(cwd);
+  return mergeProtectedWatchlist(PROTECTED_WATCHLIST.filter(e => !isUnderAny(e.path, unused)), declared.paths);
 }
 
 // NOT on the watchlist, deliberately — do not "fix" this asymmetry:
@@ -2041,6 +2047,9 @@ async function main(): Promise<void> {
     // so ADRs only ever travel through the scaffold tarball, which prunes them.
     repoOnlyPaths: [
       'docs/reports',
+      // The files of a harness this project does not use (ADR-0012): it
+      // deleted them on purpose, so no detection path re-delivers them.
+      ...unusedHarnessPaths(process.cwd()),
     ],
     // Watchlist files are NOT synced — included in the sparse clone only so
     // the protected-drift detection can read their upstream copies.
