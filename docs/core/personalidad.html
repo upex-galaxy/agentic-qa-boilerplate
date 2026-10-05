@@ -6,7 +6,7 @@
     <title>Personalidad de la IA</title>
     <meta
       name="description"
-      content="Cómo habla y cómo razona el agente en este repo: caveman, Butler, PM Voice, Visual Mapping, cómo te pide decidir, el idioma y cómo cambiar cada comportamiento."
+      content="Cómo habla y cómo razona el agente en este repo: Butler, PM Voice, Visual Mapping, cómo te pide decidir, el idioma y cómo cambiar cada comportamiento."
     />
     <meta name="docs-order" content="60" />
     <link rel="stylesheet" href="../assets/docs.css" />
@@ -43,7 +43,7 @@
           <li><a href="#en-corto">En corto</a></li>
           <li><a href="#rasgos">Cómo suena</a></li>
           <li><a href="#razonamiento">Cómo razona antes de actuar</a></li>
-          <li><a href="#capas">Tres capas, tres dimensiones</a></li>
+          <li><a href="#capas">Dos capas, dos dimensiones</a></li>
           <li><a href="#estrategias">Cómo organiza la información</a></li>
           <li><a href="#cambio-de-registro">Cuándo cambia de registro</a></li>
           <li><a href="#decidir">Cuando te pide decidir</a></li>
@@ -204,10 +204,10 @@
         </dd>
       </dl>
 
-      <h2 id="capas">Tres capas, tres dimensiones</h2>
+      <h2 id="capas">Dos capas, dos dimensiones</h2>
       <p>
-        Lo que ves en el chat sale de tres fuentes. Cada una gobierna una sola dimensión y ninguna
-        se pisa con otra. Cuando dos capas reclaman la misma dimensión se contradicen, y gana la que
+        Lo que ves en el chat sale de dos fuentes. Cada una gobierna una sola dimensión y ninguna se
+        pisa con otra. Cuando dos capas reclaman la misma dimensión se contradicen, y gana la que
         más se repite en cada turno, por accidente y no por diseño.
       </p>
       <div class="table-wrap">
@@ -220,11 +220,6 @@
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>Caveman</td>
-              <td>La cantidad de palabras</td>
-              <td>Plugin <code>caveman@caveman</code>, nivel <code>full</code> por defecto</td>
-            </tr>
             <tr>
               <td><code>AGENTS.md</code> §2</td>
               <td>Qué se dice, con qué granularidad y en qué registro</td>
@@ -245,7 +240,9 @@
         §2 manda sobre el contenido y la estructura de la información. OUTPUT STYLE nunca lo
         contradice: solo suma disciplina de render (títulos, anclas en negrita, backticks, tablas,
         espacio entre bloques) y textura humana (sin raya larga, largo de oración variado, sin
-        resumen de cierre). Las dos se combinan con caveman, que solo quita palabras.
+        resumen de cierre). La concisión sale de las dos juntas: Butler mantiene corto el titular y
+        OUTPUT STYLE corta el relleno. El repo no asume ni recomienda ningún plugin de modo de
+        comunicación (regla crítica #13).
       </p>
       <div class="callout tip">
         <span class="callout-title">Los archivos de instrucciones no son un modelo de estilo</span>
@@ -258,16 +255,6 @@
       </div>
 
       <h2 id="estrategias">Cómo organiza la información</h2>
-
-      <h3 id="caveman">Caveman: menos palabras</h3>
-      <p>
-        Si el plugin <code>caveman@caveman</code> está instalado a nivel de usuario, el agente quita
-        artículos, muletillas, cortesías y rodeos. Los fragmentos están permitidos y los términos
-        técnicos quedan exactos. El código, los commits, los PRs y las advertencias de seguridad
-        siempre se escriben en inglés normal. Tiene varios niveles (los documenta el plugin; este
-        repo usa <code>full</code>) y recorta mucho texto sin perder precisión técnica. Si el plugin
-        no está instalado, esta regla no hace nada.
-      </p>
 
       <h3 id="butler">Butler: primero la respuesta, después el menú</h3>
       <p>La respuesta tiene dos partes:</p>
@@ -511,18 +498,6 @@
           </thead>
           <tbody>
             <tr>
-              <td>Caveman</td>
-              <td>"habla normal", "normal mode", "stop caveman", "más detallado"</td>
-              <td>Hasta que termine la sesión</td>
-            </tr>
-            <tr>
-              <td>Intensidad de caveman</td>
-              <td>
-                <code>/caveman lite</code>, <code>/caveman full</code>, <code>/caveman ultra</code>
-              </td>
-              <td>Hasta que termine la sesión</td>
-            </tr>
-            <tr>
               <td>Registro técnico</td>
               <td>
                 Menciona una ruta, un comando, un error, un selector o una librería, o pide el
@@ -557,8 +532,8 @@
 
       <h2 id="donde-vive">Dónde vive la personalidad</h2>
       <p>
-        Está en capas y ninguna es imprescindible para las otras: si desactivas caveman, Butler, PM
-        Voice y Visual Mapping siguen intactos.
+        Está en capas y ninguna es imprescindible para las otras: si cambias tu OUTPUT STYLE,
+        Butler, PM Voice y Visual Mapping siguen intactos.
       </p>
       <div class="table-wrap">
         <table>
@@ -588,11 +563,6 @@
               <td>Instrucciones de agente a nivel de usuario</td>
               <td>La sección <code>## OUTPUT STYLE</code></td>
               <td>En cada sesión, según el harness</td>
-            </tr>
-            <tr>
-              <td>Plugin <code>caveman@caveman</code></td>
-              <td>Compresión y niveles de caveman</td>
-              <td>Activo por defecto si está instalado</td>
             </tr>
             <tr>
               <td><code>.agents/hooks/personality-reinject.mjs</code></td>

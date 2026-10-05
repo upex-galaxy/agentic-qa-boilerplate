@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-05T09:32:43.944Z",
+  "generatedAt": "2026-10-05T09:45:58.721Z",
   "children": [
     {
       "type": "folder",
@@ -193,7 +193,7 @@
           "type": "page",
           "path": "core/personalidad.html",
           "title": "Personalidad de la IA",
-          "description": "Cómo habla y cómo razona el agente en este repo: caveman, Butler, PM Voice, Visual Mapping, cómo te pide decidir, el idioma y cómo cambiar cada comportamiento.",
+          "description": "Cómo habla y cómo razona el agente en este repo: Butler, PM Voice, Visual Mapping, cómo te pide decidir, el idioma y cómo cambiar cada comportamiento.",
           "order": 60
         }
       ]
