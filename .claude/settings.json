@@ -88,7 +88,19 @@
       "Bash(truncate *)",
       "Bash(shred *)",
       "Bash(dd if=*)",
-      "Bash(mkfs*)"
+      "Bash(mkfs*)",
+      "Read(.env)",
+      "Read(.env.local)",
+      "Read(.env.*.local)",
+      "Read(.envrc.local)",
+      "Read(.auth/**)",
+      "Read(.claude/settings.local.json)",
+      "Bash(printenv*)",
+      "Bash(env)",
+      "Bash(varlock printenv*)",
+      "Bash(varlock reveal*)",
+      "Bash(bunx varlock printenv*)",
+      "Bash(bunx varlock reveal*)"
     ],
     "ask": []
   },
