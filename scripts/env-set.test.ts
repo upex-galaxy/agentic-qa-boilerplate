@@ -5,8 +5,9 @@
  *      name reads as a secret, a key the schema does not declare, a key whose
  *      value does not live in `.env`, and any key when the schema did not load.
  *      A refusal writes nothing, even when another pair in the call was allowed.
- *   2. The upsert replaces the active line in place, keeps comments and every
- *      other line byte-identical, and appends a missing key.
+ *   2. The upsert replaces the active line in place, keeps its inline comment,
+ *      keeps comment lines and every other line byte-identical, and appends a
+ *      missing key.
  *   3. Nothing printed carries a value: neither the one written nor any other.
  *   4. The committed QA schema marks the core credentials sensitive (real
  *      varlock, so it needs `bun install`).
@@ -106,6 +107,16 @@ describe('write', () => {
 
   it('keeps an export prefix', () => {
     expect(upsertEnvLine('export TEST_ENV=local\n', 'TEST_ENV', 'staging')).toBe('export TEST_ENV=staging\n');
+  });
+
+  it('keeps an inline comment on the replaced line, quoted or not', () => {
+    expect(upsertEnvLine('TEST_ENV=local # which env the suite runs\n', 'TEST_ENV', 'staging')).toBe('TEST_ENV=staging # which env the suite runs\n');
+    expect(upsertEnvLine('TEST_ENV="a # b"   # quoted value\n', 'TEST_ENV', 'staging')).toBe('TEST_ENV=staging   # quoted value\n');
+    expect(upsertEnvLine('TEST_ENV=\'x\' # single\n', 'TEST_ENV', 'two words')).toBe('TEST_ENV="two words" # single\n');
+  });
+
+  it('does not read a # inside an unquoted value as a comment', () => {
+    expect(upsertEnvLine('PORTAL_URL=https://h/#frag\n', 'PORTAL_URL', 'https://h/x')).toBe('PORTAL_URL=https://h/x\n');
   });
 
   it('notes a .env.local line that shadows the write, by name only', () => {
