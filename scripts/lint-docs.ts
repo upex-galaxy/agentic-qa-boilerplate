@@ -15,6 +15,10 @@
  *     `packages/decks/x.html` in the repo, `./docs/` is `docs/`, and a link
  *     into a report tree the suite workflows publish (`REPORT_ROOTS`) is
  *     skipped, because no source file backs it;
+ *   - a markdown `](…)` link in a committed `.md` under `.agents/`, `.context/`
+ *     or `.claude/` (`LINK_ONLY_ROOTS`) does not resolve, relative to the file.
+ *     Only that check runs there: links inside code spans are examples, and the
+ *     backtick paths of agent docs are `lint-skills.ts` STALE-PATH territory;
  *   - an inline-code path (`` `docs/…` ``, `<code>docs/…</code>`) that starts
  *     with a known repo root does not exist, resolved from the repo root;
  *   - an HTML page under `docs/` lacks a `<title>` or a
@@ -234,6 +238,22 @@ function nestedReadmes(root: string): string[] {
   return out;
 }
 
+/** Trees whose markdown is checked for `](…)` links only: agent docs cite paths in backticks, which `lint-skills.ts` STALE-PATH owns. */
+export const LINK_ONLY_ROOTS = ['.agents', '.context', '.claude'] as const;
+
+/**
+ * Committed `.md` files under `LINK_ONLY_ROOTS`, absolute and sorted, minus the
+ * ones `collectDocFiles` already scans in full. Read from `git ls-files`, so a
+ * gitignored Jira cache or community skill is never walked; empty outside a
+ * git work tree.
+ */
+export function collectLinkOnlyFiles(root: string, fullScan: string[]): string[] {
+  const result = Bun.spawnSync(['git', 'ls-files', '-z', '--', ...LINK_ONLY_ROOTS.map(dir => `${dir}/*.md`)], { cwd: root, stdout: 'pipe', stderr: 'ignore' });
+  if (result.exitCode !== 0) { return []; }
+  const full = new Set(fullScan);
+  return result.stdout.toString().split('\0').filter(Boolean).map(rel => join(root, rel)).filter(file => !full.has(file) && existsSync(file)).sort();
+}
+
 /** Every file the gate scans, absolute paths, sorted for stable output. */
 export function collectDocFiles(root: string): string[] {
   const files: string[] = [];
@@ -263,6 +283,11 @@ function stripSuffix(target: string): string {
   return target.split('#')[0].split('?')[0];
 }
 
+/** Blank inline code spans, keeping offsets stable: a `[x](y)` quoted as code is an example, not a link. */
+function blankInlineCode(text: string): string {
+  return text.replace(/`[^`\n]+`/g, span => ' '.repeat(span.length));
+}
+
 /** Remove fenced code blocks from markdown, keeping line count stable. */
 function blankFences(text: string): string {
   return text.replace(/^(```|~~~)[\s\S]*?\n\1/gm, block => block.replace(/[^\n]/g, ''));
@@ -277,20 +302,25 @@ function rootExists(root: string, path: string): boolean {
   return existsSync(join(root, top));
 }
 
-/** Findings for one file. Exported for the unit test. */
-export function lintDocFile(root: string, file: string): DocFinding[] {
+/**
+ * Findings for one file. Exported for the unit test. `linksOnly` (the
+ * `LINK_ONLY_ROOTS` markdown) checks markdown `](…)` links outside code and
+ * nothing else.
+ */
+export function lintDocFile(root: string, file: string, opts: { linksOnly?: boolean } = {}): DocFinding[] {
   const findings: DocFinding[] = [];
   const raw = readFileSync(file, 'utf8');
   const isMarkdown = file.endsWith('.md');
-  const text = isMarkdown ? blankFences(raw) : raw.replace(/<script[\s\S]*?<\/script>/gi, m => m.replace(/[^\n]/g, ''));
+  const fenced = isMarkdown ? blankFences(raw) : raw.replace(/<script[\s\S]*?<\/script>/gi, m => m.replace(/[^\n]/g, ''));
+  const text = opts.linksOnly ? blankInlineCode(fenced) : fenced;
   const rel = relativePosix(root, file);
   const seen = new Set<string>();
 
-  const linkPatterns = [
-    /\b(?:href|src)\s*=\s*"([^"]*)"/g,
-    /\b(?:href|src)\s*=\s*'([^']*)'/g,
-  ];
-  if (isMarkdown) { linkPatterns.push(/\]\(\s*<?([^)\s>]+)>?(?:\s+"[^"]*")?\s*\)/g); }
+  const markdownLink = /\]\(\s*<?([^)\s>]+)>?(?:\s+"[^"]*")?\s*\)/g;
+  const linkPatterns = opts.linksOnly
+    ? [markdownLink]
+    : [/\b(?:href|src)\s*=\s*"([^"]*)"/g, /\b(?:href|src)\s*=\s*'([^']*)'/g];
+  if (isMarkdown && !opts.linksOnly) { linkPatterns.push(markdownLink); }
 
   for (const pattern of linkPatterns) {
     for (const match of text.matchAll(pattern)) {
@@ -321,6 +351,7 @@ export function lintDocFile(root: string, file: string): DocFinding[] {
     }
   }
 
+  if (opts.linksOnly) { return findings; }
   const codePatterns = rel.startsWith('packages/decks/') ? [] : [/`([^`\n]+)`/g, /<code>([^<\n]+)<\/code>/g];
   for (const pattern of codePatterns) {
     for (const match of text.matchAll(pattern)) {
@@ -426,7 +457,8 @@ export function lintContracts(root: string): DocFinding[] {
 
 export function lintDocs(root: string): { files: number, findings: DocFinding[] } {
   const files = collectDocFiles(root);
-  const raw = files.flatMap(file => lintDocFile(root, file));
+  const linkOnly = collectLinkOnlyFiles(root, files);
+  const raw = [...files.flatMap(file => lintDocFile(root, file)), ...linkOnly.flatMap(file => lintDocFile(root, file, { linksOnly: true }))];
   const isRef = (f: DocFinding): boolean => f.kind === 'link' || f.kind === 'path';
   const refs = raw.filter(isRef);
   const resolvedOf = (f: DocFinding): string => f.kind === 'path'
@@ -439,7 +471,7 @@ export function lintDocs(root: string): { files: number, findings: DocFinding[] 
   findings.push(...lintRoster(root));
   findings.push(...lintScripts(root, [...(existsSync(agentsFile) ? [agentsFile] : []), ...instructionFiles, ...files]));
   findings.push(...lintContracts(root));
-  return { files: files.length, findings };
+  return { files: files.length + linkOnly.length, findings };
 }
 
 if (import.meta.main) {
