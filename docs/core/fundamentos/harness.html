@@ -545,8 +545,10 @@
               <td><code>docs:check</code></td>
               <td><code>scripts/lint-docs.ts</code></td>
               <td>
-                Links relativos rotos, rutas citadas en <code>docs/</code> que no existen y páginas
-                sin <code>&lt;title&gt;</code> o descripción. Corre en cada push y en CI
+                Links relativos rotos (también los links markdown de los <code>.md</code> de
+                <code>.agents/</code>, <code>.context/</code> y <code>.claude/</code>), rutas
+                citadas en <code>docs/</code> que no existen y páginas sin
+                <code>&lt;title&gt;</code> o descripción. Corre en cada push y en CI
               </td>
             </tr>
             <tr>

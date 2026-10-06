@@ -659,7 +659,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <table class="tt tight">
           <tr><td class="small">Cada skill del repo tiene su fila en el router de <code>.agents/instructions/agent-skills-and-mcps.md</code>.</td></tr>
           <tr><td class="small">Cada <code>bun run &lt;script&gt;</code> citado en <code>AGENTS.md</code>, en sus secciones de <code>.agents/instructions/</code> o en los docs existe en <code>package.json</code>.</td></tr>
-          <tr><td class="small">Cada link relativo y cada ruta citada existe.</td></tr>
+          <tr><td class="small">Cada link relativo y cada ruta citada existe, también los links markdown de <code>.agents/</code>, <code>.context/</code> y <code>.claude/</code>.</td></tr>
           <tr><td class="small">Sin citas <code>archivo:línea</code> ni afirmaciones sobre el presente (Rule #17).</td></tr>
         </table>
         <div class="card card-soft"><p class="small"><b>La prosa sigue siendo juicio</b>, con dos ayudas. Una región de código marcada con <code>LINT.IfChange</code> nombra sus páginas: tocarla sin tocarlas bloquea el push y el CI, salvo un commit con <code>Docs-Checked: &lt;label&gt; &lt;motivo&gt;</code> (ADR-0016). Y si el cambio toca <code>cli/</code>, <code>scripts/</code>, <code>.husky/</code> o las instrucciones, un quinto verificador (V5, solo reporta) busca en los docs la prosa que describe el comportamiento viejo.</p></div>
