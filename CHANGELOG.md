@@ -16,6 +16,14 @@ below names which one it applies to:
 
 ## Unreleased — Boilerplate
 
+### Fixed (skill registry)
+- **`bun run skills:registry` skips skill folders git ignores**: a T3 community skill installed
+  on the machine (`playwright-cli`, `resend-cli`, ...) landed in the committed
+  `.agents/skills/REGISTRY.md` with skill-relative links, which `docs:check` then reported as
+  dead on every push, and `skills:registry:check` differed per machine. A downstream project
+  that added `scripts/build-skill-registry.ts` to `updater.protected_paths` as a workaround can
+  remove that entry.
+
 ### Fixed (final sweep)
 - **`bun run allure:run` runs the Playwright suite**: it ran `bun test` (the unit tests) and
   skipped `.env`. It now goes through `scripts/launch.ts` like `allure:agent` and the `test*`

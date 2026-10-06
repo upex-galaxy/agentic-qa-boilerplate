@@ -11,7 +11,7 @@
  * there once dropped the tail rules of three skills from every briefing.
  */
 
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 
@@ -35,10 +35,7 @@ function write(root: string, relativePath: string, content: string): void {
   writeFileSync(destination, content);
 }
 
-/** A temp repo carrying exactly one skill, whose body the caller supplies. */
-function fixture(slug: string, body: string): string {
-  const root = mkdtempSync(join(tmpdir(), 'skill-registry-'));
-  temporaryRoots.push(root);
+function addSkill(root: string, slug: string, body: string): void {
   write(root, `.agents/skills/${slug}/SKILL.md`, [
     '---',
     `name: ${slug}`,
@@ -50,7 +47,19 @@ function fixture(slug: string, body: string): string {
     body,
     '',
   ].join('\n'));
+}
+
+/** A temp repo carrying exactly one skill, whose body the caller supplies. */
+function fixture(slug: string, body: string): string {
+  const root = mkdtempSync(join(tmpdir(), 'skill-registry-'));
+  temporaryRoots.push(root);
+  addSkill(root, slug, body);
   return root;
+}
+
+function git(root: string, ...args: string[]): void {
+  const result = Bun.spawnSync({ cmd: ['git', ...args], cwd: root, stdout: 'pipe', stderr: 'pipe' });
+  if (result.exitCode !== 0) { throw new Error(`git ${args.join(' ')}: ${result.stderr.toString()}`); }
 }
 
 function render(root: string): string {
@@ -124,5 +133,57 @@ describe('build-skill-registry authored rules are never truncated', () => {
     expect(output).toContain('- DO: authored rule number 15.');
     expect(output).not.toContain('- DO: authored rule number 16.');
     expect(output).toContain('(truncated');
+  });
+});
+
+describe('build-skill-registry indexes only what a commit can carry', () => {
+  const rules = ['## Compact Rules', '', '- DO: see [the guide](references/guide.md).'].join('\n');
+
+  /** A git repo with a committed skill and a T3 community skill its .gitignore excludes. */
+  function repoWithInstalledT3(): string {
+    const root = fixture('committed-skill', rules);
+    addSkill(root, 'community-skill', rules);
+    write(root, '.gitignore', '.agents/skills/community-skill/\n');
+    git(root, 'init', '-q');
+    return root;
+  }
+
+  test('a skill folder git ignores stays out of the registry', () => {
+    const output = render(repoWithInstalledT3());
+
+    expect(output).toContain('## Skill: committed-skill');
+    expect(output).not.toContain('community-skill');
+    expect(output).toContain('Skills indexed: 1');
+  });
+
+  test('a skill symlinked into the skills folder does not end the check for the others', () => {
+    const root = repoWithInstalledT3();
+    const external = mkdtempSync(join(tmpdir(), 'skill-registry-ext-'));
+    temporaryRoots.push(external);
+    addSkill(external, 'linked-skill', rules);
+    symlinkSync(join(external, '.agents/skills/linked-skill'), join(root, '.agents/skills/linked-skill'));
+
+    const output = render(root);
+
+    expect(output).toContain('## Skill: linked-skill');
+    expect(output).not.toContain('community-skill');
+  });
+
+  test('a committed skill under an ignore pattern is still indexed', () => {
+    const root = repoWithInstalledT3();
+    git(root, 'add', '-f', '.agents/skills/community-skill/SKILL.md');
+
+    expect(render(root)).toContain('## Skill: community-skill');
+  });
+
+  test('outside a git work tree every skill on disk is indexed', () => {
+    const root = fixture('committed-skill', rules);
+    addSkill(root, 'community-skill', rules);
+    write(root, '.gitignore', '.agents/skills/community-skill/\n');
+
+    const output = render(root);
+
+    expect(output).toContain('## Skill: community-skill');
+    expect(output).toContain('Skills indexed: 2');
   });
 });
