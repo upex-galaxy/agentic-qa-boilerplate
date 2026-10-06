@@ -109,6 +109,8 @@ Example: ❌ "Added `waitForResponse('**/api/auth/login')` before toast assertio
 
 **NO SUBAGENTS FOR**: quick lookups, memory reads/writes, task tracking, asking user, planning.
 
+**WHEN, NOT BY REFLEX**: delegate only when the work would return a lot of tool output to this context or splits into independent units; a single scripted command (a bulk replace, a one-line check) or a lookup of under ~5 calls stays inline.
+
 **7-COMPONENT BRIEFING (MANDATORY every dispatch)**: canonical template + filled examples: `agentic-qa-core/references/briefing-template.md`.
 
 1. **Goal**: one sentence
@@ -157,6 +159,7 @@ Files live in `.agents/instructions/`. Rows are fixed request kinds, locked by `
 The Engram protocol itself (tools, save format, conflict handling) arrives with the Engram MCP server's own instructions and, on Claude Code, the plugin's session hooks. Only this repo's delta lives here:
 
 - **Save triggers apply**: call `mem_save` without being asked after an architecture / design decision, an established convention or workflow, a completed bug fix (with root cause), or a non-obvious discovery or gotcha.
+- **Not a memory**: a finding already written in the repo (code or docs) is not saved; save only what the repo does not record (a decision's why, a gotcha, an owner preference).
 - **Session close**: MANDATORY `mem_session_summary` before saying "done" / "listo".
 - **Search with keywords, not questions**: Engram search is lexical and every term must match by default. Query `mem_search` with two or three English keywords that would appear in a memory's title, never the full natural-language question. Zero results → retry with `match_mode: "any"` or with synonyms before concluding nothing exists.
 
