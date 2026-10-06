@@ -20,7 +20,7 @@ The protocol saves tokens, and it is also the only channel through which a skill
 ## The protocol
 
 1. **Read the registry.**
-   - `.agents/skills/REGISTRY.md` is committed. `bun run skills:registry` scans `.agents/skills/*/SKILL.md`, extracts compact rules per skill, and rewrites the file in full on every run.
+   - `.agents/skills/REGISTRY.md` is committed. `bun run skills:registry` scans `.agents/skills/*/SKILL.md` (skipping skill folders git ignores, so the file depends only on committed skills), extracts compact rules per skill, and rewrites the file in full on every run.
    - `bun run skills:registry:check` reports when the committed registry is stale. Rebuild only when it does; otherwise read the file as it is.
 
 2. **Inject `## Project Standards (auto-resolved)` into every briefing.**
