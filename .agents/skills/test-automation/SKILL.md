@@ -283,7 +283,7 @@ Allure lives as a devDep — `bunx allure` resolves to the local `node_modules/.
 For human review of the same run, switch to:
 
 ```bash
-bun allure:run             # bunx allure run -- bun test  (full HTML report)
+bun allure:run             # `bunx allure run -- bunx playwright test`, through the env launcher (full HTML report)
 bun allure:open            # serve the last generated report locally
 ```
 

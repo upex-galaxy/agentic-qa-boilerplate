@@ -4,7 +4,7 @@
  *
  *   bun --no-env-file scripts/launch.ts [--warn] <bin> [args...]
  *
- * Behind the `test*` scripts and `allure:agent`. It never starts an AI harness:
+ * Behind the `test*` scripts, `allure:run` and `allure:agent`. It never starts an AI harness:
  * `claude`, `codex` and `opencode` are refused (`HARNESS_BINARIES`), because
  * `varlock run -- <harness>` would export every `.env` value into the AI's own
  * process, where any command it runs can read them (ADR-0014). A harness opens
