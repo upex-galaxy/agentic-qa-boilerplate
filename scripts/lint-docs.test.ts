@@ -282,3 +282,41 @@ describe('lint-docs published site (Pages portal and decks)', () => {
     ]);
   });
 });
+
+describe('lint-docs agent markdown (links only)', () => {
+  function gitAdd(): void {
+    Bun.spawnSync(['git', 'init', '-q'], { cwd: root });
+    Bun.spawnSync(['git', 'add', '-A'], { cwd: root });
+  }
+
+  test('reports a dead ](…) link in committed .agents, .context and .claude markdown', () => {
+    write('.agents/skills/demo/references/ok.md', '# ok');
+    write('.agents/skills/demo/SKILL.md', 'See [ok](references/ok.md#top) and [gone](references/gone.md).');
+    write('.context/ADR/ADR-0001-x.md', 'Back to [index](../missing-index.md).');
+    write('.claude/notes.md', '[x](./nowhere.md)');
+    gitAdd();
+    const findings = lintDocs(root).findings.filter(f => f.kind === 'link');
+    expect(findings.map(f => `${f.file}:${f.line}:${f.target}`)).toEqual([
+      '.agents/skills/demo/SKILL.md:1:references/gone.md',
+      '.claude/notes.md:1:./nowhere.md',
+      '.context/ADR/ADR-0001-x.md:1:../missing-index.md',
+    ]);
+  });
+
+  test('skips URLs, anchors, placeholders, code spans, fences and every non-link check', () => {
+    write('.agents/skills/demo/SKILL.md', [
+      '[a](https://example.com) [b](#section) [c](<<PRIMARY_ROOT>>/x.md) [d]({{DOC_PATH}}) [e](./{slug}.md)',
+      'Write `[label](./not-a-real-link.md)` in the brief. `docs/nope/file.md` and x.ts:12 today.',
+      '```',
+      '[f](./inside-a-fence.md)',
+      '```',
+    ].join('\n'));
+    gitAdd();
+    expect(lintDocs(root).findings).toEqual([]);
+  });
+
+  test('does not walk uncommitted markdown', () => {
+    write('.context/PBI/cache.md', '[gone](./gone.md)');
+    expect(lintDocs(root).findings).toEqual([]);
+  });
+});

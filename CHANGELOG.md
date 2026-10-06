@@ -16,6 +16,21 @@ below names which one it applies to:
 
 ## Unreleased — Boilerplate
 
+### Fixed (final sweep)
+- **`bun run allure:run` runs the Playwright suite**: it ran `bun test` (the unit tests) and
+  skipped `.env`. It now goes through `scripts/launch.ts` like `allure:agent` and the `test*`
+  scripts, and `scripts/launch.test.ts` holds every Allure run script to that.
+- **`bun run env:set` keeps an inline `# comment`** on the line it replaces (quoted or unquoted
+  value); a `#` inside an unquoted value with no space before it stays part of the value.
+- **`api/.gitkeep`** no longer describes files, scripts and an MCP setup that were retired: it
+  points at the sync script, the setup page, the harness MCP files and the API doctrine.
+
+### Changed (final sweep)
+- **`docs:check` checks markdown `](…)` links in committed `.md` under `.agents/`, `.context/`
+  and `.claude/`**, relative to the file; URLs, anchors, placeholders and code spans are skipped.
+- **`AGENTS.md`**: §3 delegates to a subagent only when the work returns a lot of tool output or
+  splits into independent units, and §12 does not save to Engram what the repo already records.
+
 ### Changed (`bun run up` appends upstream hook groups)
 - **The `hooks` of `.claude/settings.json` only grow, like its permission lists**: an upstream hook
   command the project lacks under the same event and matcher is appended as a new group after the

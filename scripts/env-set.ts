@@ -22,8 +22,8 @@
  * Sensitivity comes from `varlock load --format json-full --agent`, read in this
  * process with every value discarded. Nothing printed carries a value: not the
  * new one, not any other line of the file. Every active `KEY=` line of the key
- * is replaced in place; a key with no active line is appended. Comments and
- * every other line stay byte-identical.
+ * is replaced in place, keeping its inline `# comment`; a key with no active
+ * line is appended. Comment lines and every other line stay byte-identical.
  *
  * A secret is the human's to type, in a terminal or the secret manager.
  *
@@ -69,8 +69,28 @@ export function formatValue(value: string): string {
 }
 
 /**
+ * The inline comment after a `.env` value, with the whitespace before it, or ''.
+ * A quoted value ends at its closing quote; an unquoted one at the first `#`
+ * preceded by whitespace, so `https://h/#frag` keeps its `#`.
+ */
+export function inlineCommentOf(afterEquals: string): string {
+  const lead = /^\s*/.exec(afterEquals)?.[0] ?? '';
+  const rest = afterEquals.slice(lead.length);
+  const quote = rest[0];
+  if (quote === '"' || quote === '\'' || quote === '`') {
+    let i = 1;
+    while (i < rest.length && rest[i] !== quote) { i += rest[i] === '\\' && quote === '"' ? 2 : 1; }
+    const tail = rest.slice(i + 1);
+    return /^\s*#/.test(tail) ? tail : '';
+  }
+  const m = /\s#/.exec(rest);
+  return m === null ? '' : rest.slice(m.index);
+}
+
+/**
  * Upserts `name` in `.env` content. Replaces every active (uncommented) line of
- * the key, keeping an `export ` prefix; appends one line when none exists.
+ * the key, keeping an `export ` prefix and an inline `# comment`; appends one
+ * line when none exists.
  */
 export function upsertEnvLine(content: string, name: string, value: string): string {
   const line = `${name}=${formatValue(value)}`;
@@ -80,7 +100,7 @@ export function upsertEnvLine(content: string, name: string, value: string): str
     const m = active.exec(raw);
     if (m === null) { return raw; }
     replaced = true;
-    return `${m[1] ?? ''}${line}`;
+    return `${m[1] ?? ''}${line}${inlineCommentOf(raw.slice(m[0].length))}`;
   });
   if (replaced) { return lines.join('\n'); }
   const base = content === '' || content.endsWith('\n') ? content : `${content}\n`;

@@ -1,41 +1,16 @@
-# API Documentation Directory
+# API Contract Directory
 
-This directory contains:
-- openapi.yaml - OpenAPI specification (synced from backend repo)
-- types.ts - Generated TypeScript types from OpenAPI
-- .openapi-config.json - Sync configuration
+Holds the OpenAPI-derived TypeScript types the API tests compile against, the
+`schemas/` facades that re-export them, and the local cache of the synced spec.
+Which of these files are generated, committed or gitignored is stated where they
+are produced, not here:
 
-## Commands
-
-```bash
-# First time setup - interactive
-bun run api:sync
-
-# Quick sync using saved config
-bun run api:sync -c
-
-# Sync and generate TypeScript types
-bun run api:sync:types
-
-# Generate types only (spec must exist)
-bun run api:types
-```
-
-## MCP OpenAPI Server Configuration
-
-Add to your Claude Code configuration:
-
-```json
-{
-  "mcpServers": {
-    "openapi": {
-      "command": "npx",
-      "args": ["-y", "mcp-openapi-server"],
-      "env": {
-        "OPENAPI_SPEC_PATH": "./api/openapi.yaml",
-        "API_BASE_URL": "https://your-api.com"
-      }
-    }
-  }
-}
-```
+- Sync pipeline (sources, flags, output files): the usage header of
+  `scripts/sync-openapi.ts`, run through the `api:sync` script in `package.json`.
+- Setup walkthrough: `docs/core/setup/openapi.html`.
+- OpenAPI MCP server: declared in the harness MCP files (`.mcp.json`,
+  `.codex/config.toml`, `opencode.jsonc`), started through the filtered `.env`
+  loader (ADR-0011); `OPENAPI_SPEC_PATH` and `API_BASE_URL` are documented in
+  `.env.example`.
+- How tests use the schema and execute requests:
+  `.agents/skills/agentic-qa-core/references/api-testing-doctrine.md`.

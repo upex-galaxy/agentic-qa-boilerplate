@@ -1,9 +1,9 @@
 /**
  * Regression tests for `scripts/launch.ts`, the launcher behind the `test*`
  * scripts. What they guard:
- *   1. The `test*` scripts still load `.env`: every `package.json` script that
- *      runs a test goes through this launcher, which starts the binary under
- *      `varlock run`.
+ *   1. The `test*` and `allure:*` scripts still load `.env`: every
+ *      `package.json` script that runs the Playwright suite goes through this
+ *      launcher, which starts the binary under `varlock run`.
  *   2. An AI harness (`claude`, `codex`, `opencode`, by name or path) is never
  *      started, and no `package.json` script launches one (ADR-0014).
  *   3. A different inherited value prints a notice naming the variable with
@@ -57,9 +57,9 @@ afterEach(() => { rmSync(root, { recursive: true, force: true }); });
 describe('package.json', () => {
   const scripts = (JSON.parse(readFileSync(join(import.meta.dir, '..', 'package.json'), 'utf8')) as { scripts: Record<string, string> }).scripts;
 
-  test('every test script loads .env through this launcher', () => {
-    const testScripts = Object.entries(scripts).filter(([name, cmd]) => /^test(?::|$)/.test(name) && /playwright test|validateTestEnv|jiraSync/.test(cmd));
-    expect(testScripts.length).toBeGreaterThan(0);
+  test('every test and Allure run script loads .env through this launcher', () => {
+    const testScripts = Object.entries(scripts).filter(([name, cmd]) => /^(?:test|allure)(?::|$)/.test(name) && /playwright test|validateTestEnv|jiraSync/.test(cmd));
+    expect(testScripts.map(([name]) => name)).toContain('allure:run');
     for (const [, cmd] of testScripts) {
       expect(cmd).toStartWith('bun --no-env-file scripts/launch.ts ');
     }

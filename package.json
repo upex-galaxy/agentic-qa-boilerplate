@@ -41,7 +41,7 @@
     "allure:agent": "bun --no-env-file scripts/launch.ts --warn bunx allure agent -- bunx playwright test",
     "allure:generate": "bunx allure generate ./allure-results",
     "allure:open": "bunx allure open",
-    "allure:run": "bunx allure run -- bun test",
+    "allure:run": "bun --no-env-file scripts/launch.ts --warn bunx allure run -- bunx playwright test",
     "allure:watch": "bunx allure watch ./allure-results",
     "api:login:local": "bun scripts/api-login.ts local",
     "api:login:staging": "bun scripts/api-login.ts staging",
