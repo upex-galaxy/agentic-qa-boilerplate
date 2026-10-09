@@ -8,6 +8,8 @@ import { afterEach, describe, expect, test } from 'bun:test';
 import {
   ABORTED_OUTRO,
   archivedSkillsToReport,
+  browserProfileDrift,
+  browserProfileSitesIn,
   buildParityFileBody,
   buildParityPrompt,
   collectParityFindings,
@@ -518,6 +520,88 @@ describe('collectParityFindings', () => {
 
     write(root, PLAYWRIGHT_CLI_CONFIG, '{ not json');
     expect(findings()).toEqual([]);
+  });
+
+  test('a project skill that opens a browser on a disk profile gets one informational row per file, every line named, the file untouched', () => {
+    const root = temporaryRoot();
+    const upstream = temporaryRoot();
+    write(root, '.agents/project.yaml', 'git_strategy:\n  strategy: solo-main\n  meta:\n    strategy_source: chosen\n');
+    const skill = [
+      '# Sprint testing',
+      'playwright-cli -s=TK-{n} open --profile=.playwright/profiles/TK-{n}',
+      'Add `--persistent` only if you need it: `playwright-cli -s=TK-1 open https://app --persistent`',
+      '',
+    ].join('\n');
+    write(root, '.agents/skills/sprint-testing/SKILL.md', skill);
+    write(root, 'AGENTS.md', `Open \`playwright-cli -s=W1 open --profile="${join(root, '.playwright/profiles/W1')}"\`.\n`);
+    const findings = (): ReturnType<typeof collectParityFindings> => collectParityFindings({
+      root,
+      upstreamDir: upstream,
+      drift: [],
+      compatErrors: [],
+      archivedSkills: [],
+      archivedSkillsDir: join(root, '.template/pre-agents-migration/skills'),
+      heldBack: [],
+      envNewKeys: [],
+    });
+
+    expect(browserProfileDrift(root)).toEqual([
+      { file: 'AGENTS.md', line: 1, flag: `--profile=${join(root, '.playwright/profiles/W1')}`, reason: 'profile inside the repo' },
+      { file: '.agents/skills/sprint-testing/SKILL.md', line: 2, flag: '--profile=.playwright/profiles/TK-{n}', reason: 'relative profile' },
+      { file: '.agents/skills/sprint-testing/SKILL.md', line: 3, flag: '--persistent', reason: 'persistent' },
+    ]);
+    const rows = findings();
+    expect(rows).toHaveLength(2);
+    expect(rows.find(r => r.path === '.agents/skills/sprint-testing/SKILL.md')).toMatchObject({ surface: 'skills', blocking: false, suggested: 'keep project' });
+    expect(rows.find(r => r.path === 'AGENTS.md')).toMatchObject({ surface: 'instructions', blocking: false });
+    const evidence = rows.find(r => r.path === '.agents/skills/sprint-testing/SKILL.md')!.evidence;
+    expect(evidence).toStartWith('informational: line 2 --profile=.playwright/profiles/TK-{n} (relative profile); line 3 --persistent (persistent)');
+    expect(evidence).toContain('browser-sessions.md');
+    expect(readFileSync(join(root, '.agents/skills/sprint-testing/SKILL.md'), 'utf8')).toBe(skill);
+  });
+
+  test('the disk-profile detector ignores the doctrine, placeholders, other CLIs and the vendor flag docs', () => {
+    const root = '/work/repo';
+    const quiet = [
+      '2. **Never `--persistent`.** Persistence is `--profile=<absolute dir>` or nothing.',
+      'a named session per worker (`-s=<label>`); never `--persistent`',
+      'nunca --persistent: `playwright-cli list` vacío',
+      'only `--browser --config --headed --persistent --profile` (confirmed via `playwright-cli open --help`)',
+      'playwright-cli -s=loom open <url> --profile=<abs root>/loom --browser=chrome',
+      'playwright-cli -s=loom open <url> --profile=~/.agentic-qa/playwright-profiles/loom',
+      'playwright-cli -s=loom open <url> --profile="$HOME/.agentic-qa/playwright-profiles/loom"',
+      'playwright-cli -s=loom open <url> --profile=/Users/me/.agentic-qa/playwright-profiles/loom',
+      String.raw`playwright-cli -s=loom open <url> --profile=%USERPROFILE%\.agentic-qa\playwright-profiles\loom`,
+      'bun run api:login staging --profile W1',
+      'resend emails list --profile staging',
+      'docker compose --profile test up --abort-on-container-exit',
+      '`--profile <name>`: writes tokens under `.auth/profiles/<name>/`',
+    ].join('\n');
+    expect(browserProfileSitesIn('.agents/skills/x/SKILL.md', quiet, root)).toEqual([]);
+
+    // The vendor playwright-cli skill documents its own flag; a relative profile in it is still a project edit.
+    const vendor = 'playwright-cli open --persistent\nplaywright-cli open --profile=/path/to/profile\nplaywright-cli -s=TK-1 open --profile=.playwright/profiles/TK-1\n';
+    expect(browserProfileSitesIn('.claude/skills/playwright-cli/SKILL.md', vendor, root)).toEqual([
+      { file: '.claude/skills/playwright-cli/SKILL.md', line: 3, flag: '--profile=.playwright/profiles/TK-1', reason: 'relative profile' },
+    ]);
+
+    // Repo-root spellings and a bare relative name on a browser line.
+    const loud = [
+      'playwright-cli -s=K open --profile=<repo>/.playwright/profiles/K',
+      'playwright-cli -s=K open --profile="$PWD/profiles/K"',
+      'playwright-cli -s=K open --profile=TK-1',
+      'pw open --persistent >/dev/null 2>&1',
+    ].join('\n');
+    expect(browserProfileSitesIn('scripts.sh', loud, root).map(s => s.reason)).toEqual([
+      'profile inside the repo',
+      'profile inside the repo',
+      'relative profile',
+      'persistent',
+    ]);
+  });
+
+  test('the shipped skills and instructions carry no disk-profile line', () => {
+    expect(browserProfileDrift(join(import.meta.dir, '..', '..'))).toEqual([]);
   });
 
   test('archived skills nudge once: this run, plus unreported archive entries, until their marker exists', () => {
