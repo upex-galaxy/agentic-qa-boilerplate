@@ -55,6 +55,13 @@
           lee antes del primer <code>open</code>. El porqué de cada regla está en
           <code>.context/ADR/ADR-0008-browser-session-isolation.md</code>.
         </p>
+        <p>
+          Ni un ticket ni un worker guarda perfil en disco: el único perfil persistente es el tuyo
+          (caso c), fuera del repo, en <code>~/.agentic-qa/playwright-profiles/</code>. Si una
+          costumbre vieja (<code>--persistent</code>) dejó perfiles de Chrome en la caché del CLI,
+          <code>bun run browser:profiles</code> los lista con tamaño y antigüedad, y con
+          <code>--apply</code> borra los viejos que ninguna sesión abierta usa.
+        </p>
       </div>
     </article>
   </body>
