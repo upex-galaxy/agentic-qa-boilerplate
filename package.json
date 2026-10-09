@@ -47,6 +47,7 @@
     "api:login:staging": "bun scripts/api-login.ts staging",
     "api:login": "bun scripts/api-login.ts",
     "api:sync": "bun scripts/sync-openapi.ts",
+    "browser:profiles": "bun scripts/browser-profiles.ts",
     "context:hydrate": "bun scripts/sync-jira-issues.ts pull --include-comments",
     "context:map": "bun scripts/context-map.ts",
     "docs": "bun scripts/docs-serve.ts",
