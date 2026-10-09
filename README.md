@@ -634,9 +634,9 @@ Every skill belongs to one of four tiers. Each tier has different discovery and 
 | T2     | Vendored (upstream, attribution kept)  | `.agents/skills/judgment-day/`                        | Silent on explicit trigger or host orchestrator citation    |
 | T2-opt | Optional SDD bundle (user-installed)   | `~/.claude/skills/sdd-*` only if present on the machine | Silent inside `/framework-development` only — see anti-leak |
 | T3     | Community project-level                | Installed by `install.ts` `PROJECT_LEVEL_SKILLS`      | Silent if matched by category                               |
-| T4     | Community user-level (global)          | Installed by `install.ts` `USER_LEVEL_SKILLS`         | **ASK** user before load (cross-project, not always wanted) |
+| T4     | Community user-level (global)          | Installed by `install.ts` `USER_LEVEL_SKILLS`         | Silent when a doctrine or your standing instructions name it for the moment; otherwise **ASK** before load |
 
-T3 project-level community skills install into the same `.agents/skills/` store, so there is never a second copy per harness. T4 user-level skills stay harness-specific (`~/.claude/skills/`, and the equivalent for each host).
+T3 project-level community skills install into the same `.agents/skills/` store, so there is never a second copy per harness. T4 user-level skills stay harness-specific (`~/.claude/skills/`, and the equivalent for each host). Which doctrine loads each one is the "Loaded by / when" table in `.agents/skills/agentic-qa-onboard/SKILL.md`, and `bun run skills:check` fails when an installed user-level skill has no row there.
 
 Validation: `bun run skills:check` checks tier coherence (orphan categories, tier mismatches, missing sections, stale doc paths).
 

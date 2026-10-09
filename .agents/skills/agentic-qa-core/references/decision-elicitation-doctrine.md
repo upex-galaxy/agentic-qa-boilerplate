@@ -53,7 +53,7 @@ explain, use the terminal prompt and save everyone the tab.
 
 | State | What happens |
 |---|---|
-| **installed** | use it when the ladder says so |
+| **installed** | use it when the ladder says so. Loading it then needs no permission: this doctrine is its named loader (`skill-composition-strategy.md` §3.2) |
 | **not installed** | say ONE line offering to install it, then fall back to the harness prompt and continue. Never block on the offer |
 
 This gate is NOT silent, and that is a deliberate difference from the orchestration gate

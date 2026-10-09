@@ -98,6 +98,8 @@ interface FixtureOptions {
   staleT1Body?: boolean
   sprintTestingKind?: string | null
   extraSkills?: Array<{ slug: string, kind?: string, capabilities?: string[], body?: string }>
+  /** Slugs rendered into `USER_LEVEL_SKILLS` (T4). Omitted = the array is empty. */
+  userLevelSkills?: string[]
 }
 
 function fixture(options: FixtureOptions): string {
@@ -108,7 +110,7 @@ function fixture(options: FixtureOptions): string {
     'const PROJECT_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [',
     '  { package: \'https://github.com/resend/resend-skills\', skill: \'resend-cli\' },',
     '];',
-    'const USER_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [];',
+    `const USER_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [${(options.userLevelSkills ?? []).map(s => `{ package: 'https://example.com/${s}', skill: '${s}' }`).join(', ')}];`,
     '',
   ].join('\n'));
 
@@ -515,5 +517,71 @@ describe('lint-skills context write scope (check 23, CONTEXT-WRITES)', () => {
 
     expect(output).not.toMatch(CAPABILITY_VIOLATION);
     expect(exitCode).toBe(0);
+  });
+});
+
+describe('lint-skills T4 loaders (check 24, T4-LOADER)', () => {
+  /** The onboard skill with its user-level loader table, one row per entry. */
+  function onboard(rows: Array<[slug: string, loader: string]>): { slug: string, kind: string, body: string } {
+    return {
+      slug: 'agentic-qa-onboard',
+      kind: 'core',
+      body: [
+        '## Community skills installed at user level',
+        '',
+        '| Skill | Source | Loaded by / when |',
+        '| --- | --- | --- |',
+        ...rows.map(([slug, loader]) => `| \`${slug}\` | example.com | ${loader} |`),
+        '',
+        '## Next steps',
+        '',
+        '| `late-skill` | example.com | `/sprint-testing` |',
+        '',
+      ].join('\n'),
+    };
+  }
+
+  test('every user-level skill with a cited loader or "user-invoked only" passes', () => {
+    const { exitCode, output } = runLint(fixture({
+      listCommunityInAgentsMd: true,
+      userLevelSkills: ['deck-tool', 'slides-tool'],
+      extraSkills: [onboard([
+        ['deck-tool', 'any flow past the threshold in `/sprint-testing`'],
+        ['slides-tool', '**user-invoked only.**'],
+      ])],
+    }));
+
+    expect(output).not.toContain('T4-LOADER:');
+    expect(exitCode).toBe(0);
+  });
+
+  test('a user-level skill with no row fails, and a row outside the section does not count', () => {
+    const { exitCode, output } = runLint(fixture({
+      listCommunityInAgentsMd: true,
+      userLevelSkills: ['deck-tool', 'late-skill'],
+      extraSkills: [onboard([['deck-tool', '`/sprint-testing`']])],
+    }));
+
+    expect(output).toContain('[late-skill] T4-LOADER: in USER_LEVEL_SKILLS but has no row');
+    expect(output).not.toContain('[deck-tool] T4-LOADER:');
+    expect(exitCode).toBe(1);
+  });
+
+  test('a row whose loader cell cites nothing fails', () => {
+    const { exitCode, output } = runLint(fixture({
+      listCommunityInAgentsMd: true,
+      userLevelSkills: ['deck-tool'],
+      extraSkills: [onboard([['deck-tool', 'any flow that needs it']])],
+    }));
+
+    expect(output).toContain('[deck-tool] T4-LOADER: the "Loaded by / when" cell');
+    expect(exitCode).toBe(1);
+  });
+
+  test('user-level skills without the onboard skill fail once, naming the file', () => {
+    const { exitCode, output } = runLint(fixture({ listCommunityInAgentsMd: true, userLevelSkills: ['deck-tool'] }));
+
+    expect(output).toContain('T4-LOADER: .agents/skills/agentic-qa-onboard/SKILL.md is missing');
+    expect(exitCode).toBe(1);
   });
 });

@@ -1070,8 +1070,10 @@ subagente (contexto limpio)
         disparadoras que usa el agente para elegir skill, no el inventario. Hay tres tipos: propios
         del repo, vendorizados (como <code>judgment-day</code>, de gentle-ai) y de la comunidad, que
         instala <code>bun run setup</code> a nivel de proyecto. Además hay skills de usuario (la
-        lista <code>USER_LEVEL_SKILLS</code> de <code>cli/install.ts</code>) que el agente solo
-        carga si le das permiso.
+        lista <code>USER_LEVEL_SKILLS</code> de <code>cli/install.ts</code>): el agente carga sin
+        preguntar las que una regla del repo o tus propias instrucciones nombran para un momento
+        concreto (por ejemplo <code>mkd</code> cuando hay más de tres decisiones) y te pide permiso
+        para cualquier otra.
       </p>
 
       <h3 id="skills-workflow">Workflow: los stages del pipeline</h3>

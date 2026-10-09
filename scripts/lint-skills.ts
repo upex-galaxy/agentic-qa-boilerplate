@@ -158,6 +158,14 @@
  *      the Jira resolution tags (`[ISSUE_TRACKER_TOOL]`, `[TMS_TOOL]`): a
  *      context skill edits its own map, never a tracker. ERROR severity.
  *
+ *  24. T4-LOADER — every slug in cli/install.ts:USER_LEVEL_SKILLS must have a
+ *      row in the "Loaded by / when" table of `agentic-qa-onboard/SKILL.md`
+ *      §"Community skills installed at user level", and the row's loader cell
+ *      must either cite its loader in backticks (the skill or doctrine that
+ *      names this T4 skill for a moment, which is what lets it load without
+ *      asking: skill-composition-strategy.md §3.2) or say "user-invoked only".
+ *      No-op when USER_LEVEL_SKILLS is empty. ERROR severity.
+ *
  * Usage: bun run scripts/lint-skills.ts   (or: bun run skills:check)
  */
 
@@ -983,6 +991,60 @@ function checkDuplicateTier(
   return result;
 }
 
+// --- Check 24: T4-LOADER ---
+
+const ONBOARD_SKILL_REL = '.agents/skills/agentic-qa-onboard/SKILL.md';
+const T4_LOADER_HEADING = '## Community skills installed at user level';
+/** `| \`slug\` | source | loader |`: the slug, then the last cell. */
+const T4_LOADER_ROW = /^\|\s*`([\w-]+)`\s*\|.*\|([^|]*)\|\s*$/;
+const T4_LOADER_USER_ONLY = /user-invoked only/i;
+const T4_LOADER_CITATION = /`[^`]+`/;
+
+/** Check 24: every USER_LEVEL_SKILLS slug has a loader row in the onboard table. */
+function checkT4Loaders(t4Slugs: Set<string>, repoRoot: string): Violation[] {
+  if (t4Slugs.size === 0) { return []; }
+  const onboardPath = join(repoRoot, ONBOARD_SKILL_REL);
+  if (!existsSync(onboardPath)) {
+    return [{
+      severity: 'ERROR',
+      scope: 'USER_LEVEL_SKILLS',
+      msg: `T4-LOADER: ${ONBOARD_SKILL_REL} is missing, so no user-level skill has a declared loader`,
+    }];
+  }
+
+  const loaders = new Map<string, string>();
+  let inSection = false;
+  for (const line of readFileSync(onboardPath, 'utf8').split('\n')) {
+    if (line.startsWith('## ')) {
+      inSection = line.trim() === T4_LOADER_HEADING;
+      continue;
+    }
+    if (!inSection) { continue; }
+    const m = T4_LOADER_ROW.exec(line);
+    if (m) { loaders.set(m[1], m[2].trim()); }
+  }
+
+  const result: Violation[] = [];
+  for (const slug of [...t4Slugs].sort()) {
+    const loader = loaders.get(slug);
+    if (loader === undefined) {
+      result.push({
+        severity: 'ERROR',
+        scope: slug,
+        msg: `T4-LOADER: in USER_LEVEL_SKILLS but has no row in ${ONBOARD_SKILL_REL} §"Community skills installed at user level" — add one naming its loader, or "user-invoked only"`,
+      });
+    }
+    else if (!T4_LOADER_USER_ONLY.test(loader) && !T4_LOADER_CITATION.test(loader)) {
+      result.push({
+        severity: 'ERROR',
+        scope: slug,
+        msg: `T4-LOADER: the "Loaded by / when" cell in ${ONBOARD_SKILL_REL} neither cites its loader in backticks nor says "user-invoked only"`,
+      });
+    }
+  }
+  return result;
+}
+
 // -----------------------------------------------------------------------------
 // Checks 11–12 — session-management contract
 // -----------------------------------------------------------------------------
@@ -1511,6 +1573,9 @@ function main(): void {
   // Check 9: DUPLICATE-TIER
   violations.push(...checkDuplicateTier(t2Slugs, t3Slugs, t4Slugs));
 
+  // Check 24: T4-LOADER
+  violations.push(...checkT4Loaders(t4Slugs, REPO_ROOT));
+
   // Checks 11–14: session-management contract
   for (const skill of t1Skills) {
     violations.push(...checkSessionBanner(skill.slug, skill.body));
@@ -1556,6 +1621,7 @@ function main(): void {
     `CURRENT-STATE (today / as of / dated measurement / since <version> / tool version in the same prose; ${VOLATILE_SEVERITY['CURRENT-STATE']})`,
     'STAGE-OWNER-DISPATCH (`metadata.stage_owner: true` without a `## Subagent Dispatch Strategy` section)',
     'CONTEXT-WRITES (`metadata.writes` outside a context skill, outside its own `references/`, without `references/refresh.md`, or next to a Jira tag)',
+    'T4-LOADER (USER_LEVEL_SKILLS slug without a loader row in the agentic-qa-onboard table)',
   ];
 
   if (violations.length === 0) {

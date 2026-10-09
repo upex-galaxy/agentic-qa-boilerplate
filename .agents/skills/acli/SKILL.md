@@ -56,7 +56,7 @@ Steps for protocol consistency:
 
 1. Read `complementary_categories` from this skill's frontmatter (`issue-tracker`).
 2. Resolve via the host repo's skill-registry cache (`.agents/skills/REGISTRY.md`, built by `scripts/build-skill-registry.ts`). Fallback: scan the session-start `system-reminder` skill list.
-3. Apply the threshold rule per the host repo's skill-composition strategy doc (T1 / T3 silent; T4 ASK).
+3. Apply the threshold rule per the host repo's skill-composition strategy doc (T1 / T3 silent; T4 silent only when a doctrine names it for this moment, otherwise ASK).
 4. The Atlassian MCP fallback documented below is OPT-IN, not a skill — enable manually via `agentic-qa-core/references/mcp-atlassian-optin.md`.
 
 Expected matches: typically none. Repo-specific composability (which workflow skills load this) lives in `<repo-core>/references/acli-integration.md` §Composability.

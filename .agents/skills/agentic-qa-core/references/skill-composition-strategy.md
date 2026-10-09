@@ -42,7 +42,7 @@ Four tiers. Different discovery and load rules per tier.
 | **T2 — Vendored** | `.agents/skills/` (committed, upstream attribution in frontmatter) | `judgment-day` (gentle-ai, Apache-2.0) | Named in the skill router table | Silent on explicit user trigger (`/judgment-day`, `juzgar`) or when cited by host orchestrator (`test-automation` Phase 3, `git-flow-master` pre-PR) |
 | **T2-opt — Optional SDD bundle (user-installed outside this repo)** | `~/.claude/skills/sdd-*` (only if present on the machine, e.g. left by an older gentle-ai release) | any `sdd-*` skill (its upstream owns the bundle) | NOT installed by `bun run setup`. Discovered at runtime from system-reminder skill list when present | Silent **inside** `framework-development` only — see §4 anti-leak contract. NEVER silent inside `shift-left-testing`, `sprint-testing`, `test-documentation`, `test-automation`, `regression-testing` |
 | **T3 — Community project-level** | `.agents/skills/` (installed by `install.ts` PROJECT_LEVEL_SKILLS, not committed) | `PROJECT_LEVEL_SKILLS` in `cli/install.ts` | Named **by category** in the skill router (not by skill name). Discovered at runtime from system-reminder skill list | Silent if matched by category (e.g. user writes a Playwright test → load `playwright-best-practices`) |
-| **T4 — Community user-level** | `~/.claude/skills/` (installed by `install.ts` USER_LEVEL_SKILLS) | `USER_LEVEL_SKILLS` in `cli/install.ts` | **NOT named in the skill router**. Discovered at runtime from system-reminder skill list. Auto-match by task domain | **ASK user before load** (may not be installed, or user may not want it for this task) |
+| **T4 — Community user-level** | `~/.claude/skills/` (installed by `install.ts` USER_LEVEL_SKILLS) | `USER_LEVEL_SKILLS` in `cli/install.ts` | **NOT named in the skill router**. Discovered at runtime from system-reminder skill list. Auto-match by task domain, OR named as the instrument for a moment by a committed doctrine or the operator's standing instructions (the named loaders: `agentic-qa-onboard/SKILL.md` §"Community skills installed at user level") | **Named loader → load at that moment without asking**; a missing install follows the naming doctrine's own gate. **Matched only by domain → ASK user before load** (may not be installed, or user may not want it for this task) |
 
 ### Tier decision rule
 
@@ -107,7 +107,8 @@ Before starting any non-trivial task, the orchestrator (and each invoked skill) 
 2. **Match by domain category** (see vocabulary §5) — not by literal skill name.
 3. **Resolve tier per match**:
    - T1 / T2 / T3 → load silently when task domain matches AND any anti-leak rule from §4 is satisfied.
-   - T4 → ask user one short question before loading: `"Detected X skill (T4). Apply it? Y/N"`.
+   - T4 named for this moment by a committed doctrine or the operator's standing instructions → load without asking (§3.2).
+   - T4 matched only by domain → ask user one short question before loading: `"Detected X skill (T4). Apply it? Y/N"`.
 4. **Cache the load decisions** for the session — do not re-ask the same skill twice.
 
 ### 3.2 Threshold rule (silent vs ask)
@@ -118,7 +119,9 @@ Before starting any non-trivial task, the orchestrator (and each invoked skill) 
 | T2 (`judgment-day`) | on explicit user trigger OR when cited by host orchestrator (`test-automation` Phase 3, `git-flow-master` pre-PR) | never auto-invoked without trigger |
 | T2-opt (SDD-*, only if user manually installed) | inside `framework-development` only (see §4) | inside any other workflow skill — REJECT, redirect to `framework-development` |
 | T3 | task domain matches category | task domain only weakly matches |
-| T4 | never silent | always ask before load |
+| T4 | a committed doctrine (`AGENTS.md`, a T1 `SKILL.md` or a reference it cites) or the operator's standing instructions (a user-level `CLAUDE.md` / `AGENTS.md`) name it as the instrument for the moment at hand: load it at that moment; a missing install follows that doctrine's own gate | matched only by task domain: ask before load |
+
+**The named-loader rule.** A T4 skill is never silent by default: what makes a load silent is a NAMING, never a domain match. The naming source is either a committed doctrine or a standing instruction of the operator, which `decision-protocol.md` already treats as binding; a domain match alone, however strong, still asks. The loaders this repo commits are the "Loaded by / when" table in `agentic-qa-onboard/SKILL.md` §"Community skills installed at user level": every slug in `USER_LEVEL_SKILLS` (`cli/install.ts`) has a row there naming its loader or saying "user-invoked only", and `bun run skills:check` (`T4-LOADER`) fails when one is missing. A new doctrine that names a T4 skill updates that row in the same change.
 
 ### 3.3 Sub-agent skill propagation
 
@@ -320,7 +323,7 @@ The four-tier model is not bureaucracy. Each tier solves a real failure:
 
 - **T1 vs T2-opt**: T1 is our doctrine. T2-opt is a third-party planning bundle. Mixing them means our QA workflows could be silently rewritten by an upstream SDD release. The gate (§4) means SDD only fires where we explicitly authorized it.
 - **T2 vs T3**: T2 is vendored and committed (`judgment-day`, attribution in frontmatter, no upstream dependency). T3 is community-managed via `bunx skills add`. Different install paths, different upgrade cadences, different breakage modes. The skill router must NOT pretend they are equivalent.
-- **T3 vs T4**: T3 ships with every clone of this repo. T4 may or may not be installed. Asking before T4 use is what prevents "I cleared my `~/.claude/skills/` and now QA is broken" support tickets.
+- **T3 vs T4**: T3 ships with every clone of this repo. T4 may or may not be installed. Asking before T4 use is what prevents "I cleared my `~/.claude/skills/` and now QA is broken" support tickets. A named loader (§3.2) does not bring that ticket back: the naming doctrine states the absent case.
 - **Categories vs names**: Community skill authors rename and abandon things. A QA repo that hardcodes `playwright-best-practices` by exact name breaks the day the author republishes as `playwright-patterns`. Categories survive renames.
 
 ---
@@ -348,7 +351,7 @@ The script is wired in `package.json` as `"skills:check": "bun run scripts/lint-
 | T2 vendored skill names (`judgment-day`) | §5 (named, with citation context) | host skill SKILL.md references it in its review steps (required-verifier option or optional gate: §11 decision 3) | Reference only |
 | T2-opt SDD bundle names | §5 (named, with anti-leak note + manual-install pointer) | framework-development SKILL.md references SDD skills by name in delegation points | Reference only |
 | T3 skill names (community project-level) | §5 (mention `playwright-cli`, `playwright-best-practices` by name; small list, low fragility) | — | Reference only |
-| T4 skill names (community user-level) | NOT named in the skill router. Auto-discovered at runtime per this doc | — | Reference only — name list only in installer |
+| T4 skill names (community user-level) | NOT named in the skill router. Auto-discovered at runtime per this doc | the doctrine that names one as its loader (§3.2) | Reference only — name list in the installer, loaders in the `agentic-qa-onboard` table (`T4-LOADER`) |
 
 ---
 
@@ -356,7 +359,7 @@ The script is wired in `package.json` as `"skills:check": "bun run scripts/lint-
 
 1. **Skill discovery mechanism**: ✅ **System-reminder scan is canonical.** The installer ships no `skill-registry`. Project-owned skills and orchestrator read the system-reminder skill list directly. Users who want richer registry tooling can install it manually.
 
-2. **find-skills meta-skill**: ✅ **Automatic, but only as last resort.** Invocation order:
+2. **find-skills meta-skill**: ✅ **Automatic, but only as last resort.** This decision is `find-skills`'s named loader in the §3.2 sense: when step 3 fires it loads without asking, and anything it would install still asks. Invocation order:
    1. Scan T1 + T2 (always available).
    2. Scan T3 + T4 already installed (via system-reminder list).
    3. If a task domain has no match in steps 1-2 AND the task would benefit significantly from a specialized skill → invoke `find-skills` automatically to suggest installable skills. Ask user before installing.

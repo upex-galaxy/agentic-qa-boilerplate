@@ -352,14 +352,17 @@ Full details in [`INSTALLER.md`](../../../INSTALLER.md).
 **Every installed skill needs a LOADER, or it should not be installed.** An install that no flow
 ever reaches is tokens spent on a capability nobody invokes — and the failure is silent, because an
 unused skill looks exactly like a working one. So the third column is not decoration: it names the
-skill and the moment that loads this one, or says plainly that only a human invokes it.
+skill and the moment that loads this one, or says plainly that only a human invokes it. A loader named here is
+what lets the agent load the skill without asking (`agentic-qa-core/references/skill-composition-strategy.md` §3.2),
+and `bun run skills:check` (`T4-LOADER`) fails when a `USER_LEVEL_SKILLS` slug has no row, or a row whose
+loader cell neither cites its loader in backticks nor says "user-invoked only".
 
 | Skill | Source | Loaded by / when |
 | --- | --- | --- |
 | `find-skills` | vercel-labs/skills | **automatic, last resort.** `agentic-qa-core/references/skill-composition-strategy.md` §11.2: scan T1+T2, then installed T3+T4, and only if a task domain still has no match does any flow invoke this — then asks before installing |
 | `github-actions-docs` | xixu-me/skills | `/framework-development` and `/regression-testing` when EDITING or diagnosing `.github/workflows/**` (both name it; reading a workflow does not need it) |
 | `html-ppt` | lewislulu/html-ppt-skill | **user-invoked only.** `packages/decks/` is hand-authored; this is for a one-off deck outside that tree |
-| `bun` | bun.sh/docs | any flow hitting an unfamiliar Bun API (§6.5 CLI mapping) |
+| `bun` | bun.sh/docs | every flow, before a Bash call that runs `bun` (the CLI mapping in `.agents/instructions/agent-tool-resolution.md` §6.5) |
 | `mkd` | upex-galaxy/agentic-user-skills | any flow that reaches the decision threshold in `agentic-qa-core/references/decision-elicitation-doctrine.md` (>3 decisions, or one dense one) |
 | `orchestration.orchestrator_skills` | the orchestration binary | `/orca-orchestration`, ALONGSIDE it — the vendor owns the command grammar, the repo skill owns when and what |
 
