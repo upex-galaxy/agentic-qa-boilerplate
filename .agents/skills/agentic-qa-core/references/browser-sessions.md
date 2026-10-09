@@ -17,7 +17,7 @@ Before the first `open`, answer: **does the page need a logged-in session, and w
 
 The shipped `.playwright/cli.config.json` launches every session **in memory and headless**: no profile on disk, nothing shared between two session names. Persistence is always explicit (`--profile`), headed is always explicit (`--headed`, when a human must see the window: a first login, a demo, a pair session).
 
-`bun run up` delivers that file only when it is missing and never overwrites it: a project keeps the copy it has. If its `browser` block still carries `"isolated": false` and a `"userDataDir"`, every session name shares that one profile and nothing in this file's isolation holds; the updater says so in an informational parity row on every run until it is fixed. Fix it once (remove both keys; `headless: true`), with the human's OK, before trusting a session name as isolation.
+`bun run up` delivers that file only when it is missing and never overwrites it: a project keeps the copy it has. If its `browser` block still carries `"isolated": false` and a `"userDataDir"`, every session name shares that one profile and nothing in this file's isolation holds; the updater says so in an informational parity row on every run until it is fixed. Fix it once (remove both keys; `headless: true`), with the human's OK, before trusting a session name as isolation. A second informational row names every line of the project's own skills, commands or instructions that still opens a browser with `--persistent`, or with a `--profile` that is relative or inside the repo; the updater never rewrites those files.
 
 ---
 
@@ -42,7 +42,7 @@ A storage-state file, a profile dir and a cookie value are login credentials in 
 - **Never print them.** No `cat` of a state file or a profile file. Never run `cookie-list`, `cookie-get`, `localstorage-list` or `sessionstorage-list` on an owner account (cases c, d): they print the values (measured). On a case (b) test user, read a single non-session key with `--raw` when a test needs it, never dump the store.
 - **`fill` echoes the value it typed** in its "Ran Playwright code" block (measured). Typing a password is always `--raw fill <ref> "$VAR"`: the shell expands the variable, the command text carries only its NAME, and `--raw` suppresses the echo (measured: empty output).
 - **State files live in `.auth/` only** (gitignored), and get `chmod 600` right after `state-save` (it writes `0644`, measured). `state-save` with no filename writes `storage-state-<timestamp>.json` into the current directory: always pass the full path. `.gitignore` also covers that auto-name, as a net, not as permission.
-- **Profiles live outside every repo** (§5). `.playwright/profiles/` is gitignored for disposable per-ticket profiles only.
+- **Profiles live outside every repo** (§5). The only browser profiles on disk are the owner's case (c) profiles under `~/.agentic-qa/playwright-profiles/`. A ticket or a worker never gets a disk profile: cases (a) and (b) run in memory (§7). `.playwright/profiles/` stays in `.gitignore` as a safety net, so a profile left by an old habit or a relative `--profile` is never committed; the entry does not sanction one.
 - **CI never uses an owner profile or a pair session.** CI authenticates through the suite's setup projects, nothing else.
 
 ---
@@ -136,7 +136,7 @@ For an account the human owns and only the human can log into. Root, machine-wid
 5. Verify WHICH account is signed in, then `close`: closing is what flushes cookies to disk. A killed browser loses them (diagnose by the mtime of `<profile>/Default/Cookies`).
 6. Headless smoke, read-only: reopen without `--headed`, `eval "location.href"`, confirm no login page, `close`.
 
-**Daily use.** A healthy session lasts weeks: assume logged in, never log in "just in case". After every `open` / `goto`, `--raw eval "location.href"`; a login-pattern hit means stop, `close`, reopen headed for the human, and report what is done and what is not. Never retry, never auto-login. Nothing destructive without the human's written OK per item, and every write is one visible command, read back afterwards (Critical Rule #16). Disposable per-ticket profiles are removed by path when the ticket closes (`delete-data` never removes a custom `--profile` dir, measured); an owner profile is never removed by an agent.
+**Daily use.** A healthy session lasts weeks: assume logged in, never log in "just in case". After every `open` / `goto`, `--raw eval "location.href"`; a login-pattern hit means stop, `close`, reopen headed for the human, and report what is done and what is not. Never retry, never auto-login. Nothing destructive without the human's written OK per item, and every write is one visible command, read back afterwards (Critical Rule #16). An owner profile is never removed by an agent (and `delete-data` never removes a custom `--profile` dir, measured).
 
 ---
 
@@ -192,3 +192,11 @@ Because the cookie jar is shared, every paired worker is the SAME identity on ev
 - **An owner profile (case c) is single-writer machine-wide**, across worktrees and repos: the conductor serializes any work on it. Before opening one, `playwright-cli list --all` and check nobody holds it.
 - **Pair mode in a fleet** follows §6: one tab per worker, opened by the worker, closed only as its last step; same identity everywhere, so writes are serialized.
 - Output and evidence isolation is a separate concern: `evidence-conventions.md` §5 (explicit capture paths, never repoint the shared `outputDir`).
+
+---
+
+## 8. Leftover daemon profiles
+
+`--persistent`, or an old config with `"isolated": false`, leaves one full Chrome profile per session name under the CLI's daemon dir (`ud-<session>-<browser>`, measured), and `close` never deletes it. A relative `--profile` leaves its dir wherever the daemon's working directory was, usually `.playwright/profiles/` inside a repo, and nothing removes it either. In-memory sessions leave nothing, so on a clean setup both stay empty.
+
+`bun run browser:profiles` lists those `ud-*` dirs on this machine with size and age, dry run by default. `--apply` deletes the ones older than `--older-than <days>` that no live session holds (`playwright-cli list --all`), and prints the denominator. It never touches `~/.agentic-qa/playwright-profiles/` or any custom `--profile` dir (a leftover one inside a repo is removed by path, after the human confirms it), and it refuses `--apply` when the live-session list cannot be read. A profile is the owner's data: run `--apply` with the human's OK.

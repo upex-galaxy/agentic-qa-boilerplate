@@ -13,9 +13,11 @@ node_modules/
 /playwright/.auth/
 .playwright/user-data
 .playwright/output
-# Disposable per-ticket browser profiles, and the file `playwright-cli state-save`
-# writes into the current directory when no filename is given. Session state
-# belongs in /.auth/ (agentic-qa-core/references/browser-sessions.md).
+# Safety net only: no skill writes a browser profile here (tickets and workers run
+# in memory; owner profiles live in ~/.agentic-qa/playwright-profiles/). It keeps a
+# profile left by an old habit or a relative --profile out of git. `storage-state-*.json`
+# below is the file `playwright-cli state-save` writes into the current directory when
+# no filename is given. Session state belongs in /.auth/ (agentic-qa-core/references/browser-sessions.md §3).
 .playwright/profiles/
 # `playwright-cli` snapshots, console logs and screenshots when no path is given.
 .playwright-cli/
