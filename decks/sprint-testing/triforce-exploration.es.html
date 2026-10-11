@@ -694,6 +694,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <p class="kicker">el loop por cada AC</p>
   <h2 class="h2" data-anim="fade-up">Navega → Observa → Captura</h2>
   <div class="flow mt-s">
+    <div class="stage"><div class="sx">0</div><div><h4>Sesión + estado del rol</h4><p>Sesión con nombre en memoria (<span class="mono">-s=&lt;KEY&gt;</span>), una por rol; el login sale de <span class="mono">state-load .auth/&lt;env&gt;-&lt;role&gt;.json</span>, nunca tipeado aquí. Al terminar: <span class="mono">close</span> y <span class="mono">playwright-cli list</span> lo prueba.</p></div></div>
     <div class="stage"><div class="sx">1</div><div><h4>Navega + snapshot</h4><p>Abre la URL de inicio, captura la estructura del DOM / árbol de accesibilidad.</p></div></div>
     <div class="stage"><div class="sx">2</div><div><h4>Ejecuta + observa</h4><p>Acciones del happy path paso a paso. ¿Resultado esperado? ¿estado UI raro? ¿consola roja? ¿red 4xx/5xx?</p></div></div>
     <div class="stage"><div class="sx">3</div><div><h4>Captura + propaga estado</h4><p>Screenshot en el estado clave (<span class="mono">{KEY}-{n}-ac{N}-desc.png</span>) y marca el outline PASSED/FAILED en memory.</p></div></div>

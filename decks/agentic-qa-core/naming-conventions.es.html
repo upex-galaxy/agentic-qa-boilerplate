@@ -593,7 +593,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
   <div class="grid g3 mt-m">
     <div class="gap"><h4>1 · Archivos de test-data</h4><p class="dim" style="font-size:13.5px">Los fixtures en tests/data/ no tienen forma.</p><span class="prop">{resource}-{variant}.json → users-valid.json</span></div>
     <div class="gap"><h4>2 · Evidencia / screenshots</h4><p class="dim" style="font-size:13.5px">Los archivos en evidence/ son ad-hoc.</p><span class="prop">{KEY}-step{NN}-{action}.png</span></div>
-    <div class="gap"><h4>3 · Mocks / stubs</h4><p class="dim" style="font-size:13.5px">Sin hogar ni nombre para mocks de API.</p><span class="prop">data/mocks/{endpoint}/{method}.{status}.json</span></div>
+    <div class="gap"><h4>3 · Mocks / stubs</h4><p class="dim" style="font-size:13.5px">Sin hogar ni nombre para mocks de API.</p><span class="prop">tests/data/mocks/{endpoint-path}/{METHOD}.{status}.json</span></div>
     <div class="gap"><h4>4 · Numeración de ADR</h4><p class="dim" style="font-size:13.5px">ADR-NNNN colisiona entre agentes paralelos.</p><span class="prop">ADR-{NNNN}-{slug}.md · manual vía README Index (sin script)</span></div>
     <div class="gap"><h4>5 · Identificadores de env</h4><p class="dim" style="font-size:13.5px">Nombres de env solo implícitos por URL.</p><span class="prop">local · qa · staging · production</span></div>
     <div class="gap"><h4>6 · Carpetas de módulo de test</h4><p class="dim" style="font-size:13.5px">Subcarpetas e2e/integration sin spec.</p><span class="prop">{domain-plural}/ kebab-case</span></div>
@@ -775,11 +775,11 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
     <div class="lbar" style="--ac:#fbbf24"><span class="ln">D · PLAN vs RESULTS</span><span class="ld">Plan y results se distinguen en el primer token (P = Plan, R = Results)</span><span class="lx">ATP → ATR</span></div>
     <div class="lbar" style="--ac:#a3e635"><span class="ln">E · UNA FORMA</span><span class="ld">Una sola forma por artefacto; la membresía vive en el Set (issue link TC→ATS en ambas modalidades, más la asociación Xray en jira-xray), nunca se mete en el nombre</span><span class="lx">membership ≠ prefijo</span></div>
   </div>
-  <div class="callout good mt-m" style="padding:11px 14px"><p style="margin:0" class="dim">El siguiente slide aplica estos axiomas a los <b>5 errores</b> que más se cometen al ignorarlos.</p></div>
+  <div class="callout good mt-m" style="padding:11px 14px"><p style="margin:0" class="dim">El siguiente slide aplica estos axiomas a los <b>errores</b> que más se cometen al ignorarlos.</p></div>
 </section>
 
-<!-- 2 · LOS 5 ERRORES MÁS COMUNES -->
-<section class="slide" style="--ac:#f87171" data-t="5 errores comunes">
+<!-- 2 · LOS ERRORES MÁS COMUNES -->
+<section class="slide" style="--ac:#f87171" data-t="Errores comunes">
   <p class="kick">Aplicando los axiomas — las confusiones a nunca cometer, como reglas</p>
   <h2>Errores &amp; Reglas de Oro</h2>
   <div class="grid g2 mt-m">

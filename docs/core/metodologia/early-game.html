@@ -267,7 +267,9 @@
               <th>Transiciones en Jira</th>
               <td>
                 US: Ready For QA → In Test (<em>Start Testing</em>)<br />
-                US: In Test → BLOCKED (<em>defect reported</em>)
+                US: In Test → BLOCKED (<em>defect reported</em>), con
+                <code>qa.formal_blocked_gate: true</code>; si no, la historia queda en In Test con
+                el bug enlazado
               </td>
             </tr>
             <tr>
@@ -743,6 +745,8 @@
               <td>3 · QA</td>
               <td>
                 Ready For QA → In Test → QA Approved, con desvío a BLOCKED si se reporta un defecto
+                y <code>qa.formal_blocked_gate</code> está activo (si no, queda en In Test con el
+                bug enlazado)
               </td>
             </tr>
             <tr>

@@ -465,6 +465,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
           <tr><td class="small">El instalador y el tooling de <code>cli/</code>, los scripts de <code>scripts/</code></td></tr>
           <tr><td class="small">El pipeline OpenAPI (<code>scripts/sync-openapi.ts</code>), dependencias y scripts de <code>package.json</code></td></tr>
           <tr><td class="small">Doctrina compartida en <code>agentic-qa-core/references/</code> o una skill nueva del repo</td></tr>
+          <tr><td class="small">Editar <code>AGENTS.md</code>, una sección de <code>.agents/instructions/</code>, el ROUTER o sus <code>triggers:</code>: modo <code>instructions</code> (<code>references/instructions-doctrine.md</code>)</td></tr>
           <tr><td class="small">"Sync AI context": poner los docs al día después de un cambio del boilerplate</td></tr>
         </table>
       </div>
@@ -507,6 +508,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="wf-node alt"><p class="n">Tras aprobar el plan</p><p class="t">ADR</p><p class="c">si el cambio rehace la arquitectura de test y cuesta revertirlo</p></div>
       <div class="wf-node alt"><p class="n">Ruta prohibida</p><p class="t">Abortar y derivar</p><p class="c">a la skill dueña de la fila</p></div>
       <div class="wf-node alt"><p class="n">Un verificador en rojo</p><p class="t">REJECT</p><p class="c">retry · skip-and-document · abort<br>sin auto-fix, sin archivar</p></div>
+      <div class="wf-node alt"><p class="n">Editar instrucciones</p><p class="t">Modo <code>instructions</code></p><p class="c">ubicar · editar · <code>instructions:check</code><br>ADR si toca una fila del ROUTER</p></div>
       <div class="wf-node alt"><p class="n">Lotes independientes</p><p class="t">Ola de workers</p><p class="c">opcional: se ofrece, nunca se entra solo</p></div>
     </div>
     <p class="small dim mt-m">Después del Archive, el código lo publica <a href="../git-flow-master/how-it-works.es.html"><code>/git-flow-master</code></a> con el diff que produjo la Fase 2 y verificó la Fase 3.</p>

@@ -1,4 +1,4 @@
-import{p as W,s as a,c as s,t as q,a as p,e as z,b as v,d as X,g as t,f as r,h as Z,i as ee,j as k,k as f,l as ae,m as se,u as j,n as te,o as le,q as h,r as ie}from"./index-CGeVuCVN.js";import{T as $,s as oe}from"./Term-D8rzv-vl.js";import{C as re}from"./CodePane-BtsW7Z68.js";const S={title:"checkout.spec.ts — el mundo sin arquitectura",sourcePath:"(anti-ejemplo: NO existe en el boilerplate, y ese es el punto)",code:`import { test, expect } from '@playwright/test';
+import{p as W,s as a,c as s,t as q,a as p,e as z,b as v,d as X,g as t,f as r,h as Z,i as ee,j as k,k as f,l as ae,m as se,u as j,n as te,o as le,q as h,r as ie}from"./index-DZiUzFSY.js";import{T as $,s as oe}from"./Term-B-CLcTog.js";import{C as re}from"./CodePane-58N5RTPt.js";const S={title:"checkout.spec.ts — el mundo sin arquitectura",sourcePath:"(anti-ejemplo: NO existe en el boilerplate, y ese es el punto)",code:`import { test, expect } from '@playwright/test';
 
 test('test 1', async ({ page }) => {
   await page.goto('https://app.staging.example.com/login');

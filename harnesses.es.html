@@ -673,6 +673,7 @@
           <li><a href="#generado">Generado</a></li>
           <li><a href="#comandos">Comandos</a></li>
           <li><a href="#hook">Hook</a></li>
+          <li><a href="#trailers">Trailers</a></li>
           <li><a href="#mcp">MCP</a></li>
           <li><a href="#migracion">Migración</a></li>
           <li><a href="#limites">Límites</a></li>
@@ -1110,7 +1111,10 @@
                   <td class="rowlabel">Hook</td>
                   <td>
                     <code>.claude/settings.json</code>
-                    <span class="cellsub"><code>UserPromptSubmit</code></span>
+                    <span class="cellsub"
+                      ><code>UserPromptSubmit</code>, <code>SessionStart</code>,
+                      <code>PostToolUse</code></span
+                    >
                   </td>
                   <td>
                     <code>.opencode/plugins/</code>
@@ -1119,7 +1123,8 @@
                   <td>
                     <code>.codex/hooks.json</code>
                     <span class="cellsub"
-                      ><code>UserPromptSubmit</code> + <code>commandWindows</code></span
+                      ><code>UserPromptSubmit</code>, <code>SessionStart</code> +
+                      <code>commandWindows</code></span
                     >
                   </td>
                 </tr>
@@ -1155,12 +1160,13 @@
       <section id="generado">
         <div class="wrap">
           <div class="kicker">Skills · regla dura</div>
-          <h2>Lo generado nunca se edita a mano ni se commitea</h2>
+          <h2>Lo generado nunca se edita a mano</h2>
           <p class="lede">
             Hay un solo store de skills, <code>.agents/skills/</code>, versionado, con todas las
             skills adentro (el índice es <code>.agents/skills/REGISTRY.md</code>). Todo lo demás que
             un harness necesita ver son punteros hacia ahí. Si un puntero se rompe, se regenera;
-            nunca se parchea.
+            nunca se parchea. De lo generado, solo <code>.claude/skills</code> queda fuera del
+            repositorio (está en <code>.gitignore</code>); <code>CLAUDE.md</code> sí se commitea.
           </p>
 
           <figure>
@@ -1600,21 +1606,40 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
           <div class="kicker">Hook</div>
           <h2>Un emisor, tres adaptadores</h2>
           <p class="lede">
-            El contrato de personalidad que se reinyecta en cada prompt vive una sola vez, en
-            <code>.agents/hooks/personality-reinject.mjs</code>. El archivo exporta la constante y
-            además la escribe a <code>stdout</code> cuando se lo ejecuta como script. Esas dos
-            formas de consumirlo son las que necesitan los tres harnesses. El mismo emisor agrega
-            una línea <code>AGENT IDENTITY:</code> por prompt (worktree, sesión y harness, de donde
-            salen los trailers forenses de cada commit) y, solo si el binario de orquestación está
-            instalado, una línea que nombra <code>/orca-orchestration</code>.
+            Lo que el hook agrega a cada prompt vive una sola vez, en
+            <code>.agents/hooks/personality-reinject.mjs</code>. El archivo exporta funciones y
+            además escribe a <code>stdout</code> cuando se lo ejecuta como script. Esas dos formas
+            de consumirlo son las que necesitan los tres harnesses. El contrato de salida de
+            <code>AGENTS.md</code> no va en el emisor: el harness lo carga una vez por sesión, así
+            que no se reinyecta en cada prompt.
           </p>
+          <p>Por prompt, en este orden, el emisor escribe:</p>
+          <ul class="plain">
+            <li>
+              Una línea <code>AGENT IDENTITY:</code> con worktree, sesión y harness, de donde salen
+              los trailers forenses de cada commit.
+            </li>
+            <li>
+              Una línea <code>ORCA:</code> que nombra <code>/orca-orchestration</code>, solo si el
+              binario de orquestación está instalado.
+            </li>
+            <li>
+              Como mucho un aviso de setup: falta <code>.env</code> en el checkout, o es un worktree
+              enlazado que nunca corrió <code>bun run worktree:provision</code>.
+            </li>
+            <li>
+              Líneas <code>ROUTE: read &lt;archivo&gt;</code> con las secciones de instrucciones que
+              el prompt necesita y la sesión todavía no leyó, más una línea
+              <code>ROUTE-OPTIONAL:</code> si sobran. Si nada nuevo coincide, no hay líneas de ruta.
+            </li>
+          </ul>
 
           <figure>
             <div class="figscroll">
               <svg
                 viewBox="0 0 720 272"
                 role="img"
-                aria-label="Un único emisor de hook alimenta tres adaptadores: Claude y Codex lo ejecutan como command hook y su stdout se agrega como contexto de desarrollador, mientras OpenCode importa la constante desde un plugin"
+                aria-label="Un único emisor de hook alimenta tres adaptadores: Claude y Codex lo ejecutan como command hook y su stdout se agrega como contexto de desarrollador, mientras OpenCode importa el emisor desde un plugin"
               >
                 <defs>
                   <marker
@@ -1673,10 +1698,10 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
                   personality-reinject.mjs
                 </text>
                 <text x="40" y="141" font-family="Inter, sans-serif" font-size="10" fill="#9aa6b2">
-                  en .agents/hooks/ · el contrato, una vez
+                  en .agents/hooks/ · el emisor, una vez
                 </text>
                 <text x="40" y="157" font-family="Inter, sans-serif" font-size="10" fill="#6e7681">
-                  exporta la constante · la imprime a stdout
+                  exporta sus funciones · imprime a stdout
                 </text>
 
                 <line x1="294" y1="133" x2="338" y2="133" stroke="#9aa6b2" stroke-width="1.5" />
@@ -1799,7 +1824,7 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
             </div>
             <figcaption>
               Los verbos de las flechas son la diferencia real: dos harnesses ejecutan el archivo y
-              leen su salida, uno lo importa como módulo. El texto del contrato es idéntico en los
+              leen su salida, uno lo importa como módulo. El texto de esas líneas es el mismo en los
               tres porque nunca se copió.
             </figcaption>
           </figure>
@@ -1828,6 +1853,15 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
             de asumir el directorio de trabajo.
           </p>
           <p>
+            Las rutas se rearman solas. Claude Code y Codex registran dos grupos
+            <code>SessionStart</code>, con matcher <code>compact</code> y con <code>clear</code>: al
+            compactar o limpiar el contexto, las secciones ya ruteadas dejan de contar como leídas y
+            el emisor las vuelve a pedir en el prompt siguiente. OpenCode 1 hace lo mismo con
+            <code>experimental.session.compacting</code>. Solo Claude Code corre además el emisor en
+            <code>PostToolUse</code>: ahí no escribe líneas nuevas, solo una vez por prompt una
+            línea <code>ROUTE-PENDING:</code> si una sección ruteada sigue sin leerse.
+          </p>
+          <p>
             Hay un segundo hook, separado de este: <code>.agents/hooks/doc-contracts.mjs</code>.
             Claude Code y Codex lo corren después de cada edición de archivo
             (<code>PostToolUse</code>). Cuando la edición cae dentro de una región marcada con
@@ -1835,6 +1869,53 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
             describen ese código, una vez por sesión. El que bloquea es el gate de pre-push y de CI;
             el hook solo adelanta el aviso al momento de editar. OpenCode no lo registra. Vale solo
             en el repo del boilerplate (ADR-0016).
+          </p>
+        </div>
+      </section>
+
+      <section id="trailers">
+        <div class="wrap">
+          <div class="kicker">Commits</div>
+          <h2>Los trailers de commit son forenses, no atribución</h2>
+          <p class="lede">
+            Todo commit que escribe una sesión de agente termina con dos líneas copiadas de la línea
+            <code>AGENT IDENTITY:</code>, en cualquier host. Dicen qué checkout y qué sesión
+            produjeron el cambio, para encontrar la transcripción correcta en un bisect o en un
+            post-mortem. No nombran ninguna herramienta.
+          </p>
+          <pre class="code"><span class="c">docs: rewrite the harnesses page</span>
+
+<span class="k">Worktree:</span> &lt;nombre|primary&gt;
+<span class="k">Session:</span> &lt;etiqueta&gt;</pre>
+          <div class="grid2">
+            <div class="card">
+              <h3>Obligatorio</h3>
+              <p>
+                <code>Worktree:</code> y después <code>Session:</code>, al final y sin nada debajo.
+                Si un valor no se pudo resolver se escribe <code>unknown</code>, nunca se adivina ni
+                se omite la clave.
+              </p>
+            </div>
+            <div class="card">
+              <h3>Prohibido</h3>
+              <p>
+                <code>Claude-Session:</code> o cualquier trailer con marca de un harness, un
+                <code>Co-Authored-By:</code> de una IA y cualquier línea "Generated with". En Claude
+                Code, <code>.claude/settings.json</code> deja <code>attribution</code> en blanco.
+              </p>
+            </div>
+            <div class="card">
+              <h3>Cómo se controla</h3>
+              <p>
+                <code>.husky/commit-msg</code> llama a <code>.husky/framework-gates.sh</code>, que
+                corre <code>scripts/check-commit-trailers.ts</code>. Avisa y nunca bloquea: un
+                commit humano, un merge o un arreglo de emergencia siempre pasan.
+              </p>
+            </div>
+          </div>
+          <p>
+            La regla es la Critical Rule #3 de <code>AGENTS.md</code>; el procedimiento de etiquetas
+            y valores por harness vive en la skill <code>/git-flow-master</code>.
           </p>
         </div>
       </section>
@@ -1848,6 +1929,17 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
             harnesses que usa el proyecto (las tres en el boilerplate). La comparación no puede ser
             textual: los archivos ni siquiera comparten lenguaje.
           </p>
+          <div class="note">
+            <p>
+              <b>Un solo harness alcanza.</b> La lista <code>harnesses:</code> de
+              <code>.agents/project.yaml</code> dice cuáles usa el proyecto, y cada gate
+              (<code>agents:compat:check</code>, <code>setup:doctor</code>, el instalador,
+              <code>bun sync</code>) revisa solo esos. Sin la lista, o en <code>null</code>, se
+              detectan por los archivos presentes; una lista explícita manda. El boilerplate mismo
+              revisa siempre los tres. Decisión:
+              <code>.context/ADR/ADR-0012-declared-harnesses.md</code>.
+            </p>
+          </div>
           <div class="servers">
             <span class="server">.mcp.json</span>
             <span class="server">opencode.jsonc</span>
@@ -2098,6 +2190,15 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
             conjunto de dependencias que compara la paridad
             (<code>.context/ADR/ADR-0011-mcp-env-loader.md</code>).
           </p>
+          <div class="note warn">
+            <p>
+              <b>Falla silenciosa.</b> En ningún host una credencial vacía avisa al arrancar: el
+              servidor sube sin la variable y muere en su primera llamada autenticada. Un 401, un
+              403 o una tool que falla sin explicación es la señal: parar, nombrar la variable,
+              corregir <code>.env</code> y reiniciar la sesión (Critical Rule #10). El entorno se
+              lee cuando el harness lanza los servidores y no se refresca a mitad de sesión.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -2466,8 +2567,12 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
           </p>
           <ul class="plain">
             <li class="warn">
-              <b>El adaptador de OpenCode usa <code>experimental.chat.system.transform</code>.</b>
-              Es una API oficial, pero marcada como experimental por el proyecto. Claude y Codex
+              <b>El adaptador de OpenCode cubre dos generaciones del plugin.</b>
+              OpenCode 1 entra por <code>server()</code> y usa
+              <code>experimental.chat.system.transform</code>, una API oficial pero marcada como
+              experimental por el proyecto. OpenCode 2 entra por <code>setup(ctx)</code> y registra
+              un hook de sesión <code>context</code>; como no le llega el texto del prompt, no
+              recibe líneas <code>ROUTE:</code> y se queda con la tabla del router. Claude y Codex
               están sobre APIs de hook estables. Hay que re-verificar al actualizar OpenCode.
             </li>
             <li class="warn">

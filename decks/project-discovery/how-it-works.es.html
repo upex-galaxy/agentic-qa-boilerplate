@@ -636,6 +636,7 @@ Purchase      | order           | Compra   | orders | prisma/schema.prisma</div>
   <section class="slide compact" data-title="Fase 3 · Infraestructura">
     <p class="kicker">Fase 3 · 9 de 15</p>
     <h2 class="h2">Infraestructura: que el proyecto <span class="grad">corra</span> para testear</h2>
+    <div class="card card-soft mt-m"><p class="lbl">Antes, la página <span class="mono">/qa</span> del sistema, si la publica</p><p class="small mt-s">Se lee primero, antes de detectar el stack. Es una pista: cada dato se contrasta con el código y la configuración que la fase lee igual, y si no coinciden gana el código y el desacuerdo va a <span class="mono">discovery-gaps</span>. No se copia ningún valor a un archivo versionado. Si la página no existe, no es un hueco de discovery.</p></div>
     <div class="grid g2 mt-m" style="gap:20px">
       <div class="card card-accent"><p class="lbl"><span class="mono">backend</span></p><p class="small mt-s">Runtime, scripts, dependencias, variables de entorno (requeridas, opcionales, de servicios externos), base de datos y migraciones, receta local de instalación y arranque, y el <b>flujo de login real</b>: endpoint, payload, qué devuelve y dónde vive la sesión.</p></div>
       <div class="card"><p class="lbl"><span class="mono">frontend</span></p><p class="small mt-s">Build y modo de salida, variables públicas (un secreto con prefijo público es un hallazgo de seguridad), routing, estado, cliente de auth y la estrategia de test IDs, con <span class="mono">data-testid</span> como preferida.</p></div>

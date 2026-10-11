@@ -868,7 +868,7 @@ workers: <span class="tk-n">1</span>,</pre>
     <div class="arrow">↑ extends</div>
     <div class="layer">L2 · Bases <span class="ly-note">ApiBase (HTTP) · UiBase (Playwright)</span></div>
     <div class="arrow">↑ extends</div>
-    <div class="layer">L1 · TestContext <span class="ly-note">config · logger · faker · entorno</span></div>
+    <div class="layer">L1 · TestContext <span class="ly-note">drivers · config · entorno · DataFactory</span></div>
   </div>
   <div class="callout info" data-anim="fade-up" style="max-width:760px;margin:1.2rem auto 0"><span class="co-ico">📐</span><p>Regla única: una capa superior puede usar una inferior, <b>nunca</b> al revés. Tu Page Object (L3, estrella) es el corazón — todo lo demás existe para servirlo o consumirlo.</p></div>
   <div class="notes"><p>El mapa de KATA, verídico (kata-architecture.md §1). De abajo arriba: TestContext (utilidades globales), Bases (helpers HTTP/Playwright), Componentes/ATCs (la estrella, tu POM), Steps (cadenas reutilizables para precondiciones, opcional), Fixtures (DI). La regla de direccionalidad (superior usa inferior, nunca al revés) es la que mantiene el orden. Marca la capa estrella: es donde el equipo pasa el 90% del tiempo escribiendo ATCs. El resto del andamiaje ya viene hecho en el boilerplate.</p></div>
@@ -883,7 +883,7 @@ workers: <span class="tk-n">1</span>,</pre>
       <pre class="code" style="font-size:clamp(.74rem,1.14vw,.93rem)">
 <span class="tk-k">class</span> LoginPage <span class="tk-k">extends</span> UiBase {
 
-  <span class="tk-d">@atc</span>(<span class="tk-s">"PROJ-101"</span>)
+  <span class="tk-d">@atc</span>(<span class="tk-s">"PROJ-111"</span>)
   <span class="tk-k">async</span> <span class="tk-f">loginSuccessfully</span>(creds) {
     <span class="tk-k">await</span> <span class="tk-k">this</span>.<span class="tk-f">fillAndSubmit</span>(creds);
     <span class="tk-k">await</span> <span class="tk-k">this</span>.page.<span class="tk-f">waitForURL</span>(
@@ -895,7 +895,7 @@ workers: <span class="tk-n">1</span>,</pre>
     </div>
     <div data-stagger>
       <div class="card"><h3>🎯 ATC = un caso de prueba completo</h3><p><b>A</b>cceptance <b>T</b>est <b>C</b>ase: no un clic suelto, sino un <b>mini-flujo</b> entero (precondición → acción → aserción fija).</p></div>
-      <div class="card hl" style="margin-top:.7rem"><h3 style="color:var(--yellow)"><code style="font-size:.85em">@atc("PROJ-101")</code></h3><p>El decorador ata la ATC a su <b>ticket</b> de Jira 1:1. Da trazabilidad y tracing automático. Es un método con etiqueta.</p></div>
+      <div class="card hl" style="margin-top:.7rem"><h3 style="color:var(--yellow)"><code style="font-size:.85em">@atc("PROJ-111")</code></h3><p>El decorador ata la ATC a su <b>ticket</b> de Jira 1:1. Da trazabilidad y tracing automático. Es un método con etiqueta.</p></div>
       <div class="card" style="margin-top:.7rem"><h3>🧱 Atómica</h3><p>Una ATC <b>nunca</b> llama a otra ATC. ¿Cadenas reutilizables? Eso es un <b>Step</b> (capa 3.5).</p></div>
     </div>
   </div>
@@ -909,7 +909,7 @@ workers: <span class="tk-n">1</span>,</pre>
   <div class="stepper" data-anim="fade-up">
     <div>
       <div class="st-code" id="kt-code">
-        <div class="cl" data-l="1"><span class="tk-f">test</span>(<span class="tk-s">"PROJ-101: login"</span>, <span class="tk-k">async</span> ({ ui }) => {</div>
+        <div class="cl" data-l="1"><span class="tk-f">test</span>(<span class="tk-s">"PROJ-111: login"</span>, <span class="tk-k">async</span> ({ ui }) => {</div>
         <div class="cl" data-l="2">  <span class="tk-k">await</span> ui.login.<span class="tk-f">goto</span>();</div>
         <div class="cl" data-l="3">  <span class="tk-k">await</span> ui.login.<span class="tk-f">loginSuccessfully</span>(creds);</div>
         <div class="cl" data-l="4">});</div>
@@ -917,7 +917,7 @@ workers: <span class="tk-n">1</span>,</pre>
         <div class="cl" data-l="6"><span class="tk-c">// L4</span> UiFixture.login = <span class="tk-k">new</span> <span class="tk-f">LoginPage</span>(opts)</div>
         <div class="cl" data-l="7"><span class="tk-c">// L3</span> <span class="tk-k">class</span> LoginPage <span class="tk-k">extends</span> UiBase</div>
         <div class="cl" data-l="8"><span class="tk-c">// L2</span> <span class="tk-k">class</span> UiBase <span class="tk-k">extends</span> TestContext</div>
-        <div class="cl" data-l="9"><span class="tk-c">// L1</span> <span class="tk-k">class</span> TestContext { config, faker }</div>
+        <div class="cl" data-l="9"><span class="tk-c">// L1</span> <span class="tk-k">class</span> TestContext { config, env, data }</div>
       </div>
       <div class="st-ctrl">
         <button id="kt-next">▶ Siguiente paso</button>
@@ -930,7 +930,7 @@ workers: <span class="tk-n">1</span>,</pre>
       <div class="st-note" id="kt-note">Presiona "Siguiente paso": vas a seguir la llamada bajando por las capas de KATA.</div>
     </div>
   </div>
-  <div class="notes"><p>Cierra el círculo: muestra que una sola línea de test (ui.login.loginSuccessfully) atraviesa todas las capas. Paso 1: el test pide la fixture { ui } (L4). Paso 2: la fixture ya tiene LoginPage instanciada (L4→L3). Paso 3: loginSuccessfully es la ATC en LoginPage (L3). Paso 4: usa helpers de Playwright heredados de UiBase (L2). Paso 5: que a su vez heredan config/faker de TestContext (L1). Mensaje: el test escribe UNA línea legible; las capas hacen el trabajo pesado por debajo. Eso es la arquitectura pagando dividendos.</p></div>
+  <div class="notes"><p>Cierra el círculo: muestra que una sola línea de test (ui.login.loginSuccessfully) atraviesa todas las capas. Paso 1: el test pide la fixture { ui } (L4). Paso 2: la fixture ya tiene LoginPage instanciada (L4→L3). Paso 3: loginSuccessfully es la ATC en LoginPage (L3). Paso 4: usa helpers de Playwright heredados de UiBase (L2). Paso 5: que a su vez heredan config, entorno y DataFactory de TestContext (L1). Mensaje: el test escribe UNA línea legible; las capas hacen el trabajo pesado por debajo. Eso es la arquitectura pagando dividendos.</p></div>
 </section>
 
 <!-- 24 · Selección de fixture en KATA -->
@@ -1379,8 +1379,8 @@ buildStepper('kt', [
     note:'ui.login.loginSuccessfully() es la ATC: el mini-flujo completo vive aquí.'},
   {l:[7,8], l2:[8], where:'<div class="st-row"><span class="tag l2">L2 · Base</span> UiBase (helpers Playwright)</div>',
     note:'LoginPage extends UiBase: usa helpers de Playwright (waitForURL, etc.) heredados.'},
-  {l:[8,9], l2:[9], where:'<div class="st-row"><span class="tag l1">L1 · TestContext</span> config · faker</div>',
-    note:'UiBase extends TestContext: hasta abajo, config/faker/entorno. Una línea, toda la arquitectura. 🥋'},
+  {l:[8,9], l2:[9], where:'<div class="st-row"><span class="tag l1">L1 · TestContext</span> config · env · DataFactory</div>',
+    note:'UiBase extends TestContext: hasta abajo, config, entorno y DataFactory. Una línea, toda la arquitectura. 🥋'},
 ]);
 
 /* ================================================================

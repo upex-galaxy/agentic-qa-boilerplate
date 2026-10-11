@@ -485,6 +485,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <tr><td class="mono">[TMS_TOOL] · jira-native</td><td class="small"><span class="mono">/acli</span>: los artefactos de test son issues nativas de Jira</td><td class="small">MCP de Atlassian, opt-in</td></tr>
       <tr><td class="mono">[AUTOMATION_TOOL]</td><td class="small"><span class="mono">/playwright-cli</span>, el único camino (no hay MCP de navegador)</td><td class="small">ninguno: parar en el punto de uso</td></tr>
       <tr><td class="mono">[DOCS_TOOL] · [WEB_SEARCH_TOOL]</td><td class="small">capacidades <span class="mono">library-docs</span> y <span class="mono">web-search</span>, por sufijo</td><td class="small"><span class="mono">WebSearch</span> / <span class="mono">WebFetch</span> solo si el usuario lo elige</td></tr>
+      <tr><td class="mono">[ORCHESTRATION_TOOL]</td><td class="small"><span class="mono">/orca-orchestration</span>: workers, worktrees, runs, automatizaciones (si el binario <span class="mono">orca</span> está y el runtime responde)</td><td class="small">subagentes de un solo disparo; las líneas de lanzamiento se pegan a mano en terminales</td></tr>
       <tr><td class="mono">[DB_TOOL] · [API_TOOL]</td><td class="small">capacidades <span class="mono">db</span> y <span class="mono">api-schema</span> (el esquema); la ejecución de API es <span class="mono">curl</span></td><td class="small">según §6 (<span class="mono">.agents/instructions/agent-tool-resolution.md</span>)</td></tr>
     </table>
     <p class="small dim mt-s">La modalidad del TMS la resuelve una vez <span class="mono">/test-documentation</span> (Fase 0) y el resto del flujo la hereda; nunca se redecide a mitad de camino. Tabla completa y vigente: §6, en <span class="mono">.agents/instructions/agent-tool-resolution.md</span>.</p>
@@ -524,7 +525,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="stack" style="gap:14px">
         <div class="card card-accent"><p class="lbl">Qué resuelve</p><p class="small mt-s"><span class="mono">[ISSUE_TRACKER_TOOL]</span> siempre, y <span class="mono">[TMS_TOOL]</span> solo en modalidad <span class="mono">jira-native</span>. Cubre Jira Cloud, Confluence y admin de la organización.</p></div>
         <div class="card"><p class="lbl">El patrón selector</p><p class="small mt-s">Los comandos que mutan aceptan <span class="mono">--key</span>, <span class="mono">--jql</span>, <span class="mono">--filter</span> o <span class="mono">--from-file</span>. En un batch, <span class="mono">--yes</span> evita que se cuelgue esperando stdin.</p></div>
-        <div class="card"><p class="lbl">Texto enriquecido</p><p class="small mt-s">Markdown → ADF con <span class="mono">acli/scripts/md-to-adf.ts</span>, que valida antes de publicar; después se relee el campo.</p></div>
+        <div class="card"><p class="lbl">Texto enriquecido</p><p class="small mt-s">Markdown → ADF con <span class="mono">acli/scripts/md-to-adf.ts</span>, que valida antes de publicar. Antes de escribir se mide el ADF serializado contra un presupuesto de <span class="mono">30000</span> caracteres (Jira cuenta el JSON, no el Markdown); después se relee el campo.</p></div>
       </div>
       <div class="stack" style="gap:10px">
         <p class="lbl" style="color:var(--warn)">Trampas que la skill conoce</p>
@@ -537,7 +538,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         </table>
       </div>
     </div>
-    <div class="notes">acli nunca convierte Markdown: pasarle Markdown guarda los caracteres literales. Lo QA-específico (slugs, modalidad, anti-patrones del repo) no está en acli/SKILL.md sino en agentic-qa-core/references/acli-integration.md: la skill de la herramienta queda agnóstica y se comparte entre boilerplates. En un batch, --ignore-errors evita abortar todo por un ítem. Ante un error de backend, el trace id es la única pista y se captura siempre. Los ids de campos custom nunca se escriben literales: se resuelven por slug desde .agents/jira-fields.json.</div>
+    <div class="notes">acli nunca convierte Markdown: pasarle Markdown guarda los caracteres literales. Lo QA-específico (slugs, modalidad, anti-patrones del repo) no está en acli/SKILL.md sino en agentic-qa-core/references/acli-integration.md: la skill de la herramienta queda agnóstica y se comparte entre boilerplates. En un batch, --ignore-errors evita abortar todo por un ítem. Ante un error de backend, el trace id es la única pista y se captura siempre. Los ids de campos custom nunca se escriben literales: se resuelven por slug desde .agents/jira-fields.json. Si el ADF pasa el presupuesto, se para y se propone qué secciones mover a otro campo; nunca se trunca ni se parte un valor en dos campos.</div>
   </section>
 
   <!-- 6. READS VS WRITES -->
@@ -553,6 +554,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <tr><td class="small"><b>Trazabilidad</b> (grafo de links, estado de runs)</td><td class="small"><span class="mono">/acli</span> · <span class="mono">/xray-cli</span></td><td class="small">el sync no refleja el estado de cobertura ni de runs de Xray</td></tr>
     </table>
     <div class="card card-soft mt-s"><p class="small">Lo sincronizado vive en <span class="mono">.context/PBI/</span>: caché de Jira, sin commit y sin edición a mano. <span class="mono">bun run context:hydrate</span> reconstruye el árbol.</p></div>
+    <div class="card card-soft mt-s"><p class="small">Los catálogos de campos, workflows y tipos de vínculo (<span class="mono">.agents/jira-*.json</span>) se refrescan con <span class="mono">bun run jira:sync-fields</span>, <span class="mono">jira:sync-workflows</span> y <span class="mono">jira:sync-link-types</span>. La lista vigente de scripts <span class="mono">jira:*</span> es <span class="mono">package.json</span>.</p></div>
     <div class="notes">Un archivo sincronizado no se escribe a mano: se publica el contenido en Jira y se vuelve a sincronizar. Esta es la excepción de lecturas contra escrituras de .agents/instructions/agent-tool-resolution.md. La regla corta: si necesitás el contenido de un campo custom, nunca acli view, sincronizalo. La misma idea en acli-integration.md (Q6).</div>
   </section>
 

@@ -566,7 +566,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <p class="kicker">Paso 1 · Capturar · 8 de 13</p>
     <h2 class="h2">Cada afirmación dice si se <span class="grad">midió</span></h2>
     <div class="grid g3 mt-m" style="gap:20px;align-items:start">
-      <div class="card card-accent"><p class="lbl">measured / predicted</p><p class="small mt-s">Medido: esta sesión lo corrió y leyó la salida. Una rama predicha contada como hecho manda a la sucesora por un camino que ya no existe.</p></div>
+      <div class="card card-accent"><p class="lbl">measured / read / predicted</p><p class="small mt-s">Medido: esta sesión lo corrió y leyó la salida. Leído: salió de un documento y se le creyó. Una rama predicha contada como hecho manda a la sucesora por un camino que ya no existe.</p></div>
       <div class="card" style="border-color:var(--warn)"><p class="lbl" style="color:var(--warn)">PERISHABLE + hora</p><p class="small mt-s">Lo que decae entre la escritura y la lectura lleva la hora en que se midió. La instrucción es re-verificar y después actuar, nunca al revés.</p></div>
       <div class="card" style="border-color:var(--warn)"><p class="lbl" style="color:var(--warn)">Perecedero antes que prioridad</p><p class="small mt-s">Si un ítem vivo necesita atención antes que la lista de prioridades, se dice en la misma línea. Un worker esperando no puede esperar al orden de §8.</p></div>
     </div>
@@ -607,12 +607,12 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <text class="t-m" x="26" y="317">&lt;base&gt;-handoff-01-handoff-02</text>
       </svg>
       <div class="stack" style="gap:12px">
-        <div class="card card-accent"><p class="lbl">Nombre</p><p class="small mt-s"><span class="mono" style="font-size:15px">&lt;sesión-predecesora&gt;-handoff-NN.md</span>. El nombre de la sucesora es ese archivo sin la extensión: esa es toda la regla.</p></div>
+        <div class="card card-accent"><p class="lbl">Nombre</p><p class="small mt-s"><span class="mono" style="font-size:15px">&lt;sesión-predecesora&gt;-handoff-NN.md</span>. El nombre de la sucesora es ese archivo sin la extensión: esa es toda la regla. El de la predecesora sale del <span class="mono">session=</span> de la línea <span class="mono">AGENT IDENTITY:</span> que inyecta el hook; si dice <span class="mono">unknown</span>, se le pide un nombre al dueño.</p></div>
         <div class="card"><p class="lbl">NN</p><p class="small mt-s">Dos dígitos desde <span class="mono">01</span>. Se lista el directorio del primario antes de elegir: nunca se supone, nunca se cuenta desde la <span class="mono">.session/</span> de una worktree.</p></div>
-        <div class="card card-soft"><p class="lbl">Descartable</p><p class="small mt-s"><span class="mono">.session/</span> está en gitignore: un handoff describe una sesión, no es un registro del proyecto. Se escribe en inglés y no se borra el anterior.</p></div>
+        <div class="card card-soft"><p class="lbl">Descartable</p><p class="small mt-s"><span class="mono">.session/</span> está en gitignore: un handoff describe una sesión, no es un registro del proyecto. Se escribe en inglés y no se borra el anterior. Uno escrito por error dentro de una worktree lo rescata <span class="mono">bun run worktree:audit --rescue</span> antes de borrarla.</p></div>
       </div>
     </div>
-    <div class="notes">Las dos variables están definidas en .agents/README.md, sección "Checkout roots". Un hecho durable que sobrevive a la sesión no va en el handoff: va a Engram, al repo o al tracker, y el handoff lo cita. Antes de borrar una worktree, bun run worktree:audit lista lo que todavía guarda.</div>
+    <div class="notes">Las dos variables están definidas en .agents/README.md, sección "Checkout roots". Un hecho durable que sobrevive a la sesión no va en el handoff: va a Engram, al repo o al tracker, y el handoff lo cita. Antes de borrar una worktree, bun run worktree:audit lista lo que todavía guarda, y con --rescue copia a la primaria el handoff que se escribió dentro de ella.</div>
   </section>
 
   <!-- 10. LANZAR -->
@@ -663,10 +663,11 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <tr><td style="padding:8px 16px" class="small">Borrar el handoff anterior</td><td style="padding:8px 16px" class="small">el linaje es la pista de auditoría</td></tr>
       <tr><td style="padding:8px 16px" class="small">Cerrar su propia terminal</td><td style="padding:8px 16px" class="small">terminar la predecesora es decisión del dueño; si se cierra sola no puede avisar que el handoff falló</td></tr>
       <tr><td style="padding:8px 16px" class="small">Escribir un handoff sin que se lo pidan</td><td style="padding:8px 16px" class="small">el momento es un juicio sobre el trabajo, y ese juicio lo tiene el humano</td></tr>
+      <tr><td style="padding:8px 16px" class="small">Escribir secretos en el archivo</td><td style="padding:8px 16px" class="small">nombra la variable donde vive una credencial, nunca su valor; una cookie, un token o la ruta de un archivo de <span class="mono">.auth/</span> quedan fuera (Regla #1)</td></tr>
       <tr><td style="padding:8px 16px" class="small">Atribución a la IA, en cualquier parte</td><td style="padding:8px 16px" class="small">Regla #3; el handoff es un artefacto del repo, en inglés (Regla #14)</td></tr>
       <tr><td style="padding:8px 16px" class="small">Copiar la gramática del CLI de orquestación al repo</td><td style="padding:8px 16px" class="small">la copia se desincroniza en la próxima versión del binario</td></tr>
     </table>
-    <div class="notes">Reglas duras 7 a 10 del SKILL.md, más successor-launch.md (no cerrar la terminal propia, no copiar gramática) y auto-trigger.md (nunca escribir sin pedido).</div>
+    <div class="notes">Las reglas duras del SKILL.md, más successor-launch.md (no cerrar la terminal propia, no copiar gramática) y auto-trigger.md (nunca escribir sin pedido).</div>
   </section>
 
   <!-- 13. CIERRE -->

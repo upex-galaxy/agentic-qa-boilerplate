@@ -811,7 +811,7 @@ if (errors.length === 0) {
       <pre class="code" style="font-size:clamp(.74rem,1.13vw,.92rem)">
 <span class="tk-c">// La cadena de herencia REAL del repo (API)</span>
 
-<span class="tk-k">class</span> TestContext { ... }        <span class="tk-c">// L1 · config, faker</span>
+<span class="tk-k">class</span> TestContext { ... }        <span class="tk-c">// L1 · drivers, config, DataFactory</span>
 <span class="tk-k">class</span> ApiBase <span class="tk-k">extends</span> TestContext <span class="tk-c">// L2 · helpers HTTP</span>
 <span class="tk-k">class</span> OrdersApi <span class="tk-k">extends</span> ApiBase <span class="tk-c">// L3 ⟵ tu cliente</span>
 
@@ -836,12 +836,12 @@ if (errors.length === 0) {
     <div class="arrow">↑ usa</div>
     <div class="layer star">⭐ L3 · Componentes de dominio <span class="ly-note" style="color:var(--green)">OrdersApi · UsersApi — aquí viven las ATCs</span></div>
     <div class="arrow">↑ extends</div>
-    <div class="layer">L2 · ApiBase <span class="ly-note">helpers HTTP: get/post/put/del + parseo + auth</span></div>
+    <div class="layer">L2 · ApiBase <span class="ly-note">helpers HTTP: apiGET/apiPOST/apiPUT/apiDELETE (protegidos) + parseo + auth</span></div>
     <div class="arrow">↑ extends</div>
-    <div class="layer">L1 · TestContext <span class="ly-note">config · logger · faker · entorno (compartido con UI)</span></div>
+    <div class="layer">L1 · TestContext <span class="ly-note">drivers · config · entorno · DataFactory con faker (compartido con UI)</span></div>
   </div>
   <div class="callout info" data-anim="fade-up" style="max-width:780px;margin:1.2rem auto 0"><span class="co-ico">📐</span><p>Regla única: una capa superior puede usar una inferior, <b>nunca</b> al revés. Tu cliente de API (L3, estrella) es el corazón — escribes ATCs ahí y todo lo demás ya viene hecho.</p></div>
-  <div class="notes"><p>El mapa de KATA en su versión API, verídico (kata-architecture.md §1). De abajo arriba: TestContext (utilidades globales, compartido con UI), ApiBase (helpers HTTP: envuelve request, parsea respuestas, aplica auth), Componentes/ATCs (la estrella, tu OrdersApi), Steps (cadenas reutilizables para precondiciones, opcional), Fixtures (DI, entregan el cliente listo). La regla de direccionalidad mantiene el orden. Marca la capa estrella: ahí pasa el equipo el 90% del tiempo escribiendo ATCs. ApiBase y las fixtures ya vienen en el boilerplate — no se reescriben.</p></div>
+  <div class="notes"><p>El mapa de KATA en su versión API, verídico (kata-architecture.md §1). De abajo arriba: TestContext (drivers de Playwright, config, entorno y DataFactory; compartido con UI), ApiBase (helpers HTTP: envuelve request, parsea respuestas, aplica auth), Componentes/ATCs (la estrella, tu OrdersApi), Steps (cadenas reutilizables para precondiciones, opcional), Fixtures (DI, entregan el cliente listo). La regla de direccionalidad mantiene el orden. Marca la capa estrella: ahí pasa el equipo el 90% del tiempo escribiendo ATCs. ApiBase y las fixtures ya vienen en el boilerplate — no se reescriben.</p></div>
 </section>
 
 <!-- 20 · ATC de API + decorador -->
@@ -855,23 +855,23 @@ if (errors.length === 0) {
 
   <span class="tk-d">@atc</span>(<span class="tk-s">"PROJ-201"</span>)
   <span class="tk-k">async</span> <span class="tk-f">createOrder</span>(data) {
-    <span class="tk-k">const</span> res = <span class="tk-k">await</span> <span class="tk-k">this</span>.<span class="tk-f">post</span>(<span class="tk-s">"/orders"</span>, { data });
+    <span class="tk-k">const</span> [res, body] = <span class="tk-k">await</span> <span class="tk-k">this</span>.<span class="tk-f">apiPOST</span>(<span class="tk-s">"/orders"</span>, data);
 
     <span class="tk-c">// aserciones FIJAS dentro:</span>
     <span class="tk-f">expect</span>(res.<span class="tk-f">status</span>()).<span class="tk-f">toBe</span>(<span class="tk-n">201</span>);
-    <span class="tk-k">const</span> body = <span class="tk-k">await</span> res.<span class="tk-f">json</span>();
-    OrderSchema.<span class="tk-f">parse</span>(body);   <span class="tk-c">// contrato</span>
-    <span class="tk-k">return</span> body;
+    <span class="tk-f">expect</span>(body.id).<span class="tk-f">toBeDefined</span>();   <span class="tk-c">// contrato: campos y tipos</span>
+    <span class="tk-k">return</span> [res, body];
   }
 }</pre>
+      <div class="callout info" style="margin-top:.8rem"><span class="co-ico">🧩</span><p>¿Y un GET? Es ATC solo si su respuesta <b>es</b> el resultado que pruebas (datos, 401, 403, 404). Si solo prepara datos para otro paso, es un <b>helper</b> (<code class="pill">@step</code> opcional).</p></div>
     </div>
     <div data-stagger>
-      <div class="card"><h3>🎯 ATC = un caso completo</h3><p><b>A</b>cceptance <b>T</b>est <b>C</b>ase: no una llamada suelta, sino un <b>mini-flujo</b> — request → status fijo → schema → devuelve datos.</p></div>
+      <div class="card"><h3>🎯 ATC = un caso completo</h3><p><b>A</b>cceptance <b>T</b>est <b>C</b>ase: no una llamada suelta, sino un <b>mini-flujo</b> — request → status fijo → forma del body → devuelve la tupla.</p></div>
       <div class="card hl" style="margin-top:.7rem"><h3 style="color:var(--yellow)"><code style="font-size:.85em">@atc("PROJ-201")</code></h3><p>El decorador ata la ATC a su <b>ticket</b> de Jira 1:1. Trazabilidad y tracing automático.</p></div>
-      <div class="card" style="margin-top:.7rem"><h3>⚖️ Fijas dentro, negocio fuera</h3><p>Status <code class="pill">201</code> y schema (siempre ciertos) van <b>dentro</b>. Las aserciones de negocio van en el <b>test</b>.</p></div>
+      <div class="card" style="margin-top:.7rem"><h3>⚖️ Fijas dentro, negocio fuera</h3><p>Status <code class="pill">201</code> y contrato (siempre ciertos) van <b>dentro</b>. Las aserciones de negocio van en el <b>test</b>.</p></div>
     </div>
   </div>
-  <div class="notes"><p>La única pieza realmente nueva: la ATC de API y el decorador @atc. Código real, espejo del LoginPage del repo. Define ATC: caso completo (request + aserciones fijas + devuelve datos para que el test siga), no una llamada aislada. Las aserciones FIJAS (status 201 esperado, schema del contrato) viven dentro porque son parte de "la acción terminó bien"; las de NEGOCIO (¿el total es el correcto? ¿aparece en la lista del usuario?) van en el test. Es la misma regla acciones-vs-decisión del lado UI. Reglas duras: ATC atómica (nunca llama a otra ATC; las cadenas son Steps), y el @atc da trazabilidad 1:1 con Jira.</p></div>
+  <div class="notes"><p>La única pieza realmente nueva: la ATC de API y el decorador @atc. Código real, espejo del LoginPage del repo. Define ATC: caso completo (request + aserciones fijas + devuelve la tupla [response, body] para que el test siga), no una llamada aislada. Las aserciones FIJAS (status 201 esperado, forma del contrato) viven dentro porque son parte de "la acción terminó bien"; las de NEGOCIO (¿el total es el correcto? ¿aparece en la lista del usuario?) van en el test. Es la misma regla acciones-vs-decisión del lado UI. Reglas duras: ATC atómica (nunca llama a otra ATC; las cadenas son Steps), y el @atc da trazabilidad 1:1 con Jira.</p></div>
 </section>
 
 <!-- 21 · STEPPER: trazar una ATC de API por las capas -->
@@ -888,7 +888,7 @@ if (errors.length === 0) {
         <div class="cl" data-l="5"><span class="tk-c">// L4</span> ApiFixture.orders = <span class="tk-k">new</span> <span class="tk-f">OrdersApi</span>(opts)</div>
         <div class="cl" data-l="6"><span class="tk-c">// L3</span> <span class="tk-k">class</span> OrdersApi <span class="tk-k">extends</span> ApiBase</div>
         <div class="cl" data-l="7"><span class="tk-c">// L2</span> <span class="tk-k">class</span> ApiBase <span class="tk-k">extends</span> TestContext</div>
-        <div class="cl" data-l="8"><span class="tk-c">// L1</span> <span class="tk-k">class</span> TestContext { config, faker, request }</div>
+        <div class="cl" data-l="8"><span class="tk-c">// L1</span> <span class="tk-k">class</span> TestContext { config, env, data }</div>
       </div>
       <div class="st-ctrl">
         <button id="kt-next">▶ Siguiente paso</button>
@@ -901,7 +901,7 @@ if (errors.length === 0) {
       <div class="st-note" id="kt-note">Presiona "Siguiente paso": vas a seguir la llamada bajando por las capas de KATA.</div>
     </div>
   </div>
-  <div class="notes"><p>Cierra el círculo: una sola línea de test (api.orders.createOrder) atraviesa todas las capas. Paso 1: el test pide la fixture { api } (L4). Paso 2: la fixture ya tiene OrdersApi instanciada y autenticada como api.orders (L4→L3). Paso 3: createOrder es la ATC en OrdersApi (L3). Paso 4: usa el helper this.post() heredado de ApiBase (L2). Paso 5: que a su vez hereda config/faker/request de TestContext (L1). Mensaje: el test escribe UNA línea legible; las capas hacen el trabajo pesado debajo. La arquitectura pagando dividendos.</p></div>
+  <div class="notes"><p>Cierra el círculo: una sola línea de test (api.orders.createOrder) atraviesa todas las capas. Paso 1: el test pide la fixture { api } (L4). Paso 2: la fixture ya tiene OrdersApi instanciada y autenticada como api.orders (L4→L3). Paso 3: createOrder es la ATC en OrdersApi (L3). Paso 4: usa el helper this.apiPOST() heredado de ApiBase (L2), que devuelve la tupla [response, body]. Paso 5: que a su vez hereda config, env y DataFactory de TestContext (L1). Mensaje: el test escribe UNA línea legible; las capas hacen el trabajo pesado debajo. La arquitectura pagando dividendos.</p></div>
 </section>
 
 <!-- 22 · Selección de fixture en KATA -->
@@ -913,7 +913,7 @@ if (errors.length === 0) {
     <tbody>
       <tr><td>API pura (integration)</td><td><code>{ api }</code></td><td>No</td><td>Testing de API. Default en <code>tests/integration/</code></td></tr>
       <tr><td>Solo UI</td><td><code>{ ui }</code></td><td>Sí</td><td>Flujo de UI sin setup por API</td></tr>
-      <tr><td>Híbrido</td><td><code>{ test }</code></td><td>Sí</td><td>Setup por API + acción/verificación UI</td></tr>
+      <tr><td>Híbrido</td><td><code>{ test }</code></td><td>Sí</td><td>Setup por API + acción UI + verificación por API</td></tr>
       <tr><td>Precondiciones repetidas</td><td><code>Steps</code> (import directo)</td><td>Depende</td><td>3+ ATCs repetidas en 3+ archivos — la clase Steps se instancia directo, nunca vía fixture</td></tr>
     </tbody>
   </table>
@@ -929,7 +929,7 @@ if (errors.length === 0) {
       <pre class="code" style="font-size:clamp(.73rem,1.1vw,.91rem)">
 <span class="tk-c">// Híbrido — crea por API, verifica por UI</span>
 <span class="tk-f">test</span>(<span class="tk-s">"PROJ-9: aparece en lista"</span>, <span class="tk-k">async</span> ({ test }) => {
-  <span class="tk-k">const</span> o = <span class="tk-k">await</span> test.api.orders.<span class="tk-f">createOrder</span>(data);
+  <span class="tk-k">const</span> [, o] = <span class="tk-k">await</span> test.api.orders.<span class="tk-f">createOrder</span>(data);
   <span class="tk-k">await</span> test.ui.orders.<span class="tk-f">verifyVisible</span>(o.id);
 });</pre>
     </div>
@@ -1026,7 +1026,7 @@ playwright.config.ts      <span class="tk-c">// baseURL, workers</span>
   <p id="final-msg" data-anim="fade-up" style="animation-delay:.25s;max-width:600px"></p>
   <div class="cards c3" data-stagger style="margin-top:1.5rem;max-width:1020px">
     <div class="card"><div class="ico">🏠</div><h3>Re-juega en casa</h3><p>Este archivo corre offline: vuelve al runner de API, al validador de schema y al simulador de velocidad. Toca todo.</p></div>
-    <div class="card"><div class="ico">🧪</div><h3>Reto puente</h3><p>Abre <code class="pill">tests/components/api/</code> del repo y ubica: capa, ATC, decorador <code class="pill">@atc</code>, aserciones fijas, schema.</p></div>
+    <div class="card"><div class="ico">🧪</div><h3>Reto puente</h3><p>Abre <code class="pill">tests/components/api/</code> del repo y ubica: capa, ATC, decorador <code class="pill">@atc</code>, aserciones fijas. Los tipos del contrato están en <code class="pill">api/schemas/</code>.</p></div>
     <div class="card hl"><div class="ico">🥷</div><h3>Próximo paso</h3><p>Escribe tu primera ATC de API real con <code class="pill">/test-automation</code> — Plan → Code → Review sobre KATA.</p></div>
   </div>
   <p data-anim="fade-up" style="animation-delay:.5s;margin-top:1.3rem;color:var(--text-3);font-size:.93rem">Esta sesión: <code>request</code> → aserciones + schema → fixtures + faker → <b style="color:var(--text-2)">KATA</b>. De la pantalla al backend.</p>
@@ -1349,11 +1349,11 @@ buildStepper('kt', [
   {l:[1,5], l2:[5], where:'<div class="st-row"><span class="tag l4">L4 · Fixture</span> api.orders = new OrdersApi</div>',
     note:'La ApiFixture ya tiene OrdersApi instanciada y registrada como api.orders.'},
   {l:[2,6], l2:[6], where:'<div class="st-row"><span class="tag l3">L3 · Componente</span> OrdersApi · ATC</div>',
-    note:'api.orders.createOrder() es la ATC: el mini-flujo completo (request + status + schema) vive aquí.'},
+    note:'api.orders.createOrder() es la ATC: el mini-flujo completo (request + status + forma del body) vive aquí.'},
   {l:[6,7], l2:[7], where:'<div class="st-row"><span class="tag l2">L2 · Base</span> ApiBase (helpers HTTP)</div>',
-    note:'OrdersApi extends ApiBase: usa el helper this.post() (envuelve request) heredado.'},
-  {l:[7,8], l2:[8], where:'<div class="st-row"><span class="tag l1">L1 · TestContext</span> config · faker · request</div>',
-    note:'ApiBase extends TestContext: hasta abajo, config/faker/request. Una línea, toda la arquitectura. 🥋'},
+    note:'OrdersApi extends ApiBase: usa el helper this.apiPOST() (envuelve request) heredado.'},
+  {l:[7,8], l2:[8], where:'<div class="st-row"><span class="tag l1">L1 · TestContext</span> config · env · DataFactory</div>',
+    note:'ApiBase extends TestContext: hasta abajo, config, entorno y DataFactory. Una línea, toda la arquitectura. 🥋'},
 ]);
 
 /* ================================================================

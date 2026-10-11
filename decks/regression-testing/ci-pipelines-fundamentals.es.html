@@ -747,7 +747,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     </div>
     <p class="kicker mt-m">el pipeline de testing de este repo, de punta a punta</p>
     <div class="flow">
-      <div class="fn"><div class="t">build.yml</div><div class="d">¿El framework compila? Types, lint, <code class="k">playwright test --list</code>.</div><div class="r">en cada Pull Request</div></div><div class="fa">→</div>
+      <div class="fn"><div class="t">build.yml</div><div class="d">¿El framework compila y su documentación sigue consistente? Types, lint, gates de documentación, <code class="k">playwright test --list</code>.</div><div class="r">en cada Pull Request</div></div><div class="fa">→</div>
       <div class="fn"><div class="t">smoke.yml</div><div class="d">¿La app está viva? Solo tests <code class="k">@critical</code>.</div><div class="r">02:00 UTC + manual</div></div><div class="fa">→</div>
       <div class="fn"><div class="t">sanity.yml</div><div class="d">¿Funciona ESTE cambio? Un archivo o un <code class="k">--grep</code>.</div><div class="r">manual, con inputs</div></div><div class="fa">→</div>
       <div class="fn"><div class="t">regression.yml</div><div class="d">¿Se rompió algo más? Integration + E2E completos.</div><div class="r">00:00 UTC + manual</div></div><div class="fa">→</div>
@@ -827,11 +827,14 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
       - <span class="key">name</span>: <span class="str">Checkout Repo</span>
         <span class="key">uses</span>: <span class="str">actions/checkout@v4</span>
         <span class="key">with</span>:
-          <span class="key">fetch-depth</span>: <span class="kw">1</span></span>
+          <span class="key">fetch-depth</span>: <span class="kw">0</span>
+          <span class="c"># Full history: the documentation-contract step diffs the PR range.</span></span>
 <span class="row" data-x="run">      - <span class="key">name</span>: <span class="str">Install Dependencies</span>
         <span class="key">run</span>: bun install
       - <span class="key">name</span>: <span class="str">ESLint Check</span>
         <span class="key">run</span>: bun run lint:check
+      - <span class="key">name</span>: <span class="str">Docs Gates</span>
+        <span class="key">run</span>: bun run docs:check · bun run skills:check
       - <span class="key">name</span>: <span class="str">Playwright Compile Check</span>
         <span class="key">run</span>: bunx playwright test --list</span></pre></div>
       <div>
@@ -842,8 +845,8 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
           <div data-x="conc"><h4><span class="mono">concurrency</span> con cancelación</h4><p>Un solo build por rama (<code class="k">group: build-${{ github.ref }}</code>). Si haces push dos veces seguidas, el primer run <b>se cancela</b>: no publica nada, así que cancelarlo es gratis y ahorra minutos.</p><p>Compara con las suites: ellas usan <code class="k">cancel-in-progress: false</code> porque publican un reporte. Lo vemos en el Capítulo 4.</p><div class="hint">docs: control-workflow-concurrency</div></div>
           <div data-x="env"><h4><span class="mono">env:</span> variables para todos los jobs</h4><p>A nivel de workflow, <code class="k">env</code> define variables de entorno que heredan todos los jobs y steps. <code class="k">CI: true</code> es una convención que muchas herramientas leen (Playwright activa <code class="k">forbidOnly</code>, por ejemplo).</p><p>Las credenciales NO están escritas aquí: se leen de <code class="k">${{ secrets.X }}</code>, que GitHub inyecta enmascaradas. Copiar un valor de tu <code class="k">.env</code> al YAML es la falta más grave del curso.</p><p>En build.yml el par de test-user es <b>opcional</b>: nada en este job hace login, así que un PR de fork, que no recibe secrets, pasa igual.</p><div class="hint">docs: use-variables · use-secrets</div></div>
           <div data-x="job"><h4>el job <span class="mono">TestBuild</span></h4><p>La clave <code class="k">TestBuild</code> es el id (lo usa <code class="k">needs</code>); <code class="k">name</code> es lo que ves en la UI. <code class="k">runs-on: ubuntu-latest</code> pide una VM Linux de GitHub, limpia. <code class="k">timeout-minutes: 15</code> mata el job si se cuelga: sin él, el default es 360 minutos de factura.</p><div class="hint">docs: workflow-syntax → jobs.&lt;job_id&gt;</div></div>
-          <div data-x="uses"><h4>steps con <span class="mono">uses:</span> (acciones)</h4><p><code class="k">actions/checkout@v4</code> clona el repo en el runner (sin esto, la máquina está vacía). <code class="k">fetch-depth: 1</code> trae solo el último commit: más rápido. El siguiente step (Setup Bun, omitido aquí) es <code class="k">oven-sh/setup-bun@v2</code>, que instala Bun.</p><p><code class="k">@v4</code> es una etiqueta de versión mayor. Para máxima seguridad, GitHub recomienda fijar un <b>SHA de commit</b> completo en acciones de terceros: una etiqueta se puede mover, un SHA no.</p><div class="hint">docs: find-and-customize-actions · security/secure-use</div></div>
-          <div data-x="run"><h4>steps con <span class="mono">run:</span> (comandos)</h4><p>Cada <code class="k">run</code> es un comando de shell en el runner. Aquí corren los mismos scripts de <code class="k">package.json</code> que corres en local: <code class="k">lint:check</code> (y <code class="k">types:check</code>, omitido por espacio). <code class="k">playwright test --list</code> compila todos los specs sin ejecutarlos: valida que la suite ES ejecutable.</p><p>Regla del repo: el YAML nunca inventa comandos. Llama a los scripts de <code class="k">package.json</code>, así local y CI hacen exactamente lo mismo.</p><div class="hint">Rule #11 de AGENTS.md: los scripts viven en package.json</div></div>
+          <div data-x="uses"><h4>steps con <span class="mono">uses:</span> (acciones)</h4><p><code class="k">actions/checkout@v4</code> clona el repo en el runner (sin esto, la máquina está vacía). <code class="k">fetch-depth: 1</code> traería solo el último commit (más rápido, y es lo que usan smoke, sanity y regression). build.yml usa <code class="k">fetch-depth: 0</code>, el historial completo, porque el step Documentation Contracts compara el rango del PR y lee los mensajes de sus commits. El siguiente step (Setup Bun, omitido aquí) es <code class="k">oven-sh/setup-bun@v2</code>, que instala Bun.</p><p><code class="k">@v4</code> es una etiqueta de versión mayor. Para máxima seguridad, GitHub recomienda fijar un <b>SHA de commit</b> completo en acciones de terceros: una etiqueta se puede mover, un SHA no.</p><div class="hint">docs: find-and-customize-actions · security/secure-use</div></div>
+          <div data-x="run"><h4>steps con <span class="mono">run:</span> (comandos)</h4><p>Cada <code class="k">run</code> es un comando de shell en el runner. Aquí corren los mismos scripts de <code class="k">package.json</code> que corres en local: <code class="k">lint:check</code> y <code class="k">docs:check</code> / <code class="k">skills:check</code> (además de <code class="k">types:check</code> y otros steps, omitidos por espacio). Los dos últimos son los gates de documentación: el PR queda rojo si hay links o paths muertos, o si rompe un contrato de documentación. <code class="k">playwright test --list</code> compila todos los specs sin ejecutarlos: valida que la suite ES ejecutable.</p><p>Regla del repo: el YAML nunca inventa comandos. Llama a los scripts de <code class="k">package.json</code>, así local y CI hacen exactamente lo mismo.</p><div class="hint">Rule #11 de AGENTS.md: los scripts viven en package.json</div></div>
         </div>
       </div>
     </div>
@@ -907,16 +910,16 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
       </div>
       <div>
         <div class="wfs">
-          <div class="wf" data-fires="pr"><div class="nm">build.yml</div><div class="ds"><code class="k">on: pull_request: branches: [main]</code></div><div class="why">Valida types + lint + compile de los specs en cada PR. No corre tests.</div></div>
+          <div class="wf" data-fires="pr"><div class="nm">build.yml</div><div class="ds"><code class="k">on: pull_request: branches: [main]</code></div><div class="why">Valida types + lint + gates de documentación + compile de los specs en cada PR. No corre tests.</div></div>
           <div class="wf" data-fires="cron2 dispatch"><div class="nm">smoke.yml</div><div class="ds"><code class="k">schedule</code> 02:00 · <code class="k">workflow_dispatch</code></div><div class="why">@critical contra staging. Con el botón podés elegir env, Allure y execution_key.</div></div>
           <div class="wf" data-fires="dispatch"><div class="nm">sanity.yml</div><div class="ds">solo <code class="k">workflow_dispatch</code></div><div class="why">Nunca automático: siempre le decís QUÉ correr (grep, archivo, tipo).</div></div>
           <div class="wf" data-fires="cron0 dispatch"><div class="nm">regression.yml</div><div class="ds"><code class="k">schedule</code> 00:00 · <code class="k">workflow_dispatch</code></div><div class="why">Integration + E2E completos. El único con input video_record.</div></div>
-          <div class="wf" data-fires="push dispatch day1"><div class="nm">pages.yml / squash</div><div class="ds"><code class="k">push</code> a main con <code class="k">paths</code> · <code class="k">dispatch</code> · squash mensual</div><div class="why">pages.yml publica la portada (<code class="k">packages/pages-home</code>), <code class="k">/kata/</code> y <code class="k">/decks/</code> solo si cambiaron esos paquetes; <code class="k">docs/</code> no se publica, se sirve en local con <code class="k">bun run docs</code>. pages-squash.yml aplana gh-pages el 1° de cada mes.</div></div>
+          <div class="wf" data-fires="push dispatch day1"><div class="nm">pages.yml / squash</div><div class="ds"><code class="k">push</code> a main con <code class="k">paths</code> · <code class="k">dispatch</code> · squash mensual</div><div class="why">pages.yml publica la portada (<code class="k">packages/pages-home</code>), <code class="k">/kata/</code>, <code class="k">/decks/</code> y el sitio estático de <code class="k">docs/</code> en <code class="k">/docs/</code>, solo si el push tocó sus fuentes; <code class="k">bun run docs</code> sigue sirviendo <code class="k">docs/</code> en local. pages-squash.yml aplana gh-pages el 1° de cada mes.</div></div>
         </div>
         <div class="trig-note"></div>
         <div class="trig-notes" hidden>
           <div data-ev="pr">Solo <b>build.yml</b>. Ninguna suite corre en PR: el framework se valida, los tests no se ejecutan contra staging en cada push (costaría minutos y credenciales por cada PR, incluidos los de forks, que no tienen secrets). Correr una suite en PR es una decisión de la Parte II.</div>
-          <div data-ev="push">Solo <b>pages.yml</b>, y solo si el push tocó <code class="k">packages/kata-academy/**</code>, <code class="k">packages/pages-home/**</code>, <code class="k">packages/decks/**</code> o el propio workflow (la lista <code class="k">paths:</code> del workflow). Un push que cambia un test no publica nada.</div>
+          <div data-ev="push">Solo <b>pages.yml</b>, y solo si el push tocó una ruta de la lista <code class="k">paths:</code> del propio workflow (kata-academy, pages-home, decks, docs y el workflow mismo; la fuente es ese bloque). Un push que cambia un test no publica nada.</div>
           <div data-ev="cron0">Solo <b>regression.yml</b>. Sin inputs (un cron no tiene formulario): <code class="k">TEST_ENV</code> cae en <code class="k">'staging'</code> por el <code class="k">|| 'staging'</code> del bloque env, y <code class="k">STP_EXECUTION_KEY</code> cae en el secret. Dos horas antes que smoke para no pisarse.</div>
           <div data-ev="cron2">Solo <b>smoke.yml</b>. Corre a las 02:00 UTC: a esa hora el deploy nocturno de la app ya debería estar arriba. GitHub advierte que los crons se retrasan en la hora en punto bajo carga; por eso conviene repartirlos.</div>
           <div data-ev="dispatch">Cualquiera de los cuatro que declare <code class="k">workflow_dispatch</code>, uno a la vez: vos elegís cuál en la UI (o con <code class="k">gh workflow run &lt;archivo&gt;</code>). El formulario se genera de los <code class="k">inputs</code>. build.yml NO tiene botón: solo PR.</div>
@@ -1373,13 +1376,9 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
 <pre class="sm"><span class="key">permissions</span>:
   <span class="key">contents</span>: write        <span class="c"># puede hacer push (a gh-pages)</span>
 <span class="c">…</span>
-      - <span class="key">name</span>: <span class="str">Deploy to GitHub Pages</span>
-        <span class="key">uses</span>: <span class="str">peaceiris/actions-gh-pages@v4</span>
-        <span class="key">with</span>:
-          <span class="key">github_token</span>: <span class="ex">${{ secrets.GITHUB_TOKEN }}</span>
-          <span class="key">publish_branch</span>: gh-pages
-          <span class="key">publish_dir</span>: _site
-          <span class="key">keep_files</span>: <span class="kw">true</span></pre></div>
+<span class="c"># El deploy no usa una acción de terceros: el workflow arma _site, clona</span>
+<span class="c"># gh-pages, sincroniza solo las superficies del hub (rsync --delete) y</span>
+<span class="c"># hace git push con el mismo GITHUB_TOKEN.</span></pre></div>
         <div class="yaml mt-m"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">forma recomendada para un workflow nuevo</span><span class="badge ex">ejemplo</span></div>
 <pre class="sm"><span class="key">permissions</span>: {}            <span class="c"># nada por defecto…</span>
 <span class="key">jobs</span>:

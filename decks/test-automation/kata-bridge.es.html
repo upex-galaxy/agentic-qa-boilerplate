@@ -225,7 +225,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
 <section class="slide" data-act="Acto 0 · La última puerta" style="align-items:center">
   <canvas id="fx-cover"></canvas>
   <div class="cover-inner">
-    <div class="kicker" data-anim="fade-up">Sesión final · Graduación</div>
+    <div class="kicker" data-anim="fade-up">Sesión 6 · Cierre de fundamentos</div>
     <h1 data-anim="fade-up" style="animation-delay:.1s">KATA <span class="grad-text">Bridge</span> 🥋</h1>
     <p data-anim="fade-up" style="animation-delay:.2s;max-width:680px;font-size:clamp(1.05rem,1.8vw,1.35rem)">
       Del Page Object hecho a mano al <b>framework profesional</b>.<br>Aquí no aprendes piezas nuevas — aprendes el mapa que las ensambla.</p>
@@ -233,7 +233,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
       <span class="pill">KATA: arquitectura de capas</span><span class="pill">ATCs</span><span class="pill">kata-manifest</span><span class="pill">Agentic QA</span><span class="pill">graduación 🎓</span>
     </div>
   </div>
-  <div class="notes"><p>Última sesión de la serie Código al Grano. Tono distinto: ya no enseñas a programar — revelas que el framework "intimidante" está hecho 100% de piezas que ellos ya construyeron a mano. Prerrequisito: serie completa (especialmente Coding Classes y Playwright Pro). Duración: 90 min + exploración del repo real.</p></div>
+  <div class="notes"><p>Sesión 6 de la serie Código al Grano y cierre de los fundamentos; después siguen Automation Patterns y API Automation (ver el catálogo). Tono distinto: ya no enseñas a programar — revelas que el framework "intimidante" está hecho 100% de piezas que ellos ya construyeron a mano. Prerrequisito: los decks anteriores del catálogo (especialmente Coding Classes y Playwright Pro). Duración: 90 min + exploración del repo real.</p></div>
 </section>
 
 <!-- 2 · El viaje -->
@@ -243,9 +243,9 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
   <div class="journey" data-stagger style="margin:1rem 0">
     <div class="jy">✅<b>Coding Base</b>valores → tu primer test</div>
     <div class="jy">✅<b>Coding Classes</b>clases → Page Object</div>
-    <div class="jy">✅<b>Dojo Lab I</b>Playwright real + dojo</div>
-    <div class="jy">✅<b>Playwright Pro</b>hooks, POM, fixtures, API</div>
     <div class="jy">✅<b>Dev Craft</b>terminal, git, tu primer PR</div>
+    <div class="jy">✅<b>Playwright Pro</b>hooks, POM, fixtures, API</div>
+    <div class="jy">✅<b>Dojo Lab I</b>Playwright real + dojo</div>
     <div class="jy now">🎓<b>KATA Bridge</b>estás aquí</div>
   </div>
   <div class="callout" data-anim="fade-up" style="max-width:760px;margin:1rem auto 0"><span class="co-ico">🔭</span><p>Al inicio de la serie, <code>"Ana"</code> era tu primer valor. Ahora tienes: suite multi-browser con Page Objects y fixtures propios, publicada en GitHub por PR. <b>Lo que falta no es conocimiento — es el mapa del territorio profesional.</b></p></div>
@@ -285,7 +285,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
   <div class="kicker">El mapa completo</div>
   <h2 data-anim="fade-up" style="text-align:center">KATA: <span class="grad-text">Komponent Action Test Architecture</span></h2>
   <div class="kata-stack" data-stagger style="margin-top:.4rem">
-    <div class="layer"><span class="ly-tag">L1</span>TestContext <span class="ly-note">config por ambiente, faker, utils agnósticos</span></div>
+    <div class="layer"><span class="ly-tag">L1</span>TestContext <span class="ly-note">drivers Playwright, config por ambiente, DataFactory</span></div>
     <div class="arrow">↓ extends</div>
     <div class="layer"><span class="ly-tag">L2</span>ApiBase / UiBase <span class="ly-note">helpers HTTP / Playwright ya escritos</span></div>
     <div class="arrow">↓ extends</div>
@@ -306,10 +306,10 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
     <div data-anim="slide-l">
       <div class="card"><h3>🎒 L1 · TestContext — la mochila común</h3>
         <p style="font-size:.92rem;line-height:1.8">• Config por ambiente: URLs y credenciales salen de <code class="pill">.env</code> + config — <b>mata tus credenciales hardcodeadas</b><br>
-        • Faker: datos fake frescos en cada corrida (¿recuerdas tu <code class="pill">Date.now()</code> del email único? esto, industrializado)<br>
-        • Utilidades agnósticas compartidas por API y UI</p></div>
+        • DataFactory (faker por dentro): datos frescos en cada corrida (¿recuerdas tu <code class="pill">Date.now()</code> del email único? esto, industrializado)<br>
+        • Los drivers de Playwright (<code class="pill">page</code>, <code class="pill">request</code>) y el entorno, compartidos por API y UI</p></div>
       <div class="card" style="margin-top:.9rem"><h3>🧰 L2 · UiBase / ApiBase — los helpers heredables</h3>
-        <p style="font-size:.92rem;line-height:1.8">• <b>UiBase</b>: navegación, waits inteligentes, helpers de formularios — todo lo que tus POMs repetían<br>
+        <p style="font-size:.92rem;line-height:1.8">• <b>UiBase</b>: <code class="pill">buildUrl</code>, interceptar respuestas y esperar llamadas de red — lo que tus POMs repetían. Los helpers de formulario viven en cada componente<br>
         • <b>ApiBase</b>: cliente HTTP con auth, headers y manejo de errores resuelto</p></div>
     </div>
     <div data-anim="fade-up" style="animation-delay:.25s">
@@ -321,14 +321,14 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
 
 <span class="tk-c">// En KATA:</span>
 <span class="tk-k">export</span> <span class="tk-k">class</span> LoginPage <span class="tk-k">extends</span> UiBase {
-  <span class="tk-c">// hereda navegación, waits, forms,</span>
-  <span class="tk-c">// config y faker — GRATIS 🎁</span>
+  <span class="tk-c">// hereda buildUrl, waits de red,</span>
+  <span class="tk-c">// config y datos — GRATIS 🎁</span>
   <span class="tk-c">// tú solo escribes lo específico de login</span>
 }</pre>
       <div class="callout" style="margin-top:.9rem"><span class="co-ico">🧬</span><p>La cadena <code>extends</code> que practicaste con User → Admin, pagando su dividendo más grande: <b>escribes solo lo que es único de tu página</b>.</p></div>
     </div>
   </div>
-  <div class="notes"><p>L1 y L2 juntas = "lo que heredas gratis". Conexiones directas: credenciales hardcodeadas (dolor que ellos tienen) → TestContext; el Date.now() del lab → faker; sus helpers repetidos → UiBase. El código de la derecha es el antes/después que resume la sesión: extends convirtiendo trabajo repetido en herencia.</p></div>
+  <div class="notes"><p>L1 y L2 juntas = "lo que heredas gratis". Conexiones directas: credenciales hardcodeadas (dolor que ellos tienen) → TestContext; el Date.now() del lab → DataFactory; sus helpers repetidos → UiBase. El código de la derecha es el antes/después que resume la sesión: extends convirtiendo trabajo repetido en herencia.</p></div>
 </section>
 
 <!-- 6 · L3 + ATC -->
@@ -648,7 +648,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
     <tr><td>Tu <code>fixtures.ts</code> con <code>({ loginPage })</code></td><td>TestFixture L4: <code>({ ui })</code>, <code>({ api })</code></td><td>Playwright Pro</td></tr>
     <tr><td>Helpers que repetías en cada POM</td><td>UiBase / ApiBase (L2) — heredados</td><td>Pro + esta sesión</td></tr>
     <tr><td>Credenciales hardcodeadas 😅</td><td>TestContext (L1) — config por ambiente</td><td>esta sesión</td></tr>
-    <tr><td><code>Date.now()</code> para emails únicos</td><td>Faker en TestContext</td><td>Dojo Lab</td></tr>
+    <tr><td><code>Date.now()</code> para emails únicos</td><td>DataFactory (faker) en TestContext</td><td>Dojo Lab</td></tr>
     <tr><td>Tu rama <code>test/*</code> + PR</td><td>El flujo de entrega del repo (idéntico)</td><td>Dev Craft</td></tr>
   </table>
   <div class="notes"><p>La tabla-diccionario es el regalo de despedida: imprimible, consultable, y demuestra que NADA de KATA salió de la nada. Recórrela rápido — cada fila es un "ya lo sabes". Es también tu herramienta de onboarding para futuros cohorts.</p></div>
@@ -670,22 +670,22 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
 
 <!-- 21 · Cierre serie -->
 <section class="slide" data-act="Acto 4 · Graduación" style="align-items:center;text-align:center">
-  <div class="kicker" data-anim="fade-up">Fin de la serie</div>
+  <div class="kicker" data-anim="fade-up">Cierre de fundamentos</div>
   <h2 data-anim="fade-up" style="animation-delay:.1s">De <span style="font-family:var(--font-mono);color:var(--green)">"Ana"</span> a <span class="grad-text">Quality Engineer</span></h2>
   <div id="final-score" data-anim="pop" style="font-family:var(--font-mono);font-size:clamp(2rem,5vw,3.4rem);font-weight:700;color:var(--yellow)">— / 3 · — / 4</div>
   <p id="final-msg" data-anim="fade-up" style="animation-delay:.25s;max-width:620px"></p>
   <div class="journey" data-stagger style="margin-top:1.2rem">
     <div class="jy">✅<b>Coding Base</b></div>
     <div class="jy">✅<b>Coding Classes</b></div>
-    <div class="jy">✅<b>Dojo Lab I</b></div>
-    <div class="jy">✅<b>Playwright Pro</b></div>
     <div class="jy">✅<b>Dev Craft</b></div>
+    <div class="jy">✅<b>Playwright Pro</b></div>
+    <div class="jy">✅<b>Dojo Lab I</b></div>
     <div class="jy now">🎓<b>KATA Bridge</b></div>
   </div>
   <p data-anim="fade-up" style="animation-delay:.5s;margin-top:1.4rem;color:var(--text-3);font-size:.98rem;max-width:640px">
   Un valor → una variable → una función → una clase → un Page Object → fixtures → git → <b style="color:var(--text-2)">un framework profesional que ahora sabes leer, juzgar y dirigir</b>.<br><br>
-  <span style="color:var(--yellow)">Bienvenida/o al oficio. Nos vemos en el repo. 🥋</span></p>
-  <div class="notes"><p>Cierre de la serie completa, un arco. Lee el viaje en voz alta de principio a fin: desde "Ana" en el primer deck hasta dirigir una IA en un framework profesional. Celebra, recoge feedback de la serie y agenda el onboarding del repo + primer ticket. El confetti final es automático al llegar aquí. Esto fue Código al Grano.</p></div>
+  <span style="color:var(--yellow)">Bienvenida/o al oficio. Nos vemos en el repo. 🥋</span><br><br>Sigue en el catálogo: <b style="color:var(--text-2)">Automation Patterns</b> y <b style="color:var(--text-2)">API Automation con Playwright</b>.</p>
+  <div class="notes"><p>Cierre de los fundamentos, un arco. Lee el viaje en voz alta de principio a fin: desde "Ana" en el primer deck hasta dirigir una IA en un framework profesional. Celebra, recoge feedback de la serie y agenda el onboarding del repo + primer ticket. El confetti final es automático al llegar aquí. Esto fue Código al Grano.</p></div>
 </section>
 
 <script>

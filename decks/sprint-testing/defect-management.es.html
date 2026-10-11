@@ -865,7 +865,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     </div>
   </div>
   <div class="callout mt-m"><h4>Regla de oro</h4><p>Cada campo que dejas vacío es una pregunta que el dashboard <b>no podrá responder</b>. La disciplina al reportar ES la materia prima de la métrica.</p></div>
-  <div class="notes">Estos campos salen de .agents/jira-required.yaml (sección bug/defect): ese archivo es el catálogo vivo, la slide muestra la agrupación pedagógica. El summary sigue el patrón Épica:Componente:Síntoma — que ya es agrupable. Conecta con Components en la siguiente.</div>
+  <div class="notes">La matriz de campos por tipo de trabajo vive en agentic-qa-core/references/defect-management-doctrine.md (Part 5); el catálogo de definiciones de campo es el bloque required: de .agents/jira-required.yaml. La slide muestra la agrupación pedagógica. El summary sigue el patrón Épica:Componente:Síntoma — que ya es agrupable. Conecta con Components en la siguiente.</div>
 </section>
 
 <!-- 18. SEVERITY / PRIORITY -->
@@ -895,7 +895,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <h4>Error Type — el síntoma</h4>
       <p class="dim mb-s">Se infiere al reportar, desde el comportamiento observado.</p>
       <div class="row wrap" style="gap:8px">
-        <span class="tag">functional</span><span class="tag">visual</span><span class="dim" style="font-size:12px">ejemplo · opciones en <span class="mono">.agents/jira-fields.json</span> (error_type)</span>
+        <span class="tag">functional</span><span class="tag">visual</span><span class="dim" style="font-size:12px">ejemplo · opciones en <span class="mono">.agents/jira-fields.json</span> (error_type); los datos del dashboard de ShopFlow más abajo usan esas opciones</span>
       </div>
     </div>
     <div class="card card-accent">
@@ -1001,7 +1001,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <h2 class="h2" data-anim="fade-up">Un Snapshot Típico: ShopFlow</h2>
   <div class="mgrid">
     <div class="mcard"><div class="mv grad">40</div><div class="mk">familia de incidencias</div><div class="md">26 Defect · 10 Bug · 4 Improvement — todas tipadas</div></div>
-    <div class="mcard"><div class="mv grad">26</div><div class="mk">Closed (verificadas)</div><div class="md">6 In Progress · 5 Ready For QA · 3 Open</div></div>
+    <div class="mcard"><div class="mv grad">26</div><div class="mk">Closed (verificadas)</div><div class="md">4 In Progress · 4 Ready For QA · 3 Open · 3 descartadas (2 Duplicated, 1 REJECTED)</div></div>
     <div class="mcard"><div class="mv grad">4</div><div class="mk">Críticas</div><div class="md">11 Mayor · 17 Moderada · 8 Menor — 40/40 con Severity</div></div>
   </div>
   <div class="bars">
@@ -1022,10 +1022,10 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="barrow"><span class="bl">Components</span><span class="bt" style="width:100%"></span><span class="bn">100%</span></div>
     <div class="barrow"><span class="bl">Root Cause</span><span class="bt" style="width:100%"></span><span class="bn">100%</span></div>
     <div class="barrow"><span class="bl">Error Type</span><span class="bt" style="width:100%"></span><span class="bn">100%</span></div>
-    <div class="barrow"><span class="bl">Resolution</span><span class="bt" style="width:98%"></span><span class="bn">98%</span></div>
+    <div class="barrow"><span class="bl">Resolution</span><span class="bt" style="width:72%"></span><span class="bn">72%</span></div>
   </div>
   <div class="callout mt-m"><h4>El diagnóstico</h4><p>ShopFlow rellena <b>cada campo del estándar</b> en las 40 incidencias → las 8 preguntas de la parte 3 tienen respuesta, sin ningún slice "sin asignar". El principio se cumple, pero al revés: <i>lo que no rellenas no lo puedes medir</i> — y aquí no quedó nada vacío. La disciplina al reportar AHORA es la métrica fiable de MAÑANA.</p></div>
-  <div class="notes">Aquí el equipo modelo: cobertura completa. Severity, Components y Error Type al 100% → toda gráfica se dibuja entera, sin porción muted. El único campo que no llega al 100% es Resolution (98%), porque hay incidencias aún abiertas — eso es esperado, no una brecha de higiene.</div>
+  <div class="notes">Aquí el equipo modelo: cobertura completa. Severity, Components y Error Type al 100% → toda gráfica se dibuja entera, sin porción muted. El único campo que no llega al 100% es Resolution (72%: 29 de 40, las cerradas y las descartadas), porque hay 11 incidencias aún abiertas — eso es esperado, no una brecha de higiene.</div>
 </section>
 
 <!-- 26. QUESTIONS -> METRICS (CENTERPIECE) -->
@@ -1222,23 +1222,25 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <div class="stackwrap">
           <div class="stacked">
             <div class="seg" style="width:65%;background:var(--good);color:#03130b">65%</div>
-            <div class="seg" style="width:15%;background:var(--warn);color:#1a1303">15%</div>
-            <div class="seg" style="width:12.5%;background:#79c0ff;color:#04121f">12%</div>
+            <div class="seg" style="width:10%;background:var(--warn);color:#1a1303">10%</div>
+            <div class="seg" style="width:10%;background:#79c0ff;color:#04121f">10%</div>
             <div class="seg" style="width:7.5%;background:var(--text-3);color:#0d1117">7%</div>
+            <div class="seg" style="width:7.5%;background:var(--a2);color:#0d1117">7%</div>
           </div>
           <div class="stacked-legend">
             <div class="legend-item"><span class="swatch" style="background:var(--good)"></span>Closed<b>26</b></div>
-            <div class="legend-item"><span class="swatch" style="background:var(--warn)"></span>In Progress<b>6</b></div>
-            <div class="legend-item"><span class="swatch" style="background:#79c0ff"></span>Ready For QA<b>5</b></div>
+            <div class="legend-item"><span class="swatch" style="background:var(--warn)"></span>In Progress<b>4</b></div>
+            <div class="legend-item"><span class="swatch" style="background:#79c0ff"></span>Ready For QA<b>4</b></div>
             <div class="legend-item"><span class="swatch" style="background:var(--text-3)"></span>Open<b>3</b></div>
+            <div class="legend-item"><span class="swatch" style="background:var(--a2)"></span>Duplicated / REJECTED<b>3</b></div>
           </div>
         </div>
       </div>
-      <div class="chartans"><b>26 cerradas; 14 vivas</b> avanzando por un flujo sano.</div>
+      <div class="chartans"><b>26 cerradas; 11 vivas y 3 descartadas</b> avanzando por un flujo sano.</div>
     </div>
 
   </div>
-  <div class="notes">Bloque 1 del dashboard blueprint materializado, con la data completa de ShopFlow. Escape Rate (donut): 72% contenido en sprint, 28% escapa — shift-left sano. Type split: Defect domina (26 de 40) → se caza antes del release. Lifecycle (barra apilada): 26 Closed + 14 vivas (6 In Progress, 5 Ready For QA, 3 Open), todas en flujo normal. Los tres gadgets se dibujan enteros porque type y status están al 100%.</div>
+  <div class="notes">Bloque 1 del dashboard blueprint materializado, con la data completa de ShopFlow. Escape Rate (donut): 72% contenido en sprint, 28% escapa — shift-left sano. Type split: Defect domina (26 de 40) → se caza antes del release. Lifecycle (barra apilada): 26 Closed + 11 vivas (4 In Progress, 4 Ready For QA, 3 Open) + 3 descartadas (2 Duplicated, 1 REJECTED), todas en flujo normal. Los tres gadgets se dibujan enteros porque type y status están al 100%.</div>
 </section>
 
 <!-- 32. DASHBOARD D2 — GRAVEDAD & CAUSA -->
@@ -1271,9 +1273,9 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <div class="legend">
           <div class="legend-item"><span class="swatch" style="background:var(--a1)"></span>Lógica código<b>15</b></div>
           <div class="legend-item"><span class="swatch" style="background:var(--a2)"></span>Req. ambiguo<b>9</b></div>
-          <div class="legend-item"><span class="swatch" style="background:var(--a3)"></span>Datos/config<b>7</b></div>
+          <div class="legend-item"><span class="swatch" style="background:var(--a3)"></span>Datos<b>7</b></div>
           <div class="legend-item"><span class="swatch" style="background:#79c0ff"></span>Integración<b>6</b></div>
-          <div class="legend-item"><span class="swatch" style="background:var(--good)"></span>Validación<b>3</b></div>
+          <div class="legend-item"><span class="swatch" style="background:var(--good)"></span>Config<b>3</b></div>
         </div>
       </div>
       <div class="chartans"><b>Lógica de código domina</b> → foco de mejora de proceso.</div>
@@ -1286,13 +1288,13 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="chartwrap" style="align-items:stretch">
         <div class="bars" style="margin-top:0;width:100%">
           <div class="barrow" style="grid-template-columns:96px 1fr 30px"><span class="bl">Funcional</span><span class="bt" style="width:100%;background:var(--a1)"></span><span class="bn">17</span></div>
-          <div class="barrow" style="grid-template-columns:96px 1fr 30px"><span class="bl">UI</span><span class="bt" style="width:53%;background:var(--a2)"></span><span class="bn">9</span></div>
-          <div class="barrow" style="grid-template-columns:96px 1fr 30px"><span class="bl">Validación</span><span class="bt" style="width:41%;background:#79c0ff"></span><span class="bn">7</span></div>
+          <div class="barrow" style="grid-template-columns:96px 1fr 30px"><span class="bl">Visual</span><span class="bt" style="width:53%;background:var(--a2)"></span><span class="bn">9</span></div>
+          <div class="barrow" style="grid-template-columns:96px 1fr 30px"><span class="bl">Datos</span><span class="bt" style="width:41%;background:#79c0ff"></span><span class="bn">7</span></div>
           <div class="barrow" style="grid-template-columns:96px 1fr 30px"><span class="bl">Performance</span><span class="bt" style="width:29%;background:var(--warn)"></span><span class="bn">5</span></div>
           <div class="barrow" style="grid-template-columns:96px 1fr 30px"><span class="bl">Seguridad</span><span class="bt" style="width:12%;background:var(--bad)"></span><span class="bn">2</span></div>
         </div>
       </div>
-      <div class="chartans"><b>Funcional domina; UI y validación siguen.</b></div>
+      <div class="chartans"><b>Funcional domina; visual y datos siguen.</b></div>
     </div>
 
   </div>

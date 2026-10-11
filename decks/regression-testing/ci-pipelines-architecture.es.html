@@ -741,7 +741,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <div class="split wide">
       <table class="tbl tight mt-s">
         <tr><th>Suite</th><th>Pregunta</th><th>Trigger</th><th>Alcance</th><th>Dura (orden de magnitud)</th><th>Gatea</th></tr>
-        <tr><td><b>build.yml</b></td><td>¿El <i>framework</i> compila y pasa lint?</td><td class="mono">pull_request → main</td><td>types · lint · evals · <code class="k">playwright test --list</code>. Cero tests ejecutados.</td><td>~3 min</td><td>el merge del PR</td></tr>
+        <tr><td><b>build.yml</b></td><td>¿El <i>framework</i> compila, pasa lint y su documentación sigue consistente?</td><td class="mono">pull_request → main</td><td>types · lint · docs gates · contratos de documentación · evals · <code class="k">playwright test --list</code>. Cero tests ejecutados.</td><td>~3 min</td><td>el merge del PR</td></tr>
         <tr><td><b>smoke.yml</b></td><td>¿La app está viva tras el deploy?</td><td class="mono">cron 02:00 · manual</td><td>solo <code class="k">@critical</code> (proyectos smoke-ui + smoke-api)</td><td>2-5 min</td><td>«¿seguimos o avisamos?» post-deploy</td></tr>
         <tr><td><b>sanity.yml</b></td><td>¿Funciona ESTE cambio / feature?</td><td class="mono">solo manual, con inputs</td><td>un archivo, un <code class="k">--grep</code>, o e2e/integration</td><td>1-10 min</td><td>validar un test nuevo en CI antes del PR</td></tr>
         <tr><td><b>regression.yml</b></td><td>¿Se rompió algo más?</td><td class="mono">cron 00:00 · manual</td><td>integration completo → e2e completo</td><td>20-60 min</td><td>el release: GO / CAUTION / NO-GO</td></tr>
@@ -786,6 +786,12 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
         <span class="key">run</span>: bun run types:check
       - <span class="key">name</span>: <span class="str">ESLint Check</span>
         <span class="key">run</span>: bun run lint:check
+      - <span class="key">name</span>: <span class="str">Docs Gates</span>
+        <span class="key">run</span>: |
+          bun run docs:check
+          bun run skills:check
+      - <span class="key">name</span>: <span class="str">Documentation Contracts</span>
+        <span class="key">run</span>: bun scripts/lint-doc-contracts.ts --base "$BASE_SHA" --head "$HEAD_SHA"
       - <span class="key">name</span>: <span class="str">Skill Activation Evals Check</span>
         <span class="key">run</span>: bun run skills:evals
       - <span class="key">name</span>: <span class="str">Playwright Compile Check</span>
@@ -795,6 +801,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
           <li><b>Contesta «¿este PR rompe el framework?».</b> Un test que no compila no falla: no existe. Por eso <code class="k">playwright test --list</code> es el step clave: compila cada spec sin ejecutarlo y sin credenciales de app.</li>
           <li><b>Mismo orden que la Rule #7 del repo:</b> tests (compilación) → types → lint. Lo que corrés en local antes de commitear, corre aquí antes de mergear. Sin sorpresas.</li>
           <li><b>El step Validate env schema (varlock) va primero</b>, antes de <code class="k">bun install</code>: valida que el bloque <code class="k">env</code> del job cumpla <code class="k">.env.schema</code> y deja un summary redactado en la página del job. Lo único requerido es <code class="k">TEST_ENV</code> (tiene default); el par de test-user es opcional, así que un PR de fork, que no tiene secrets, pasa aquí y en <code class="k">test:env:check</code>.</li>
+          <li><b>Los gates de documentación también bloquean el PR.</b> <code class="k">Docs Gates</code> corre <code class="k">docs:check</code> y <code class="k">skills:check</code> (links y paths muertos, scripts citados que package.json no declara, Rule #17, router de skills y capa de instrucciones). <code class="k">Documentation Contracts</code> falla el PR si cambia una región marcada con <code class="k">LINT.IfChange</code> sin que cambien las páginas que su <code class="k">LINT.ThenChange</code> nombra (o sin un trailer <code class="k">Docs-Checked:</code> en un commit del PR). Por eso el checkout de build.yml trae el historial completo (<code class="k">fetch-depth: 0</code>).</li>
           <li><b>Cancelable</b> (<code class="k">cancel-in-progress: true</code>): un push nuevo invalida al anterior y nada quedó publicado.</li>
           <li><b>El timeout más corto de las suites</b> (ver <code class="k">timeout-minutes</code> en build.yml): si tarda más, algo está mal en la máquina, no en el código.</li>
         </ul>
@@ -802,7 +809,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
       </div>
     </div>
     </div>
-    <div class="notes">build.yml: gate de PR del framework. varlock primero, tests→types→lint, playwright --list. No corre tests contra la app, con justificación.</div>
+    <div class="notes">build.yml: gate de PR del framework. varlock primero, tests→types→lint, gates de documentación, playwright --list. No corre tests contra la app, con justificación.</div>
   </section>
 
   <!-- 6. SMOKE.YML -->
@@ -818,7 +825,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
         <span class="key">run</span>: bun run test:smoke
 
 <span class="c"># package.json</span>
-"test:smoke": "playwright test --project=smoke-ui --project=smoke-api"
+"test:smoke": "… playwright test --project=smoke-ui --project=smoke-api"
 
 <span class="c"># playwright.config.ts (comentario del bloque smoke, resumido)</span>
 <span class="c"># Smoke Tests - @critical tagged tests, ONE PROJECT PER SURFACE</span>
@@ -1157,7 +1164,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
       <p class="lede">Dónde aparece cada cosa cuando el run termina, y cómo los resultados vuelven a Jira/Xray sin que nadie los copie a mano: el RTR, la <code class="k">execution_key</code> y la matriz de decisión que gobierna cada import.</p>
       <div class="goals"><span>Actions UI · artifacts · Allure · Playwright report · traces</span><span>RTR / STR · execution_key · AUTO_SYNC · TMS_PROVIDER</span></div>
     </div>
-    <div class="notes">Cap 8. El write-back tal como quedó tras la RTR ladder (ADR-0001).</div>
+    <div class="notes">Cap 8. El write-back tal como quedó tras la RTR ladder (ADR-0002).</div>
   </section>
 
   <!-- 17. DÓNDE MIRO QUÉ -->

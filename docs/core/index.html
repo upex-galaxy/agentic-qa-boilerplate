@@ -20,8 +20,9 @@
         <h1>Documentación del boilerplate</h1>
         <p class="lede">
           Todo lo que está bajo <code>docs/core/</code> lo trae el boilerplate y se actualiza con
-          <code>bun sync</code>. Las páginas de tu proyecto van en cualquier otra carpeta de
-          <code>docs/</code> y aparecen solas en el menú.
+          <code>bun sync</code>, igual que <code>docs/assets/</code> y el portal
+          <code>docs/index.html</code>: no los edites, el próximo sync los pisa. Las páginas de tu
+          proyecto van en cualquier otra carpeta de <code>docs/</code> y aparecen solas en el menú.
         </p>
       </header>
 
@@ -62,8 +63,9 @@
         <li>
           <strong>Crea una carpeta fuera de <code>core/</code></strong>
           <p>
-            Por ejemplo <code>docs/&lt;equipo&gt;/</code>. El updater nunca escribe fuera de
-            <code>core/</code>.
+            Por ejemplo <code>docs/&lt;equipo&gt;/</code>. El updater solo escribe en
+            <code>core/</code>, en <code>docs/assets/</code> y en el portal
+            <code>docs/index.html</code>; el resto de <code>docs/</code> es tuyo.
           </p>
         </li>
         <li>

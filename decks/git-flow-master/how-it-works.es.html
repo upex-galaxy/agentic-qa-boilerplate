@@ -567,7 +567,8 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
           <tr><td class="mono"><b>Q3</b></td><td class="small">hotfix: rama desde producción, PR a producción y back-merge el mismo día</td></tr>
           <tr><td class="mono" style="color:var(--accent)"><b>Q4</b></td><td class="small">todas las estrategias: <span class="mono">direct_push_to_protected</span> · <span class="mono">admin_bypass</span> · <span class="mono">require_pr_reviews</span></td></tr>
         </table>
-        <p class="small dim">Después materializa: crea ramas solo si faltan y sincroniza solo por fast-forward real, nunca <span class="mono">--force</span>.</p>
+        <p class="small dim">Después materializa: crea ramas solo si faltan y sincroniza solo por fast-forward real, nunca <span class="mono">--force</span>. El push de ese sync a una rama protegida siempre pregunta.</p>
+        <p class="small dim mt-s">Al cierre <b>ofrece</b> llevar la política al host: primero <span class="mono">bun run git:policy verify</span> (solo lectura), y si hay deriva muestra el dry run de <span class="mono">apply</span> y escribe únicamente con tu sí.</p>
       </div>
     </div>
     <div class="notes">Disparadores: "set up our git strategy", "configura el flujo de git", "bootstrap branching". Las estrategias de una sola rama no responden Q1 a Q3; Q4 aplica siempre, porque un main solitario también está protegido. Una pregunta ya respondida en decisions.* no se repite, y la creación de ramas siempre se propone antes. Mecánica completa: references/strategy-setup.md.</div>
@@ -628,6 +629,7 @@ ATP marked as risk beyond the criterion.
 Worktree: bulk-assign
 Session: bulk-assign-w2 (c0ffee12)</div>
         <p class="small dim mt-s">Con clave: <span class="mono">{type}({ISSUE-KEY}): {description}</span>. Sin clave: <span class="mono">{type}: {description}</span>. Cambio que rompe: <span class="mono">!</span> tras el tipo y footer <span class="mono">BREAKING CHANGE:</span>.</p>
+        <p class="small dim mt-s">Un <span class="mono">Docs-Checked: &lt;label&gt; &lt;motivo&gt;</span> puede ir encima del par forense, solo con motivo y nunca por reflejo: sin él, o sin editar las páginas que el contrato nombra, el pre-push y la CI bloquean.</p>
       </div>
       <div class="stack" style="gap:14px">
         <div class="card"><p class="lbl">Prefijos semánticos</p><p class="small mt-s"><span class="mono">feat fix docs style refactor perf test chore build ci revert</span>. Detalle: <span class="mono">references/conventional-commits.md</span>.</p></div>
@@ -662,7 +664,7 @@ Session: bulk-assign-w2 (c0ffee12)</div>
       <text class="t-m" x="836" y="108">Session: &lt;label&gt;</text>
     </svg>
     <div class="grid g3 mt-s" style="gap:20px">
-      <div class="card"><p class="lbl">Se copian del contexto</p><p class="small mt-s">El label llega hasta el token literal <span class="mono"> harness=</span> (puede tener espacios y paréntesis). <span class="mono">primary</span> fuera de un worktree; <span class="mono">unknown</span> si no resuelve. Nada debajo.</p></div>
+      <div class="card"><p class="lbl">Se copian del contexto</p><p class="small mt-s">El label llega hasta el token literal <span class="mono"> harness=</span> (puede tener espacios y paréntesis). <span class="mono">primary</span> fuera de un worktree; <span class="mono">unknown</span> si no resuelve. Nada debajo. Al commitear, <span class="mono">.husky/commit-msg</span> solo avisa (no bloquea) si falta alguno o si aparece un <span class="mono">Claude-Session:</span>.</p></div>
       <div class="card card-accent"><p class="lbl">Procedencia</p><p class="small mt-s">Responden qué checkout y qué sesión produjeron la línea, para un bisect o un post-mortem de sesiones paralelas. No nombran herramienta, vendor ni modelo: por eso no cuentan como atribución (Regla #3).</p></div>
       <div class="card"><p class="lbl">Un emisor, tres hosts</p><p class="small mt-s">Claude Code y Codex lo corren como command hook; OpenCode importa la constante desde un plugin. Mismo texto, sin copias por harness.</p></div>
     </div>
@@ -792,7 +794,7 @@ $ bun run git:policy apply --yes      # escribe el ruleset
       <text class="t-b" x="988" y="76" style="font-size:13px">descomponer</text>
     </svg>
     <div class="grid g2 mt-s" style="gap:22px">
-      <div class="card card-accent"><p class="small"><b>El plan es un contrato.</b> Si el diff real supera la estimación, se vuelve a correr la decisión en vez de estirar el presupuesto en silencio. El umbral sale de la investigación sobre review de código: por encima, la detección de defectos cae.</p></div>
+      <div class="card card-accent"><p class="small"><b>El plan es un contrato.</b> Si el diff real supera la estimación, se vuelve a correr la decisión en vez de estirar el presupuesto en silencio. Se devuelve con su traza, nunca como etiqueta suelta: <span class="mono">Chain strategy:</span>, cada pregunta respondida con el motivo de este cambio y <span class="mono">Decided by:</span>. Una traza que solo repite la conclusión cuenta como no decidida. El umbral sale de la investigación sobre review de código: por encima, la detección de defectos cae.</p></div>
       <div class="card"><p class="small"><b>Con <span class="mono">sdet</span> activo</b>, el trunk de integración ya es el modo encadenado de toda suite de tests y este árbol no se recorre para test automation. Sigue valiendo para cambios no-test del mismo repo.</p></div>
     </div>
     <div class="notes">Un cambio monolítico no mecánico y sin scaffolding compartido es un olor de planificación: vuelve al breakdown de la historia. El árbol completo está en references/branching-strategies.md.</div>

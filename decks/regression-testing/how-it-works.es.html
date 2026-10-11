@@ -489,7 +489,7 @@ table.tbl .mono{font-size:13px}
       </div>
       <div class="wf-row">
         <span class="wf-lbl">FASE 3</span>
-        <div class="wf-node"><b>Score /9</b></div>
+        <div class="wf-node"><b>Score /10</b></div>
         <span class="wf-arr">→</span>
         <div class="wf-node"><b>Vetos duros</b><small>@critical·regression·&lt;90%</small></div>
         <span class="wf-arr">→</span>
@@ -640,7 +640,7 @@ table.tbl .mono{font-size:13px}
     </div>
     <div class="cards c2 mt-m">
       <div class="callout"><h4>Checkpoint crítico</h4><p>El <span class="mono">RUN_ID</span> se añade a <span class="mono">plan.md §Inputs</span>, junto al <span class="mono">RTR_KEY</span>, y <span class="mono">progress.md</span> registra ambos. Sin RUN_ID persistido no hay re-attach; sin RTR_KEY una sesión retomada no sabe en qué Execution importó CI. En jira-native se omite <span class="mono">execution_key</span> en todas las suites.</p></div>
-      <div class="callout warn"><h4>Anti-patrón R5</h4><p>Nunca disparar sin <span class="mono">--ref &lt;commit-sha&gt;</span> fijado: commit distinto, baseline distinta. Y <span class="mono">video_record=true</span> infla mucho los artefactos: solo para depurar.</p></div>
+      <div class="callout warn"><h4>Anti-patrón R5</h4><p>Registra el commit probado en el reporte (<span class="mono">gh run view &lt;RUN_ID&gt; --json headSha</span>) y compara tendencias solo entre runs con commit conocido: commit distinto, baseline distinta. Y <span class="mono">video_record=true</span> infla mucho los artefactos: solo para depurar.</p></div>
     </div>
     <div class="notes">La condición de carrera es real: gh workflow run retorna antes de que el run exista en la API, de ahí la espera corta antes de gh run list. Los inputs que se muestran son los que declaran regression.yml, smoke.yml y sanity.yml en .github/workflows/. Video solo al depurar flakiness o capturar evidencia de un bug puntual.</div>
   </section>
@@ -730,7 +730,8 @@ table.tbl .mono{font-size:13px}
       <div class="callout bad"><h4>La misclasificación #1</h4><p>NUNCA marques REGRESSION sin revisar el historial primero. Y un primer fallo sin historia no es regresión: es NEW TEST — se verifica a mano una vez antes de clasificar.</p></div>
       <div class="callout"><h4>Dispatch por volumen</h4><p>&gt;10 fallos → chunks de ~10 con un subagente clasificador por chunk (cap 10), merge de JSONs en el hilo principal. ≤10 → inline: el overhead no se justifica.</p></div>
     </div>
-    <div class="notes">Para poder decir FLAKY hacen falta al menos 5 runs de historial: con menos, se anota "insufficient history" y se reevalúa el próximo sprint (nunca se adivina). El porcentaje de fallo se calcula sobre una ventana más ancha, los últimos N = min(10, disponibles) runs: 5 es el piso para tener señal, 10 es la ventana. R1: jamás FLAKY sin re-ejecutar en aislamiento.</div>
+    <div class="callout warn mt-m"><h4>El gate falla cerrado</h4><p>Toda clase salvo REGRESSION deja pasar el fallo, y quien la elige es el clasificador. Por eso cada una se sostiene solo con su cita (tabla de la slide siguiente). Sin cita, cita vacía o un ticket que esta misma sesión creó para volver «conocido» el fallo: cuenta como REGRESSION.</p></div>
+    <div class="notes">Para poder decir FLAKY hacen falta al menos 5 runs de historial: con menos, se anota "INSUFFICIENT HISTORY" y para el gate cuenta como REGRESSION (falla cerrado); se reevalúa en el próximo run. El porcentaje de fallo se calcula sobre una ventana más ancha, los últimos N = min(10, disponibles) runs: 5 es el piso para tener señal, 10 es la ventana. R1: jamás FLAKY sin citar el historial de al menos 5 runs.</div>
   </section>
 
   <!-- 11. FASE 2 · CATEGORÍA → ACCIÓN -->
@@ -738,14 +739,14 @@ table.tbl .mono{font-size:13px}
     <p class="kicker">fase 2 · analyze — de la etiqueta a la acción</p>
     <h2 class="h2">Solo dos categorías pueden llegar a Jira</h2>
     <table class="tbl mt-m">
-      <thead><tr><th>Categoría</th><th>Impacto</th><th>Acción</th><th>¿Issue en Jira?</th></tr></thead>
+      <thead><tr><th>Categoría</th><th>Impacto</th><th>Acción</th><th>¿Issue en Jira?</th><th>Evidencia que debe citar</th></tr></thead>
       <tbody>
-        <tr><td><b>KNOWN-BLOCKED</b></td><td><span class="tag bl">LOW</span></td><td>Excluir del gating, listar con su <span class="mono">{BUG-KEY}</span></td><td>No — el marker ya nombra el bug abierto</td></tr>
-        <tr><td><b>REGRESSION</b></td><td><span class="tag no">HIGH</span></td><td>Bloquea el release, archivar y asignar</td><td><b>Sí</b> — Bug/Defect (Fase 3)</td></tr>
-        <tr><td><b>FLAKY</b></td><td><span class="tag wr">MEDIUM</span></td><td>Agendar estabilización, no bloquea</td><td>No</td></tr>
-        <tr><td><b>KNOWN ISSUE</b></td><td><span class="tag bl">LOW</span></td><td>Documentar contra el ticket existente</td><td>No</td></tr>
-        <tr><td><b>ENVIRONMENT</b></td><td><span class="tag wr">MEDIUM</span></td><td>Re-run tras revisar la infra</td><td>No</td></tr>
-        <tr><td><b>NEW TEST</b></td><td><span class="tag bl">LOW</span></td><td>Verificación manual primero</td><td>Solo si se confirma defecto real</td></tr>
+        <tr><td><b>KNOWN-BLOCKED</b></td><td><span class="tag bl">LOW</span></td><td>Excluir del gating, listar con su <span class="mono">{BUG-KEY}</span></td><td>No — el marker ya nombra el bug abierto</td><td>El tag <span class="mono">@blocked:{BUG-KEY}</span> del spec y su bug key</td></tr>
+        <tr><td><b>REGRESSION</b></td><td><span class="tag no">HIGH</span></td><td>Bloquea el release, archivar y asignar</td><td><b>Sí</b> — Bug/Defect (Fase 3)</td><td>Ninguna: es el valor por defecto</td></tr>
+        <tr><td><b>FLAKY</b></td><td><span class="tag wr">MEDIUM</span></td><td>Agendar estabilización, no bloquea</td><td>No</td><td>Ids y resultados de al menos 5 runs sobre el mismo build</td></tr>
+        <tr><td><b>KNOWN ISSUE</b></td><td><span class="tag bl">LOW</span></td><td>Documentar contra el ticket existente</td><td>No</td><td>La key de un ticket creado antes del run que nombre el test</td></tr>
+        <tr><td><b>ENVIRONMENT</b></td><td><span class="tag wr">MEDIUM</span></td><td>Re-run tras revisar la infra</td><td>No</td><td>La línea de log que coincide con el patrón, más los otros tests caídos en el mismo host</td></tr>
+        <tr><td><b>NEW TEST</b></td><td><span class="tag bl">LOW</span></td><td>Verificación manual primero</td><td>Solo si se confirma defecto real</td><td>La consulta de historial (Allure, runs del TMS) que volvió vacía</td></tr>
       </tbody>
     </table>
     <div class="cards c2 mt-m">
@@ -797,7 +798,7 @@ table.tbl .mono{font-size:13px}
 
   <!-- 13. FASE 3 · SCORE + VEREDICTO -->
   <section class="slide" data-title="Fase 3 · Score y veredicto">
-    <p class="kicker">fase 3 · report &amp; decide — el score de 9 puntos</p>
+    <p class="kicker">fase 3 · report &amp; decide — el score de 10 puntos</p>
     <h2 class="h2">Un score guía; tres vetos mandan</h2>
     <table class="tbl mt-s">
       <thead><tr><th>Factor</th><th>+3</th><th>+1</th><th>0</th><th>−1</th><th>−2</th><th>−3</th></tr></thead>
@@ -861,7 +862,7 @@ table.tbl .mono{font-size:13px}
         </div>
         <div class="term">
           <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">.context/reports/regression-{env}-{date}.md · [LOCAL]</span></div>
-<pre><span class="okc">## Executive Summary</span>   Verdict + score/9 + 1 línea
+<pre><span class="okc">## Executive Summary</span>   Verdict + score/10 + 1 línea
 <span class="okc">## Release Blockers</span>    si NO-GO: regressions + owner + ETA
 <span class="okc">## Failure Details</span>     Regressions → Flaky → Known → Blocked → Env
 <span class="okc">## Trend</span> · <span class="okc">## Links</span> (RTR key) · <span class="okc">## Recommendations</span></pre>

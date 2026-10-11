@@ -571,17 +571,19 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <section class="slide compact" data-title="LOAD PROTOCOL">
     <p class="kicker">04 · Protocolo · 5 de 14</p>
     <h2 class="h2">El <span class="grad">LOAD PROTOCOL</span></h2>
-    <p class="small dim mt-s">Un párrafo al principio de L0 convierte el router en obligación. Son seis frases; sin ellas, la tabla sería una sugerencia.</p>
+    <p class="small dim mt-s">Un párrafo al principio de L0 convierte el router en obligación. Sin sus frases, la tabla sería una sugerencia.</p>
     <ol class="steps mt-m">
       <li><b>Antes de actuar</b>, el pedido se compara contra el router y se lee cada archivo de sección que coincide y todavía no está en la conversación.</li>
-      <li><b>Una línea <code>ROUTE:</code></b> que inyecta el hook es obligatoria y gana sobre el criterio propio del modelo.</li>
+      <li><b>Una línea <code>ROUTE:</code></b> que inyecta el hook es obligatoria y gana sobre el criterio propio del modelo: se lee su archivo antes de actuar.</li>
+      <li><b>Una línea <code>ROUTE-OPTIONAL:</code></b> no obliga: se lee uno de sus archivos solo si la tarea lo pide.</li>
+      <li><b>Una línea <code>ROUTE-PENDING:</code></b> nombra un archivo obligatorio que sigue sin leerse: se lee antes del paso siguiente.</li>
       <li><b>Una sección ya leída no se relee</b>, salvo que una compactación o un <code>/clear</code> la haya sacado del contexto.</li>
       <li><b>Ante la duda, se lee.</b> Una sección salteada es justo la falla que este diseño evita.</li>
       <li><b>Una sección obliga</b> exactamente igual que <code>AGENTS.md</code>.</li>
       <li><b>Una cita <code>§N</code></b>, en cualquier lado, nombra el heading numerado que se conserva textual en el archivo que el router lista para ella.</li>
     </ol>
     <p class="small dim mt-m">La regla de edición (editar la sección dueña, nunca pegar su prosa de vuelta en <code>AGENTS.md</code>) no es parte del protocolo: vive en la cabecera de <code>AGENTS.md</code> y en "Editing rules" de <code>.agents/instructions/README.md</code>.</p>
-    <div class="notes">Las seis frases son textuales del LOAD PROTOCOL de AGENTS.md, traducidas. La quinta es la que hace que leer a pedido no debilite nada. La sexta es la que mantiene vivas las citas viejas: §11 sigue apuntando a git porque la columna Was del router dice dónde quedó.</div>
+    <div class="notes">Las frases son textuales del LOAD PROTOCOL de AGENTS.md, traducidas. La que dice que una sección obliga igual que AGENTS.md hace que leer a pedido no debilite nada. La de la cita §N mantiene vivas las citas viejas: §11 sigue apuntando a git porque la columna Was del router dice dónde quedó.</div>
   </section>
 
   <!-- 6. HOOK -->
@@ -609,13 +611,15 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
           <text class="t-s" x="246" y="178">lo ya ruteado no se repite</text>
           <path class="ln" d="M355 104V132" marker-end="url(#pd-a2)"/>
         </svg>
-        <div class="hookline"><span class="c"># después de AGENT IDENTITY:, y de ORCA: si el binario está</span>
-<span class="k">ROUTE: read</span> .agents/instructions/agent-git.md (git)
-<span class="k">ROUTE: read</span> package.json</div>
+        <div class="hookline"><span class="c"># una línea por archivo nuevo, después de AGENT IDENTITY:, y de ORCA: si el binario está</span>
+<span class="k">ROUTE: read</span> .agents/instructions/agent-git.md (git, &lt;n&gt; lines) before acting on this prompt
+<span class="k">ROUTE: read</span> package.json (&lt;n&gt; lines) before acting on this prompt
+<span class="c"># lo que pasó el tope, en una sola línea que no obliga</span>
+<span class="k">ROUTE-OPTIONAL:</span> the prompt also touches .agents/instructions/agent-harnesses.md (harnesses); read one only if the task needs it.</div>
         <table class="tt tight">
           <tr><th style="width:120px">Host</th><th>Cómo llega la línea</th></tr>
-          <tr><td class="small"><b>Claude Code</b></td><td class="small"><code>UserPromptSubmit</code> corre el emisor; <code>SessionStart</code> <code>compact</code> o <code>clear</code> lo re-arma.</td></tr>
-          <tr><td class="small"><b>Codex</b></td><td class="small">Lo mismo, y solo en un repositorio de confianza.</td></tr>
+          <tr><td class="small"><b>Claude Code</b></td><td class="small"><code>UserPromptSubmit</code> corre el emisor; <code>SessionStart</code> <code>compact</code> o <code>clear</code> lo re-arma; <code>PostToolUse</code> sin matcher recuerda una ruta sin leer.</td></tr>
+          <tr><td class="small"><b>Codex</b></td><td class="small">Lo mismo salvo el recordatorio, y solo en un repositorio de confianza.</td></tr>
           <tr><td class="small"><b>OpenCode 1</b></td><td class="small"><code>chat.message</code> clasifica, la system transform empuja las líneas, <code>session.compacting</code> re-arma.</td></tr>
           <tr><td class="small"><b>OpenCode 2</b></td><td class="small">Solo router: ningún hook le pasa el pedido. Degradación declarada.</td></tr>
         </table>
@@ -624,6 +628,9 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <tr><th style="width:130px">Regla</th><th>Qué hace</th></tr>
         <tr><td class="small"><b>Ancla</b></td><td class="small">Una fila se dispara cuando el pedido coincide con su primer archivo de <code>Read</code>, y entonces se rutean todos los de la fila. Así un archivo que comparten dos filas no arrastra los de la otra.</td></tr>
         <tr><td class="small"><b>Disparadores</b></td><td class="small">Cada sección declara en su frontmatter <code>triggers:</code> (regex sin distinguir mayúsculas, en inglés y en español) y <code>paths:</code> (rutas del repo que el pedido nombra). Un import que ancla solo su fila (<code>@package.json</code>) usa <code>IMPORT_ROW_TRIGGERS</code> del emisor. Ajustar el ruteo es editar esas listas, nunca L0.</td></tr>
+        <tr><td class="small"><b>Alcance</b></td><td class="small">Una línea <code>ROUTE-SCOPE:</code> en el pedido reemplaza al pedido para clasificar: cada ítem es un <code>id</code> de sección (se rutea directo) o palabras (se clasifican); <code>none</code> no rutea nada. Sin ella, un pedido con el preámbulo de un orquestador se clasifica solo por el bloque de tarea que sigue a su marcador.</td></tr>
+        <tr><td class="small"><b>Ranking y tope</b></td><td class="small">Las filas disparadas se ordenan por la fuerza de su ancla. Solo las primeras <code>MAX_ROUTED_SECTIONS</code> reciben un <code>ROUTE:</code> obligatorio; el resto va a una sola línea <code>ROUTE-OPTIONAL:</code> que no se registra como ruteada. Un agente lee una ruta sola mucho más que una de cinco en el mismo turno (ADR-0017).</td></tr>
+        <tr><td class="small"><b>Recordatorio</b></td><td class="small">La primera herramienta del turno que no lee ninguna sección ruteada, mientras alguna sigue sin leerse, recibe UNA línea <code>ROUTE-PENDING:</code>. No se repite en el turno y calla para los subagentes.</td></tr>
         <tr><td class="small"><b>Dedupe por sesión</b></td><td class="small">Un JSON por checkout y por sesión, en <code>agentic-instruction-routes/</code> bajo el temp del sistema, recuerda qué se ruteó. Un pedido que no necesita nada nuevo no agrega nada.</td></tr>
         <tr><td class="small"><b>Re-armado</b></td><td class="small">Tras una compactación o un <code>/clear</code>, el emisor borra ese estado y no imprime nada: lo que salió del contexto se vuelve a rutear la próxima vez que haga falta.</td></tr>
       </table>
@@ -690,7 +697,7 @@ whenever any of these apply, read <span class="k">@package.json</span> first, ne
       <div class="card"><p class="lbl">§12</p><h4 class="h4 mt-s">Los disparadores de memoria</h4><p class="small mt-s">Cuándo guardar en Engram, el resumen de cierre obligatorio y cómo buscar con palabras clave.</p></div>
     </div>
     <div class="grid g2 mt-m" style="gap:20px;align-items:stretch">
-      <div class="card card-accent"><p class="lbl">§2 · entero</p><h4 class="h4 mt-s">La capa comportamental</h4><p class="small mt-s">El reparto de capas (§2, OUTPUT STYLE), Think before coding, Simplicity first, Surgical changes, Goal-driven execution, Butler, cómo se le pide al humano que decida, PM Voice y Visual Mapping.</p></div>
+      <div class="card card-accent"><p class="lbl">§2 · entero</p><h4 class="h4 mt-s">La capa comportamental</h4><p class="small mt-s">Todo lo que §2 de <code>AGENTS.md</code> fija sobre cómo razona el agente y qué dice. Qué bloques tiene lo dice §2, no este slide.</p></div>
       <div class="card"><p class="lbl">§3 · núcleo</p><h4 class="h4 mt-s">La orquestación</h4><p class="small mt-s">Qué va a subagentes y qué queda en la conversación principal, el briefing de siete componentes, la alcanzabilidad de las reglas y el protocolo de error. Gobierna cada despacho, sea cual sea el pedido.</p></div>
     </div>
     <div class="notes">El detalle de orquestación que no es núcleo (executors, workers, gates) está en agent-orchestration-detail.md. §2 entero es la razón de que L0 pueda pasar el objetivo de 16 KiB (ADR-0009): se ve en el slide de presupuestos. Su espejo para humanos es docs/core/personalidad.html.</div>
@@ -713,7 +720,7 @@ whenever any of these apply, read <span class="k">@package.json</span> first, ne
     </table>
     <div class="card card-accent mt-m">
       <p class="lbl">Gate</p>
-      <p class="small mt-s"><b><code>bun run instructions:check</code></b> revisa presupuesto, stub, router, frontmatter, triggers que compilan, frases de las reglas y que cada NEVER o MUST sea alcanzable. Además sostiene tres candados (ADR-0013): el ROUTER bloqueado detrás de un ADR, el eval del router con pisos de recall y precisión en cada corrida, y que una sección nueva llegue completa. Corre dentro de <code>bun run repo:check</code>. La guía completa está en <code>.agents/instructions/README.md</code>.</p>
+      <p class="small mt-s"><b><code>bun run instructions:check</code></b> revisa presupuesto, stub, router, frontmatter, triggers que compilan, frases de las reglas y que cada NEVER o MUST sea alcanzable. Además sostiene tres candados (ADR-0013): el ROUTER bloqueado detrás de un ADR, el eval del router con pisos de recall, de recall en las líneas obligatorias y de precisión en cada corrida, y que una sección nueva llegue completa. Corre dentro de <code>bun run repo:check</code>. La guía completa está en <code>.agents/instructions/README.md</code>.</p>
     </div>
     <div class="notes">La regla de oro está en la cabecera de AGENTS.md y en "Editing rules" del README de instrucciones. Lo de CLAUDE.md sale de agent-harnesses.md, GENERATED vs VERSIONED: se edita la fuente y se regenera, y agents:compat:check falla si alguien le escribe prosa.</div>
   </section>
@@ -744,11 +751,11 @@ whenever any of these apply, read <span class="k">@package.json</span> first, ne
     <p class="small dim mt-s">Dos preguntas distintas: si el clasificador rutea lo que tiene que rutear, y si el modelo después lee lo que le rutearon.</p>
     <table class="tt tight mt-m">
       <tr><th style="width:290px">Qué se mide</th><th>Dónde</th></tr>
-      <tr><td class="small"><b>Recall y precisión del clasificador</b></td><td class="small">Pedidos etiquetados a mano, en inglés y en español y con vocabulario de QA (shift-left, ATP y ATR, Xray, KATA, regresión, caché del PBI, handoff, flotas, <code>{{VAR}}</code>), en <code>cli/lib/fixtures/instruction-router-eval.json</code>. Lo puntúa <code>bun run instructions:check</code> en cada corrida contra su campo <code>targets</code>, que nunca baja de los pisos de <code>scripts/lib/router-eval.ts</code>.</td></tr>
+      <tr><td class="small"><b>Recall y precisión del clasificador</b></td><td class="small">Pedidos etiquetados a mano, en inglés y en español y con vocabulario de QA (shift-left, ATP y ATR, Xray, KATA, regresión, caché del PBI, handoff, flotas, <code>{{VAR}}</code>), en <code>cli/lib/fixtures/instruction-router-eval.json</code>. Lo puntúa <code>bun run instructions:check</code> en cada corrida contra su campo <code>targets</code>, que nunca baja de los pisos de <code>scripts/lib/router-eval.ts</code> (recall, recall en las líneas obligatorias y precisión).</td></tr>
       <tr><td class="small"><b>Que no tarde</b></td><td class="small"><code>cli/lib/instruction-router.test.ts</code> exige que rutear un pedido quede muy por debajo de 50 ms</td></tr>
       <tr><td class="small"><b>Que hook y lint lean igual</b></td><td class="small"><code>scripts/lib/hook-router-parity.test.ts</code> ata el parser del hook al de <code>scripts/lib/instructions.ts</code></td></tr>
       <tr><td class="small"><b>Que el hook real responda</b></td><td class="small">el test lanza el proceso del emisor con un pedido de git y espera su línea <code>ROUTE:</code></td></tr>
-      <tr><td class="small"><b>Que el modelo obedezca</b></td><td class="small"><code>bun run instructions:audit</code>: de las líneas <code>ROUTE:</code> inyectadas, cuántas leyó el agente en el mismo turno, medido sobre las transcripciones locales de Claude Code (solo nombres y conteos). Los resultados están en ADR-0013.</td></tr>
+      <tr><td class="small"><b>Que el modelo obedezca</b></td><td class="small"><code>bun run instructions:audit</code>: de las líneas <code>ROUTE:</code> inyectadas, cuántas leyó el agente en el mismo turno y cuántas lecturas siguieron a un recordatorio <code>ROUTE-PENDING:</code>, medido sobre las transcripciones locales de Claude Code (solo nombres y conteos). Los resultados están en ADR-0013.</td></tr>
     </table>
     <div class="card card-accent mt-m">
       <p class="lbl">Si falla</p>

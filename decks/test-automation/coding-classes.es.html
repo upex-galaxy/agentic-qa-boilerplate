@@ -1003,8 +1003,8 @@ test("login con Page Object", async ({ page }) => {
     <div class="arrow">↓ consumida por</div>
     <div class="consumer">loginUser.test.ts <span class="ly-note">consume el Fixture: no es una capa</span></div>
   </div>
-  <div class="callout" data-anim="fade-up" style="max-width:720px;margin:1.4rem auto 0"><span class="co-ico">🗺️</span><p>Las <b>cuatro capas</b> (TestContext → UiBase → LoginPage → TestFixture) son clases encadenadas por la herencia que acabas de dominar; el spec solo <b>consume</b> el Fixture, no es una capa más. Tu LoginPage de esta sesión es el corazón del framework profesional.</p></div>
-  <div class="notes"><p>Teaser, NO lección: no expliques cada capa — solo muestra que la estrella verde (la Page que construyeron EN ESTA SESIÓN) es el centro del framework, y que el resto son las mismas dos herramientas de esta sesión (extends + fixtures/destructuring) aplicadas con más capas. El miedo a la arquitectura muere cuando reconocen las piezas. Próximos pasos del roadmap: práctica real con Playwright contra el dojo, luego el puente KATA completo.</p></div>
+  <div class="callout" data-anim="fade-up" style="max-width:720px;margin:1.4rem auto 0"><span class="co-ico">🗺️</span><p>Las <b>cuatro capas</b> son clases: TestContext, UiBase y LoginPage se encadenan con la herencia (<code class="pill">extends</code>) que acabas de dominar, y el TestFixture las expone ya instanciadas (por ejemplo <code class="pill">ui.login</code>). El spec solo <b>consume</b> el Fixture, no es una capa más. Tu LoginPage de esta sesión es el corazón del framework profesional.</p></div>
+  <div class="notes"><p>Teaser, NO lección: no expliques cada capa — solo muestra que la estrella verde (la Page que construyeron EN ESTA SESIÓN) es el centro del framework, y que el resto son las mismas dos herramientas de esta sesión (extends + fixtures/destructuring) aplicadas con más capas. El miedo a la arquitectura muere cuando reconocen las piezas. Próximos pasos del roadmap, en el orden del catálogo: Dev Craft (terminal, Git y primer PR), Playwright Pro, Dojo Lab I (Playwright real contra el dojo) y luego el puente KATA completo.</p></div>
 </section>
 
 <!-- 29 · Cierre -->
@@ -1014,12 +1014,12 @@ test("login con Page Object", async ({ page }) => {
   <div id="final-score" data-anim="pop">— / 6</div>
   <p id="final-msg" data-anim="fade-up" style="animation-delay:.25s;max-width:560px"></p>
   <div class="cards c3" data-stagger style="margin-top:1.6rem;max-width:1000px">
-    <div class="card"><div class="ico">🏠</div><h3>Re-practica en casa</h3><p>Este archivo funciona offline: re-juega los 4 playgrounds y los retos.</p></div>
+    <div class="card"><div class="ico">🏠</div><h3>Re-practica en casa</h3><p>Este archivo funciona offline: re-juega los playgrounds y los retos.</p></div>
     <div class="card"><div class="ico">🧪</div><h3>Reto puente</h3><p>Escribe un <code class="pill">SignupPage</code> imaginario en papel: ¿qué métodos tendría? ¿qué selectores guardaría?</p></div>
-    <div class="card hl"><div class="ico">🥷</div><h3>Próxima sesión</h3><p>Playwright real contra <b>UPEX Dojo</b>: instalas el kit y tus Page Objects controlan un navegador DE VERDAD. 🚀</p></div>
+    <div class="card hl"><div class="ico">🥷</div><h3>Próxima sesión</h3><p><b>Dev Craft</b>: terminal, Git y tu primer Pull Request, para que tu código viva en un repo de equipo. Después, Playwright Pro y Dojo Lab I. 🚀</p></div>
   </div>
   <p data-anim="fade-up" style="animation-delay:.5s;margin-top:1.4rem;color:var(--text-3);font-size:.95rem">Esta sesión: JS moderno → map/filter/find → clases → this → herencia → <b style="color:var(--text-2)">tu primer Page Object</b>. El gap más grande del camino: cerrado.</p>
-  <div class="notes"><p>Celebra el score y nombra el logro exacto: en esta sesión cruzaron la frontera entre "escribir scripts" y "construir arquitectura". El reto puente (SignupPage en papel) consolida sin computadora. Anuncia la sesión Dojo Lab: misma LoginPage, navegador real, app real (dojo.upexgalaxy.com). Comparte el archivo HTML.</p></div>
+  <div class="notes"><p>Celebra el score y nombra el logro exacto: en esta sesión cruzaron la frontera entre "escribir scripts" y "construir arquitectura". El reto puente (SignupPage en papel) consolida sin computadora. Anuncia la sesión Dev Craft (terminal, Git y tu primer Pull Request); más adelante, en Dojo Lab I, la misma LoginPage corre en navegador real contra una app real (dojo.upexgalaxy.com). Comparte el archivo HTML.</p></div>
 </section>
 
 <script>

@@ -234,7 +234,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
       <span class="pill">7 misiones 🎯</span><span class="pill">codegen</span><span class="pill">UI mode</span><span class="pill">trace viewer</span><span class="pill">dojo.upexgalaxy.com</span>
     </div>
   </div>
-  <div class="notes"><p>Sesión 3 de la serie, formato LAB: ellos trabajan, tú guías. Prerrequisitos: Coding Base + Coding Classes vistos, laptop con permisos de instalación, internet. Ritmo sugerido: misiones 1-2 todos juntos (setup es donde más se atascan), 3-5 guiadas, 6-7 semi-libres con apoyo. Duración realista: 2-3 horas con pausas.</p></div>
+  <div class="notes"><p>Sesión 5 de la serie, formato LAB: ellos trabajan, tú guías. Prerrequisitos: Coding Base + Coding Classes vistos, laptop con permisos de instalación, internet. Ritmo sugerido: misiones 1-2 todos juntos (setup es donde más se atascan), 3-5 guiadas, 6-7 semi-libres con apoyo. Duración realista: 2-3 horas con pausas.</p></div>
 </section>
 
 <!-- 2 · Cómo funciona el lab -->
@@ -371,7 +371,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
       <p style="margin-top:.8rem;font-size:.95rem">Inventario de lo que reconoces: <code class="pill">import</code> ✓ <code class="pill">test()</code> ✓ <code class="pill">async ({ page })</code> ✓ <code class="pill">await</code> ✓ <code class="pill">expect</code> ✓ — <b>cero sorpresas</b>. Las dos sesiones anteriores fueron exactamente para este momento.</p>
     </div>
   </div>
-  <div class="notes"><p>Momento de cosecha: el árbol es el de la slide «Zoom final» de Coding Base y el spec se lee completo con lo aprendido. Pide a alguien que LEA el example.spec.ts en voz alta explicando cada línea — validación pública de que las bases están. Menciona playwright.config.ts sin profundizar: "ahí viven los 3 browsers del 6 passed; lo exploramos en Playwright Pro".</p></div>
+  <div class="notes"><p>Momento de cosecha: el árbol es el de la slide «Zoom final» de Coding Base y el spec se lee completo con lo aprendido. Pide a alguien que LEA el example.spec.ts en voz alta explicando cada línea — validación pública de que las bases están. Menciona playwright.config.ts sin profundizar: "ahí viven los 3 browsers del 6 passed; se profundiza en Playwright Pro".</p></div>
 </section>
 
 <!-- ================================================================ -->
@@ -626,9 +626,9 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
       <button class="opt"><span class="key">B</span><span>Borrar ese test, total los otros 14 pasan</span></button>
       <button class="opt" data-ok="1"><span class="key">C</span><span>Algo cambió fuera del código: la app, los datos, el timing — abrir el trace y comparar contra la corrida verde</span></button>
     </div>
-    <div class="quiz-expl">💡 Test que falla sin cambios de código = señal de que algo SÍ cambió en otra parte: deploy de la app, datos de prueba consumidos (¿tu registro reusó un email?), timing de red. El trace te dice cuál. Si va y viene sin causa, se llama <b>flaky</b> — y diagnosticarlos es una habilidad estrella del QA Engineer (la entrenarás en Playwright Pro).</div>
+    <div class="quiz-expl">💡 Test que falla sin cambios de código = señal de que algo SÍ cambió en otra parte: deploy de la app, datos de prueba consumidos (¿tu registro reusó un email?), timing de red. El trace te dice cuál. Si va y viene sin causa, se llama <b>flaky</b> — y diagnosticarlos es una habilidad estrella del QA Engineer (se profundiza en Playwright Pro).</div>
   </div>
-  <div class="notes"><p>Mentalidad final del lab: el rojo intermitente no se ignora ni se borra — se diagnostica con evidencia (trace). La opción B es la tentación real en equipos con prisa: tests borrados = cobertura perdida en silencio. Anticipa que Playwright Pro ataca flakiness de frente con hooks y datos aislados.</p></div>
+  <div class="notes"><p>Mentalidad final del lab: el rojo intermitente no se ignora ni se borra — se diagnostica con evidencia (trace). La opción B es la tentación real en equipos con prisa: tests borrados = cobertura perdida en silencio. Recuerda que Playwright Pro ataca flakiness de frente con hooks y datos aislados.</p></div>
 </section>
 
 <!-- 17 · Cierre -->
@@ -640,9 +640,9 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
   <div class="cards c3" data-stagger style="margin-top:1.2rem;max-width:1000px">
     <div class="card"><div class="ico">🏠</div><h3>Tarea</h3><p>Termina las misiones pendientes — tu progreso quedó guardado en este archivo.</p></div>
     <div class="card"><div class="ico">➕</div><h3>Reto extra</h3><p>Spec de logout + spec del kanban del dashboard (drag & drop: investígalo).</p></div>
-    <div class="card hl"><div class="ico">🚀</div><h3>Próxima parada</h3><p><b>Playwright Pro</b>: hooks, fixtures, tu LoginPage (POM) conectada a tests reales, y API testing contra el dojo.</p></div>
+    <div class="card hl"><div class="ico">🚀</div><h3>Próxima parada</h3><p><b>KATA Bridge</b>: del Page Object que ya construiste al framework profesional, con sus capas, ATCs y manifest.</p></div>
   </div>
-  <div class="notes"><p>Lee el tablero de misiones en voz alta y celebra el progreso real (no todos llegan a 7/7 en la sesión — está diseñado así; el archivo persiste su avance). Logro de la sesión en una frase: instalaron su entorno profesional y escribieron su primera suite real multi-browser contra una app de verdad. Recoge atascos comunes para ajustar la próxima sesión. Anuncia Playwright Pro: ahí el Page Object de Coding Classes conoce a Playwright real.</p></div>
+  <div class="notes"><p>Lee el tablero de misiones en voz alta y celebra el progreso real (no todos llegan a 7/7 en la sesión — está diseñado así; el archivo persiste su avance). Logro de la sesión en una frase: instalaron su entorno profesional y escribieron su primera suite real multi-browser contra una app de verdad. Recoge atascos comunes para ajustar la próxima sesión. Anuncia KATA Bridge: ahí el Page Object que ya corre contra Playwright real se encuentra con el framework profesional.</p></div>
 </section>
 
 <script>
