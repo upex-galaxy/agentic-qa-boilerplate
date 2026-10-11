@@ -586,7 +586,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="stack" style="gap:14px">
         <div class="card card-accent"><p class="lbl">Solo QA</p><p class="small mt-s">El repo trae skills, scripts y convenciones para llevar un ticket de Jira a casos documentados y cobertura automatizada. La app bajo prueba <b>no</b> vive acá: está en otro repo, configurado en <span class="mono">.agents/project.yaml</span>.</p></div>
         <div class="card" style="border-color:var(--warn)"><p class="lbl" style="color:var(--warn)">El stack no se cambia</p><p class="small mt-s">KATA es específico de Playwright. Si tu proyecto necesita Cypress o Robot Framework, este boilerplate no es el punto de partida, y la skill no te va a sugerir cambiarlo.</p></div>
-        <div class="card card-soft"><p class="lbl">Primer paso</p><p class="small mt-s"><span class="mono">bun run setup</span>, completar <span class="mono">.env</span> y reiniciar la sesión del agente: los MCP leen <span class="mono">.env</span> al arrancar. El chequeo de salud es <span class="mono">bun run setup:doctor</span>.</p></div>
+        <div class="card card-soft"><p class="lbl">Primer paso</p><p class="small mt-s"><span class="mono">bun setup</span>, completar <span class="mono">.env</span> y reiniciar la sesión del agente: los MCP leen <span class="mono">.env</span> al arrancar. El chequeo de salud es <span class="mono">bun run setup:doctor</span>.</p></div>
       </div>
     </div>
     <div class="notes">Fuente: secciones "Welcome", "Stack" y "First-time setup" del SKILL.md, más su Compact Rule de no sugerir otro stack. El detalle de lo que instala setup está en INSTALLER.md.</div>
@@ -595,7 +595,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <!-- 7. PROYECTO NUEVO -->
   <section class="slide compact" data-title="Proyecto nuevo">
     <p class="kicker">Proyecto nuevo · 7 de 14</p>
-    <h2 class="h2"><span class="mono" style="font-size:.8em">bun run setup</span> es la <span class="grad">fase 1</span>, no todo</h2>
+    <h2 class="h2"><span class="mono" style="font-size:.8em">bun setup</span> es la <span class="grad">fase 1</span>, no todo</h2>
     <div class="wf-row mt-m">
       <div class="wf-node"><p class="n">Fase 1 · Base</p><p class="t">Herramientas en verde</p><p class="c">setup → .env → reinicio → agents:setup → pw:install → jira:check</p></div>
       <span class="wf-arr">→</span>
@@ -713,7 +713,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="grid g2 mt-m" style="gap:22px;align-items:start">
       <div class="card">
         <ul class="big" style="font-size:18px;line-height:1.75;list-style:'☐  '">
-          <li><span class="mono">bun run setup</span> corrido</li>
+          <li><span class="mono">bun setup</span> corrido</li>
           <li><span class="mono">.env</span> con lo que tu trabajo necesita, y web search conectado a nivel harness</li>
           <li>Sesión del agente reiniciada después de completar <span class="mono">.env</span></li>
           <li><span class="mono">.agents/project.yaml</span> poblado (<span class="mono">bun run agents:setup</span>)</li>

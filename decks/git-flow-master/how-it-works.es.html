@@ -892,7 +892,7 @@ $ bun run git:policy apply --yes      # escribe el ruleset
       </div>
       <div class="stack" style="gap:12px">
         <div class="card card-accent"><p class="lbl">La auditoría clasifica</p><p class="small mt-s"><b>STATE</b> va al principal (<span class="mono">--rescue</span> copia sin pisar) · <b>CACHE</b> vuelve con el comando que nombra · <b>DISPOSABLE</b> se pierde sin culpa · <b>UNKNOWN</b> se decide a mano. Exit 1 mientras quede STATE o UNKNOWN solo en el worktree.</p></div>
-        <div class="card"><p class="lbl" style="color:var(--warn)">El updater se niega</p><p class="small mt-s"><span class="mono">bun run up</span> guarda backups, marcadores y prompts dentro del checkout: en un worktree aborta y pide correrlo en el principal.</p></div>
+        <div class="card"><p class="lbl" style="color:var(--warn)">El updater se niega</p><p class="small mt-s"><span class="mono">bun sync</span> guarda backups, marcadores y prompts dentro del checkout: en un worktree aborta y pide correrlo en el principal.</p></div>
       </div>
     </div>
     <div class="notes">Un worktree removido con git worktree remove borra lo ignorado sin avisar, y la CLI de Orca saltea los archive hooks salvo con --run-hooks. Por eso la auditoría va antes de cualquier baja. Doctrina de provisioning: orca-orchestration/references/provisioning.md.</div>

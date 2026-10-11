@@ -233,7 +233,7 @@ bun run worktree:audit --json             # para que lo lea un agente</code></pr
 
       <h2 id="updater">El updater corre solo en el checkout principal</h2>
       <p>
-        <code>bun run up</code> guarda dentro del checkout los backups que usa
+        <code>bun sync</code> guarda dentro del checkout los backups que usa
         <code>--rollback</code>, sus marcadores y los prompts de paridad. En un worktree todo eso se
         perdería al borrarlo, y la siguiente corrida en el principal no vería nada. Por eso, en un
         worktree, el updater se niega, te dice la ruta del checkout principal y sale sin tocar nada.

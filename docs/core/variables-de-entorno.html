@@ -147,7 +147,7 @@
               <td><code>.env.core.schema</code></td>
               <td>
                 Generado desde el manifest con <code>bun run vars:schema</code>; lo sincroniza
-                <code>bun run up</code>. No se edita a mano.
+                <code>bun sync</code>. No se edita a mano.
               </td>
               <td>
                 Las tres secciones, una por alcance. Lo único que varlock se niega a cargar sin
@@ -407,7 +407,7 @@ bun run vars:schema:check      # el core está al día, todo secreto es @sensiti
       <div class="callout">
         <span class="callout-title">Si tu proyecto declara uno de esos servers</span>
         <p>
-          Los archivos MCP de un proyecto están protegidos: <code>bun run up</code> nunca los
+          Los archivos MCP de un proyecto están protegidos: <code>bun sync</code> nunca los
           sobreescribe. Si todavía declaran un server de la lista del harness, la actualización deja
           una fila de paridad que lo explica, y las dos respuestas son válidas: dejarlo como server
           propio del proyecto, o quitarlo y conectarlo a nivel del harness. El porqué está en
@@ -434,11 +434,11 @@ resend login</code></pre>
       </p>
       <p>
         Si tu <code>.env</code> todavía tiene una clave retirada (la lista es
-        <code>RETIRED_KEYS</code> en <code>cli/lib/env-schema.ts</code>),
-        <code>bun run setup</code> y <code>bun run setup:doctor</code> te ofrecen borrar esas líneas
-        con una sola confirmación, antes de validar. El esquema no las declara, y varlock rechaza
-        una clave no declarada que está vacía. Sin terminal interactiva solo las listan: nunca
-        editan el archivo ni muestran valores.
+        <code>RETIRED_KEYS</code> en <code>cli/lib/env-schema.ts</code>), <code>bun setup</code> y
+        <code>bun run setup:doctor</code> te ofrecen borrar esas líneas con una sola confirmación,
+        antes de validar. El esquema no las declara, y varlock rechaza una clave no declarada que
+        está vacía. Sin terminal interactiva solo las listan: nunca editan el archivo ni muestran
+        valores.
       </p>
 
       <h2 id="doctor">Qué te dice el doctor</h2>
@@ -515,7 +515,7 @@ bun run setup:doctor --json   # env_var_scopes[] y harness_level_mcps para un ag
             <tr>
               <td><code>.env.provider.schema</code></td>
               <td>
-                Lo escribe <code>bun run setup</code> cuando eliges el gestor, y se versiona. Tiene
+                Lo escribe <code>bun setup</code> cuando eliges el gestor, y se versiona. Tiene
                 referencias (<code>op(op://vault/VARIABLE/password)</code>), nunca un valor. Cada
                 línea viene comentada: descomentas las que tu vault tiene.
               </td>
@@ -551,8 +551,8 @@ bun run setup:doctor --json   # env_var_scopes[] y harness_level_mcps para un ag
           huella o contraseña al cargar; no queda ningún token en disco.
         </li>
         <li>
-          Corre <code>bun run setup</code> y elige 1Password. Para un equipo, el vault es uno
-          compartido (<code>&lt;proyecto&gt;-dev</code>); con un plan personal, tu propio vault.
+          Corre <code>bun setup</code> y elige 1Password. Para un equipo, el vault es uno compartido
+          (<code>&lt;proyecto&gt;-dev</code>); con un plan personal, tu propio vault.
         </li>
         <li>
           En el vault, un item de tipo Password por variable, con el NOMBRE de la variable como

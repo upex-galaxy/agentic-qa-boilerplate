@@ -100,7 +100,7 @@
             <desc id="loop-desc">
               Ocho pasos en ciclo. Arriba, en el repo upstream: una fricción en una sesión, la
               propuesta en refinements.md, el OK humano por entrada y la edición de la skill con sus
-              gates. Abajo, de derecha a izquierda: el commit en upstream, bun run up con el reporte
+              gates. Abajo, de derecha a izquierda: el commit en upstream, bun sync con el reporte
               de paridad, el proyecto consumidor y el issue skill-feedback que vuelve al principio.
             </desc>
             <defs>
@@ -214,7 +214,7 @@
                 style="fill: var(--surface); stroke: var(--border-strong)"
               />
               <text x="482" y="226" text-anchor="middle" style="fill: currentColor">
-                6. bun run up
+                6. bun sync
               </text>
               <text x="482" y="246" text-anchor="middle" style="fill: var(--text-2)">
                 sync + reporte de paridad
@@ -325,8 +325,8 @@
 
       <h2 id="propagar">Cómo llega a los proyectos consumidores</h2>
       <p>
-        Un proyecto creado desde este boilerplate recibe las mejoras con <code>bun run up</code>,
-        que ejecuta <code>cli/update-boilerplate.ts</code>. El updater sincroniza por componentes y
+        Un proyecto creado desde este boilerplate recibe las mejoras con <code>bun sync</code>, que
+        ejecuta <code>cli/update-boilerplate.ts</code>. El updater sincroniza por componentes y
         nunca pisa los archivos que son identidad del proyecto: <code>AGENTS.md</code>,
         <code>.agents/instructions/agent-project.md</code>, las configuraciones de MCP de cada
         harness, los hooks de husky, <code>.agents/project.yaml</code> y cualquier ruta que el
@@ -454,8 +454,8 @@
         <span class="callout-title">Lo que más se repite</span>
         <p>
           Editar una skill de upstream dentro de un proyecto consumidor. Funciona hasta el próximo
-          <code>bun run up</code>, que la sobrescribe y deja una copia en <code>.backups/</code>.
-          Abre un issue <code>skill-feedback</code>, o declara la ruta en
+          <code>bun sync</code>, que la sobrescribe y deja una copia en <code>.backups/</code>. Abre
+          un issue <code>skill-feedback</code>, o declara la ruta en
           <code>updater.protected_paths</code> sabiendo que dejas de recibir los arreglos de ese
           archivo.
         </p>

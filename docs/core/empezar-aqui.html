@@ -19,7 +19,7 @@
         <h1>Empezar aquí</h1>
         <p class="lede">
           Cómo instalar el repo, qué hace cada pieza y qué ejecutar en cada momento: desde el primer
-          <code>bun run setup</code> hasta el veredicto de regresión de un release.
+          <code>bun setup</code> hasta el veredicto de regresión de un release.
         </p>
         <div class="meta-row">
           <span class="badge accent">Onboarding</span>
@@ -139,8 +139,8 @@
           <tbody>
             <tr>
               <td><strong>Bun</strong></td>
-              <td>la mínima que exige el preflight de <code>bun run setup</code></td>
-              <td>Bloquea. El preflight de <code>bun run setup</code> sale con código 1.</td>
+              <td>la mínima que exige el preflight de <code>bun setup</code></td>
+              <td>Bloquea. El preflight de <code>bun setup</code> sale con código 1.</td>
             </tr>
             <tr>
               <td><strong>Un agente</strong>: Claude Code, OpenCode o Codex (CLI o Desktop)</td>
@@ -162,13 +162,13 @@
               </td>
               <td>
                 Los hooks ejecutan <code>node .agents/hooks/personality-reinject.mjs</code>. Lo
-                comprueban el doctor del scaffolder y el preflight de <code>bun run setup</code>.
+                comprueban el doctor del scaffolder y el preflight de <code>bun setup</code>.
               </td>
             </tr>
             <tr>
               <td><strong>engram</strong></td>
               <td>
-                la mínima que exige <code>bun run setup</code> (<code>MIN_ENGRAM_VERSION</code> en
+                la mínima que exige <code>bun setup</code> (<code>MIN_ENGRAM_VERSION</code> en
                 <code>cli/install.ts</code>)
               </td>
               <td>
@@ -202,7 +202,7 @@
           <p>
             <code>bunx create-agentic-qa@latest &lt;nombre-del-repo&gt;</code> descarga el último
             <code>main</code> sin historial, renombra el proyecto, hace <code>git init</code>, corre
-            <code>bun install</code> y te pasa a <code>bun run setup</code>.
+            <code>bun install</code> y te pasa a <code>bun setup</code>.
           </p>
         </div>
         <div class="card">
@@ -210,8 +210,8 @@
           <h3>"Use this template"</h3>
           <p>
             Creas el repo desde la web de GitHub, lo clonas y ejecutas
-            <code>bun install</code> y <code>bun run setup</code>. Hereda el historial del
-            boilerplate y el renombrado lo haces a mano.
+            <code>bun install</code> y <code>bun setup</code>. Hereda el historial del boilerplate y
+            el renombrado lo haces a mano.
           </p>
         </div>
         <div class="card">
@@ -231,14 +231,14 @@ cd mi-proyecto-qa
 git clone https://github.com/&lt;tu-org&gt;/&lt;tu-repo&gt;.git
 cd &lt;tu-repo&gt;
 bun install
-bun run setup</code></pre>
+bun setup</code></pre>
       <p>
         Si usas la plantilla de GitHub, renombra el proyecto en
         <code>package.json</code> (<code>name</code>) y en <code>.agents/project.yaml</code>
         (<code>project.project_name</code>).
       </p>
 
-      <h3 id="setup">Qué hace <code>bun run setup</code></h3>
+      <h3 id="setup">Qué hace <code>bun setup</code></h3>
       <p>
         Es idempotente: cada paso guarda una marca en <code>.template/installer.state.json</code> y
         una segunda ejecución salta lo que ya terminó.
@@ -445,7 +445,7 @@ codex      # Codex CLI (Codex Desktop usa la misma config del repo)</code></pre>
       ><code>  una vez por repo           una vez por target              continuo        cuando hay drift
 +-----------------+   +---------------+   +-----------+   +-------------+   +---------------+
 | 0 Bootstrap     |--&gt;| 1 Discovery   |--&gt;| 2 Adapt   |--&gt;| 3 QA diario |&lt;--| 4 Mantenim.   |
-| bun run setup   |   | /project-     |   | /test-    |   | stages IQL  |--&gt;| sync + maps   |
+| bun setup   |   | /project-     |   | /test-    |   | stages IQL  |--&gt;| sync + maps   |
 |                 |   |  discovery    |   | framework-|   | con skill   |   |               |
 |                 |   |               |   | adaptation|   |             |   |               |
 +-----------------+   +---------------+   +-----------+   +-------------+   +---------------+</code></pre>
@@ -462,7 +462,7 @@ codex      # Codex CLI (Codex Desktop usa la misma config del repo)</code></pre>
           <tbody>
             <tr>
               <td><strong>0 · Bootstrap</strong></td>
-              <td><code>bun run setup</code>, luego <code>.env</code> y reiniciar el agente</td>
+              <td><code>bun setup</code>, luego <code>.env</code> y reiniciar el agente</td>
               <td>
                 Dependencias, Engram, skills de la comunidad, MCPs cableados,
                 <code>.agents/project.yaml</code> relleno y los catálogos de Jira
@@ -514,7 +514,7 @@ codex      # Codex CLI (Codex Desktop usa la misma config del repo)</code></pre>
                 regenerados (<code>project-context</code> modos <code>data</code> /
                 <code>e2e</code> / <code>api</code> y <code>test-plan</code>), catálogos de Jira al
                 día (<code>jira:sync-*</code>, <code>jira:check</code>, <code>vars:check</code>) y
-                el framework actualizado con <code>bun run up</code>.
+                el framework actualizado con <code>bun sync</code>.
               </td>
               <td>Cuando aparece el drift. Trátalo como un warning del compilador.</td>
             </tr>
@@ -811,7 +811,7 @@ subagente (contexto limpio)
       <h2 id="engram">Engram: memoria entre sesiones</h2>
       <p>
         Engram es un servidor MCP que guarda memoria estructurada y sobrevive a sesiones y
-        compactaciones. <code>bun run setup</code> lo conecta a cada harness con
+        compactaciones. <code>bun setup</code> lo conecta a cada harness con
         <code>engram setup</code>, a nivel de usuario, fuera del repo. Ese comando registra el
         servidor de memoria y nada más. En Claude Code, además, ofrece instalar el plugin de Engram
         (<code>claude plugin install engram@engram</code>), que trae los hooks de sesión. El
@@ -889,7 +889,7 @@ subagente (contexto limpio)
             </tr>
             <tr>
               <td>Instalar o reparar la instalación</td>
-              <td><code>bun run setup</code></td>
+              <td><code>bun setup</code></td>
             </tr>
             <tr>
               <td>Saber qué falta configurar</td>
@@ -900,7 +900,7 @@ subagente (contexto limpio)
                 Poner credenciales en <code>.env</code> o subirlas a GitHub Actions (al terminar
                 solo te recuerda reiniciar el agente)
               </td>
-              <td><code>bun run setup --variables</code></td>
+              <td><code>bun setup --variables</code></td>
             </tr>
             <tr>
               <td>
@@ -1052,7 +1052,7 @@ subagente (contexto limpio)
             </tr>
             <tr>
               <td>Traer las novedades del boilerplate</td>
-              <td><code>bun run up</code> (en el checkout principal: en un worktree se niega)</td>
+              <td><code>bun sync</code> (en el checkout principal: en un worktree se niega)</td>
             </tr>
             <tr>
               <td>Pasar todos los chequeos del repo</td>
@@ -1069,8 +1069,8 @@ subagente (contexto limpio)
         <code>.agents/instructions/agent-skills-and-mcps.md</code> es otra cosa: el router de frases
         disparadoras que usa el agente para elegir skill, no el inventario. Hay tres tipos: propios
         del repo, vendorizados (como <code>judgment-day</code>, de gentle-ai) y de la comunidad, que
-        instala <code>bun run setup</code> a nivel de proyecto. Además hay skills de usuario (la
-        lista <code>USER_LEVEL_SKILLS</code> de <code>cli/install.ts</code>): el agente carga sin
+        instala <code>bun setup</code> a nivel de proyecto. Además hay skills de usuario (la lista
+        <code>USER_LEVEL_SKILLS</code> de <code>cli/install.ts</code>): el agente carga sin
         preguntar las que una regla del repo o tus propias instrucciones nombran para un momento
         concreto (por ejemplo <code>mkd</code> cuando hay más de tres decisiones) y te pide permiso
         para cualquier otra.
@@ -1128,9 +1128,8 @@ subagente (contexto limpio)
         El resto (onboarding, discovery, adaptación del framework, mapas de contexto, git,
         administración de Jira, orquestación, revisión y los wrappers de CLI) son skills de soporte:
         su fila en <code>.agents/skills/REGISTRY.md</code> dice cuándo se cargan y qué hacen. Las de
-        la comunidad las instala <code>bun run setup</code> (listas
-        <code>PROJECT_LEVEL_SKILLS</code> y <code>USER_LEVEL_SKILLS</code> en
-        <code>cli/install.ts</code>).
+        la comunidad las instala <code>bun setup</code> (listas <code>PROJECT_LEVEL_SKILLS</code> y
+        <code>USER_LEVEL_SKILLS</code> en <code>cli/install.ts</code>).
       </p>
 
       <h2 id="comandos-scripts">Comandos y scripts</h2>
