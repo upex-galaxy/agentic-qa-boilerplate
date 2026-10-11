@@ -618,18 +618,19 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <p class="kicker">El tour · 8 de 14</p>
     <h2 class="h2">Un stage, <span class="grad">una skill</span></h2>
     <table class="tt tight mt-m">
-      <tr><th style="width:10%">Stage</th><th style="width:24%">Skill</th><th style="width:16%">Cuándo</th><th>Qué pasa</th></tr>
-      <tr><td class="small">0</td><td class="small mono">/shift-left-testing</td><td class="small">Antes del sprint, en lote</td><td class="small">Refina ACs de Stories del backlog, marca huecos y escribe temprano el ATP de cada Story</td></tr>
-      <tr><td class="small">1-3</td><td class="small mono">/sprint-testing</td><td class="small">En el sprint, por ticket</td><td class="small">Planning, Execution y Reporting: smoke más exploración UI / API / DB</td></tr>
-      <tr><td class="small">4</td><td class="small mono">/test-documentation</td><td class="small">Después del QA</td><td class="small">Documenta casos en el TMS y los prioriza por ROI (Candidate / Manual / Deferred)</td></tr>
-      <tr><td class="small">5</td><td class="small mono">/test-automation</td><td class="small">Después del sprint</td><td class="small">Tests E2E y de API sobre KATA y Playwright: Plan, Code, Review</td></tr>
-      <tr><td class="small">6</td><td class="small mono">/regression-testing</td><td class="small">Antes del release</td><td class="small">Corre las suites en CI, clasifica fallas y da el veredicto GO / CAUTION / NO-GO</td></tr>
+      <tr><th style="width:16%">Stage</th><th style="width:20%">Skill</th><th style="width:16%">Cuándo</th><th>Qué pasa</th></tr>
+      <tr><td class="small">Shift-Left</td><td class="small mono">/shift-left-testing</td><td class="small">Antes del sprint, en lote</td><td class="small">Refina ACs de Stories del backlog, marca huecos y escribe temprano el ATP de cada Story</td></tr>
+      <tr><td class="small">Planning, Execution, Reporting</td><td class="small mono">/sprint-testing</td><td class="small">En el sprint, por ticket</td><td class="small">Planning, Execution y Reporting: smoke más exploración UI / API / DB</td></tr>
+      <tr><td class="small">Documentation</td><td class="small mono">/test-documentation</td><td class="small">Después del QA</td><td class="small">Documenta casos en el TMS y los prioriza por ROI (Candidate / Manual / Deferred)</td></tr>
+      <tr><td class="small">Automation</td><td class="small mono">/test-automation</td><td class="small">Después del sprint</td><td class="small">Tests E2E y de API sobre KATA y Playwright: Plan, Code, Review</td></tr>
+      <tr><td class="small">Regression</td><td class="small mono">/regression-testing</td><td class="small">Antes del release</td><td class="small">Corre las suites en CI, clasifica fallas y da el veredicto GO / CAUTION / NO-GO</td></tr>
+      <tr><td class="small">Observation</td><td class="small">ninguna</td><td class="small">En producción</td><td class="small">Declarado y vacío: todavía ninguna skill lo cubre</td></tr>
     </table>
     <div class="grid g2 mt-m" style="gap:22px">
       <div class="card" style="border-color:var(--warn)"><p class="lbl" style="color:var(--warn)">Estados de Jira: nunca de memoria</p><p class="small mt-s">La fuente es <span class="mono">.agents/jira-workflows.json</span> (se regenera con <span class="mono">bun run jira:sync-workflows</span>). Si un estado no está ahí, no existe en tu instancia. <span class="mono">/shift-left-testing</span> mueve los estados previos al sprint, <span class="mono">/sprint-testing</span> los de QA, y PO y dev el tramo del medio.</p></div>
       <div class="card card-soft"><p class="lbl">¿Qué ya está cubierto?</p><p class="small mt-s"><span class="mono">bun run tests:map</span> dibuja el árbol Epic → Story → Test sincronizado en una página HTML, con huérfanos y un resumen por componente.</p></div>
     </div>
-    <div class="notes">Fuente: "Primary pipeline" del SKILL.md y su Compact Rule de no recitar estados de Jira de memoria. /sprint-testing orquesta los stages 1 a 3; del 4 en adelante son handoffs explícitos. Si el Stage 0 corrió hace poco, /sprint-testing saltea su propio refinamiento.</div>
+    <div class="notes">Fuente: "Primary pipeline" del SKILL.md y su Compact Rule de no recitar estados de Jira de memoria. Los stages se nombran, nunca se numeran. /sprint-testing orquesta Planning, Execution y Reporting; de Documentation en adelante son handoffs explícitos. /sprint-testing saltea su propio refinamiento solo cuando el ATP publicado de la Story respalda un Shift-Left dentro de la ventana de frescura: la etiqueta sola no alcanza.</div>
   </section>
 
   <!-- 9. ARTEFACTOS -->

@@ -382,10 +382,10 @@ ul.plain b{color:var(--t1)}
         <div class="proc-hd"><span class="pid">P3</span><h3>Handoff a Jira</h3><span class="repo qa">qa</span></div>
         <div class="io deps"><span class="io-k">skills</span><div><span class="chip">references/handoff-protocol.md</span><span class="chip">acli</span><span class="chip">defect-management-doctrine.md</span><span class="chip">traceability-linking.md</span></div></div>
         <div class="io in"><span class="io-k">stdin ←</span><div><code>shift-left-refinement.md</code> · <code>acceptance-criteria.md</code> re-sincronizado</div></div>
-        <div class="io jira"><span class="io-k">jira ⇄</span><div>Campos: <code>{{jira.acceptance_criteria}}</code> · <code>{{jira.acceptance_test_plan}}</code> <b class="hi-warn">field-first en AMBAS modalidades</b> (NO Test Plan item pre-sprint — lo crea sprint-testing Planning desde el field) · sección <b>«QA Refinements (Shift-Left Analysis)»</b> en la description · <code>{{jira.qa_assignee}}</code> <b class="hi-warn">solo si está vacío</b> · Labels: <code>shift-left-reviewed</code> + <code>shift-left-{{YYYY-MM-DD}}</code> · Transiciones: <b>Backlog → Shift-Left QA → Estimation</b> · Comentario: puntero al campo ATP (fallback sin custom field: cuerpo bajo <code>## Acceptance Test Plan (ATP)</code>) · subtask <b>«[QA] Shift-Left Review»</b>: anotaciones exhaustivas de sesión + transición a <b>Done</b></div></div>
+        <div class="io jira"><span class="io-k">jira ⇄</span><div>Campos: <code>{{jira.acceptance_criteria}}</code> · <code>{{jira.acceptance_test_plan}}</code> <b class="hi-warn">field-first en AMBAS modalidades</b> (NO Test Plan item pre-sprint — lo crea sprint-testing Planning desde el field) · sección <b>«QA Refinements (Shift-Left Analysis)»</b> en la description · <code>{{jira.qa_assignee}}</code> <b class="hi-warn">solo si está vacío</b> · Labels: <code>shift-left-reviewed</code> + <code>shift-left-{{YYYY-MM-DD}}</code> · Transiciones: <b>Backlog → Shift-Left QA → Estimation</b> · Comentario: puntero al campo ATP (fallback sin custom field: cuerpo bajo <code>## Acceptance Test Plan (ATP)</code>) · subtask <b>«[QA] Shift-Left Review»</b>: anotaciones exhaustivas de sesión + transición <code>complete</code> a <b>Close</b></div></div>
       </div>
 
-      <div class="exit"><b>loop 2a ⇄ 2b</b> hasta ACs firmes → <b>exit 0</b> → status <b>Ready For Dev</b></div>
+      <div class="exit"><b>loop 2a ⇄ 2b</b> hasta ACs firmes → <b>exit 0</b> → status <b>Estimation</b> (el equipo estima y la pasa a Ready For Dev)</div>
     </article>
 
     <!-- ══════════════════ TAB 3 · FASE 3 ══════════════════ -->
@@ -450,9 +450,9 @@ ul.plain b{color:var(--t1)}
 
       <div class="proc">
         <div class="proc-hd"><span class="pid">S1</span><h3>Planning</h3><span class="repo qa">qa</span></div>
-        <div class="io deps"><span class="io-k">skills</span><div><span class="chip mand">test-design-doctrine.md — MANDATORIO</span><span class="chip mand">defect-management-doctrine.md — MANDATORIO</span><span class="chip">acli / xray-cli</span><span class="chip">shift-left-testing (short-circuit si label &lt;30 días)</span></div></div>
+        <div class="io deps"><span class="io-k">skills</span><div><span class="chip mand">test-design-doctrine.md — MANDATORIO</span><span class="chip mand">defect-management-doctrine.md — MANDATORIO</span><span class="chip">acli / xray-cli</span><span class="chip">shift-left-testing (short-circuit solo con el ATP publicado como evidencia, nunca por las labels solas)</span></div></div>
         <div class="io in"><span class="io-k">stdin ←</span><div><code>story.md</code> · <code>acceptance-criteria.md</code> · <code>acceptance-test-plan.md</code> · <code>comments.md</code> · mapa de dominio (<code>business-domain-context</code>) · <code>master-test-plan.md</code> · campos <code>{{jira.qa_assignee}}</code> · AC · priority · label <code>shift-left-reviewed</code></div></div>
-        <div class="io out"><span class="io-k">stdout →</span><div>Primer ticket del sprint: <b>STP «STP: Sprint#{N}: {objetivo}»</b> find-or-create · orden <b>Set-first</b>: Test Set <b>«ATS: {US}: {título}»</b> → epic <b class="hi-jira">QA Test Artifacts</b> con link <b>ATS→Story</b> (<b class="hi-out">el link de coverage</b>) → Test Plan <b>«ATP: {STORY}: {título}»</b> desde el field del shift-left → epic <b class="hi-jira">QA Master Test Plan</b> → Test Execution <b>«ATR: …»</b> con <code>--environment</code> <b class="hi-warn">siempre</b> (gate: sin environment no hay ATR) · listas de Plan/Exec derivadas de la membership del ATS · triage de riesgo en bugs: <b>0-3 LOW · 4-7 MEDIUM (pregunta) · 8+ HIGH</b></div></div>
+        <div class="io out"><span class="io-k">stdout →</span><div>Primer ticket del sprint: <b>STP «STP: Sprint#{N}: {objetivo}»</b> find-or-create · orden <b>Set-first</b>: Test Set <b>«ATS: {US}: {título}»</b> → epic <b class="hi-jira">QA Test Artifacts</b> con link <b>ATS→Story</b> (<b class="hi-out">el link de coverage</b>) → Test Plan <b>«ATP: {STORY}: {título}»</b> desde el field del shift-left → epic <b class="hi-jira">QA Master Test Plan</b> → Test Execution <b>«ATR: …»</b> con <code>--environment</code> <b class="hi-warn">siempre</b> (gate: sin environment no hay ATR) · listas de Plan/Exec derivadas de la membership del ATS · TCs: en jira-xray crea los <b>Test</b> de los outlines y los ejecuta en el ATR; en jira-native solo outlines (lo decide <code>testing.tc_creation_stage</code>) · triage de riesgo en bugs: <b>0-3 LOW · 4-7 MEDIUM (pregunta) · 8+ HIGH</b></div></div>
         <div class="io note"><span class="io-k">nota</span><div><code>kata-manifest.json</code> se vuelve load-bearing recién en el hand-off de Reporting → test-automation, no en Planning.</div></div>
       </div>
 
@@ -481,7 +481,7 @@ ul.plain b{color:var(--t1)}
 
       <div class="proc">
         <div class="proc-hd"><span class="pid">P0</span><h3>Detección de modalidad</h3><span class="repo qa">qa</span></div>
-        <div class="io in"><span class="io-k">stdin ←</span><div><code>.agents/project.yaml</code> — <code>testing.tms_cli</code> · <code>[ISSUE_TRACKER_TOOL]</code> List issue types</div></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div><code>.agents/project.yaml</code> — <code>testing.tms_cli</code> (candidato) · evidencia: la API de Xray responde vía <code>xray-cli</code>; los work types solos nunca deciden · pregunta solo si ninguna de las dos decide</div></div>
         <div class="io out"><span class="io-k">stdout →</span><div>Decisión de modalidad → carga <code>xray-cli</code> o <code>acli</code> · escrita a <code>plan.md §Inputs</code></div></div>
       </div>
 
@@ -502,7 +502,7 @@ ul.plain b{color:var(--t1)}
         <div class="proc-hd"><span class="pid">P3</span><h3>Document</h3><span class="repo qa">qa</span></div>
         <div class="io deps"><span class="io-k">skills</span><div><span class="chip">acli / xray-cli</span><span class="chip">tms-architecture.md · traceability-linking.md</span></div></div>
         <div class="io in"><span class="io-k">stdin ←</span><div><code>qa.qa_epics.test_repository_epic</code> · <code>jira-required.yaml</code> · <code>jira-fields.json</code> · <code>jira-workflows.json</code></div></div>
-        <div class="io jira"><span class="io-k">jira ⇄</span><div>Test issues (TC) creados: description con template TC · labels · Test Status · membership <b>TC ∈ ATS</b> = issue link <b>TC→ATS</b> en ambas modalidades (jira-xray suma la membership Xray vía GraphQL) + <b>ATS→Story</b> como link de coverage; <b>TC→Story directo solo last-resort</b> · transición <b>Draft → In Design → Ready → (Manual | In Review → Candidate)</b></div></div>
+        <div class="io jira"><span class="io-k">jira ⇄</span><div>Test issues (TC) creados (jira-native) o promovidos + enriquecidos (jira-xray: ya los creó sprint-testing), según <code>testing.tc_creation_stage</code>: description con template TC · labels · Test Status · membership <b>TC ∈ ATS</b> = issue link <b>TC→ATS</b> en ambas modalidades (jira-xray suma la membership Xray vía GraphQL) + <b>ATS→Story</b> como link de coverage; <b>TC→Story directo solo last-resort</b> · transición <b>Draft → In Design → Ready → (Manual | In Review → Candidate)</b></div></div>
         <div class="io out"><span class="io-k">stdout →</span><div>Cache local <code>stories/STORY-*/test-cases/{TC-ID}-{slug}.md</code></div></div>
       </div>
 

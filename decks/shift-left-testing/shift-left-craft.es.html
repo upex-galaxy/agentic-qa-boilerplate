@@ -692,7 +692,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <ul class="blist">
       <li><b>Sin código, sin commit</b> — Jira es canónico. El <span class="mono">shift-left-refinement.md</span> es working artifact gitignored.</li>
       <li><b>Sin test data, sin parametrización</b> — outline names only. Eso se difiere a in-sprint.</li>
-      <li><b>Sin TCs</b> — los Test Cases se formalizan en Documentation (<span class="mono">/test-documentation</span>), no aquí.</li>
+      <li><b>Sin TCs pre-sprint</b>: solo nombres de outline. El ítem <span class="mono">Test</span> lo crea <span class="mono">/sprint-testing</span> Planning (Xray) o <span class="mono">/test-documentation</span> (jira-native), según <span class="mono">testing.tc_creation_stage</span>.</li>
     </ul>
   </div>
   <div class="callout warn mt-m"><h4>La línea con sprint-testing</h4><p>Todo lo que requiere correr el sistema (generación de datos, parametrización, fixtures) pertenece a <span class="mono">/sprint-testing</span> Planning. Shift-left es <b>doc-only</b>.</p></div>
@@ -1088,7 +1088,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="grid g3 mt-l">
     <div class="card card-soft"><h4 class="mono" style="font-size:14px">Escribe a Jira</h4><p class="dim">ACs refinados al campo · ATP pre-sprint al campo <span class="mono">acceptance_test_plan</span> (el Test Plan item nace en Planning) · sección "QA Refinements" en la descripción (append, nunca overwrite).</p></div>
     <div class="card card-soft"><h4 class="mono" style="font-size:14px">Notifica</h4><p class="dim">1 comentario de handoff con @PO / @Dev (solo si el handle está en project.yaml).</p></div>
-    <div class="card card-soft"><h4 class="mono" style="font-size:14px">Transiciona</h4><p class="dim">analyze → estimate. Si ya pasó estimation: log warning + SKIP (el refinamiento igual aterriza). La subtask <span class="mono">[QA] Shift-Left Review</span> (In Progress desde la aceptación en Phase 1) pasa a <b>Done</b>.</p></div>
+    <div class="card card-soft"><h4 class="mono" style="font-size:14px">Transiciona</h4><p class="dim">analyze → estimate. Si ya pasó estimation: log warning + SKIP (el refinamiento igual aterriza). La subtask <span class="mono">[QA] Shift-Left Review</span> (en <span class="mono">ACTIVE</span> desde la aceptación en Phase 1) pasa a <b>Close</b> con la transición <span class="mono">complete</span>.</p></div>
   </div>
   <div class="callout warn mt-m"><h4>Guardrail: NUNCA más allá de Estimation</h4><p>PO + Dev lead son dueños de <span class="mono">estimate → ready_for_dev</span>. Shift-left para en estimation — la Story queda lista para que el equipo le ponga puntos.</p></div>
   <div class="notes">Máquina de estados: backlog→(analyze)→shift_left_qa→(estimate)→estimation. Guardrail duro: nunca past estimation. Descripción se hace append, nunca overwrite.</div>
@@ -1099,14 +1099,14 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <p class="kicker">trabajo hecho una vez, reutilizado</p>
   <h2 class="h2" data-anim="fade-up">Los Labels y el Short-Circuit</h2>
   <div class="grid g2 mt-s">
-    <div class="card card-accent"><h4><span class="mono">shift-left-reviewed</span></h4><p class="dim">El <b>marcador suave</b>. <span class="mono">/sprint-testing</span> Planning lo lee para saber que el refinamiento pre-sprint ya ocurrió.</p></div>
-    <div class="card card-accent"><h4><span class="mono">shift-left-{YYYY-MM-DD}</span></h4><p class="dim">El <b>marcador de frescura</b>. Si &lt;30 días, el refinamiento se considera vigente y se puede short-circuitar.</p></div>
+    <div class="card card-accent"><h4><span class="mono">shift-left-reviewed</span></h4><p class="dim">El <b>marcador suave</b>. Dice que el refinamiento pre-sprint ocurrió, y <span class="mono">/sprint-testing</span> Planning lo lee como un reclamo, no como evidencia.</p></div>
+    <div class="card card-accent"><h4><span class="mono">shift-left-{YYYY-MM-DD}</span></h4><p class="dim">El <b>marcador de frescura</b>. Con más de 30 días el refinamiento se considera viejo y corre el flujo completo.</p></div>
   </div>
   <div class="flow mt-m">
-    <div class="stage"><div class="sx">→</div><div><h4>Cuando la Story llega a Ready For QA…</h4><p><span class="mono">/sprint-testing</span> detecta el label, <b>salta las Phases 1-3</b> (ya hechas), valida que los ACs sigan vigentes, y añade lo diferido (datos, parametrización, pasos) como un superset.</p></div></div>
+    <div class="stage"><div class="sx">→</div><div><h4>Cuando la Story llega a Ready For QA…</h4><p><span class="mono">/sprint-testing</span> parte del flujo completo. <b>Salta las Phases 1-3</b> solo si cita la evidencia: los dos labels con menos de 30 días, el cuerpo del ATP publicado en Jira (el <span class="mono">acceptance-test-plan.md</span> sincronizado) y los ACs refinados todavía iguales a la descripción. Después añade lo diferido (datos, parametrización, pasos) como un superset. Un label sin ATP no abre nada.</p></div></div>
   </div>
   <div class="callout mt-m"><h4>Esta es la economía del shift-left</h4><p>El refinamiento se hace <b>una vez</b>, pre-sprint, y se <b>reutiliza</b> in-sprint — no se repite. El costo de calidad se paga en la fase 1×, no en la 10×.</p></div>
-  <div class="notes">Dos labels: reviewed (soft marker) + dated (freshness). Juntos permiten a sprint-testing saltar Phases 1-3. Esa reutilización ES el payoff económico del shift-left.</div>
+  <div class="notes">Dos labels: reviewed (soft marker) + dated (freshness). Solos no alcanzan: el gate es fail-closed y se abre con el ATP publicado en Jira como evidencia (sprint-testing/references/acceptance-test-planning.md). Esa reutilización ES el payoff económico del shift-left.</div>
 </section>
 
 <!-- 31. DELIVERABLES + BATCH REPORT -->
@@ -1157,13 +1157,13 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="qq"><span class="qn">Q2</span><span>¿Para qué sirve el label <span class="mono">shift-left-reviewed</span> cuando la Story llega luego a Ready For QA?</span></div>
       <div class="opts">
         <div class="opt"><span class="mk">A</span><span>Es decorativo — solo marca que QA la vio</span></div>
-        <div class="opt" data-correct="1"><span class="mk">B</span><span>Deja que /sprint-testing salte las Phases 1-3 — el trabajo se reutiliza, no se repite</span></div>
+        <div class="opt" data-correct="1"><span class="mk">B</span><span>Junto con el ATP publicado en Jira, deja que /sprint-testing salte las Phases 1-3: el trabajo se reutiliza</span></div>
         <div class="opt"><span class="mk">C</span><span>Bloquea que la Story entre al sprint</span></div>
       </div>
-      <div class="qexp"><b>Short-circuit.</b> /sprint-testing Planning lo detecta y salta las Phases 1-3 de planning (ya hechas pre-sprint). Esa reutilización es la economía del shift-left: refinas una vez en la fase 1×, no repites en la 10×.</div>
+      <div class="qexp"><b>Short-circuit.</b> /sprint-testing Planning lo lee, pero el label solo es un reclamo: salta las Phases 1-3 cuando además encuentra el cuerpo del ATP publicado pre-sprint y los ACs siguen iguales. Esa reutilización es la economía del shift-left: refinas una vez en la fase 1×, no repites en la 10×.</div>
     </div>
   </div>
-  <div class="notes">Guardrail (para en estimation) y el short-circuit (el label permite reutilizar el trabajo in-sprint). Las dos claves del handoff.</div>
+  <div class="notes">Guardrail (para en estimation) y el short-circuit (labels frescos + ATP publicado permiten reutilizar el trabajo in-sprint). Las dos claves del handoff.</div>
 </section>
 
 <!-- 33. ANTI-PATTERNS -->

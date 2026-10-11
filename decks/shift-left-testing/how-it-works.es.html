@@ -603,7 +603,7 @@ h4,.h4{font-size:17px;color:var(--text-1)}
     <div class="card" style="border-top:3px solid var(--warn)">
       <h4 style="color:var(--warn)">GATE: presenta la tabla y ESPERA el OK</h4>
       <p class="sm mt-s">Phase 1 termina con una tabla ranqueada: <b>Accepted</b> (riesgo · score · veto override · data-feasibility), <b>Rejected</b> (no-Story, con motivo), <b>Skipped</b> (LOW), <b>Already Reviewed</b> (skip/refresh?), orden recomendado y preguntas abiertas.</p>
-      <p class="sm mt-s"><b>No se refina nada</b> hasta que el humano confirme el set. Puede vetar Stories, rescatar LOWs o cambiar el orden. La lista aceptada se persiste en <code>plan.md</code> §Inputs y se registra el checkpoint en <code>progress.md</code>.</p>
+      <p class="sm mt-s"><b>No se refina nada</b> hasta que el humano confirme el set. Puede vetar Stories, rescatar LOWs o cambiar el orden. La lista aceptada final se persiste en <code>progress.md</code>, dentro del entry de Phase 1.</p>
       <p class="sm mt-s"><b>Tras el OK</b>, por cada Story aceptada: find-or-create de la subtask <code>[QA] Shift-Left Review</code> con <b>assignee = self</b> desde el create. Nace en <code>{{jira.status.subtask.active}}</code> (status <code>ACTIVE</code>) y ahí queda hasta Phase 3; si ya existía cerrada, se reabre con <code>reactive</code>. Sin work type subtask en el catálogo → skip con warning, nunca bloquea.</p>
     </div>
   </div>
@@ -895,7 +895,7 @@ Refinements proposed: 1 →
     <table class="dtable" style="margin-top:0">
       <thead><tr><th>Después necesitas…</th><th>Skill</th></tr></thead>
       <tbody>
-        <tr><td>La Story llega a <b>Ready For QA</b></td><td><code>/sprint-testing</code>: lee <code>shift-left-reviewed</code> (&lt;30 días) y cortocircuita sus fases de planning</td></tr>
+        <tr><td>La Story llega a <b>Ready For QA</b></td><td><code>/sprint-testing</code>: lee los labels (&lt;30 días) y el ATP publicado en el campo, y solo con los dos cortocircuita sus fases de planning</td></tr>
         <tr><td>TCs formales + ROI, cuando la Story shippea</td><td><code>/test-documentation</code> (Documentation)</td></tr>
         <tr><td>Código de test automatizado</td><td><code>/test-automation</code> (Automation) · luego <code>/regression-testing</code> (Regression)</td></tr>
         <tr><td>Falta contexto de negocio</td><td><code>/project-discovery</code> + <code>/project-context</code> (modos <code>data</code> / <code>e2e</code> / <code>api</code> y <code>test-plan</code>)</td></tr>

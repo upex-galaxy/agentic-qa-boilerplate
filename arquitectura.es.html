@@ -420,7 +420,10 @@
               <tr>
                 <td><b>MTP</b> — Master Test Plan</td>
                 <td>Producto</td>
-                <td>Epic <code>QA Master Test Plan</code> + archivo local</td>
+                <td>
+                  Epic <code>QA Master Test Plan</code> (la descripción es el plan; caché local
+                  gitignoreado)
+                </td>
                 <td><code>/project-context test-plan</code></td>
               </tr>
               <tr>
@@ -637,10 +640,11 @@ TC → Story directo    last resort válido (deja de ser anti-patrón)
                 </li>
                 <li>Cascade de placement integrada con la enrichment GraphQL</li>
                 <li>
-                  Un <code>pull</code> sin filtros barre además los cuatro epics de proceso QA: FTP
-                  / STP / STR, Test Sets y Preconditions bajan a <code>test-plans/</code> y
-                  <code>test-executions/</code> con el acrónimo del título en el nombre de archivo
-                  (ADR-0001)
+                  Un <code>pull</code> sin filtros barre además los cuatro epics de proceso QA: los
+                  Plans (FTP / STP / ATP) bajan a <code>test-plans/</code>, las Executions (STR /
+                  ATR) a <code>test-executions/</code>, y los Test Sets y las Preconditions a
+                  <code>test-sets/</code> y <code>preconditions/</code>, con el acrónimo del título
+                  en el nombre de archivo (ADR-0001)
                 </li>
                 <li><code>bun run tests:map</code>: mapa HTML de cobertura, gaps primero</li>
                 <li>

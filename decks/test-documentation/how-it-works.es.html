@@ -508,7 +508,7 @@ kbd,.kbd{font-family:var(--font-mono);font-size:12.5px;padding:2px 8px;border-ra
     <div class="node"><span class="nb">✓</span><h5>Cierre</h5><p>reportes, Deferred a Jira, verificador, footer</p><span class="br ok">archive + mem_session_summary</span></div>
   </div>
   <div class="adjacent">
-    <div class="mini"><b>Gates.</b> Preflight con RED bloqueante → STOP; la modalidad se auto-resuelve en 3 sondeos y solo pregunta si los tres fallan.</div>
+    <div class="mini"><b>Gates.</b> Preflight con RED bloqueante → STOP; la modalidad se auto-resuelve por config y evidencia, y solo pregunta si ninguna de las dos decide.</div>
     <div class="mini"><b>Fallbacks.</b> Sin work type <span class="mono">Test Plan</span>/<span class="mono">Test Execution</span> → ATP/ATR como campos de la Story; campo ausente → comment estructurado.</div>
     <div class="mini"><b>Loops.</b> Bulk create interrumpido → resume despacha solo los chunks faltantes; rework de TC vía <span class="mono">back_from_&lt;state&gt;</span>.</div>
     <div class="mini"><b>Handoffs.</b> Candidate → <span class="mono">/test-automation</span> · Manual → suite manual · Deferred → reporte + comment en Jira (terminal).</div>
@@ -561,9 +561,9 @@ kbd,.kbd{font-family:var(--font-mono);font-size:12.5px;padding:2px 8px;border-ra
   <p class="kicker">fase 0: gate obligatorio, se resuelve UNA vez</p>
   <h2 class="h2" data-anim="fade-up">¿Xray licenciado? Mismos conceptos, distintos <span class="grad">contenedores</span></h2>
   <div class="steps s3 anim-stagger-list">
-    <div class="step"><div class="num">1</div><h4>Config</h4><p><span class="mono">{{TMS_CLI}}</span> = <span class="mono">bun xray</span> → jira-xray; <span class="mono">acli</span>-solo o sin definir → jira-native.</p></div>
-    <div class="step"><div class="num">2</div><h4>Issue types</h4><p>¿Existen <span class="mono">Test Plan / Test Execution / Test Set / Pre-Condition</span>? Sí → jira-xray; no → jira-native.</p></div>
-    <div class="step"><div class="num">3</div><h4>Preguntar</h4><p>Solo si los dos sondeos fallan. Persistir en <span class="mono">plan.md</span>; sticky; drift a mitad de sesión → STOP y pregunta.</p></div>
+    <div class="step"><div class="num">1</div><h4>Config</h4><p><span class="mono">{{TMS_CLI}}</span> = <span class="mono">bun xray</span> → <b>candidato</b> jira-xray, se confirma en el paso 2; <span class="mono">acli</span>-solo o sin definir → jira-native.</p></div>
+    <div class="step"><div class="num">2</div><h4>Evidencia</h4><p>La API de Xray responde vía <span class="mono">/xray-cli</span> (auth status y una lectura del proyecto) → jira-xray. Los work types solos nunca deciden: también existen nativos en jira-native. Sin respuesta nunca es jira-xray: si la config nombró Xray, STOP por la Regla #10 y nombrar las <span class="mono">XRAY_*</span>.</p></div>
+    <div class="step"><div class="num">3</div><h4>Preguntar</h4><p>Solo si ni la config ni la evidencia deciden. Persistir en <span class="mono">plan.md</span>; sticky; drift a mitad de sesión → STOP y pregunta.</p></div>
   </div>
   <table class="dtable tight">
     <thead><tr><th>Artefacto</th><th>jira-xray</th><th>jira-native (sin Xray)</th></tr></thead>
@@ -1000,7 +1000,7 @@ Refinements proposed: 0</span></pre>
 <pre><span class="p">&gt; </span><span class="c">/test-documentation UPEX-202 (turn this closed bug into a regression test)</span>
 
 <span class="o">[Modo]      document (default). [Preflight] acli + xray-cli OK → GREEN.</span>
-<span class="o">[Fase -1]   Sin sesión previa para UPEX-202. [Fase 0] jira-xray ({{TMS_CLI}} = bun xray)</span>
+<span class="o">[Fase -1]   Sin sesión previa para UPEX-202. [Fase 0] jira-xray ({{TMS_CLI}} = bun xray, la API de Xray responde)</span>
 <span class="o">            · TC_CREATION_STAGE auto → verbo: promover. Ambos sticky en plan.md.</span>
 <span class="o">[Fase 1]    jira:sync-issues get UPEX-202 + Story UPEX-101 (--include-comments).</span>
 <span class="o">            Grep: data-testid="login-error" confirmado · ruta /api/auth/login.</span>

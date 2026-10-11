@@ -447,7 +447,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <span class="wchip"><b>single-issue</b> una Story o un Bug</span>
         <span class="wchip"><b>sprint-wide</b> el sprint N · 1 o N ejecutores</span>
         <span class="wchip">modo <b>preguntado</b> en Session Start</span>
-        <span class="wchip">← viene de <b>/shift-left-testing</b> (label <span class="mono">shift-left-reviewed</span> acorta el Planning)</span>
+        <span class="wchip">← viene de <b>/shift-left-testing</b> (el ATP publicado en Jira, no el label solo, acorta el Planning)</span>
       </div>
       <div class="wrow">
         <div class="wnode stop"><span class="wn">Gate 0</span><div class="wt">Preflight</div><div class="wd">Probar env, creds, tools, TMS</div><div class="wg">RED bloqueante → STOP</div></div>
@@ -577,7 +577,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <table class="tt sm mt-m">
       <thead><tr><th>Fase</th><th>Qué produce</th></tr></thead>
       <tbody>
-        <tr><td><b>0 · Triage</b></td><td>Short-circuit si hay label <span class="mono">shift-left-reviewed</span> &lt;30 días (salta fases 1-3) · veto · risk score · factibilidad de datos: <b>Discover / Modify / Generate</b> por AC</td></tr>
+        <tr><td><b>0 · Triage</b></td><td>Short-circuit solo con evidencia citada: el ATP pre-sprint publicado en Jira, los labels <span class="mono">shift-left-*</span> con menos de 30 días y los ACs sin cambios (salta fases 1-3; los labels solos corren el flujo completo) · veto · risk score · factibilidad de datos: <b>Discover / Modify / Generate</b> por AC</td></tr>
         <tr><td><b>1-2 · Análisis</b></td><td>Contexto de negocio + técnico · ambigüedades y gaps marcados <span class="mono">NEEDS PO/DEV CONFIRMATION</span></td></tr>
         <tr><td><b>3 · ACs refinadas</b></td><td>Cada AC reescrita Given/When/Then con datos específicos</td></tr>
         <tr><td><b>4-5 · Test outlines</b></td><td>Derivación por técnica (1:N) · nombre <span class="mono">Should &lt;BEHAVIOR&gt; &lt;CONDITION&gt;</span> · edge cases + estrategia de datos</td></tr>
@@ -747,7 +747,7 @@ Listas de tests del ATP y del ATR = DERIVADAS de la membership del ATS (S17)</di
     <p class="kicker">Execution · sesiones de browser y evidencia</p>
     <h2 class="h2 md">Un login por rol, cada captura con su <span class="grad">ruta</span></h2>
     <div class="grid g2 mt-m" style="align-items:start">
-      <div class="card"><p class="lbl">Una sesión por ticket, un estado por rol</p><p class="small mt-s">Sesión con nombre (<span class="mono">-s=UPEX-123</span>), en memoria. El login sale del estado del rol, <span class="mono">.auth/&lt;env&gt;-&lt;role&gt;.json</span> vía <span class="mono">state-load</span>, nunca tipeado en la exploración. Dos roles = dos sesiones. Cada sesión se cierra antes del reporte y <span class="mono">playwright-cli list</span> lo prueba.</p></div>
+      <div class="card"><p class="lbl">Una sesión por ticket, un estado por rol</p><p class="small mt-s">Sesión con nombre (<span class="mono">-s=UPEX-123</span>), en memoria. El login sale del estado del rol, <span class="mono">.auth/&lt;env&gt;-&lt;role&gt;.json</span> vía <span class="mono">state-load</span>, nunca tipeado en la exploración. Y ese estado solo lo produce el login real de la app: nada de service-role key, API de administración de usuarios, magic link generado en el servidor ni JWT armado a mano (<span class="mono">browser-sessions.md</span> §4). Dos roles = dos sesiones. Cada sesión se cierra antes del reporte y <span class="mono">playwright-cli list</span> lo prueba.</p></div>
       <div class="card"><p class="lbl">Agentic Pair Testing</p><p class="small mt-s">La IA y tú en tu propio Chrome. Lo gobierna <span class="mono">testing.browser.pair_mode</span> en <span class="mono">.agents/project.yaml</span>: <span class="mono">null</span> pregunta una sola vez y guarda la respuesta · <span class="mono">true</span> es el modo por defecto · <span class="mono">false</span> usa sesiones dedicadas, y pair solo si lo pides, con una confirmación.</p></div>
       <div class="card"><p class="lbl">Destino explícito (Gotcha 8)</p><p class="small mt-s">Nadie reapunta el <span class="mono">outputDir</span> de <span class="mono">.playwright/cli.config.json</span>: queda en el directorio de la herramienta. Cada captura lleva su ruta al <span class="mono">evidence/</span> del ticket (a un <span class="mono">.png</span> el <span class="mono">outputDir</span> no le aplica igual), y la ruta se muestra en el chat apenas existe.</p></div>
       <div class="card"><p class="lbl">Bug visual o de posición</p><p class="small mt-s">Superposición, desalineación, un eje corrido: antes de reportar se carga <span class="mono">/bug-screenshot-annotation</span>, que marca la captura (círculos, flechas, callouts) en local. El PNG anotado va primero como evidencia. Un hallazgo textual no lo necesita.</p></div>
@@ -884,7 +884,7 @@ También la disparan frases como
 &gt; process sprint 5 · resume sprint testing</div>
       <div class="stack">
         <div class="card"><p class="lbl">El primer token decide</p><p class="small mt-s">Si el primer argumento nombra un modo, ese es el modo; si no, Session Start pregunta. Abrí el host tal cual (<span class="mono">claude</span>, <span class="mono">opencode</span>, <span class="mono">codex</span> o su app): cada MCP lee <span class="mono">.env</span> por su cuenta.</p></div>
-        <div class="card"><p class="lbl">Auto-cargado al arrancar</p><p class="small mt-s"><span class="mono">.agents/project.yaml</span> · catálogos Jira · mapas de contexto + MTP · el ticket vía <span class="mono">jira:sync-issues</span> · <span class="mono">.env</span>.</p></div>
+        <div class="card"><p class="lbl">Se lee en Session Start</p><p class="small mt-s"><span class="mono">.agents/project.yaml</span> · catálogos Jira · mapas de contexto + MTP · el ticket vía <span class="mono">jira:sync-issues</span>. El <span class="mono">.env</span> no entra: la IA nunca lo abre.</p></div>
         <div class="card card-accent"><p class="lbl">El humano conserva los juicios</p><p class="small mt-s">Modo · OK de la Story · triage · cada bug · retry/skip/abort.</p></div>
       </div>
     </div>
@@ -901,7 +901,7 @@ También la disparan frases como
       <tr><td><b>Execution</b></td><td>corre el smoke como Go/No-Go, ejecuta los outlines, explora más allá de ellos por la trifuerza, propone bugs con la severidad ya derivada</td><td>el triage de cada bug y el <b>alta</b> de cada bug; cualquier recalibración de severidad en seguridad o auth</td><td><b>3</b></td></tr>
       <tr><td><b>Reporting</b></td><td>llena el ATR, escribe el comentario de QA, crea y verifica los links de trazabilidad</td><td>la transición del workflow (<span class="mono">qa_sign_off</span> / <span class="mono">defect_reported</span>)</td><td><b>2</b></td></tr>
     </table>
-    <div class="callout mt-m"><h4>La escala, y su techo</h4><p>CSA 0-5: 0 lo hace la persona · 1 aprobación por acción · 2 aprobación por plan o por lote · 3 decide dentro de límites declarados y escala fuera de ellos · 4 supervisión por monitoreo · 5 sin intervención. <b>Ningún stage de este pipeline pasa de 3</b>, y eso es una decisión de arquitectura, no un accidente de lo que se alcanzó a construir. Ninguno de los tres lleva verificador separado: el PO/Dev y el propio checkpoint humano cumplen ese papel.</p></div>
+    <div class="callout mt-m"><h4>La escala, y su techo</h4><p>CSA 0-5: 0 lo hace la persona · 1 aprobación por acción · 2 aprobación por plan o por lote · 3 decide dentro de límites declarados y escala fuera de ellos · 4 supervisión por monitoreo · 5 sin intervención. <b>Ninguno de estos tres stages pasa de 3</b> (Regression es la excepción: puede llegar a 4 en un GO limpio), y eso es una decisión de arquitectura, no un accidente de lo que se alcanzó a construir. Ninguno de los tres lleva verificador separado: el PO/Dev y el propio checkpoint humano cumplen ese papel.</p></div>
     <div class="notes">Fuente: agentic-qa-core/references/stage-gates.md. El DoD dice qué tiene que ser verdad para avanzar; el contrato dice quién tuvo permiso de hacerlo mientras el stage corría. Los dos son gates: avanzar un stage cuyo contrato no se honró es saltarse un gate igual que tildar un DoD que nunca se verificó.</div>
   </section>
 
