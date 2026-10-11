@@ -337,13 +337,13 @@ todo junto, a escala <span class="tk-c">→ KATA</span></pre>
       <div class="callout info" style="margin-top:1rem"><span class="co-ico">🧭</span><p>Cada acto: <b>primero el dolor</b>, luego el patrón que lo cura. Nunca sintaxis sin motivo.</p></div>
     </div>
   </div>
-  <div class="notes"><p>Encuadre central de la sesión: un patrón NO es decoración, es la respuesta consensuada de la industria a un dolor recurrente. La columna derecha mapea dolor→patrón — es el índice de la charla. Promesa pedagógica: cada acto abre con el dolor concreto (mostrado en código), para que el patrón se sienta inevitable, no impuesto. Si alguien pregunta "¿por qué no escribir el test y ya?": funciona con 5 tests; a 500, sin patrones, el proyecto se vuelve inmantenible. Eso es lo que vamos a vivir.</p></div>
+  <div class="notes"><p>Encuadre central de la sesión: un patrón NO es decoración, es la respuesta consensuada de la industria a un dolor recurrente. La columna derecha mapea dolor→patrón — es el índice de la charla. Promesa pedagógica: cada acto abre con el dolor concreto (mostrado en código), para que el patrón se sienta inevitable, no impuesto. Si alguien pregunta "por qué no escribir el test y ya?": funciona con 5 tests; a 500, sin patrones, el proyecto se vuelve inmantenible. Eso es lo que vamos a vivir.</p></div>
 </section>
 
 <!-- 3 · QUIZ 0 relámpago -->
 <section class="slide" data-act="Acto 0 · Por qué patrones" style="align-items:center">
   <div class="quiz" data-quiz="q0">
-    <div class="quiz-tag">⭐ QUIZ relámpago · ¿Caliente de la sesión anterior?</div>
+    <div class="quiz-tag">⭐ QUIZ relámpago · Caliente de la sesión anterior?</div>
     <h3 class="quiz-q">Un Page Object es, en una frase…</h3>
     <div class="quiz-opts">
       <button class="opt"><span class="key">A</span><span>Un archivo de configuración de Playwright</span></button>
@@ -382,7 +382,7 @@ todo junto, a escala <span class="tk-c">→ KATA</span></pre>
 
 <span class="tk-c">// 50 tests más… y mañana el dev renombra #login-btn 💀</span></pre>
   </div>
-  <div class="callout warn" data-anim="fade-up"><span class="co-ico">🚨</span><p>Pregunta asesina: si <code>#login-btn</code> cambia de id, ¿cuántos lugares corriges? Con 50 tests → <b>50 ediciones</b> y un riesgo de error en cada una.</p></div>
+  <div class="callout warn" data-anim="fade-up"><span class="co-ico">🚨</span><p>Pregunta asesina: si <code>#login-btn</code> cambia de id, cuántos lugares corriges? Con 50 tests → <b>50 ediciones</b> y un riesgo de error en cada una.</p></div>
   <div class="notes"><p>Deja que ELLOS nombren el problema: pasos duplicados + selectores dispersos. La pregunta del "renombre" es el gancho de todo el acto — sostén la incomodidad unos segundos antes de revelar la cura. Conecta con un dolor que ya conocen: test cases manuales copiados. La herramienta para encapsular ya la tienen: una clase.</p></div>
 </section>
 
@@ -411,7 +411,7 @@ todo junto, a escala <span class="tk-c">→ KATA</span></pre>
 }</pre>
     </div>
     <div data-stagger>
-      <div class="card"><h3>📍 Selectores arriba, una vez</h3><p>Cada selector vive en UN getter. ¿Cambió <code class="pill">#login-btn</code>? Editas <b>1 línea</b> — los 50 tests ni se enteran.</p></div>
+      <div class="card"><h3>📍 Selectores arriba, una vez</h3><p>Cada selector vive en UN getter. Cambió <code class="pill">#login-btn</code>? Editas <b>1 línea</b> — los 50 tests ni se enteran.</p></div>
       <div class="card" style="margin-top:.7rem"><h3>🎬 Acciones como métodos</h3><p><code class="pill">login()</code> cuenta una historia: llena, llena, clic. El test lee como un caso manual.</p></div>
       <div class="card hl" style="margin-top:.7rem"><h3>🧬 Cero conceptos nuevos</h3><p>Es la clase de siempre: <code class="pill">constructor</code> · <code class="pill">this</code> · método <code class="pill">async</code> · <code class="pill">await</code>. POM = clase + propósito.</p></div>
     </div>
@@ -465,7 +465,7 @@ todo junto, a escala <span class="tk-c">→ KATA</span></pre>
           <label>Email</label><input id="s-email" data-sel="#email" type="text" placeholder="tu@email.com">
           <label>Password</label><input id="s-password" data-sel="#password" type="password" placeholder="••••••••">
           <button class="app-login" id="s-login-btn" data-sel="#login-btn">Entrar</button>
-          <div class="app-msg ok" id="s-welcome" data-sel="#welcome">✅ ¡Bienvenida, Ana!</div>
+          <div class="app-msg ok" id="s-welcome" data-sel="#welcome">✅ Bienvenida, Ana!</div>
           <div class="app-msg bad" id="s-error-msg" data-sel="#error-msg">❌ Credenciales inválidas</div>
         </div>
       </div>
@@ -503,7 +503,7 @@ test("login con Page Object", async ({ page }) => {
 <section class="slide" data-act="Acto 1 · Page Object Model" style="align-items:center">
   <div class="quiz" data-quiz="q1">
     <div class="quiz-tag">⭐ QUIZ 1 · Page Object</div>
-    <h3 class="quiz-q">El dev renombra <code style="color:var(--cyan)">#login-btn</code> → <code style="color:var(--cyan)">#signin-btn</code>. Tienes 50 tests que hacen login con <code style="color:var(--cyan)">LoginPage</code>. ¿Cuántos lugares corriges?</h3>
+    <h3 class="quiz-q">El dev renombra <code style="color:var(--cyan)">#login-btn</code> → <code style="color:var(--cyan)">#signin-btn</code>. Tienes 50 tests que hacen login con <code style="color:var(--cyan)">LoginPage</code>. Cuántos lugares corriges?</h3>
     <div class="quiz-opts">
       <button class="opt"><span class="key">A</span><span>50 — uno por test</span></button>
       <button class="opt"><span class="key">B</span><span>Ninguno — Playwright lo detecta solo</span></button>
@@ -542,7 +542,7 @@ test("login con Page Object", async ({ page }) => {
     </div>
     <div data-stagger>
       <div class="card"><h3>🧩 El síntoma</h3><p>Construir objetos, navegar, autenticar — <b>antes</b> de cada test. Ruido que tapa lo que el test realmente prueba.</p></div>
-      <div class="card" style="margin-top:.8rem"><h3>🧹 ¿Y la limpieza?</h3><p>¿Quién cierra sesión, borra el usuario creado, resetea el estado <b>después</b>? Sin fixtures: nadie, o copiado en cada test.</p></div>
+      <div class="card" style="margin-top:.8rem"><h3>🧹 Y la limpieza?</h3><p>Quién cierra sesión, borra el usuario creado, resetea el estado <b>después</b>? Sin fixtures: nadie, o copiado en cada test.</p></div>
       <div class="card hl" style="margin-top:.8rem"><h3>💡 La idea</h3><p>Que alguien prepare el escenario <b>antes</b> y lo limpie <b>después</b>, y le entregue al test solo lo que pidió, listo para usar. Eso es una <b>Fixture</b>.</p></div>
     </div>
   </div>
@@ -564,12 +564,12 @@ test("login con Page Object", async ({ page }) => {
       <div class="callout info" style="margin-top:1rem"><span class="co-ico">🔓</span><p>Playwright construye un <code>page</code> fresco <b>antes</b> de tu test, te lo presta, y lo <b>desecha después</b>. Tú nunca escribiste <code>new Page()</code> ni lo cerraste. Eso es una fixture trabajando.</p></div>
     </div>
     <div data-stagger>
-      <div class="card"><h3>📦 ¿Qué es una fixture?</h3><p>Un <b>recurso listo para usar</b> que el framework arma, te inyecta por nombre, y limpia solo. Inyección de Dependencias (DI) aplicada a tests.</p></div>
+      <div class="card"><h3>📦 Qué es una fixture?</h3><p>Un <b>recurso listo para usar</b> que el framework arma, te inyecta por nombre, y limpia solo. Inyección de Dependencias (DI) aplicada a tests.</p></div>
       <div class="card" style="margin-top:.8rem"><h3>🎁 Built-in de Playwright</h3><p><code class="pill">page</code> · <code class="pill">request</code> · <code class="pill">context</code> · <code class="pill">browser</code>. Pides por nombre lo que usas; lo demás ni se crea.</p></div>
       <div class="card hl-g" style="margin-top:.8rem"><h3>🛠️ Lo nuevo de esta sesión</h3><p>Crear las <b>tuyas</b> con <code class="pill">test.extend</code>: una fixture <code class="pill">loginPage</code>, una <code class="pill">authedUser</code>… que lleguen ya preparadas a cada test.</p></div>
     </div>
   </div>
-  <div class="notes"><p>El "¡ahhh!" del acto: ({ page }) siempre fue una fixture. Define fixture en términos llanos: recurso listo, inyectado por nombre, auto-limpiado. Menciona el término técnico (Dependency Injection) una vez, sin enredarte — lo importante es la intuición. El destructuring ({ page }) que ya dominan es exactamente cómo se piden las fixtures: por nombre, desempacando solo lo necesario.</p></div>
+  <div class="notes"><p>El "ahhh!" del acto: ({ page }) siempre fue una fixture. Define fixture en términos llanos: recurso listo, inyectado por nombre, auto-limpiado. Menciona el término técnico (Dependency Injection) una vez, sin enredarte — lo importante es la intuición. El destructuring ({ page }) que ya dominan es exactamente cómo se piden las fixtures: por nombre, desempacando solo lo necesario.</p></div>
 </section>
 
 <!-- 11 · test.extend anatomía -->
@@ -631,7 +631,7 @@ test("login con Page Object", async ({ page }) => {
       </div>
     </div>
     <div class="st-side">
-      <div class="st-panel"><h4>📍 ¿Dónde corre el control?</h4><div id="fx-where"><p style="font-size:.85rem;color:var(--text-3);margin:0">— en reposo —</p></div></div>
+      <div class="st-panel"><h4>📍 Dónde corre el control?</h4><div id="fx-where"><p style="font-size:.85rem;color:var(--text-3);margin:0">— en reposo —</p></div></div>
       <div class="st-note" id="fx-note">Presiona "Siguiente paso": vas a ver el control saltar de la fixture al test y volver.</div>
       <div class="st-out" id="fx-out"><div class="ln" style="color:var(--text-3);font-style:italic">consola…</div></div>
     </div>
@@ -681,7 +681,7 @@ base.<span class="tk-f">extend</span>({
 <section class="slide" data-act="Acto 2 · Fixtures" style="align-items:center">
   <div class="quiz" data-quiz="q2">
     <div class="quiz-tag">⭐ QUIZ 2 · Fixtures</div>
-    <h3 class="quiz-q">En una fixture, ¿qué hace exactamente <code style="color:var(--cyan)">await use(value)</code>?</h3>
+    <h3 class="quiz-q">En una fixture, qué hace exactamente <code style="color:var(--cyan)">await use(value)</code>?</h3>
     <div class="quiz-opts">
       <button class="opt"><span class="key">A</span><span>Importa el valor desde otro archivo</span></button>
       <button class="opt" data-ok="1"><span class="key">B</span><span>Entrega <code>value</code> al test y pausa la fixture; al terminar el test, sigue con el teardown de abajo</span></button>
@@ -792,13 +792,7 @@ npx playwright test --shard=<span class="tk-n">3</span>/<span class="tk-n">3</sp
     </div>
     <div data-anim="fade-up" style="animation-delay:.2s">
       <h3>🐢 La postura honesta de este repo</h3>
-      <pre class="code" style="font-size:clamp(.76rem,1.15vw,.93rem)">
-<span class="tk-c">// playwright.config.ts (la postura; el archivo manda)</span>
-fullyParallel: <span class="tk-k">false</span>,
-retries: <span class="tk-n">0</span>,
-<span class="tk-c">// "Single worker for now - increase</span>
-<span class="tk-c">//  when tests are stable"</span>
-workers: <span class="tk-n">1</span>,</pre>
+      <p style="font-size:.9rem">El config de este repo corre en serie y sin reintentos, a propósito. Los valores vigentes de <code>fullyParallel</code>, <code>retries</code> y <code>workers</code> están en <code>playwright.config.ts</code>; el archivo manda.</p>
       <div class="callout" style="margin-top:.8rem"><span class="co-ico">🎯</span><p>Primero <b>determinismo</b>, después velocidad. Con la suite joven se corre en serie para cazar dependencias ocultas; el paralelismo se sube cuando los tests ya son sólidos.</p></div>
     </div>
   </div>
@@ -809,7 +803,7 @@ workers: <span class="tk-n">1</span>,</pre>
 <section class="slide" data-act="Acto 3 · Paralelización" style="align-items:center">
   <div class="quiz" data-quiz="q3">
     <div class="quiz-tag">⭐ QUIZ 3 · Paralelización</div>
-    <h3 class="quiz-q">Subes de 1 a 4 workers y la suite pasa de 40 a 12 min. ¿Qué bajó?</h3>
+    <h3 class="quiz-q">Subes de 1 a 4 workers y la suite pasa de 40 a 12 min. Qué bajó?</h3>
     <div class="quiz-opts">
       <button class="opt"><span class="key">A</span><span>El trabajo total de CPU — se ejecuta menos código</span></button>
       <button class="opt" data-ok="1"><span class="key">B</span><span>El <b>reloj de pared</b> — el mismo trabajo se reparte entre 4 procesos a la vez</span></button>
@@ -817,7 +811,7 @@ workers: <span class="tk-n">1</span>,</pre>
     </div>
     <div class="quiz-expl">💡 El cómputo total es idéntico: se ejecutan los mismos tests, el mismo código. Lo que cambia es el <b>tiempo de pared</b>, porque 4 workers trabajan en paralelo. Y el límite lo pone el worker más cargado — por eso 4 workers casi nunca dan exactamente 4×.</div>
   </div>
-  <div class="notes"><p>Refuerza la distinción que el simulador hizo visible: trabajo total (constante) vs reloj de pared (lo que baja). Opción A es el malentendido más común. Si en el simulador notaron que 4 workers no daban 4×, este quiz lo formaliza. Transición al cierre: "POM, fixtures y paralelización… ¿cómo se viven los tres juntos, a escala, en un proyecto real? Eso es KATA."</p></div>
+  <div class="notes"><p>Refuerza la distinción que el simulador hizo visible: trabajo total (constante) vs reloj de pared (lo que baja). Opción A es el malentendido más común. Si en el simulador notaron que 4 workers no daban 4×, este quiz lo formaliza. Transición al cierre: "POM, fixtures y paralelización… cómo se viven los tres juntos, a escala, en un proyecto real? Eso es KATA."</p></div>
 </section>
 
 <!-- ================================================================ -->
@@ -896,7 +890,7 @@ workers: <span class="tk-n">1</span>,</pre>
     <div data-stagger>
       <div class="card"><h3>🎯 ATC = un caso de prueba completo</h3><p><b>A</b>cceptance <b>T</b>est <b>C</b>ase: no un clic suelto, sino un <b>mini-flujo</b> entero (precondición → acción → aserción fija).</p></div>
       <div class="card hl" style="margin-top:.7rem"><h3 style="color:var(--yellow)"><code style="font-size:.85em">@atc("PROJ-111")</code></h3><p>El decorador ata la ATC a su <b>ticket</b> de Jira 1:1. Da trazabilidad y tracing automático. Es un método con etiqueta.</p></div>
-      <div class="card" style="margin-top:.7rem"><h3>🧱 Atómica</h3><p>Una ATC <b>nunca</b> llama a otra ATC. ¿Cadenas reutilizables? Eso es un <b>Step</b> (capa 3.5).</p></div>
+      <div class="card" style="margin-top:.7rem"><h3>🧱 Atómica</h3><p>Una ATC <b>nunca</b> llama a otra ATC. Cadenas reutilizables? Eso es un <b>Step</b> (capa 3.5).</p></div>
     </div>
   </div>
   <div class="notes"><p>La ÚNICA pieza realmente nueva de KATA respecto a lo que ya saben: la ATC y el decorador @atc. Código adaptado de tests/components/ui/LoginPage.ts (ATC de login; los ids de ATC viven en kata-manifest.json). Define ATC: caso de prueba completo (mini-flujo), no una interacción. El decorador @atc('TICKET') la liga a Jira 1:1 — trazabilidad. Reglas duras a mencionar sin agobiar: ATC atómica (no llama a otra ATC), aserciones fijas dentro / de negocio fuera (la regla del acto 1, ahora con nombre KATA). Un decorador es solo "un método con una etiqueta que añade comportamiento" — no te metas en la mecánica de decorators aquí.</p></div>
@@ -905,7 +899,7 @@ workers: <span class="tk-n">1</span>,</pre>
 <!-- 23 · STEPPER: trazar una ATC por las capas -->
 <section class="slide" data-act="Acto 4 · KATA">
   <div class="kicker">🧠 Trazador · sigue una llamada por las capas</div>
-  <h2 data-anim="fade-up">Un test llama <span class="grad-text">ui.login.loginSuccessfully()</span> — ¿por dónde viaja?</h2>
+  <h2 data-anim="fade-up">Un test llama <span class="grad-text">ui.login.loginSuccessfully()</span> — por dónde viaja?</h2>
   <div class="stepper" data-anim="fade-up">
     <div>
       <div class="st-code" id="kt-code">
@@ -938,7 +932,7 @@ workers: <span class="tk-n">1</span>,</pre>
   <div class="zoomline"><span>page object</span><span>fixtures</span><span>paralelización</span><span class="on">kata</span></div>
   <h2 data-anim="fade-up">En la práctica: <span class="grad-text">pides la fixture según lo que pruebas</span> 🎚️</h2>
   <table class="cmp" data-anim="fade-up">
-    <thead><tr><th>Tipo de test</th><th>Fixture</th><th>¿Navegador?</th><th>Cuándo</th></tr></thead>
+    <thead><tr><th>Tipo de test</th><th>Fixture</th><th>Navegador?</th><th>Cuándo</th></tr></thead>
     <tbody>
       <tr><td>API pura (integration)</td><td><code>{ api }</code></td><td>No</td><td>Testing de API. Default en <code>tests/integration/</code></td></tr>
       <tr><td>Solo UI</td><td><code>{ ui }</code></td><td>Sí</td><td>Flujo de UI sin setup por API</td></tr>
@@ -970,7 +964,7 @@ workers: <span class="tk-n">1</span>,</pre>
 <section class="slide" data-act="Acto 4 · KATA" style="align-items:center">
   <div class="quiz" data-quiz="q4">
     <div class="quiz-tag">⭐ QUIZ 4 · KATA</div>
-    <h3 class="quiz-q">Vas a probar <b>solo un endpoint</b> <code style="color:var(--cyan)">GET /orders</code>, sin tocar UI. ¿Qué fixture pides?</h3>
+    <h3 class="quiz-q">Vas a probar <b>solo un endpoint</b> <code style="color:var(--cyan)">GET /orders</code>, sin tocar UI. Qué fixture pides?</h3>
     <div class="quiz-opts">
       <button class="opt" data-ok="1"><span class="key">A</span><span><code>{ api }</code> — API pura, no abre navegador (lazy)</span></button>
       <button class="opt"><span class="key">B</span><span><code>{ ui }</code> — siempre conviene tener el navegador abierto</span></button>
@@ -1069,7 +1063,7 @@ playwright.config.ts      <span class="tk-c">// workers, projects</span>
     <p data-anim="fade-up" style="animation-delay:.2s;max-width:660px;font-size:clamp(1.02rem,1.7vw,1.3rem)">
       POM · Fixtures · Paralelización · KATA.<br>Cuatro patrones, una forma de pensar las pruebas.</p>
     <div class="cover-chips" data-anim="fade-up" style="animation-delay:.32s">
-      <span class="pill">¿Preguntas?</span><span class="pill">/test-automation</span><span class="pill">references/kata-architecture.md</span>
+      <span class="pill">Preguntas?</span><span class="pill">/test-automation</span><span class="pill">references/kata-architecture.md</span>
     </div>
   </div>
   <div class="notes"><p>Slide de cierre y espacio para preguntas. Reabre el simulador de workers o el stepper de use() si alguien quiere ver algo otra vez — son la mejor herramienta para resolver dudas en vivo. Punteros finales: la skill /test-automation y la referencia de arquitectura KATA. Gracias y a escribir ATCs.</p></div>
@@ -1218,8 +1212,8 @@ function renderFinal(){
   $('#final-score').textContent = score + ' / ' + TOTAL_Q;
   const pct = score/TOTAL_Q;
   $('#final-msg').textContent =
-    pct === 1 ? '¡Perfecto! POM, Fixtures, Paralelización y KATA dominados. Piensas como SDET. 🏆' :
-    pct >= .75 ? '¡Excelente! La base de arquitectura está firme — ya lees y diseñas tests con criterio. 💪' :
+    pct === 1 ? 'Perfecto! POM, Fixtures, Paralelización y KATA dominados. Piensas como SDET. 🏆' :
+    pct >= .75 ? 'Excelente! La base de arquitectura está firme — ya lees y diseñas tests con criterio. 💪' :
     pct >= .5 ? 'Muy buen avance. Re-juega el stepper de use() y el simulador de workers — la segunda pasada lo fija. 👍' :
     'Los patrones toman dos vueltas, es normal. Re-juega los simuladores de este archivo: la próxima, hace click. 🌱';
   setTimeout(()=>{ confetti(innerWidth/2, innerHeight*0.32, 140); }, 450);
@@ -1297,7 +1291,7 @@ $$('.livecell').forEach(cell=>{
     const fake = { log: mk(''), error: mk('err'), warn: mk(''),
       setup: mk('setup'), teardown: mk('teardown'), info: mk('info') };
     const flush = ()=>{
-      if(!logs.length) logs.push({t:'(sin salida — ¿olvidaste console.log?)', cls:'dim'});
+      if(!logs.length) logs.push({t:'(sin salida — olvidaste console.log?)', cls:'dim'});
       logs.forEach(l=>{ const d=document.createElement('div'); d.className='ln'+(l.cls?' '+l.cls:''); d.textContent=l.t; out.appendChild(d); });
     };
     (async ()=>{
@@ -1584,7 +1578,7 @@ buildStepper('kt', [
       }
       cursor.style.opacity = '0';
       banner.className = 'sim-banner pass';
-      banner.textContent = '✓ ' + (queue.length||1) + ' passed — ¡tu Page Object funciona!';
+      banner.textContent = '✓ ' + (queue.length||1) + ' passed — tu Page Object funciona!';
       const r = banner.getBoundingClientRect();
       confetti(r.left + r.width/2, r.top, 110);
     } catch(err){

@@ -252,7 +252,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
   <h2 data-anim="fade-up">Código que no está en Git <span class="grad-text">es un castillo de arena</span> 🏖️</h2>
   <div class="cols">
     <div data-stagger>
-      <div class="card"><div class="ico">💀</div><h3>Sin Git</h3><p>Laptop muere = suite muere. "¿Qué cambié ayer?" = misterio. Dos personas editando = caos de versiones por email.</p></div>
+      <div class="card"><div class="ico">💀</div><h3>Sin Git</h3><p>Laptop muere = suite muere. "Qué cambié ayer?" = misterio. Dos personas editando = caos de versiones por email.</p></div>
       <div class="card" style="margin-top:.9rem"><div class="ico">🤝</div><h3>El QA Engineer real</h3><p>Tu suite entra al repo del equipo <b>por Pull Request</b>, con revisión, igual que el código de los devs. Mismo flujo, mismos estándares.</p></div>
     </div>
     <div data-anim="fade-up" style="animation-delay:.3s">
@@ -278,8 +278,8 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
   <h2 data-anim="fade-up">Terminal sin miedo: <span class="grad-text">6 comandos te bastan</span> ⌨️</h2>
   <table class="cmp" data-stagger>
     <tr><th>Comando</th><th>Qué hace</th><th>Mnemonia</th></tr>
-    <tr><td><code>pwd</code></td><td>¿DÓNDE estoy parado?</td><td>print working directory</td></tr>
-    <tr><td><code>ls</code></td><td>¿QUÉ hay aquí?</td><td>list</td></tr>
+    <tr><td><code>pwd</code></td><td>DÓNDE estoy parado?</td><td>print working directory</td></tr>
+    <tr><td><code>ls</code></td><td>QUÉ hay aquí?</td><td>list</td></tr>
     <tr><td><code>cd mi-dojo-lab</code></td><td>Entra a una carpeta</td><td>change directory</td></tr>
     <tr><td><code>cd ..</code></td><td>Sube un nivel</td><td>.. = la carpeta padre</td></tr>
     <tr><td><code>mkdir pages</code></td><td>Crea una carpeta</td><td>make directory</td></tr>
@@ -379,7 +379,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
 <section class="slide" data-act="Acto 2 · package.json" style="align-items:center">
   <div class="quiz" data-quiz="q1">
     <div class="quiz-tag">⭐ QUIZ 1 · El ritual del clon</div>
-    <h3 class="quiz-q">Clonas el proyecto de un compañero, corres <code style="color:var(--cyan)">npm run test</code> y explota: "Cannot find module '@playwright/test'". ¿Primer comando?</h3>
+    <h3 class="quiz-q">Clonas el proyecto de un compañero, corres <code style="color:var(--cyan)">npm run test</code> y explota: "Cannot find module '@playwright/test'". Primer comando?</h3>
     <div class="quiz-opts">
       <button class="opt"><span class="key">A</span><span>Reinstalar Node.js completo</span></button>
       <button class="opt" data-ok="1"><span class="key">B</span><span><code>npm install</code> — reconstruir node_modules desde la lista de compras</span></button>
@@ -401,12 +401,12 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
     <div class="gf-box"><b>📝 Working</b>tus archivos<br>tal como están</div>
     <div class="gf-arrow">─ git add →<br><span style="font-size:.7rem">"esto entra en la foto"</span></div>
     <div class="gf-box"><b>📦 Staging</b>lo seleccionado<br>para la próxima foto</div>
-    <div class="gf-arrow">─ git commit →<br><span style="font-size:.7rem">"¡click! foto tomada"</span></div>
+    <div class="gf-arrow">─ git commit →<br><span style="font-size:.7rem">"click! foto tomada"</span></div>
     <div class="gf-box hl"><b>📚 Historia</b>checkpoints<br>permanentes</div>
   </div>
   <div class="cards c3" data-stagger style="margin-top:.6rem">
-    <div class="card"><div class="ico">🎮</div><h3>Como un videojuego</h3><p>Commit = grabar partida. ¿Rompiste todo? Vuelves al último checkpoint. Nada se pierde de verdad después de un commit.</p></div>
-    <div class="card"><div class="ico">📦</div><h3>¿Por qué staging?</h3><p>Eliges QUÉ entra en cada foto. Cambiaste 5 archivos pero 2 son de otra tarea → fotos separadas, historia limpia.</p></div>
+    <div class="card"><div class="ico">🎮</div><h3>Como un videojuego</h3><p>Commit = grabar partida. Rompiste todo? Vuelves al último checkpoint. Nada se pierde de verdad después de un commit.</p></div>
+    <div class="card"><div class="ico">📦</div><h3>Por qué staging?</h3><p>Eliges QUÉ entra en cada foto. Cambiaste 5 archivos pero 2 son de otra tarea → fotos separadas, historia limpia.</p></div>
     <div class="card"><div class="ico">🔍</div><h3>git status = tu brújula</h3><p>Te dice qué está modificado, qué está en staging y qué falta. <b>Cuando dudes: git status.</b> Siempre.</p></div>
   </div>
   <div class="notes"><p>El modelo de 3 zonas ES git — todo comando se entiende desde aquí. Insiste en "git status como brújula": el hábito que salva a todo principiante (no castiga, solo informa). La metáfora checkpoint de videojuego baja el miedo: con commits frecuentes, nada se pierde.</p></div>
@@ -474,7 +474,7 @@ playwright-report/</pre>
         <div class="cmd"><span class="ps">$</span><span class="ct">git log --oneline</span><span class="copy">📋</span></div>
         <details class="m-hint"><summary>Pista: git pide tu identidad</summary><div class="hint-body"><p>Primera vez con git en esta máquina:</p><pre class="code" style="font-size:.75rem">git config --global user.name "Tu Nombre"
 git config --global user.email "tu@email.com"</pre><p style="margin-top:.3rem">Una sola vez, queda configurado para siempre.</p></div></details>
-        <details class="m-hint"><summary>Pista: ¿el .gitignore funcionó?</summary><div class="hint-body"><p><code>git status</code> ANTES del add: si node_modules aparece en la lista, el .gitignore tiene un typo o está en la carpeta equivocada.</p></div></details>
+        <details class="m-hint"><summary>Pista: el .gitignore funcionó?</summary><div class="hint-body"><p><code>git status</code> ANTES del add: si node_modules aparece en la lista, el .gitignore tiene un typo o está en la carpeta equivocada.</p></div></details>
       </div>
     </div>
     <div class="m-crit">✅ <span><b>Criterio de éxito:</b> <code style="color:var(--cyan)">git log --oneline</code> muestra tu commit inicial, y <code style="color:var(--cyan)">git status</code> NO lista node_modules.</span></div>
@@ -486,7 +486,7 @@ git config --global user.email "tu@email.com"</pre><p style="margin-top:.3rem">U
 <section class="slide" data-act="Acto 3 · Git local" style="align-items:center">
   <div class="quiz" data-quiz="q2">
     <div class="quiz-tag">⭐ QUIZ 2 · Las 3 zonas</div>
-    <h3 class="quiz-q">Modificaste 5 archivos, pero 2 pertenecen a otra tarea. ¿Cómo logras un commit limpio con solo los 3 relevantes?</h3>
+    <h3 class="quiz-q">Modificaste 5 archivos, pero 2 pertenecen a otra tarea. Cómo logras un commit limpio con solo los 3 relevantes?</h3>
     <div class="quiz-opts">
       <button class="opt"><span class="key">A</span><span>Imposible — git add . se lleva todo, es todo o nada</span></button>
       <button class="opt" data-ok="1"><span class="key">B</span><span><code>git add archivo1 archivo2 archivo3</code> — el staging existe exactamente para elegir qué entra en la foto</span></button>
@@ -578,7 +578,7 @@ git config --global user.email "tu@email.com"</pre><p style="margin-top:.3rem">U
       </div>
       <div>
         <details class="m-hint"><summary>Pista: sin gh CLI</summary><div class="hint-body"><p>Tras el push, GitHub imprime una URL "Create a pull request" en la propia terminal — ábrela. O en la web del repo: botón "Compare & pull request".</p></div></details>
-        <details class="m-hint"><summary>Pista: ¿y quién me lo aprueba?</summary><div class="hint-body"><p>En este ejercicio: revísalo tú (mira el diff con ojos de reviewer — ¿entenderías este cambio sin contexto?) y dale merge. En equipo real, un colega aprueba. Si están en pareja: ¡revísense mutuamente! Eso es code review real.</p></div></details>
+        <details class="m-hint"><summary>Pista: y quién me lo aprueba?</summary><div class="hint-body"><p>En este ejercicio: revísalo tú (mira el diff con ojos de reviewer — entenderías este cambio sin contexto?) y dale merge. En equipo real, un colega aprueba. Si están en pareja: revísense mutuamente! Eso es code review real.</p></div></details>
       </div>
     </div>
     <div class="m-crit">✅ <span><b>Criterio de éxito:</b> URL de un PR tuyo, mergeado, en tu repo de GitHub. Guárdala — es tu primera entrega con flujo profesional.</span></div>
@@ -590,7 +590,7 @@ git config --global user.email "tu@email.com"</pre><p style="margin-top:.3rem">U
 <section class="slide" data-act="Acto 4 · GitHub + PR" style="align-items:center">
   <div class="quiz" data-quiz="q3">
     <div class="quiz-tag">⭐ QUIZ 3 · El porqué del ritual</div>
-    <h3 class="quiz-q">Trabajas SOLO en tu suite. ¿Tiene sentido seguir usando ramas y PRs?</h3>
+    <h3 class="quiz-q">Trabajas SOLO en tu suite. Tiene sentido seguir usando ramas y PRs?</h3>
     <div class="quiz-opts">
       <button class="opt"><span class="key">A</span><span>No — los PRs solo sirven cuando hay un equipo que revise</span></button>
       <button class="opt" data-ok="1"><span class="key">B</span><span>Sí — historial revisable, CI se engancha a los PRs, y practicas el flujo que usarás en equipo</span></button>
@@ -857,7 +857,7 @@ function termSim(opts){
       step++;
       renderGoals();
       if(step === opts.steps.length){
-        print('\n<span class="o-ok">🎉 ¡Ejercicio completo! Esto mismo harás en tu proyecto real.</span>');
+        print('\n<span class="o-ok">🎉 Ejercicio completo! Esto mismo harás en tu proyecto real.</span>');
         const r = out.getBoundingClientRect();
         confetti(r.left + r.width/2, r.top + 40, 80);
       } else {

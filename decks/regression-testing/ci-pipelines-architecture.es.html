@@ -741,10 +741,10 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <div class="split wide">
       <table class="tbl tight mt-s">
         <tr><th>Suite</th><th>Pregunta</th><th>Trigger</th><th>Alcance</th><th>Dura (orden de magnitud)</th><th>Gatea</th></tr>
-        <tr><td><b>build.yml</b></td><td>¿El <i>framework</i> compila, pasa lint y su documentación sigue consistente?</td><td class="mono">pull_request → main</td><td>types · lint · docs gates · contratos de documentación · evals · <code class="k">playwright test --list</code>. Cero tests ejecutados.</td><td>~3 min</td><td>el merge del PR</td></tr>
-        <tr><td><b>smoke.yml</b></td><td>¿La app está viva tras el deploy?</td><td class="mono">cron 02:00 · manual</td><td>solo <code class="k">@critical</code> (proyectos smoke-ui + smoke-api)</td><td>2-5 min</td><td>«¿seguimos o avisamos?» post-deploy</td></tr>
-        <tr><td><b>sanity.yml</b></td><td>¿Funciona ESTE cambio / feature?</td><td class="mono">solo manual, con inputs</td><td>un archivo, un <code class="k">--grep</code>, o e2e/integration</td><td>1-10 min</td><td>validar un test nuevo en CI antes del PR</td></tr>
-        <tr><td><b>regression.yml</b></td><td>¿Se rompió algo más?</td><td class="mono">cron 00:00 · manual</td><td>integration completo → e2e completo</td><td>20-60 min</td><td>el release: GO / CAUTION / NO-GO</td></tr>
+        <tr><td><b>build.yml</b></td><td>El <i>framework</i> compila, pasa lint y su documentación sigue consistente?</td><td class="mono">pull_request → main</td><td>types · lint · docs gates · contratos de documentación · evals · <code class="k">playwright test --list</code>. Cero tests ejecutados.</td><td>~3 min</td><td>el merge del PR</td></tr>
+        <tr><td><b>smoke.yml</b></td><td>La app está viva tras el deploy?</td><td class="mono">cron 02:00 · manual</td><td>solo <code class="k">@critical</code> (proyectos smoke-ui + smoke-api)</td><td>2-5 min</td><td>«seguimos o avisamos?» post-deploy</td></tr>
+        <tr><td><b>sanity.yml</b></td><td>Funciona ESTE cambio / feature?</td><td class="mono">solo manual, con inputs</td><td>un archivo, un <code class="k">--grep</code>, o e2e/integration</td><td>1-10 min</td><td>validar un test nuevo en CI antes del PR</td></tr>
+        <tr><td><b>regression.yml</b></td><td>Se rompió algo más?</td><td class="mono">cron 00:00 · manual</td><td>integration completo → e2e completo</td><td>20-60 min</td><td>el release: GO / CAUTION / NO-GO</td></tr>
       </table>
       <div>
         <div class="pyr">
@@ -798,14 +798,14 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
         <span class="key">run</span>: bunx playwright test --list</pre></div>
       <div>
         <ul class="blist" style="margin-top:0">
-          <li><b>Contesta «¿este PR rompe el framework?».</b> Un test que no compila no falla: no existe. Por eso <code class="k">playwright test --list</code> es el step clave: compila cada spec sin ejecutarlo y sin credenciales de app.</li>
+          <li><b>Contesta «este PR rompe el framework?».</b> Un test que no compila no falla: no existe. Por eso <code class="k">playwright test --list</code> es el step clave: compila cada spec sin ejecutarlo y sin credenciales de app.</li>
           <li><b>Mismo orden que la Rule #7 del repo:</b> tests (compilación) → types → lint. Lo que corrés en local antes de commitear, corre aquí antes de mergear. Sin sorpresas.</li>
           <li><b>El step Validate env schema (varlock) va primero</b>, antes de <code class="k">bun install</code>: valida que el bloque <code class="k">env</code> del job cumpla <code class="k">.env.schema</code> y deja un summary redactado en la página del job. Lo único requerido es <code class="k">TEST_ENV</code> (tiene default); el par de test-user es opcional, así que un PR de fork, que no tiene secrets, pasa aquí y en <code class="k">test:env:check</code>.</li>
           <li><b>Los gates de documentación también bloquean el PR.</b> <code class="k">Docs Gates</code> corre <code class="k">docs:check</code> y <code class="k">skills:check</code> (links y paths muertos, scripts citados que package.json no declara, Rule #17, router de skills y capa de instrucciones). <code class="k">Documentation Contracts</code> falla el PR si cambia una región marcada con <code class="k">LINT.IfChange</code> sin que cambien las páginas que su <code class="k">LINT.ThenChange</code> nombra (o sin un trailer <code class="k">Docs-Checked:</code> en un commit del PR). Por eso el checkout de build.yml trae el historial completo (<code class="k">fetch-depth: 0</code>).</li>
           <li><b>Cancelable</b> (<code class="k">cancel-in-progress: true</code>): un push nuevo invalida al anterior y nada quedó publicado.</li>
           <li><b>El timeout más corto de las suites</b> (ver <code class="k">timeout-minutes</code> en build.yml): si tarda más, algo está mal en la máquina, no en el código.</li>
         </ul>
-        <div class="callout warn mt-m"><h4>Lo que NO hace, a propósito</h4><p>No corre ni un test contra staging. Correr la suite en cada PR costaría minutos y credenciales por cada push (incluidos forks, que no las tienen) y mezclaría dos preguntas: «¿compila?» con «¿la app funciona?». La segunda se contesta con sanity, a demanda.</p></div>
+        <div class="callout warn mt-m"><h4>Lo que NO hace, a propósito</h4><p>No corre ni un test contra staging. Correr la suite en cada PR costaría minutos y credenciales por cada push (incluidos forks, que no las tienen) y mezclaría dos preguntas: «compila?» con «la app funciona?». La segunda se contesta con sanity, a demanda.</p></div>
       </div>
     </div>
     </div>
@@ -816,7 +816,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
   <section class="slide" data-title="smoke.yml: @critical">
     <div class="body">
     <p class="kicker">suite 1: la pregunta más barata, la más frecuente</p>
-    <h2 class="h2"><span class="grad">smoke.yml</span>: ¿la app está viva?</h2>
+    <h2 class="h2"><span class="grad">smoke.yml</span>: la app está viva?</h2>
     <div class="split eq">
       <div>
         <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">extracto de <b>.github/workflows/smoke.yml</b> step Run Smoke Tests (@critical) · <b>playwright.config.ts</b> proyectos smoke-*</span><span class="badge real">real</span></div>
@@ -839,7 +839,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
         <ul class="blist" style="margin-top:0">
           <li><b>El tag decide el alcance.</b> Un test entra en smoke por llevar <code class="k">@critical</code> en su título, no por estar en una carpeta. El mismo tag alimenta el label <code class="k">suite</code> de Allure: una sola taxonomía para CI y reporte.</li>
           <li><b>Un job de suite, un job de reporte.</b> Sin integración-primero: los críticos de API y UI corren juntos porque el objetivo es velocidad, no diagnóstico.</li>
-          <li><b>Cron a las 02:00 UTC</b>: después del deploy nocturno. También a mano tras cualquier deploy: «¿seguimos?».</li>
+          <li><b>Cron a las 02:00 UTC</b>: después del deploy nocturno. También a mano tras cualquier deploy: «seguimos?».</li>
           <li><b>Nunca escribe en la ejecución de regresión.</b> El secret <code class="k">STP_EXECUTION_KEY</code> no se lee aquí (bloque <code class="k">env</code> del workflow): un smoke que importara al RTR voltearía Test Runs que pertenecen a un veredicto de regresión completo. Solo importa si le pasás una <code class="k">execution_key</code> explícita.</li>
           <li><b>Criterio de tamaño</b> (industria): smoke debería ser menos del 5% de la regresión y terminar en minutos. Si tu smoke tarda 20, es una regresión disfrazada.</li>
         </ul>
@@ -853,7 +853,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
   <section class="slide" data-title="sanity.yml: el cambio">
     <div class="body">
     <p class="kicker">suite 2: la única que siempre necesita que le digas qué</p>
-    <h2 class="h2"><span class="grad">sanity.yml</span>: ¿funciona ESTE cambio?</h2>
+    <h2 class="h2"><span class="grad">sanity.yml</span>: funciona ESTE cambio?</h2>
     <div class="split">
       <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">extracto de <b>.github/workflows/sanity.yml</b> · step Run Sanity Tests</span><span class="badge real">real</span></div>
 <pre class="sm">      - <span class="key">name</span>: <span class="str">Run Sanity Tests on <span class="ex">${{ env.TEST_ENV }}</span></span>
@@ -900,15 +900,15 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <div class="notes">sanity.yml: inputs y precedencia; uso canónico; nota de hardening ya resuelta: los inputs pasaron a env:, se leen entre comillas y el eval se quitó (array de bash). Mostrar el listado como el ejemplo del patrón seguro.</div>
   </section>
 
-  <!-- 8. ¿QUÉ SUITE CORRO? -->
-  <section class="slide" data-title="¿Qué suite corro?">
+  <!-- 8. QUÉ SUITE CORRO? -->
+  <section class="slide" data-title="Qué suite corro?">
     <div class="body">
     <p class="kicker">decisor: elige la situación y mira qué suite corresponde</p>
-    <h2 class="h2">¿Qué suite corro? <span class="grad">La situación decide</span></h2>
+    <h2 class="h2">Qué suite corro? <span class="grad">La situación decide</span></h2>
     <div class="trig">
       <div class="evs">
         <div class="ev" data-ev="s1">Acabo de escribir un test<small>y quiero verlo pasar en CI antes del PR</small></div>
-        <div class="ev" data-ev="s2">Devs desplegaron a staging<small>«¿podemos seguir probando?»</small></div>
+        <div class="ev" data-ev="s2">Devs desplegaron a staging<small>«podemos seguir probando?»</small></div>
         <div class="ev" data-ev="s3">Mañana es el release<small>necesito el veredicto</small></div>
         <div class="ev" data-ev="s4">Un bug de checkout se arregló<small>quiero verificar solo esa área</small></div>
         <div class="ev" data-ev="s5">Abrí un PR al repo de tests<small>refactor de una Page</small></div>
@@ -924,7 +924,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
         <div class="trig-note"></div>
         <div class="trig-notes" hidden>
           <div data-ev="s1"><b>Sanity con test_file.</b> Es exactamente su propósito declarado (el comentario de cabecera: «Useful for validating new tests in CI before merging PRs»). No dispares la regresión para un archivo: decenas de minutos para una respuesta que sanity da en unos pocos.</div>
-          <div data-ev="s2"><b>Smoke.</b> La pregunta es «¿está viva?», no «¿está perfecta?». Solo @critical: login, el flujo de negocio principal, la API respondiendo. Si pasa, el equipo sigue; si no, nadie pierde la tarde probando sobre una app caída.</div>
+          <div data-ev="s2"><b>Smoke.</b> La pregunta es «está viva?», no «está perfecta?». Solo @critical: login, el flujo de negocio principal, la API respondiendo. Si pasa, el equipo sigue; si no, nadie pierde la tarde probando sobre una app caída.</div>
           <div data-ev="s3"><b>Regression, vía el skill.</b> El veredicto necesita un run record (RTR) creado ANTES del trigger para que CI importe ahí. Lo hace <code class="k">/regression-testing</code>: crea el RTR, dispara con <code class="k">execution_key</code>, persiste el RUN_ID y luego clasifica. Deck how-it-works para el resto.</div>
           <div data-ev="s4"><b>Sanity con grep.</b> <code class="k">-f test_type=e2e -f grep="@checkout"</code> corre solo los tests etiquetados. Reporte en <code class="k">/staging/sanity/</code> (o el <code class="k">custom_allure_url</code> que elijas, p.ej. <code class="k">checkout-fix</code>).</div>
           <div data-ev="s5"><b>Build, sin hacer nada.</b> El PR dispara build.yml solo. Si además querés ver tu Page refactorizada funcionando, sanity con el archivo que la usa. Nunca los dos en el mismo workflow.</div>
@@ -940,22 +940,22 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
   <section class="slide" data-title="Quiz 6">
     <div class="body">
     <p class="kicker run">quiz 06: estrategia</p>
-    <h2 class="h2">¿Qué suite y por qué?</h2>
+    <h2 class="h2">Qué suite y por qué?</h2>
     <div class="quiz two">
       <div class="qitem">
-        <div class="qq"><span class="qn">Q1</span><span>El PM pide «un solo número de calidad» sumando los pass-rates de smoke (98%) y regression (91%). ¿Qué respondés?</span></div>
+        <div class="qq"><span class="qn">Q1</span><span>El PM pide «un solo número de calidad» sumando los pass-rates de smoke (98%) y regression (91%). Qué respondés?</span></div>
         <div class="opts">
           <div class="opt"><span class="mk">A</span><span>94.5%, promedio simple</span></div>
           <div class="opt" data-correct="1"><span class="mk">B</span><span>Son suites con preguntas y SLOs distintos: se reportan por separado; el veredicto de release sale solo de regression</span></div>
           <div class="opt"><span class="mk">C</span><span>98%: smoke es la que importa para el release</span></div>
         </div>
-        <div class="qexp"><b>Por separado.</b> Smoke mide «¿está viva?» sobre 5% de los tests; regression mide «¿se rompió algo?» sobre todo. Promediar esconde el 91%, que es el que decide (regla R6: never mix smoke + regression into one pass-rate). El deck how-it-works cuenta cómo el 91% se convierte en CAUTION.</div>
+        <div class="qexp"><b>Por separado.</b> Smoke mide «está viva?» sobre 5% de los tests; regression mide «se rompió algo?» sobre todo. Promediar esconde el 91%, que es el que decide (regla R6: never mix smoke + regression into one pass-rate). El deck how-it-works cuenta cómo el 91% se convierte en CAUTION.</div>
       </div>
       <div class="qitem">
-        <div class="qq"><span class="qn">Q2</span><span>¿Por qué build.yml corre <code class="k">playwright test --list</code> en vez de <code class="k">playwright test</code>?</span></div>
+        <div class="qq"><span class="qn">Q2</span><span>Por qué build.yml corre <code class="k">playwright test --list</code> en vez de <code class="k">playwright test</code>?</span></div>
         <div class="opts">
           <div class="opt"><span class="mk">A</span><span>Para ahorrar minutos: es un atajo temporal</span></div>
-          <div class="opt" data-correct="1"><span class="mk">B</span><span>Porque su pregunta es «¿compila la suite?», no «¿funciona la app?»: lista = compila todo sin ejecutar ni necesitar la app</span></div>
+          <div class="opt" data-correct="1"><span class="mk">B</span><span>Porque su pregunta es «compila la suite?», no «funciona la app?»: lista = compila todo sin ejecutar ni necesitar la app</span></div>
           <div class="opt"><span class="mk">C</span><span>Porque los PR no tienen browsers instalados</span></div>
         </div>
         <div class="qexp"><b>Pregunta distinta.</b> <code class="k">--list</code> carga y compila cada spec: si un import está roto o un tipo no cierra, falla ahí, sin credenciales de app ni browsers. Ejecutar la suite en cada PR mezclaría el estado del framework con el estado de staging, y haría que un PR de fork (sin secrets) fallara por motivos que no son suyos.</div>
@@ -1131,10 +1131,10 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
   <section class="slide" data-title="Quiz 7">
     <div class="body">
     <p class="kicker run">quiz 07: regression.yml</p>
-    <h2 class="h2">¿Leíste el archivo o solo el deck?</h2>
+    <h2 class="h2">Leíste el archivo o solo el deck?</h2>
     <div class="quiz two">
       <div class="qitem">
-        <div class="qq"><span class="qn">Q3</span><span>IntegrationTests falla a las 00:06. ¿Qué pasa con el reporte Allure de esa noche?</span></div>
+        <div class="qq"><span class="qn">Q3</span><span>IntegrationTests falla a las 00:06. Qué pasa con el reporte Allure de esa noche?</span></div>
         <div class="opts">
           <div class="opt"><span class="mk">A</span><span>No se genera: allure-report depende de los dos jobs de tests</span></div>
           <div class="opt" data-correct="1"><span class="mk">B</span><span>Se genera solo con los resultados de Integration: allure-report tiene <code class="k">if: always()</code> y la descarga de E2E lleva <code class="k">continue-on-error</code></span></div>
@@ -1143,7 +1143,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
         <div class="qexp"><b>Parcial pero existe.</b> E2ETests se salta (su <code class="k">needs</code> falló y no tiene <code class="k">always()</code>). allure-report sí arranca (<code class="k">if: always() &amp;&amp; …</code>), la descarga de <code class="k">e2e-allure-results</code> falla sin romper el job, el merge copia lo que hay y publica. El agente verá una suite sola y sabrá por qué.</div>
       </div>
       <div class="qitem">
-        <div class="qq"><span class="qn">Q4</span><span>Es el primer run de la historia del repo. El step «Get Allure History» intenta hacer checkout de <code class="k">gh-pages</code>, que no existe. ¿Qué pasa?</span></div>
+        <div class="qq"><span class="qn">Q4</span><span>Es el primer run de la historia del repo. El step «Get Allure History» intenta hacer checkout de <code class="k">gh-pages</code>, que no existe. Qué pasa?</span></div>
         <div class="opts">
           <div class="opt"><span class="mk">A</span><span>El job falla: no se puede publicar sin la rama</span></div>
           <div class="opt" data-correct="1"><span class="mk">B</span><span>El step falla pero el job sigue (<code class="k">continue-on-error: true</code>); el reporte nace sin historia y el script crea la rama</span></div>
@@ -1171,16 +1171,16 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
   <section class="slide" data-title="Dónde miro qué">
     <div class="body">
     <p class="kicker">el mapa de los resultados</p>
-    <h2 class="h2">Terminó el run. <span class="grad">¿Dónde miro qué?</span></h2>
+    <h2 class="h2">Terminó el run. <span class="grad">Dónde miro qué?</span></h2>
     <table class="tbl mt-m">
       <tr><th>Quiero saber…</th><th>Dónde</th><th>Cómo llego</th><th>Qué veo</th></tr>
-      <tr><td><b>¿Pasó o falló, y qué job?</b></td><td>GitHub → Actions → el run</td><td class="mono">gh run view &lt;RUN_ID&gt; --json status,conclusion,jobs</td><td>grafo de jobs con ✓/✗/⊘, duración por job, el <b>summary</b> con el link al reporte</td></tr>
-      <tr><td><b>¿Qué línea falló?</b></td><td>Logs del job</td><td class="mono">gh run view &lt;RUN_ID&gt; --log-failed</td><td>solo los steps rojos (el <code class="k">--log</code> completo puede pesar &gt;50 MB)</td></tr>
-      <tr><td><b>¿Qué tests, con qué tendencia?</b></td><td>Reporte Allure publicado</td><td class="mono">https://…github.io/…/{env}/{suite}/</td><td>Report (drill-down, tags) · Graphs (status, severidades, pirámide) · Timeline</td></tr>
-      <tr><td><b>¿Qué pasó en pantalla?</b></td><td>Playwright HTML report + traces</td><td class="mono">gh run download &lt;RUN_ID&gt; -n e2e-playwright-report</td><td>trace viewer: DOM, red, consola paso a paso. <code class="k">trace: 'retain-on-failure'</code> en el config</td></tr>
+      <tr><td><b>Pasó o falló, y qué job?</b></td><td>GitHub → Actions → el run</td><td class="mono">gh run view &lt;RUN_ID&gt; --json status,conclusion,jobs</td><td>grafo de jobs con ✓/✗/⊘, duración por job, el <b>summary</b> con el link al reporte</td></tr>
+      <tr><td><b>Qué línea falló?</b></td><td>Logs del job</td><td class="mono">gh run view &lt;RUN_ID&gt; --log-failed</td><td>solo los steps rojos (el <code class="k">--log</code> completo puede pesar &gt;50 MB)</td></tr>
+      <tr><td><b>Qué tests, con qué tendencia?</b></td><td>Reporte Allure publicado</td><td class="mono">https://…github.io/…/{env}/{suite}/</td><td>Report (drill-down, tags) · Graphs (status, severidades, pirámide) · Timeline</td></tr>
+      <tr><td><b>Qué pasó en pantalla?</b></td><td>Playwright HTML report + traces</td><td class="mono">gh run download &lt;RUN_ID&gt; -n e2e-playwright-report</td><td>trace viewer: DOM, red, consola paso a paso. <code class="k">trace: 'retain-on-failure'</code> en el config</td></tr>
       <tr><td><b>Evidencia para el bug</b></td><td>artifact de fallo</td><td class="mono">gh run download &lt;RUN_ID&gt; -n e2e-failure-evidence -D ./analysis/evidence/</td><td>screenshots, traces, videos (si <code class="k">video_record=true</code>)</td></tr>
       <tr><td><b>Los datos crudos para analizar</b></td><td>artifact merged</td><td class="mono">gh run download &lt;RUN_ID&gt; -n merged-allure-results-staging</td><td>un JSON por test: status, message, labels (testId = ATC, suite, severity)</td></tr>
-      <tr><td><b>¿Qué quedó en el TMS?</b></td><td>Jira / Xray</td><td>el RTR (Test Execution) del run</td><td>un Test Run por ATC con PASSED / FAILED, importado desde <code class="k">junit.xml</code></td></tr>
+      <tr><td><b>Qué quedó en el TMS?</b></td><td>Jira / Xray</td><td>el RTR (Test Execution) del run</td><td>un Test Run por ATC con PASSED / FAILED, importado desde <code class="k">junit.xml</code></td></tr>
     </table>
     <div class="callout mt-m"><h4>Orden de verdad para el análisis</h4><p><code class="k">/regression-testing</code> fija la prioridad: <b>Allure results JSON &gt; Playwright <code class="k">results.json</code> &gt; logs</b>. Los logs son el último recurso, no el primero. Y el label <code class="k">suite</code> de Allure deriva del tag Playwright que también eligió el alcance en CI: una sola taxonomía, cero reconciliación.</p></div>
     </div>
@@ -1244,10 +1244,10 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
   <section class="slide" data-title="Quiz 8">
     <div class="body">
     <p class="kicker run">quiz 08: resultados y write-back</p>
-    <h2 class="h2">¿Adónde fueron los resultados?</h2>
+    <h2 class="h2">Adónde fueron los resultados?</h2>
     <div class="quiz two">
       <div class="qitem">
-        <div class="qq"><span class="qn">Q5</span><span>Disparás smoke.yml a mano sin <code class="k">execution_key</code>. <code class="k">AUTO_SYNC=true</code>, <code class="k">TMS_PROVIDER=xray</code>. ¿Qué llega a Xray?</span></div>
+        <div class="qq"><span class="qn">Q5</span><span>Disparás smoke.yml a mano sin <code class="k">execution_key</code>. <code class="k">AUTO_SYNC=true</code>, <code class="k">TMS_PROVIDER=xray</code>. Qué llega a Xray?</span></div>
         <div class="opts">
           <div class="opt"><span class="mk">A</span><span>Los @critical se importan al RTR de la última regresión (secret STP_EXECUTION_KEY)</span></div>
           <div class="opt" data-correct="1"><span class="mk">B</span><span>Nada: smoke no lee el secret, y sin key el step de sync se salta a propósito</span></div>
@@ -1256,7 +1256,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
         <div class="qexp"><b>Nada, por diseño.</b> smoke.yml pone <code class="k">STP_EXECUTION_KEY: ${{ github.event.inputs.execution_key }}</code> sin fallback al secret, y el <code class="k">if</code> del step Sync Results to TMS exige key cuando el proveedor es xray. Importar el @critical dentro del RTR voltearía Test Runs de un veredicto completo (comentario del bloque <code class="k">env</code>). C tampoco: el import sin destino se evita justamente porque acuñaría huérfanas.</div>
       </div>
       <div class="qitem">
-        <div class="qq"><span class="qn">Q6</span><span>La regresión del jueves dio NO-GO, se arregló el bug y ahora re-corrés. ¿Qué execution_key usás?</span></div>
+        <div class="qq"><span class="qn">Q6</span><span>La regresión del jueves dio NO-GO, se arregló el bug y ahora re-corrés. Qué execution_key usás?</span></div>
         <div class="opts">
           <div class="opt"><span class="mk">A</span><span>La misma RTR del jueves: es la misma regresión</span></div>
           <div class="opt" data-correct="1"><span class="mk">B</span><span>Una RTR nueva (<code class="k">…#2</code>): el veredicto del jueves ya se escribió y cerró; nunca se reabre</span></div>
@@ -1333,7 +1333,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <div class="flow">
       <div class="fn"><div class="t">app: build + unit</div><div class="d">CI de la app. Rápido, en cada push.</div><div class="r">repo app</div></div><div class="fa">→</div>
       <div class="fn"><div class="t">app: deploy-staging</div><div class="d"><code class="k">environment: staging</code>. Al terminar, invoca QA.</div><div class="r">repo app</div></div><div class="fa">→</div>
-      <div class="fn k"><div class="t">QA: smoke (2-5 min)</div><div class="d">¿Está viva? Falla → nada más corre.</div><div class="r">repo QA · smoke.yml</div></div><div class="fa">→</div>
+      <div class="fn k"><div class="t">QA: smoke (2-5 min)</div><div class="d">Está viva? Falla → nada más corre.</div><div class="r">repo QA · smoke.yml</div></div><div class="fa">→</div>
       <div class="fn k"><div class="t">QA: regression o sanity</div><div class="d">Todo, o el área tocada (grep por componente).</div><div class="r">repo QA · regression.yml</div></div><div class="fa">→</div>
       <div class="fn g"><div class="t">app: deploy-production</div><div class="d"><code class="k">needs: [qa]</code> + <code class="k">environment: production</code> con required reviewers.</div><div class="r">repo app</div></div>
     </div>
@@ -1361,10 +1361,10 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
   <section class="slide" data-title="Quiz 9">
     <div class="body">
     <p class="kicker run">quiz 09: integración con el pipeline de desarrollo</p>
-    <h2 class="h2">¿Qué mecanismo elegís?</h2>
+    <h2 class="h2">Qué mecanismo elegís?</h2>
     <div class="quiz two">
       <div class="qitem">
-        <div class="qq"><span class="qn">Q7</span><span>La app y este repo están en la misma organización de GitHub. Querés que <code class="k">deploy-production</code> no arranque si la regresión falla. ¿Mecanismo más simple?</span></div>
+        <div class="qq"><span class="qn">Q7</span><span>La app y este repo están en la misma organización de GitHub. Querés que <code class="k">deploy-production</code> no arranque si la regresión falla. Mecanismo más simple?</span></div>
         <div class="opts">
           <div class="opt"><span class="mk">A</span><span>repository_dispatch + escribir un commit status de vuelta</span></div>
           <div class="opt" data-correct="1"><span class="mk">B</span><span>workflow_call: la app invoca regression.yml como job y pone <code class="k">needs</code> en deploy-production</span></div>
@@ -1373,7 +1373,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
         <div class="qexp"><b>workflow_call.</b> Misma org → <code class="k">secrets: inherit</code> vale; el job QA aparece en el run de la app y <code class="k">needs</code> es el gate, sin tokens ni statuses a mano. A funciona pero cuesta más (token cross-repo + feedback manual). C no llega: <code class="k">deployment_status</code> se emite en el repo donde ocurrió el deployment, que es la app, no QA.</div>
       </div>
       <div class="qitem">
-        <div class="qq"><span class="qn">Q8</span><span>Añadís <code class="k">on: workflow_call</code> a regression.yml y leés el entorno con <code class="k">github.event.inputs.environment</code>. Desde la app llega vacío. ¿Por qué?</span></div>
+        <div class="qq"><span class="qn">Q8</span><span>Añadís <code class="k">on: workflow_call</code> a regression.yml y leés el entorno con <code class="k">github.event.inputs.environment</code>. Desde la app llega vacío. Por qué?</span></div>
         <div class="opts">
           <div class="opt" data-correct="1"><span class="mk">A</span><span><code class="k">github.event.inputs</code> es del dispatch; los inputs de workflow_call llegan por el contexto <code class="k">inputs</code>, que sirve para ambos</span></div>
           <div class="opt"><span class="mk">B</span><span>La app olvidó <code class="k">secrets: inherit</code></span></div>
@@ -1456,7 +1456,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <h2 class="h2">Último control del mini-curso</h2>
     <div class="quiz two">
       <div class="qitem">
-        <div class="qq"><span class="qn">Q9</span><span>Tu workflow nuevo recibe un input <code class="k">grep</code> y lo usa así: <code class="k">run: bun run test --grep="${{ github.event.inputs.grep }}"</code>. Un compañero de seguridad lo marca. ¿Qué cambiás?</span></div>
+        <div class="qq"><span class="qn">Q9</span><span>Tu workflow nuevo recibe un input <code class="k">grep</code> y lo usa así: <code class="k">run: bun run test --grep="${{ github.event.inputs.grep }}"</code>. Un compañero de seguridad lo marca. Qué cambiás?</span></div>
         <div class="opts">
           <div class="opt"><span class="mk">A</span><span>Nada: solo gente con permiso puede disparar el workflow</span></div>
           <div class="opt" data-correct="1"><span class="mk">B</span><span><code class="k">env: GREP: ${{ github.event.inputs.grep }}</code> y en el run <code class="k">--grep="$GREP"</code>: el valor no participa en la generación del script</span></div>
@@ -1465,7 +1465,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
         <div class="qexp"><b>Variable intermedia.</b> Una expresión dentro de <code class="k">run:</code> se sustituye ANTES de que bash lea el script: un input con <code class="k">"; rm -rf …</code> se convierte en código. Con <code class="k">env:</code> el valor llega como variable de entorno y bash lo trata como dato. Es la recomendación literal de la guía de seguridad de GitHub, y el patrón que aplica el step Run Sanity Tests de sanity.yml: inputs por env:, leídos entre comillas, sin eval.</div>
       </div>
       <div class="qitem">
-        <div class="qq"><span class="qn">Q10</span><span>Terminaste el workflow, mergeaste y a la mañana no corrió. Revisás: el cron está bien, el archivo está en main. ¿Qué mirás primero?</span></div>
+        <div class="qq"><span class="qn">Q10</span><span>Terminaste el workflow, mergeaste y a la mañana no corrió. Revisás: el cron está bien, el archivo está en main. Qué mirás primero?</span></div>
         <div class="opts">
           <div class="opt"><span class="mk">A</span><span>Si el repo tiene actividad reciente (los crons se desactivan a los 60 días en repos públicos) y si el run quedó encolado por carga</span></div>
           <div class="opt"><span class="mk">B</span><span>Si falta <code class="k">permissions: write-all</code></span></div>
@@ -1489,7 +1489,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
       <div class="card acc3"><h4>Referencias</h4><p>Repo: <code class="k">.github/workflows/*.yml</code> (leelos con este deck al lado) · <code class="k">.agents/skills/regression-testing/references/ci-cd-integration.md</code> (sharding, caché, path filters, troubleshooting) · <code class="k">references/github-pages-setup.md</code> · <code class="k">references/private-hosting-setup.md</code>. GitHub Docs: <i>docs.github.com/en/actions</i>. Playwright: <i>playwright.dev/docs/test-sharding</i>.</p></div>
     </div>
     <div class="callout mt-m"><h4>Ejercicio final</h4><p>Tomá el YAML del constructor para una suite <code class="k">visual</code> por tag <code class="k">@visual</code>. Pasá los 12 controles. Abrí un PR de prueba (sin mergear) y mirá cómo <code class="k">build.yml</code> reacciona. Después borrá la rama. Si entendiste cada línea que escribiste, este mini-curso cumplió.</p></div>
-    <p class="lede mt-m" style="font-size:17px">Un pipeline de testing no es una lista de comandos: es la respuesta escrita a «¿qué queremos saber, cuándo, y qué pasa si la respuesta es no?». Ahora sabés escribirla.</p>
+    <p class="lede mt-m" style="font-size:17px">Un pipeline de testing no es una lista de comandos: es la respuesta escrita a «qué queremos saber, cuándo, y qué pasa si la respuesta es no?». Ahora sabés escribirla.</p>
     <p class="small dim2 mt-s">← <a href="./ci-pipelines-fundamentals.es.html" class="mono">Parte I · Fundamentos</a></p>
     </div>
     <div class="notes">Cierre del mini-curso. Recap, handoff a how-it-works (veredicto) y test-automation, referencias, ejercicio final.</div>
@@ -2333,7 +2333,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
   document.getElementById('btn-next').addEventListener('click', function(){ go(idx + 1); });
   document.getElementById('btn-reset').addEventListener('click', resetTimer);
   document.getElementById('reset-layout').addEventListener('click', function(){
-    if (confirm('¿Restaurar la disposición por defecto?')) {
+    if (confirm('Restaurar la disposición por defecto?')) {
       try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
       applyLayout(defaultLayout());
     }

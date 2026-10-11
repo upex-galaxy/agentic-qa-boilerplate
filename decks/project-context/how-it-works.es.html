@@ -530,7 +530,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <text class="t-s" x="454" y="204">sección</text>
         <path class="ln" d="M535 216V250" marker-end="url(#pc-a4)"/>
         <rect class="bx" x="230" y="252" width="400" height="118" rx="10"/>
-        <text class="t-l" x="246" y="274">¿VIEJA? LO DICE data-sources</text>
+        <text class="t-l" x="246" y="274">VIEJA? LO DICE data-sources</text>
         <text class="t-m" x="246" y="298">ruta del repo  → git log --since</text>
         <text class="t-m" x="246" y="318">openapi:&lt;x&gt;     → cambió el contrato</text>
         <text class="t-m" x="246" y="338">db:&lt;tabla&gt;      → hubo migración</text>
@@ -747,7 +747,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <div class="card"><p class="lbl" style="color:var(--warn)">Antes de empezar</p><p class="small mt-s">Lo que va a mirar tiene que existir. Datos, API, E2E, dominio e infra ya tienen skill: se señala la que existe.</p></div>
       </div>
       <div class="stack" style="gap:12px">
-        <div class="card"><p class="lbl">El test de las tres preguntas</p><p class="small mt-s">¿Se regenera? ¿Es un dato? Queda en el mapa. ¿Es criterio que tiene que llegar sin pedirlo? Regla en la skill, con fecha y cómo se midió. Sin medición no hay regla.</p></div>
+        <div class="card"><p class="lbl">El test de las tres preguntas</p><p class="small mt-s">Se regenera? Es un dato? Queda en el mapa. Es criterio que tiene que llegar sin pedirlo? Regla en la skill, con fecha y cómo se midió. Sin medición no hay regla.</p></div>
         <div class="card"><p class="lbl">Validación</p><p class="small mt-s"><span class="mono">skills:check</span> verde · <span class="mono">skills:registry</span> la suma a <span class="mono">REGISTRY.md</span> · fila en la tabla <span class="mono">Project context skills</span> de <span class="mono">.agents/instructions/agent-project.md</span>, con sus frases en <span class="mono">triggers:</span> (<span class="mono">agent-skills-and-mcps.md</span> se sincroniza y <span class="mono">bun sync</span> la pisaría) · nada copiado del mapa.</p></div>
         <div class="card card-soft"><p class="lbl">Después</p><p class="small mt-s">Si sus fuentes se regeneran, ofrece UPDATE: suma reglas fechadas y mueve la falsa a "No longer true", sin borrarla.</p></div>
       </div>
@@ -1673,7 +1673,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   document.getElementById('btn-next').addEventListener('click', function(){ go(idx + 1); });
   document.getElementById('btn-reset').addEventListener('click', resetTimer);
   document.getElementById('reset-layout').addEventListener('click', function(){
-    if (confirm('¿Restaurar la disposición por defecto?')) {
+    if (confirm('Restaurar la disposición por defecto?')) {
       try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
       applyLayout(defaultLayout());
     }

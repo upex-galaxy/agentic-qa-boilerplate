@@ -495,7 +495,7 @@ kbd,.kbd{font-family:var(--font-mono);font-size:12.5px;padding:2px 8px;border-ra
     <span class="arr">→</span>
     <div class="node"><span class="nb">-1</span><h5>Resume check</h5><p><span class="mono">.session/…/progress.md</span></p><span class="br">resume · restart · abort</span></div>
     <span class="arr">→</span>
-    <div class="node"><span class="nb">0</span><h5>Modalidad TMS</h5><p>gate: ¿Xray licenciado? + <span class="mono">{{TC_CREATION_STAGE}}</span></p><span class="br warn">jira-xray | jira-native</span></div>
+    <div class="node"><span class="nb">0</span><h5>Modalidad TMS</h5><p>gate: Xray licenciado? + <span class="mono">{{TC_CREATION_STAGE}}</span></p><span class="br warn">jira-xray | jira-native</span></div>
     <span class="arr">→</span>
     <div class="node"><span class="nb">S</span><h5>Alcance</h5><p>module · ticket · bug · ad-hoc</p><span class="br">plan.md escrito</span></div>
     <span class="arr">→</span>
@@ -559,7 +559,7 @@ kbd,.kbd{font-family:var(--font-mono);font-size:12.5px;padding:2px 8px;border-ra
 <!-- 5 · FASE 0 MODALIDAD -->
 <section class="slide" data-title="Fase 0 · Modalidad TMS">
   <p class="kicker">fase 0: gate obligatorio, se resuelve UNA vez</p>
-  <h2 class="h2" data-anim="fade-up">¿Xray licenciado? Mismos conceptos, distintos <span class="grad">contenedores</span></h2>
+  <h2 class="h2" data-anim="fade-up">Xray licenciado? Mismos conceptos, distintos <span class="grad">contenedores</span></h2>
   <div class="steps s3 anim-stagger-list">
     <div class="step"><div class="num">1</div><h4>Config</h4><p><span class="mono">{{TMS_CLI}}</span> = <span class="mono">bun xray</span> → <b>candidato</b> jira-xray, se confirma en el paso 2; <span class="mono">acli</span>-solo o sin definir → jira-native.</p></div>
     <div class="step"><div class="num">2</div><h4>Evidencia</h4><p>La API de Xray responde vía <span class="mono">/xray-cli</span> (auth status y una lectura del proyecto) → jira-xray. Los work types solos nunca deciden: también existen nativos en jira-native. Sin respuesta nunca es jira-xray: si la config nombró Xray, STOP por la Regla #10 y nombrar las <span class="mono">XRAY_*</span>.</p></div>
@@ -621,8 +621,8 @@ kbd,.kbd{font-family:var(--font-mono);font-size:12.5px;padding:2px 8px;border-ra
   <p class="kicker">alcance bug-driven: la regla que vale oro</p>
   <h2 class="h2" data-anim="fade-up">Un bug importante DEBE terminar con un <span class="grad">Test</span></h2>
   <div class="flow anim-stagger-list">
-    <div class="stage"><div class="sx">1</div><div><h4>¿Es candidato de regression?</h4><p>Aplica los filtros de la Fase 0 + ROI (el bug previo sesga hacia arriba). <b>NO</b> → trátalo como un test fallido: el fix ya se verificó en sprint-testing → <b>Deferred, sin Test nuevo</b>. <b>SÍ</b> → paso 2.</p></div></div>
-    <div class="stage"><div class="sx">2</div><div><h4>¿Vino de un Test ya ejecutado que falló?</h4><p><b>SÍ</b> → <b>REUTILIZA</b> ese Test: enlázalo al bug (<span class="mono">tests / is tested by</span>) y promuévelo a regression, <b>nunca dupliques</b>. <b>NO</b> → <b>CREA</b> + diseña el Test (native: issue <span class="mono">Test</span>; xray: Xray <span class="mono">Test</span> + Test Plan / Test Set).</p></div></div>
+    <div class="stage"><div class="sx">1</div><div><h4>Es candidato de regression?</h4><p>Aplica los filtros de la Fase 0 + ROI (el bug previo sesga hacia arriba). <b>NO</b> → trátalo como un test fallido: el fix ya se verificó en sprint-testing → <b>Deferred, sin Test nuevo</b>. <b>SÍ</b> → paso 2.</p></div></div>
+    <div class="stage"><div class="sx">2</div><div><h4>Vino de un Test ya ejecutado que falló?</h4><p><b>SÍ</b> → <b>REUTILIZA</b> ese Test: enlázalo al bug (<span class="mono">tests / is tested by</span>) y promuévelo a regression, <b>nunca dupliques</b>. <b>NO</b> → <b>CREA</b> + diseña el Test (native: issue <span class="mono">Test</span>; xray: Xray <span class="mono">Test</span> + Test Plan / Test Set).</p></div></div>
   </div>
   <div class="grid g2 mt-m">
     <div class="callout warn" style="margin-top:0"><h4>Anula «el bug es el test case»</h4><p>Esa frase de <span class="mono">/sprint-testing</span> cubre solo el retest inmediato del sprint, NO la regression futura. Esta regla decide si debe existir un Test <i>persistente</i> para que el bug nunca regrese en silencio.</p></div>
@@ -704,9 +704,9 @@ kbd,.kbd{font-family:var(--font-mono);font-size:12.5px;padding:2px 8px;border-ra
   <div class="grid g2t mt-m">
     <div>
       <div class="flow anim-stagger-list" style="margin-top:0">
-        <div class="stage"><div class="sx">F1</div><div><h4>¿Protege contra regressions futuras?</h4><p>Typo puntual en un área estable → No → Deferred.</p></div></div>
-        <div class="stage"><div class="sx">F2</div><div><h4>¿Bugs previos en esta área?</h4><p>Sí → prioriza aun con ROI moderado: «falló una vez, puede fallar de nuevo».</p></div></div>
-        <div class="stage"><div class="sx">F3</div><div><h4>¿Nivel de app o de feature?</h4><p>XSS / a11y / perf / responsive → suites APP-level → Deferred desde este alcance.</p></div></div>
+        <div class="stage"><div class="sx">F1</div><div><h4>Protege contra regressions futuras?</h4><p>Typo puntual en un área estable → No → Deferred.</p></div></div>
+        <div class="stage"><div class="sx">F2</div><div><h4>Bugs previos en esta área?</h4><p>Sí → prioriza aun con ROI moderado: «falló una vez, puede fallar de nuevo».</p></div></div>
+        <div class="stage"><div class="sx">F3</div><div><h4>Nivel de app o de feature?</h4><p>XSS / a11y / perf / responsive → suites APP-level → Deferred desde este alcance.</p></div></div>
       </div>
       <div class="callout warn"><h4>Falla cualquier filtro → Deferred</h4><p>Los tres filtros matan a la mayoría antes de hacer aritmética.</p></div>
     </div>
@@ -1009,7 +1009,7 @@ Refinements proposed: 0</span></pre>
 <span class="o">[Fase 3]    Plan: Test Cucumber «UPEX-101: TC2: should show auth error when password</span>
 <span class="o">            is incorrect» · parent QA Test Repository · components Auth · assignee yo</span>
 <span class="o">            · link TC→ATS UPEX-410 + membership Xray · tests → UPEX-202</span>
-<span class="o">            · RTP UPEX-12 + regression-candidate · flujo «Login, usuario registrado». ¿Procedo?</span>
+<span class="o">            · RTP UPEX-12 + regression-candidate · flujo «Login, usuario registrado». Procedo?</span>
 <span class="p">&gt; </span><span class="c">y</span>
 <span class="o">  UPEX-540 creado (Create Test + Update Issue) · draft → … → candidate · RTP en ready.</span>
 <span class="o">  sync get UPEX-101 → test-cases/TEST-UPEX-540-….md leído. Reportes [LOCAL] escritos;</span>
@@ -1874,7 +1874,7 @@ Refinements proposed: 0</span></pre>
   document.getElementById('btn-next').addEventListener('click', function(){ go(idx + 1); });
   document.getElementById('btn-reset').addEventListener('click', resetTimer);
   document.getElementById('reset-layout').addEventListener('click', function(){
-    if (confirm('¿Restaurar la disposición por defecto?')) {
+    if (confirm('Restaurar la disposición por defecto?')) {
       try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
       applyLayout(defaultLayout());
     }

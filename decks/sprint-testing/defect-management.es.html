@@ -632,8 +632,8 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 <section class="slide" data-title="Mismo término">
   <p class="kicker">la idea central</p>
   <h2 class="h2" data-anim="fade-up">Mismo Término, Distinta Gestión</h2>
-  <p class="lede mt-s">"Bug" y "defecto" son sinónimos en el lenguaje. La diferencia vive en la <b>etapa de vida de la feature</b>: ¿ya está viva por encima de Staging, o sigue pre-release?</p>
-  <div class="callout mt-l"><h4>El eje que decide todo</h4><p>Una sola pregunta: <b>¿la feature afectada ya está viva por encima de Staging?</b> Si NO — sigue pre-release, la esté construyendo el sprint actual o no → <b>Defect</b>. Si SÍ — el usuario final puede toparse con ella → <b>Bug</b>. El Improvement es el tercer camino: no rompe ningún criterio, propone una mejora.</p><p class="mt-s"><b>Sin importar cuándo ni dónde lo encontraste.</b> Podés reproducir la falla en <span class="mono">localhost</span> o en <span class="mono">qa</span> y seguir siendo un Defect; podés verla por primera vez en Staging y ser un Bug, si la feature ya está en producción.</p></div>
+  <p class="lede mt-s">"Bug" y "defecto" son sinónimos en el lenguaje. La diferencia vive en la <b>etapa de vida de la feature</b>: ya está viva por encima de Staging, o sigue pre-release?</p>
+  <div class="callout mt-l"><h4>El eje que decide todo</h4><p>Una sola pregunta: <b>la feature afectada ya está viva por encima de Staging?</b> Si NO — sigue pre-release, la esté construyendo el sprint actual o no → <b>Defect</b>. Si SÍ — el usuario final puede toparse con ella → <b>Bug</b>. El Improvement es el tercer camino: no rompe ningún criterio, propone una mejora.</p><p class="mt-s"><b>Sin importar cuándo ni dónde lo encontraste.</b> Podés reproducir la falla en <span class="mono">localhost</span> o en <span class="mono">qa</span> y seguir siendo un Defect; podés verla por primera vez en Staging y ser un Bug, si la feature ya está en producción.</p></div>
   <div class="notes">La doctrina es literal: «Classification follows the lifecycle stage of the FEATURE, not the environment where you happened to find the problem» (defect-management-doctrine.md). El caso que más se equivoca: probando la Story A tropezás con una falla de la Story B. Mirá la etapa de B, no dónde estabas vos. Si B ya está en producción → Bug, aunque lo hayas visto en Staging.</div>
 </section>
 
@@ -726,14 +726,14 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <tr><td><b>Nace de</b></td><td>Una User Story</td><td>Un edge case en prod</td><td>Uso real o un RCA</td></tr>
     </tbody>
   </table>
-  <div class="callout mt-m"><h4>Léelo como instrumentación, no como burocracia</h4><p>Elegir bien el work type no es papeleo: es lo que más adelante hace que la pregunta <i>"¿estamos deteniendo los defectos antes de que escapen?"</i> sea <b>medible</b>.</p></div>
+  <div class="callout mt-m"><h4>Léelo como instrumentación, no como burocracia</h4><p>Elegir bien el work type no es papeleo: es lo que más adelante hace que la pregunta <i>"estamos deteniendo los defectos antes de que escapen?"</i> sea <b>medible</b>.</p></div>
   <div class="notes">Esta tabla es el ancla conceptual de la parte 1. Cada fila es una decisión de gestión, no una etiqueta arbitraria.</div>
 </section>
 
 <!-- 11. QUIZ 1 -->
 <section class="slide" data-title="Quiz 1">
   <p class="kicker">quiz · parte 1</p>
-  <h2 class="h2" data-anim="fade-up">¿Bug, Defect o Improvement?</h2>
+  <h2 class="h2" data-anim="fade-up">Bug, Defect o Improvement?</h2>
   <div class="quiz">
     <div class="qitem">
       <div class="qq"><span class="qn">Q1</span><span>Durante el sprint, QA encuentra que el nuevo formulario de registro no valida el email. La US aún está en desarrollo.</span></div>
@@ -754,7 +754,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="qexp"><b>Bug.</b> Funcionalidad ya desplegada que deja de funcionar = regresión. Es un escape: cruzó la red del sprint y llegó al usuario.</div>
     </div>
   </div>
-  <div class="notes">Deja que el público haga clic: las explicaciones aparecen al responder. La lección: el criterio que distingue es la etapa de vida de la feature (¿ya vive arriba de Staging?), nunca la gravedad, el síntoma ni el ambiente donde lo encontraste. Tercer caso (Improvement): si tras RCA el comportamiento es el especificado pero el cliente lo quiere distinto, se reclasifica vía "is not a Bug" → Enhancement (ver slide 9).</div>
+  <div class="notes">Deja que el público haga clic: las explicaciones aparecen al responder. La lección: el criterio que distingue es la etapa de vida de la feature (ya vive arriba de Staging?), nunca la gravedad, el síntoma ni el ambiente donde lo encontraste. Tercer caso (Improvement): si tras RCA el comportamiento es el especificado pero el cliente lo quiere distinto, se reclasifica vía "is not a Bug" → Enhancement (ver slide 9).</div>
 </section>
 
 <!-- 12. DIVIDER PART 2 -->
@@ -858,7 +858,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <li><b>Root Cause</b> — se fija tras el RCA</li>
         <li><b>Fix</b> — bugfix vs hotfix</li>
         <li><b>Workaround</b> — mitigación temporal</li>
-        <li><b>Components</b> — agrupación (¡clave! →)</li>
+        <li><b>Components</b> — agrupación (clave! →)</li>
         <li><b>Labels</b> — <span class="mono">bug</span>, dominio</li>
         <li><b>Links</b> — US <span class="mono">causes</span> Bug</li>
       </ul>
@@ -906,7 +906,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       </div>
     </div>
   </div>
-  <div class="callout mt-m"><h4>Por qué importan las dos</h4><p>Error Type responde <i>"¿qué clase de fallas dominan?"</i> (¿somos débiles en seguridad? ¿en performance?). Root Cause responde <i>"¿de dónde vienen?"</i> (¿código? ¿requerimientos? ¿integraciones?). Dos preguntas, dos campos, dos gráficos.</p></div>
+  <div class="callout mt-m"><h4>Por qué importan las dos</h4><p>Error Type responde <i>"qué clase de fallas dominan?"</i> (somos débiles en seguridad? en performance?). Root Cause responde <i>"de dónde vienen?"</i> (código? requerimientos? integraciones?). Dos preguntas, dos campos, dos gráficos.</p></div>
   <div class="notes">Error Type es de cara al usuario (síntoma); Root Cause es de cara al proceso (causa, post-RCA). Juntos permiten preguntas de mejora de proceso, no solo de conteo.</div>
 </section>
 
@@ -923,7 +923,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     </div>
     <div class="card card-accent">
       <h4>Para qué sirve realmente</h4>
-      <p class="dim">"¿Qué parte de la app falla más?" se vuelve una sola query. Habilita <b>ownership</b> (qué equipo dueño de qué componente) y <b>routing</b> automático de incidencias.</p>
+      <p class="dim">"Qué parte de la app falla más?" se vuelve una sola query. Habilita <b>ownership</b> (qué equipo dueño de qué componente) y <b>routing</b> automático de incidencias.</p>
     </div>
   </div>
   <div class="callout mt-m"><h4>Y ShopFlow lo rellena siempre</h4><p>Las <b>40 incidencias</b> de ShopFlow marcan su Component → el dashboard de ownership existe y dice qué módulo concentra los defectos. Regla en una línea: <i>lo que no rellenas no lo puedes medir</i> — por eso es la recomendación #1 de higiene, y ShopFlow no deja ninguno vacío. Lo vemos en la parte 3.</p></div>
@@ -936,7 +936,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <h2 class="h2" data-anim="fade-up">Workflow &amp; Campos</h2>
   <div class="quiz">
     <div class="qitem">
-      <div class="qq"><span class="qn">Q1</span><span>Triage de un Bug recién abierto: el equipo confirma que el comportamiento es exactamente el especificado. ¿Transición y estado?</span></div>
+      <div class="qq"><span class="qn">Q1</span><span>Triage de un Bug recién abierto: el equipo confirma que el comportamiento es exactamente el especificado. Transición y estado?</span></div>
       <div class="opts">
         <div class="opt"><span class="mk">A</span><span><span class="mono">start fixing</span> → In Progress</span></div>
         <div class="opt" data-correct="1"><span class="mk">B</span><span><span class="mono">is WAD</span> → REJECTED</span></div>
@@ -945,7 +945,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="qexp"><b>is WAD → REJECTED.</b> Working As Designed: no es una falla, es comportamiento especificado. Estado terminal (categoría done). Si además el cliente quisiera cambiarlo, sería <span class="mono">is not a Bug</span> → Enhancement.</div>
     </div>
     <div class="qitem">
-      <div class="qq"><span class="qn">Q2</span><span>El equipo de producto quiere un dashboard de "¿qué parte de la app concentra más defectos?". ¿Qué campo lo habilita?</span></div>
+      <div class="qq"><span class="qn">Q2</span><span>El equipo de producto quiere un dashboard de "qué parte de la app concentra más defectos?". Qué campo lo habilita?</span></div>
       <div class="opts">
         <div class="opt"><span class="mk">A</span><span>Severity</span></div>
         <div class="opt"><span class="mk">B</span><span>Priority</span></div>
@@ -985,9 +985,9 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="card good-side">
       <h3>✓ Dashboard como respuesta</h3>
       <ul>
-        <li>"¿Estamos deteniendo defectos antes del escape?"</li>
-        <li>"¿Qué componente falla más?"</li>
-        <li>"¿La calidad del fix mejora o empeora?"</li>
+        <li>"Estamos deteniendo defectos antes del escape?"</li>
+        <li>"Qué componente falla más?"</li>
+        <li>"La calidad del fix mejora o empeora?"</li>
         <li>Producto abre Jira y <b>entiende</b> la salud</li>
       </ul>
     </div>
@@ -1035,14 +1035,14 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <table class="dtable mt-s" style="font-size:14px">
     <thead><tr><th>La pregunta que el equipo se hace</th><th>Métrica que la responde</th><th>Campo(s)</th></tr></thead>
     <tbody>
-      <tr><td>¿Detenemos los defectos antes de que escapen a prod?</td><td><b>Defect Escape Rate</b> = Bugs / (Bugs+Defects)</td><td>issuetype</td></tr>
-      <tr><td>¿Qué tan grave es lo que encontramos?</td><td>Distribución por <b>Severity</b> + Severity Index</td><td>Severity</td></tr>
-      <tr><td>¿Qué parte de la app falla más?</td><td>Defectos por <b>Component</b></td><td>Components</td></tr>
-      <tr><td>¿Por qué fallamos? (mejora de proceso)</td><td>Distribución por <b>Root Cause</b></td><td>Root Cause</td></tr>
-      <tr><td>¿Qué clase de fallas dominan?</td><td>Distribución por <b>Error Type</b></td><td>Error Type</td></tr>
-      <tr><td>¿Qué tan bueno es el fix? (¿reabrimos?)</td><td><b>Reopen Rate</b></td><td>historial de status (<span class="mono">back</span>/<span class="mono">re-open</span>)</td></tr>
-      <tr><td>¿Cuánto tardamos en cerrar?</td><td><b>Defect Age</b> / MTTR</td><td>created → resolved</td></tr>
-      <tr><td>¿Cuánto ruido genera el reporte?</td><td><b>Rejection Ratio</b> = (Dup+REJ+CNR)/total</td><td>resolution / status</td></tr>
+      <tr><td>Detenemos los defectos antes de que escapen a prod?</td><td><b>Defect Escape Rate</b> = Bugs / (Bugs+Defects)</td><td>issuetype</td></tr>
+      <tr><td>Qué tan grave es lo que encontramos?</td><td>Distribución por <b>Severity</b> + Severity Index</td><td>Severity</td></tr>
+      <tr><td>Qué parte de la app falla más?</td><td>Defectos por <b>Component</b></td><td>Components</td></tr>
+      <tr><td>Por qué fallamos? (mejora de proceso)</td><td>Distribución por <b>Root Cause</b></td><td>Root Cause</td></tr>
+      <tr><td>Qué clase de fallas dominan?</td><td>Distribución por <b>Error Type</b></td><td>Error Type</td></tr>
+      <tr><td>Qué tan bueno es el fix? (reabrimos?)</td><td><b>Reopen Rate</b></td><td>historial de status (<span class="mono">back</span>/<span class="mono">re-open</span>)</td></tr>
+      <tr><td>Cuánto tardamos en cerrar?</td><td><b>Defect Age</b> / MTTR</td><td>created → resolved</td></tr>
+      <tr><td>Cuánto ruido genera el reporte?</td><td><b>Rejection Ratio</b> = (Dup+REJ+CNR)/total</td><td>resolution / status</td></tr>
     </tbody>
   </table>
   <div class="notes">ESTA es la slide núcleo. El orden siempre: pregunta primero, métrica después, campo al final. Cada fila es directamente construible (o casi) con los campos del estándar. Escape Rate es la estrella — la siguiente slide la desarrolla.</div>
@@ -1093,7 +1093,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 <section class="slide" data-title="Escape rate">
   <p class="kicker">la métrica estrella del shift-left</p>
   <h2 class="h2" data-anim="fade-up">Defect vs Bug = tu Medidor de Escape</h2>
-  <p class="lede mt-s">Aquí la taxonomía paga. Como <b>Defect = feature aún sin liberar</b> y <b>Bug = feature ya liberada</b>, su proporción <b>es</b>, literalmente, la salud del shift-left: ¿cuánto contenemos vs cuánto se fuga?</p>
+  <p class="lede mt-s">Aquí la taxonomía paga. Como <b>Defect = feature aún sin liberar</b> y <b>Bug = feature ya liberada</b>, su proporción <b>es</b>, literalmente, la salud del shift-left: cuánto contenemos vs cuánto se fuga?</p>
   <div class="mgrid mt-m">
     <div class="mcard"><div class="mv grad">26</div><div class="mk">Defects (contenidos)</div><div class="md">cazados dentro del sprint</div></div>
     <div class="mcard"><div class="mv grad">10</div><div class="mk">Bugs (escapados)</div><div class="md">descubiertos post-release</div></div>
@@ -1127,7 +1127,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <div class="donut mini" style="background:conic-gradient(var(--a1) 0 58%,var(--a2) 58% 84%,var(--a3) 84% 100%)"></div>
       </div>
       <h4>Donut / Pie</h4>
-      <p>Proporción de un total; las partes suman 100%. <b>"¿Cómo se reparte el total?"</b></p>
+      <p>Proporción de un total; las partes suman 100%. <b>"Cómo se reparte el total?"</b></p>
     </div>
 
     <div class="card chartcard tiny">
@@ -1139,7 +1139,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         </div>
       </div>
       <h4>Barras</h4>
-      <p>Comparar la magnitud entre categorías. <b>"¿Cuál es mayor?"</b></p>
+      <p>Comparar la magnitud entre categorías. <b>"Cuál es mayor?"</b></p>
     </div>
 
     <div class="card chartcard tiny">
@@ -1151,7 +1151,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         </div>
       </div>
       <h4>Barra apilada</h4>
-      <p>La composición de UN total dentro de una sola barra. <b>"¿De qué se compone esto?"</b></p>
+      <p>La composición de UN total dentro de una sola barra. <b>"De qué se compone esto?"</b></p>
     </div>
 
     <div class="card chartcard tiny">
@@ -1162,7 +1162,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         </div>
       </div>
       <h4>Gauge (medidor)</h4>
-      <p>Un valor único contra su máximo/meta (un %). <b>"¿Qué tan cerca del tope?"</b></p>
+      <p>Un valor único contra su máximo/meta (un %). <b>"Qué tan cerca del tope?"</b></p>
     </div>
 
   </div>
@@ -1187,7 +1187,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 
     <!-- chart 1: escape rate donut -->
     <div class="card chartcard">
-      <div class="cq">¿Detenemos los defectos antes de que escapen a prod?</div>
+      <div class="cq">Detenemos los defectos antes de que escapen a prod?</div>
       <div class="cm">métrica · Defect Escape Rate</div>
       <div class="chartwrap">
         <div class="donut" style="background:conic-gradient(var(--warn) 0 28%,var(--good) 28% 100%)">
@@ -1199,7 +1199,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 
     <!-- chart 2: type split donut -->
     <div class="card chartcard">
-      <div class="cq">¿De qué se compone la familia de incidencias?</div>
+      <div class="cq">De qué se compone la familia de incidencias?</div>
       <div class="cm">métrica · Type split (40 total)</div>
       <div class="chartwrap">
         <div class="donut" style="background:conic-gradient(var(--a1) 0 65%,var(--a2) 65% 90%,var(--a3) 90% 100%)">
@@ -1216,7 +1216,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 
     <!-- chart 3: status lifecycle stacked bar -->
     <div class="card chartcard">
-      <div class="cq">¿En qué punto del ciclo están?</div>
+      <div class="cq">En qué punto del ciclo están?</div>
       <div class="cm">métrica · Status lifecycle (40 total)</div>
       <div class="chartwrap">
         <div class="stackwrap">
@@ -1251,7 +1251,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 
     <!-- chart 4: severity bars -->
     <div class="card chartcard">
-      <div class="cq">¿Qué tan grave es lo que encontramos?</div>
+      <div class="cq">Qué tan grave es lo que encontramos?</div>
       <div class="cm">métrica · Severity dist. (40 total)</div>
       <div class="chartwrap" style="align-items:stretch">
         <div class="bars" style="margin-top:0;width:100%">
@@ -1266,7 +1266,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 
     <!-- chart 5: root cause pie -->
     <div class="card chartcard">
-      <div class="cq">¿Por qué fallamos?</div>
+      <div class="cq">Por qué fallamos?</div>
       <div class="cm">métrica · Root Cause (40 total)</div>
       <div class="chartwrap">
         <div class="pie" style="background:conic-gradient(var(--a1) 0 37.5%,var(--a2) 37.5% 60%,var(--a3) 60% 77.5%,#79c0ff 77.5% 92.5%,var(--good) 92.5% 100%)"></div>
@@ -1283,7 +1283,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 
     <!-- chart 6: error type bars -->
     <div class="card chartcard">
-      <div class="cq">¿Qué clase de fallas dominan?</div>
+      <div class="cq">Qué clase de fallas dominan?</div>
       <div class="cm">métrica · Error Type (40 total)</div>
       <div class="chartwrap" style="align-items:stretch">
         <div class="bars" style="margin-top:0;width:100%">
@@ -1309,7 +1309,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 
     <!-- chart 7: components populated -->
     <div class="card chartcard">
-      <div class="cq">¿Qué parte de la app falla más?</div>
+      <div class="cq">Qué parte de la app falla más?</div>
       <div class="cm">métrica · Defectos por Component (40 total)</div>
       <div class="chartwrap" style="align-items:stretch">
         <div class="bars" style="margin-top:0;width:100%">
@@ -1326,7 +1326,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 
     <!-- chart 8: reopen rate gauge -->
     <div class="card chartcard">
-      <div class="cq">¿Qué tan bueno es el fix? (¿reabrimos?)</div>
+      <div class="cq">Qué tan bueno es el fix? (reabrimos?)</div>
       <div class="cm">métrica · Reopen Rate</div>
       <div class="chartwrap">
         <div class="gauge">
@@ -1341,7 +1341,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 
     <!-- chart 9: rejection ratio donut -->
     <div class="card chartcard">
-      <div class="cq">¿Cuánto ruido genera el reporte?</div>
+      <div class="cq">Cuánto ruido genera el reporte?</div>
       <div class="cm">métrica · Rejection Ratio (40 total)</div>
       <div class="chartwrap">
         <div class="donut" style="background:conic-gradient(var(--warn) 0 7.5%,var(--good) 7.5% 100%)">
@@ -1365,7 +1365,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <h2 class="h2" data-anim="fade-up">Métricas &amp; Dashboards</h2>
   <div class="quiz">
     <div class="qitem">
-      <div class="qq"><span class="qn">Q1</span><span>El PM pregunta: "¿estamos atrapando los problemas antes de que lleguen al usuario?". ¿Qué métrica responde?</span></div>
+      <div class="qq"><span class="qn">Q1</span><span>El PM pregunta: "estamos atrapando los problemas antes de que lleguen al usuario?". Qué métrica responde?</span></div>
       <div class="opts">
         <div class="opt" data-correct="1"><span class="mk">A</span><span>Defect Escape Rate = Bugs / (Bugs+Defects)</span></div>
         <div class="opt"><span class="mk">B</span><span>Severity Index</span></div>
@@ -1374,7 +1374,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="qexp"><b>Defect Escape Rate.</b> La proporción Bug/Defect mide exactamente la fuga, porque Defect = feature aún sin liberar y Bug = feature ya liberada. Es la métrica núcleo del shift-left.</div>
     </div>
     <div class="qitem">
-      <div class="qq"><span class="qn">Q2</span><span>El equipo de producto abre el dashboard de ShopFlow y pregunta "¿qué parte de la app concentra más defectos?". ¿Qué módulo lidera?</span></div>
+      <div class="qq"><span class="qn">Q2</span><span>El equipo de producto abre el dashboard de ShopFlow y pregunta "qué parte de la app concentra más defectos?". Qué módulo lidera?</span></div>
       <div class="opts">
         <div class="opt" data-correct="1"><span class="mk">A</span><span>Checkout (11 defectos)</span></div>
         <div class="opt"><span class="mk">B</span><span>Notifications (3 defectos)</span></div>
@@ -2278,7 +2278,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   document.getElementById('btn-next').addEventListener('click', function(){ go(idx + 1); });
   document.getElementById('btn-reset').addEventListener('click', resetTimer);
   document.getElementById('reset-layout').addEventListener('click', function(){
-    if (confirm('¿Restaurar la disposición por defecto?')) {
+    if (confirm('Restaurar la disposición por defecto?')) {
       try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
       applyLayout(defaultLayout());
     }

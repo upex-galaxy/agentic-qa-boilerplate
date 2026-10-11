@@ -268,32 +268,6 @@
         font-style: normal;
       }
 
-      .stats {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 12px;
-        margin-top: 16px;
-      }
-      .stat {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 14px 16px;
-      }
-      .stat .n {
-        font-family: var(--font-mono);
-        font-size: 1.5rem;
-        font-weight: 700;
-        background: var(--grad);
-        -webkit-background-clip: text;
-        background-clip: text;
-        color: transparent;
-      }
-      .stat .t {
-        font-size: 0.78rem;
-        color: var(--text-3);
-      }
-
       footer {
         border-top: 1px solid var(--border);
         padding: 28px 0 48px;
@@ -357,7 +331,7 @@
               <tr>
                 <th>Tier</th>
                 <th>Fuente de verdad</th>
-                <th>¿En git?</th>
+                <th>En git?</th>
                 <th>Se recupera con</th>
               </tr>
               <tr>
@@ -659,29 +633,12 @@ TC → Story directo    last resort válido (deja de ser anti-patrón)
 
       <section>
         <div class="wrap">
-          <div class="kicker">07 · Este release (agosto 2026) en números</div>
-          <h2>Tres tandas de trabajo, todo verificado</h2>
-          <div class="stats">
-            <div class="stat">
-              <div class="n">115+</div>
-              <div class="t">afirmaciones falsas corregidas en docs y skills</div>
-            </div>
-            <div class="stat">
-              <div class="n">Todos</div>
-              <div class="t">los decks por skill alineados al modelo nuevo</div>
-            </div>
-            <div class="stat">
-              <div class="n">18</div>
-              <div class="t">decisiones de diseño tomadas con evidencia</div>
-            </div>
-            <div class="stat">
-              <div class="n">3</div>
-              <div class="t">verificaciones en vivo contra Xray real</div>
-            </div>
-          </div>
+          <div class="kicker">07 · Dónde queda el detalle</div>
+          <h2>El registro de este release</h2>
           <p style="margin-top: 14px">
-            Cada decisión quedó registrada con su porqué en los commits de <code>main</code>. Las
-            presentaciones por skill (en español) están en el
+            Cada decisión quedó registrada con su porqué en los commits de <code>main</code> y en
+            <code>.context/ADR/ADR-0001-artifact-ladder-local-cache.md</code>. Las presentaciones
+            por skill (en español) están en el
             <a href="./index.html#decks">catálogo de decks del hub</a>.
           </p>
         </div>

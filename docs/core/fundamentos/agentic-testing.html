@@ -34,7 +34,7 @@
           sigue.
         </p>
         <div class="meta-row">
-          <span class="badge accent">Fundamentos agénticos</span><span class="badge">8 stages</span
+          <span class="badge accent">Fundamentos agénticos</span
           ><span class="badge">Autonomía 0-5</span>
         </div>
       </header>
@@ -74,11 +74,12 @@
         agente y si otro agente revisa al primero.
       </p>
       <p>
-        El pipeline tiene ocho stages con nombre: Shift-Left, Planning, Execution, Reporting,
-        Documentation, Automation, Regression y Observation. Observation está declarado pero no
-        tiene skill ni checklist, y así lo dice el propio archivo: una checklist vacía parecería un
-        gate que alguien podría marcar. El cierre de sprint tampoco es un stage; es el límite del
-        lote donde se cierran el STP y el STR.
+        La lista de stages con nombre, su orden y el skill dueño de cada uno viven en
+        <code>.agents/skills/agentic-qa-core/references/stage-gates.md</code>; la tabla de abajo
+        recorre cada uno. Observation está declarado pero no tiene skill ni checklist, y así lo dice
+        el propio archivo: una checklist vacía parecería un gate que alguien podría marcar. El
+        cierre de sprint tampoco es un stage; es el límite del lote donde se cierran el STP y el
+        STR.
       </p>
 
       <div class="table-wrap">
@@ -267,7 +268,8 @@
         <figcaption>
           Nivel de autonomía por stage según el contrato. Lo punteado es condicional: Automation
           sube a 3 solo dentro del plan aprobado, Regression marca 4 únicamente para un GO limpio, y
-          Observation no tiene skill que lo ejecute.
+          Observation no tiene skill que lo ejecute. El nivel vigente de cada stage está en
+          <code>stage-gates.md</code>.
         </figcaption>
       </figure>
 
@@ -553,7 +555,7 @@
             <tr>
               <td><code>.agents/skills/agentic-qa-core/references/stage-gates.md</code></td>
               <td>
-                Los 8 stages, el contrato por stage, la escala de autonomía, las checklists DoD y el
+                Los stages, el contrato por stage, la escala de autonomía, las checklists DoD y el
                 status que cada stage debe dejar
               </td>
             </tr>

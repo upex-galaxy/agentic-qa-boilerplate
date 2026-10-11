@@ -1512,17 +1512,18 @@
           <h2>Una skill, un modo</h2>
           <p class="lede">
             Antes cada comando llevaba el workflow entero escrito adentro.
-            <code>adapt-framework</code> solo tenía 590 líneas. Eso era instrucción duplicada que
-            ningún harness fuera de Claude podía descubrir, y que se desincronizaba de su skill en
-            cuanto alguien editaba una de las dos copias. Ahora no queda ni el archivo: invocás la
-            skill por su nombre y le decís el modo.
+            <code>adapt-framework</code> era el más largo. Eso era instrucción duplicada que ningún
+            harness fuera de Claude podía descubrir, y que se desincronizaba de su skill en cuanto
+            alguien editaba una de las dos copias. Ahora no queda ni el archivo: invocás la skill
+            por su nombre y le decís el modo. Las mediciones de ese antes y después, con su fecha,
+            están en <code>.context/ADR/ADR-0006-forensic-measurements-ledger.md</code>.
           </p>
 
           <div class="delta">
             <div class="bar-row">
               <div class="bar-label">
                 <span>Workflow duplicado dentro de los comandos</span>
-                <b>2 531 líneas</b>
+                <b>el workflow entero, copiado</b>
               </div>
               <div class="bar-track"><div class="bar-fill old"></div></div>
             </div>
@@ -2359,7 +2360,7 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
                   font-weight="700"
                   fill="#e6edf3"
                 >
-                  ¿todo resoluble sin adivinar?
+                  todo resoluble sin adivinar?
                 </text>
                 <text
                   x="360"

@@ -538,7 +538,7 @@ h4,.h4{font-size:17px;color:var(--text-1)}
   <h2 class="h2" data-anim="fade-up">Phase 0 · Arrancar <span class="grad">o retomar</span> la sesión</h2>
   <div class="grid g2 mt-m" style="align-items:start;gap:30px">
     <ul class="blist tight anim-stagger-list" style="margin-top:0">
-      <li><b>0.0 Resume check.</b> ¿Existe <code>progress.md</code> del batch? → ofrecer <b>resume / restart / abort</b>. Restart archiva lo anterior como <code>-aborted</code>.</li>
+      <li><b>0.0 Resume check.</b> Existe <code>progress.md</code> del batch? → ofrecer <b>resume / restart / abort</b>. Restart archiva lo anterior como <code>-aborted</code>.</li>
       <li><b>0.1 Modalidad TMS.</b> El mismo probe automático de <code>test-documentation</code> §Phase 0 (A: Xray · B: Jira-native); solo pregunta si fallan los chequeos. Se persiste en <code>plan.md</code> §Inputs.</li>
       <li><b>0.2 Tool skills.</b> <code>/acli</code> siempre (escrituras + búsqueda trivial). Lecturas de detalle → <code>bun run jira:sync-issues</code>, nunca <code>acli view</code>.</li>
       <li><b>0.3 Contexto generado.</b> <code>bun run context:map &lt;slug&gt; --list</code> por cada mapa de negocio + el master test plan. Que el archivo exista no alcanza: un placeholder pasa ese chequeo vacío. Aviso de placeholder o plan ausente → STOP → <b>/project-discovery</b> o el modo de <code>project-context</code>.</li>
@@ -576,7 +576,7 @@ h4,.h4{font-size:17px;color:var(--text-1)}
   </div>
   <div class="steps s4 anim-stagger-list">
     <div class="step"><div class="num">1</div><h4>Filtro de tipo</h4><p>Solo Stories. Bug / Spike / Sub-task / Tech-debt → rechazo CON motivo de una línea, nunca en silencio.</p></div>
-    <div class="step"><div class="num">2</div><h4>Frescura de label</h4><p>¿Ya <code>shift-left-reviewed</code> y una label fechada de &lt;30 días? Se muestra aparte: el usuario decide skip o refresh.</p></div>
+    <div class="step"><div class="num">2</div><h4>Frescura de label</h4><p>Ya <code>shift-left-reviewed</code> y una label fechada de &lt;30 días? Se muestra aparte: el usuario decide skip o refresh.</p></div>
     <div class="step"><div class="num">3</div><h4>Tabla de veto</h4><p>Money / auth / data-integrity / integración / state machine → FORZAR FULL. CSS puro / copy / docs → SKIP.</p></div>
     <div class="step"><div class="num">4</div><h4>Risk score</h4><p>Solo sin veto. Feature nueva +3 · datos dinámicos +3 · AC-light +2 · esfuerzo +2 · &gt;5 comentarios +1…</p></div>
   </div>
@@ -619,7 +619,7 @@ h4,.h4{font-size:17px;color:var(--text-1)}
     <div class="card good-side">
       <h3>Corre (alcance outline)</h3>
       <ul>
-        <li><b>Fase 1 · Critical Analysis</b>: contexto negocio + técnico; lecturas de código LIGERAS (¿es viable?), sin reproducción</li>
+        <li><b>Fase 1 · Critical Analysis</b>: contexto negocio + técnico; lecturas de código LIGERAS (es viable?), sin reproducción</li>
         <li><b>Fase 2 · Story Quality Analysis</b>: el corazón (siguiente slide)</li>
         <li><b>Fase 3 · Refined ACs</b>: Given/When/Then con datos específicos</li>
         <li><b>Fase 4 · outlines</b>: solo NOMBRES + coverage estimate (guía la estimación del PO)</li>
@@ -1751,7 +1751,7 @@ Refinements proposed: 1 →
   document.getElementById('btn-next').addEventListener('click', function(){ go(idx + 1); });
   document.getElementById('btn-reset').addEventListener('click', resetTimer);
   document.getElementById('reset-layout').addEventListener('click', function(){
-    if (confirm('¿Restaurar la disposición por defecto?')) {
+    if (confirm('Restaurar la disposición por defecto?')) {
       try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
       applyLayout(defaultLayout());
     }

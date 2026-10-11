@@ -747,10 +747,10 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     </div>
     <p class="kicker mt-m">el pipeline de testing de este repo, de punta a punta</p>
     <div class="flow">
-      <div class="fn"><div class="t">build.yml</div><div class="d">¿El framework compila y su documentación sigue consistente? Types, lint, gates de documentación, <code class="k">playwright test --list</code>.</div><div class="r">en cada Pull Request</div></div><div class="fa">→</div>
-      <div class="fn"><div class="t">smoke.yml</div><div class="d">¿La app está viva? Solo tests <code class="k">@critical</code>.</div><div class="r">02:00 UTC + manual</div></div><div class="fa">→</div>
-      <div class="fn"><div class="t">sanity.yml</div><div class="d">¿Funciona ESTE cambio? Un archivo o un <code class="k">--grep</code>.</div><div class="r">manual, con inputs</div></div><div class="fa">→</div>
-      <div class="fn"><div class="t">regression.yml</div><div class="d">¿Se rompió algo más? Integration + E2E completos.</div><div class="r">00:00 UTC + manual</div></div><div class="fa">→</div>
+      <div class="fn"><div class="t">build.yml</div><div class="d">El framework compila y su documentación sigue consistente? Types, lint, gates de documentación, <code class="k">playwright test --list</code>.</div><div class="r">en cada Pull Request</div></div><div class="fa">→</div>
+      <div class="fn"><div class="t">smoke.yml</div><div class="d">La app está viva? Solo tests <code class="k">@critical</code>.</div><div class="r">02:00 UTC + manual</div></div><div class="fa">→</div>
+      <div class="fn"><div class="t">sanity.yml</div><div class="d">Funciona ESTE cambio? Un archivo o un <code class="k">--grep</code>.</div><div class="r">manual, con inputs</div></div><div class="fa">→</div>
+      <div class="fn"><div class="t">regression.yml</div><div class="d">Se rompió algo más? Integration + E2E completos.</div><div class="r">00:00 UTC + manual</div></div><div class="fa">→</div>
       <div class="fn k"><div class="t">Allure + TMS</div><div class="d">Reporte publicado en GitHub Pages (o en el portal privado si está configurado); resultados al TMS (en Xray, import JUnit al RTR).</div><div class="r">jobs finales</div></div>
     </div>
     <p class="small dim mt-m">Cada caja es un archivo en <code class="k">.github/workflows/</code>. Los cuatro comparten el mismo esqueleto; por eso, cuando entiendas uno, entiendes todos. La estrategia (por qué cuatro y no uno) es el Capítulo 6, en la Parte II.</p>
@@ -858,10 +858,10 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
   <section class="slide" data-title="Quiz 1">
     <div class="body">
     <p class="kicker run">quiz 01: vocabulario y anatomía</p>
-    <h2 class="h2">¿Se entendió la jerarquía?</h2>
+    <h2 class="h2">Se entendió la jerarquía?</h2>
     <div class="quiz two">
       <div class="qitem">
-        <div class="qq"><span class="qn">Q1</span><span>El job <code class="k">E2ETests</code> instala Bun y los browsers aunque <code class="k">IntegrationTests</code> ya lo hizo un minuto antes. ¿Por qué?</span></div>
+        <div class="qq"><span class="qn">Q1</span><span>El job <code class="k">E2ETests</code> instala Bun y los browsers aunque <code class="k">IntegrationTests</code> ya lo hizo un minuto antes. Por qué?</span></div>
         <div class="opts">
           <div class="opt"><span class="mk">A</span><span>Por descuido: se podría borrar y ahorrar tiempo</span></div>
           <div class="opt" data-correct="1"><span class="mk">B</span><span>Cada job corre en un runner nuevo y vacío; nada del job anterior sobrevive</span></div>
@@ -870,7 +870,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
         <div class="qexp"><b>Runner nuevo por job.</b> Un job es una VM limpia. Lo único que cruza de un job a otro son los <b>artifacts</b> (y los <code class="k">outputs</code>). Por eso las suites repiten los 5 steps de setup en cada job, y por eso <code class="k">allure-report</code> tiene que <i>descargar</i> los resultados con <code class="k">download-artifact</code>.</div>
       </div>
       <div class="qitem">
-        <div class="qq"><span class="qn">Q2</span><span>Un compañero propone escribir la contraseña de staging directamente en <code class="k">env:</code> del YAML «porque total el repo es privado». ¿Qué le decís?</span></div>
+        <div class="qq"><span class="qn">Q2</span><span>Un compañero propone escribir la contraseña de staging directamente en <code class="k">env:</code> del YAML «porque total el repo es privado». Qué le decís?</span></div>
         <div class="opts">
           <div class="opt"><span class="mk">A</span><span>Vale, si el repo es privado no hay riesgo</span></div>
           <div class="opt"><span class="mk">B</span><span>Mejor ponerla en un comentario para que quede documentada</span></div>
@@ -1064,10 +1064,10 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
   <section class="slide" data-title="Quiz 2">
     <div class="body">
     <p class="kicker run">quiz 02: triggers, inputs y contextos</p>
-    <h2 class="h2">¿Quién despertó al workflow?</h2>
+    <h2 class="h2">Quién despertó al workflow?</h2>
     <div class="quiz two">
       <div class="qitem">
-        <div class="qq"><span class="qn">Q3</span><span>Agregás <code class="k">schedule: cron '0 6 * * *'</code> a sanity.yml en tu rama <code class="k">feat/sanity-cron</code> y abrís el PR. Pasan tres días. ¿Cuántas veces corrió el cron?</span></div>
+        <div class="qq"><span class="qn">Q3</span><span>Agregás <code class="k">schedule: cron '0 6 * * *'</code> a sanity.yml en tu rama <code class="k">feat/sanity-cron</code> y abrís el PR. Pasan tres días. Cuántas veces corrió el cron?</span></div>
         <div class="opts">
           <div class="opt"><span class="mk">A</span><span>Tres: una por día a las 06:00</span></div>
           <div class="opt" data-correct="1"><span class="mk">B</span><span>Cero: los crons solo corren sobre la rama por defecto; hasta el merge a main no existe</span></div>
@@ -1076,7 +1076,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
         <div class="qexp"><b>Cero.</b> <code class="k">schedule</code> se evalúa sobre el último commit de la rama por defecto. Tu rama puede tener el cron perfecto y GitHub no lo mira. Después del merge, además, recordá que un cron no trae inputs: cada valor necesita su <code class="k">|| 'default'</code>.</div>
       </div>
       <div class="qitem">
-        <div class="qq"><span class="qn">Q4</span><span>Querés que un job entero se salte cuando el proyecto no usa Xray. Escribís <code class="k">if: env.TMS_PROVIDER == 'xray'</code> a nivel de job. ¿Qué pasa?</span></div>
+        <div class="qq"><span class="qn">Q4</span><span>Querés que un job entero se salte cuando el proyecto no usa Xray. Escribís <code class="k">if: env.TMS_PROVIDER == 'xray'</code> a nivel de job. Qué pasa?</span></div>
         <div class="opts">
           <div class="opt"><span class="mk">A</span><span>Funciona: env está disponible en todo el workflow</span></div>
           <div class="opt" data-correct="1"><span class="mk">B</span><span>No funciona: el <code class="k">if</code> de job no puede leer <code class="k">env</code>; hay que usar <code class="k">vars.TMS_PROVIDER</code></span></div>
@@ -1154,7 +1154,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
       - <span class="key">name</span>: <span class="str">Install Dependencies</span>
         <span class="key">run</span>: bun install                  <span class="c"># 3 · node_modules</span>
       - <span class="key">name</span>: <span class="str">Validate Test Environment Variables</span>
-        <span class="key">run</span>: bun run test:env:check       <span class="c"># 4 · ¿faltan secrets?</span>
+        <span class="key">run</span>: bun run test:env:check       <span class="c"># 4 · faltan secrets?</span>
       - <span class="key">name</span>: <span class="str">Install Playwright Browsers</span>
         <span class="key">run</span>: bun run pw:install           <span class="c"># 5 · chromium + deps</span>
       - <span class="key">name</span>: <span class="str">Run Smoke Tests (@critical) on <span class="ex">${{ env.TEST_ENV }}</span></span>
@@ -1255,10 +1255,10 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
   <section class="slide" data-title="Quiz 3">
     <div class="body">
     <p class="kicker run">quiz 03: ejecución</p>
-    <h2 class="h2">¿Corre o se salta?</h2>
+    <h2 class="h2">Corre o se salta?</h2>
     <div class="quiz two">
       <div class="qitem">
-        <div class="qq"><span class="qn">Q5</span><span>Borrás el <code class="k">if: always()</code> del step «Upload Allure Results» para «simplificar». La suite falla esa noche. ¿Qué encontrás por la mañana?</span></div>
+        <div class="qq"><span class="qn">Q5</span><span>Borrás el <code class="k">if: always()</code> del step «Upload Allure Results» para «simplificar». La suite falla esa noche. Qué encontrás por la mañana?</span></div>
         <div class="opts">
           <div class="opt"><span class="mk">A</span><span>El reporte Allure con los tests rojos, como siempre</span></div>
           <div class="opt" data-correct="1"><span class="mk">B</span><span>Ningún artifact ni reporte: al fallar un step, los siguientes se saltan por defecto</span></div>
@@ -1267,7 +1267,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
         <div class="qexp"><b>Nada.</b> El default implícito de cada step es <code class="k">success()</code>: si algo falló antes, no corre. Perdés los resultados precisamente la noche que los necesitabas. <code class="k">always()</code> en los uploads no es decoración: es la diferencia entre «algo falló» y «esto falló, aquí está el trace».</div>
       </div>
       <div class="qitem">
-        <div class="qq"><span class="qn">Q6</span><span>El job <code class="k">allure-report</code> quiere saber si el job <code class="k">SmokeTest</code> dejó resultados. ¿Cómo puede enterarse?</span></div>
+        <div class="qq"><span class="qn">Q6</span><span>El job <code class="k">allure-report</code> quiere saber si el job <code class="k">SmokeTest</code> dejó resultados. Cómo puede enterarse?</span></div>
         <div class="opts">
           <div class="opt"><span class="mk">A</span><span>Leyendo <code class="k">allure-results/</code> del disco: los jobs comparten el filesystem</span></div>
           <div class="opt"><span class="mk">B</span><span>Con <code class="k">steps.check_allure</code>: los outputs de steps son globales</span></div>
@@ -1294,7 +1294,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
   <!-- 21. SORTER: secret / var / env -->
   <section class="slide" data-title="Secrets vs vars vs env">
     <div class="body">
-    <p class="kicker">clasificador: ¿dónde va cada valor? un clic por fila</p>
+    <p class="kicker">clasificador: dónde va cada valor? un clic por fila</p>
     <h2 class="h2">Tres niveles de configuración, <span class="grad">tres razones distintas</span></h2>
     <div class="sorter">
       <div>
@@ -1358,7 +1358,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
           <li><b>FIFO.</b> Los pending arrancan en el orden en que empezaron a esperar.</li>
           <li><b>Nivel workflow o nivel job.</b> Todos los workflows lo declaran a nivel workflow; pages.yml usa un grupo fijo (<code class="k">pages-docs-hub</code>) porque siempre publica al mismo sitio.</li>
         </ul>
-        <div class="callout mt-m"><h4>La pregunta que decide</h4><p>«¿Este workflow deja algo publicado o compartido?» Si no (validar, lint, compilar): <b>cancelar</b>, es más barato. Si sí (reporte, deploy, rama gh-pages): <b>encolar</b>, porque cancelar a medias deja un estado que parece completo y no lo es. Todos nuestros workflows publican salvo build.yml, que cancela.</p></div>
+        <div class="callout mt-m"><h4>La pregunta que decide</h4><p>«Este workflow deja algo publicado o compartido?» Si no (validar, lint, compilar): <b>cancelar</b>, es más barato. Si sí (reporte, deploy, rama gh-pages): <b>encolar</b>, porque cancelar a medias deja un estado que parece completo y no lo es. Todos nuestros workflows publican salvo build.yml, que cancela.</p></div>
       </div>
     </div>
     </div>
@@ -1407,10 +1407,10 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
   <section class="slide" data-title="Quiz 4">
     <div class="body">
     <p class="kicker run">quiz 04: configuración y seguridad operativa</p>
-    <h2 class="h2">¿Cancelo, encolo, secret o var?</h2>
+    <h2 class="h2">Cancelo, encolo, secret o var?</h2>
     <div class="quiz two">
       <div class="qitem">
-        <div class="qq"><span class="qn">Q7</span><span>Disparás la regresión a mano a las 23:58. A las 00:00 arranca el cron. ¿Qué pasa con el segundo run, según regression.yml?</span></div>
+        <div class="qq"><span class="qn">Q7</span><span>Disparás la regresión a mano a las 23:58. A las 00:00 arranca el cron. Qué pasa con el segundo run, según regression.yml?</span></div>
         <div class="opts">
           <div class="opt"><span class="mk">A</span><span>Cancela al primero: el cron tiene prioridad</span></div>
           <div class="opt" data-correct="1"><span class="mk">B</span><span>Queda pending y arranca cuando el manual termine: mismo grupo, <code class="k">cancel-in-progress: false</code></span></div>
@@ -1419,7 +1419,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
         <div class="qexp"><b>Encola.</b> Ambos runs son de la misma rama, así que caen en el grupo <code class="k">regression-refs/heads/main</code>. Con <code class="k">cancel-in-progress: false</code> el segundo espera. Si cancelara, el manual podría haber subido ya sus artifacts y allure-report publicaría un reporte parcial como si fuera la regresión completa (el comentario del bloque <code class="k">concurrency</code>).</div>
       </div>
       <div class="qitem">
-        <div class="qq"><span class="qn">Q8</span><span>Un PR llega desde un fork externo. build.yml corre. ¿Qué valor tiene <code class="k">${{ secrets.STAGING_USER_PASSWORD }}</code> dentro de ese run?</span></div>
+        <div class="qq"><span class="qn">Q8</span><span>Un PR llega desde un fork externo. build.yml corre. Qué valor tiene <code class="k">${{ secrets.STAGING_USER_PASSWORD }}</code> dentro de ese run?</span></div>
         <div class="opts">
           <div class="opt"><span class="mk">A</span><span>El mismo de siempre: los secrets son del repo, no del PR</span></div>
           <div class="opt" data-correct="1"><span class="mk">B</span><span>Vacío: los secrets no se pasan a workflows disparados por <code class="k">pull_request</code> desde forks</span></div>
@@ -1550,7 +1550,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <h2 class="h2">Último control de la Parte I</h2>
     <div class="quiz two">
       <div class="qitem">
-        <div class="qq"><span class="qn">Q9</span><span>Copiás el job E2ETests para crear un job «VisualTests» en regression.yml y dejás el upload con <code class="k">name: e2e-allure-results</code>. ¿Qué pasa en el primer run?</span></div>
+        <div class="qq"><span class="qn">Q9</span><span>Copiás el job E2ETests para crear un job «VisualTests» en regression.yml y dejás el upload con <code class="k">name: e2e-allure-results</code>. Qué pasa en el primer run?</span></div>
         <div class="opts">
           <div class="opt"><span class="mk">A</span><span>Los dos jobs escriben en el mismo artifact y se fusionan</span></div>
           <div class="opt" data-correct="1"><span class="mk">B</span><span>El segundo upload falla: en v4 los artifacts son inmutables y el nombre debe ser único por run</span></div>
@@ -1559,7 +1559,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
         <div class="qexp"><b>Falla.</b> Desde upload-artifact v4 un nombre solo puede subirse una vez por run (salvo <code class="k">overwrite: true</code>, que pisa el anterior). La solución es el prefijo por job (<code class="k">visual-allure-results</code>) y, si querés fusionarlos, bajar con <code class="k">pattern: '*-allure-results'</code> + <code class="k">merge-multiple: true</code>, que es justo lo que hace a mano el step «Merge Allure Results» de <code class="k">.github/workflows/regression.yml</code>.</div>
       </div>
       <div class="qitem">
-        <div class="qq"><span class="qn">Q10</span><span>La regresión del viernes falló. Es lunes (3 días después) y querés el trace. ¿Dónde está?</span></div>
+        <div class="qq"><span class="qn">Q10</span><span>La regresión del viernes falló. Es lunes (3 días después) y querés el trace. Dónde está?</span></div>
         <div class="opts">
           <div class="opt"><span class="mk">A</span><span>En el runner: los runners se conservan una semana</span></div>
           <div class="opt" data-correct="1"><span class="mk">B</span><span>En el artifact <code class="k">e2e-failure-evidence</code> del run, disponible hasta el día 10: <code class="k">gh run download &lt;RUN_ID&gt; -n e2e-failure-evidence</code></span></div>
@@ -2426,7 +2426,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
   document.getElementById('btn-next').addEventListener('click', function(){ go(idx + 1); });
   document.getElementById('btn-reset').addEventListener('click', resetTimer);
   document.getElementById('reset-layout').addEventListener('click', function(){
-    if (confirm('¿Restaurar la disposición por defecto?')) {
+    if (confirm('Restaurar la disposición por defecto?')) {
       try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
       applyLayout(defaultLayout());
     }

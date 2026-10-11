@@ -305,7 +305,7 @@ table.cmp td code{color:var(--cyan);font-size:.92em}
     <tr><td>Lo ejecuta un humano 🧍</td><td>Lo ejecuta la máquina 🤖 (miles de veces, sin café)</td></tr>
   </table>
   <div class="callout" data-anim="fade-up"><span class="co-ico">💡</span><p><b>Un script es un test case que la máquina ejecuta por ti.</b> En esta sesión solo aprendemos el idioma para escribirlo.</p></div>
-  <div class="notes"><p>Mensaje anti-miedo: ellos YA piensan como programadores cuando escriben un test case — pasos ordenados, datos, resultado esperado. Programar es traducir eso a un idioma que la máquina entiende. Pregunta a la audiencia: "¿qué pasa si el paso 3 de tu test case es ambiguo?" — igual en código, la máquina necesita instrucciones exactas.</p></div>
+  <div class="notes"><p>Mensaje anti-miedo: ellos YA piensan como programadores cuando escriben un test case — pasos ordenados, datos, resultado esperado. Programar es traducir eso a un idioma que la máquina entiende. Pregunta a la audiencia: "qué pasa si el paso 3 de tu test case es ambiguo?" — igual en código, la máquina necesita instrucciones exactas.</p></div>
 </section>
 
 <!-- 3 · Mapa de la clase -->
@@ -336,7 +336,7 @@ table.cmp td code{color:var(--cyan);font-size:.92em}
   <div class="big-mono" data-anim="pop">"Ana"</div>
   <p data-anim="fade-up" style="max-width:620px">Esto es un <b>valor</b>: la pieza más pequeña de información que un programa puede manejar.
   Las comillas dicen "esto es texto". Sin contexto, sin nombre, sin lógica. Un átomo.</p>
-  <div class="notes"><p>Slide minimalista a propósito: UNA idea. Un valor es un dato suelto. Compáralo con una celda suelta de su tabla de test data. Pregunta retórica: "¿de qué sirve un dato sin nombre?" — eso conecta con la siguiente slide (variables).</p></div>
+  <div class="notes"><p>Slide minimalista a propósito: UNA idea. Un valor es un dato suelto. Compáralo con una celda suelta de su tabla de test data. Pregunta retórica: "de qué sirve un dato sin nombre?" — eso conecta con la siguiente slide (variables).</p></div>
 </section>
 
 <!-- 5 · Tipos -->
@@ -351,7 +351,7 @@ table.cmp td code{color:var(--cyan);font-size:.92em}
 3.14
 404</pre><p style="margin-top:.6rem">Números. Sin comillas. <code class="pill">404</code> ≠ <code class="pill">"404"</code></p></div>
     <div class="card"><div class="ico">🚦</div><h3>boolean</h3><pre class="code">true
-false</pre><p style="margin-top:.6rem">Verdadero o falso. El tipo favorito de QA: <b>¿pasó o falló?</b></p></div>
+false</pre><p style="margin-top:.6rem">Verdadero o falso. El tipo favorito de QA: <b>pasó o falló?</b></p></div>
   </div>
   <div class="callout info" data-anim="fade-up"><span class="co-ico">🧪</span><p>Analogía QA: los campos de un formulario. Nombre = string, edad = number, "acepto términos" = boolean.</p></div>
   <div class="notes"><p>Tres tipos primitivos bastan para el 90% de los tests. Enfatiza la trampa de 404 vs "404": un status code numérico y un texto que parece número NO son lo mismo — esto vuelve en el quiz de operadores. Boolean es EL tipo de QA: toda aserción termina en true/false.</p></div>
@@ -399,7 +399,7 @@ bugsFound = bugsFound + 1;
 console.log("Bugs encontrados: " + bugsFound);
 
 // Reto 1: crea una variable "rol" y muéstrala
-// Reto 2: intenta reasignar tester = "Luis"  (¿qué pasa?)</textarea></div>
+// Reto 2: intenta reasignar tester = "Luis"  (qué pasa?)</textarea></div>
     <div class="lc-console"><div class="ln dim">▶ Presiona Ejecutar para ver la salida…</div></div>
   </div>
   <div class="notes"><p>Primer momento interactivo: pide a alguien de la audiencia que dicte un cambio. Ejecuta el reto 2 — reasignar un const lanza "Assignment to constant variable" y ES BUENO: el lenguaje los protege. console.log = "muéstrame esto en la consola"; es la linterna del programador. Dedica 3-4 minutos.</p></div>
@@ -409,7 +409,7 @@ console.log("Bugs encontrados: " + bugsFound);
 <section class="slide" data-act="Acto 1 · Átomos" style="align-items:center">
   <div class="quiz" data-quiz="q1">
     <div class="quiz-tag">⭐ QUIZ 1 · Variables y tipos</div>
-    <h3 class="quiz-q">¿Cuál de estas líneas lanza un ERROR?</h3>
+    <h3 class="quiz-q">Cuál de estas líneas lanza un ERROR?</h3>
     <div class="quiz-opts">
       <button class="opt"><span class="key">A</span><span><code>let retries = 1; retries = 2;</code></span></button>
       <button class="opt" data-ok="1"><span class="key">B</span><span><code>const user = "Ana"; user = "Luis";</code></span></button>
@@ -435,7 +435,7 @@ console.log("Bugs encontrados: " + bugsFound);
 a || b  <span class="tk-c">// O: alguna</span>
 !a      <span class="tk-c">// NO: invierte</span></pre><p style="margin-top:.6rem">Combinan condiciones.</p></div>
   </div>
-  <div class="callout warn" data-anim="fade-up"><span class="co-ico">⚠️</span><p><b>La trampa #1:</b> <code class="pill">=</code> asigna (guarda en la caja) · <code class="pill">===</code> compara (¿son iguales?). Confundirlos es el bug clásico de principiante.</p></div>
+  <div class="callout warn" data-anim="fade-up"><span class="co-ico">⚠️</span><p><b>La trampa #1:</b> <code class="pill">=</code> asigna (guarda en la caja) · <code class="pill">===</code> compara (son iguales?). Confundirlos es el bug clásico de principiante.</p></div>
   <div class="notes"><p>Tres familias, pero el 80% del tiempo usarán === para comparar. Insiste en la trampa = vs ===: una asigna, la otra pregunta. Menciona que existe == (doble), pero la regla profesional es usar SIEMPRE === (triple), que también compara el tipo — perfecto puente al quiz.</p></div>
 </section>
 
@@ -443,7 +443,7 @@ a || b  <span class="tk-c">// O: alguna</span>
 <section class="slide" data-act="Acto 1 · Átomos" style="align-items:center">
   <div class="quiz" data-quiz="q2">
     <div class="quiz-tag">⭐ QUIZ 2 · Operadores</div>
-    <h3 class="quiz-q">¿Qué imprime <code style="color:var(--cyan)">console.log(5 === "5")</code>?</h3>
+    <h3 class="quiz-q">Qué imprime <code style="color:var(--cyan)">console.log(5 === "5")</code>?</h3>
     <div class="quiz-opts">
       <button class="opt"><span class="key">A</span><span><code>true</code> — cinco es cinco</span></button>
       <button class="opt" data-ok="1"><span class="key">B</span><span><code>false</code> — número y texto no son lo mismo</span></button>
@@ -484,7 +484,7 @@ a || b  <span class="tk-c">// O: alguna</span>
 
 <!-- 12 · Funciones = pasos reutilizables -->
 <section class="slide" data-act="Acto 2 · Lógica">
-  <h2 data-anim="fade-up">¿Por qué te importan? <span class="grad-text">Reutilización</span></h2>
+  <h2 data-anim="fade-up">Por qué te importan? <span class="grad-text">Reutilización</span></h2>
   <div class="cols">
     <div data-anim="slide-l">
       <h3>😫 Tester manual</h3>
@@ -502,7 +502,7 @@ a || b  <span class="tk-c">// O: alguna</span>
     </div>
   </div>
   <div class="callout" data-anim="fade-up"><span class="co-ico">💡</span><p>Una función es un <b>test step reutilizable</b>. Cuando el botón de login cambie, corriges UN lugar — no 40 test cases.</p></div>
-  <div class="notes"><p>Este es el argumento de venta de la automatización entera: mantenimiento. Pregunta: "¿cuántos test cases tuyos repiten los mismos 4 pasos de login?" La respuesta emocional a esa pregunta ES la motivación para aprender funciones.</p></div>
+  <div class="notes"><p>Este es el argumento de venta de la automatización entera: mantenimiento. Pregunta: "cuántos test cases tuyos repiten los mismos 4 pasos de login?" La respuesta emocional a esa pregunta ES la motivación para aprender funciones.</p></div>
 </section>
 
 <!-- 13 · LIVE CELL 2 -->
@@ -531,7 +531,7 @@ console.log(greet("Luis"));
 <section class="slide" data-act="Acto 2 · Lógica" style="align-items:center">
   <div class="quiz" data-quiz="q3">
     <div class="quiz-tag">⭐ QUIZ 3 · Funciones</div>
-    <h3 class="quiz-q">¿Qué imprime este código?</h3>
+    <h3 class="quiz-q">Qué imprime este código?</h3>
     <pre class="code" style="margin-bottom:1.3rem">
 <span class="tk-k">function</span> <span class="tk-f">sum</span>(a, b) {
   <span class="tk-k">return</span> a + b;
@@ -561,9 +561,9 @@ console.<span class="tk-f">log</span>(<span class="tk-f">sum</span>(<span class=
 }</pre>
     </div>
     <div data-stagger>
-      <div class="card"><h3>🤔 La pregunta</h3><p><code class="pill">statusCode === 200</code> se evalúa a <b>true</b> o <b>false</b> (¡los booleans del Acto 1!).</p></div>
+      <div class="card"><h3>🤔 La pregunta</h3><p><code class="pill">statusCode === 200</code> se evalúa a <b>true</b> o <b>false</b> (los booleans del Acto 1!).</p></div>
       <div class="card" style="margin-top:.9rem"><h3>✅ true → primer bloque</h3><p>❌ false → bloque del <code class="pill">else</code>. Nunca ambos.</p></div>
-      <div class="card hl" style="margin-top:.9rem"><h3>🧪 ¿Te suena?</h3><p>Es tu <b>resultado esperado</b>: "SI el sistema muestra X, el test pasa; SI NO, falla". Llevas años escribiendo if/else en español.</p></div>
+      <div class="card hl" style="margin-top:.9rem"><h3>🧪 Te suena?</h3><p>Es tu <b>resultado esperado</b>: "SI el sistema muestra X, el test pasa; SI NO, falla". Llevas años escribiendo if/else en español.</p></div>
     </div>
   </div>
   <div class="notes"><p>Conecta con el boolean del Acto 1: la condición del if ES una expresión que produce true/false. El paralelo con "resultado esperado" de sus test cases es literal — toda aserción de Playwright es un if/else glorificado que decide PASSED o FAILED.</p></div>
@@ -581,7 +581,7 @@ console.<span class="tk-f">log</span>(<span class="tk-f">sum</span>(<span class=
   console.<span class="tk-f">log</span>(<span class="tk-s">"Intento #"</span> + i);
 }
 <span class="tk-c">// Intento #0, #1, #2</span></pre>
-      <p style="margin-top:.7rem;font-size:.95rem">Tres piezas: <b>inicio</b> (<code class="pill">i = 0</code>) · <b>condición</b> (<code class="pill">i < 3</code>: ¿sigo?) · <b>paso</b> (<code class="pill">i++</code>: suma 1).</p>
+      <p style="margin-top:.7rem;font-size:.95rem">Tres piezas: <b>inicio</b> (<code class="pill">i = 0</code>) · <b>condición</b> (<code class="pill">i < 3</code>: sigo?) · <b>paso</b> (<code class="pill">i++</code>: suma 1).</p>
     </div>
     <div data-anim="fade-up" style="animation-delay:.2s">
       <h3>El elegante: <code style="color:var(--purple)">for...of</code></h3>
@@ -621,14 +621,14 @@ console.<span class="tk-f">log</span>(<span class="tk-f">sum</span>(<span class=
       <div class="mv-out" id="mv-out"><div class="ln" style="color:var(--text-3);font-style:italic">consola…</div></div>
     </div>
   </div>
-  <div class="notes"><p>La slide más importante del Acto 2. Avanza paso a paso PREGUNTANDO antes de cada click: "¿qué línea sigue? ¿cuánto vale i?". Los loops dejan de ser magia cuando VEN a i mutar 0→1→2→3 y la condición volverse false. Tómate tu tiempo: 5 minutos aquí valen oro.</p></div>
+  <div class="notes"><p>La slide más importante del Acto 2. Avanza paso a paso PREGUNTANDO antes de cada click: "qué línea sigue? cuánto vale i?". Los loops dejan de ser magia cuando VEN a i mutar 0→1→2→3 y la condición volverse false. Tómate tu tiempo: 5 minutos aquí valen oro.</p></div>
 </section>
 
 <!-- 18 · QUIZ 4 -->
 <section class="slide" data-act="Acto 2 · Lógica" style="align-items:center">
   <div class="quiz" data-quiz="q4">
     <div class="quiz-tag">⭐ QUIZ 4 · Condicionales y loops</div>
-    <h3 class="quiz-q">¿Qué imprime <code style="color:var(--cyan)">for (let i = 0; i < 3; i++) console.log(i)</code>?</h3>
+    <h3 class="quiz-q">Qué imprime <code style="color:var(--cyan)">for (let i = 0; i < 3; i++) console.log(i)</code>?</h3>
     <div class="quiz-opts">
       <button class="opt" data-ok="1"><span class="key">A</span><span><code>0 1 2</code></span></button>
       <button class="opt"><span class="key">B</span><span><code>1 2 3</code></span></button>
@@ -648,7 +648,7 @@ console.<span class="tk-f">log</span>(<span class="tk-f">sum</span>(<span class=
       <pre class="code big">
 <span class="tk-k">const</span> browsers = [<span class="tk-s">"chrome"</span>, <span class="tk-s">"firefox"</span>, <span class="tk-s">"safari"</span>];
 
-browsers[<span class="tk-n">0</span>]      <span class="tk-c">// "chrome"  ← ¡desde cero!</span>
+browsers[<span class="tk-n">0</span>]      <span class="tk-c">// "chrome"  ← desde cero!</span>
 browsers[<span class="tk-n">2</span>]      <span class="tk-c">// "safari"</span>
 browsers.length  <span class="tk-c">// 3</span>
 
@@ -720,7 +720,7 @@ for (const u of users) {
 <section class="slide" data-act="Acto 2 · Lógica" style="align-items:center">
   <div class="quiz" data-quiz="q5">
     <div class="quiz-tag">⭐ QUIZ 5 · Arrays y objetos</div>
-    <h3 class="quiz-q">¿Qué imprime este código?</h3>
+    <h3 class="quiz-q">Qué imprime este código?</h3>
     <pre class="code" style="margin-bottom:1.3rem">
 <span class="tk-k">const</span> fruits = [<span class="tk-s">"uva"</span>, <span class="tk-s">"kiwi"</span>, <span class="tk-s">"mango"</span>];
 console.<span class="tk-f">log</span>(fruits[<span class="tk-n">1</span>]);</pre>
@@ -758,7 +758,7 @@ console.<span class="tk-f">log</span>(fruits[<span class="tk-n">1</span>]);</pre
     <div data-stagger>
       <div class="card"><h3>🏷️ Tipos explícitos</h3><p><code class="pill">email: string</code> declara qué tipo acepta cada parámetro. El contrato queda escrito.</p></div>
       <div class="card" style="margin-top:.9rem"><h3>⚡ Error ANTES de ejecutar</h3><p>El subrayado rojo aparece <b>mientras escribes</b> — no en producción, no en el test run de las 3am.</p></div>
-      <div class="card hl" style="margin-top:.9rem"><h3>🧪 ¿Te suena el concepto?</h3><p>Encontrar el defecto lo más temprano posible… <b>TypeScript es shift-left para tu propio código.</b> 😉</p></div>
+      <div class="card hl" style="margin-top:.9rem"><h3>🧪 Te suena el concepto?</h3><p>Encontrar el defecto lo más temprano posible… <b>TypeScript es shift-left para tu propio código.</b> 😉</p></div>
     </div>
   </div>
   <div class="notes"><p>Frame ganador: TypeScript no es "JS más difícil", es JS con un revisor automático. La conexión con shift-left les llega directo — detectan el bug en la fase más barata. El subrayado rojo de la slide es idéntico al que verán en VS Code. Bonus: los tipos alimentan el autocompletado, su mejor amigo al empezar.</p></div>
@@ -819,7 +819,7 @@ page.<span class="tk-f">click</span>(<span class="tk-s">"#login-btn"</span>);
 <section class="slide" data-act="Acto 3 · TypeScript + async" style="align-items:center">
   <div class="quiz" data-quiz="q6">
     <div class="quiz-tag">⭐ QUIZ 6 · TypeScript + async</div>
-    <h3 class="quiz-q">¿Por qué escribimos <code style="color:var(--cyan)">await page.click("#save-btn")</code>?</h3>
+    <h3 class="quiz-q">Por qué escribimos <code style="color:var(--cyan)">await page.click("#save-btn")</code>?</h3>
     <div class="quiz-opts">
       <button class="opt"><span class="key">A</span><span>Decoración — el test corre igual sin await</span></button>
       <button class="opt"><span class="key">B</span><span>Hace que el click sea más rápido</span></button>
@@ -857,12 +857,12 @@ page.<span class="tk-f">click</span>(<span class="tk-s">"#login-btn"</span>);
     </div>
     <div data-stagger>
       <div class="card"><h3>📦 import</h3><p>"Tráeme las herramientas <code class="pill">test</code> y <code class="pill">expect</code> de la caja Playwright."</p></div>
-      <div class="card" style="margin-top:.75rem"><h3>🧪 test("…", async … )</h3><p>¡Una <b>función</b> que recibe el nombre del caso… y otra función con los pasos! Sí: las funciones viajan como valores.</p></div>
+      <div class="card" style="margin-top:.75rem"><h3>🧪 test("…", async … )</h3><p>Una <b>función</b> que recibe el nombre del caso… y otra función con los pasos! Sí: las funciones viajan como valores.</p></div>
       <div class="card" style="margin-top:.75rem"><h3>🤖 page.fill / page.click</h3><p>Funciones con parámetros (Acto 2) + el punto de objetos (Acto 2) + await (Acto 3).</p></div>
       <div class="card hl" style="margin-top:.75rem"><h3>✅ expect(...).toBeVisible()</h3><p>Tu <b>resultado esperado</b> hecho código. Si no se cumple → test FAILED.</p></div>
     </div>
   </div>
-  <div class="notes"><p>Slide cumbre: recorre el código línea por línea preguntando "¿qué reconocen aquí?" — strings, funciones, params, el punto, async/await: TODO visto. Único concepto nuevo: pasar una función como argumento a test(); no lo teorices, di "le entregamos al runner los pasos para que los ejecute cuando toque". El expect es su resultado esperado de toda la vida.</p></div>
+  <div class="notes"><p>Slide cumbre: recorre el código línea por línea preguntando "qué reconocen aquí?" — strings, funciones, params, el punto, async/await: TODO visto. Único concepto nuevo: pasar una función como argumento a test(); no lo teorices, di "le entregamos al runner los pasos para que los ejecute cuando toque". El expect es su resultado esperado de toda la vida.</p></div>
 </section>
 
 <!-- 28 · Locators -->
@@ -892,7 +892,7 @@ page.<span class="tk-f">click</span>(<span class="tk-s">"#login-btn"</span>);
           <label>Email</label><input id="email" type="text" placeholder="tu@email.com">
           <label>Password</label><input id="password" type="password" placeholder="••••••••">
           <button class="app-login" id="login-btn">Entrar</button>
-          <div class="app-msg ok" id="welcome">✅ ¡Bienvenida, Ana!</div>
+          <div class="app-msg ok" id="welcome">✅ Bienvenida, Ana!</div>
           <div class="app-msg bad" id="error-msg">❌ Credenciales inválidas</div>
         </div>
       </div>
@@ -922,7 +922,7 @@ page.<span class="tk-f">click</span>(<span class="tk-s">"#login-btn"</span>);
           <label>Email</label><input id="s-email" data-sel="#email" type="text" placeholder="tu@email.com">
           <label>Password</label><input id="s-password" data-sel="#password" type="password" placeholder="••••••••">
           <button class="app-login" id="s-login-btn" data-sel="#login-btn">Entrar</button>
-          <div class="app-msg ok" id="s-welcome" data-sel="#welcome">✅ ¡Bienvenida, Ana!</div>
+          <div class="app-msg ok" id="s-welcome" data-sel="#welcome">✅ Bienvenida, Ana!</div>
           <div class="app-msg bad" id="s-error-msg" data-sel="#error-msg">❌ Credenciales inválidas</div>
         </div>
       </div>
@@ -950,7 +950,7 @@ page.<span class="tk-f">click</span>(<span class="tk-s">"#login-btn"</span>);
 <section class="slide" data-act="Acto 4 · Tu primer test" style="align-items:center">
   <div class="quiz" data-quiz="q7">
     <div class="quiz-tag">⭐ QUIZ 7 · Anatomía Playwright</div>
-    <h3 class="quiz-q">¿Qué hace <code style="color:var(--cyan)">await page.fill("#email", "ana@qa.com")</code>?</h3>
+    <h3 class="quiz-q">Qué hace <code style="color:var(--cyan)">await page.fill("#email", "ana@qa.com")</code>?</h3>
     <div class="quiz-opts">
       <button class="opt"><span class="key">A</span><span>Hace click en el campo email</span></button>
       <button class="opt"><span class="key">B</span><span>Verifica que el campo contiene ese texto</span></button>
@@ -1023,14 +1023,14 @@ Running 1 test using 1 worker
       <p style="margin-top:.7rem;font-size:.95rem">El error te dice <b>qué</b> esperaba, <b>qué</b> encontró y <b>en qué línea</b>. Leer errores con calma = tu superpoder QA.</p>
     </div>
   </div>
-  <div class="notes"><p>Desactiva el pánico al rojo: el error de Playwright es un reporte de bug bien escrito — expected vs received más la línea exacta. Ellos LEEN reportes de bugs todos los días; esto es lo mismo. Un test que falla puede significar bug encontrado (¡victoria!) o test mal escrito — distinguir ambos es el oficio que practicarán en hands-on.</p></div>
+  <div class="notes"><p>Desactiva el pánico al rojo: el error de Playwright es un reporte de bug bien escrito — expected vs received más la línea exacta. Ellos LEEN reportes de bugs todos los días; esto es lo mismo. Un test que falla puede significar bug encontrado (victoria!) o test mal escrito — distinguir ambos es el oficio que practicarán en hands-on.</p></div>
 </section>
 
 <!-- 34 · QUIZ 8 -->
 <section class="slide" data-act="Acto 5 · Vista satelital" style="align-items:center">
   <div class="quiz" data-quiz="q8">
     <div class="quiz-tag">⭐ QUIZ 8 · El integrador final</div>
-    <h3 class="quiz-q">A este test le falta UNA palabra. ¿Cuál?</h3>
+    <h3 class="quiz-q">A este test le falta UNA palabra. Cuál?</h3>
     <pre class="code" style="margin-bottom:1.3rem">
 <span class="tk-f">test</span>(<span class="tk-s">"guardar cambios"</span>, <span class="tk-k">async</span> ({ page }) => {
   page.<span class="tk-f">click</span>(<span class="tk-s">"#save-btn"</span>);   <span class="tk-c">// ⚠️ algo falta aquí…</span>
@@ -1204,8 +1204,8 @@ function renderFinal(){
   $('#final-score').textContent = score + ' / ' + TOTAL_Q;
   const pct = score/TOTAL_Q;
   $('#final-msg').textContent =
-    pct === 1 ? '¡Perfecto! Naciste para esto. La sesión hands-on te va a quedar corta. 🏆' :
-    pct >= .75 ? '¡Excelente! Tienes las bases firmes — a la sesión hands-on llegas con ventaja. 💪' :
+    pct === 1 ? 'Perfecto! Naciste para esto. La sesión hands-on te va a quedar corta. 🏆' :
+    pct >= .75 ? 'Excelente! Tienes las bases firmes — a la sesión hands-on llegas con ventaja. 💪' :
     pct >= .5 ? 'Muy buen arranque. Repasa los quizzes fallados con este mismo archivo y llegas lista/o al hands-on. 👍' :
     'Lo importante: ahora RECONOCES el código. Re-juega los playgrounds de este archivo en casa — la segunda pasada todo encaja. 🌱';
   setTimeout(()=>{ confetti(innerWidth/2, innerHeight*0.32, 140); }, 450);
@@ -1283,7 +1283,7 @@ $$('.livecell').forEach(cell=>{
                    warn: (...a)=>logs.push({t:a.map(fmt).join(' ')}) };
     try { new Function('console', '"use strict";\n'+ta.value)(fake); }
     catch(err){ logs.push({t:'⛔ '+err.name+': '+err.message, e:1}); }
-    if(!logs.length) logs.push({t:'(sin salida — ¿olvidaste console.log?)', d:1});
+    if(!logs.length) logs.push({t:'(sin salida — olvidaste console.log?)', d:1});
     logs.forEach(l=>{
       const d = document.createElement('div');
       d.className = 'ln' + (l.e?' err':'') + (l.d?' dim':'');
@@ -1301,13 +1301,13 @@ $$('.livecell').forEach(cell=>{
   const codeBox = $('#mv-code'); if(!codeBox) return;
   const steps = [
     {l:1, vars:{users:'["Ana","Luis","Mia"]'}, note:'Se crea el array users con 3 elementos.'},
-    {l:2, vars:{users:'["Ana","Luis","Mia"]', i:'0'}, note:'i nace en 0. ¿0 < 3? Sí → entramos al loop.'},
+    {l:2, vars:{users:'["Ana","Luis","Mia"]', i:'0'}, note:'i nace en 0. 0 < 3? Sí → entramos al loop.'},
     {l:3, vars:{users:'["Ana","Luis","Mia"]', i:'0'}, out:'Login de Ana', note:'users[0] es "Ana". Se imprime.'},
-    {l:2, vars:{users:'["Ana","Luis","Mia"]', i:'1'}, note:'i++ → i vale 1. ¿1 < 3? Sí → otra vuelta.'},
+    {l:2, vars:{users:'["Ana","Luis","Mia"]', i:'1'}, note:'i++ → i vale 1. 1 < 3? Sí → otra vuelta.'},
     {l:3, vars:{users:'["Ana","Luis","Mia"]', i:'1'}, out:'Login de Luis', note:'users[1] es "Luis".'},
-    {l:2, vars:{users:'["Ana","Luis","Mia"]', i:'2'}, note:'i++ → i vale 2. ¿2 < 3? Sí → última vuelta.'},
+    {l:2, vars:{users:'["Ana","Luis","Mia"]', i:'2'}, note:'i++ → i vale 2. 2 < 3? Sí → última vuelta.'},
     {l:3, vars:{users:'["Ana","Luis","Mia"]', i:'2'}, out:'Login de Mia', note:'users[2] es "Mia".'},
-    {l:2, vars:{users:'["Ana","Luis","Mia"]', i:'3'}, note:'i++ → i vale 3. ¿3 < 3? NO → el loop termina.'},
+    {l:2, vars:{users:'["Ana","Luis","Mia"]', i:'3'}, note:'i++ → i vale 3. 3 < 3? NO → el loop termina.'},
     {l:4, vars:{users:'["Ana","Luis","Mia"]', i:'3'}, note:'Fin. 3 usuarios probados con 3 líneas de código. 🎉'}
   ];
   let s = 0;
@@ -1468,9 +1468,9 @@ function wireApp(frame, ids){
     }
     cursor.style.opacity = '0';
     if(failed){
-      banner.className = 'sim-banner fail'; banner.textContent = '✗ 1 failed — el test encontró algo. ¡Eso es trabajo de QA bien hecho!';
+      banner.className = 'sim-banner fail'; banner.textContent = '✗ 1 failed — el test encontró algo. Eso es trabajo de QA bien hecho!';
     } else {
-      banner.className = 'sim-banner pass'; banner.textContent = '✓ 1 passed (' + (lines.length) + ' pasos) — ¡tu primer test automatizado!';
+      banner.className = 'sim-banner pass'; banner.textContent = '✓ 1 passed (' + (lines.length) + ' pasos) — tu primer test automatizado!';
       const r = banner.getBoundingClientRect();
       confetti(r.left + r.width/2, r.top, 110);
     }

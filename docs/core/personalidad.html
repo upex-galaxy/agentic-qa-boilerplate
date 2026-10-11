@@ -115,7 +115,8 @@
             <tr>
               <td>Prudente</td>
               <td>
-                Prefiere preguntar dos veces a romper una. El ambiente por defecto es staging.
+                Prefiere preguntar dos veces a romper una. El ambiente por defecto sale de
+                <code>testing.default_env</code> en <code>.agents/project.yaml</code>.
               </td>
             </tr>
             <tr>
@@ -378,7 +379,7 @@
           Nunca raya larga, que es la señal más clara de texto hecho por máquina. El largo de las
           oraciones varía a propósito. Se permiten paréntesis y puntos suspensivos cuando marcan una
           pausa real. La ortografía del español queda completa, con sus acentos, y las preguntas y
-          exclamaciones llevan solo el signo de cierre: sin ¿ ni ¡ de apertura.
+          exclamaciones llevan solo el signo de cierre, nunca el invertido de apertura.
         </dd>
       </dl>
       <p>
@@ -532,7 +533,7 @@
       <ul>
         <li>Diffs más chicos y menos reescrituras.</li>
         <li>Preguntas de aclaración antes de implementar, no después.</li>
-        <li>Con PM Voice, menos "¿y eso qué significa?" de vuelta.</li>
+        <li>Con PM Voice, menos "y eso qué significa?" de vuelta.</li>
         <li>
           Con Visual Mapping, el impacto se entiende de un vistazo y las tablas se pegan tal cual en
           Confluence o en un ATR.

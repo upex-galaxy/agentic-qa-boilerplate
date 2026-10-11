@@ -321,10 +321,10 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
         <div class="cmd"><span class="ps">$</span><span class="ct">npm init playwright@latest mi-dojo-lab</span><span class="copy">📋</span></div>
         <p style="font-size:.88rem;margin:.6rem 0 .3rem">El asistente pregunta — responde así:</p>
         <table class="cmp" style="font-size:.85rem">
-          <tr><td>¿TypeScript o JavaScript?</td><td><b>TypeScript</b> ✓</td></tr>
-          <tr><td>¿Carpeta de tests?</td><td><b>tests</b> (default)</td></tr>
-          <tr><td>¿GitHub Actions workflow?</td><td><b>false</b> (en este lab no)</td></tr>
-          <tr><td>¿Instalar browsers?</td><td><b>true</b> ✓ (tarda unos minutos)</td></tr>
+          <tr><td>TypeScript o JavaScript?</td><td><b>TypeScript</b> ✓</td></tr>
+          <tr><td>Carpeta de tests?</td><td><b>tests</b> (default)</td></tr>
+          <tr><td>GitHub Actions workflow?</td><td><b>false</b> (en este lab no)</td></tr>
+          <tr><td>Instalar browsers?</td><td><b>true</b> ✓ (tarda unos minutos)</td></tr>
         </table>
       </div>
       <div>
@@ -335,7 +335,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
         <pre>Running 6 tests using 4 workers
 
   <span class="t-green">6 passed</span> <span class="t-dim">(8.3s)</span></pre></div>
-        <details class="m-hint"><summary>Pista: ¿qué acaba de pasar?</summary><div class="hint-body"><p>Corriste los tests de ejemplo (incluidos en el proyecto) contra playwright.dev en 3 navegadores — SIN abrir ninguna ventana. Playwright corre headless (invisible) por defecto: por eso es tan rápido.</p></div></details>
+        <details class="m-hint"><summary>Pista: qué acaba de pasar?</summary><div class="hint-body"><p>Corriste los tests de ejemplo (incluidos en el proyecto) contra playwright.dev en 3 navegadores — SIN abrir ninguna ventana. Playwright corre headless (invisible) por defecto: por eso es tan rápido.</p></div></details>
       </div>
     </div>
     <div class="m-crit">✅ <span><b>Criterio de éxito:</b> <code style="color:var(--cyan)">npx playwright test</code> termina en verde (todos los tests de ejemplo <b style="color:var(--green)">passed</b>).</span></div>
@@ -421,7 +421,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
 <span class="tk-k">await</span> page.<span class="tk-f">getByLabel</span>(<span class="tk-s">"Password"</span>).<span class="tk-f">click</span>(); <span class="tk-c">← otro</span>
 <span class="tk-k">await</span> page.<span class="tk-f">getByLabel</span>(<span class="tk-s">"Password"</span>).<span class="tk-f">fill</span>(<span class="tk-s">"Test123!"</span>);
 <span class="tk-k">await</span> page.<span class="tk-f">getByRole</span>(<span class="tk-s">"button"</span>, { name: <span class="tk-s">"Sign in"</span> }).<span class="tk-f">click</span>();
-<span class="tk-c">// ...y AQUÍ TERMINA. ¿Dónde está la verificación? 😱</span></pre>
+<span class="tk-c">// ...y AQUÍ TERMINA. Dónde está la verificación? 😱</span></pre>
     </div>
     <div>
       <span class="ba-tag good-tag">✅ Tu versión limpia (con aserción)</span>
@@ -463,7 +463,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
     </div>
     <div class="m-crit">✅ <span><b>Criterio de éxito:</b> viste el navegador hacer login solo, y en UI mode recorriste la línea de tiempo paso a paso.</span></div>
   </div>
-  <div class="notes"><p>Headed produce la foto del lab: el navegador llenando el formulario solo — el momento que vinieron a buscar. UI mode es la herramienta de trabajo diaria #1: time-travel + locator picker (esa pestaña les resuelve "¿qué selector uso?" para la misión 6). Déjalos jugar 5 minutos: cada minuto en UI mode ahora ahorra horas después.</p></div>
+  <div class="notes"><p>Headed produce la foto del lab: el navegador llenando el formulario solo — el momento que vinieron a buscar. UI mode es la herramienta de trabajo diaria #1: time-travel + locator picker (esa pestaña les resuelve "qué selector uso?" para la misión 6). Déjalos jugar 5 minutos: cada minuto en UI mode ahora ahorra horas después.</p></div>
 </section>
 
 <!-- ================================================================ -->
@@ -494,19 +494,19 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
   Received string:  <span class="t-red">"…/login"</span>  <span class="t-dim">← se quedó en login</span>
     <span class="t-dim">at login.spec.ts:9:24</span></pre></div>
         <p style="margin-top:.6rem;font-size:.88rem">En el reporte, click en el test rojo → <b>Trace</b>: línea de tiempo con screenshots de cada paso, red, consola. La caja negra completa del fallo.</p>
-        <details class="m-hint"><summary>Pista: leer el error como detective</summary><div class="hint-body"><p>Tres preguntas SIEMPRE: ¿qué esperaba? (Expected) ¿qué encontró? (Received) ¿en qué línea? (at …). El error de Playwright es un reporte de bug bien escrito — tu oficio es leerlos.</p></div></details>
+        <details class="m-hint"><summary>Pista: leer el error como detective</summary><div class="hint-body"><p>Tres preguntas SIEMPRE: qué esperaba? (Expected) qué encontró? (Received) en qué línea? (at …). El error de Playwright es un reporte de bug bien escrito — tu oficio es leerlos.</p></div></details>
       </div>
     </div>
     <div class="m-crit">✅ <span><b>Criterio de éxito:</b> encontraste en el trace el screenshot del momento del fallo (la página que se quedó en login). Restaura la password buena y vuelve a verde antes de seguir.</span></div>
   </div>
-  <div class="notes"><p>Misión anti-miedo: el rojo es información, no fracaso. El test "falló" porque ENCONTRÓ algo — login con password mala no llega al dashboard: ¡el test funciona! Distinción importante a sembrar: este fallo es "test correcto detectando comportamiento esperado del sistema" — en el trabajo real distinguirán bug real vs test mal escrito con estas mismas herramientas. No olviden restaurar la password.</p></div>
+  <div class="notes"><p>Misión anti-miedo: el rojo es información, no fracaso. El test "falló" porque ENCONTRÓ algo — login con password mala no llega al dashboard: el test funciona! Distinción importante a sembrar: este fallo es "test correcto detectando comportamiento esperado del sistema" — en el trabajo real distinguirán bug real vs test mal escrito con estas mismas herramientas. No olviden restaurar la password.</p></div>
 </section>
 
 <!-- 11 · QUIZ 1 -->
 <section class="slide" data-act="Acto 3 · Rompe y diagnostica" style="align-items:center">
   <div class="quiz" data-quiz="q1">
     <div class="quiz-tag">⭐ QUIZ 1 · Leer errores</div>
-    <h3 class="quiz-q">Tu test falla con: <code style="color:var(--red);font-size:.85em">TimeoutError: waiting for getByLabel("Email")</code> — ¿qué significa?</h3>
+    <h3 class="quiz-q">Tu test falla con: <code style="color:var(--red);font-size:.85em">TimeoutError: waiting for getByLabel("Email")</code> — qué significa?</h3>
     <div class="quiz-opts">
       <button class="opt"><span class="key">A</span><span>La app está caída — avisar a infraestructura</span></button>
       <button class="opt" data-ok="1"><span class="key">B</span><span>Playwright esperó y nunca encontró un elemento con label "Email" — locator equivocado o página distinta</span></button>
@@ -604,7 +604,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
       </div>
       <div>
         <div class="card"><h3>📊 En el reporte HTML explora</h3>
-          <p style="font-size:.88rem;line-height:1.9">✅ Lista de tests por browser (¡corrieron en 3!)<br>
+          <p style="font-size:.88rem;line-height:1.9">✅ Lista de tests por browser (corrieron en 3!)<br>
           ⏱️ Duración de cada test<br>
           📷 Click en cualquiera → pasos detallados<br>
           Este reporte es lo que un QA Engineer adjunta como <b>evidencia de ejecución</b></p></div>
@@ -620,13 +620,13 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
 <section class="slide" data-act="Acto 5 · Boss final" style="align-items:center">
   <div class="quiz" data-quiz="q2">
     <div class="quiz-tag">⭐ QUIZ 2 · El integrador</div>
-    <h3 class="quiz-q">Tu suite pasó 15/15 el lunes. El martes corre de nuevo SIN cambios de código… y un test falla. ¿Primera hipótesis profesional?</h3>
+    <h3 class="quiz-q">Tu suite pasó 15/15 el lunes. El martes corre de nuevo SIN cambios de código… y un test falla. Primera hipótesis profesional?</h3>
     <div class="quiz-opts">
       <button class="opt"><span class="key">A</span><span>Playwright se corrompió — reinstalar todo</span></button>
       <button class="opt"><span class="key">B</span><span>Borrar ese test, total los otros 14 pasan</span></button>
       <button class="opt" data-ok="1"><span class="key">C</span><span>Algo cambió fuera del código: la app, los datos, el timing — abrir el trace y comparar contra la corrida verde</span></button>
     </div>
-    <div class="quiz-expl">💡 Test que falla sin cambios de código = señal de que algo SÍ cambió en otra parte: deploy de la app, datos de prueba consumidos (¿tu registro reusó un email?), timing de red. El trace te dice cuál. Si va y viene sin causa, se llama <b>flaky</b> — y diagnosticarlos es una habilidad estrella del QA Engineer (se profundiza en Playwright Pro).</div>
+    <div class="quiz-expl">💡 Test que falla sin cambios de código = señal de que algo SÍ cambió en otra parte: deploy de la app, datos de prueba consumidos (tu registro reusó un email?), timing de red. El trace te dice cuál. Si va y viene sin causa, se llama <b>flaky</b> — y diagnosticarlos es una habilidad estrella del QA Engineer (se profundiza en Playwright Pro).</div>
   </div>
   <div class="notes"><p>Mentalidad final del lab: el rojo intermitente no se ignora ni se borra — se diagnostica con evidencia (trace). La opción B es la tentación real en equipos con prisa: tests borrados = cobertura perdida en silencio. Recuerda que Playwright Pro ataca flakiness de frente con hooks y datos aislados.</p></div>
 </section>

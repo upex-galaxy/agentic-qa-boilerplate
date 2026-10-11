@@ -535,7 +535,7 @@ metadata:
       <path class="ln" d="M775 155V286" marker-end="url(#jd-a)"/>
       <rect class="bx-warn" x="680" y="290" width="190" height="90" rx="10"/>
       <text class="t-l" x="694" y="313" style="fill:var(--warn)">PASO 5 · HUMANO</text>
-      <text class="t-b" x="694" y="337">¿Los arreglo?</text>
+      <text class="t-b" x="694" y="337">Los arreglo?</text>
       <text class="t-s" x="694" y="359">pregunta en la ronda 1</text>
       <path class="ln" d="M680 335H632" marker-end="url(#jd-a)"/>
       <rect class="bx" x="430" y="290" width="200" height="90" rx="10"/>
@@ -654,7 +654,7 @@ metadata:
       <span class="wf-arr">→</span>
       <div class="wf-node"><p class="n">En seguida</p><p class="t">Re-juicio en paralelo</p><p class="c">A y B, antes de commit, push o cierre</p></div>
       <span class="wf-arr">→</span>
-      <div class="wf-node gate"><p class="n">2 iteraciones</p><p class="t">Te pregunta otra vez</p><p class="c">si quedan problemas: ¿seguimos?</p></div>
+      <div class="wf-node gate"><p class="n">2 iteraciones</p><p class="t">Te pregunta otra vez</p><p class="c">si quedan problemas: seguimos?</p></div>
     </div>
     <div class="grid g2 mt-m" style="gap:22px;align-items:start">
       <div class="card card-accent">
@@ -709,7 +709,7 @@ JUDGMENT: APPROVED ✅   o   JUDGMENT: ESCALATED ⚠️</div>
     <p class="kicker">En el pipeline · 11 de 13</p>
     <h2 class="h2">Otras skills <span class="grad">la citan</span></h2>
     <table class="tt tight mt-m">
-      <tr><th style="width:24%">Skill anfitriona</th><th style="width:40%">Cuándo</th><th>¿Obligatoria?</th></tr>
+      <tr><th style="width:24%">Skill anfitriona</th><th style="width:40%">Cuándo</th><th>Obligatoria?</th></tr>
       <tr><td class="small mono" style="border-color:var(--accent)">/test-automation</td><td class="small" style="border-color:var(--accent)">Fase 3 Review del stage Automation, antes del merge, sobre el diff y en contexto limpio</td><td class="small" style="border-color:var(--accent)"><b>Un verificador separado es requerido</b>: <span class="mono">/pr-review-lead</span> o <span class="mono">/judgment-day</span>, el que mejor encaje. Saltarlo es una falla del DoD.</td></tr>
       <tr><td class="small mono">/git-flow-master</td><td class="small">Antes del PR, si el diff pasa las 400 líneas o toca scaffolding compartido (bases KATA, fixtures, schemas OpenAPI)</td><td class="small">Opcional: la skill te lo ofrece y vos decidís</td></tr>
       <tr><td class="small mono">/shift-left-testing</td><td class="small">El refinamiento va a una Story de alto riesgo</td><td class="small">Opcional, nunca auto-invocada</td></tr>
@@ -1612,7 +1612,7 @@ JUDGMENT: APPROVED ✅   o   JUDGMENT: ESCALATED ⚠️</div>
   document.getElementById('btn-next').addEventListener('click', function(){ go(idx + 1); });
   document.getElementById('btn-reset').addEventListener('click', resetTimer);
   document.getElementById('reset-layout').addEventListener('click', function(){
-    if (confirm('¿Restaurar la disposición por defecto?')) {
+    if (confirm('Restaurar la disposición por defecto?')) {
       try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
       applyLayout(defaultLayout());
     }

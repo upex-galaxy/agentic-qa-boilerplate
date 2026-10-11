@@ -271,10 +271,11 @@ footer code{font-family:var(--mono);font-size:12px;color:var(--t2)}
 
     <div class="card" style="--ac:var(--rose)">
       <span class="n">04</span>
-      <h4>Barrido de 173 guiones largos</h4>
-      <p>119 en <code>AGENTS.md</code> y 54 en <code>docs/ai-personality.md</code> (ruta retirada; la página es <code>docs/core/personalidad.html</code>). El modelo imita
-      la densidad tipográfica que ve en sus propias instrucciones, y veía 185 guiones largos contra
-      una línea que los prohibía. Al cierre de este reporte quedaban cero.</p>
+      <h4>Barrido de guiones largos</h4>
+      <p>Se barrieron <code>AGENTS.md</code> y <code>docs/ai-personality.md</code> (ruta retirada; la página es <code>docs/core/personalidad.html</code>). El modelo imita
+      la densidad tipográfica que ve en sus propias instrucciones, y veía muchos guiones largos
+      contra una línea que los prohibía. El barrido de la fecha de este reporte los dejó en cero;
+      el estado actual lo dice una búsqueda en el archivo, no esta página.</p>
       <span class="st done">aplicado</span>
     </div>
 
@@ -324,7 +325,7 @@ footer code{font-family:var(--mono);font-size:12px;color:var(--t2)}
 const SESSION = {
   before: [
     {
-      user: '¿cómo quedó el testing de la historia del login con 2FA?',
+      user: 'cómo quedó el testing de la historia del login con 2FA?',
       html: `
 <p class="head"><span class="punch">Resumen</span>: se completó la ejecución de la suite manual sobre la historia UPEX-482 <span class="dash">—</span> login con doble factor <span class="dash">—</span> y los resultados se detallan a continuación.</p>
 <p class="wall">Se ejecutaron once casos de prueba en total sobre el entorno de staging, cubriendo tanto el flujo de SMS como el de aplicación autenticadora, y de esos once casos nueve resultaron en estado aprobado mientras que dos presentaron desviaciones respecto al comportamiento esperado descrito en los criterios de aceptación de la historia. La primera desviación corresponde a la ventana de validez del código TOTP, que según el criterio de aceptación número tres debería ser de treinta segundos pero que en la práctica acepta códigos generados hasta noventa segundos antes, lo cual representa un riesgo de seguridad al triplicar la ventana de exposición de un código interceptado. La segunda desviación corresponde a la ausencia de un botón de reenvío de código, situación que obliga al usuario a recargar la página completa para solicitar un código nuevo, degradando la experiencia sin llegar a incumplir ningún criterio de aceptación explícito.</p>
@@ -332,14 +333,14 @@ const SESSION = {
 <p class="wall">En conclusión, la historia no se encuentra en condiciones de ser cerrada hasta que el defecto de la ventana TOTP sea corregido y verificado nuevamente, mientras que la mejora puede ser priorizada de forma independiente por el equipo de producto.</p>`
     },
     {
-      user: 'dame el detalle del defecto del TOTP, ¿en qué archivo está el fixture?',
+      user: 'dame el detalle del defecto del TOTP, en qué archivo está el fixture?',
       html: `
 <p class="head"><span class="punch">Detalle</span>: el defecto UPEX-517 <span class="dash">—</span> ventana TOTP extendida <span class="dash">—</span> se reproduce de forma consistente.</p>
 <p class="wall">El fixture que genera los códigos de prueba se encuentra en tests/components/auth/TotpApi.ts y expone el método generateCode que internamente utiliza la librería otplib con un parámetro window configurado en tres unidades, cuando el valor correcto para una ventana de treinta segundos sería uno, siendo este parámetro el que multiplica por tres el periodo de validez efectivo. La reproducción requiere generar un código, esperar entre treinta y uno y noventa segundos, e introducirlo en el formulario de verificación, momento en el cual la respuesta del endpoint POST /api/auth/verify-2fa devuelve un código doscientos cuando lo esperado sería un código cuatrocientos uno.</p>
 <p class="wall">El impacto se considera alto dado que triplica la ventana de exposición efectiva de un código interceptado por un atacante, y afecta a la totalidad de los usuarios que tengan activado el segundo factor de autenticación mediante aplicación autenticadora, no así a los que utilicen el canal de SMS.</p>`
     },
     {
-      user: 'vale, ¿y qué falta para cerrar el sprint?',
+      user: 'vale, y qué falta para cerrar el sprint?',
       html: `
 <p class="head"><span class="punch">Estado</span>: quedan cuatro elementos pendientes antes del cierre.</p>
 <p class="wall">En el apartado de defectos, el ticket UPEX-517 permanece abierto a la espera de corrección por parte del equipo de desarrollo y posterior verificación por parte de QA, siendo este el único bloqueante real del cierre del sprint. En el apartado de documentación, restan por documentar dos casos de prueba en la herramienta de gestión de pruebas, correspondientes a los flujos de expiración y de reenvío, así como la actualización del plan de pruebas de aceptación de la historia. En el apartado de automatización, se identificaron tres candidatos con retorno de inversión favorable que deberían incorporarse a la suite de regresión antes del siguiente ciclo. Finalmente, en el apartado de reportes, queda pendiente la generación del informe ejecutivo de calidad correspondiente al sprint.</p>
@@ -348,7 +349,7 @@ const SESSION = {
   ],
   after: [
     {
-      user: '¿cómo quedó el testing de la historia del login con 2FA?',
+      user: 'cómo quedó el testing de la historia del login con 2FA?',
       html: `
 <p class="head">Login con 2FA queda bloqueado: la <strong>ventana TOTP</strong> acepta códigos caducados de hasta 90 segundos. 9 de 11 casos pasan, y los 2 que fallan son el mismo problema.</p>
 <table>
@@ -358,7 +359,7 @@ const SESSION = {
     <tr><td>App autenticadora (TOTP)</td><td>6</td><td>4</td><td>2</td></tr>
   </tbody>
 </table>
-<p class="q">¿Por dónde quieres entrar?</p>
+<p class="q">Por dónde quieres entrar?</p>
 <ul>
   <li><code>UPEX-517</code> (Defect, severidad <strong>Alta</strong>): código TOTP sigue siendo válido 90 s después de generarse, triple de los 30 s especificados en AC-3.</li>
   <li>Riesgo de negocio: código visto de reojo en la pantalla, o reenviado por WhatsApp, sirve minuto y medio más. No es teórico: los 6 dígitos siguen en pantalla del móvil.</li>
@@ -369,7 +370,7 @@ const SESSION = {
 </ul>`
     },
     {
-      user: 'dame el detalle del defecto del TOTP, ¿en qué archivo está el fixture?',
+      user: 'dame el detalle del defecto del TOTP, en qué archivo está el fixture?',
       html: `
 <p class="head">Fixture está en <code>tests/components/TestFixture.ts</code>. El ATC que reproduce el defecto vive en <code>tests/components/auth/api/AuthApi.ts</code>, registrado como <code>@atc('UPEX-491')</code>.</p>
 <table>
@@ -398,10 +399,10 @@ const SESSION = {
 </ul>`
     },
     {
-      user: 'vale, ¿y qué falta para cerrar el sprint?',
+      user: 'vale, y qué falta para cerrar el sprint?',
       html: `
 <p class="head">Queda <strong>un solo bloqueante</strong> para cerrar el sprint: el retest del defecto de seguridad. Lo demás es trabajo que no frena la release.</p>
-<p class="q">¿Qué quieres que empuje primero?</p>
+<p class="q">Qué quieres que empuje primero?</p>
 <ul>
   <li><code>UPEX-517</code>: asignado a dev, fix estimado para hoy. El retest son 3 casos, unos 25 minutos, y devuelve la historia a Tested.</li>
   <li><code>UPEX-518</code>: parado en decisión del PO. Si entra al sprint siguiente, no toca nada de lo ya probado.</li>

@@ -351,7 +351,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
         <div class="cmd"><span class="ps">$</span><span class="ct">npx playwright test</span><span class="copy">📋</span></div>
       </div>
       <div>
-        <details class="m-hint"><summary>Pista: un test ahora falla</summary><div class="hint-body"><p>¿Ese test NECESITA estar deslogueado (p.ej. login-invalid)? Entonces no pertenece a ese describe — déjalo en su propio grupo sin hook de login. Los hooks aplican a TODO el grupo: agrupa por precondición compartida.</p></div></details>
+        <details class="m-hint"><summary>Pista: un test ahora falla</summary><div class="hint-body"><p>Ese test NECESITA estar deslogueado (p.ej. login-invalid)? Entonces no pertenece a ese describe — déjalo en su propio grupo sin hook de login. Los hooks aplican a TODO el grupo: agrupa por precondición compartida.</p></div></details>
         <div class="callout info" style="margin-top:.8rem"><span class="co-ico">📏</span><p>Métrica de éxito honesta: tu suite debería perder ~15-25 líneas duplicadas sin perder ningún test.</p></div>
       </div>
     </div>
@@ -364,7 +364,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
 <section class="slide" data-act="Acto 1 · Organiza" style="align-items:center">
   <div class="quiz" data-quiz="q1">
     <div class="quiz-tag">⭐ QUIZ 1 · Hooks</div>
-    <h3 class="quiz-q">Un describe tiene 3 tests y un <code style="color:var(--cyan)">beforeEach</code> con login. ¿Cuántas veces se ejecuta el login al correr el grupo?</h3>
+    <h3 class="quiz-q">Un describe tiene 3 tests y un <code style="color:var(--cyan)">beforeEach</code> con login. Cuántas veces se ejecuta el login al correr el grupo?</h3>
     <div class="quiz-opts">
       <button class="opt"><span class="key">A</span><span>1 vez — al inicio del grupo</span></button>
       <button class="opt" data-ok="1"><span class="key">B</span><span>3 veces — antes de CADA test</span></button>
@@ -391,7 +391,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
     <tr><td>🚨 último</td><td><code>page.locator(".btn > div:nth-child(2)")</code></td><td>CSS estructural: muere con cualquier rediseño. Solo sin alternativa.</td></tr>
   </table>
   <div class="callout" data-anim="fade-up"><span class="co-ico">♿</span><p><b>Bonus oculto:</b> si getByRole no encuentra tu botón, a un usuario con lector de pantalla le pasa lo mismo. Locators semánticos = tests robustos Y auditoría de accesibilidad gratis.</p></div>
-  <div class="notes"><p>La tabla ES la lección — déjala respirar. Regla mental: "¿cómo le describirías el elemento a un humano por teléfono?" → ese es el locator correcto. El bonus de accesibilidad eleva la conversación: el QA que detecta problemas a11y de pasada aporta valor extra. data-testid: la convención para pedir anclas al equipo dev cuando el DOM es hostil.</p></div>
+  <div class="notes"><p>La tabla ES la lección — déjala respirar. Regla mental: "cómo le describirías el elemento a un humano por teléfono?" → ese es el locator correcto. El bonus de accesibilidad eleva la conversación: el QA que detecta problemas a11y de pasada aporta valor extra. data-testid: la convención para pedir anclas al equipo dev cuando el DOM es hostil.</p></div>
 </section>
 
 <!-- 8 · Locators avanzados -->
@@ -438,8 +438,8 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
         <p style="font-size:.9rem;margin:.5rem 0">3. Reemplaza, corre, verde.</p>
       </div>
       <div>
-        <details class="m-hint"><summary>Pista: el dojo no tiene label en un input</summary><div class="hint-body"><p>Orden de fallback: ¿placeholder? → getByPlaceholder. ¿texto cercano único? → getByText + chaining. ¿nada? → ese es el caso legítimo de data-testid (y en un proyecto real, lo pides al dev). Documenta tu decisión en un comentario.</p></div></details>
-        <div class="callout warn" style="margin-top:.8rem"><span class="co-ico">🧪</span><p>Prueba ácida: ¿tu locator describe QUÉ es el elemento ("el botón Sign in") o DÓNDE está colgado ("el tercer div del form")? Solo el primero sobrevive.</p></div>
+        <details class="m-hint"><summary>Pista: el dojo no tiene label en un input</summary><div class="hint-body"><p>Orden de fallback: placeholder? → getByPlaceholder. texto cercano único? → getByText + chaining. nada? → ese es el caso legítimo de data-testid (y en un proyecto real, lo pides al dev). Documenta tu decisión en un comentario.</p></div></details>
+        <div class="callout warn" style="margin-top:.8rem"><span class="co-ico">🧪</span><p>Prueba ácida: tu locator describe QUÉ es el elemento ("el botón Sign in") o DÓNDE está colgado ("el tercer div del form")? Solo el primero sobrevive.</p></div>
       </div>
     </div>
     <div class="m-crit">✅ <span><b>Criterio de éxito:</b> cero selectores CSS estructurales en tu suite (o cada excepción justificada con comentario) y todo verde.</span></div>
@@ -451,7 +451,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
 <section class="slide" data-act="Acto 2 · Locators pro" style="align-items:center">
   <div class="quiz" data-quiz="q2">
     <div class="quiz-tag">⭐ QUIZ 2 · Locators</div>
-    <h3 class="quiz-q">El equipo rediseña el CSS completo de la app (clases nuevas, estructura nueva, mismos textos). ¿Cuál locator sigue funcionando?</h3>
+    <h3 class="quiz-q">El equipo rediseña el CSS completo de la app (clases nuevas, estructura nueva, mismos textos). Cuál locator sigue funcionando?</h3>
     <div class="quiz-opts">
       <button class="opt"><span class="key">A</span><span><code>page.locator(".btn-primary")</code></span></button>
       <button class="opt"><span class="key">B</span><span><code>page.locator("form > div:nth-child(3) > button")</code></span></button>
@@ -565,7 +565,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
       </div>
       <div>
         <details class="m-hint"><summary>Pista: "Cannot find module '../pages/login-page'"</summary><div class="hint-body"><p>La ruta del import es relativa AL ARCHIVO que importa: desde tests/, la carpeta pages/ está un nivel arriba → <code>../pages/login-page</code>. Sin extensión .ts en el import.</p></div></details>
-        <details class="m-hint"><summary>Reto extra si vas sobrado</summary><div class="hint-body"><p>Crea también <code>pages/dashboard-page.ts</code> con un método <code>expectLoaded()</code>... espera, ¿expects en el POM? 🤔 Decide tú dónde va la aserción — y defiende tu decisión en el debrief.</p></div></details>
+        <details class="m-hint"><summary>Reto extra si vas sobrado</summary><div class="hint-body"><p>Crea también <code>pages/dashboard-page.ts</code> con un método <code>expectLoaded()</code>... espera, expects en el POM? 🤔 Decide tú dónde va la aserción — y defiende tu decisión en el debrief.</p></div></details>
       </div>
     </div>
     <div class="m-crit">✅ <span><b>Criterio de éxito:</b> tests de login verdes SIN ningún <code style="color:var(--cyan)">page.fill/page.click</code> directo en los specs — todo pasa por LoginPage.</span></div>
@@ -577,7 +577,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
 <section class="slide" data-act="Acto 3 · POM real" style="align-items:center">
   <div class="quiz" data-quiz="q3">
     <div class="quiz-tag">⭐ QUIZ 3 · POM</div>
-    <h3 class="quiz-q">Según la división sagrada, ¿dónde vive <code style="color:var(--cyan)">expect(page).toHaveURL(/dashboard/)</code>?</h3>
+    <h3 class="quiz-q">Según la división sagrada, dónde vive <code style="color:var(--cyan)">expect(page).toHaveURL(/dashboard/)</code>?</h3>
     <div class="quiz-opts">
       <button class="opt"><span class="key">A</span><span>En LoginPage — al final del método login()</span></button>
       <button class="opt" data-ok="1"><span class="key">B</span><span>En el test — el Page Object actúa, el test verifica</span></button>
@@ -676,7 +676,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
       <div class="card hl" style="margin-top:.8rem"><h3>🥋 El dojo te espera</h3><p>Tiene API REST documentada: <span class="pill">dojo.upexgalaxy.com/api/docs</span> — ábrela AHORA y mira qué endpoints ofrece.</p></div>
     </div>
   </div>
-  <div class="notes"><p>La pirámide sin dogma: heurístico de costo-beneficio, no religión. Mensaje práctico: "¿estás probando el viaje (UI) o la regla (API)?" Casos edge de validación por UI = lentitud multiplicada; por API son milisegundos. Pide que abran /api/docs en vivo — la misión P5 sale de ahí.</p></div>
+  <div class="notes"><p>La pirámide sin dogma: heurístico de costo-beneficio, no religión. Mensaje práctico: "estás probando el viaje (UI) o la regla (API)?" Casos edge de validación por UI = lentitud multiplicada; por API son milisegundos. Pide que abran /api/docs en vivo — la misión P5 sale de ahí.</p></div>
 </section>
 
 <!-- 18 · request -->
@@ -727,7 +727,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
         <div class="cmd"><span class="ps">$</span><span class="ct">npx playwright test tests/api</span><span class="copy">📋</span></div>
       </div>
       <div>
-        <details class="m-hint"><summary>Pista: ¿qué ruta y campos exactos?</summary><div class="hint-body"><p>TODO está en /api/docs: método (GET/POST), ruta, cuerpo esperado y respuestas posibles. Leer documentación de API es destreza de QA — esta misión la entrena tanto como el código.</p></div></details>
+        <details class="m-hint"><summary>Pista: qué ruta y campos exactos?</summary><div class="hint-body"><p>TODO está en /api/docs: método (GET/POST), ruta, cuerpo esperado y respuestas posibles. Leer documentación de API es destreza de QA — esta misión la entrena tanto como el código.</p></div></details>
         <div class="callout" style="margin-top:.8rem"><span class="co-ico">⚡</span><p>Fíjate en la duración al terminar: tus API tests deberían correr en <b>menos de 2 segundos</b>. Compáralo con tus tests de UI — ese delta ES la pirámide.</p></div>
       </div>
     </div>
@@ -740,7 +740,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
 <section class="slide" data-act="Acto 5 · API testing" style="align-items:center">
   <div class="quiz" data-quiz="q4">
     <div class="quiz-tag">⭐ QUIZ 4 · Estrategia</div>
-    <h3 class="quiz-q">Debes probar 12 combinaciones de datos inválidos en el formulario de registro. ¿Estrategia profesional?</h3>
+    <h3 class="quiz-q">Debes probar 12 combinaciones de datos inválidos en el formulario de registro. Estrategia profesional?</h3>
     <div class="quiz-opts">
       <button class="opt"><span class="key">A</span><span>12 tests de UI — el formulario es UI, se prueba por UI</span></button>
       <button class="opt" data-ok="1"><span class="key">B</span><span>12 por API (las reglas de validación) + 1-2 por UI (que el error se MUESTRE al usuario)</span></button>

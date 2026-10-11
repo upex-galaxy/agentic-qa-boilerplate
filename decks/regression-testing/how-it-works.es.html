@@ -549,7 +549,7 @@ table.tbl .mono{font-size:13px}
   <!-- 4. PHASE 0 RESUME -->
   <section class="slide" data-title="Phase 0 · Resume">
     <p class="kicker">phase 0 · session resume check (obligatorio, inline)</p>
-    <h2 class="h2">¿Ya había una sesión? Reanuda, no repitas</h2>
+    <h2 class="h2">Ya había una sesión? Reanuda, no repitas</h2>
     <div class="cards c2 mt-m" style="align-items:start">
       <div class="card acc">
         <h4>El contrato de sesión</h4>
@@ -718,13 +718,13 @@ table.tbl .mono{font-size:13px}
     <div class="term mt-m">
       <div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">decision-tree · references/failure-classification.md</span></div>
 <pre>Test fallido
-  ├─ ¿tag <span class="hi">@blocked:{BUG-KEY}</span>?  ──────────────► <span class="okc">KNOWN-BLOCKED</span>  <span class="cm">(aparcado; fuera del gating)</span>
-  ├─ ¿un ticket conocido ya lo rastrea? ────► <span class="okc">KNOWN ISSUE</span>
-  ├─ ¿patrón de error de entorno? ──────────► <span class="hi">ENVIRONMENT</span>
+  ├─ tag <span class="hi">@blocked:{BUG-KEY}</span>?  ──────────────► <span class="okc">KNOWN-BLOCKED</span>  <span class="cm">(aparcado; fuera del gating)</span>
+  ├─ un ticket conocido ya lo rastrea? ────► <span class="okc">KNOWN ISSUE</span>
+  ├─ patrón de error de entorno? ──────────► <span class="hi">ENVIRONMENT</span>
   │    <span class="cm">ECONNREFUSED · ETIMEDOUT · net::ERR_ · Navigation timeout · browserType.launch · 502/503</span>
-  ├─ ¿sin historial (primer run)? ──────────► <span class="hi">NEW TEST</span>
-  ├─ ¿falla &gt;20% en los últimos 10 runs? ───► <span class="hi">FLAKY</span>
-  └─ ¿pasaba hace ≤5 runs y ahora falla? ───► <span class="bad">REGRESSION   ← bloquea el release</span></pre>
+  ├─ sin historial (primer run)? ──────────► <span class="hi">NEW TEST</span>
+  ├─ falla &gt;20% en los últimos 10 runs? ───► <span class="hi">FLAKY</span>
+  └─ pasaba hace ≤5 runs y ahora falla? ───► <span class="bad">REGRESSION   ← bloquea el release</span></pre>
     </div>
     <div class="cards c2 mt-m">
       <div class="callout bad"><h4>La misclasificación #1</h4><p>NUNCA marques REGRESSION sin revisar el historial primero. Y un primer fallo sin historia no es regresión: es NEW TEST — se verifica a mano una vez antes de clasificar.</p></div>
@@ -739,7 +739,7 @@ table.tbl .mono{font-size:13px}
     <p class="kicker">fase 2 · analyze — de la etiqueta a la acción</p>
     <h2 class="h2">Solo dos categorías pueden llegar a Jira</h2>
     <table class="tbl mt-m">
-      <thead><tr><th>Categoría</th><th>Impacto</th><th>Acción</th><th>¿Issue en Jira?</th><th>Evidencia que debe citar</th></tr></thead>
+      <thead><tr><th>Categoría</th><th>Impacto</th><th>Acción</th><th>Issue en Jira?</th><th>Evidencia que debe citar</th></tr></thead>
       <tbody>
         <tr><td><b>KNOWN-BLOCKED</b></td><td><span class="tag bl">LOW</span></td><td>Excluir del gating, listar con su <span class="mono">{BUG-KEY}</span></td><td>No — el marker ya nombra el bug abierto</td><td>El tag <span class="mono">@blocked:{BUG-KEY}</span> del spec y su bug key</td></tr>
         <tr><td><b>REGRESSION</b></td><td><span class="tag no">HIGH</span></td><td>Bloquea el release, archivar y asignar</td><td><b>Sí</b> — Bug/Defect (Fase 3)</td><td>Ninguna: es el valor por defecto</td></tr>
@@ -1825,7 +1825,7 @@ table.tbl .mono{font-size:13px}
   document.getElementById('btn-next').addEventListener('click', function(){ go(idx + 1); });
   document.getElementById('btn-reset').addEventListener('click', resetTimer);
   document.getElementById('reset-layout').addEventListener('click', function(){
-    if (confirm('¿Restaurar la disposición por defecto?')) {
+    if (confirm('Restaurar la disposición por defecto?')) {
       try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
       applyLayout(defaultLayout());
     }

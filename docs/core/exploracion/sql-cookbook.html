@@ -164,22 +164,22 @@ Lo que hay en la base:
           <tbody>
             <tr>
               <td>Existencia</td>
-              <td>¿Se creó la fila?</td>
+              <td>Se creó la fila?</td>
               <td><code>SELECT COUNT(*) FROM users WHERE email = $1</code> devuelve 1</td>
             </tr>
             <tr>
               <td>Valores</td>
-              <td>¿El valor guardado es correcto?</td>
+              <td>El valor guardado es correcto?</td>
               <td>El total guardado es igual a <code>SUM(price * quantity)</code> de sus items</td>
             </tr>
             <tr>
               <td>Integridad</td>
-              <td>¿Las relaciones se sostienen?</td>
+              <td>Las relaciones se sostienen?</td>
               <td>Cero huérfanos</td>
             </tr>
             <tr>
               <td>Timestamps</td>
-              <td>¿Las fechas son plausibles?</td>
+              <td>Las fechas son plausibles?</td>
               <td>
                 <code>created_at</code> dentro del último minuto;
                 <code>updated_at &gt;= created_at</code>
@@ -187,7 +187,7 @@ Lo que hay en la base:
             </tr>
             <tr>
               <td>Side effects</td>
-              <td>¿Corrieron triggers y cascades?</td>
+              <td>Corrieron triggers y cascades?</td>
               <td>Tras borrar un usuario, cero filas en sus tablas dependientes</td>
             </tr>
           </tbody>
@@ -264,7 +264,7 @@ WHERE id = 'ord_123';
 SELECT * FROM products WHERE updated_at &lt; created_at;    -- actualizado antes de crearse
 SELECT * FROM orders   WHERE created_at IS NULL;         -- falta donde es obligatorio
 
--- ¿Se creó hace menos de un minuto?
+-- Se creó hace menos de un minuto?
 SELECT * FROM users
 WHERE email = 'test@example.com'
   AND created_at &gt; NOW() - INTERVAL '1 minute';

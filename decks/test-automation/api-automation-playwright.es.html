@@ -376,7 +376,7 @@ table.cmp td code{color:var(--cyan);font-size:.92em}
   <span class="tk-k">await</span> page.<span class="tk-f">goto</span>(<span class="tk-s">"/orders/new"</span>);         <span class="tk-c">│</span>
   <span class="tk-k">await</span> page.<span class="tk-f">fill</span>(<span class="tk-s">"#item"</span>, <span class="tk-s">"Coffee"</span>);     <span class="tk-c">│</span>
   <span class="tk-k">await</span> page.<span class="tk-f">click</span>(<span class="tk-s">"#submit"</span>);            <span class="tk-c">┘</span>
-  <span class="tk-k">await</span> <span class="tk-f">expect</span>(page.<span class="tk-f">locator</span>(<span class="tk-s">".toast"</span>)).<span class="tk-f">toBeVisible</span>();  <span class="tk-c">// ¿de verdad se guardó?</span>
+  <span class="tk-k">await</span> <span class="tk-f">expect</span>(page.<span class="tk-f">locator</span>(<span class="tk-s">".toast"</span>)).<span class="tk-f">toBeVisible</span>();  <span class="tk-c">// de verdad se guardó?</span>
 });</pre>
   </div>
   <div class="callout warn" data-anim="fade-up"><span class="co-ico">🚨</span><p>Solo quería saber si <code>POST /orders</code> funciona. Pagué <b>8 segundos</b>, un login completo y un navegador… y al final confío en un <i>toast</i>, no en la respuesta real del servidor.</p></div>
@@ -508,7 +508,7 @@ test("crea y luego lee un pedido", async ({ api }) => {
 <section class="slide" data-act="Acto 1 · La fixture request" style="align-items:center">
   <div class="quiz" data-quiz="q1">
     <div class="quiz-tag">⭐ QUIZ 1 · La fixture request</div>
-    <h3 class="quiz-q">Quieres probar <code style="color:var(--cyan)">GET /orders</code> sin tocar la interfaz. ¿Qué fixture pides en tu test?</h3>
+    <h3 class="quiz-q">Quieres probar <code style="color:var(--cyan)">GET /orders</code> sin tocar la interfaz. Qué fixture pides en tu test?</h3>
     <div class="quiz-opts">
       <button class="opt"><span class="key">A</span><span><code>{ page }</code> — y navegas hasta la lista de pedidos</span></button>
       <button class="opt" data-ok="1"><span class="key">B</span><span><code>{ request }</code> — y haces <code>request.get("/orders")</code> directo</span></button>
@@ -516,7 +516,7 @@ test("crea y luego lee un pedido", async ({ api }) => {
     </div>
     <div class="quiz-expl">💡 <code>{ request }</code> es el cliente HTTP: golpea el endpoint sin abrir navegador. Pedir <code>{ page }</code> o <code>{ browser }</code> arranca un navegador que no necesitas — segundos perdidos en cada test. Para probar la API, habla con la API.</div>
   </div>
-  <div class="notes"><p>Si hicieron el experimento del endpoint en el runner, este quiz formaliza lo vivido. Opción A es el reflejo de quien aún piensa en UI; B es la respuesta. Transición: "request resuelve el canal… pero toBeOK() solo mira el status. ¿Y si el status es 200 pero el body viene mal? Ese es el siguiente dolor: aserciones de verdad."</p></div>
+  <div class="notes"><p>Si hicieron el experimento del endpoint en el runner, este quiz formaliza lo vivido. Opción A es el reflejo de quien aún piensa en UI; B es la respuesta. Transición: "request resuelve el canal… pero toBeOK() solo mira el status. Y si el status es 200 pero el body viene mal? Ese es el siguiente dolor: aserciones de verdad."</p></div>
 </section>
 
 <!-- ================================================================ -->
@@ -533,7 +533,7 @@ test("crea y luego lee un pedido", async ({ api }) => {
 <span class="tk-f">test</span>(<span class="tk-s">"trae el pedido"</span>, <span class="tk-k">async</span> ({ request }) => {
   <span class="tk-k">const</span> res = <span class="tk-k">await</span> request.<span class="tk-f">get</span>(<span class="tk-s">"/orders/42"</span>);
 
-  <span class="tk-k">await</span> <span class="tk-f">expect</span>(res).<span class="tk-f">toBeOK</span>();   <span class="tk-c">// ✅ 200… ¿y ya?</span>
+  <span class="tk-k">await</span> <span class="tk-f">expect</span>(res).<span class="tk-f">toBeOK</span>();   <span class="tk-c">// ✅ 200… y ya?</span>
 });
 
 <span class="tk-c">// El server respondió 200, pero el body era:</span>
@@ -542,12 +542,12 @@ test("crea y luego lee un pedido", async ({ api }) => {
       <div class="callout warn" style="margin-top:1rem"><span class="co-ico">🕳️</span><p>Verificar solo el status es un colador: el endpoint puede responder <code>200</code> con un body incompleto, campos <code>null</code> o tipos equivocados.</p></div>
     </div>
     <div data-stagger>
-      <div class="card"><h3>🎯 Tres capas que verificar</h3><p><b>1. Status</b> — ¿el código correcto? <b>2. Body</b> — ¿los datos correctos? <b>3. Contrato</b> — ¿la forma correcta?</p></div>
+      <div class="card"><h3>🎯 Tres capas que verificar</h3><p><b>1. Status</b> — el código correcto? <b>2. Body</b> — los datos correctos? <b>3. Contrato</b> — la forma correcta?</p></div>
       <div class="card" style="margin-top:.8rem"><h3>🧩 El síntoma</h3><p>Tests "verdes" que no atrapan nada. Pasan aunque el backend devuelva basura, porque solo miran el status.</p></div>
       <div class="card hl" style="margin-top:.8rem"><h3>💡 La idea</h3><p>Afirmar sobre el <b>contenido</b>: campos exactos, tipos, y la <b>forma completa</b> del JSON (schema).</p></div>
     </div>
   </div>
-  <div class="notes"><p>El dolor del acto: una aserción débil da falsa seguridad. 200 OK solo dice "el servidor respondió", no "respondió bien". Tres niveles a cubrir: status (¿201 o 422?), body (¿item es "Coffee" y qty es 2?), y contrato/schema (¿el JSON tiene todos los campos con los tipos correctos?). El ejemplo del body con null y qty negativo es el clásico: pasa el status, pasa el test, y el bug llega a producción. La cura viene en las dos slides siguientes.</p></div>
+  <div class="notes"><p>El dolor del acto: una aserción débil da falsa seguridad. 200 OK solo dice "el servidor respondió", no "respondió bien". Tres niveles a cubrir: status (201 o 422?), body (item es "Coffee" y qty es 2?), y contrato/schema (el JSON tiene todos los campos con los tipos correctos?). El ejemplo del body con null y qty negativo es el clásico: pasa el status, pasa el test, y el bug llega a producción. La cura viene en las dos slides siguientes.</p></div>
 </section>
 
 <!-- 10 · El patrón: aserciones por capas -->
@@ -657,7 +657,7 @@ if (errors.length === 0) {
       </div>
     </div>
     <div class="st-side">
-      <div class="st-panel"><h4>📍 ¿Dónde está la petición?</h4><div id="rq-where"><p style="font-size:.85rem;color:var(--text-3);margin:0">— en reposo —</p></div></div>
+      <div class="st-panel"><h4>📍 Dónde está la petición?</h4><div id="rq-where"><p style="font-size:.85rem;color:var(--text-3);margin:0">— en reposo —</p></div></div>
       <div class="st-note" id="rq-note">Presiona "Siguiente paso": vas a seguir la petición desde tu test hasta el servidor y de vuelta.</div>
       <div class="st-out" id="rq-out"><div class="ln" style="color:var(--text-3);font-style:italic">consola…</div></div>
     </div>
@@ -669,7 +669,7 @@ if (errors.length === 0) {
 <section class="slide" data-act="Acto 2 · Aserciones de API" style="align-items:center">
   <div class="quiz" data-quiz="q2">
     <div class="quiz-tag">⭐ QUIZ 2 · Aserciones</div>
-    <h3 class="quiz-q">Tu test hace <code style="color:var(--cyan)">expect(res).toBeOK()</code> y pasa. Pero el body llegó <code style="color:var(--cyan)">{ item: null, qty: -3 }</code>. ¿Qué falló en tu test?</h3>
+    <h3 class="quiz-q">Tu test hace <code style="color:var(--cyan)">expect(res).toBeOK()</code> y pasa. Pero el body llegó <code style="color:var(--cyan)">{ item: null, qty: -3 }</code>. Qué falló en tu test?</h3>
     <div class="quiz-opts">
       <button class="opt"><span class="key">A</span><span>Nada — si el status es 2xx, el endpoint está correcto</span></button>
       <button class="opt" data-ok="1"><span class="key">B</span><span>La aserción es débil: faltó verificar el <b>body</b> (campos y tipos), no solo el status</span></button>
@@ -779,7 +779,7 @@ if (errors.length === 0) {
 <section class="slide" data-act="Acto 3 · Datos, auth y velocidad" style="align-items:center">
   <div class="quiz" data-quiz="q3">
     <div class="quiz-tag">⭐ QUIZ 3 · Datos y velocidad</div>
-    <h3 class="quiz-q">¿Por qué cada test de API debe generar sus datos con <code style="color:var(--cyan)">faker</code> en vez de usar un id fijo como <code style="color:var(--cyan)">"order-1"</code>?</h3>
+    <h3 class="quiz-q">Por qué cada test de API debe generar sus datos con <code style="color:var(--cyan)">faker</code> en vez de usar un id fijo como <code style="color:var(--cyan)">"order-1"</code>?</h3>
     <div class="quiz-opts">
       <button class="opt"><span class="key">A</span><span>Porque faker hace los tests más cortos de escribir</span></button>
       <button class="opt" data-ok="1"><span class="key">B</span><span>Para que sean <b>independientes</b>: con datos únicos ningún test pisa a otro y pueden correr en paralelo</span></button>
@@ -787,7 +787,7 @@ if (errors.length === 0) {
     </div>
     <div class="quiz-expl">💡 Datos fijos compartidos = colisiones: dos tests crean <code>"order-1"</code> y uno rompe al otro. Datos únicos por test = aislamiento total, y el aislamiento es lo que permite paralelizar sin flakiness. La velocidad de API solo se aprovecha si los tests no se estorban entre sí.</div>
   </div>
-  <div class="notes"><p>Une datos (faker) con velocidad (paralelismo). La respuesta exige entender que la independencia es la condición para correr rápido. Opción A subestima (es un beneficio menor); C inventa una obligación. Si en el simulador vieron el salto de velocidad, aquí entienden el requisito que lo habilita: sin independencia, paralelizar multiplica flakiness, no velocidad. Transición al cierre: "request, aserciones, datos, velocidad… ¿cómo se organiza todo esto a escala en el repo real? KATA, ahora por el lado de la API."</p></div>
+  <div class="notes"><p>Une datos (faker) con velocidad (paralelismo). La respuesta exige entender que la independencia es la condición para correr rápido. Opción A subestima (es un beneficio menor); C inventa una obligación. Si en el simulador vieron el salto de velocidad, aquí entienden el requisito que lo habilita: sin independencia, paralelizar multiplica flakiness, no velocidad. Transición al cierre: "request, aserciones, datos, velocidad… cómo se organiza todo esto a escala en el repo real? KATA, ahora por el lado de la API."</p></div>
 </section>
 
 <!-- ================================================================ -->
@@ -863,7 +863,7 @@ if (errors.length === 0) {
     <span class="tk-k">return</span> [res, body];
   }
 }</pre>
-      <div class="callout info" style="margin-top:.8rem"><span class="co-ico">🧩</span><p>¿Y un GET? Es ATC solo si su respuesta <b>es</b> el resultado que pruebas (datos, 401, 403, 404). Si solo prepara datos para otro paso, es un <b>helper</b> (<code class="pill">@step</code> opcional).</p></div>
+      <div class="callout info" style="margin-top:.8rem"><span class="co-ico">🧩</span><p>Y un GET? Es ATC solo si su respuesta <b>es</b> el resultado que pruebas (datos, 401, 403, 404). Si solo prepara datos para otro paso, es un <b>helper</b> (<code class="pill">@step</code> opcional).</p></div>
     </div>
     <div data-stagger>
       <div class="card"><h3>🎯 ATC = un caso completo</h3><p><b>A</b>cceptance <b>T</b>est <b>C</b>ase: no una llamada suelta, sino un <b>mini-flujo</b> — request → status fijo → forma del body → devuelve la tupla.</p></div>
@@ -871,13 +871,13 @@ if (errors.length === 0) {
       <div class="card" style="margin-top:.7rem"><h3>⚖️ Fijas dentro, negocio fuera</h3><p>Status <code class="pill">201</code> y contrato (siempre ciertos) van <b>dentro</b>. Las aserciones de negocio van en el <b>test</b>.</p></div>
     </div>
   </div>
-  <div class="notes"><p>La única pieza realmente nueva: la ATC de API y el decorador @atc. Código real, espejo del LoginPage del repo. Define ATC: caso completo (request + aserciones fijas + devuelve la tupla [response, body] para que el test siga), no una llamada aislada. Las aserciones FIJAS (status 201 esperado, forma del contrato) viven dentro porque son parte de "la acción terminó bien"; las de NEGOCIO (¿el total es el correcto? ¿aparece en la lista del usuario?) van en el test. Es la misma regla acciones-vs-decisión del lado UI. Reglas duras: ATC atómica (nunca llama a otra ATC; las cadenas son Steps), y el @atc da trazabilidad 1:1 con Jira.</p></div>
+  <div class="notes"><p>La única pieza realmente nueva: la ATC de API y el decorador @atc. Código real, espejo del LoginPage del repo. Define ATC: caso completo (request + aserciones fijas + devuelve la tupla [response, body] para que el test siga), no una llamada aislada. Las aserciones FIJAS (status 201 esperado, forma del contrato) viven dentro porque son parte de "la acción terminó bien"; las de NEGOCIO (el total es el correcto? aparece en la lista del usuario?) van en el test. Es la misma regla acciones-vs-decisión del lado UI. Reglas duras: ATC atómica (nunca llama a otra ATC; las cadenas son Steps), y el @atc da trazabilidad 1:1 con Jira.</p></div>
 </section>
 
 <!-- 21 · STEPPER: trazar una ATC de API por las capas -->
 <section class="slide" data-act="Acto 4 · KATA para API">
   <div class="kicker">🧠 Trazador · sigue una llamada por las capas</div>
-  <h2 data-anim="fade-up">Un test llama <span class="grad-text">api.orders.createOrder()</span> — ¿por dónde viaja?</h2>
+  <h2 data-anim="fade-up">Un test llama <span class="grad-text">api.orders.createOrder()</span> — por dónde viaja?</h2>
   <div class="stepper" data-anim="fade-up">
     <div>
       <div class="st-code" id="kt-code">
@@ -909,7 +909,7 @@ if (errors.length === 0) {
   <div class="zoomline"><span>request</span><span>aserciones</span><span>schema · datos</span><span class="on">kata</span></div>
   <h2 data-anim="fade-up">En la práctica: <span class="grad-text">pides la fixture según lo que pruebas</span> 🎚️</h2>
   <table class="cmp" data-anim="fade-up">
-    <thead><tr><th>Tipo de test</th><th>Fixture</th><th>¿Navegador?</th><th>Cuándo</th></tr></thead>
+    <thead><tr><th>Tipo de test</th><th>Fixture</th><th>Navegador?</th><th>Cuándo</th></tr></thead>
     <tbody>
       <tr><td>API pura (integration)</td><td><code>{ api }</code></td><td>No</td><td>Testing de API. Default en <code>tests/integration/</code></td></tr>
       <tr><td>Solo UI</td><td><code>{ ui }</code></td><td>Sí</td><td>Flujo de UI sin setup por API</td></tr>
@@ -941,7 +941,7 @@ if (errors.length === 0) {
 <section class="slide" data-act="Acto 4 · KATA para API" style="align-items:center">
   <div class="quiz" data-quiz="q4">
     <div class="quiz-tag">⭐ QUIZ 4 · KATA</div>
-    <h3 class="quiz-q">En una ATC <code style="color:var(--cyan)">createOrder()</code>, ¿qué aserción va <b>dentro</b> de la ATC y cuál en el <b>test</b>?</h3>
+    <h3 class="quiz-q">En una ATC <code style="color:var(--cyan)">createOrder()</code>, qué aserción va <b>dentro</b> de la ATC y cuál en el <b>test</b>?</h3>
     <div class="quiz-opts">
       <button class="opt" data-ok="1"><span class="key">A</span><span><b>Dentro:</b> status <code>201</code> + schema (siempre ciertos). <b>En el test:</b> "el total facturado es 14€" (regla de negocio)</span></button>
       <button class="opt"><span class="key">B</span><span>Todas dentro de la ATC — así el test queda más corto</span></button>
@@ -1041,7 +1041,7 @@ playwright.config.ts      <span class="tk-c">// baseURL, workers</span>
     <p data-anim="fade-up" style="animation-delay:.2s;max-width:680px;font-size:clamp(1.02rem,1.7vw,1.3rem)">
       request · aserciones · schema · KATA.<br>Probar la API: rápido, estable y al hueso.</p>
     <div class="cover-chips" data-anim="fade-up" style="animation-delay:.32s">
-      <span class="pill">¿Preguntas?</span><span class="pill">/test-automation</span><span class="pill">references/kata-architecture.md</span>
+      <span class="pill">Preguntas?</span><span class="pill">/test-automation</span><span class="pill">references/kata-architecture.md</span>
     </div>
   </div>
   <div class="notes"><p>Slide de cierre y espacio para preguntas. Reabre el runner de API o el simulador de velocidad si alguien quiere ver algo otra vez — son la mejor herramienta para resolver dudas en vivo. Punteros finales: la skill /test-automation y la referencia de arquitectura KATA. Gracias y a escribir ATCs de API.</p></div>
@@ -1196,8 +1196,8 @@ function renderFinal(){
   $('#final-score').textContent = score + ' / ' + TOTAL_Q;
   const pct = score/TOTAL_Q;
   $('#final-msg').textContent =
-    pct === 1 ? '¡Perfecto! request, aserciones, schema y KATA dominados. Piensas como SDET de API. 🏆' :
-    pct >= .75 ? '¡Excelente! La base de API testing está firme — ya pruebas el backend con criterio. 💪' :
+    pct === 1 ? 'Perfecto! request, aserciones, schema y KATA dominados. Piensas como SDET de API. 🏆' :
+    pct >= .75 ? 'Excelente! La base de API testing está firme — ya pruebas el backend con criterio. 💪' :
     pct >= .5 ? 'Muy buen avance. Re-juega el runner de API y el simulador de velocidad — la segunda pasada lo fija. 👍' :
     'La capa API toma dos vueltas, es normal. Re-juega los simuladores de este archivo: la próxima, hace click. 🌱';
   setTimeout(()=>{ confetti(innerWidth/2, innerHeight*0.32, 140); }, 450);
@@ -1270,7 +1270,7 @@ $$('.livecell').forEach(cell=>{
     const fake = { log: mk(''), error: mk('err'), warn: mk(''),
       setup: mk('setup'), teardown: mk('teardown'), info: mk('info') };
     const flush = ()=>{
-      if(!logs.length) logs.push({t:'(sin salida — ¿olvidaste console.log?)', cls:'dim'});
+      if(!logs.length) logs.push({t:'(sin salida — olvidaste console.log?)', cls:'dim'});
       logs.forEach(l=>{ const d=document.createElement('div'); d.className='ln'+(l.cls?' '+l.cls:''); d.textContent=l.t; out.appendChild(d); });
     };
     (async ()=>{
@@ -1559,7 +1559,7 @@ buildStepper('kt', [
       }
       packet.style.opacity='0';
       banner.className='sim-banner pass';
-      banner.textContent='✓ '+(queue.length||1)+' passed — ¡tu cliente de API funciona!';
+      banner.textContent='✓ '+(queue.length||1)+' passed — tu cliente de API funciona!';
       const r = banner.getBoundingClientRect();
       confetti(r.left + r.width/2, r.top, 110);
     } catch(err){

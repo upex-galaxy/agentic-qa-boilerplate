@@ -586,9 +586,9 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <p class="kicker">el modelo</p>
   <h2 class="h2" data-anim="fade-up">Tres Capas, Tres Verdades</h2>
   <div class="grid g3 mt-m">
-    <div class="card" style="border-top:3px solid #f5b942"><h4 style="color:#f5b942">UI</h4><p class="dim">Lo que el usuario ve. ¿Renderiza, fluye, da feedback? Puede mostrar datos cacheados o mock.</p></div>
-    <div class="card" style="border-top:3px solid #e879f9"><h4 style="color:#e879f9">API</h4><p class="dim">El contrato. ¿Status correcto, schema válido, auth y RLS? El 2xx no garantiza la DB.</p></div>
-    <div class="card" style="border-top:3px solid #22d3ee"><h4 style="color:#22d3ee">DB</h4><p class="dim">La verdad persistida. ¿La fila existe, el trigger corrió, los constraints aguantan?</p></div>
+    <div class="card" style="border-top:3px solid #f5b942"><h4 style="color:#f5b942">UI</h4><p class="dim">Lo que el usuario ve. Renderiza, fluye, da feedback? Puede mostrar datos cacheados o mock.</p></div>
+    <div class="card" style="border-top:3px solid #e879f9"><h4 style="color:#e879f9">API</h4><p class="dim">El contrato. Status correcto, schema válido, auth y RLS? El 2xx no garantiza la DB.</p></div>
+    <div class="card" style="border-top:3px solid #22d3ee"><h4 style="color:#22d3ee">DB</h4><p class="dim">La verdad persistida. La fila existe, el trigger corrió, los constraints aguantan?</p></div>
   </div>
   <table class="dtable mt-l" style="font-size:14px">
     <thead><tr><th>Tipo de feature</th><th>Orden de capas</th></tr></thead>
@@ -608,9 +608,9 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <h2 class="h2" data-anim="fade-up">Capas · Niveles · Tipos</h2>
   <p class="lede mt-s">La Trifuerza es UN eje: <b>las capas — dónde sondeas</b> (UI · API · DB). Es <b>ortogonal</b> a otros dos ejes que el tester decide en cada prueba. No compiten: se combinan.</p>
   <div class="grid g3 mt-m">
-    <div class="card card-accent" style="border-top-color:#f5b942"><h4 style="color:#f5b942">Capas — ¿dónde sondeas?</h4><p class="dim"><b>La Trifuerza.</b> UI · API · DB. Cada feature se atraviesa por sus tres capas, siempre.</p></div>
-    <div class="card card-accent" style="border-top-color:#e879f9"><h4 style="color:#e879f9">Niveles — ¿qué alcance?</h4><p class="dim">component → integration → end-to-end (e2e). Cuánto del sistema entra en la prueba.</p></div>
-    <div class="card card-accent" style="border-top-color:#22d3ee"><h4 style="color:#22d3ee">Tipos — ¿con qué intención?</h4><p class="dim">funcional · regresión · smoke · seguridad · performance · usabilidad…</p></div>
+    <div class="card card-accent" style="border-top-color:#f5b942"><h4 style="color:#f5b942">Capas — dónde sondeas?</h4><p class="dim"><b>La Trifuerza.</b> UI · API · DB. Cada feature se atraviesa por sus tres capas, siempre.</p></div>
+    <div class="card card-accent" style="border-top-color:#e879f9"><h4 style="color:#e879f9">Niveles — qué alcance?</h4><p class="dim">component → integration → end-to-end (e2e). Cuánto del sistema entra en la prueba.</p></div>
+    <div class="card card-accent" style="border-top-color:#22d3ee"><h4 style="color:#22d3ee">Tipos — con qué intención?</h4><p class="dim">funcional · regresión · smoke · seguridad · performance · usabilidad…</p></div>
   </div>
   <div class="callout mt-m"><h4>Cómo se cruzan</h4><p>Una misma historia de usuario se prueba <b>eligiendo un nivel y un tipo</b> — pero <b>SIEMPRE atravesando las tres capas</b>. Ej.: un e2e funcional del checkout y una prueba de seguridad de la API distinta en nivel y tipo, idénticas en que ambas piensan UI/API/DB.</p></div>
   <div class="notes">El marco mental clave: la Trifuerza es el eje de CAPAS (dónde), ortogonal a NIVELES (alcance: component/integration/e2e) y TIPOS (intención: funcional/regresión/smoke/seguridad/performance/usabilidad). El tester elige nivel + tipo por prueba, pero las tres capas se atraviesan siempre. Esto evita el malentendido de que la Trifuerza es solo para exploratorio.</div>
@@ -672,11 +672,11 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <p class="kicker">dos preguntas distintas</p>
   <h2 class="h2" data-anim="fade-up">Smoke ≠ Testing Profundo de la Feature</h2>
   <div class="grid g2 mt-m">
-    <div class="card card-accent"><h4>Smoke pregunta…</h4><p class="dim" style="font-size:18px">"¿El <b>ambiente</b> está vivo?" — ¿carga, autentica, persiste el happy path? Si no, todo lo demás es ruido.</p></div>
-    <div class="card card-accent"><h4>La Trifuerza pregunta…</h4><p class="dim" style="font-size:18px">"¿La <b>feature</b> funciona bien?" — ¿cumple los ACs, aguanta edge cases, es segura e íntegra en sus tres capas?</p></div>
+    <div class="card card-accent"><h4>Smoke pregunta…</h4><p class="dim" style="font-size:18px">"El <b>ambiente</b> está vivo?" — carga, autentica, persiste el happy path? Si no, todo lo demás es ruido.</p></div>
+    <div class="card card-accent"><h4>La Trifuerza pregunta…</h4><p class="dim" style="font-size:18px">"La <b>feature</b> funciona bien?" — cumple los ACs, aguanta edge cases, es segura e íntegra en sus tres capas?</p></div>
   </div>
   <div class="callout warn mt-m"><h4>El orden importa</h4><p>Un ambiente roto produce <b>reportes de bug falsos</b>. Si smoke falla y pruebas igual, vas a reportar "bugs" que en realidad son el ambiente caído. Smoke valida el ambiente; la Trifuerza valida la feature. Primero uno, luego la otra.</p></div>
-  <div class="notes">Anti-patrón S7: nunca saltar el smoke antes de la trifuerza. Son preguntas distintas — ambiente vs feature. El reachability gate (Stage Start) es aún anterior: ¿el env responde? Tres gates, tres preguntas.</div>
+  <div class="notes">Anti-patrón S7: nunca saltar el smoke antes de la trifuerza. Son preguntas distintas — ambiente vs feature. El reachability gate (Stage Start) es aún anterior: el env responde? Tres gates, tres preguntas.</div>
 </section>
 
 <!-- 10. DIVIDER PART 2 — UI -->
@@ -696,7 +696,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="flow mt-s">
     <div class="stage"><div class="sx">0</div><div><h4>Sesión + estado del rol</h4><p>Sesión con nombre en memoria (<span class="mono">-s=&lt;KEY&gt;</span>), una por rol; el login sale de <span class="mono">state-load .auth/&lt;env&gt;-&lt;role&gt;.json</span>, nunca tipeado aquí. Al terminar: <span class="mono">close</span> y <span class="mono">playwright-cli list</span> lo prueba.</p></div></div>
     <div class="stage"><div class="sx">1</div><div><h4>Navega + snapshot</h4><p>Abre la URL de inicio, captura la estructura del DOM / árbol de accesibilidad.</p></div></div>
-    <div class="stage"><div class="sx">2</div><div><h4>Ejecuta + observa</h4><p>Acciones del happy path paso a paso. ¿Resultado esperado? ¿estado UI raro? ¿consola roja? ¿red 4xx/5xx?</p></div></div>
+    <div class="stage"><div class="sx">2</div><div><h4>Ejecuta + observa</h4><p>Acciones del happy path paso a paso. Resultado esperado? estado UI raro? consola roja? red 4xx/5xx?</p></div></div>
     <div class="stage"><div class="sx">3</div><div><h4>Captura + propaga estado</h4><p>Screenshot en el estado clave (<span class="mono">{KEY}-{n}-ac{N}-desc.png</span>) y marca el outline PASSED/FAILED en memory.</p></div></div>
   </div>
   <div class="callout warn mt-m"><h4>Reglas de DevTools</h4><p>Consola: <b>rojo = log</b> (amarillo OK). Red: filas <b>rojas (4xx/5xx) siempre se anotan</b> aunque la UI se vea bien — la UI puede enmascarar un fallo de API. &gt;5s de carga = hallazgo de Performance. Desactiva el cache.</p></div>
@@ -734,7 +734,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   </div>
   <div class="lifecycle mt-m">
     <span class="dim2 mono" style="font-size:13px">la sonda:</span>
-    <span class="lstate bad">approve(closed) → ¿rechazado?</span>
+    <span class="lstate bad">approve(closed) → rechazado?</span>
     <span class="dim2 mono" style="font-size:13px">un 200 silencioso sin cambio de estado = bug</span>
   </div>
   <div class="callout warn mt-m"><h4>El happy path casi siempre funciona</h4><p>Lo que rompe es cuando alguien intenta hacer lo que el negocio no permite — aprobar algo ya cerrado, cancelar algo ya enviado. <b>Las transiciones inválidas son donde viven los bugs de máquina de estados.</b></p></div>
@@ -810,7 +810,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 <section class="slide" data-title="RLS probe">
   <p class="kicker">la sonda de seguridad que casi nadie corre</p>
   <h2 class="h2" data-anim="fade-up">Sonda de RLS / Autorización — A/B</h2>
-  <p class="lede mt-s">Crítica para apps multi-tenant. Dos usuarios (A, B), <b>el mismo rol</b>. La pregunta: ¿puede A tocar lo de B?</p>
+  <p class="lede mt-s">Crítica para apps multi-tenant. Dos usuarios (A, B), <b>el mismo rol</b>. La pregunta: puede A tocar lo de B?</p>
   <div class="terminal mt-s">
     <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>A intenta acceder a lo de B</span></div>
 <pre><span class="num">1.</span> A lista recursos              <span class="kw">→</span> solo las filas de A
@@ -829,7 +829,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <h2 class="h2" data-anim="fade-up">Un 201 No Prueba la DB</h2>
   <div class="flow mt-m">
     <div class="stage"><div class="sx">✓</div><div><h4>La API responde 201 Created</h4><p>El contrato dice "creado". Pero un POST/PATCH exitoso solo prueba que la API <b>aceptó</b> la petición.</p></div></div>
-    <div class="stage"><div class="sx">?</div><div><h4>¿El trigger corrió? ¿La fila quedó bien?</h4><p>Los triggers pueden no ejecutarse en silencio. El total calculado, las relaciones, los timestamps — todo eso vive en la DB.</p></div></div>
+    <div class="stage"><div class="sx">?</div><div><h4>El trigger corrió? La fila quedó bien?</h4><p>Los triggers pueden no ejecutarse en silencio. El total calculado, las relaciones, los timestamps — todo eso vive en la DB.</p></div></div>
     <div class="stage"><div class="sx">→</div><div><h4>Baja a §DB a confirmar</h4><p>Tras cada POST/PATCH exitoso, verifica persistencia y ejecución de triggers en la base. La respuesta no es la verdad.</p></div></div>
   </div>
   <div class="callout warn mt-m"><h4>La regla de oro de la Trifuerza</h4><p>Cada capa prueba <b>su</b> verdad. La API prueba el contrato; solo la DB prueba la persistencia. Confiar en el 201 es confiar en la capa equivocada.</p></div>
@@ -842,7 +842,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <h2 class="h2" data-anim="fade-up">Las Capas de Arriba</h2>
   <div class="quiz">
     <div class="qitem">
-      <div class="qq"><span class="qn">Q1</span><span>El POST devuelve 201 y la UI muestra "Orden creada". ¿Es suficiente para marcar el AC como PASSED?</span></div>
+      <div class="qq"><span class="qn">Q1</span><span>El POST devuelve 201 y la UI muestra "Orden creada". Es suficiente para marcar el AC como PASSED?</span></div>
       <div class="opts">
         <div class="opt"><span class="mk">A</span><span>Sí — 201 + UI verde = creado correctamente</span></div>
         <div class="opt" data-correct="1"><span class="mk">B</span><span>No — un 201 no prueba la DB; baja a confirmar fila + trigger</span></div>
@@ -851,7 +851,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="qexp"><b>No.</b> Un 201 prueba que la API aceptó la petición, no que la DB quedó correcta — los triggers pueden no correr en silencio. Confirma persistencia (fila, total calculado, relaciones) en §DB antes de dar PASSED.</div>
     </div>
     <div class="qitem">
-      <div class="qq"><span class="qn">Q2</span><span>El usuario A, con su token, hace <span class="mono">GET resource?user_id=eq.B</span> y recibe las filas de B (200). ¿Veredicto?</span></div>
+      <div class="qq"><span class="qn">Q2</span><span>El usuario A, con su token, hace <span class="mono">GET resource?user_id=eq.B</span> y recibe las filas de B (200). Veredicto?</span></div>
       <div class="opts">
         <div class="opt" data-correct="1"><span class="mk">A</span><span>VULNERABLE — fuga cross-tenant, bug Critical, finding bloqueante</span></div>
         <div class="opt"><span class="mk">B</span><span>VERIFIED — devolvió 200, el endpoint funciona</span></div>
@@ -947,8 +947,8 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <h4>Cascadas de limpieza</h4>
       <p class="dim mb-s">Tras probar flujos CRUD, verifica que la limpieza cascadea:</p>
       <ul class="blist" style="margin-top:4px;font-size:14px">
-        <li>DELETE padre → ¿los hijos se van?</li>
-        <li>Soft-delete: ¿flag puesto, fila aún presente?</li>
+        <li>DELETE padre → los hijos se van?</li>
+        <li>Soft-delete: flag puesto, fila aún presente?</li>
         <li>Registra <span class="mono">CLEANUP COMPLETE / INCOMPLETE</span></li>
       </ul>
     </div>
@@ -963,7 +963,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <h2 class="h2" data-anim="fade-up">La Verdad Persistida</h2>
   <div class="quiz">
     <div class="qitem">
-      <div class="qq"><span class="qn">Q1</span><span>Sondas la constraint UNIQUE insertando un duplicado, y el INSERT <b>tiene éxito</b> (no errora). ¿Qué significa?</span></div>
+      <div class="qq"><span class="qn">Q1</span><span>Sondas la constraint UNIQUE insertando un duplicado, y el INSERT <b>tiene éxito</b> (no errora). Qué significa?</span></div>
       <div class="opts">
         <div class="opt"><span class="mk">A</span><span>Bien — la base aceptó el dato, todo en orden</span></div>
         <div class="opt" data-correct="1"><span class="mk">B</span><span>Bug — el constraint UNIQUE falta; la sonda negativa debía errorar</span></div>
@@ -972,7 +972,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="qexp"><b>Bug.</b> En sondas de constraints la lógica se invierte: el éxito es el defecto. Un duplicado que pasa = la base no protege la unicidad. Por eso las sondas FK/CHECK/UNIQUE/NOT NULL deben errorar todas (en transacción + ROLLBACK).</div>
     </div>
     <div class="qitem">
-      <div class="qq"><span class="qn">Q2</span><span>Tu barrido devuelve un pedido con <span class="mono">status='delivered'</span> y <span class="mono">payment_status='pending'</span>. ¿Acción?</span></div>
+      <div class="qq"><span class="qn">Q2</span><span>Tu barrido devuelve un pedido con <span class="mono">status='delivered'</span> y <span class="mono">payment_status='pending'</span>. Acción?</span></div>
       <div class="opts">
         <div class="opt"><span class="mk">A</span><span>Ignorar — la UI no lo muestra, no afecta al usuario</span></div>
         <div class="opt" data-correct="1"><span class="mk">B</span><span>Defecto de integridad — un estado de dominio imposible que el negocio nunca debe permitir</span></div>
@@ -1064,7 +1064,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <h2 class="h2" data-anim="fade-up">El Oficio de la Pasada</h2>
   <div class="quiz">
     <div class="qitem">
-      <div class="qq"><span class="qn">Q1</span><span>En el TC #4 de 17 encuentras un texto desalineado (cosmético). ¿Detienes la pasada?</span></div>
+      <div class="qq"><span class="qn">Q1</span><span>En el TC #4 de 17 encuentras un texto desalineado (cosmético). Detienes la pasada?</span></div>
       <div class="opts">
         <div class="opt"><span class="mk">A</span><span>Sí — todo FAIL detiene la pasada y se reporta de inmediato</span></div>
         <div class="opt" data-correct="1"><span class="mk">B</span><span>No — es no-bloqueante: lo registro y sigo; lo surfaceo todo junto al cierre</span></div>
@@ -1073,7 +1073,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="qexp"><b>No, sigue.</b> Un cosmético es no-bloqueante: se registra en Findings, el TC queda FAILED y la pasada continúa para no perder los otros 13 TCs. Solo lo bloqueante (env/corrupción/seguridad) detiene. Un FAIL no es auto-Critical.</div>
     </div>
     <div class="qitem">
-      <div class="qq"><span class="qn">Q2</span><span>Un TC valida que un magic link expira a los 15 min, pero no hay forma de adelantar el reloj del entorno. ¿Cómo lo cierras?</span></div>
+      <div class="qq"><span class="qn">Q2</span><span>Un TC valida que un magic link expira a los 15 min, pero no hay forma de adelantar el reloj del entorno. Cómo lo cierras?</span></div>
       <div class="opts">
         <div class="opt"><span class="mk">A</span><span>Lo dejas en <span class="mono">NOT RUN</span></span></div>
         <div class="opt"><span class="mk">B</span><span><span class="mono">BLOCKED</span> a secas — no se pudo correr</span></div>
@@ -2002,7 +2002,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   document.getElementById('btn-next').addEventListener('click', function(){ go(idx + 1); });
   document.getElementById('btn-reset').addEventListener('click', resetTimer);
   document.getElementById('reset-layout').addEventListener('click', function(){
-    if (confirm('¿Restaurar la disposición por defecto?')) {
+    if (confirm('Restaurar la disposición por defecto?')) {
       try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
       applyLayout(defaultLayout());
     }

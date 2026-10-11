@@ -725,7 +725,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   </div>
   <div class="grid g2 mt-m">
     <div class="card card-soft"><h4>Filtro de tipo (duro)</h4><p class="dim">Solo <b>Story</b>. Bug/Spike/Sub-task/Tech-debt → rechazo, con razón de una línea. Nunca drop silencioso.</p></div>
-    <div class="card card-soft"><h4>Freshness de label</h4><p class="dim"><span class="mono">shift-left-reviewed</span> &lt;30 días → ya refinada (surfacear: ¿refrescar?). &gt;30 días → re-refinar (pudo derivar).</p></div>
+    <div class="card card-soft"><h4>Freshness de label</h4><p class="dim"><span class="mono">shift-left-reviewed</span> &lt;30 días → ya refinada (surfacear: refrescar?). &gt;30 días → re-refinar (pudo derivar).</p></div>
   </div>
   <div class="notes">Entry: los estados de la JQL (backlog/shift-left-qa/estimation/ready-for-dev en el proyecto de ejemplo). Solo Stories. Las ya revisadas se surfacean, no se auto-saltan.</div>
 </section>
@@ -791,10 +791,10 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 <!-- 15. QUIZ 1 -->
 <section class="slide" data-title="Quiz 1">
   <p class="kicker">quiz · selección</p>
-  <h2 class="h2" data-anim="fade-up">¿Refinar o Saltar?</h2>
+  <h2 class="h2" data-anim="fade-up">Refinar o Saltar?</h2>
   <div class="quiz">
     <div class="qitem">
-      <div class="qq"><span class="qn">Q1</span><span>Una Story de cálculo de impuestos tiene risk score 2 (LOW). ¿Qué se hace?</span></div>
+      <div class="qq"><span class="qn">Q1</span><span>Una Story de cálculo de impuestos tiene risk score 2 (LOW). Qué se hace?</span></div>
       <div class="opts">
         <div class="opt" data-correct="1"><span class="mk">A</span><span>FORCE FULL — el veto de "cálculos/fórmulas" vence al score bajo</span></div>
         <div class="opt"><span class="mk">B</span><span>SKIP — score LOW, PO escribe los ACs</span></div>
@@ -803,7 +803,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="qexp"><b>FORCE FULL.</b> El veto vence al risk score: dinero, datos, auth, integraciones, máquinas de estado y <b>cálculos/fórmulas</b> se refinan completos sin importar el puntaje. La precisión de un impuesto no se negocia.</div>
     </div>
     <div class="qitem">
-      <div class="qq"><span class="qn">Q2</span><span>El usuario pega 5 IDs para refinar; uno es un Bug de "el botón no responde". ¿Qué pasa con el Bug?</span></div>
+      <div class="qq"><span class="qn">Q2</span><span>El usuario pega 5 IDs para refinar; uno es un Bug de "el botón no responde". Qué pasa con el Bug?</span></div>
       <div class="opts">
         <div class="opt"><span class="mk">A</span><span>Se refina igual — es trabajo de QA</span></div>
         <div class="opt" data-correct="1"><span class="mk">B</span><span>Se rechaza con razón de una línea — shift-left es solo Stories</span></div>
@@ -907,11 +907,11 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <table class="dtable mt-s" style="font-size:13.5px">
     <thead><tr><th>#</th><th>Pregunta</th><th>Si no se responde…</th></tr></thead>
     <tbody>
-      <tr><td>U1</td><td>¿Texto EXACTO del error + status code por cada camino de fallo?</td><td>QA escribe assert que pasa con el error equivocado</td></tr>
-      <tr><td>U3</td><td>¿Qué pasa en éxito — redirect, toast, reload?</td><td>El test pasa por "sin error" pero la UI nunca actualizó</td></tr>
-      <tr><td>U5</td><td>¿La operación es idempotente? ¿Y si se dispara dos veces?</td><td>Cargos / registros duplicados</td></tr>
-      <tr><td>U7</td><td>¿Rollback en fallo parcial (3 de 5 registros fallan)?</td><td>Mutaciones a medias dejan el sistema inconsistente</td></tr>
-      <tr><td>U10</td><td>¿Hay estado "primera vez" / vacío distinto del estado normal?</td><td>El onboarding muestra una tabla vacía aterradora</td></tr>
+      <tr><td>U1</td><td>Texto EXACTO del error + status code por cada camino de fallo?</td><td>QA escribe assert que pasa con el error equivocado</td></tr>
+      <tr><td>U3</td><td>Qué pasa en éxito — redirect, toast, reload?</td><td>El test pasa por "sin error" pero la UI nunca actualizó</td></tr>
+      <tr><td>U5</td><td>La operación es idempotente? Y si se dispara dos veces?</td><td>Cargos / registros duplicados</td></tr>
+      <tr><td>U7</td><td>Rollback en fallo parcial (3 de 5 registros fallan)?</td><td>Mutaciones a medias dejan el sistema inconsistente</td></tr>
+      <tr><td>U10</td><td>Hay estado "primera vez" / vacío distinto del estado normal?</td><td>El onboarding muestra una tabla vacía aterradora</td></tr>
     </tbody>
   </table>
   <div class="callout mt-m"><h4>Pero solo si la Story no las responde ya</h4><p>Las universales NO se incluyen por defecto — se recorren cuando la Story las deja sin responder. El archivo de refinamiento es de alta señal, no exhaustivo.</p></div>
@@ -926,25 +926,25 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="card card-accent">
       <h4>Auth / Sesión</h4>
       <ul class="blist" style="margin-top:4px;font-size:13.5px">
-        <li>A1 · ¿Rol/permiso por cada AC?</li>
-        <li>A8 · ¿No-autenticado → 401, 403 o 404? <span class="dim2">(403 vs 404 revela existencia)</span></li>
-        <li>A10 · ¿Rate-limit + lockout por intentos?</li>
+        <li>A1 · Rol/permiso por cada AC?</li>
+        <li>A8 · No-autenticado → 401, 403 o 404? <span class="dim2">(403 vs 404 revela existencia)</span></li>
+        <li>A10 · Rate-limit + lockout por intentos?</li>
       </ul>
     </div>
     <div class="card card-accent">
       <h4>Money / Billing</h4>
       <ul class="blist" style="margin-top:4px;font-size:13.5px">
-        <li>M1 · ¿Moneda, precisión, redondeo?</li>
-        <li>M3 · ¿El provider de pago hace timeout — retry, error, cola?</li>
-        <li>M9 · ¿Proración al cambiar/cancelar plan?</li>
+        <li>M1 · Moneda, precisión, redondeo?</li>
+        <li>M3 · El provider de pago hace timeout — retry, error, cola?</li>
+        <li>M9 · Proración al cambiar/cancelar plan?</li>
       </ul>
     </div>
     <div class="card card-accent">
       <h4>State Machine</h4>
       <ul class="blist" style="margin-top:4px;font-size:13.5px">
-        <li>SM1 · ¿TODOS los estados + transiciones válidas?</li>
-        <li>SM3 · ¿Transición inválida (cancelar un delivered)?</li>
-        <li>SM10 · ¿Transiciones concurrentes — lock/cola?</li>
+        <li>SM1 · TODOS los estados + transiciones válidas?</li>
+        <li>SM3 · Transición inválida (cancelar un delivered)?</li>
+        <li>SM10 · Transiciones concurrentes — lock/cola?</li>
       </ul>
     </div>
   </div>
@@ -990,7 +990,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <h2 class="h2" data-anim="fade-up">El Corazón del Refinamiento</h2>
   <div class="quiz">
     <div class="qitem">
-      <div class="qq"><span class="qn">Q1</span><span>El refinamiento infiere un edge case que no está en la Story original. ¿Cómo se marca?</span></div>
+      <div class="qq"><span class="qn">Q1</span><span>El refinamiento infiere un edge case que no está en la Story original. Cómo se marca?</span></div>
       <div class="opts">
         <div class="opt"><span class="mk">A</span><span>Se añade al AC directamente como hecho</span></div>
         <div class="opt" data-correct="1"><span class="mk">B</span><span>Se marca <span class="mono">NEEDS PO/DEV CONFIRMATION</span> — verbatim, viaja a Jira</span></div>
@@ -999,7 +999,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="qexp"><b>NEEDS PO/DEV CONFIRMATION.</b> Todo lo inferido (no literal en la Story) lleva ese marcador exacto. Viaja al comentario de Jira para que PO lo confirme en sprint planning. El tooling después lo grepea — por eso es verbatim.</div>
     </div>
     <div class="qitem">
-      <div class="qq"><span class="qn">Q2</span><span>Tras analizarla, la Story está genuinamente clara y completa. ¿Qué entregas?</span></div>
+      <div class="qq"><span class="qn">Q2</span><span>Tras analizarla, la Story está genuinamente clara y completa. Qué entregas?</span></div>
       <div class="opts">
         <div class="opt"><span class="mk">A</span><span>Inventas algunas preguntas para que el refinamiento "se vea completo"</span></div>
         <div class="opt" data-correct="1"><span class="mk">B</span><span>"Calidad de la Story: buena, sin gaps" — lista de preguntas vacía</span></div>
@@ -1145,7 +1145,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <h2 class="h2" data-anim="fade-up">Artefactos &amp; Handoff</h2>
   <div class="quiz">
     <div class="qitem">
-      <div class="qq"><span class="qn">Q1</span><span>Una Story refinada está en estado Backlog. ¿Hasta dónde la transiciona el handoff?</span></div>
+      <div class="qq"><span class="qn">Q1</span><span>Una Story refinada está en estado Backlog. Hasta dónde la transiciona el handoff?</span></div>
       <div class="opts">
         <div class="opt"><span class="mk">A</span><span>Hasta Ready For Dev — lista para el sprint</span></div>
         <div class="opt" data-correct="1"><span class="mk">B</span><span>Hasta Estimation (analyze → estimate) y para ahí — guardrail</span></div>
@@ -1154,7 +1154,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="qexp"><b>Estimation.</b> backlog → (analyze) → shift_left_qa → (estimate) → estimation. Guardrail duro: nunca más allá. PO + Dev lead son dueños de estimate → ready_for_dev; ellos le ponen los puntos.</div>
     </div>
     <div class="qitem">
-      <div class="qq"><span class="qn">Q2</span><span>¿Para qué sirve el label <span class="mono">shift-left-reviewed</span> cuando la Story llega luego a Ready For QA?</span></div>
+      <div class="qq"><span class="qn">Q2</span><span>Para qué sirve el label <span class="mono">shift-left-reviewed</span> cuando la Story llega luego a Ready For QA?</span></div>
       <div class="opts">
         <div class="opt"><span class="mk">A</span><span>Es decorativo — solo marca que QA la vio</span></div>
         <div class="opt" data-correct="1"><span class="mk">B</span><span>Junto con el ATP publicado en Jira, deja que /sprint-testing salte las Phases 1-3: el trabajo se reutiliza</span></div>
@@ -2093,7 +2093,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   document.getElementById('btn-next').addEventListener('click', function(){ go(idx + 1); });
   document.getElementById('btn-reset').addEventListener('click', resetTimer);
   document.getElementById('reset-layout').addEventListener('click', function(){
-    if (confirm('¿Restaurar la disposición por defecto?')) {
+    if (confirm('Restaurar la disposición por defecto?')) {
       try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
       applyLayout(defaultLayout());
     }

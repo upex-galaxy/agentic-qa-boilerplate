@@ -490,7 +490,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       </tbody>
     </table>
     <div class="grid g2 mt-m">
-      <div class="card"><p class="lbl">La pregunta del modo, siempre</p><p class="small mt-s">Session Start pregunta: ¿todo el backlog de QA del sprint (<span class="mono">sprint-wide</span>) o un issue (<span class="mono">single-issue</span>)? Un número de sprint es una pista, no una respuesta. Solo se saltea cuando el primer token de los argumentos nombra el modo: <span class="mono">/sprint-testing sprint-wide 12</span> · <span class="mono">/sprint-testing single-issue UPEX-123</span>. En sprint-wide llega una segunda pregunta: ¿un ejecutor o una flota?</p></div>
+      <div class="card"><p class="lbl">La pregunta del modo, siempre</p><p class="small mt-s">Session Start pregunta: todo el backlog de QA del sprint (<span class="mono">sprint-wide</span>) o un issue (<span class="mono">single-issue</span>)? Un número de sprint es una pista, no una respuesta. Solo se saltea cuando el primer token de los argumentos nombra el modo: <span class="mono">/sprint-testing sprint-wide 12</span> · <span class="mono">/sprint-testing single-issue UPEX-123</span>. En sprint-wide llega una segunda pregunta: un ejecutor o una flota?</p></div>
       <div class="card card-accent"><p class="lbl">Alcance por JQL, misma cadencia</p><p class="small mt-s">El sprint sale de una <b>JQL</b> con los work types <span class="mono">coverable</span> que declara el proyecto, intersectada con lo que la instancia tiene (un tipo ausente se saltea con una nota, nunca bloquea). Cada issue paga los mismos <b>4 despachos</b>: Session Start → Planning → Execution → Reporting.</p></div>
     </div>
     <div class="notes">El modo no se infiere de cómo está escrita la invocación: «QA sprint 12» puede querer decir cualquiera de los dos. Solo sprint-wide crea el par de sesión del sprint y el STP; single-issue no crea ninguno de los dos. Se dice "issue" y no "story" porque bugs, defects, tech debt e improvements también son coverables, y no hay camino "inline" para un solo issue: los dos modos corren la misma secuencia de 4 subagentes.</div>
@@ -514,14 +514,14 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       </tbody>
     </table>
     <p class="small dim mt-m">Framework aún genérico (URLs <span class="mono">null</span>) → STOP: correr antes <span class="mono">/project-discovery</span> → <span class="mono">/test-framework-adaptation</span>.</p>
-    <p class="small dim mt-s">¿URL ad hoc (preview, hotfix)? <span class="mono">WEB_URL_OVERRIDE</span> / <span class="mono">API_URL_OVERRIDE</span> en <span class="mono">test-session-memory.md</span>: gana a <span class="mono">project.yaml</span> en todas las etapas y nunca se escribe ahí (Gotcha 15).</p>
+    <p class="small dim mt-s">URL ad hoc (preview, hotfix)? <span class="mono">WEB_URL_OVERRIDE</span> / <span class="mono">API_URL_OVERRIDE</span> en <span class="mono">test-session-memory.md</span>: gana a <span class="mono">project.yaml</span> en todas las etapas y nunca se escribe ahí (Gotcha 15).</p>
     <div class="notes">Las superficies UI/API/DB las decide el triage de Planning, nunca se le preguntan al usuario. El gate más pesado del repo porque Execution ejercita UI + API + DB en vivo. Autorar un ATP contra un entorno muerto es el desperdicio más caro de un run, y se atrapa aquí, a t=0.</div>
   </section>
 
   <!-- 5. PHASE 0 -->
   <section class="slide" data-title="Phase 0 · Resume">
     <p class="kicker">Phase 0 · nunca empieces a ciegas</p>
-    <h2 class="h2 md">¿Ya había una sesión? Resume, restart o abort</h2>
+    <h2 class="h2 md">Ya había una sesión? Resume, restart o abort</h2>
     <div class="grid g2 mt-m" style="align-items:start">
       <div class="stack">
         <ul class="big tight tight">
@@ -541,7 +541,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 .context/PBI/.../STORY-&lt;KEY&gt;-&lt;slug&gt;/
   context.md · evidence/   &larr; lo local del ticket</div>
     </div>
-    <div class="card mt-m"><p class="small"><b>Dos memorias, dos preguntas.</b> <span class="dim"><span class="mono">progress.md</span> decide «¿qué etapa sigue?» · <span class="mono">test-session-memory.md</span> lleva la modalidad TMS + contexto del ticket que cada subagente lee. Ambas se consultan al retomar. Las dos viven en <span class="mono">.session/</span>, nunca en la carpeta PBI: un re-sync del cache PBI destruiría el archivo.</span></p></div>
+    <div class="card mt-m"><p class="small"><b>Dos memorias, dos preguntas.</b> <span class="dim"><span class="mono">progress.md</span> decide «qué etapa sigue?» · <span class="mono">test-session-memory.md</span> lleva la modalidad TMS + contexto del ticket que cada subagente lee. Ambas se consultan al retomar. Las dos viven en <span class="mono">.session/</span>, nunca en la carpeta PBI: un re-sync del cache PBI destruiría el archivo.</span></p></div>
     <div class="notes">El contrato de resume viene de session-management.md §4. Interrumpir una sesión no pierde nada: el próximo run detecta el estado y retoma exactamente donde quedó.</div>
   </section>
 
@@ -612,7 +612,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <!-- 9. TC TIMING -->
   <section class="slide" data-title="TC timing">
     <p class="kicker">Planning · la regla que define la forma del skill</p>
-    <h2 class="h2 md">¿Cuándo un TC se vuelve <span class="grad">work item</span>?</h2>
+    <h2 class="h2 md">Cuándo un TC se vuelve <span class="grad">work item</span>?</h2>
     <table class="tt sm mt-m">
       <thead><tr><th></th><th>Modality jira-native</th><th>Modality jira-xray (<span class="mono">bun xray</span>)</th></tr></thead>
       <tbody>
@@ -622,7 +622,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       </tbody>
     </table>
     <div class="grid g3 mt-m">
-      <div class="card"><p class="lbl">Formato, una vez por batch</p><p class="small mt-s">¿<b>Manual</b> o <b>Gherkin</b>? Se sugiere, <b>tú eliges</b>, aplica a todo el batch. En una flota lo declara el brief.</p></div>
+      <div class="card"><p class="lbl">Formato, una vez por batch</p><p class="small mt-s"><b>Manual</b> o <b>Gherkin</b>? Se sugiere, <b>tú eliges</b>, aplica a todo el batch. En una flota lo declara el brief.</p></div>
       <div class="card"><p class="lbl">Manual en dos pasos</p><p class="small mt-s">Xray Cloud <b>descarta en silencio</b> los steps inline: crear sin steps y agregarlos <b>uno a uno</b>.</p></div>
       <div class="card card-accent"><p class="lbl">El knob del proyecto</p><p class="small mt-s"><span class="mono">testing.tc_creation_stage</span>: <span class="mono">auto</span> = esta tabla · <span class="mono">sprint-testing</span> = Tests en ambas · <span class="mono">test-documentation</span> = en ninguna.</p></div>
     </div>
@@ -701,7 +701,7 @@ Listas de tests del ATP y del ATR = DERIVADAS de la membership del ATS (S17)</di
       </ul>
       <div class="stack">
         <div class="card card-accent"><p class="lbl">Veredicto</p><p class="small mt-s"><b style="color:var(--good)">PASS</b> → continuar a la trifuerza · <b style="color:var(--bad)">FAIL</b> → <b>STOP</b>: blocker de nivel entorno, se reporta y no se explora nada.</p></div>
-        <div class="card"><p class="lbl">Reachability ≠ smoke (S7)</p><p class="small mt-s">El preflight preguntó «¿está levantado el env?»; el smoke pregunta «¿funciona la feature?». Ambos corren: saltarse el smoke produce bugs falso-positivo contra un entorno roto.</p></div>
+        <div class="card"><p class="lbl">Reachability ≠ smoke (S7)</p><p class="small mt-s">El preflight preguntó «está levantado el env?»; el smoke pregunta «funciona la feature?». Ambos corren: saltarse el smoke produce bugs falso-positivo contra un entorno roto.</p></div>
       </div>
     </div>
     <div class="notes">Sin edge cases, sin bugs menores, no más de 10 minutos. El smoke valida el entorno de la feature; la trifuerza valida la feature.</div>
@@ -718,7 +718,7 @@ Listas de tests del ATP y del ATR = DERIVADAS de la membership del ATS (S17)</di
     </div>
     <div class="grid g2 mt-m">
       <div class="card"><p class="lbl">Orden según la feature</p><p class="small mt-s">UI-céntrica: UI→API→DB · API-first: API→DB→UI · data-céntrica: DB→API→UI. Un no-2xx en la UI te escala a la capa API; datos raros en pantalla te mandan a la DB.</p></div>
-      <div class="card"><p class="lbl">Sonda RLS (multi-tenant)</p><p class="small mt-s">Con A y B del mismo rol: ¿A lista/lee/edita datos de B? Cualquier <b>VULNERABLE</b> = Critical y BLOQUEANTE: los bugs de autorización nunca afloran en el happy path.</p></div>
+      <div class="card"><p class="lbl">Sonda RLS (multi-tenant)</p><p class="small mt-s">Con A y B del mismo rol: A lista/lee/edita datos de B? Cualquier <b>VULNERABLE</b> = Critical y BLOQUEANTE: los bugs de autorización nunca afloran en el happy path.</p></div>
     </div>
     <div class="notes">Nunca ejecutar requests autenticadas por el OpenAPI MCP: es de lectura de schema. El token se acuña con api:login a .auth/tokens.env y se ejecuta con curl. Explorar SIEMPRE más allá de los outlines planeados.</div>
   </section>
@@ -1774,7 +1774,7 @@ También la disparan frases como
   document.getElementById('btn-next').addEventListener('click', function(){ go(idx + 1); });
   document.getElementById('btn-reset').addEventListener('click', resetTimer);
   document.getElementById('reset-layout').addEventListener('click', function(){
-    if (confirm('¿Restaurar la disposición por defecto?')) {
+    if (confirm('Restaurar la disposición por defecto?')) {
       try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
       applyLayout(defaultLayout());
     }

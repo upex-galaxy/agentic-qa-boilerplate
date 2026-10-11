@@ -486,9 +486,9 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="wmap">
       <div class="wrow">
         <div class="wlbl">Decidir</div>
-        <div class="wnode"><div class="wn">1 · ¿es orquestación?</div><div class="wt">Subagente o worker</div><div class="wd">Si cabe en este turno, es un subagente. Si hay que escribir, integrar y volver mañana, es un worker.</div></div>
+        <div class="wnode"><div class="wn">1 · es orquestación?</div><div class="wt">Subagente o worker</div><div class="wd">Si cabe en este turno, es un subagente. Si hay que escribir, integrar y volver mañana, es un worker.</div></div>
         <div class="warr">→</div>
-        <div class="wnode"><div class="wn">2 · gate</div><div class="wt">Binario + runtime</div><div class="wd">Tres estados. A y B caen al fallback sin nombrar nada.</div><div class="wg">Nunca se evalúa "¿está instalado el skill del vendor?"</div></div>
+        <div class="wnode"><div class="wn">2 · gate</div><div class="wt">Binario + runtime</div><div class="wd">Tres estados. A y B caen al fallback sin nombrar nada.</div><div class="wg">Nunca se evalúa "está instalado el skill del vendor?"</div></div>
         <div class="warr">→</div>
         <div class="wnode"><div class="wn">3 · topología</div><div class="wt">Qué ESCRIBE el trabajo</div><div class="wd">Mismo checkout, worktree por módulo, worktree por cluster.</div></div>
       </div>
@@ -526,7 +526,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 
   <!-- 3. DOS EJECUTORES -->
   <section class="slide" data-title="Dos ejecutores">
-    <p class="kicker">Paso 1 · ¿es orquestación de verdad?</p>
+    <p class="kicker">Paso 1 · es orquestación de verdad?</p>
     <h2 class="h2 md">Dos ejecutores, y el <span class="grad">subagente</span> sigue siendo el default</h2>
     <p class="small dim mt-s">La doctrina del repo (AGENTS.md §3) no cambia: el subagente one-shot ejecuta casi todo. El worker supervisado es el <b>segundo</b> ejecutor, y solo cuando el trabajo no cabe en un turno.</p>
     <div class="cmp mt-m">
@@ -555,7 +555,7 @@ LAYER 2 · GRAMÁTICA + MÁQUINA  las guías que sirve el binario       (mailbox
 LAYER 1 · APP                 la app corriendo · runtime alcanzable · board · móvil</div>
     <div class="grid g3 mt-m">
       <div class="card"><p class="lbl">Regla de composición</p><p class="small mt-s">Si la guía del binario ya lo dice, aquí va un <b>puntero</b>, no una copia. Una copia se desincroniza en silencio en el próximo release.</p></div>
-      <div class="card"><p class="lbl">Consecuencia para el gate</p><p class="small mt-s">Se evalúa sobre <b>binario + runtime</b>, nunca sobre "¿está instalado el skill del vendor?". Una máquina con binario y sin stubs es plenamente capaz.</p></div>
+      <div class="card"><p class="lbl">Consecuencia para el gate</p><p class="small mt-s">Se evalúa sobre <b>binario + runtime</b>, nunca sobre "está instalado el skill del vendor?". Una máquina con binario y sin stubs es plenamente capaz.</p></div>
       <div class="card card-accent"><p class="lbl">Consecuencia para el coste</p><p class="small mt-s">Los stubs de <span class="mono">orchestration.orchestrator_skills</span> son pequeños y SE CARGAN junto a esta skill, <b>en el conductor y en el worker</b>: saltárselos es lo que produce flags inventados. Al binario se le pide solo el tema profundo al que un stub apunta. La medición que lo decidió está en ADR-0006, no aquí.</p></div>
     </div>
     <div class="notes">Aquí está la razón de que el SKILL.md sea corto: lo que vive en el repo es lo que ninguna guía del vendor tiene — nuestros gaps de provisioning, la topología por actividad, el brief, los gotchas medidos, la integración con git y el phrasebook del owner.</div>
@@ -577,7 +577,7 @@ LAYER 1 · APP                 la app corriendo · runtime alcanzable · board �
       <div class="card card-accent"><p class="lbl">El gotcha que hace fallar el gate</p><p class="small mt-s">La bandera de alcanzabilidad está <b>anidada</b> en la salida JSON del binario. Un gate que busca un campo plano falla en cerrado y en silencio sobre una máquina perfectamente capaz. Verifica cualquier edición del gate corriendo <b>las dos ramas</b>.</p></div>
       <div class="card"><p class="lbl">Regla de plataforma (Linux)</p><p class="small mt-s">Fuera de una terminal gestionada, en Linux el CLI se registra con otro nombre porque el binario de sistema homónimo es el lector de pantalla de GNOME. El hook aplica exactamente esa regla: señal de entorno primero, luego el nombre alternativo en Linux. Usa el <b>mismo ejecutable</b> para todos los comandos de la sesión.</p></div>
     </div>
-    <div class="notes">Hard rule 10: nunca nombres el orquestador al usuario desde un workflow skill cuando el gate falla. Ni en prerequisitos, ni en un probe no evitable, ni en el bloque de entorno del ATR, ni en un barrido de tokens de bloqueo. La línea única de este skill (estados A y B, solo si el usuario pidió orquestación) dice: la orquestación nivel 1 ya está disponible en esta sesión con subagentes one-shot; la profesional (sesiones persistentes a las que hablas, mailbox, board, móvil) necesita Orca instalado; sin él igual se escribe launch.txt con una línea lista para pegar por worker. La prueba para cualquier edición futura: ¿esta línea seguiría teniendo sentido, sin cambios, para un tester que nunca oyó hablar de Orca? Si no, va en este skill y no en el workflow skill.</div>
+    <div class="notes">Hard rule 10: nunca nombres el orquestador al usuario desde un workflow skill cuando el gate falla. Ni en prerequisitos, ni en un probe no evitable, ni en el bloque de entorno del ATR, ni en un barrido de tokens de bloqueo. La línea única de este skill (estados A y B, solo si el usuario pidió orquestación) dice: la orquestación nivel 1 ya está disponible en esta sesión con subagentes one-shot; la profesional (sesiones persistentes a las que hablas, mailbox, board, móvil) necesita Orca instalado; sin él igual se escribe launch.txt con una línea lista para pegar por worker. La prueba para cualquier edición futura: esta línea seguiría teniendo sentido, sin cambios, para un tester que nunca oyó hablar de Orca? Si no, va en este skill y no en el workflow skill.</div>
   </section>
 
   <!-- 6. VOCABULARIO -->
@@ -805,7 +805,7 @@ LAYER 1 · APP                 la app corriendo · runtime alcanzable · board �
       </tbody>
     </table>
     <div class="grid g2 mt-m">
-      <div class="card card-accent"><p class="lbl">La regla "¿cuándo un worktree?"</p><p class="small mt-s">Un worktree cuando dos workers escribirían el <b>mismo archivo de código</b>. Mismo checkout cuando escriben en sistemas distintos (el tracker, artefactos distintos) y se puede declarar file ownership.</p></div>
+      <div class="card card-accent"><p class="lbl">La regla "cuándo un worktree?"</p><p class="small mt-s">Un worktree cuando dos workers escribirían el <b>mismo archivo de código</b>. Mismo checkout cuando escriben en sistemas distintos (el tracker, artefactos distintos) y se puede declarar file ownership.</p></div>
       <div class="card"><p class="lbl">El gotcha que se pagó dos veces</p><p class="small mt-s">La bandera de referencia base resuelve refs <b>locales</b>. Verifica el SHA del worktree nuevo contra la base remota, y sin un <span class="mono">|| true</span> que esconda el fallo.</p></div>
     </div>
     <div class="notes">En un fleet de mismo checkout la Critical Rule #15 cuenta doble: prohibido cualquier descarte global de git, porque otra sesión comparte el árbol.</div>
@@ -993,7 +993,7 @@ preamble; channel = orca orchestration, never SendMessage/AskUserQuestion.</div>
       </tbody>
     </table>
     <div class="grid g2 mt-m">
-      <div class="card card-accent"><p class="lbl">La pregunta que decide</p><p class="small mt-s">¿Necesitas supervisar, esperar resultados, responder preguntas o coordinar dependencias? Entonces es orquestación. ¿Quieres soltar el trabajo y dejar de ocuparte? Es un handoff, y no lleva Run.</p></div>
+      <div class="card card-accent"><p class="lbl">La pregunta que decide</p><p class="small mt-s">Necesitas supervisar, esperar resultados, responder preguntas o coordinar dependencias? Entonces es orquestación. Quieres soltar el trabajo y dejar de ocuparte? Es un handoff, y no lleva Run.</p></div>
       <div class="card"><p class="lbl">Tampoco es para</p><p class="small mt-s">QA manual por ticket (<span class="mono">/sprint-testing</span>), escribir código de test (<span class="mono">/test-automation</span>), mecánica de rama, commit, push o PR, ni un <span class="mono">git worktree</span> sin flota (<span class="mono">/git-flow-master</span>).</p></div>
     </div>
     <div class="notes">El handoff entre conductores es otro caso: un Run sobrevive a la sesión que lo creó. El conductor saliente escribe kickoff.md (Run id, topología, rounds cerrados, lo que está en vuelo, claims abiertos, la próxima decisión del owner) y el entrante se liga al Run por su id de run.md. Nunca se adivina el Run desde un listado: conviven Runs de otros repos en la misma máquina.</div>
@@ -1876,7 +1876,7 @@ preamble; channel = orca orchestration, never SendMessage/AskUserQuestion.</div>
   document.getElementById('btn-next').addEventListener('click', function(){ go(idx + 1); });
   document.getElementById('btn-reset').addEventListener('click', resetTimer);
   document.getElementById('reset-layout').addEventListener('click', function(){
-    if (confirm('¿Restaurar la disposición por defecto?')) {
+    if (confirm('Restaurar la disposición por defecto?')) {
       try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
       applyLayout(defaultLayout());
     }

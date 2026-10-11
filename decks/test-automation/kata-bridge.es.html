@@ -306,7 +306,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
     <div data-anim="slide-l">
       <div class="card"><h3>🎒 L1 · TestContext — la mochila común</h3>
         <p style="font-size:.92rem;line-height:1.8">• Config por ambiente: URLs y credenciales salen de <code class="pill">.env</code> + config — <b>mata tus credenciales hardcodeadas</b><br>
-        • DataFactory (faker por dentro): datos frescos en cada corrida (¿recuerdas tu <code class="pill">Date.now()</code> del email único? esto, industrializado)<br>
+        • DataFactory (faker por dentro): datos frescos en cada corrida (recuerdas tu <code class="pill">Date.now()</code> del email único? esto, industrializado)<br>
         • Los drivers de Playwright (<code class="pill">page</code>, <code class="pill">request</code>) y el entorno, compartidos por API y UI</p></div>
       <div class="card" style="margin-top:.9rem"><h3>🧰 L2 · UiBase / ApiBase — los helpers heredables</h3>
         <p style="font-size:.92rem;line-height:1.8">• <b>UiBase</b>: <code class="pill">buildUrl</code>, interceptar respuestas y esperar llamadas de red — lo que tus POMs repetían. Los helpers de formulario viven en cada componente<br>
@@ -370,9 +370,9 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
   <table class="cmp" data-stagger style="max-width:920px">
     <tr><th>Regla</th><th>Qué significa</th><th>Por qué</th></tr>
     <tr><td><b>Atómico</b></td><td>Un ATC ejecuta UN mini-flujo completo y <b>NUNCA llama a otro ATC</b></td><td>Si A llama a B y B cambia, A se rompe en cadena — el dominó que mata frameworks</td></tr>
-    <tr><td><b>Cadenas → Steps</b></td><td>¿Necesitas login + crear proyecto + invitar? Eso es un <b>Steps module</b> que orquesta ATCs</td><td>Composición explícita en un solo lugar, no acoplamiento oculto</td></tr>
+    <tr><td><b>Cadenas → Steps</b></td><td>Necesitas login + crear proyecto + invitar? Eso es un <b>Steps module</b> que orquesta ATCs</td><td>Composición explícita en un solo lugar, no acoplamiento oculto</td></tr>
     <tr><td><b>Locators inline</b></td><td>Los locators viven DENTRO del ATC; se extraen solo si 2+ ATCs los usan</td><td>Leer un ATC = verlo completo, sin saltar entre archivos</td></tr>
-    <tr><td><b>Máx 2 params sueltos</b></td><td>3 o más datos → un objeto: <code>loginSuccessfully({ email, password, role })</code></td><td><code>fn(a, b, c, d)</code> = ¿cuál era el tercero? El objeto se autodocumenta</td></tr>
+    <tr><td><b>Máx 2 params sueltos</b></td><td>3 o más datos → un objeto: <code>loginSuccessfully({ email, password, role })</code></td><td><code>fn(a, b, c, d)</code> = cuál era el tercero? El objeto se autodocumenta</td></tr>
   </table>
   <div class="notes"><p>Las 4 reglas que difieren de lo que harían por instinto. La #1 es LA regla: ATCs no se llaman entre sí — el dominó de dependencias es la muerte lenta de los frameworks caseros. Steps existe precisamente para componer sin acoplar. Locators inline sorprende a quien aprendió "extraer todo" — KATA prefiere legibilidad local; la extracción se GANA con el segundo uso.</p></div>
 </section>
@@ -381,7 +381,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
 <section class="slide" data-act="Acto 1 · Las capas" style="align-items:center">
   <div class="quiz" data-quiz="q1">
     <div class="quiz-tag">⭐ QUIZ 1 · La regla sagrada</div>
-    <h3 class="quiz-q">Tu ATC <code style="color:var(--cyan)">createProject()</code> necesita que el usuario esté logueado. ¿Puede llamar internamente a <code style="color:var(--cyan)">loginSuccessfully()</code>?</h3>
+    <h3 class="quiz-q">Tu ATC <code style="color:var(--cyan)">createProject()</code> necesita que el usuario esté logueado. Puede llamar internamente a <code style="color:var(--cyan)">loginSuccessfully()</code>?</h3>
     <div class="quiz-opts">
       <button class="opt"><span class="key">A</span><span>Sí — es reutilización, justo lo que aprendimos</span></button>
       <button class="opt" data-ok="1"><span class="key">B</span><span>No — un ATC nunca llama a otro ATC; la cadena login→crear vive en un Steps module (o el login va en el fixture/hook)</span></button>
@@ -427,7 +427,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
 <section class="slide" data-act="Acto 1 · Las capas" style="align-items:center">
   <div class="quiz" data-quiz="q2">
     <div class="quiz-tag">⭐ QUIZ 2 · Fixtures</div>
-    <h3 class="quiz-q">Escribes 15 tests que solo validan respuestas de la API. ¿Qué fixture pides?</h3>
+    <h3 class="quiz-q">Escribes 15 tests que solo validan respuestas de la API. Qué fixture pides?</h3>
     <div class="quiz-opts">
       <button class="opt"><span class="key">A</span><span><code>({ test })</code> — el completo, por si acaso</span></button>
       <button class="opt"><span class="key">B</span><span><code>({ ui })</code> — todo test necesita navegador</span></button>
@@ -465,7 +465,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
 }</pre>
     </div>
     <div data-stagger>
-      <div class="card"><h3>🔍 Resuelve el Dolor 3</h3><p>"¿Ya existe un ATC de login?" — el manifest responde en 2 segundos. <b>Se consulta SIEMPRE antes de crear</b> un Component o ATC nuevo. Anti-duplicación.</p></div>
+      <div class="card"><h3>🔍 Resuelve el Dolor 3</h3><p>"Ya existe un ATC de login?" — el manifest responde en 2 segundos. <b>Se consulta SIEMPRE antes de crear</b> un Component o ATC nuevo. Anti-duplicación.</p></div>
       <div class="card" style="margin-top:.8rem"><h3>🤖 Se genera, no se edita</h3><p><code class="pill">bun run kata:manifest</code> lo regenera leyendo el código. Nunca a mano.</p></div>
       <div class="card hl" style="margin-top:.8rem"><h3>🚧 Guardián automático</h3><p>Manifest desactualizado = <b>el commit se bloquea</b> (hook de pre-commit). El registro nunca miente porque no puede quedarse atrás.</p></div>
     </div>
@@ -488,7 +488,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
       <div>└─ <span class="tr-file">package.json</span> <span class="tr-c">← scripts con bun (= npm, otro motor)</span></div>
     </div>
     <div data-stagger>
-      <div class="card"><h3>🔌 api/schemas/</h3><p>¿Recuerdas /api/docs del dojo? Aquí el contrato OpenAPI se convierte en <b>tipos TypeScript</b>: tu test de API sabe la forma exacta de cada respuesta. Typo en un campo = error antes de ejecutar.</p></div>
+      <div class="card"><h3>🔌 api/schemas/</h3><p>Recuerdas /api/docs del dojo? Aquí el contrato OpenAPI se convierte en <b>tipos TypeScript</b>: tu test de API sabe la forma exacta de cada respuesta. Typo en un campo = error antes de ejecutar.</p></div>
       <div class="card" style="margin-top:.8rem"><h3>🗺️ Contexto del proyecto</h3><p>Los mapas del negocio bajo prueba (dominio, datos, APIs, journeys) viven como HTML dentro de sus <b>context skills</b> en <code class="pill">.agents/skills/</code> y se leen con <code class="pill">bun run context:map &lt;slug&gt;</code>. El plan maestro vive en Jira (epic QA Master Test Plan). <code class="pill">.context/</code> guarda la cache de Jira y las decisiones (ADRs). La "memoria" del proyecto, tuya y de la IA.</p></div>
       <div class="card" style="margin-top:.8rem"><h3>⚡ bun</h3><p><code class="pill">bun install</code> = npm install · <code class="pill">bun run test</code> = npm run test. Mismo concepto, motor más rápido.</p></div>
     </div>
@@ -505,10 +505,10 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
       <div class="card" style="margin-top:.8rem"><h3>📐 Plan → Code → Review</h3><p>Regla de la casa: <b>plan de implementación ANTES de escribir código</b>. La IA propone el plan, tú lo apruebas, luego se escribe. Nada de código a ciegas.</p></div>
     </div>
     <div data-anim="fade-up" style="animation-delay:.25s">
-      <div class="card hl"><h3>🧠 ¿Entonces para qué aprendí todo esto?</h3>
+      <div class="card hl"><h3>🧠 Entonces para qué aprendí todo esto?</h3>
         <p style="font-size:.95rem;line-height:1.8">Porque tu rol NO es tipear código — es <b>tener criterio</b>:<br><br>
         ✅ <b>Leer</b> lo que la IA propone y detectar lo que está mal<br>
-        ✅ <b>Juzgar</b>: ¿este ATC es atómico? ¿el fixture es el mínimo? ¿el locator sobrevivirá?<br>
+        ✅ <b>Juzgar</b>: este ATC es atómico? el fixture es el mínimo? el locator sobrevivirá?<br>
         ✅ <b>Decidir</b> qué se prueba, qué se automatiza y qué NO<br><br>
         Sin la serie, la IA te dicta. Con ellas, <b>tú diriges</b>.</p></div>
     </div>
@@ -520,7 +520,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
 <section class="slide" data-act="Acto 2 · El ecosistema" style="align-items:center">
   <div class="quiz" data-quiz="q3">
     <div class="quiz-tag">⭐ QUIZ 3 · Criterio agentic</div>
-    <h3 class="quiz-q">La IA te propone un ATC nuevo: <code style="color:var(--cyan)">registerUser(name, email, password, role)</code>. ¿Qué marcas en el review?</h3>
+    <h3 class="quiz-q">La IA te propone un ATC nuevo: <code style="color:var(--cyan)">registerUser(name, email, password, role)</code>. Qué marcas en el review?</h3>
     <div class="quiz-opts">
       <button class="opt"><span class="key">A</span><span>Nada — compila y los tests pasan, se aprueba</span></button>
       <button class="opt" data-ok="1"><span class="key">B</span><span>4 parámetros sueltos viola la regla de la casa: 3+ datos van en un objeto → <code>registerUser({ name, email, password, role })</code></span></button>
@@ -545,17 +545,17 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
       <div>
         <p style="font-size:.9rem;margin:.2rem 0 .3rem">1. Clona (la URL te la da tu lead):</p>
         <div class="cmd"><span class="ps">$</span><span class="ct">git clone &lt;URL-del-repo&gt; && cd bunkai-qa-engineering</span><span class="copy">📋</span></div>
-        <p style="font-size:.9rem;margin:.5rem 0 .3rem">2. El ritual del clon (¡quiz 1 de Dev Craft!), versión bun:</p>
+        <p style="font-size:.9rem;margin:.5rem 0 .3rem">2. El ritual del clon (quiz 1 de Dev Craft!), versión bun:</p>
         <div class="cmd"><span class="ps">$</span><span class="ct">bun install</span><span class="copy">📋</span></div>
         <p style="font-size:.9rem;margin:.5rem 0 .3rem">3. Abre y explora:</p>
         <div class="cmd"><span class="ps">$</span><span class="ct">code .</span><span class="copy">📋</span></div>
       </div>
       <div>
         <p style="font-size:.9rem;margin:.2rem 0 .4rem">Encuentra y abre estos 4 lugares:</p>
-        <p style="font-size:.88rem;line-height:2"><span class="pill">tests/components/</span> ¿ves bases y pages?<br>
-        <span class="pill">kata-manifest.json</span> ¿cuántos components hay?<br>
-        <span class="pill">api/schemas/</span> ¿reconoces tipos TS?<br>
-        <span class="pill">package.json</span> ¿qué scripts ofrece?</p>
+        <p style="font-size:.88rem;line-height:2"><span class="pill">tests/components/</span> ves bases y pages?<br>
+        <span class="pill">kata-manifest.json</span> cuántos components hay?<br>
+        <span class="pill">api/schemas/</span> reconoces tipos TS?<br>
+        <span class="pill">package.json</span> qué scripts ofrece?</p>
         <details class="m-hint"><summary>Pista: bun no está instalado</summary><div class="hint-body"><p>macOS/Linux: <code>curl -fsSL https://bun.sh/install | bash</code> · Windows: <code>powershell -c "irm bun.sh/install.ps1 | iex"</code> — luego reabre la terminal.</p></div></details>
       </div>
     </div>
@@ -577,10 +577,10 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
         2. Elige un Component que te llame la atención<br>
         3. Salta a su archivo (el manifest te da la ruta)<br>
         4. Lee UN ATC completo, línea por línea<br>
-        5. Verifica las reglas: ¿es atómico? ¿locators inline? ¿firma con objeto si 3+ datos?</p>
+        5. Verifica las reglas: es atómico? locators inline? firma con objeto si 3+ datos?</p>
       </div>
       <div>
-        <details class="m-hint"><summary>Pista: hay algo que no reconozco</summary><div class="hint-body"><p>Apunta QUÉ exactamente. Si es sintaxis TS avanzada (generics, decorators) — normal, se aprende en el camino. Si es estructura (¿de dónde sale this.config?) — sigue la cadena extends hacia arriba: la respuesta vive en UiBase o TestContext. Saber RASTREAR la herencia es la habilidad.</p></div></details>
+        <details class="m-hint"><summary>Pista: hay algo que no reconozco</summary><div class="hint-body"><p>Apunta QUÉ exactamente. Si es sintaxis TS avanzada (generics, decorators) — normal, se aprende en el camino. Si es estructura (de dónde sale this.config?) — sigue la cadena extends hacia arriba: la respuesta vive en UiBase o TestContext. Saber RASTREAR la herencia es la habilidad.</p></div></details>
         <div class="callout" style="margin-top:.8rem"><span class="co-ico">📊</span><p>Meta honesta: deberías reconocer el <b>80%+</b> de cada ATC (clase, this, async/await, locators, params). El 20% restante es lo que el trabajo diario te dará.</p></div>
       </div>
     </div>
@@ -601,10 +601,10 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
         1. Abre cualquier spec de <code class="pill">tests/e2e/</code><br>
         2. Por cada elemento, anota de qué deck salió:</p>
         <table class="cmp" style="font-size:.82rem">
-          <tr><td><code>import { test } from "@TestFixture"</code></td><td>→ ¿deck?</td></tr>
-          <tr><td><code>async ({ ui }) =></code></td><td>→ ¿deck?</td></tr>
-          <tr><td><code>ui.login.loginSuccessfully({...})</code></td><td>→ ¿deck?</td></tr>
-          <tr><td><code>await expect(...).toBeVisible()</code></td><td>→ ¿deck?</td></tr>
+          <tr><td><code>import { test } from "@TestFixture"</code></td><td>→ deck?</td></tr>
+          <tr><td><code>async ({ ui }) =></code></td><td>→ deck?</td></tr>
+          <tr><td><code>ui.login.loginSuccessfully({...})</code></td><td>→ deck?</td></tr>
+          <tr><td><code>await expect(...).toBeVisible()</code></td><td>→ deck?</td></tr>
         </table>
       </div>
       <div>
@@ -621,11 +621,11 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
 <section class="slide" data-act="Acto 3 · Manos al repo" style="align-items:center">
   <div class="quiz" data-quiz="q4">
     <div class="quiz-tag">⭐ QUIZ 4 · El integrador final de la serie</div>
-    <h3 class="quiz-q">Te asignan automatizar "el usuario puede archivar un proyecto". ¿Tu PRIMER movimiento?</h3>
+    <h3 class="quiz-q">Te asignan automatizar "el usuario puede archivar un proyecto". Tu PRIMER movimiento?</h3>
     <div class="quiz-opts">
       <button class="opt"><span class="key">A</span><span>Abrir VS Code y escribir el test — para eso entrenamos</span></button>
       <button class="opt"><span class="key">B</span><span>Grabar el flujo con codegen y limpiar</span></button>
-      <button class="opt" data-ok="1"><span class="key">C</span><span>Consultar <code>kata-manifest.json</code>: ¿ya existe un ProjectsPage? ¿un ATC parecido? — construir sobre lo que hay</span></button>
+      <button class="opt" data-ok="1"><span class="key">C</span><span>Consultar <code>kata-manifest.json</code>: ya existe un ProjectsPage? un ATC parecido? — construir sobre lo que hay</span></button>
     </div>
     <div class="quiz-expl">💡 En un framework de equipo, el primer movimiento NUNCA es escribir — es <b>consultar el registro</b>. Quizás ProjectsPage ya existe y solo agregas un ATC; quizás alguien ya automatizó archive. Codegen (B) sigue siendo útil DESPUÉS, para descubrir locators. El orden profesional: manifest → plan → código. Duplicar trabajo es el bug más caro de los equipos.</div>
   </div>

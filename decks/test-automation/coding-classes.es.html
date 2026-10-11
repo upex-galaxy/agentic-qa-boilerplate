@@ -310,8 +310,8 @@ Framework KATA   <span class="tk-c">← próxima parada: el repo profesional</sp
 <!-- 3 · QUIZ 0 relámpago -->
 <section class="slide" data-act="Acto 0 · Recap" style="align-items:center">
   <div class="quiz" data-quiz="q0">
-    <div class="quiz-tag">⭐ QUIZ relámpago · ¿Sigues caliente de la sesión 1?</div>
-    <h3 class="quiz-q">¿Cómo accedo al email de este objeto?</h3>
+    <div class="quiz-tag">⭐ QUIZ relámpago · Sigues caliente de la sesión 1?</div>
+    <h3 class="quiz-q">Cómo accedo al email de este objeto?</h3>
     <pre class="code" style="margin-bottom:1.3rem">
 <span class="tk-k">const</span> creds = { email: <span class="tk-s">"ana@qa.com"</span>, password: <span class="tk-s">"secreto123"</span> };</pre>
     <div class="quiz-opts">
@@ -369,15 +369,15 @@ Framework KATA   <span class="tk-c">← próxima parada: el repo profesional</sp
     </div>
     <div data-stagger>
       <div class="card"><h3>🏹 La flecha <code style="font-size:.85em">=></code></h3><p>Se lee: "recibe <code class="pill">n</code> → devuelve <code class="pill">n * 2</code>". Función compacta, ideal para pasarla a OTRA función.</p></div>
-      <div class="card hl" style="margin-top:.9rem"><h3>👀 ¿Te suena de algún lado?</h3>
+      <div class="card hl" style="margin-top:.9rem"><h3>👀 Te suena de algún lado?</h3>
         <pre class="code" style="font-size:.8rem;margin-top:.4rem">
 <span class="tk-f">test</span>(<span class="tk-s">"login"</span>, <span class="tk-k">async</span> ({ page }) => {
   ...
 });</pre>
-        <p style="margin-top:.5rem">¡Tu test de la sesión 1 ERA una arrow function! Ahora por fin sabes leer cada símbolo.</p></div>
+        <p style="margin-top:.5rem">Tu test de la sesión 1 ERA una arrow function! Ahora por fin sabes leer cada símbolo.</p></div>
     </div>
   </div>
-  <div class="notes"><p>El momento "¡ahhh!" del acto: el test() que escribieron en sesión 1 ya usaba arrow + async. La transformación en 3 pasos es el camino mental — muéstrala despacio. Para qué sirve la compacidad: pasarle funciones a map/filter (siguiente acto). No menciones diferencias de this entre function y arrow — ruido innecesario en este nivel.</p></div>
+  <div class="notes"><p>El momento "ahhh!" del acto: el test() que escribieron en sesión 1 ya usaba arrow + async. La transformación en 3 pasos es el camino mental — muéstrala despacio. Para qué sirve la compacidad: pasarle funciones a map/filter (siguiente acto). No menciones diferencias de this entre function y arrow — ruido innecesario en este nivel.</p></div>
 </section>
 
 <!-- 6 · Destructuring -->
@@ -403,7 +403,7 @@ Framework KATA   <span class="tk-c">← próxima parada: el repo profesional</sp
         <p style="margin-top:.5rem">Playwright entrega un objeto LLENO de herramientas. <code class="pill">({ page })</code> = "del paquete que me das, solo desempaco <b>page</b>". Misterio de la sesión 1: cerrado. 🔓</p></div>
     </div>
   </div>
-  <div class="notes"><p>Segundo "¡ahhh!" del acto: ({ page }) por fin explicado. Playwright pasa un objeto de fixtures (page, request, context, browser...) y el test desempaca lo que necesita. Cuando lleguen a KATA verán ({ api }), ({ ui }), ({ test }) — exactamente el mismo patrón. Esa conexión vale la sesión entera.</p></div>
+  <div class="notes"><p>Segundo "ahhh!" del acto: ({ page }) por fin explicado. Playwright pasa un objeto de fixtures (page, request, context, browser...) y el test desempaca lo que necesita. Cuando lleguen a KATA verán ({ api }), ({ ui }), ({ test }) — exactamente el mismo patrón. Esa conexión vale la sesión entera.</p></div>
 </section>
 
 <!-- 7 · LIVE CELL 1 -->
@@ -437,7 +437,7 @@ console.log(`${name} es ${role}`);
 <section class="slide" data-act="Acto 1 · JS moderno" style="align-items:center">
   <div class="quiz" data-quiz="q1">
     <div class="quiz-tag">⭐ QUIZ 1 · JS moderno</div>
-    <h3 class="quiz-q">En <code style="color:var(--cyan)">test("login", async ({ page }) => {...})</code> — ¿qué hace <code style="color:var(--cyan)">({ page })</code>?</h3>
+    <h3 class="quiz-q">En <code style="color:var(--cyan)">test("login", async ({ page }) => {...})</code> — qué hace <code style="color:var(--cyan)">({ page })</code>?</h3>
     <div class="quiz-opts">
       <button class="opt"><span class="key">A</span><span>Crea un objeto nuevo llamado page</span></button>
       <button class="opt" data-ok="1"><span class="key">B</span><span>Desempaca la propiedad <code>page</code> del objeto de herramientas que Playwright entrega</span></button>
@@ -543,7 +543,7 @@ console.log(`Top bug hunter: ${top.name}`);
 <section class="slide" data-act="Acto 2 · Arrays con superpoderes" style="align-items:center">
   <div class="quiz" data-quiz="q2">
     <div class="quiz-tag">⭐ QUIZ 2 · Arrays con superpoderes</div>
-    <h3 class="quiz-q">¿Qué devuelve <code style="color:var(--cyan)">[1, 2, 3, 4].filter(n => n > 2)</code>?</h3>
+    <h3 class="quiz-q">Qué devuelve <code style="color:var(--cyan)">[1, 2, 3, 4].filter(n => n > 2)</code>?</h3>
     <div class="quiz-opts">
       <button class="opt"><span class="key">A</span><span><code>[1, 2]</code> — los que NO cumplen</span></button>
       <button class="opt"><span class="key">B</span><span><code>3</code> — el primero que cumple</span></button>
@@ -572,8 +572,8 @@ console.log(`Top bug hunter: ${top.name}`);
 <span class="tk-k">function</span> <span class="tk-f">findBug</span>(tester) {
   tester.bugs = tester.bugs + <span class="tk-n">1</span>;
 }
-<span class="tk-c">// ¿qué funciones van con qué objetos?</span>
-<span class="tk-c">// ¿quién me garantiza que tester tiene .bugs?</span></pre>
+<span class="tk-c">// qué funciones van con qué objetos?</span>
+<span class="tk-c">// quién me garantiza que tester tiene .bugs?</span></pre>
     </div>
     <div data-stagger>
       <div class="card"><h3>🧩 El síntoma</h3><p>Objetos por un lado, funciones por otro. Con 5 objetos y 15 funciones, nadie sabe qué combina con qué.</p></div>
@@ -624,7 +624,7 @@ console.log(`Top bug hunter: ${top.name}`);
 
 ana.<span class="tk-f">findBug</span>();  <span class="tk-c">// "Ana: 1 bugs"</span>
 ana.<span class="tk-f">findBug</span>();  <span class="tk-c">// "Ana: 2 bugs"</span>
-luis.<span class="tk-f">findBug</span>(); <span class="tk-c">// "Luis: 1 bugs" ← ¡SU propio contador!</span></pre>
+luis.<span class="tk-f">findBug</span>(); <span class="tk-c">// "Luis: 1 bugs" ← SU propio contador!</span></pre>
     </div>
     <div data-stagger>
       <div class="card"><h3>🏭 new Tester("Ana")</h3><p>"Fabrica un objeto con el molde Tester" → corre el constructor con <code class="pill">name = "Ana"</code> → entrega la <b>instancia</b>.</p></div>
@@ -632,7 +632,7 @@ luis.<span class="tk-f">findBug</span>(); <span class="tk-c">// "Luis: 1 bugs" �
       <div class="card hl" style="margin-top:.9rem"><h3>👀 Spoiler</h3><p><code class="pill">page</code> de Playwright… es una instancia de una clase. <code class="pill">page.click()</code> = método. Llevas una sesión entera usando clases.</p></div>
     </div>
   </div>
-  <div class="notes"><p>Independencia de instancias = concepto del quiz 3, márcalo fuerte: cada new crea memoria nueva. El spoiler de page es otro puente potente: no van hacia territorio desconocido, van hacia entender lo que YA usan. Pregunta de control antes de seguir: "si hago new Tester('Mia') y llamo findBug una vez, ¿cuánto vale mia.bugs?"</p></div>
+  <div class="notes"><p>Independencia de instancias = concepto del quiz 3, márcalo fuerte: cada new crea memoria nueva. El spoiler de page es otro puente potente: no van hacia territorio desconocido, van hacia entender lo que YA usan. Pregunta de control antes de seguir: "si hago new Tester('Mia') y llamo findBug una vez, cuánto vale mia.bugs?"</p></div>
 </section>
 
 <!-- 16 · MEMORY VIZ: this -->
@@ -705,7 +705,7 @@ console.log(luis.findBug()); // su PROPIO contador
 <section class="slide" data-act="Acto 3 · Clases" style="align-items:center">
   <div class="quiz" data-quiz="q3">
     <div class="quiz-tag">⭐ QUIZ 3 · Clases e instancias</div>
-    <h3 class="quiz-q">Después de este código, ¿cuánto vale <code style="color:var(--cyan)">luis.bugs</code>?</h3>
+    <h3 class="quiz-q">Después de este código, cuánto vale <code style="color:var(--cyan)">luis.bugs</code>?</h3>
     <pre class="code" style="margin-bottom:1.3rem">
 <span class="tk-k">const</span> ana  = <span class="tk-k">new</span> <span class="tk-f">Tester</span>(<span class="tk-s">"Ana"</span>);
 <span class="tk-k">const</span> luis = <span class="tk-k">new</span> <span class="tk-f">Tester</span>(<span class="tk-s">"Luis"</span>);
@@ -748,8 +748,8 @@ ana.<span class="tk-f">findBug</span>();</pre>
 }</pre>
     </div>
   </div>
-  <div class="callout warn" data-anim="fade-up"><span class="co-ico">🚨</span><p><code>constructor</code> y <code>login()</code> están <b>copiados y pegados</b>. ¿Te suena? Es el mismo dolor de los test cases repetidos de la sesión 1 — y la solución tiene la misma forma: escribir lo común UNA vez.</p></div>
-  <div class="notes"><p>Herencia motivada por el mismo principio que motivó funciones en sesión 1: no repetir. Admin y Viewer comparten constructor y login; difieren en un método propio cada uno. Pregunta a la sala: "¿dónde han visto este copy-paste antes?" — la respuesta (test cases duplicados) les pertenece y hace suya la solución.</p></div>
+  <div class="callout warn" data-anim="fade-up"><span class="co-ico">🚨</span><p><code>constructor</code> y <code>login()</code> están <b>copiados y pegados</b>. Te suena? Es el mismo dolor de los test cases repetidos de la sesión 1 — y la solución tiene la misma forma: escribir lo común UNA vez.</p></div>
+  <div class="notes"><p>Herencia motivada por el mismo principio que motivó funciones en sesión 1: no repetir. Admin y Viewer comparten constructor y login; difieren en un método propio cada uno. Pregunta a la sala: "dónde han visto este copy-paste antes?" — la respuesta (test cases duplicados) les pertenece y hace suya la solución.</p></div>
 </section>
 
 <!-- 20 · extends + super -->
@@ -822,7 +822,7 @@ console.log(ana.deleteProject()); // propio de Admin
 <section class="slide" data-act="Acto 4 · Herencia" style="align-items:center">
   <div class="quiz" data-quiz="q4">
     <div class="quiz-tag">⭐ QUIZ 4 · Herencia</div>
-    <h3 class="quiz-q">En <code style="color:var(--cyan)">class Admin extends User</code> — ¿qué hace <code style="color:var(--cyan)">super(name)</code>?</h3>
+    <h3 class="quiz-q">En <code style="color:var(--cyan)">class Admin extends User</code> — qué hace <code style="color:var(--cyan)">super(name)</code>?</h3>
     <div class="quiz-opts">
       <button class="opt"><span class="key">A</span><span>Crea una instancia nueva de User</span></button>
       <button class="opt" data-ok="1"><span class="key">B</span><span>Llama al constructor del padre para que inicialice su parte (<code>this.name</code>)</span></button>
@@ -840,7 +840,7 @@ console.log(ana.deleteProject()); // propio de Admin
 <!-- 23 · El dolor: spec repetitivo -->
 <section class="slide" data-act="Acto 5 · Page Object">
   <div class="zoomline"><span>js moderno</span><span>arrays pro</span><span>clases</span><span>herencia</span><span class="on">page object</span></div>
-  <h2 data-anim="fade-up">Mira este spec real. <span class="grad-text">¿Notas algo?</span> 🔍</h2>
+  <h2 data-anim="fade-up">Mira este spec real. <span class="grad-text">Notas algo?</span> 🔍</h2>
   <div class="code-window" data-anim="fade-up" style="max-width:900px">
     <div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">login.spec.ts — 3 tests</span></div>
     <pre class="code" style="font-size:clamp(.75rem,1.15vw,.95rem)">
@@ -858,9 +858,9 @@ console.log(ana.deleteProject()); // propio de Admin
   <span class="tk-k">await</span> <span class="tk-f">expect</span>(page.<span class="tk-f">locator</span>(<span class="tk-s">"#error-msg"</span>)).<span class="tk-f">toBeVisible</span>();
 });
 
-<span class="tk-c">// test 3, test 4, test 5… ¿y si mañana #login-btn cambia de id? 💀</span></pre>
+<span class="tk-c">// test 3, test 4, test 5… y si mañana #login-btn cambia de id? 💀</span></pre>
   </div>
-  <div class="notes"><p>Deja que ELLOS nombren el problema antes de decirlo: pasos duplicados + selectores regados por todos lados. La pregunta asesina: "si el dev renombra #login-btn, ¿cuántos lugares corriges?" Con 50 tests, 50 lugares. Ya saben la herramienta para encapsular: una clase. La siguiente slide la presenta con nombre y apellido.</p></div>
+  <div class="notes"><p>Deja que ELLOS nombren el problema antes de decirlo: pasos duplicados + selectores regados por todos lados. La pregunta asesina: "si el dev renombra #login-btn, cuántos lugares corriges?" Con 50 tests, 50 lugares. Ya saben la herramienta para encapsular: una clase. La siguiente slide la presenta con nombre y apellido.</p></div>
 </section>
 
 <!-- 24 · La idea POM -->
@@ -935,7 +935,7 @@ console.log(ana.deleteProject()); // propio de Admin
           <label>Email</label><input id="s-email" data-sel="#email" type="text" placeholder="tu@email.com">
           <label>Password</label><input id="s-password" data-sel="#password" type="password" placeholder="••••••••">
           <button class="app-login" id="s-login-btn" data-sel="#login-btn">Entrar</button>
-          <div class="app-msg ok" id="s-welcome" data-sel="#welcome">✅ ¡Bienvenida, Ana!</div>
+          <div class="app-msg ok" id="s-welcome" data-sel="#welcome">✅ Bienvenida, Ana!</div>
           <div class="app-msg bad" id="s-error-msg" data-sel="#error-msg">❌ Credenciales inválidas</div>
         </div>
       </div>
@@ -943,7 +943,7 @@ console.log(ana.deleteProject()); // propio de Admin
     </div>
     <div class="sim-right">
       <div class="livecell" style="flex:0 0 auto">
-        <div class="lc-bar"><span class="lc-name">login-page.spec.ts — ¡código real, clases reales!</span>
+        <div class="lc-bar"><span class="lc-name">login-page.spec.ts — código real, clases reales!</span>
           <button class="lc-reset" id="sim-reset">↺ Reset</button><button class="lc-run" id="sim-run">▶ Ejecutar test</button></div>
         <div class="lc-editor" style="min-height:230px"><pre class="lc-hl" id="sim-hl"></pre><textarea id="sim-src" spellcheck="false">class LoginPage {
   constructor(page) {
@@ -973,7 +973,7 @@ test("login con Page Object", async ({ page }) => {
 <section class="slide" data-act="Acto 5 · Page Object" style="align-items:center">
   <div class="quiz" data-quiz="q5">
     <div class="quiz-tag">⭐ QUIZ 5 · El integrador</div>
-    <h3 class="quiz-q">El dev renombra <code style="color:var(--cyan)">#login-btn</code> a <code style="color:var(--cyan)">#signin-btn</code>. Tienes 50 tests que hacen login usando LoginPage. ¿Cuántos lugares corriges?</h3>
+    <h3 class="quiz-q">El dev renombra <code style="color:var(--cyan)">#login-btn</code> a <code style="color:var(--cyan)">#signin-btn</code>. Tienes 50 tests que hacen login usando LoginPage. Cuántos lugares corriges?</h3>
     <div class="quiz-opts">
       <button class="opt"><span class="key">A</span><span>50 — uno por test</span></button>
       <button class="opt"><span class="key">B</span><span>Ninguno — Playwright lo detecta solo</span></button>
@@ -997,7 +997,7 @@ test("login con Page Object", async ({ page }) => {
     <div class="arrow">↓ extends</div>
     <div class="layer">UiBase <span class="ly-note">helpers de Playwright ya escritos</span></div>
     <div class="arrow">↓ extends</div>
-    <div class="layer star">⭐ LoginPage <span class="ly-note" style="color:var(--green)">¡ESTO ya lo sabes construir!</span></div>
+    <div class="layer star">⭐ LoginPage <span class="ly-note" style="color:var(--green)">ESTO ya lo sabes construir!</span></div>
     <div class="arrow">↓ usada por</div>
     <div class="layer">TestFixture <span class="ly-note">el ({ page }) pero con tus clases</span></div>
     <div class="arrow">↓ consumida por</div>
@@ -1015,7 +1015,7 @@ test("login con Page Object", async ({ page }) => {
   <p id="final-msg" data-anim="fade-up" style="animation-delay:.25s;max-width:560px"></p>
   <div class="cards c3" data-stagger style="margin-top:1.6rem;max-width:1000px">
     <div class="card"><div class="ico">🏠</div><h3>Re-practica en casa</h3><p>Este archivo funciona offline: re-juega los playgrounds y los retos.</p></div>
-    <div class="card"><div class="ico">🧪</div><h3>Reto puente</h3><p>Escribe un <code class="pill">SignupPage</code> imaginario en papel: ¿qué métodos tendría? ¿qué selectores guardaría?</p></div>
+    <div class="card"><div class="ico">🧪</div><h3>Reto puente</h3><p>Escribe un <code class="pill">SignupPage</code> imaginario en papel: qué métodos tendría? qué selectores guardaría?</p></div>
     <div class="card hl"><div class="ico">🥷</div><h3>Próxima sesión</h3><p><b>Dev Craft</b>: terminal, Git y tu primer Pull Request, para que tu código viva en un repo de equipo. Después, Playwright Pro y Dojo Lab I. 🚀</p></div>
   </div>
   <p data-anim="fade-up" style="animation-delay:.5s;margin-top:1.4rem;color:var(--text-3);font-size:.95rem">Esta sesión: JS moderno → map/filter/find → clases → this → herencia → <b style="color:var(--text-2)">tu primer Page Object</b>. El gap más grande del camino: cerrado.</p>
@@ -1166,8 +1166,8 @@ function renderFinal(){
   $('#final-score').textContent = score + ' / ' + TOTAL_Q;
   const pct = score/TOTAL_Q;
   $('#final-msg').textContent =
-    pct === 1 ? '¡Perfecto! Clases, herencia y Page Objects dominados. El framework profesional te espera. 🏆' :
-    pct >= .75 ? '¡Excelente! La base de arquitectura está firme — llegas al Dojo con ventaja. 💪' :
+    pct === 1 ? 'Perfecto! Clases, herencia y Page Objects dominados. El framework profesional te espera. 🏆' :
+    pct >= .75 ? 'Excelente! La base de arquitectura está firme — llegas al Dojo con ventaja. 💪' :
     pct >= .5 ? 'Muy buen avance. Repasa this y herencia con los playgrounds de este archivo y estás del otro lado. 👍' :
     'Las clases toman dos pasadas — es normal. Re-juega los playgrounds en casa: la segunda vez, this hace click. 🌱';
   setTimeout(()=>{ confetti(innerWidth/2, innerHeight*0.32, 140); }, 450);
@@ -1245,7 +1245,7 @@ $$('.livecell').forEach(cell=>{
                    warn: (...a)=>logs.push({t:a.map(fmt).join(' ')}) };
     try { new Function('console', '"use strict";\n'+ta.value)(fake); }
     catch(err){ logs.push({t:'⛔ '+err.name+': '+err.message, e:1}); }
-    if(!logs.length) logs.push({t:'(sin salida — ¿olvidaste console.log?)', d:1});
+    if(!logs.length) logs.push({t:'(sin salida — olvidaste console.log?)', d:1});
     logs.forEach(l=>{
       const d = document.createElement('div');
       d.className = 'ln' + (l.e?' err':'') + (l.d?' dim':'');
@@ -1402,7 +1402,7 @@ $$('.livecell').forEach(cell=>{
       }
       cursor.style.opacity = '0';
       banner.className = 'sim-banner pass';
-      banner.textContent = '✓ ' + (queue.length||1) + ' passed — ¡tu Page Object funciona!';
+      banner.textContent = '✓ ' + (queue.length||1) + ' passed — tu Page Object funciona!';
       const r = banner.getBoundingClientRect();
       confetti(r.left + r.width/2, r.top, 110);
     } catch(err){
