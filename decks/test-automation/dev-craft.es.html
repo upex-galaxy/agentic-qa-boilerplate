@@ -243,7 +243,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
       <span class="pill">terminal</span><span class="pill">package.json</span><span class="pill">git</span><span class="pill">GitHub + PR</span><span class="pill">2 simuladores 🎮</span><span class="pill">4 misiones 🎯</span>
     </div>
   </div>
-  <div class="notes"><p>Sesión 3 de la serie. El gap silencioso: saben escribir tests pero no compartirlos como profesionales. En esta sesión hay 2 terminales SIMULADAS dentro del deck (practican git sin riesgo) + misiones reales sobre su proyecto del lab. Prerrequisito: proyecto mi-dojo-lab funcionando. Duración: 90-120 min.</p></div>
+  <div class="notes"><p>Sesión 3 de la serie. El gap silencioso: saben escribir tests pero no compartirlos como profesionales. En esta sesión hay 2 terminales SIMULADAS dentro del deck (practican git sin riesgo) + misiones reales sobre su propia carpeta de práctica, <code>mi-dev-craft</code>, que crean en la misión D1. Prerrequisitos: Coding Base y Coding Classes vistos, Node.js LTS y VS Code instalados (el kit que cierra Coding Base; si falta, nodejs.org y code.visualstudio.com) y una cuenta de GitHub. No depende de ningún deck posterior. Duración: 90-120 min.</p></div>
 </section>
 
 <!-- 2 · Por qué -->
@@ -262,7 +262,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
         Acto 2 → package.json y scripts<br>
         Acto 3 → Git local 🎮 (simulador + real)<br>
         Acto 4 → GitHub + tu primer PR 🎮<br>
-        Boss → tu suite del lab, publicada</p></div>
+        Boss → tu proyecto, publicado con PR</p></div>
       <div class="callout info" style="margin-top:.9rem"><span class="co-ico">🎮</span><p>En esta sesión estrenamos <b>terminales simuladas</b> dentro del deck: practicas los comandos aquí (imposible romper nada) y DESPUÉS los corres de verdad.</p></div>
     </div>
   </div>
@@ -280,7 +280,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
     <tr><th>Comando</th><th>Qué hace</th><th>Mnemonia</th></tr>
     <tr><td><code>pwd</code></td><td>DÓNDE estoy parado?</td><td>print working directory</td></tr>
     <tr><td><code>ls</code></td><td>QUÉ hay aquí?</td><td>list</td></tr>
-    <tr><td><code>cd mi-dojo-lab</code></td><td>Entra a una carpeta</td><td>change directory</td></tr>
+    <tr><td><code>cd mi-dev-craft</code></td><td>Entra a una carpeta</td><td>change directory</td></tr>
     <tr><td><code>cd ..</code></td><td>Sube un nivel</td><td>.. = la carpeta padre</td></tr>
     <tr><td><code>mkdir pages</code></td><td>Crea una carpeta</td><td>make directory</td></tr>
     <tr><td><code>code .</code></td><td>Abre VS Code AQUÍ</td><td>. = esta carpeta</td></tr>
@@ -294,24 +294,28 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
   <div class="mission" data-mission="d1" data-anim="fade-up">
     <div class="m-head"><span class="m-badge">MISIÓN D1</span><h3>Navega como profesional</h3>
       <label class="m-check"><input type="checkbox"> Completada</label></div>
-    <div class="m-obj">🎯 Desde una terminal NUEVA, llegar hasta tu proyecto del lab usando solo comandos, y abrirlo en VS Code.</div>
+    <div class="m-obj">🎯 Desde una terminal NUEVA, crear tu carpeta de práctica, llegar hasta ella usando solo comandos y abrirla en VS Code.</div>
     <div class="cols" style="gap:1.2rem">
       <div>
         <p style="font-size:.9rem;line-height:1.9;margin:.2rem 0">
         1. Abre una terminal nueva (no la de VS Code — esa hace trampa)<br>
         2. <code class="pill">pwd</code> para ubicarte, <code class="pill">ls</code> para mirar<br>
-        3. Navega con <code class="pill">cd</code> + <code class="pill">Tab</code> hasta <code class="pill">mi-dojo-lab</code><br>
-        4. Remata con:</p>
+        3. Crea tu carpeta de práctica (TypeScript, el resto por defecto):</p>
+        <div class="cmd"><span class="ps">$</span><span class="ct">npm init playwright@latest mi-dev-craft</span><span class="copy">📋</span></div>
+        <p style="font-size:.9rem;line-height:1.9;margin:.2rem 0">
+        4. Entra con <code class="pill">cd</code> + <code class="pill">Tab</code> hasta <code class="pill">mi-dev-craft</code><br>
+        5. Remata con:</p>
         <div class="cmd"><span class="ps">$</span><span class="ct">code .</span><span class="copy">📋</span></div>
       </div>
       <div>
+        <details class="m-hint"><summary>Pista: "npm: command not found"</summary><div class="hint-body"><p>Falta Node.js, el kit que cierra Coding Base: instala la versión LTS desde nodejs.org y reabre la terminal (la vieja no conoce programas nuevos).</p></div></details>
         <details class="m-hint"><summary>Pista: "code: command not found" (Mac)</summary><div class="hint-body"><p>Abre VS Code → Cmd+Shift+P → escribe "shell command" → "Install 'code' command in PATH". Reabre la terminal.</p></div></details>
         <details class="m-hint"><summary>Pista: me perdí en las carpetas</summary><div class="hint-body"><p><code>cd ~</code> te teletransporta a tu carpeta de usuario (home). Desde ahí, ls y a navegar de nuevo. Imposible perderse para siempre.</p></div></details>
       </div>
     </div>
-    <div class="m-crit">✅ <span><b>Criterio de éxito:</b> VS Code abierto en tu proyecto, lanzado 100% desde la terminal, sin tocar el Finder/Explorador.</span></div>
+    <div class="m-crit">✅ <span><b>Criterio de éxito:</b> VS Code abierto en <code>mi-dev-craft</code>, lanzado 100% desde la terminal, sin tocar el Finder/Explorador.</span></div>
   </div>
-  <div class="notes"><p>Misión corta (5-10 min) pero diagnóstica: quien no fluye aquí va a sufrir con git. "Terminal nueva, no la de VS Code" fuerza la navegación real. cd ~ como botón de pánico elimina el miedo a perderse.</p></div>
+  <div class="notes"><p>Misión corta (10-15 min: el instalador de Playwright baja los navegadores) pero diagnóstica: quien no fluye aquí va a sufrir con git. "Terminal nueva, no la de VS Code" fuerza la navegación real. cd ~ como botón de pánico elimina el miedo a perderse.</p></div>
 </section>
 
 <!-- ================================================================ -->
@@ -327,7 +331,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
         <div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">package.json</span></div>
         <pre class="code" style="font-size:clamp(.75rem,1.15vw,.92rem)">
 {
-  <span class="tk-s">"name"</span>: <span class="tk-s">"mi-dojo-lab"</span>,
+  <span class="tk-s">"name"</span>: <span class="tk-s">"mi-dev-craft"</span>,
   <span class="tk-s">"scripts"</span>: {
     <span class="tk-s">"test"</span>: <span class="tk-s">"playwright test"</span>,
     <span class="tk-s">"test:ui"</span>: <span class="tk-s">"playwright test --ui"</span>
@@ -446,7 +450,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
     <div class="ts-goals" id="ts1-goals"></div>
     <div class="ts-term">
       <div class="ts-bar"><span class="dot" style="background:#f7768e"></span><span class="dot" style="background:#e0af68"></span><span class="dot" style="background:#9ece6a"></span>
-        <span class="ts-title">~/mi-dojo-lab — simulador</span><button class="ts-reset" id="ts1-reset" style="margin-left:auto">↺ Reiniciar</button></div>
+        <span class="ts-title">~/mi-dev-craft — simulador</span><button class="ts-reset" id="ts1-reset" style="margin-left:auto">↺ Reiniciar</button></div>
       <div class="ts-out" id="ts1-out"></div>
       <div class="ts-inline"><span class="ps">$</span><input id="ts1-in" autocomplete="off" spellcheck="false" placeholder="escribe un comando y Enter…"></div>
     </div>
@@ -459,7 +463,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
   <div class="mission" data-mission="d3" data-anim="fade-up">
     <div class="m-head"><span class="m-badge">MISIÓN D3</span><h3>Git de verdad en tu proyecto</h3>
       <label class="m-check"><input type="checkbox"> Completada</label></div>
-    <div class="m-obj">🎯 Poner tu proyecto del lab bajo control de versiones: init, .gitignore y primer commit con mensaje digno.</div>
+    <div class="m-obj">🎯 Poner tu proyecto de práctica bajo control de versiones: init, .gitignore y primer commit con mensaje digno.</div>
     <div class="cols" style="gap:1.2rem">
       <div>
         <div class="cmd"><span class="ps">$</span><span class="ct">git init</span><span class="copy">📋</span></div>
@@ -468,7 +472,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
 test-results/
 playwright-report/</pre>
         <div class="cmd" style="margin-top:.6rem"><span class="ps">$</span><span class="ct">git add .</span><span class="copy">📋</span></div>
-        <div class="cmd"><span class="ps">$</span><span class="ct">git commit -m "add dojo test suite with POM and fixtures"</span><span class="copy">📋</span></div>
+        <div class="cmd"><span class="ps">$</span><span class="ct">git commit -m "add playwright starter suite"</span><span class="copy">📋</span></div>
       </div>
       <div>
         <div class="cmd"><span class="ps">$</span><span class="ct">git log --oneline</span><span class="copy">📋</span></div>
@@ -517,7 +521,7 @@ git config --global user.email "tu@email.com"</pre><p style="margin-top:.3rem">U
       <h3>Conectar tu proyecto (una vez)</h3>
       <p style="font-size:.88rem;margin:.2rem 0 .3rem">Con GitHub CLI (recomendado — crea el repo Y lo conecta):</p>
       <div class="cmd"><span class="ps">$</span><span class="ct">gh auth login</span><span class="copy">📋</span></div>
-      <div class="cmd"><span class="ps">$</span><span class="ct">gh repo create mi-dojo-lab --private --source=. --push</span><span class="copy">📋</span></div>
+      <div class="cmd"><span class="ps">$</span><span class="ct">gh repo create mi-dev-craft --private --source=. --push</span><span class="copy">📋</span></div>
       <details class="m-hint"><summary>Alternativa sin gh (web)</summary><div class="hint-body"><p>github.com → New repository → copia los comandos que GitHub te muestra bajo "push an existing repository": <code>git remote add origin …</code> + <code>git push -u origin main</code>.</p></div></details>
     </div>
   </div>
@@ -552,7 +556,7 @@ git config --global user.email "tu@email.com"</pre><p style="margin-top:.3rem">U
     <div class="ts-goals" id="ts2-goals"></div>
     <div class="ts-term">
       <div class="ts-bar"><span class="dot" style="background:#f7768e"></span><span class="dot" style="background:#e0af68"></span><span class="dot" style="background:#9ece6a"></span>
-        <span class="ts-title">~/mi-dojo-lab — simulador</span><button class="ts-reset" id="ts2-reset" style="margin-left:auto">↺ Reiniciar</button></div>
+        <span class="ts-title">~/mi-dev-craft — simulador</span><button class="ts-reset" id="ts2-reset" style="margin-left:auto">↺ Reiniciar</button></div>
       <div class="ts-out" id="ts2-out"></div>
       <div class="ts-inline"><span class="ps">$</span><input id="ts2-in" autocomplete="off" spellcheck="false" placeholder="escribe un comando y Enter…"></div>
     </div>
@@ -565,7 +569,7 @@ git config --global user.email "tu@email.com"</pre><p style="margin-top:.3rem">U
   <div class="mission" data-mission="d4" data-anim="fade-up">
     <div class="m-head"><span class="m-badge">MISIÓN D4 · BOSS 🏆</span><h3>Tu suite, publicada con PR</h3>
       <label class="m-check"><input type="checkbox"> Completada</label></div>
-    <div class="m-obj">🎯 Tu proyecto del lab en GitHub, con una mejora entrando por <b>Pull Request</b> — el flujo profesional completo, de verdad.</div>
+    <div class="m-obj">🎯 Tu proyecto de práctica en GitHub, con una mejora entrando por <b>Pull Request</b> — el flujo profesional completo, de verdad.</div>
     <div class="cols" style="gap:1.2rem">
       <div>
         <p style="font-size:.9rem;line-height:1.85;margin:.2rem 0">
@@ -790,7 +794,7 @@ function renderFinal(){
   $('#final-msg').textContent =
     d === M_TOTAL ? '4/4 — kit completo. Tu suite vive en GitHub y entregas como profesional. 🏆' :
     d >= 2 ? d + '/' + M_TOTAL + ' — buen avance. D3 y D4 (git + PR) son las que te gradúan: termínalas en casa.' :
-    'El lab queda contigo — un commit diario esta semana y el músculo se instala solo. 🌱';
+    'La sesión queda contigo — un commit diario esta semana y el músculo se instala solo. 🌱';
   if(d === M_TOTAL) setTimeout(()=>confetti(innerWidth/2, innerHeight*0.3, 140), 450);
 }
 
@@ -884,7 +888,7 @@ termSim({
   out:'#ts1-out', in:'#ts1-in', goals:'#ts1-goals', reset:'#ts1-reset',
   intro:'Simulador git — acabas de terminar tu suite y quieres tu primer checkpoint.',
   logAfter: 3,
-  logOut:'<span class="o-yellow">a1b2c3d</span> <span class="o-cyan">(HEAD -> main)</span> add dojo test suite with POM',
+  logOut:'<span class="o-yellow">a1b2c3d</span> <span class="o-cyan">(HEAD -> main)</span> add playwright starter suite',
   statusAt: s => s === 0
     ? '<span class="o-red">Untracked files:</span>\n  <span class="o-red">fixtures.ts  pages/  tests/  package.json</span>\n<span class="o-dim">nothing added to commit but untracked files present</span>'
     : (s === 1
@@ -899,12 +903,12 @@ termSim({
     { label:'Pon los archivos en staging', example:'git add .',
       re:[/^git add \.$/, /^git add -A$/, /^git add --all$/],
       out:'<span class="o-ok">✓ archivos al staging (la próxima foto los incluye)</span>' },
-    { label:'Crea el commit con mensaje', example:'git commit -m "add dojo test suite"',
+    { label:'Crea el commit con mensaje', example:'git commit -m "add playwright starter suite"',
       re:[/^git commit -m ".+"$/, /^git commit -m '.+'$/],
-      out:'<span class="o-cyan">[main a1b2c3d]</span> add dojo test suite with POM\n<span class="o-dim"> 9 files changed, 214 insertions(+)</span>' },
+      out:'<span class="o-cyan">[main a1b2c3d]</span> add playwright starter suite\n<span class="o-dim"> 9 files changed, 214 insertions(+)</span>' },
     { label:'Mira tu historia', example:'git log --oneline',
       re:[/^git log( --oneline)?$/],
-      out:'<span class="o-yellow">a1b2c3d</span> <span class="o-cyan">(HEAD -> main)</span> add dojo test suite with POM\n<span class="o-dim">Tu primer checkpoint. Nada se pierde después de esto.</span>' }
+      out:'<span class="o-yellow">a1b2c3d</span> <span class="o-cyan">(HEAD -> main)</span> add playwright starter suite\n<span class="o-dim">Tu primer checkpoint. Nada se pierde después de esto.</span>' }
   ]
 });
 
@@ -913,7 +917,7 @@ termSim({
   out:'#ts2-out', in:'#ts2-in', goals:'#ts2-goals', reset:'#ts2-reset',
   intro:'Simulador git — tu repo ya está en GitHub. Hoy: una mejora entra por PR.',
   logAfter: 3,
-  logOut:'<span class="o-yellow">e4f5a6b</span> <span class="o-cyan">(HEAD -> test/login-suite)</span> add logout spec\n<span class="o-yellow">a1b2c3d</span> add dojo test suite with POM',
+  logOut:'<span class="o-yellow">e4f5a6b</span> <span class="o-cyan">(HEAD -> test/login-suite)</span> add logout spec\n<span class="o-yellow">a1b2c3d</span> add playwright starter suite',
   statusAt: s => s <= 1
     ? '<span class="o-red">modified: tests/logout.spec.ts</span>'
     : '<span class="o-dim">nothing to commit, working tree clean</span>',
@@ -929,10 +933,10 @@ termSim({
       out:'<span class="o-cyan">[test/login-suite e4f5a6b]</span> add logout spec\n<span class="o-dim"> 1 file changed, 18 insertions(+)</span>' },
     { label:'Sube la rama a GitHub', example:'git push -u origin test/login-suite',
       re:[/^git push( -u)?( origin)?( [\w\/.-]+)?$/],
-      out:'<span class="o-dim">Enumerating objects: 5, done.</span>\n<span class="o-ok">✓ rama publicada en GitHub</span>\n<span class="o-dim">remote: Create a pull request for test/login-suite:</span>\n<span class="o-cyan">remote:   https://github.com/tu-user/mi-dojo-lab/pull/new/test/login-suite</span>' },
+      out:'<span class="o-dim">Enumerating objects: 5, done.</span>\n<span class="o-ok">✓ rama publicada en GitHub</span>\n<span class="o-dim">remote: Create a pull request for test/login-suite:</span>\n<span class="o-cyan">remote:   https://github.com/tu-user/mi-dev-craft/pull/new/test/login-suite</span>' },
     { label:'Abre el Pull Request', example:'gh pr create --fill',
       re:[/^gh pr create( --fill)?.*$/],
-      out:'<span class="o-dim">Creating pull request for test/login-suite into main…</span>\n<span class="o-ok">✓ PR creado:</span> <span class="o-cyan">https://github.com/tu-user/mi-dojo-lab/pull/1</span>\n<span class="o-dim">En la vida real: aquí un colega revisa, comenta y aprueba. Luego: merge. 🎉</span>' }
+      out:'<span class="o-dim">Creating pull request for test/login-suite into main…</span>\n<span class="o-ok">✓ PR creado:</span> <span class="o-cyan">https://github.com/tu-user/mi-dev-craft/pull/1</span>\n<span class="o-dim">En la vida real: aquí un colega revisa, comenta y aprueba. Luego: merge. 🎉</span>' }
   ]
 });
 

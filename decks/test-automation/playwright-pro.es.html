@@ -233,12 +233,51 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
     <div class="kicker" data-anim="fade-up">Sesión 4 · QA Engineering</div>
     <h1 data-anim="fade-up" style="animation-delay:.1s">Playwright <span class="grad-text">Pro</span> 🚀</h1>
     <p data-anim="fade-up" style="animation-delay:.2s;max-width:680px;font-size:clamp(1.05rem,1.8vw,1.35rem)">
-      Tu suite del Dojo Lab funciona… pero repite código y vive desordenada.<br>Ahora la conviertes en una <b>suite profesional</b>: hooks, POM real, fixtures y API testing.</p>
+      Escribes una suite que funciona… pero repite código y vive desordenada.<br>Después la conviertes en una <b>suite profesional</b>: hooks, POM real, fixtures y API testing.</p>
     <div class="cover-chips" data-anim="fade-up" style="animation-delay:.32s">
-      <span class="pill">describe + hooks</span><span class="pill">locators pro</span><span class="pill">POM real</span><span class="pill">fixtures</span><span class="pill">API testing</span><span class="pill">6 misiones 🎯</span>
+      <span class="pill">describe + hooks</span><span class="pill">locators pro</span><span class="pill">POM real</span><span class="pill">fixtures</span><span class="pill">API testing</span><span class="pill">7 misiones 🎯</span>
     </div>
   </div>
-  <div class="notes"><p>Sesión 4 de la serie. Prerrequisito duro: la suite del Dojo Lab I funcionando (5 specs verdes). Todo lo de esta sesión REFACTORIZA esa suite — quien no la tenga, que clone la de un compañero o complete M6 del lab primero. Formato híbrido: concepto corto → misión aplicada. Duración: 2-3 horas.</p></div>
+  <div class="notes"><p>Sesión 4 de la serie. Prerrequisitos: Coding Base y Coding Classes vistos, Node.js LTS y VS Code instalados (el kit que cierra Coding Base; si falta, nodejs.org y code.visualstudio.com), internet. La sesión no depende de ningún deck posterior: la misión P0 arma en 10 minutos la suite de partida en su propia carpeta, <code>mi-playwright-pro</code>, y todo lo demás la REFACTORIZA. Formato híbrido: concepto corto → misión aplicada. Duración: 2-3 horas.</p></div>
+</section>
+
+<!-- 1b · M P0 -->
+<section class="slide" data-act="Acto 0 · Briefing">
+  <div class="mission" data-mission="p0" data-anim="fade-up">
+    <div class="m-head"><span class="m-badge">MISIÓN P0</span><h3>Tu suite de partida</h3>
+      <label class="m-check"><input type="checkbox"> Completada</label></div>
+    <div class="m-obj">🎯 Crear tu carpeta de práctica y escribir 3 specs como un primer borrador: funcionan, pero cada uno repite el login. El resto de la sesión los profesionaliza.</div>
+    <div class="cols" style="gap:1.2rem">
+      <div>
+        <p style="font-size:.9rem;line-height:1.9;margin:.2rem 0">
+        1. Crea el proyecto (TypeScript, el resto por defecto) y ábrelo:</p>
+        <div class="cmd"><span class="ps">$</span><span class="ct">npm init playwright@latest mi-playwright-pro</span><span class="copy">📋</span></div>
+        <div class="cmd"><span class="ps">$</span><span class="ct">cd mi-playwright-pro && code .</span><span class="copy">📋</span></div>
+        <p style="font-size:.9rem;line-height:1.9;margin:.4rem 0 .2rem">
+        2. En <code class="pill">tests/</code> crea <code class="pill">login.spec.ts</code> con el modelo de la derecha<br>
+        3. <code class="pill">login-invalid.spec.ts</code>: lo mismo con password <code class="pill">mala</code>, y espera el mensaje de error<br>
+        4. <code class="pill">dashboard.spec.ts</code>: copia el login y verifica que el tablero cargue<br>
+        5. Borra el <code class="pill">example.spec.ts</code> del instalador y corre:</p>
+        <div class="cmd"><span class="ps">$</span><span class="ct">npx playwright test</span><span class="copy">📋</span></div>
+      </div>
+      <div>
+        <pre class="code" style="font-size:clamp(.66rem,.95vw,.8rem)">
+<span class="tk-c">// tests/login.spec.ts — primer borrador</span>
+<span class="tk-k">import</span> { test, expect } <span class="tk-k">from</span> <span class="tk-s">"@playwright/test"</span>;
+
+<span class="tk-f">test</span>(<span class="tk-s">"login válido entra al dashboard"</span>, <span class="tk-k">async</span> ({ page }) => {
+  <span class="tk-k">await</span> page.<span class="tk-f">goto</span>(<span class="tk-s">"https://dojo.upexgalaxy.com/login"</span>);
+  <span class="tk-k">await</span> page.<span class="tk-f">getByLabel</span>(<span class="tk-s">"Email"</span>).<span class="tk-f">fill</span>(<span class="tk-s">"testuser@upex.dev"</span>);
+  <span class="tk-k">await</span> page.<span class="tk-f">getByLabel</span>(<span class="tk-s">"Password"</span>).<span class="tk-f">fill</span>(<span class="tk-s">"Test123!"</span>);
+  <span class="tk-k">await</span> page.<span class="tk-f">locator</span>(<span class="tk-s">"form button"</span>).<span class="tk-f">click</span>();
+  <span class="tk-k">await</span> <span class="tk-f">expect</span>(page).<span class="tk-f">toHaveURL</span>(<span class="tk-c">/dashboard/</span>);
+});</pre>
+        <details class="m-hint"><summary>Pista: un selector no coincide con el dojo</summary><div class="hint-body"><p>El modelo muestra la FORMA. Graba el flujo real con <code>npx playwright codegen https://dojo.upexgalaxy.com/login</code> y copia el locator que te sugiere. Deja el <code>page.locator("form button")</code> si funciona: en P2 lo vas a cazar.</p></div></details>
+      </div>
+    </div>
+    <div class="m-crit">✅ <span><b>Criterio de éxito:</b> carpeta <code>mi-playwright-pro</code> con 3 specs verdes (login válido, login inválido, dashboard), cada uno con su propio login copiado.</span></div>
+  </div>
+  <div class="notes"><p>Esta misión fabrica a propósito el código que la sesión va a corregir: el login copiado en cada spec y un selector CSS estructural. Dilo en voz alta: es el primer borrador que todo el mundo escribe, no un error. Quien termina antes, que pruebe <code>npx playwright test --ui</code>. 10 minutos; no avances hasta que todos tengan los 3 verdes, porque cada misión siguiente parte de esta carpeta.</p></div>
 </section>
 
 <!-- 2 · El dolor actual -->
@@ -247,8 +286,8 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
   <h2 data-anim="fade-up">Tu suite funciona. <span class="grad-text">Ahora mírala con ojos de senior.</span></h2>
   <div class="cols">
     <div data-stagger>
-      <div class="card"><div class="ico">🔁</div><h3>Síntoma 1: login repetido</h3><p>4 de tus 5 specs empiezan con los mismos pasos de login. Copy-paste detectado.</p></div>
-      <div class="card" style="margin-top:.9rem"><div class="ico">🗺️</div><h3>Síntoma 2: selectores regados</h3><p>El locator del botón de login vive en 4 archivos. Cambio de UI = cacería.</p></div>
+      <div class="card"><div class="ico">🔁</div><h3>Síntoma 1: login repetido</h3><p>Tus 3 specs empiezan con los mismos pasos de login. Copy-paste detectado.</p></div>
+      <div class="card" style="margin-top:.9rem"><div class="ico">🗺️</div><h3>Síntoma 2: selectores regados</h3><p>El locator del botón de login vive en 3 archivos, y encima es CSS estructural. Cambio de UI = cacería.</p></div>
       <div class="card" style="margin-top:.9rem"><div class="ico">🐌</div><h3>Síntoma 3: todo por UI</h3><p>Cada verificación pasa por el navegador — lento y frágil para cosas que la API responde en milisegundos.</p></div>
     </div>
     <div data-anim="fade-up" style="animation-delay:.3s">
@@ -263,7 +302,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
       <div class="callout info" style="margin-top:.9rem"><span class="co-ico">🧬</span><p>Cada herramienta de esta sesión usa conceptos que YA dominas: hooks = funciones, POM = tu clase de Coding Classes, fixtures = el destructuring de <code>({ page })</code>.</p></div>
     </div>
   </div>
-  <div class="notes"><p>Abre la sesión con autocrítica de código propio — los 3 síntomas existen de verdad en sus suites del lab (compruébalo en vivo con la de alguien). El mensaje: no escribieron mal código; escribieron el primer borrador que todo profesional escribe. Ahora toca la segunda pasada, la que separa scripts de ingeniería.</p></div>
+  <div class="notes"><p>Abre la sesión con autocrítica de código propio — los 3 síntomas existen de verdad en la suite que acaban de escribir en P0 (compruébalo en vivo con la de alguien). El mensaje: no escribieron mal código; escribieron el primer borrador que todo profesional escribe. Ahora toca la segunda pasada, la que separa scripts de ingeniería.</p></div>
 </section>
 
 <!-- ================================================================ -->
@@ -341,7 +380,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
   <div class="mission" data-mission="p1" data-anim="fade-up">
     <div class="m-head"><span class="m-badge">MISIÓN P1</span><h3>Refactoriza con describe + beforeEach</h3>
       <label class="m-check"><input type="checkbox"> Completada</label></div>
-    <div class="m-obj">🎯 Reorganizar tu suite del lab: agrupa los tests por feature y mueve el login repetido a un <b>beforeEach</b>.</div>
+    <div class="m-obj">🎯 Reorganizar tu suite de partida: agrupa los tests por feature y mueve el login repetido a un <b>beforeEach</b>.</div>
     <div class="cols" style="gap:1.2rem">
       <div>
         <p style="font-size:.9rem;line-height:1.9;margin:.2rem 0">
@@ -352,7 +391,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
       </div>
       <div>
         <details class="m-hint"><summary>Pista: un test ahora falla</summary><div class="hint-body"><p>Ese test NECESITA estar deslogueado (p.ej. login-invalid)? Entonces no pertenece a ese describe — déjalo en su propio grupo sin hook de login. Los hooks aplican a TODO el grupo: agrupa por precondición compartida.</p></div></details>
-        <div class="callout info" style="margin-top:.8rem"><span class="co-ico">📏</span><p>Métrica de éxito honesta: tu suite debería perder ~15-25 líneas duplicadas sin perder ningún test.</p></div>
+        <div class="callout info" style="margin-top:.8rem"><span class="co-ico">📏</span><p>Métrica de éxito honesta: tu suite pierde líneas duplicadas sin perder ningún test.</p></div>
       </div>
     </div>
     <div class="m-crit">✅ <span><b>Criterio de éxito:</b> misma cantidad de tests, todos verdes, login escrito UNA sola vez por grupo.</span></div>
@@ -420,7 +459,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
       <p style="margin-top:.7rem;font-size:.92rem">Reintentan automáticamente hasta cumplirse (o timeout). <b>Por eso nunca necesitas sleep</b>: la aserción ES la espera.</p>
     </div>
   </div>
-  <div class="notes"><p>filter + chaining resuelve el caso real más común: tablas y listas. Las web-first assertions cierran el círculo anti-sleep del lab: expect(...).toBeVisible() REINTENTA hasta que aparece — la espera inteligente está integrada en la aserción. Quien entiende esto jamás vuelve a escribir waitForTimeout.</p></div>
+  <div class="notes"><p>filter + chaining resuelve el caso real más común: tablas y listas. Las web-first assertions cierran el círculo anti-sleep: expect(...).toBeVisible() REINTENTA hasta que aparece — la espera inteligente está integrada en la aserción. Quien entiende esto jamás vuelve a escribir waitForTimeout.</p></div>
 </section>
 
 <!-- 9 · M P2 -->
@@ -538,7 +577,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
     <div data-stagger>
       <div class="card"><h3>🗂️ Estructura nueva</h3>
         <div class="tree" style="font-size:.85rem;line-height:1.8">
-        <div><span class="tr-dir">mi-dojo-lab/</span></div>
+        <div><span class="tr-dir">mi-playwright-pro/</span></div>
         <div>├─ <span class="tr-dir">pages/</span> <span class="tr-c">← tus Page Objects</span></div>
         <div>│&nbsp;&nbsp;└─ <span class="tr-star">login-page.ts</span></div>
         <div>└─ <span class="tr-dir">tests/</span> <span class="tr-c">← solo specs</span></div>
@@ -706,7 +745,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
     <div data-stagger>
       <div class="card"><h3>💉 ({ request })</h3><p>Otro fixture de la casa — cliente HTTP listo, cero navegador.</p></div>
       <div class="card" style="margin-top:.8rem"><h3>📨 Anatomía</h3><p><code class="pill">post(url, { data })</code> envía JSON · <code class="pill">res.status()</code> el código · <code class="pill">res.json()</code> el cuerpo. Los status (200, 401, 404…) ya los conoces del oficio.</p></div>
-      <div class="card" style="margin-top:.8rem"><h3>🗺️ Forma vs realidad</h3><p>Rutas y campos exactos: en <span class="pill">/api/docs</span> del dojo. Estas slides muestran la FORMA — regla de oro del lab.</p></div>
+      <div class="card" style="margin-top:.8rem"><h3>🗺️ Forma vs realidad</h3><p>Rutas y campos exactos: en <span class="pill">/api/docs</span> del dojo. Estas slides muestran la FORMA, la misma regla que en P0.</p></div>
     </div>
   </div>
   <div class="notes"><p>El segundo test (camino triste por API) es el argumento más fuerte: validar el 401 por UI cuesta segundos y depende de mensajes visuales; por API es directo al contrato. Nota que expect aquí no lleva await en status (no es web-first, es valor inmediato) — si alguien pregunta, esa es la razón; si no, no lo compliques.</p></div>
@@ -764,14 +803,14 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
     <div class="cols" style="gap:1.2rem">
       <div>
         <div class="tree" style="font-size:.82rem;line-height:1.75">
-          <div><span class="tr-dir">mi-dojo-lab/</span></div>
+          <div><span class="tr-dir">mi-playwright-pro/</span></div>
           <div>├─ <span class="tr-file">fixtures.ts</span> <span class="tr-c">← tus fixtures (P4)</span></div>
           <div>├─ <span class="tr-dir">pages/</span></div>
           <div>│&nbsp;&nbsp;└─ <span class="tr-star">login-page.ts</span> <span class="tr-c">← POM (P3)</span></div>
           <div>├─ <span class="tr-dir">tests/</span></div>
           <div>│&nbsp;&nbsp;├─ <span class="tr-file">login.spec.ts</span> <span class="tr-c">← describe+fixture (P1, P4)</span></div>
-          <div>│&nbsp;&nbsp;├─ <span class="tr-file">register.spec.ts</span></div>
-          <div>│&nbsp;&nbsp;├─ <span class="tr-file">navigation.spec.ts</span></div>
+          <div>│&nbsp;&nbsp;├─ <span class="tr-file">login-invalid.spec.ts</span> <span class="tr-c">← POM (P3)</span></div>
+          <div>│&nbsp;&nbsp;├─ <span class="tr-file">dashboard.spec.ts</span> <span class="tr-c">← fixture (P4)</span></div>
           <div>│&nbsp;&nbsp;└─ <span class="tr-dir">api/</span></div>
           <div>│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─ <span class="tr-file">auth.spec.ts</span> <span class="tr-c">← API tests (P5)</span></div>
           <div>└─ <span class="tr-file">playwright.config.ts</span></div>
@@ -781,7 +820,7 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
         <div class="cmd"><span class="ps">$</span><span class="ct">npx playwright test</span><span class="copy">📋</span></div>
         <div class="cmd"><span class="ps">$</span><span class="ct">npx playwright show-report</span><span class="copy">📋</span></div>
         <div class="callout" style="margin-top:.8rem"><span class="co-ico">📊</span><p>En el reporte: tus describe como capítulos, API tests en milisegundos, UI tests organizados. <b>Esta estructura es una mini-versión de cómo se ve un framework profesional.</b></p></div>
-        <details class="m-hint"><summary>Pista: specs que aún usan page.fill para login</summary><div class="hint-body"><p>Los que tocan login deben pasar por LoginPage o el fixture. Los demás (navigation, components) pueden seguir directos — no fuerces POM donde no aporta TODAVÍA. Criterio > dogma.</p></div></details>
+        <details class="m-hint"><summary>Pista: specs que aún usan page.fill para login</summary><div class="hint-body"><p>Los que tocan login deben pasar por LoginPage o el fixture. Un spec que no toque el login puede seguir directo — no fuerces POM donde no aporta TODAVÍA. Criterio > dogma.</p></div></details>
       </div>
     </div>
     <div class="m-crit">✅ <span><b>Criterio de éxito:</b> árbol como el de la izquierda, suite completa verde (UI + API), reporte HTML navegable por capítulos.</span></div>
@@ -977,10 +1016,10 @@ function renderFinal(){
   }).join('');
   const d = missionsDone();
   $('#final-msg').textContent =
-    d === M_TOTAL ? '6/6 — tienes un mini-framework hecho a mano. KATA te va a parecer territorio conocido. 🏆' :
+    d === M_TOTAL ? M_TOTAL + '/' + M_TOTAL + ' — tienes un mini-framework hecho a mano. KATA te va a parecer territorio conocido. 🏆' :
     d >= 4 ? d + '/' + M_TOTAL + ' — gran sesión. Las pendientes son tu tarea; el archivo guarda tu avance.' :
     d >= 2 ? d + '/' + M_TOTAL + ' — buen avance. P3 (POM) y P4 (fixture) son las críticas para KATA: priorízalas en casa.' :
-    'El lab queda contigo — avanza a tu ritmo, cada misión construye sobre la anterior. 🌱';
+    'La sesión queda contigo — avanza a tu ritmo, cada misión construye sobre la anterior. 🌱';
   if(d === M_TOTAL) setTimeout(()=>confetti(innerWidth/2, innerHeight*0.3, 140), 450);
 }
 
