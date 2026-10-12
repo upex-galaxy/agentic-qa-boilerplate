@@ -6,7 +6,7 @@
     <title>Agentic QA — el pipeline de testing agéntico</title>
     <meta
       name="description"
-      content="Boilerplate de QA agéntico: siete stages ejecutados por skills, arquitectura KATA sobre Playwright y TypeScript, trazabilidad en Jira/Xray, KATA Academy y los decks de doctrina."
+      content="Boilerplate de QA agéntico: stages ejecutados por skills, arquitectura KATA sobre Playwright y TypeScript, trazabilidad en Jira/Xray, KATA Academy y los decks de doctrina."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -966,7 +966,7 @@
             <div class="stat-rail">
               <div class="stat">
                 <div class="n">IQL</div>
-                <div class="t">ocho stages con nombre</div>
+                <div class="t">stages con nombre</div>
               </div>
               <div class="stat">
                 <div class="n">Decks</div>
@@ -1001,7 +1001,10 @@
                   >
                 </li>
                 <li>
-                  <span>Corre <code>bun install</code> y el installer interactivo</span>
+                  <span
+                    >Corre <code>bun install</code> y <code>bun setup</code>, que abre una página
+                    local con cada pregunta (<code>--headless</code> lo deja en la terminal)</span
+                  >
                 </li>
                 <li>
                   <span>Crea el repo en GitHub vía <code>gh</code> si se lo pedís</span>
@@ -1021,7 +1024,7 @@
         <div class="wrap">
           <div class="sec-head">
             <p class="eyebrow">01 · El pipeline</p>
-            <h2>Ocho stages con nombre, un skill dueño por stage, un solo hilo de trazabilidad</h2>
+            <h2>Stages con nombre, un skill dueño por stage, un solo hilo de trazabilidad</h2>
             <p>
               No son carpetas sueltas: es la secuencia del IQL. Cada stage recibe el artefacto del
               anterior y produce el que el siguiente necesita. Lo que empieza como un acceptance
@@ -1037,7 +1040,7 @@
                 class="diagram d-pipeline"
                 viewBox="0 0 1336 192"
                 role="img"
-                aria-label="Los ocho stages del IQL: Shift-Left, antes del sprint, ejecutado por shift-left-testing; Planning, Execution y Reporting, dentro del sprint, ejecutados por sprint-testing; Documentation por test-documentation, Automation por test-automation y Regression por regression-testing, en el cierre y release; Observation, en producción, declarado y sin skill. Cada stage produce artefactos que alimentan al siguiente."
+                aria-label="Los stages del IQL: Shift-Left, antes del sprint, ejecutado por shift-left-testing; Planning, Execution y Reporting, dentro del sprint, ejecutados por sprint-testing; Documentation por test-documentation, Automation por test-automation y Regression por regression-testing, en el cierre y release; Observation, en producción, declarado y sin skill. Cada stage produce artefactos que alimentan al siguiente."
               >
                 <defs>
                   <marker
@@ -1739,8 +1742,10 @@
                 <h3>Mantener un proyecto al día con <code>bun sync</code></h3>
                 <span class="go">→</span>
                 <p>
-                  Qué sincroniza el updater, qué archivos del proyecto protege y cómo leer la tabla
-                  por superficie y el prompt de paridad con que cierra.
+                  Qué sincroniza el updater, qué archivos del proyecto protege, por qué responde
+                  todo antes de escribir y cómo leer el reporte con que cierra: la tabla por
+                  superficie y el prompt de paridad, en la página local o en la terminal con
+                  <code>--headless</code>.
                 </p>
               </a>
               <a class="deck" href="./harnesses.es.html#migracion">
@@ -1748,7 +1753,9 @@
                 <h3>De la era Claude a tres harnesses</h3>
                 <span class="go">→</span>
                 <p>
-                  Qué hace <code>bun sync</code> la primera vez sobre un repo con el layout viejo.
+                  Qué hace <code>bun sync</code> la primera vez sobre un repo con el layout viejo:
+                  la migración corre al inicio de la misma corrida y se ve en la página o en la
+                  terminal.
                 </p>
               </a>
             </div>

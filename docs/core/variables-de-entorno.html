@@ -434,11 +434,13 @@ resend login</code></pre>
       </p>
       <p>
         Si tu <code>.env</code> todavía tiene una clave retirada (la lista es
-        <code>RETIRED_KEYS</code> en <code>cli/lib/env-schema.ts</code>), <code>bun setup</code> y
-        <code>bun run setup:doctor</code> te ofrecen borrar esas líneas con una sola confirmación,
-        antes de validar. El esquema no las declara, y varlock rechaza una clave no declarada que
-        está vacía. Sin terminal interactiva solo las listan: nunca editan el archivo ni muestran
-        valores.
+        <code>RETIRED_KEYS</code> en <code>cli/lib/env-schema.ts</code>), te ofrecen borrar esas
+        líneas con una sola confirmación, antes de validar: <code>bun setup</code> en una tarjeta de
+        la fase de credenciales (en la página local, o en la terminal con <code>--headless</code>) y
+        <code>bun run setup:doctor</code> en la terminal. El esquema no las declara, y varlock
+        rechaza una clave no declarada que está vacía. Sin terminal interactiva (o con
+        <code>bun setup --non-interactive</code>) solo las listan: nunca editan el archivo ni
+        muestran valores.
       </p>
 
       <h2 id="doctor">Qué te dice el doctor</h2>
@@ -551,8 +553,11 @@ bun run setup:doctor --json   # env_var_scopes[] y harness_level_mcps para un ag
           huella o contraseña al cargar; no queda ningún token en disco.
         </li>
         <li>
-          Corre <code>bun setup</code> y elige 1Password. Para un equipo, el vault es uno compartido
-          (<code>&lt;proyecto&gt;-dev</code>); con un plan personal, tu propio vault.
+          Corre <code>bun setup</code> y, en la fase de credenciales, elige 1Password en la tarjeta
+          "Dónde viven los secretos de este proyecto?" (en la terminal si corres con
+          <code>--headless</code>). Después te pregunta el vault, la cuenta y cómo se autentica la
+          laptop. Para un equipo, el vault es uno compartido (<code>&lt;proyecto&gt;-dev</code>);
+          con un plan personal, tu propio vault.
         </li>
         <li>
           En el vault, un item de tipo Password por variable, con el NOMBRE de la variable como

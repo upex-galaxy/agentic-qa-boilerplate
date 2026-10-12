@@ -6,7 +6,7 @@
     <title>IQL</title>
     <meta
       name="description"
-      content="Resumen del Integrated Quality Lifecycle: 3 fases, 8 stages, 15 steps, 5 ciclos y 4 altitudes, con el contrato agéntico de cada stage, las modalidades y la escalera de artefactos."
+      content="Resumen del Integrated Quality Lifecycle: 3 fases, la escalera de stages, 15 steps, 5 ciclos y 4 altitudes, con el contrato agéntico de cada stage, las modalidades y la escalera de artefactos."
     />
     <meta name="docs-order" content="10" />
     <link rel="stylesheet" href="../../assets/docs.css" />
@@ -25,7 +25,7 @@
         </p>
         <div class="meta-row">
           <span class="badge accent">Metodología</span><span class="badge">3 fases</span
-          ><span class="badge">8 stages</span><span class="badge">15 steps</span
+          ><span class="badge">la escalera de stages</span><span class="badge">15 steps</span
           ><span class="badge">5 ciclos</span><span class="badge">4 altitudes</span>
         </div>
       </header>
@@ -54,7 +54,7 @@
           <li><a href="#bloques">Los cuatro bloques de madurez</a></li>
           <li><a href="#bucle">El bucle completo</a></li>
           <li><a href="#principios">Principios e invariantes</a></li>
-          <li><a href="#stages">Los 8 stages y su contrato agéntico</a></li>
+          <li><a href="#stages">Los stages y su contrato agéntico</a></li>
           <li><a href="#steps">Los 15 steps</a></li>
           <li><a href="#ciclos">Los ciclos internos</a></li>
           <li><a href="#modalidades">Dos modalidades: jira-native y jira-xray</a></li>
@@ -230,12 +230,12 @@
 
       <h2 id="bucle">El bucle completo</h2>
       <p>
-        El ciclo vuelve sobre sí mismo. Los 8 stages se agrupan en cuatro momentos (antes del
-        sprint, dentro del sprint, cierre y release, producción) y alrededor están los eventos del
-        SDLC que producen artefactos sin ser stages. El diagrama dibuja tres flechas de vuelta que
-        un modelo lineal no tiene: el defecto que reabre la ejecución (defecto, fix, retest), el
-        NO-GO de la regresión que devuelve el release a la automatización, y las señales de
-        producción que alimentan el Shift-Left siguiente.
+        El ciclo vuelve sobre sí mismo. Los stages se agrupan en cuatro momentos (antes del sprint,
+        dentro del sprint, cierre y release, producción) y alrededor están los eventos del SDLC que
+        producen artefactos sin ser stages. El diagrama dibuja tres flechas de vuelta que un modelo
+        lineal no tiene: el defecto que reabre la ejecución (defecto, fix, retest), el NO-GO de la
+        regresión que devuelve el release a la automatización, y las señales de producción que
+        alimentan el Shift-Left siguiente.
       </p>
       <figure>
         <div class="frame scroll on-dark">
@@ -245,7 +245,7 @@
           />
         </div>
         <figcaption>
-          Los 8 stages en 4 momentos, con la skill dueña y el nivel de cada uno.
+          Los stages en sus cuatro momentos, con la skill dueña y el nivel de cada uno.
           <a href="../../assets/iql/iql-loop.svg" target="_blank" rel="noopener"
             >Ver a tamaño completo</a
           >
@@ -452,10 +452,13 @@
         </p>
       </div>
 
-      <h2 id="stages">Los 8 stages y su contrato agéntico</h2>
+      <h2 id="stages">Los stages y su contrato agéntico</h2>
       <p>
         El stage es lo que se ejecuta y lo que se gatea. Cada uno declara qué hace el agente, qué
         firma la persona, qué evidencia exige y con cuánta autonomía corre, en una escala de 0 a 5.
+        La escalera completa está en
+        <code>.agents/skills/agentic-qa-core/references/stage-gates.md</code>; los stages que corre
+        cada proyecto, en <code>qa.methodology.stages</code> de <code>.agents/project.yaml</code>.
       </p>
       <div class="table-wrap">
         <table>

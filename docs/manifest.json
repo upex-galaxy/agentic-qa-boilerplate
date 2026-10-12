@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-12T00:46:49.668Z",
+  "generatedAt": "2026-10-12T02:22:00.774Z",
   "children": [
     {
       "type": "folder",
@@ -66,7 +66,7 @@
               "type": "page",
               "path": "core/metodologia/iql.html",
               "title": "IQL",
-              "description": "Resumen del Integrated Quality Lifecycle: 3 fases, 8 stages, 15 steps, 5 ciclos y 4 altitudes, con el contrato agéntico de cada stage, las modalidades y la escalera de artefactos.",
+              "description": "Resumen del Integrated Quality Lifecycle: 3 fases, la escalera de stages, 15 steps, 5 ciclos y 4 altitudes, con el contrato agéntico de cada stage, las modalidades y la escalera de artefactos.",
               "order": 10
             },
             {
@@ -101,7 +101,7 @@
               "type": "page",
               "path": "core/metodologia/este-repo.html",
               "title": "Este repo y el IQL",
-              "description": "Cómo este boilerplate implementa el IQL: los 8 stages y sus skills, la escalera de artefactos, dónde vive la doctrina, las integraciones, los MCPs y el árbol .context/PBI.",
+              "description": "Cómo este boilerplate implementa el IQL: los stages y sus skills, la escalera de artefactos, dónde vive la doctrina, las integraciones, los MCPs y el árbol .context/PBI.",
               "order": 60
             }
           ]

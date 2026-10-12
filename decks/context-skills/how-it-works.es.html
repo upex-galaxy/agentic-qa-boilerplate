@@ -750,7 +750,7 @@ apply? (yes / no)</div>
     <table class="tt tight mt-m">
       <tr><th style="width:330px">Qué</th><th>Qué hace el updater</th><th style="width:250px">Dueño</th></tr>
       <tr><td class="small">Una skill de <span class="mono">CONTEXT_MAP_SKILLS</span></td><td class="small">entrega la carpeta entera <b>una vez</b>, si falta; después nunca la pisa ni la borra</td><td class="small">el proyecto, desde la entrega</td></tr>
-      <tr><td class="small">Su mapa sin generar, o un markdown viejo al lado</td><td class="small">una fila informativa, nunca bloqueante; <span class="mono">bun run setup:doctor</span> imprime la misma línea</td><td class="small">el proyecto</td></tr>
+      <tr><td class="small">Su mapa sin generar, o un markdown viejo al lado</td><td class="small">una fila informativa, nunca bloqueante, en el reporte de cierre (la tabla por superficie, en la página local y en la terminal); <span class="mono">bun run setup:doctor</span> la repite como aviso</td><td class="small">el proyecto</td></tr>
       <tr><td class="small">Cualquier otro <span class="mono">&lt;aspect&gt;-context</span></td><td class="small">nunca lo entrega, nunca lo pisa, nunca lo borra, aunque upstream publicara uno con el mismo slug</td><td class="small">el proyecto, por construcción</td></tr>
       <tr><td class="small"><span class="mono">iql-context</span> (cuerpo y referencias)</td><td class="small">lo sincroniza tal cual; una edición directa sale como fila de paridad</td><td class="small">upstream</td></tr>
       <tr><td class="small">su <span class="mono">project-overrides.md</span></td><td class="small">lo entrega una vez si falta; después nunca lo pisa</td><td class="small">el proyecto</td></tr>

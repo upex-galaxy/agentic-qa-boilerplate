@@ -290,9 +290,11 @@
       <h2 id="verificador">El verificador light al cerrar cada stage</h2>
       <p>
         Un DoD puede quedar marcado mientras el artefacto sigue en el status donde Jira lo dejó al
-        crearlo. El verificador light existe para atrapar lo que se saltó en silencio. Son ocho
-        líneas y el agente las responde con lo que ya hizo en el stage, más una sola lectura extra
-        (un <code>Get Issue</code> sobre la clave principal) para confirmar el status.
+        crearlo. El verificador light existe para atrapar lo que se saltó en silencio. Sus líneas
+        son las de la sección "Light stage verifier" de
+        <code>.agents/skills/agentic-qa-core/references/artifact-lifecycle.md</code>, y el agente
+        las responde con lo que ya hizo en el stage, más una sola lectura extra (un
+        <code>Get Issue</code> sobre la clave principal) para confirmar el status.
       </p>
       <pre data-lang="text"><code>Light stage verifier: &lt;Stage&gt;
 [ ] Artifacts exist: cada artefacto del stage, por KEY

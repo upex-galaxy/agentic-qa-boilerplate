@@ -335,19 +335,32 @@
         <a href="worktrees.html#updater">Worktrees</a>).
       </p>
       <p>
+        Primero pregunta y después escribe: las áreas, los archivos de cada área (cada fila con su
+        "Ver cambios"), los borrados y las claves nuevas de <code>package.json</code> se responden
+        antes de tocar el primer archivo, y luego todo se aplica en un solo paso. Un archivo
+        sincronizado que el proyecto editó y upstream también cambió también es una pregunta: en una
+        corrida interactiva eliges conservar el tuyo, tomar el nuevo o decidir después (con
+        <code>--auto</code> se sobrescribe y el original queda en <code>.backups/</code>). En una
+        terminal con pantalla la corrida se ve en una página local con cada pregunta como tarjeta,
+        mientras la terminal conserva el log completo; <code>--headless</code> lo deja todo en la
+        terminal (<code>bun sync --help</code>).
+      </p>
+      <p>
         Cuando upstream y el proyecto no coinciden en un archivo protegido, el updater no decide
         solo. Cierra con una tabla por superficie y un único prompt de paridad, que guarda en un
         archivo de un solo uso (<code>parity-plan.md</code>, ignorado por git) dentro del proyecto.
-        Cada fila trae su evidencia (encabezados, claves, servidores MCP) y pide una decisión:
-        conservar la versión del proyecto, tomar la de upstream o fusionar. El agente presenta la
-        tabla, espera la respuesta fila por fila y solo aplica lo elegido. Después vuelve a correr
-        tests, tipos y lint.
+        La misma tabla sale en la tarjeta de reporte de la página y en la terminal. Cada fila trae
+        su evidencia (encabezados, claves, servidores MCP) y pide una decisión: conservar la versión
+        del proyecto, tomar la de upstream o fusionar. El agente presenta la tabla, espera la
+        respuesta fila por fila y solo aplica lo elegido. Después vuelve a correr tests, tipos y
+        lint.
       </p>
       <p>
         El camino de vuelta también está escrito. Si en un proyecto consumidor una skill de upstream
-        falla, la sesión no la edita ahí, porque el siguiente update sobrescribiría el cambio.
-        Redacta un issue con la plantilla <code>skill-feedback</code>, le quita las claves de Jira y
-        los hosts del proyecto, y lo muestra al dueño. Solo con su OK se publica con
+        falla, la sesión no la edita ahí, porque el siguiente update que toque ese archivo la
+        pondría a elegir entre perder el arreglo o dejar de recibir los de upstream. Redacta un
+        issue con la plantilla <code>skill-feedback</code>, le quita las claves de Jira y los hosts
+        del proyecto, y lo muestra al dueño. Solo con su OK se publica con
         <code>gh issue create</code>, y después se verifica leyendo el issue de vuelta.
       </p>
 
@@ -454,8 +467,10 @@
         <span class="callout-title">Lo que más se repite</span>
         <p>
           Editar una skill de upstream dentro de un proyecto consumidor. Funciona hasta el próximo
-          <code>bun sync</code>, que la sobrescribe y deja una copia en <code>.backups/</code>. Abre
-          un issue <code>skill-feedback</code>, o declara la ruta en
+          <code>bun sync</code> que traiga cambios de upstream en ese archivo: te obliga a elegir
+          entre tu versión y la nueva, y si tomas la nueva (o corres con <code>--auto</code>) la
+          sobrescribe y deja una copia en <code>.backups/</code>. Abre un issue
+          <code>skill-feedback</code>, o declara la ruta en
           <code>updater.protected_paths</code> sabiendo que dejas de recibir los arreglos de ese
           archivo.
         </p>

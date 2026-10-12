@@ -140,12 +140,16 @@
             <tr>
               <td><strong>Bun</strong></td>
               <td>la mínima que exige el preflight de <code>bun setup</code></td>
-              <td>Bloquea. El preflight de <code>bun setup</code> sale con código 1.</td>
+              <td>
+                Bloquea. El preflight de <code>bun setup</code> se detiene antes de escribir nada.
+              </td>
             </tr>
             <tr>
               <td><strong>Un agente</strong>: Claude Code, OpenCode o Codex (CLI o Desktop)</td>
               <td>última</td>
-              <td>Bloquea. Sin ninguno de los tres, el paso de selección de agentes corta.</td>
+              <td>
+                Bloquea. Sin ninguno de los tres, el preflight se detiene antes de escribir nada.
+              </td>
             </tr>
             <tr>
               <td><code>git</code> y <code>tar</code></td>
@@ -156,10 +160,7 @@
             </tr>
             <tr>
               <td><code>node</code></td>
-              <td>
-                la mínima que exige el preflight (<code>MIN_NODE_MAJOR</code> en
-                <code>cli/doctor.ts</code>)
-              </td>
+              <td>la mínima que exige el preflight (<code>cli/preflight.ts</code>)</td>
               <td>
                 Los hooks ejecutan <code>node .agents/hooks/personality-reinject.mjs</code>. Lo
                 comprueban el doctor del scaffolder y el preflight de <code>bun setup</code>.
@@ -240,49 +241,99 @@ bun setup</code></pre>
 
       <h3 id="setup">Qué hace <code>bun setup</code></h3>
       <p>
-        Es idempotente: cada paso guarda una marca en <code>.template/installer.state.json</code> y
-        una segunda ejecución salta lo que ya terminó.
+        Si tu terminal tiene pantalla, la corrida se ve en una página local que se abre sola (dentro
+        de Orca, como una pestaña de su navegador). Cada pregunta es una tarjeta, y la terminal
+        sigue mostrando el log completo. Con <code>bun setup --headless</code> todo pasa en la
+        terminal, igual que en CI, sin TTY, cuando la lanza un agente o por SSH sin pantalla;
+        <code>--ui</code> abre la página aunque esas reglas digan terminal. Si ninguna página se
+        conecta a los pocos segundos, las preguntas vuelven a la terminal. Los flags y las reglas
+        completas están en <code>bun setup --help</code>.
+      </p>
+      <p>
+        Es idempotente: cada paso guarda una marca en <code>.template/installer.state.json</code> en
+        cuanto termina, así que una corrida interrumpida sigue donde quedó y una segunda ejecución
+        salta lo que ya terminó. Con <code>--non-interactive</code> (o sin TTY) cada pregunta toma
+        su valor por defecto.
       </p>
       <ol class="steps">
         <li>
-          <strong>Detección</strong>
+          <strong>Preflight</strong>
           <p>
-            Comprueba Bun y las dependencias, detecta el binario <code>engram</code> y te deja
-            elegir qué harness configurar: Claude Code, OpenCode o Codex. Tu elección queda en
-            <code>harnesses:</code> (<code>.agents/project.yaml</code>) y luego te ofrece borrar los
-            archivos de los harnesses que dejaste fuera (por defecto los conserva).
+            Antes de preguntar o escribir nada revisa la máquina: las herramientas, que haya al
+            menos un agente, la carpeta del proyecto, la red y el disco. Cada fila sale como ok,
+            aviso o bloqueo. Un bloqueo frena la corrida sin tocar nada (en la página, con un botón
+            "Volver a comprobar"); que falte <code>acli</code> o <code>engram</code> es solo un
+            aviso. Si faltan las dependencias, corre <code>bun install</code> por su cuenta. Cierra
+            con una única confirmación para empezar.
           </p>
         </li>
         <li>
-          <strong>Instalación</strong>
+          <strong>Tu equipo</strong>
           <p>
-            <code>bun install</code>, los navegadores de Playwright (<code>bun run pw:install</code
-            >), Engram con <code>engram setup</code> en cada harness elegido y los skills de la
-            comunidad con <code>bunx skills add</code>.
+            Qué agentes soporta el proyecto: Claude Code, OpenCode o Codex. Tu elección queda en
+            <code>harnesses:</code> (<code>.agents/project.yaml</code>) y te ofrece borrar los
+            archivos de los que dejaste fuera (por defecto los conserva). Aquí eliges también los
+            skills de nivel usuario, una casilla por skill: el que desmarcas queda registrado como
+            rechazado y no se vuelve a ofrecer. También pregunta si conectar el plugin de Engram.
           </p>
         </li>
         <li>
-          <strong>Configuración</strong>
+          <strong>Instalación en segundo plano</strong>
           <p>
-            Antes te pregunta dónde viven los secretos: <code>.env</code> (por defecto) o un gestor
-            (1Password, opción avanzada). Luego pide las credenciales que usan los MCPs y las guarda
-            en <code>.env</code>. Si quieres, también crea el repo en GitHub con <code>gh</code>.
+            Arranca en cuanto respondes Tu equipo: dependencias, los navegadores de Playwright,
+            Engram con <code>engram setup</code> en cada agente elegido, los skills de la comunidad
+            y la reparación de compatibilidad. No pregunta nada; las fases siguientes se responden
+            mientras descarga.
+          </p>
+        </li>
+        <li>
+          <strong>Tu proyecto</strong>
+          <p>
+            La identidad y los entornos de <code>.agents/project.yaml</code> (lo que hacía
+            <code>agents:setup</code>). El ejemplo aparece como pista dentro del campo y nunca se
+            escribe como valor.
+          </p>
+        </li>
+        <li>
+          <strong>Credenciales</strong>
+          <p>
+            Dónde viven los secretos: <code>.env</code> (por defecto) o un gestor (1Password, opción
+            avanzada). Luego las variables que usan los MCPs y las credenciales de Atlassian. Un
+            secreto que escribes en la página va enmascarado y solo llega a <code>.env</code>.
+          </p>
+        </li>
+        <li>
+          <strong>Jira</strong>
+          <p>
+            Autentica <code>acli</code>, sincroniza los catálogos (tu workspace, el estándar de
+            UPEX-Galaxy o saltarlo), te deja elegir los estados y transiciones del workflow que no
+            se resuelven solos y valida con <code>jira:check</code>. Si el login falla, una tarjeta
+            dice qué pasó y te deja reintentar.
+          </p>
+        </li>
+        <li>
+          <strong>GitHub</strong>
+          <p>
+            Opcional: crea el repo con <code>gh</code> y hace el push cuando termina la instalación
+            en segundo plano.
           </p>
         </li>
         <li>
           <strong>Verificación</strong>
           <p>
-            Imprime una tabla con los CLIs externos: cuáles están y cómo instalar los que faltan.
+            Una tabla con los CLIs externos, solo informativa: cuáles están y cómo instalar los que
+            faltan. Además retira las copias en texto plano de credenciales MCP que dejó una versión
+            anterior (ver la sección siguiente).
           </p>
         </li>
         <li>
-          <strong>Configuración inicial</strong>
+          <strong>Listo</strong>
           <p>
-            Rellena <code>.agents/project.yaml</code> (<code>agents:setup</code>), autentica
-            <code>acli</code>, sincroniza los catálogos de Jira (tu workspace, el estándar de
-            UPEX-Galaxy o saltarlo) y valida con <code>jira:check</code>. Al final retira las copias
-            en texto plano de credenciales MCP que dejó una versión anterior (ver la sección
-            siguiente).
+            Una tarjeta de reporte con lo hecho, lo saltado o con aviso, los errores y el tiempo, y
+            debajo los próximos pasos: abrir tu agente, <code>/agentic-qa-onboard</code>,
+            <code>/project-discovery</code> y lo que quedó pendiente. Al terminar se guarda una
+            copia estática en <code>.session/runs/</code> (ignorada por git) y la página te muestra
+            la ruta.
           </p>
         </li>
       </ol>
@@ -524,7 +575,7 @@ codex      # Codex CLI (Codex Desktop usa la misma config del repo)</code></pre>
 
       <h3 id="stages-iql">La fase 3 son los stages del IQL</h3>
       <p>
-        El QA diario sigue los ocho stages del IQL (Integrated Quality Lifecycle). Cada uno tiene un
+        El QA diario sigue los stages del IQL (Integrated Quality Lifecycle). Cada uno tiene un
         skill que lo ejecuta, salvo Observation, que está declarado sin skill. La metodología
         completa está en <a href="metodologia/iql.html">IQL</a> y cómo la implementa este repo, en
         <a href="metodologia/este-repo.html">El IQL en este repo</a>.
@@ -1319,7 +1370,7 @@ subagente (contexto limpio)
         <a class="card" href="metodologia/iql.html">
           <span class="badge accent">Metodología</span>
           <h3>El IQL</h3>
-          <p>Las fases, los ocho stages y los artefactos que conectan el trabajo de QA.</p>
+          <p>Las fases, los stages y los artefactos que conectan el trabajo de QA.</p>
         </a>
         <a class="card" href="exploracion/index.html">
           <span class="badge accent">Exploración</span>

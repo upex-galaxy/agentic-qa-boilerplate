@@ -2210,8 +2210,10 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
           <p class="lede">
             Un proyecto creado cuando las instrucciones vivían en <code>CLAUDE.md</code> y las
             skills en <code>.claude/skills/</code> recibe una migración preflight la primera vez que
-            corre <code>bun sync</code> — antes de que se sincronice un solo componente, porque
-            sincronizar primero sobre una estructura vieja es exactamente cómo se pierde trabajo.
+            corre <code>bun sync</code>, antes de que se sincronice un solo componente, porque
+            sincronizar primero sobre una estructura vieja es exactamente cómo se pierde trabajo. La
+            migración se ve dentro de esa misma corrida, como un aviso en la página local o en la
+            terminal si corrés con <code>--headless</code>.
           </p>
 
           <figure>
