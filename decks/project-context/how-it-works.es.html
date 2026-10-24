@@ -446,7 +446,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 
   <!-- 2. CUÁNDO SÍ, CUÁNDO NO -->
   <section class="slide compact" data-title="Cuándo usarla">
-    <p class="kicker">Alcance · 2 de 15</p>
+    <p class="kicker">Alcance · 2 de 16</p>
     <h2 class="h2">Cuándo usarla y cuándo <span class="grad">pasarle la posta</span> a otra</h2>
     <div class="grid g2 mt-m" style="gap:28px;align-items:start">
       <div class="card card-accent">
@@ -456,6 +456,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
           <li>Escribir o actualizar el <b>Master Test Plan</b>: qué testear y por qué, rankeado por riesgo.</li>
           <li>Refrescar todo en orden, cuando lo pedís explícitamente (<span class="mono">refresh-all</span>).</li>
           <li>Crear una skill <span class="mono">&lt;aspect&gt;-context</span> propia del proyecto para un aspecto que las skills que vienen con el boilerplate no cubren.</li>
+          <li>Ver qué hace el producto que ningún test ejercita, ordenado por riesgo (<span class="mono">coverage</span>).</li>
         </ul>
       </div>
       <div class="stack" style="gap:10px">
@@ -476,7 +477,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 
   <!-- 3. MAPA -->
   <section class="slide" data-title="Mapa de la skill">
-    <p class="kicker">Mapa · 3 de 15</p>
+    <p class="kicker">Mapa · 3 de 16</p>
     <h2 class="h2" style="font-size:42px">Un modo por corrida, un <span class="grad">gate</span> por artefacto</h2>
     <div class="wf-row mt-m">
       <div class="wf-node gate"><p class="n">Paso 1</p><p class="t">Resolver el modo</p><p class="c">primer token de los argumentos<br>o pregunta</p></div>
@@ -496,13 +497,14 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="wf-row">
       <div class="wf-node alt"><p class="n">refresh-all</p><p class="t">Los cuatro en orden fijo</p><p class="c">data → e2e → api → test-plan</p></div>
       <div class="wf-node alt"><p class="n">context-skill</p><p class="t">Skill propia del proyecto</p><p class="c">.agents/skills/&lt;aspect&gt;-context/</p></div>
+      <div class="wf-node alt"><p class="n">coverage</p><p class="t">Comportamientos vs tests</p><p class="c">lista de brechas por riesgo</p></div>
     </div>
-    <div class="notes">El modo sale del primer token de los argumentos: si coincide con un modo de la tabla, ese token es el modo y el resto se le pasa tal cual. features es sinónimo de e2e. Si no hay token reconocible, la skill pregunta. refresh-all nunca incluye context-skill.</div>
+    <div class="notes">El modo sale del primer token de los argumentos: si coincide con un modo de la tabla, ese token es el modo y el resto se le pasa tal cual. features es sinónimo de e2e. Si no hay token reconocible, la skill pregunta. refresh-all nunca incluye context-skill ni coverage.</div>
   </section>
 
   <!-- 4. CREATE VS UPDATE -->
   <section class="slide compact" data-title="CREATE y UPDATE">
-    <p class="kicker">El gate · 4 de 15</p>
+    <p class="kicker">El gate · 4 de 16</p>
     <h2 class="h2">Nunca pisa un mapa sin <span class="grad">tu aprobación</span></h2>
     <div class="grid g2 mt-s" style="gap:28px;grid-template-columns:1.35fr 1fr;align-items:start">
       <svg class="dg" style="max-height:400px" viewBox="0 0 640 470" role="img" aria-label="Detección de modo CREATE o UPDATE de un mapa">
@@ -551,7 +553,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 
   <!-- 5. ANATOMÍA DEL MAPA -->
   <section class="slide compact" data-title="Anatomía de un mapa">
-    <p class="kicker">Los mapas · 5 de 15</p>
+    <p class="kicker">Los mapas · 5 de 16</p>
     <h2 class="h2">Un mapa es un <span class="grad">HTML</span> dentro de su skill</h2>
     <div class="grid g2 mt-s" style="gap:28px;align-items:start">
       <div>
@@ -582,7 +584,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 
   <!-- 6. MODO DATA -->
   <section class="slide compact" data-title="Modo data">
-    <p class="kicker">Modo data · 6 de 15</p>
+    <p class="kicker">Modo data · 6 de 16</p>
     <h2 class="h2">Cómo funciona el sistema, <span class="grad">por dentro</span></h2>
     <div class="grid g2 mt-s" style="gap:28px;align-items:start">
       <div class="stack" style="gap:12px">
@@ -609,7 +611,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 
   <!-- 7. MODO E2E -->
   <section class="slide compact" data-title="Modo e2e">
-    <p class="kicker">Modo e2e (sinónimo features) · 7 de 15</p>
+    <p class="kicker">Modo e2e (sinónimo features) · 7 de 16</p>
     <h2 class="h2">Primero las <span class="grad">personas y sus recorridos</span>, después el catálogo</h2>
     <div class="grid g3 mt-m" style="gap:20px;align-items:start">
       <div class="card card-accent"><p class="lbl">Personas</p><p class="small mt-s">Son los <b>roles que el código reconoce</b>, con evidencia (enums, guards, UI condicional), no demografía inventada. Cada una trae su fila de permisos y la clave de cuenta de prueba que necesita (<span class="mono">&lt;ENV&gt;_&lt;ROLE&gt;_EMAIL</span>).</p></div>
@@ -625,7 +627,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 
   <!-- 8. MODO API -->
   <section class="slide compact" data-title="Modo api">
-    <p class="kicker">Modo api · 8 de 15</p>
+    <p class="kicker">Modo api · 8 de 16</p>
     <h2 class="h2">Cómo opera el negocio <span class="grad">a través de la API</span></h2>
     <div class="grid g2 mt-s" style="gap:28px;align-items:start">
       <div class="stack" style="gap:12px">
@@ -650,7 +652,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 
   <!-- 9. MODO TEST-PLAN: QUÉ -->
   <section class="slide compact" data-title="Modo test-plan">
-    <p class="kicker">Modo test-plan · 9 de 15</p>
+    <p class="kicker">Modo test-plan · 9 de 16</p>
     <h2 class="h2">Qué testear y <span class="grad">por qué importa</span></h2>
     <div class="grid g2 mt-s" style="gap:28px;align-items:start">
       <div class="stack" style="gap:12px">
@@ -675,7 +677,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 
   <!-- 10. MODO TEST-PLAN: JIRA -->
   <section class="slide compact" data-title="El MTP en Jira">
-    <p class="kicker">Modo test-plan · 10 de 15</p>
+    <p class="kicker">Modo test-plan · 10 de 16</p>
     <h2 class="h2">El MTP se escribe en <span class="grad">Jira</span>, no en un archivo</h2>
     <svg class="dg mt-s" viewBox="0 0 1100 190" role="img" aria-label="Escritura del Master Test Plan en el Epic de Jira y lectura de vuelta">
       <defs><marker id="pc-a10" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="ar"/></marker></defs>
@@ -717,7 +719,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 
   <!-- 11. REFRESH-ALL -->
   <section class="slide compact" data-title="refresh-all">
-    <p class="kicker">Modo refresh-all · 11 de 15</p>
+    <p class="kicker">Modo refresh-all · 11 de 16</p>
     <h2 class="h2">Los cuatro, en <span class="grad">orden fijo</span> y uno por vez</h2>
     <div class="wf-row mt-m">
       <div class="wf-node"><p class="n">1 · data</p><p class="t">Mapa de datos</p><p class="c">el resto lo usa de entrada</p></div>
@@ -733,12 +735,12 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="card"><p class="lbl" style="color:var(--bad)">Cuándo para</p><p class="small mt-s">Una dependencia dura que falla o un overwrite que rechazás cortan la cadena ahí.</p></div>
       <div class="card"><p class="lbl">Solo si lo pedís</p><p class="small mt-s">Nunca se infiere de "refrescá el contexto". Es el paso que recomienda <span class="mono">/project-discovery</span> al terminar, en una <b>sesión limpia</b>, porque consume muchos tokens.</p></div>
     </div>
-    <div class="notes">Las dependencias blandas que faltan siguen siendo Discovery Gaps, exactamente como las define cada referencia. refresh-all no incluye context-skill.</div>
+    <div class="notes">Las dependencias blandas que faltan siguen siendo Discovery Gaps, exactamente como las define cada referencia. refresh-all no incluye context-skill ni coverage.</div>
   </section>
 
   <!-- 12. CONTEXT-SKILL -->
   <section class="slide compact" data-title="Modo context-skill">
-    <p class="kicker">Modo context-skill · 12 de 15</p>
+    <p class="kicker">Modo context-skill · 12 de 16</p>
     <h2 class="h2">Una skill de <span class="grad">criterio</span> para otro aspecto del proyecto</h2>
     <div class="grid g2 mt-s" style="gap:28px;align-items:start">
       <div class="stack" style="gap:12px">
@@ -755,9 +757,29 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="notes">El contrato de una skill de contexto está en agentic-qa-core/references/skill-scaffold.md §3 a §5. Nunca copia una tabla, una lista de entidades o de endpoints del mapa a la skill. Toda edición posterior la gobierna skill-refinement-protocol.md: nada se aplica solo. Fuente: project-context/references/context-skill.md.</div>
   </section>
 
-  <!-- 13. SALVAGUARDAS -->
+  <!-- 13. COVERAGE -->
+  <section class="slide compact" data-title="Modo coverage">
+    <p class="kicker">Modo coverage · 13 de 16</p>
+    <h2 class="h2">Qué hace el producto que <span class="grad">ningún test</span> ejercita</h2>
+    <div class="wf-row mt-s">
+      <div class="wf-node gate"><p class="n">collect · script</p><p class="t">Comportamientos y tests</p><p class="c">mapas (BR / FEAT) · manifest KATA<br>en producción · TMS</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node"><p class="n">juicio · IA</p><p class="t">Qué test cubre qué</p><p class="c">exercises o weak, con una línea<br>de evidencia · riesgo del MTP</p></div>
+      <span class="wf-arr">→</span>
+      <div class="wf-node gate"><p class="n">classify · script</p><p class="t">Un bucket por comportamiento</p><p class="c">ordena por riesgo · diff contra<br>la corrida anterior</p></div>
+    </div>
+    <div class="grid g3 mt-m" style="gap:20px;align-items:start">
+      <div class="card card-accent"><p class="lbl">Cuatro buckets</p><p class="small mt-s"><span class="mono">automated</span> (un ATC en la rama de producción) · <span class="mono">manual-only</span> · <span class="mono">weak</span> (el test pasa por ahí, pero nada de lo que chequea fallaría) · <span class="mono">uncovered</span>. Las brechas son weak + uncovered.</p></div>
+      <div class="card"><p class="lbl">Recalculable</p><p class="small mt-s">Los juicios se guardan por id estable y vuelven en la próxima corrida; un juicio cuyo mapa o test cambió se marca viejo y se rejuzga primero. Así medís el avance corrida a corrida.</p></div>
+      <div class="card"><p class="lbl" style="color:var(--warn)">Lo que firmás vos</p><p class="small mt-s">Una Tech Story de cobertura por brecha o por módulo, solo después de tu OK: <span class="mono">propose</span> es un dry run. El riesgo ordena; el ROI decide después, por Test.</p></div>
+    </div>
+    <p class="small dim mt-s">Escribe solo en <span class="mono">.session/project-context/coverage/</span> del checkout principal. Sin mapas generados, para con una nota; sin TMS, <span class="mono">manual-only</span> sale como <span class="mono">unknown</span>, nunca 0.</p>
+    <div class="notes">Es el paso de inventario del flujo discovery-driven: comportamiento en producción sin Story. No edita tests ni mapas y no entra en refresh-all. Script: bun run context:coverage collect, classify y propose. El veredicto weak y el nivel de riesgo son juicio de la IA con evidencia por fila; los buckets, el orden y el diff son aritmética. Fuente: project-context/references/coverage.md y discovery-driven-doctrine.md §1, §3 y §7.</div>
+  </section>
+
+  <!-- 14. SALVAGUARDAS -->
   <section class="slide compact" data-title="Salvaguardas">
-    <p class="kicker">Salvaguardas · 13 de 15</p>
+    <p class="kicker">Salvaguardas · 14 de 16</p>
     <h2 class="h2">Lo que la skill <span class="grad">nunca</span> hace</h2>
     <table class="tt mt-m" style="font-size:16px;border-spacing:0 5px">
       <tr><th style="width:420px">Nunca</th><th>Qué hace en su lugar</th></tr>
@@ -773,9 +795,9 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="notes">Las capacidades salen de metadata.requires_capabilities y se resuelven por el sufijo del nombre de la herramienta, según preflight-gate.md §8: nunca un fallback silencioso. Para diagrams, la capacidad se resuelve por la presencia de la skill diagram-design, no por una herramienta MCP.</div>
   </section>
 
-  <!-- 14. ENTRADAS Y SALIDAS + INVOCACIÓN -->
+  <!-- 15. ENTRADAS Y SALIDAS + INVOCACIÓN -->
   <section class="slide compact" data-title="Invocación">
-    <p class="kicker">Invocación · 14 de 15</p>
+    <p class="kicker">Invocación · 15 de 16</p>
     <h2 class="h2">Cómo se invoca y <span class="grad">dónde queda</span> cada cosa</h2>
     <div class="grid g2 mt-s" style="gap:28px;align-items:start">
       <div class="stack" style="gap:12px">
@@ -795,6 +817,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
           <tr><td class="mono small">api</td><td class="small"><span class="mono">business-api-map.html</span> en <span class="mono">business-api-context</span></td></tr>
           <tr><td class="mono small">test-plan</td><td class="small">Epic <b>QA Master Test Plan</b> en Jira · caché <span class="mono">.context/PBI/qa-artifacts/master-test-plan.md</span></td></tr>
           <tr><td class="mono small">context-skill</td><td class="mono small">.agents/skills/&lt;aspect&gt;-context/</td></tr>
+          <tr><td class="mono small">coverage</td><td class="small"><span class="mono">gap-list.md</span> en <span class="mono">.session/project-context/coverage/</span> · Tech Stories en Jira solo con tu OK</td></tr>
         </table>
         <p class="small dim mt-s">Cada mapa va en <span class="mono">references/</span> de su skill. Lista canónica: <span class="mono">CONTEXT_MAP_SKILLS</span> en <span class="mono">cli/lib/context-maps.ts</span>.</p>
       </div>
@@ -802,9 +825,9 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="notes">El primer token que coincide con un modo es el modo; lo demás se reenvía sin tocar al modo elegido. En context-skill, lo que sigue es el aspecto. Antes de cualquier escritura en Jira se carga /acli, y la caché del MTP se recarga con bun run jira:sync-issues get o con bun run context:hydrate.</div>
   </section>
 
-  <!-- 15. HANDOFFS Y CIERRE -->
+  <!-- 16. HANDOFFS Y CIERRE -->
   <section class="slide compact" data-title="Handoffs y cierre">
-    <p class="kicker">Cierre · 15 de 15</p>
+    <p class="kicker">Cierre · 16 de 16</p>
     <h2 class="h2">Qué viene <span class="grad">antes y después</span></h2>
     <div class="grid g3 mt-m" style="gap:22px;align-items:start">
       <div class="card">
@@ -828,7 +851,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="notes">Fin del recorrido. La skill no corre workflows de testing: deja el contexto listo para que las skills de etapa lo usen. El mapa del slide 3 resume todo: resolver un modo, cargar su referencia, y pasar el gate de CREATE o UPDATE antes de escribir.</div>
   </section>
 
-  <div class="deck-footer"><span class="mono">/project-context · mapas · MTP</span><span class="slide-number" data-current="1" data-total="15"></span></div>
+  <div class="deck-footer"><span class="mono">/project-context · mapas · MTP</span><span class="slide-number" data-current="1" data-total="16"></span></div>
 </div>
 
 <!-- keyboard-nav hint (ported from defect-management deck) -->

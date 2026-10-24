@@ -518,7 +518,12 @@
                 <code>context-skill</code> crea una skill de criterio propia del proyecto, solo para
                 un aspecto que las context skills de mapas no cubren: cita sus fuentes y nunca copia
                 su contenido
-                (<code>.agents/skills/project-context/references/context-skill.md</code>).
+                (<code>.agents/skills/project-context/references/context-skill.md</code>). El modo
+                <code>coverage</code> no escribe un mapa: cruza los mapas con los tests (manifest
+                KATA y TMS) y deja una lista de brechas recalculable en <code>.session/</code>, con
+                un script para la parte aritmética (<code>bun run context:coverage</code>) y la IA
+                para el juicio de qué test ejercita qué
+                (<code>.agents/skills/project-context/references/coverage.md</code>).
               </td>
             </tr>
             <tr>
