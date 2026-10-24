@@ -504,7 +504,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
 .trig .ev small{display:block;font:400 11px 'Inter',sans-serif;color:var(--text-3);margin-top:2px}
 .trig .ev:hover{border-color:var(--accent);color:var(--text-1)}
 .trig .ev.on{background:color-mix(in srgb,var(--accent) 16%,transparent);border-color:var(--accent);color:var(--text-1)}
-.wfs{display:grid;grid-template-columns:repeat(5,1fr);gap:9px}
+.wfs{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
 .wf{border:1px solid var(--border);border-radius:11px;padding:10px 11px;background:var(--surface);opacity:.45;transition:all .25s;min-height:118px}
 .wf .nm{font:700 12.5px 'JetBrains Mono',monospace;color:var(--text-1)}
 .wf .ds{font-size:11.5px;color:var(--text-3);margin-top:3px;line-height:1.4}
@@ -748,14 +748,15 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <p class="kicker mt-m">el pipeline de testing de este repo, de punta a punta</p>
     <div class="flow">
       <div class="fn"><div class="t">build.yml</div><div class="d">El framework compila y su documentación sigue consistente? Types, lint, gates de documentación, <code class="k">playwright test --list</code>.</div><div class="r">en cada Pull Request</div></div><div class="fa">→</div>
+      <div class="fn"><div class="t">unit-tests.yml</div><div class="d">Las herramientas del propio repo (<code class="k">cli/</code>, <code class="k">scripts/</code>) siguen andando? <code class="k">bun test</code> + los gates que build.yml no corre.</div><div class="r">en cada push</div></div><div class="fa">→</div>
       <div class="fn"><div class="t">smoke.yml</div><div class="d">La app está viva? Solo tests <code class="k">@critical</code>.</div><div class="r">02:00 UTC + manual</div></div><div class="fa">→</div>
       <div class="fn"><div class="t">sanity.yml</div><div class="d">Funciona ESTE cambio? Un archivo o un <code class="k">--grep</code>.</div><div class="r">manual, con inputs</div></div><div class="fa">→</div>
       <div class="fn"><div class="t">regression.yml</div><div class="d">Se rompió algo más? Integration + E2E completos.</div><div class="r">00:00 UTC + manual</div></div><div class="fa">→</div>
       <div class="fn k"><div class="t">Allure + TMS</div><div class="d">Reporte publicado en GitHub Pages (o en el portal privado si está configurado); resultados al TMS (en Xray, import JUnit al RTR).</div><div class="r">jobs finales</div></div>
     </div>
-    <p class="small dim mt-m">Cada caja es un archivo en <code class="k">.github/workflows/</code>. Los cuatro comparten el mismo esqueleto; por eso, cuando entiendas uno, entiendes todos. La estrategia (por qué cuatro y no uno) es el Capítulo 6, en la Parte II.</p>
+    <p class="small dim mt-m">Cada caja es un archivo en <code class="k">.github/workflows/</code>. Los cinco comparten el mismo esqueleto; por eso, cuando entiendas uno, entiendes todos. La estrategia (por qué varios y no uno) es el Capítulo 6, en la Parte II.</p>
     </div>
-    <div class="notes">Dolor → patrón. CI = archivo declarativo + máquina limpia + evidencia persistente. Mostramos los cuatro workflows como cadena; la estrategia se justifica en Parte II.</div>
+    <div class="notes">Dolor → patrón. CI = archivo declarativo + máquina limpia + evidencia persistente. Mostramos los cinco workflows como cadena; la estrategia se justifica en Parte II.</div>
   </section>
 
   <!-- 5. VOCABULARIO -->
@@ -911,6 +912,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
       <div>
         <div class="wfs">
           <div class="wf" data-fires="pr"><div class="nm">build.yml</div><div class="ds"><code class="k">on: pull_request: branches: [main]</code></div><div class="why">Valida types + lint + gates de documentación + compile de los specs en cada PR. No corre tests.</div></div>
+          <div class="wf" data-fires="push pr dispatch"><div class="nm">unit-tests.yml</div><div class="ds"><code class="k">on: push</code> (cualquier rama, sin tags) · <code class="k">pull_request</code> de forks · <code class="k">workflow_dispatch</code></div><div class="why">Corre <code class="k">bun test</code> (los tests de <code class="k">cli/</code> y <code class="k">scripts/</code>, no las suites de Playwright) y los gates de repo que build.yml no corre. Inerte fuera del repo del boilerplate.</div></div>
           <div class="wf" data-fires="cron2 dispatch"><div class="nm">smoke.yml</div><div class="ds"><code class="k">schedule</code> 02:00 · <code class="k">workflow_dispatch</code></div><div class="why">@critical contra staging. Con el botón podés elegir env, Allure y execution_key.</div></div>
           <div class="wf" data-fires="dispatch"><div class="nm">sanity.yml</div><div class="ds">solo <code class="k">workflow_dispatch</code></div><div class="why">Nunca automático: siempre le decís QUÉ correr (grep, archivo, tipo).</div></div>
           <div class="wf" data-fires="cron0 dispatch"><div class="nm">regression.yml</div><div class="ds"><code class="k">schedule</code> 00:00 · <code class="k">workflow_dispatch</code></div><div class="why">Integration + E2E completos. El único con input video_record.</div></div>
@@ -918,11 +920,11 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
         </div>
         <div class="trig-note"></div>
         <div class="trig-notes" hidden>
-          <div data-ev="pr">Solo <b>build.yml</b>. Ninguna suite corre en PR: el framework se valida, los tests no se ejecutan contra staging en cada push (costaría minutos y credenciales por cada PR, incluidos los de forks, que no tienen secrets). Correr una suite en PR es una decisión de la Parte II.</div>
-          <div data-ev="push">Solo <b>pages.yml</b>, y solo si el push tocó una ruta de la lista <code class="k">paths:</code> del propio workflow (kata-academy, pages-home, decks, docs y el workflow mismo; la fuente es ese bloque). Un push que cambia un test no publica nada.</div>
+          <div data-ev="pr"><b>build.yml</b>, y <b>unit-tests.yml</b> solo si el PR viene de un fork: un PR del mismo repo ya tuvo su run de push sobre el mismo commit, y GitHub lo muestra en el PR. Ninguna suite corre en PR: el framework se valida, los tests no se ejecutan contra staging en cada push (costaría minutos y credenciales por cada PR, incluidos los de forks, que no tienen secrets). Correr una suite en PR es una decisión de la Parte II.</div>
+          <div data-ev="push"><b>unit-tests.yml</b> siempre, en cualquier rama: corre los tests del propio repo y no publica nada. <b>pages.yml</b> solo si el push tocó una ruta de la lista <code class="k">paths:</code> del propio workflow (kata-academy, pages-home, decks, docs y el workflow mismo; la fuente es ese bloque). Un push que cambia un test no publica nada.</div>
           <div data-ev="cron0">Solo <b>regression.yml</b>. Sin inputs (un cron no tiene formulario): <code class="k">TEST_ENV</code> cae en <code class="k">'staging'</code> por el <code class="k">|| 'staging'</code> del bloque env, y <code class="k">STP_EXECUTION_KEY</code> cae en el secret. Dos horas antes que smoke para no pisarse.</div>
           <div data-ev="cron2">Solo <b>smoke.yml</b>. Corre a las 02:00 UTC: a esa hora el deploy nocturno de la app ya debería estar arriba. GitHub advierte que los crons se retrasan en la hora en punto bajo carga; por eso conviene repartirlos.</div>
-          <div data-ev="dispatch">Cualquiera de los cuatro que declare <code class="k">workflow_dispatch</code>, uno a la vez: vos elegís cuál en la UI (o con <code class="k">gh workflow run &lt;archivo&gt;</code>). El formulario se genera de los <code class="k">inputs</code>. build.yml NO tiene botón: solo PR.</div>
+          <div data-ev="dispatch">Cualquiera de los cinco que declare <code class="k">workflow_dispatch</code>, uno a la vez: vos elegís cuál en la UI (o con <code class="k">gh workflow run &lt;archivo&gt;</code>). El formulario se genera de los <code class="k">inputs</code>. build.yml NO tiene botón: solo PR.</div>
           <div data-ev="day1">Solo <b>pages-squash.yml</b> (<code class="k">cron '0 4 1 * *'</code>): reescribe gh-pages a un único commit para que la rama generada no crezca sin límite. Un cron de mantenimiento, no de testing.</div>
         </div>
       </div>
@@ -1358,7 +1360,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
           <li><b>FIFO.</b> Los pending arrancan en el orden en que empezaron a esperar.</li>
           <li><b>Nivel workflow o nivel job.</b> Todos los workflows lo declaran a nivel workflow; pages.yml usa un grupo fijo (<code class="k">pages-docs-hub</code>) porque siempre publica al mismo sitio.</li>
         </ul>
-        <div class="callout mt-m"><h4>La pregunta que decide</h4><p>«Este workflow deja algo publicado o compartido?» Si no (validar, lint, compilar): <b>cancelar</b>, es más barato. Si sí (reporte, deploy, rama gh-pages): <b>encolar</b>, porque cancelar a medias deja un estado que parece completo y no lo es. Todos nuestros workflows publican salvo build.yml, que cancela.</p></div>
+        <div class="callout mt-m"><h4>La pregunta que decide</h4><p>«Este workflow deja algo publicado o compartido?» Si no (validar, lint, compilar): <b>cancelar</b>, es más barato. Si sí (reporte, deploy, rama gh-pages): <b>encolar</b>, porque cancelar a medias deja un estado que parece completo y no lo es. Todos nuestros workflows publican salvo build.yml y unit-tests.yml, que cancelan (unit-tests.yml nunca en main: ahí cada push es trabajo que ya aterrizó y merece su propio run, así que cada commit de main lleva su propio grupo; <code class="k">cancel-in-progress: false</code> no alcanza, porque el grupo guarda un solo run pendiente y lo cancela cuando llega otro).</p></div>
       </div>
     </div>
     </div>
