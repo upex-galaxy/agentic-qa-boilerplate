@@ -497,7 +497,7 @@ kbd,.kbd{font-family:var(--font-mono);font-size:12.5px;padding:2px 8px;border-ra
     <span class="arr">→</span>
     <div class="node"><span class="nb">0</span><h5>Modalidad TMS</h5><p>gate: Xray licenciado? + <span class="mono">{{TC_CREATION_STAGE}}</span></p><span class="br warn">jira-xray | jira-native</span></div>
     <span class="arr">→</span>
-    <div class="node"><span class="nb">S</span><h5>Alcance</h5><p>module · ticket · bug · ad-hoc</p><span class="br">plan.md escrito</span></div>
+    <div class="node"><span class="nb">S</span><h5>Alcance</h5><p>module · ticket · bug · discovery · ad-hoc</p><span class="br">plan.md escrito</span></div>
     <span class="arr">→</span>
     <div class="node"><span class="nb">1</span><h5>Analyze</h5><p>escenarios reales + código</p><span class="br">1 (pre+acción) = 1 TC</span></div>
     <span class="arr">→</span>
@@ -601,7 +601,7 @@ kbd,.kbd{font-family:var(--font-mono);font-size:12.5px;padding:2px 8px;border-ra
 <!-- 7 · ALCANCES -->
 <section class="slide" data-title="Alcances">
   <p class="kicker">elige el alcance por la ENTRADA, no por la salida</p>
-  <h2 class="h2" data-anim="fade-up">Cuatro alcances, un solo pipeline</h2>
+  <h2 class="h2" data-anim="fade-up">Los alcances, un solo pipeline</h2>
   <table class="dtable">
     <thead><tr><th>Alcance</th><th>Entrada</th><th>Volumen típico</th><th>Sesgo por defecto</th></tr></thead>
     <tbody>
@@ -609,11 +609,12 @@ kbd,.kbd{font-family:var(--font-mono);font-size:12.5px;padding:2px 8px;border-ra
       <tr><td><b>Ticket-driven</b></td><td>una Story QA Approved del sprint</td><td>3-8 escenarios</td><td>ATP/ATR por Story</td></tr>
       <tr><td><b>Bug-driven</b></td><td>un bug cerrado con fix verificado</td><td>0-2 escenarios</td><td>ROI sesgado ARRIBA, «falló una vez, puede fallar de nuevo»</td></tr>
       <tr><td><b>Ad-hoc / Exploratory</b></td><td>escenarios nuevos de exploración</td><td>1-10 escenarios</td><td>aplica los 3 filtros con dureza</td></tr>
+      <tr><td><b>Discovery-driven</b></td><td>una brecha sin Story, anclada a una Tech Story de cobertura</td><td>1-10 por brecha, 20-100+ por módulo</td><td>nada marcado «observed» llega a Candidate sin que una persona confirme que es intencional</td></tr>
     </tbody>
   </table>
   <div class="callout"><h4>Al confirmar el alcance, la IA escribe el plan</h4><p><span class="mono">&lt;scope&gt;</span> = <span class="mono">&lt;JIRA-KEY&gt;</span> (ticket/bug) · <span class="mono">&lt;module-slug&gt;</span> · <span class="mono">&lt;YYYY-MM-DD&gt;-adhoc</span>. Escribe <span class="mono">.session/test-documentation/&lt;scope&gt;/plan.md</span>: goal (scope + modalidad + nº de TCs esperados), inputs (PBI, ATP, bugs previos), fases, riesgos y checklist de verificación, y registra el checkpoint en <span class="mono">progress.md</span>.</p></div>
-  <p class="foot-note">Un ID de Story → ticket-driven · un ID de bug → bug-driven · un nombre de módulo → module-driven · notas de sesión → ad-hoc.</p>
-  <div class="notes">Los cuatro alcances comparten el pipeline Analyze → Prioritize → Document; solo cambian la fuente de entrada y los defaults. El plan-first es obligatorio (contrato de sesión): nada se crea en el TMS sin plan.md escrito.</div>
+  <p class="foot-note">Un ID de Story → ticket-driven · un ID de bug → bug-driven · una Tech Story de cobertura → discovery-driven · un nombre de módulo → module-driven · notas de sesión → ad-hoc.</p>
+  <div class="notes">Los alcances comparten el pipeline Analyze → Prioritize → Document; solo cambian la fuente de entrada y los defaults. El plan-first es obligatorio (contrato de sesión): nada se crea en el TMS sin plan.md escrito.</div>
 </section>
 
 <!-- 8 · REGLA DE ORO BUG-DRIVEN -->

@@ -598,15 +598,15 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div>
     <p class="part-no">PARTE 01</p>
     <h1 class="h1">Los Scopes<br><span class="grad">Elige por el Input, no por el Output</span></h1>
-    <p class="lede">Cuatro scopes comparten el mismo pipeline Analyze→Prioritize→Document. Solo cambian la fuente de entrada y los defaults. El input decide el scope.</p>
+    <p class="lede">Todos los scopes comparten el mismo pipeline Analyze→Prioritize→Document. Solo cambian la fuente de entrada y los defaults. El input decide el scope.</p>
   </div>
-  <div class="notes">Module / Ticket / Bug / Ad-hoc. Si te dan un story ID → ticket. Bug ID → bug. Nombre de módulo o salida de sesión → module o ad-hoc.</div>
+  <div class="notes">Module / Ticket / Bug / Discovery / Ad-hoc. Si te dan un story ID → ticket. Bug ID → bug. Tech Story de cobertura → discovery. Nombre de módulo o salida de sesión → module o ad-hoc.</div>
 </section>
 
-<!-- 6. 4 SCOPES TABLE -->
-<section class="slide" data-title="4 Scopes">
-  <p class="kicker">los cuatro scopes</p>
-  <h2 class="h2" data-anim="fade-up">Módulo · Historia · Bug · Exploratorio</h2>
+<!-- 6. SCOPES TABLE -->
+<section class="slide" data-title="Scopes">
+  <p class="kicker">los scopes</p>
+  <h2 class="h2" data-anim="fade-up">Módulo · Historia · Bug · Descubrimiento · Exploratorio</h2>
   <table class="dtable mt-s" style="font-size:14px">
     <thead><tr><th>Scope</th><th>Input</th><th>Volumen</th><th>Cuándo</th></tr></thead>
     <tbody>
@@ -614,6 +614,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <tr><td><b>Ticket-driven</b></td><td>Una US <span class="mono">QA Approved</span> de sprint</td><td>3-8</td><td>Salida de una sesión sprint-testing. ATP/ATR por US.</td></tr>
       <tr><td><b>Bug-driven</b></td><td>Un bug cerrado con fix verificado</td><td>0-2</td><td>Corre la decisión bug-driven. ROI sesgado arriba: "falló una vez, puede fallar de nuevo".</td></tr>
       <tr><td><b>Ad-hoc / Exploratorio</b></td><td>Escenarios nuevos de testing exploratorio</td><td>1-10</td><td>Aplica los 3 filtros con dureza — suelen ser validaciones de una sola vez.</td></tr>
+      <tr><td><b>Discovery-driven</b></td><td>Una brecha sin Story, anclada a una Tech Story de cobertura</td><td>1-10 por brecha</td><td>Comportamiento ya en producción. Lo observado se marca «observed» y una persona confirma si es intencional antes de cualquier Candidate.</td></tr>
     </tbody>
   </table>
   <div class="callout mt-m"><h4>Mismo pipeline, distinto punto de entrada</h4><p>El scope NO cambia el método (Analyze→Prioritize→Document); cambia de dónde sacas los escenarios y qué labels por defecto aplicas.</p></div>

@@ -575,7 +575,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="agenda-row"><span class="anum">02</span><span class="at">Capa UI — el loop por AC, edge cases, transiciones inválidas, DevTools</span><span class="ad">oro</span></div>
     <div class="agenda-row"><span class="anum">03</span><span class="at">Capa API — la matriz de status codes y la sonda de RLS A/B</span><span class="ad">magenta</span></div>
     <div class="agenda-row"><span class="anum">04</span><span class="at">Capa DB — sondas de constraints, barridos de integridad, RLS en SQL</span><span class="ad">cian</span></div>
-    <div class="agenda-row"><span class="anum">05</span><span class="at">Disciplina — triage bloqueante/no-bloqueante, TTL, sin NOT RUN, evidencia</span><span class="ad">el oficio</span></div>
+    <div class="agenda-row"><span class="anum">05</span><span class="at">Disciplina — triage bloqueante/no-bloqueante, TTL, pasa solo si se observó, evidencia</span><span class="ad">el oficio</span></div>
   </div>
   <p class="qhint mt-l">3 quizzes interactivos a lo largo del recorrido — haz clic en las respuestas.</p>
   <div class="notes">Seis partes: el marco de ejes (capas vs niveles vs tipos), el gate de smoke, las tres capas (UI/API/DB) y la disciplina transversal. El corazón es entender qué prueba cada capa — y que las capas se atraviesan SIEMPRE, sin importar el nivel o tipo de prueba.</div>
@@ -989,7 +989,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div>
     <p class="part-no">EL OFICIO</p>
     <h1 class="h1">La Disciplina<br><span class="grad">Que Hace la Pasada Confiable</span></h1>
-    <p class="lede">Cuándo detenerse y cuándo seguir, cómo tratar el tiempo, y por qué ningún test puede quedar en NOT RUN.</p>
+    <p class="lede">Cuándo detenerse y cuándo seguir, cómo tratar el tiempo, y por qué un test pasa solo si se observó en su entorno.</p>
   </div>
   <div class="notes">La capa transversal: triage de findings, TTL, status propagation, evidencia. Lo que separa una pasada profesional de un click-around.</div>
 </section>
@@ -1036,14 +1036,14 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="notes">La escalera TTL de 3 opciones por prioridad: fixture > clock-mock > defer escrito. Nunca un BLOCKED desnudo — siempre "BLOCKED — needs time fixture" + opción + razón.</div>
 </section>
 
-<!-- 30. NO NOT RUN + EVIDENCE -->
-<section class="slide" data-title="No NOT RUN">
+<!-- 30. OBSERVATION RULE + EVIDENCE -->
+<section class="slide" data-title="Pasa solo si se observó">
   <p class="kicker">cerrar la pasada con rigor</p>
-  <h2 class="h2" data-anim="fade-up">Sin NOT RUN · Evidencia que Sirve</h2>
+  <h2 class="h2" data-anim="fade-up">Pasa Solo si se Observó · Evidencia que Sirve</h2>
   <div class="grid g2 mt-s">
     <div class="card card-accent">
       <h4>Propagación de estado</h4>
-      <p class="dim">Al cerrar Execution, cada outline / TC tiene <b>PASSED o FAILED</b>. Sin NOT RUN. Si uno queda NOT RUN: o está fuera de scope (di por qué en Notes) o está incompleto (vuelve al loop).</p>
+      <p class="dim">Un TC es <b>PASSED o FAILED</b> solo si se observó en el entorno que nombra su precondición. Un test unitario, un CI verde, leer el código u otro entorno lo dejan en <b>NOT RUN</b>, nunca en FAILED. Un NOT RUN sube la escalera: recrear en el entorno de pruebas, QA difiere con su autoridad y deja una tarea de seguimiento, después desarrolladores, y el dueño solo si hay duda.</p>
     </div>
     <div class="card card-accent">
       <h4>Disciplina de evidencia</h4>
@@ -1055,7 +1055,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     </div>
   </div>
   <div class="callout mt-m"><h4>El log es el handoff a Reporting</h4><p>El bloque Execution de <span class="mono">test-session-memory.md</span> (smoke + tablas UI/API/DB + Findings) es lo que Reporting consume: los Findings alimentan los bugs, los pass/fail alimentan el ATR.</p></div>
-  <div class="notes">Sin NOT RUN: todo termina PASSED o FAILED. Evidencia en el estado de fallo, nombrada y gitignored. El memory de Execution es el input de Reporting (Findings→bugs, pass/fail→ATR).</div>
+  <div class="notes">Pasa solo si se observó: PASSED o FAILED exigen observar el caso en el entorno de su precondición; lo demás es NOT RUN con su razón (BLOCKED mientras la escalera sigue abierta, DEFERRED (execution) cuando QA lo difirió con tarea). Esa razón no es el veredicto Deferred del ROI. Evidencia en el estado de fallo, nombrada y gitignored. El memory de Execution es el input de Reporting (Findings→bugs, pass/fail→ATR).</div>
 </section>
 
 <!-- 31. QUIZ 3 -->
@@ -1075,14 +1075,14 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="qitem">
       <div class="qq"><span class="qn">Q2</span><span>Un TC valida que un magic link expira a los 15 min, pero no hay forma de adelantar el reloj del entorno. Cómo lo cierras?</span></div>
       <div class="opts">
-        <div class="opt"><span class="mk">A</span><span>Lo dejas en <span class="mono">NOT RUN</span></span></div>
+        <div class="opt"><span class="mk">A</span><span>Lo dejas en <span class="mono">NOT RUN</span> sin razón</span></div>
         <div class="opt"><span class="mk">B</span><span><span class="mono">BLOCKED</span> a secas — no se pudo correr</span></div>
-        <div class="opt" data-correct="1"><span class="mk">C</span><span><span class="mono">BLOCKED — needs time fixture</span> + la opción elegida y la razón</span></div>
+        <div class="opt" data-correct="1"><span class="mk">C</span><span><span class="mono">NOT RUN</span> con razón <span class="mono">BLOCKED — needs time fixture</span> + la opción elegida, y sube la escalera</span></div>
       </div>
-      <div class="qexp"><b>BLOCKED — needs time fixture.</b> Nunca un BLOCKED desnudo ni un NOT RUN. Documenta el borde, por qué no se pudo, y el follow-up (opción 3: defer escrito). Así la cobertura no se pierde en silencio y viaja a Reporting.</div>
+      <div class="qexp"><b>NOT RUN con su razón.</b> No se observó, así que no puede ser PASSED ni FAILED. Nunca un NOT RUN o un BLOCKED desnudo: documenta el borde, por qué no se pudo, y el camino. La opción 3 (defer escrito) es la deferral de QA de la escalera: <span class="mono">DEFERRED (execution)</span> con su tarea de seguimiento. Así la cobertura no se pierde en silencio y viaja a Reporting.</div>
     </div>
   </div>
-  <div class="notes">Las dos reglas de disciplina: cosmético = no-bloqueante (sigue), y nunca BLOCKED/NOT RUN desnudo (siempre con razón + camino).</div>
+  <div class="notes">Las dos reglas de disciplina: cosmético = no-bloqueante (sigue), y nunca BLOCKED/NOT RUN desnudo (siempre con razón + camino por la escalera).</div>
 </section>
 
 <!-- 32. WHOLE PASS AT A GLANCE -->
@@ -1104,7 +1104,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <li><b>Smoke primero</b> — Go/No-Go del ambiente, ≤10 min, siempre revisa la red.</li>
     <li><b>Capas por tipo de feature</b> — el orden lo decide qué cambió; cada capa prueba su verdad.</li>
     <li><b>Triagea cada finding</b> — bloqueante detiene, no-bloqueante registra y sigue.</li>
-    <li><b>Cierra con rigor</b> — sin NOT RUN, evidencia en el estado de fallo, Findings al handoff de Reporting.</li>
+    <li><b>Cierra con rigor</b> — pasa solo lo observado, cada NOT RUN con su razón, evidencia en el estado de fallo, Findings al handoff de Reporting.</li>
   </ul>
   <div class="notes">El recap del flujo completo: smoke → UI/API/DB (orden por feature) → triage → status → findings a Reporting. Las tres fuerzas en una pasada.</div>
 </section>
@@ -1124,7 +1124,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <li><b>Confirma en DB tras cada write</b> — el 201 no basta.</li>
       <li><b>Sondas negativas: éxito = bug</b> — en transacción + ROLLBACK.</li>
       <li><b>Prueba las transiciones inválidas</b> — ahí viven los defectos.</li>
-      <li><b>Cierra sin NOT RUN</b> — cada TC PASSED o FAILED, con evidencia.</li>
+      <li><b>Pasa solo lo observado</b> — PASSED o FAILED en el entorno de la precondición; lo demás, NOT RUN con su razón.</li>
     </ul>
   </div>
   <div class="callout mt-m"><h4>La meta</h4><p>Que ningún defecto cruce las tres capas sin ser visto: ni el que la UI esconde, ni el que la API maquilla, ni el que la DB corrompe en silencio.</p></div>
@@ -1138,7 +1138,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="steps s3 mt-l">
     <div class="step"><div class="num">1</div><h4>Cada capa, su verdad</h4><p>La UI muestra, la API contrata, la DB persiste. Un 201 no prueba la base; una pantalla verde no prueba la API.</p></div>
     <div class="step"><div class="num">2</div><h4>El negativo es el oro</h4><p>Los status de error, las transiciones inválidas, las sondas de constraint (éxito=bug) y RLS A/B cazan lo que el happy path nunca toca.</p></div>
-    <div class="step"><div class="num">3</div><h4>Disciplina sobre impulso</h4><p>Smoke primero, triage graduado, sin NOT RUN. La cobertura completa vale más que parar por el primer hallazgo.</p></div>
+    <div class="step"><div class="num">3</div><h4>Disciplina sobre impulso</h4><p>Smoke primero, triage graduado, pasa solo lo observado. La cobertura completa vale más que parar por el primer hallazgo.</p></div>
   </div>
   <div class="notes">Los tres conceptos núcleo: cada capa su verdad, el valor del negativo/seguridad, y la disciplina de la pasada.</div>
 </section>
@@ -1147,7 +1147,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 <section class="slide center tc" data-title="Cierre">
   <div>
     <h1 class="h1"><span class="grad">Tres Capas. Una Verdad. Ningún Punto Ciego.</span></h1>
-    <p class="lede" style="margin:14px auto">Smoke valida el ambiente → la Trifuerza valida la feature: UI (lo que se ve), API (el contrato), DB (lo que persiste). Prueba el negativo, confirma una capa abajo, cierra sin NOT RUN.</p>
+    <p class="lede" style="margin:14px auto">Smoke valida el ambiente → la Trifuerza valida la feature: UI (lo que se ve), API (el contrato), DB (lo que persiste). Prueba el negativo, confirma una capa abajo, da por pasado solo lo que observaste.</p>
     <p class="lede" style="margin:14px auto">← → navegar · S notas del orador · O resumen · T tema</p>
   </div>
   <div class="notes">Cierra atando las tres capas y la disciplina. La Trifuerza es cómo un defecto no cruza las tres capas sin ser visto.</div>

@@ -512,13 +512,14 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <section class="slide" data-title="Entrada + scope">
     <p class="kicker">antes de nada — qué entra y a qué tamaño</p>
     <h2 class="h2" data-anim="fade-up">Elige el <span class="grad">scope</span> primero, una sola vez</h2>
-    <div class="callout"><h4>La entrada viene de /test-documentation (Documentation)</h4><p>Solo los TCs con veredicto <b>Candidate</b> llegan a automation. <b>Manual</b> y <b>Deferred</b> son terminales. Mapeo: Module ← module-driven · Ticket ← ticket-driven · Regression ← bug-driven · ad-hoc → donde encaje.</p></div>
+    <div class="callout"><h4>La entrada viene de /test-documentation (Documentation)</h4><p>Solo los TCs con veredicto <b>Candidate</b> llegan a automation. <b>Manual</b> y <b>Deferred</b> son terminales. Los dos skills usan los mismos nombres de scope: el nombre dice el ORIGEN y Macro / Medium / Micro solo dicen el tamaño. module-driven (Macro) · ticket-driven (Medium) · bug-driven (Micro) · discovery-driven (según la brecha) · ad-hoc → donde encaje.</p></div>
     <table class="tt">
       <thead><tr><th>Scope</th><th>Entrada</th><th>Salida</th><th>Úsalo cuando</th></tr></thead>
       <tbody>
         <tr><td><b>Module-driven</b> (Macro)</td><td>Un módulo + lista de TCs candidatos</td><td>1 spec de módulo + N specs de ATC</td><td>Lote de 10+ tests; primera pasada sobre un área nueva</td></tr>
         <tr><td><b>Ticket-driven</b> (Medium)</td><td>Un Story ID con escenarios</td><td>1 plan de implementación del ticket</td><td>Una user story completa — default del trabajo de sprint</td></tr>
-        <tr><td><b>Regression-driven</b> (Micro)</td><td>Un TC concreto (post-bugfix)</td><td>1 plan de implementación de ATC</td><td>Un test de regresión tras un fix — unidad mínima</td></tr>
+        <tr><td><b>Bug-driven</b> (Micro)</td><td>Un TC concreto (post-bugfix)</td><td>1 plan de implementación de ATC</td><td>Un test de regresión tras un fix: unidad mínima (antes se llamaba Regression-driven)</td></tr>
+        <tr><td><b>Discovery-driven</b> (Macro por módulo; Medium o Micro por brecha)</td><td>Los TCs Candidate de una Tech Story de cobertura, sin Story detrás</td><td>Lo mismo que el tamaño que le toque</td><td>Cubrir comportamiento que ya está en producción y que ninguna Story especificó</td></tr>
       </tbody>
     </table>
     <p class="small dim mt-m">Ante la duda, PREGUNTA al usuario. Nunca asumas "module" solo porque aparecen varios IDs de TC en el briefing.</p>
@@ -771,20 +772,20 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <!-- 16a · CICLO DE VIDA DEL TC -->
   <section class="slide" data-title="Ciclo de vida del TC">
     <p class="kicker">tres transiciones que esta skill es dueña</p>
-    <h2 class="h2" data-anim="fade-up">El TC avanza con el código, y llega a <span class="grad">Automated</span> solo en <span class="mono">main</span></h2>
+    <h2 class="h2" data-anim="fade-up">El TC avanza con el código, y llega a <span class="grad">Automated</span> solo en la rama de producción</h2>
     <table class="tt">
       <thead><tr><th>Momento</th><th>Transición</th><th>Estado después</th></tr></thead>
       <tbody>
         <tr><td><b>Abre Phase 2 · Code</b></td><td class="mono">start_automation</td><td><b>In Automation</b></td></tr>
         <tr><td><b>Abre el PR del ticket</b> (bajo <span class="mono">sdet</span>, hacia el trunk)</td><td class="mono">create_pr</td><td><b>Pull Request</b></td></tr>
-        <tr><td><b>El PR final de la suite mergea a <span class="mono">main</span></b> con CI verde ahí</td><td class="mono">merged</td><td><b>Automated</b></td></tr>
+        <tr><td><b>El código llega a la rama de producción</b> (<span class="mono">git_strategy.branches.production</span>; bajo <span class="mono">sdet</span>, el PR final de la suite) con CI verde ahí</td><td class="mono">merged</td><td><b>Automated</b></td></tr>
       </tbody>
     </table>
     <div class="cols c2 mt-m">
       <div class="card"><h4>Señal 1 · el link</h4><p>El test automatizado se vincula al <span class="mono">Test</span> manual que automatiza con el link type <span class="mono">test_automation</span> (outward <i>"automation test for"</i>), resuelto por slug, nunca literal.</p></div>
-      <div class="card"><h4>Señal 2 · los labels</h4><p><b>+ automated</b> y <b>− automation-candidate</b> en el <span class="mono">Test</span>: son mutuamente excluyentes. Se cambian en <span class="mono">merged</span>, cuando el TC llega de verdad a Automated, nunca en un merge al trunk.</p></div>
+      <div class="card"><h4>Señal 2 · los labels</h4><p><b>+ automated</b> y <b>− automation-candidate</b> en el <span class="mono">Test</span>: son mutuamente excluyentes. Se cambian en <span class="mono">merged</span>, cuando el TC llega de verdad a Automated, nunca en un merge al trunk o a la rama de integración.</p></div>
     </div>
-    <div class="callout warn"><h4>Mergear al trunk NO es Automated</h4><p>Las transiciones salen por <span class="mono">/test-documentation</span> + <span class="mono">[ISSUE_TRACKER_TOOL]</span>, con cada slug resuelto contra <span class="mono">.agents/jira-workflows.json</span>. Slug sin mapear? El fallback de <span class="mono">artifact-lifecycle.md</span> §4: lista las transiciones vivas, pregunta una vez, dispara el id vivo con tu OK. Nunca se salta en silencio.</p></div>
+    <div class="callout warn"><h4>Mergear al trunk o a la rama de integración NO es Automated</h4><p>Las transiciones salen por <span class="mono">/test-documentation</span> + <span class="mono">[ISSUE_TRACKER_TOOL]</span>, con cada slug resuelto contra <span class="mono">.agents/jira-workflows.json</span>. Slug sin mapear? El fallback de <span class="mono">artifact-lifecycle.md</span> §4: lista las transiciones vivas, pregunta una vez, dispara el id vivo con tu OK. Nunca se salta en silencio.</p></div>
     <div class="notes">Canon: agentic-qa-core/references/artifact-lifecycle.md §1, fila Test. Antes de esta skill, test-documentation dejó el TC en Candidate (approve_to_automate). En un batch fleet, estas escrituras en Jira son solo del conductor: dos sesiones transicionando el mismo TC dejan un historial contradictorio.</div>
   </section>
 

@@ -736,7 +736,7 @@ Listas de tests del ATP y del ATR = DERIVADAS de la membership del ATS (S17)</di
       </tbody>
     </table>
     <div class="grid g2 mt-m">
-      <div class="card"><p class="lbl">Casos dependientes del tiempo</p><p class="small mt-s">TTL, magic links, OTPs: elegir la opción más alta: TTL corto de test → clock-mock → defer explícito documentado. Nunca un «BLOCKED» a secas: al cierre <b>todo TC está PASSED o FAILED</b>.</p></div>
+      <div class="card"><p class="lbl">Casos dependientes del tiempo</p><p class="small mt-s">TTL, magic links, OTPs: elegir la opción más alta: TTL corto de test → clock-mock → defer explícito documentado. Nunca un «BLOCKED» a secas: al cierre cada TC está <b>PASSED o FAILED solo si se observó</b> en su entorno, o en NOT RUN con su razón (el defer escrito es la deferral de QA, con tarea de seguimiento).</p></div>
       <div class="card"><p class="lbl">Evidencia</p><p class="small mt-s">Capturas, traces y logs bajo <span class="mono">evidence/</span> del ticket (gitignored). Se captura <b>el bug</b>, no la navegación hacia él.</p></div>
     </div>
     <div class="notes">Esta regla protege la cobertura: pausar un pase de 17 TCs por un hallazgo cosmético desperdicia el run; un blocker genuino sí detiene al instante.</div>
