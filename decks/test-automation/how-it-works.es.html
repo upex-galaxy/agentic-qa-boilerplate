@@ -512,14 +512,14 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <section class="slide" data-title="Entrada + scope">
     <p class="kicker">antes de nada — qué entra y a qué tamaño</p>
     <h2 class="h2" data-anim="fade-up">Elige el <span class="grad">scope</span> primero, una sola vez</h2>
-    <div class="callout"><h4>La entrada viene de /test-documentation (Documentation)</h4><p>Solo los TCs con veredicto <b>Candidate</b> llegan a automation. <b>Manual</b> y <b>Deferred</b> son terminales. Los dos skills usan los mismos nombres de scope: el nombre dice el ORIGEN y Macro / Medium / Micro solo dicen el tamaño. module-driven (Macro) · ticket-driven (Medium) · bug-driven (Micro) · discovery-driven (según la brecha) · ad-hoc → donde encaje.</p></div>
+    <div class="callout"><h4>La entrada viene de /test-documentation (Documentation)</h4><p>Solo los TCs con veredicto <b>Candidate</b> firmado por una persona llegan a automation: antes de planear, el gate de origen de TCs lee cada TC del TMS, y si falta o no está firmado la sesión se detiene y manda el scope a /test-documentation. Este skill nunca crea un Test ni puntúa ROI. <b>Manual</b> y <b>Deferred</b> son terminales. Los dos skills usan los mismos nombres de scope: el nombre dice el ORIGEN y Macro / Medium / Micro solo dicen el tamaño. module-driven (Macro) · ticket-driven (Medium) · bug-driven (Micro) · discovery-driven (según la brecha) · ad-hoc → donde encaje.</p></div>
     <table class="tt">
       <thead><tr><th>Scope</th><th>Entrada</th><th>Salida</th><th>Úsalo cuando</th></tr></thead>
       <tbody>
         <tr><td><b>Module-driven</b> (Macro)</td><td>Un módulo + lista de TCs candidatos</td><td>1 spec de módulo + N specs de ATC</td><td>Lote de 10+ tests; primera pasada sobre un área nueva</td></tr>
         <tr><td><b>Ticket-driven</b> (Medium)</td><td>Un Story ID con escenarios</td><td>1 plan de implementación del ticket</td><td>Una user story completa — default del trabajo de sprint</td></tr>
         <tr><td><b>Bug-driven</b> (Micro)</td><td>Un TC concreto (post-bugfix)</td><td>1 plan de implementación de ATC</td><td>Un test de regresión tras un fix: unidad mínima (antes se llamaba Regression-driven)</td></tr>
-        <tr><td><b>Discovery-driven</b> (Macro por módulo; Medium o Micro por brecha)</td><td>Los TCs Candidate de una Tech Story de cobertura, sin Story detrás</td><td>Lo mismo que el tamaño que le toque</td><td>Cubrir comportamiento que ya está en producción y que ninguna Story especificó</td></tr>
+        <tr><td><b>Discovery-driven</b> (Macro por módulo; Medium o Micro por brecha)</td><td>Los TCs Candidate firmados de una Tech Story de cobertura, sin Story detrás (una brecha sola no es entrada)</td><td>Lo mismo que el tamaño que le toque</td><td>Cubrir comportamiento que ya está en producción y que ninguna Story especificó</td></tr>
       </tbody>
     </table>
     <p class="small dim mt-m">Ante la duda, PREGUNTA al usuario. Nunca asumas "module" solo porque aparecen varios IDs de TC en el briefing.</p>
