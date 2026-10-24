@@ -614,6 +614,15 @@ codex      # Codex CLI (Codex Desktop usa la misma config del repo)</code></pre>
               <td>ATR, comentario de QA y bugs</td>
             </tr>
             <tr>
+              <td>Execution sin ticket</td>
+              <td>a demanda, en el sprint o después</td>
+              <td><code>/exploratory-testing</code></td>
+              <td>
+                Escenarios candidatos ejecutados en vivo, marcados NEW, WEAK o COVERED contra la
+                cobertura que ya existe
+              </td>
+            </tr>
+            <tr>
               <td>Documentation</td>
               <td>después del sprint</td>
               <td><code>/test-documentation</code></td>
@@ -664,6 +673,15 @@ codex      # Codex CLI (Codex Desktop usa la misma config del repo)</code></pre>
             Ticket en "Ready For QA" o un retest de bug. Planifica, explora UI, API y DB, y reporta
             ATP, ATR, ATS y bugs en el TMS. Si la historia pasó por Shift-Left dentro de la ventana
             que declara <code>/sprint-testing</code>, se salta parte de la planificación.
+          </p>
+        </div>
+        <div class="card">
+          <span class="badge accent">Sin ticket</span>
+          <h3>/exploratory-testing</h3>
+          <p>
+            Un módulo, un flujo o la app entera, sin historia de por medio. Arma un charter, reparte
+            el reconocimiento entre varios agentes, intenta refutar cada hallazgo y te pregunta si
+            lo observado es lo esperado. Solo pasa a documentación lo que no estaba cubierto.
           </p>
         </div>
         <div class="card">
@@ -982,6 +1000,10 @@ subagente (contexto limpio)
               <td><code>/sprint-testing</code> con la clave o el número de sprint</td>
             </tr>
             <tr>
+              <td>Explorar un módulo, un flujo o la app sin ticket</td>
+              <td><code>/exploratory-testing</code></td>
+            </tr>
+            <tr>
               <td>Documentar tests en Jira/Xray con ROI</td>
               <td><code>/test-documentation</code></td>
             </tr>
@@ -996,6 +1018,10 @@ subagente (contexto limpio)
             <tr>
               <td>Anotar una captura de un bug visual</td>
               <td>"anota este bug" (<code>bug-screenshot-annotation</code>)</td>
+            </tr>
+            <tr>
+              <td>Armar y publicar la página de evidencia de un ticket o un bug</td>
+              <td>"publica la evidencia" (<code>evidence-artifact</code>)</td>
             </tr>
             <tr>
               <td>Traer un issue de Jira con todos sus campos</td>
@@ -1145,6 +1171,14 @@ subagente (contexto limpio)
           </p>
         </div>
         <div class="card">
+          <span class="badge accent">Execution sin ticket</span>
+          <h3>exploratory-testing</h3>
+          <p>
+            Exploración por módulo, flujo o barrido completo. Produce hallazgos verificados y
+            escenarios candidatos con su marca de cobertura.
+          </p>
+        </div>
+        <div class="card">
           <span class="badge accent">Documentation</span>
           <h3>test-documentation</h3>
           <p>
@@ -1270,6 +1304,16 @@ subagente (contexto limpio)
           <span class="badge accent">Sprint</span>
           <h3>sprint-testing</h3>
           <p>QA manual por ticket, de punta a punta.</p>
+        </a>
+        <a
+          class="card"
+          href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/exploratory-testing/how-it-works.es.html"
+          target="_blank"
+          rel="noopener"
+        >
+          <span class="badge accent">Exploración</span>
+          <h3>exploratory-testing</h3>
+          <p>La exploración sin ticket, del charter al handoff.</p>
         </a>
         <a
           class="card"

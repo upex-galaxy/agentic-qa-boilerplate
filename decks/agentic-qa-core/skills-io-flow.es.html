@@ -267,6 +267,7 @@ ul.plain b{color:var(--t1)}
       ▼
 <span class="f4">FASE 4 · Testing</span>              <span class="ar">qa-boilerplate</span>
       ├─ 4a sprint-testing      <span class="ar">QA manual por ticket</span>
+      ├─ 4a exploratory-testing <span class="ar">Execution sin ticket · alimenta 4b</span>
       ├─ 4b test-documentation  <span class="ar">TMS + ROI</span>
       ├─ 4c test-automation     <span class="ar">KATA · solo verdict Candidate</span>
       └─ 4d regression-testing  <span class="ar">release gate GO / NO-GO</span>
@@ -471,6 +472,14 @@ ul.plain b{color:var(--t1)}
       </div>
 
       <div class="exit"><b>exit 0</b> → ticket <b>qa_approved</b> (o <b>blocked</b> con bugs filed)</div>
+
+      <div class="proc">
+        <div class="proc-hd"><span class="pid">X</span><h3>Execution sin ticket <span class="muted">(/exploratory-testing)</span></h3><span class="repo qa">qa</span></div>
+        <div class="io deps"><span class="io-k">skills</span><div><span class="chip mand">adversarial-verification.md — MANDATORIO</span><span class="chip mand">discovery-driven-doctrine.md — MANDATORIO</span><span class="chip">playwright-cli</span><span class="chip">mkd</span><span class="chip">acli</span></div></div>
+        <div class="io in"><span class="io-k">stdin ←</span><div>gap list de <code>project-context coverage</code> (opcional) · <code>kata-manifest.json</code> · Tests del módulo en el TMS · mapas de negocio · <code>master-test-plan.md</code> · <code>module-context.md</code></div></div>
+        <div class="io out"><span class="io-k">stdout →</span><div><code>charter.md</code> · <code>findings/FNN-*.md</code> · <b>candidate-scenarios.md</b> con cada candidato NEW / WEAK / COVERED y <code>oracle: observed</code> hasta que una persona confirma</div></div>
+        <div class="io jira"><span class="io-k">jira ⇄</span><div>Solo con aprobación: bugs bajo <b class="hi-jira">QA Defect Management</b> · Tech Story de cobertura bajo <b class="hi-jira">QA Test Repository</b> · sección <code>## Module Context (QA)</code> de la Epic</div></div>
+      </div>
     </article>
 
     <!-- ══════════════════ TAB 5 · 4b TMS ══════════════════ -->
