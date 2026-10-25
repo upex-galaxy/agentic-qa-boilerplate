@@ -568,7 +568,7 @@ LAYER 1 · APP                 la app corriendo · runtime alcanzable · board �
     <table class="tt sm mt-m">
       <thead><tr><th style="width:170px">Estado</th><th>En un workflow skill (<span class="mono">sprint-testing</span>, <span class="mono">test-automation</span>…)</th><th>En este skill</th></tr></thead>
       <tbody>
-        <tr><td><span class="st a">A · sin binario</span></td><td><b>Silencio total.</b> No se nombra, no se recomienda, no es prerequisito, no entra en el ATR ni en el barrido de tokens de bloqueo. El flujo escribe su launch file y el humano pega las líneas.</td><td><b>Una línea</b>, y solo porque el usuario PIDIÓ orquestación; después se continúa por el fallback.</td></tr>
+        <tr><td><span class="st a">A · sin binario</span></td><td><b>Silencio total.</b> No se nombra, no se recomienda, no es prerequisito, no entra en el ATR ni en el barrido de tokens de bloqueo. El flujo escribe su launch file y el humano pega las líneas. La única excepción es <span class="mono">/sprint-conductor</span>, que corre solo sobre Orca: una línea y se detiene.</td><td><b>Una línea</b>, y solo porque el usuario PIDIÓ orquestación; después se continúa por el fallback.</td></tr>
         <tr><td><span class="st b">B · binario, runtime inalcanzable</span></td><td>Silencio (mismo fallback).</td><td>Un intento de abrir el runtime, un re-chequeo; si sigue inalcanzable se trata como estado A.</td></tr>
         <tr><td><span class="st c">C · listo</span></td><td>El refuerzo se activa sin anunciarse: el runtime lanza los workers y les entrega el prompt idéntico, y ellos reportan al mailbox ADEMÁS de a los tokens de archivo.</td><td>Modo completo: conductor / worker / automation.</td></tr>
       </tbody>

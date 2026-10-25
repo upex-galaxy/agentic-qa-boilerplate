@@ -685,6 +685,16 @@ codex      # Codex CLI (Codex Desktop usa la misma config del repo)</code></pre>
           </p>
         </div>
         <div class="card">
+          <span class="badge accent">Sprint en flota</span>
+          <h3>/sprint-conductor</h3>
+          <p>
+            El sprint entero corrido por varios testers a la vez, uno por ticket, y el owner mirando
+            todo desde el Sprint Board. El conductor no prueba: arranca, vigila el entorno de
+            pruebas, cierra cada worker verificando sus artefactos y retoma la flota después de un
+            reinicio. Necesita Orca.
+          </p>
+        </div>
+        <div class="card">
           <span class="badge accent">Codificar</span>
           <h3>/test-documentation, luego /test-automation</h3>
           <p>
@@ -1004,6 +1014,10 @@ subagente (contexto limpio)
               <td><code>/exploratory-testing</code></td>
             </tr>
             <tr>
+              <td>Correr el sprint en flota y mirarlo desde el Sprint Board</td>
+              <td><code>/sprint-conductor</code></td>
+            </tr>
+            <tr>
               <td>Documentar tests en Jira/Xray con ROI</td>
               <td><code>/test-documentation</code></td>
             </tr>
@@ -1183,6 +1197,14 @@ subagente (contexto limpio)
           </p>
         </div>
         <div class="card">
+          <span class="badge accent">Sprint en flota</span>
+          <h3>sprint-conductor</h3>
+          <p>
+            Conduce una flota de workers de sprint-testing desde el Sprint Board: arranque,
+            vigilancia del entorno, cierre verificado y retoma. Requiere Orca.
+          </p>
+        </div>
+        <div class="card">
           <span class="badge accent">Documentation</span>
           <h3>test-documentation</h3>
           <p>
@@ -1318,6 +1340,16 @@ subagente (contexto limpio)
           <span class="badge accent">Exploración</span>
           <h3>exploratory-testing</h3>
           <p>La exploración sin ticket, del charter al handoff.</p>
+        </a>
+        <a
+          class="card"
+          href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/sprint-conductor/how-it-works.es.html"
+          target="_blank"
+          rel="noopener"
+        >
+          <span class="badge accent">Flota</span>
+          <h3>sprint-conductor</h3>
+          <p>Un sprint en flota, mirado desde el Sprint Board.</p>
         </a>
         <a
           class="card"

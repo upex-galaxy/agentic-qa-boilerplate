@@ -198,6 +198,16 @@
         </table>
       </div>
 
+      <div class="callout">
+        <span class="callout-title">Un sprint en flota no es un stage nuevo</span>
+        <p>
+          <code>sprint-conductor</code> corre Planning, Execution y Reporting con un worker de
+          <code>sprint-testing</code> por ticket y el Sprint Board como único punto de control. Cada
+          worker cumple los gates de su stage; el conductor suma una verificación en cada cierre:
+          relee el estado del ticket él mismo y revisa los artefactos, nunca solo el reporte.
+        </p>
+      </div>
+
       <div class="callout warn">
         <span class="callout-title">Observation está declarado, no implementado</span>
         <p>
