@@ -605,8 +605,9 @@ bun xray exec list
 bun xray exec create --project PROJ --summary "RTR: staging-2026-09-24: Regression Testing" --environment staging
 bun xray exec add-tests --execution &lt;issue-id&gt; --tests &lt;id1,id2&gt;
 
-# Importar resultados, siempre en una ejecución explícita
-bun xray import junit --file test-results/junit.xml --execution PROJ-194
+# Importar resultados: una entrada por ATC con la clave de su Test, siempre en una ejecución explícita
+bun run xray:payload --execution PROJ-194 --out xray-results.json reports/atc_results.json
+bun xray import xray --file xray-results.json
 
 # Test Plans
 bun xray plan list
@@ -616,9 +617,14 @@ bun xray plan get PROJ-300</code></pre>
         <p>
           <code>test create</code> no guarda pasos manuales: Xray Cloud los descarta. Añádelos
           después, uno por llamada, con <code>test add-step</code>. Y pasa siempre
-          <code>--execution</code> a <code>import junit</code>: sin él, cada corrida crea una Test
-          Execution nueva que la API de importación no puede colgar después del epic "QA Test
-          Artifacts".
+          <code>--execution</code>: sin él, cada corrida crea una Test Execution nueva que la API de
+          importación no puede colgar después del epic "QA Test Artifacts".
+        </p>
+        <p>
+          El import nunca crea un Test. Xray crea un Test Generic nuevo por cada testcase JUnit sin
+          <code>test_key</code>, así que <code>import junit</code> rechaza ese archivo y nombra cada
+          testcase sin clave. Una corrida KATA se importa por ATC desde
+          <code>reports/atc_results.json</code>, con el id de <code>@atc</code> como clave del Test.
         </p>
       </div>
       <p>
@@ -697,10 +703,14 @@ bun xray plan get PROJ-300</code></pre>
         <li><code>bun run jira:check</code> termina sin errores.</li>
       </ul>
       <p>
-        Para una prueba de punta a punta: crea un test <code>Generic</code>, añádelo a un plan,
-        ejecuta Playwright con el reporter JUnit e importa el resultado con
-        <code>bun xray import junit --file test-results/junit.xml --execution &lt;KEY&gt;</code>. La
-        Test Execution debe mostrar el resultado.
+        Para una prueba de punta a punta: pon la clave de un Test que ya existe en un
+        <code>@atc</code>, añádelo a un plan, ejecuta Playwright e importa el resultado con
+        <code
+          >bun run xray:payload --execution &lt;KEY&gt; --out xray-results.json
+          reports/atc_results.json</code
+        >
+        y <code>bun xray import xray --file xray-results.json</code>. La Test Execution debe mostrar
+        el resultado.
       </p>
 
       <h2 id="problemas">Problemas frecuentes</h2>

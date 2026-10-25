@@ -752,7 +752,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
       <div class="fn"><div class="t">smoke.yml</div><div class="d">La app está viva? Solo tests <code class="k">@critical</code>.</div><div class="r">02:00 UTC + manual</div></div><div class="fa">→</div>
       <div class="fn"><div class="t">sanity.yml</div><div class="d">Funciona ESTE cambio? Un archivo o un <code class="k">--grep</code>.</div><div class="r">manual, con inputs</div></div><div class="fa">→</div>
       <div class="fn"><div class="t">regression.yml</div><div class="d">Se rompió algo más? Integration + E2E completos.</div><div class="r">00:00 UTC + manual</div></div><div class="fa">→</div>
-      <div class="fn k"><div class="t">Allure + TMS</div><div class="d">Reporte publicado en GitHub Pages (o en el portal privado si está configurado); resultados al TMS (en Xray, import JUnit al RTR).</div><div class="r">jobs finales</div></div>
+      <div class="fn k"><div class="t">Allure + TMS</div><div class="d">Reporte publicado en GitHub Pages (o en el portal privado si está configurado); resultados al TMS (en Xray, una entrada por ATC al RTR, sin crear Tests).</div><div class="r">jobs finales</div></div>
     </div>
     <p class="small dim mt-m">Cada caja es un archivo en <code class="k">.github/workflows/</code>. Los cinco comparten el mismo esqueleto; por eso, cuando entiendas uno, entiendes todos. La estrategia (por qué varios y no uno) es el Capítulo 6, en la Parte II.</p>
     </div>
@@ -1243,7 +1243,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
         <div class="cards c3">
           <div class="card acc"><h4>$GITHUB_OUTPUT</h4><p>Un archivo. Escribís <code class="k">clave=valor</code> y GitHub lo expone como <code class="k">steps.&lt;id&gt;.outputs.clave</code> para los steps siguientes. Para pasarlo a OTRO job, lo mapeás en <code class="k">jobs.X.outputs</code> y lo leés con <code class="k">needs.X.outputs.clave</code>.</p></div>
           <div class="card acc2"><h4>$GITHUB_STEP_SUMMARY</h4><p>Markdown que aparece en la página del run, arriba de los logs. Aquí se escribe el link al reporte Allure: el PM no abre logs, abre el summary. regression.yml también escribe cuántos JUnit importó a Xray.</p></div>
-          <div class="card acc3"><h4>::notice / ::warning</h4><p>Anotaciones visibles en la UI sin fallar el step. el step Import JUnit Results to Xray de regression.yml avisa «Xray import skipped» con <code class="k">::notice</code> y con <code class="k">::warning</code> cuando falta la execution_key. El step sale con 0: informar no es fallar.</p></div>
+          <div class="card acc3"><h4>::notice / ::warning</h4><p>Anotaciones visibles en la UI sin fallar el step. el step de gate del job XrayImport de regression.yml avisa «Xray import skipped» con <code class="k">::notice</code> y con <code class="k">::warning</code> cuando falta la execution_key. El step sale con 0: informar no es fallar.</p></div>
         </div>
         <div class="callout good mt-m"><h4>El patrón «detectar → decidir → saltar»</h4><p>Un step barato comprueba si hay resultados y publica un output. Los steps siguientes llevan <code class="k">if: steps.check_allure.outputs.has_results == 'true'</code>. Si la suite no dejó nada (un run cancelado a los 10 segundos), el job no instala Bun ni genera un reporte vacío. Diseño defensivo con un booleano de texto.</p></div>
         <p class="small dim2 mt-s"><code class="k">$GITHUB_ENV</code> es el primo: <code class="k">echo "VAR=valor" &gt;&gt; $GITHUB_ENV</code> crea una variable de entorno para los steps siguientes del mismo job.</p>
@@ -1478,7 +1478,8 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
         <table class="tbl tight">
           <tr><th>Artifact</th><th>Contenido</th><th>Cuándo</th><th>Quién lo consume</th></tr>
           <tr><td class="mono">*-allure-results</td><td>JSON de Allure por test</td><td>always()</td><td>job allure-report → reporte publicado</td></tr>
-          <tr><td class="mono">*-test-results</td><td><code class="k">junit.xml</code>, <code class="k">results.json</code>, traces</td><td>always()</td><td>job XrayImport (regression) · vos con <code class="k">gh run download</code></td></tr>
+          <tr><td class="mono">*-test-results</td><td><code class="k">junit.xml</code>, <code class="k">results.json</code>, traces</td><td>always()</td><td>vos con <code class="k">gh run download</code></td></tr>
+          <tr><td class="mono">*-atc-results</td><td><code class="k">reports/atc_results.json</code>: un veredicto por ATC</td><td>always() (regression)</td><td>job XrayImport: una entrada por clave de Test, nunca crea un Test</td></tr>
           <tr><td class="mono">*-playwright-report</td><td>HTML de Playwright</td><td>always() (sanity, e2e)</td><td>humanos: abrir y ver el trace viewer</td></tr>
           <tr><td class="mono">*-failure-evidence</td><td>test-results + playwright-report</td><td>failure()</td><td>triage del fallo, adjuntar al bug</td></tr>
           <tr><td class="mono">merged-allure-results-{env}</td><td>Integration + E2E fusionados</td><td>si hay resultados</td><td>análisis del agente (/regression-testing Fase 2)</td></tr>
@@ -2729,14 +2730,14 @@ $$('.ifsim').forEach(function(box){
     // regression per-job sync
     var s2 = auto && prov!=='xray';
     row('Sync Integration/E2E Results to TMS <span class="dim2">(regression.yml, un step por job)</span>', 'always() &amp;&amp; AUTO_SYNC==\'true\' &amp;&amp; TMS_PROVIDER!=\'xray\'', s2,
-      prov==='xray' ? 'En xray se salta: el job XrayImport ya sube el junit.xml; dos importaciones = doble import, no red de seguridad.' : (auto ? 'jira-native: cada job escribe sus propios resultados.' : ''));
+      prov==='xray' ? 'En xray se salta: el job XrayImport ya importa los resultados por ATC; dos importaciones = doble import, no red de seguridad.' : (auto ? 'jira-native: cada job escribe sus propios resultados.' : ''));
     // XrayImport job
     var jobRuns = prov==='xray';
     var imp = jobRuns && auto && key;
     row('Job XrayImport <span class="dim2">(regression.yml)</span>', 'always() &amp;&amp; (vars.TMS_PROVIDER || \'xray\') == \'xray\'', jobRuns,
       jobRuns ? '' : 'jira-native: el job entero se salta EN SILENCIO (sin anotación): un proyecto sin Xray no debe ver ruido de Xray.');
-    if(jobRuns) row('&nbsp;&nbsp;↳ paso Import JUnit Results to Xray', 'gates en bash: AUTO_SYNC · XRAY_CLIENT_* · STP_EXECUTION_KEY', imp,
-      !auto ? '::notice "Xray import skipped: AUTO_SYNC is not true" y exit 0 (nunca rojo).' : (!key ? '::warning "No execution key, so results were NOT imported". Importar sin destino acuñaría una Test Execution huérfana por run.' : 'bun xray import junit --execution &lt;RTR&gt; por cada junit.xml (integration + e2e).'));
+    if(jobRuns) row('&nbsp;&nbsp;↳ pasos gate · payload · Import Results to Xray', 'gates en bash: AUTO_SYNC · XRAY_CLIENT_* · STP_EXECUTION_KEY', imp,
+      !auto ? '::notice "Xray import skipped: AUTO_SYNC is not true" y exit 0 (nunca rojo).' : (!key ? '::warning "No execution key, so results were NOT imported". Importar sin destino acuñaría una Test Execution huérfana por run.' : 'bun run xray:payload (una entrada por ATC de integration + e2e, sin testInfo) y bun xray import xray al RTR; un id que no es clave de Test frena el job.'));
     out.innerHTML = lines.join('');
   }
   [tAuto,tKey].forEach(function(t){ t.addEventListener('click',function(){ t.classList.toggle('on'); render(); }); });
@@ -2754,7 +2755,7 @@ $$('.ifsim').forEach(function(box){
       [0,'int','00:00 UTC: <span class="mono">schedule: cron \'0 0 * * *\'</span> despierta <b>Regression Tests</b>. Sin inputs: <span class="mono">TEST_ENV</span> cae al fallback <span class="mono">\'staging\'</span>; <span class="mono">STP_EXECUTION_KEY</span> cae al secret.'],
       [1400,'e2e','~00:06: IntegrationTests terminó en verde. E2ETests (<span class="mono">needs</span>) arranca: nuevo runner, checkout, bun, browsers, <span class="mono">bun run test:e2e</span>.'],
       [3600,'allure','~00:31: Los dos jobs finales arrancan en paralelo. allure-report descarga los dos artifacts, los fusiona en <span class="mono">merged-allure-results</span> y publica.'],
-      [3600,'xray','~00:31: XrayImport descarga <span class="mono">*-test-results</span>, encuentra los <span class="mono">junit.xml</span> y los importa al RTR.'],
+      [3600,'xray','~00:31: XrayImport descarga <span class="mono">*-atc-results</span>, arma una entrada por ATC y la importa al RTR.'],
       [5200,'','~00:35: Fin. Job summary con el link <span class="mono">https://upex-galaxy.github.io/agentic-qa-boilerplate/staging/regression/</span>. Artifacts disponibles 10 días. El agente analiza y emite GO / CAUTION / NO-GO (eso lo cuenta el deck how-it-works).']
     ];
     script.forEach(function(s){ timer.push(setTimeout(function(){

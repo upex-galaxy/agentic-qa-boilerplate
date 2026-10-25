@@ -1,4 +1,4 @@
-import{p as J,v as ie,g as e,w as re,n as $,s,i as Q,e as D,c as a,b as A,d as te,x as ce,f,y as N,h as oe,a as i,l as H,m as X,u as W,t as I,q as _,r as ne,z as de,j as O,k as U}from"./index-DpAVwruA.js";import{i as pe}from"./legacy-C5LM4uNl.js";import{C as V}from"./CodePane-CWYNjZwc.js";import{T as L}from"./Term-DkkcE7Q-.js";const Y={title:"tests/components/api/AuthApi.ts",code:`@atc('PROJ-101')
+import{p as J,v as ie,g as e,w as re,n as $,s,i as Q,e as D,c as a,b as A,d as te,x as ce,f,y as N,h as oe,a as i,l as H,m as X,u as W,t as I,q as _,r as ne,z as de,j as O,k as U}from"./index-oQk2oS0_.js";import{i as pe}from"./legacy-C5tbXRmF.js";import{C as V}from"./CodePane-CmIaAVuS.js";import{T as L}from"./Term-BJDv-nOv.js";const Y={title:"tests/components/api/AuthApi.ts",code:`@atc('PROJ-101')
 async authenticateSuccessfully(
   credentials: LoginPayload,
 ): Promise<[APIResponse, TokenResponse, LoginPayload]> {

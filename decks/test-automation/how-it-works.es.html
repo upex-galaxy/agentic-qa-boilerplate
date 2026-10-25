@@ -782,7 +782,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       </tbody>
     </table>
     <div class="cols c2 mt-m">
-      <div class="card"><h4>Señal 1 · el link</h4><p>El test automatizado se vincula al <span class="mono">Test</span> manual que automatiza con el link type <span class="mono">test_automation</span> (outward <i>"automation test for"</i>), resuelto por slug, nunca literal.</p></div>
+      <div class="card"><h4>Señal 1 · ningún Test aparte</h4><p>No existe un Test "automatizado" separado: <span class="mono">@atc('&lt;TC_KEY&gt;')</span> es la clave del TC, y cada corrida queda registrada en el TC mismo. No se crea un segundo Test ni se enlaza uno.</p></div>
       <div class="card"><h4>Señal 2 · los labels</h4><p><b>+ automated</b> y <b>− automation-candidate</b> en el <span class="mono">Test</span>: son mutuamente excluyentes. Se cambian en <span class="mono">merged</span>, cuando el TC llega de verdad a Automated, nunca en un merge al trunk o a la rama de integración.</p></div>
     </div>
     <div class="callout warn"><h4>Mergear al trunk o a la rama de integración NO es Automated</h4><p>Las transiciones salen por <span class="mono">/test-documentation</span> + <span class="mono">[ISSUE_TRACKER_TOOL]</span>, con cada slug resuelto contra <span class="mono">.agents/jira-workflows.json</span>. Slug sin mapear? El fallback de <span class="mono">artifact-lifecycle.md</span> §4: lista las transiciones vivas, pregunta una vez, dispara el id vivo con tu OK. Nunca se salta en silencio.</p></div>
@@ -813,7 +813,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="term" style="margin:0"><div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>líneas propias de Automation</span></div>
 <pre><span class="c">[ ] TCs del scope en in_automation o más allá</span>
 <span class="o">    (start_automation disparado)</span>
-<span class="c">[ ] TCs vinculados con el link test_automation</span>
+<span class="c">[ ] Cada ATC lleva la clave de su TC; ningún Test automatizado aparte</span>
 <span class="c">[ ] Labels cambiados en su estado: +automated</span>
 <span class="o">    -automation-candidate en merged, nunca</span>
 <span class="o">    en el merge al trunk</span>
