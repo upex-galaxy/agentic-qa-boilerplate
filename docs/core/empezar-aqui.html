@@ -351,8 +351,9 @@ bun setup</code></pre>
           ofrece una vez por sesión. El hook <code>pre-push</code> (vía
           <code>bun run git:policy verify</code>) solo te frena con ese mensaje si el bloque
           <code>git_strategy:</code> de <code>.agents/project.yaml</code> falta o no tiene
-          estrategia; con el bloque presente, lo que reporta es la diferencia entre la política
-          declarada y la que aplica GitHub.
+          estrategia. Con el bloque presente reporta la diferencia entre la política declarada y la
+          que aplica GitHub: mientras la estrategia siga heredada (o no haya un origin en GitHub) la
+          muestra como aviso y deja pasar el push; una vez elegida, esa diferencia frena el push.
         </p>
       </div>
       <p>
