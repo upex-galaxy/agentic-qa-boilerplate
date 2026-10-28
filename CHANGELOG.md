@@ -16,6 +16,18 @@ below names which one it applies to:
 
 ## Unreleased — Boilerplate
 
+### Changed (the regression and git skills stop contradicting each other)
+- **One rule per contested point, aligned across `SKILL.md`, references, decks and docs.** A
+  failure with fewer than 5 runs of history is labeled INSUFFICIENT HISTORY and counts as
+  REGRESSION for the GO / CAUTION / NO-GO verdict (fail-closed), never FLAKY. The precedence is
+  `KNOWN-BLOCKED > KNOWN ISSUE > ENVIRONMENT > NEW TEST > FLAKY > REGRESSION` in both
+  `regression-testing/SKILL.md` and `failure-classification.md` (FLAKY wins only with its
+  citation; REGRESSION is the residual class). Run counts come from `reports/test-outcomes.json`;
+  Allure supplies each failure's detail and history, and the counts only when that file is
+  missing from the downloaded artifacts (the report says so). `git-flow-master` §3.4 picks the
+  `gh pr merge` flag by rule: `--merge` for every PR of an `sdet` suite and never `--squash` into
+  the trunk, otherwise the flag that matches `git_strategy.decisions.feature_merge`.
+
 ### Fixed (a re-run of `bun sync` keeps the lock and the blocking rows honest)
 - **The lock's `templateCommit` reaches the upstream head after a partial-delta sync.** A
   component with no delta at the new head now has its cursor moved too (`componentsWithoutDelta`),

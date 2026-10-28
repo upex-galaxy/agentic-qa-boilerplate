@@ -353,7 +353,15 @@ gh pr create \
   [--draft]
 ```
 
-**Stop at PR creation.** Merging is the user's explicit next step. Never auto-merge. Surface: _"Review the PR. Once approved, merge via the GitHub UI or run `gh pr merge {number} --squash --delete-branch`."_ **One carve-out**: when a supervised worker's dispatch or brief NAMES the merge as a step, that instruction IS the explicit next step and the worker merges. The rule exists so a PR is never merged by an agent acting on its own judgement; a dispatch that says "open the PR and merge it" is not the agent's judgement, it is the owner's, delivered through the channel the fleet uses for every other instruction. Say in the report that the merge was pre-authorized and by which line of the brief.
+**Stop at PR creation.** Merging is the user's explicit next step. Never auto-merge. Surface: _"Review the PR. Once approved, merge via the GitHub UI or run `gh pr merge {number} {merge-flag}`."_ with the flag chosen by the rule below. **One carve-out**: when a supervised worker's dispatch or brief NAMES the merge as a step, that instruction IS the explicit next step and the worker merges. The rule exists so a PR is never merged by an agent acting on its own judgement; a dispatch that says "open the PR and merge it" is not the agent's judgement, it is the owner's, delivered through the channel the fleet uses for every other instruction. Say in the report that the merge was pre-authorized and by which line of the brief.
+
+**Which merge flag (one rule, `sdet` first).** `sdet` (the integration trunk) is the Dojo standard for test-automation suites, so its rule comes first and is never relaxed:
+
+| PR | Flag | Squash |
+| --- | --- | --- |
+| Ticket or Plus Branch → the trunk `test/<module>-suite` | `--merge` (a merge commit, the `--no-ff` equivalent) | **Never.** It flattens the per-ticket history the suite exists to keep (`references/sdet-integration-trunk.md`). |
+| Final `trunk → main` | `--merge` | Only when the host allows no other method; the chain then survives on the pushed trunk and the PR body says so. Do not add `--delete-branch` here: the trunk is deleted after CI is green on `main`. |
+| Any other strategy | the flag that matches `git_strategy.decisions.feature_merge`: `merge-commit` → `--merge`, `squash` → `--squash`, `rebase-merge` → `--rebase` | Fine for a short-lived branch whose intermediate commits carry no meaning (the default when `feature_merge` is `n/a` or the block is missing). Use `--merge` when per-commit history matters. |
 
 **Optional pre-PR adversarial gate** — when the diff exceeds the 400-line cognitive review budget OR touches shared scaffolding (KATA base classes, fixtures, OpenAPI schemas), surface `/judgment-day` as an optional pre-PR review: _"Diff is large / touches shared scaffolding. Want to run `/judgment-day` before opening the PR?"_. Two blind judges review the diff in parallel; only approves when both agree. See `.agents/skills/judgment-day/SKILL.md`. Never invoked automatically — user opts in.
 

@@ -69,7 +69,7 @@ four gates that may be collapsed "when the release squeezes", each with a condit
 | The ATP as a Test Plan item of the Planning stage | The ATP exists in the story's `acceptance_test_plan` field and the sprint already has an STP. | The story does not appear in the sprint coverage panel until the item is created. (Repo: only the ATS to Story edge fills coverage, see `agentic-qa-core/references/traceability-linking.md`; the site says the same on its test-management diagram.) |
 | Promoting the cases to the feature Test Set | The feature has a single live story, or the TS already exists from an earlier sprint. | The feature smoke has to be assembled by hand the next sprint. |
 | The recommended verifier of the ROI verdicts | Fewer than five scenarios and none lands in Candidate. | The regression filter loses its second reading: the >50% Candidate/Manual alarm loses its control. |
-| The five-run history before declaring FLAKY | The failure reproduces by hand and is recorded as INSUFFICIENT HISTORY in the report. | A real regression can be archived as flaky; the debt is paid the next sprint. |
+| The five-run history before declaring FLAKY | The failure reproduces by hand and is recorded as INSUFFICIENT HISTORY in the report; for the verdict it still counts as REGRESSION. | A real regression can be archived as flaky; the debt is paid the next sprint. |
 
 Activation rule, as the site states it:
 
@@ -135,7 +135,7 @@ never universal objectives; each implementation declares its own in `implementat
 | Change failure rate | Share of deployments ending in incident, rollback or hotfix; the DORA metric that says whether the method sustains velocity or only pushes it. | not measured |
 | Escape rate | Bugs found in production over all bugs of the period; the one thing the method promises, that the defect is found earlier. | not measured |
 | Deferred ratio | Share of scenarios the ROI gate keeps out of regression; the filter's health. Alarm: more than half in Candidate or Manual means the filter was not applied, and the discard phase runs again. | the >50% Candidate/Manual alarm in `agentic-qa-core/references/stage-gates.md` (Documentation) |
-| Flaky rate | Tests that change result without a code change, over the whole suite; what decides whether the team believes the regression. | the FLAKY rule (five runs of history, else INSUFFICIENT HISTORY) in `agentic-qa-core/references/stage-gates.md` (Regression); no rate is computed |
+| Flaky rate | Tests that change result without a code change, over the whole suite; what decides whether the team believes the regression. | the FLAKY rule (five runs of history, else INSUFFICIENT HISTORY, counted as REGRESSION for the verdict) in `agentic-qa-core/references/stage-gates.md` (Regression); no rate is computed |
 | Lead time AC to ATP (site marks it optional) | Time from a story having acceptance criteria to having its acceptance test plan; whether Shift-Left arrives on time. | not measured |
 
 How production feeds step 1 (site, `#bucle` and invariant `loop-not-sequence`): the error budget and

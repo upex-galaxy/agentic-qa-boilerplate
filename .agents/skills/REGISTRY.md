@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-10-25T04:24:53.330Z`
+> Generated: `2026-10-28T22:13:17.504Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -515,7 +515,8 @@ Skills indexed: 29
 - DO: classify every failure into exactly one of KNOWN-BLOCKED / KNOWN ISSUE / ENVIRONMENT / NEW TEST / FLAKY / REGRESSION, and assess severity on a separate axis — a FLAKY test on checkout is still CRITICAL. Classification is fail-closed: every class but REGRESSION cites its evidence (the `@blocked:{BUG-KEY}` marker; a ticket created BEFORE the run; the matching log line plus the other failures on that host; the empty history query; the ids and results of at least 5 runs on an unchanged build). No citation, or a ticket this session filed, = REGRESSION.
 - DO: exclude `@blocked:{BUG-KEY}` tests from the gating pass-rate and report their count with each blocking key. They are parked behind an already-filed bug: never REGRESSION, and never a new bug.
 - DO NOT: use ENVIRONMENT as a scapegoat. Many unrelated tests failing on one host is environment; one test failing on an endpoint other tests reach fine is more likely a REGRESSION.
-- DO NOT: call a test flaky on fewer than 5 runs of history — mark "insufficient history" and re-evaluate rather than guessing.
+- DO NOT: call a test FLAKY on fewer than 5 runs of history. Label the failure INSUFFICIENT HISTORY and count it as REGRESSION for the verdict (fail-closed), then re-evaluate on the next run. When several classes match, the order is KNOWN-BLOCKED > KNOWN ISSUE > ENVIRONMENT > NEW TEST > FLAKY > REGRESSION: FLAKY wins only with its citation, REGRESSION is what is left.
+- DO: take the run's counts (total, passed, failed, skipped, pass-rate) from `reports/test-outcomes.json`. Allure is the source for each failure's detail and for the history behind FLAKY, and the fallback for counts only when the file is missing from the downloaded artifacts (always so for smoke and sanity runs; say so in the report).
 - DO NOT: emit GO while any REGRESSION-class failure stands. Hard vetoes regardless of score: any `@critical` test failing, any HIGH/CRITICAL-severity regression, or a pass rate below 90%.
 - DO: file only CONFIRMED product failures — the REGRESSION class, plus a NEW TEST failure once manually confirmed to be a real defect. FLAKY, ENVIRONMENT and KNOWN ISSUE get no issue at all. Triage decides WHETHER to file; the defect-management doctrine decides the type and the fields.
 - DO NOT: open a GitHub issue for a quality failure. It is filed in the issue tracker, parented to the QA Defect Management process epic and linked to the source Story — never to a product or dev epic.

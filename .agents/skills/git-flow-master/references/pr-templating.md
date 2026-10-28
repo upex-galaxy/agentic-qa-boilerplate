@@ -161,7 +161,7 @@ Always show the rendered body and base branch to the user **before** running `gh
 ## After creation
 
 - Return the PR URL.
-- Surface the next step: _"Review the PR. Once approved, merge via the GitHub UI or run `gh pr merge {number} --squash --delete-branch`."_
+- Surface the next step: _"Review the PR. Once approved, merge via the GitHub UI or run `gh pr merge {number} {merge-flag}`."_ The flag comes from `SKILL.md` §3.4 "Which merge flag": `--merge` for every PR on an `sdet` suite (never `--squash` into the trunk), otherwise the one matching `git_strategy.decisions.feature_merge`.
 - **Do not auto-merge.** Merging is an explicit, separate action by the user.
 
 ---

@@ -24,7 +24,7 @@
         "Every failed test is placed into exactly one of the six classification buckets",
         "At least one classification includes the error pattern that drove the decision (e.g. ECONNREFUSED -> ENVIRONMENT, or 'element not found after deploy' -> REGRESSION)",
         "The response notes severity (CRITICAL / HIGH / MEDIUM / LOW) alongside classification for any failure in a core flow",
-        "The response does not classify a test as REGRESSION without history evidence (or explicitly flags 'insufficient history')"
+        "The response does not classify a test as REGRESSION without checking its history, and a failure with fewer than 5 runs of history is labeled INSUFFICIENT HISTORY and counted as REGRESSION for the verdict, never called FLAKY"
       ]
     },
     {

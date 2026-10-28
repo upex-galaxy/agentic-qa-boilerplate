@@ -41,7 +41,8 @@ Three phases, always in this order: **Execute → Analyze → Report**. Do not s
 - DO: classify every failure into exactly one of KNOWN-BLOCKED / KNOWN ISSUE / ENVIRONMENT / NEW TEST / FLAKY / REGRESSION, and assess severity on a separate axis — a FLAKY test on checkout is still CRITICAL. Classification is fail-closed: every class but REGRESSION cites its evidence (the `@blocked:{BUG-KEY}` marker; a ticket created BEFORE the run; the matching log line plus the other failures on that host; the empty history query; the ids and results of at least 5 runs on an unchanged build). No citation, or a ticket this session filed, = REGRESSION.
 - DO: exclude `@blocked:{BUG-KEY}` tests from the gating pass-rate and report their count with each blocking key. They are parked behind an already-filed bug: never REGRESSION, and never a new bug.
 - DO NOT: use ENVIRONMENT as a scapegoat. Many unrelated tests failing on one host is environment; one test failing on an endpoint other tests reach fine is more likely a REGRESSION.
-- DO NOT: call a test flaky on fewer than 5 runs of history — mark "insufficient history" and re-evaluate rather than guessing.
+- DO NOT: call a test FLAKY on fewer than 5 runs of history. Label the failure INSUFFICIENT HISTORY and count it as REGRESSION for the verdict (fail-closed), then re-evaluate on the next run. When several classes match, the order is KNOWN-BLOCKED > KNOWN ISSUE > ENVIRONMENT > NEW TEST > FLAKY > REGRESSION: FLAKY wins only with its citation, REGRESSION is what is left.
+- DO: take the run's counts (total, passed, failed, skipped, pass-rate) from `reports/test-outcomes.json`. Allure is the source for each failure's detail and for the history behind FLAKY, and the fallback for counts only when the file is missing from the downloaded artifacts (always so for smoke and sanity runs; say so in the report).
 - DO NOT: emit GO while any REGRESSION-class failure stands. Hard vetoes regardless of score: any `@critical` test failing, any HIGH/CRITICAL-severity regression, or a pass rate below 90%.
 - DO: file only CONFIRMED product failures — the REGRESSION class, plus a NEW TEST failure once manually confirmed to be a real defect. FLAKY, ENVIRONMENT and KNOWN ISSUE get no issue at all. Triage decides WHETHER to file; the defect-management doctrine decides the type and the fields.
 - DO NOT: open a GitHub issue for a quality failure. It is filed in the issue tracker, parented to the QA Defect Management process epic and linked to the source Story — never to a product or dev epic.
@@ -301,8 +302,10 @@ gh run view <RUN_ID> --log-failed
 # Inline (main thread): list artifacts so the parallel dispatchers know what to fetch
 gh run view <RUN_ID> --json artifacts --jq '.artifacts[].name'
 
-# Parallel subagent A — allure results
+# Parallel subagent A — allure results + the run's outcome records (counts)
 gh run download <RUN_ID> -n merged-allure-results-staging -D ./analysis/
+gh run download <RUN_ID> -n e2e-atc-results -D ./analysis/outcomes/e2e/                   # reports/test-outcomes.json
+gh run download <RUN_ID> -n integration-atc-results -D ./analysis/outcomes/integration/   # one per job that ran
 
 # Parallel subagent B — failure evidence (screenshots, traces, videos)
 gh run download <RUN_ID> -n e2e-failure-evidence       -D ./analysis/evidence/
@@ -315,7 +318,7 @@ Each subagent uses the briefing shape in `agentic-qa-core/references/briefing-te
 
 ### Step 2: Parse results
 
-Source of truth priority: **Allure results JSON > Playwright `report.json` > raw logs**. Each Allure result has `status`, `statusDetails.message`, `statusDetails.trace`, and `labels[]` (look for `testId` = ATC ID, `suite`, and `severity`).
+**Counts come from `reports/test-outcomes.json`; failure detail comes from Allure.** `regression.yml` uploads `reports/test-outcomes.json` inside the `e2e-atc-results` and `integration-atc-results` artifacts, one file per job (written by `KataReporter`, ADR-0020: one record per test with its outcome class `passed` / `failed` / `known-defect` / `unexpected-pass` / `skipped`); the run's counts are the sum of the files. `smoke.yml` and `sanity.yml` do not upload it, so for those suites the Allure counts below are the normal path, not the exception. Allure files an expected failure as passed and Playwright reports a test skipped by a failed `beforeAll` as ok, so a count taken from Allure's `status` can read green over tests that were never observed passing. Use the other source in exactly two cases: Allure for what the records do not hold (the message, trace, `suite`/`severity` labels of each failure, and the cross-run history FLAKY needs), and Allure `status` for the counts when `reports/test-outcomes.json` is absent from the downloaded artifacts (a smoke or sanity run, a downstream project not yet on ADR-0020, or a job that died before `onEnd`); the report then states that the counts are Allure-derived and may overstate passes. Failure-detail priority: **Allure results JSON > Playwright `report.json` > raw logs**. Each Allure result has `status`, `statusDetails.message`, `statusDetails.trace`, and `labels[]` (look for `testId` = ATC ID, `suite`, and `severity`).
 
 > **The `suite` label is tag-derived — single source of truth.** Allure suite/grouping labels are NOT a separate taxonomy: they derive from the Playwright tag (`@smoke` / `@regression` / `@e2e` / `@integration` / `@critical`) that also drives CI scope selection. A test tagged `@integration` reports `suite: integration` automatically. So the `suite` you read here is exactly the scope CI ran — never reconcile it against a parallel Allure label set. Convention owner: `test-automation/references/ci-integration.md` §3.2.1.
 
@@ -323,8 +326,8 @@ Source of truth priority: **Allure results JSON > Playwright `report.json` > raw
 
 | Metric | Formula |
 |--------|---------|
-| Total | count of results |
-| Passed / Failed / Skipped / Broken | count by `status` |
+| Total | count of records in `reports/test-outcomes.json` (Allure results only as the stated fallback) |
+| Passed / Failed / Skipped | count by outcome class (`known-defect` is its own line and feeds KNOWN-BLOCKED; an `unexpected-pass` is an action item, never a silent pass); on the Allure fallback, count by `status` (incl. Broken) |
 | Pass Rate | `Passed / Total * 100` |
 | Duration | `max(stop) - min(start)` |
 | Trend | current pass rate − previous run pass rate |
@@ -364,10 +367,18 @@ Failed test
   │
   ├── No history (first-ever run)? ──────────► NEW TEST FAILURE
   │
-  ├── Failure rate > 20% over last 10 runs? ─► FLAKY
+  ├── ≥ 5 runs of history, failure rate > 20%
+  │   over the last min(10, available) runs,
+  │   same build across them? ───────────────► FLAKY
   │
-  └── Passed in last ≤ 5 runs, now fails? ───► REGRESSION   (release blocker)
+  ├── 1-4 runs of history? ──────────────────► REGRESSION, labeled INSUFFICIENT HISTORY
+  │   (FLAKY cannot be proven: fail-closed,
+  │    re-evaluate on the next run)
+  │
+  └── Anything else (passed before, fails now)► REGRESSION   (release blocker)
 ```
+
+When more than one branch matches, the first one down the tree wins: KNOWN-BLOCKED > KNOWN ISSUE > ENVIRONMENT > NEW TEST > FLAKY > REGRESSION. FLAKY beats REGRESSION only when its citation is complete; REGRESSION is the residual class, never a rank to win.
 
 | Category | Impact | Action | Evidence the classification must cite |
 |----------|--------|--------|------|
@@ -625,7 +636,7 @@ On Verdict = NO-GO with regressions still being filed as issues, archive WAITS u
 - **This repo ships `retries: 0` everywhere** (`playwright.config.ts`) — tests must be deterministic, and a retry would only mask the flake. A flaky test therefore surfaces as a plain intermittent failure and is caught by the >20% history rule, never by a retry-pass signal. If a downstream project has consciously enabled retries, a test that passes on retry is still flaky — see the "Conscious divergence: enabling retries" box in `references/ci-cd-integration.md` for how to read retry counts in Allure.
 - **ENVIRONMENT is not a scapegoat.** `ECONNREFUSED` to your app's own API probably means the app crashed, not "infra glitch". Check if the same run has many unrelated tests failing on the same host — that is environment. One test failing with a network error on an endpoint that other tests hit successfully is more likely a REGRESSION.
 - **Never mark NEW TEST as REGRESSION.** A first-ever failure with no history is not a regression — it is unverified. Manually confirm once before classifying.
-- **Flakiness needs 5 runs of history minimum before you can call it at all** (below that, mark "insufficient history" and re-evaluate next sprint — do not guess). The failure-rate itself is computed over a wider window: the last N = min(10, available) runs (see `references/failure-classification.md`). 5 is the floor to have any signal; 10 is the window the percentage is actually computed over.
+- **Flakiness needs 5 runs of history minimum before you can call it at all.** Below that the failure is labeled INSUFFICIENT HISTORY and counts as REGRESSION for the verdict (fail-closed); re-evaluate on the next run, when it can become FLAKY with its citation. The failure-rate itself is computed over a wider window: the last N = min(10, available) runs (see `references/failure-classification.md`). 5 is the floor to have any signal; 10 is the window the percentage is actually computed over.
 - **Sanity + `grep` and `test_file` are mutually exclusive.** Passing both makes the workflow ignore one silently. Pick one.
 - **Video recording inflates artifact size by 5-10x.** Only enable `video_record=true` when debugging flakiness or capturing bug evidence. Never enable it for nightly regression.
 - **CI credentials come from GitHub secrets, not `.env`.** Do not copy values from local `.env` into workflow YAML — reference `${{ secrets.NAME }}` only.

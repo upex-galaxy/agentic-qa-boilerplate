@@ -832,7 +832,7 @@ $ bun run git:policy apply --yes      # escribe el ruleset
       <div class="card"><p class="lbl">Plus Branches</p><p class="small mt-s">Trabajo adyacente (<span class="mono">docs/* chore/* fix/*</span>) entre tickets, con PR al trunk como cualquier ticket.</p></div>
       <div class="card card-accent"><p class="lbl">Cierre</p><p class="small mt-s">Sync gate para que el diff final muestre solo la suite, un PR revisado trunk → <span class="mono">main</span>, y el trunk se borra. Solo <span class="mono">main</span> está protegida.</p></div>
     </div>
-    <div class="notes">El trunk es un sustituto de main para la suite: "nunca volver a main" significa volver al trunk hasta el final. El nombre sale del alcance: test/&lt;module&gt;-suite o test/&lt;STORY-KEY&gt;-&lt;slug&gt;-suite. Runbook completo: references/sdet-integration-trunk.md.</div>
+    <div class="notes">El trunk es un sustituto de main para la suite: "nunca volver a main" significa volver al trunk hasta el final. El nombre sale del alcance: test/&lt;module&gt;-suite o test/&lt;STORY-KEY&gt;-&lt;slug&gt;-suite. Todo PR de la suite se mergea con gh pr merge --merge: squash nunca dentro del trunk, y solo en el PR final trunk → main si el host no permite otro método. Runbook completo: references/sdet-integration-trunk.md.</div>
   </section>
 
   <!-- 15. WORKTREES -->
