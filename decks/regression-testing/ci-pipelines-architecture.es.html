@@ -1183,9 +1183,9 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
       <tr><td><b>Los datos crudos para analizar</b></td><td>artifact merged</td><td class="mono">gh run download &lt;RUN_ID&gt; -n merged-allure-results-staging</td><td>un JSON por test: status, message, labels (testId = ATC, suite, severity)</td></tr>
       <tr><td><b>Qué quedó en el TMS?</b></td><td>Jira / Xray</td><td>el RTR (Test Execution) del run</td><td>un Test Run por ATC con PASSED / FAILED, importado desde <code class="k">reports/atc_results.json</code> con la clave de cada Test</td></tr>
     </table>
-    <div class="callout mt-m"><h4>Orden de verdad para el análisis</h4><p><code class="k">/regression-testing</code> fija la prioridad: <b>Allure results JSON &gt; Playwright <code class="k">results.json</code> &gt; logs</b>. Los logs son el último recurso, no el primero. Y el label <code class="k">suite</code> de Allure deriva del tag Playwright que también eligió el alcance en CI: una sola taxonomía, cero reconciliación.</p></div>
+    <div class="callout mt-m"><h4>Orden de verdad para el análisis</h4><p><code class="k">/regression-testing</code> fija la fuente de cada cosa: los <b>conteos</b> salen de <code class="k">reports/test-outcomes.json</code> (Allure solo si el archivo falta, y el reporte lo dice); el <b>detalle de cada falla</b> sale de <b>Allure results JSON &gt; Playwright <code class="k">results.json</code> &gt; logs</b>. Los logs son el último recurso, no el primero. Y el label <code class="k">suite</code> de Allure deriva del tag Playwright que también eligió el alcance en CI: una sola taxonomía, cero reconciliación.</p></div>
     </div>
-    <div class="notes">Tabla "dónde miro qué" con comandos gh reales. Prioridad Allure > results.json > logs.</div>
+    <div class="notes">Tabla "dónde miro qué" con comandos gh reales. Conteos: test-outcomes.json. Detalle de fallas: Allure > results.json > logs.</div>
   </section>
 
   <!-- 18. WRITE-BACK FLOW -->

@@ -689,7 +689,7 @@ table.tbl .mono{font-size:13px}
   <!-- 9. FASE 2 · PARSE + MÉTRICAS -->
   <section class="slide" data-title="Fase 2 · Parse y métricas">
     <p class="kicker">fase 2 · analyze — parse + métricas</p>
-    <h2 class="h2">Allure manda; el pass-rate que gatea excluye lo bloqueado</h2>
+    <h2 class="h2">Los conteos salen de test-outcomes; el pass-rate que gatea excluye lo bloqueado</h2>
     <div class="cards c2 mt-m" style="align-items:start">
       <div>
         <table class="tbl">
@@ -703,7 +703,7 @@ table.tbl .mono{font-size:13px}
         </table>
       </div>
       <div style="gap:10px;display:flex;flex-direction:column">
-        <div class="callout"><h4>Fuente de verdad, en orden</h4><p>Allure results JSON &gt; Playwright <span class="mono">report.json</span> &gt; logs crudos. Cada resultado trae <span class="mono">status</span>, <span class="mono">statusDetails</span> y <span class="mono">labels[]</span> (testId = ATC ID, suite, severity).</p></div>
+        <div class="callout"><h4>Conteos y detalle, cada uno de su fuente</h4><p>Los conteos (total, passed, failed, skipped) salen de <span class="mono">reports/test-outcomes.json</span>: Allure archiva una falla esperada como passed y puede leerse verde sobre tests que nunca se observaron pasar. Allure manda para el detalle de cada falla (<span class="mono">statusDetails</span>, <span class="mono">labels[]</span>: testId = ATC ID, suite, severity) y para el historial que exige FLAKY; solo si el archivo no está en los artefactos descargados, los conteos salen de Allure y el reporte lo dice. Detalle: Allure &gt; Playwright <span class="mono">report.json</span> &gt; logs crudos.</p></div>
         <div class="callout"><h4>El label suite deriva del tag</h4><p><span class="mono">@smoke/@regression/@e2e/@integration/@critical</span> es la única taxonomía: el <span class="mono">suite</span> que lees ES el scope que CI corrió. Nunca reconcilies contra otro set de labels.</p></div>
       </div>
     </div>
@@ -723,15 +723,16 @@ table.tbl .mono{font-size:13px}
   ├─ patrón de error de entorno? ──────────► <span class="hi">ENVIRONMENT</span>
   │    <span class="cm">ECONNREFUSED · ETIMEDOUT · net::ERR_ · Navigation timeout · browserType.launch · 502/503</span>
   ├─ sin historial (primer run)? ──────────► <span class="hi">NEW TEST</span>
-  ├─ falla &gt;20% en los últimos 10 runs? ───► <span class="hi">FLAKY</span>
-  └─ pasaba hace ≤5 runs y ahora falla? ───► <span class="bad">REGRESSION   ← bloquea el release</span></pre>
+  ├─ ≥5 runs y falla &gt;20% (mismo build)? ─► <span class="hi">FLAKY</span>
+  ├─ 1-4 runs de historial? ───────────────► <span class="bad">REGRESSION</span> <span class="cm">(etiqueta INSUFFICIENT HISTORY)</span>
+  └─ cualquier otro caso ──────────────────► <span class="bad">REGRESSION   ← bloquea el release</span></pre>
     </div>
     <div class="cards c2 mt-m">
       <div class="callout bad"><h4>La misclasificación #1</h4><p>NUNCA marques REGRESSION sin revisar el historial primero. Y un primer fallo sin historia no es regresión: es NEW TEST — se verifica a mano una vez antes de clasificar.</p></div>
       <div class="callout"><h4>Dispatch por volumen</h4><p>&gt;10 fallos → chunks de ~10 con un subagente clasificador por chunk (cap 10), merge de JSONs en el hilo principal. ≤10 → inline: el overhead no se justifica.</p></div>
     </div>
     <div class="callout warn mt-m"><h4>El gate falla cerrado</h4><p>Toda clase salvo REGRESSION deja pasar el fallo, y quien la elige es el clasificador. Por eso cada una se sostiene solo con su cita (tabla de la slide siguiente). Sin cita, cita vacía o un ticket que esta misma sesión creó para volver «conocido» el fallo: cuenta como REGRESSION.</p></div>
-    <div class="notes">Para poder decir FLAKY hacen falta al menos 5 runs de historial: con menos, se anota "INSUFFICIENT HISTORY" y para el gate cuenta como REGRESSION (falla cerrado); se reevalúa en el próximo run. El porcentaje de fallo se calcula sobre una ventana más ancha, los últimos N = min(10, disponibles) runs: 5 es el piso para tener señal, 10 es la ventana. R1: jamás FLAKY sin citar el historial de al menos 5 runs.</div>
+    <div class="notes">Para poder decir FLAKY hacen falta al menos 5 runs de historial: con menos, se anota "INSUFFICIENT HISTORY" y para el gate cuenta como REGRESSION (falla cerrado); se reevalúa en el próximo run. Orden cuando coinciden varias: KNOWN-BLOCKED > KNOWN ISSUE > ENVIRONMENT > NEW TEST > FLAKY > REGRESSION; FLAKY gana solo con su cita completa y REGRESSION es lo que queda. El porcentaje de fallo se calcula sobre una ventana más ancha, los últimos N = min(10, disponibles) runs: 5 es el piso para tener señal, 10 es la ventana. R1: jamás FLAKY sin citar el historial de al menos 5 runs.</div>
   </section>
 
   <!-- 11. FASE 2 · CATEGORÍA → ACCIÓN -->
