@@ -1,4 +1,4 @@
-import { agentContextLines, rearmRoutes, routeLines } from '../../.agents/hooks/personality-reinject.mjs';
+import { agentContextLines, rearmRoutes, routeLines, sessionLaunched } from '../../.agents/hooks/personality-reinject.mjs';
 
 // OpenCode has no command hook: the plugin imports the shared emitter and
 // pushes the same lines (`AGENT IDENTITY:`, `ORCA:` when the
@@ -24,12 +24,21 @@ import { agentContextLines, rearmRoutes, routeLines } from '../../.agents/hooks/
 // LOAD PROTOCOL, with no `ROUTE:` cue. Re-verify when OpenCode 2 ships a
 // per-message hook.
 //
+// The `ORCA:` line follows the session's role, and the role comes from the
+// prompt too: a prompt carrying the fleet token (`/<skill> <label> fleet
+// worker`) marks the session launched. OpenCode 1 records it in
+// `chat.message` with the emitter's `sessionLaunched` (same session record as
+// the routes, so a compaction keeps it) and the system transform then pushes
+// the launched variant. OpenCode 2 hands the plugin no prompt, so it cannot
+// see the token: a v2 worker always gets the independent `ORCA:` line, and
+// its brief (worker contract) is what tells it to report to its launcher.
+//
 // Plain object on purpose (no `Plugin.define` import): this repo does not
 // depend on the plugin SDK, and the loader reads the shape, not the helper.
 // See https://opencode.ai/v2/docs/build/plugins/migrate-v1.
 
-function linesFor(sessionId) {
-  return agentContextLines({ harness: 'opencode', sessionId: sessionId ?? '' });
+function linesFor(sessionId, repoRoot) {
+  return agentContextLines({ harness: 'opencode', sessionId: sessionId ?? '', repoRoot });
 }
 
 /** The text a user message carries: its `text` parts, joined. */
@@ -64,13 +73,16 @@ export default {
     return {
       'chat.message': async (input, output) => {
         const sessionId = input?.sessionID ?? '';
-        pendingRoutes.set(sessionId, routeLines({ prompt: promptOf(output?.parts), sessionId, repoRoot }));
+        const prompt = promptOf(output?.parts);
+        // The role first: `routeLines` rewrites the same record and keeps `launched`.
+        sessionLaunched({ prompt, sessionId, repoRoot });
+        pendingRoutes.set(sessionId, routeLines({ prompt, sessionId, repoRoot }));
       },
       'experimental.session.compacting': async (input) => {
         rearmRoutes({ sessionId: input?.sessionID ?? '', repoRoot });
       },
       'experimental.chat.system.transform': async (input, output) => {
-        const lines = [...linesFor(input?.sessionID), ...(pendingRoutes.get(input?.sessionID ?? '') ?? [])];
+        const lines = [...linesFor(input?.sessionID, repoRoot), ...(pendingRoutes.get(input?.sessionID ?? '') ?? [])];
         for (const line of lines) {
           if (!output.system.includes(line)) {
             output.system.push(line);

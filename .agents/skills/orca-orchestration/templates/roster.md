@@ -39,5 +39,7 @@ If the runtime restarts, every terminal handle in this table is stale while ever
 alive (gotcha G22), and every tab title still carries the old handle. Re-discover with
 `orca terminal list --worktree <selector> --json </dev/null`, match each terminal on its label (the
 part of the title before the last `--term_`), rewrite the `Terminal` column, and re-issue each tab
-rename with the new handle before steering anyone. Note in `## Notes per worker` that the session
-name and the trailer may still carry the old handle.
+rename with the new handle before steering anyone. Then rename each resumed SESSION too, with the
+harness rename verb, on every harness (`references/coordinator-playbook.md` §5 step 6), rewrite the
+`Name` column, and keep the old name in `## Notes per worker`: the commits made before the restart
+carry it in their trailer.

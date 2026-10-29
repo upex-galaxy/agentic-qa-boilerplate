@@ -388,6 +388,17 @@ fallback that also works with no runtime.
    had not opened at launch only takes the label once it has (G72). After a runtime restart the
    handles in the titles are stale (G22): match each tab on its label (the part before the last
    `--term_`), update the roster's `terminal` column, and rename with the new handle.
+   The tab is only half of it: each resumed worker's harness SESSION name still carries the old
+   handle, and on Claude Code too the identity hook will not re-title it, because it names a session
+   only from a prompt carrying the fleet token and a resumed session receives none. Once the
+   worker's screen shows it ready, send the rename verb of step 5 on every harness, Claude Code
+   included (`terminal send --enter --text '/rename <label>--<new handle>'`; Pi `/name`), and read
+   the bar back. On Claude Code that makes the name human-set, so the hook leaves it alone from then
+   on, which is what a resume wants. OpenCode v1, or a harness that cannot be renamed: mark the row
+   `(roster only)` as at launch. Update the roster's `name` column (keep the old name in the row's
+   notes) BEFORE the first message to the resumed worker, and give it the new name in that message
+   on a harness with no identity hook; every `Session:` trailer after the resume carries the new
+   name, commits made before keep the old one. Do this once per restart, not every sweep.
 
 ### Stalled is not idle, and the prompt line cannot tell them apart
 
@@ -411,7 +422,8 @@ parser that looks for `lines` returns empty forever, silently. The TUI status ba
 spaces, so a grep including a space after a label never matches. `result.terminal.status == exited`
 is usually the conductor having closed that terminal itself. And if the runtime restarts, **handles
 change** while the sessions survive as separate processes: re-discover with
-`orca terminal list --worktree <sel> --json </dev/null`.
+`orca terminal list --worktree <sel> --json </dev/null`, then rename each tab AND each session with
+the new handle (step 6 above).
 
 `terminal read` without `--screen` returns accumulated output with escapes stripped, so a repainting
 TUI comes back as stacked fragments. `--screen` and `--cursor` are mutually exclusive.

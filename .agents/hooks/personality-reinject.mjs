@@ -998,10 +998,15 @@ export function rearmRoutes(options = {}) {
  * did (the `launched` field of the session record, written here). A harness
  * notification neither sets nor clears it: its result text may quote a brief
  * that carries the token. Without a session id only the current prompt decides.
+ * Without `routeState` the record is resolved from `sessionId` (and `repoRoot`),
+ * as `routeLines` does: the OpenCode 1 adapter records the role this way in
+ * `chat.message`, and its system transform reads it back.
  */
 export function sessionLaunched(options = {}) {
   const { prompt } = options;
-  const routeState = options.routeState ?? null;
+  const routeState = options.routeState === undefined
+    ? fileRouteState(routerRoot(options), options.sessionId ?? '')
+    : options.routeState;
   const record = routeState ? normalizeRouteRecord(routeState.read()) : null;
   if (record?.launched) { return true; }
   const carries = typeof prompt === 'string' && !isHarnessNotification(prompt) && FLEET_PROMPT_PATTERN.test(prompt);

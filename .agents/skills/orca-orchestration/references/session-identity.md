@@ -95,8 +95,8 @@ start.
 
 - **One token, nothing between it and `fleet worker`.** `<label> SPIKE fleet worker` does not match,
   and the session keeps the harness's generated title.
-- **Do not rename a Claude Code worker whose prompt carried the token**, and do not pass a name flag
-  on its launch line. A rename or `--name` marks the name as human-set, and the emitter then leaves it
+- **Do not rename a Claude Code worker whose prompt carried the token** at launch (after a resume
+  the conductor does, §5), and do not pass a name flag on its launch line. A rename or `--name` marks the name as human-set, and the emitter then leaves it
   alone forever: the handle never gets appended, which is correct behaviour and not what you wanted.
 - **Codex, OpenCode v2.2 and Pi have no hook that can set a name.** The conductor drives their TUI
   with the harness's rename verb (`/rename <label>--<handle>`; Pi `/name <label>--<handle>`) once the
@@ -188,7 +188,12 @@ So at every launch and every stage boundary:
   does not exist yet), and the rename follows once `terminal create` returns the handle. After a
   runtime restart every handle changes while the titles still carry the old one (gotcha G22): match
   a tab on its label, the part before the last `--term_`, write the new handle into the roster, and
-  re-issue the rename with it;
+  re-issue the rename with it. The harness SESSION name keeps the old handle, and a resumed session
+  receives no fresh fleet-token prompt, so not even the Claude Code hook re-titles it: the conductor
+  types the rename verb (`/rename <label>--<new handle>`; Pi `/name`) into each resumed worker once
+  its screen is ready, on every harness Claude Code included, reads it back, and updates the roster's
+  `Name` column; `Session:` trailers after the resume carry the new name
+  (`references/coordinator-playbook.md` §5 step 6);
 - the board card's display name is the work key plus a short title — or, in a same-checkout fleet,
   the fleet's own display name, because the card is per-worktree there;
 - the board card's comment carries the recovery block: stage, session label, branch, and the absolute

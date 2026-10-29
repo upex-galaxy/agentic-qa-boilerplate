@@ -1032,7 +1032,7 @@ export async function backfillProjectYamlFromSchema(
   const release = upstreamRelease(templateDir);
 
   // Non-interactive (`--auto`, headless, an agent run): a WHOLE missing block is
-  // inserted, copied from the schema with its blank values, because nothing of
+  // inserted, copied from the schema with its values (blank or default), because nothing of
   // the project's can be in a block it does not have, and a shipped skill that
   // reads the block (`CONFIG_BLOCK_READERS`) would otherwise fail at runtime.
   // A block the project HAS stays untouched: its missing leaves are only listed.
@@ -1059,7 +1059,7 @@ export async function backfillProjectYamlFromSchema(
       false,
     );
     if (!proceed) { continue; }
-    if (nonInteractive) { sink.step(`Modo --auto: insertando ${what} (valores en blanco, insert-only).`); }
+    if (nonInteractive) { sink.step(`Modo --auto: insertando ${what} (valores del schema de upstream, insert-only).`); }
 
     // A whole missing block is inserted as ONE unit, not leaf by leaf: its
     // children come with it, and asking for each would be the per-key
@@ -1086,7 +1086,7 @@ export async function backfillProjectYamlFromSchema(
     return;
   }
   sink.step(`Insertadas ${applied.length} clave(s) en \`${SCHEMA_SOURCE}\`: ${applied.join(', ')}.`);
-  sink.step(`Cada una lleva un comentario \`# NEW in ${release ?? '?'}\` y queda sin valor. Revísalas con \`git diff ${SCHEMA_SOURCE}\`.`);
+  sink.step(`Cada una lleva un comentario \`# NEW in ${release ?? '?'}\`: \`unset\` si quedó sin valor, \`upstream default\` si trae el valor por defecto de upstream. Revísalas con \`git diff ${SCHEMA_SOURCE}\`.`);
 }
 
 // --- METHODOLOGY YAML BLOCK BACK-FILL (qa_assignee, subtask — afterApply hooks) ---

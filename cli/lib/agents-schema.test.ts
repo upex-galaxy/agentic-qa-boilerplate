@@ -32,6 +32,7 @@ import {
   isIdentityPath,
   isMaintainerCopy,
   isSchemaOwner,
+  isUnsetValue,
   locateLeaf,
   originIsUpstream,
   planInsertions,
@@ -622,6 +623,62 @@ describe('insertion', () => {
     // earlier insert (`bun sync --auto` adds one with each block).
     expect(text.split('# NEW in').length).toBe(old.split('# NEW in').length);
     expect(text).not.toContain('# NEW in null');
+  });
+
+  // The marker used to say `unset` for every key, also for one that arrives
+  // with a real upstream default (a model id, a map of modes).
+  describe('the marker says unset only for an unset value', () => {
+    const miniSchema = [
+      'kept:',
+      '  a: 1',
+      'blank:',
+      '  key: null # TODO: e.g. PROJ',
+      '  name: \'\' # e.g. Acme',
+      '  list: []',
+      'defaulted:',
+      '  model: claude-opus-5-5',
+      '  modes:',
+      '    worker: bypass',
+      '  empty: null',
+      '',
+    ].join('\n');
+    const miniProject = 'kept:\n  a: 1\n';
+    const markerFor = (target: string): string | undefined => {
+      const { text, error } = applyInsertions(miniProject, planInsertions(miniProject, miniSchema, [target], '9.9.9'));
+      expect(error).toBeNull();
+      return text.split('\n').find(l => l.includes('# NEW in 9.9.9'));
+    };
+
+    test('a block of null, blank and empty leaves is marked unset', () => {
+      const marker = markerFor('blank');
+      expect(marker).toContain(', unset.');
+      expect(marker).not.toContain('upstream default');
+    });
+
+    test('a block carrying a real default is marked upstream default', () => {
+      const marker = markerFor('defaulted');
+      expect(marker).toContain(', upstream default.');
+      expect(marker).not.toContain('unset');
+    });
+
+    test('a single leaf follows its own value', () => {
+      const project = `${miniProject}defaulted:\n  modes:\n    worker: bypass\n`;
+      const mark = (target: string): string | undefined => applyInsertions(project, planInsertions(project, miniSchema, [target], '9.9.9'))
+        .text
+        .split('\n')
+        .find(l => l.includes('# NEW in 9.9.9'));
+      expect(mark('defaulted.model')).toContain(', upstream default.');
+      expect(mark('defaulted.empty')).toContain(', unset.');
+    });
+
+    test('isUnsetValue reads null, blank, empty and all-unset blocks as unset', () => {
+      for (const value of [null, undefined, '', '  ', [], {}, { a: null, b: { c: '' } }]) {
+        expect(isUnsetValue(value)).toBe(true);
+      }
+      for (const value of ['sonnet', 0, false, ['x'], { a: null, b: 'auto' }]) {
+        expect(isUnsetValue(value)).toBe(false);
+      }
+    });
   });
 
   // The case the parent-offset bug produced: a first child has no preceding

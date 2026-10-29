@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-10-29T03:16:22.542Z`
+> Generated: `2026-10-29T04:05:13.180Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -601,7 +601,7 @@ Skills indexed: 29
 - A finished worker's final ticket status is read back by the CONDUCTOR itself, with a bounded poll for the expected value; a worker's or a subagent's "verified" is never the proof (Critical Rule #16). The round close is ONE subagent per finished worker that verifies the artifacts, never the report; closes whose workers touched the same Epic run one after another, never in parallel, so only one of them publishes that Epic's `## Module Context (QA)` section at a time.
 - A redeploy while workers are live: fetch only (never fast-forward a sibling repo while a worker is live), then tell EVERY live worker once, with the repo, the old and new build and whether its own change's files moved.
 - Never message a developer without the owner's explicit order for that message, never commit, never print a credential. Reports to the owner are counts and tables that name who must answer, never a narrative.
-- Resume after a reboot or a session resume: find the workers by the label in their tab title, the part before the last `--term_` (the handle after it is stale), and re-issue each tab rename with the new handle, restart the board, re-arm the sentinel with the same baseline, replay the owner's actions with `listen --since`, read the mailbox, send ONE resume message per live worker, and launch nothing until every live worker confirmed. Full: `references/boot-and-resume.md` §4.
+- Resume after a reboot or a session resume: find the workers by the label in their tab title, the part before the last `--term_` (the handle after it is stale), and re-issue each tab rename and each session rename (the harness rename verb, Claude Code included) with the new handle, restart the board, re-arm the sentinel with the same baseline, replay the owner's actions with `listen --since`, read the mailbox, send ONE resume message per live worker, and launch nothing until every live worker confirmed. Full: `references/boot-and-resume.md` §4.
 - On any subagent failure: STOP, report which pass or ticket failed with full context, offer retry / skip / abort, never auto-fix. A skill that itself broke is reported upstream per `agentic-qa-core/references/upstream-feedback.md`.
 
 **Read full SKILL.md when**: booting a conductor cold, resuming one after a reboot, or deciding whether a

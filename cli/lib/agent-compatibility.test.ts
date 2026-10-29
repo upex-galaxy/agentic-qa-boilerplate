@@ -1183,6 +1183,35 @@ describe.skipIf(!HAS_OPENCODE)('instruction router hooks', () => {
       rmSync(routeStatePath(REPO_ROOT, sessionID), { force: true });
     }
   });
+
+  // OpenCode 1 used to classify the routes in chat.message but never record the
+  // role, so a launched OpenCode worker always got the independent ORCA line.
+  test('OpenCode 1 records the fleet token in chat.message and pushes the launched ORCA line, also after compaction', async () => {
+    const sessionID = `compat-role-${process.pid}-${Date.now()}`;
+    const independentID = `${sessionID}-independent`;
+    const previous = process.env.ORCA_APP_VERSION;
+    process.env.ORCA_APP_VERSION = 'test';
+    const plugin = await opencodePlugin.server({ worktree: REPO_ROOT });
+    const orcaFor = async (id: string, text: string) => {
+      await plugin['chat.message']({ sessionID: id }, { message: {}, parts: [{ type: 'text', text }] });
+      const output = { system: [] as string[] };
+      await plugin['experimental.chat.system.transform']({ sessionID: id, model: {} }, output);
+      return output.system.filter(line => line.startsWith(HOOK_ORCA_MARKER));
+    };
+    try {
+      expect(await orcaFor(sessionID, '/sprint-testing TK-123 fleet worker. Read the brief.')).toEqual([ORCA_LAUNCHED_LINE]);
+      expect(await orcaFor(sessionID, 'continue with stage 2')).toEqual([ORCA_LAUNCHED_LINE]);
+      await plugin['experimental.session.compacting']({ sessionID });
+      expect(await orcaFor(sessionID, 'continue')).toEqual([ORCA_LAUNCHED_LINE]);
+      expect(await orcaFor(independentID, 'plan the sprint fleet')).toEqual([ORCA_CONTEXT_LINE]);
+    }
+    finally {
+      if (previous === undefined) { delete process.env.ORCA_APP_VERSION; }
+      else { process.env.ORCA_APP_VERSION = previous; }
+      rmSync(routeStatePath(REPO_ROOT, sessionID), { force: true });
+      rmSync(routeStatePath(REPO_ROOT, independentID), { force: true });
+    }
+  });
 });
 
 describe('MCP semantic parity', () => {

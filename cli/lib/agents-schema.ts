@@ -1110,7 +1110,7 @@ export function planInsertions(
     const extent = pairExtent(schemaText, target.split('.'));
     if (!extent) { skipped.push({ path: target, reason: `not found in ${SCHEMA_FILE}` }); continue; }
     let block = schemaText.slice(extent.start, extent.end);
-    if (release) { block = markRelease(block, release); }
+    if (release) { block = markRelease(block, release, isUnsetValue(schema.entries.get(target))); }
 
     const siblings = schemaSiblings(schemaText, target);
     const index = siblings.indexOf(target);
@@ -1169,11 +1169,31 @@ export function planInsertions(
  * machine-checkable state, because the moment someone fills the value without
  * deleting the comment it lies. The durable signal is the TODO-plus-null pair,
  * which `bun run agents:schema --project` reads.
+ *
+ * It says `unset` only when the inserted value IS unset (see `isUnsetValue`).
+ * A schema key that ships a real default (a model id, a number, a map of
+ * modes) arrives WITH that value, and calling it unset sends the reader
+ * looking for a gap that is not there.
  */
-function markRelease(block: string, release: string): string {
+function markRelease(block: string, release: string, unset: boolean): string {
   const firstContent = block.split('\n').find(l => l.trim() !== '') ?? '';
   const indent = /^(\s*)/.exec(firstContent)?.[1] ?? '';
-  return `${indent}# NEW in ${release} — added by \`bun sync\`, unset. See .agents/README.md.\n${block}`;
+  const state = unset ? 'unset' : 'upstream default';
+  return `${indent}# NEW in ${release} — added by \`bun sync\`, ${state}. See .agents/README.md.\n${block}`;
+}
+
+/**
+ * Whether an inserted value carries nothing to keep: null, an empty or blank
+ * string, an empty list or map, or a block whose every leaf is one of those.
+ * A block with at least one real leaf counts as a default, since the reader
+ * gets that value without typing it.
+ */
+export function isUnsetValue(value: unknown): boolean {
+  if (value === null || value === undefined) { return true; }
+  if (typeof value === 'string') { return value.trim() === ''; }
+  if (Array.isArray(value)) { return value.length === 0; }
+  if (isPlainObject(value)) { return Object.values(value).every(isUnsetValue); }
+  return false;
 }
 
 /**

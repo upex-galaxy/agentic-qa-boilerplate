@@ -47,6 +47,17 @@ below names which one it applies to:
   leaves of an existing block, it never inserts them (`bun run agents:schema --project` lists what
   your file lacks).
 
+### Fixed (worker names after a resume, OpenCode worker role, `bun sync` insertion marker)
+- **A resumed worker gets its new name everywhere.** After a restart the conductor types the harness
+  rename verb (`/rename <label>--<new handle>`, Pi `/name`) into each resumed worker, Claude Code
+  included, and rewrites the roster `Name`; trailers after the resume carry the new name
+  (`sprint-conductor/references/boot-and-resume.md` §4, `coordinator-playbook.md` §5).
+- **OpenCode v1 workers get the launched `ORCA:` line.** The plugin records the fleet token like the
+  Claude Code and Codex hook; OpenCode v2 does not expose the prompt to plugins, so a v2 worker keeps
+  the independent line and relies on its brief.
+- **`bun sync` labels inserted `project.yaml` leaves honestly**: `unset` only when the inserted value
+  is empty, `upstream default` when it carries a real default.
+
 ### Changed (the regression and git skills stop contradicting each other)
 - **One rule per contested point, aligned across `SKILL.md`, references, decks and docs.** A
   failure with fewer than 5 runs of history is labeled INSUFFICIENT HISTORY and counts as

@@ -144,6 +144,18 @@ without the named session falls back to the shared default.
    re-issue each tab rename as `<KEY>--<new handle>` ([ORCHESTRATION_TOOL] terminal rename), and
    re-bind every replaced terminal's dispatch (G68). Read each screen's footer for the model and effort; a
    worker below its launch effort goes in the status line, relaunching it is the owner's call.
+   **Rename each resumed SESSION too**: the tab rename leaves the harness session name on the old handle,
+   and on Claude Code the identity hook will not fix it either, because it names a session only from a
+   prompt carrying the fleet token and a resumed session receives none. Once each worker's screen shows it
+   ready, type the harness rename verb into it, on every harness Claude Code included
+   (`[ORCHESTRATION_TOOL] terminal send --enter --text '/rename <KEY>--<new handle>'`; Pi
+   `/name <KEY>--<new handle>`), then read it back on the status bar as a bare token
+   (`orca-orchestration/references/session-identity.md` §5). On Claude Code this makes the name human-set,
+   so the hook leaves it alone from then on, which is what a resume wants. OpenCode v1, or a harness that
+   cannot be renamed: mark the roster row `(roster only)` as at launch. Write the new name into the
+   roster's `Name` column and keep the old one in its `## Notes per worker`; every `Session:` trailer made
+   after the resume carries the new name (commits made before keep the old one, never rewritten). All of
+   this lands before the step 6 message.
 2. **Board server**: when the page does not answer inside working hours, start `bun run board:up` in the
    background (the sentinel would at its next tick; doing it now lets the resume read the page).
 3. **Sentinel**: re-arm it with the SAME `--baseline` file (`sprint-board.md` §7). On a harness without
@@ -159,7 +171,8 @@ without the named session falls back to the shared default.
    your state file again before navigating. Read your test-session-memory.md Live Progress and the ticket's
    tracker artifacts (TCs, ATP, ATR, comments) for what already landed. Re-run from the last VERIFIED step;
    never repeat a tracker write that is already there. Re-dispatch any subagent that never reported. Reply
-   with the step you resume from.
+   with the step you resume from. Your name is now <KEY>--<new handle>: use it in the Session: trailer of
+   every commit from here on.
    ```
 
 7. **No new launch until every live worker answered.** Then the next pass runs as usual, and boot Step 7
