@@ -439,8 +439,9 @@
         clasifica el pedido contra el router de <code>AGENTS.md</code>: por cada sección que el
         pedido necesita y la sesión todavía no leyó, suma una línea
         <code>ROUTE: read &lt;archivo&gt;</code>, con un tope de pocas por pedido: el resto va en
-        una sola línea <code>ROUTE-OPTIONAL:</code> que no obliga. Claude Code y Codex lo ejecutan
-        como hook de comando en el evento <code>UserPromptSubmit</code>, y un
+        una sola línea <code>ROUTE-OPTIONAL:</code> que no obliga. Un aviso de tarea del harness (un
+        prompt que empieza con <code>&lt;task-notification&gt;</code>) no se rutea. Claude Code y
+        Codex lo ejecutan como hook de comando en el evento <code>UserPromptSubmit</code>, y un
         <code>SessionStart</code> con matcher <code>compact</code> o <code>clear</code> re-arma las
         rutas después de compactar o de un <code>/clear</code>. En Claude Code, un
         <code>PostToolUse</code> corre el mismo archivo y, si el agente usa una herramienta sin

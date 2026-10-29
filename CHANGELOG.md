@@ -16,6 +16,37 @@ below names which one it applies to:
 
 ## Unreleased — Boilerplate
 
+### Changed (agentic work runs in three tiers: who asks the human, one worker name, a permission mode per tier)
+- **Only the session the human types into asks the human.** `decision-elicitation-doctrine.md` §0
+  governs the question tool, the sweep and the `mkd` deck together: a session launched by another
+  session (its prompt carries `/<skill> <label> fleet worker`) never uses any of them and sends the
+  four escalation kinds of `decision-protocol.md` §5, plus every error or blocker it cannot clear,
+  to its launcher, which relays. `worker-contract.md` gains rule 16 and the brief template an
+  escalation section. The prompt hook's `ORCA:` line now has two variants by role (launched:
+  report through the mailbox, never ask the human; independent or conductor: ask the human, sweep
+  small items, deck for heavy ones), and a harness task notification (a prompt opening with
+  `<task-notification>`) no longer produces `ROUTE:` lines or touches the route state.
+- **A worker has one name, `<label>--<handle>`**, for the harness session, the Orca tab, the
+  roster and the `Session:` trailer (`session-identity.md` §2b). The prompt token carries
+  `<label>` (`[<KEY>-]<slug>`) instead of `<KEY>`; on Claude Code the identity hook composes the
+  name from it plus `ORCA_TERMINAL_HANDLE`, the worker renames its own tab first, and the conductor
+  types the rename verb on Codex, OpenCode v2.2 and Pi. The roster template gains `Name` and `Mode`
+  columns, the Claude Code launch line drops `-n` (a name flag would stop the hook from appending
+  the handle), and the `/sprint-testing` fleet launch line no longer writes the `PARALLEL_*` env
+  prefix.
+- **A permission mode per tier instead of "launch workers in auto".** The modes come from
+  `orchestration.permission_modes` (shipped: conductor `auto`, worker `bypass`, subagent
+  `inherit`; ADR-0024 records the security tradeoff of worker bypass), translated per harness in
+  `orca-orchestration/references/orca-machine-setup.md` §3.1. A supervised worker takes no argv,
+  so Orca's per-agent default arguments (Settings, Agents) decide its permission mode: check them
+  against §3.1, and the conductor verifies the mode on the worker's screen at readiness.
+- **New `orchestration:` keys**: `conductor_model`, `conductor_effort`, `subagent_model`,
+  `permission_modes` and `model_overrides`; `default_model` keeps its name and now pins a full
+  model id for the worker tier. Run `bun sync` **interactively** to get them: `orchestration:`
+  already exists in your `.agents/project.yaml`, and `bun sync --auto` only lists the missing
+  leaves of an existing block, it never inserts them (`bun run agents:schema --project` lists what
+  your file lacks).
+
 ### Changed (the regression and git skills stop contradicting each other)
 - **One rule per contested point, aligned across `SKILL.md`, references, decks and docs.** A
   failure with fewer than 5 runs of history is labeled INSUFFICIENT HISTORY and counts as

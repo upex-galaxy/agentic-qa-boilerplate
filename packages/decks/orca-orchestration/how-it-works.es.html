@@ -596,7 +596,7 @@ LAYER 1 · APP                 la app corriendo · runtime alcanzable · board �
       <table class="tt sm">
         <tbody>
           <tr><td style="width:150px"><b>wave</b></td><td>un bucket de estado del tracker, y existe <b>solo</b> en <span class="mono">sprint-testing</span></td></tr>
-          <tr><td><b>roster</b></td><td>una fila por worker: label · KEY · ids · terminal · worktree · agente · modelo · estado</td></tr>
+          <tr><td><b>roster</b></td><td>una fila por worker: label · KEY · nombre · ids · terminal · worktree · agente · modelo · modo · estado</td></tr>
           <tr><td><b>brief</b></td><td>el archivo que define el scope de un worker, citado por ruta absoluta</td></tr>
           <tr><td><b>claim</b></td><td>la reserva de un fixture, una credencial o un registro compartido</td></tr>
         </tbody>
@@ -604,7 +604,7 @@ LAYER 1 · APP                 la app corriendo · runtime alcanzable · board �
     </div>
     <div class="grid g2 mt-m">
       <div class="card card-accent"><p class="lbl">La regla que evita reportes ilegibles</p><p class="small mt-s">Los rounds se numeran <b>dentro</b> de una wave: "Wave 1, round 2". Nunca se reutiliza "wave" para concurrencia.</p></div>
-      <div class="card"><p class="lbl">Defaults, no política</p><p class="small mt-s">El bloque <span class="mono">orchestration</span> de <span class="mono">.agents/project.yaml</span> lleva el tope de workers, el agente, el modelo y el nivel de esfuerzo por defecto. Una instrucción explícita del usuario en la sesión conductora SIEMPRE los pisa para ese run. Los defaults aplican solo cuando el usuario no dijo nada.</p></div>
+      <div class="card"><p class="lbl">Defaults, no política</p><p class="small mt-s">El bloque <span class="mono">orchestration</span> de <span class="mono">.agents/project.yaml</span> lleva el tope de workers, el agente y, por nivel, modelo, esfuerzo, modo de permisos y overrides. Una instrucción explícita del usuario en la sesión conductora SIEMPRE los pisa para ese run. Los defaults aplican solo cuando el usuario no dijo nada.</p></div>
     </div>
     <div class="notes">Nunca pidas al usuario confirmar un default que nunca mencionó, y nunca pises una instrucción que sí dio porque el yaml opine distinto.</div>
   </section>
@@ -624,7 +624,7 @@ LAYER 1 · APP                 la app corriendo · runtime alcanzable · board �
     </table>
     <div class="grid g2 mt-m">
       <div class="card card-accent"><p class="lbl">Invocación en los tres hosts</p><p class="small mt-s"><b>Claude Code:</b> <span class="mono">/orca-orchestration</span>, o una frase como "orquesta esto" o "lanza workers".<br><b>OpenCode y Codex:</b> no hay slash commands; se pide en prosa: "carga la skill <span class="mono">orca-orchestration</span>". No hay token de modo que escribir: la sesión que habla con el owner es el CONDUCTOR.</p></div>
-      <div class="card"><p class="lbl">Cómo entra un worker</p><p class="small mt-s">El modo WORKER se activa cuando un brief nombra esta skill. Su prompt abre con <span class="mono">/&lt;workflow-skill&gt; &lt;KEY&gt; fleet worker</span>: ese token le dice a la skill de dominio que corre en flota y, en Claude Code, al hook de identidad cómo titular la sesión.</p></div>
+      <div class="card"><p class="lbl">Cómo entra un worker</p><p class="small mt-s">El modo WORKER se activa cuando un brief nombra esta skill. Su prompt abre con <span class="mono">/&lt;workflow-skill&gt; &lt;label&gt; fleet worker</span>: ese token le dice a la skill de dominio que corre en flota, le dice al hook que es una sesión lanzada (no le pregunta nada al humano) y, en Claude Code, le da al hook de identidad el label con el que compone el nombre <span class="mono">&lt;label&gt;--&lt;handle&gt;</span>.</p></div>
     </div>
     <div class="notes">El SKILL no tiene una sección de mode routing con tokens: el modo sale del rol. CONDUCTOR para quien habla con el owner, WORKER cuando un brief nombra la skill, AUTOMATION para una rutina desatendida. El dispatcher de una automatización crea el worker que produce y cierra su sesión; si se descubre escribiendo el entregable, se salió de su tarea.</div>
   </section>
@@ -655,7 +655,7 @@ LAYER 1 · APP                 la app corriendo · runtime alcanzable · board �
       <div class="card card-accent">
         <p class="lbl">Native path · el default supervisado</p>
         <p class="small mt-s">El verbo <span class="mono">worker-start</span> con task, worktree, agente, modelo y nivel de esfuerzo. El runtime lanza al agente, así que lo reconoce y lo supervisa.</p>
-        <p class="small mt-s">El spec de la task ya llega como primer prompt (G58), así que se basta solo. El prompt que se envía después de verificar la pantalla <b>debe empezar por</b> <span class="mono">/&lt;workflow-skill&gt; &lt;KEY&gt; fleet worker …</span>, para que el hook de identidad pueda titular la sesión; después va el puntero al brief y la frase de continuidad, y el prompt cierra con una última frase <span class="mono">ROUTE-SCOPE:</span> que nombra los ids de sección de instrucciones que el trabajo necesita (o <span class="mono">none</span>).</p>
+        <p class="small mt-s">El spec de la task ya llega como primer prompt (G58), así que se basta solo. El prompt que se envía después de verificar la pantalla <b>debe empezar por</b> <span class="mono">/&lt;workflow-skill&gt; &lt;label&gt; fleet worker …</span>, para que el hook de identidad pueda nombrar la sesión <span class="mono">&lt;label&gt;--&lt;handle&gt;</span>; después va el puntero al brief y la frase de continuidad, y el prompt cierra con una última frase <span class="mono">ROUTE-SCOPE:</span> que nombra los ids de sección de instrucciones que el trabajo necesita (o <span class="mono">none</span>).</p>
         <p class="small mt-s"><b>Credenciales sin argv:</b> cada MCP, en cualquier harness, lee el <span class="mono">.env</span> del propio worktree a través del loader de <span class="mono">.env</span> de las configs MCP. Ningún secreto se exporta al shell del worker: los scripts de Bun leen el <span class="mono">.env</span> con su propio autoload y <span class="mono">acli</span> usa su login guardado. El conductor <b>verifica las credenciales en la pantalla del worker</b> antes de despacharle trabajo.</p>
       </div>
       <div class="card">
@@ -666,7 +666,7 @@ LAYER 1 · APP                 la app corriendo · runtime alcanzable · board �
       </div>
     </div>
     <p class="small mt-m"><b>Prometer las dos cosas a la vez es lo que costó más caro.</b> En el dogfood ningún terminal de argv propio fue adoptado, la flota entera corrió sin supervisión y el conductor lo pagó en empujones manuales, uno por cada worker parado en cada límite de stage.</p>
-    <div class="notes">Regla de permisos: lanza en un modo de permisos automático, nunca en un modo "solo edits". Un modo solo-edits cubre ediciones de archivo pero no comandos, así que cada llamada a script espera a un humano que no está mirando. Un worker dejó cada mutación del tracker calculada y sin ejecutar.</div>
+    <div class="notes">Regla de permisos: cada nivel se lanza en el modo que declara orchestration.permission_modes de .agents/project.yaml (los defaults que decidió ADR-0024: conductor auto, worker bypass, subagente inherit), traducido por harness en references/orca-machine-setup.md §3.1, y nunca en un modo "solo edits". El modo auto no es desatendido: el clasificador de Claude Code pausa y pregunta después de varios bloqueos seguidos, y por eso ADR-0024 puso en bypass al worker, al que nadie mira. Un worker supervisado no recibe argv: su modo sale de los argumentos por defecto del agente en la app, y el conductor lo verifica en la pantalla del worker antes de despacharle trabajo. Un modo solo-edits cubre ediciones de archivo pero no comandos, así que cada llamada a script espera a un humano que no está mirando. Un worker dejó cada mutación del tracker calculada y sin ejecutar.</div>
   </section>
 
   <!-- 9. EL BRIEF -->
@@ -679,11 +679,12 @@ LAYER 1 · APP                 la app corriendo · runtime alcanzable · board �
         <ul class="big tight mt-s">
           <li>Los ids del run, la task y el dispatch</li>
           <li>El roster de los hermanos (quién más está vivo y sobre qué)</li>
-          <li>El canal, y la prohibición de las herramientas de mensajería del harness y de las preguntas al usuario</li>
+          <li>El canal, y la prohibición de las herramientas de mensajería del harness, de las preguntas al usuario, de la herramienta de preguntas estructuradas y del deck de <span class="mono">mkd</span></li>
+          <li>La regla de escalado: errores, bloqueos y decisiones que no son suyas van al conductor, nunca al humano</li>
           <li><b>File ownership</b>: qué rutas son suyas y de nadie más</li>
           <li>Los <b>claims</b> a declarar, ya pre-concedidos</li>
           <li>El protocolo de reporte y la ruta del reporte</li>
-          <li>Su label de sesión (el <span class="mono">&lt;KEY&gt;</span> del roster); nunca le pide renombrarse</li>
+          <li>Su label (<span class="mono">[&lt;KEY&gt;-]&lt;slug&gt;</span>) y su nombre completo <span class="mono">&lt;label&gt;--&lt;handle&gt;</span>: lo primero que hace es renombrar su propia pestaña; nunca le pide renombrar su sesión</li>
           <li>El recordatorio de los trailers forenses en cada commit</li>
         </ul>
       </div>
@@ -713,7 +714,7 @@ LAYER 1 · APP                 la app corriendo · runtime alcanzable · board �
     </table>
     <div class="grid g2 mt-m">
       <div class="card card-accent"><p class="lbl">El trigger de <span class="mono">ask</span> que salvó el dogfood</p><p class="small mt-s">Cuando <b>tu propia medición contradice una instrucción del conductor</b>: PARA y pregunta, con las dos lecturas y la evidencia. Nunca cumplas en silencio, nunca te desvíes en silencio.</p><p class="small mt-s">Un worker lo hizo por criterio propio y es la razón de que el reporte del run no esté equivocado. Ahora es doctrina, no suerte.</p></div>
-      <div class="card"><p class="lbl">El canal, y lo que no es canal</p><p class="small mt-s">Todo lo que el worker debe hacia arriba (estado, <span class="mono">ask</span>, <span class="mono">worker_done</span>, un bloqueo) va por el <b>mailbox</b>, que llega intacto; lo largo va en su archivo de reporte con un puntero. Nunca reporta con <span class="mono">terminal send</span>: trunca y no puede verificar el destino. La pantalla renderizada es <b>respaldo</b> para ver qué hace un worker, nunca el canal.</p></div>
+      <div class="card"><p class="lbl">El canal, y lo que no es canal</p><p class="small mt-s">Todo lo que el worker debe hacia arriba (estado, <span class="mono">ask</span>, <span class="mono">worker_done</span>, un bloqueo) va por el <b>mailbox</b>, que llega intacto; lo largo va en su archivo de reporte con un puntero. Nunca reporta con <span class="mono">terminal send</span>: trunca y no puede verificar el destino. La pantalla renderizada es <b>respaldo</b> para ver qué hace un worker, nunca el canal.</p><p class="small mt-s"><b>Nunca le pregunta al humano</b>: ni herramienta de preguntas, ni deck de <span class="mono">mkd</span>, ni barrido. Errores, bloqueos y las cuatro clases de decisión van a la sesión que lo lanzó, que se las pasa al humano. Excepción: el humano le escribió en su propia terminal, o el brief lo autoriza por escrito.</p></div>
     </div>
     <div class="notes">El worker SÍ carga los stubs del vendor (orchestration.orchestrator_skills), además de references/worker-contract.md, references/channel-discipline.md y su skill de dominio (/sprint-testing, /test-automation…). Su preámbulo inyectado lleva la gramática de los mensajes. Y lo inverso también vale: un fragmento que recibe empezando a mitad de frase es una truncación; no lo responde, pide el puntero.</div>
   </section>
@@ -871,15 +872,21 @@ scripts:
     <p class="kicker">Quién hizo qué · identidad y trazas</p>
     <h2 class="h2 md">Una línea de identidad, dos <span class="grad">trailers</span></h2>
     <div class="mk sm mt-s">AGENT IDENTITY: worktree=&lt;nombre|primary&gt; session=&lt;label&gt; harness=&lt;claude-code|codex|opencode&gt;
-ORCA: available. Multi-session orchestration -&gt; /orca-orchestration. Dispatched worker: follow your
-preamble; channel = orca orchestration, never SendMessage/AskUserQuestion.</div>
+# sesión en la que escribe el humano (independiente o conductor)
+ORCA: available. Multi-session orchestration -&gt; /orca-orchestration. Independent session or
+conductor: ask the human directly (sweep small items, mkd deck for heavy ones). A session launched
+by a conductor carries "/&lt;skill&gt; &lt;label&gt; fleet worker" and reports to it instead.
+# sesión lanzada (su prompt trae el token fleet worker)
+ORCA: available. Launched by a conductor (fleet worker token): report through the orca orchestration
+mailbox and never ask the human (no question tool, no mkd deck, no sweep) unless the human asked you
+in this session; your launcher relays.</div>
     <div class="grid g3 mt-m">
-      <div class="card"><p class="lbl">Un emisor, tres adaptadores</p><p class="small mt-s">El hook de <span class="mono">.agents/hooks/personality-reinject.mjs</span> calcula la identidad una vez por prompt y la inyecta en el contexto. La segunda línea aparece solo cuando el binario está presente; sin él, silencio. Como mucho se suma un aviso de setup (<span class="mono">CREDENTIALS:</span> o <span class="mono">WORKTREE:</span>).</p></div>
-      <div class="card"><p class="lbl">La regla del label</p><p class="small mt-s">Nombre puesto por el usuario → ese nombre. Nombre derivado o automático → <span class="mono">nombre (id corto)</span>. Solo id → el id completo. Nada → <span class="mono">unknown</span>.</p></div>
+      <div class="card"><p class="lbl">Un emisor, tres adaptadores</p><p class="small mt-s">El hook de <span class="mono">.agents/hooks/personality-reinject.mjs</span> calcula la identidad una vez por prompt y la inyecta en el contexto. La segunda línea aparece solo cuando el binario está presente (sin él, silencio) y su texto depende del rol de la sesión. Como mucho se suma un aviso de setup (<span class="mono">CREDENTIALS:</span> o <span class="mono">WORKTREE:</span>).</p></div>
+      <div class="card"><p class="lbl">La regla del label</p><p class="small mt-s">Nombre puesto por el usuario o por el hook → ese nombre. Nombre derivado o automático → <span class="mono">nombre (id corto)</span>. Solo id → el id completo. Nada → <span class="mono">unknown</span>.</p></div>
       <div class="card card-accent"><p class="lbl">Los trailers forenses</p><p class="small mt-s">Cada commit termina con <span class="mono">Worktree:</span> y <span class="mono">Session:</span>. Son <b>forense, no atribución</b>: no hay atribución de IA en los commits, ni trailers con marca del harness. Canon: <span class="mono">/git-flow-master</span>.</p></div>
     </div>
-    <p class="small mt-m">Por la vía native, en Claude Code el hook titula la sesión desde el prompt, y por eso el prompt empieza por <span class="mono">/&lt;workflow-skill&gt; &lt;KEY&gt; fleet worker …</span>. En OpenCode y Codex ningún hook puede ponerle nombre: el <b>conductor</b> teclea <span class="mono">/rename &lt;KEY&gt;</span> en la terminal del worker cuando lo ve listo. Un worker no puede renombrarse solo, así que el brief nunca se lo pide.</p>
-    <div class="notes">El footer del agente en pantalla muestra las líneas de id y de sesión, legibles leyendo la pantalla renderizada. Eso es útil para el roster y para recuperar una sesión.</div>
+    <p class="small mt-m">Un worker tiene <b>un solo nombre</b>, <span class="mono">&lt;label&gt;--&lt;handle&gt;</span>: sesión, pestaña, roster y trailer <span class="mono">Session:</span>. En Claude Code lo compone el hook desde el token del prompt más <span class="mono">ORCA_TERMINAL_HANDLE</span>; en Codex, OpenCode v2.2 y Pi lo teclea el <b>conductor</b>; en OpenCode v1 vive solo en el roster. El worker renombra su propia pestaña, nunca su sesión.</p>
+    <div class="notes">Ejemplo de nombre: TK-123-add-google-auth--term_ seguido del uuid del handle; se parsea cortando en el último --term_. El worker renombra su pestaña como primera acción porque es una llamada al CLI; su sesión no, porque /rename es input del usuario. El conductor vuelve a renombrar la pestaña en cada barrido. El footer del agente en pantalla muestra las líneas de id y de sesión, legibles leyendo la pantalla renderizada. Eso es útil para el roster y para recuperar una sesión.</div>
   </section>
 
   <!-- 16. HARD RULES -->
@@ -890,7 +897,7 @@ preamble; channel = orca orchestration, never SendMessage/AskUserQuestion.</div>
       <li><b>Un worker terminado se cierra en el mismo turno.</b> Los worktrees vivos que nadie cerró tumbaron el runtime (G31).</li>
       <li><b>Provisiona el worktree ANTES de lanzar.</b> Un hueco de provisioning se disfraza de otro fallo.</li>
       <li><b>Crear + lanzar + entregar el brief = una operación indivisible.</b> Verifícalo unos minutos después con un status del árbol de trabajo.</li>
-      <li><b>Lanza en modo de permisos automático</b>, nunca en un modo solo-edits: cubre ediciones pero no comandos.</li>
+      <li><b>Lanza cada nivel en el modo de <span class="mono">orchestration.permission_modes</span></b>, nunca en solo-edits: cubre ediciones pero no comandos.</li>
       <li><b>Nunca aceptes un lote que no procesaste.</b> Un lote sin ack esconde todo lo que hay detrás, y el runtime no vuelve a avisar.</li>
       <li><b>El verbo de parada tiene radio de worktree: cuenta primero.</b> Para cerrar una terminal, se cierra esa terminal (y su pestaña).</li>
       <li><b>Nunca nombres el orquestador al usuario desde un workflow skill si el gate falla</b>, y jamás lo pongas en prerequisitos, en un probe no evitable, en el bloque de entorno del ATR ni en un barrido de tokens de bloqueo.</li>
@@ -899,7 +906,7 @@ preamble; channel = orca orchestration, never SendMessage/AskUserQuestion.</div>
       <div class="card"><p class="lbl">Y una que no es del skill</p><p class="small mt-s">Los commits del worker llevan <b>cero atribución de IA</b> (Critical Rule #3) y los dos trailers forenses. En un fleet de mismo checkout, la Critical Rule #15 (nada de descartes globales de git) <b>cuenta doble</b>.</p></div>
       <div class="card card-accent"><p class="lbl">La que se descubrió cerrando</p><p class="small mt-s">El coste de un worker solo es visible en <b>su propia pantalla</b> y desaparece cuando el conductor cierra la terminal. Si quieres contabilidad de coste, <b>leer el footer es parte del ritual de cierre</b>. En el dogfood se perdieron los números de un worker por cerrarlo correcta y puntualmente.</p></div>
     </div>
-    <div class="notes">El resto está en el SKILL.md. Ninguna es teórica: cada una tiene una fecha, un repo y un síntoma en references/gotchas.md.</div>
+    <div class="notes">ADR-0024 puso al worker en bypass porque auto pausa y pregunta, y nadie mira la terminal de un worker; y la regla dura 24 dice que una sesión lanzada nunca le pregunta al humano: escala a quien la lanzó, que le pasa la pregunta (está en el slide del contrato del worker). El resto está en el SKILL.md. Ninguna es teórica: cada una tiene una fecha, un repo y un síntoma en references/gotchas.md.</div>
   </section>
 
   <!-- 16b. VERIFICAR EN DESTINO -->
@@ -951,7 +958,7 @@ preamble; channel = orca orchestration, never SendMessage/AskUserQuestion.</div>
         <tr><td><b>plan</b></td><td><b>Idéntico</b>: misma decisión de topología, mismo chequeo de colisiones en triage, mismos rounds.</td></tr>
         <tr><td><b>brief</b></td><td><b>Idéntico</b>: <span class="mono">COMMON.md</span> + <span class="mono">W-&lt;label&gt;.md</span> en el scope, citados por ruta absoluta.</td></tr>
         <tr><td><b>launch</b></td><td>El conductor imprime <span class="mono">launch.txt</span> y el humano abre N terminales y pega N líneas. Es la ÚNICA vía donde la línea misma es el payload, y por eso el archivo se escribe sin condiciones.</td></tr>
-        <tr><td><b>identidad</b></td><td>La bandera de nombre de la propia línea titula la sesión; donde el harness no la tiene, el humano teclea <span class="mono">/rename &lt;KEY&gt;</span> cuando la sesión arranca (un worker no puede renombrarse solo).</td></tr>
+        <tr><td><b>identidad</b></td><td>En Claude Code la línea no lleva bandera de nombre: el hook nombra la sesión desde el token del prompt. En Codex y OpenCode v2.2, que no tienen bandera, el humano teclea <span class="mono">/rename &lt;label&gt;--&lt;handle&gt;</span> cuando la sesión arranca (solo <span class="mono">&lt;label&gt;</span> fuera de Orca). Un worker nunca renombra su propia sesión.</td></tr>
         <tr><td><b>estado</b></td><td>Los tokens de bloqueo del propio workflow más el tracker, exactamente como ya hace una sesión sola.</td></tr>
         <tr><td><b>preguntas</b></td><td>El worker escribe la pregunta en su reporte, con opciones y una recomendación, y sigue con lo que no dependa de la respuesta.</td></tr>
         <tr><td><b>cierre</b></td><td>El humano cierra las terminales.</td></tr>

@@ -551,10 +551,13 @@ Rules: no tocar archivos fuera del directorio de reportes; no correr git.</code>
           <code>.agents/skills/orca-orchestration/SKILL.md</code> es la capa de transporte.
           Comprueba tres estados (sin binario, binario sin runtime, listo) y en los dos primeros las
           skills de workflow no mencionan el orquestador. Sus valores por defecto (máximo de
-          workers, agente, modelo) están en el bloque <code>orchestration:</code> de
-          <code>.agents/project.yaml</code>. Cada worker trabaja en su propio worktree, que se
-          prepara y se revisa solo antes de borrarse; cómo funciona está en
-          <a href="worktrees.html">Worktrees</a>.
+          workers, agente, y por nivel de conductor, worker y subagente: modelo, esfuerzo, modo de
+          permisos y overrides de modelo por tema) están en el bloque <code>orchestration:</code> de
+          <code>.agents/project.yaml</code>; la decisión está en
+          <code>.context/ADR/ADR-0024-agentic-work-profile-and-permission-posture.md</code>. Un
+          worker nunca te pregunta nada a ti: sus errores, bloqueos y decisiones van al conductor,
+          que te los trae. Cada worker trabaja en su propio worktree, que se prepara y se revisa
+          solo antes de borrarse; cómo funciona está en <a href="worktrees.html">Worktrees</a>.
         </dd>
         <dt>Las rutinas sin supervisión</dt>
         <dd>
