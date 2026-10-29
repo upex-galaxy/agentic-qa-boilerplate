@@ -7,13 +7,18 @@ import { afterEach, describe, expect, test } from 'bun:test';
 
 import {
   agentContextLines,
+  fileRouteState,
   MISSING_ENV_LINE,
+  ORCA_CONTEXT_LINE,
+  ORCA_LAUNCHED_LINE,
   orcaAvailable,
   proposeSessionTitle,
+  rearmRoutes,
   resolveWorktree,
   ROUTE_PREFIX,
   routeStatePath,
   sessionLabel,
+  sessionLaunched,
   UNPROVISIONED_WORKTREE_LINE,
   worktreeUnprovisioned,
 } from '../../.agents/hooks/personality-reinject.mjs';
@@ -535,8 +540,9 @@ describe('agent identity', () => {
     const output = hookSpecificOutput(run.stdout);
     expect(output.hookEventName).toBe('UserPromptSubmit');
     expect(output.additionalContext).not.toContain('OUTPUT CONTRACT');
+    // The prompt that sets the title already reports it: the session takes the name with this prompt.
     expect(output.additionalContext).toContain(
-      `${HOOK_IDENTITY_MARKER} worktree=primary session=agentic-qa-boilerplate-7 (${CLAUDE_SESSION_ID.slice(0, 8)}) harness=claude-code`,
+      `${HOOK_IDENTITY_MARKER} worktree=primary session=UPEX-123-sprint-testing harness=claude-code`,
     );
     expect(output.sessionTitle).toBe('UPEX-123-sprint-testing');
   });
@@ -708,6 +714,65 @@ describe('agent identity', () => {
     expect(proposeSessionTitle({ prompt, identity: { nameSource: 'user', sessionName: 'mine' } })).toBe('');
   });
 
+  const WORKER_HANDLE = 'term_7235f5a5-0fce-495c-9474-7c4370fdefa6';
+  const WORKER_PROMPT = '/sprint-testing TK-123-add-google-auth fleet worker. Read the brief.';
+
+  test('in an Orca terminal the fleet name is <label>--<handle>; without a handle, the label alone', () => {
+    expect(proposeSessionTitle({ prompt: WORKER_PROMPT, identity: { nameSource: 'derived' }, handle: WORKER_HANDLE }))
+      .toBe(`TK-123-add-google-auth--${WORKER_HANDLE}`);
+    expect(proposeSessionTitle({ prompt: WORKER_PROMPT, identity: { nameSource: 'derived' } })).toBe('TK-123-add-google-auth');
+    expect(proposeSessionTitle({ prompt: WORKER_PROMPT, identity: { nameSource: 'derived' }, handle: '' })).toBe('TK-123-add-google-auth');
+    // The 60-character cap is the label's; the handle is appended after it.
+    const label = `TK-1-${'a'.repeat(55)}`;
+    expect(proposeSessionTitle({ prompt: `/sprint-testing ${label} fleet worker.`, identity: { nameSource: 'none' }, handle: WORKER_HANDLE }))
+      .toBe(`${label}--${WORKER_HANDLE}`);
+    // No token: today's rules, and no handle on the other shapes.
+    expect(proposeSessionTitle({ prompt: 'test-automation UPEX-9', identity: { nameSource: 'none' }, handle: WORKER_HANDLE })).toBe('UPEX-9-test-automation');
+    expect(proposeSessionTitle({ prompt: 'what does this repo do?', identity: { nameSource: 'none' }, handle: WORKER_HANDLE })).toBe('');
+    // A human-set name stays; the composed name is not re-emitted once set.
+    expect(proposeSessionTitle({ prompt: WORKER_PROMPT, identity: { nameSource: 'user', sessionName: 'mine' }, handle: WORKER_HANDLE })).toBe('');
+    expect(proposeSessionTitle({
+      prompt: WORKER_PROMPT,
+      identity: { nameSource: 'hook', sessionName: `TK-123-add-google-auth--${WORKER_HANDLE}` },
+      handle: WORKER_HANDLE,
+    })).toBe('');
+  });
+
+  test('Claude Code: the hook proposes <label>--<handle> and reads the composed name back verbatim', () => {
+    const temp = temporaryRoot('agent identity tmp ');
+    const first = runEmitter({
+      home: claudeHome('agentic-qa-boilerplate-7', 'derived'),
+      env: { ...CLAUDE_ENV, ORCA_TERMINAL_HANDLE: WORKER_HANDLE, TMPDIR: temp },
+      input: claudePayload(WORKER_PROMPT),
+    });
+    expect(hookSpecificOutput(first.stdout).sessionTitle).toBe(`TK-123-add-google-auth--${WORKER_HANDLE}`);
+    expect(hookSpecificOutput(first.stdout).additionalContext).toContain(`session=TK-123-add-google-auth--${WORKER_HANDLE} harness=claude-code`);
+
+    const next = runEmitter({
+      home: claudeHome(`TK-123-add-google-auth--${WORKER_HANDLE}`, 'hook'),
+      env: { ...CLAUDE_ENV, ORCA_TERMINAL_HANDLE: WORKER_HANDLE, TMPDIR: temp },
+      input: claudePayload('continue with the next stage'),
+    });
+    const output = hookSpecificOutput(next.stdout);
+    expect(output.sessionTitle).toBeUndefined();
+    expect(output.additionalContext).toContain(`session=TK-123-add-google-auth--${WORKER_HANDLE} harness=claude-code`);
+
+    const noHandle = runEmitter({
+      home: claudeHome('agentic-qa-boilerplate-7', 'derived'),
+      env: { ...CLAUDE_ENV, TMPDIR: temp },
+      input: claudePayload(WORKER_PROMPT),
+    });
+    expect(hookSpecificOutput(noHandle.stdout).sessionTitle).toBe('TK-123-add-google-auth');
+  });
+
+  test('a harness task notification proposes no session title', () => {
+    expect(proposeSessionTitle({
+      prompt: `<task-notification>\n<status>completed</status>\n<result>launched ${WORKER_PROMPT}</result>\n</task-notification>`,
+      identity: { nameSource: 'derived' },
+      handle: WORKER_HANDLE,
+    })).toBe('');
+  });
+
   test('orcaAvailable never spawns a process and tolerates an empty PATH', () => {
     const home = temporaryRoot('agent identity path ');
     // Linux probes `orca-ide`: a bare `orca` there is the GNOME screen reader
@@ -721,6 +786,68 @@ describe('agent identity', () => {
     expect(orcaAvailable({ PATH: join(home, 'bin') })).toBe(true);
     expect(orcaAvailable({ PATH: join(home, 'missing') })).toBe(false);
     expect(orcaAvailable({})).toBe(false);
+  });
+});
+
+describe('ORCA line by role', () => {
+  const identity = { worktree: 'primary', label: 'x', harness: 'claude-code', sessionId: '' };
+  const base = { identity, orca: true, envMissing: false, worktreeUnprovisioned: false, router: null };
+  const memoryState = () => {
+    let record: Record<string, unknown> = {};
+    return { read: () => record, write: (next: Record<string, unknown>) => { record = next; }, clear: () => { record = {}; } };
+  };
+  const orcaLine = (lines: string[]) => lines.find(line => line.startsWith(HOOK_ORCA_MARKER));
+
+  test('both variants open with the compat marker and stay one line', () => {
+    for (const line of [ORCA_CONTEXT_LINE, ORCA_LAUNCHED_LINE]) {
+      expect(line).toStartWith(HOOK_ORCA_MARKER);
+      expect(line).not.toContain('\n');
+    }
+    expect(ORCA_CONTEXT_LINE).toContain('ask the human directly');
+    expect(ORCA_LAUNCHED_LINE).toContain('never ask the human');
+  });
+
+  test('an independent session or a conductor is told to ask the human', () => {
+    expect(orcaLine(agentContextLines({ ...base, prompt: 'plan the sprint fleet', routeState: memoryState() }))).toBe(ORCA_CONTEXT_LINE);
+    // A system transform with no prompt and no state (OpenCode 2) gets the default.
+    expect(orcaLine(agentContextLines({ ...base, routeState: null }))).toBe(ORCA_CONTEXT_LINE);
+  });
+
+  test('the fleet token marks the session launched, and later prompts remember it', () => {
+    const state = memoryState();
+    expect(orcaLine(agentContextLines({ ...base, prompt: '/sprint-testing TK-123 fleet worker. Read the brief.', routeState: state }))).toBe(ORCA_LAUNCHED_LINE);
+    expect(state.read().launched).toBe(true);
+    expect(orcaLine(agentContextLines({ ...base, prompt: 'continue with stage 2', routeState: state }))).toBe(ORCA_LAUNCHED_LINE);
+    // A re-arm (compact / clear) drops the routes, never the role.
+    rearmRoutes({ routeState: state });
+    expect(state.read()).toEqual({ launched: true });
+    expect(orcaLine(agentContextLines({ ...base, prompt: 'continue', routeState: state }))).toBe(ORCA_LAUNCHED_LINE);
+  });
+
+  test('the token after the runtime preamble counts; a notification quoting it does not', () => {
+    const preamble = 'You are working inside Orca, a multi-agent IDE.\n=== TASK ===\n';
+    expect(sessionLaunched({ prompt: `${preamble}/framework-development docs-sweep fleet worker. Read the brief.`, routeState: null })).toBe(true);
+    const state = memoryState();
+    const notice = '<task-notification>\n<status>completed</status>\n<result>the brief says /sprint-testing TK-9 fleet worker</result>\n</task-notification>';
+    expect(orcaLine(agentContextLines({ ...base, prompt: notice, routeState: state }))).toBe(ORCA_CONTEXT_LINE);
+    expect(state.read()).toEqual({});
+  });
+
+  test('without a session id only the current prompt decides', () => {
+    expect(sessionLaunched({ prompt: '/sprint-testing TK-1 fleet worker.' })).toBe(true);
+    expect(sessionLaunched({ prompt: 'continue' })).toBe(false);
+  });
+
+  test('the file-backed record keeps launched across route writes and a re-arm', () => {
+    const root = temporaryRoot('orca role state ');
+    const temp = temporaryRoot('orca role tmp ');
+    const state = fileRouteState(root, 'session-orca', temp)!;
+    expect(sessionLaunched({ prompt: '/sprint-testing TK-1 fleet worker.', routeState: state })).toBe(true);
+    agentContextLines({ ...base, repoRoot: root, prompt: 'next', routeState: state });
+    expect(state.read().launched).toBe(true);
+    rearmRoutes({ routeState: state });
+    expect(state.read().launched).toBe(true);
+    expect(sessionLaunched({ prompt: 'continue', routeState: state })).toBe(true);
   });
 });
 

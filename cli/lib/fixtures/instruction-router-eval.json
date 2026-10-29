@@ -284,6 +284,14 @@
     {
       "prompt": "armá el inventario de cobertura y decime qué comportamientos no tienen tests",
       "expect": ["context-map"]
+    },
+    {
+      "prompt": "<task-notification>\n<task-id>a1b2c3d4</task-id>\n<status>completed</status>\n<summary>Agent \"doc sweep\" completed</summary>\n<result>Done. I committed the hook change and pushed to main; the harness compat check and package.json scripts pass, and .agents/project.yaml now carries the new orchestration keys for the sprint.</result>\n</task-notification>",
+      "expect": []
+    },
+    {
+      "prompt": "<task-notification>\n<task-id>e5f6a7b8</task-id>\n<status>completed</status>\n<summary>Agent \"revisión del sprint\" completed</summary>\n<result>Listo: revisé el sprint actual en Jira, el board muestra 3 historias en test; corrí bun run lint:check y el git status quedó limpio.</result>\n</task-notification>",
+      "expect": []
     }
   ]
 }

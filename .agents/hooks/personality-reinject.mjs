@@ -13,7 +13,9 @@
  *      forensic metadata: `git-flow-master` copies it into the `Worktree:` /
  *      `Session:` commit trailers, which are NOT attribution.
  *   2. The `ORCA:` line — emitted only when an `orca` binary is on PATH, so a
- *      machine without Orca never hears about it (silence rule).
+ *      machine without Orca never hears about it (silence rule). Its wording
+ *      follows the session's role (`sessionLaunched`): a session a conductor
+ *      launched reports to it, every other session asks the human.
  *   3. At most ONE setup warning: `MISSING_ENV_LINE` when the checkout has no
  *      `.env`, else `UNPROVISIONED_WORKTREE_LINE` when it is a linked worktree
  *      that never ran `bun run worktree:provision`.
@@ -21,7 +23,9 @@
  *      this session has not been routed to yet, classified with the router of
  *      `AGENTS.md` and each section's frontmatter (see `routeLines`), capped,
  *      plus at most one `ROUTE-OPTIONAL:` line. 0 bytes when nothing new
- *      matches. A re-arm (below) clears them and prints nothing.
+ *      matches. A re-arm (below) clears them and prints nothing. A harness
+ *      task notification (`isHarnessNotification`) routes nothing and leaves
+ *      the session state untouched: no human wrote it.
  *
  * Claude Code also runs it on `PostToolUse` (`.claude/settings.json`, no
  * matcher): it prints nothing but, at most once per prompt, a `ROUTE-PENDING:`
@@ -102,16 +106,48 @@ export const UNPROVISIONED_WORKTREE_LINE = [
   'Run `bun run worktree:provision` in it, then restart the session.',
 ].join(' ');
 
+/**
+ * The `ORCA:` line of a session nobody launched: an independent session or a
+ * conductor, the sessions the human types into. Both variants open with the
+ * literal `ORCA: available.` (`HOOK_ORCA_MARKER`, asserted by
+ * `bun run agents:compat:check`).
+ */
 export const ORCA_CONTEXT_LINE = [
   'ORCA: available.',
   'Multi-session orchestration -> /orca-orchestration.',
-  'Dispatched worker: follow your preamble;',
-  'channel = orca orchestration, never SendMessage/AskUserQuestion.',
+  'Independent session or conductor: ask the human directly (sweep small items, mkd deck for heavy ones).',
+  'A session launched by a conductor carries "/<skill> <label> fleet worker" and reports to it instead.',
 ].join(' ');
 
 /**
+ * The `ORCA:` line of a session a conductor launched: the fleet token matched
+ * on this prompt or on an earlier one of the session (`sessionLaunched`).
+ */
+export const ORCA_LAUNCHED_LINE = [
+  'ORCA: available.',
+  'Launched by a conductor (fleet worker token): report through the orca orchestration mailbox',
+  'and never ask the human (no question tool, no mkd deck, no sweep) unless the human asked you in this session;',
+  'your launcher relays.',
+].join(' ');
+
+/**
+ * A harness task notification: Claude Code delivers a background subagent's
+ * completion as a `UserPromptSubmit` whose prompt opens with this tag (then
+ * `<task-id>`, `<status>`, `<summary>`, `<result>`; measured 2026-10-29). No
+ * human wrote it, so it routes nothing, names nothing and never touches the
+ * session state. Anchored: a prompt that merely mentions the tag is a prompt.
+ */
+export const HARNESS_NOTIFICATION_PREFIX = '<task-notification>';
+
+export function isHarnessNotification(prompt) {
+  return typeof prompt === 'string' && prompt.trimStart().startsWith(HARNESS_NOTIFICATION_PREFIX);
+}
+
+/**
  * The fleet-worker token names the session after the roster label:
- * `/<skill> <label> fleet worker` → `<label>`. Any skill slug qualifies (a
+ * `/<skill> <label> fleet worker` → `<label>`, plus `--<handle>` when the
+ * session runs in an Orca terminal (`ORCA_TERMINAL_HANDLE`), so the name is
+ * `<label>--<handle>` and splits on its last `--term_`. Any skill slug qualifies (a
  * fleet is not limited to the workflow skills) and the label is whatever the
  * conductor wrote: a ticket key, `<KEY>-<slug>`, or a kebab slug. Unanchored,
  * because on the supervised path the runtime prepends its own preamble to the
@@ -730,10 +766,12 @@ function targetStrength(target, text, ids) {
  * once: the anchors first, strongest row first (ties: earliest match, then
  * router order), then the companions those rows bring, in the same order. An
  * anchor is what the prompt asked for; a companion only rides along, so it is
- * the first to fall past the cap.
+ * the first to fall past the cap. A harness notification classifies as
+ * nothing, whatever its result text names.
  */
 export function classifyPrompt(router, prompt) {
   if (!router || typeof prompt !== 'string' || prompt.trim().length === 0) { return []; }
+  if (isHarnessNotification(prompt)) { return []; }
   const { text, ids } = routeScope(router, prompt);
   const strength = new Map();
   for (const target of router.targets.values()) {
@@ -821,6 +859,7 @@ export function normalizeRouteRecord(stored) {
     offered: list(stored?.offered),
     pending: list(stored?.pending),
     reminded: stored?.reminded === true,
+    launched: stored?.launched === true,
   };
 }
 
@@ -829,7 +868,8 @@ export function normalizeRouteRecord(stored) {
  * prompt routes what it matches). `routed`: files with a binding line this
  * session. `offered`: files already named in a `ROUTE-OPTIONAL:` line.
  * `pending` + `reminded`: the latest prompt's binding sections not read yet,
- * and whether `ROUTE-PENDING:` already fired for them.
+ * and whether `ROUTE-PENDING:` already fired for them. `launched`: a prompt of
+ * this session carried the fleet token (`sessionLaunched`); a re-arm keeps it.
  */
 export function fileRouteState(root, sessionId, temp = tmpdir()) {
   if (!text(sessionId)) { return null; }
@@ -876,9 +916,12 @@ function routerRoot(options) {
  * The routing lines for this prompt: one binding `ROUTE:` line per new file
  * up to the cap, then at most one `ROUTE-OPTIONAL:` line for the new matches
  * past it that were never offered. Empty (0 bytes) when nothing new matches.
- * Every prompt resets the pending set the `PostToolUse` re-surface checks.
+ * Every prompt resets the pending set the `PostToolUse` re-surface checks,
+ * except a harness notification: it routes nothing and neither reads nor
+ * writes the state, so the human's last prompt keeps its pending set.
  */
 export function routeLines(options = {}) {
+  if (isHarnessNotification(options.prompt)) { return []; }
   const root = routerRoot(options);
   const router = options.router ?? loadInstructionRouter(root);
   const matched = classifyPrompt(router, options.prompt ?? '');
@@ -895,7 +938,7 @@ export function routeLines(options = {}) {
   const offer = capped.optional.filter(path => !seen.has(path) && !record.offered.includes(path));
   const pending = binding.filter(isSection);
   if (state && (binding.length > 0 || offer.length > 0 || record.pending.length > 0)) {
-    state.write({ routed: [...record.routed, ...binding], offered: [...record.offered, ...offer], pending, reminded: false });
+    state.write({ routed: [...record.routed, ...binding], offered: [...record.offered, ...offer], pending, reminded: false, launched: record.launched });
   }
   const lines = binding.map(path => routeLine(router, path));
   if (offer.length > 0) { lines.push(optionalRouteLine(router, offer)); }
@@ -935,12 +978,35 @@ export function pendingRouteReminder(options = {}) {
   return `${ROUTE_PENDING_PREFIX} routed for this prompt and still unread: ${pending.join(', ')}. Read ${pending.length === 1 ? 'it' : 'them'} before the next step (AGENTS.md LOAD PROTOCOL); this reminder is not repeated.`;
 }
 
-/** After a compaction (or `/clear`) the routed files left the context: route them again on demand. */
+/**
+ * After a compaction (or `/clear`) the routed files left the context: route
+ * them again on demand. The session's role did not change, so `launched`
+ * survives the re-arm.
+ */
 export function rearmRoutes(options = {}) {
   const state = options.routeState === undefined
     ? fileRouteState(routerRoot(options), options.sessionId ?? '')
     : options.routeState;
-  if (state) { state.clear(); }
+  if (!state) { return; }
+  if (normalizeRouteRecord(state.read()).launched) { state.write({ launched: true }); }
+  else { state.clear(); }
+}
+
+/**
+ * Was this session launched by a conductor? Yes when this prompt carries the
+ * fleet token (`FLEET_PROMPT_PATTERN`) or an earlier prompt of the session
+ * did (the `launched` field of the session record, written here). A harness
+ * notification neither sets nor clears it: its result text may quote a brief
+ * that carries the token. Without a session id only the current prompt decides.
+ */
+export function sessionLaunched(options = {}) {
+  const { prompt } = options;
+  const routeState = options.routeState ?? null;
+  const record = routeState ? normalizeRouteRecord(routeState.read()) : null;
+  if (record?.launched) { return true; }
+  const carries = typeof prompt === 'string' && !isHarnessNotification(prompt) && FLEET_PROMPT_PATTERN.test(prompt);
+  if (carries && routeState) { routeState.write({ ...record, launched: true }); }
+  return carries;
 }
 
 export function identityLine(identity) {
@@ -951,27 +1017,42 @@ export function identityLine(identity) {
  * The lines every harness injects, in order. OpenCode pushes them as-is. The
  * `ROUTE:` lines come last and only when a `prompt` is passed: the OpenCode
  * system transform has no prompt, so its adapter routes in `chat.message`.
+ * The session record is resolved once and shared: `sessionLaunched` (the
+ * `ORCA:` variant) writes its flag before `routeLines` writes the routes.
  */
 export function agentContextLines(options = {}) {
   const { env = process.env } = options;
   const identity = options.identity ?? resolveAgentIdentity(options);
   const orca = options.orca ?? orcaAvailable(env);
+  const prompt = typeof options.prompt === 'string' ? options.prompt : undefined;
+  const routeState = !orca && prompt === undefined
+    ? null
+    : options.routeState === undefined
+      ? fileRouteState(routerRoot(options), options.sessionId ?? identity.sessionId ?? '')
+      : options.routeState;
   const lines = [identityLine(identity)];
-  if (orca) { lines.push(ORCA_CONTEXT_LINE); }
+  if (orca) {
+    const launched = options.launched ?? sessionLaunched({ prompt, routeState });
+    lines.push(launched ? ORCA_LAUNCHED_LINE : ORCA_CONTEXT_LINE);
+  }
   if (options.envMissing ?? envFileMissing({ env })) { lines.push(MISSING_ENV_LINE); }
   else if (options.worktreeUnprovisioned ?? worktreeUnprovisioned({ env })) { lines.push(UNPROVISIONED_WORKTREE_LINE); }
-  if (typeof options.prompt === 'string') {
-    lines.push(...routeLines({ ...options, sessionId: options.sessionId ?? identity.sessionId }));
+  if (prompt !== undefined) {
+    lines.push(...routeLines({ ...options, sessionId: options.sessionId ?? identity.sessionId, routeState }));
   }
   return lines;
 }
 
 /** A title is a single line: control characters collapse into spaces. */
-function sanitizeTitle(value) {
+function singleLine(value) {
   const printable = [...value]
     .map(character => (character.codePointAt(0) < 0x20 || character.codePointAt(0) === 0x7F ? ' ' : character))
     .join('');
-  return printable.replace(/\s+/g, ' ').trim().slice(0, 60);
+  return printable.replace(/\s+/g, ' ').trim();
+}
+
+function sanitizeTitle(value) {
+  return singleLine(value).slice(0, 60);
 }
 
 /**
@@ -979,19 +1060,26 @@ function sanitizeTitle(value) {
  * or `--name`) and `unknown` (a name of unverifiable origin) are both left
  * alone. A name this hook set earlier (`hook`) may be replaced, because a
  * re-engaged fleet terminal receives a new task with a new label. The
- * fleet-worker token wins first and yields the label, then an explicit
+ * fleet-worker token wins first and yields the label (60 characters at most),
+ * followed by `--<handle>` when `handle` (the session's `ORCA_TERMINAL_HANDLE`,
+ * passed by the caller, never read here) is non-empty; then an explicit
  * `--name <value>`, then the workflow + issue-key shape, `<KEY>-<workflow>`.
- * A title equal to the current name is not re-emitted.
+ * Only the fleet name carries the handle. A harness notification proposes
+ * nothing. A title equal to the current name is not re-emitted.
  */
-export function proposeSessionTitle({ prompt = '', identity = {} } = {}) {
+export function proposeSessionTitle({ prompt = '', identity = {}, handle = '' } = {}) {
   if (identity.nameSource === 'user' || identity.nameSource === 'unknown') { return ''; }
-  const title = titleFromPrompt(prompt);
+  if (isHarnessNotification(prompt)) { return ''; }
+  const title = titleFromPrompt(prompt, singleLine(text(handle)));
   return title === identity.sessionName ? '' : title;
 }
 
-function titleFromPrompt(prompt) {
+function titleFromPrompt(prompt, handle) {
   const fleet = FLEET_PROMPT_PATTERN.exec(prompt);
-  if (fleet) { return sanitizeTitle(fleet[2]); }
+  if (fleet) {
+    const label = sanitizeTitle(fleet[2]);
+    return handle ? `${label}--${handle}` : label;
+  }
   const explicit = EXPLICIT_NAME_PATTERN.exec(prompt);
   if (explicit) { return sanitizeTitle(explicit[1] ?? explicit[2] ?? ''); }
   const workflow = WORKFLOW_PROMPT_PATTERN.exec(prompt);
@@ -1022,17 +1110,23 @@ export function renderHookOutput(options = {}) {
   // Any other event a host config wires to this file by mistake prints nothing:
   // identity and routes belong to the prompt.
   if (event !== 'UserPromptSubmit') { return ''; }
-  const identity = resolveAgentIdentity({ env, hookInput, home });
+  const resolved = resolveAgentIdentity({ env, hookInput, home });
+  // The title is decided first: the session takes it with this prompt, so the
+  // identity line of this same prompt (often a fleet worker's only one) already
+  // names it, exactly as the next prompt reads it back (`nameSource: hook`).
+  const title = resolved.harness === 'claude-code'
+    ? proposeSessionTitle({ prompt: text(hookInput.prompt), identity: resolved, handle: text(env.ORCA_TERMINAL_HANDLE) })
+    : '';
+  const identity = title
+    ? { ...resolved, sessionName: title, nameSource: 'hook', label: sessionLabel({ sessionName: title, nameSource: 'hook', sessionId: resolved.sessionId }) }
+    : resolved;
   const prompt = options.prompt ?? (event === 'UserPromptSubmit' ? text(hookInput.prompt) : undefined);
   const context = agentContextLines({ ...options, env, hookInput, home, identity, prompt }).join('\n');
   if (identity.harness !== 'claude-code' && identity.harness !== 'codex') {
     return context;
   }
   const hookSpecificOutput = { hookEventName: event, additionalContext: context };
-  if (identity.harness === 'claude-code' && event === 'UserPromptSubmit') {
-    const title = proposeSessionTitle({ prompt: text(hookInput.prompt), identity });
-    if (title) { hookSpecificOutput.sessionTitle = title; }
-  }
+  if (title) { hookSpecificOutput.sessionTitle = title; }
   return `${JSON.stringify({ hookSpecificOutput })}\n`;
 }
 

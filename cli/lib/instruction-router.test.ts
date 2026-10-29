@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 
@@ -10,6 +10,7 @@ import {
   classifyPrompt,
   fileRouteState,
   IMPORT_ROW_TRIGGERS,
+  isHarnessNotification,
   loadInstructionRouter,
   MAX_ROUTED_SECTIONS,
   neutralizePaths,
@@ -247,6 +248,51 @@ describe('ROUTE: lines and the per-session state', () => {
       }
       expect(renderHookOutput({ ...options, hookInput: { session_id: sessionId, hook_event_name: 'SessionStart', source: 'resume' } })).toBe('');
       expect(prompt('push it').some(line => line.startsWith(ROUTE_PREFIX))).toBe(false);
+    }
+    finally {
+      rmSync(routeStatePath(root, sessionId), { force: true });
+    }
+  });
+});
+
+describe('harness task notifications route nothing and leave the state alone', () => {
+  const notice = (result: string) => `<task-notification>\n<task-id>a1b2c3d4</task-id>\n<status>completed</status>\n<summary>Agent "sweep" completed</summary>\n<result>${result}</result>\n</task-notification>`;
+
+  test('classification: a notice is nothing, whatever its result names; a prompt that mentions the tag still routes', () => {
+    const router = loadInstructionRouter(routerFixture());
+    expect(isHarnessNotification(notice('x'))).toBe(true);
+    expect(isHarnessNotification(`  \n${notice('x')}`)).toBe(true);
+    expect(classifyPrompt(router, 'commit and push the jira environment changes')).not.toEqual([]);
+    expect(classifyPrompt(router, notice('commit and push the jira environment changes'))).toEqual([]);
+    expect(bindingRoutes(router, notice('run the tests, then push'))).toEqual([]);
+    expect(classifyPrompt(router, 'why did <task-notification> fire after my commit?')).toEqual(['.agents/instructions/agent-git.md']);
+  });
+
+  test('routeLines: no lines and the record of the human\'s last prompt is untouched', () => {
+    const root = routerFixture();
+    const state = memoryState();
+    expect(routeLines({ repoRoot: root, prompt: 'commit this', routeState: state })).toHaveLength(1);
+    const before = structuredClone(state.read());
+    expect(before.pending).toEqual(['.agents/instructions/agent-git.md']);
+    const writes: unknown[] = [];
+    const watched = { ...state, write: (next: Record<string, unknown>) => { writes.push(next); state.write(next); } };
+    expect(routeLines({ repoRoot: root, prompt: notice('push it, then change project.yaml'), routeState: watched })).toEqual([]);
+    expect(writes).toEqual([]);
+    expect(state.read()).toEqual(before);
+  });
+
+  test('the Claude Code wire: identity and ORCA lines still emit, no ROUTE line, the state file is not created', () => {
+    const root = routerFixture();
+    const sessionId = `route-notice-${process.pid}-${Date.now()}`;
+    const options = { repoRoot: root, env: { CLAUDE_PROJECT_DIR: root }, home: temporaryRoot('home '), orca: true, envMissing: false, worktreeUnprovisioned: false };
+    try {
+      const output = JSON.parse(renderHookOutput({ ...options, hookInput: { session_id: sessionId, prompt: notice('commit, push, project.yaml'), hook_event_name: 'UserPromptSubmit' } })).hookSpecificOutput;
+      const lines = output.additionalContext.split('\n') as string[];
+      expect(lines[0]).toStartWith('AGENT IDENTITY:');
+      expect(lines[1]).toStartWith('ORCA: available.');
+      expect(lines.some(line => line.startsWith(ROUTE_PREFIX) || line.startsWith(ROUTE_OPTIONAL_PREFIX))).toBe(false);
+      expect(output.sessionTitle).toBeUndefined();
+      expect(existsSync(routeStatePath(root, sessionId))).toBe(false);
     }
     finally {
       rmSync(routeStatePath(root, sessionId), { force: true });
