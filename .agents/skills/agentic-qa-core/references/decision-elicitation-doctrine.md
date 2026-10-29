@@ -8,7 +8,45 @@ let the instrument cost more than the decision is worth.
 
 ---
 
+## 0 · Who may ask the human
+
+One rule for every instrument in this file: the harness's question tool, the sweep (§7) and the `mkd`
+deck (§2-5). **Only the session the human types into asks the human.**
+
+| Session | Asks the human? | Where its pendings go |
+|---|---|---|
+| a top-level conductor; a super-conductor (a conductor whose workers are conductors); an independent worker (launched top-level, its prompt carries no fleet token) | yes: the sweep for small items, the deck for heavy ones (§1) | to the human |
+| a session launched by another session: its prompt carries the fleet token `/<skill> <label> fleet worker` (a worker, or a middle conductor started with `agent launch`) | never: no structured-question tool, no `mkd` deck, no sweep | to the session that launched it |
+| a subagent, an unattended routine, CI | never | listed in its report; a routine parks the item (`./decision-protocol.md` §5) |
+
+**A launched session escalates to its launcher.** It sends the four kinds of `./decision-protocol.md`
+§5, and every error or blocker it cannot clear inside its brief, to the session that launched it: a
+blocking `ask`, an `escalation`, or, when it was launched without a dispatch, a `status` message whose
+subject starts with `BLOCKED: ` (`orca-orchestration/references/worker-contract.md` rules 2, 3 and 8).
+A pending that does not block it goes in a plain message or its report, and it keeps working on what
+does not depend on the answer. The launcher relays the item to the human with the instrument §1 picks
+or, if it was itself launched, sends it up one more level the same way. A middle conductor never sweeps:
+it escalates its workers' pendings together with its own.
+
+**Why.** A question prompt in a terminal nobody watches waits forever (gotcha G36 in
+`orca-orchestration/references/gotchas.md`), and inside Orca the `mkd` deck opens a tab and blocks its
+session until someone presses Send.
+
+**The exception is per request.** A launched session may ask the human directly when the human typed
+that request into its own terminal, or when its brief grants it in writing. It asks with the instrument
+§1 picks, then tells its launcher what it asked and what the answer was, so the decision lands in the run
+record (`./decision-protocol.md` §6). The fleet token in its first prompt stays: the next request that
+did not come from the human goes back to its launcher.
+
+**How a session knows.** Its first prompt says what it is (the fleet token, or none); the request in
+front of it says who is asking now. Unsure → treat yourself as launched and escalate: a needless relay
+costs one hop, a prompt nobody sees costs the run.
+
+---
+
 ## 1 · The ladder
+
+The ladder is for a session §0 lets ask the human; a launched session sends its asks to its launcher.
 
 | The ask | Instrument | Why |
 |---|---|---|
@@ -131,10 +169,11 @@ sweep takes small decisions, the deck takes heavy ones** (§1, weight not count)
 asked at once, by whichever instrument fits; at the close, heavy items go to the deck first, then the sweep
 takes every remaining small item.
 
-**Who sweeps.** The conductor, or any session the human types into directly (no conductor launched it). A worker or subagent whose
-brief names a conductor never sweeps and never decides: it lists its pendings in its report
-(`ask`/`escalation` in a fleet) and the conductor sweeps them. No human at the wheel (CI, an unattended
-routine): no sweep; park the item and report it (`./decision-protocol.md` §5).
+**Who sweeps.** Only a session §0 lets ask the human: a top-level conductor, a super-conductor, an
+independent worker. A session launched by another session never sweeps and never decides a pending of
+the four kinds: it sends it to its launcher as §0 says, and the session the human types into sweeps it.
+No human at the wheel (CI, an unattended routine): no sweep; park the item and report it
+(`./decision-protocol.md` §5).
 
 **What counts as pending.** Only what `./decision-protocol.md` §5 lets reach a person (the four kinds).
 A technical call inside the approved plan is decided and reported as DECIDED, never swept. A settled

@@ -176,7 +176,8 @@ The list is exhaustive. A question outside it is the agent's.
 **Escalate informed.** Show what the record already says (with its sources), the options with their value
 and their cost, and one recommendation. Never a bare open question: that is how a person gets pulled into
 re-deciding what they already decided. The instrument (harness prompt or `mkd` deck) is
-`./decision-elicitation-doctrine.md` §1.
+`./decision-elicitation-doctrine.md` §1. Who receives it is §0 there: only the session the human types
+into asks the human; a session launched by another session escalates to its launcher, which relays.
 
 **No person at the wheel** (an unattended routine, CI). Technical calls are decided and recorded exactly
 as above. A question of the four kinds is never decided by the routine: it parks the affected item
