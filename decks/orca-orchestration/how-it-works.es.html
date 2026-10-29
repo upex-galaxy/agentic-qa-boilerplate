@@ -868,7 +868,7 @@ scripts:
   </section>
 
   <!-- 15. IDENTIDAD Y FORENSE -->
-  <section class="slide" data-title="Identidad y forense">
+  <section class="slide dense" data-title="Identidad y forense">
     <p class="kicker">Quién hizo qué · identidad y trazas</p>
     <h2 class="h2 md">Una línea de identidad, dos <span class="grad">trailers</span></h2>
     <div class="mk sm mt-s">AGENT IDENTITY: worktree=&lt;nombre|primary&gt; session=&lt;label&gt; harness=&lt;claude-code|codex|opencode&gt;
@@ -2154,8 +2154,8 @@ in this session; your launcher relays.</div>
 </script>
 
 <script>
-/* deck :: mobile scale-to-fit — fixed 1440x900 layout (the desktop reference viewport) scaled into narrow/short viewports.
-   Desktop (vw>=1024 && vh>=640) is left untouched (native fluid). Preview iframes skipped. */
+/* deck :: scale-to-fit: fixed 1440x900 layout (the desktop reference viewport) scaled into any smaller viewport,
+   laptops included (1366x768, 1280x800). Viewports of at least 1440x900 are left untouched (native fluid). Preview iframes skipped. */
 (function(){
   try{
     if (new URLSearchParams(location.search).has('preview')) return;
@@ -2164,7 +2164,7 @@ in this session; your launcher relays.</div>
     if (!deck) return;
     function fit(){
       var vw = window.innerWidth, vh = window.innerHeight;
-      if (vw >= 1024 && vh >= 640){
+      if (vw >= BASE_W && vh >= BASE_H){
         deck.style.transform = '';
         deck.style.width = ''; deck.style.height = '';
         deck.style.position = ''; deck.style.left = ''; deck.style.top = '';
