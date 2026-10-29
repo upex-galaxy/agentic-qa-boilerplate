@@ -246,8 +246,38 @@ git_strategy:
 orchestration:
   max_workers: 4 # concurrent workers per round
   default_agent: claude # claude | codex | opencode
-  default_model: '' # full provider model id; empty = the harness default
+  # The WORKER model: the full provider model id, never an alias (an alias moves
+  # on its own between rounds: gotcha G29). The name stays `default_model` for
+  # compatibility (`bun sync` only inserts keys, it never renames one). Empty ''
+  # is allowed only when the conductor reads the model off the worker's screen
+  # at readiness and records it in the roster.
+  default_model: claude-opus-5-5 # e.g. claude-opus-5-5
   default_effort: high # harness effort level when supported
+  # The CONDUCTOR tier: the session the human types into, or a middle conductor
+  # another session launched. Same rule as `default_model`: a full model id.
+  conductor_model: claude-opus-5-5 # e.g. claude-opus-5-5
+  conductor_effort: high # e.g. high
+  # The SUBAGENT tier: one-shot dispatches inside a turn. Written in the
+  # harness's own subagent vocabulary, never a full id: Claude Code's Agent tool
+  # takes sonnet | opus | haiku | fable.
+  subagent_model: sonnet # e.g. sonnet
+  # Permission mode per tier, in the repo vocabulary bypass | auto | ask | inherit.
+  # Translated per harness in ONE table:
+  # .agents/skills/orca-orchestration/references/orca-machine-setup.md §3.1.
+  # A supervised worker's REAL mode comes from the orchestrator app's per-agent
+  # default arguments (the native launch takes no argv); this map declares what
+  # the conductor verifies at readiness. Why these defaults and the security
+  # tradeoff of `bypass`: .context/ADR/ADR-0024-agentic-work-profile-and-permission-posture.md.
+  # A map, read by path (`orchestration.permission_modes.<tier>`), not a {{VAR}}.
+  permission_modes:
+    conductor: auto # e.g. auto
+    worker: bypass # e.g. bypass
+    subagent: inherit # e.g. inherit (the mode of the session that launches it)
+  # Model by topic: the conductor matches a brief's topics against these entries
+  # when it picks a model and effort for a tier. Empty = the tier defaults above.
+  # Entry shape: {topics: [security, migration], tier: worker, model: <full id>, effort: max}
+  # (tier: worker | conductor | subagent). A list, read by path, not a {{VAR}}.
+  model_overrides: [] # e.g. [{topics: [security, migration], tier: worker, model: claude-opus-5-5, effort: max}]
   # WHICH orchestrator, named here instead of hardcoded in a skill. Empty
   # `orchestrator_cli` = no orchestrator on this machine: every workflow skill
   # falls back to the pasted-launch-line path and says NOTHING about it.

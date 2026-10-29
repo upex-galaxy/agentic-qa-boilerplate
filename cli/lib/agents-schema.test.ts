@@ -510,8 +510,12 @@ describe('projectDelta', () => {
     expect(delta.gaps[0].block).toBe('orchestration');
     expect(delta.gaps[0].wholeBlock).toBe(true);
     // Every leaf of the block, whatever the count: asserting a hardcoded
-    // number here just breaks the day someone legitimately adds a key.
-    const blockLeaves = [...schemaKeyPaths(schema)!.keys()].filter(k => k.startsWith('orchestration.'));
+    // number here just breaks the day someone legitimately adds a key. A
+    // nested map (`permission_modes`) is a container, not a leaf: the delta
+    // lists its children, so the container path is left out here too.
+    const walk = yamlLeafWalk(schema)!;
+    const blockLeaves = [...schemaKeyPaths(schema)!.keys()]
+      .filter(k => k.startsWith('orchestration.') && !walk.containers.includes(k));
     expect(delta.gaps[0].paths.sort()).toEqual(blockLeaves.sort());
     expect(delta.gaps[0].paths.length).toBeGreaterThan(3);
   });
@@ -672,12 +676,14 @@ describe('insertion', () => {
 
   test.skipIf(!MAINTAINER_CHECKOUT)('several keys anchored to the same spot keep the schema\'s order', () => {
     const old = source
-      .replace(/ {2}default_model: ''[^\n]*\n/, '')
+      .replace(/ {2}default_model: [^\n]*\n/, '')
       .replace(/ {2}default_effort: high[^\n]*\n/, '');
     const plan = planInsertions(old, schema, ['orchestration.default_model', 'orchestration.default_effort'], null);
     const { text, error } = applyInsertions(old, plan);
     expect(error).toBeNull();
-    expect(text.indexOf('default_model')).toBeLessThan(text.indexOf('default_effort'));
+    // The key lines, not the bare words: the comments around them name both.
+    expect(text.indexOf('  default_model:')).toBeGreaterThan(-1);
+    expect(text.indexOf('  default_model:')).toBeLessThan(text.indexOf('  default_effort:'));
   });
 
   test.skipIf(!MAINTAINER_CHECKOUT)('a path absent from the schema is reported, never silently dropped', () => {

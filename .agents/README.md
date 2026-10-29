@@ -184,16 +184,29 @@ Default settings for **supervised multi-session worker fleets** — one conducto
 orchestration:
   max_workers: 4        # concurrent workers per round (example value)
   default_agent: claude # claude | codex | opencode
-  default_model: ''     # full provider model id; empty = the harness default
-  default_effort: high  # harness effort level when supported
+  default_model: claude-opus-5-5   # worker model: full provider model id, never an alias
+  default_effort: high             # harness effort level when supported
+  conductor_model: claude-opus-5-5 # conductor model: full provider model id
+  conductor_effort: high
+  subagent_model: sonnet           # the harness's subagent vocabulary, never a full id
+  permission_modes:                # map, read by path
+    conductor: auto
+    worker: bypass
+    subagent: inherit
+  model_overrides: []              # list, read by path
 ```
 
 | Field | `{{VAR}}` name | Description |
 |---|---|---|
 | `max_workers` | `{{MAX_WORKERS}}` | Ceiling on concurrent workers per round (a concurrency group inside a Jira-status wave — see `orca-orchestration/references/coordinator-playbook.md`). |
 | `default_agent` | `{{DEFAULT_AGENT}}` | Which harness launches a worker when the user doesn't say: `claude` \| `codex` \| `opencode`. |
-| `default_model` | `{{DEFAULT_MODEL}}` | Full provider model id passed to the launch line; empty string defers to the harness's own default. |
-| `default_effort` | `{{DEFAULT_EFFORT}}` | Effort level passed to the launch line, when the harness supports one. |
+| `default_model` | `{{DEFAULT_MODEL}}` | The WORKER model: full provider model id passed to the launch line, never an alias (an alias moves between rounds, gotcha G29 in `orca-orchestration/references/gotchas.md`). Empty `''` is allowed only when the conductor reads the model off the worker's screen at readiness and records it in the roster. |
+| `default_effort` | `{{DEFAULT_EFFORT}}` | Effort level passed to the worker launch line, when the harness supports one. |
+| `conductor_model` | `{{CONDUCTOR_MODEL}}` | The CONDUCTOR model, same rule as `default_model`: a full provider model id. |
+| `conductor_effort` | `{{CONDUCTOR_EFFORT}}` | The conductor's effort level, when the harness supports one. |
+| `subagent_model` | `{{SUBAGENT_MODEL}}` | The model a one-shot subagent gets, in the harness's OWN subagent vocabulary, never a full id (Claude Code's Agent tool takes `sonnet` \| `opus` \| `haiku` \| `fable`). |
+| `permission_modes` | *(none, read by path)* | Map `conductor` / `worker` / `subagent` to a mode in the repo vocabulary `bypass` \| `auto` \| `ask` \| `inherit`. Translated per harness in ONE table: `orca-orchestration/references/orca-machine-setup.md` §3.1. A supervised worker's real mode comes from the orchestrator app's per-agent default arguments (the native launch takes no argv): this map declares what the conductor verifies at readiness. Read by path (`orchestration.permission_modes.<tier>`), never as a `{{VAR}}`. Why these defaults and the security tradeoff of `bypass`: ADR-0024. |
+| `model_overrides` | *(none, read by path)* | List of `{topics: [...], tier: worker \| conductor \| subagent, model: <id>, effort: <level>}`, e.g. `{topics: [security, migration], tier: worker, model: <full id>, effort: max}`. The conductor matches a brief's topics against it when it picks a model; empty = the tier defaults. Read by path, never as a `{{VAR}}`. |
 | `orchestrator_name` | `{{ORCHESTRATOR_NAME}}` | The orchestration application, as the operator names it. Prose only. |
 | `orchestrator_cli` | `{{ORCHESTRATOR_CLI}}` | The binary on `PATH`. Empty = no orchestrator on this machine: every workflow skill falls back to the pasted-launch-line path and says NOTHING about it. |
 | `message_verb` | `{{MESSAGE_VERB}}` | The command that carries **messages between sessions**. Byte-intact. |
@@ -201,6 +214,8 @@ orchestration:
 | `orchestrator_skills` | *(none — a list)* | Vendor skills the orchestrator installs at user level, loaded ALONGSIDE `/orca-orchestration`. Referenced by path (`orchestration.orchestrator_skills`), never as a `{{VAR}}`: a list is not a substitutable scalar, same carve-out as `git_strategy.protected`. |
 
 **`message_verb` and `terminal_verb` are NOT interchangeable, and that pair is the point.** The test: if a HUMAN would read it, it does not go through `terminal_verb`; if a shell or a TUI would EXECUTE it, that is what the verb is for. One structural exception: a supervised worker's FIRST prompt must go through `terminal_verb`, because the native launch has no argv — keep it short and pointing at a file. Full doctrine, measurements and the reverse-direction rules: `orca-orchestration/references/channel-discipline.md`.
+
+**Three tiers, one profile.** A *conductor* is the session the human types into, or a middle conductor another session launched; a *worker* is a session a conductor launched; a *subagent* is a one-shot dispatch inside a turn. `default_model` / `default_effort` are the worker tier, `conductor_*` and `subagent_model` the other two, and `permission_modes` and `model_overrides` are keyed by the same tier names. Every value is a fallback: an explicit user instruction in the conductor session overrides it for that run. `default_model` keeps its name for compatibility, because `bun sync` only inserts keys and never renames one (an old key would be stranded downstream). A downstream project gets the new leaves through an interactive `bun sync`, which offers them and inserts them insert-only; with `--auto` they are listed, not inserted, because the `orchestration:` block already exists there. An existing value is never changed, so a project that had `default_model: ''` keeps it until someone sets it. Decision record: `.context/ADR/ADR-0024-agentic-work-profile-and-permission-posture.md`.
 
 **Naming the orchestrator here is what lets a skill stop hardcoding it.** A project on a different orchestrator keeps the whole doctrine and swaps the values of the `orchestration:` block.
 

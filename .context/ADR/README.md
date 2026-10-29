@@ -85,6 +85,7 @@ Who authors: a human QA architect / lead directly, **or** an AI workflow that de
 | [ADR-0020](./ADR-0020-test-outcome-classes.md) | Every automated test gets one outcome class (`passed`, `failed`, `known-defect`, `unexpected-pass`, `skipped`) in `reports/test-outcomes.json`, and the run headline comes from those records | Accepted | — | — |
 | [ADR-0021](./ADR-0021-evidence-pack-and-host-seam.md) | Evidence is a versioned pack (`evidence-pack/1.0`) built into one offline HTML page per ticket and per bug, with burned redactions, refused secrets and a host seam (default: the agent publishes a private Claude artifact; `local` fallback) | Accepted | — | ADR-0022 (in part) |
 | [ADR-0022](./ADR-0022-evidence-page-reference-design.md) | The evidence page is the reference implementation's page, copied, built by the reference `build.py` (Python + Pillow) from `evidence-pack/2.0`, with ADR-0021's safety rules moved into it and the workflow as the `evidence-artifact` skill | Accepted | ADR-0021 (in part) | — |
+| [ADR-0024](./ADR-0024-agentic-work-profile-and-permission-posture.md) | Agentic work runs in three tiers with one profile in `orchestration:`; a launched session escalates to its launcher, and workers run in bypass | Accepted | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first.
 
