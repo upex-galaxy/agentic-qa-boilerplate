@@ -635,7 +635,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <tr><td class="small"><b>Re-armado</b></td><td class="small">Tras una compactación o un <code>/clear</code>, el emisor borra ese estado y no imprime nada: lo que salió del contexto se vuelve a rutear la próxima vez que haga falta.</td></tr>
       </table>
     </div>
-    <div class="notes">Un emisor, tres adaptadores: Claude Code y Codex lo ejecutan como command hook, OpenCode lo importa desde .opencode/plugins/personality-reinject.js. El estado de ruteo nunca vive en el repo: es estado de sesión. La confianza de Codex es estado de runtime, por eso setup:doctor la reporta aparte (agent-harnesses.md, Codex trust).</div>
+    <div class="notes">Un emisor, tres adaptadores: Claude Code y Codex lo ejecutan como command hook, OpenCode lo importa desde .opencode/plugins/personality-reinject.js. Un prompt que empieza con &lt;task-notification&gt; (el aviso del harness de que terminó un subagente en segundo plano) no rutea nada y no toca el estado de ruteo: nadie pidió esas rutas. El estado de ruteo nunca vive en el repo: es estado de sesión. La confianza de Codex es estado de runtime, por eso setup:doctor la reporta aparte (agent-harnesses.md, Codex trust).</div>
   </section>
 
   <!-- 7. REGLAS CRÍTICAS -->

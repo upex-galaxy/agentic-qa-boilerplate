@@ -429,6 +429,13 @@
         <code>stage-gates.md</code> reserva para ti en esa etapa. El detalle está en
         <code>.agents/skills/agentic-qa-core/references/decision-protocol.md</code>.
       </p>
+      <p>
+        Solo te pregunta la sesión en la que tú escribes. Una sesión que lanzó otra sesión (un
+        worker de una flota, o un conductor intermedio) nunca te pregunta: no abre la herramienta de
+        preguntas, ni un deck, ni hace el barrido. Le escala todo a la sesión que la lanzó, y esa
+        sesión te lo trae. La regla está en el §0 de
+        <code>.agents/skills/agentic-qa-core/references/decision-elicitation-doctrine.md</code>.
+      </p>
       <p>Cuando sí te pregunta, el instrumento depende de la forma de la pregunta:</p>
       <div class="table-wrap">
         <table>

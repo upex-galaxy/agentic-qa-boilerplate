@@ -1622,7 +1622,10 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
             </li>
             <li>
               Una línea <code>ORCA:</code> que nombra <code>/orca-orchestration</code>, solo si el
-              binario de orquestación está instalado.
+              binario de orquestación está instalado. Su texto depende del rol: una sesión en la que
+              escribe el humano le pregunta a él directamente; una sesión lanzada por un conductor
+              (su prompt trae el token <code>fleet worker</code>) le reporta al conductor y nunca le
+              pregunta al humano.
             </li>
             <li>
               Como mucho un aviso de setup: falta <code>.env</code> en el checkout, o es un worktree
@@ -1632,6 +1635,8 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
               Líneas <code>ROUTE: read &lt;archivo&gt;</code> con las secciones de instrucciones que
               el prompt necesita y la sesión todavía no leyó, más una línea
               <code>ROUTE-OPTIONAL:</code> si sobran. Si nada nuevo coincide, no hay líneas de ruta.
+              Un aviso de tarea del harness (un prompt que empieza con
+              <code>&lt;task-notification&gt;</code>) no produce rutas ni toca el estado de ruteo.
             </li>
           </ul>
 
