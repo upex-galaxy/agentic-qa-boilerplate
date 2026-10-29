@@ -51,7 +51,7 @@ So the rule is not "never a prompt through `terminal send`". It is:
 > **Never a CONVERSATION through `terminal send`. The one prompt it may carry is the launch handoff,
 > and that prompt is short and points at a file.**
 
-Which is the same discipline anyway: the handoff opens with `/<workflow-skill> <KEY> fleet worker`,
+Which is the same discipline anyway: the handoff opens with `/<workflow-skill> <label> fleet worker`,
 names the brief by absolute path, carries the no-stopping sentence, and stops. Everything else the
 worker needs is in the brief, in a file, because a long prompt through this verb arrives as its last
 fragment (G60).

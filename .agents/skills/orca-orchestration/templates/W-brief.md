@@ -14,9 +14,9 @@ Read `<ABS>/.session/orchestration/<slug>/COMMON.md` first, then this file.
 | Task | `task_…` |
 | Dispatch | `dispatch_…` (omit if launched without one) |
 | Run | `run_…` — **ONLY** when launched WITHOUT a dispatch; with an active dispatch the recipient defaults to the owning Run, so this line invites an error |
-| Session label | <KEY> — your roster name, the token your prompt opens with. It is set for you: on Claude Code the identity hook names the session from that token, on OpenCode and Codex the conductor types `/rename <KEY>`. Do not rename yourself (you cannot run `/rename`); carry this value in your `Session:` trailer |
+| Name | `<label>--<handle>`, where `<label>` is `[<KEY>-]<slug>`, the token your prompt opens with, and `<handle>` is your own `ORCA_TERMINAL_HANDLE`. **First action: rename your own tab** with `orca terminal rename --terminal "$ORCA_TERMINAL_HANDLE" --title "<label>--$ORCA_TERMINAL_HANDLE" --json </dev/null`. Your SESSION name is set for you (Claude Code: the identity hook; Codex, OpenCode v2.2, Pi: the conductor types the rename verb); never rename your own session. Your `Session:` trailer carries this full name (the `session=` value of your `AGENT IDENTITY` line)<; on a harness that cannot be renamed, mark this row `roster only`: your trailer carries this roster name> |
 | Worktree | <primary \| name> — the first commit-trailer value |
-| Agent / model / effort | <agent> / <full model id> / <effort> |
+| Agent / model / effort | <agent> / <full model id> / <effort> — from `orchestration.default_agent` / `default_model` / `default_effort`, unless an `orchestration.model_overrides` entry matches this brief's topics or the user said otherwise |
 | Report path | `<ABS>/.session/orchestration/<slug>/reports/<label>.md` |
 
 ## Goal
@@ -89,8 +89,14 @@ Then send `worker_done` exactly once — explicit outcome, modified files, repor
 
 ## Rules
 
-- Channel: the orchestration mailbox. No harness agent-messaging, no user prompts, **no heartbeats**
-  (your preamble asks for them; this wave forbids them).
+- Channel: the orchestration mailbox. No harness agent-messaging, no user prompts, no
+  structured-question tool, no `mkd` deck, **no heartbeats** (your preamble asks for them; this wave
+  forbids them).
+- **Errors, blockers and decisions go to the conductor, never to the human** (worker contract rule
+  16): the four escalation kinds of `agentic-qa-core/references/decision-protocol.md` §5 and every
+  error or blocker you cannot clear inside this brief, as a blocking `ask`, an `escalation` or a
+  `BLOCKED: ` status. Never guessed. A technical call inside this brief is yours: decide it and report
+  it as DECIDED.
 - **Run every stage without returning to the prompt until `worker_done` is sent.** A stage boundary,
   a written artifact and a natural pause are not checkpoints. Done → `worker_done`; blocked → `ask`;
   otherwise keep going.
@@ -100,7 +106,7 @@ Then send `worker_done` exactly once — explicit outcome, modified files, repor
   depend on the answer. <If you were launched WITHOUT a dispatch: `escalation` is rejected on that
   path — send blockers as a `status` message with the subject prefixed `BLOCKED: `.>
 - Commit trailers, the last two lines of every commit, nothing after them:
-  `Worktree: <value>` then `Session: <label>`. Forensics, not attribution. No AI attribution.
+  `Worktree: <value>` then `Session: <label>--<handle>`. Forensics, not attribution. No AI attribution.
 - Critical Rules #3, #7, #8, #15 (see COMMON.md).
 - <any scope-specific guardrail: the environment to test against, the credentials profile to read,
   the branch to base on>

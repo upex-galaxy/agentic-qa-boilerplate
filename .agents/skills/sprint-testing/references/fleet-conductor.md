@@ -63,7 +63,7 @@ The **orchestration gate** (binary present + runtime reachable, three-state, can
 **The prompt is the channel.** A worker's first prompt opens with the skill, the issue key and the literal token `fleet worker`, then points at its brief:
 
 ```
-/sprint-testing UPEX-123 fleet worker env: staging. Brief: <abs path to brief.md>. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints.
+/sprint-testing UPEX-123 fleet worker env: staging. Brief: /abs/path/to/sprint-N/UPEX-123/brief.md. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints.
 ```
 
 Same text on both launch paths (§5 rule 2), so a worker cannot tell them apart.
@@ -75,7 +75,7 @@ Two signals, in this order, make a session a worker:
 | the token `fleet worker` next to a skill invocation and an issue key | the launch prompt | this session is a worker; that key is the single issue it owns |
 | `Label` · `Task` · `Dispatch` in the brief's `## Meta` | `sprint-<N>/<KEY>/brief.md` | which worker it is, and how it reports (§10) |
 
-**Environment variables are NOT a channel.** Measured on a real fleet (ADR-0006): an env prefix written into a launch line did not survive the launcher, and every session ran with both variables empty while behaving as workers only because the prompt said so. `PARALLEL_TESTING` / `PARALLEL_TICKET` therefore survive as an OPTIONAL redundant hint on the human-paste path (a pasted shell line does carry its own prefix) and nothing in this skill may depend on them. A session that sees the env vars but no `fleet worker` prompt and no brief is not a worker — the prompt and the brief are the only detection channel.
+**Environment variables are NOT a channel.** Measured on a real fleet (ADR-0006): an env prefix written into a launch line did not survive the launcher, and every session ran with both variables empty while behaving as workers only because the prompt said so. `PARALLEL_TESTING` / `PARALLEL_TICKET` are therefore no longer written into a launch line (§5), and nothing in this skill may depend on them. A session that sees the env vars but no `fleet worker` prompt and no brief is not a worker — the prompt and the brief are the only detection channel.
 
 A worker:
 
@@ -147,7 +147,8 @@ Run: <run id — ONLY when this worker was launched without a supervised dispatc
 - no write to the Epic's `## Module Context (QA)` section: stage what you learned about the module under `## Module Learnings (candidate)` in your test-session-memory.md; the conductor publishes it
 - no heartbeats; report once at the end
 - if your own measurement contradicts an instruction in this brief or a later message, STOP and `ask` with both readings and your evidence — never comply silently and never deviate silently
-- your session name is set by the conductor (the prompt token on Claude; a conductor-typed `/rename <KEY>` on a non-Claude harness): never try to rename yourself
+- your name is <KEY>--<your terminal handle>: first action, rename your own tab to it ([ORCHESTRATION_TOOL] terminal rename, exact command in `orca-orchestration/references/worker-contract.md` §Session naming); your session name is set for you (the identity hook on Claude, a conductor-typed rename verb on Codex, OpenCode v2.2 and Pi), never rename your own session; your `Session:` trailer carries that full name
+- errors, blockers and anything for the human go to the conductor (ask / escalation / BLOCKED: status), never to the human, never guessed; no question prompt, no deck (`orca-orchestration/references/worker-contract.md` rule 16)
 ```
 
 **Absolute paths, always.** `.session/` is gitignored and local; a worker that resolves a relative path against the wrong working directory silently reads nothing.
@@ -165,7 +166,7 @@ Rules:
 1. **Always written**, gate or no gate. It is the record of what the fleet was asked to do, and the **human-paste** path consumes it literally.
 2. **Byte-identical where it is pasted.** A human (or a launcher that takes a whole command line) gets *this exact line*; never paraphrase it. On the supervised path the transport opens the session itself with its own arguments and cannot accept a custom command line, so what travels there is the **prompt payload** of this line, delivered to the live session as its first message (`orca-orchestration/references/launch-seam.md` §2). The prompt is the part that must stay identical across both paths — it is what makes a session a worker (§3).
 3. **Regenerated whole** at every round boundary. Never patched line by line: issues that closed **drop out**, issues that arrived get appended. A stale line relaunches a finished issue.
-4. **Self-contained**: the harness invocation, the session name, the prompt, and (paste path only) the optional env prefix, in one line that works when pasted into a fresh terminal at the repo root. The prefix is a convenience for a pasted line — it does not reach a session the transport opened, so the prompt must carry everything the worker needs (§3).
+4. **Self-contained**: the harness invocation and the prompt, in one line that works when pasted into a fresh terminal at the repo root. No env prefix and no second session name: the worker's name is `<KEY>--<handle>`, composed from the prompt token (`orca-orchestration/references/session-identity.md` §2b), and a prefix never reaches a session the transport opened, so the prompt carries everything the worker needs (§3).
 5. **No `"` and no `<` / `>` inside the prompt text.** Measured on the source fleet (ADR-0006): a quote inside the prompt produced a shell parse error that killed every launch line *and* silently dropped the env-var exports, so the workers ran as non-workers. Reword the prompt instead.
 6. **Validate every line before launch** with a shell syntax check (`bash -n` on a file holding the lines; `zsh -n` where the user's shell is zsh). A line that does not parse is not launched.
 7. The harness invocation itself (binary, model / effort / permission / session-name flags per harness) and which launch path supervises are owned by `orca-orchestration/references/launch-seam.md`. This skill owns only the payload: the `sprint-testing` worker prompt.
@@ -173,10 +174,10 @@ Rules:
 Shape (Claude Code; the line starts the harness binary bare with its own flags, and the worker gets credentials from the MCP configs' `.env` loader and each script's own loading, never from the launch line):
 
 ```
-PARALLEL_TESTING=true PARALLEL_TICKET=UPEX-123 claude <harness flags per launch-seam.md> -n "UPEX-123-checkout-tax" "/sprint-testing UPEX-123 fleet worker env: staging. Brief: <abs path to brief.md>. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints."
+claude <harness flags per launch-seam.md> '/sprint-testing UPEX-123 fleet worker env: staging. Brief: /abs/path/to/sprint-N/UPEX-123/brief.md. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints.'
 ```
 
-The quoted prompt is the payload. On the supervised path it is what the conductor sends to the session the moment it is ready — same text, no shell around it.
+The single-quoted prompt is the payload, and `UPEX-123` is the one label everywhere: the prompt token, the worker's name `UPEX-123--<handle>` (session, tab, roster, `Session:` trailer) and its brief folder. The Claude line carries no name flag, because a name flag freezes the name before the hook can append the handle. On the supervised path the prompt is what the conductor sends to the session the moment it is ready — same text, no shell around it.
 
 ---
 

@@ -11,7 +11,7 @@
 
 ---
 
-## The fifteen rules
+## The sixteen rules
 
 1. **One task: the one in the brief.** Do not widen the scope. Do not create other workers. If you
    find something that changes the scope, STOP and report it — a scope correction is the conductor's
@@ -21,9 +21,12 @@
    messaging tool: from an isolated worktree the conductor is not in your agent list, and a whole
    fleet once reported this way (G35) — reports went to an unrelated session or sat typed and
    unsent, and the conductor found out by reading screens much later.
-   Do NOT use a user-question prompt either: nobody is watching it (one such question waited for
-   hours, G36). A pending that needs the human goes to the conductor (`ask`, or listed in your
-   report), which sweeps it with the owner; you never sweep and never decide it.
+   Do NOT use a user-question prompt, any structured-question tool, or an `mkd` decision deck either:
+   nobody is watching them (one such question waited for hours, G36), and inside Orca a deck opens a
+   tab and blocks until someone presses Send. A pending that needs the human goes to the conductor
+   (`ask`, or listed in your report), which relays it to the owner; you never sweep, never open a
+   deck, and never decide it (rule 16). Who may ask the human at all:
+   `agentic-qa-core/references/decision-elicitation-doctrine.md` §0.
 
 3. **A question that blocks you goes out as a blocking `ask`.** If it times out, the question stays
    pending: resume it by its original message id, never ask again (a duplicate question produces two
@@ -109,6 +112,28 @@
     absolute path, or the same content through the mailbox. Measured in both directions, between
     two sessions that had each just written the rule they were breaking (G64).
 
+15. **Resolve your `ROUTE:` lines before the brief.** Your first prompt arrives with the hook's
+    `ROUTE: read <file>` lines (`AGENTS.md` LOAD PROTOCOL): read each one first, then COMMON and your
+    brief. They are few on purpose: the hook routes on the prompt's `ROUTE-SCOPE:` sentence or, without
+    one, on the task block only, never on the injected preamble, and caps the binding lines; anything
+    else it matched sits on one `ROUTE-OPTIONAL:` line you read only if the work needs it. Before the
+    cap, worker prompts fired most sections at once and workers read almost none of them, so the
+    brief ran without the sections it depended on (measurements in ADR-0017).
+
+16. **Errors, blockers and decisions go to your launcher.** Everything that needs a person goes to
+    the conductor that launched you, never to the human: the four kinds of
+    `agentic-qa-core/references/decision-protocol.md` §5 (product behaviour, a new security posture,
+    an irreversible or outward action, what a person signs), AND every error or blocker you cannot
+    clear inside your brief. It travels as a blocking `ask`, an `escalation`, or, on the unsupervised
+    path, a `status` message whose subject starts with `BLOCKED: ` (rule 8); never guessed, never asked
+    to the human, never worked around. Escalate informed: what you found, the options, your
+    recommendation. A technical call inside your brief stays yours: decide it and report it as
+    DECIDED, with the option it beat. The one exception: the human typed the request into your own
+    session, or your brief grants it in writing. Then you may ask them directly, and you tell the
+    conductor what was asked and answered, so the decision lands in the run record. A conductor that
+    another conductor launched (G77) is a worker of this rule: it escalates to its own launcher the
+    same way.
+
 ---
 
 ## Commit trailers
@@ -130,21 +155,36 @@ owned by `/git-flow-master`; the identity resolution is described in `references
 
 ## Session naming
 
-**There is no name flag on the supervised path**: the runtime starts the agent itself and takes an
-agent, a model and an effort level, not a command line. Your name therefore comes from one of two
-places:
+Your name is `<label>--<handle>`: the roster label your prompt token carries, two hyphens, then your
+own Orca terminal handle (`references/session-identity.md` §2b). It is your session name, your tab
+title, the roster's `Name` column and your `Session:` trailer, one string everywhere.
 
-- **Claude Code** — from your first prompt. It opens with `/<workflow-skill> <KEY> fleet worker`, and
-  the repo's identity hook names the session `<KEY>`, your roster name. Nothing for you to do.
-- **OpenCode and Codex** — the conductor types `/rename <KEY>` into your terminal once you are
-  ready. Nothing for you to do either.
+**Your first action once your `ROUTE:` lines, COMMON and your brief are read (rule 15), before any
+work: rename your own TAB.** The runtime titles every worker
+tab `worker-<task id>` (G71), and the tab is how the owner finds you:
 
-You cannot rename yourself: `/rename` is user input, not a command you can run, so do not try, and
-do not treat a missing name as a blocker. Your tab title is also the conductor's job. A worker
-launched from a pasted line on the no-runtime path may already be named by that line's own name
-flag. Either way, the `Session:` trailer carries EXACTLY the label the brief gives you: the
-conductor's roster, the board card and the commit trailer all key off it, and a self-invented name
-breaks the resume path.
+```
+orca terminal rename --terminal "$ORCA_TERMINAL_HANDLE" --title "<label>--$ORCA_TERMINAL_HANDLE" --json </dev/null
+```
+
+The conductor re-issues the same rename in every liveness sweep; yours is the first, not the only
+one. With no `ORCA_TERMINAL_HANDLE` in your environment (a line pasted outside Orca) there is no tab
+to rename: skip it.
+
+Your SESSION name is set for you, never by you:
+
+- **Claude Code**: the repo's identity hook composes `<label>--<handle>` from your first prompt's
+  `/<workflow-skill> <label> fleet worker` opening plus `ORCA_TERMINAL_HANDLE`. Nothing to do.
+- **Codex, OpenCode v2.2, Pi**: the conductor types the rename verb into your terminal once you are
+  ready. Nothing to do either.
+- **OpenCode v1, or any harness that cannot be renamed**: the roster maps your name to your handle.
+
+You cannot rename your own session: `/rename` is user input, not a command you can run, so do not
+try, and do not treat a missing name as a blocker. Your `Session:` trailer carries the full name:
+the `session=` value of the `AGENT IDENTITY` line in your context, or, where your harness could not be
+renamed, the roster name your brief or the conductor gives you. Never a self-invented name: the
+roster, the board card and the commit trailer all key off it, and a different one breaks the resume
+path.
 
 ---
 
@@ -193,7 +233,10 @@ has a known failure mode:
 - [ ] The domain skill to load, by trigger.
 - [ ] **File ownership**: the exact paths you may edit, and the instruction to request any other edit
       instead of making it.
-- [ ] The channel, and the prohibition of harness messaging / user prompts / heartbeats.
+- [ ] The channel, and the prohibition of harness messaging / user prompts / structured-question
+      tools / decks / heartbeats.
+- [ ] Rule 16 in writing: errors, blockers and the four escalation kinds go to the conductor, never
+      to the human; technical calls inside the brief are yours, reported as DECIDED.
 - [ ] The continuation rule (rule 11), in writing, and not only in the prompt.
 - [ ] `Run: <run_id>` if you were launched without a dispatch, and the `BLOCKED: ` status form that
       replaces `escalation` on that path.
@@ -201,13 +244,6 @@ has a known failure mode:
       someone else's decision gets broadcast instead of buried.
 - [ ] The claims you must declare before starting.
 - [ ] The report path and the report protocol.
-- [ ] Your session label, and the rename instruction if your harness needs one.
+- [ ] Your label, the tab-rename first action, and your `Session:` trailer source (the full
+      `<label>--<handle>` name, or the roster name where your harness cannot be renamed).
 - [ ] The trailer reminder.
-
-15. **Resolve your `ROUTE:` lines before the brief.** Your first prompt arrives with the hook's
-    `ROUTE: read <file>` lines (`AGENTS.md` LOAD PROTOCOL): read each one first, then COMMON and your
-    brief. They are few on purpose: the hook routes on the prompt's `ROUTE-SCOPE:` sentence or, without
-    one, on the task block only, never on the injected preamble, and caps the binding lines; anything
-    else it matched sits on one `ROUTE-OPTIONAL:` line you read only if the work needs it. Before the
-    cap, worker prompts fired most sections at once and workers read almost none of them, so the
-    brief ran without the sections it depended on (measurements in ADR-0017).

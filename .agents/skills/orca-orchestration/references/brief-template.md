@@ -58,7 +58,8 @@ a system temp directory (it triggers a permission prompt on some harnesses).
    types and prohibit, in writing:
    - the harness's agent-to-agent messaging tool (from an isolated worktree the conductor is not
      addressable);
-   - the harness's user-question prompt (nobody is watching it);
+   - the harness's user-question prompt, any structured-question tool, and an `mkd` decision deck
+     (nobody is watching them; inside Orca a deck blocks until someone presses Send);
    - **periodic heartbeats** — and say WHY the prohibition is there, because the injected preamble
      asks for them and a worker obeying its preamble is behaving correctly from its own side.
 
@@ -90,11 +91,23 @@ a system temp directory (it triggers a permission prompt on some harnesses).
    conductor instruction, it stops and asks with both readings and its evidence. Never silent
    compliance, never silent deviation.
 
-7. **Session label** — the worker's roster name `<KEY>`, the one value the roster, the tab, the board
-   card and the commit trailer all key off. On the supervised path there is no name flag: on Claude
-   Code the identity hook names the session from the prompt's `/<workflow-skill> <KEY> fleet worker`
-   opening, and on OpenCode and Codex the conductor types `/rename <KEY>`. The brief never asks the
-   worker to rename itself: `/rename` is user input, and a model cannot run it. Detail:
+   **Escalation goes to the launcher** (`references/worker-contract.md` rule 16): the four kinds of
+   `agentic-qa-core/references/decision-protocol.md` §5 and every error or blocker the worker cannot
+   clear inside the brief go to the conductor as a blocking `ask`, an `escalation` or a `BLOCKED: `
+   status, never guessed and never asked to the human; technical calls inside the brief are the
+   worker's, reported as DECIDED. Say in writing if the brief grants the worker a direct question to
+   the human (the one exception besides the human typing into the worker's own session).
+
+7. **Session label** — the worker's roster label `[<KEY>-]<slug>`, which the prompt token carries;
+   the worker's full name is `<label>--<handle>`, composed once the terminal exists, and it is the
+   one value the session, the tab, the roster's `Name` column and the commit trailer all key off. The
+   brief tells the worker to rename its own TAB as its first action (the exact command is in
+   `references/worker-contract.md` §Session naming). On the supervised path there is no name flag:
+   on Claude Code the identity hook composes the session name from the prompt's
+   `/<workflow-skill> <label> fleet worker` opening plus `ORCA_TERMINAL_HANDLE`, and on Codex,
+   OpenCode v2.2 and Pi the conductor types the rename verb. The brief never asks the worker to
+   rename its own SESSION: `/rename` is user input, and a model cannot run it. Where the harness
+   cannot be renamed (OpenCode v1), the brief gives the roster name the trailer carries. Detail:
    `references/session-identity.md` §2b.
 
 8. **Trailer reminder** — the two forensic trailers as the last lines of every commit, and the
@@ -112,8 +125,9 @@ Read <ABS>/.session/orchestration/<slug>/COMMON.md first, then this file.
 
 Label: <label>   Task: <task_id>   Dispatch: <dispatch_id>
 [Run: <run_id>]                       # ONLY when launched without a dispatch
-Session label: <KEY>                  # set for you (hook or conductor); your `Session:` trailer
-Model / effort: <model> / <effort>
+Session label: <label>                # your full name is <label>--<handle>; rename your own tab first
+Model / effort: <model> / <effort>    # orchestration.default_model / default_effort, unless a
+                                      # model_overrides entry matches this brief's topics or the user said otherwise
 Worktree: <primary | name>            # first trailer value
 
 ## Goal
@@ -153,7 +167,12 @@ Then send worker_done exactly once, outcome succeeded|failed, with --files-modif
 --report-path. Then stop.
 
 ## Rules
-- Channel = the orchestration mailbox. No harness agent-messaging, no user prompts, NO heartbeats.
+- Channel = the orchestration mailbox. No harness agent-messaging, no user prompts, no
+  structured-question tool, no mkd deck, NO heartbeats.
+- First action once COMMON and this brief are read, before any work: rename your own tab to
+  <label>--$ORCA_TERMINAL_HANDLE (worker-contract.md §Session naming).
+- Errors, blockers and the four escalation kinds go to me (ask / escalation / BLOCKED: status), never
+  to the human and never guessed; a technical call inside this brief is yours, reported as DECIDED.
 - Run every stage without returning to the prompt until worker_done is sent; a stage boundary is not
   a checkpoint.
 - A measurement of yours that contradicts an instruction of mine = STOP and ask, with both readings.
@@ -161,7 +180,7 @@ Then send worker_done exactly once, outcome succeeded|failed, with --files-modif
   keep working on everything that does not depend on the answer.
 - Commit trailers, last two lines, nothing after them:
   Worktree: <value>
-  Session: <label>
+  Session: <label>--<handle>    # the session= value of your AGENT IDENTITY line
 - Critical Rules #3 (no AI attribution), #7 (verify tests -> types -> lint), #8 (read before edit),
   #15 (no global discards).
 ```
@@ -178,6 +197,7 @@ Then send worker_done exactly once, outcome succeeded|failed, with --files-modif
 | a context path inside the worker's own worktree | the file is not there; the worker proceeds without it, silently |
 | no file-ownership list in a same-checkout fleet | two workers edit one file and one of them loses the work |
 | no explicit heartbeat prohibition | the worker obeys its injected preamble and wakes the conductor every few minutes |
+| no escalation rule in the brief | the worker guesses a product answer, or opens a question prompt or a deck nobody is watching, and the run stalls on it (G36) |
 | claims listed in the brief while the protocol says "wait for the grant" | the worker cannot tell which document governs and stalls on a claim that was never disputed. Measured |
 | the continuation rule only in the brief, never in the prompt | the worker reads it as reference material and stops at the first stage boundary anyway. Measured on a real fleet (G58) |
 | a launch prompt with no closing `ROUTE-SCOPE:` sentence | the prompt hook routes on the task block's incidental words (a path, "worker", the channel name) instead of the sections the work needs, and the worker reads routes that do not matter or skips the ones that do (ADR-0017) |

@@ -29,7 +29,7 @@ the failure this rule exists to prevent; the prompt is what must not drift.
 | Responsibility | Without a runtime (the contract) | With a runtime (supervised) |
 |---|---|---|
 | Launch | the human opens N terminals and pastes N lines from `launch.txt` | `[ORCHESTRATION_TOOL] launch: one native supervised worker per unit of work (agent + model + effort), then send the prompt into it` |
-| Prompt | it is inside the pasted line | delivered as a separate step, same text, opening with `/<workflow-skill> <KEY> fleet worker` |
+| Prompt | it is inside the pasted line | delivered as a separate step, same text, opening with `/<workflow-skill> <label> fleet worker` |
 | Credentials | the pasted line runs in the user's own shell, which already has them | every MCP server reads the worktree's own `.env` through the `.env` loader on any harness, and every other process loads its own config; the conductor VERIFIES them on screen before sending work (`references/orca-machine-setup.md` §3.2) |
 | State | the workflow's own blocked-state tokens in its session memory, plus the tracker | the mailbox: wait on done / escalation / question |
 | Sibling awareness | each worker knows only its own ticket | the roster in the brief; a worker broadcasts a fact that changes someone else's decision |
@@ -53,21 +53,35 @@ for the real grammar. Only this skill spells out commands, because only this ski
 - One line per unit of work, **self-contained**: it exports whatever the worker needs, then starts
   the agent with the full prompt. A line that depends on something typed earlier in that terminal is
   not a launch line.
-- Shape (Claude Code example; other harnesses use their own binary and their own documented flags):
+- Shape, one line per harness. The permission flag is the one that matches
+  `orchestration.permission_modes.worker` (`.agents/project.yaml`), translated in
+  `references/orca-machine-setup.md` §3.1; the lines below carry the shipped `bypass`, with the
+  version each flag was read at (2026-10-28). Confirm with `<harness> --help` before pasting:
 
   ```
-  claude --model <full-model-id> --effort <level> --permission-mode auto \
-    -n "<KEY>" '<prompt>'
+  claude --model <full-model-id> --effort <level> --dangerously-skip-permissions '<prompt>'
+  opencode --model <provider/model> --auto --prompt '<prompt>'                        # v1.19.5 / v2.2.0
+  codex --model <full-model-id> --dangerously-bypass-approvals-and-sandbox '<prompt>' # rust-v0.165.0
+  pi --approve -n "<label>${ORCA_TERMINAL_HANDLE:+--$ORCA_TERMINAL_HANDLE}" '<prompt>' # v1.4.0, not a supported harness
   ```
+
+  Claude Code's line carries no `-n`: a name flag marks the name as human-set, and the identity hook
+  then never appends the handle, so the hook names the session from the prompt token instead
+  (`references/session-identity.md` §2b). Codex's bypass flag is the full one on purpose:
+  `-a never -s workspace-write` never prompts but keeps `.git` read-only and the network off, so the
+  worker cannot commit. The full set, with the Claude Code source and the auto-mode flags:
+  `templates/launch.txt`.
 
   The line starts the harness binary directly, with its own flags. No launch line loads `.env` into
   the worker's shell: every MCP server reads `.env` through the filtered loader in the MCP configs
   (ADR-0011) and every repo script loads it itself (`references/provisioning.md` §1b), so a pasted
   line and a supervised launch get credentials the same way. A variable the human exported in the
   shell the line is pasted into still wins over `.env` for whatever that shell starts;
-  `bun run vars:env:check` names such a variable (names and lengths only). `<KEY>` is the worker's
-  roster name, the same token the prompt opens with. On a harness where the launcher cannot set a session name, omit the flag: the
-  human types `/rename <KEY>` once the session is up, because a model cannot rename its own session.
+  `bun run vars:env:check` names such a variable (names and lengths only). `<label>` is the worker's
+  roster label, the same token the prompt opens with; the worker's name is `<label>--<handle>`. On a
+  harness with no name flag (Codex, OpenCode), the human types `/rename <label>--<handle>` once the
+  session is up (`<label>` alone outside Orca; OpenCode v1's `/rename` takes no argument, so the
+  roster carries the name), because a model cannot rename its own session.
 
 **This line is for a human, or for a terminal nobody will supervise.** Two things about it do not
 survive the supervised path, and a skill that assumes they do is writing a lie into its own doc:
@@ -87,14 +101,15 @@ Whether it is pasted inside a launch line or sent into a native worker, the prom
 parts, in this order:
 
 ```
-/<workflow-skill> <KEY> fleet worker. Read <ABS>/<scope>/COMMON.md then <ABS>/<scope>/W-<label>.md
+/<workflow-skill> <label> fleet worker. Read <ABS>/<scope>/COMMON.md then <ABS>/<scope>/W-<label>.md
 and execute your brief. Run every stage without returning to the prompt until worker_done is sent;
-stage boundaries are not checkpoints. Channel: orca orchestration. No heartbeats.
+stage boundaries are not checkpoints. Channel: {{MESSAGE_VERB}}. No heartbeats.
 ROUTE-SCOPE: <section ids the work needs, e.g. git, harnesses; or none>
 ```
 
-- **The opening token is load-bearing.** `/<workflow-skill> <KEY> fleet worker` is what the identity
-  hook reads to title the session (there is no name flag on the supervised path) and what the workflow
+- **The opening token is load-bearing.** `/<workflow-skill> <label> fleet worker` is what the identity
+  hook reads to title the session `<label>--<handle>` (there is no name flag on the supervised path)
+  and what the workflow
   skill reads to know it is running as a fleet worker.
 - **The continuation sentence is not decoration.** Workers on a measured fleet (G58) stopped at
   a stage boundary with work remaining, on briefs that said "no checkpoints": the instruction works
@@ -182,7 +197,9 @@ session-management contract already declares — this seam never invents a new s
 ## 5 · Review checklist for a seam edit
 
 - [ ] The launch file is written on BOTH paths, unconditionally.
-- [ ] The prompt is identical on both paths, and it opens with `/<workflow-skill> <KEY> fleet worker`.
+- [ ] The prompt is identical on both paths, and it opens with `/<workflow-skill> <label> fleet worker`.
+- [ ] The launch line's permission flag matches `orchestration.permission_modes.worker` (§2.1), and
+      the Claude Code line carries no name flag.
 - [ ] The prompt carries the continuation sentence (no stopping until `worker_done`).
 - [ ] Nothing in the flow detects fleet mode from an environment variable.
 - [ ] Every line is self-contained and passes the shell syntax check.

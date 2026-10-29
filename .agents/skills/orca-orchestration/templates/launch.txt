@@ -16,40 +16,66 @@
 #   6. Validate before launching:  sh -n <this file>        (or the equivalent for the user's shell)
 #   7. Comment lines (starting with #) are documentation; strip them before a syntax check if the
 #      checker objects, and never hand one to the launcher.
-#   8. Every prompt OPENS with `/<workflow-skill> <KEY> fleet worker`, where <KEY> is the worker's
-#      roster name: one token (a ticket key, <KEY>-<slug>, or a kebab slug). The identity hook names
-#      a Claude Code session <KEY> from it, and the workflow skill detects fleet mode from it. It
-#      CARRIES the
-#      continuation sentence: run every stage without returning to the prompt until worker_done is
-#      sent. Both paths, every harness.
+#   8. Every prompt OPENS with `/<workflow-skill> <label> fleet worker`, where <label> is the worker's
+#      roster label, one token: [<KEY>-]<slug>, kebab-case, single hyphens inside (a ticket key plus a
+#      slug, or a kebab slug such as volatile-impl). The worker's NAME is <label>--<handle>
+#      (references/session-identity.md §2b): the identity hook composes it on Claude Code from the
+#      token plus ORCA_TERMINAL_HANDLE, and the workflow skill detects fleet mode from the token. It
+#      CARRIES the continuation sentence: run every stage without returning to the prompt until
+#      worker_done is sent. Both paths, every harness.
 #   9. An environment prefix is at most a redundant signal on THIS path and reaches a native worker
 #      never. Do not make fleet detection depend on it.
+#  10. The permission flag is the one that matches orchestration.permission_modes.worker
+#      (.agents/project.yaml), translated per harness in references/orca-machine-setup.md §3.1. The
+#      lines below carry the shipped default, bypass. Flags read 2026-10-28 at the versions named on
+#      each line; confirm with `<harness> --help` on the machine before pasting.
 #
-# Claude Code — full model id (never an alias: an alias moves on its own), effort, auto permission
-# mode, session name. The line starts the binary bare: no launch line loads .env into the worker's
-# shell; every MCP server and every repo script loads it itself (references/provisioning.md §1b).
-claude --model <full-model-id> --effort high --permission-mode auto -n "<KEY>" '/<workflow-skill> <KEY> fleet worker. Read <ABS>/.session/orchestration/<slug>/COMMON.md then <ABS>/.session/orchestration/<slug>/W-<label>.md and execute your brief. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints. Channel: orca orchestration. No heartbeats.'
+# Claude Code (flags per code.claude.com/docs/en/cli-reference, read 2026-10-28) — full model id
+# (never an alias: an alias moves on its own), effort, bypass = --dangerously-skip-permissions (auto
+# would be --permission-mode auto, which pauses and prompts after 3 consecutive or 20 total blocks).
+# NO name flag: --name marks the name as human-set and the hook then never appends the handle, so the
+# hook names the session (<label>--<handle> inside an Orca terminal, <label> alone outside). The line
+# starts the binary bare: no launch line loads .env into the worker's shell; every MCP server and
+# every repo script loads it itself (references/provisioning.md §1b).
+claude --model <full-model-id> --effort {{DEFAULT_EFFORT}} --dangerously-skip-permissions '/<workflow-skill> <label> fleet worker. Read <ABS>/.session/orchestration/<slug>/COMMON.md then <ABS>/.session/orchestration/<slug>/W-<label>.md and execute your brief. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints. Channel: {{MESSAGE_VERB}}. No heartbeats. ROUTE-SCOPE: <section ids>'
 
-# Per-issue brief, the sprint shape (one line, still self-contained). The environment variables are
-# OPTIONAL and redundant here: fleet mode is detected from the prompt token and the brief, because a
-# prefix reaches a native supervised worker never and was measured EMPTY on a real fleet even on
-# this path.
-claude --model <full-model-id> --effort high --permission-mode auto -n "<KEY>" '/sprint-testing <KEY> fleet worker. Read <ABS>/.session/sprint-testing/sprint-<N>/<KEY>/brief.md and execute it. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints. Channel: orca orchestration. No heartbeats.'
+# Per-issue brief, the sprint shape (one line, still self-contained). A sprint-testing worker's label is
+# the bare issue key, because that skill reads the issue it owns from the token; its name is
+# <KEY>--<handle>. Fleet mode is detected from the
+# prompt token and the brief, never from an environment prefix: a prefix reaches a native supervised
+# worker never and was measured EMPTY on a real fleet even on this path.
+claude --model <full-model-id> --effort {{DEFAULT_EFFORT}} --dangerously-skip-permissions '/sprint-testing <KEY> fleet worker. Read <ABS>/.session/sprint-testing/sprint-<N>/<KEY>/brief.md and execute it. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints. Channel: {{MESSAGE_VERB}}. No heartbeats. ROUTE-SCOPE: <section ids>'
 
-# The SAME prompt, delivered on the supervised path (no argv, so no name flag and no prefix):
+# The SAME prompt, delivered on the supervised path (no argv, so no name flag, no permission flag and
+# no prefix: the mode comes from the app's per-agent default arguments, orca-machine-setup.md §3.1):
 #   1. launch natively:  [ORCHESTRATION_TOOL] worker-start: task + worktree + agent + model + effort
-#   2. read the screen:  status footer present AND credentials loaded (MCP servers connected), or fix the worktree's .env
-#   3. send the prompt:  [ORCHESTRATION_TOOL] terminal send, the text between the quotes above
-#   4. name it:          [ORCHESTRATION_TOOL] terminal rename, tab title "<KEY> · task_<first 4 of
-#                        the task id>"; on OpenCode and Codex also terminal send '/rename <KEY>'
+#   2. read the handle:  [ORCHESTRATION_TOOL] worker-list: agentTerminalHandle (gotcha G78)
+#   3. read the screen:  status footer present, permission mode = orchestration.permission_modes.worker,
+#                        AND credentials loaded (MCP servers connected), or fix it before any work
+#   4. send the prompt:  [ORCHESTRATION_TOOL] terminal send, the text between the quotes above
+#   5. name it:          the worker renames its own tab to <label>--<handle> as its first action; the
+#                        conductor re-issues [ORCHESTRATION_TOOL] terminal rename with the same title
+#                        in every sweep; on Codex, OpenCode v2.2 and Pi also terminal send the rename
+#                        verb ('/rename <label>--<handle>', Pi '/name <label>--<handle>')
 
-# OpenCode — flags per `opencode --help` on the machine (confirm before pasting): -m/--model, --agent,
-# --prompt, --auto (auto-approve permissions not explicitly denied), -s/--session, -c/--continue,
-# --fork. There is NO name flag and NO effort flag: once the session is up, type `/rename <KEY>`
-# into it (a model cannot rename its own session).
-opencode --model <provider/model> --auto --prompt '/<workflow-skill> <KEY> fleet worker. Read <ABS>/.session/orchestration/<slug>/COMMON.md then <ABS>/.session/orchestration/<slug>/W-<label>.md and execute your brief. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints. Channel: orca orchestration. No heartbeats.'
+# OpenCode (v1.19.5 / v2.2.0; opencode.ai/docs/cli and /docs/permissions, read 2026-10-28): -m/--model,
+# --agent, --prompt, --auto (bypass: auto-approve every permission not explicitly denied; hidden
+# aliases --yolo, --dangerously-skip-permissions), -s/--session, -c/--continue, --fork. NO name flag
+# and NO effort flag: once the session is up, type '/rename <label>--<handle>' into it on v2.2; on v1
+# /rename opens a dialog with no argument, so the roster carries the name (a model cannot rename its
+# own session).
+opencode --model <provider/model> --auto --prompt '/<workflow-skill> <label> fleet worker. Read <ABS>/.session/orchestration/<slug>/COMMON.md then <ABS>/.session/orchestration/<slug>/W-<label>.md and execute your brief. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints. Channel: {{MESSAGE_VERB}}. No heartbeats. ROUTE-SCOPE: <section ids>'
 
-# Codex — started bare like the others. Its name / permission /
-# effort flags were NOT verified here: read `codex --help` on the machine, use only flags it lists,
-# and if no name flag exists, type `/rename <KEY>` into the session once it is up.
-codex <verified flags only> '/<workflow-skill> <KEY> fleet worker. Read <ABS>/.session/orchestration/<slug>/COMMON.md then <ABS>/.session/orchestration/<slug>/W-<label>.md and execute your brief. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints. Channel: orca orchestration. No heartbeats.'
+# Codex CLI (rust-v0.165.0; Codex approvals and security docs plus codex-rs at that tag, read
+# 2026-10-28): bypass = --dangerously-bypass-approvals-and-sandbox. Not -a never -s workspace-write:
+# that sandbox keeps .git read-only and the network off, so the worker cannot commit. --model: confirm
+# with `codex --help`; no effort flag was verified. NO name flag: type '/rename <label>--<handle>' into
+# the session once it is up (accepted mid-task).
+codex --model <full-model-id> --dangerously-bypass-approvals-and-sandbox '/<workflow-skill> <label> fleet worker. Read <ABS>/.session/orchestration/<slug>/COMMON.md then <ABS>/.session/orchestration/<slug>/W-<label>.md and execute your brief. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints. Channel: {{MESSAGE_VERB}}. No heartbeats. ROUTE-SCOPE: <section ids>'
+
+# Pi (v1.4.0, earendil-works/pi docs/security.md, read 2026-10-28; NOT a supported harness of this
+# repo): no approval system, so bypass needs nothing; --approve skips the project-trust prompt. It has
+# a name flag, so the line names the session itself (the handle is appended only inside an Orca
+# terminal). Only -n, /name and --approve were read: confirm the model flag and the positional prompt
+# with `pi --help`.
+pi --approve -n "<label>${ORCA_TERMINAL_HANDLE:+--$ORCA_TERMINAL_HANDLE}" '/<workflow-skill> <label> fleet worker. Read <ABS>/.session/orchestration/<slug>/COMMON.md then <ABS>/.session/orchestration/<slug>/W-<label>.md and execute your brief. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints. Channel: {{MESSAGE_VERB}}. No heartbeats. ROUTE-SCOPE: <section ids>'

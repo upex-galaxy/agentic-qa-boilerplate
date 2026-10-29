@@ -52,41 +52,76 @@ untracked skill directory and collide with the repo's own tier model. Global (th
 
 ## 3 · The native-launch prerequisites
 
-Item 3.1 decides whether **supervision** is available on this machine at all, so it is not an
-optional extra; item 3.2 decides whether a supervised worker has its credentials, and needs nothing
-per machine. The native launch (`worker-start --agent <agent> --model <id> --effort <level>`) is
-the ONLY supervised one: the runtime recognizes only agents it started itself, so a terminal created
-from our own command line can never be adopted (`references/gotchas.md` G44). A machine that has not
-done item 3.1 can still run a fleet, but every worker on it is unsupervised.
+Supervision comes from the native launch alone (`worker-start --agent <agent> --model <id> --effort
+<level>`): the runtime recognizes only agents it started itself, so a terminal created from our own
+command line can never be adopted (`references/gotchas.md` G44). Item 3.1 decides the PERMISSION
+MODE a supervised worker runs in, which the conductor verifies at readiness; a machine whose default
+arguments do not match the profile still supervises its workers, and the mismatch is caught on the
+first worker's screen and fixed before any work is dispatched. Item 3.2 decides whether a supervised
+worker has its credentials, and needs nothing per machine.
 
-### 3.1 · The agent's default arguments (permission mode)
+### 3.1 · The agent's default arguments (permission mode per tier)
 
 The native path accepts a model and an effort level and **nothing else**: there is no argument
 passthrough on `worker-start` or on `worktree create`, so a permission mode cannot be expressed as a
-flag. It has to be a per-agent default configured in the app:
+flag. It has to be a per-agent default configured in the app. The profile DECLARES the mode each
+tier should run in (`orchestration.permission_modes` in `.agents/project.yaml`, repo vocabulary
+`bypass | auto | ask | inherit`; why these defaults and the risk they accept:
+`.context/ADR/ADR-0024-agentic-work-profile-and-permission-posture.md`); this table translates it per
+harness, and the conductor VERIFIES the result on each worker at readiness
+(`references/coordinator-playbook.md` §1 step 5).
 
-1. Open the app's Settings → the Agents section.
-2. For the `claude` agent, add `--permission-mode auto` to its default arguments.
-3. Leave the run mode per-agent: an agent with its own argument override is excluded from the global
-   yolo / manual switch, which is what you want — you do not want a global switch deciding a worker's
-   permission model.
+| Mode | Claude Code | Codex CLI (rust-v0.165.0) | OpenCode (v1.19.5 / v2.2.0) | Pi (v1.4.0; not a supported harness of this repo) |
+|---|---|---|---|---|
+| bypass | `--dangerously-skip-permissions` (= `--permission-mode bypassPermissions`); the first run needs `skipDangerousModePermissionPrompt: true` in the user settings | `--dangerously-bypass-approvals-and-sandbox` (`-a never -s workspace-write` keeps `.git` read-only and the network off: a worker cannot commit) | `--auto` (hidden aliases `--yolo`, `--dangerously-skip-permissions`) or `"permission": {"*": "allow"}` | nothing to set (no approval system); pass `--approve` to skip the project-trust prompt |
+| auto | `--permission-mode auto` (a classifier; it pauses and PROMPTS after 3 consecutive or 20 total blocks, and falls back to manual when it is unavailable) | `--approve-for-me` (a reviewer model answers approvals) | no equivalent (closest: per-tool `ask` / `allow` / `deny`) | no equivalent |
+| ask | the default mode | `-a on-request` | the default | n/a |
+| inherit | a subagent inherits the parent session's mode | same | same | same |
 
-Two things to know before relying on it:
+Sources, read 2026-10-28 (versions as named; harness flags move, so confirm with `<harness> --help`
+on the machine): code.claude.com/docs/en/permission-modes and /cli-reference; learn.chatgpt.com
+Codex approvals and security plus `codex-rs` at tag rust-v0.165.0; opencode.ai/docs/permissions and
+/docs/cli; earendil-works/pi `packages/coding-agent/docs/security.md`.
 
-- The app's own "yolo" mode injects a FIXED flag per agent, and it is NOT an auto permission mode:
-  for `claude` it is the skip-permissions flag, for `codex` the bypass-approvals-and-sandbox flag.
-  Those are broader than what a worker needs. The auto-mode classifier belongs to Claude Code, not
-  to the runtime, and that classifier is the thing worth keeping alive (gotcha G27).
-- For any agent other than `claude`, **consult that agent's own documentation** for its equivalent.
-  OpenCode exposes `--auto` (auto-approve permissions not explicitly denied); confirm it with
-  `opencode --help` on the machine. For Codex, do not guess a flag — read its docs, then write the
-  verified value here.
+What still stops each mode, so nobody reads `bypass` as "nothing ever stops" (same research): Claude
+Code bypass still stops on its first-run dialog (item 4 below), on explicit `ask` rules, on
+`AskUserQuestion` and on protected-path deletes, and refuses to run as root; OpenCode `--auto` still
+applies an explicit `deny`; Codex's full bypass has no sandbox (full disk and network), and whether
+a destructive-annotated MCP call still asks under it is **(unverified)**. The repo's own
+`permissions.deny` list stays in every mode. `auto` and an edits-only mode
+(`acceptEdits`) are not non-interactive: the first stalls after its block limit, the second on its
+first Bash call, and a worker nobody watches stalls with them (gotcha G27).
+
+What to set in the app (Settings, the Agents section), per agent the fleet uses:
+
+1. **Worker tier** (`orchestration.permission_modes.worker`): the agent's default arguments carry the
+   flag of that mode from the table. Orca's own default Claude launch has been measured carrying
+   `--dangerously-skip-permissions` already (gotcha G79 holds the date and the app version), so for
+   `claude` with the shipped `bypass` there may be nothing to add; read what is there rather than
+   assuming it.
+2. **Conductor tier** (`orchestration.permission_modes.conductor`): a conductor is the session the
+   human types into, usually started by hand. Start it with that mode's flag
+   (`claude --permission-mode auto` for the shipped `auto`). A middle conductor started with `agent launch` (G77) is unsupervised:
+   pass the flag there if `orca agent launch --help` lists an argument passthrough, otherwise the
+   agent's default arguments decide its mode as they do a worker's, and the conductor reads it off
+   the screen.
+3. **Subagent tier** (`inherit`): nothing to set; a subagent runs in its parent session's mode.
+4. **Claude Code with bypass**: set `skipDangerousModePermissionPrompt: true` in the user-level
+   settings once, or every bypass worker stops on a first-run confirmation dialog that nobody sees.
+5. Leave the run mode per-agent: an agent with its own argument override is excluded from the global
+   yolo / manual switch, which is what you want: a global switch never decides a worker's mode.
+
 - **(unverified)** the exact label of the settings section and the field, which may differ per app
   version. Read the screen, do not trust this sentence.
 
-Until that override exists on a machine, a native worker launches in whatever mode the app's
-per-agent default gives it, which is the trap gotcha G27 describes. Neither the repo nor a teammate's
-machine can tell whether you did it, which is the whole problem with a non-versionable setting.
+The security tradeoff of a bypass worker, stated once: an instruction injected through content the
+worker reads (a page of the app under test, a tracker comment) runs with the owner's rights and
+network. The repo's `permissions.deny` list stays in force; the accepted risk is recorded in ADR-0024.
+
+Until the default arguments match the profile on a machine, a native worker launches in whatever
+mode the app's per-agent default gives it. Neither the repo nor a teammate's machine can tell whether
+you set it, which is the whole problem with a non-versionable setting, and why the conductor reads
+the mode off each worker instead of trusting this checklist.
 
 ### 3.2 · Credentials for a supervised worker: the `.env` loader
 
@@ -170,9 +205,12 @@ find out during a real fleet, and record it in `references/gotchas.md`.
 ```
 [ ] binary installed, `orca status` reports a reachable runtime; appVersion noted
 [ ] (optional) vendor stubs installed GLOBALLY, never --local in this repo
-[ ] Settings -> Agents: `claude` default args include `--permission-mode auto`
-    (prerequisite of the SUPERVISED native launch; a pasted custom-argv line needs nothing)
-[ ] other agents: their documented equivalent, verified, not guessed
+[ ] Settings -> Agents: each agent's default args carry the flag of
+    `orchestration.permission_modes.worker` from the §3.1 table (claude bypass:
+    `--dangerously-skip-permissions`, already in Orca 1.4.240's default launch, G79; a pasted
+    custom-argv line carries its own flag)
+[ ] Claude Code with bypass: `skipDangerousModePermissionPrompt: true` in the user settings
+[ ] other agents: the §3.1 flag, confirmed with `<harness> --help` on this machine, not guessed
 [ ] the worktree has its own `.env` and the session restarted after the last `.env` change (every
     MCP server reads it through the `.env` loader; verify its servers connected on the worker's
     screen at launch)

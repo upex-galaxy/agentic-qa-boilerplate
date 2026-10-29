@@ -136,9 +136,12 @@ the source fleet: after a reboot under memory pressure every worker resumed from
 repeating a tracker write, but one first drove another worker's browser session, because a browser call
 without the named session falls back to the shared default.
 
-1. **Find the workers by title, never by an old handle**: handles change when the runtime restarts
-   (`orca-orchestration/references/gotchas.md` G22). The title carries the ticket key (the roster name).
-   Update the roster and the board (`bun run board worker <KEY> --name <new handle> --by conductor`), and
+1. **Find the workers by the label in their title, never by an old handle**: handles change when the
+   runtime restarts (`orca-orchestration/references/gotchas.md` G22), and each tab title is the worker
+   name `<KEY>--<old handle>` (`orca-orchestration/references/session-identity.md` §2b). Match on the
+   part before the last `--term_` (the ticket key, the roster label), never on the stale handle after
+   it. Update the roster and the board (`bun run board worker <KEY> --name <new handle> --by conductor`),
+   re-issue each tab rename as `<KEY>--<new handle>` ([ORCHESTRATION_TOOL] terminal rename), and
    re-bind every replaced terminal's dispatch (G68). Read each screen's footer for the model and effort; a
    worker below its launch effort goes in the status line, relaunching it is the owner's call.
 2. **Board server**: when the page does not answer inside working hours, start `bun run board:up` in the

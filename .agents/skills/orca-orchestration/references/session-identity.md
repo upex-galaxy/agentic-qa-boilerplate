@@ -31,29 +31,37 @@ they answer "which of the six" and nothing else. No AI attribution of any kind i
 
 ## 2 · Per-harness table
 
-| Axis | Claude Code | OpenCode | Codex CLI |
-|---|---|---|---|
-| id from inside a shell | `CLAUDE_CODE_SESSION_ID`, `CLAUDE_PID` | no env var (only a terminal marker) | no confirmed env var; resolve from disk |
-| id via a hook | stdin JSON `session_id`, on every event | plugin context exposes the session id | **(unverified)** |
-| id from disk | `~/.claude/sessions/<PID>.json` → `.sessionId` | the local app data store; `opencode session list` | `$CODEX_HOME/sessions/YYYY/MM/DD/rollout-<ts>-<uuid>.jsonl` (respects `CODEX_HOME`) |
-| name at launch | `-n, --name <name>` | none at startup (`--prompt`, `--model`, `--agent`, `--auto`, `-s`, `-c`, `--fork` exist; no name flag) | **(unverified)**: no confirmed flag |
-| rename in session | `/rename` | `/rename` (also a REST patch on the session; **not** a `session rename` subcommand) | `/rename` in the TUI |
-| name from disk | `~/.claude/sessions/<PID>.json` → `.name` + `.nameSource` (`user` \| `derived`) | `opencode session list`, Title column (auto-generated from the first message) | `$CODEX_HOME/session_index.jsonl` → `{id, thread_name, updated_at}` |
-| resume by id | `claude -r <id>`, `--session-id <uuid>`, `--fork-session` | `opencode -s <id>`, `-c`, `--fork` | `codex resume <id>`, `--last` |
-| resume by name | `claude --resume <term>` opens a filtered picker; direct resolution **(unverified)** | not supported | first class: `codex resume <name-or-id>` |
-| transcripts | `~/.claude/projects/<slug>/<uuid>.jsonl` | `opencode export [id]` | under `$CODEX_HOME/sessions/` |
+| Axis | Claude Code | OpenCode | Codex CLI | Pi (not a supported harness of this repo; researched 2026-10-28) |
+|---|---|---|---|---|
+| id from inside a shell | `CLAUDE_CODE_SESSION_ID`, `CLAUDE_PID` | no env var (only a terminal marker) | no confirmed env var; resolve from disk | not researched |
+| id via a hook | stdin JSON `session_id`, on every event | plugin context exposes the session id | **(unverified)** | not researched |
+| id from disk | `~/.claude/sessions/<PID>.json` → `.sessionId` | the local app data store; `opencode session list` | `$CODEX_HOME/sessions/YYYY/MM/DD/rollout-<ts>-<uuid>.jsonl` (respects `CODEX_HOME`) | not researched |
+| name at launch | `-n, --name <name>` | none in the TUI (`opencode run --title` only; `--prompt`, `--model`, `--agent`, `--auto`, `-s`, `-c`, `--fork` exist) | none (rust-v0.165.0) | `-n, --name <name>` (v1.4.0) |
+| rename in session | `/rename <name>` (≤200 chars); **queued while the session is busy** | v1.19.5: `/rename` opens a dialog and takes no argument; v2.2.0: `/rename <name>` inline. Also `PATCH /session/:id {title}` on the TUI's server, only when it was launched with a fixed `--port` (that port then also accepts prompts). **Not** a `session rename` subcommand | `/rename <name>`, accepted mid-task (rust-v0.165.0) | `/name <name>`, works mid-run (v1.4.0) |
+| rename from another process | only by typing `/rename` into the TUI; the identity hook sets the name itself (§2b) | typing into the TUI, or the `--port` REST route above | typing into the TUI; the app-server `thread/name/set` needs an experimental `--remote` TUI, so it is not usable | typing into the TUI |
+| name from disk | `~/.claude/sessions/<PID>.json` → `.name` + `.nameSource` (`user` \| `derived` \| `hook`) | `opencode session list`, Title column (auto-generated from the first message) | `$CODEX_HOME/session_index.jsonl` → `{id, thread_name, updated_at}` | not researched |
+| resume by id | `claude -r <id>`, `--session-id <uuid>`, `--fork-session` | `opencode -s <id>`, `-c`, `--fork` | `codex resume <id>`, `--last` | not researched |
+| resume by name | `claude --resume <term>` opens a filtered picker; direct resolution **(unverified)** | not supported | first class: `codex resume <name-or-id>` | not researched |
+| transcripts | `~/.claude/projects/<slug>/<uuid>.jsonl` | `opencode export [id]` | under `$CODEX_HOME/sessions/` | not researched |
+
+Versions are the ones the research read (2026-10-28): Codex CLI rust-v0.165.0, OpenCode v1.19.5 and <!-- volatile-ok: harness flags carry the version they were read at -->
+v2.2.0, Pi v1.4.0. Harness flags move, so the launch line is always confirmed against `<harness>
+--help` on the machine.
 
 Claude Code flags this skill relies on (confirm with `claude --help` before writing a launch line): `-n, --name`, `--model`,
 `--effort` (`low`, `medium`, `high`, `xhigh`, `max`), `--permission-mode` (`acceptEdits`, `auto`,
-`bypassPermissions`, `manual`, `dontAsk`, `plan`), `-r, --resume`, `--session-id`, `--fork-session`.
+`bypassPermissions`, `manual`, `dontAsk`, `plan`), `--dangerously-skip-permissions` (the same as
+`--permission-mode bypassPermissions`), `-r, --resume`, `--session-id`, `--fork-session`. Which
+permission mode a tier gets, per harness: `references/orca-machine-setup.md` §3.1.
 Note the asymmetry worth remembering: the permission-mode flag REJECTS an invalid value, while the
 effort flag does not — an invalid effort starts the session on the default and tells nobody (gotcha
 G28).
 
 OpenCode flags this skill relies on (confirm with `opencode --help`): `-m, --model`, `-c, --continue`, `-s, --session`,
 `--fork`, `--prompt`, `--agent`, `--auto` (auto-approve permissions not explicitly denied), `--mini`.
-There is no name flag and no effort flag, so an OpenCode worker is named by renaming itself in its
-first turn.
+There is no name flag and no effort flag, so an OpenCode worker is named by the CONDUCTOR, never by
+itself: on v2.2 the conductor types `/rename <name>` into it once it is ready; on v1 `/rename` opens a
+dialog with no argument, so the roster carries the name instead (§2b).
 
 **Claude Code is the only harness where a hook both reads and writes the session name**: a hook
 receives the current title and can emit a title field to set it. The exact field name and the events
@@ -67,24 +75,41 @@ The `name at launch` row above applies to a pasted launch line. It does not appl
 worker: the native launch starts the agent itself and takes an agent, a model and an effort level,
 **never a command line**, so there is no name flag to pass (`references/coordinator-playbook.md` §1b).
 
-The replacement is the prompt's fixed opening. A worker's first prompt begins with
-`/<skill> <KEY> fleet worker`, where `<KEY>` is the worker's roster name (a ticket key, `<KEY>-<slug>`,
-or a kebab slug such as `volatile-impl`). On Claude Code the hook emitter turns that token into the
-session name `<KEY>`, exactly, while no human has named the session; Claude Code records it with
-`nameSource: hook`, and the label rule in §3 reads it back verbatim. The runtime prepends its own
-preamble to that prompt, so the token is matched anywhere in it, never only at the start.
+**The worker name is `<label>--<handle>`**, one string everywhere: the harness session name, the Orca
+tab title (§5), the roster's `Name` column and the `Session:` commit trailer. `<label>` is
+`[<KEY>-]<slug>`, kebab-case with single hyphens inside (`TK-123-add-google-auth`, or a bare kebab
+slug such as `volatile-impl` for work with no ticket; a `/sprint-testing` worker uses the bare issue
+key, because that skill reads the issue it owns from the token); `--` appears only once, before the Orca
+terminal handle (`term_<uuid>`). Parse it back by splitting on the LAST `--term_`. Example:
+`TK-123-add-google-auth--term_7235f5a5-0fce-495c-9474-7c4370fdefa6`. Vocabulary: in this file
+`<label>` is that roster label, and the session LABEL of §3 (the trailer value) is the whole name.
 
-- **One token, nothing between it and `fleet worker`.** `<KEY> SPIKE fleet worker` does not match,
+The replacement for the name flag is the prompt's fixed opening. A worker's first prompt begins with
+`/<skill> <label> fleet worker`. On Claude Code the hook emitter composes the session name
+`<label>--<handle>` from that token plus `ORCA_TERMINAL_HANDLE`, which is present in a dispatched
+worker's own environment (gotcha G56); with no handle in the environment (a line pasted outside
+Orca) the name is the label alone. It does so while no human has named the session; Claude Code
+records it with `nameSource: hook`, and the label rule in §3 reads it back verbatim. The runtime
+prepends its own preamble to that prompt, so the token is matched anywhere in it, never only at the
+start.
+
+- **One token, nothing between it and `fleet worker`.** `<label> SPIKE fleet worker` does not match,
   and the session keeps the harness's generated title.
-- **Do not rename a Claude Code worker whose prompt carried the token.** A rename marks the name as
-  human-set, and the emitter then leaves it alone forever, which is correct behaviour and not what
-  you wanted.
-- **OpenCode and Codex have no hook that can set a name.** The conductor drives their TUI with
-  `/rename <KEY>` once the screen shows the worker ready (`references/coordinator-playbook.md` §1
-  step 5). **A worker cannot rename itself**: `/rename` is user input on all three harnesses, not a
-  command a model can run, so a brief that asks for it asks for nothing.
+- **Do not rename a Claude Code worker whose prompt carried the token**, and do not pass a name flag
+  on its launch line. A rename or `--name` marks the name as human-set, and the emitter then leaves it
+  alone forever: the handle never gets appended, which is correct behaviour and not what you wanted.
+- **Codex, OpenCode v2.2 and Pi have no hook that can set a name.** The conductor drives their TUI
+  with the harness's rename verb (`/rename <label>--<handle>`; Pi `/name <label>--<handle>`) once the
+  screen shows the worker ready (`references/coordinator-playbook.md` §1 step 5), then reads it back
+  on the status bar.
+- **OpenCode v1 (`/rename` opens a dialog and takes no argument), or any harness that cannot be
+  renamed**: the roster maps name ↔ handle, the worker's `Session:` trailer carries the roster name,
+  and the conductor says so once in the run report.
+- **A worker never renames its own SESSION**: `/rename` is user input on every harness, not a command
+  a model can run, so a brief that asks for it asks for nothing. A worker CAN rename its own TAB,
+  because that is a CLI call, and it does so as its first action (§5).
 
-The conductor reads the resulting label back off the screen rather than assuming it: the agent's
+The conductor reads the resulting name back off the screen rather than assuming it: the agent's
 status bar carries the session label together with the model and the effort level, and
 `terminal read --screen` is how you see it (gotcha G13 — the default read mode returns stacked
 fragments of a repainting TUI). Grep it as a BARE token: that bar is drawn with non-breaking spaces,
@@ -102,6 +127,10 @@ One rule, applied in order, so two sessions never produce two different label fo
 | the name was derived or auto-generated | `<name> (<first 8 chars of the id>)` |
 | only an id is available | the full id |
 | nothing is resolvable | `unknown` |
+
+A fleet worker's composed `<label>--<handle>` is a hook name (`nameSource == hook`, first row), so it
+is the label as-is, handle included; a conductor-typed rename on Codex, OpenCode v2.2 or Pi is a
+`user` name and lands in the same row.
 
 Why the name beats the id: **the name persists and the id does not.** Resuming a session can mint a
 new id (a fork certainly does), while the name survives across resumes — and the name is what appears
@@ -148,13 +177,18 @@ Whatever was only in the conductor's head is lost; whatever is in the card is re
 
 So at every launch and every stage boundary:
 
-- the TAB title is `<KEY> · task_<first 4 of the task id>`: the roster name first, the id the
-  conductor addresses as a suffix. On the supervised path the runtime titles every worker tab
-  `worker-<task id>` and that label outranks whatever the harness paints, so the conductor sets it
-  with the terminal-rename verb right after the launch and again in every liveness sweep; it lands
-  only once the app window has opened the tab, and `terminal list` reads a different field, so it is
-  confirmed on the tab itself (gotchas G71, G72). On the custom-argv path the same title goes in
-  `terminal create --title`;
+- the TAB title is the worker name itself, `<label>--<handle>` (§2b), the same string as the session
+  name. On the supervised path the runtime titles every worker tab `worker-<task id>` and that label
+  outranks whatever the harness paints (G71), so the WORKER sets it first, as its first action:
+  `orca terminal rename --terminal "$ORCA_TERMINAL_HANDLE" --title "<label>--$ORCA_TERMINAL_HANDLE" --json </dev/null`.
+  The conductor re-issues the same rename, with the handle it read from `worker-list`
+  (`agentTerminalHandle`, G78), in every liveness sweep: it lands only once the app window has
+  opened the tab, and `terminal list` reads a different field, so it is confirmed on the tab itself
+  (gotchas G71, G72). On the custom-argv path `terminal create --title` takes the label (the handle
+  does not exist yet), and the rename follows once `terminal create` returns the handle. After a
+  runtime restart every handle changes while the titles still carry the old one (gotcha G22): match
+  a tab on its label, the part before the last `--term_`, write the new handle into the roster, and
+  re-issue the rename with it;
 - the board card's display name is the work key plus a short title — or, in a same-checkout fleet,
   the fleet's own display name, because the card is per-worktree there;
 - the board card's comment carries the recovery block: stage, session label, branch, and the absolute
@@ -163,6 +197,6 @@ So at every launch and every stage boundary:
   (`references/coordinator-playbook.md` §3, gotcha G50).
 
 The roster keeps the machine-readable side of the same facts (task, dispatch, terminal handle,
-worktree, agent, model, session label, resume command, status), and it is what the owner phrasebook
+worktree, agent, model, name, resume command, status), and it is what the owner phrasebook
 resolves "the one on BK-123" against. In a fleet of N workers in one checkout it is not a convenience:
 it is the only recovery record there is.

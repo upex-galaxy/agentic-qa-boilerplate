@@ -61,14 +61,25 @@ conductor has the owner's authority for this wave and reviews everything at the 
 
   ```
   Worktree: <your worktree name, or `primary`>
-  Session: <your session label>
+  Session: <your full name: the session= value of your AGENT IDENTITY line>
   ```
 
   They are forensics, not attribution: months later they are the only way to tell which of the six
-  sessions did this. Take both values from the `AGENT IDENTITY` line in your context; write
-  `unknown` for a value you cannot resolve rather than guessing.
+  sessions did this. Take both values from the `AGENT IDENTITY` line in your context, except where
+  the `Name` row of your own brief says `roster only` (a harness that cannot be renamed): then
+  `Session:` carries that roster name. Write `unknown` for a value you cannot resolve rather than
+  guessing.
 - The pre-commit hook runs the repo's gates. Fix what it reports; never bypass it. A rejected commit
   is fixed in a NEW commit, never by amending the rejected one.
+
+## Your name, and your first action
+
+Your name is the label your prompt token carries, two hyphens, then your own terminal handle
+(`TK-123-add-google-auth--term_…`). It is your session name, your tab title and your `Session:`
+trailer. **Your first action once this file and your brief are read, before any work: rename your
+own tab** with the exact command in the `Name` row of your own brief (`orca terminal rename --terminal "$ORCA_TERMINAL_HANDLE" …`); with no
+`ORCA_TERMINAL_HANDLE` in your environment there is no tab to rename. Your SESSION is named for
+you (the identity hook on Claude Code, the conductor elsewhere); you never rename it. Detail: `.agents/skills/orca-orchestration/references/worker-contract.md` §Session naming.
 
 ## Communication with the conductor
 
@@ -85,6 +96,14 @@ message syntax. Use it, and nothing else:
 - **Blocker** → an `escalation` — unless you were launched WITHOUT a dispatch, where the runtime
   rejects it and returns the refusal as a `status` message, so your blocker silently never arrives.
   On that path: a `status` message whose subject starts with `BLOCKED: `.
+- **An error, a blocker or a decision you cannot take inside your brief** → the conductor, never the
+  human, never guessed: the four escalation kinds of
+  `agentic-qa-core/references/decision-protocol.md` §5 (product behaviour, a new security posture,
+  an irreversible or outward action, what a person signs) and every error or blocker you cannot
+  clear, as a blocking `ask`, an `escalation` or the `BLOCKED: ` status above. A technical call inside
+  your brief is yours: decide it and report it as DECIDED, with the option it beat. Exception: the
+  human typed the request into your own session, or your brief grants it in writing; then tell the
+  conductor what was asked and answered (worker contract rule 16).
 - **Finished (or stopping)** → exactly ONE `worker_done`, with an explicit outcome
   (`succeeded` / `failed` — never a failure stated only in prose), your modified files, and the
   path of your report. Then STOP: no new work, no polling, and never close your own terminal.
@@ -98,7 +117,9 @@ keep going.
 
 - the harness's own agent-to-agent messaging tool — from a worktree the conductor is not in your
   agent list, and a whole fleet once reported to the wrong sessions this way (G35);
-- the harness's user-question prompt — nobody is watching it (one such question waited for hours, G36); a pending that needs the human goes to the conductor, who sweeps it;
+- the harness's user-question prompt, any structured-question tool, and an `mkd` decision deck —
+  nobody is watching them (one such question waited for hours, G36); a pending that needs the human
+  goes to the conductor, who relays it;
 - **periodic heartbeats.** Your injected preamble asks for them; this repo forbids them, because
   each one wakes the conductor to read the word "alive". You send three things and nothing else:
   `worker_done`, `ask`, `escalation`.
