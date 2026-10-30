@@ -457,7 +457,24 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 
 /* fix: cover .speaker must not collide with the absolute .deck-footer */
 .tpl-howto .slide:has(> .speaker){padding-bottom:160px}
-.tpl-howto .slide .speaker{position:absolute;left:88px;right:88px;bottom:70px;margin-top:0;z-index:3}</style>
+.tpl-howto .slide .speaker{position:absolute;left:88px;right:88px;bottom:70px;margin-top:0;z-index:3}
+/* dense slides: the same content at a tighter type step so it fits the 1280x720 canvas */
+.tpl-howto .slide.compact .h2{font-size:42px}
+.tpl-howto .slide.compact .lede{font-size:18px;line-height:1.5}
+.tpl-howto .slide.compact .card{padding:18px 22px}
+.tpl-howto .slide.compact .card p{font-size:14px;line-height:1.5}
+.tpl-howto .slide.compact .callout p{font-size:14px;line-height:1.5}
+.tpl-howto .slide.compact .blist li{padding:6px 0 6px 30px;font-size:16px}
+.tpl-howto .slide.compact .blist li::before{top:6px}
+.tpl-howto .slide.compact .dtable td{padding:8px 14px}
+.tpl-howto .slide.compact .dtable th{padding:8px 14px}
+.tpl-howto .slide.compact .terminal{font-size:13.5px;line-height:1.55}
+.tpl-howto .slide.compact .terminal .bar{padding:8px 16px}
+.tpl-howto .slide.compact .terminal pre{padding:14px 22px}
+.tpl-howto .slide.compact .agenda-row{padding:10px 0}
+.tpl-howto .slide.compact .agenda-row .at{font-size:20px}
+.tpl-howto .slide.compact .mt-l{margin-top:20px}
+.tpl-howto .slide.compact .flow .stage{padding:9px 0}</style>
 <style>
 /* ===== defect-management :: extra components (quiz, lifecycle, metric cards) ===== */
 .tpl-howto .lifecycle{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:22px}
@@ -510,6 +527,9 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 .tpl-howto .qitem.answered .qexp{display:block}
 .tpl-howto .qexp b{color:#fff}
 .tpl-howto .qhint{font-size:13px;color:var(--text-3);font-family:'JetBrains Mono',monospace;margin-top:6px}
+/* quizzes: the two questions side by side, so both answered explanations fit the 1280x720 canvas */
+.tpl-howto .quiz{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:start;margin-top:18px}
+.tpl-howto .quiz .qitem{margin-bottom:0}
 
 /* ===== naming anatomy — segmented title ===== */
 .tpl-howto .nameline{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px;margin-top:24px;font-family:'JetBrains Mono',monospace}
@@ -566,7 +586,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 </section>
 
 <!-- 3. AGENDA -->
-<section class="slide" data-title="Agenda">
+<section class="slide compact" data-title="Agenda">
   <p class="kicker">qué cubriremos</p>
   <h2 class="h2" data-anim="fade-up">Probar Toda Feature, por Capas</h2>
   <div class="stack mt-l anim-stagger-list">
@@ -690,7 +710,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 </section>
 
 <!-- 11. UI SCENARIO LOOP -->
-<section class="slide" data-title="UI loop">
+<section class="slide compact" data-title="UI loop">
   <p class="kicker">el loop por cada AC</p>
   <h2 class="h2" data-anim="fade-up">Navega → Observa → Captura</h2>
   <div class="flow mt-s">
@@ -765,7 +785,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 </section>
 
 <!-- 16. API SETUP -->
-<section class="slide" data-title="API setup">
+<section class="slide compact" data-title="API setup">
   <p class="kicker">descubrir + autenticar</p>
   <h2 class="h2" data-anim="fade-up">Preparar el Testing de la Capa API</h2>
   <div class="terminal mt-s">
@@ -787,7 +807,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 </section>
 
 <!-- 17. STATUS-CODE MATRIX -->
-<section class="slide" data-title="Status codes">
+<section class="slide compact" data-title="Status codes">
   <p class="kicker">cada status PRUEBA algo</p>
   <h2 class="h2" data-anim="fade-up">La Matriz de Status Codes</h2>
   <table class="dtable mt-s" style="font-size:13.5px">

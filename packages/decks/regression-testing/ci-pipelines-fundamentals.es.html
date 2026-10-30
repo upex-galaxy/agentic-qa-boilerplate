@@ -438,7 +438,7 @@ table.tbl.tight td,table.tbl.tight th{padding:5px 9px}
 
 /* two-column with yaml */
 .split{display:grid;grid-template-columns:1.15fr 1fr;gap:18px;align-items:start;margin-top:12px}
-.split.eq{grid-template-columns:1fr 1fr}
+.split.eq{grid-template-columns:1.08fr 1fr}
 .split.wide{grid-template-columns:1.5fr 1fr}
 
 /* YAML block (terminal-like) */
@@ -515,7 +515,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
 .trig-note{margin-top:10px;font-size:13px;color:var(--text-2);line-height:1.5;min-height:40px}
 
 /* dispatch form builder */
-.dform{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;margin-top:10px}
+.dform{display:grid;grid-template-columns:1.08fr 1fr;gap:16px;align-items:start;margin-top:10px}
 .gform{background:#0d1117;border:1px solid var(--border-strong);border-radius:12px;padding:14px 16px;font-family:'Inter',sans-serif}
 .gform .hd{font-size:12.5px;color:var(--text-3);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
 .gform .hd b{color:var(--text-1)}
@@ -562,7 +562,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
 .lane .run.late{left:40%}
 
 /* sorter (classify) */
-.sorter{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:10px;align-items:start}
+.sorter{display:grid;grid-template-columns:1.08fr 1fr;gap:16px;margin-top:10px;align-items:start}
 .sorter .items{display:flex;flex-direction:column;gap:8px}
 .sorter .it{border:1px solid var(--border-strong);border-radius:10px;padding:9px 12px;background:var(--surface);display:flex;justify-content:space-between;align-items:center;gap:10px}
 .sorter .it .nm{font:600 12.5px 'JetBrains Mono',monospace;color:var(--text-1)}
@@ -609,7 +609,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
 .gd .pros b{color:var(--text-1)}
 
 /* checklist */
-.chk{list-style:none;margin:10px 0 0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:6px 18px}
+.chk{list-style:none;margin:10px 0 0;padding:0;display:grid;grid-template-columns:1.08fr 1fr;gap:6px 18px}
 .chk li{display:flex;gap:9px;align-items:flex-start;font-size:13px;color:var(--text-2);line-height:1.45;cursor:pointer;padding:5px 0;border-bottom:1px solid var(--border)}
 .chk li .bx{flex:none;width:17px;height:17px;border-radius:5px;border:1px solid var(--border-strong);margin-top:2px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#1a1b26}
 .chk li.on .bx{background:var(--good);border-color:var(--good)}
@@ -636,7 +636,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
 .qexp{margin-top:9px;font-size:13px;color:var(--text-2);border-left:3px solid var(--good);padding:9px 14px;background:color-mix(in srgb,var(--good) 7%,transparent);border-radius:0 9px 9px 0;display:none;line-height:1.55}
 .qitem.answered .qexp{display:block}
 .qexp b{color:var(--text-1)}
-.quiz.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.quiz.two{display:grid;grid-template-columns:1.08fr 1fr;gap:18px}
 
 /* not-implemented banner */
 .nyi{display:inline-flex;align-items:center;gap:9px;font:700 12px 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--warn);border:1.5px dashed color-mix(in srgb,var(--warn) 65%,transparent);background:color-mix(in srgb,var(--warn) 9%,transparent);border-radius:9px;padding:6px 12px;margin-bottom:8px}
@@ -679,6 +679,29 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
 /* tall explorer blocks: fit 720px viewports */
 .yaml.tall pre.sm{font-size:10.5px;line-height:1.42;padding:8px 14px;max-height:calc(100vh - 250px);overflow:auto}
 .jg{height:215px}
+
+/* fit the 1280x720 canvas: denser slides keep every line visible */
+.slide.fit .split{margin-top:8px}
+.slide.fit .blist li{padding:4px 0 4px 22px;font-size:13px;line-height:1.45}
+.slide.fit .blist li::before{top:4px}
+.slide.fit .callout{padding:8px 13px}
+.slide.fit .callout p{line-height:1.45}
+.slide.fit .callout.mt-m{margin-top:10px}
+.slide.fit .yaml pre.sm{line-height:1.38;padding:8px 14px}
+.slide.fit .yaml:not(.tall) pre.sm{font-size:11px}
+.slide.fit table.tbl td{line-height:1.4;padding-top:3px;padding-bottom:3px}
+.slide.fit table.tbl.mt-s{margin-top:4px}
+.yaml.cols2 pre.sm{max-height:none;column-count:2;column-gap:32px;column-fill:balance}
+.yaml.cols2 .row{break-inside:avoid}
+.yx-stack .yx-panel{margin-top:6px;min-height:0;padding:6px 16px 7px}
+.yx-stack .yx-panel p+p,.yx-stack .yx-panel .hint{margin-top:4px}
+.yx-stack .yx-panel h4{margin-bottom:3px}
+.slide.fit .h2{margin-bottom:2px}
+.dform p.small{margin:8px 0 0!important}
+.slide.fit .yaml.tight pre.sm{line-height:1.29;padding-top:5px;padding-bottom:5px}
+.slide.fit .split p.small:last-child{margin-bottom:0}
+.yx-stack .yx-panel p{line-height:1.42}
+.yx-stack .yaml pre.sm{line-height:1.32;padding-top:6px;padding-bottom:6px}
 </style>
 </head>
 <body data-quiz-key="ci-fundamentals-quiz">
@@ -797,12 +820,12 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
   </section>
 
   <!-- 6. ANATOMÍA (YAML EXPLORER build.yml) -->
-  <section class="slide" data-title="Anatomía: build.yml">
+  <section class="slide fit" data-title="Anatomía: build.yml">
     <div class="body">
     <p class="kicker">explorador: haz clic en cada bloque del YAML</p>
     <h2 class="h2">Anatomía de un workflow: <span class="grad">build.yml</span>, pieza por pieza</h2>
-    <div class="split wide">
-      <div class="yaml yx tall" data-first="name"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>.github/workflows/build.yml</b> · extracto</span><span class="badge real">real</span></div>
+    <div class="yx-stack">
+      <div class="yaml yx tall cols2" data-first="name"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>.github/workflows/build.yml</b> · extracto</span><span class="badge real">real</span></div>
 <pre class="sm"><span class="row" data-x="name"><span class="key">name</span>: <span class="str">TestBuild Checks</span>
 <span class="key">run-name</span>: <span class="ex">${{ github.actor }}</span> triggered TestBuild Checks on <span class="ex">${{ github.ref_name }}</span></span>
 <span class="row" data-x="on"><span class="key">on</span>:
@@ -934,12 +957,13 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
   </section>
 
   <!-- 10. WORKFLOW_DISPATCH INPUTS -->
-  <section class="slide" data-title="workflow_dispatch inputs">
+  <section class="slide fit" data-title="workflow_dispatch inputs">
     <div class="body">
     <p class="kicker">formulario: cambia los valores y mira el comando que genera</p>
     <h2 class="h2"><span class="grad">workflow_dispatch</span>: el botón con parámetros</h2>
     <div class="dform">
-      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>.github/workflows/smoke.yml</b> · extracto: inputs de workflow_dispatch</span><span class="badge real">real</span></div>
+      <div>
+        <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>.github/workflows/smoke.yml</b> · extracto: inputs de workflow_dispatch</span><span class="badge real">real</span></div>
 <pre class="sm">  <span class="key">workflow_dispatch</span>:
     <span class="key">inputs</span>:
       <span class="key">environment</span>:
@@ -960,6 +984,9 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
         <span class="key">required</span>: <span class="kw">false</span>
         <span class="key">default</span>: <span class="str">''</span>
         <span class="key">type</span>: <span class="kw">string</span></pre></div>
+        <p class="small dim" style="margin:0;flex:1">Tipos válidos: <code class="k">choice</code>, <code class="k">boolean</code>, <code class="k">string</code>, <code class="k">number</code>, <code class="k">environment</code>. Máximo 25 inputs. Se leen con <code class="k">github.event.inputs.X</code> (todo llega como <b>string</b>) o con <code class="k">inputs.X</code> (conserva los booleanos). Por eso el repo compara <code class="k">generate_allure != 'false'</code> entre comillas (el <code class="k">if</code> del job allure-report en smoke.yml).</p>
+        <p class="small dim" style="margin:0;flex:1">El patrón <code class="k">${{ github.event.inputs.environment || 'staging' }}</code> es el <b>fallback para el cron</b>: un run programado no tiene inputs, la expresión devuelve vacío y el <code class="k">||</code> rescata el default. Sin ese <code class="k">||</code>, la regresión nocturna correría sin entorno.</p>
+      </div>
       <div>
         <div class="gform" id="dform">
           <div class="hd">Actions → <b>Smoke Tests</b> → Run workflow ▾ &nbsp;<span class="dim2">(así lo dibuja GitHub a partir de los inputs)</span></div>
@@ -972,10 +999,6 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
         </div>
         <div class="out mt-s" id="dform-out"></div>
       </div>
-    </div>
-    <div class="row mt-s" style="gap:16px;align-items:flex-start">
-      <p class="small dim" style="margin:0;flex:1">Tipos válidos: <code class="k">choice</code>, <code class="k">boolean</code>, <code class="k">string</code>, <code class="k">number</code>, <code class="k">environment</code>. Máximo 25 inputs. Se leen con <code class="k">github.event.inputs.X</code> (todo llega como <b>string</b>) o con <code class="k">inputs.X</code> (conserva los booleanos). Por eso el repo compara <code class="k">generate_allure != 'false'</code> entre comillas (el <code class="k">if</code> del job allure-report en smoke.yml).</p>
-      <p class="small dim" style="margin:0;flex:1">El patrón <code class="k">${{ github.event.inputs.environment || 'staging' }}</code> es el <b>fallback para el cron</b>: un run programado no tiene inputs, la expresión devuelve vacío y el <code class="k">||</code> rescata el default. Sin ese <code class="k">||</code>, la regresión nocturna correría sin entorno.</p>
     </div>
     </div>
     <div class="notes">Formulario vivo: los inputs generan la UI de GitHub y el comando gh equivalente. Dos gotchas: inputs llegan como string en github.event.inputs; el || 'staging' existe por el cron.</div>
@@ -1025,11 +1048,11 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
   </section>
 
   <!-- 12. CONTEXTOS Y EXPRESIONES -->
-  <section class="slide" data-title="Contextos y expresiones">
+  <section class="slide fit" data-title="Contextos y expresiones">
     <div class="body">
     <p class="kicker">el lenguaje dentro de ${{ }}</p>
     <h2 class="h2">Contextos: de dónde salen los valores</h2>
-    <div class="split wide">
+    <div class="split wide" style="grid-template-columns:1.6fr 1fr">
       <table class="tbl tight mt-s">
         <tr><th>Contexto</th><th>Qué contiene</th><th>Ejemplo real en el repo</th></tr>
         <tr><td><b>github</b></td><td>Metadatos del run: quién, qué rama, qué evento, número de run.</td><td class="mono">${{ github.actor }} · github.ref_name · github.run_number (smoke.yml)</td></tr>
@@ -1043,7 +1066,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
       </table>
       <div>
         <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">operadores que vas a usar</span><span class="badge ex">ejemplos</span></div>
-<pre><span class="c"># fallback: si A está vacío, usa B</span>
+<pre class="sm"><span class="c"># fallback: si A está vacío, usa B</span>
 <span class="ex">${{ github.event.inputs.environment || 'staging' }}</span>
 
 <span class="c"># comparación (siempre string vs string)</span>
@@ -1241,8 +1264,8 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
             echo "View the report: https://<span class="ex">${{ github.repository_owner }}</span>.github.io/…/<span class="ex">${{ env.TEST_ENV }}</span>/smoke/" &gt;&gt; $GITHUB_STEP_SUMMARY</pre></div>
       <div>
         <div class="cards c3">
-          <div class="card acc"><h4>$GITHUB_OUTPUT</h4><p>Un archivo. Escribís <code class="k">clave=valor</code> y GitHub lo expone como <code class="k">steps.&lt;id&gt;.outputs.clave</code> para los steps siguientes. Para pasarlo a OTRO job, lo mapeás en <code class="k">jobs.X.outputs</code> y lo leés con <code class="k">needs.X.outputs.clave</code>.</p></div>
-          <div class="card acc2"><h4>$GITHUB_STEP_SUMMARY</h4><p>Markdown que aparece en la página del run, arriba de los logs. Aquí se escribe el link al reporte Allure: el PM no abre logs, abre el summary. regression.yml también escribe cuántos JUnit importó a Xray.</p></div>
+          <div class="card acc"><h4>$GITHUB_OUTPUT</h4><p>Un archivo. Escribís <code class="k">clave=valor</code> y GitHub lo expone como <code class="k">steps.&lt;id&gt;.outputs.clave</code> para los steps siguientes. Para pasarlo a OTRO job, lo mapeás en <code class="k">jobs.X.outputs</code> y lo leés con <code class="k">needs.X.<wbr>outputs.clave</code>.</p></div>
+          <div class="card acc2"><h4>$GITHUB_STEP_<wbr>SUMMARY</h4><p>Markdown que aparece en la página del run, arriba de los logs. Aquí se escribe el link al reporte Allure: el PM no abre logs, abre el summary. regression.yml también escribe cuántos JUnit importó a Xray.</p></div>
           <div class="card acc3"><h4>::notice / ::warning</h4><p>Anotaciones visibles en la UI sin fallar el step. el step de gate del job XrayImport de regression.yml avisa «Xray import skipped» con <code class="k">::notice</code> y con <code class="k">::warning</code> cuando falta la execution_key. El step sale con 0: informar no es fallar.</p></div>
         </div>
         <div class="callout good mt-m"><h4>El patrón «detectar → decidir → saltar»</h4><p>Un step barato comprueba si hay resultados y publica un output. Los steps siguientes llevan <code class="k">if: steps.check_allure.outputs.has_results == 'true'</code>. Si la suite no dejó nada (un run cancelado a los 10 segundos), el job no instala Bun ni genera un reporte vacío. Diseño defensivo con un booleano de texto.</p></div>
@@ -1445,12 +1468,12 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
   </section>
 
   <!-- 26. ARTIFACTS -->
-  <section class="slide" data-title="Artifacts">
+  <section class="slide fit" data-title="Artifacts">
     <div class="body">
     <p class="kicker">lo que sobrevive al runner</p>
     <h2 class="h2">Artifacts: <span class="grad">subir en un job, bajar en otro</span></h2>
-    <div class="split eq">
-      <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>.github/workflows/smoke.yml</b> · extracto: steps Upload … (sube) · Download Smoke Test Artifacts (baja)</span><span class="badge real">real</span></div>
+    <div class="split" style="grid-template-columns:480px 1fr">
+      <div class="yaml tight"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>.github/workflows/smoke.yml</b> · extracto: steps Upload … (sube) · Download Smoke Test Artifacts (baja)</span><span class="badge real">real</span></div>
 <pre class="sm">      - <span class="key">name</span>: <span class="str">Upload Allure Results</span>
         <span class="key">if</span>: always()
         <span class="key">uses</span>: <span class="str">actions/upload-artifact@v4</span>
@@ -1485,20 +1508,24 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
           <tr><td class="mono">merged-allure-results-{env}</td><td>Integration + E2E fusionados</td><td>si hay resultados</td><td>análisis del agente (/regression-testing Fase 2)</td></tr>
         </table>
         <p class="small dim2 mt-s">Snapshot: la lista viva son los steps <code class="k">Upload …</code> de cada workflow.</p>
-        <ul class="blist mt-s">
+      </div>
+    </div>
+    <div class="split" style="grid-template-columns:1.08fr 1fr;margin-top:2px">
+      <ul class="blist" style="margin-top:0">
           <li><b>Nombres únicos por run.</b> En v4 los artifacts son inmutables: dos uploads con el mismo nombre en el mismo run fallan. Por eso los prefijos <code class="k">smoke-</code>, <code class="k">sanity-</code>, <code class="k">integration-</code>, <code class="k">e2e-</code>.</li>
           <li><b><code class="k">retention-days: 10</code>.</b> Después, se borran. El máximo por defecto es 90 (ajustable en Settings). Regla R4 de <code class="k">/regression-testing</code>: bajá la evidencia de un build rojo antes de que expire.</li>
+      </ul>
+      <ul class="blist" style="margin-top:0">
           <li><b><code class="k">continue-on-error: true</code> en la descarga.</b> Si la suite no llegó a subir nada, el job de reporte no debe morir por eso: sigue, y el step «Check Allure Results» decide.</li>
           <li><b>El step Cleanup Workspace</b> borra node_modules y resultados. En un runner de GitHub es redundante (la VM muere igual); en un runner self-hosted evita que el disco se llene.</li>
-        </ul>
-      </div>
+      </ul>
     </div>
     </div>
     <div class="notes">Artifacts: upload (always/failure), download en otro job (continue-on-error), tabla de los tipos que producimos, inmutabilidad v4, retención.</div>
   </section>
 
   <!-- 27. ESQUELETO -->
-  <section class="slide" data-title="El esqueleto">
+  <section class="slide fit" data-title="El esqueleto">
     <div class="body">
     <p class="kicker">explorador: el mismo esqueleto en smoke, sanity y regression</p>
     <h2 class="h2">El esqueleto de una suite, <span class="grad">bloque por bloque</span></h2>

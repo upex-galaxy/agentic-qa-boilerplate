@@ -401,6 +401,16 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   .slide.compact .card{padding:16px 20px}
   .slide.compact .h2{font-size:46px}
   .slide.compact .small{font-size:18px;line-height:1.5}
+  /* slides justos: un poco menos de aire y medio paso de letra */
+  .slide.snug .h2{font-size:42px;margin-bottom:6px}
+  .slide.snug .small{font-size:17px;line-height:1.45}
+  .slide.snug .mt-m{margin-top:12px}
+  /* slides muy densos: un paso más de letra en tablas y bloques para que todo entre en el lienzo de 1440x900 */
+  .slide.dense .h2{font-size:42px;margin-bottom:6px}
+  .slide.dense .small{font-size:15px;line-height:1.38}
+  .slide.dense table.tt.tight{border-spacing:0 4px}
+  .slide.dense table.tt.tight td{padding:5px 12px}
+  .slide.dense .hookline{font-size:13px;line-height:1.5;padding:9px 14px}
 
   /* ===== progressive-disclosure: diagramas SVG inline (tokens del tema) ===== */
   .dg{width:100%;height:auto;display:block}
@@ -587,13 +597,13 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   </section>
 
   <!-- 6. HOOK -->
-  <section class="slide compact" data-title="El hook y la línea ROUTE:">
+  <section class="slide compact dense" data-title="El hook y la línea ROUTE:">
     <p class="kicker">05 · Hook · 6 de 14</p>
     <h2 class="h2">El hook y la línea <span class="grad">ROUTE:</span></h2>
     <p class="small dim mt-s">El router en L0 depende de que el modelo lo consulte. El hook no: clasifica cada pedido con código y deja escrito qué leer. Es el mismo emisor que ya pone la línea <code>AGENT IDENTITY:</code>: <code>.agents/hooks/personality-reinject.mjs</code>.</p>
-    <div class="grid g2 mt-m" style="gap:24px;align-items:start">
-      <div class="stack" style="gap:12px">
-        <svg class="dg" style="max-height:110px" viewBox="0 0 760 210" role="img" aria-label="El pedido pasa por el clasificador del hook, que lee el router y los triggers, y sale una línea ROUTE que el modelo lee antes de actuar">
+    <div class="grid mt-s" style="grid-template-columns:minmax(0,.94fr) minmax(0,1.06fr);gap:22px;align-items:start">
+      <div class="stack" style="gap:10px">
+        <svg class="dg" style="max-height:96px" viewBox="0 0 760 210" role="img" aria-label="El pedido pasa por el clasificador del hook, que lee el router y los triggers, y sale una línea ROUTE que el modelo lee antes de actuar">
           <defs><marker id="pd-a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="ar"/></marker></defs>
           <rect class="bx" x="10" y="30" width="170" height="74" rx="10"/>
           <text class="t-b" x="26" y="60">El pedido</text>
@@ -626,16 +636,16 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       </div>
       <table class="tt tight">
         <tr><th style="width:130px">Regla</th><th>Qué hace</th></tr>
-        <tr><td class="small"><b>Ancla</b></td><td class="small">Una fila se dispara cuando el pedido coincide con su primer archivo de <code>Read</code>, y entonces se rutean todos los de la fila. Así un archivo que comparten dos filas no arrastra los de la otra.</td></tr>
-        <tr><td class="small"><b>Disparadores</b></td><td class="small">Cada sección declara en su frontmatter <code>triggers:</code> (regex sin distinguir mayúsculas, en inglés y en español) y <code>paths:</code> (rutas del repo que el pedido nombra). Un import que ancla solo su fila (<code>@package.json</code>) usa <code>IMPORT_ROW_TRIGGERS</code> del emisor. Ajustar el ruteo es editar esas listas, nunca L0.</td></tr>
-        <tr><td class="small"><b>Alcance</b></td><td class="small">Una línea <code>ROUTE-SCOPE:</code> en el pedido reemplaza al pedido para clasificar: cada ítem es un <code>id</code> de sección (se rutea directo) o palabras (se clasifican); <code>none</code> no rutea nada. Sin ella, un pedido con el preámbulo de un orquestador se clasifica solo por el bloque de tarea que sigue a su marcador.</td></tr>
-        <tr><td class="small"><b>Ranking y tope</b></td><td class="small">Las filas disparadas se ordenan por la fuerza de su ancla. Solo las primeras <code>MAX_ROUTED_SECTIONS</code> reciben un <code>ROUTE:</code> obligatorio; el resto va a una sola línea <code>ROUTE-OPTIONAL:</code> que no se registra como ruteada. Un agente lee una ruta sola mucho más que una de cinco en el mismo turno (ADR-0017).</td></tr>
+        <tr><td class="small"><b>Ancla</b></td><td class="small">Una fila se dispara cuando el pedido coincide con su primer archivo de <code>Read</code>, y entonces se rutean todos los de la fila.</td></tr>
+        <tr><td class="small"><b>Disparadores</b></td><td class="small">Cada sección declara en su frontmatter <code>triggers:</code> (regex sin distinguir mayúsculas, en inglés y en español) y <code>paths:</code> (rutas del repo que el pedido nombra). Ajustar el ruteo es editar esas listas, nunca L0.</td></tr>
+        <tr><td class="small"><b>Alcance</b></td><td class="small">Una línea <code>ROUTE-SCOPE:</code> en el pedido reemplaza al pedido para clasificar: cada ítem es un <code>id</code> de sección (se rutea directo) o palabras (se clasifican); <code>none</code> no rutea nada.</td></tr>
+        <tr><td class="small"><b>Ranking y tope</b></td><td class="small">Las filas disparadas se ordenan por la fuerza de su ancla. Solo las primeras <code>MAX_ROUTED_SECTIONS</code> reciben un <code>ROUTE:</code> obligatorio; el resto va a una sola línea <code>ROUTE-OPTIONAL:</code> que no se registra como ruteada (ADR-0017).</td></tr>
         <tr><td class="small"><b>Recordatorio</b></td><td class="small">La primera herramienta del turno que no lee ninguna sección ruteada, mientras alguna sigue sin leerse, recibe UNA línea <code>ROUTE-PENDING:</code>. No se repite en el turno y calla para los subagentes.</td></tr>
         <tr><td class="small"><b>Dedupe por sesión</b></td><td class="small">Un JSON por checkout y por sesión, en <code>agentic-instruction-routes/</code> bajo el temp del sistema, recuerda qué se ruteó. Un pedido que no necesita nada nuevo no agrega nada.</td></tr>
         <tr><td class="small"><b>Re-armado</b></td><td class="small">Tras una compactación o un <code>/clear</code>, el emisor borra ese estado y no imprime nada: lo que salió del contexto se vuelve a rutear la próxima vez que haga falta.</td></tr>
       </table>
     </div>
-    <div class="notes">Un emisor, tres adaptadores: Claude Code y Codex lo ejecutan como command hook, OpenCode lo importa desde .opencode/plugins/personality-reinject.js. Un prompt que empieza con &lt;task-notification&gt; (el aviso del harness de que terminó un subagente en segundo plano) no rutea nada y no toca el estado de ruteo: nadie pidió esas rutas. El estado de ruteo nunca vive en el repo: es estado de sesión. La confianza de Codex es estado de runtime, por eso setup:doctor la reporta aparte (agent-harnesses.md, Codex trust).</div>
+    <div class="notes">Detalle de las reglas. Ancla: así un archivo que comparten dos filas no arrastra los de la otra. Disparadores: un import que ancla solo su fila (@package.json) usa IMPORT_ROW_TRIGGERS del emisor. Alcance: sin la línea ROUTE-SCOPE:, un pedido con el preámbulo de un orquestador se clasifica solo por el bloque de tarea que sigue a su marcador. Ranking y tope: un agente lee una ruta sola mucho más que una de cinco en el mismo turno. Un emisor, tres adaptadores: Claude Code y Codex lo ejecutan como command hook, OpenCode lo importa desde .opencode/plugins/personality-reinject.js. Un prompt que empieza con &lt;task-notification&gt; (el aviso del harness de que terminó un subagente en segundo plano) no rutea nada y no toca el estado de ruteo: nadie pidió esas rutas. El estado de ruteo nunca vive en el repo: es estado de sesión. La confianza de Codex es estado de runtime, por eso setup:doctor la reporta aparte (agent-harnesses.md, Codex trust).</div>
   </section>
 
   <!-- 7. REGLAS CRÍTICAS -->
@@ -666,7 +676,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   </section>
 
   <!-- 8. IMPORTS -->
-  <section class="slide compact" data-title="Dos imports">
+  <section class="slide compact snug" data-title="Dos imports">
     <p class="kicker">07 · Imports · 8 de 14</p>
     <h2 class="h2">Dos imports para Claude, una <span class="grad">instrucción reforzada</span> para los otros</h2>
     <p class="small dim mt-s"><code>package.json</code> y <code>.agents/project.yaml</code> son los dos archivos de datos que más se consultan. Las dos filas del router que los nombran hacen dos cosas a la vez.</p>
@@ -704,7 +714,7 @@ whenever any of these apply, read <span class="k">@package.json</span> first, ne
   </section>
 
   <!-- 10. CÓMO SE EDITA -->
-  <section class="slide compact" data-title="Cómo se edita">
+  <section class="slide compact dense" data-title="Cómo se edita">
     <p class="kicker">09 · Edición · 10 de 14</p>
     <h2 class="h2">Cómo se <span class="grad">edita</span></h2>
     <p class="small dim mt-s">Toda edición entra por un solo camino: <code>/framework-development</code> modo <code>instructions</code>, que ubica cada frase con la doctrina de <code>references/instructions-doctrine.md</code>. Las secciones son doctrina compartida: <code>bun sync</code> las sincroniza como una skill. <code>agent-project.md</code> es del proyecto y nunca se sincroniza; un proyecto sin él lo recibe una vez desde <code>agent-project.md.template</code>. Regla de oro: el texto va al archivo dueño, nunca de vuelta a <code>AGENTS.md</code>.</p>
@@ -726,7 +736,7 @@ whenever any of these apply, read <span class="k">@package.json</span> first, ne
   </section>
 
   <!-- 11. PRESUPUESTOS -->
-  <section class="slide compact" data-title="Presupuestos">
+  <section class="slide compact snug" data-title="Presupuestos">
     <p class="kicker">10 · Presupuestos · 11 de 14</p>
     <h2 class="h2"><span class="grad">Presupuestos</span> de L0</h2>
     <p class="small dim mt-s">L0 tiene techo porque Codex corta sin avisar. Los valores son constantes con nombre en <code>scripts/lint-instructions.ts</code>, iguales en los dos boilerplates.</p>
@@ -745,7 +755,7 @@ whenever any of these apply, read <span class="k">@package.json</span> first, ne
   </section>
 
   <!-- 12. MEDICIÓN -->
-  <section class="slide compact" data-title="Cómo se mide">
+  <section class="slide compact snug" data-title="Cómo se mide">
     <p class="kicker">11 · Medición · 12 de 14</p>
     <h2 class="h2">Cómo se mide que <span class="grad">funciona</span></h2>
     <p class="small dim mt-s">Dos preguntas distintas: si el clasificador rutea lo que tiene que rutear, y si el modelo después lee lo que le rutearon.</p>

@@ -429,6 +429,27 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 .tpl-howto .dtable tr:last-child td{border-bottom:none}
 .tpl-howto .dtable td b,.tpl-howto .dtable td strong{color:#fff;font-weight:600}
 
+/* ---------- dense slides: same content, tighter spacing so it fits the 1280x720 canvas ---------- */
+.tpl-howto .slide.dense > *{flex-shrink:0}
+.tpl-howto .slide.dense .h2{font-size:40px;margin-bottom:6px}
+.tpl-howto .slide.dense .lede{font-size:18px;line-height:1.45}
+.tpl-howto .slide.dense .dtable{margin-top:10px}
+.tpl-howto .slide.dense .dtable th{padding:7px 12px}
+.tpl-howto .slide.dense .dtable td{padding:7px 12px;line-height:1.45}
+.tpl-howto .slide.dense .dtable.tight th{padding:5px 12px}
+.tpl-howto .slide.dense .dtable.tight td{padding:4px 12px;line-height:1.4}
+.tpl-howto .slide.dense .callout{padding:11px 18px;margin-top:12px}
+.tpl-howto .slide.dense .callout.mt-s{margin-top:6px}
+.tpl-howto .slide.dense .callout p{font-size:14px;line-height:1.5}
+.tpl-howto .slide.dense .terminal{font-size:13px;line-height:1.55}
+.tpl-howto .slide.dense .terminal .bar{padding:7px 14px}
+.tpl-howto .slide.dense .terminal pre{padding:12px 18px}
+.tpl-howto .slide.dense .card{padding:16px 20px}
+.tpl-howto .slide.dense .card p{font-size:14px;line-height:1.5}
+.tpl-howto .slide.dense .mt-m{margin-top:12px}
+.tpl-howto .slide.dense .mt-l{margin-top:18px}
+.tpl-howto .slide.dense .nameline{margin-top:12px}
+
 /* ---------- bullet list (clean) ---------- */
 .tpl-howto .blist{list-style:none;padding:0;margin:22px 0 0}
 .tpl-howto .blist li{position:relative;padding:9px 0 9px 30px;font-size:17px;color:var(--text-2);line-height:1.5;border-bottom:1px solid var(--border)}
@@ -491,12 +512,12 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 .tpl-howto .mcard .md{font-size:13px;color:var(--text-2);margin-top:6px;line-height:1.5}
 
 /* ===== QUIZ ===== */
-.tpl-howto .quiz{margin-top:18px}
-.tpl-howto .qitem{margin-bottom:18px}
-.tpl-howto .qq{font-size:19px;font-weight:600;color:#fff;margin-bottom:12px;display:flex;gap:12px;line-height:1.4}
+.tpl-howto .quiz{margin-top:12px}
+.tpl-howto .qitem{margin-bottom:10px}
+.tpl-howto .qq{font-size:18px;font-weight:600;color:#fff;margin-bottom:8px;display:flex;gap:12px;line-height:1.35}
 .tpl-howto .qq .qn{flex:none;color:var(--accent);font-family:'JetBrains Mono',monospace}
-.tpl-howto .opts{display:grid;gap:9px}
-.tpl-howto .opt{display:flex;align-items:center;gap:13px;padding:12px 17px;border:1px solid var(--border);border-radius:11px;background:var(--surface);cursor:pointer;font-size:15px;color:var(--text-2);transition:border-color .15s,background .15s,color .15s}
+.tpl-howto .opts{display:grid;gap:6px}
+.tpl-howto .opt{display:flex;align-items:center;gap:13px;padding:6px 16px;border:1px solid var(--border);border-radius:11px;background:var(--surface);cursor:pointer;font-size:15px;color:var(--text-2);transition:border-color .15s,background .15s,color .15s}
 .tpl-howto .opt:hover{border-color:var(--border-strong);color:#fff}
 .tpl-howto .opt .mk{flex:none;width:26px;height:26px;border-radius:7px;background:var(--surface-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--text-2)}
 .tpl-howto .opt.correct{border-color:var(--good);background:color-mix(in srgb,var(--good) 15%,transparent);color:#fff}
@@ -506,7 +527,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 .tpl-howto .opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,transparent);color:#fff}
 .tpl-howto .opt.wrong .mk{background:var(--bad);border-color:var(--bad);color:#190405}
 .tpl-howto .qitem.answered .opt{cursor:default}
-.tpl-howto .qexp{margin-top:11px;font-size:14px;color:var(--text-2);border-left:3px solid var(--good);padding:11px 16px;background:color-mix(in srgb,var(--good) 7%,transparent);border-radius:0 9px 9px 0;display:none;line-height:1.6}
+.tpl-howto .qexp{margin-top:8px;font-size:14px;color:var(--text-2);border-left:3px solid var(--good);padding:8px 14px;background:color-mix(in srgb,var(--good) 7%,transparent);border-radius:0 9px 9px 0;display:none;line-height:1.45}
 .tpl-howto .qitem.answered .qexp{display:block}
 .tpl-howto .qexp b{color:#fff}
 .tpl-howto .qhint{font-size:13px;color:var(--text-3);font-family:'JetBrains Mono',monospace;margin-top:6px}
@@ -604,7 +625,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 </section>
 
 <!-- 6. SCOPES TABLE -->
-<section class="slide" data-title="Scopes">
+<section class="slide dense" data-title="Scopes">
   <p class="kicker">los scopes</p>
   <h2 class="h2" data-anim="fade-up">Módulo · Historia · Bug · Descubrimiento · Exploratorio</h2>
   <table class="dtable mt-s" style="font-size:14px">
@@ -642,7 +663,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 </section>
 
 <!-- 8. BUG-DRIVEN GOLDEN RULE -->
-<section class="slide" data-title="Bug-driven">
+<section class="slide dense" data-title="Bug-driven">
   <p class="kicker">la regla de oro</p>
   <h2 class="h2" data-anim="fade-up">Bug-driven — "Donde Hay un Bug Importante, Debe Haber un Test"</h2>
   <p class="lede mt-s">No todo bug se vuelve TC de regresión. Pero si ES regression-worthy, <b>debe</b> terminar con un Test — en ambas modalidades.</p>
@@ -698,7 +719,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 </section>
 
 <!-- 11. THE NAMING RULE -->
-<section class="slide" data-title="Regla de nombrado">
+<section class="slide dense" data-title="Regla de nombrado">
   <p class="kicker">la regla que más importa</p>
   <h2 class="h2" data-anim="fade-up">El Formato Canónico del Título</h2>
   <div class="nameline">
@@ -719,7 +740,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 </section>
 
 <!-- 12. GOOD VS BAD TITLES -->
-<section class="slide" data-title="Bien vs Mal">
+<section class="slide dense" data-title="Bien vs Mal">
   <p class="kicker">anti-patrones a rechazar</p>
   <h2 class="h2" data-anim="fade-up">Títulos: Mal → Bien</h2>
   <table class="dtable mt-s" style="font-size:14px">
@@ -764,19 +785,19 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 </section>
 
 <!-- 14. NAMING OTHER ARTIFACTS -->
-<section class="slide" data-title="Nombrado de artefactos">
+<section class="slide dense" data-title="Nombrado de artefactos">
   <p class="kicker">el sistema completo de nombrado</p>
   <h2 class="h2" data-anim="fade-up">No Solo el TC — Todo el TMS</h2>
-  <table class="dtable mt-s" style="font-size:13.5px">
-    <thead><tr><th>Artefacto</th><th>Formato</th><th>Ejemplo</th></tr></thead>
+  <table class="dtable tight mt-s" style="font-size:13px">
+    <thead><tr><th style="width:26%">Artefacto</th><th style="width:38%">Formato</th><th>Ejemplo</th></tr></thead>
     <tbody>
       <tr><td>User Story</td><td><span class="mono">{KEY}-{n}</span></td><td><span class="mono">PROJ-123</span></td></tr>
       <tr><td>ATP — Story Test Plan</td><td><span class="mono">ATP: {STORY-KEY}: {story title}</span></td><td><span class="mono">ATP: PROJ-123: Apply discount at checkout</span></td></tr>
       <tr><td>ATR — Story Test Execution</td><td><span class="mono">ATR: {STORY-KEY}: Story Testing</span></td><td><span class="mono">ATR: PROJ-123: Story Testing</span></td></tr>
-      <tr><td>STP — Sprint Test Plan</td><td><span class="mono">STP: Sprint#{N}: {objetivo}</span> — lo crea /sprint-testing al abrir el sprint</td><td><span class="mono">STP: Sprint#30: Checkout hardening</span></td></tr>
-      <tr><td>STR — Sprint Test Results</td><td><span class="mono">STR: Sprint#{N}: Regression Testing</span> — nace al cierre del sprint</td><td><span class="mono">STR: Sprint#30: Regression Testing</span></td></tr>
-      <tr><td>RTP · Regression Test Plan</td><td><span class="mono">RTP: {PROJECT_KEY|module}: Regression Test Plan</span> · lo alimenta /test-documentation al promover; vivo, nunca se completa</td><td><span class="mono">RTP: PROJ: Regression Test Plan</span></td></tr>
-      <tr><td>RTR · Regression Test Results</td><td><span class="mono">RTR: {scope-id}: Regression Testing</span> · lo crea /regression-testing antes del trigger de CI, 1 por veredicto; el STR queda para el cierre del sprint</td><td><span class="mono">RTR: staging-2026-09-23: Regression Testing</span></td></tr>
+      <tr><td>STP — Sprint Test Plan</td><td><span class="mono">STP: Sprint#{N}: {objetivo}</span></td><td><span class="mono">STP: Sprint#30: Checkout hardening</span></td></tr>
+      <tr><td>STR — Sprint Test Results</td><td><span class="mono">STR: Sprint#{N}: Regression Testing</span></td><td><span class="mono">STR: Sprint#30: Regression Testing</span></td></tr>
+      <tr><td>RTP · Regression Test Plan</td><td><span class="mono">RTP: {PROJECT_KEY|module}: Regression Test Plan</span></td><td><span class="mono">RTP: PROJ: Regression Test Plan</span></td></tr>
+      <tr><td>RTR · Regression Test Results</td><td><span class="mono">RTR: {scope-id}: Regression Testing</span></td><td><span class="mono">RTR: staging-2026-09-23: Regression Testing</span></td></tr>
       <tr><td><b>ATS</b> (coverage, obligatorio per-Story)</td><td><span class="mono">ATS: {US_ID}: {story title}</span></td><td><span class="mono">ATS: PROJ-123: Apply discount at checkout</span></td></tr>
       <tr><td><b>Test Set feature-level</b> (agrupa, opcional)</td><td><span class="mono">TS: {EPIC-KEY|module}: Validate &lt;feature&gt;</span></td><td><span class="mono">TS: GX-101: Validate credit card payment</span></td></tr>
       <tr><td><b>Test Case</b> (asevera)</td><td><span class="mono">{US_ID}: TC#: should &lt;BEHAVIOR&gt; when &lt;COND&gt;</span></td><td><span class="mono">GX-101: TC1: should log in successfully when…</span></td></tr>
@@ -784,8 +805,8 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <tr><td>Precondition</td><td><span class="mono">{COMPONENT}: {required state}</span> — sin prefijo de acrónimo</td><td><span class="mono">Payment: Authenticated user with a saved card</span></td></tr>
     </tbody>
   </table>
-  <div class="callout mt-m"><h4>Dos niveles: <span class="mono">Validate</span> agrupa, <span class="mono">should</span> asevera</h4><p>El <b>Set</b> nombra la feature — <span class="mono">TS: GX-101: Validate login</span> — y bajo él cada <b>TC</b> asevera un comportamiento: <span class="mono">should redirect to dashboard when credentials are valid</span>, <span class="mono">should show an error when password is incorrect</span>. El prefijo acrónimo (<span class="mono">ATP/ATR/ATS/STP/STR/RTP/RTR/TS</span>) revela altitud y plan-vs-run en el primer token; el verbo te dice el nivel: <span class="mono">Validate</span> = suite, <span class="mono">should</span> = caso — y el <b>ATS</b> per-Story lleva el título de la Story, no un Validate.</p></div>
-  <div class="notes">El nombrado embebe la trazabilidad: cada Plan/Run lleva un prefijo acrónimo de 3 letras (ATP/ATR/ATS/STP/STR/FTP/RTP/RTR) + el key de la cosa bajo prueba; el ATS per-Story (obligatorio) lleva el título de la Story y su link a la Story llena el coverage; el TS: feature-level opcional agrupa (Validate <feature>); el TC asevera con should…when y lleva SIEMPRE el prefijo US_ID del Story; la membership al Set nunca va en el prefijo (link TC→ATS en ambas modalidades; jira-xray suma la membership Xray-internal). Validate=nivel suite, should=nivel caso.</div>
+  <div class="callout mt-s"><h4>Dos niveles: <span class="mono">Validate</span> agrupa, <span class="mono">should</span> asevera</h4><p>El <b>Set</b> nombra la feature — <span class="mono">TS: GX-101: Validate login</span> — y bajo él cada <b>TC</b> asevera un comportamiento: <span class="mono">should redirect to dashboard when credentials are valid</span>, <span class="mono">should show an error when password is incorrect</span>. El verbo te dice el nivel: <span class="mono">Validate</span> = suite, <span class="mono">should</span> = caso — y el <b>ATS</b> per-Story lleva el título de la Story, no un Validate.</p></div>
+  <div class="notes">El nombrado embebe la trazabilidad: cada Plan/Run lleva un prefijo acrónimo de 3 letras (ATP/ATR/ATS/STP/STR/FTP/RTP/RTR) + el key de la cosa bajo prueba; el ATS per-Story (obligatorio) lleva el título de la Story y su link a la Story llena el coverage; el TS: feature-level opcional agrupa (Validate <feature>); el TC asevera con should…when y lleva SIEMPRE el prefijo US_ID del Story; la membership al Set nunca va en el prefijo (link TC→ATS en ambas modalidades; jira-xray suma la membership Xray-internal). Validate=nivel suite, should=nivel caso. Quién crea cada artefacto: el STP lo crea /sprint-testing al abrir el sprint; el STR nace al cierre del sprint; el RTP lo alimenta /test-documentation al promover y es vivo, nunca se completa; el RTR lo crea /regression-testing antes del trigger de CI, uno por veredicto, y el STR queda para el cierre del sprint. El prefijo acrónimo (ATP/ATR/ATS/STP/STR/RTP/RTR/TS) revela altitud y plan-vs-run en el primer token.</div>
 </section>
 
 <!-- 15. CODE-SIDE NAMING -->
@@ -863,7 +884,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 </section>
 
 <!-- 19. GHERKIN ANATOMY -->
-<section class="slide" data-title="Anatomía Gherkin">
+<section class="slide dense" data-title="Anatomía Gherkin">
   <p class="kicker">el patrón de alta calidad</p>
   <h2 class="h2" data-anim="fade-up">Anatomía de un Gherkin de Candidato</h2>
   <div class="terminal mt-s">
@@ -956,7 +977,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 </section>
 
 <!-- T2b. BVA PRACTICE -->
-<section class="slide" data-title="BVA práctica">
+<section class="slide dense" data-title="BVA práctica">
   <p class="kicker">técnica 2/5 · en la práctica</p>
   <h2 class="h2" data-anim="fade-up">BVA — Password de 8 a 20 Caracteres</h2>
   <table class="dtable mt-s" style="font-size:14px">
@@ -1154,7 +1175,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 </section>
 
 <!-- 21. PARAMETRIZATION -->
-<section class="slide" data-title="Parametrización">
+<section class="slide dense" data-title="Parametrización">
   <p class="kicker">data-driven sin hardcodear</p>
   <h2 class="h2" data-anim="fade-up">Dos Tablas que NO se Confunden</h2>
   <div class="grid g2 mt-s">
@@ -1271,7 +1292,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 </section>
 
 <!-- 28. THREE VERDICTS -->
-<section class="slide" data-title="Tres veredictos">
+<section class="slide dense" data-title="Tres veredictos">
   <p class="kicker">cada escenario termina en uno</p>
   <h2 class="h2" data-anim="fade-up">Candidate · Manual · Deferred</h2>
   <table class="dtable mt-s" style="font-size:14px">
@@ -1356,7 +1377,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 </section>
 
 <!-- 32. MODALITY ENTITY MAP -->
-<section class="slide" data-title="Modalidades">
+<section class="slide dense" data-title="Modalidades">
   <p class="kicker">mismos conceptos, distinto contenedor</p>
   <h2 class="h2" data-anim="fade-up">Xray vs Jira-native — el Mapeo</h2>
   <table class="dtable mt-s" style="font-size:13.5px">
@@ -1374,7 +1395,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 </section>
 
 <!-- 33. TWO STATUS FIELDS -->
-<section class="slide" data-title="Dos estados">
+<section class="slide dense" data-title="Dos estados">
   <p class="kicker">la distinción que arregla los dashboards</p>
   <h2 class="h2" data-anim="fade-up">Test Status (Workflow) ≠ Execution Status (Run)</h2>
   <div class="grid g2 mt-s">
@@ -1423,7 +1444,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 </section>
 
 <!-- 35. TRACEABILITY -->
-<section class="slide" data-title="Trazabilidad">
+<section class="slide dense" data-title="Trazabilidad">
   <p class="kicker">cómo cuelgan los artefactos</p>
   <h2 class="h2" data-anim="fade-up">La Cadena de Coverage: US ← ATS ← TC</h2>
   <div class="terminal mt-s">

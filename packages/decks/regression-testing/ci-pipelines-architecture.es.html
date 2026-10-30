@@ -595,8 +595,8 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
 #tl-log{margin-top:30px;min-height:64px}
 
 /* workflow builder */
-.wb{display:grid;grid-template-columns:300px 1fr;gap:16px;margin-top:8px;align-items:start}
-.wb .opts{display:flex;flex-direction:column;gap:9px}
+.wb{display:grid;grid-template-columns:340px 1fr;gap:16px;margin-top:8px;align-items:start}
+.wb .opts{display:flex;flex-direction:column;gap:7px}
 .wb .grp{border:1px solid var(--border);border-radius:11px;padding:10px 12px;background:var(--surface)}
 .wb .grp h5{margin:0 0 7px;font:700 11px 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-2)}
 .wb .grp .tog{display:flex;margin:4px 0}
@@ -604,7 +604,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
 
 /* gate designer */
 .gd{display:grid;grid-template-columns:260px 1fr;gap:16px;margin-top:8px;align-items:start}
-.gd .yaml pre{max-height:380px;font-size:11px;line-height:1.5}
+.gd .yaml pre{max-height:none;font-size:11px;line-height:1.4;padding:8px 14px}
 .gd .pros{margin-top:10px;font-size:12.5px;color:var(--text-2);line-height:1.5}
 .gd .pros b{color:var(--text-1)}
 
@@ -679,6 +679,28 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
 /* tall explorer blocks: fit 720px viewports */
 .yaml.tall pre.sm{font-size:10.5px;line-height:1.42;padding:8px 14px;max-height:calc(100vh - 250px);overflow:auto}
 .jg{height:215px}
+
+/* fit the 1280x720 canvas: denser slides keep every line visible */
+.slide.fit .split{margin-top:8px}
+.slide.fit .blist li{padding:4px 0 4px 22px;font-size:13px;line-height:1.45}
+.slide.fit .blist li::before{top:4px}
+.slide.fit .callout{padding:8px 13px}
+.slide.fit .callout p{line-height:1.45}
+.slide.fit .callout.mt-m{margin-top:10px}
+.slide.fit .yaml pre.sm{line-height:1.42}
+.slide.fit table.tbl td{line-height:1.4;padding-top:4px;padding-bottom:4px}
+.head-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:6px}
+.head-row .nyi,.head-row .kicker{margin:0}
+.suites-low{display:grid;grid-template-columns:1fr 1.5fr;gap:18px;align-items:center;margin-top:10px}
+.suites-low .pyr{margin-top:0;gap:5px}
+.suites-low p.small{margin:8px 0 0}
+.suites-low .pyr .lv{padding:7px 14px}
+.suites-low .pyr .lv.l1{width:60%}.suites-low .pyr .lv.l2{width:72%}.suites-low .pyr .lv.l3{width:85%}.suites-low .pyr .lv.l4{width:98%}
+.flow.even .fn{flex:1 1 0;min-width:0}
+.flow.even code.k{overflow-wrap:anywhere}
+.split.jobs-split{grid-template-columns:712px 1fr}
+.slide.fit #jg-log{font-size:13px}
+.slide.fit .ctl.mt-m{margin-top:4px}
 </style>
 </head>
 <body data-quiz-key="ci-architecture-quiz">
@@ -734,11 +756,10 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
   </section>
 
   <!-- 4. CUATRO SUITES -->
-  <section class="slide" data-title="Cuatro suites">
+  <section class="slide fit" data-title="Cuatro suites">
     <div class="body">
     <p class="kicker">una tabla que vale por el capítulo</p>
     <h2 class="h2">Cada workflow contesta <span class="grad">una pregunta</span> y gatea una decisión</h2>
-    <div class="split wide">
       <table class="tbl tight mt-s">
         <tr><th>Suite</th><th>Pregunta</th><th>Trigger</th><th>Alcance</th><th>Dura (orden de magnitud)</th><th>Gatea</th></tr>
         <tr><td><b>build.yml</b></td><td>El <i>framework</i> compila, pasa lint y su documentación sigue consistente?</td><td class="mono">pull_request → main</td><td>types · lint · docs gates · contratos de documentación · evals · <code class="k">playwright test --list</code>. Cero tests ejecutados.</td><td>~3 min</td><td>el merge del PR</td></tr>
@@ -747,27 +768,28 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
         <tr><td><b>sanity.yml</b></td><td>Funciona ESTE cambio / feature?</td><td class="mono">solo manual, con inputs</td><td>un archivo, un <code class="k">--grep</code>, o e2e/integration</td><td>1-10 min</td><td>validar un test nuevo en CI antes del PR</td></tr>
         <tr><td><b>regression.yml</b></td><td>Se rompió algo más?</td><td class="mono">cron 00:00 · manual</td><td>integration completo → e2e completo</td><td>20-60 min</td><td>el release: GO / CAUTION / NO-GO</td></tr>
       </table>
-      <div>
+      <div class="suites-low">
         <div class="pyr">
           <div class="lv l1"><span class="nm">smoke</span><span class="ds">pocos tests, siempre, rápido</span></div>
           <div class="lv l2"><span class="nm">sanity</span><span class="ds">un recorte, a demanda</span></div>
           <div class="lv l3"><span class="nm">regression</span><span class="ds">todo, cada noche</span></div>
           <div class="lv l4"><span class="nm">build</span><span class="ds">el framework mismo, en cada PR</span></div>
         </div>
-        <div class="callout mt-m"><h4>La regla que nace de la tabla</h4><p>Smoke habla del <b>build de la app</b>; sanity habla del <b>cambio</b>; regression habla del <b>producto entero</b>. Tres pass-rates distintos con tres SLOs distintos: nunca los sumes en un número (regla R6 de <code class="k">/regression-testing</code>). Y build no habla de la app en absoluto: habla de nosotros.</p></div>
+        <div>
+          <div class="callout"><h4>La regla que nace de la tabla</h4><p>Smoke habla del <b>build de la app</b>; sanity habla del <b>cambio</b>; regression habla del <b>producto entero</b>. Tres pass-rates distintos con tres SLOs distintos: nunca los sumes en un número (regla R6 de <code class="k">/regression-testing</code>). Y build no habla de la app en absoluto: habla de nosotros.</p></div>
+          <p class="small dim mt-s">La secuencia clásica de la industria es <b>smoke → sanity → regression</b> como gates sucesivos: si smoke falla, no gastás la regresión. En este repo los gates son temporales (cron) y manuales; conectarlos al deploy de la app es el Capítulo 9.</p>
+        </div>
       </div>
-    </div>
-    <p class="small dim mt-s">La secuencia clásica de la industria es <b>smoke → sanity → regression</b> como gates sucesivos: si smoke falla, no gastás la regresión. En este repo los gates son temporales (cron) y manuales; conectarlos al deploy de la app es el Capítulo 9.</p>
     </div>
     <div class="notes">Tabla maestra. Pirámide de suites. Regla R6: no mezclar pass-rates. Referencia a la secuencia smoke→sanity→regression de la industria.</div>
   </section>
 
   <!-- 5. BUILD.YML -->
-  <section class="slide" data-title="build.yml: el framework">
+  <section class="slide fit" data-title="build.yml: el framework">
     <div class="body">
     <p class="kicker">suite 0: no prueba la app, prueba el repo de pruebas</p>
     <h2 class="h2"><span class="grad">build.yml</span>: el gate del Pull Request</h2>
-    <div class="split eq">
+    <div class="split eq" style="grid-template-columns:1fr 1.1fr">
       <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">extracto de <b>.github/workflows/build.yml</b></span><span class="badge real">real</span></div>
 <pre class="sm">      - <span class="key">name</span>: <span class="str">Validate env schema (varlock)</span>
         <span class="key">uses</span>: <span class="str">dmno-dev/varlock-action@v1.0.5</span>
@@ -851,11 +873,11 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
   </section>
 
   <!-- 7. SANITY.YML -->
-  <section class="slide" data-title="sanity.yml: el cambio">
+  <section class="slide fit" data-title="sanity.yml: el cambio">
     <div class="body">
     <p class="kicker">suite 2: la única que siempre necesita que le digas qué</p>
     <h2 class="h2"><span class="grad">sanity.yml</span>: funciona ESTE cambio?</h2>
-    <div class="split">
+    <div class="split" style="grid-template-columns:1fr 1.05fr">
       <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">extracto de <b>.github/workflows/sanity.yml</b> · step Run Sanity Tests</span><span class="badge real">real</span></div>
 <pre class="sm">      - <span class="key">name</span>: <span class="str">Run Sanity Tests on <span class="ex">${{ env.TEST_ENV }}</span></span>
         <span class="key">shell</span>: bash
@@ -977,11 +999,11 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <div class="notes">Cap 7. regression.yml completo.</div>
   </section>
   <!-- 11. CUATRO JOBS -->
-  <section class="slide" data-title="Cuatro jobs">
+  <section class="slide fit" data-title="Cuatro jobs">
     <div class="body">
     <p class="kicker">simulador: la misma animación de la Parte I, ahora con el porqué de cada job</p>
     <h2 class="h2">Cuatro jobs: <span class="grad">dos que prueban, dos que cuentan</span></h2>
-    <div class="split wide">
+    <div class="split jobs-split">
       <div>
         <div class="jg" id="jg" style="height:200px">
           <svg viewBox="0 0 700 230" preserveAspectRatio="none">
@@ -996,7 +1018,8 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
           <div class="node q" data-j="xray" style="left:490px;top:125px"><div class="nm">XrayImport</div><div class="ds">atc_results → RTR</div><div class="st">queued</div></div>
         </div>
         <div class="ctl mt-m"><button class="btn primary" id="jg-play">▶ noche normal</button><button class="btn" id="jg-fail">▶ la API falla</button><button class="btn sm" id="jg-reset">reset</button></div>
-        <div class="small dim mt-s" id="jg-log" style="min-height:52px;line-height:1.4"></div>
+        <div class="small dim mt-s" id="jg-log" style="min-height:52px;line-height:1.3"></div>
+        <div class="callout mt-s"><h4>Dos que prueban, dos que cuentan</h4><p>Los dos primeros ejecutan Playwright y suben evidencia. Los dos últimos no prueban nada: <b>consumen</b> los artifacts para producir el reporte (humanos) y la importación (TMS). Separarlos permite que corran en paralelo, que corran aunque la suite haya fallado, y que cada uno se pueda apagar solo: <code class="k">generate_allure=false</code> apaga uno; <code class="k">TMS_PROVIDER=jira</code> apaga el otro.</p></div>
       </div>
       <div>
         <table class="tbl tight">
@@ -1006,7 +1029,6 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
           <tr><td><b>allure-report</b></td><td class="mono">merged-allure-results-{env}</td><td>ambos terminaron (como sea) y <code class="k">generate_allure != 'false'</code></td></tr>
           <tr><td><b>XrayImport</b></td><td>nada: escribe en Xray</td><td>ambos terminaron (como sea) y <code class="k">vars.TMS_PROVIDER</code> es xray</td></tr>
         </table>
-        <div class="callout mt-m"><h4>Dos que prueban, dos que cuentan</h4><p>Los dos primeros ejecutan Playwright y suben evidencia. Los dos últimos no prueban nada: <b>consumen</b> los artifacts para producir el reporte (humanos) y la importación (TMS). Separarlos permite que corran en paralelo, que corran aunque la suite haya fallado, y que cada uno se pueda apagar solo: <code class="k">generate_allure=false</code> apaga uno; <code class="k">TMS_PROVIDER=jira</code> apaga el otro.</p></div>
       </div>
     </div>
     </div>
@@ -1056,7 +1078,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
   </section>
 
   <!-- 13. PUBLICAR ALLURE -->
-  <section class="slide" data-title="Publicar Allure">
+  <section class="slide fit" data-title="Publicar Allure">
     <div class="body">
     <p class="kicker">del artifact a una URL con historia</p>
     <h2 class="h2">Publicar: <span class="grad">gh-pages, tendencias y la URL predecible</span></h2>
@@ -1189,11 +1211,11 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
   </section>
 
   <!-- 18. WRITE-BACK FLOW -->
-  <section class="slide" data-title="El write-back al TMS">
+  <section class="slide fit" data-title="El write-back al TMS">
     <div class="body">
     <p class="kicker">un RTR por veredicto</p>
     <h2 class="h2">Write-back: <span class="grad">el run record nace antes que el run</span></h2>
-    <div class="flow">
+    <div class="flow even">
       <div class="fn k"><div class="t">1 · /regression-testing crea el RTR</div><div class="d">Test Execution <code class="k">RTR: staging-2026-09-23: Regression Testing</code>, padre «QA Test Artifacts», <code class="k">testPlan</code> → RTP, environment + assignee al crear.</div><div class="r">ANTES del trigger</div></div><div class="fa">→</div>
       <div class="fn"><div class="t">2 · dispara con la key</div><div class="d"><code class="k">gh workflow run regression.yml -f environment=staging -f execution_key=UPEX-482</code></div><div class="r">workflow_dispatch input</div></div><div class="fa">→</div>
       <div class="fn"><div class="t">3 · el workflow la recibe</div><div class="d"><code class="k">STP_EXECUTION_KEY: ${{ github.event.inputs.execution_key || secrets.STP_EXECUTION_KEY }}</code></div><div class="r">regression.yml, env STP_EXECUTION_KEY · input gana al secret</div></div><div class="fa">→</div>
@@ -1284,8 +1306,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
   <!-- 22. TRES MECANISMOS -->
   <section class="slide" data-title="Tres mecanismos">
     <div class="body">
-    <span class="nyi">no implementado en este repo</span>
-    <p class="kicker">el problema y las tres formas de resolverlo</p>
+    <div class="head-row"><span class="nyi">no implementado en este repo</span><p class="kicker">el problema y las tres formas de resolverlo</p></div>
     <h2 class="h2">De «corre a las 00:00» a <span class="grad">«corre cuando la app se despliega»</span></h2>
     <div class="cards c3 mt-s">
       <div class="card bad"><h4>Punto de partida</h4><p>La app despliega a staging a las 22:00 y nuestra regresión corre por cron a las 00:00 (horas ilustrativas; la real es el <code class="k">schedule</code> de regression.yml). Si el deploy fue a las 00:30, probamos la versión vieja. Y producción no espera a nadie: el deploy a prod es una decisión humana sin gate automatizado de QA.</p></div>
@@ -1306,8 +1327,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
   <!-- 23. GATE DESIGNER -->
   <section class="slide" data-title="Diseña tu gate">
     <div class="body">
-    <span class="nyi">no implementado en este repo · yaml ilustrativo</span>
-    <p class="kicker">diseñador: elige mecanismo, suite y dureza del gate</p>
+    <div class="head-row"><span class="nyi">no implementado en este repo · yaml ilustrativo</span><p class="kicker">diseñador: elige mecanismo, suite y dureza del gate</p></div>
     <h2 class="h2">Diseña el gate: <span class="grad">los dos lados del YAML</span></h2>
     <div class="gd" id="gd">
       <div>

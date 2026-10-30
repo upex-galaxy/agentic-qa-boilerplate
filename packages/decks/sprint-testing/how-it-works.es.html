@@ -393,6 +393,12 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   table.tt.sm th{font-size:13px;padding:0 12px 2px}
   table.tt.sm td{padding:11px 12px}
   .mk.sm{font-size:14.5px;line-height:1.45;padding:18px 20px}
+  /* slides justos: menos aire entre filas y cards para que todo entre en el lienzo de 1440x900 */
+  .slide.snug .mt-m{margin-top:12px}
+  .slide.snug table.tt.sm{border-spacing:0 6px}
+  .slide.snug table.tt.sm td{padding:8px 12px}
+  .slide.snug .card{padding:16px 22px}
+  .slide.snug .small{font-size:17px;line-height:1.45}
 
   /* workflow map (slide 2) */
   .wmap{display:flex;flex-direction:column;gap:12px;margin-top:16px}
@@ -571,7 +577,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   </section>
 
   <!-- 7. STAGE 1 FLUJO -->
-  <section class="slide" data-title="Planning">
+  <section class="slide snug" data-title="Planning">
     <p class="kicker">Planning <span class="dim">(históricamente Stage 1)</span> · de los ACs a un plan ejecutable</p>
     <h2 class="h2 md">Siete fases, del triage al <span class="grad">ATP</span> en Jira</h2>
     <table class="tt sm mt-m">
@@ -743,7 +749,7 @@ Listas de tests del ATP y del ATR = DERIVADAS de la membership del ATS (S17)</di
   </section>
 
   <!-- 13b. BROWSER Y EVIDENCIA -->
-  <section class="slide" data-title="Browser y evidencia">
+  <section class="slide snug" data-title="Browser y evidencia">
     <p class="kicker">Execution · sesiones de browser y evidencia</p>
     <h2 class="h2 md">Un login por rol, cada captura con su <span class="grad">ruta</span></h2>
     <div class="grid g2 mt-m" style="align-items:start">
@@ -756,7 +762,7 @@ Listas de tests del ATP y del ATR = DERIVADAS de la membership del ATS (S17)</di
   </section>
 
   <!-- 14. STAGE 3 CIERRE -->
-  <section class="slide" data-title="Reporting · Cierre">
+  <section class="slide snug" data-title="Reporting · Cierre">
     <p class="kicker">Reporting · el veredicto auditable</p>
     <h2 class="h2 md">ATR → QA comment → <span class="grad">transición</span>, en ese orden</h2>
     <table class="tt sm mt-m">
@@ -777,7 +783,7 @@ Listas de tests del ATP y del ATR = DERIVADAS de la membership del ATS (S17)</di
   </section>
 
   <!-- 15. REPORTAR QUALITY ISSUES -->
-  <section class="slide" data-title="Reportar bugs">
+  <section class="slide snug" data-title="Reportar bugs">
     <p class="kicker">Reporting · doctrina de defect management</p>
     <h2 class="h2 md">Clasifica antes de reportar: <span class="grad">Bug ≠ Defect ≠ Improvement</span></h2>
     <div class="grid g3 mt-m anim-stagger-list" data-anim-target>
@@ -844,7 +850,7 @@ Reporting · líneas propias
   </section>
 
   <!-- 16b. FLEET MODE -->
-  <section class="slide" data-title="Fleet mode">
+  <section class="slide snug" data-title="Fleet mode">
     <p class="kicker">Sprint-wide · el segundo eje: ejecutores</p>
     <h2 class="h2 md">Alcance × ejecutores: la <span class="grad">flota</span> es opcional</h2>
     <table class="tt sm mt-m">
