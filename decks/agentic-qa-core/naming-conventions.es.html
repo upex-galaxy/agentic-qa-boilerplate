@@ -23,7 +23,7 @@ body{overflow:hidden}
 
 .deck{position:relative;width:100vw;height:100vh;overflow:hidden}
 .slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;
-  padding:64px 88px 84px;opacity:0;pointer-events:none;
+  padding:52px 88px 60px;opacity:0;pointer-events:none;
   transform:translateY(16px) scale(.99);transition:opacity .45s var(--ease),transform .45s var(--ease);
   overflow:auto}
 .slide.is-active{opacity:1;pointer-events:auto;transform:none;z-index:2}
@@ -146,6 +146,26 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
 .wf-global{margin:6px 0 0;font-family:var(--mono);font-size:11.5px;color:var(--t3)}
 .wf-take{margin-top:8px;font-size:14px;color:var(--t1)}
 .notes{margin-top:7px;font-size:11.5px;line-height:1.5;color:var(--t3);border-left:2px solid var(--line-2);padding-left:12px}
+/* slides densos: misma tipografía, menos aire entre bloques para que quepan en el lienzo 1280x720 */
+.slide.dense h2{margin:6px 0 10px}
+.slide.dense .mt-m{margin-top:10px}
+.slide.dense .mt-l{margin-top:16px}
+.slide.dense .card{padding:13px 16px}
+.slide.dense .grid{gap:12px}
+.slide.dense .tmpl{padding:10px 16px}
+.slide.dense .ex{padding:3px 0}
+.slide.dense .lstack{gap:6px}
+.slide.dense .lbar{padding:8px 16px}
+.slide.dense th,.slide.dense td{padding:6px 10px}
+.slide.dense .callout{padding:10px 14px}
+.slide.dense p{margin-bottom:6px}
+.slide.dense .kick{margin-bottom:2px}
+.slide.dense .wf-legend{margin-top:2px}
+.slide.dense .wf-global{margin-top:2px}
+.slide.dense .wf{margin-top:4px}
+.slide.dense .wf svg{max-height:52vh}
+.slide.dense .wf-take{margin-top:4px}
+.slide.dense .notes{line-height:1.4;margin-top:4px}
 @media print{body{overflow:visible}.slide{position:relative;opacity:1!important;transform:none!important;page-break-after:always;height:auto;min-height:100vh}}
 </style>
 </head>
@@ -186,7 +206,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
 </section>
 
 <!-- B · CONCEPTOS BASE -->
-<section class="slide" style="--ac:#a3e635" data-t="Conceptos base">
+<section class="slide dense" style="--ac:#a3e635" data-t="Conceptos base">
   <p class="kick">El vocabulario primero — define esto antes de cualquier nombre</p>
   <h2>Conceptos base</h2>
   <p class="lede mt-s">Todo el códice usa estos términos. Léelos una vez; el resto del deck asume que ya los conoces.</p>
@@ -237,7 +257,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
 </section>
 
 <!-- 3 · LAS 7 CAPAS -->
-<section class="slide" style="--ac:#a78bfa" data-t="Siete capas">
+<section class="slide dense" style="--ac:#a78bfa" data-t="Siete capas">
   <p class="kick">El mapa · los nombres se organizan por altitud</p>
   <h2>Siete Capas de Nomenclatura</h2>
   <p class="lede mt-s">La <b>capa</b> de un nombre te dice qué tipo de cosa es antes de leer una sola palabra. Cada capa tiene su color en este códice.</p>
@@ -276,7 +296,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
 </section>
 
 <!-- 4 · ANATOMÍA del título de TC -->
-<section class="slide" style="--ac:#22d3ee" data-t="Anatomía del TC">
+<section class="slide dense" style="--ac:#22d3ee" data-t="Anatomía del TC">
   <p class="kick">Capa · CASE — la forma más importante del códice</p>
   <h2>Anatomía del título de un Test Case</h2>
   <div class="tmpl mt-m"><span class="t-pre">{US_ID}</span><span class="t-pun">: </span><span class="t-pre">TC#</span><span class="t-pun">: </span><span class="t-fix">should</span> <span class="t-var">&lt;expected outcome&gt;</span> <span class="t-opt">[&lt;connector&gt; &lt;condition&gt;]</span> <span class="t-opt">[given &lt;precondition&gt;]</span></div>
@@ -309,7 +329,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
 </section>
 
 <!-- 5 · should vs Validate -->
-<section class="slide" style="--ac:#a3e635" data-t="should vs Validate">
+<section class="slide dense" style="--ac:#a3e635" data-t="should vs Validate">
   <p class="kick">La distinción que rige todo el códice</p>
   <h2><span class="mono" style="color:#22d3ee">should</span> &nbsp;vs&nbsp; <span class="mono" style="color:#a3e635">Validate</span></h2>
   <div class="grid g2 mt-m">
@@ -333,10 +353,10 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
 </section>
 
 <!-- 6 · Capa GROUP -->
-<section class="slide" style="--ac:#a3e635" data-t="Capa Group">
+<section class="slide dense" style="--ac:#a3e635" data-t="Capa Group">
   <p class="kick">Capa · GROUP y contenedores de planificación</p>
   <h2>Agrupar los casos</h2>
-  <div class="grid g2 mt-m">
+  <div class="grid g3 mt-m">
     <div class="card lyr" style="--ac:#a3e635"><h4><span class="mono">describe()</span> en código</h4>
       <div class="tmpl sm" style="--ac:#a3e635"><span class="t-pre">'{TICKET-ID}: </span><span class="t-fix" style="color:#a3e635">Validate</span><span class="t-pre"> {feature}'</span></div>
       <div class="ex mt-s"><b>'UPEX-411:</b> Validate discount codes'</div>
@@ -369,7 +389,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
 </section>
 
 <!-- 7 · Capa CONTAINER -->
-<section class="slide" style="--ac:#fbbf24" data-t="Capa Container">
+<section class="slide dense" style="--ac:#fbbf24" data-t="Capa Container">
   <p class="kick">Capa · CONTAINER — vasijas de ejecución y setup</p>
   <h2>Vasijas de ejecución y setup</h2>
   <p class="dim mt-s" style="font-size:15px"><b>Vasija</b> (ing. <i>vessel</i>) = el subconjunto de artefactos que <b>contiene</b> una corrida o un plan. Todo en el códice es un artefacto; la vasija es la que se ejecuta o se planifica — por eso no la llamamos solo "artefacto".</p>
@@ -396,7 +416,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
 </section>
 
 <!-- 7b · LA ESCALERA DE PLANIFICACIÓN -->
-<section class="slide" style="--ac:#fbbf24" data-t="Escalera de planificación">
+<section class="slide dense" style="--ac:#fbbf24" data-t="Escalera de planificación">
   <p class="kick">Capa · CONTAINER — la escalera de planificación</p>
   <h2>La Escalera de Planificación</h2>
   <p class="lede mt-s">Cada Plan y cada Run lleva un prefijo acrónimo de 3 letras, así la altitud y el plan-vs-run se leen en el primer token. Cuatro Epics de proceso QA le dan a cada tipo de artefacto un único hogar de gobierno.</p>
@@ -414,6 +434,13 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
     <div class="lbar" style="--ac:#22d3ee"><span class="ln">STORY</span><span class="ld">ATP → ATR — "Story Testing", 1 run</span><span class="lx">{STORY-KEY}</span></div>
     <div class="lbar" style="--ac:#a3e635"><span class="ln">STORY · SET</span><span class="ld">ATS — Test Set per-Story, obligatorio; su link a la Story llena el coverage panel</span><span class="lx">{US_ID}</span></div>
   </div>
+  <p class="mt-s"><span class="src">defect-management-doctrine.md · traceability-linking.md · planning-ladder</span></p>
+</section>
+
+<!-- 7c · LA ESCALERA: PATRONES POR ALTITUD -->
+<section class="slide" style="--ac:#fbbf24" data-t="Escalera: patrones">
+  <p class="kick">Capa · CONTAINER · la escalera de planificación, patrón por altitud</p>
+  <h2>La Escalera, fila por fila</h2>
   <table class="mt-m">
     <thead><tr><th>Altitud</th><th>Plan</th><th>Results</th><th>Patrón</th></tr></thead>
     <tbody>
@@ -438,7 +465,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
 </section>
 
 <!-- 9 · ATC + @atc + archivos + test() -->
-<section class="slide" style="--ac:#a78bfa" data-t="ATC + decorador">
+<section class="slide dense" style="--ac:#a78bfa" data-t="ATC + decorador">
   <p class="kick">Capa · CODE — la unidad de test case</p>
   <h2>ATC, decorador, archivo, <span class="mono">test()</span></h2>
   <div class="grid g2 mt-m">
@@ -506,7 +533,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
 </section>
 
 <!-- 12 · Capa JIRA -->
-<section class="slide" style="--ac:#60a5fa" data-t="Capa Jira">
+<section class="slide dense" style="--ac:#60a5fa" data-t="Capa Jira">
   <p class="kick">Capa · ISSUE TRACKER (Jira) — estados, labels, títulos de calidad</p>
   <h2>Nombres en el Issue Tracker (Jira / TMS)</h2>
   <div class="grid g2 mt-m">
@@ -616,7 +643,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
 </section>
 
 <!-- WF · Workflow de Story -->
-<section class="slide" style="--ac:#60a5fa" data-t="Workflow de Story">
+<section class="slide dense" style="--ac:#60a5fa" data-t="Workflow de Story">
   <p class="kick">Capa · workflow JIRA — el ciclo de vida de la User Story / Feature</p>
   <h2>Workflow de Story</h2>
   <div class="wf-legend"><span class="lg2"><span class="nd" style="background:rgba(96,165,250,.16);border-color:#60a5fa"></span>Nuevo</span><span class="lg2"><span class="nd" style="background:rgba(167,139,250,.17);border-color:#a78bfa"></span>En progreso</span><span class="lg2"><span class="nd" style="background:rgba(52,211,153,.15);border-color:#34d399"></span>Hecho</span><span class="lg2"><span class="nd" style="background:rgba(248,113,113,.15);border-color:#f87171"></span>Abortado / rechazado</span><span class="lg2"><svg width="26" height="10"><line x1="1" y1="5" x2="25" y2="5" stroke="#8b96ab" stroke-width="2" /></svg>Avance</span><span class="lg2"><svg width="26" height="10"><line x1="1" y1="5" x2="25" y2="5" stroke="#e8993f" stroke-width="2" stroke-dasharray="6 5" /></svg>Retorno (back)</span></div>
@@ -671,7 +698,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
 </section>
 
 <!-- WF · Bug / Defect / Improvement -->
-<section class="slide" style="--ac:#f87171" data-t="Bug / Defect / Improvement">
+<section class="slide dense" style="--ac:#f87171" data-t="Bug / Defect / Improvement">
   <p class="kick">Capa · workflow JIRA — Bug / Defect / Improvement (un ciclo de vida compartido)</p>
   <h2>Bug / Defect / Improvement</h2>
   <div class="wf-legend"><span class="lg2"><span class="nd" style="background:rgba(96,165,250,.16);border-color:#60a5fa"></span>Nuevo</span><span class="lg2"><span class="nd" style="background:rgba(167,139,250,.17);border-color:#a78bfa"></span>En progreso</span><span class="lg2"><span class="nd" style="background:rgba(52,211,153,.15);border-color:#34d399"></span>Hecho</span><span class="lg2"><span class="nd" style="background:rgba(248,113,113,.15);border-color:#f87171"></span>Abortado / rechazado</span><span class="lg2"><svg width="26" height="10"><line x1="1" y1="5" x2="25" y2="5" stroke="#8b96ab" stroke-width="2" /></svg>Avance</span><span class="lg2"><svg width="26" height="10"><line x1="1" y1="5" x2="25" y2="5" stroke="#e8993f" stroke-width="2" stroke-dasharray="6 5" /></svg>Retorno (back)</span></div>
@@ -713,7 +740,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
 </section>
 
 <!-- WF · Workflow de Test -->
-<section class="slide" style="--ac:#a78bfa" data-t="Workflow de Test">
+<section class="slide dense" style="--ac:#a78bfa" data-t="Workflow de Test">
   <p class="kick">Capa · workflow JIRA — el ciclo de vida del Test Case</p>
   <h2>Workflow de Test</h2>
   <div class="wf-legend"><span class="lg2"><span class="nd" style="background:rgba(96,165,250,.16);border-color:#60a5fa"></span>Nuevo</span><span class="lg2"><span class="nd" style="background:rgba(167,139,250,.17);border-color:#a78bfa"></span>En progreso</span><span class="lg2"><span class="nd" style="background:rgba(52,211,153,.15);border-color:#34d399"></span>Hecho</span><span class="lg2"><span class="nd" style="background:rgba(248,113,113,.15);border-color:#f87171"></span>Abortado / rechazado</span><span class="lg2"><svg width="26" height="10"><line x1="1" y1="5" x2="25" y2="5" stroke="#8b96ab" stroke-width="2" /></svg>Avance</span><span class="lg2"><svg width="26" height="10"><line x1="1" y1="5" x2="25" y2="5" stroke="#e8993f" stroke-width="2" stroke-dasharray="6 5" /></svg>Retorno (back)</span></div>
@@ -779,7 +806,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
 </section>
 
 <!-- 2 · LOS ERRORES MÁS COMUNES -->
-<section class="slide" style="--ac:#f87171" data-t="Errores comunes">
+<section class="slide dense" style="--ac:#f87171" data-t="Errores comunes">
   <p class="kick">Aplicando los axiomas — las confusiones a nunca cometer, como reglas</p>
   <h2>Errores &amp; Reglas de Oro</h2>
   <div class="grid g2 mt-m">
@@ -795,7 +822,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel-2);border:1px 
 </section>
 
 <!-- 18 · MASTER cheat-sheet -->
-<section class="slide" style="--ac:#a78bfa" data-t="Hoja maestra">
+<section class="slide dense" style="--ac:#a78bfa" data-t="Hoja maestra">
   <p class="kick">Una pantalla · todo el códice</p>
   <h2>Hoja de referencia maestra</h2>
   <table class="mt-m" style="font-size:12.5px">

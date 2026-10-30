@@ -429,6 +429,19 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 .tpl-howto .dtable tr:last-child td{border-bottom:none}
 .tpl-howto .dtable td b,.tpl-howto .dtable td strong{color:#fff;font-weight:600}
 
+/* ---------- dense slides: same content, tighter spacing so it fits the 1280x720 canvas ---------- */
+.tpl-howto .slide.dense > *{flex-shrink:0}
+.tpl-howto .slide.dense .h2{font-size:40px;margin-bottom:6px}
+.tpl-howto .slide.dense .lede{font-size:18px;line-height:1.45}
+.tpl-howto .slide.dense .dtable{margin-top:10px}
+.tpl-howto .slide.dense .dtable th{padding:7px 12px}
+.tpl-howto .slide.dense .dtable td{padding:7px 12px;line-height:1.45}
+.tpl-howto .slide.dense .callout{padding:11px 18px;margin-top:12px}
+.tpl-howto .slide.dense .callout p{font-size:14px;line-height:1.5}
+.tpl-howto .slide.dense .blist li{padding:4px 0 4px 30px;line-height:1.4}
+.tpl-howto .slide.dense .blist li::before{top:4px}
+.tpl-howto .slide.dense .mt-m{margin-top:12px}
+
 /* ---------- bullet list (clean) ---------- */
 .tpl-howto .blist{list-style:none;padding:0;margin:22px 0 0}
 .tpl-howto .blist li{position:relative;padding:9px 0 9px 30px;font-size:17px;color:var(--text-2);line-height:1.5;border-bottom:1px solid var(--border)}
@@ -491,12 +504,12 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 .tpl-howto .mcard .md{font-size:13px;color:var(--text-2);margin-top:6px;line-height:1.5}
 
 /* ===== QUIZ ===== */
-.tpl-howto .quiz{margin-top:18px}
-.tpl-howto .qitem{margin-bottom:18px}
-.tpl-howto .qq{font-size:19px;font-weight:600;color:#fff;margin-bottom:12px;display:flex;gap:12px;line-height:1.4}
+.tpl-howto .quiz{margin-top:12px}
+.tpl-howto .qitem{margin-bottom:10px}
+.tpl-howto .qq{font-size:18px;font-weight:600;color:#fff;margin-bottom:8px;display:flex;gap:12px;line-height:1.35}
 .tpl-howto .qq .qn{flex:none;color:var(--accent);font-family:'JetBrains Mono',monospace}
-.tpl-howto .opts{display:grid;gap:9px}
-.tpl-howto .opt{display:flex;align-items:center;gap:13px;padding:12px 17px;border:1px solid var(--border);border-radius:11px;background:var(--surface);cursor:pointer;font-size:15px;color:var(--text-2);transition:border-color .15s,background .15s,color .15s}
+.tpl-howto .opts{display:grid;gap:6px}
+.tpl-howto .opt{display:flex;align-items:center;gap:13px;padding:6px 16px;border:1px solid var(--border);border-radius:11px;background:var(--surface);cursor:pointer;font-size:15px;color:var(--text-2);transition:border-color .15s,background .15s,color .15s}
 .tpl-howto .opt:hover{border-color:var(--border-strong);color:#fff}
 .tpl-howto .opt .mk{flex:none;width:26px;height:26px;border-radius:7px;background:var(--surface-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--text-2)}
 .tpl-howto .opt.correct{border-color:var(--good);background:color-mix(in srgb,var(--good) 15%,transparent);color:#fff}
@@ -506,7 +519,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 .tpl-howto .opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,transparent);color:#fff}
 .tpl-howto .opt.wrong .mk{background:var(--bad);border-color:var(--bad);color:#190405}
 .tpl-howto .qitem.answered .opt{cursor:default}
-.tpl-howto .qexp{margin-top:11px;font-size:14px;color:var(--text-2);border-left:3px solid var(--good);padding:11px 16px;background:color-mix(in srgb,var(--good) 7%,transparent);border-radius:0 9px 9px 0;display:none;line-height:1.6}
+.tpl-howto .qexp{margin-top:8px;font-size:14px;color:var(--text-2);border-left:3px solid var(--good);padding:8px 14px;background:color-mix(in srgb,var(--good) 7%,transparent);border-radius:0 9px 9px 0;display:none;line-height:1.45}
 .tpl-howto .qitem.answered .qexp{display:block}
 .tpl-howto .qexp b{color:#fff}
 .tpl-howto .qhint{font-size:13px;color:var(--text-3);font-family:'JetBrains Mono',monospace;margin-top:6px}
@@ -661,7 +674,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 </section>
 
 <!-- 9. VS SPRINT-TESTING -->
-<section class="slide" data-title="vs sprint-testing">
+<section class="slide dense" data-title="vs sprint-testing">
   <p class="kicker">por qué una disciplina aparte</p>
   <h2 class="h2" data-anim="fade-up">Shift-Left vs Sprint-Testing</h2>
   <table class="dtable mt-s" style="font-size:14px">
@@ -870,7 +883,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 </section>
 
 <!-- 19. 1:N EXPLOSION -->
-<section class="slide" data-title="1:N">
+<section class="slide dense" data-title="1:N">
   <p class="kicker">los ACs son el piso, no el techo</p>
   <h2 class="h2" data-anim="fade-up">Explota 1:N — Empuja Más Allá del Happy Path</h2>
   <p class="lede mt-s">Un AC no-trivial implica <b>varios</b> escenarios. El refinamiento deriva por la forma del AC, y etiqueta cada hueco a su técnica.</p>
@@ -1022,7 +1035,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 </section>
 
 <!-- 27. EL ATP PRE-SPRINT -->
-<section class="slide" data-title="ATP pre-sprint">
+<section class="slide dense" data-title="ATP pre-sprint">
   <p class="kicker">el artefacto central</p>
   <h2 class="h2" data-anim="fade-up">Un solo ATP — <span class="grad">nace outline, madura a ejecutable</span></h2>
   <div class="grid g2 mt-s">

@@ -401,6 +401,12 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   .slide.compact .card{padding:16px 20px}
   .slide.compact .h2{font-size:46px}
   .slide.compact .small{font-size:18px;line-height:1.5}
+  /* slides justos: un poco menos de aire y medio paso de letra */
+  .slide.snug .h2{font-size:42px;margin-bottom:6px}
+  .slide.snug .small{font-size:17px;line-height:1.45}
+  .slide.snug .mt-m{margin-top:12px}
+  .slide.snug .card > p:first-child{margin-top:0}
+  .slide.snug .card > p:last-child{margin-bottom:0}
 
   /* ===== project-discovery: diagramas SVG inline (tokens del tema) ===== */
   .dg{width:100%;height:auto;display:block}
@@ -633,7 +639,7 @@ Purchase      | order           | Compra   | orders | prisma/schema.prisma</div>
   </section>
 
   <!-- 9. FASE 3 -->
-  <section class="slide compact" data-title="Fase 3 · Infraestructura">
+  <section class="slide compact snug" data-title="Fase 3 · Infraestructura">
     <p class="kicker">Fase 3 · 9 de 15</p>
     <h2 class="h2">Infraestructura: que el proyecto <span class="grad">corra</span> para testear</h2>
     <div class="card card-soft mt-m"><p class="lbl">Antes, la página <span class="mono">/qa</span> del sistema, si la publica</p><p class="small mt-s">Se lee primero, antes de detectar el stack. Es una pista: cada dato se contrasta con el código y la configuración que la fase lee igual, y si no coinciden gana el código y el desacuerdo va a <span class="mono">discovery-gaps</span>. No se copia ningún valor a un archivo versionado. Si la página no existe, no es un hueco de discovery.</p></div>
