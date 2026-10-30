@@ -35,8 +35,9 @@ A skill covered by a category deck gets no folder of its own: its human explanat
 1. Create `packages/decks/<folder>/<slug>.<lang>.html` (self-contained: CSS + JS
    inlined; Spanish decks use `.es.html`, technical terms stay in English). A
    workflow deck is `how-it-works.es.html`, mirrors the shell of an existing
-   deck, and keeps the mobile scale-to-fit canvas at 1440x900 (the desktop
-   reference viewport), so a slide that fits on desktop also fits on a phone.
+   deck, and keeps the scale-to-fit canvas at 1440x900 (the desktop reference
+   viewport): any smaller viewport gets the canvas scaled down, so a slide that
+   fits at 1440x900 also fits on a laptop (1366x768, 1280x800) or a phone.
 2. Register a card in `packages/pages-home/index.html` (the homepage catalog is
    hardcoded HTML).
 3. If the AI should proactively offer it, register it in

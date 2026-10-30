@@ -1807,8 +1807,8 @@ Purchase      | order           | Compra   | orders | prisma/schema.prisma</div>
 </script>
 
 <script>
-/* deck :: mobile scale-to-fit — fixed 1440x900 layout (the desktop reference viewport) scaled into narrow/short viewports.
-   Desktop (vw>=1024 && vh>=640) is left untouched (native fluid). Preview iframes skipped. */
+/* deck :: scale-to-fit: fixed BASE_W x BASE_H layout scaled into any smaller viewport, laptops included (1366x768, 1280x800).
+   Viewports of at least BASE_W x BASE_H are left untouched (native fluid). Preview iframes skipped. */
 (function(){
   try{
     if (new URLSearchParams(location.search).has('preview')) return;
@@ -1817,7 +1817,7 @@ Purchase      | order           | Compra   | orders | prisma/schema.prisma</div>
     if (!deck) return;
     function fit(){
       var vw = window.innerWidth, vh = window.innerHeight;
-      if (vw >= 1024 && vh >= 640){
+      if (vw >= BASE_W && vh >= BASE_H){
         deck.style.transform = '';
         deck.style.width = ''; deck.style.height = '';
         deck.style.position = ''; deck.style.left = ''; deck.style.top = '';

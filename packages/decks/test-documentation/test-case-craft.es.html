@@ -2496,8 +2496,8 @@ else document.addEventListener('DOMContentLoaded', init);
 })();
 </script>
 <script>
-/* deck :: mobile scale-to-fit — fixed 16:9 layout scaled into narrow/short viewports.
-   Desktop (vw>=1024 && vh>=640) is left untouched (native fluid). Preview iframes skipped. */
+/* deck :: scale-to-fit: fixed BASE_W x BASE_H layout scaled into any viewport smaller than its base.
+   Viewports of at least BASE_W x BASE_H are left untouched (native fluid). Preview iframes skipped. */
 (function(){
   try{
     if (new URLSearchParams(location.search).has('preview')) return;
@@ -2506,7 +2506,7 @@ else document.addEventListener('DOMContentLoaded', init);
     if (!deck) return;
     function fit(){
       var vw = window.innerWidth, vh = window.innerHeight;
-      if (vw >= 1024 && vh >= 640){
+      if (vw >= BASE_W && vh >= BASE_H){
         deck.style.transform = '';
         deck.style.width = ''; deck.style.height = '';
         deck.style.position = ''; deck.style.left = ''; deck.style.top = '';
