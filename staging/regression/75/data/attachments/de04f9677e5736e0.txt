@@ -1,0 +1,9 @@
+[API Setup] Starting API authentication...
+[API Setup] Target: https://dojo.upexgalaxy.com/api/auth/login
+---- API OK: 200 - https://dojo.upexgalaxy.com/api/auth/login
+---- API OK: 200 - https://dojo.upexgalaxy.com/api/auth/me
+✅ [PROJ-101] authenticateSuccessfully - PASS (1795ms)
+[API Setup] Authentication successful
+[API Setup] Token type: Bearer
+[API Setup] Expires in: 86400 seconds
+[API Setup] Token saved to .auth/api-state.json

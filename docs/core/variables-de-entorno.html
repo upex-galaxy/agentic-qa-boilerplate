@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Variables de entorno</title>
+    <meta
+      name="description"
+      content="Los tres alcances de las variables (framework, tooling, proyecto bajo prueba), qué valida varlock y dónde, qué lee cada harness, la validación en el punto de uso, qué MCPs se conectan a nivel del harness y los logins de CLI."
+    />
+    <meta name="docs-order" content="15" />
+    <link rel="stylesheet" href="../assets/docs.css" />
+    <script src="../assets/docs.js"></script>
+  </head>
+  <body>
+    <article class="doc">
+      <header class="doc-header">
+        <nav class="breadcrumbs"><span>Core</span><span>Variables de entorno</span></nav>
+        <h1>Variables de entorno: quién valida qué</h1>
+        <p class="lede">
+          El repo conoce muchas variables y casi ninguna es suya. Esta guía dice a quién pertenece
+          cada una, qué se valida y dónde, qué lee cada harness al arrancar y qué se conecta fuera
+          de
+          <code>.env</code>. La regla corta: nada bloquea la instalación ni el doctor; cada valor lo
+          valida el código que lo lee, con un error que lo nombra.
+        </p>
+        <div class="meta-row">
+          <span class="badge accent">Credenciales</span><span class="badge">varlock</span>
+          <span class="badge">MCP</span>
+        </div>
+      </header>
+
+      <nav class="toc">
+        <strong>En esta página</strong>
+        <ol>
+          <li><a href="#alcances">Los tres alcances</a></li>
+          <li><a href="#varlock">Qué valida varlock y dónde</a></li>
+          <li><a href="#harness">Qué lee cada harness</a></li>
+          <li><a href="#punto-de-uso">Validar en el punto de uso</a></li>
+          <li><a href="#mcps">MCPs locales y MCPs a nivel del harness</a></li>
+          <li><a href="#clis">Logins de CLI</a></li>
+          <li><a href="#doctor">Qué te dice el doctor</a></li>
+          <li><a href="#ia">Lo que la IA puede ver</a></li>
+          <li><a href="#gestores">Gestores de secretos</a></li>
+        </ol>
+      </nav>
+
+      <div class="callout">
+        <span class="callout-title">Fuente canónica</span>
+        <p>
+          La lista de variables con su alcance vive en <code>cli/lib/variables-manifest.ts</code>;
+          la decisión, en <code>.context/ADR/ADR-0005-validation-scope.md</code>. Esta página es la
+          guía para personas: si alguna vez no coinciden, manda el manifest.
+        </p>
+      </div>
+
+      <h2 id="alcances">Los tres alcances</h2>
+      <p>
+        Cada variable del manifest lleva un <code>scope</code>. El alcance decide quién tiene
+        derecho a exigirla y, por tanto, cómo se reporta su ausencia.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Alcance</th>
+              <th>Qué es</th>
+              <th>Ejemplos</th>
+              <th>Si falta</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Framework</strong> (<code>core</code>)</td>
+              <td>
+                Lo que lee el boilerplate. Casi todas están detrás de un interruptor: la sincronía
+                con Xray, el host de Jira, el portal privado de reportes.
+              </td>
+              <td>
+                <code>TEST_ENV</code> (tiene default), <code>AUTO_SYNC</code>,
+                <code>ATLASSIAN_EMAIL</code> y <code>ATLASSIAN_API_TOKEN</code> (cuando el host de
+                Jira está en <code>.agents/project.yaml</code>), <code>XRAY_*</code> (cuando
+                <code>AUTO_SYNC=true</code>)
+              </td>
+              <td>
+                Un aviso del doctor mientras el interruptor esté encendido. El código detrás del
+                interruptor falla nombrándola.
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Tooling</strong></td>
+              <td>
+                Herramientas que consiguen su credencial en otro sitio. En <code>.env</code> solo
+                quedan los secretos que usa CI.
+              </td>
+              <td>
+                <code>SLACK_WEBHOOK_URL</code>, <code>PORTAL_*</code> y <code>R2_*</code> (portal
+                privado, solo en GitHub Actions); <code>SLACK_MCP_*</code> (el bot de Slack, solo si
+                el proyecto lo usa). La búsqueda web, Postman y los logins de <code>acli</code> o
+                <code>resend</code> no son variables de este archivo.
+              </td>
+              <td>Una fila informativa. Nunca un bloqueo.</td>
+            </tr>
+            <tr>
+              <td><strong>Proyecto bajo prueba</strong> (<code>project</code>)</td>
+              <td>
+                La aplicación que pruebas: su login, su base de datos, su API. El boilerplate las
+                declara como ejemplos tipados para que un <code>.env</code> copiado de la plantilla
+                valide; renómbralas o bórralas al adaptar el framework.
+              </td>
+              <td>
+                <code>LOCAL_USER_EMAIL</code> y <code>STAGING_USER_PASSWORD</code> (nombres de
+                ejemplo), <code>DBHUB_*</code>, <code>API_BASE_URL</code>,
+                <code>OPENAPI_SPEC_PATH</code>
+              </td>
+              <td>
+                Una fila informativa. El consumidor que la lee falla nombrándola: un login vacío lo
+                dice <code>config.testUser</code> en la primera línea de la corrida, no la app.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Los nombres de los interruptores también están en el manifest (<code>featureGate</code>): el
+        host de Atlassian en el yaml, <code>AUTO_SYNC</code>, la pareja <code>AUTO_SYNC</code> más
+        <code>TMS_PROVIDER=xray</code>, y la presencia de <code>PORTAL_URL</code>.
+      </p>
+
+      <h2 id="varlock">Qué valida varlock y dónde</h2>
+      <p>
+        varlock lee dos archivos versionados que declaran nombres, tipos y sensibilidad, nunca
+        valores (un tercero, opcional, conecta un gestor de secretos: ver
+        <a href="#gestores">Gestores de secretos</a>). Los valores siguen en <code>.env</code>.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Archivo</th>
+              <th>Quién lo escribe</th>
+              <th>Qué declara</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>.env.core.schema</code></td>
+              <td>
+                Generado desde el manifest con <code>bun run vars:schema</code>; lo sincroniza
+                <code>bun sync</code>. No se edita a mano.
+              </td>
+              <td>
+                Las tres secciones, una por alcance. Lo único que varlock se niega a cargar sin
+                valor es <code>TEST_ENV</code>, y tiene default. Todo lo demás es opcional y tipado.
+              </td>
+            </tr>
+            <tr>
+              <td><code>.env.schema</code></td>
+              <td>Tuyo. Se entrega una vez y el updater no lo vuelve a tocar.</td>
+              <td>
+                Importa el core y añade las variables de tu proyecto. Ahí puedes endurecer un item
+                que el core declara opcional: la declaración del proyecto gana.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <pre data-lang="bash"><code># en .env.schema: exigir la pareja de staging en TU proyecto
+# @required=forEnv(staging) @type=email
+STAGING_USER_EMAIL=
+
+bunx varlock load --agent      # valida .env con los valores enmascarados
+bun run vars:schema:check      # el core está al día, todo secreto es @sensitive y el par carga</code></pre>
+      <div class="callout warn">
+        <span class="callout-title">Un # sin comillas corta el valor</span>
+        <p>
+          varlock corta un valor sin comillas en el primer <code>#</code>:
+          <code>PASSWORD=pass#word</code> llega como <code>pass</code>. Pon entre comillas cualquier
+          valor que tenga <code>#</code>: <code>PASSWORD="pass#word"</code>.
+        </p>
+      </div>
+      <div class="callout warn">
+        <span class="callout-title">La excepción es TEST_ENV</span>
+        <p>
+          <code>@currentEnv</code> resuelve <code>TEST_ENV</code> al inicio y varlock rechaza una
+          segunda declaración del mismo item. Por eso el core conserva su enum y el proyecto no la
+          redeclara; el valor válido lo decide <code>config/variables.ts</code>, que falla nombrando
+          los entornos que sí conoce.
+        </p>
+      </div>
+      <p>
+        Dónde corre cada validación: <code>bun run vars:schema:check</code> en el pre-commit y en
+        <code>repo:check</code> valida el repo, no tu <code>.env</code>. También falla si una
+        variable con nombre de secreto (<code>TOKEN</code>, <code>SECRET</code>,
+        <code>PASSWORD</code>, <code>API_KEY</code>...) no lleva <code>@sensitive</code>:
+        <code>varlock load --agent</code> solo enmascara lo marcado, y el resto lo imprime tal cual.
+        <code>varlock load</code> en el pre-push solo avisa. La acción de varlock en
+        <code>build.yml</code> valida el esquema contra el job y pasa sin secretos, así que un PR
+        desde un fork también pasa. <code>bun run test:env:check</code> comprueba la forma: que
+        <code>TEST_ENV</code> sea un entorno declarado y que exista la pareja del TMS cuando
+        <code>AUTO_SYNC=true</code>.
+      </p>
+
+      <h2 id="harness">Qué lee cada harness</h2>
+      <p>
+        Un harness arranca sus servidores MCP antes de que corra cualquier hook, y una app de
+        escritorio o un worker lanzado de forma nativa no trae variables en su entorno. Por eso los
+        tres harnesses leen igual: cada MCP que necesita valores de <code>.env</code> arranca con el
+        mismo loader delante, en <code>.mcp.json</code>, <code>opencode.jsonc</code> y
+        <code>.codex/config.toml</code>.
+      </p>
+      <pre
+        data-lang="bash"
+      ><code>bunx -p varlock@&lt;pin&gt; varlock run --no-redact-stdout --inject vars --filter A,B -- &lt;server&gt;</code></pre>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Pieza</th>
+              <th>Qué hace</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>--filter A,B</code></td>
+              <td>
+                El server recibe solo esas variables: una clave del esquema heredada que no está en
+                la lista se quita, y la validación mira solo la lista. Es también la lista de
+                dependencias que <code>bun run agents:compat:check</code> compara entre los tres
+                hosts
+              </td>
+            </tr>
+            <tr>
+              <td><code>--inject vars</code></td>
+              <td>Variables sueltas, sin el blob <code>__VARLOCK_ENV</code></td>
+            </tr>
+            <tr>
+              <td><code>--no-redact-stdout</code></td>
+              <td>
+                No toca la salida: el server habla JSON-RPC por stdio y varlock, por defecto,
+                redacta lo que sale por una tubería
+              </td>
+            </tr>
+            <tr>
+              <td><code>bunx -p varlock@&lt;pin&gt;</code></td>
+              <td>
+                La versión exacta de la devDependency: basta con <code>bun install</code> una vez,
+                sin el binario suelto
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        El loader lee el esquema y <code>.env</code> / <code>.env.local</code> (o el gestor de
+        secretos que nombre el esquema) desde la raíz del proyecto, no depende de cómo abriste el
+        harness y no deja ninguna copia en texto plano. Si falta una variable, ningún harness falla
+        al arrancar: el server muere en su primera llamada autenticada. Un valor que no pasa el
+        esquema frena solo al server que lo filtra. Para ver si un MCP conecta, usa
+        <code>/mcp</code> dentro de la sesión de Claude Code u <code>opencode mcp list</code>.
+      </p>
+      <p>
+        Después de tocar <code>.env</code>, reinicia el agente. Si una versión anterior de
+        <code>bun run harness:env</code> dejó copias en el bloque <code>env</code> de
+        <code>.claude/settings.local.json</code> o en <code>.auth/opencode/</code>, el comando de
+        ahora las retira y <code>setup:doctor</code> las reporta. En Windows es igual: abres
+        <code>claude</code>, <code>opencode</code> o <code>codex</code> (o su app de escritorio) y
+        cada MCP lee <code>.env</code> por su cuenta. Ningún secreto se exporta a tu shell: los
+        scripts de Bun (<code>bun run jira:*</code>, <code>bun run api:login</code>,
+        <code>bun xray</code>) leen <code>.env</code> con su propio autoload y <code>acli</code> usa
+        su login guardado.
+      </p>
+
+      <h2 id="punto-de-uso">Validar en el punto de uso</h2>
+      <p>
+        El instalador ofrece credenciales y nunca las exige. El updater marca como requerida solo
+        una variable de framework. El doctor no devuelve error por ninguna credencial. Lo que sí
+        pasa es que el código que necesita un valor falla con un mensaje que nombra la variable, el
+        archivo que la declara y qué hacer si tu app no tiene esa cosa.
+      </p>
+      <dl class="defs">
+        <dt>El login de la app</dt>
+        <dd>
+          <code>config.testUser</code> en <code>config/variables.ts</code> es un getter. Los
+          proyectos <code>ui-setup</code> y <code>api-setup</code> de Playwright lo leen al
+          arrancar, así que una pareja vacía es la primera línea de la corrida. Si tu app no tiene
+          login, quita esos dos proyectos de <code>playwright.config.ts</code> y nadie vuelve a
+          leerlo.
+        </dd>
+        <dt>El entorno</dt>
+        <dd>
+          Un <code>TEST_ENV</code> que <code>envDataMap</code> no declara falla nombrando los
+          entornos válidos, en lugar de romper más abajo con un <code>undefined</code>.
+        </dd>
+        <dt>Jira y Xray</dt>
+        <dd>
+          Cada script de sincronía y el CLI de Xray fallan por nombre cuando les falta la
+          credencial. La sincronía de resultados se valida solo cuando
+          <code>AUTO_SYNC=true</code>: en CI corta la corrida, en local avisa.
+        </dd>
+        <dt>El portal privado de reportes</dt>
+        <dd>
+          <code>scripts/ci/publish-allure-portal.ts</code> exige por nombre cada variable del portal
+          (<code>PORTAL_*</code> y <code>R2_*</code>) solo cuando el workflow encuentra
+          <code>PORTAL_URL</code>; sin ella publica en GitHub Pages.
+        </dd>
+      </dl>
+
+      <h2 id="mcps">MCPs locales y MCPs a nivel del harness</h2>
+      <p>
+        El principio: un server remoto cuyo único contenido del lado del proyecto era una API key es
+        asunto del harness, no del repo. Solo los servers locales (stdio) viven en
+        <code>.mcp.json</code>, <code>opencode.jsonc</code> y <code>.codex/config.toml</code>. El
+        navegador no es un MCP: toda la automatización de navegador pasa por
+        <code>/playwright-cli</code>.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Server</th>
+              <th>Dónde vive</th>
+              <th>Por qué</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                Los servers locales: los que declara <code>.mcp.json</code> (con sus espejos en
+                <code>opencode.jsonc</code> y <code>.codex/config.toml</code>)
+              </td>
+              <td>
+                En el proyecto. Las variables que lee cada uno, y su alcance, están en
+                <code>cli/lib/variables-manifest.ts</code>
+              </td>
+              <td>
+                Corren en tu máquina y leen lo tuyo: la base de datos y la API de tu app, por
+                ejemplo, con variables de alcance proyecto como <code>DBHUB_*</code> u
+                <code>OPENAPI_SPEC_PATH</code>. Uno sin clave no tiene nada que autenticar; uno
+                opcional sin su token arranca vacío y ningún skill lo llama
+              </td>
+            </tr>
+            <tr>
+              <td>
+                Los remotos con clave del usuario: los que lista
+                <code>cli/lib/harness-level-mcps.ts</code>, como la búsqueda web
+              </td>
+              <td>A nivel del harness, una vez por máquina</td>
+              <td>
+                Son remotos y su clave es tuya, no del proyecto. Los skills los resuelven por
+                capacidad: buscan una herramienta cuyo nombre termine en
+                <code>web_search_exa</code> (Exa, primera opción) o en
+                <code>tavily_search</code> (Tavily, segunda), sea cual sea el prefijo del server.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Cómo conectar uno a nivel del harness:</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Harness</th>
+              <th>Dónde queda</th>
+              <th>Cómo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Claude Code</td>
+              <td><code>~/.claude.json</code> (ámbito de usuario) o un conector de claude.ai</td>
+              <td>
+                <code>claude mcp add --scope user --transport http &lt;nombre&gt; &lt;url&gt;</code
+                >, o conectarlo desde los ajustes de claude.ai. Compruébalo con
+                <code>/mcp</code> dentro de la sesión.
+              </td>
+            </tr>
+            <tr>
+              <td>OpenCode</td>
+              <td>
+                <code>~/.config/opencode/opencode.json</code>: clave <code>mcp.servers</code> en
+                OpenCode 2, <code>mcp</code> en OpenCode 1
+              </td>
+              <td>
+                En OpenCode 2,
+                <code>opencode mcp add &lt;nombre&gt; --global --url &lt;url&gt;</code>. En OpenCode
+                1, añádelo a mano en la config global. El <code>opencode.jsonc</code>
+                del proyecto no lo redeclara.
+              </td>
+            </tr>
+            <tr>
+              <td>Codex</td>
+              <td>
+                <code>~/.codex/config.toml</code>, tabla <code>[mcp_servers.&lt;nombre&gt;]</code>
+              </td>
+              <td>
+                <code>codex mcp add &lt;nombre&gt; --url &lt;url&gt;</code> y después
+                <code>codex mcp login &lt;nombre&gt;</code> (OAuth). Evita
+                <code>--bearer-token-env-var</code> si usas la app de escritorio: lee una variable
+                del entorno del proceso, y abierta desde el Dock no tiene ninguna.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        <span class="callout-title">Si tu proyecto declara uno de esos servers</span>
+        <p>
+          Los archivos MCP de un proyecto están protegidos: <code>bun sync</code> nunca los
+          sobreescribe. Si todavía declaran un server de la lista del harness, la actualización deja
+          una fila de paridad que lo explica, y las dos respuestas son válidas: dejarlo como server
+          propio del proyecto, o quitarlo y conectarlo a nivel del harness. El porqué está en
+          <code>.context/ADR/ADR-0005-validation-scope.md</code>.
+        </p>
+      </div>
+
+      <h2 id="clis">Logins de CLI</h2>
+      <p>
+        Los CLIs se autentican solos y guardan su propia sesión. Nada de esto va en
+        <code>.env</code>.
+      </p>
+      <pre data-lang="bash"><code># Atlassian CLI: sesión persistente en ~/.config/acli/
+echo "$ATLASSIAN_API_TOKEN" | acli jira auth login \
+  --site "$(bun run --silent jira:url --slug)" --email "$ATLASSIAN_EMAIL" --token
+
+# Resend CLI: guarda la key en el llavero del sistema
+resend login</code></pre>
+      <p>
+        La pareja <code>ATLASSIAN_*</code> sigue en <code>.env</code> porque los scripts de
+        sincronía, el CLI de Xray y el proveedor de TMS la leen por REST; el login de
+        <code>acli</code> no los sustituye. <code>RESEND_API_KEY</code> no va en <code>.env</code>:
+        nada del repo la lee y el CLI de Resend guarda su propia sesión.
+      </p>
+      <p>
+        Si tu <code>.env</code> todavía tiene una clave retirada (la lista es
+        <code>RETIRED_KEYS</code> en <code>cli/lib/env-schema.ts</code>), te ofrecen borrar esas
+        líneas con una sola confirmación, antes de validar: <code>bun setup</code> en una tarjeta de
+        la fase de credenciales (en la página local, o en la terminal con <code>--headless</code>) y
+        <code>bun run setup:doctor</code> en la terminal. El esquema no las declara, y varlock
+        rechaza una clave no declarada que está vacía. Sin terminal interactiva (o con
+        <code>bun setup --non-interactive</code>) solo las listan: nunca editan el archivo ni
+        muestran valores.
+      </p>
+
+      <h2 id="doctor">Qué te dice el doctor</h2>
+      <p>
+        <code>bun run setup:doctor</code> lista cada variable con su alcance, su interruptor y quién
+        la consume, y añade una sección con los servers a nivel del harness que encuentra en tu
+        configuración de usuario. Un conector de claude.ai no deja archivo, así que ahí dice "no
+        detectable", nunca "falta". El código de salida solo cambia por hallazgos estructurales: no
+        hay <code>.env</code>, queda una copia en texto plano de una credencial MCP, el esquema no
+        carga.
+      </p>
+      <pre
+        data-lang="bash"
+      ><code>bun run setup:doctor          # tabla por alcance + servers a nivel del harness
+bun run setup:doctor --json   # env_var_scopes[] y harness_level_mcps para un agente</code></pre>
+
+      <h2 id="ia">Lo que la IA puede ver</h2>
+      <p>
+        La IA usa cada secreto por su nombre y nunca por su valor (Regla Crítica #1). Escribe
+        <code>$STAGING_USER_PASSWORD</code> dentro del comando, la terminal lo expande y en la
+        conversación solo queda el resultado. No abre <code>.env</code>, <code>.env.local</code>,
+        <code>.auth/</code> ni <code>.claude/settings.local.json</code>, y tampoco corre
+        <code>printenv</code>, <code>env</code> ni <code>curl -v</code>, porque cualquier valor que
+        aparezca en pantalla viaja al proveedor del modelo y se queda en la transcripción local.
+        <code>.env.example</code> y los esquemas versionados (<code>.env*.schema</code>) sí los lee:
+        solo tienen nombres y referencias, nunca valores.
+      </p>
+      <p>
+        Para saber si una variable está cargada, la IA corre <code>bunx varlock load --agent</code>,
+        que lista cada variable por nombre y tapa los valores <code>@sensitive</code>. Si falta un
+        secreto o está mal, te dice cuál es y lo escribes tú en tu terminal o en tu gestor de
+        secretos; nunca lo pegues en el chat. Un valor que no es secreto (una URL, una clave de
+        proyecto, un flag, un puerto) sí puede escribirlo la IA en <code>.env</code> si se lo pides,
+        y solo con <code>bun run env:set CLAVE=valor</code>: el script rechaza cualquier clave que
+        el schema marque <code>@sensitive</code> o cuyo nombre suene a secreto, y no imprime
+        valores.
+      </p>
+      <p>
+        Claude Code y OpenCode traen reglas de denegación para esos archivos (<code
+          >.claude/settings.json</code
+        >
+        y <code>opencode.jsonc</code>), así que un descuido se bloquea antes de leer nada. Son una
+        red de seguridad y se pueden esquivar con un subproceso; lo que obliga a la IA es la regla.
+        El detalle completo, con los comandos seguros y qué hacer si un valor se filtra, está en
+        <code>.agents/skills/agentic-qa-core/references/secret-hygiene.md</code>.
+      </p>
+
+      <h2 id="gestores">Gestores de secretos</h2>
+      <p>
+        Es la opción <strong>avanzada</strong>. El camino por defecto es <code>.env</code>, y sigue
+        siéndolo: un clon recién hecho, un estudiante o una laptop sin internet no necesitan nada
+        más. Un gestor sirve cuando un equipo comparte los secretos de un proyecto y no quiere
+        pasarse valores por chat ni tenerlos en claro en cada máquina. El primero que trae el repo
+        es 1Password; el diseño deja el mismo hueco para cualquier otro gestor que varlock sepa
+        leer.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Pieza</th>
+              <th>Qué hace</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>secrets:</code> en <code>.agents/project.yaml</code></td>
+              <td>
+                <code>provider: local | 1password</code> (por defecto <code>local</code>), el vault,
+                la cuenta y el modo de autenticación (<code>app</code> o
+                <code>service-account</code>).
+              </td>
+            </tr>
+            <tr>
+              <td><code>.env.provider.schema</code></td>
+              <td>
+                Lo escribe <code>bun setup</code> cuando eliges el gestor, y se versiona. Tiene
+                referencias (<code>op(op://vault/VARIABLE/password)</code>), nunca un valor. Cada
+                línea viene comentada: descomentas las que tu vault tiene.
+              </td>
+            </tr>
+            <tr>
+              <td><code>.env.core.schema</code></td>
+              <td>
+                Lo importa con <code>allowMissing=true</code>. Si el archivo no existe, nada cambia.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        El orden de precedencia no cambia: un valor no vacío en <code>.env.local</code>,
+        <code>.env</code> o exportado en la terminal gana sobre el vault, y entonces el vault ni
+        siquiera se consulta. Para leer una clave del gestor, déjala vacía (o quítala) de
+        <code>.env</code>. Así un compañero sin acceso al vault sigue trabajando con su
+        <code>.env.local</code>. El autoload de Bun no resuelve las referencias de 1Password, así
+        que un script que necesita un secreto del vault corre con
+        <code>bunx varlock run -- &lt;comando&gt;</code>.
+      </p>
+      <h3>1Password, paso a paso</h3>
+      <ol>
+        <li>
+          Instala la app de escritorio y su CLI, <code>op</code> (<code
+            >brew install 1password-cli</code
+          >
+          en macOS).
+        </li>
+        <li>
+          En la app: Settings &gt; Developer &gt; "Integrate with 1Password CLI". La app te pide
+          huella o contraseña al cargar; no queda ningún token en disco.
+        </li>
+        <li>
+          Corre <code>bun setup</code> y, en la fase de credenciales, elige 1Password en la tarjeta
+          "Dónde viven los secretos de este proyecto?" (en la terminal si corres con
+          <code>--headless</code>). Después te pregunta el vault, la cuenta y cómo se autentica la
+          laptop. Para un equipo, el vault es uno compartido (<code>&lt;proyecto&gt;-dev</code>);
+          con un plan personal, tu propio vault.
+        </li>
+        <li>
+          En el vault, un item de tipo Password por variable, con el NOMBRE de la variable como
+          título. En <code>.env.provider.schema</code>, descomenta esas líneas.
+        </li>
+        <li>Comprueba sin ver valores: <code>bunx varlock load --agent</code>.</li>
+      </ol>
+      <p>
+        En CI hace falta un <em>service account</em> con lectura sobre el vault del equipo. Su token
+        va en el secret de GitHub <code>OP_SERVICE_ACCOUNT_TOKEN</code>, al lado de los secrets por
+        variable de siempre (nunca en su lugar): un secret por variable que tiene valor sigue
+        ganando, y uno vacío ya no tapa el valor del vault porque el launcher de los scripts de test
+        (<code>scripts/launch.ts</code>) lo descarta antes de llamar a varlock. Un plan personal no
+        sirve para CI, porque un service account no puede leer un vault personal. Los pasos que
+        llaman a una herramienta directamente (<code>bun xray</code>, el publicador del portal)
+        siguen leyendo solo los secrets por variable.
+      </p>
+      <div class="callout warn">
+        <span class="callout-title">Otros gestores</span>
+        <p>
+          varlock trae plugins para otros gestores (la lista está en su documentación). Ninguno
+          viene configurado aquí. Sumar uno es añadir su id y un adaptador en
+          <code>cli/lib/secret-providers.ts</code>; el archivo, el import, el launcher de los tests
+          y CI quedan igual. La decisión completa está en
+          <code>.context/ADR/ADR-0010-secret-manager-advanced-option.md</code>.
+        </p>
+      </div>
+
+      <footer class="doc-footer">
+        <a href="empezar-aqui.html">Empezar aquí</a> · <a href="setup/index.html">Setup</a>. Fuente
+        canónica: <code>cli/lib/variables-manifest.ts</code> y
+        <code>.context/ADR/ADR-0005-validation-scope.md</code>.
+      </footer>
+    </article>
+  </body>
+</html>

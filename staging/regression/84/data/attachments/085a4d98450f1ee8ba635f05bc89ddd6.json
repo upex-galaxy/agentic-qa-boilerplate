@@ -1,0 +1,5 @@
+{
+  "access_token": "eyJhbGciOiJIUzI1NiJ9.eyJpZCI6IjFjMzQ1NzcyLTFmMGEtNDA1NC05YTUyLTA2MTE1MzA0ZThlOCIsImVtYWlsIjoidGVzdHVzZXJAdXBleC5kZXYiLCJuYW1lIjoiVGVzdCBVc2VyIiwiaWF0IjoxNzgzNDc1NDU0LCJleHAiOjE3ODM1NjE4NTR9.MEErKl3SUqTBoAPG2Ghd_wHtoSjjw-hhH4eG-Ea1txU",
+  "token_type": "Bearer",
+  "expires_in": 86400
+}

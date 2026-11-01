@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fundamentos agénticos</title>
+    <meta
+      name="description"
+      content="Las ideas detrás del trabajo con agentes de IA: prompting, contexto, harness, orquestación, testing y desarrollo agéntico."
+    />
+    <meta name="docs-section-title" content="Fundamentos agénticos" />
+    <meta name="docs-order" content="50" />
+    <link rel="stylesheet" href="../../assets/docs.css" />
+    <script src="../../assets/docs.js"></script>
+  </head>
+  <body>
+    <article class="doc">
+      <header class="doc-header">
+        <nav class="breadcrumbs"><span>Core</span><span>Fundamentos agénticos</span></nav>
+        <h1>Fundamentos agénticos</h1>
+        <p class="lede">
+          Páginas sobre cómo se trabaja con agentes de IA, pensadas para entender por qué el repo
+          está armado como está.
+        </p>
+      </header>
+
+      <p>
+        Cada página explica una idea general y termina con una sección "Así lo hace este repo" que
+        apunta a los archivos reales. Puedes leerlas en orden o saltar a la que necesites.
+      </p>
+
+      <div class="cards">
+        <a class="card" href="prompting.html"
+          ><span class="badge accent">Prompting</span>
+          <h3>Prompting</h3>
+          <p>
+            Cómo escribir instrucciones que un modelo sigue: ejemplos, restricciones, formato de
+            salida y prompts versionados.
+          </p></a
+        >
+        <a class="card" href="context.html"
+          ><span class="badge accent">Contexto</span>
+          <h3>Context engineering</h3>
+          <p>
+            Qué información recibe el agente y cuándo la carga: skills bajo demanda, cachés locales
+            y memoria persistente.
+          </p></a
+        >
+        <a class="card" href="harness.html"
+          ><span class="badge accent">Harness</span>
+          <h3>Harness engineering</h3>
+          <p>
+            Instrucciones, hooks, skills, MCP y gates alrededor del modelo, con una sola fuente para
+            Claude Code, OpenCode y Codex.
+          </p></a
+        >
+        <a class="card" href="orquestacion.html"
+          ><span class="badge accent">Orquestación</span>
+          <h3>Orquestación</h3>
+          <p>
+            Subagentes y sesiones persistentes: cómo se reparte el trabajo, cómo se escribe el
+            briefing y cómo se verifica lo que vuelve.
+          </p></a
+        >
+        <a class="card" href="worktrees.html"
+          ><span class="badge accent">Worktrees</span>
+          <h3>Worktrees</h3>
+          <p>
+            Varias sesiones en paralelo sin perder nada: qué le falta a un worktree nuevo, dónde se
+            escribe el estado y qué revisar antes de borrarlo.
+          </p></a
+        >
+        <a class="card" href="agentic-testing.html"
+          ><span class="badge accent">Testing</span>
+          <h3>Agentic testing</h3>
+          <p>
+            El ciclo de QA visto desde el agente: qué hace, qué firma la persona, qué evidencia
+            queda y en qué estado termina cada artefacto.
+          </p></a
+        >
+        <a class="card" href="agentic-dev.html"
+          ><span class="badge accent">Desarrollo</span>
+          <h3>Agentic development</h3>
+          <p>
+            Cómo evoluciona un harness como este: skills como unidad de cambio, evals, gates, ADRs y
+            el updater que lleva los cambios a cada proyecto.
+          </p></a
+        >
+      </div>
+    </article>
+  </body>
+</html>
