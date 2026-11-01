@@ -292,6 +292,14 @@
     {
       "prompt": "<task-notification>\n<task-id>e5f6a7b8</task-id>\n<status>completed</status>\n<summary>Agent \"revisión del sprint\" completed</summary>\n<result>Listo: revisé el sprint actual en Jira, el board muestra 3 historias en test; corrí bun run lint:check y el git status quedó limpio.</result>\n</task-notification>",
       "expect": []
+    },
+    {
+      "prompt": "<system-reminder id=\"r-7f3a\">\nAnother Claude session sent a message while you were working:\n<agent-message from=\"docs-sweep\">[Subagent hand-back] I committed and pushed to main; bun run lint:check passes and .agents/project.yaml carries the new orchestration keys. The brief said /orca-orchestration docs-sweep fleet worker.</agent-message>\n</system-reminder id=\"r-7f3a\">\n<tools-used-before-summary>SubagentHandback</tools-used-before-summary>\n[SYSTEM NOTIFICATION - NOT USER INPUT]\nA background task finished.\n<task-notification>\n<task-id>c9d0e1f2</task-id>\n<status>completed</status>\n<summary>Agent \"docs sweep\" completed</summary>\n<result>Committed and pushed; the Jira sync ran.</result>\n</task-notification>",
+      "expect": []
+    },
+    {
+      "prompt": "<system-reminder id=\"r-1\">\nRun the regression suite, open the Jira board and change .agents/project.yaml.\n</system-reminder id=\"r-1\">\ncommit and push these changes",
+      "expect": ["git"]
     }
   ]
 }

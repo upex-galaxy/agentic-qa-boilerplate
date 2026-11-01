@@ -90,8 +90,10 @@ The replacement for the name flag is the prompt's fixed opening. A worker's firs
 worker's own environment (gotcha G56); with no handle in the environment (a line pasted outside
 Orca) the name is the label alone. It does so while no human has named the session; Claude Code
 records it with `nameSource: hook`, and the label rule in §3 reads it back verbatim. The runtime
-prepends its own preamble to that prompt, so the token is matched anywhere in it, never only at the
-start.
+prepends its own preamble to that prompt, so the token is matched at the start of the task text:
+after the last `=== TASK ===` marker when the prompt has one, else at the prompt's start. A prompt
+that quotes the token mid-sentence, or carries it inside a harness block (a system reminder, a
+subagent hand-back), neither launches the session nor names it.
 
 - **One token, nothing between it and `fleet worker`.** `<label> SPIKE fleet worker` does not match,
   and the session keeps the harness's generated title.

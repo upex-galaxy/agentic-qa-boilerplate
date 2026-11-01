@@ -16,6 +16,17 @@ below names which one it applies to:
 
 ## Unreleased — Boilerplate
 
+### Fixed (the prompt hook ignores what the harness injected)
+- **A hand-back wrapped in system reminders no longer routes.** The prompt hook treats a prompt
+  made only of harness blocks (`<system-reminder>`, `<tools-used-before-summary>`, the
+  `[SYSTEM NOTIFICATION - NOT USER INPUT]` preamble, `<task-notification>`) as a notification: no
+  `ROUTE:` lines, no route-state write, no role change. A human prompt that carries a reminder
+  still routes, on the human's text only.
+- **The fleet token counts only at the start of the task text** (after the last `=== TASK ===`,
+  else the prompt's start, harness blocks removed). A prompt that quotes
+  `/<skill> <label> fleet worker` mid-sentence, or a subagent report that does, no longer marks the
+  session the human types into as launched for the rest of the session.
+
 ### Changed (agentic work runs in three tiers: who asks the human, one worker name, a permission mode per tier)
 - **Only the session the human types into asks the human.** `decision-elicitation-doctrine.md` §0
   governs the question tool, the sweep and the `mkd` deck together: a session launched by another

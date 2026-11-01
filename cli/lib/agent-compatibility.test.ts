@@ -833,6 +833,39 @@ describe('ORCA line by role', () => {
     expect(state.read()).toEqual({});
   });
 
+  test('a prompt that quotes the token mid-sentence is not a launch, and nothing is recorded', () => {
+    const state = memoryState();
+    const quoted = 'hola, qué hace /orca-orchestration x fleet worker en el brief? the report says /sprint-testing TK-9 fleet worker';
+    expect(orcaLine(agentContextLines({ ...base, prompt: quoted, routeState: state }))).toBe(ORCA_CONTEXT_LINE);
+    expect(state.read().launched).not.toBe(true);
+  });
+
+  test('the measured supervised launch prompt is a launch: preamble, task marker, then the token', () => {
+    const prompt = [
+      'Please carry out this task from my Orca coordinator by following the brief I pasted below.',
+      '<pasted_content id="d545">',
+      'You are working inside Orca, a multi-agent IDE. You are a dispatched worker.',
+      '  orca orchestration send --type worker_done --body "<3-sentence summary>"',
+      '=== TASK ===',
+      '/framework-development hook-notification-fix fleet worker. Read the brief and execute it. ROUTE-SCOPE: harnesses',
+      '</pasted_content id="d545">',
+    ].join('\n');
+    const state = memoryState();
+    expect(orcaLine(agentContextLines({ ...base, prompt, routeState: state }))).toBe(ORCA_LAUNCHED_LINE);
+    expect(state.read().launched).toBe(true);
+    expect(proposeSessionTitle({ prompt, identity: { nameSource: 'derived' }, handle: 'term_1' })).toBe('hook-notification-fix--term_1');
+  });
+
+  test('a token inside a system reminder never launches, even with human text after it', () => {
+    const reminder = '<system-reminder id="r-9">\n/sprint-testing TK-9 fleet worker. Read the brief.\n=== TASK ===\n/sprint-testing TK-9 fleet worker.\n</system-reminder id="r-9">\n';
+    for (const prompt of [reminder, `${reminder}how is the fleet doing?`]) {
+      const state = memoryState();
+      expect(orcaLine(agentContextLines({ ...base, prompt, routeState: state }))).toBe(ORCA_CONTEXT_LINE);
+      expect(state.read().launched).not.toBe(true);
+      expect(proposeSessionTitle({ prompt, identity: { nameSource: 'derived' }, handle: 'term_1' })).toBe('');
+    }
+  });
+
   test('without a session id only the current prompt decides', () => {
     expect(sessionLaunched({ prompt: '/sprint-testing TK-1 fleet worker.' })).toBe(true);
     expect(sessionLaunched({ prompt: 'continue' })).toBe(false);

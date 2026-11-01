@@ -1635,8 +1635,9 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
               Líneas <code>ROUTE: read &lt;archivo&gt;</code> con las secciones de instrucciones que
               el prompt necesita y la sesión todavía no leyó, más una línea
               <code>ROUTE-OPTIONAL:</code> si sobran. Si nada nuevo coincide, no hay líneas de ruta.
-              Un aviso de tarea del harness (un prompt que empieza con
-              <code>&lt;task-notification&gt;</code>) no produce rutas ni toca el estado de ruteo.
+              Un aviso del harness (un prompt que empieza con
+              <code>&lt;task-notification&gt;</code>, o que trae solo bloques del harness como los
+              <code>&lt;system-reminder&gt;</code>) no produce rutas ni toca el estado de ruteo.
             </li>
           </ul>
 
