@@ -8,7 +8,7 @@ import { dirname, join } from 'node:path';
 import { afterEach, describe, expect, test } from 'bun:test';
 
 import { parse as parseYaml } from 'yaml';
-import { isMaintainerCopy, isSchemaOwner } from './lib/agents-schema.ts';
+import { isMaintainerCopy, isSchemaOwner, stripYamlComments } from './lib/agents-schema.ts';
 import { unusedHarnessPaths } from './lib/harness-selection.ts';
 import { loadBoardConfig } from './lib/sprint-source/index.ts';
 import { cleanupDeprecated, componentOwnedPaths, isRepoOnlyPath, validateComponentRegistry } from './lib/updater-core.ts';
@@ -407,12 +407,15 @@ describe('project.yaml back-fill under --auto', () => {
     return { root, upstream };
   }
 
-  test('a whole missing block is inserted from the schema with blank values; a block the project has is never edited', async () => {
-    const boardBlock = extractIndentedYamlBlock(SCHEMA, 'board', '');
+  test('a whole missing block is inserted from the schema with blank values and no comments; a block the project has is never edited', async () => {
+    // A project's yaml is values only (ADR-0025): the schema with its comments stripped.
+    const lean = stripYamlComments(SCHEMA);
+    const boardBlock = extractIndentedYamlBlock(lean, 'board', '');
     expect(boardBlock).not.toBeNull();
     // The project lacks the whole `board:` block AND one leaf of `testing:`.
-    const projectYaml = SCHEMA.replace(`${boardBlock}\n`, '').replace(/^ {2}default_env:.*\n/m, '');
+    const projectYaml = lean.replace(`${boardBlock}\n`, '').replace(/^ {2}default_env:.*\n/m, '');
     expect(projectYaml).not.toContain('\nboard:');
+    expect(projectYaml).not.toContain('default_env:');
     const { root, upstream } = fixture(projectYaml);
     const lines: string[] = [];
     await backfillProjectYamlFromSchema(upstream, autoSink(lines), true, root);
@@ -420,14 +423,15 @@ describe('project.yaml back-fill under --auto', () => {
     const after = readFileSync(join(root, '.agents/project.yaml'), 'utf8');
     const parsed = parseYaml(after) as { board?: { source?: string }, testing?: Record<string, unknown> };
     expect(parsed.board?.source).toBe('auto');
-    expect(after).toContain('# NEW in 9.9.9');
+    // The schema documents the block; not one of its comments reaches the project.
+    expect(after.split('\n').filter(l => l.includes('#'))).toEqual([]);
     // The existing block keeps its shape: the missing leaf is only reported.
     expect(parsed.testing).not.toHaveProperty('default_env');
     expect(lines.join('\n')).toContain('testing.default_env');
     // Insert-only: every line the project had is still there, in order, and the
-    // only new lines are the block and its markers.
+    // only new lines are the block's own.
     const nonBlank = (text: string): string[] => text.split('\n').filter(l => l.trim() !== '');
-    const kept = nonBlank(after).filter(l => !l.includes('NEW in 9.9.9'));
+    const kept = nonBlank(after);
     const blockLines = new Set(nonBlank(boardBlock!));
     expect(kept.filter(l => !blockLines.has(l))).toEqual(nonBlank(projectYaml).filter(l => !blockLines.has(l)));
     expect(kept.length).toBe(nonBlank(projectYaml).length + nonBlank(boardBlock!).length);

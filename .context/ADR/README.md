@@ -87,6 +87,7 @@ Who authors: a human QA architect / lead directly, **or** an AI workflow that de
 | [ADR-0022](./ADR-0022-evidence-page-reference-design.md) | The evidence page is the reference implementation's page, copied, built by the reference `build.py` (Python + Pillow) from `evidence-pack/2.0`, with ADR-0021's safety rules moved into it and the workflow as the `evidence-artifact` skill | Accepted | ADR-0021 (in part) | — |
 | [ADR-0023](./ADR-0023-sprint-board-store-and-merge-collector.md) | The Sprint Board keeps one append-only log and one tracker read per sprint, and the Merge Line collector is TypeScript with the source's document contract | Accepted | — | — |
 | [ADR-0024](./ADR-0024-agentic-work-profile-and-permission-posture.md) | Agentic work runs in three tiers with one profile in `orchestration:`; a launched session escalates to its launcher, and workers run in bypass | Accepted | — | — |
+| [ADR-0025](./ADR-0025-project-yaml-values-only-schema-documents.md) | `.agents/project.yaml` carries values only; `.agents/project.schema.yaml` is the documented template, its values synced down from the yaml | Accepted | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first.
 

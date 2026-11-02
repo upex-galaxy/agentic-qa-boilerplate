@@ -473,17 +473,27 @@ describe('seedProjectYamlFromSchema', () => {
   });
 
   // The banner is true of the template and a lie on the copy a project edits.
-  test('the generated banner is swapped for a consumer header', async () => {
+  test('the schema banner is swapped for a consumer header', async () => {
     await seedProjectYamlFromSchema(dir);
     const yaml = readYaml();
     expect(yaml).not.toContain('DO NOT EDIT BY HAND');
-    expect(yaml.startsWith('# Project configuration consumed by AI agents')).toBe(true);
+    expect(yaml.startsWith('# Project configuration read by AI agents. VALUES ONLY')).toBe(true);
     expect(yaml).toContain('bun run agents:schema --project');
   });
 
   test('the seeded file still starts its content at the first block', async () => {
     await seedProjectYamlFromSchema(dir);
     expect(readYaml()).toContain('\nproject:\n');
+  });
+
+  // ADR-0025: the schema documents every key; the project's own file is values
+  // only, because the harness loads it into every session.
+  test('the seeded file is values only: no comment survives below the header', async () => {
+    await seedProjectYamlFromSchema(dir);
+    const body = readYaml().split('\nproject:\n')[1];
+    expect(body.split('\n').filter(l => l.includes('#'))).toEqual([]);
+    expect(readYaml()).toContain('    require_pr_reviews: 1\n');
+    expect(readYaml()).toContain('    TODO: describe this project\'s branching strategy in prose.\n');
   });
 
   // An older tag has no schema: the caller falls back to the field-by-field

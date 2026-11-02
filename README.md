@@ -355,7 +355,7 @@ Every supported harness (Claude Code, OpenCode, Codex) resolves `{{VAR}}` refere
 bun run agents:setup
 ```
 
-This populates project identity (`project.project_name`, `project.project_key`), `issue_tracker.atlassian_url` and the per-environment leaves under `environments.<env>`; the full key set is `.agents/project.schema.yaml`. `bun setup` also writes `harnesses:` (the harnesses the gates check) and `secrets:` (where secret values live). See `.agents/README.md` for the convention.
+This populates project identity (`project.project_name`, `project.project_key`), `issue_tracker.atlassian_url` and the per-environment leaves under `environments.<env>`; the full key set, each key documented, is `.agents/project.schema.yaml` (your `.agents/project.yaml` holds values only, because the agent loads it into every session). `bun setup` also writes `harnesses:` (the harnesses the gates check) and `secrets:` (where secret values live). See `.agents/README.md` for the convention.
 
 <br />
 

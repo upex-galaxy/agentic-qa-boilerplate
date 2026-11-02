@@ -124,20 +124,76 @@ function escapeReg(s: string): string {
 }
 
 /**
+ * The index where a YAML comment starts on `line`, or -1. A `#` opens a comment
+ * only at the start of the line or after whitespace, and never inside a quoted
+ * scalar; a quote opens a scalar only where a token can start, so the
+ * apostrophe in `it's` is not one.
+ */
+function commentStart(line: string): number {
+  let quote: string | null = null;
+  for (let i = 0; i < line.length; i += 1) {
+    const ch = line[i];
+    if (quote !== null) {
+      if (quote === '"' && ch === '\\') { i += 1; continue; }
+      if (ch === quote) {
+        // `''` inside a single-quoted scalar is an escaped quote, not the end.
+        if (quote === '\'' && line[i + 1] === '\'') { i += 1; continue; }
+        quote = null;
+      }
+      continue;
+    }
+    const prev = i === 0 ? ' ' : line[i - 1];
+    if ((ch === '"' || ch === '\'') && /[\s[{,:]/.test(prev)) { quote = ch; continue; }
+    if (ch === '#' && /\s/.test(prev)) { return i; }
+  }
+  return -1;
+}
+
+/**
+ * YAML text with every comment removed and its values untouched: whole-line
+ * comments dropped, trailing comments cut with the whitespace before them,
+ * block scalars (`>` / `|`) passed through verbatim, blank lines kept only as
+ * one separator before each top-level key. TWIN of `stripYamlComments` in
+ * the boilerplate's `cli/lib/agents-schema.ts` (this package has no `yaml`
+ * dependency, so it cannot import that one): a test there keeps the two
+ * byte-identical in behaviour on the real schema.
+ */
+export function stripYamlComments(text: string): string {
+  const out: string[] = [];
+  let scalarIndent = -1;
+  let pendingBlanks = 0;
+  for (const line of text.split('\n')) {
+    const indent = line.length - line.trimStart().length;
+    if (scalarIndent >= 0) {
+      if (line.trim() === '') { pendingBlanks += 1; continue; }
+      if (indent > scalarIndent) {
+        for (; pendingBlanks > 0; pendingBlanks -= 1) { out.push(''); }
+        out.push(line);
+        continue;
+      }
+      scalarIndent = -1;
+    }
+    pendingBlanks = 0;
+    const cut = commentStart(line);
+    const kept = (cut === -1 ? line : line.slice(0, cut)).trimEnd();
+    if (kept.trim() === '') { continue; }
+    if (indent === 0 && /^[\w"']/.test(kept) && out.length > 0) { out.push(''); }
+    out.push(kept);
+    if (/:\s*[|>][-+\d]*$/.test(kept) || /^\s*-\s+[|>][-+\d]*$/.test(kept)) { scalarIndent = indent; }
+  }
+  return `${out.join('\n')}${text.endsWith('\n') ? '\n' : ''}`;
+}
+
+/**
  * The header a CONSUMER's `.agents/project.yaml` opens with.
  *
- * The schema's own banner says GENERATED / DO NOT EDIT BY HAND, which is true
- * of the template and a lie on the copy a project edits every week. The seed
- * swaps one for the other.
+ * The schema's own banner addresses the boilerplate's maintainers, and the
+ * copy a project edits every week is values only (ADR-0025): the seed swaps the
+ * banner for this one and strips every comment.
  */
-const CONSUMER_YAML_HEADER = `# Project configuration consumed by AI agents (Claude, Cursor, Gemini, Codex, etc.)
-# when they encounter {{VAR_NAME}} references in skills, commands, templates and docs.
-# Variable names are snake_case; the AI maps {{PROJECT_NAME}} -> project.project_name lexically.
-# Edit values manually, or run \`bun run agents:setup\` for an interactive walkthrough.
-# Every unfilled field is \`null\` plus a TODO comment with a concrete example.
-#
-# \`bun run agents:schema --project\` lists the keys upstream has added since this
-# project was scaffolded; \`bun sync\` offers to insert them, one prompt per block.
+const CONSUMER_YAML_HEADER = `# Project configuration read by AI agents. VALUES ONLY: every key is documented in
+# .agents/project.schema.yaml, the template this file was seeded from. Edit by hand or
+# run \`bun run agents:setup\`. \`bun run agents:schema --project\` lists keys added upstream.
 `;
 
 /**
@@ -164,15 +220,15 @@ export async function seedProjectYamlFromSchema(projectDir: string): Promise<boo
   if (!existsSync(schemaPath) || !existsSync(yamlPath)) { return false; }
 
   const schema = await readFile(schemaPath, 'utf8');
-  // Drop the generated banner: the contiguous comment run the generator wrote,
-  // plus the blank line after it. The boundary is stable because we emit it.
+  // Drop the schema's banner: its leading comment run, plus the blank line
+  // after it. Every other comment goes with `stripYamlComments`.
   const lines = schema.split('\n');
   let i = 0;
   while (i < lines.length && lines[i].startsWith('#')) { i += 1; }
   while (i < lines.length && lines[i].trim() === '') { i += 1; }
   if (i === 0 || i >= lines.length) { return false; } // not the shape we emit — leave it alone.
 
-  await writeFile(yamlPath, `${CONSUMER_YAML_HEADER}\n${lines.slice(i).join('\n')}`, 'utf8');
+  await writeFile(yamlPath, `${CONSUMER_YAML_HEADER}\n${stripYamlComments(lines.slice(i).join('\n'))}`, 'utf8');
   log.dim('  Seeded .agents/project.yaml from the upstream schema (no maintainer values travel).');
   return true;
 }

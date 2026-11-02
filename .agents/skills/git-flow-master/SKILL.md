@@ -156,7 +156,7 @@ Apply in order; stop at the first definitive answer:
 
 ### Persist the decision
 
-Once resolved (whether by detection or by asking), write/update the `git_strategy:` block **in place** inside `.agents/project.yaml` (preserve the rest of the file — it holds project identity, env config, etc.; create the block if it is missing). NEVER write a separate file. It is the single source of truth. At minimum the first five operations need `git_strategy.strategy` + `git_strategy.branches`; the full schema (with `git_strategy.decisions`, `git_strategy.protected`, `git_strategy.policy`, `git_strategy.branch_prefixes`, `git_strategy.meta`) is populated by Strategy Setup (3.6).
+Once resolved (whether by detection or by asking), write/update the `git_strategy:` block **in place** inside `.agents/project.yaml` (preserve the rest of the file — it holds project identity, env config, etc.; create the block if it is missing), values only: each key is documented in `.agents/project.schema.yaml`, never in the yaml (ADR-0025). NEVER write a separate file. It is the single source of truth. At minimum the first five operations need `git_strategy.strategy` + `git_strategy.branches`; the full schema (with `git_strategy.decisions`, `git_strategy.protected`, `git_strategy.policy`, `git_strategy.branch_prefixes`, `git_strategy.meta`) is populated by Strategy Setup (3.6).
 
 ```yaml
 # .agents/project.yaml — git_strategy block (only the fields that apply shown)

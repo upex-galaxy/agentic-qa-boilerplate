@@ -166,21 +166,19 @@ export function explicitHarnesses(root: string): Harness[] {
   return raw.filter(isHarness).filter((entry, index, all) => all.indexOf(entry) === index);
 }
 
-/** The block appended when the yaml has no `harnesses:` key yet. */
+/**
+ * The line appended when the yaml has no `harnesses:` key yet. Value only:
+ * `.agents/project.schema.yaml` documents the key (ADR-0025).
+ */
 function harnessesBlock(value: string): string {
-  return [
-    '# Host harnesses this project uses (ADR-0012), any of: claude, opencode, codex.',
-    '# The compatibility gates check only these. null = detect from the files present.',
-    `${HARNESSES_KEY}: ${value}`,
-    '',
-  ].join('\n');
+  return `${HARNESSES_KEY}: ${value}\n`;
 }
 
 /**
  * The yaml text with `harnesses:` set to `harnesses`, as a parser-located
  * splice (never a re-serialization: see the `.agents/` rule in
  * `agent-harnesses.md`). The value lands on the key's own line and a trailing
- * comment survives; an absent key is appended as a commented block. The
+ * comment survives; an absent key is appended as one value line. The
  * result is re-parsed, and a mismatch throws instead of returning a file that
  * means something else.
  */

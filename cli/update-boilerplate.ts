@@ -992,16 +992,6 @@ function makeKataManifestHook(sink: ReportSink): (summary: RunSummary) => Promis
 // the same drift problem and a much richer shape, and giving it this treatment
 // is a follow-up with its own wildcards, not a freebie.
 
-/** Upstream's version, for the `NEW in <release>` marker. See `markRelease`. */
-function upstreamRelease(templateDir: string): string | null {
-  try {
-    const raw = fs.readFileSync(path.join(templateDir, 'package.json'), 'utf8');
-    const version = (JSON.parse(raw) as { version?: string }).version;
-    return typeof version === 'string' && version !== '' ? version : null;
-  }
-  catch { return null; }
-}
-
 export async function backfillProjectYamlFromSchema(
   templateDir: string,
   sink: ReportSink,
@@ -1028,8 +1018,6 @@ export async function backfillProjectYamlFromSchema(
     return;
   }
   if (delta.gaps.length === 0) { return; }
-
-  const release = upstreamRelease(templateDir);
 
   // Non-interactive (`--auto`, headless, an agent run): a WHOLE missing block is
   // inserted, copied from the schema with its values (blank or default), because nothing of
@@ -1065,7 +1053,7 @@ export async function backfillProjectYamlFromSchema(
     // children come with it, and asking for each would be the per-key
     // prompting this design rejected.
     const targets = gap.wholeBlock ? [gap.block] : gap.paths;
-    const plan = planInsertions(current, schema, targets, release);
+    const plan = planInsertions(current, schema, targets);
     const result = applyInsertions(current, plan);
     if (result.error) {
       sink.warn(`No se insertó \`${gap.block}\`: ${result.error}`);
@@ -1086,7 +1074,7 @@ export async function backfillProjectYamlFromSchema(
     return;
   }
   sink.step(`Insertadas ${applied.length} clave(s) en \`${SCHEMA_SOURCE}\`: ${applied.join(', ')}.`);
-  sink.step(`Cada una lleva un comentario \`# NEW in ${release ?? '?'}\`: \`unset\` si quedó sin valor, \`upstream default\` si trae el valor por defecto de upstream. Revísalas con \`git diff ${SCHEMA_SOURCE}\`.`);
+  sink.step(`Solo valores, sin comentarios: cada clave está documentada en \`${SCHEMA_FILE}\`. Revísalas con \`git diff ${SCHEMA_SOURCE}\`.`);
 }
 
 // --- METHODOLOGY YAML BLOCK BACK-FILL (qa_assignee, subtask — afterApply hooks) ---

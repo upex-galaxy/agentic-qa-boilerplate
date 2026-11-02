@@ -107,9 +107,8 @@ describe('withHarnesses', () => {
     expect(withHarnesses('harnesses:\n  - claude\nqa: 1\n', ['opencode'])).toBe('harnesses: [opencode]\nqa: 1\n');
   });
 
-  test('appends a commented block when the key is absent', () => {
+  test('appends the key as one value line, no comment, when it is absent', () => {
     const out = withHarnesses('project:\n  project_name: X\n', ['claude']);
-    expect(out.startsWith('project:\n  project_name: X\n\n# Host harnesses')).toBe(true);
-    expect(out.endsWith('harnesses: [claude]\n')).toBe(true);
+    expect(out).toBe('project:\n  project_name: X\n\nharnesses: [claude]\n');
   });
 });

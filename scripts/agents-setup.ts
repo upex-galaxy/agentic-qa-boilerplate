@@ -281,8 +281,7 @@ FLAGS:
                        of writing the file. Combine with --non-interactive
                        for scripted previews; combine with no flags for an
                        interactive preview that does not persist.
-  --reset              Reset every field back to \`null\` and restore the
-                       original \`# TODO:\` prefix on each comment. Asks for
+  --reset              Reset every field back to \`null\`. Asks for
                        confirmation. Useful for re-onboarding.
   --reseed             Consent, for --non-interactive runs, to replace a
                        .agents/project.yaml copied from the boilerplate (GitHub
@@ -312,12 +311,13 @@ INTERACTIVE FLOW (default):
   - Asks which environments to keep / add / remove (default: local + staging).
   - For each environment, prompts for the four env-scoped vars.
   - Validates that default_env matches a real env (re-prompts if not).
-  - For unfilled fields: prompts with the # TODO: description as helper text,
+  - For unfilled fields: prompts with the field's description from
+    .agents/project.schema.yaml (the documented template) as helper text,
     shows the example next to the question (never as the default), and
     validates input. Empty input keeps the field as null (skip).
   - For filled fields: shows current value and asks keep / change / clear.
   - At the end: shows a summary, asks for confirmation, then writes the file
-    back preserving every comment, blank line and section header.
+    back in place, every untouched line byte for byte.
   - Ctrl+C aborts cleanly without writing.
 
 ENV-VAR MAPPING (--non-interactive):
@@ -355,9 +355,9 @@ BOARD STATUSES:
   only prints them. Needs .agents/jira-workflows.json (bun run jira:sync-workflows).
 
 OUTPUT:
-  .agents/project.yaml is rewritten in place. Comments are preserved
-  byte-for-byte for untouched fields; the \`# TODO:\` prefix is stripped from
-  filled fields' comments (kept on null fields).
+  .agents/project.yaml is rewritten in place, values only (ADR-0025): every
+  untouched line stays byte for byte, and no comment is added. Each key is
+  documented in .agents/project.schema.yaml.
 
 EXIT CODES:
   0  success (file written, dry-run printed, or no-op)
@@ -444,6 +444,25 @@ function coerceToString(v: unknown): string | null {
 // ============================================================================
 // EXAMPLE / DESCRIPTION EXTRACTION — pulls the inline `# TODO:` comment
 // ============================================================================
+
+/**
+ * The help text of one field. It comes from the documented template
+ * (`.agents/project.schema.yaml`, ADR-0025): the project's own yaml carries
+ * values only, so its comments are the last resort, not the source. An
+ * environment the template does not ship (`uat`) gets the generic help of the
+ * same leaf.
+ */
+function fieldHelp(rawText: string, key: string, envName?: string): { description: string | null, example: string | null } {
+  const schemaPath = join(REPO_ROOT, SCHEMA_FILE);
+  const docs = existsSync(schemaPath) ? readFileSync(schemaPath, 'utf8') : null;
+  if (docs !== null) {
+    const meta = extractCommentMeta(docs, key, envName);
+    if (meta.description !== null || meta.example !== null) { return meta; }
+  }
+  const own = extractCommentMeta(rawText, key, envName);
+  if (own.description !== null || own.example !== null || envName === undefined) { return own; }
+  return envLeafHelp(envName, key);
+}
 
 /**
  * Match the value line for a key. If `parentKey` is provided, the match is
@@ -598,7 +617,7 @@ async function promptFlatField(
   currentValue: string | null,
   knownEnvs: string[],
 ): Promise<string | null> {
-  const { description, example } = extractCommentMeta(rawText, field.key);
+  const { description, example } = fieldHelp(rawText, field.key);
   const desc = description ?? `Value for ${field.key}`;
 
   if (field.validator === 'env_select') {
@@ -665,7 +684,7 @@ async function promptEnvScopedField(
   rawText: string,
   currentValue: string | null,
 ): Promise<string | null> {
-  const { description, example } = extractCommentMeta(rawText, field.key, envName);
+  const { description, example } = fieldHelp(rawText, field.key, envName);
   const desc = description ?? `${field.label} for ${envName}`;
 
   while (true) {
@@ -957,10 +976,8 @@ function renderUpdatedYaml(
         const path = `environments.${envName}.${sf.key}`;
         const val = updates.get(path) ?? null;
         const scalar = val === null ? 'null' : formatYamlValue(val);
-        // Comment shape mirrors the existing local/staging blocks: filled
-        // values use `# <description>`, null values use `# TODO: <description>`.
-        const comment = renderCommentForEnvLeaf(envName, sf, val !== null);
-        inserts.push(`    ${sf.key}: ${scalar}${comment ? `              ${comment}` : ''}`);
+        // Values only (ADR-0025): the template documents the leaf.
+        inserts.push(`    ${sf.key}: ${scalar}`);
       }
     }
     outLines.splice(environmentsEndIndex, 0, ...inserts);
@@ -974,16 +991,16 @@ function collapseBlankRuns(text: string): string {
   return text.replace(/\n{3,}/g, '\n\n');
 }
 
-function renderCommentForEnvLeaf(envName: string, sf: EnvScopedFieldSpec, filled: boolean): string {
-  const descriptions: Record<string, string> = {
-    web_url: `Frontend URL for ${envName} env (e.g. https://example.com)`,
-    api_url: `API base URL for ${envName} env (e.g. https://api.example.com)`,
-    db_mcp: `MCP server name for ${envName} DB (e.g. myproject-${envName}-db)`,
-    api_mcp: `MCP server name for ${envName} API (e.g. myproject-${envName}-api)`,
+/** Generic help for an env-scoped leaf of an environment the template does not ship. */
+function envLeafHelp(envName: string, key: string): { description: string | null, example: string | null } {
+  const help: Record<string, [string, string]> = {
+    web_url: [`Frontend URL for ${envName} env`, 'https://example.com'],
+    api_url: [`API base URL for ${envName} env`, 'https://api.example.com'],
+    db_mcp: [`MCP server name for ${envName} DB`, `myproject-${envName}-db`],
+    api_mcp: [`MCP server name for ${envName} API`, `myproject-${envName}-api`],
   };
-  const desc = descriptions[sf.key];
-  if (!desc) { return ''; }
-  return filled ? `# ${desc}` : `# TODO: ${desc}`;
+  const entry = help[key];
+  return entry ? { description: entry[0], example: entry[1] } : { description: null, example: null };
 }
 
 /**
@@ -1337,7 +1354,7 @@ function runNonInteractive(loaded: LoadedConfig, dryRun: boolean): void {
 
 async function runReset(loaded: LoadedConfig): Promise<void> {
   log.header('agents-setup — reset mode');
-  log.warn('This will set every field in .agents/project.yaml back to null and restore # TODO: comments.');
+  log.warn('This will set every field in .agents/project.yaml back to null.');
 
   const proceed = await confirm({
     message: 'Reset all values to null?',

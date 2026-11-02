@@ -16,6 +16,27 @@ below names which one it applies to:
 
 ## Unreleased — Boilerplate
 
+### Changed (`.agents/project.yaml` is values only; the schema is the documented template)
+- **`.agents/project.yaml` carries values only** (ADR-0025). Claude Code imports it into every session
+  start, and most of its 29 329 B were comments; the maintainer copy is now one sentinel line plus
+  values. Every explanatory comment lives in `.agents/project.schema.yaml`, written there by hand.
+- **`bun run agents:schema` syncs values, not text.** It splices the maintainer's methodology values
+  into the schema's commented skeleton (identity blanked, the git-strategy safety values substituted)
+  and leaves every comment in place; `agents:schema:check` requires a fixpoint and refuses a key on one
+  side only, by path.
+- **Seeding and `bun sync` write values only.** The installer, `agents:setup --reseed` and the
+  scaffolder seed a comment-free yaml with a three-line header; `bun sync` inserts a missing key without
+  its comment block, and the `# NEW in <release>` marker is gone. `agents:setup` reads each field's help
+  from the schema.
+- **Orca workers default to `medium` effort** (`orchestration.default_effort`); the Opus override for
+  high-risk topics stays at `high`. `model_overrides` is written as a block sequence, which clears the
+  `eslint` YAML errors that held `repo:check` red.
+
+### Changed — Scaffolder (prepared, not published)
+- **`seedProjectYamlFromSchema` writes a values-only `.agents/project.yaml`**: the schema banner is
+  swapped for the new three-line consumer header and every comment is stripped by `stripYamlComments`,
+  the package's dependency-free twin of the boilerplate's (a boilerplate test keeps the two identical).
+
 ### Fixed (the prompt hook ignores what the harness injected)
 - **A hand-back wrapped in system reminders no longer routes.** The prompt hook treats a prompt
   made only of harness blocks (`<system-reminder>`, `<tools-used-before-summary>`, the

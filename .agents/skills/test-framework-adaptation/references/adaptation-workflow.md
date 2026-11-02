@@ -507,7 +507,7 @@ Run every detection signal and print a per-subsystem **GENERIC / ADAPTED** table
 
 | Subsystem | ADAPTED signal (else GENERIC) |
 |-----------|-------------------------------|
-| project.yaml | `bun run vars:check` exits 0 **AND** `grep -c 'null # TODO' .agents/project.yaml` == 0 (the `null`s with no TODO are legitimate: `qa.qa_epics.*.key` is cached at runtime, `git_strategy.branches` stays `null` under a strategy that has no such branch; env blocks the project does not run are deleted in §3.4, not left `null`) |
+| project.yaml | `bun run vars:check` exits 0 **AND** every leaf `.agents/project.schema.yaml` marks `null # TODO:` holds a value in `.agents/project.yaml` (the yaml is values only, ADR-0025, so the TODO markers are read in the schema; the placeholders with no TODO are legitimate: `qa.qa_epics.*.key` is cached at runtime, `git_strategy.branches` stays `null` under a strategy that has no such branch; env blocks the project does not run are deleted in §3.4, not left `null`) |
 | ATC keys | `grep -rnE "^\s*@atc\('(PROJ\|UPEX)-" tests/components/` returns nothing (decorator lines only — excludes the JSDoc example in `AuthApi.ts` + `decorators.ts` JSDoc) |
 | Example components | none of `ExampleApi.ts` / `ExamplePage.ts` / `ExampleSteps.ts` / `api/schemas/example.types.ts` exist |
 | Example specs | `tests/e2e/module-example/` + `tests/integration/module-example/` do not exist; no `testIgnore` `module-example` line in `playwright.config.ts` |

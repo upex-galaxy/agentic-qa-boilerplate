@@ -137,7 +137,7 @@ git push origin <ahead-ref>:refs/heads/<behind-branch>
 
 Once branches are materialized and decisions captured, persist in this order:
 
-1. **Write the `git_strategy:` block in `.agents/project.yaml`** (in place — create the block if absent; overwrite the relevant fields if it exists; preserve the rest of the file, which holds project identity + env config). NEVER write a separate file. Populate the fields that apply to the resolved strategy (all nested under `git_strategy`):
+1. **Write the `git_strategy:` block in `.agents/project.yaml`** (in place — create the block if absent; overwrite the relevant fields if it exists; preserve the rest of the file, which holds project identity + env config). NEVER write a separate file. Values only, no comments: the file is loaded into every session and each key is documented in `.agents/project.schema.yaml` (ADR-0025). Populate the fields that apply to the resolved strategy (all nested under `git_strategy`):
    - `strategy` — the resolved slug.
    - `branches` — `production` (release/default branch), `integration` (long-lived integration branch name or `null`), `ephemeral_pattern` (strategy-specific on-demand trunk pattern or `null`).
    - `protected` — branches whose direct pushes are gated by `policy.direct_push_to_protected` (not always a confirm: `allowed` is standing authorization).

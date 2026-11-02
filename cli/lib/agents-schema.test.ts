@@ -3,11 +3,14 @@
  *
  * Two kinds of test here, and the split matters. Most run against small YAML
  * literals, because a fixture that fits on screen is a test whose failure can
- * be read. A handful run against THIS REPO'S REAL `.agents/project.yaml`,
- * because the whole module exists to survive that specific file: its folded
- * scalar, its flow sequences, its inline comments after values, and its
- * comment blocks between keys. A synthetic fixture would pass while the real
- * file corrupted.
+ * be read. A handful run against THIS REPO'S REAL `.agents/project.yaml`
+ * (values only) and `.agents/project.schema.yaml` (the documented template,
+ * ADR-0025), because the whole module exists to survive those files: their
+ * folded scalars, flow sequences, inline comments after values, and comment
+ * blocks between keys. A synthetic fixture would pass while the real file
+ * corrupted. Every edit of a real file goes through `edit`, which throws when
+ * it matched nothing: a fixture edit that silently no-ops is a test that passes
+ * vacuously.
  *
  * Nothing here writes to the repo. The real file is read and spliced in
  * memory only.
@@ -32,17 +35,18 @@ import {
   isIdentityPath,
   isMaintainerCopy,
   isSchemaOwner,
-  isUnsetValue,
   locateLeaf,
   originIsUpstream,
   planInsertions,
   projectDelta,
   ruleFor,
+  sameValues,
   SCHEMA_FILE,
   SCHEMA_SOURCE,
   schemaExemptions,
   schemaKeyPaths,
   seedFromSchema,
+  stripYamlComments,
   walkGovernedFile,
   yamlLeafWalk,
 } from './agents-schema.ts';
@@ -51,14 +55,21 @@ const REPO_ROOT = join(import.meta.dir, '..', '..');
 const realSource = (): string => readFileSync(join(REPO_ROOT, SCHEMA_SOURCE), 'utf8');
 const committedSchema = (): string => readFileSync(join(REPO_ROOT, SCHEMA_FILE), 'utf8');
 
+/** `text.replace(from, to)`, refusing an edit that matched nothing. */
+function edit(text: string, from: string | RegExp, to: string): string {
+  const out = text.replace(from, to);
+  if (out === text) { throw new Error(`fixture edit matched nothing: ${String(from)}`); }
+  return out;
+}
+
 /**
  * The boilerplate's own checkout (the package name AND the maintainer sentinel,
  * the same test `contractsEnforced` makes). A scaffolded project runs this file
  * too: its yaml is its own, its schema is synced and `packages/` is pruned, so
  * the assertions about the maintainers' copy are skipped there, never failed.
- * That includes every case built on `generateSchema(realSource())`: there the
- * real source is the project's filled yaml, which generation refuses (its own
- * dates and hosts are identity leaks), so the fixture itself is empty.
+ * That includes every case built on `generateSchema(realSource(), ...)`: there
+ * the real source is the project's filled yaml, which generation refuses (its
+ * own dates and hosts are identity leaks), so the fixture itself is empty.
  */
 const MAINTAINER_CHECKOUT = isSchemaOwner(readFileSync(join(REPO_ROOT, 'package.json'), 'utf8')) && isMaintainerCopy(realSource());
 
@@ -294,22 +305,22 @@ describe('generateSchema, against the real .agents/project.yaml', () => {
   const source = realSource();
 
   test.skipIf(!MAINTAINER_CHECKOUT)('generates without refusing', () => {
-    expect(generateSchema(source).error).toBeNull();
+    expect(generateSchema(source, committedSchema()).error).toBeNull();
   });
 
   test.skipIf(!MAINTAINER_CHECKOUT)('every key path survives the splices', () => {
-    const result = generateSchema(source);
+    const result = generateSchema(source, committedSchema());
     const before = yamlLeafWalk(source)!;
     const after = yamlLeafWalk(result.schema)!;
     expect([...after.entries.keys()].sort()).toEqual([...before.entries.keys()].sort());
   });
 
   test('the generated schema carries no identity leak', () => {
-    expect(findIdentityLeaks(generateSchema(source).schema)).toEqual([]);
+    expect(findIdentityLeaks(generateSchema(source, committedSchema()).schema)).toEqual([]);
   });
 
   test('every table entry actually fired: a stale rule is a silent no-op', () => {
-    const result = generateSchema(source);
+    const result = generateSchema(source, committedSchema());
     expect(result.generic.sort()).toEqual(Object.keys(GENERIC_RULES).sort());
   });
 
@@ -317,7 +328,7 @@ describe('generateSchema, against the real .agents/project.yaml', () => {
   // standing push authorization, under a `strategy_source: inherited` that
   // says nobody chose anything, contradicts Critical Rule #5.
   test.skipIf(!MAINTAINER_CHECKOUT)('ships confirm, not this repo\'s allowed, for direct_push_to_protected', () => {
-    const walk = yamlLeafWalk(generateSchema(source).schema)!;
+    const walk = yamlLeafWalk(generateSchema(source, committedSchema()).schema)!;
     expect(walk.entries.get('git_strategy.policy.direct_push_to_protected')).toBe('confirm');
     expect(walk.entries.get('git_strategy.policy.admin_bypass')).toBe(false);
     expect(walk.entries.get('git_strategy.meta.strategy_source')).toBe('inherited');
@@ -325,7 +336,7 @@ describe('generateSchema, against the real .agents/project.yaml', () => {
   });
 
   test.skipIf(!MAINTAINER_CHECKOUT)('methodology defaults travel unchanged', () => {
-    const walk = yamlLeafWalk(generateSchema(source).schema)!;
+    const walk = yamlLeafWalk(generateSchema(source, committedSchema()).schema)!;
     expect(walk.entries.get('testing.tc_creation_stage')).toBe('auto');
     expect(walk.entries.get('qa.formal_blocked_gate')).toBe(true);
     expect(walk.entries.get('orchestration.max_workers')).toBe(4);
@@ -333,20 +344,26 @@ describe('generateSchema, against the real .agents/project.yaml', () => {
   });
 
   test.skipIf(!MAINTAINER_CHECKOUT)('a comment far from any rule is preserved byte-for-byte', () => {
-    const { schema } = generateSchema(source);
+    const { schema } = generateSchema(source, committedSchema());
     expect(schema).toContain('# Read as {{TC_CREATION_STAGE}}; unset or unrecognized is treated as `auto`.');
   });
 
   // Invariant 1: `parseDocument(...).toString()` rewrites `[main]` as
   // `[ main ]` and rewraps the folded scalar. A splice does neither.
   test.skipIf(!MAINTAINER_CHECKOUT)('a flow sequence is not reformatted', () => {
-    expect(generateSchema(source).schema).toContain('precedence: [feat, fix, refactor, test, docs, chore]');
+    expect(generateSchema(source, committedSchema()).schema).toContain('precedence: [feat, fix, refactor, test, docs, chore]');
   });
 
-  test.skipIf(!MAINTAINER_CHECKOUT)('the generated banner replaces the source\'s own header', () => {
-    const { schema } = generateSchema(source);
-    expect(schema.startsWith('# GENERATED by `bun run agents:schema`')).toBe(true);
-    expect(schema).not.toContain('Edit values manually, or run `bun run agents:setup`');
+  test.skipIf(!MAINTAINER_CHECKOUT)('the schema keeps its own documented header; nothing of the source\'s reaches it', () => {
+    const { schema } = generateSchema(source, committedSchema());
+    expect(schema.startsWith('# THE DOCUMENTED TEMPLATE for .agents/project.yaml.')).toBe(true);
+    expect(schema).not.toContain('MAINTAINER COPY');
+  });
+
+  test.skipIf(!MAINTAINER_CHECKOUT)('the maintainer copy is values only: one sentinel line, no other comment', () => {
+    const commented = realSource().split('\n').filter(l => /(?:^|\s)#/.test(l));
+    expect(commented).toHaveLength(1);
+    expect(commented[0].startsWith('# MAINTAINER COPY:')).toBe(true);
   });
 });
 
@@ -373,28 +390,48 @@ describe('identity is blanked, whatever this repo filled in', () => {
   });
 
   test.skipIf(!MAINTAINER_CHECKOUT)('the real source generates the committed schema byte for byte', () => {
-    expect(generateSchema(realSource()).schema).toBe(committedSchema());
+    expect(generateSchema(realSource(), committedSchema()).schema).toBe(committedSchema());
   });
 
   test.skipIf(!MAINTAINER_CHECKOUT)('filling every identity leaf changes nothing in the schema, byte for byte', () => {
     const { text, values } = fillEveryIdentityLeaf(realSource());
-    const result = generateSchema(text);
+    const result = generateSchema(text, committedSchema());
     expect(result.error).toBeNull();
     expect(result.schema).toBe(committedSchema());
     for (const value of values) { expect(result.schema).not.toContain(value); }
   });
 
-  test('the TODO prefix is restored, and a comment that never had one is left alone', () => {
-    const src = 'project:\n  project_name: Acme # Project name (e.g. MyProject)\nqa:\n  qa_epics:\n    defect_epic:\n      key: ACME-12 # discovered/created at runtime, then cached here (e.g. PROJ-123)\n';
-    const { schema, error } = generateSchema(src);
+  // ADR-0025: values flow down into the documented skeleton; comments never move.
+  test('values are synced into the skeleton, every comment and header line untouched', () => {
+    const src = 'project:\n  project_name: Acme\nqa:\n  gate: true\n  list: [a, b]\n';
+    const skeleton = '# the template header\n\nproject:\n  # documented above\n  project_name: null # TODO: Project name (e.g. MyProject)\nqa:\n  gate: false # the gate\n  list:\n    - a\n';
+    const { schema, error, changed } = generateSchema(src, skeleton);
     expect(error).toBeNull();
-    expect(schema).toContain('  project_name: null # TODO: Project name (e.g. MyProject)\n');
-    expect(schema).toContain('      key: null # discovered/created at runtime, then cached here (e.g. PROJ-123)\n');
+    expect(changed.sort()).toEqual(['qa.gate', 'qa.list']);
+    expect(schema).toBe('# the template header\n\nproject:\n  # documented above\n  project_name: null # TODO: Project name (e.g. MyProject)\nqa:\n  gate: true # the gate\n  list: [a, b]\n');
+  });
+
+  test('an identity value typed into the template is blanked back to null', () => {
+    const { schema, changed } = generateSchema('project:\n  project_name: Acme\n', 'project:\n  project_name: Acme # TODO: name\n');
+    expect(changed).toEqual(['project.project_name']);
+    expect(schema).toBe('project:\n  project_name: null # TODO: name\n');
+  });
+
+  test('key parity is literal and both ways: an undocumented key and an unseeded one each refuse', () => {
+    const undocumented = generateSchema('a: 1\nb: 2\n', 'a: 1 # doc\n');
+    expect(undocumented.error).toContain('does not document');
+    expect(undocumented.undocumented).toEqual(['b']);
+    const unseeded = generateSchema('a: 1\n', 'a: 1 # doc\nb: 2 # doc\n');
+    expect(unseeded.error).toContain('lacks');
+    expect(unseeded.unseeded).toEqual(['b']);
+    // Environments too: the template's environments mirror the maintainer's.
+    const env = generateSchema('environments:\n  local:\n    web_url: null\n', 'environments:\n  qa:\n    web_url: null\n');
+    expect(env.undocumented).toContain('environments.local.web_url');
   });
 
   test.skipIf(!MAINTAINER_CHECKOUT)('a real Atlassian host no longer refuses generation: it is blanked first', () => {
-    const src = realSource().replace(/atlassian_url: [^#\n]*#/, 'atlassian_url: https://acme-corp.atlassian.net #');
-    const result = generateSchema(src);
+    const src = edit(realSource(), /atlassian_url: [^\n]*/, 'atlassian_url: https://acme-corp.atlassian.net');
+    const result = generateSchema(src, committedSchema());
     expect(result.error).toBeNull();
     expect(result.schema).not.toContain('acme-corp');
   });
@@ -406,9 +443,10 @@ describe('the value-leak net under IDENTITY_PATHS', () => {
     expect(distinctiveValues(src).sort()).toEqual(['../acme-api', 'ACME-7', 'acme.io', 'https://staging.acme.io'].sort());
   });
 
-  test('a filled key in a MIXED block that nobody declared still refuses generation', () => {
-    const src = realSource().replace('  tc_creation_stage: auto', '  tc_creation_stage: auto\n  sut_url: https://staging.acme.io # the SUT');
-    const result = generateSchema(src);
+  test.skipIf(!MAINTAINER_CHECKOUT)('a filled key in a MIXED block that nobody declared still refuses generation', () => {
+    const src = edit(realSource(), '  tc_creation_stage: auto', '  tc_creation_stage: auto\n  sut_url: https://staging.acme.io');
+    const skeleton = edit(committedSchema(), '  tc_creation_stage: auto', '  tc_creation_stage: auto\n  sut_url: null # the SUT');
+    const result = generateSchema(src, skeleton);
     expect(result.error).toContain('identity leak');
     expect(result.leaks.some(l => l.pattern.includes('https://staging.acme.io'))).toBe(true);
   });
@@ -429,9 +467,16 @@ describe('the maintainer copy and the template route', () => {
     expect(isMaintainerCopy('project: {}\n# MAINTAINER COPY: x\n')).toBe(false);
   });
 
-  test('a sentinel moved below the header is a leak the gate refuses', () => {
-    const moved = realSource().replace('\nbackend:', '\n# MAINTAINER COPY: moved\nbackend:');
-    expect(generateSchema(moved).error).toContain('identity leak');
+  test.skipIf(!MAINTAINER_CHECKOUT)('a schema carrying the sentinel is a leak the gate refuses', () => {
+    const moved = edit(committedSchema(), '\nbackend:', '\n# MAINTAINER COPY: moved\nbackend:');
+    expect(generateSchema(realSource(), moved).error).toContain('identity leak');
+  });
+
+  // A comment is the schema's to carry; an identity fact pasted into one is
+  // still caught, which is the leak gate's whole reason to scan comments.
+  test.skipIf(!MAINTAINER_CHECKOUT)('a real date pasted into a schema COMMENT refuses', () => {
+    const dated = edit(committedSchema(), '# release / default branch', '# release / default branch, chosen 2026-08-21');
+    expect(generateSchema(realSource(), dated).error).toContain('identity leak');
   });
 
   test('origin decides between the boilerplate (or a fork) and a repo made from it', () => {
@@ -463,49 +508,81 @@ describe('the maintainer copy and the template route', () => {
     expect(reseeded.startsWith(CONSUMER_YAML_HEADER)).toBe(true);
   });
 
+  test('a seeded yaml is values only: the header is its one comment block', () => {
+    const reseeded = seedFromSchema(committedSchema())!;
+    const body = reseeded.slice(CONSUMER_YAML_HEADER.length);
+    expect(body.split('\n').filter(l => /(?:^|\s)#/.test(l))).toEqual([]);
+    expect(sameValues(committedSchema(), reseeded)).toBe(true);
+  });
+
   test.skipIf(!MAINTAINER_CHECKOUT)('the consumer header matches its twin in the scaffolder', () => {
     const prepare = readFileSync(join(REPO_ROOT, 'packages', 'create-agentic-qa', 'src', 'prepare.ts'), 'utf8');
     const twin = /const CONSUMER_YAML_HEADER = `([\s\S]*?)`;/.exec(prepare)![1].replace(/\\`/g, '`');
     expect(twin).toBe(CONSUMER_YAML_HEADER);
   });
+
+  // The scaffolder package has no `yaml` dependency, so it carries its own
+  // copy of the stripper. Dynamic import: `packages/` is pruned downstream.
+  test.skipIf(!MAINTAINER_CHECKOUT)('the comment stripper matches its twin in the scaffolder', async () => {
+    const twin = await import(join(REPO_ROOT, 'packages', 'create-agentic-qa', 'src', 'prepare.ts')) as { stripYamlComments: (text: string) => string };
+    for (const text of [committedSchema(), realSource(), SAMPLE, 'a: \'x # y\' # z\nb: >\n  one\n\n  two\n# tail\n']) {
+      expect(twin.stripYamlComments(text)).toBe(stripYamlComments(text));
+    }
+  });
 });
 
 describe.skipIf(!MAINTAINER_CHECKOUT)('checkSchema', () => {
   const source = realSource();
-  const schema = generateSchema(source).schema;
+  const schema = committedSchema();
 
-  test('the committed schema matches the source', () => {
+  test('the committed schema is a fixpoint of the source', () => {
     expect(checkSchema(source, schema).ok).toBe(true);
   });
 
-  test('a key added upstream and not regenerated fires', () => {
-    const grown = source.replace('  max_workers: 4 #', '  default_timeout: null # TODO: seconds\n  max_workers: 4 #');
+  test('a key added to project.yaml and not documented in the schema fires', () => {
+    const grown = edit(source, '  max_workers: 4\n', '  default_timeout: null\n  max_workers: 4\n');
     const result = checkSchema(grown, schema);
     expect(result.ok).toBe(false);
-    expect(result.missing).toContain('orchestration.default_timeout');
+    expect(result.undocumented).toContain('orchestration.default_timeout');
   });
 
-  // Paths-plus-marking, never bytes: a gate that fires on a typo fix is a gate
-  // people route around.
+  test('a key documented in the schema and missing from project.yaml fires', () => {
+    const grown = edit(schema, '  max_workers: 4 #', '  default_timeout: null # TODO: seconds\n  max_workers: 4 #');
+    const result = checkSchema(source, grown);
+    expect(result.ok).toBe(false);
+    expect(result.unseeded).toContain('orchestration.default_timeout');
+  });
+
+  // The comments are the schema's own: a gate that fired on a typo fix would be
+  // a gate people route around.
   test('rewording a comment does not fire', () => {
-    const reworded = schema.replace('# release / default branch', '# the release branch');
+    const reworded = edit(schema, '# release / default branch', '# the release branch');
     expect(checkSchema(source, reworded).ok).toBe(true);
   });
 
   test('turning a placeholder into a default DOES fire', () => {
-    const filled = schema.replace('  db_type: null #', '  db_type: PostgreSQL #');
+    const filled = edit(schema, '  db_type: null #', '  db_type: PostgreSQL #');
     const result = checkSchema(source, filled);
     expect(result.ok).toBe(false);
-    expect(result.remarked).toContain('database.db_type');
+    expect(result.stale).toContain('database.db_type');
+  });
+
+  test('a methodology default changed in project.yaml fires until synced, and the sync keeps the comment', () => {
+    const changed = edit(source, /default_effort: \w+/, 'default_effort: low');
+    const result = checkSchema(changed, schema);
+    expect(result.stale).toEqual(['orchestration.default_effort']);
+    const synced = generateSchema(changed, schema).schema;
+    expect(synced).toMatch(/\n {2}default_effort: low # harness effort level/);
+    expect(checkSchema(changed, synced).ok).toBe(true);
   });
 });
 
 describe('projectDelta', () => {
   const source = realSource();
-  const schema = generateSchema(source).schema;
+  const schema = committedSchema();
 
   test.skipIf(!MAINTAINER_CHECKOUT)('a project scaffolded before orchestration: existed sees one block', () => {
-    const old = source.replace(/\norchestration:\n(?: {2}.*\n)+/, '\n');
+    const old = edit(source, /\norchestration:\n(?: {2}.*\n)+/, '\n');
     const delta = projectDelta(old, schema);
     expect(delta.gaps).toHaveLength(1);
     expect(delta.gaps[0].block).toBe('orchestration');
@@ -524,18 +601,18 @@ describe('projectDelta', () => {
   // The headline of the whole change: this path sits at depth 3, so the
   // 2-level walk could not see it at all.
   test.skipIf(!MAINTAINER_CHECKOUT)('a missing DEPTH-3 leaf is visible', () => {
-    const stripped = source.replace(/ {4}direct_push_to_protected: \w+ #/, '    #x: y #');
+    const stripped = edit(source, / {4}direct_push_to_protected: \w+\n/, '');
     const paths = projectDelta(stripped, schema).gaps.flatMap(g => g.paths);
     expect(paths).toContain('git_strategy.policy.direct_push_to_protected');
   });
 
   test('a key the PROJECT has and upstream does not is silent', () => {
-    const extended = source.replace('  max_workers: 4 #', '  their_own_key: 1 # project extension\n  max_workers: 4 #');
+    const extended = edit(source, '  max_workers: 4\n', '  their_own_key: 1\n  max_workers: 4\n');
     expect(projectDelta(extended, schema).gaps).toEqual([]);
   });
 
   test('values are never compared: only key paths', () => {
-    const filled = source.replace('  project_key: null #', '  project_key: ACME #');
+    const filled = edit(source, / {2}project_key: [^\n]*/, '  project_key: ACME');
     expect(projectDelta(filled, schema).gaps).toEqual([]);
   });
 
@@ -548,8 +625,11 @@ describe('projectDelta', () => {
 
 describe('updater.schema_exempt', () => {
   const source = realSource();
-  const schema = generateSchema(source).schema;
+  const schema = committedSchema();
   const withoutBlock = source.replace(/\norchestration:\n(?: {2}.*\n)+/, '\n');
+  test.skipIf(!MAINTAINER_CHECKOUT)('the fixture really dropped the block', () => {
+    expect(withoutBlock).not.toBe(source);
+  });
 
   test.skipIf(!MAINTAINER_CHECKOUT)('reads the declared list', () => {
     const text = withoutBlock.replace('  protected_paths: []', '  protected_paths: []\n  schema_exempt: [orchestration]');
@@ -577,13 +657,13 @@ describe('updater.schema_exempt', () => {
 
 describe('insertion', () => {
   const source = realSource();
-  const schema = generateSchema(source).schema;
+  const schema = committedSchema();
   const stripBlock = (text: string, block: string): string =>
-    text.replace(new RegExp(`\\n${block}:\\n(?:  .*\\n)+`), '\n');
+    edit(text, new RegExp(`\\n${block}:\\n(?:  .*\\n)+`), '\n');
 
   test.skipIf(!MAINTAINER_CHECKOUT)('a whole missing block returns to its schema position, not to EOF', () => {
     const old = stripBlock(source, 'orchestration');
-    const plan = planInsertions(old, schema, ['orchestration'], '8.5');
+    const plan = planInsertions(old, schema, ['orchestration']);
     const { text, error } = applyInsertions(old, plan);
     expect(error).toBeNull();
     const top = [...yamlLeafWalk(text)!.entries.keys()].filter(k => !k.includes('.'));
@@ -596,100 +676,35 @@ describe('insertion', () => {
   test.skipIf(!MAINTAINER_CHECKOUT)('re-inserting closes the gap the diff reported', () => {
     const old = stripBlock(source, 'orchestration');
     expect(projectDelta(old, schema).gaps).toHaveLength(1);
-    const { text } = applyInsertions(old, planInsertions(old, schema, ['orchestration'], '8.5'));
+    const { text } = applyInsertions(old, planInsertions(old, schema, ['orchestration']));
     expect(projectDelta(text, schema).gaps).toEqual([]);
   });
 
-  test.skipIf(!MAINTAINER_CHECKOUT)('the block arrives with the comments that explain it', () => {
+  // ADR-0025: the schema documents the block; the project's file is values only.
+  test.skipIf(!MAINTAINER_CHECKOUT)('the block arrives as values, without one of its comments', () => {
     const old = stripBlock(source, 'orchestration');
-    const { text } = applyInsertions(old, planInsertions(old, schema, ['orchestration'], '8.5'));
-    expect(text).toContain('# Defaults for multi-session orchestration');
-    expect(text).toContain('max_workers: 4 # concurrent workers per round');
+    const { text } = applyInsertions(old, planInsertions(old, schema, ['orchestration']));
+    expect(text).toContain('\n  max_workers: 4\n');
+    expect(text.split('\n').filter(l => /(?:^|\s)#/.test(l) && !l.startsWith('# MAINTAINER COPY:'))).toEqual([]);
   });
 
-  test.skipIf(!MAINTAINER_CHECKOUT)('the release marker names the release and sits above the block', () => {
-    const old = stripBlock(source, 'orchestration');
-    const { text } = applyInsertions(old, planInsertions(old, schema, ['orchestration'], '8.5'));
-    const lines = text.split('\n');
-    const marker = lines.findIndex(l => l.includes('# NEW in 8.5'));
-    expect(marker).toBeGreaterThan(-1);
-    expect(lines.slice(marker).findIndex(l => l.startsWith('orchestration:'))).toBeGreaterThan(0);
-  });
-
-  test('no release means no marker, not the string "null"', () => {
-    const old = stripBlock(source, 'orchestration');
-    const { text } = applyInsertions(old, planInsertions(old, schema, ['orchestration'], null));
-    // Relative to the input: a project's yaml may already carry a marker from an
-    // earlier insert (`bun sync --auto` adds one with each block).
-    expect(text.split('# NEW in').length).toBe(old.split('# NEW in').length);
-    expect(text).not.toContain('# NEW in null');
-  });
-
-  // The marker used to say `unset` for every key, also for one that arrives
-  // with a real upstream default (a model id, a map of modes).
-  describe('the marker says unset only for an unset value', () => {
-    const miniSchema = [
-      'kept:',
-      '  a: 1',
-      'blank:',
-      '  key: null # TODO: e.g. PROJ',
-      '  name: \'\' # e.g. Acme',
-      '  list: []',
-      'defaulted:',
-      '  model: claude-opus-5-5',
-      '  modes:',
-      '    worker: bypass',
-      '  empty: null',
-      '',
-    ].join('\n');
-    const miniProject = 'kept:\n  a: 1\n';
-    const markerFor = (target: string): string | undefined => {
-      const { text, error } = applyInsertions(miniProject, planInsertions(miniProject, miniSchema, [target], '9.9.9'));
-      expect(error).toBeNull();
-      return text.split('\n').find(l => l.includes('# NEW in 9.9.9'));
-    };
-
-    test('a block of null, blank and empty leaves is marked unset', () => {
-      const marker = markerFor('blank');
-      expect(marker).toContain(', unset.');
-      expect(marker).not.toContain('upstream default');
-    });
-
-    test('a block carrying a real default is marked upstream default', () => {
-      const marker = markerFor('defaulted');
-      expect(marker).toContain(', upstream default.');
-      expect(marker).not.toContain('unset');
-    });
-
-    test('a single leaf follows its own value', () => {
-      const project = `${miniProject}defaulted:\n  modes:\n    worker: bypass\n`;
-      const mark = (target: string): string | undefined => applyInsertions(project, planInsertions(project, miniSchema, [target], '9.9.9'))
-        .text
-        .split('\n')
-        .find(l => l.includes('# NEW in 9.9.9'));
-      expect(mark('defaulted.model')).toContain(', upstream default.');
-      expect(mark('defaulted.empty')).toContain(', unset.');
-    });
-
-    test('isUnsetValue reads null, blank, empty and all-unset blocks as unset', () => {
-      for (const value of [null, undefined, '', '  ', [], {}, { a: null, b: { c: '' } }]) {
-        expect(isUnsetValue(value)).toBe(true);
-      }
-      for (const value of ['sonnet', 0, false, ['x'], { a: null, b: 'auto' }]) {
-        expect(isUnsetValue(value)).toBe(false);
-      }
-    });
+  test('a single leaf arrives without its leading or trailing comment', () => {
+    const miniSchema = 'kept:\n  a: 1 # doc a\n  # documents b\n  b: [x] # doc b\n';
+    const project = 'kept:\n  a: 1\nother: 2\n';
+    const { text, error } = applyInsertions(project, planInsertions(project, miniSchema, ['kept.b']));
+    expect(error).toBeNull();
+    expect(text).toBe('kept:\n  a: 1\n  b: [x]\nother: 2\n');
   });
 
   // The case the parent-offset bug produced: a first child has no preceding
   // sibling, so it anchors to the top of the parent's body — and a block's
   // value node starts AFTER the indent, so a naive splice lands mid-indent.
   test.skipIf(!MAINTAINER_CHECKOUT)('a first-child leaf lands at the right indent inside its parent', () => {
-    const old = source.replace(/ {4}direct_push_to_protected: \w+ #[^\n]*\n/, '');
-    const plan = planInsertions(old, schema, ['git_strategy.policy.direct_push_to_protected'], '8.5');
+    const old = edit(source, / {4}direct_push_to_protected: \w+\n/, '');
+    const plan = planInsertions(old, schema, ['git_strategy.policy.direct_push_to_protected']);
     const { text, error } = applyInsertions(old, plan);
     expect(error).toBeNull();
-    expect(text).toContain('\n    direct_push_to_protected: confirm #');
+    expect(text).toContain('\n    direct_push_to_protected: confirm\n');
     expect(yamlLeafWalk(text)!.entries.get('git_strategy.policy.direct_push_to_protected')).toBe('confirm');
   });
 
@@ -697,10 +712,10 @@ describe('insertion', () => {
   // `testing.browser` is missing too, so there was nothing to anchor to and
   // the key was skipped forever. The plan lifts it to the missing sub-block.
   test.skipIf(!MAINTAINER_CHECKOUT)('a new sub-block inside an existing block is inserted whole, under its parent', () => {
-    const old = source.replace(/ {2}# Agentic browser sessions[\s\S]*? {4}pair_mode: null\n/, '');
+    const old = edit(source, / {2}browser:\n {4}pair_mode: null\n/, '');
     const gap = projectDelta(old, schema).gaps.find(g => g.block === 'testing');
     expect(gap?.wholeBlock).toBe(false);
-    const plan = planInsertions(old, schema, gap!.paths, null);
+    const plan = planInsertions(old, schema, gap!.paths);
     expect(plan.skipped).toEqual([]);
     expect(plan.inserted).toEqual(['testing.browser']);
     const { text, error } = applyInsertions(old, plan);
@@ -711,17 +726,17 @@ describe('insertion', () => {
   });
 
   test.skipIf(!MAINTAINER_CHECKOUT)('a missing leaf takes the SCHEMA\'s value, not the maintainer\'s', () => {
-    const old = source.replace(/ {4}admin_bypass: true #[^\n]*\n/, '');
-    const { text } = applyInsertions(old, planInsertions(old, schema, ['git_strategy.policy.admin_bypass'], null));
+    const old = edit(source, / {4}admin_bypass: true\n/, '');
+    const { text } = applyInsertions(old, planInsertions(old, schema, ['git_strategy.policy.admin_bypass']));
     expect(yamlLeafWalk(text)!.entries.get('git_strategy.policy.admin_bypass')).toBe(false);
   });
 
   // INSERT-ONLY is the promise that makes writing to a project's identity file
   // acceptable at all. Every existing leaf keeps its value, byte for byte.
   test.skipIf(!MAINTAINER_CHECKOUT)('not one existing value changes', () => {
-    const old = stripBlock(source.replace(/ {2}project_key: [^#\n]*#/, '  project_key: ACME #'), 'orchestration');
+    const old = stripBlock(edit(source, / {2}project_key: [^\n]*/, '  project_key: ACME'), 'orchestration');
     const before = yamlLeafWalk(old)!;
-    const { text, error } = applyInsertions(old, planInsertions(old, schema, ['orchestration'], '8.5'));
+    const { text, error } = applyInsertions(old, planInsertions(old, schema, ['orchestration']));
     expect(error).toBeNull();
     const after = yamlLeafWalk(text)!;
     for (const [path, value] of before.entries) {
@@ -732,10 +747,8 @@ describe('insertion', () => {
   });
 
   test.skipIf(!MAINTAINER_CHECKOUT)('several keys anchored to the same spot keep the schema\'s order', () => {
-    const old = source
-      .replace(/ {2}default_model: [^\n]*\n/, '')
-      .replace(/ {2}default_effort: high[^\n]*\n/, '');
-    const plan = planInsertions(old, schema, ['orchestration.default_model', 'orchestration.default_effort'], null);
+    const old = edit(edit(source, / {2}default_model: [^\n]*\n/, ''), / {2}default_effort: [^\n]*\n/, '');
+    const plan = planInsertions(old, schema, ['orchestration.default_model', 'orchestration.default_effort']);
     const { text, error } = applyInsertions(old, plan);
     expect(error).toBeNull();
     // The key lines, not the bare words: the comments around them name both.
@@ -744,19 +757,19 @@ describe('insertion', () => {
   });
 
   test.skipIf(!MAINTAINER_CHECKOUT)('a path absent from the schema is reported, never silently dropped', () => {
-    const plan = planInsertions(source, schema, ['nope.not_here'], null);
+    const plan = planInsertions(source, schema, ['nope.not_here']);
     expect(plan.inserted).toEqual([]);
     expect(plan.skipped[0].reason).toContain('not found');
   });
 
   test('an unparseable project is refused before anything is planned', () => {
-    const plan = planInsertions(`${source}\n: : :\n`, schema, ['orchestration'], null);
+    const plan = planInsertions(`${source}\n: : :\n`, schema, ['orchestration']);
     expect(plan.error).toContain('does not parse');
     expect(applyInsertions(source, plan).text).toBe(source);
   });
 
   test('an empty plan leaves the text identical', () => {
-    const plan = planInsertions(source, schema, [], null);
+    const plan = planInsertions(source, schema, []);
     expect(applyInsertions(source, plan).text).toBe(source);
   });
 });
@@ -769,7 +782,7 @@ describe('insertion', () => {
 // arriving with nobody to fill it.
 describe.skipIf(!MAINTAINER_CHECKOUT)('every schema placeholder has somebody to fill it', () => {
   test('either agents:setup prompts for it, or FILLED_ELSEWHERE names who does', () => {
-    const schema = generateSchema(realSource()).schema;
+    const schema = generateSchema(realSource(), committedSchema()).schema;
     const placeholders = [...schemaKeyPaths(schema)!.entries()].filter(([, todo]) => todo).map(([p]) => p);
     const installer = readFileSync(join(REPO_ROOT, 'scripts', 'agents-setup.ts'), 'utf8');
     const prompted = new Set([...installer.matchAll(/key:\s*'([a-z_]+)'/g)].map(m => m[1]));
@@ -780,7 +793,7 @@ describe.skipIf(!MAINTAINER_CHECKOUT)('every schema placeholder has somebody to 
   });
 
   test('FILLED_ELSEWHERE carries no entry that is no longer a placeholder', () => {
-    const shape = schemaKeyPaths(generateSchema(realSource()).schema)!;
+    const shape = schemaKeyPaths(generateSchema(realSource(), committedSchema()).schema)!;
     for (const path of Object.keys(FILLED_ELSEWHERE)) {
       expect(shape.get(path)).toBe(true);
     }

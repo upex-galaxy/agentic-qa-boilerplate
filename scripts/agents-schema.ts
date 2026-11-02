@@ -9,8 +9,8 @@
  * FROM `cli/`").
  *
  * Usage:
- *   bun run agents:schema            regenerate .agents/project.schema.yaml
- *   bun run agents:schema --check    fail when the committed schema is stale
+ *   bun run agents:schema            sync the schema's values from .agents/project.yaml
+ *   bun run agents:schema --check    fail when the committed schema is out of sync
  *   bun run agents:schema --project  list the key paths THIS project lacks
  *   bun run agents:schema --dry-run  print what would change, write nothing
  *   bun run agents:schema --json     machine-readable result for any mode
@@ -48,19 +48,21 @@ function out(text: string): void { process.stdout.write(text); }
 function emit(payload: unknown): void { out(`${JSON.stringify(payload, null, 2)}\n`); }
 
 if (HELP) {
-  out(`agents-schema — the generated template behind ${SCHEMA_SOURCE}
+  out(`agents-schema — the documented template behind ${SCHEMA_SOURCE}
 
-  bun run agents:schema            regenerate ${SCHEMA_FILE}
-  bun run agents:schema --check    exit 1 when the committed schema is stale
+  bun run agents:schema            sync the values of ${SCHEMA_FILE}
+  bun run agents:schema --check    exit 1 when the committed schema is out of sync
   bun run agents:schema --project  list the key paths this project is missing
   bun run agents:schema --dry-run  report what would change, write nothing
   bun run agents:schema --json     machine-readable result
 
-The schema is the TEMPLATE a consumer project is compared against. It is
-GENERATED from ${SCHEMA_SOURCE} in the boilerplate and SYNCED everywhere else,
-so only the boilerplate regenerates it. Values that are this repo's identity —
-its ruleset, its dates, its standing push authorization — are replaced, and a
-leak gate refuses to emit the file when one survives.
+The schema is the TEMPLATE a consumer project is compared against, and the one
+file that documents every key: ${SCHEMA_SOURCE} carries values only (ADR-0025).
+Keys and comments are written in the schema by hand; its VALUES are synced from
+${SCHEMA_SOURCE} in the boilerplate, and the file is SYNCED everywhere else, so
+only the boilerplate runs this. Values that are this repo's identity (its
+ruleset, its dates, its standing push authorization) are replaced, and a leak
+gate refuses to emit the file when one survives, in a value or a comment.
 `);
   process.exit(0);
 }
@@ -114,13 +116,18 @@ if (!owner) {
   process.exit(0);
 }
 
-const generated = generateSchema(sourceText);
+if (!existsSync(schemaPath)) {
+  // The schema is the documented skeleton, written by hand: there is nothing
+  // to generate it FROM, so its absence is a broken checkout, not a first run.
+  if (JSON_OUT) { emit({ ok: false, error: `${SCHEMA_FILE} does not exist` }); }
+  else { out(`agents-schema: ${SCHEMA_FILE} does not exist. Restore it from git; it is the documented template, not a generated file.\n`); }
+  process.exit(1);
+}
+const before = readFileSync(schemaPath, 'utf8');
+const generated = generateSchema(sourceText, before);
 
 if (CHECK) {
-  const committed = existsSync(schemaPath) ? readFileSync(schemaPath, 'utf8') : '';
-  const result = committed === ''
-    ? { ok: false, missing: [], extra: [], remarked: [], error: `${SCHEMA_FILE} does not exist` }
-    : checkSchema(sourceText, committed);
+  const result = checkSchema(sourceText, before);
   if (JSON_OUT) { emit(result); }
   if (result.ok) {
     if (!JSON_OUT) { out('agents-schema --check: OK\n'); }
@@ -130,10 +137,9 @@ if (CHECK) {
     out('agents-schema --check: STALE\n');
     if (result.error) { out(`  ${result.error}\n`); }
     const name = (paths: string[]): string => paths.slice(0, 10).join(', ') + (paths.length > 10 ? `, +${paths.length - 10} more` : '');
-    if (result.missing.length > 0) { out(`  ${SCHEMA_FILE} is missing ${result.missing.length} path(s): ${name(result.missing)}\n`); }
-    if (result.extra.length > 0) { out(`  ${SCHEMA_FILE} has ${result.extra.length} path(s) ${SCHEMA_SOURCE} does not: ${name(result.extra)}\n`); }
-    if (result.remarked.length > 0) { out(`  required/optional marking differs at ${result.remarked.length} path(s): ${name(result.remarked)}\n`); }
-    out(`\n  Fix: bun run agents:schema && git add ${SCHEMA_FILE}\n`);
+    if (result.undocumented.length > 0) { out(`  ${SCHEMA_FILE} does not document ${result.undocumented.length} path(s): ${name(result.undocumented)}\n  Fix: add each key to ${SCHEMA_FILE} with its comment, by hand.\n`); }
+    if (result.unseeded.length > 0) { out(`  ${SCHEMA_SOURCE} lacks ${result.unseeded.length} path(s) the schema documents: ${name(result.unseeded)}\n  Fix: add each key to ${SCHEMA_SOURCE} (value only, no comment).\n`); }
+    if (result.stale.length > 0) { out(`  ${result.stale.length} value(s) out of sync with ${SCHEMA_SOURCE}: ${name(result.stale)}\n  Fix: bun run agents:schema && git add ${SCHEMA_FILE}\n`); }
   }
   process.exit(1);
 }
@@ -143,23 +149,22 @@ if (generated.error) {
   else {
     out(`agents-schema: REFUSED — ${generated.error}\n`);
     for (const leak of generated.leaks) { out(`  line ${leak.line}: ${leak.pattern}\n    ${leak.text}\n`); }
-    out(`\n  Either genericize the value in ${SCHEMA_SOURCE}, or add a rule for its path to GENERIC_RULES in cli/lib/agents-schema.ts.\n`);
+    if (generated.leaks.length > 0) { out(`\n  Either genericize the value in ${SCHEMA_SOURCE}, reword the comment in ${SCHEMA_FILE}, or add a rule for its path to GENERIC_RULES in cli/lib/agents-schema.ts.\n`); }
   }
   process.exit(1);
 }
 
-const before = existsSync(schemaPath) ? readFileSync(schemaPath, 'utf8') : '';
 const changed = before !== generated.schema;
 
 if (DRY_RUN) {
-  if (JSON_OUT) { emit({ ok: true, changed, blanked: generated.blanked.length, generic: generated.generic }); }
-  else { out(`agents-schema --dry-run: ${changed ? `${SCHEMA_FILE} WOULD change` : `${SCHEMA_FILE} is up to date`} (${generated.blanked.length} placeholder path(s), ${generated.generic.length} replaced)\n`); }
+  if (JSON_OUT) { emit({ ok: true, changed, synced: generated.changed, blanked: generated.blanked.length, generic: generated.generic }); }
+  else { out(`agents-schema --dry-run: ${changed ? `${SCHEMA_FILE} WOULD change` : `${SCHEMA_FILE} is up to date`} (${generated.changed.length} value(s) to sync)\n`); }
   process.exit(0);
 }
 
 if (changed) { writeFileSync(schemaPath, generated.schema); }
-if (JSON_OUT) { emit({ ok: true, changed, blanked: generated.blanked.length, generic: generated.generic }); }
+if (JSON_OUT) { emit({ ok: true, changed, synced: generated.changed, blanked: generated.blanked.length, generic: generated.generic }); }
 else {
-  out(`agents-schema: ${changed ? 'wrote' : 'unchanged'} ${SCHEMA_FILE} (${generated.blanked.length} placeholder path(s), ${generated.generic.length} replaced)\n`);
-  if (generated.generic.length > 0) { out(`  replaced: ${generated.generic.join(', ')}\n`); }
+  out(`agents-schema: ${changed ? 'wrote' : 'unchanged'} ${SCHEMA_FILE} (${generated.blanked.length} placeholder path(s), ${generated.generic.length} generic, ${generated.changed.length} value(s) synced)\n`);
+  if (generated.changed.length > 0) { out(`  synced: ${generated.changed.join(', ')}\n`); }
 }
