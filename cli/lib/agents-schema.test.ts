@@ -315,11 +315,11 @@ describe('generateSchema, against the real .agents/project.yaml', () => {
     expect([...after.entries.keys()].sort()).toEqual([...before.entries.keys()].sort());
   });
 
-  test('the generated schema carries no identity leak', () => {
+  test.skipIf(!MAINTAINER_CHECKOUT)('the generated schema carries no identity leak', () => {
     expect(findIdentityLeaks(generateSchema(source, committedSchema()).schema)).toEqual([]);
   });
 
-  test('every table entry actually fired: a stale rule is a silent no-op', () => {
+  test.skipIf(!MAINTAINER_CHECKOUT)('every table entry actually fired: a stale rule is a silent no-op', () => {
     const result = generateSchema(source, committedSchema());
     expect(result.generic.sort()).toEqual(Object.keys(GENERIC_RULES).sort());
   });
@@ -381,7 +381,7 @@ describe('identity is blanked, whatever this repo filled in', () => {
     expect(ruleFor('issue_tracker.atlassian_url', 'https://acme.atlassian.net')).toBe('blank');
   });
 
-  test('every pattern covers at least one leaf of the real file: a stale pattern is a silent no-op', () => {
+  test.skipIf(!MAINTAINER_CHECKOUT)('every pattern covers at least one leaf of the real file: a stale pattern is a silent no-op', () => {
     const walk = yamlLeafWalk(realSource())!;
     const leaves = [...walk.entries.keys()].filter(p => !walk.containers.includes(p));
     for (const pattern of IDENTITY_PATHS) {
@@ -606,12 +606,12 @@ describe('projectDelta', () => {
     expect(paths).toContain('git_strategy.policy.direct_push_to_protected');
   });
 
-  test('a key the PROJECT has and upstream does not is silent', () => {
+  test.skipIf(!MAINTAINER_CHECKOUT)('a key the PROJECT has and upstream does not is silent', () => {
     const extended = edit(source, '  max_workers: 4\n', '  their_own_key: 1\n  max_workers: 4\n');
     expect(projectDelta(extended, schema).gaps).toEqual([]);
   });
 
-  test('values are never compared: only key paths', () => {
+  test.skipIf(!MAINTAINER_CHECKOUT)('values are never compared: only key paths', () => {
     const filled = edit(source, / {2}project_key: [^\n]*/, '  project_key: ACME');
     expect(projectDelta(filled, schema).gaps).toEqual([]);
   });
@@ -636,7 +636,7 @@ describe('updater.schema_exempt', () => {
     expect(schemaExemptions(text)).toEqual(['orchestration']);
   });
 
-  test('an absent list is empty, not a throw', () => {
+  test.skipIf(!MAINTAINER_CHECKOUT)('an absent list is empty, not a throw', () => {
     expect(schemaExemptions(source)).toEqual([]);
   });
 
