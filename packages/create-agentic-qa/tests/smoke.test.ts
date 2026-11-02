@@ -512,6 +512,19 @@ describe('seedProjectYamlFromSchema', () => {
   });
 });
 
+// Review fix L1: the twin stripper has no YAML parser to verify its output,
+// and a block scalar inside a sequence item or a keep-chomping header (`|+`)
+// is where a line-based stripper can change a value. Pin the schema the
+// scaffolder seeds from to the shapes the stripper handles.
+describe('the schema the scaffolder strips stays in the shapes the stripper handles', () => {
+  const schemaPath = join(import.meta.dir, '..', '..', '..', '.agents', 'project.schema.yaml');
+  test.skipIf(!existsSync(schemaPath))('no block scalar inside a sequence item, no keep chomping', () => {
+    const lines = readFileSync(schemaPath, 'utf8').split('\n');
+    const offending = lines.filter(l => /^\s*-\s.*[:\s][|>][-+\d]*\s*(?:#.*)?$/.test(l) || /^\s*-\s+[|>]/.test(l) || /[:\s][|>]\d*\+\s*(?:#.*)?$/.test(l));
+    expect(offending).toEqual([]);
+  });
+});
+
 describe('seedProjectInstructionsFromTemplate', () => {
   let dir: string;
   const STUB = '---\nid: project\n---\n\n# Project-specific instructions\n';

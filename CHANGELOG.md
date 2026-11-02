@@ -30,7 +30,10 @@ below names which one it applies to:
   from the schema.
 - **`bun sync` and `setup:doctor` list changed defaults.** Each methodology value a project changed
   from upstream's default is reported as `<path>: yours <x>, upstream default <y>` and left as it is;
-  identity and git-strategy safety leaves are excluded.
+  identity, git-strategy and the project's own configuration blocks (`updater`, `secrets`, `board`,
+  `harnesses`, `testing.browser`, `qa.qa_epics`) are excluded.
+- **The schema's leak gate also catches a bare project name, project key or host label** typed into a
+  schema comment, and a value sync keeps the comment on a key's own line.
 - **Orca workers default to `medium` effort** (`orchestration.default_effort`); the Opus override for
   high-risk topics stays at `high`. `model_overrides` is written as a block sequence, which clears the
   `eslint` YAML errors that held `repo:check` red.

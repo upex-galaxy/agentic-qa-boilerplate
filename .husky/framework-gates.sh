@@ -58,8 +58,9 @@ framework_gates_pre_commit() {
     && grep -q '"agents:schema:check"' package.json 2>/dev/null; then
     bun run agents:schema:check || {
       echo ""
-      echo "❌ .agents/project.schema.yaml is stale. Fix:"
-      echo "   bun run agents:schema && git add .agents/project.schema.yaml"
+      echo "❌ .agents/project.schema.yaml and .agents/project.yaml disagree (the check above names each path). Fix:"
+      echo "   a value out of sync:   bun run agents:schema && git add .agents/project.schema.yaml"
+      echo "   a key on one side only: add it to the other file by hand (schema: with its comment; yaml: value only)"
       exit 1
     }
   fi

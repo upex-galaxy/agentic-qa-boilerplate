@@ -607,6 +607,36 @@ export const GENERIC_RULES: Readonly<Record<string, GenericRule>> = {
 };
 
 /**
+ * Blocks that are each project's own CONFIGURATION, not methodology, so a
+ * value that differs from upstream's is not reported by `changedDefaults`.
+ * Owner decision 4 (ADR-0025) warns on METHODOLOGY leaves; these hold the
+ * project's push policy, its protected files, its secret manager, its
+ * harnesses, its sprint board and its cached QA epics, and a warning on every
+ * `bun sync` about them would be noise that teaches people to ignore the rest.
+ *
+ * A pattern matches the path it names and everything below it (`board.*`
+ * covers `board.statuses.tickets.in_test`), segment by segment.
+ */
+export const CHANGED_DEFAULTS_EXEMPT: readonly string[] = [
+  'updater.*',
+  'secrets.*',
+  'git_strategy.*',
+  'harnesses',
+  'board.*',
+  'testing.browser.*',
+  'qa.qa_epics.*',
+];
+
+/** Whether a leaf sits under a `CHANGED_DEFAULTS_EXEMPT` pattern. */
+export function isChangedDefaultExempt(path: string): boolean {
+  const segments = path.split('.');
+  return CHANGED_DEFAULTS_EXEMPT.some((pattern) => {
+    const depth = pattern.split('.').length;
+    return segments.length >= depth && matchesPattern(segments.slice(0, depth).join('.'), pattern);
+  });
+}
+
+/**
  * The leaves that are THIS repo's identity, blanked whatever value they hold.
  * A segment of `*` matches any one key name.
  *
@@ -796,6 +826,62 @@ export function findValueLeaks(schemaText: string, values: readonly string[]): I
   return leaks;
 }
 
+/**
+ * The bare identity TOKENS this repo's yaml implies, for a schema COMMENT that
+ * names the project without quoting a whole value: the project name (5+
+ * characters, any case), the project key (exact case, whole word), and the
+ * project's own host labels (6+ characters: `upexbunkai` out of
+ * `staging-upexbunkai.vercel.app` and `upexbunkai.vercel.app`). A host's last
+ * label is its TLD and, on a host of three labels or more, the one before it
+ * is the provider's domain (`vercel`, `atlassian`), which the template's own
+ * examples name; neither is a token. Loopback hosts are skipped.
+ *
+ * Deliberately not every identity leaf: an environment name (`staging`), a
+ * CLI (`bun xray`) or a loopback URL is template vocabulary the schema's
+ * examples use, and a gate that refused the clean template would be routed
+ * around.
+ */
+export function identityTokens(sourceText: string): Array<{ token: string, re: RegExp }> {
+  const walk = yamlLeafWalk(sourceText);
+  if (!walk) { return []; }
+  const escape = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const word = (text: string, flags: string): RegExp => new RegExp(`(?<![\\w-])${escape(text)}(?![\\w-])`, flags);
+  const tokens = new Map<string, RegExp>();
+  const name = walk.entries.get('project.project_name');
+  if (typeof name === 'string' && name.trim().length >= 5) { tokens.set(name.trim(), word(name.trim(), 'i')); }
+  const key = walk.entries.get('project.project_key');
+  if (typeof key === 'string' && key.trim() !== '') { tokens.set(key.trim(), word(key.trim(), '')); }
+  for (const [path, value] of walk.entries) {
+    if (typeof value !== 'string' || !isIdentityPath(path)) { continue; }
+    const v = value.trim();
+    let host: string | null = null;
+    if (/^https?:\/\//.test(v)) {
+      try { host = new URL(v).hostname; }
+      catch { host = null; }
+    }
+    else if (/^[a-z\d-]+(?:\.[a-z\d-]+)+$/i.test(v)) { host = v; }
+    if (host === null || host === 'localhost' || /^[\d.]+$/.test(host)) { continue; }
+    const labels = host.split('.');
+    const own = labels.length >= 3 ? labels.slice(0, -2) : labels.slice(0, -1);
+    for (const label of own) {
+      if (label.length >= 6) { tokens.set(label, word(label, 'i')); }
+    }
+  }
+  return [...tokens].map(([token, re]) => ({ token, re }));
+}
+
+/** Every line of the schema that names one of `identityTokens`, in a value or a comment. */
+export function findTokenLeaks(schemaText: string, tokens: ReadonlyArray<{ token: string, re: RegExp }>): IdentityLeak[] {
+  const leaks: IdentityLeak[] = [];
+  const lines = schemaText.split('\n');
+  for (let i = 0; i < lines.length; i += 1) {
+    for (const { token, re } of tokens) {
+      if (re.test(lines[i])) { leaks.push({ line: i + 1, pattern: `an identity token of this repo (${token})`, text: lines[i].trim() }); }
+    }
+  }
+  return leaks;
+}
+
 /** Every identity pattern found in the generated schema, with its line. */
 export function findIdentityLeaks(schemaText: string): IdentityLeak[] {
   const leaks: IdentityLeak[] = [];
@@ -919,8 +1005,30 @@ export function generateSchema(sourceText: string, schemaText: string): Generate
     }
     // From just past the key's colon, so a value that used to be a block
     // collection comes back onto the key's line instead of leaving a lonely
-    // `[]` beneath it. The trailing comment, after the value, is untouched.
-    edits.push({ range: [located.afterKey, located.value[1]], text });
+    // `[]` beneath it. The comment on the KEY's line is the schema's
+    // documentation and must survive the splice in every shape:
+    //  - schema block (`key: # doc` + items below): the range starts at the
+    //    colon and would swallow `# doc`, so it is put back;
+    //  - schema inline (`key: [] # doc`) becoming a block: the comment would
+    //    land after the block's last item, so it is moved onto the key's line;
+    //  - inline to inline: the comment sits after the range and stays.
+    const lineEnd = schemaText.indexOf('\n', located.afterKey);
+    const valueOnLaterLine = lineEnd !== -1 && located.value[0] > lineEnd;
+    let range: TextRange = [located.afterKey, located.value[1]];
+    let keyComment: string | null = null;
+    if (valueOnLaterLine) {
+      const tail = schemaText.slice(located.afterKey, lineEnd);
+      const hash = commentStart(tail);
+      if (hash !== -1) { keyComment = tail.slice(hash).trimEnd(); }
+    }
+    else if (text.startsWith('\n') && located.trailingComment) {
+      keyComment = schemaText.slice(...located.trailingComment).trimEnd();
+      range = [located.afterKey, located.trailingComment[1]];
+    }
+    if (keyComment !== null) {
+      text = text.startsWith('\n') ? ` ${keyComment}${text}` : `${text} ${keyComment}`;
+    }
+    edits.push({ range, text });
     changed.push(path);
   }
 
@@ -941,7 +1049,11 @@ export function generateSchema(sourceText: string, schemaText: string): Generate
     if (!sameJson(after.entries.get(path), want)) { return fail(`the splice at ${path} did not produce the intended value`); }
   }
 
-  const leaks = [...findIdentityLeaks(schema), ...findValueLeaks(schema, distinctiveValues(sourceText))];
+  const leaks = [
+    ...findIdentityLeaks(schema),
+    ...findValueLeaks(schema, distinctiveValues(sourceText)),
+    ...findTokenLeaks(schema, identityTokens(sourceText)),
+  ];
   if (leaks.length > 0) {
     const first = leaks[0];
     return fail(`${SCHEMA_FILE} would carry ${leaks.length} identity leak(s); first at line ${first.line}: ${first.pattern}`, { leaks });
@@ -1086,8 +1198,9 @@ export interface ChangedDefault {
  * `applyInsertions` covers existing values too.
  *
  * Only `keep` leaves count, judged by upstream's value: identity (blanked in
- * the template) and `GENERIC_RULES` leaves are the project's own answer by
- * design, and a `null` upstream value is a placeholder, not a default. A key
+ * the template), `GENERIC_RULES` leaves and the per-project configuration in
+ * `CHANGED_DEFAULTS_EXEMPT` are the project's own answer by design, and a
+ * `null` upstream value is a placeholder, not a default. A key
  * the project lacks is a gap (`projectDelta`), not a change, and a block in
  * `updater.schema_exempt` is silent here as well.
  */
@@ -1103,6 +1216,7 @@ export function changedDefaults(projectText: string, schemaText: string): { chan
   for (const [path, upstream] of schema.entries) {
     if (containers.has(path) || !project.entries.has(path)) { continue; }
     if (exempt.has(schema.blockOf.get(path) ?? '')) { continue; }
+    if (isChangedDefaultExempt(path)) { continue; }
     if (ruleFor(path, upstream) !== 'keep') { continue; }
     const yours = project.entries.get(path);
     if (!sameJson(yours, upstream)) { changed.push({ path, yours, upstream }); }
