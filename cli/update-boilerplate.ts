@@ -22,7 +22,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import pc from 'picocolors';
 import { checkAgentCompatibility, repairAgentSurfaces, SHADOWING_COMMANDS_BACKUP_DIR, SKILLS_ALIAS_DEFERRED_MARKER } from './lib/agent-compatibility.ts';
-import { applyInsertions, planInsertions, projectDelta, SCHEMA_FILE, SCHEMA_SOURCE } from './lib/agents-schema.ts';
+import { applyInsertions, changedDefaults, describeChangedDefault, planInsertions, projectDelta, SCHEMA_FILE, SCHEMA_SOURCE } from './lib/agents-schema.ts';
 import { declaredHarnesses, isUnderAny, unusedHarnessPaths } from './lib/harness-selection.ts';
 import * as tui from './lib/tui';
 import { startUpdaterUi } from './lib/ui/updater-run.ts';
@@ -992,6 +992,19 @@ function makeKataManifestHook(sink: ReportSink): (summary: RunSummary) => Promis
 // the same drift problem and a much richer shape, and giving it this treatment
 // is a follow-up with its own wildcards, not a freebie.
 
+/**
+ * The methodology values this project changed from upstream's default, listed
+ * and never written (owner decision 2026-11-02). Identity and `GENERIC_RULES`
+ * leaves are excluded by `changedDefaults`; the insert-only promise holds.
+ */
+function reportChangedDefaults(consumer: string, schema: string, sink: ReportSink): void {
+  const { changed, error } = changedDefaults(consumer, schema);
+  if (error !== null || changed.length === 0) { return; }
+  sink.warn(`Tu \`${SCHEMA_SOURCE}\` tiene ${changed.length} valor(es) de metodología distinto(s) del default de upstream. No se modifica nada:`);
+  for (const change of changed) { sink.step(`  ${describeChangedDefault(change)}`); }
+  sink.step(`Si alguno no fue deliberado, copia el valor de \`${SCHEMA_FILE}\`, donde cada clave está documentada.`);
+}
+
 export async function backfillProjectYamlFromSchema(
   templateDir: string,
   sink: ReportSink,
@@ -1017,6 +1030,7 @@ export async function backfillProjectYamlFromSchema(
     sink.warn(`No se pudo comparar \`${SCHEMA_SOURCE}\` contra el schema: ${delta.error}`);
     return;
   }
+  reportChangedDefaults(consumer, schema, sink);
   if (delta.gaps.length === 0) { return; }
 
   // Non-interactive (`--auto`, headless, an agent run): a WHOLE missing block is

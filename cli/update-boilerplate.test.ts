@@ -439,6 +439,19 @@ describe('project.yaml back-fill under --auto', () => {
     expect(loadBoardConfig(root).state).toBe('unconfigured');
   });
 
+  // Owner decision (2026-11-02): a changed methodology default is listed, never written.
+  test('a methodology value the project changed is warned about and left as it is', async () => {
+    const lean = stripYamlComments(SCHEMA);
+    const upstreamMax = (parseYaml(lean) as { orchestration: { max_workers: number } }).orchestration.max_workers;
+    const projectYaml = lean.replace(/^ {2}max_workers: .*$/m, `  max_workers: ${upstreamMax + 2}`);
+    expect(projectYaml).not.toBe(lean);
+    const { root, upstream } = fixture(projectYaml);
+    const lines: string[] = [];
+    await backfillProjectYamlFromSchema(upstream, autoSink(lines), true, root);
+    expect(readFileSync(join(root, '.agents/project.yaml'), 'utf8')).toBe(projectYaml);
+    expect(lines.join('\n')).toContain(`orchestration.max_workers: yours ${upstreamMax + 2}, upstream default ${upstreamMax}`);
+  });
+
   test('a block silenced through updater.schema_exempt is not inserted, and nothing missing means nothing written', async () => {
     const boardBlock = extractIndentedYamlBlock(SCHEMA, 'board', '')!;
     const silenced = fixture(SCHEMA.replace(`${boardBlock}\n`, '').replace(/^updater:\n/m, 'updater:\n  schema_exempt: [board]\n'));

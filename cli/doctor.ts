@@ -43,7 +43,7 @@ import {
   groupCompatibilityErrors,
   validateCanonicalSources,
 } from './lib/agent-compatibility.ts';
-import { classifyProjectYaml, projectDelta, SCHEMA_FILE, SCHEMA_SOURCE } from './lib/agents-schema.ts';
+import { changedDefaults, classifyProjectYaml, describeChangedDefault, projectDelta, SCHEMA_FILE, SCHEMA_SOURCE } from './lib/agents-schema.ts';
 import {
   formatInstanceMismatchWarning,
   resolveAtlassianInstance,
@@ -576,6 +576,11 @@ export interface ProjectSchemaDiagnostic {
   gaps: Array<{ block: string, paths: string[], wholeBlock: boolean }>
   /** Blocks silenced through `updater.schema_exempt`. */
   exempt: string[]
+  /**
+   * Methodology values this project changed from upstream's default, one
+   * `<path>: yours <x>, upstream default <y>` line each. Listed, never a failure.
+   */
+  changed_defaults: string[]
   /** Set when nothing could be compared: a parse failure, or no schema on disk. */
   note: string | null
   /**
@@ -600,16 +605,18 @@ function gitOrigin(): string | null {
 function projectSchemaDiagnostic(): ProjectSchemaDiagnostic {
   const sourcePath = join(REPO_ROOT, SCHEMA_SOURCE);
   const schemaPath = join(REPO_ROOT, SCHEMA_FILE);
-  if (!existsSync(sourcePath)) { return { gaps: [], exempt: [], note: `${SCHEMA_SOURCE} not found`, copied_template: false }; }
+  if (!existsSync(sourcePath)) { return { gaps: [], exempt: [], changed_defaults: [], note: `${SCHEMA_SOURCE} not found`, copied_template: false }; }
   const sourceText = readFileSync(sourcePath, 'utf8');
   const copied_template = classifyProjectYaml(sourceText, gitOrigin()) === 'copied-template';
-  if (!existsSync(schemaPath)) { return { gaps: [], exempt: [], note: `${SCHEMA_FILE} not found — run \`bun sync\` to receive it`, copied_template }; }
+  if (!existsSync(schemaPath)) { return { gaps: [], exempt: [], changed_defaults: [], note: `${SCHEMA_FILE} not found — run \`bun sync\` to receive it`, copied_template }; }
   try {
-    const delta = projectDelta(sourceText, readFileSync(schemaPath, 'utf8'));
-    return { gaps: delta.gaps, exempt: delta.exempt, note: delta.error, copied_template };
+    const schemaText = readFileSync(schemaPath, 'utf8');
+    const delta = projectDelta(sourceText, schemaText);
+    const changed_defaults = changedDefaults(sourceText, schemaText).changed.map(describeChangedDefault);
+    return { gaps: delta.gaps, exempt: delta.exempt, changed_defaults, note: delta.error, copied_template };
   }
   catch (err) {
-    return { gaps: [], exempt: [], note: `the schema comparison threw: ${(err as Error).message}`, copied_template };
+    return { gaps: [], exempt: [], changed_defaults: [], note: `the schema comparison threw: ${(err as Error).message}`, copied_template };
   }
 }
 
@@ -1306,7 +1313,7 @@ function printHuman(report: DoctorReport): void {
   // and it must never push the report to `needs action`. It answers a
   // different question from the checks above — not "is something broken" but
   // "has upstream moved and am I still on the old shape".
-  if (report.project_schema.note !== null || report.project_schema.gaps.length > 0 || report.project_schema.copied_template) {
+  if (report.project_schema.note !== null || report.project_schema.gaps.length > 0 || report.project_schema.changed_defaults.length > 0 || report.project_schema.copied_template) {
     tui.section('Project config vs upstream schema (.agents/project.yaml)');
     if (report.project_schema.copied_template) {
       process.stdout.write(`  ${tui.statusIcon('warn')} .agents/project.yaml is the boilerplate maintainers' own copy (GitHub "Use this template"): their project, Jira and push authorization\n`);
@@ -1315,13 +1322,18 @@ function printHuman(report: DoctorReport): void {
     if (report.project_schema.note !== null) {
       process.stdout.write(`  ${tui.statusIcon('warn')} ${report.project_schema.note}\n`);
     }
-    else {
+    else if (report.project_schema.gaps.length > 0) {
       const total = report.project_schema.gaps.reduce((n, g) => n + g.paths.length, 0);
       process.stdout.write(`  ${tui.statusIcon('warn')} upstream declares ${total} key path(s) this project does not have\n`);
       for (const gap of report.project_schema.gaps) {
         process.stdout.write(`  ${gap.block}${gap.wholeBlock ? ' (whole block)' : ''}: ${gap.paths.join(', ')}\n`);
       }
       process.stdout.write('  Fix: bun sync  (offers to insert them, one prompt per block, insert-only)\n');
+    }
+    if (report.project_schema.changed_defaults.length > 0) {
+      process.stdout.write(`  ${tui.statusIcon('warn')} ${report.project_schema.changed_defaults.length} methodology value(s) differ from upstream's default (yours is kept; listed so each change is deliberate)\n`);
+      for (const line of report.project_schema.changed_defaults) { process.stdout.write(`  ${line}\n`); }
+      process.stdout.write(`  Each key is documented in ${SCHEMA_FILE}.\n`);
     }
     if (report.project_schema.exempt.length > 0) {
       process.stdout.write(`  silenced via updater.schema_exempt: ${report.project_schema.exempt.join(', ')}\n`);

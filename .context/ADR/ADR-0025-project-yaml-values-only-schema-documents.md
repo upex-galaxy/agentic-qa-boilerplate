@@ -41,3 +41,9 @@ So the explanation of each key was paid for in tokens at every session start of 
 ## Verification
 
 `bun test cli/lib/agents-schema.test.ts` (fixpoint against the real files, value sync, parity both ways, comment-leak refusal, values-only seed, comment-free insertion, stripper twin), `bun test cli/update-boilerplate.test.ts` (`--auto` back-fill inserts values only), the scaffolder's `tests/smoke.test.ts`, and `bun run repo:check`.
+
+## Amendments
+
+Appended, never rewritten: the decision above stays as accepted, and each line records what changed after it.
+
+- 2026-11-02 (owner decision, relayed by the conductor of Run `run_50f612db9324`): `bun sync` and `bun run setup:doctor` LIST every methodology value a project changed from upstream's default, one `<path>: yours <x>, upstream default <y>` line each, and never write it (`changedDefaults` in `cli/lib/agents-schema.ts`). Only `keep` leaves count: identity, `GENERIC_RULES` leaves, `null` placeholders, missing keys (gaps) and blocks in `updater.schema_exempt` are excluded. Insert-only stays the rule for existing values.

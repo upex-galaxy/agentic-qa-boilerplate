@@ -1037,7 +1037,8 @@ export function schemaExemptions(projectText: string): string[] {
  * is silent, because that is the project's own extension and reporting it
  * would read as an instruction to delete it.
  *
- * Values are never compared. Every value in a real project file is either its
+ * Values are never compared HERE (a changed methodology default is listed by
+ * `changedDefaults`, never treated as a gap). Every value in a real project file is either its
  * identity or its chosen methodology, and both are the project's business.
  */
 export function projectDelta(projectText: string, schemaText: string): ProjectDelta {
@@ -1065,6 +1066,61 @@ export function projectDelta(projectText: string, schemaText: string): ProjectDe
     gaps.push({ block, paths, wholeBlock: !project.entries.has(block) });
   }
   return { gaps, exempt: [...exempt], error: null };
+}
+
+// ============================================================================
+// CHANGED DEFAULTS — a project's methodology values vs upstream's, warn only
+// ============================================================================
+
+export interface ChangedDefault {
+  path: string
+  yours: unknown
+  upstream: unknown
+}
+
+/**
+ * The methodology leaves where a project's value differs from upstream's
+ * default, for `bun sync` and `setup:doctor` to LIST. Owner decision
+ * (2026-11-02): a changed default is reported, never written back, because the
+ * project may have chosen it on purpose, and the insert-only promise of
+ * `applyInsertions` covers existing values too.
+ *
+ * Only `keep` leaves count, judged by upstream's value: identity (blanked in
+ * the template) and `GENERIC_RULES` leaves are the project's own answer by
+ * design, and a `null` upstream value is a placeholder, not a default. A key
+ * the project lacks is a gap (`projectDelta`), not a change, and a block in
+ * `updater.schema_exempt` is silent here as well.
+ */
+export function changedDefaults(projectText: string, schemaText: string): { changed: ChangedDefault[], error: string | null } {
+  const project = yamlLeafWalk(projectText);
+  if (!project) { return { changed: [], error: `the project's ${SCHEMA_SOURCE} does not parse; nothing was compared` }; }
+  const schema = yamlLeafWalk(schemaText);
+  if (!schema) { return { changed: [], error: `${SCHEMA_FILE} does not parse; nothing was compared` }; }
+
+  const exempt = new Set(schemaExemptions(projectText));
+  const containers = new Set(schema.containers);
+  const changed: ChangedDefault[] = [];
+  for (const [path, upstream] of schema.entries) {
+    if (containers.has(path) || !project.entries.has(path)) { continue; }
+    if (exempt.has(schema.blockOf.get(path) ?? '')) { continue; }
+    if (ruleFor(path, upstream) !== 'keep') { continue; }
+    const yours = project.entries.get(path);
+    if (!sameJson(yours, upstream)) { changed.push({ path, yours, upstream }); }
+  }
+  return { changed, error: null };
+}
+
+/** One value as a reader writes it in YAML: `null`, `auto`, `4`, `[a, b]`. */
+function showValue(value: unknown): string {
+  if (value === null || value === undefined) { return 'null'; }
+  if (Array.isArray(value) && value.every(v => v === null || typeof v !== 'object')) { return `[${value.map(showValue).join(', ')}]`; }
+  if (typeof value === 'object') { return JSON.stringify(value); }
+  return String(value);
+}
+
+/** `<path>: yours <x>, upstream default <y>`, the line both reports print. */
+export function describeChangedDefault(change: ChangedDefault): string {
+  return `${change.path}: yours ${showValue(change.yours)}, upstream default ${showValue(change.upstream)}`;
 }
 
 // ============================================================================

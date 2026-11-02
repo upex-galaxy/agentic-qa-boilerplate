@@ -28,6 +28,9 @@ below names which one it applies to:
   scaffolder seed a comment-free yaml with a three-line header; `bun sync` inserts a missing key without
   its comment block, and the `# NEW in <release>` marker is gone. `agents:setup` reads each field's help
   from the schema.
+- **`bun sync` and `setup:doctor` list changed defaults.** Each methodology value a project changed
+  from upstream's default is reported as `<path>: yours <x>, upstream default <y>` and left as it is;
+  identity and git-strategy safety leaves are excluded.
 - **Orca workers default to `medium` effort** (`orchestration.default_effort`); the Opus override for
   high-risk topics stays at `high`. `model_overrides` is written as a block sequence, which clears the
   `eslint` YAML errors that held `repo:check` red.
