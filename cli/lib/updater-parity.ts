@@ -1203,7 +1203,7 @@ export function compatErrorSuggestion(message: string): ParitySuggestion {
 function compatErrorPath(message: string): string {
   const m = /(?:^|\s|:)((?:\.[\w-]+|[\w-]+)(?:\/[\w.-]+)+\.\w+)/.exec(message);
   if (m) { return m[1]; }
-  const host = /(claude|opencode|codex|pi)\b/i.exec(message);
+  const host = /\b(claude|opencode|codex|pi)\b/i.exec(message);
   if (host && /MCP/.test(message)) { return MCP_HOST_FILE[host[1].toLowerCase()]; }
   if (/skills alias|\.claude\/skills/.test(message)) { return '.claude/skills'; }
   return '(compat)';

@@ -8,9 +8,11 @@ import { afterEach, describe, expect, test } from 'bun:test';
 
 import { communitySkillStatus, diagnoseAgentCompatibility } from './doctor.ts';
 import {
+  agentsWithFilesHere,
   buildCommunitySkillArgs,
   detectAgents,
   discoverRequiredEnvVars,
+  ENGRAM_PI_MANUAL,
   ENGRAM_PLUGIN_COMMANDS,
   engramSetupArgs,
   mergedHarnesses,
@@ -170,6 +172,7 @@ describe('installer Codex lifecycle', () => {
   });
 
   test('wires Engram per agent with engram setup, slim protocol on Claude Code only', () => {
+    expect(ENGRAM_PI_MANUAL).toContain('--exposure deferred');
     expect(engramSetupArgs('claude-code')).toEqual(['setup', 'claude-code', '--protocol=slim']);
     expect(engramSetupArgs('opencode')).toEqual(['setup', 'opencode']);
     expect(engramSetupArgs('codex')).toEqual(['setup', 'codex']);
@@ -420,6 +423,33 @@ describe('user-level skill selection', () => {
     const slugs = USER_LEVEL_SKILLS.map(item => item.skill);
     expect(slugs).not.toContain('bun');
     expect(slugs).not.toContain('brainstorming');
+  });
+});
+
+describe('agentsWithFilesHere (nobody to ask)', () => {
+  const repo = (files: string[]): string => {
+    const root = mkdtempSync(join(tmpdir(), 'agents-here-'));
+    for (const file of files) {
+      mkdirSync(dirname(join(root, file)), { recursive: true });
+      writeFileSync(join(root, file), '{}\n');
+    }
+    return root;
+  };
+
+  test('a detected agent whose harness has no file here is skipped', () => {
+    expect(agentsWithFilesHere(['claude-code', 'pi'], repo(['.mcp.json']))).toEqual(['claude-code']);
+  });
+
+  test('a fresh scaffold has every file, so nothing is skipped', () => {
+    expect(agentsWithFilesHere(['claude-code', 'pi'], repo(['.mcp.json', '.pi/mcp.json']))).toEqual(['claude-code', 'pi']);
+  });
+
+  test('Pi runtime state alone does not count', () => {
+    expect(agentsWithFilesHere(['claude-code', 'pi'], repo(['.mcp.json', '.pi/loops/x.json']))).toEqual(['claude-code']);
+  });
+
+  test('a repo with no harness file keeps what was detected', () => {
+    expect(agentsWithFilesHere(['pi'], repo([]))).toEqual(['pi']);
   });
 });
 

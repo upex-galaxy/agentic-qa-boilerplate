@@ -11,7 +11,7 @@
   // ONLY the variables in its --filter. That works however OpenCode was started:
   // a desktop or natively launched session has no process environment, and
   // `{env:VAR}` would resolve to nothing there. `--no-redact-stdout` keeps the
-  // JSON-RPC stream byte-intact. The loader is the same on the three hosts
+  // JSON-RPC stream byte-intact. The loader is the same on every host
   // (MCP_ENV_LOADER_* in cli/lib/agent-compatibility-contracts.ts, ADR-0011);
   // never add `{env:}` or `{file:}` beside it: an empty value shadows .env.
   //

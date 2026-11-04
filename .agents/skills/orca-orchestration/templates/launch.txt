@@ -73,9 +73,8 @@ opencode --model <provider/model> --auto --prompt '/<workflow-skill> <label> fle
 # the session once it is up (accepted mid-task).
 codex --model <full-model-id> --dangerously-bypass-approvals-and-sandbox '/<workflow-skill> <label> fleet worker. Read <ABS>/.session/orchestration/<slug>/COMMON.md then <ABS>/.session/orchestration/<slug>/W-<label>.md and execute your brief. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints. Channel: {{MESSAGE_VERB}}. No heartbeats. ROUTE-SCOPE: <section ids>'
 
-# Pi (v1.4.0, earendil-works/pi docs/security.md, read 2026-10-28; NOT a supported harness of this
-# repo): no approval system, so bypass needs nothing; --approve skips the project-trust prompt. It has
-# a name flag, so the line names the session itself (the handle is appended only inside an Orca
-# terminal). Only -n, /name and --approve were read: confirm the model flag and the positional prompt
-# with `pi --help`.
-pi --approve -n "<label>${ORCA_TERMINAL_HANDLE:+--$ORCA_TERMINAL_HANDLE}" '/<workflow-skill> <label> fleet worker. Read <ABS>/.session/orchestration/<slug>/COMMON.md then <ABS>/.session/orchestration/<slug>/W-<label>.md and execute your brief. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints. Channel: {{MESSAGE_VERB}}. No heartbeats. ROUTE-SCOPE: <section ids>'
+# Pi (v1.4.0 and v1.5.0, measured 2026-11-04, ADR-0026): no approval system, so bypass needs nothing;
+# --approve skips the project-trust prompt for this run. No -n: the adapter names the session from
+# the prompt token, and a name it did not set counts as a human's and freezes. No model flag on the
+# supervised path: a Pi worker starts on the model in its own config; confirm with `pi --help`.
+pi --approve '/<workflow-skill> <label> fleet worker. Read <ABS>/.session/orchestration/<slug>/COMMON.md then <ABS>/.session/orchestration/<slug>/W-<label>.md and execute your brief. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints. Channel: {{MESSAGE_VERB}}. No heartbeats. ROUTE-SCOPE: <section ids>'

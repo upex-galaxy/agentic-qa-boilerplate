@@ -74,7 +74,7 @@ bun run worktree:provision <wt>             # references/provisioning.md
 
 # 4 · LAUNCH natively → supervised, with the preamble injected by the runtime
 orca orchestration worker-start --task <task_id> --worktree <current|id:<repoId>::<path>> \
-  --agent <claude|codex|opencode> --model <full-model-id> --effort <level> --json </dev/null
+  --agent <claude|codex|opencode|pi> --model <full-model-id> --effort <level> --json </dev/null
 #     Model and effort: the worker tier's {{DEFAULT_MODEL}} / {{DEFAULT_EFFORT}}, unless an
 #       `orchestration.model_overrides` entry for tier worker matches the brief's topics, or the user
 #       said otherwise (the user always wins). A full model id, never an alias (G29).

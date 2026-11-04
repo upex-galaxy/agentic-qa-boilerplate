@@ -19,7 +19,7 @@ inherit = "core"
 # server ONLY the variables in its --filter. `--no-redact-stdout` keeps the
 # JSON-RPC stream byte-intact (varlock redacts piped output otherwise). No
 # `env_vars` beside it: the filter IS the server's dependency list, and
-# `bun run agents:compat:check` compares it across the three hosts. Same loader
+# `bun run agents:compat:check` compares it across the hosts. Same loader
 # on every host: MCP_ENV_LOADER_* in cli/lib/agent-compatibility-contracts.ts
 # (ADR-0011). context7 needs no value, so it starts without the loader.
 #

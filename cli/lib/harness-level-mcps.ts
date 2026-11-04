@@ -6,7 +6,7 @@
  * (a claude.ai connector, a user-scope server, the OpenCode / Codex / Pi user
  * config), and the skills resolve it by CAPABILITY, whatever prefix the host
  * gives its tools (`agentic-qa-core/references/mcp-capabilities.md`). Only
- * LOCAL (stdio) servers stay in the three project MCP files.
+ * LOCAL (stdio) servers stay in the project MCP files.
  *
  * This module is the ONE list of the harness-level servers the repo
  * recommends (the ones that moved out, plus Exa, which never was committed),
@@ -173,7 +173,7 @@ function stripJsonComments(source: string): string {
 }
 
 /**
- * Read the user-level MCP registries of the three harnesses. Read-only, never
+ * Read the user-level MCP registries of every harness. Read-only, never
  * throws: an unreadable or unparseable file contributes nothing. Values (a
  * bearer token in a header) are never returned: ids and url hosts only.
  *

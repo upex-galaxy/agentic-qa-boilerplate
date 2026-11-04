@@ -1381,7 +1381,7 @@ const PROTECTED_WATCHLIST: ProtectedWatchEntry[] = [
   // through `agent-root-config`): a consumer adds its own servers there.
   { path: '.mcp.json', reason: 'MCP registry with project-specific servers/vars' },
   { path: 'opencode.jsonc', reason: 'OpenCode MCP registry (paired with .mcp.json)' },
-  { path: '.codex/config.toml', reason: 'Codex MCP registry (paired with .mcp.json / opencode.jsonc; `agents:compat:check` enforces parity across the three)' },
+  { path: '.codex/config.toml', reason: 'Codex MCP registry (paired with .mcp.json / opencode.jsonc; `agents:compat:check` enforces parity across the hosts)' },
   { path: '.pi/mcp.json', reason: 'Pi MCP registry (paired with .mcp.json; `agents:compat:check` enforces parity across the hosts)' },
   { path: '.claude/settings.json', reason: 'project permissions and hook wiring; never overwritten' },
   // Synced component (`husky`) files that carry the project's own gates. Before

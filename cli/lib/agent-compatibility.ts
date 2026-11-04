@@ -132,6 +132,15 @@ export const COMPATIBILITY_GROUP_LABEL: Record<CompatibilityErrorGroup, string> 
   lint: 'Lint config wiring (eslint.config.js <- eslint.config.base.js)',
 };
 
+/**
+ * The files named by the "file missing" errors: what a declared harness lacks.
+ * `agents:compat` cannot make them; `bun sync` delivers what upstream ships.
+ */
+export function missingHarnessFiles(errors: readonly string[]): string[] {
+  const found = errors.flatMap(error => /^(?:Hook compatibility file missing|MCP config missing for \w+): (\S+)/.exec(error)?.[1] ?? []);
+  return [...new Set(found)];
+}
+
 /** Classify one error message by its wording (the messages are ours). */
 export function compatibilityErrorGroup(message: string): CompatibilityErrorGroup {
   // An MCP config error names its file even when the parser's message lacks

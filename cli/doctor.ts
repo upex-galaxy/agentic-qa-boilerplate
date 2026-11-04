@@ -42,6 +42,7 @@ import {
   checkAgentCompatibility,
   describeAliasStatus,
   groupCompatibilityErrors,
+  missingHarnessFiles,
   validateCanonicalSources,
 } from './lib/agent-compatibility.ts';
 import { changedDefaults, classifyProjectYaml, describeChangedDefault, projectDelta, SCHEMA_FILE, SCHEMA_SOURCE } from './lib/agents-schema.ts';
@@ -61,7 +62,7 @@ import {
   OPENCODE_SECRET_DIR,
 } from './lib/harness-env.ts';
 import { harnessLevelMcpReport } from './lib/harness-level-mcps.ts';
-import { HARNESS_LABEL } from './lib/harness-selection.ts';
+import { declaredHarnesses, HARNESS_LABEL } from './lib/harness-selection.ts';
 import { playwrightBrowsersInstalled } from './lib/playwright-cache.ts';
 import { gateIsOn, varsFor } from './lib/variables-manifest.ts';
 import { checkoutRoots } from './lib/worktree.ts';
@@ -1200,7 +1201,7 @@ export async function runDoctor(): Promise<DoctorReport> {
   if (!agentCompatibility.file_correct) {
     report.pending_actions.push({
       type: 'shell_command',
-      target: 'bun run agents:compat',
+      target: missingHarnessFiles(agentCompatibility.errors).length > 0 && declaredHarnesses(REPO_ROOT).source !== 'boilerplate' ? 'bun sync' : 'bun run agents:compat',
       hint: `Repair generated compatibility artifacts, then restore any canonical/config files still reported by doctor: ${agentCompatibility.errors.join('; ')}`,
     });
   }

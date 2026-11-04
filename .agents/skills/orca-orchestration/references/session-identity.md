@@ -45,7 +45,7 @@ they answer "which of the six" and nothing else. No AI attribution of any kind i
 | transcripts | `~/.claude/projects/<slug>/<uuid>.jsonl` | `opencode export [id]` | under `$CODEX_HOME/sessions/` | `~/.pi/agent/sessions/`, one JSONL per session; `pi --export <file>` |
 
 Versions are the ones the research read (2026-10-28): Codex CLI rust-v0.165.0, OpenCode v1.19.5 and <!-- volatile-ok: harness flags carry the version they were read at -->
-v2.2.0, Pi v1.4.0. Harness flags move, so the launch line is always confirmed against `<harness> <!-- volatile-ok: harness flags carry the version they were read at -->
+v2.2.0; Pi v1.4.0 and v1.5.0 were read and measured 2026-11-04. Harness flags move, so the launch line is always confirmed against `<harness> <!-- volatile-ok: harness flags carry the version they were read at -->
 --help` on the machine.
 
 Claude Code flags this skill relies on (confirm with `claude --help` before writing a launch line): `-n, --name`, `--model`,
@@ -151,11 +151,11 @@ distinction is the whole point of a forensic field.
 
 ## 4 · Where it is injected
 
-This repo has **one hook emitter and three adapters**. The emitter resolves identity once per prompt
+This repo has **one hook emitter and one adapter per harness**. The emitter resolves identity once per prompt
 and injects a single line into the session's context:
 
 ```
-AGENT IDENTITY: worktree=<name|primary> session=<label> harness=<claude-code|codex|opencode>
+AGENT IDENTITY: worktree=<name|primary> session=<label> harness=<claude-code|codex|opencode|pi>
 ```
 
 And, only when the binary gate passes, a second line naming this skill and the worker's channel.
@@ -170,8 +170,8 @@ Consequences for anyone reading a commit or writing one:
 - A worker in a fresh worktree has the hook, because the hook is committed. It does NOT have the
   environment file or the skills alias — see `references/provisioning.md`.
 
-Ownership: the emitter and its three adapters are `.agents/hooks/` plus the per-harness adapters, and
-the compatibility contract (`cli/lib/agent-compatibility-contracts.ts`) is what keeps the three in
+Ownership: the emitter and its adapters are `.agents/hooks/` plus the per-harness adapters, and
+the compatibility contract (`cli/lib/agent-compatibility-contracts.ts`) is what keeps them in
 sync. Never write a second emitter, and never hand-edit an adapter's generated counterpart.
 
 ---

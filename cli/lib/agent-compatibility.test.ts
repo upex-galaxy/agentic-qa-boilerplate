@@ -61,6 +61,7 @@ import {
   describeAliasStatus,
   groupCompatibilityErrors,
   isInside,
+  missingHarnessFiles,
   normalizeNewlines,
   POSIX_CLAUDE_SKILLS_TARGET,
   removeShadowingCommands,
@@ -1895,6 +1896,37 @@ describe('one-harness projects (ADR-0012)', () => {
       expect(server.exposure).toBe('deferred');
       expect(server.description?.length).toBeGreaterThan(0);
     }
+  });
+
+  test('a !command value in the Pi registry is refused, in env and in headers', () => {
+    const withValue = (mutate: (servers: Record<string, Record<string, unknown>>) => void): string => {
+      const parsed = JSON.parse(mcpJson(BOILERPLATE_IDS)) as { mcpServers: Record<string, Record<string, unknown>> };
+      mutate(parsed.mcpServers);
+      return `${JSON.stringify(parsed)}\n`;
+    };
+    const root = contractFixture();
+    write(root, '.agents/project.yaml', 'harnesses: [pi]\n');
+    rmSync(join(root, '.mcp.json'));
+
+    write(root, '.pi/mcp.json', withValue((servers) => { servers.context7.env = { T: '!cat .env' }; }));
+    let findings = validateMcpParityFindings(root, { schemaOwner: false, harnesses: ['pi'] });
+    expect(findings.warnings.some(warning => warning.includes('pi MCP context7 runs a shell command'))).toBe(true);
+
+    write(root, '.pi/mcp.json', withValue((servers) => { servers.remote = { url: 'https://x.dev/mcp', headers: { A: '!op read x' } }; }));
+    findings = validateMcpParityFindings(root, { schemaOwner: true, harnesses: ['pi'] });
+    expect(findings.errors.some(error => error.includes('pi MCP remote runs a shell command'))).toBe(true);
+
+    write(root, '.pi/mcp.json', withValue((servers) => { servers.context7.env = { T: 'wow!' }; }));
+    findings = validateMcpParityFindings(root, { schemaOwner: false, harnesses: ['pi'] });
+    expect([...findings.errors, ...findings.warnings].some(line => line.includes('runs a shell command'))).toBe(false);
+  });
+
+  test('missingHarnessFiles names only what a sync can bring', () => {
+    expect(missingHarnessFiles([
+      'Hook compatibility file missing: .pi/extensions/agentic-qa.js',
+      'MCP config missing for pi: .pi/mcp.json (a harness in use; declare `harnesses:` in .agents/project.yaml to drop it)',
+      'MCP dbhub missing from codex: declared in .mcp.json, absent from .codex/config.toml',
+    ])).toEqual(['.pi/extensions/agentic-qa.js', '.pi/mcp.json']);
   });
 
   test('the Pi adapter contract names what it depends on', () => {

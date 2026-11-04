@@ -1194,6 +1194,15 @@ describe('never a destructive default for project-only content', () => {
     return { root, upstreamDir: upstream, drift: [], compatErrors: [], archivedSkills: [], archivedSkillsDir: join(root, 'x'), heldBack: [], envNewKeys: [] };
   }
 
+  test('an env contract error on openapi is not attributed to Pi', () => {
+    const findings = collectParityFindings({
+      ...base(temporaryRoot(), temporaryRoot()),
+      compatErrors: ['MCP openapi env contract differs between claude and codex: {} vs {}'],
+    });
+    expect(findings.map(f => f.path)).toContain('.mcp.json');
+    expect(findings.map(f => f.path)).not.toContain('.pi/mcp.json');
+  });
+
   test('an MCP host with project-only servers suggests merge and names the other registries in use; missing-only still takes upstream', () => {
     const root = temporaryRoot();
     mkdirSync(join(root, '.agents'), { recursive: true });

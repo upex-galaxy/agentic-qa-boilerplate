@@ -19,6 +19,7 @@ import {
   checkAgentCompatibility,
   describeAliasStatus,
   groupCompatibilityErrors,
+  missingHarnessFiles,
   removeShadowingCommands,
   repairClaudeSkillsAlias,
   SHADOWING_COMMANDS_BACKUP_DIR,
@@ -49,6 +50,10 @@ function printCheck(result: CompatibilityCheck): void {
     for (const error of bucket.errors) {
       console.error(`  ERROR: ${error}`);
     }
+  }
+  const missing = declaredHarnesses(process.cwd()).source === 'boilerplate' ? [] : missingHarnessFiles(result.errors);
+  if (missing.length > 0) {
+    console.error(`FIX: \`bun sync\` brings ${missing.join(', ')}, or drop that harness from \`harnesses:\` in .agents/project.yaml.`);
   }
 }
 

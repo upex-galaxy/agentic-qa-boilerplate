@@ -897,10 +897,11 @@ subagente (contexto limpio)
         <code>engram setup</code>, a nivel de usuario, fuera del repo. Ese comando registra el
         servidor de memoria y nada más. <code>engram setup</code> no nombra a Pi, así que para Pi el
         instalador imprime la línea que corres a mano:
-        <code>pi mcp add engram -- engram mcp --tools=agent</code>. En Claude Code, además, ofrece
-        instalar el plugin de Engram (<code>claude plugin install engram@engram</code>), que trae
-        los hooks de sesión. El boilerplate no usa la capa de workflow de gentle-ai: los skills de
-        workflow ya cubren Plan, Code y Verify.
+        <code>pi mcp add engram --exposure deferred -- engram mcp --tools=agent</code>. En Claude
+        Code, además, ofrece instalar el plugin de Engram (<code
+          >claude plugin install engram@engram</code
+        >), que trae los hooks de sesión. El boilerplate no usa la capa de workflow de gentle-ai:
+        los skills de workflow ya cubren Plan, Code y Verify.
       </p>
       <p>
         Dos cosas conviene saber. El agente guarda solo cuando él llama a <code>mem_save</code>;

@@ -75,6 +75,7 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { parse as parseYaml } from 'yaml';
 import {
   checkAgentCompatibility,
+  missingHarnessFiles,
   removeShadowingCommands,
   repairClaudeSkillsAlias,
   SHADOWING_COMMANDS_BACKUP_DIR,
@@ -264,7 +265,7 @@ const ENGRAM_COMPONENT = 'engram';
  * layer is needed.
  */
 
-// The servers the three project MCP files declare. Remote servers whose only
+// The servers the project MCP files declare. Remote servers whose only
 // project-side content was an API key (web search, Postman) are not here any
 // more: they run at harness level, connected once per machine, and the skills
 // resolve them by capability (ADR-0005, D3; the list of moved servers lives in
@@ -296,7 +297,7 @@ const EXTERNAL_CLIS: ReadonlyArray<{ name: string, install?: string, docs: strin
     // constantly. Claude Code ships its own copy, so this never surfaced there — but
     // OpenCode and Codex fall through to the system binary, and a downstream user hit
     // exactly that while running /git-flow-master. Declaring it is the point of
-    // supporting three harnesses.
+    // supporting several harnesses.
     name: 'rg',
     install: 'brew install ripgrep   # or: apt install ripgrep · winget install BurntSushi.ripgrep.MSVC',
     docs: 'https://github.com/BurntSushi/ripgrep#installation',
@@ -485,7 +486,7 @@ export const MCP_VAR_PATTERN = /\$\{([A-Z][A-Z0-9_]*)(?::-[^}]*)?\}/g;
 // Matches OpenCode {env:VAR} placeholders in opencode.jsonc.
 export const OPENCODE_VAR_PATTERN = /\{env:([A-Z][A-Z0-9_]*)\}/g;
 // Matches the `.env` loader's `"--filter", "A,B"` pair, spelled the same in the
-// three MCP configs (JSON, JSONC and TOML arrays). The names it lists are what
+// MCP configs (JSON, JSONC and TOML arrays). The names it lists are what
 // the server reads from `.env` (MCP_ENV_LOADER_* in
 // cli/lib/agent-compatibility-contracts.ts).
 export const MCP_FILTER_PATTERN = /"--filter"\s*,\s*"([A-Z][A-Z0-9_,]*)"/g;
@@ -913,14 +914,28 @@ function detectedAgentIds(detected: AgentDetection): AgentId[] {
 }
 
 /**
+ * What a run with nobody to ask may declare on its own: the detected agents whose
+ * harness has a file in this repo. A binary on the machine says nothing about the
+ * project, and an existing project gets no harness it never had (ADR-0026). A repo
+ * with no harness file at all keeps what was detected, so there is still someone
+ * to configure.
+ */
+export function agentsWithFilesHere(found: readonly AgentId[], root = REPO_ROOT): AgentId[] {
+  const here = found.filter(agent => HARNESS_FILES[harnessOfAgent(agent)].some(file => existsSync(join(root, file))));
+  return here.length > 0 ? here : [...found];
+}
+
+/**
  * Which agents this repository supports. All of them are offered: a teammate may
  * use one this machine does not have. Non-interactive: `INSTALL_AGENTS`, else
- * whatever is detected.
+ * the earlier run's choice, else `agentsWithFilesHere`.
  */
 async function askAgents(detected: AgentDetection, prior: AgentId[]): Promise<AgentId[]> {
   const found = detectedAgentIds(detected);
   const fromEnv = parseAgentsEnv();
-  const preset = fromEnv && fromEnv.length > 0 ? fromEnv : prior.length > 0 ? prior : found;
+  const preset = fromEnv && fromEnv.length > 0
+    ? fromEnv
+    : prior.length > 0 ? prior : NON_INTERACTIVE ? agentsWithFilesHere(found) : found;
   const codexDesc = detected.codexCli
     ? tr('Instalado · CLI; la app de escritorio usa la misma configuración', 'Installed · CLI; the desktop app uses the same repository config')
     : detected.codexConfigured
@@ -1024,7 +1039,7 @@ export function engramSetupArgs(agent: Exclude<AgentId, 'pi'>): string[] {
 }
 
 /** Registers Engram at Pi's user level; the human runs it, because it writes user config. */
-export const ENGRAM_PI_MANUAL = 'pi mcp add engram -- engram mcp --tools=agent';
+export const ENGRAM_PI_MANUAL = 'pi mcp add engram --exposure deferred -- engram mcp --tools=agent';
 
 /** The Engram Claude Code plugin ships the session hooks `engram setup` does not write. */
 export const ENGRAM_PLUGIN_COMMANDS: string[][] = [
@@ -2344,6 +2359,19 @@ function removeEmptyParents(root: string, file: string): void {
   }
 }
 
+/** `agents:compat` regenerates; only `bun sync` brings the files of a harness the project declared without them. */
+function agentContractFix(errors: readonly string[]): { es: string, en: string } {
+  const files = declaredHarnesses(REPO_ROOT).source === 'boilerplate' ? [] : missingHarnessFiles(errors);
+  if (files.length === 0) {
+    return { es: 'corre <code>bun run agents:compat</code>.', en: 'run <code>bun run agents:compat</code>.' };
+  }
+  const list = files.map(file => `<code>${file}</code>`).join(', ');
+  return {
+    es: `corre <code>bun sync</code>, que trae ${list}, o quita ese agente de <code>harnesses:</code> en <code>.agents/project.yaml</code>.`,
+    en: `run <code>bun sync</code>, which brings ${list}, or drop that agent from <code>harnesses:</code> in <code>.agents/project.yaml</code>.`,
+  };
+}
+
 function compatibilityStep(lane: string): void {
   const step = UI!.step({ id: 'compat', phase: 'install', lane, title: tr('Enlazar las skills a tus agentes', 'Link the skills to your agents') });
   try {
@@ -2352,8 +2380,10 @@ function compatibilityStep(lane: string): void {
     step.end('ok', `${compatibility.alias ? '<code>.claude/skills</code> → <code>.agents/skills/</code>' : tr('sin alias de Claude', 'no Claude alias')}${moved.length > 0 ? tr(` · movidos a ${SHADOWING_COMMANDS_BACKUP_DIR}/: ${moved.join(', ')}`, ` · moved to ${SHADOWING_COMMANDS_BACKUP_DIR}/: ${moved.join(', ')}`) : ''}`);
   }
   catch (err) {
-    for (const line of (err as Error).message.split('\n').slice(1, 8)) { step.log(line, 'err'); }
-    step.end('failed', tr('El contrato de los agentes quedó incompleto: corre <code>bun run agents:compat</code>.', 'The agent contract is incomplete: run <code>bun run agents:compat</code>.'));
+    const lines = (err as Error).message.split('\n').slice(1);
+    for (const line of lines.slice(0, 8)) { step.log(line, 'err'); }
+    const fix = agentContractFix(lines);
+    step.end('failed', tr(`El contrato de los agentes quedó incompleto: ${fix.es}`, `The agent contract is incomplete: ${fix.en}`));
   }
 }
 
@@ -3504,7 +3534,8 @@ async function main(): Promise<void> {
     if (check.ok) { step.end('ok'); }
     else {
       for (const e of check.errors.slice(0, 8)) { step.log(e, 'err'); }
-      step.end('warn', tr('Corre <code>bun run agents:compat</code>.', 'Run <code>bun run agents:compat</code>.'));
+      const fix = agentContractFix(check.errors);
+      step.end('warn', tr(fix.es, fix.en));
     }
   }
   await retireHarnessCopies();
