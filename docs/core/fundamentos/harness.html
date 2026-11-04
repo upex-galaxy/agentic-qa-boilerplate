@@ -540,8 +540,9 @@
         <code>.env.example</code> ni de los schemas), de <code>.auth/**</code> y de
         <code>.claude/settings.local.json</code>, y los comandos tipo <code>printenv</code>. Ese
         bloqueo es un cinturón de seguridad, no un muro: variantes por shell como
-        <code>cat .env</code> pasan, y los hijos en segundo plano de <code>pi-subagents</code> no se
-        probaron.
+        <code>cat .env</code> pasan, los hijos en segundo plano de <code>pi-subagents</code> no se
+        probaron, y solo existe donde el adaptador carga: una sesión sin confianza, o una de print o
+        RPC bajo <code>ask</code>, no lo tiene.
       </p>
       <p>
         Pi tampoco trae subagentes, tool de preguntas ni modo plan: el trabajo corre en línea o en

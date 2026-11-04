@@ -2381,7 +2381,8 @@ carga <b>project-context</b>, modo <span class="k">data</span>
               >pi mcp add</code
             >); los conectores de claude.ai no existen en Pi. Como <code>engram setup</code> no
             nombra a Pi, el instalador imprime
-            <code>pi mcp add engram -- engram mcp --tools=agent</code> para que lo corras a mano.
+            <code>pi mcp add engram --exposure deferred -- engram mcp --tools=agent</code> para que
+            lo corras a mano.
           </p>
           <div class="note warn">
             <p>
@@ -2780,8 +2781,9 @@ carga <b>project-context</b>, modo <span class="k">data</span>
                 único estado. El adaptador rechaza la lectura directa de <code>.env*</code> (no de
                 <code>.env.example</code> ni de los schemas), de <code>.auth/**</code> y de
                 <code>.claude/settings.local.json</code>, y los comandos tipo <code>printenv</code>.
-                Variantes por shell como <code>cat .env</code> pasan, y los hijos en segundo plano
-                de <code>pi-subagents</code> no se probaron.
+                Variantes por shell como <code>cat .env</code> pasan, los hijos en segundo plano de
+                <code>pi-subagents</code> no se probaron, y solo existe donde el adaptador carga:
+                una sesión sin confianza, o una de print o RPC bajo <code>ask</code>, no lo tiene.
               </p>
             </div>
             <div class="card">

@@ -495,9 +495,10 @@ bun run setup:doctor --json   # env_var_scopes[] y harness_level_mcps para un ag
         <code>.env*</code> (no de <code>.env.example</code> ni de los schemas), de
         <code>.auth/**</code> y de <code>.claude/settings.local.json</code>, y los comandos tipo
         <code>printenv</code>. Es un cinturón de seguridad: variantes por shell como
-        <code>cat .env</code> pasan, y los hijos en segundo plano de <code>pi-subagents</code> no se
-        probaron. El detalle completo, con los comandos seguros y qué hacer si un valor se filtra,
-        está en <code>.agents/skills/agentic-qa-core/references/secret-hygiene.md</code>.
+        <code>cat .env</code> pasan, los hijos en segundo plano de <code>pi-subagents</code> no se
+        probaron, y solo existe donde el adaptador carga: una sesión sin confianza no lo tiene. El
+        detalle completo, con los comandos seguros y qué hacer si un valor se filtra, está en
+        <code>.agents/skills/agentic-qa-core/references/secret-hygiene.md</code>.
       </p>
 
       <h2 id="gestores">Gestores de secretos</h2>

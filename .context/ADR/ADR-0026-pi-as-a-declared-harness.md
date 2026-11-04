@@ -39,6 +39,10 @@ We will treat Pi as a first-class harness: it is in `HARNESSES`, under the same 
 - **Negative / trade-offs:** the boilerplate must keep a fourth adapter passing while Pi moves fast. New scaffolds carry two more files until the installer's offer to delete them is taken. The block leaves Rule #1's text as what really binds. A Pi conductor cannot honour `permission_modes.conductor: auto`, because Pi has no such mode, and ADR-0024's stated exposure applies.
 - **Neutral / follow-ups:** Pi has no subagents, question tool or plan mode built in, so the doctrines name their fallbacks (inline work or a supervised worker, the numbered list). `default_model` never reaches a Pi worker: it starts on the model in its own config and the conductor types `/model`. `dbhub` on Pi is loader-verified only: the machine that measured this has no database values, so a full connect is unproven. Trust on a machine whose default is `ask` is unproven under Orca.
 
+## Review note (2026-11-04, before the first push)
+
+An independent review found the block narrower than stated, and the code was fixed before this ADR left the branch. A `grep` wildcard glob overrides `.gitignore` and returned `.env` values, and path and case variants passed `read`. Ripgrep takes one `--glob` and runs with `--no-config`, so an exclusion cannot be forced: the adapter refuses a glob that names a secret and drops lines from secret files out of `grep` output. It normalizes paths and fails closed on malformed input. A third limit joins decision 4: the block exists only where the adapter loads, so an untrusted session, or a print or RPC session under `ask`, has none. The Engram line takes `--exposure deferred`, per decision 5.
+
 ## Alternatives considered
 
 - **A separate opt-in class for Pi** — lower promise while Pi moves fast, but a second code path through selection, doctor, installer and updater, with weaker gates.

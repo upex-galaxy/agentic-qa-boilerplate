@@ -6,9 +6,10 @@
  * there on every commit.
  */
 
-import { existsSync, readFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
-import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
+import { afterAll, afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
 const REPO_ROOT = resolve(import.meta.dir, '..', '..');
 const ADAPTER = join(REPO_ROOT, '.pi/extensions/agentic-qa.js');
@@ -180,16 +181,133 @@ describe.skipIf(!HAS_ADAPTER)('Pi adapter: secret block', () => {
     expect(blocked('bash', { command })).toBe(false);
   });
 
-  test('other tools and missing input pass without throwing', () => {
+  test.each([
+    '.env/.',
+    '.env/x/..',
+    './.env/.',
+    '.env/',
+    'a/../.env',
+    '.ENV',
+    '.Env.Local',
+    '.AUTH/state.json',
+    '.CLAUDE/settings.local.json',
+    '.claude/./settings.local.json',
+    '.claude//settings.local.json',
+    '.claude/x/../settings.local.json',
+    '.auth\\state.json',
+  ])('refuses the path variant %s', (path) => {
+    expect(blocked('read', { path })).toBe(true);
+    expect(blocked('grep', { path })).toBe(true);
+  });
+
+  test.each(['.ENV.EXAMPLE', '.Env.Schema', 'other/settings.local.json', '.claude/settings.json'])('still lets %s through', (path) => {
+    expect(blocked('read', { path })).toBe(false);
+  });
+
+  test.each([
+    ['read', {}],
+    ['read', { path: 42 }],
+    ['read', undefined],
+    ['bash', {}],
+    ['bash', { command: ['printenv'] }],
+    ['grep', { path: {} }],
+    ['grep', { glob: ['*'] }],
+  ])('fails closed on a malformed %s call: %j', (toolName, input) => {
+    expect(blocked(toolName, input as Record<string, unknown>)).toBe(true);
+  });
+
+  test('other tools and an omitted grep path pass without throwing', () => {
     expect(blocked('edit', { path: 'a.ts' })).toBe(false);
-    expect(blocked('read', {})).toBe(false);
-    expect(blocked('bash', {})).toBe(false);
+    expect(blocked('grep', {})).toBe(false);
+    expect(blocked('grep', { path: null, glob: null })).toBe(false);
     expect(blocked('mcp__x__y', undefined as unknown as Record<string, unknown>)).toBe(false);
+  });
+
+  test.each(['grep -E \'dev|env|prod\' config.yml', 'echo \'x; printenv\'', 'git commit -m "a; printenv docs"', 'ls 2>&1'])('quoted text is not a command: %s', (command) => {
+    expect(blocked('bash', { command })).toBe(false);
+  });
+
+  test.each(['FOO="a b" printenv', 'true & printenv', 'echo \'ok\'; printenv'])('still refuses %s', (command) => {
+    expect(blocked('bash', { command })).toBe(true);
+  });
+
+  test.each(['.env', '.env*', '.ENV.local', '**/.env', '.auth/**', '**/settings.local.json'])('refuses the grep glob %s', (glob) => {
+    expect(blocked('grep', { glob })).toBe(true);
+  });
+
+  test.each(['*', '**', '*.ts', 'src/**', '.env.example', '.env.*.schema', '*.local'])('lets the grep glob %s through to the output filter', (glob) => {
+    expect(blocked('grep', { glob })).toBe(false);
   });
 
   test('the event handler answers with block and a reason', () => {
     const { fire } = fakePi();
     expect(fire('tool_call', { toolName: 'read', input: { path: '.env' } })).toMatchObject({ block: true, reason: expect.stringContaining('Rule #1') });
     expect(fire('tool_call', { toolName: 'read', input: { path: 'README.md' } })).toBeUndefined();
+  });
+});
+
+// Pi's `grep` runs `rg --no-config --json --line-number --color=never --hidden
+// [--glob <g>] -- <pattern> <path>` and prints `<path>:<line>: <text>`. These run
+// the same command over throwaway canary files, in a real git repo whose
+// `.gitignore` lists them, and hand the result to the adapter through the fake `pi`.
+const RG = Bun.which('rg');
+const CANARY = 'CANARY_VALUE_NOT_A_SECRET';
+
+describe.skipIf(!HAS_ADAPTER || RG === null)('Pi adapter: grep output against real ripgrep', () => {
+  const repo = mkdtempSync(join(tmpdir(), 'pi-grep-canary-'));
+  afterAll(() => rmSync(repo, { recursive: true, force: true }));
+  const files: Record<string, string> = {
+    '.gitignore': '.env\n.env.*\n!.env.example\n.auth/\n.claude/settings.local.json\n',
+    '.env': `TOKEN=${CANARY}\n`,
+    '.env.local': `TOKEN=${CANARY}\n`,
+    '.env.staging': `TOKEN=${CANARY}\n`,
+    '.auth/state.json': `{"t":"${CANARY}"}\n`,
+    '.claude/settings.local.json': `{"t":"${CANARY}"}\n`,
+    '.env.example': `TOKEN=${CANARY}_EXAMPLE\n`,
+    'src/app.ts': `// ${CANARY}_APP\n`,
+  };
+  for (const [path, body] of Object.entries(files)) {
+    mkdirSync(dirname(join(repo, path)), { recursive: true });
+    writeFileSync(join(repo, path), body);
+  }
+  Bun.spawnSync(['git', 'init', '-q'], { cwd: repo });
+
+  /** What Pi's grep tool would hand the model, before the adapter. */
+  const piGrep = (glob?: string): string => {
+    const args = ['--no-config', '--json', '--line-number', '--color=never', '--hidden', ...(glob ? ['--glob', glob] : []), '--', CANARY, '.'];
+    const out = new TextDecoder().decode(Bun.spawnSync([RG!, ...args], { cwd: repo }).stdout);
+    return out.split('\n').filter(Boolean).map(line => JSON.parse(line) as { type: string, data: { path: { text: string }, line_number: number, lines: { text: string } } }).filter(event => event.type === 'match').map(event => `${event.data.path.text.replace(/^\.\//, '')}:${event.data.line_number}: ${event.data.lines.text.trimEnd()}`).join('\n');
+  };
+
+  test.each([undefined, '*', '**', '.*', '*.local', '*.staging', '*.json'])('glob %s: no secret line reaches the model', (glob) => {
+    const { fire } = fakePi();
+    const content = [{ type: 'text', text: piGrep(glob) }];
+    const result = fire('tool_result', { toolName: 'grep', input: { pattern: CANARY, glob }, content, parentToolCallId: 'p' });
+    const text = (result?.content ?? content).map((part: { text: string }) => part.text).join('\n');
+    expect(text).not.toMatch(new RegExp(`${CANARY}(?!_)`));
+  });
+
+  test('the measurement is real: without the filter `*` returns the canaries, and the rest survive it', () => {
+    const raw = piGrep('*');
+    expect(raw).toMatch(new RegExp(`\\.env:1: TOKEN=${CANARY}$`, 'm'));
+    expect(raw).toMatch(new RegExp(`\\.auth/state\\.json:1: .*${CANARY}`));
+
+    const { fire } = fakePi();
+    const result = fire('tool_result', { toolName: 'grep', input: {}, content: [{ type: 'text', text: raw }], parentToolCallId: 'p' });
+    const text = result.content.map((part: { text: string }) => part.text).join('\n');
+    expect(text).toContain(`${CANARY}_APP`);
+    expect(text).toContain(`${CANARY}_EXAMPLE`);
+    expect(text).toContain('withheld (Critical Rule #1)');
+  });
+
+  test('context lines are withheld too, and a look-alike line of an ordinary file stays', () => {
+    const filtered = adapter.withholdSecretLines([{ type: 'text', text: `.env-1- TOKEN=${CANARY}\n.env-2- A:3: x\nsrc/a.ts-3- .env\nsrc/a.ts:4: see .env:1: there` }]);
+    expect(filtered[0].text).toBe('src/a.ts-3- .env\nsrc/a.ts:4: see .env:1: there');
+  });
+
+  test('a result with no secret line stays untouched, and other tools are not filtered', () => {
+    expect(adapter.withholdSecretLines([{ type: 'text', text: 'src/a.ts:4: fine' }])).toBeNull();
+    const { fire } = fakePi();
+    expect(fire('tool_result', { toolName: 'read', input: { path: 'x' }, content: [{ type: 'text', text: `.env:1: ${CANARY}` }], parentToolCallId: 'p' })).toBeUndefined();
   });
 });
