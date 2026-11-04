@@ -3,7 +3,7 @@
   "type": "module",
   "version": "1.0.0",
   "private": true,
-  "description": "Agentic QA boilerplate built on Playwright + KATA + TypeScript. Skills-based AI workflows for the full QA lifecycle — planning, manual testing, TMS docs, automation, and regression. Portable across Claude Code, Codex, Cursor, Copilot, and OpenCode.",
+  "description": "Agentic QA boilerplate built on Playwright + KATA + TypeScript. Skills-based AI workflows for the full QA lifecycle — planning, manual testing, TMS docs, automation, and regression. Portable across Claude Code, Codex, Cursor, Copilot, OpenCode, and Pi.",
   "author": "UPEX Galaxy",
   "license": "MIT",
   "homepage": "https://github.com/upex-galaxy/agentic-qa-boilerplate#readme",
@@ -28,6 +28,7 @@
     "agent-skills",
     "agentskills",
     "claude-code",
+    "pi",
     "quality-engineering",
     "shift-left-testing",
     "agentic"

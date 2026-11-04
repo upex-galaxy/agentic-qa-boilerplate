@@ -2,7 +2,7 @@
 /**
  * @fileoverview Structural gate for the progressive-disclosure instructions.
  *
- * `AGENTS.md` (L0) is loaded on every session by all three hosts; the section
+ * `AGENTS.md` (L0) is loaded on every session by every host; the section
  * files under `.agents/instructions/` load only when the L0 ROUTER (or the
  * hook's `ROUTE:` line) sends the model there. That split only works while
  * these hold, and each one is checked here:

@@ -521,15 +521,16 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <section class="slide compact" data-title="Puede dispararse sola?">
     <p class="kicker">Disparo · 5 de 13</p>
     <h2 class="h2">Puede dispararse <span class="grad">sola</span>? En parte</h2>
-    <p class="small dim mt-s">Ningún harness le pasa al agente el tamaño actual del contexto. Dos de los tres lo exponen fuera del loop del modelo: un modo automático sería cableado nuevo, no un campo esperando a ser leído.</p>
+    <p class="small dim mt-s">Ningún harness le pasa al agente el tamaño actual del contexto. Claude Code, OpenCode y Pi lo exponen fuera del loop del modelo: un modo automático sería cableado nuevo, no un campo esperando a ser leído.</p>
     <table class="tt tight mt-m">
       <tr><th style="width:150px">Harness</th><th>Mejor señal disponible</th><th style="width:30%">Qué trae</th></tr>
       <tr><td class="mono">Claude Code</td><td class="small">el JSON que recibe la status line</td><td class="small"><span class="mono">context_window.used_percentage</span> y el tamaño de la ventana</td></tr>
       <tr><td class="mono">OpenCode</td><td class="small">un plugin suscrito a <span class="mono">message.part.updated</span></td><td class="small"><span class="mono">tokens.input</span> / <span class="mono">tokens.output</span> de cada <span class="mono">step-finish</span>, acumulables</td></tr>
       <tr><td class="mono">Codex CLI</td><td class="small">solo el evento <span class="mono">PreCompact</span></td><td class="small">ningún número; la ventana ya está llena</td></tr>
+      <tr><td class="mono">Pi</td><td class="small">una extensión, con <span class="mono">ctx.getContextUsage()</span></td><td class="small">el uso actual del contexto, desde cualquier evento</td></tr>
     </table>
     <div class="grid g2 mt-m" style="gap:22px">
-      <div class="card" style="border-color:var(--warn)"><p class="lbl" style="color:var(--warn)">La compactación es el momento equivocado</p><p class="small mt-s">Los tres avisan que la compactación es inminente, pero ahí la ventana ya se agotó: el handoff lo escribiría una sesión a punto de truncarse, con el juicio degradado del que el handoff existe para escapar.</p></div>
+      <div class="card" style="border-color:var(--warn)"><p class="lbl" style="color:var(--warn)">La compactación es el momento equivocado</p><p class="small mt-s">Todos avisan que la compactación es inminente, pero ahí la ventana ya se agotó: el handoff lo escribiría una sesión a punto de truncarse, con el juicio degradado del que el handoff existe para escapar.</p></div>
       <div class="card card-soft"><p class="lbl">Si algún día se habilita</p><p class="small mt-s">Pregunta una vez, en dos líneas, y acepta un no sin volver a preguntar en esa sesión. Nunca escribe un handoff sin que se lo pidan.</p></div>
     </div>
     <div class="notes">Veredicto completo, con fuentes, la fecha de verificación y las versiones de cada harness: references/auto-trigger.md. Leelo antes de prometerle al dueño un modo automático. La posición del dueño queda registrada ahí: prefiere el disparo manual.</div>
@@ -629,7 +630,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="card card-accent">
         <p class="lbl">Con un runtime alcanzable</p>
         <p class="small mt-s">Antes de lanzar verifica tres cosas: el binario está y el runtime responde; el archivo existe completo en su path final; el destino es la <b>misma worktree</b> y el <b>mismo harness</b>.</p>
-        <p class="small mt-s">Después abre una terminal en esa worktree con la línea de lanzamiento <b>del harness</b> (Claude lanza Claude, OpenCode lanza OpenCode, Codex lanza Codex), con el nombre de la sucesora y un primer prompt.</p>
+        <p class="small mt-s">Después abre una terminal en esa worktree con la línea de lanzamiento <b>del harness</b> (Claude lanza Claude, OpenCode lanza OpenCode, Codex lanza Codex, Pi lanza Pi), con el nombre de la sucesora y un primer prompt.</p>
         <p class="small mt-s" style="color:var(--warn)"><b>Te lo anuncia antes de dispararlo</b> y te dice qué terminal lo lleva: va a aparecer una segunda sesión en tu tablero.</p>
       </div>
       <div class="stack" style="gap:14px">
@@ -683,8 +684,8 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="grid g3 mt-m" style="gap:22px;align-items:start">
       <div class="card">
         <p class="lbl">Cómo se invoca</p>
-        <p class="small mt-s"><b>Claude Code:</b> <span class="mono">/session-handoff</span>.<br><b>OpenCode y Codex:</b> cargá la skill <span class="mono">session-handoff</span>.</p>
-        <p class="small mt-s">En los tres hosts también la disparan frases como <i>"hagamos el handoff"</i> o <i>"pasa el contexto a otra sesión"</i>. No tiene modos.</p>
+        <p class="small mt-s"><b>Claude Code:</b> <span class="mono">/session-handoff</span>.<br><b>OpenCode y Codex:</b> cargá la skill <span class="mono">session-handoff</span>.<br><b>Pi:</b> <span class="mono">/skill:session-handoff</span></p>
+        <p class="small mt-s">En cada host también la disparan frases como <i>"hagamos el handoff"</i> o <i>"pasa el contexto a otra sesión"</i>. No tiene modos.</p>
       </div>
       <div class="card">
         <p class="lbl">Qué lee</p>

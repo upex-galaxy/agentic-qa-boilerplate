@@ -21,7 +21,7 @@ When in doubt, treat it as a secret. The schema is the source of truth for the `
 |---|---|
 | `.env`, `.env.local`, `.env.*.local` | `.env.example` |
 | `.auth/**` (token files, `api-state.json`, `<env>-<role>.json`, the `opencode/<VAR>` value files an older `harness:env` wrote, `harness-env-backup/<VAR>`) | the committed `.env*.schema` files: `.env.schema`, `.env.core.schema` and, when a project uses a secret manager, `.env.provider.schema` (`op://` references, never a value) |
-| `.claude/settings.local.json` (an older `bun run harness:env` wrote MCP secrets into its `env` block; the current one retires them) | `.mcp.json`, `opencode.jsonc`, `.codex/config.toml` (they hold the `.env` loader's `--filter` names) |
+| `.claude/settings.local.json` (an older `bun run harness:env` wrote MCP secrets into its `env` block; the current one retires them) | `.mcp.json`, `opencode.jsonc`, `.codex/config.toml`, `.pi/mcp.json` (they hold the `.env` loader's `--filter` names) |
 
 Sourcing a file inside the same command that uses it is using it by name: `source .auth/tokens.env && curl -H "Authorization: Bearer $API_TOKEN_<ROLE>_<ENV>" ...` is the API doctrine's form (`api-testing-doctrine.md`) and stays allowed. Printing what the file holds is not.
 

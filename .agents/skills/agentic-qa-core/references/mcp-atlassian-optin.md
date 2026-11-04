@@ -23,13 +23,13 @@ same way the committed configs pin every `bunx` package: pin the version you ins
 | `JIRA_USERNAME` | `ATLASSIAN_EMAIL` in `.env` |
 | `JIRA_API_TOKEN` | `ATLASSIAN_API_TOKEN` in `.env` |
 
-After a site migration: update `.agents/project.yaml` first, then re-paste `JIRA_URL` in all
-three configs. `bun run setup:doctor` cannot see a stale value inside an MCP config.
+After a site migration: update `.agents/project.yaml` first, then re-paste `JIRA_URL` in every
+config. `bun run setup:doctor` cannot see a stale value inside an MCP config.
 
-## Enable it on ALL THREE hosts, in one change
+## Enable it on EVERY host, in one change
 
 The parity check (below) fails when a server exists in one host only, so the block goes into
-`.mcp.json`, `opencode.jsonc` and `.codex/config.toml` together. Replace
+`.mcp.json`, `opencode.jsonc`, `.codex/config.toml` and `.pi/mcp.json` together. Replace
 `https://your-site.atlassian.net` with the output of `bun run --silent jira:url`.
 
 Every host starts the server through the same `.env` loader the shipped servers use
@@ -97,6 +97,8 @@ args = [
 JIRA_URL = "https://your-site.atlassian.net"
 ```
 
+**Pi** (`.pi/mcp.json`). Same launch line, and the entry carries `exposure: "deferred"` like every other server in that file; copy the shape of a shipped entry there.
+
 Copy the `varlock@<pin>` from the shipped servers in the same file rather than from this page: it
 tracks the `varlock` devDependency. On Windows, where there is no `sh`, add `JIRA_USERNAME` /
 `JIRA_API_TOKEN` to the schema and `.env` under those names and filter on them with
@@ -112,14 +114,14 @@ Rule #10). Verify with `bun run agents:compat:check`.
 ## MCP parity contract
 
 `bun run agents:compat:check` (in `repo:check` and pre-push) normalises `.mcp.json`,
-`opencode.jsonc` and `.codex/config.toml` into one shape (transport, command, args, url, `.env`
+`opencode.jsonc`, `.codex/config.toml` and `.pi/mcp.json` into one shape (transport, command, args, url, `.env`
 dependencies, literal env, enabled) and compares them. The canonical server set is whatever
 `.mcp.json` declares; a server missing from another host, or present in one host only, fails
 naming the server and the host.
 
 - **It compares `.env` dependencies, not argument spelling.** A server behind the loader
   declares its dependencies as the `--filter` list; that list is what must match across the
-  three hosts, plus the literal settings. A remote server that carries its key from the host
+  hosts, plus the literal settings. A remote server that carries its key from the host
   (an HTTP header in Claude, `bearer_token_env_var` in Codex) is compared on the same SET of
   names, so different spellings of one name are parity, not drift.
 - **A stdio server that needs `.env` values launches through the loader on every host, and
@@ -128,7 +130,7 @@ naming the server and the host.
   value shadows `.env`. Codex passes placeholders inside `args` or `[mcp_servers.X.env]` as
   literal text, so a `${DBHUB_HOST}` there would reach dbhub as that string; the check rejects a
   placeholder inside a Codex `env` table. ERROR in the boilerplate, WARNING downstream that names
-  the exact launch to write, because the three configs are never overwritten by a sync.
+  the exact launch to write, because the configs are never overwritten by a sync.
 - **The shipped servers get a stricter shape check** (the ids in `KNOWN_MCP_IDS`,
   `cli/lib/agent-compatibility-contracts.ts`) when declared. Any other server, `atlassian`
   included, gets the generic comparison only, so a project may add or drop servers freely.

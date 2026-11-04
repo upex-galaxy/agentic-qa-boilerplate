@@ -666,7 +666,7 @@ Session: bulk-assign-w2 (c0ffee12)</div>
     <div class="grid g3 mt-s" style="gap:20px">
       <div class="card"><p class="lbl">Se copian del contexto</p><p class="small mt-s">El label llega hasta el token literal <span class="mono"> harness=</span> (puede tener espacios y paréntesis). <span class="mono">primary</span> fuera de un worktree; <span class="mono">unknown</span> si no resuelve. Nada debajo. Al commitear, <span class="mono">.husky/commit-msg</span> solo avisa (no bloquea) si falta alguno o si aparece un <span class="mono">Claude-Session:</span>.</p></div>
       <div class="card card-accent"><p class="lbl">Procedencia</p><p class="small mt-s">Responden qué checkout y qué sesión produjeron la línea, para un bisect o un post-mortem de sesiones paralelas. No nombran herramienta, vendor ni modelo: por eso no cuentan como atribución (Regla #3).</p></div>
-      <div class="card"><p class="lbl">Un emisor, tres hosts</p><p class="small mt-s">Claude Code y Codex lo corren como command hook; OpenCode importa la constante desde un plugin. Mismo texto, sin copias por harness.</p></div>
+      <div class="card"><p class="lbl">Un emisor, un adaptador por host</p><p class="small mt-s">Claude Code y Codex lo corren como command hook; OpenCode importa la constante desde un plugin; Pi lo carga desde una extensión. Mismo texto, sin copias por harness.</p></div>
     </div>
     <div class="notes">Son obligatorios en todo commit y en toda estrategia. Un trailer faltante es menos recuperable que un unknown honesto. El hook es el mismo que reinyecta el contrato de personalidad.</div>
   </section>
@@ -956,8 +956,8 @@ $ bun run git:policy apply --yes      # escribe el ruleset
     <div class="grid g3 mt-m" style="gap:22px;align-items:start">
       <div class="card">
         <p class="lbl">Cómo se invoca</p>
-        <p class="small mt-s"><b>Claude Code:</b> <span class="mono">/git-flow-master</span>.<br><b>OpenCode y Codex:</b> cargá la skill <span class="mono">git-flow-master</span>.</p>
-        <p class="small mt-s">En los tres hosts se carga sola ante intenciones como <i>"commit and push"</i>, <i>"abrí un PR"</i>, <i>"tengo conflictos"</i> o <i>"configura el flujo de git"</i>. No tiene modos: la operación sale del pedido.</p>
+        <p class="small mt-s"><b>Claude Code:</b> <span class="mono">/git-flow-master</span>.<br><b>OpenCode y Codex:</b> cargá la skill <span class="mono">git-flow-master</span>.<br><b>Pi:</b> <span class="mono">/skill:git-flow-master</span></p>
+        <p class="small mt-s">En cada host se carga sola ante intenciones como <i>"commit and push"</i>, <i>"abrí un PR"</i>, <i>"tengo conflictos"</i> o <i>"configura el flujo de git"</i>. No tiene modos: la operación sale del pedido.</p>
       </div>
       <div class="card">
         <p class="lbl">Quién la llama</p>

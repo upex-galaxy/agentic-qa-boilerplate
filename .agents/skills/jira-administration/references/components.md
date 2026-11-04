@@ -2,7 +2,7 @@
 name: jira-components
 description: Reconcile a Jira project's Components against the target application's real functional modules, driving `scripts/sync-jira-components.ts` through a plan file the user approves before anything is written. Do NOT use for setting components on an issue, Jira field/workflow catalogs, or repointing the instance (use `jira-administration` mode `instance-migration`).
 license: MIT
-compatibility: [claude-code, copilot, cursor, codex, opencode]
+compatibility: [claude-code, copilot, cursor, codex, opencode, pi]
 ---
 
 # Jira Components Sync

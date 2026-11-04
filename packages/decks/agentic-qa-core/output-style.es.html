@@ -200,7 +200,7 @@ footer code{font-family:var(--mono);font-size:12px;color:var(--t2)}
       <tr>
         <td>OUTPUT STYLE</td>
         <td>cómo se <strong>ve</strong> y qué <strong>textura</strong> tiene</td>
-        <td>instrucciones de agente a nivel usuario (<code>## OUTPUT STYLE</code>), en cualquiera de los tres hosts</td>
+        <td>instrucciones de agente a nivel usuario (<code>## OUTPUT STYLE</code>), en cualquiera de los hosts</td>
         <td>al arrancar sesión</td>
       </tr>
     </tbody>
@@ -301,10 +301,10 @@ footer code{font-family:var(--mono);font-size:12px;color:var(--t2)}
     <div class="card" style="--ac:var(--blue)">
       <span class="n">06</span>
       <h4>Hook de reinyección del contrato</h4>
-      <p><code>.agents/hooks/personality-reinject.mjs</code> guarda el texto una sola vez y tres
-      adaptadores finos lo registran como <code>UserPromptSubmit</code>:
-      <code>.claude/settings.json</code>, <code>.opencode/plugins/personality-reinject.js</code> y
-      <code>.codex/hooks.json</code>. Sin él, PM Voice y Butler se leen una vez y se diluyen a lo largo
+      <p><code>.agents/hooks/personality-reinject.mjs</code> guarda el texto una sola vez y un
+      adaptador fino por harness lo registra:
+      <code>.claude/settings.json</code>, <code>.opencode/plugins/personality-reinject.js</code>,
+      <code>.codex/hooks.json</code> y <code>.pi/extensions/agentic-qa.js</code>. Sin él, PM Voice y Butler se leen una vez y se diluyen a lo largo
       de la sesión: el problema era mecánico, no editorial. Cuesta unas decenas de
       tokens por turno.</p>
       <span class="st done">aplicado</span>

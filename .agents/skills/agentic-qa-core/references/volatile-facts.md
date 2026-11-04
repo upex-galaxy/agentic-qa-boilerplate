@@ -32,7 +32,7 @@ edit-history   "since 8.4 the updater does X"          -> "the updater does X" (
 
 ## 3. What is stable, and therefore fine
 
-Names that change only by an explicit decision are the vocabulary of the repo, not its state: the IQL stage names, the KATA layer names, a Critical Rule number, the name of a file or a command, "three hosts". A stable fact passes all five tests. When in doubt, ask whether a routine commit (a new skill, a new skill mode, a synced catalog, a regenerated registry) could falsify the sentence without anyone meaning to change it. If yes, it is volatile.
+Names that change only by an explicit decision are the vocabulary of the repo, not its state: the IQL stage names, the KATA layer names, a Critical Rule number, the name of a file or a command, "every host". A stable fact passes all five tests. When in doubt, ask whether a routine commit (a new skill, a new skill mode, a synced catalog, a regenerated registry) could falsify the sentence without anyone meaning to change it. If yes, it is volatile.
 
 ## 4. Exemptions: where a snapshot is the point
 

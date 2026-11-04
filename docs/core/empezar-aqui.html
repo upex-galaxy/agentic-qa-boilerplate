@@ -90,7 +90,9 @@
               <td>La sección de modos del <code>SKILL.md</code> de ese skill</td>
               <td>
                 Tú, con <code>/&lt;skill&gt; &lt;modo&gt;</code> en Claude Code, o nombrando skill y
-                modo en prosa en OpenCode y Codex. Sin modo reconocible, el skill pregunta.
+                modo en prosa en OpenCode y Codex, o con
+                <code>/skill:&lt;skill&gt; &lt;modo&gt;</code> en Pi. Sin modo reconocible, el skill
+                pregunta.
               </td>
             </tr>
             <tr>
@@ -145,11 +147,9 @@
               </td>
             </tr>
             <tr>
-              <td><strong>Un agente</strong>: Claude Code, OpenCode o Codex (CLI o Desktop)</td>
+              <td><strong>Un agente</strong>: Claude Code, OpenCode, Codex (CLI o Desktop) o Pi</td>
               <td>última</td>
-              <td>
-                Bloquea. Sin ninguno de los tres, el preflight se detiene antes de escribir nada.
-              </td>
+              <td>Bloquea. Sin ninguno, el preflight se detiene antes de escribir nada.</td>
             </tr>
             <tr>
               <td><code>git</code> y <code>tar</code></td>
@@ -270,7 +270,7 @@ bun setup</code></pre>
         <li>
           <strong>Tu equipo</strong>
           <p>
-            Qué agentes soporta el proyecto: Claude Code, OpenCode o Codex. Tu elección queda en
+            Qué agentes soporta el proyecto: Claude Code, OpenCode, Codex o Pi. Tu elección queda en
             <code>harnesses:</code> (<code>.agents/project.yaml</code>) y te ofrece borrar los
             archivos de los que dejaste fuera (por defecto los conserva). Aquí eliges también los
             skills de nivel usuario, una casilla por skill: el que desmarcas queda registrado como
@@ -425,8 +425,8 @@ bun setup</code></pre>
         hook, y una app de escritorio (Claude Desktop, Codex Desktop, OpenCode desktop) o un worker
         lanzado de forma nativa no trae ninguna variable en su entorno. Por eso ningún MCP depende
         del entorno del harness: cada servidor que necesita valores de <code>.env</code> arranca a
-        través del mismo loader, igual en los tres hosts (<code>.mcp.json</code>,
-        <code>opencode.jsonc</code> y <code>.codex/config.toml</code>):
+        través del mismo loader, igual en todos los hosts (<code>.mcp.json</code>,
+        <code>opencode.jsonc</code>, <code>.codex/config.toml</code> y <code>.pi/mcp.json</code>):
       </p>
       <pre
         data-lang="bash"
@@ -465,7 +465,8 @@ bun setup</code></pre>
       </ol>
       <pre data-lang="bash"><code>claude     # Claude Code
 opencode   # OpenCode
-codex      # Codex CLI (Codex Desktop usa la misma config del repo)</code></pre>
+codex      # Codex CLI (Codex Desktop usa la misma config del repo)
+pi         # Pi, pelado y nunca dentro de un loader</code></pre>
       <p>
         Abre el harness tal cual en la carpeta del repo, o con su app de escritorio: no hace falta
         ningún script. Cada servidor MCP lee <code>.env</code> por su cuenta con el loader filtrado
@@ -860,12 +861,12 @@ subagente (contexto limpio)
       </p>
       <h2 id="mcps">Los MCPs del repo</h2>
       <p>
-        Los declara <code>.mcp.json</code> y existen igual en <code>opencode.jsonc</code> y
-        <code>.codex/config.toml</code>. Solo viven ahí servers locales: los que leen valores de
-        <code>.env</code> (la base de datos, la API, el bot de Slack) y el de documentación, que no
-        necesita clave. El navegador no es un MCP: es <code>/playwright-cli</code>. La regla
-        general: primero el CLI (gasta menos tokens) y el MCP como respaldo, salvo donde el MCP es
-        la herramienta principal.
+        Los declara <code>.mcp.json</code> y existen igual en <code>opencode.jsonc</code>,
+        <code>.codex/config.toml</code> y <code>.pi/mcp.json</code>. Solo viven ahí servers locales:
+        los que leen valores de <code>.env</code> (la base de datos, la API, el bot de Slack) y el
+        de documentación, que no necesita clave. El navegador no es un MCP: es
+        <code>/playwright-cli</code>. La regla general: primero el CLI (gasta menos tokens) y el MCP
+        como respaldo, salvo donde el MCP es la herramienta principal.
       </p>
       <p>
         Qué hace cada uno y cuándo se usa está en la tabla de MCPs de
@@ -878,8 +879,9 @@ subagente (contexto limpio)
         La búsqueda web y Postman no están en <code>.mcp.json</code> a propósito: son servers
         remotos cuyo único contenido del lado del proyecto era una API key, así que se conectan una
         vez por máquina a nivel del harness (un conector de claude.ai o un server de usuario en
-        Claude Code, la config global de OpenCode, <code>codex mcp add</code> en Codex) y los skills
-        los resuelven por capacidad, sea cual sea el prefijo. Cómo conectarlos por harness:
+        Claude Code, la config global de OpenCode, <code>codex mcp add</code> en Codex,
+        <code>pi mcp add</code> en Pi) y los skills los resuelven por capacidad, sea cual sea el
+        prefijo. Cómo conectarlos por harness:
         <a href="variables-de-entorno.html#mcps">Variables de entorno</a>. El MCP de Atlassian
         tampoco está: es opt-in y se documenta en
         <code>.agents/skills/agentic-qa-core/references/mcp-atlassian-optin.md</code>. Jira y Xray
@@ -893,10 +895,12 @@ subagente (contexto limpio)
         Engram es un servidor MCP que guarda memoria estructurada y sobrevive a sesiones y
         compactaciones. <code>bun setup</code> lo conecta a cada harness con
         <code>engram setup</code>, a nivel de usuario, fuera del repo. Ese comando registra el
-        servidor de memoria y nada más. En Claude Code, además, ofrece instalar el plugin de Engram
-        (<code>claude plugin install engram@engram</code>), que trae los hooks de sesión. El
-        boilerplate no usa la capa de workflow de gentle-ai: los skills de workflow ya cubren Plan,
-        Code y Verify.
+        servidor de memoria y nada más. <code>engram setup</code> no nombra a Pi, así que para Pi el
+        instalador imprime la línea que corres a mano:
+        <code>pi mcp add engram -- engram mcp --tools=agent</code>. En Claude Code, además, ofrece
+        instalar el plugin de Engram (<code>claude plugin install engram@engram</code>), que trae
+        los hooks de sesión. El boilerplate no usa la capa de workflow de gentle-ai: los skills de
+        workflow ya cubren Plan, Code y Verify.
       </p>
       <p>
         Dos cosas conviene saber. El agente guarda solo cuando él llama a <code>mem_save</code>;
@@ -944,7 +948,8 @@ subagente (contexto limpio)
         <code>package.json</code>. Los skills se muestran en la forma de Claude Code (<code
           >/&lt;skill&gt; &lt;modo&gt;</code
         >); en OpenCode y Codex se piden en prosa ("cargá la skill <code>&lt;skill&gt;</code>, modo
-        <code>&lt;modo&gt;</code>"), como explica <a href="#comandos">Skill y modo</a>.
+        <code>&lt;modo&gt;</code>"), y en Pi con <code>/skill:&lt;skill&gt; &lt;modo&gt;</code>,
+        como explica <a href="#comandos">Skill y modo</a>.
       </p>
       <div class="table-wrap">
         <table>
@@ -1250,9 +1255,9 @@ subagente (contexto limpio)
       <p>
         No hay archivos de comando. Un skill se invoca por su nombre más un modo: en Claude Code,
         <code>/project-context data</code>; en OpenCode y Codex, en prosa ("carga
-        <code>project-context</code>, modo <code>data</code>"). El primer token de tus argumentos
-        que coincide con un modo es el modo; el resto se le pasa al skill. Si ninguno coincide, el
-        skill pregunta.
+        <code>project-context</code>, modo <code>data</code>"); en Pi,
+        <code>/skill:project-context data</code>. El primer token de tus argumentos que coincide con
+        un modo es el modo; el resto se le pasa al skill. Si ninguno coincide, el skill pregunta.
       </p>
       <p>
         Una fila de ejemplo; los modos de cada skill están en su <code>SKILL.md</code> y el catálogo

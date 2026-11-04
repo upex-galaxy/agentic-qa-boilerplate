@@ -14,7 +14,7 @@ Source: `https://www.upexgalaxy.com/metodologia#fases` ("Navegar el IQL completo
 
 | Phase | Posture (web) | Steps | Protagonist role | Guiding question (translated) | Approaches the phase page lists | Tools the phase page lists |
 |---|---|---|---|---|---|---|
-| Early-Game | Prevention (Prevención) | 1-4 | QA Analyst | "Let's build it right from the start" | Shift-Left, BDD, Risk-Based | Jira (or equivalent tracker), Confluence (or team wiki), API client (Postman, Bruno, curl), agentic harness (Claude Code, OpenCode, Codex) |
+| Early-Game | Prevention (Prevención) | 1-4 | QA Analyst | "Let's build it right from the start" | Shift-Left, BDD, Risk-Based | Jira (or equivalent tracker), Confluence (or team wiki), API client (Postman, Bruno, curl), agentic harness (Claude Code, OpenCode, Codex, Pi) |
 | Mid-Game | Detection (Detección) | 5-9 | QA Automation Engineer | "Does the software meet the requirements?" | Continuous Testing, Agile Testing, AI-Driven | Playwright, GitHub Actions (or equivalent CI), Docker, Xray |
 | Late-Game | Observation (Observación) | 10-15 | QA + DevOps | "How does it behave in the real world?" | Shift-Right, Chaos Engineering, Production Monitoring, AI Ops | Sentry / Grafana / Datadog, progressive delivery / feature flags, k6, UptimeRobot (or availability monitor) |
 

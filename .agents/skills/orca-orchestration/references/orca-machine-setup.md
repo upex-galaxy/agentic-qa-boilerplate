@@ -129,7 +129,7 @@ the mode off each worker instead of trusting this checklist.
 
 A launch line can export variables; the native launch cannot, because it has no argv. So no MCP
 server depends on the launch: every one that needs `.env` values starts through the `.env` loader
-declared in `.mcp.json`, `opencode.jsonc` and `.codex/config.toml` (`varlock run ... --filter <its
+declared in `.mcp.json`, `opencode.jsonc`, `.codex/config.toml` and `.pi/mcp.json` (`varlock run ... --filter <its
 vars> -- <server>`, ADR-0011), which reads the varlock schema plus `.env` / `.env.local` from the
 worktree root when the harness spawns the server. NO shell is involved, for Claude Code, OpenCode
 and Codex workers alike. Nothing here is set per machine: what this item needs is the worktree's own

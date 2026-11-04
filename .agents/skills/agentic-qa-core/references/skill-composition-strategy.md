@@ -104,7 +104,7 @@ A skill carries three independent labels. Each answers one question, is declared
 Before starting any non-trivial task, the orchestrator (and each invoked skill) MUST:
 
 1. **Scan the skills actually installed**, from two sources read together:
-   - the skill list the harness injects at session start (the `system-reminder` list in Claude Code, the equivalent list in Codex and OpenCode). It already carries the user-level skills and the project-level ones the harness discovers through `.agents/skills/` (Claude Code through the generated `.claude/skills` alias);
+   - the skill list the harness injects at session start (the `system-reminder` list in Claude Code, the equivalent list in Codex, OpenCode and Pi). It already carries the user-level skills and the project-level ones the harness discovers through `.agents/skills/` (Claude Code through the generated `.claude/skills` alias);
    - the project store on disk: every `.agents/skills/*/SKILL.md`, git-ignored community folders included (`ls .agents/skills/*/SKILL.md`, then the frontmatter `description` of any folder the session list did not show).
 
    `.agents/skills/REGISTRY.md` is NOT this scan. `scripts/build-skill-registry.ts` skips git-ignored folders on purpose, so the file is identical on every clone and lists committed skills only: a community (T3) skill never appears in it. The registry is where the resolver copies T1 compact rules from (`skill-resolver.md`), never the inventory of what this machine has installed.

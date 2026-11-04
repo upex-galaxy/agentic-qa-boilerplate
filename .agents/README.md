@@ -122,16 +122,16 @@ The `hooks` block grows on every `bun sync` too, before the compatibility check 
 
 ## `harnesses` (top-level list in `project.yaml`)
 
-Which host harnesses this project uses, any of `claude`, `opencode`, `codex` (ADR-0012).
+Which host harnesses this project uses, any of `claude`, `opencode`, `codex`, `pi` (ADR-0012).
 
 ```yaml
 harnesses: [claude] # e.g. a team on Claude Code only
 ```
 
 - **What it decides**: every compatibility gate (`agents:compat:check`, `setup:doctor`, the installer, `bun sync`) checks only the listed harnesses. A harness left out may delete its files (`HARNESS_FILES` in `cli/lib/harness-selection.ts`), and the updater stops delivering them.
-- **Absent or `null`**: detected from the files present. A harness is in use while ANY of its files exists, so deleting one file of a harness still fails its contract; nothing found at all checks all three.
+- **Absent or `null`**: detected from the files present. A harness is in use while ANY of its files exists, so deleting one file of a harness still fails its contract; nothing found at all checks every harness.
 - **Who writes it**: `bun setup` adds the agents you select (union only, it never removes one) and then offers to delete the files of each harness left out (default keep). Edit the list by hand to drop one.
-- **The boilerplate itself** checks all three, whatever its own yaml says.
+- **The boilerplate itself** checks every harness, whatever its own yaml says.
 - Read directly by `cli/lib/harness-selection.ts`, so `vars:check` skips it.
 
 ## `secrets` (block inside `project.yaml`)
@@ -183,7 +183,7 @@ Default settings for **supervised multi-session worker fleets** — one conducto
 ```yaml
 orchestration:
   max_workers: 4        # concurrent workers per round (example value)
-  default_agent: claude # claude | codex | opencode
+  default_agent: claude # claude | codex | opencode | pi
   default_model: claude-opus-5-5   # worker model: full provider model id, never an alias
   default_effort: high             # harness effort level when supported
   conductor_model: claude-opus-5-5 # conductor model: full provider model id
@@ -199,7 +199,7 @@ orchestration:
 | Field | `{{VAR}}` name | Description |
 |---|---|---|
 | `max_workers` | `{{MAX_WORKERS}}` | Ceiling on concurrent workers per round (a concurrency group inside a Jira-status wave — see `orca-orchestration/references/coordinator-playbook.md`). |
-| `default_agent` | `{{DEFAULT_AGENT}}` | Which harness launches a worker when the user doesn't say: `claude` \| `codex` \| `opencode`. |
+| `default_agent` | `{{DEFAULT_AGENT}}` | Which harness launches a worker when the user doesn't say: `claude` \| `codex` \| `opencode` \| `pi`. |
 | `default_model` | `{{DEFAULT_MODEL}}` | The WORKER model: full provider model id passed to the launch line, never an alias (an alias moves between rounds, gotcha G29 in `orca-orchestration/references/gotchas.md`). Empty `''` is allowed only when the conductor reads the model off the worker's screen at readiness and records it in the roster. |
 | `default_effort` | `{{DEFAULT_EFFORT}}` | Effort level passed to the worker launch line, when the harness supports one. |
 | `conductor_model` | `{{CONDUCTOR_MODEL}}` | The CONDUCTOR model, same rule as `default_model`: a full provider model id. |

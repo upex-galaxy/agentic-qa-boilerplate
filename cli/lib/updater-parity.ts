@@ -1078,7 +1078,7 @@ export function retiredMcpNote(filePath: string, project: string, upstream: stri
       ...retired.map(id => `Upstream no longer commits ${listNames([id])}: ${RETIRED_MCPS[id]}.`),
       'Two valid answers for this project:',
       `  - keep project: the server stays a project-only entry in ${filePath} (and in the other host files); agents:compat:check still compares it across hosts, just without a pinned shape.`,
-      '  - remove it from all three host files.',
+      '  - remove it from every host file.',
     ].join('\n'),
   };
 }

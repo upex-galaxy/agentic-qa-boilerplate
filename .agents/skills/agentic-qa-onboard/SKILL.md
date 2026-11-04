@@ -306,7 +306,7 @@ Visual deck: `packages/decks/orca-orchestration/how-it-works.es.html` (same open
 
 ## MCPs available
 
-The project MCP files (`.mcp.json` and its OpenCode / Codex twins) commit only LOCAL (stdio) servers: the ones that read `.env` values (the app's database and API, the Slack bot) and the docs server, which needs no key. The set is whatever `.mcp.json` declares (`KNOWN_MCP_IDS` in `cli/lib/agent-compatibility-contracts.ts` pins the shipped ones), and the capability each server provides is in `agentic-qa-core/references/mcp-capabilities.md` §2.
+The project MCP files (`.mcp.json` and its OpenCode / Codex / Pi twins) commit only LOCAL (stdio) servers: the ones that read `.env` values (the app's database and API, the Slack bot) and the docs server, which needs no key. The set is whatever `.mcp.json` declares (`KNOWN_MCP_IDS` in `cli/lib/agent-compatibility-contracts.ts` pins the shipped ones), and the capability each server provides is in `agentic-qa-core/references/mcp-capabilities.md` §2.
 
 A remote server whose only project-side content was an API key is the harness's business (ADR-0005; the list of moved servers and how to connect each one per host: `cli/lib/harness-level-mcps.ts`, human guide `docs/core/variables-de-entorno.html`). The **Atlassian MCP is opt-in** (setup in `agentic-qa-core/references/mcp-atlassian-optin.md`) — the primary Jira tools are `/acli` and `bun run jira:sync-issues`.
 
@@ -317,7 +317,7 @@ A remote server whose only project-side content was an API key is the harness's 
 - Use `/acli` for ticket WRITES (create, transition, comment, link); for detailed READS (custom fields, ACs, ATP/ATR, comments) use `bun run jira:sync-issues get`/`jql`
 - Use `/playwright-cli` for every browser interaction, ad-hoc or scripted: there is no browser MCP
 
-`.mcp.json` lives at the repo root and is **committed**: it is secret-free, naming secrets only in each server's `.env` loader `--filter`. Every MCP server that needs `.env` values starts through that loader on all three hosts (`.mcp.json`, `opencode.jsonc`, `.codex/config.toml`; `MCP_ENV_LOADER_*` in `cli/lib/agent-compatibility-contracts.ts`), which reads `.env` from the project root itself, so even a desktop or Dock launch sees the values and no plaintext copy is written anywhere. Only `.mcp.local.json` (personal overrides) is gitignored.
+`.mcp.json` lives at the repo root and is **committed**: it is secret-free, naming secrets only in each server's `.env` loader `--filter`. Every MCP server that needs `.env` values starts through that loader on every host (`.mcp.json`, `opencode.jsonc`, `.codex/config.toml`, `.pi/mcp.json`; `MCP_ENV_LOADER_*` in `cli/lib/agent-compatibility-contracts.ts`), which reads `.env` from the project root itself, so even a desktop or Dock launch sees the values and no plaintext copy is written anywhere. Only `.mcp.local.json` (personal overrides) is gitignored.
 
 ---
 
@@ -325,7 +325,7 @@ A remote server whose only project-side content was an API key is the harness's 
 
 Every variable carries a scope in `cli/lib/variables-manifest.ts` (human guide: `docs/core/variables-de-entorno.html`). Nothing blocks install or the doctor: a value is validated by the code that reads it, with a named error. Fill what your work needs: the list is `.env.example` (each variable documented in place, its scope in the manifest), `bun run vars:env:check` verifies them, and `bun run setup:doctor` shows every variable with its scope. The Jira site HOST is NOT in `.env` — it lives in `.agents/project.yaml` -> `issue_tracker.atlassian_url`; read it with `bun run --silent jira:url`.
 
-Not in `.env`: web search and Postman are MCP servers connected at harness level (a claude.ai connector, a user-scope server, the OpenCode / Codex user config), and `acli` / `resend` keep their own login. `bun run setup:doctor` shows every variable with its scope and which harness-level servers your user config declares.
+Not in `.env`: web search and Postman are MCP servers connected at harness level (a claude.ai connector, a user-scope server, the OpenCode / Codex user config, `~/.pi/agent/mcp.json` on Pi; claude.ai connectors do not exist there), and `acli` / `resend` keep their own login. `bun run setup:doctor` shows every variable with its scope and which harness-level servers your user config declares.
 
 `.env` is **gitignored**. Never commit it. `.agents/project.yaml` (committed) holds non-secret context (URLs, project key, environment names); `.env` holds the matching secrets.
 

@@ -871,7 +871,7 @@ Reporting · líneas propias
 
   <!-- 17. INVOCACION -->
   <section class="slide" data-title="Cómo invocarlo">
-    <p class="kicker">Cómo lo invocas · tres hosts</p>
+    <p class="kicker">Cómo lo invocas · cada host</p>
     <h2 class="h2 md">La skill, el modo y el resto de los argumentos</h2>
     <div class="grid g2 mt-m" style="align-items:start">
       <div class="mk sm">Claude Code
@@ -885,16 +885,20 @@ OpenCode · Codex
 &gt; cargá la skill sprint-testing, modo sprint-wide,
   sprint 12
 
+Pi
+&gt; /skill:sprint-testing single-issue UPEX-277
+&gt; /skill:sprint-testing sprint-wide 12
+
 También la disparan frases como
 &gt; QA this user story · retest bug UPEX-445
 &gt; process sprint 5 · resume sprint testing</div>
       <div class="stack">
-        <div class="card"><p class="lbl">El primer token decide</p><p class="small mt-s">Si el primer argumento nombra un modo, ese es el modo; si no, Session Start pregunta. Abrí el host tal cual (<span class="mono">claude</span>, <span class="mono">opencode</span>, <span class="mono">codex</span> o su app): cada MCP lee <span class="mono">.env</span> por su cuenta.</p></div>
+        <div class="card"><p class="lbl">El primer token decide</p><p class="small mt-s">Si el primer argumento nombra un modo, ese es el modo; si no, Session Start pregunta. Abrí el host tal cual (<span class="mono">claude</span>, <span class="mono">opencode</span>, <span class="mono">codex</span>, <span class="mono">pi</span> o su app): cada MCP lee <span class="mono">.env</span> por su cuenta.</p></div>
         <div class="card"><p class="lbl">Se lee en Session Start</p><p class="small mt-s"><span class="mono">.agents/project.yaml</span> · catálogos Jira · mapas de contexto + MTP · el ticket vía <span class="mono">jira:sync-issues</span>. El <span class="mono">.env</span> no entra: la IA nunca lo abre.</p></div>
         <div class="card card-accent"><p class="lbl">El humano conserva los juicios</p><p class="small mt-s">Modo · OK de la Story · triage · cada bug · retry/skip/abort.</p></div>
       </div>
     </div>
-    <div class="notes">Una sola forma de invocar en los tres hosts: skill más modo. En Claude Code es el slash; en OpenCode y Codex se nombra la skill y el modo en prosa. No hay archivos de comando aparte. El resto de los argumentos (el KEY, el número de sprint) se reenvía tal cual. Un worker de una flota arranca con /sprint-testing KEY fleet worker y su brief: el prompt ya responde el modo.</div>
+    <div class="notes">Una sola forma de invocar en cada host: skill más modo. En Claude Code es el slash; en OpenCode y Codex se nombra la skill y el modo en prosa; en Pi es /skill:sprint-testing más el modo. No hay archivos de comando aparte. El resto de los argumentos (el KEY, el número de sprint) se reenvía tal cual. Un worker de una flota arranca con /sprint-testing KEY fleet worker y su brief: el prompt ya responde el modo.</div>
   </section>
 
   <!-- 17b. CONTRATO AGÉNTICO -->

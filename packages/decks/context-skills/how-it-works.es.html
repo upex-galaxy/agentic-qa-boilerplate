@@ -525,7 +525,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 name: &lt;aspect&gt;-context
 description: "Trigger: &lt;aspecto&gt;, &lt;palabras del dominio&gt;..."
 license: MIT
-compatibility: [claude-code, codex, opencode]
+compatibility: [claude-code, codex, opencode, pi]
 metadata:
   kind: context
   writes: [references/]            # solo si lleva un mapa
@@ -777,7 +777,7 @@ apply? (yes / no)</div>
       <div class="card"><p class="lbl">CREATE y UPDATE</p><p class="small mt-s">Si la carpeta no existe, la escribe después del análisis. Si existe, muestra el diff y <b>espera</b>. Las reglas viejas no se reescriben: se agregan nuevas con fecha, y una contradicha pasa a "No longer true".</p></div>
       <div class="card card-soft"><p class="lbl">Lo que no crea</p><p class="small mt-s">Un pedido de <span class="mono">data-context</span>, <span class="mono">api-context</span>, <span class="mono">glossary-context</span> o <span class="mono">infra-context</span> se responde señalando la skill que ya viene, nunca con una segunda skill sobre el mismo aspecto.</p></div>
     </div>
-    <div class="card card-accent mt-m"><p class="lbl">Cómo se invoca</p><p class="small mt-s"><b>Claude Code:</b> <span class="mono">/project-context context-skill &lt;aspect&gt;</span>. <b>OpenCode y Codex:</b> cargá la skill <span class="mono">project-context</span>, modo <span class="mono">context-skill</span>, y nombrá el aspecto. <span class="mono">refresh-all</span> nunca incluye este modo.</p></div>
+    <div class="card card-accent mt-m"><p class="lbl">Cómo se invoca</p><p class="small mt-s"><b>Claude Code:</b> <span class="mono">/project-context context-skill &lt;aspect&gt;</span>. <b>OpenCode y Codex:</b> cargá la skill <span class="mono">project-context</span>, modo <span class="mono">context-skill</span>, y nombrá el aspecto. <span class="mono">refresh-all</span> nunca incluye este modo.<br><b>Pi:</b> <span class="mono">/skill:project-context context-skill &lt;aspect&gt;</span></p></div>
     <div class="notes">skill-creator es el constructor de toda skill que este repo arma: borrador, prompts de prueba en evals/evals.json y pasada sobre la description. Si no está instalado en la máquina, el modo arma la skill desde la plantilla de skill-scaffold.md §4 y lo dice en el reporte, nunca en silencio. Cuando lo que la skill cita se regenera, el modo ofrece correr su UPDATE: es el momento barato para revisar el juicio. Contrato: project-context/references/context-skill.md.</div>
   </section>
 
@@ -865,7 +865,7 @@ apply? (yes / no)</div>
     <div class="grid g3 mt-m" style="gap:22px;align-items:start">
       <div class="card">
         <p class="lbl">Cómo se usan</p>
-        <p class="small mt-s">No se invocan como un workflow: se cargan solas por su <span class="mono">description</span> en los tres hosts. Para pedirlas a mano, en Claude Code <span class="mono">/&lt;aspect&gt;-context</span>; en OpenCode y Codex, cargá la skill <span class="mono">&lt;aspect&gt;-context</span>. No tienen modos.</p>
+        <p class="small mt-s">No se invocan como un workflow: se cargan solas por su <span class="mono">description</span> en cada host. Para pedirlas a mano, en Claude Code <span class="mono">/&lt;aspect&gt;-context</span>; en OpenCode y Codex, cargá la skill <span class="mono">&lt;aspect&gt;-context</span>; en Pi, <span class="mono">/skill:&lt;aspect&gt;-context</span>. No tienen modos.</p>
       </div>
       <div class="card">
         <p class="lbl">Quién escribe sus mapas</p>

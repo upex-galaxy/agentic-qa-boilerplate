@@ -147,7 +147,7 @@ Run: <run id — ONLY when this worker was launched without a supervised dispatc
 - no write to the Epic's `## Module Context (QA)` section: stage what you learned about the module under `## Module Learnings (candidate)` in your test-session-memory.md; the conductor publishes it
 - no heartbeats; report once at the end
 - if your own measurement contradicts an instruction in this brief or a later message, STOP and `ask` with both readings and your evidence — never comply silently and never deviate silently
-- your name is <KEY>--<your terminal handle>: first action, rename your own tab to it ([ORCHESTRATION_TOOL] terminal rename, exact command in `orca-orchestration/references/worker-contract.md` §Session naming); your session name is set for you (the identity hook on Claude, a conductor-typed rename verb on Codex, OpenCode v2.2 and Pi), never rename your own session; your `Session:` trailer carries that full name
+- your name is <KEY>--<your terminal handle>: first action, rename your own tab to it ([ORCHESTRATION_TOOL] terminal rename, exact command in `orca-orchestration/references/worker-contract.md` §Session naming); your session name is set for you (the identity hook on Claude, the adapter on Pi, a conductor-typed rename verb on Codex and OpenCode v2.2), never rename your own session; your `Session:` trailer carries that full name
 - errors, blockers and anything for the human go to the conductor (ask / escalation / BLOCKED: status), never to the human, never guessed; no question prompt, no deck (`orca-orchestration/references/worker-contract.md` rule 16)
 ```
 

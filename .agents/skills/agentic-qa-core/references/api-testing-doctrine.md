@@ -145,7 +145,7 @@ The OpenAPI MCP (its `--tools` mode is pinned in `.mcp.json`) exposes `list-api-
 - **NEVER** hardcode or paste a raw token into a command, artifact, commit, or chat. It lives only in `.auth/` (gitignored).
 - **NEVER** write the token back into `.env` or inject it into an MCP.
 - **NEVER** obtain a token around the login: no service-role / admin key, no admin user-management API, no locally signed JWT, no token copied from a database session table. Seeding test data through the API is fine; the identity is not seeded (`browser-sessions.md` §4).
-- **NEVER** "fix" an expired JWT by editing `.mcp.json` (or `opencode.jsonc` / `.codex/config.toml`). The MCP holds no credential by design; a stale token is refreshed by `bun run api:login` into `.auth/tokens.env`, nothing else.
+- **NEVER** "fix" an expired JWT by editing `.mcp.json` (or `opencode.jsonc` / `.codex/config.toml` / `.pi/mcp.json`). The MCP holds no credential by design; a stale token is refreshed by `bun run api:login` into `.auth/tokens.env`, nothing else.
 - **NEVER** report a schema-vs-target mismatch as a bug without first checking for dev/target schema drift.
 
 ---

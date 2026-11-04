@@ -78,7 +78,7 @@ testing:
 # checks only these; the files of a harness left out may be deleted. null = detect from
 # the files present (a harness is in use while ANY of its files exists). `bun setup`
 # adds the agents you select (it never removes one); edit the list to drop one.
-# The boilerplate itself always checks all three, whatever this says.
+# The boilerplate itself always checks every harness, whatever this says.
 # Read directly by cli/lib/harness-selection.ts (not a {{VAR}} token) -> skipped by vars:check.
 harnesses: null # e.g. [claude]
 
@@ -248,7 +248,7 @@ git_strategy:
 # apply only when the user says nothing.
 orchestration:
   max_workers: 4 # concurrent workers per round
-  default_agent: claude # claude | codex | opencode
+  default_agent: claude # claude | codex | opencode | pi
   # The WORKER model: the full provider model id, never an alias (an alias moves
   # on its own between rounds: gotcha G29). The name stays `default_model` for
   # compatibility (`bun sync` only inserts keys, it never renames one). Empty ''

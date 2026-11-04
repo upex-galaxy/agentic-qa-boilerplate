@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-11-04T04:54:30.745Z`
+> Generated: `2026-11-04T05:07:46.513Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -465,7 +465,7 @@ Skills indexed: 29
 - Stop the run on a hard dependency failure or a rejected overwrite. A missing SOFT dependency is not a stop: record it as a Discovery Gap and continue, exactly as the selected reference defines.
 - NEVER invent business facts. Read every source the selected reference requires; anything unverified belongs under the output's mandatory discovery-gaps section, not asserted in the body.
 - After a successful artifact write, add the pointer to `.agents/instructions/agent-project.md` ONLY when that pointer is missing. NEVER write it into `AGENTS.md` (boilerplate-owned, size-budgeted) or add operational prose to `CLAUDE.md`. Placement per `framework-development/references/instructions-doctrine.md` §4, then `bun run instructions:check`; any other instruction change is `/framework-development` mode `instructions`.
-- Mode from `$ARGUMENTS`: when its first token matches a mode in the Mode routing table, that token IS the mode and the rest is forwarded to it unchanged (`/project-context data` on Claude Code, "project-context mode data" in prose on OpenCode and Codex). No matching first token → ASK which mode.
+- Mode from `$ARGUMENTS`: when its first token matches a mode in the Mode routing table, that token IS the mode and the rest is forwarded to it unchanged (`/project-context data` on Claude Code, "project-context mode data" in prose on OpenCode and Codex, `/skill:project-context data` on Pi). No matching first token → ASK which mode.
 - Before any step that uses a declared capability (`metadata.requires_capabilities`: `db`, `api-schema`, `diagrams` for the maps' figures), run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8: resolve by tool-name suffix, and when no available tool provides it STOP and name the capability + how to enable it, never a silent fallback.
 
 **Read full SKILL.md when**: the requested mode is ambiguous, a `refresh-all` chain fails mid-sequence, or you need the selected reference's own analysis steps and validation gate.

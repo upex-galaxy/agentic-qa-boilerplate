@@ -12,7 +12,7 @@
 name: <slug>                                   # equals the directory name
 description: "<trigger phrases + what it does + what it is NOT for>"
 license: MIT
-compatibility: [claude-code, codex, opencode]
+compatibility: [claude-code, codex, opencode, pi]
 complementary_categories: [<from strategy §5.1>] # optional, audited when present
 metadata:
   kind: <context | workflow | utility | core>  # mandatory, gated (KIND-MISSING / KIND-VOCAB / KIND-SUFFIX)
@@ -71,7 +71,7 @@ Judgment vs fact inside a context skill: would two competent sessions write it d
 name: <aspect>-context
 description: "Trigger: <aspect> questions, <domain words>. Judgment layer over .context/<map>. NOT the map itself."
 license: MIT
-compatibility: [claude-code, codex, opencode]
+compatibility: [claude-code, codex, opencode, pi]
 metadata:
   kind: context
 ---

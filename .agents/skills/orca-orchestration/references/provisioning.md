@@ -14,7 +14,7 @@ gap. It disguises itself as something else, and the worker then debugs the wrong
 | Missing | Git state | How it fails without it | How it is restored |
 |---|---|---|---|
 | `.env` | ignored | **silent on every host** (Critical Rule #10): every MCP server that needs `.env` values starts through the `.env` loader, which reads THIS worktree's `.env`; without it the server starts with empty values and dies on its first authenticated call (401/403), not at parse time. Any script needing credentials fails on missing variables | copy it from the primary checkout, mode `0600`. Shell-exported CLIs on the SUPERVISED path need more — see §1b |
-| the `.claude/skills` alias → `.agents/skills` | ignored | loud, on Claude Code only: `Skill` answers `Unknown skill`. OpenCode and Codex read `.agents/skills/` natively and do not need it | `bun run agents:compat` inside the worktree (it creates a POSIX symlink or a Windows junction) |
+| the `.claude/skills` alias → `.agents/skills` | ignored | loud, on Claude Code only: `Skill` answers `Unknown skill`. OpenCode, Codex and Pi read `.agents/skills/` natively and do not need it | `bun run agents:compat` inside the worktree (it creates a POSIX symlink or a Windows junction) |
 | the T3 community skills `cli/install.ts` installs | ignored by explicit `.gitignore` entries | loud, at load time: the skill simply is not there | copy the directories from the primary checkout, or re-run the installer |
 | `node_modules/` | ignored | loud **with the wrong message**: `Cannot find module`, which reads as a broken import | `bun install --frozen-lockfile` |
 | `.context/PBI/` (the tracker cache) | ignored | **silent**: the worker cannot see the synced story and quietly works from the ticket title alone | `bun run context:hydrate`, or a scoped per-issue sync named in the brief |
@@ -35,8 +35,8 @@ No launch path loads the env file into the worker's shell: a pasted launch line 
 binary bare, and the supervised native launch has no launch line at all. Both paths therefore get
 credentials the same way, only from what a worker can read WITHOUT a shell:
 
-- **Every MCP server, on Claude Code, OpenCode and Codex alike**: the `.env` loader declared in the
-  three MCP configs (`varlock run ... --filter <its vars> -- <server>`, ADR-0011) reads the
+- **Every MCP server, on every harness alike**: the `.env` loader declared in the
+  MCP configs (`varlock run ... --filter <its vars> -- <server>`, ADR-0011) reads the
   worktree's own `.env` when the harness spawns the server. The `.env` row of §1 is all it needs.
 - **Every other process a worker runs loads its own config**, so nothing is exported into the
   worker's shell: Bun scripts (`bun run jira:*`, `bun run api:login`, `bun xray`, the acli helper

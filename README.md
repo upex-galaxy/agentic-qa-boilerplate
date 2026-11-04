@@ -61,7 +61,7 @@ Before running `bunx create-agentic-qa@latest` or `bun install && bun setup`, in
 | ---------------------------------------------------------------------------------------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
 | **Bun**                                                                                                                | the floor `cli/preflight.ts` enforces | Runtime for every script (`bun install`, `bun setup`, `bun run test`, `bun xray`, `bun run setup:doctor`) | macOS/Linux/WSL: `curl -fsSL https://bun.sh/install \| bash` · Windows: `powershell -c "irm bun.sh/install.ps1 \| iex"` · [docs](https://bun.sh/docs/installation) |
 | **Node**                                                                                                               | the floor `cli/preflight.ts` enforces | Hooks run `node .agents/hooks/personality-reinject.mjs`; checked by the scaffolder doctor and the `bun setup` preflight | [nodejs.org](https://nodejs.org)                                                       |
-| **An agent** — [Claude Code](https://docs.claude.com/en/docs/claude-code), [OpenCode](https://opencode.ai/docs) **or** [Codex](https://developers.openai.com/codex/) | latest      | the `bun setup` preflight detects all three (`~/.claude/` or `claude` on PATH · `~/.config/opencode/` or `opencode` on PATH · `codex` on PATH or `.codex/config.toml` in the repo) and blocks only if none is found; the Team phase then lets you pick which to configure | See each project's official docs                           |
+| **An agent** — [Claude Code](https://docs.claude.com/en/docs/claude-code), [OpenCode](https://opencode.ai/docs), [Codex](https://developers.openai.com/codex/) **or** Pi | latest      | the `bun setup` preflight detects them (`~/.claude/` or `claude` on PATH · `~/.config/opencode/` or `opencode` on PATH · `codex` on PATH or `.codex/config.toml` in the repo) and Pi, and blocks only if none is found; the Team phase then lets you pick which to configure | See each project's official docs                           |
 | `git`                                                                                                                  | any         | Scaffolder runs `git init`; pre-commit hooks (Husky) require git                                            | [git-scm.com/downloads](https://git-scm.com/downloads)                                 |
 | `tar`                                                                                                                  | any         | Scaffolder extracts the template tarball. Either flavour works — GNU tar (Linux, WSL, Git Bash) or bsdtar   | Ships with macOS, Linux, and Windows 10 1803+ / Windows 11 (`C:\Windows\System32\tar.exe`) |
 
@@ -83,7 +83,7 @@ The evidence page (`evidence-artifact` skill, `bun run evidence`) is built by a 
 
 ### Variables and MCP credentials (`.env` keys)
 
-Each harness has its own MCP config — `.mcp.json` (Claude Code), `opencode.jsonc` (OpenCode), `.codex/config.toml` (Codex) — and all three start every server that needs `.env` values through the same `.env` loader, which reads the file itself. Every variable the repo knows carries a scope in `cli/lib/variables-manifest.ts` (the source of truth; human guide: `docs/core/variables-de-entorno.html`):
+Each harness has its own MCP config — `.mcp.json` (Claude Code), `opencode.jsonc` (OpenCode), `.codex/config.toml` (Codex), `.pi/mcp.json` (Pi) — and every harness starts every server that needs `.env` values through the same `.env` loader, which reads the file itself. Every variable the repo knows carries a scope in `cli/lib/variables-manifest.ts` (the source of truth; human guide: `docs/core/variables-de-entorno.html`):
 
 - **framework** (`core`): what the boilerplate reads. `TEST_ENV` has a default; the Atlassian pair is needed once the Jira host is set in `.agents/project.yaml`.
 - **tooling**: CI-only secrets (Slack, the private report portal). MCP servers that can run at harness level (web search, Postman) and CLI logins (`acli`, `resend`) are NOT `.env` keys at all: connect them once per machine and the skills resolve them by capability.
@@ -104,7 +104,7 @@ Nothing blocks install, update or `setup:doctor`: a value is validated by the co
 | Verification (`verifyExternalClis`) | PATH probe — runs `which <name>` (POSIX) or `where <name>` (Windows). Presence only, no version check.                          | A `found`/`missing` table; for missing entries a `quick:` install command (when cross-platform) + `docs:` URL. Non-blocking.                                                                      |
 | `bun run setup:doctor`   | Re-checks every MCP `.env` var the manifest declares + Playwright browser cache + plaintext MCP credential copies an older version left (`bun run harness:env` retires them), and, per harness in use (`harnesses:`), the MCP and hook surfaces. | Human-readable or `--json` report. Every `pending_action` carries a `where` hint or URL — re-run any time after partial setup.                                                                            |
 
-> **TL;DR**: install **Bun** plus at least one of **Claude Code, OpenCode, or Codex** before you run setup. Everything else, the installer points you at when you hit it.
+> **TL;DR**: install **Bun** plus at least one of **Claude Code, OpenCode, Codex, or Pi** before you run setup. Everything else, the installer points you at when you hit it.
 
 <br />
 <br />
@@ -190,12 +190,13 @@ bunx -y ccstatusline@latest
 
 ## Launching the agent
 
-`.env` is the default source of credentials (a secret manager can hold them instead, ADR-0010), and no harness gets a copy of it. Every MCP server that needs `.env` values starts through the same `.env` loader in `.mcp.json`, `opencode.jsonc` and `.codex/config.toml` (`varlock run --no-redact-stdout --inject vars --filter <its vars> -- <server>`), so each server reads `.env` itself, and only its own variables, however the harness was opened. `bun run setup:doctor` reports any plaintext copy an older `bun run harness:env` left in `.claude/settings.local.json` or `.auth/opencode/`, and `bun run harness:env` retires it. After filling `.env`, restart the agent session (MCP servers read `.env` when the harness spawns them). From the repo root:
+`.env` is the default source of credentials (a secret manager can hold them instead, ADR-0010), and no harness gets a copy of it. Every MCP server that needs `.env` values starts through the same `.env` loader in `.mcp.json`, `opencode.jsonc`, `.codex/config.toml` and `.pi/mcp.json` (`varlock run --no-redact-stdout --inject vars --filter <its vars> -- <server>`), so each server reads `.env` itself, and only its own variables, however the harness was opened. `bun run setup:doctor` reports any plaintext copy an older `bun run harness:env` left in `.claude/settings.local.json` or `.auth/opencode/`, and `bun run harness:env` retires it. After filling `.env`, restart the agent session (MCP servers read `.env` when the harness spawns them). From the repo root:
 
 ```bash
 claude        # Claude Code (or Claude Desktop)
 opencode      # OpenCode (or its desktop app)
 codex         # Codex CLI (or Codex Desktop)
+pi            # Pi
 ```
 
 Open the harness directly: no wrapper, no script. Starting it inside `varlock run` would export every `.env` value into the AI's own process, where any command it runs can read them (ADR-0014). Nothing in the repo exports `.env` into a shell: the test scripts (`bun run test`, `test:e2e`, ...) load it through `scripts/launch.ts`, which warns when a variable inherited from the shell differs from `.env.local` over `.env` (names and lengths only) and goes on, so a deliberate `AUTO_SYNC=true bun run test` still works. A project variable you export in your own shell profile still wins over `.env` for whatever starts from that shell, MCP servers included; `bun run vars:env:check` names it.
@@ -289,7 +290,7 @@ Project values (URLs, project key, Jira fields) live in `.agents/project.yaml` a
 | **TMS Sync**               | Test results pushed to Jira/Xray by `bun run test:sync` after the run (off by default: `AUTO_SYNC`) |
 | **Context Engineering**    | Context skills hold the AI's map of your app (`bun run context:map`); `.context/` is a regenerable cache of Jira and the API spec |
 | **Skills-based Workflows** | Agent skills under `.agents/skills/` drive the AI-assisted QA and automation flows |
-| **Multi-harness**          | One instruction body and one skill store, consumed by Claude Code, OpenCode and Codex; a project keeps only the harnesses it declares in `harnesses:` (`.agents/project.yaml`) |
+| **Multi-harness**          | One instruction body and one skill store, consumed by Claude Code, OpenCode, Codex and Pi; a project keeps only the harnesses it declares in `harnesses:` (`.agents/project.yaml`) |
 | **Secrets by name**        | `.env` (or a secret manager, ADR-0010) is read per process; MCP servers read it through a filtered `.env` loader (ADR-0011); the AI never sees a value (Critical Rule #1) |
 | **MCP Integration**        | Local servers declared once in `.mcp.json` and mirrored for each host; browser automation runs through `/playwright-cli`, with no browser MCP |
 | **Sprint Board**           | A live local page for a sprint run with several workers (`bun run board:up`, 127.0.0.1:4477): lanes, Needs you, metrics, evidence, the QA report, and Merge Line for the open PRs. Reads the tracker through the `board:` block (`bun run board:check`); commands and a demo sprint in `cli/sprint-board/README.md` |
@@ -303,7 +304,7 @@ This boilerplate has **two configuration systems** that serve different consumer
 | System                     | File                           | Consumer                                                                                                                | Loaded at            |
 | -------------------------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------- | -------------------- |
 | **Runtime test config**    | `.env` + `config/variables.ts` | Playwright runner, KATA components, `bun run *` scripts (jiraSync, env validate, etc.)                                  | Test execution time  |
-| **AI context engineering** | `.agents/project.yaml`         | Every supported harness (Claude Code, OpenCode, Codex) — used to resolve `{{VAR}}` references in skills, commands, and templates | AI session bootstrap |
+| **AI context engineering** | `.agents/project.yaml`         | Every supported harness (Claude Code, OpenCode, Codex, Pi) — used to resolve `{{VAR}}` references in skills, commands, and templates | AI session bootstrap |
 
 Both are needed. Skip neither.
 
@@ -349,7 +350,7 @@ const envDataMap: Record<
 
 ### (c) AI context engineering — `.agents/project.yaml`
 
-Every supported harness (Claude Code, OpenCode, Codex) resolves `{{VAR}}` references in skills, templates, and commands against `.agents/project.yaml`. Edit it manually, or run the interactive walkthrough:
+Every supported harness (Claude Code, OpenCode, Codex, Pi) resolves `{{VAR}}` references in skills, templates, and commands against `.agents/project.yaml`. Edit it manually, or run the interactive walkthrough:
 
 ```bash
 bun run agents:setup
@@ -422,14 +423,15 @@ bun run test:smoke         # smoke / @critical tests
 │   ├── jira-fields.json          # Jira custom-field catalog (synced by `bun run jira:sync-fields`)
 │   ├── jira-required.yaml        # Required Jira custom-field manifest
 │   ├── README.md                 # Variable conventions reference
-│   ├── hooks/                    # personality-reinject.mjs (one emitter, three harness adapters) + doc-contracts.mjs (edit-time DOCS: line)
+│   ├── hooks/                    # personality-reinject.mjs (one emitter, one adapter per harness) + doc-contracts.mjs (edit-time DOCS: line)
 │   ├── instructions/             # AGENTS.md sections, loaded on demand by the ROUTER (agent-project.md = this project's own)
-│   └── skills/                   # THE skill store — read by all three harnesses
+│   └── skills/                   # THE skill store — read by every harness
 │       └── <skill>/              # one folder per skill; the catalogue is REGISTRY.md (generated)
 │
 ├── .claude/                      # Claude Code adapter — settings.json (hook) + generated skills alias
 ├── .opencode/                    # OpenCode adapter — plugins/personality-reinject.js
 ├── .codex/                       # Codex adapter — config.toml (MCP) + hooks.json. Shared by CLI and Desktop
+├── .pi/                          # Pi adapter: mcp.json (MCP) + extensions/agentic-qa.js (hook adapter)
 │
 ├── .github/workflows/            # CI/CD pipelines, one file per workflow (see CI/CD Pipelines below)
 │
@@ -444,7 +446,7 @@ bun run test:smoke         # smoke / @critical tests
 │
 ├── playwright.config.ts          # Playwright configuration
 ├── INSTALLER.md                  # Contract for bun setup — what each installer layer does
-├── AGENTS.md                     # AI memory, always-on layer: binding rules, behaviour and the ROUTER, loaded by all three harnesses
+├── AGENTS.md                     # AI memory, always-on layer: binding rules, behaviour and the ROUTER, loaded by every harness
 ├── CLAUDE.md                     # One-line shim (`@AGENTS.md`) so Claude Code reaches it. Never holds prose
 ├── .mcp.json                     # MCP config — Claude Code
 ├── opencode.jsonc                # MCP config — OpenCode
@@ -651,7 +653,7 @@ Validation: `bun run skills:check` checks tier coherence (orphan categories, tie
 
 ### Invoking a skill mode
 
-There are no command files on any harness. A skill is invoked by its own name plus a mode: when the first token of `$ARGUMENTS` matches one of the skill's modes, that token is the mode and the rest is forwarded to it; with no match, the skill asks. On Claude Code that is `/<skill> <mode>` through `.claude/skills`, for example `/project-context data`. On OpenCode and Codex, name the skill and the mode in prose ("load `project-context`, mode `data`").
+There are no command files on any harness. A skill is invoked by its own name plus a mode: when the first token of `$ARGUMENTS` matches one of the skill's modes, that token is the mode and the rest is forwarded to it; with no match, the skill asks. On Claude Code that is `/<skill> <mode>` through `.claude/skills`, for example `/project-context data`. On OpenCode and Codex, name the skill and the mode in prose ("load `project-context`, mode `data`"). On Pi it is `/skill:<name> <mode>`.
 
 The modes of each skill are in its `## Mode routing` section; the skills themselves are listed in `.agents/skills/REGISTRY.md`.
 
@@ -744,7 +746,7 @@ async loginSuccessfully(credentials: LoginCredentials): Promise<void> {
 Edit these files:
 
 - `package.json` — name, description, repository
-- `AGENTS.md` — the canonical AI memory's always-on layer, loaded by Claude Code, OpenCode and Codex alike; detail lives in `.agents/instructions/`, and this project's own rules go in `.agents/instructions/agent-project.md`. Never edit `CLAUDE.md`: it is the generated one-line shim that points here
+- `AGENTS.md` — the canonical AI memory's always-on layer, loaded by Claude Code, OpenCode, Codex and Pi alike; detail lives in `.agents/instructions/`, and this project's own rules go in `.agents/instructions/agent-project.md`. Never edit `CLAUDE.md`: it is the generated one-line shim that points here
 - `.agents/project.yaml` — AI context vars (or run `bun run agents:setup` for an interactive walkthrough)
 - `config/variables.ts` — runtime URLs for Playwright (`envDataMap`)
 
@@ -786,25 +788,26 @@ The development side lives in [agentic-dev-boilerplate](https://github.com/upex-
 
 <br />
 
-## Multi-harness architecture: one source, three consumers
+## Multi-harness architecture: one source, every harness
 
-This repo runs on **Claude Code, OpenCode, and Codex (CLI + Desktop)**. A project declares the harnesses it uses in `harnesses:` (`.agents/project.yaml`); every gate checks only those, and the boilerplate itself always checks all three (ADR-0012). There is exactly one copy of every instruction and every skill. Where the harnesses genuinely differ (MCP file format, hook API, how a skill is invoked) each keeps a thin versioned adapter. Nothing is duplicated.
+This repo runs on **Claude Code, OpenCode, Codex (CLI + Desktop) and Pi**. A project declares the harnesses it uses in `harnesses:` (`.agents/project.yaml`); every gate checks only those, and the boilerplate itself always checks every harness (ADR-0012). There is exactly one copy of every instruction and every skill. Where the harnesses genuinely differ (MCP file format, hook API, how a skill is invoked) each keeps a thin versioned adapter. Nothing is duplicated.
 
-> Visual walkthrough, including what happens when you update a project created before this change: [**Una fuente, tres harnesses**](https://upex-galaxy.github.io/agentic-qa-boilerplate/harnesses.es.html) (Spanish, published page with diagrams). The dev boilerplate publishes its own release page, with a parity table against this repo: [agentic-dev-boilerplate: harnesses](https://upex-galaxy.github.io/agentic-dev-boilerplate/harnesses.es.html).
+> Visual walkthrough, including what happens when you update a project created before this change: [**Una fuente, todos los harnesses**](https://upex-galaxy.github.io/agentic-qa-boilerplate/harnesses.es.html) (Spanish, published page with diagrams). The dev boilerplate publishes its own release page, with a parity table against this repo: [agentic-dev-boilerplate: harnesses](https://upex-galaxy.github.io/agentic-dev-boilerplate/harnesses.es.html).
 
-| Surface | Claude Code | OpenCode | Codex CLI + Desktop |
-| ------- | ----------- | -------- | ------------------- |
-| **Instructions** | `CLAUDE.md` → `@AGENTS.md` **[generated shim]** | `AGENTS.md` (native) | `AGENTS.md` (native) |
-| **Skills** | `.claude/skills` **[generated alias]** | `.agents/skills/` (native) | `.agents/skills/` (native) |
-| **Commands** | none: `/<skill> <mode>` through `.claude/skills` | none: name the skill and the mode in prose | none: name the skill and the mode in prose |
-| **Hook** | `.claude/settings.json` → `UserPromptSubmit` + `SessionStart` (`compact`, `clear`) + `PostToolUse` (route pending, doc contracts) | `.opencode/plugins/personality-reinject.js` | `.codex/hooks.json` → `UserPromptSubmit` + `SessionStart` (`compact`, `clear`) + `PostToolUse` (doc contracts) |
-| **MCP** | `.mcp.json` | `opencode.jsonc` | `.codex/config.toml` |
+| Surface | Claude Code | OpenCode | Codex CLI + Desktop | Pi |
+| ------- | ----------- | -------- | ------------------- | -- |
+| **Instructions** | `CLAUDE.md` → `@AGENTS.md` **[generated shim]** | `AGENTS.md` (native) | `AGENTS.md` (native) | `AGENTS.md` (native) |
+| **Skills** | `.claude/skills` **[generated alias]** | `.agents/skills/` (native) | `.agents/skills/` (native) | `.agents/skills/` (native) |
+| **Commands** | none: `/<skill> <mode>` through `.claude/skills` | none: name the skill and the mode in prose | none: name the skill and the mode in prose | none: `/skill:<name> <mode>` |
+| **Hook** | `.claude/settings.json` → `UserPromptSubmit` + `SessionStart` (`compact`, `clear`) + `PostToolUse` (route pending, doc contracts) | `.opencode/plugins/personality-reinject.js` | `.codex/hooks.json` → `UserPromptSubmit` + `SessionStart` (`compact`, `clear`) + `PostToolUse` (doc contracts) | `.pi/extensions/agentic-qa.js` |
+| **MCP** | `.mcp.json` | `opencode.jsonc` | `.codex/config.toml` | `.pi/mcp.json` |
 
-- **Instructions.** `AGENTS.md` plus the section files it routes to under `.agents/instructions/` are the only instruction body (progressive disclosure: `AGENTS.md` is the always-on layer, each section loads when its ROUTER row or a hook `ROUTE:` line names it; see `.agents/instructions/README.md`). Edits go through `/framework-development` mode `instructions`; `instructions:check` locks the ROUTER behind an ADR and scores the router eval on every run, and `bun run instructions:audit` measures from local transcripts how often a routed section was actually read (ADR-0013). OpenCode and Codex load `AGENTS.md` natively; Claude Code loads `CLAUDE.md`, which is exactly `@AGENTS.md` plus one newline: a documented import rather than a symlink, so it survives a Windows checkout. Operational prose in the shim is structural drift, and `agents:compat:check` fails on it.
-- **Skills.** Every committed skill lives in `.agents/skills/`, and the project-level community skills install into the same store. OpenCode and Codex read it directly; Claude Code reaches it through `.claude/skills`, a POSIX symlink (Windows junction) that is generated and gitignored: never committed, never hand-edited. Each skill still declares the hosts it supports in its `compatibility:` frontmatter per the [agentskills.io](https://agentskills.io) spec, and hosts without slash triggers auto-activate from the same `description` field.
+- **Instructions.** `AGENTS.md` plus the section files it routes to under `.agents/instructions/` are the only instruction body (progressive disclosure: `AGENTS.md` is the always-on layer, each section loads when its ROUTER row or a hook `ROUTE:` line names it; see `.agents/instructions/README.md`). Edits go through `/framework-development` mode `instructions`; `instructions:check` locks the ROUTER behind an ADR and scores the router eval on every run, and `bun run instructions:audit` measures from local transcripts how often a routed section was actually read (ADR-0013). OpenCode, Codex and Pi load `AGENTS.md` natively; Claude Code loads `CLAUDE.md`, which is exactly `@AGENTS.md` plus one newline: a documented import rather than a symlink, so it survives a Windows checkout. Operational prose in the shim is structural drift, and `agents:compat:check` fails on it.
+- **Skills.** Every committed skill lives in `.agents/skills/`, and the project-level community skills install into the same store. OpenCode, Codex and Pi read it directly; Claude Code reaches it through `.claude/skills`, a POSIX symlink (Windows junction) that is generated and gitignored: never committed, never hand-edited. Each skill still declares the hosts it supports in its `compatibility:` frontmatter per the [agentskills.io](https://agentskills.io) spec, and hosts without slash triggers auto-activate from the same `description` field.
 - **Commands.** No harness gets generated command files: a skill is invoked by its name plus a mode ([Invoking a skill mode](#invoking-a-skill-mode)). A project command named like a skill would hide that skill's instructions, so the check fails on it and `bun run agents:compat` moves it aside.
-- **Hook.** `.agents/hooks/personality-reinject.mjs` is the one per-prompt emitter: the `AGENT IDENTITY:` line and one `ROUTE: read <file>` line per instruction section the prompt needs and the session has not read yet, capped at a few per prompt with the rest on one non-binding `ROUTE-OPTIONAL:` line. Claude and Codex run it as a command hook (plus `SessionStart` `compact` and `clear` hooks that re-arm the routes); OpenCode imports it from a thin plugin. On Claude Code a `PostToolUse` hook runs the same file and reminds the agent once when a routed section is still unread. A second hook, `.agents/hooks/doc-contracts.mjs`, runs after file edits in Claude Code and Codex: an edit inside a `LINT.IfChange` region gets one `DOCS:` line naming the pages that describe it (ADR-0016; silent outside the boilerplate's own repo, and OpenCode relies on the pre-push and CI gate).
-- **MCP.** Every server declared in `.mcp.json` must exist in the other configs in use with the same `.env` dependencies (when Claude Code is not in use, the first declared harness's file is the canonical set). Parity is checked semantically: each native format (JSON / JSONC / TOML) is normalized into a common shape, then compared on the `.env` variables each server depends on and on its literal settings, so a server missing from one host, or present in one host only, is a failure. The servers the boilerplate ships (`KNOWN_MCP_IDS` in `cli/lib/agent-compatibility-contracts.ts`) additionally get a strict per-host shape check when declared; a downstream project with a different set passes on the generic check alone. A local server that needs `.env` values starts through the same `.env` loader on all three hosts, and its `--filter` list is the dependency set compared; nothing beside the loader takes names from the host.
+- **Hook.** `.agents/hooks/personality-reinject.mjs` is the one per-prompt emitter: the `AGENT IDENTITY:` line and one `ROUTE: read <file>` line per instruction section the prompt needs and the session has not read yet, capped at a few per prompt with the rest on one non-binding `ROUTE-OPTIONAL:` line. Claude and Codex run it as a command hook (plus `SessionStart` `compact` and `clear` hooks that re-arm the routes); OpenCode imports it from a thin plugin; Pi runs one plain-JS extension, `.pi/extensions/agentic-qa.js`, over the same emitter, re-arms the routes after a compaction and reminds the agent when a routed section is still unread. On Claude Code a `PostToolUse` hook runs the same file and reminds the agent once when a routed section is still unread. A second hook, `.agents/hooks/doc-contracts.mjs`, runs after file edits in Claude Code and Codex: an edit inside a `LINT.IfChange` region gets one `DOCS:` line naming the pages that describe it (ADR-0016; silent outside the boilerplate's own repo, and OpenCode and Pi rely on the pre-push and CI gate).
+- **MCP.** Every server declared in `.mcp.json` must exist in the other configs in use with the same `.env` dependencies (when Claude Code is not in use, the first declared harness's file is the canonical set). Parity is checked semantically: each native format (JSON / JSONC / TOML) is normalized into a common shape, then compared on the `.env` variables each server depends on and on its literal settings, so a server missing from one host, or present in one host only, is a failure. The servers the boilerplate ships (`KNOWN_MCP_IDS` in `cli/lib/agent-compatibility-contracts.ts`) additionally get a strict per-host shape check when declared; a downstream project with a different set passes on the generic check alone. A local server that needs `.env` values starts through the same `.env` loader on every host, and its `--filter` list is the dependency set compared; nothing beside the loader takes names from the host.
+- **Pi.** Two files: `.pi/mcp.json` (the MCP registry, same `mcpServers` shape as `.mcp.json`, same `.env` loader lines, each server with `exposure: "deferred"` and a one-line `description`) and `.pi/extensions/agentic-qa.js` (one plain-JS adapter over the shared emitter). Detection reads those two files only; everything else under `.pi/` is runtime state, gitignored by an allowlist. Open it bare, `pi`, never inside a loader. **Trust first:** without project trust a session gets `AGENTS.md` and nothing else (no skills, no MCP, no adapter). Run `/trust` inside Pi; `bun run setup:doctor` reports it apart from file correctness, and a machine that runs workers trusts the parent folder. **The block is a seatbelt:** Pi has no deny config and no approval system, so bypass is its only state. The adapter refuses direct reads of `.env*` (not `.env.example` or the schemas), `.auth/**`, `.claude/settings.local.json` and the `printenv`-style commands, but shell variants such as `cat .env` pass, and `pi-subagents` background children are untested. Pi ships no subagents, question tool or plan mode: work runs inline or on a supervised worker, and questions use the numbered-list fallback. The adapter has no edit-time doc-contract hook; the pre-push gate covers it. Orca launches it with `worker-start --agent pi`; a Pi worker starts on the model in its own config and the conductor types `/model`. User-level MCP servers go in `~/.pi/agent/mcp.json` (`pi mcp add`); claude.ai connectors do not exist on Pi. The installer offers Pi with slug `pi`, preselected only when detected; an existing project gets no Pi file unless it declares Pi or the files exist.
 
 ### Regenerating and verifying
 
@@ -824,7 +827,7 @@ bun run agents:compat:check   # validate the whole contract (also runs in repo:c
 
 `agents:compat:check` covers, for the harnesses in use (a `Harnesses checked:` line, one `NOTE:` per skipped harness), the shim bytes, the alias target, no project command named like a skill, the hook adapters, MCP parity, and the eslint block wiring. It prints the alias status line on every run (created, OK, deferred until the migration commit, missing) and groups the errors per surface (`COMPATIBILITY_GROUP_ORDER` in `cli/lib/agent-compatibility.ts`), so "alias pending commit" and "MCP drift" never read as one flat failure. It runs inside `bun run repo:check`, in the pre-push hook, and conditionally in pre-commit. `bun run setup:doctor` reports the same surfaces for the same harnesses (the server count comes from `.mcp.json`) plus **Codex repository trust**: project `.codex/` config and hooks load only in a trusted repo, and that is runtime state no file read can verify.
 
-The `.agents/` variable system is harness-agnostic and unchanged across all three.
+The `.agents/` variable system is harness-agnostic and unchanged across every harness.
 
 <br />
 

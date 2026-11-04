@@ -35,7 +35,7 @@ Sources: `https://code.claude.com/docs/en/hooks`, `https://code.claude.com/docs/
 
 ## Why the compaction hooks are the weaker answer
 
-All three harnesses expose a compaction-imminent event, and it is tempting to treat that as the trigger. It is the wrong moment. Compaction fires when the window is already exhausted, so a handoff written from there is written by a session about to be truncated, using the degraded judgement the handoff exists to escape. The threshold that matters is the one the owner named (~500k), and it arrives long before compaction does.
+Every harness exposes a compaction-imminent event, and it is tempting to treat that as the trigger. It is the wrong moment. Compaction fires when the window is already exhausted, so a handoff written from there is written by a session about to be truncated, using the degraded judgement the handoff exists to escape. The threshold that matters is the one the owner named (~500k), and it arrives long before compaction does.
 
 ## If an automatic mode is ever enabled
 

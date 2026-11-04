@@ -9,7 +9,7 @@
  --------------               ------                       -----------
  DBHub MCP  [DB_TOOL]         dbhub.toml (committed)       .env  DBHUB_* (see .env.example)
   search_objects_primary       [[sources]] id = "primary"   -> the .env loader's --filter
-  execute_sql_primary          ${DBHUB_*} interpolation        on all three hosts
+  execute_sql_primary          ${DBHUB_*} interpolation        on every host
 ```
 
 ## The tool: DBHub MCP
@@ -32,9 +32,9 @@ A project that adds a second `[[sources]]` block with `id = "reporting"` gets
   placeholder. Never put a literal password in it and never gitignore it: the file is shared
   config, the values are not.
 - **`dbhub` itself does the interpolation**, from the environment of the process it was spawned
-  in, so the `DBHUB_*` variables `.env.example` declares must reach that process. That is why all three hosts start
+  in, so the `DBHUB_*` variables `.env.example` declares must reach that process. That is why every host starts
   it through the `.env` loader with those six names in its `--filter` (`.mcp.json`,
-  `opencode.jsonc`, `.codex/config.toml`): the loader reads `.env` from the project root at spawn
+  `opencode.jsonc`, `.codex/config.toml`, `.pi/mcp.json`): the loader reads `.env` from the project root at spawn
   time and hands dbhub exactly those names. Parity is checked
   (`mcp-atlassian-optin.md`, MCP parity contract).
 - **It fails late and quietly.** A missing variable does not stop startup: `dbhub` substitutes

@@ -843,7 +843,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <text class="t-s" x="10" y="350">Mismo trato para un pedido directo: "buscá en la web" sin proveedor = el mismo STOP.</text>
       </svg>
       <div class="stack" style="gap:14px">
-        <div class="card" style="border-color:var(--bad)"><p class="lbl" style="color:var(--bad)">Regla #10 · credenciales</p><p class="small mt-s">Servidor activo pero 401/403 o una falla misteriosa: es el caso de credencial. Con una variable sin setear, el loader de <span class="mono">.env</span> arranca el servidor igual en los tres hosts y falla <b>en silencio</b> en la primera llamada; ninguno falla fuerte al arrancar. Nombrar la variable, apuntar a <span class="mono">.env</span> y pedir reinicio: los valores se leen al arrancar el MCP.</p></div>
+        <div class="card" style="border-color:var(--bad)"><p class="lbl" style="color:var(--bad)">Regla #10 · credenciales</p><p class="small mt-s">Servidor activo pero 401/403 o una falla misteriosa: es el caso de credencial. Con una variable sin setear, el loader de <span class="mono">.env</span> arranca el servidor igual en cada host y falla <b>en silencio</b> en la primera llamada; ninguno falla fuerte al arrancar. Nombrar la variable, apuntar a <span class="mono">.env</span> y pedir reinicio: los valores se leen al arrancar el MCP.</p></div>
         <div class="card"><p class="lbl">Sin degradar por cuenta propia</p><p class="small mt-s"><span class="mono">WebSearch</span> / <span class="mono">WebFetch</span> integrados no son respaldo silencioso de <span class="mono">web-search</span> ni de <span class="mono">library-docs</span>, y leer archivos de rutas no reemplaza a <span class="mono">api-schema</span>.</p></div>
       </div>
     </div>
@@ -856,12 +856,12 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <h2 class="h2">Locales en el repo, remotos en el <span class="grad">harness</span></h2>
     <div class="grid g2 mt-m" style="gap:28px;align-items:start">
       <div class="card card-accent">
-        <p class="lbl">Servidores locales: un set, tres formatos</p>
-        <p class="small mt-s">Solo los servidores locales (stdio) se comprometen en el repo. El set canónico es el que declara <span class="mono">.mcp.json</span>, y cada uno tiene que existir también en <span class="mono">opencode.jsonc</span> y <span class="mono">.codex/config.toml</span> con las mismas dependencias de <span class="mono">.env</span>. <span class="mono">bun run agents:compat:check</span> compara los tres normalizados.</p>
+        <p class="lbl">Servidores locales: un set, un formato por host</p>
+        <p class="small mt-s">Solo los servidores locales (stdio) se comprometen en el repo. El set canónico es el que declara <span class="mono">.mcp.json</span>, y cada uno tiene que existir también en <span class="mono">opencode.jsonc</span>, <span class="mono">.codex/config.toml</span> y <span class="mono">.pi/mcp.json</span> con las mismas dependencias de <span class="mono">.env</span>. <span class="mono">bun run agents:compat:check</span> los compara normalizados.</p>
       </div>
       <div class="card">
         <p class="lbl">Remotos: a nivel harness</p>
-        <p class="small mt-s">Un servidor remoto cuyo único contenido de proyecto era una API key (búsqueda web, Postman) se conecta una vez por máquina: un conector de claude.ai, un servidor de usuario, la config de usuario de OpenCode o Codex. La lista: <span class="mono">cli/lib/harness-level-mcps.ts</span>.</p>
+        <p class="small mt-s">Un servidor remoto cuyo único contenido de proyecto era una API key (búsqueda web, Postman) se conecta una vez por máquina: un conector de claude.ai, un servidor de usuario, la config de usuario de OpenCode o Codex, o <span class="mono">~/.pi/agent/mcp.json</span> en Pi (los conectores de claude.ai no existen en Pi). La lista: <span class="mono">cli/lib/harness-level-mcps.ts</span>.</p>
       </div>
     </div>
     <table class="tt tight mt-m">
@@ -869,9 +869,10 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <tr><td class="small"><b>Claude Code</b></td><td class="small"><span class="mono">/mcp</span> dentro de la sesión (habilitar, autenticar, reconectar). Los servidores del proyecto leen <span class="mono">.env</span> a través del loader, se lance como se lance la sesión.</td></tr>
       <tr><td class="small"><b>OpenCode</b></td><td class="small"><span class="mono">enabled: true</span> en <span class="mono">opencode.jsonc</span>; los secretos se leen de <span class="mono">.env</span> a través del loader. Reiniciar.</td></tr>
       <tr><td class="small"><b>Codex CLI / Desktop</b></td><td class="small">carga la config del proyecto solo en un repo <b>confiable</b>. Reiniciar.</td></tr>
+      <tr><td class="small"><b>Pi</b></td><td class="small">carga skills, <span class="mono">.pi/mcp.json</span> y el adaptador solo en un proyecto <b>confiable</b>; sin trust recibe <span class="mono">AGENTS.md</span> y nada más. Cada servidor va como <span class="mono">exposure: "deferred"</span>. Reiniciar.</td></tr>
     </table>
     <p class="small dim mt-s"><span class="mono">bun run setup:doctor</span> informa qué servidores de nivel harness declaran las configs de usuario de la máquina; un conector en la nube no deja archivo y figura como no detectable, no como faltante.</p>
-    <div class="notes">Búsqueda web: Exa primero, Tavily segundo (cuando no hay Exa o el usuario lo pide). Los tres hosts arrancan cada MCP que necesita valores de .env con el mismo loader delante (varlock run ... --filter A,B -- servidor): el --filter nombra sus variables y no hay ${VAR}, {file:} ni env_vars a su lado. Detalle en .agents/instructions/agent-harnesses.md.</div>
+    <div class="notes">Búsqueda web: Exa primero, Tavily segundo (cuando no hay Exa o el usuario lo pide). Cada host arranca cada MCP que necesita valores de .env con el mismo loader delante (varlock run ... --filter A,B -- servidor): el --filter nombra sus variables y no hay ${VAR}, {file:} ni env_vars a su lado. Detalle en .agents/instructions/agent-harnesses.md.</div>
   </section>
 
   <!-- 19. CIERRE -->
@@ -881,7 +882,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="grid g3 mt-m" style="gap:22px;align-items:start">
       <div class="card">
         <p class="lbl">Cómo se invoca</p>
-        <p class="small mt-s"><b>Claude Code:</b> <span class="mono">/acli</span>, <span class="mono">/xray-cli</span>, <span class="mono">/playwright-cli</span>.<br><b>OpenCode y Codex:</b> cargá la skill <span class="mono">acli</span> (o <span class="mono">xray-cli</span>, <span class="mono">playwright-cli</span>).</p>
+        <p class="small mt-s"><b>Claude Code:</b> <span class="mono">/acli</span>, <span class="mono">/xray-cli</span>, <span class="mono">/playwright-cli</span>.<br><b>OpenCode y Codex:</b> cargá la skill <span class="mono">acli</span> (o <span class="mono">xray-cli</span>, <span class="mono">playwright-cli</span>).<br><b>Pi:</b> <span class="mono">/skill:acli</span></p>
         <p class="small mt-s">Ninguna tiene modos: la operación sale del pedido. Casi nunca se invocan a mano: las carga una skill de flujo al resolver su etiqueta, o el gate de §6.5 al ver el binario.</p>
       </div>
       <div class="card">

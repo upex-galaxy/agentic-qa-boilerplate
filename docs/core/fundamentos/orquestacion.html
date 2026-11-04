@@ -116,11 +116,12 @@
 
       <h2 id="command-center">La sesión principal como command center</h2>
       <p>
-        Cuando trabajas con un agente como Claude Code, OpenCode o Codex, la conversación que tienes
-        abierta tiene una ventana de contexto finita. Cada archivo que el agente lee, cada salida de
-        un comando y cada respuesta de un MCP ocupan espacio en ella. Si la misma sesión lee veinte
-        archivos, corre la suite de tests y además decide qué hacer después, llega un punto en que
-        el plan original queda enterrado bajo miles de líneas de salida que ya no sirven.
+        Cuando trabajas con un agente como Claude Code, OpenCode, Codex o Pi, la conversación que
+        tienes abierta tiene una ventana de contexto finita. Cada archivo que el agente lee, cada
+        salida de un comando y cada respuesta de un MCP ocupan espacio en ella. Si la misma sesión
+        lee veinte archivos, corre la suite de tests y además decide qué hacer después, llega un
+        punto en que el plan original queda enterrado bajo miles de líneas de salida que ya no
+        sirven.
       </p>
       <p>
         La orquestación separa dos papeles. La sesión principal, el <strong>command center</strong>,
@@ -632,7 +633,8 @@ Rules: no tocar archivos fuera del directorio de reportes; no correr git.</code>
             >Create custom subagents</a
           >
           (documentación de Claude Code). Cómo se definen y se configuran los subagentes en uno de
-          los tres harnesses que usa este repo; OpenCode y Codex tienen su propio mecanismo.
+          los harnesses que usa este repo; OpenCode y Codex tienen su propio mecanismo, y Pi no trae
+          subagentes.
         </li>
         <li>
           <a

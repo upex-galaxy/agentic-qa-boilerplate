@@ -134,7 +134,7 @@ tests/data/{DataFactory,types}.ts + fixtures/example.json      ← strip hotel/b
 tests/setup/{global,api-auth,ui-auth}.setup.ts
 api/schemas/{auth,example}.types.ts + index.ts                 ← example.types.ts DELETE
 config/variables.ts · config/validateTestEnv.ts · playwright.config.ts
-.agents/project.yaml · .env(.example) · .mcp.json · opencode.jsonc · dbhub.toml · allurerc.mjs
+.agents/project.yaml · .env(.example) · .mcp.json · opencode.jsonc · .codex/config.toml · .pi/mcp.json · dbhub.toml · allurerc.mjs
 .github/workflows/*.yml · kata-manifest.json
 ```
 
@@ -172,7 +172,7 @@ Session reuse always has the same shape: `global.setup → ui-auth.setup + api-a
 | URL    | Backend serves a spec endpoint | `bun run api:sync --url <URL> -t` |
 | GitHub | Spec committed in a repo file  | `bun run api:sync` (interactive → GitHub) |
 | Local  | Spec file on disk              | `bun run api:sync --file <path> -t` |
-| None   | No spec available              | Hand-write type facades; log in Discovery Gaps; **disable the `openapi` MCP server** in all three harness files (see Phase 7) |
+| None   | No spec available              | Hand-write type facades; log in Discovery Gaps; **disable the `openapi` MCP server** in every harness file in use (see Phase 7) |
 
 ### 1.6 Map entities to the first component
 
@@ -202,9 +202,9 @@ Ask only what context cannot reveal. Short, specific questions. Group and ask in
 
 **Database + MCP**
 - Does the target have a DB to validate against? `DBHUB_TYPE/HOST/PORT/DATABASE/USER/PASSWORD` per env (drives `dbhub.toml` + `.env`; without these every `[DB_TOOL]` MCP call 401s).
-- For each env, what should `environments.<env>.db_mcp` / `api_mcp` resolve to? Default: the existing single `dbhub` / `openapi` servers. Advanced: per-env named servers must be added to **all three** harness files (`.mcp.json`, `opencode.jsonc`, `.codex/config.toml`).
+- For each env, what should `environments.<env>.db_mcp` / `api_mcp` resolve to? Default: the existing single `dbhub` / `openapi` servers. Advanced: per-env named servers must be added to **every** harness file in use (`.mcp.json`, `opencode.jsonc`, `.codex/config.toml`, `.pi/mcp.json`).
 - Which harness-level servers are connected on this machine (a claude.ai connector or a user-scope server)? Recommend, never commit: Exa and Tavily for web search (Exa first; near-mandatory for spikes and fix lookups), Context7 for official docs, Postman only if the team already keeps collections there. `bun run setup:doctor` reports which ones a user-level config declares.
-- Which of Claude Code, OpenCode, and Codex will this project use? Every MCP edit must preserve semantic parity across `.mcp.json`, `opencode.jsonc`, and `.codex/config.toml`, using each harness's native environment syntax. Missing values remain a hard stop under `AGENTS.md` Rule #10.
+- Which of Claude Code, OpenCode, Codex and Pi will this project use (`harnesses:` in `.agents/project.yaml`)? Every MCP edit must preserve semantic parity across `.mcp.json`, `opencode.jsonc`, `.codex/config.toml` and `.pi/mcp.json` for the harnesses in use, using each harness's native environment syntax. Missing values remain a hard stop under `AGENTS.md` Rule #10.
 
 **CI + reporting + docs**
 - TMS modality + `AUTO_SYNC`: Xray / Jira-native / none, and which GitHub Secrets you can set (these live outside the repo).
@@ -226,7 +226,7 @@ Write `.context/reports/test-framework-adaptation-plan.md` (skill-owned report p
 4. **Identity + Variables** — `project.yaml` fields to fill (all env leaves), `.env` keys, `config/variables.ts` `envDataMap` + auth endpoints, env-enum reconciliation (the 4 sources below).
 5. **Components to Create / Modify** — API table, UI table, Steps (if any), files deleted (Example*, module-example, example.json), ATC-key rewrite (`PROJ-`/`UPEX-` → `{{PROJECT_KEY}}`).
 6. **Env Vars + Secrets** — `.env` keys to populate + GitHub repo Secrets the user must set externally.
-7. **CI + MCP + Reporting** — workflow reconciliation (env options, secrets, smoke tag), three-harness MCP parity, `dbhub.toml`, `allurerc.mjs` name.
+7. **CI + MCP + Reporting** — workflow reconciliation (env options, secrets, smoke tag), MCP parity across harnesses, `dbhub.toml`, `allurerc.mjs` name.
 8. **Implementation Phases** — maps to Phases 3-8 below.
 9. **AI Guidelines** — golden rules (inline locators, `@atc`, alias imports, `@schemas` facades, never `@openapi` from components).
 10. **Questions Answered** — verbatim from §1.7.
@@ -300,7 +300,7 @@ bun run test:env:check    # validateTestEnv: TEST_ENV is a declared env (+ TMS p
 bun run vars:schema:check # env schema pair is current, every secret-looking key is @sensitive, loads through varlock
 ```
 
-**Restart the agent session after any `.env` change an MCP server reads.** A harness spawns its MCP servers at startup, each one that needs `.env` values through the `.env` loader declared in `.mcp.json`, `opencode.jsonc` and `.codex/config.toml`, which reads `.env` at that moment. A `DBHUB_*`, `API_BASE_URL` or `OPENAPI_SPEC_PATH` written to `.env` mid-session reaches no running server: `[DB_TOOL]` and `[API_TOOL]` keep their empty values and fail with a 401 or a connection error, not a config error (Critical Rule #10). Tell the user to restart before Phase 4 needs the `openapi` server.
+**Restart the agent session after any `.env` change an MCP server reads.** A harness spawns its MCP servers at startup, each one that needs `.env` values through the `.env` loader declared in `.mcp.json`, `opencode.jsonc`, `.codex/config.toml` and `.pi/mcp.json`, which reads `.env` at that moment. A `DBHUB_*`, `API_BASE_URL` or `OPENAPI_SPEC_PATH` written to `.env` mid-session reaches no running server: `[DB_TOOL]` and `[API_TOOL]` keep their empty values and fail with a 401 or a connection error, not a config error (Critical Rule #10). Tell the user to restart before Phase 4 needs the `openapi` server.
 
 ---
 
@@ -450,13 +450,13 @@ Every suite workflow under `.github/workflows/`: the ones with a `workflow_dispa
 
 **Offer to push the CI secrets from `.env` automatically** (opt-in — ask first, never push silently): when `gh auth status` is authenticated, the values already exist in `.env`, and the user approves, set each by NAME so the value travels on a pipe and never through the transcript: `bunx varlock run -- sh -c 'printf %s "$NAME" | gh secret set NAME'` (add `--env <env>` for environment-scoped secrets; `gh variable set <NAME>` for non-secret config). Never pass a secret as `--body` (argv is visible) and never `grep` or `source` `.env` to get it. This is the low-friction alternative to the manual copy-paste block above — the regression-testing readiness gate probes these same secrets via `gh secret list`, so setting them here means the first CI run does not 401. Skip for any value not present in `.env` (surface it instead) and never echo a secret's value back to the user.
 
-### 7.3 MCP registry — THREE-HARNESS sync (highest-risk surface)
+### 7.3 MCP registry — sync across harnesses (highest-risk surface)
 
-`.mcp.json` (Claude Code), `opencode.jsonc` (OpenCode), and `.codex/config.toml` (Codex CLI/Desktop) ship the **same** server set (`.mcp.json` is canonical; `bun run agents:compat:check` proves the parity). **Every semantic change must land in all three** with native syntax. Per `AGENTS.md` Rule #10, a missing or empty MCP variable is a HARD SESSION STOP, not a soft CI failure.
+`.mcp.json` (Claude Code), `opencode.jsonc` (OpenCode), `.codex/config.toml` (Codex CLI/Desktop) and `.pi/mcp.json` (Pi, each server `exposure: "deferred"`) ship the **same** server set (`.mcp.json` is canonical; `bun run agents:compat:check` proves the parity). **Every semantic change must land in every file in use** with native syntax. Per `AGENTS.md` Rule #10, a missing or empty MCP variable is a HARD SESSION STOP, not a soft CI failure.
 
-The three project files carry **local stdio servers only**. A remote (HTTP) server never goes in them: web search (Exa first, Tavily second), Context7's hosted connector, Postman and Atlassian run at harness level, connected once per machine and resolved by capability (`agentic-qa-core/references/mcp-capabilities.md`; the servers moved out are listed in `cli/lib/harness-level-mcps.ts`). Recommend the user connects Exa, Tavily and Context7 (near-mandatory for spikes and official-doc checks) and Postman only as an option; the default API path stays the `openapi` server for schemas plus `curl` for execution.
+The project MCP files carry **local stdio servers only**. A remote (HTTP) server never goes in them: web search (Exa first, Tavily second), Context7's hosted connector, Postman and Atlassian run at harness level, connected once per machine and resolved by capability (`agentic-qa-core/references/mcp-capabilities.md`; the servers moved out are listed in `cli/lib/harness-level-mcps.ts`). Recommend the user connects Exa, Tavily and Context7 (near-mandatory for spikes and official-doc checks) and Postman only as an option; the default API path stays the `openapi` server for schemas plus `curl` for execution.
 
-- `project.yaml` `environments.<env>.db_mcp` / `api_mcp` resolve to MCP **server names**. Default: point them at the existing `dbhub` / `openapi` servers. If the target needs per-env DB/API servers, add those entries to all three harness configs, each launched through the `.env` loader with its own variables in `--filter` (`bun run agents:compat:check` names the exact launch it expects).
+- `project.yaml` `environments.<env>.db_mcp` / `api_mcp` resolve to MCP **server names**. Default: point them at the existing `dbhub` / `openapi` servers. If the target needs per-env DB/API servers, add those entries to every harness config in use, each launched through the `.env` loader with its own variables in `--filter` (`bun run agents:compat:check` names the exact launch it expects).
 - `openapi` server reads `API_BASE_URL` / `OPENAPI_SPEC_PATH` ONLY — it is **schema-read-only**, so do NOT inject `API_TOKEN` / `API_HEADERS` (authenticated requests run via curl using `.auth/tokens.env` from `bun run api:login`; canon: `agentic-qa-core/references/api-testing-doctrine.md`). If the target has **no API**, disable/remove the `openapi` entry in all three configs (else it spins against empty env and `[API_TOOL]` breaks).
 - `dbhub` server reads `dbhub.toml`. Verify it stays consistent with `DBHUB_*`.
 - Any `.env` value an MCP server reads changed in this phase → a session restart (§3.5).
@@ -523,9 +523,9 @@ Run every detection signal and print a per-subsystem **GENERIC / ADAPTED** table
 | Session reuse | second `test:smoke` does not execute api-setup/ui-setup (and ≥1 test actually ran) |
 | Business context | `bun run context:map <slug>` prints no placeholder notice for any shipped context map skill (`CONTEXT_MAP_SKILLS`, `cli/lib/context-maps.ts`), and `.context/PBI/qa-artifacts/master-test-plan.md` exists after `bun run context:hydrate` |
 | CI workflows | workflow `options:` == env union; secret names match scheme; smoke filter == config grep tag |
-| MCP parity | `db_mcp`/`api_mcp` resolve to server names present in `.mcp.json`, `opencode.jsonc`, and `.codex/config.toml`; `bun run agents:compat:check` exits 0; `API_BASE_URL`/`OPENAPI_SPEC_PATH` set in `.env` (or `openapi` disabled in all three); `bun run harness:env:check` exits 0 |
+| MCP parity | `db_mcp`/`api_mcp` resolve to server names present in `.mcp.json`, `opencode.jsonc`, `.codex/config.toml` and `.pi/mcp.json`; `bun run agents:compat:check` exits 0; `API_BASE_URL`/`OPENAPI_SPEC_PATH` set in `.env` (or `openapi` disabled in every harness file); `bun run harness:env:check` exits 0 |
 | Env schema | `bun run vars:schema:check` exits 0 **AND** every variable the project added or renamed is declared in `.env.schema` |
-| dbhub | `DBHUB_*` populated in `.env` if `db_type` set (else `dbhub` MCP disabled in all three harness configs) |
+| dbhub | `DBHUB_*` populated in `.env` if `db_type` set (else `dbhub` MCP disabled in every harness config in use) |
 | allurerc | `allurerc.mjs` `name` != `Agentic QA Boilerplate` |
 | agent-project.md | resolved auth strategy / first entity / OpenAPI source present in `.agents/instructions/agent-project.md` (not generic template wording); `AGENTS.md` carries no project facts; `CLAUDE.md` remains exactly `@AGENTS.md` |
 | Project docs | `grep -rnE 'upexgalaxy\|dojo\.' README.md CONTEXT.md INSTALLER.md` returns only lines the project kept on purpose (§9.3) |
@@ -567,7 +567,7 @@ Done only when **every** box is true (all map to a Phase 9 signal):
 - [ ] No `Example*` component, `module-example/` spec, or hotel/booking data remains
 - [ ] No component imports `@openapi`; only `api/schemas/` facades do
 - [ ] `.agents/project.yaml` fully populated; `envDataMap` URLs == `project.yaml` env URLs
-- [ ] MCP servers consistent across `.mcp.json`, `opencode.jsonc` and `.codex/config.toml` (local stdio only); the session restarted after any MCP value changed; `allurerc.mjs` renamed
+- [ ] MCP servers consistent across `.mcp.json`, `opencode.jsonc`, `.codex/config.toml` and `.pi/mcp.json` (local stdio only); the session restarted after any MCP value changed; `allurerc.mjs` renamed
 - [ ] Every variable the project added or renamed declared in `.env.schema`; `vars:schema:check` exits 0
 - [ ] CI workflow env options + secret names + smoke tag reconciled; GitHub Secrets list emitted
 - [ ] `.agents/instructions/agent-project.md` updated, `AGENTS.md` and the `CLAUDE.md` shim unchanged; branching strategy left to `git_strategy:` in `.agents/project.yaml`
@@ -591,7 +591,7 @@ Done only when **every** box is true (all map to a Phase 9 signal):
 | Domain data | hotel / booking | Target entities in `DataFactory` + `types.ts` |
 | Smoke tag | `@critical` (keep) | `@critical` (do not invent `@smoke`) |
 | Allure name | `Agentic QA Boilerplate` | Project report name |
-| MCP db/api | single `dbhub` / `openapi` | per-env servers if needed (all three harness files) |
+| MCP db/api | single `dbhub` / `openapi` | per-env servers if needed (every harness file in use) |
 | Credential pair | `LOCAL_USER_*` / `STAGING_USER_*` | Project names in `config/variables.ts` maps, `.env.schema`, `.env.example`, workflow secrets |
 | Data-testid | `getByTestId('email')` | Whatever the frontend exposes — request `data-testid` if missing |
 | Email verify / 2FA / tenant | not in example | Add to `ui-auth.setup.ts` only if enforced + bypass exists |
@@ -613,11 +613,11 @@ Done only when **every** box is true (all map to a Phase 9 signal):
 - `api-login.ts` does **not** auto-refresh — it mints per run (writes `.auth/api-state.json` for Playwright AND `.auth/tokens.env` + `.auth/tokens.json` for the agentic curl maneuver). Don't document a refresh that doesn't exist. Adapt `scripts/api-login.project.ts` (`buildAuthPayload` / `extractTokenFromResponse`) to the target — a wrong token shape leaves `.auth/tokens.env` empty and every curl 401s. The CLI around it — `scripts/lib/api-login-core.ts` (synced) and `scripts/api-login.ts` (delivered once, never overwritten; adopt the split by hand if the repo pre-dates it) — is never adapted.
 - Golden KATA rule: components import from `@schemas/*`, never `@openapi`. Keep `@openapi` scoped to facades.
 - Steps (Layer 3.5) carry no `@atc` and no fixed assertions — they chain ATCs only.
-- MCP edits preserve three-harness parity across `.mcp.json`, `opencode.jsonc`, and `.codex/config.toml`. Miss one and that harness loses the server or receives empty env → Rule #10 hard stop.
+- MCP edits preserve parity across every harness file in use (`.mcp.json`, `opencode.jsonc`, `.codex/config.toml`, `.pi/mcp.json`). Miss one and that harness loses the server or receives empty env → Rule #10 hard stop.
 - Smoke tag is `@critical`, not `@smoke`. The config grep and the workflows agree on `@critical`; a `@smoke` test selects zero.
 - `CLAUDE.md` is a regular one-line import shim, not a symlink or instruction body.
 - The plan lives in `.context/reports/`, not `.context/PBI/` (Jira-owned cache).
 - Session reuse: the second smoke run should be noticeably faster. If not, `auth.setup` is re-running.
-- No OpenAPI spec → hand-write facades AND disable the `openapi` MCP server in all three harness files.
+- No OpenAPI spec → hand-write facades AND disable the `openapi` MCP server in every harness file in use.
 - A value written to `.env` does not reach a running MCP server: restart the session.
 - `config/variables.core.ts`, `.env.core.schema` and `docs/core/**` are synced: adapting them is lost on the next `bun sync`. Edit the project half.

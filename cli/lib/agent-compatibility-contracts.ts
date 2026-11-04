@@ -69,7 +69,7 @@ export const CODEX_HOOK_COMMAND_WINDOWS = 'powershell.exe -NoProfile -Command "$
 
 /**
  * The `.env` loader every MCP stdio server that needs `.env` values launches
- * through, on all three hosts:
+ * through, on every host:
  *
  *   bunx -p varlock@<pin> varlock run --no-redact-stdout --inject vars --filter A,B -- <server>
  *

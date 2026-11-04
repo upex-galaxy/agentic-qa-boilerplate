@@ -537,6 +537,7 @@ kbd,.kbd{font-family:var(--font-mono);font-size:12.5px;padding:2px 8px;border-ra
     <tbody>
       <tr><td><b>Claude Code</b></td><td><span class="mono">/test-documentation UPEX-101</span> · <span class="mono">/test-documentation repair-traceability UPEX-101</span> · <span class="mono">/test-documentation post-promotion</span></td></tr>
       <tr><td><b>OpenCode · Codex</b></td><td>en prosa: «cargá la skill <span class="mono">test-documentation</span>, modo <span class="mono">repair-traceability</span>, ticket UPEX-101» · «modo <span class="mono">post-promotion</span>»</td></tr>
+      <tr><td><b>Pi</b></td><td><span class="mono">/skill:test-documentation repair-traceability UPEX-101</span> · <span class="mono">/skill:test-documentation post-promotion</span></td></tr>
       <tr><td><b>Regla</b></td><td>el primer token que coincide con un modo ES el modo y el resto se reenvía; sin modo → <span class="mono">document</span> para trabajo de documentación; si el pedido podría ser más de uno, <b>pregunta</b></td></tr>
     </tbody>
   </table>
@@ -1025,7 +1026,7 @@ Refinements proposed: 0</span></pre>
   <p class="kicker">cierre: dónde encaja y cómo se invoca</p>
   <h2 class="h2" data-anim="fade-up">Deriva amplio · documenta lo repetible · <span class="grad">automatiza los pocos</span></h2>
   <div class="grid g3 mt-m anim-stagger-list">
-    <div class="card"><h4>Cómo invocarlo</h4><p class="small dim">Claude Code: <kbd>/test-documentation &lt;KEY&gt;</kbd>, <kbd>/test-documentation repair-traceability &lt;KEY&gt;</kbd> o <kbd>/test-documentation post-promotion</kbd>. OpenCode y Codex: «cargá la skill <span class="mono">test-documentation</span>, modo <span class="mono">&lt;modo&gt;</span>». También por frases: «document tests», «ROI analysis», «which tests to automate», «fix-traceability».</p></div>
+    <div class="card"><h4>Cómo invocarlo</h4><p class="small dim">Claude Code: <kbd>/test-documentation &lt;KEY&gt;</kbd>, <kbd>/test-documentation repair-traceability &lt;KEY&gt;</kbd> o <kbd>/test-documentation post-promotion</kbd>. OpenCode y Codex: «cargá la skill <span class="mono">test-documentation</span>, modo <span class="mono">&lt;modo&gt;</span>». Pi: <kbd>/skill:test-documentation &lt;modo&gt;</kbd>. También por frases: «document tests», «ROI analysis», «which tests to automate», «fix-traceability».</p></div>
     <div class="card"><h4>Handoffs en el pipeline</h4><p class="small dim"><b>Entra</b> desde <span class="mono">/sprint-testing</span> (Story QA Approved, bug cerrado). <b>Sale</b> hacia <span class="mono">/test-automation</span>, que re-alcanza los Candidates: module → Macro · ticket → Medium · bug → Micro (ad-hoc entra donde encaje). Manual y Deferred son terminales.</p></div>
     <div class="card"><h4>Artefactos que deja</h4><p class="small dim"><b>Durable, en el TMS:</b> TCs enlazados US↔ATS↔ATP↔ATR↔TC con su comment de ROI · Candidates en el RTP con <span class="mono">## Regression flows</span> · comment <span class="mono">Prioritization</span> con los Deferred. <b>Local:</b> los dos reportes <span class="mono">[LOCAL]</span> de <span class="mono">.context/reports/</span>, el caché <span class="mono">[SYNC]</span> de <span class="mono">test-cases/</span> (se lee, no se escribe) y la sesión archivada en <span class="mono">.session/.archive/</span>.</p></div>
   </div>

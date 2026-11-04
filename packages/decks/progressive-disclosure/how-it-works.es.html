@@ -496,7 +496,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="card">
         <p class="lbl">Costo visible</p>
         <h4 class="h4 mt-s">Cada sesión pagaba el archivo completo</h4>
-        <p class="small mt-s">Una charla sobre un selector pagaba la política de git, el caché del PBI y el contrato de los tres harnesses. Las secciones condicionales cargaban siempre, aunque la sesión no las usara.</p>
+        <p class="small mt-s">Una charla sobre un selector pagaba la política de git, el caché del PBI y el contrato de cada harness. Las secciones condicionales cargaban siempre, aunque la sesión no las usara.</p>
       </div>
       <div class="card" style="border-color:var(--bad)">
         <p class="lbl" style="color:var(--bad)">Costo invisible</p>
@@ -506,7 +506,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="card card-accent">
         <p class="lbl">Lo que sí sirve</p>
         <h4 class="h4 mt-s">Un import no achica nada</h4>
-        <p class="small mt-s">En Claude Code un <code>@archivo</code> se expande entero al arrancar, y ni OpenCode ni Codex expanden imports. Lo que funciona en Claude Code, OpenCode y Codex por igual es que el modelo lea un archivo porque una instrucción se lo pide, y un hook que agrega texto en cada pedido. El diseño usa esas dos cosas.</p>
+        <p class="small mt-s">En Claude Code un <code>@archivo</code> se expande entero al arrancar, y ni OpenCode ni Codex expanden imports. Lo que funciona en Claude Code, OpenCode, Codex y Pi por igual es que el modelo lea un archivo porque una instrucción se lo pide, y un hook que agrega texto en cada pedido. El diseño usa esas dos cosas.</p>
       </div>
     </div>
     <p class="small dim mt-m">Lo que Codex perdía después del corte: el contrato de harnesses, la tabla de skills, la resolución de herramientas, las variables, el PBI, KATA, git y la memoria. Los números exactos están en <code>.context/ADR/ADR-0009-progressive-disclosure-of-instructions.md</code>.</p>
@@ -546,7 +546,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       </div>
       <table class="tt tight">
         <tr><th style="width:52px">Capa</th><th>Archivo y cuándo carga</th></tr>
-        <tr><td class="mono"><b>L0</b></td><td class="small"><code>AGENTS.md</code>, en cada sesión y en cada host. OpenCode y Codex lo cargan nativo; Claude Code llega por <code>CLAUDE.md</code>, que es exactamente <code>@AGENTS.md</code> más un salto de línea.</td></tr>
+        <tr><td class="mono"><b>L0</b></td><td class="small"><code>AGENTS.md</code>, en cada sesión y en cada host. OpenCode, Codex y Pi lo cargan nativo; Claude Code llega por <code>CLAUDE.md</code>, que es exactamente <code>@AGENTS.md</code> más un salto de línea.</td></tr>
         <tr><td class="mono"><b>L1</b></td><td class="small">Un archivo por tema en <code>.agents/instructions/</code>, a pedido: el router de L0 dice cuándo, y el hook lo recuerda con una línea <code>ROUTE:</code>.</td></tr>
         <tr><td class="mono"><b>L2</b></td><td class="small">Las <code>references/</code> de cada skill, a pedido, cuando una sección o una skill las nombra.</td></tr>
       </table>
@@ -632,6 +632,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
           <tr><td class="small"><b>Codex</b></td><td class="small">Lo mismo salvo el recordatorio, y solo en un repositorio de confianza.</td></tr>
           <tr><td class="small"><b>OpenCode 1</b></td><td class="small"><code>chat.message</code> clasifica, la system transform empuja las líneas, <code>session.compacting</code> re-arma.</td></tr>
           <tr><td class="small"><b>OpenCode 2</b></td><td class="small">Solo router: ningún hook le pasa el pedido. Degradación declarada.</td></tr>
+          <tr><td class="small"><b>Pi</b></td><td class="small">Una extensión (<code>.pi/extensions/agentic-qa.js</code>) en lugar de un command hook, y solo si el proyecto es de confianza.</td></tr>
         </table>
       </div>
       <table class="tt tight">
@@ -645,7 +646,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <tr><td class="small"><b>Re-armado</b></td><td class="small">Tras una compactación o un <code>/clear</code>, el emisor borra ese estado y no imprime nada: lo que salió del contexto se vuelve a rutear la próxima vez que haga falta.</td></tr>
       </table>
     </div>
-    <div class="notes">Detalle de las reglas. Ancla: así un archivo que comparten dos filas no arrastra los de la otra. Disparadores: un import que ancla solo su fila (@package.json) usa IMPORT_ROW_TRIGGERS del emisor. Alcance: sin la línea ROUTE-SCOPE:, un pedido con el preámbulo de un orquestador se clasifica solo por el bloque de tarea que sigue a su marcador. Ranking y tope: un agente lee una ruta sola mucho más que una de cinco en el mismo turno. Un emisor, tres adaptadores: Claude Code y Codex lo ejecutan como command hook, OpenCode lo importa desde .opencode/plugins/personality-reinject.js. Un prompt que empieza con &lt;task-notification&gt; (el aviso del harness de que terminó un subagente en segundo plano), o que trae solo bloques del harness como los system-reminder, no rutea nada y no toca el estado de ruteo: nadie pidió esas rutas. El estado de ruteo nunca vive en el repo: es estado de sesión. La confianza de Codex es estado de runtime, por eso setup:doctor la reporta aparte (agent-harnesses.md, Codex trust).</div>
+    <div class="notes">Detalle de las reglas. Ancla: así un archivo que comparten dos filas no arrastra los de la otra. Disparadores: un import que ancla solo su fila (@package.json) usa IMPORT_ROW_TRIGGERS del emisor. Alcance: sin la línea ROUTE-SCOPE:, un pedido con el preámbulo de un orquestador se clasifica solo por el bloque de tarea que sigue a su marcador. Ranking y tope: un agente lee una ruta sola mucho más que una de cinco en el mismo turno. Un emisor, un adaptador por harness: Claude Code y Codex lo ejecutan como command hook, OpenCode lo importa desde .opencode/plugins/personality-reinject.js, Pi lo carga desde .pi/extensions/agentic-qa.js. Un prompt que empieza con &lt;task-notification&gt; (el aviso del harness de que terminó un subagente en segundo plano), o que trae solo bloques del harness como los system-reminder, no rutea nada y no toca el estado de ruteo: nadie pidió esas rutas. El estado de ruteo nunca vive en el repo: es estado de sesión. La confianza de Codex es estado de runtime, por eso setup:doctor la reporta aparte (agent-harnesses.md, Codex trust).</div>
   </section>
 
   <!-- 7. REGLAS CRÍTICAS -->
@@ -687,7 +688,7 @@ whenever any of these apply, read <span class="k">@package.json</span> first, ne
     <table class="tt tight mt-m">
       <tr><th style="width:190px">Host</th><th>Qué pasa</th></tr>
       <tr><td class="small"><b>Claude Code</b></td><td class="small">El <code>@</code> va como texto plano, fuera de backticks: Claude Code salta los imports que están dentro de código, y el lint y el hook tampoco los cuentan. Los dos archivos entran enteros al arrancar la sesión.</td></tr>
-      <tr><td class="small"><b>OpenCode y Codex</b></td><td class="small">Cargan <code>AGENTS.md</code> nativo, sin el shim de <code>CLAUDE.md</code>. Siguen la instrucción reforzada de la misma fila ("whenever any of these apply, read ...") y abren el archivo cuando la condición se cumple.</td></tr>
+      <tr><td class="small"><b>OpenCode, Codex y Pi</b></td><td class="small">Cargan <code>AGENTS.md</code> nativo, sin el shim de <code>CLAUDE.md</code>. Siguen la instrucción reforzada de la misma fila ("whenever any of these apply, read ...") y abren el archivo cuando la condición se cumple.</td></tr>
     </table>
     <div class="card mt-m" style="border-color:var(--warn)">
       <p class="lbl" style="color:var(--warn)">Costo</p>
@@ -784,7 +785,7 @@ whenever any of these apply, read <span class="k">@package.json</span> first, ne
       <a href="https://github.com/upex-galaxy/agentic-qa-boilerplate/blob/main/.context/ADR/ADR-0009-progressive-disclosure-of-instructions.md">ADR-0009<span>la decisión, las mediciones y las alternativas descartadas</span></a>
     </div>
     <div class="grid g2 mt-m" style="gap:22px">
-      <div class="card"><p class="lbl">Una fuente, tres harnesses</p><p class="small mt-s">La página <code>harnesses.es.html</code> del sitio publicado: cómo cada host lee las instrucciones y el hook. En el repo, el contrato está en <code>.agents/instructions/agent-harnesses.md</code>.</p></div>
+      <div class="card"><p class="lbl">Una fuente, un adaptador por harness</p><p class="small mt-s">La página <code>harnesses.es.html</code> del sitio publicado: cómo cada host lee las instrucciones y el hook. En el repo, el contrato está en <code>.agents/instructions/agent-harnesses.md</code>.</p></div>
       <div class="card"><p class="lbl">La capa comportamental</p><p class="small mt-s">Lo que L0 nunca recorta, §2, tiene su espejo para humanos en <code>docs/core/personalidad.html</code>.</p></div>
     </div>
     <div class="notes">Los tres primeros son los archivos fuente. La página de harnesses y la de personalidad explican lo mismo para lectores humanos; cuando divergen, gana el archivo fuente.</div>
@@ -803,7 +804,7 @@ whenever any of these apply, read <span class="k">@package.json</span> first, ne
       <p class="lbl">Fuente de verdad</p>
       <p class="small mt-s"><code>AGENTS.md</code> · <code>.agents/instructions/README.md</code> · <code>.agents/hooks/personality-reinject.mjs</code> · <code>scripts/lint-instructions.ts</code></p>
     </div>
-    <div class="notes">Fin del recorrido. La idea entera: lo que ata carga siempre, lo demás se lee cuando el pedido lo necesita, y un hook más un gate se aseguran de que eso pase en los tres hosts.</div>
+    <div class="notes">Fin del recorrido. La idea entera: lo que ata carga siempre, lo demás se lee cuando el pedido lo necesita, y un hook más un gate se aseguran de que eso pase en cada host.</div>
   </section>
 
   <div class="deck-footer"><span class="mono">progressive disclosure · AGENTS.md · .agents/instructions/</span><span class="slide-number" data-current="1" data-total="14"></span></div>

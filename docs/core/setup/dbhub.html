@@ -91,7 +91,8 @@
             <tr>
               <td>Servidor MCP</td>
               <td>
-                <code>.mcp.json</code>, <code>opencode.jsonc</code>, <code>.codex/config.toml</code>
+                <code>.mcp.json</code>, <code>opencode.jsonc</code>,
+                <code>.codex/config.toml</code>, <code>.pi/mcp.json</code>
               </td>
               <td>
                 El server <code>dbhub</code>, que arranca <code>dbhub --config dbhub.toml</code> (la
@@ -115,9 +116,9 @@ password = "${DBHUB_PASSWORD}"
 sslmode = "require"</code></pre>
       <p>
         La sustitución de <code>${...}</code> la hace el propio <code>dbhub</code>, con el entorno
-        del proceso que lo lanzó. Por eso los tres harnesses (<code>.mcp.json</code>,
-        <code>opencode.jsonc</code> y <code>.codex/config.toml</code>) arrancan
-        <code>dbhub</code> con el mismo loader delante,
+        del proceso que lo lanzó. Por eso todos los harnesses (<code>.mcp.json</code>,
+        <code>opencode.jsonc</code>, <code>.codex/config.toml</code> y <code>.pi/mcp.json</code>)
+        arrancan <code>dbhub</code> con el mismo loader delante,
         <code>varlock run ... --filter DBHUB_TYPE,...,DBHUB_PASSWORD -- &lt;dbhub&gt;</code>: lee
         <code>.env</code> desde la raíz del proyecto al arrancar el server y le pasa exactamente
         esas seis variables, aunque abras el harness desde la app de escritorio.
@@ -151,12 +152,12 @@ DBHUB_PASSWORD=</code></pre>
         <li>
           <strong>Arranca el agente</strong>
           <p>
-            Abre la sesión con <code>claude</code>, <code>opencode</code> o <code>codex</code> en la
-            carpeta del repo, o con su app de escritorio. <code>dbhub</code> lee
-            <code>.env</code> por su cuenta con el loader de varlock. Si exportaste una variable
-            <code>DBHUB_*</code> en el perfil de tu shell, esa gana sobre el archivo;
-            <code>bun run vars:env:check</code> la nombra. Si cambias <code>.env</code> con la
-            sesión abierta, reiníciala: el MCP recibe las variables una sola vez, al arrancar.
+            Abre la sesión con <code>claude</code>, <code>opencode</code>, <code>codex</code> o
+            <code>pi</code> en la carpeta del repo, o con su app de escritorio.
+            <code>dbhub</code> lee <code>.env</code> por su cuenta con el loader de varlock. Si
+            exportaste una variable <code>DBHUB_*</code> en el perfil de tu shell, esa gana sobre el
+            archivo; <code>bun run vars:env:check</code> la nombra. Si cambias <code>.env</code> con
+            la sesión abierta, reiníciala: el MCP recibe las variables una sola vez, al arrancar.
           </p>
         </li>
         <li>
@@ -263,8 +264,8 @@ password = "${REPORTING_DB_PASSWORD}"
 sslmode = "require"</code></pre>
       <p>
         Los nombres <code>REPORTING_DB_*</code> son un ejemplo. Sean cuales sean, tienen que llegar
-        al proceso del MCP, así que decláralos también en el bloque <code>dbhub</code> de los tres
-        archivos de harness, igual que las <code>DBHUB_*</code>.
+        al proceso del MCP, así que decláralos también en el bloque <code>dbhub</code> del archivo
+        de cada harness, igual que las <code>DBHUB_*</code>.
       </p>
 
       <h2 id="problemas">Problemas de conexión</h2>

@@ -17,7 +17,7 @@
  * and neither covered by "never read .env" (exposure findings X9 and X10).
  *
  * WHAT REPLACED IT. Every MCP server that needs `.env` values now starts
- * through the `.env` loader on all three hosts (`MCP_ENV_LOADER_*` in
+ * through the `.env` loader on every host (`MCP_ENV_LOADER_*` in
  * `agent-compatibility-contracts.ts`): `varlock run --filter <its vars>` reads
  * `.env` (or the secret manager the schema names) at spawn time, from the
  * project root, however the harness was opened, and hands the server only its

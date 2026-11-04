@@ -84,4 +84,4 @@ A workflow skill whose own flow records a project fact (a context pointer after 
 
 ## 6. Measuring the routes
 
-The router eval proves the hook names the right section; `bun run instructions:audit` measures whether the agent then read it, from this machine's Claude Code transcripts (OpenCode and Codex transcripts are not parsed yet). It prints file names and counts only. A team that wants a trend can run it monthly (an Orca automation or a calendar reminder); the repo ships no routine for it.
+The router eval proves the hook names the right section; `bun run instructions:audit` measures whether the agent then read it, from this machine's Claude Code transcripts (OpenCode, Codex and Pi transcripts are not parsed yet). It prints file names and counts only. A team that wants a trend can run it monthly (an Orca automation or a calendar reminder); the repo ships no routine for it.
