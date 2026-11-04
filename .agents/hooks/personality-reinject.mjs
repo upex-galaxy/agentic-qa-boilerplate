@@ -1,11 +1,12 @@
 /**
- * @fileoverview ONE prompt-time emitter for the three harnesses.
+ * @fileoverview ONE prompt-time emitter for every harness.
  *
  * Claude Code and Codex run this file as a `UserPromptSubmit` command hook and
  * read its stdout, and run it again on `SessionStart` to re-arm the routes
  * (see "Re-arm sources" below); OpenCode imports the same exports from its
  * plugin adapter (`.opencode/plugins/personality-reinject.js`): OpenCode 1
- * also routes from `chat.message`, OpenCode 2 is router-only. The emitter
+ * also routes from `chat.message`, OpenCode 2 is router-only. Pi imports them
+ * from its extension (`.pi/extensions/agentic-qa.js`). The emitter
  * carries four payloads, in this order (the AGENTS.md §2 output contract is
  * not one of them: the harness loads it once per session):
  *
@@ -44,6 +45,8 @@
  *   - OpenCode 1, `.opencode/plugins/personality-reinject.js`: the
  *     `experimental.session.compacting` event only; OpenCode 2 is router-only
  *     and keeps no state to re-arm.
+ *   - Pi, `.pi/extensions/agentic-qa.js`: the `session_compact` event only;
+ *     `/new` starts a new session id.
  *   `bun run agents:compat:check` asserts the two command-host lists
  *   (`REARM_SESSION_START_SOURCES` in `cli/lib/agent-compatibility-contracts.ts`).
  *
