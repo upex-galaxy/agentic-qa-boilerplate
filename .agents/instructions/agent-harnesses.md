@@ -2,7 +2,7 @@
 id: harnesses
 title: 'Host harnesses: one source, every harness'
 load_when: 'harness files (CLAUDE.md, .claude/, .codex/, .opencode/, .pi/, MCP configs), which harnesses a project uses (harnesses:), hooks, husky, the updater (bun sync), cli/, root configs, the project schema'
-triggers: ['\bharness', 'CLAUDE\.md', '\bopencode\b', '\bcodex\b', '\.pi/', '\bpi\s+(?:adapter|extensions?|mcp|workers?|sessions?|trust)\b', '\b(?:adaptador|extensi[oó]n|sesi[oó]n|worker)\s+de\s+pi\b', '\b(?:in|on|en|con)\s+pi\b', '\.mcp\.json', '\bMCPs?\b.*\bconfigur', '\bconfigur\w*\b.*\bMCPs?\b', '\bhooks?\b', '\bhusky\b', '\bbun (?:run )?(?:sync|up)\b', '\bupdater\b', '\bparity\b', '\bagents:(compat|schema)', 'project\.schema\.yaml', '\beslint\.config', '\btsconfig', 'AGENTS\.md', '\b(?:instructions?|router)\b.*\b(?:sections?|triggers?|rows?)\b']
+triggers: ['\bharness', 'CLAUDE\.md', '\bopencode\b', '\bcodex\b', '\.pi/', '\bpi\s+(?:adapter|extensions?|mcp|workers?|trust)\b', '\b(?:adaptador|extensi[oó]n|worker)\s+de\s+pi\b', '\b(?:works?|runs?|running|funciona|corre)\s+(?:\w+\s+)?(?:in|on|en|con)\s+pi\b', '\.mcp\.json', '\bMCPs?\b.*\bconfigur', '\bconfigur\w*\b.*\bMCPs?\b', '\bhooks?\b', '\bhusky\b', '\bbun (?:run )?(?:sync|up)\b', '\bupdater\b', '\bparity\b', '\bagents:(compat|schema)', 'project\.schema\.yaml', '\beslint\.config', '\btsconfig', 'AGENTS\.md', '\b(?:instructions?|router)\b.*\b(?:sections?|triggers?|rows?)\b']
 paths: ['CLAUDE.md', '.claude/', '.codex/', '.opencode/', '.pi/', '.mcp.json', 'opencode.jsonc', '.husky/', 'cli/', '.agents/hooks/', 'eslint.config.base.js', 'tsconfig.base.json', 'config/variables.core.ts', '.agents/project.schema.yaml', '.agents/instructions/']
 ---
 

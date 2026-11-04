@@ -324,6 +324,18 @@
     {
       "prompt": "round pi to two decimals in that formula",
       "expect": []
+    },
+    {
+      "prompt": "the stories planned in PI 3 need their test plans",
+      "expect": []
+    },
+    {
+      "prompt": "revisá las historias de la planificación en PI 24.3",
+      "expect": []
+    },
+    {
+      "prompt": "does this also work on pi",
+      "expect": ["harnesses"]
     }
   ]
 }
