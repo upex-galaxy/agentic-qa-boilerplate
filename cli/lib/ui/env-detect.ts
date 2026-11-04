@@ -54,7 +54,7 @@ export interface UiDecision {
 }
 
 /** Env vars an agent harness sets in the shells it drives. */
-export const AGENT_MARKERS = ['CLAUDECODE', 'CLAUDE_CODE_ENTRYPOINT', 'CODEX_SANDBOX', 'CODEX_SANDBOX_NETWORK_DISABLED', 'OPENCODE'] as const;
+export const AGENT_MARKERS = ['CLAUDECODE', 'CLAUDE_CODE_ENTRYPOINT', 'CODEX_SANDBOX', 'CODEX_SANDBOX_NETWORK_DISABLED', 'OPENCODE', 'PI_CODING_AGENT'] as const;
 
 const CI_MARKERS = ['CI', 'GITHUB_ACTIONS', 'BUILD_ID'] as const;
 

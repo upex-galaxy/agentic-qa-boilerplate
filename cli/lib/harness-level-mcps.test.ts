@@ -66,11 +66,22 @@ describe('readUserLevelMcpServers', () => {
     expect(servers.opencode).toEqual(['exa', 'mcp.exa.ai']);
   });
 
+  test('reads Pi\'s user-level registry, under PI_CODING_AGENT_DIR when set', () => {
+    const home = fakeHome();
+    mkdirSync(join(home, '.pi', 'agent'), { recursive: true });
+    writeFileSync(join(home, '.pi', 'agent', 'mcp.json'), JSON.stringify({ mcpServers: { exa: { url: 'https://mcp.exa.ai/mcp' } } }));
+    expect(readUserLevelMcpServers(home, ENV).pi).toEqual(['exa', 'mcp.exa.ai']);
+
+    const elsewhere = fakeHome();
+    writeFileSync(join(elsewhere, 'mcp.json'), JSON.stringify({ mcpServers: { tavily: { url: 'https://mcp.tavily.com/x' } } }));
+    expect(readUserLevelMcpServers(home, { ...ENV, PI_CODING_AGENT_DIR: elsewhere }).pi).toEqual(['mcp.tavily.com', 'tavily']);
+  });
+
   test('an absent or unparseable file contributes nothing and never throws', () => {
     const home = fakeHome();
     writeFileSync(join(home, '.claude.json'), '{ not json');
     const servers = readUserLevelMcpServers(home, ENV);
-    expect(servers).toEqual({ claude: [], opencode: [], codex: [], sources: [] });
+    expect(servers).toEqual({ claude: [], opencode: [], codex: [], pi: [], sources: [] });
   });
 });
 
@@ -78,15 +89,15 @@ describe('classifyHarnessLevelMcp', () => {
   const tavily = HARNESS_LEVEL_MCPS.find(m => m.id === 'tavily')!;
 
   test('a hit by id or by url host is "provided elsewhere" naming the harness', () => {
-    const byId = classifyHarnessLevelMcp(tavily, { claude: ['tavily'], opencode: [], codex: [] });
+    const byId = classifyHarnessLevelMcp(tavily, { claude: ['tavily'], opencode: [], codex: [], pi: [] });
     expect(byId.state).toBe('provided elsewhere');
     expect(byId.hosts).toEqual(['claude']);
-    const byHost = classifyHarnessLevelMcp(tavily, { claude: [], opencode: [], codex: ['mcp.tavily.com', 'websearch'] });
+    const byHost = classifyHarnessLevelMcp(tavily, { claude: [], opencode: [], codex: ['mcp.tavily.com', 'websearch'], pi: [] });
     expect(byHost.hosts).toEqual(['codex']);
   });
 
   test('no hit is "not detectable", never "missing", and says how to connect it per host', () => {
-    const verdict = classifyHarnessLevelMcp(tavily, { claude: [], opencode: [], codex: [] });
+    const verdict = classifyHarnessLevelMcp(tavily, { claude: [], opencode: [], codex: [], pi: [] });
     expect(verdict.state).toBe('not detectable');
     expect(verdict.hosts).toEqual([]);
     expect(verdict.detail).toContain('claude.ai connector');

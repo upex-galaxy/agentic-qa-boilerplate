@@ -265,6 +265,7 @@ const MCP_HOST_FILE: Record<string, string> = {
   claude: '.mcp.json',
   opencode: 'opencode.jsonc',
   codex: '.codex/config.toml',
+  pi: '.pi/mcp.json',
 };
 
 /** Order of the surfaces in every table. */
@@ -296,9 +297,10 @@ const SURFACE_LABEL_ES: Record<ParitySurface, string> = {
   gates: 'Verificación',
 };
 
-/** The other two MCP registries a host's project-only server must be declared in. */
-function otherMcpHostFiles(host: string): string {
-  return Object.entries(MCP_HOST_FILE).filter(([id]) => id !== host).map(([, file]) => file).join(' and ');
+/** The other MCP registries in use where a host's project-only server must be declared. */
+function otherMcpHostFiles(host: string, root: string): string {
+  const inUse: readonly string[] = declaredHarnesses(root).harnesses;
+  return Object.entries(MCP_HOST_FILE).filter(([id]) => id !== host && inUse.includes(id)).map(([, file]) => file).join(' and ');
 }
 
 const MAX_NAMES = 3;
@@ -529,10 +531,10 @@ export const RESOLVED_BY_APPLY_MARK = '(resolved by apply)';
  * evidence, because a contract message names the file it is about even when the
  * row's own path could not be extracted from it (`(compat)`).
  */
-const SELF_HEALING_COMPAT_PATHS = ['.agents/hooks/', '.opencode/plugins/', 'CLAUDE.md'];
+const SELF_HEALING_COMPAT_PATHS = ['.agents/hooks/', '.opencode/plugins/', '.pi/extensions/agentic-qa.js', 'CLAUDE.md'];
 
 /** Project-owned registries the apply step never overwrites: their contract needs a human. */
-const APPLY_CANNOT_FIX_PATHS = ['.claude/settings.json', '.mcp.json', 'opencode.jsonc', '.codex/config.toml'];
+const APPLY_CANNOT_FIX_PATHS = ['.claude/settings.json', '.mcp.json', 'opencode.jsonc', '.codex/config.toml', '.pi/mcp.json'];
 
 /**
  * True when the real run fixes this row without the user: the afterApply
@@ -1040,7 +1042,7 @@ export function harnessLevelMcpNote(filePath: string, project: string, upstream:
       `Upstream no longer commits ${listNames(ids)}: a remote MCP server whose only project-side content is an API key is the harness's business, and the skills resolve it by capability whatever the server prefix (ADR-0005; .agents/skills/agentic-qa-core/references/mcp-capabilities.md).`,
       'Two valid answers for this project:',
       `  - keep project: the server stays a project-only entry in ${filePath} and its key stays in your .env and .env.example (the manifest no longer declares ${listNames(vars)}, so vars:env:check treats the uncommented line as an orphan unless you keep it commented or declare it in .env.schema).`,
-      `  - remove it here (and from the other two host files) and connect it at user level: Claude Code \`claude mcp add --scope user\` or a claude.ai connector; OpenCode ~/.config/opencode/opencode.json; Codex \`codex mcp add\`. Then drop ${listNames(vars)} from .env.`,
+      `  - remove it here (and from the other host files) and connect it at user level: Claude Code \`claude mcp add --scope user\` or a claude.ai connector; OpenCode ~/.config/opencode/opencode.json; Codex \`codex mcp add\`; Pi \`pi mcp add\`. Then drop ${listNames(vars)} from .env.`,
       'bun run setup:doctor reports which of these servers your user-level configs already declare.',
     ].join('\n'),
   };
@@ -1075,7 +1077,7 @@ export function retiredMcpNote(filePath: string, project: string, upstream: stri
     note: [
       ...retired.map(id => `Upstream no longer commits ${listNames([id])}: ${RETIRED_MCPS[id]}.`),
       'Two valid answers for this project:',
-      `  - keep project: the server stays a project-only entry in ${filePath} (and in the other two host files); agents:compat:check still compares it across hosts, just without a pinned shape.`,
+      `  - keep project: the server stays a project-only entry in ${filePath} (and in the other host files); agents:compat:check still compares it across hosts, just without a pinned shape.`,
       '  - remove it from all three host files.',
     ].join('\n'),
   };
@@ -1201,7 +1203,7 @@ export function compatErrorSuggestion(message: string): ParitySuggestion {
 function compatErrorPath(message: string): string {
   const m = /(?:^|\s|:)((?:\.[\w-]+|[\w-]+)(?:\/[\w.-]+)+\.\w+)/.exec(message);
   if (m) { return m[1]; }
-  const host = /(claude|opencode|codex)\b/i.exec(message);
+  const host = /(claude|opencode|codex|pi)\b/i.exec(message);
   if (host && /MCP/.test(message)) { return MCP_HOST_FILE[host[1].toLowerCase()]; }
   if (/skills alias|\.claude\/skills/.test(message)) { return '.claude/skills'; }
   return '(compat)';
@@ -1383,7 +1385,7 @@ function readIfExists(filePath: string): string | null {
 }
 
 function watchedSurface(filePath: string, source: 'upstream' | 'project' = 'upstream'): ParitySurface {
-  if (filePath === '.mcp.json' || filePath === 'opencode.jsonc' || filePath === '.codex/config.toml') { return 'mcp'; }
+  if (filePath === '.mcp.json' || filePath === 'opencode.jsonc' || filePath === '.codex/config.toml' || filePath === '.pi/mcp.json') { return 'mcp'; }
   if (filePath === '.claude/settings.json') { return 'hooks'; }
   if (filePath.startsWith('.agents/skills/')) { return 'skills'; }
   // Synced component files kept as the project's own (.husky hooks, a declared path).
@@ -1573,7 +1575,7 @@ export function collectParityFindings(input: ParityInput): ParityFinding[] {
     // Servers only this host has are the project's integrations: the fix is to
     // declare them everywhere or drop them deliberately, never to overwrite
     // the file with upstream's copy.
-    if (sets.extra.length > 0) { parts.push(`only here: ${sets.extra.join(', ')} (not in .mcp.json): declare them in ${otherMcpHostFiles(host)}, or remove them`); }
+    if (sets.extra.length > 0) { parts.push(`only here: ${sets.extra.join(', ')} (not in .mcp.json): declare them in ${otherMcpHostFiles(host, input.root)}, or remove them`); }
     pushCompat({
       surface: 'mcp',
       path: MCP_HOST_FILE[host] ?? host,

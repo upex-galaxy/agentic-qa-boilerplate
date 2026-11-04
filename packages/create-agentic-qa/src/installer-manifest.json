@@ -24,11 +24,11 @@
       "binaryName": "git"
     },
     {
-      "name": "an AI agent (Claude Code, OpenCode or Codex)",
+      "name": "an AI agent (Claude Code, OpenCode, Codex or Pi)",
       "required": true,
       "purpose": "bun setup configures only the agents you pick, and does not start when none is installed.",
       "installHint": "https://github.com/upex-galaxy/agentic-qa-boilerplate#readme",
-      "binaryNames": ["claude", "opencode", "codex"]
+      "binaryNames": ["claude", "opencode", "codex", "pi"]
     },
     {
       "name": "internet access",
@@ -251,7 +251,7 @@
       "steps": [
         {
           "step": "AI agents",
-          "what": "Which agents the project supports (Claude Code, OpenCode, Codex), recorded in .agents/project.yaml `harnesses:`; the files of an agent you drop can be removed.",
+          "what": "Which agents the project supports (Claude Code, OpenCode, Codex, Pi), recorded in .agents/project.yaml `harnesses:`; the files of an agent you drop can be removed.",
           "interactive": true,
           "prompts": ["agents", "drop-*"]
         },

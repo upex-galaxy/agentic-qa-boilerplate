@@ -144,7 +144,7 @@ describe('checks for bun setup', () => {
   test('a ready machine is clear, every group present, the downloads reachable', async () => {
     const r = await runSetupPreflight({ cwd: project(), lang: 'en', run: machine(), reach: reachAll, env: { HOME: '/nowhere', INSTALL_SKIP_PLAYWRIGHT: '1' }, disk: BIG });
     // Chromium is a row only for a product that downloads it (BRAND.setupDownloads).
-    expect(r.checks.map(c => c.id)).toEqual(['bun', 'node', 'git', 'acli', 'engram', 'gh', ...(PYTHON ? ['python'] : []), 'agent-claude', 'agent-codex', 'agent-opencode', 'repo', 'disk', 'net-npm', 'net-github', ...(CHROMIUM ? ['net-playwright'] : [])]);
+    expect(r.checks.map(c => c.id)).toEqual(['bun', 'node', 'git', 'acli', 'engram', 'gh', ...(PYTHON ? ['python'] : []), 'agent-claude', 'agent-codex', 'agent-opencode', 'agent-pi', 'repo', 'disk', 'net-npm', 'net-github', ...(CHROMIUM ? ['net-playwright'] : [])]);
     expect(r.verdict).toBe('clear');
     expect(new Set(r.checks.map(c => c.group))).toEqual(new Set(['Tools', 'AI agents', 'This machine', 'Network']));
   });
@@ -168,7 +168,7 @@ describe('checks for bun setup', () => {
   });
 
   test('no AI agent and no Node block; nothing starts', async () => {
-    const r = await runSetupPreflight({ cwd: project(), lang: 'es', run: machine(['claude', 'codex', 'opencode', 'node']), reach: reachAll, env: { HOME: '/nowhere', INSTALL_SKIP_PLAYWRIGHT: '1' }, disk: BIG });
+    const r = await runSetupPreflight({ cwd: project(), lang: 'es', run: machine(['claude', 'codex', 'opencode', 'pi', 'node']), reach: reachAll, env: { HOME: '/nowhere', INSTALL_SKIP_PLAYWRIGHT: '1' }, disk: BIG });
     expect(r.verdict).toBe('block');
     expect(r.checks.find(c => c.id === 'harness')).toMatchObject({ state: 'block' });
     expect(r.checks.find(c => c.id === 'node')).toMatchObject({ state: 'block' });

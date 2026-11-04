@@ -142,6 +142,7 @@ describe('installer Codex lifecycle', () => {
       opencode: false,
       codexCli: true,
       codexConfigured: true,
+      pi: false,
     });
   });
 

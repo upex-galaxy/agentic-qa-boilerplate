@@ -256,6 +256,7 @@ describe('one-harness projects (ADR-0012)', () => {
     expect(isRepoOnlyPath('.opencode/commands/mine.md', unused)).toBe(false);
     expect(isRepoOnlyPath('.pi/mcp.json', unused)).toBe(true);
     expect(isRepoOnlyPath('.pi/extensions/mine.js', unused)).toBe(false);
+    expect(isRepoOnlyPath('.pi/extensions/agentic-qa.js', unused)).toBe(true);
   });
 
   test('a project with all three (or none detected) keeps the full delivery', () => {

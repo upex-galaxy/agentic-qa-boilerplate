@@ -124,7 +124,7 @@ export const PHASE_STEPS: Record<string, StepSpec[]> = {
     { step: 'Clean project.yaml', what: 'A project copied with "Use this template" gets a clean .agents/project.yaml from the schema before anything writes to it.', probes: ['reseedCopiedTemplate('] },
   ],
   team: [
-    { step: 'AI agents', what: 'Which agents the project supports (Claude Code, OpenCode, Codex), recorded in .agents/project.yaml `harnesses:`; the files of an agent you drop can be removed.', probes: ['askAgents(', 'recordHarnessSelection('], prompts: ['agents', 'drop-*'] },
+    { step: 'AI agents', what: 'Which agents the project supports (Claude Code, OpenCode, Codex, Pi), recorded in .agents/project.yaml `harnesses:`; the files of an agent you drop can be removed.', probes: ['askAgents(', 'recordHarnessSelection('], prompts: ['agents', 'drop-*'] },
     { step: 'Engram', what: 'Detects Engram 3.0+ and, for Claude Code, offers its plugin (session hooks, installed once per machine).', probes: ['detectEngram('], prompts: ['engram-incompatible', 'engram-plugin'] },
     { step: 'User-level skills', what: 'Which user-level community skills to install, one by one; a declined skill is left out of later runs.', probes: ['askUserLevelSkills('], prompts: ['user-skills'] },
   ],
@@ -216,11 +216,11 @@ function prerequisites(mcpsWithKeys: string[]): PrerequisiteSpec[] {
       preflight: ['git'],
     },
     {
-      name: 'an AI agent (Claude Code, OpenCode or Codex)',
+      name: 'an AI agent (Claude Code, OpenCode, Codex or Pi)',
       required: true,
       purpose: 'bun setup configures only the agents you pick, and does not start when none is installed.',
       installHint: 'https://github.com/upex-galaxy/agentic-qa-boilerplate#readme',
-      binaryNames: ['claude', 'opencode', 'codex'],
+      binaryNames: ['claude', 'opencode', 'codex', 'pi'],
       preflight: ['harness'],
     },
     {

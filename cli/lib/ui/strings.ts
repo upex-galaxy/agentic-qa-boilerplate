@@ -225,7 +225,7 @@ const en: StringTable = {
 const glossaryEs: Record<string, GlossaryEntry> = {
   preflight: { t: 'Chequeo previo', d: 'Antes de tocar nada, el instalador revisa que tengas las herramientas, accesos y espacio que cada paso va a necesitar. Así no te quedas a mitad de camino por algo que se podía saber al principio.' },
   bloquea: { t: 'Bloquea vs. aviso', d: '<b>Bloquea</b>: sin esto el paso falla seguro, así que no empezamos. <b>Aviso</b>: un paso concreto lo va a necesitar; puedes seguir y arreglarlo cuando llegue, o saltar ese paso.' },
-  harness: { t: 'Agente de IA (harness)', d: 'El programa donde trabaja la IA: Claude Code, OpenCode o Codex. El boilerplate trae instrucciones y skills para cada uno; eliges los que usa tu equipo y solo se configuran esos.' },
+  harness: { t: 'Agente de IA (harness)', d: 'El programa donde trabaja la IA: Claude Code, OpenCode, Codex o Pi. El boilerplate trae instrucciones y skills para cada uno; eliges los que usa tu equipo y solo se configuran esos.' },
   skill: { t: 'Skill', d: 'Un paquete de instrucciones que la IA carga cuando la tarea lo pide: probar una historia, escribir un test, abrir un PR. Viven en <code>.agents/skills/</code> y se copian a cada agente que elijas.' },
   mcp: { t: 'MCP', d: 'Un conector que le da a la IA una herramienta extra: leer tu base de datos, llamar a tu API, consultar documentación. Algunos necesitan una credencial, por eso te la pedimos.' },
   env: { t: 'Archivo .env', d: 'Donde viven las credenciales de este proyecto en tu máquina. Está en <code>.gitignore</code>: nunca se sube al repositorio. La IA lee los nombres de las variables, nunca sus valores.' },
@@ -253,7 +253,7 @@ const glossaryEs: Record<string, GlossaryEntry> = {
 const glossaryEn: Record<string, GlossaryEntry> = {
   preflight: { t: 'Preflight', d: 'Before touching anything, the installer checks you have the tools, access and disk space every step will need, so you never get stuck halfway on something that could be known at the start.' },
   bloquea: { t: 'Blocks vs. warning', d: '<b>Blocks</b>: without it the step fails for sure, so we do not start. <b>Warning</b>: one specific step needs it; you can go on and fix it when that step arrives, or skip the step.' },
-  harness: { t: 'AI agent (harness)', d: 'The program the AI works in: Claude Code, OpenCode or Codex. The boilerplate ships instructions and skills for each; you pick the ones your team uses and only those are configured.' },
+  harness: { t: 'AI agent (harness)', d: 'The program the AI works in: Claude Code, OpenCode, Codex or Pi. The boilerplate ships instructions and skills for each; you pick the ones your team uses and only those are configured.' },
   skill: { t: 'Skill', d: 'A package of instructions the AI loads when a task needs it: test a story, write a test, open a PR. They live in <code>.agents/skills/</code> and are copied to every agent you pick.' },
   mcp: { t: 'MCP', d: 'A connector that gives the AI an extra tool: read your database, call your API, look up documentation. Some need a credential, which is why we ask for it.' },
   env: { t: '.env file', d: 'Where this project keeps its credentials on your machine. It is in <code>.gitignore</code>, so it never reaches the repository. The AI reads variable names, never their values.' },

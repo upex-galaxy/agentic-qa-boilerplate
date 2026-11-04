@@ -186,6 +186,7 @@ const ENV_SCHEMA_FILES = ['.env.schema', '.env.core.schema'];
 // `.mcp.json` / `opencode.jsonc`, both on the protected watchlist) and ships ONCE.
 // The hook adapter carries no project state and keeps flowing.
 const CODEX_FRAMEWORK_FILES = ['hooks.json'];
+const PI_ADAPTER_FILES = ['agentic-qa.js'];
 const CLAUDE_ROOT_CONFIG_FILES = ['settings.json'];
 // The framework helpers under `tests/utils/`: pure logic every project runs as
 // is (outcome classes, the known-defect marker, the Xray JSON body) plus their
@@ -235,7 +236,7 @@ const SKILLS_CANONICAL_DIR = '.agents/skills';
 const GENERATED_PATHS = ['CLAUDE.md', `${SKILLS_CANONICAL_DIR}/REGISTRY.md`];
 
 // The command-alias layer is retired: a skill is invoked by its own name plus a
-// mode (`/project-context data` on Claude Code, in prose on OpenCode and Codex).
+// mode (`/project-context data` on Claude Code, `/skill:project-context data` on Pi, in prose on OpenCode and Codex).
 // These are the files upstream generated for it. `cleanupDeprecated` removes
 // them without a backup, which is right for wrappers that carried no workflow
 // (the compat contract rejected any body). A command the PROJECT
@@ -298,12 +299,15 @@ export const COMPONENTS: Component[] = [
   // the generic `agent-project.md.template` this component ships
   // (`deliverProjectInstructions`, afterApply).
   { name: INSTRUCTIONS_COMPONENT, type: 'directory', paths: [INSTRUCTIONS_DIR] },
-  // One source, three harnesses: the hook emitter and the OpenCode hook
+  // One source, every harness: the hook emitter and the OpenCode hook
   // adapter. `.claude/skills` is NOT here: it is the generated alias, rebuilt
   // by the afterApply compatibility hook. The `commands` component (the alias
   // wrappers) is retired; a lock that still carries its cursor is harmless,
   // because every walk iterates this list, never the lock's keys.
   { name: 'agent-compatibility', type: 'directory', paths: ['.agents/hooks', '.opencode/plugins'] },
+  // The Pi adapter alone, never `.pi/extensions`: a project's own extensions
+  // and Pi's runtime state live beside it.
+  { name: 'pi-adapter', type: 'file-list', paths: ['.pi/extensions'], files: PI_ADAPTER_FILES },
   { name: 'codex-config', type: 'directory', paths: ['.codex'], bootstrapOnly: true, frameworkFiles: CODEX_FRAMEWORK_FILES },
   // Delivered once when missing, then project-owned (watchlist). A file-list on
   // the `.claude` root: `.claude/commands` is the project's own (never synced),
@@ -451,7 +455,7 @@ REPORTE DE PARIDAD (al final de cada corrida, incluido --dry-run):
   sugiere "merge", nunca un reemplazo, y una fila "merge" siempre dice que
   portar (lo que upstream agrego) y que conservar (lo que solo tiene el
   proyecto). Los archivos protegidos (AGENTS.md, .agents/project.yaml,
-  .mcp.json, opencode.jsonc, .codex/config.toml, .claude/settings.json,
+  .mcp.json, opencode.jsonc, .codex/config.toml, .pi/mcp.json, .claude/settings.json,
   .husky/pre-commit, .husky/pre-push, .husky/commit-msg, allurerc.mjs, playwright.config.ts, las
   bases KATA de tests/components/, los workflows de CI, …) nunca se
   sobrescriben: solo aparecen en ese reporte. .claude/settings.json, .codex/ y
@@ -924,8 +928,8 @@ export function makeAgentCompatibilityHook(
   return async (): Promise<void> => {
     const deferSkillsAlias = runFacts.migration?.applied === true || migrationCommitPending(root);
     sink.step(deferSkillsAlias
-      ? 'Revisando superficies de Claude/OpenCode/Codex (el alias .claude/skills espera al commit de la migración)…'
-      : 'Regenerando superficies de Claude/OpenCode/Codex (alias .claude/skills)…');
+      ? 'Revisando superficies de los harnesses (el alias .claude/skills espera al commit de la migración)…'
+      : 'Regenerando superficies de los harnesses (alias .claude/skills)…');
     const repair = repairAgentSurfaces(root, { deferSkillsAlias });
     runFacts.compat = repair.check;
     runFacts.aliasDeferred = repair.aliasDeferred;
@@ -1369,11 +1373,12 @@ const PROTECTED_WATCHLIST: ProtectedWatchEntry[] = [
   { path: '.agents/project.yaml', reason: 'per-project identity + env map, but upstream keeps ADDING structural blocks (e.g. git_strategy). A project scaffolded before a block existed never learns it should have one.', structural: true },
   { path: 'tsconfig.json', reason: 'project-owned `include` / `exclude`: which directories this repo type-checks. The path aliases every synced file imports through moved to the synced `tsconfig.base.json` this file extends, so a new upstream alias now arrives on its own.' },
   { path: 'eslint.config.js', reason: 'project-owned overrides; .husky/pre-commit runs eslint against this local config. The shared rules and the cli/ import-closure block that guards the updater live in the synced `eslint.config.base.js` this file spreads.' },
-  // The three MCP registries are project-owned since 8.2 (they used to sync
+  // The MCP registries are project-owned since 8.2 (they used to sync
   // through `agent-root-config`): a consumer adds its own servers there.
   { path: '.mcp.json', reason: 'MCP registry with project-specific servers/vars' },
   { path: 'opencode.jsonc', reason: 'OpenCode MCP registry (paired with .mcp.json)' },
   { path: '.codex/config.toml', reason: 'Codex MCP registry (paired with .mcp.json / opencode.jsonc; `agents:compat:check` enforces parity across the three)' },
+  { path: '.pi/mcp.json', reason: 'Pi MCP registry (paired with .mcp.json; `agents:compat:check` enforces parity across the hosts)' },
   { path: '.claude/settings.json', reason: 'project permissions and hook wiring; never overwritten' },
   // Synced component (`husky`) files that carry the project's own gates. Before
   // 8.2 every run force-applied upstream's copy over a committed merge and

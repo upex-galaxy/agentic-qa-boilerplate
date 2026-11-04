@@ -28,10 +28,11 @@ import type { HarnessLevelVerdict } from './lib/harness-level-mcps.ts';
 import type { Harness } from './lib/harness-selection.ts';
 import type { GateContext, VarSpec } from './lib/variables-manifest.ts';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, realpathSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
+import { homedir } from 'node:os';
 
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import {
   declaredMcpIds,
   validateHookCompatibility,
@@ -259,6 +260,17 @@ export interface AgentCompatibilityDiagnostic {
   hooks: { claude: boolean, opencode: boolean, codex: boolean, pi: boolean, ok: boolean }
   /** `expected_servers` is whatever the canonical MCP config declares, never a literal count. */
   mcp: { expected_servers: number, claude: boolean, opencode: boolean, codex: boolean, pi: boolean, parity: boolean }
+  /**
+   * Pi's project trust gates `.agents/skills`, `.pi/mcp.json` and
+   * `.pi/extensions`: without it a session gets `AGENTS.md` and nothing else.
+   * Runtime state, read from Pi's own files and reported apart from file
+   * correctness.
+   */
+  pi: {
+    mcp_config_exists: boolean
+    adapter_exists: boolean
+    trust_status: PiTrustStatus
+  }
   codex: {
     config_exists: boolean
     cli_detected: boolean
@@ -549,6 +561,11 @@ export function diagnoseAgentCompatibility(
       pi: !uses('pi') || !hasMcpError('.pi/mcp.json'),
       parity: mcpErrors.length === 0,
     },
+    pi: {
+      mcp_config_exists: existsSync(join(root, '.pi', 'mcp.json')),
+      adapter_exists: existsSync(join(root, '.pi', 'extensions', 'agentic-qa.js')),
+      trust_status: uses('pi') ? piTrustStatus(root) : 'unknown',
+    },
     codex: {
       config_exists: codexConfigExists,
       // Not probed when Codex is not in use: the binary is irrelevant there.
@@ -559,6 +576,47 @@ export function diagnoseAgentCompatibility(
       trust_status: 'required-not-verifiable',
     },
   };
+}
+
+export type PiTrustStatus = 'trusted' | 'declined' | 'ask' | 'unknown';
+
+/**
+ * What Pi would decide for this folder when a session opens: the closest saved
+ * decision in `trust.json` for the folder or a parent, else `defaultProjectTrust`
+ * in `settings.json`, whose default is to ask. Pi's own order; an extension or
+ * `--approve` can still override it at launch. Reads those two files and starts nothing.
+ */
+export function piTrustStatus(root: string, env: Record<string, string | undefined> = process.env, home: string = homedir()): PiTrustStatus {
+  const agentDir = env.PI_CODING_AGENT_DIR && env.PI_CODING_AGENT_DIR.trim() !== '' ? env.PI_CODING_AGENT_DIR : join(home, '.pi', 'agent');
+  const readJson = (file: string): Record<string, unknown> | null => {
+    try { return JSON.parse(readFileSync(join(agentDir, file), 'utf8')) as Record<string, unknown>; }
+    catch { return null; }
+  };
+  const decisions = readJson('trust.json') ?? {};
+  let canonical = resolve(root);
+  try { canonical = realpathSync(canonical); }
+  catch { /* keep the resolved path */ }
+  for (let directory = canonical; ; directory = dirname(directory)) {
+    const decision = decisions[directory];
+    if (decision === true) { return 'trusted'; }
+    if (decision === false) { return 'declined'; }
+    if (dirname(directory) === directory) { break; }
+  }
+  const settings = readJson('settings.json');
+  if (settings === null) { return existsSync(agentDir) ? 'ask' : 'unknown'; }
+  if (settings.defaultProjectTrust === 'always') { return 'trusted'; }
+  if (settings.defaultProjectTrust === 'never') { return 'declined'; }
+  return 'ask';
+}
+
+function piTrustRow(status: PiTrustStatus): string {
+  if (status === 'trusted') { return tui.statusIcon('ok'); }
+  const why = {
+    declined: 'declined: Pi loads AGENTS.md here and nothing else',
+    ask: 'not decided: print and RPC modes skip the project\'s resources; run /trust inside Pi',
+    unknown: 'Pi has no config on this machine yet',
+  }[status];
+  return `${tui.statusIcon('warn')} ${why}`;
 }
 
 // ----------------------------------------------------------------------------
@@ -1199,6 +1257,15 @@ function printHuman(report: DoctorReport): void {
   else {
     checks.push(['Codex', notUsed]);
   }
+  if (inUse('pi')) {
+    checks.push(
+      ['Pi MCP registry and adapter', compat.pi.mcp_config_exists && compat.pi.adapter_exists ? tui.statusIcon('ok') : tui.statusIcon('fail')],
+      ['Pi project trust', piTrustRow(compat.pi.trust_status)],
+    );
+  }
+  else {
+    checks.push(['Pi', notUsed]);
+  }
   checks.push(
     ['node_modules', report.deps_installed ? tui.statusIcon('ok') : tui.statusIcon('fail')],
     ['Git hooks (.husky/_)', report.git_hooks_installed ? tui.statusIcon('ok') : `${tui.statusIcon('fail')} no hook runs`],
@@ -1411,7 +1478,7 @@ function printHuman(report: DoctorReport): void {
 
   if (report.pending_actions.length === 0) {
     process.stdout.write('\n');
-    process.stdout.write(`${tui.successBox(['All file checks green. Open the agent: claude  /  opencode  /  codex (or its desktop app)', 'Codex Desktop uses the same repository configuration; approve repository trust before hooks run.'])}\n`);
+    process.stdout.write(`${tui.successBox(['All file checks green. Open the agent: claude  /  opencode  /  codex (or its desktop app)  /  pi', 'Codex Desktop uses the same repository configuration; approve repository trust before hooks run.'])}\n`);
   }
 }
 

@@ -237,7 +237,7 @@ async function main(): Promise<number> {
   const steps = [
     ...(cdCmd ? [pc.cyan(cdCmd)] : []),
     ...(args.noSetup ? [`${pc.cyan('bun setup')}  ${pc.dim('# the installer this run skipped')}`] : []),
-    `${pc.cyan('claude')}     ${pc.dim('# or: opencode / codex, or the desktop app')}`,
+    `${pc.cyan('claude')}     ${pc.dim('# or: opencode / codex / pi, or the desktop app')}`,
   ];
   const nextLines = [
     pc.green(`${figures.tick ?? '✔'}  Project ready at ${projectDir}`),

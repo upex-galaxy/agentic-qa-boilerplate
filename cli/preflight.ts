@@ -260,7 +260,7 @@ const S = {
     repoMissing: (scaffolder: string): string => `No hay un <code>package.json</code> aquí. Corre <code>bun setup</code> desde la raíz del proyecto, o crea uno con <code>npx ${scaffolder}</code>.`,
     repoUnknown: (name: string): string => `Este proyecto se llama "${name}" y no tiene la marca de un proyecto creado desde el boilerplate. Si lo creaste con el scaffolder, está bien: la instalación deja la marca al terminar.`,
     templateCopy: 'Este proyecto todavía tiene la configuración del propio boilerplate (vino con "Use this template"). Empezamos desde una plantilla limpia antes de preguntar nada.',
-    harnessNone: 'No encontramos ningún agente de IA. Instala al menos uno: Claude Code (<code>npm i -g @anthropic-ai/claude-code</code>), Codex u OpenCode, y vuelve a comprobar.',
+    harnessNone: 'No encontramos ningún agente de IA. Instala al menos uno: Claude Code (<code>npm i -g @anthropic-ai/claude-code</code>), Codex, OpenCode o Pi, y vuelve a comprobar.',
     agentFound: 'encontrado',
     agentMissing: 'no encontrado',
     agentOptional: 'No hace falta: elige solo los que usa tu equipo.',
@@ -301,7 +301,7 @@ const S = {
     repoMissing: (scaffolder: string): string => `There is no <code>package.json</code> here. Run <code>bun setup</code> from the project root, or create one with <code>npx ${scaffolder}</code>.`,
     repoUnknown: (name: string): string => `This project is called "${name}" and has no marker of a project made from the boilerplate. If the scaffolder created it, that is fine: the install leaves the marker when it finishes.`,
     templateCopy: 'This project still carries the boilerplate\'s own settings (it came with "Use this template"). We start from a clean template before asking anything.',
-    harnessNone: 'No AI agent was found. Install at least one: Claude Code (<code>npm i -g @anthropic-ai/claude-code</code>), Codex or OpenCode, and check again.',
+    harnessNone: 'No AI agent was found. Install at least one: Claude Code (<code>npm i -g @anthropic-ai/claude-code</code>), Codex, OpenCode or Pi, and check again.',
     agentFound: 'found',
     agentMissing: 'not found',
     agentOptional: 'Not needed: pick only the ones your team uses.',
@@ -488,14 +488,15 @@ export async function runSetupPreflight(o: SetupPreflightOptions): Promise<Prefl
   const claude = onPath(run, 'claude') || (home !== '' && existsSync(join(home, '.claude')));
   const opencode = onPath(run, 'opencode') || (home !== '' && existsSync(join(home, '.config', 'opencode')));
   const codex = onPath(run, 'codex') || existsSync(join(o.cwd, '.codex', 'config.toml'));
+  const pi = onPath(run, 'pi') || (home !== '' && existsSync(join(home, '.pi', 'agent')));
   const agentRow = (id: string, label: string, found: boolean): PreflightCheck => found
     ? { id, group: L.agents, label, value: L.agentFound, state: 'ok', neededBy: 'team' }
     : { id, group: L.agents, label, value: L.agentMissing, state: 'info', msg: L.agentOptional, neededBy: 'team' };
-  if (!claude && !opencode && !codex) {
-    checks.push({ id: 'harness', group: L.agents, label: 'Claude Code / Codex / OpenCode', value: '-', state: 'block', msg: L.harnessNone, neededBy: 'team' });
+  if (!claude && !opencode && !codex && !pi) {
+    checks.push({ id: 'harness', group: L.agents, label: 'Claude Code / Codex / OpenCode / Pi', value: '-', state: 'block', msg: L.harnessNone, neededBy: 'team' });
   }
   else {
-    checks.push(agentRow('agent-claude', 'Claude Code', claude), agentRow('agent-codex', 'Codex', codex), agentRow('agent-opencode', 'OpenCode', opencode));
+    checks.push(agentRow('agent-claude', 'Claude Code', claude), agentRow('agent-codex', 'Codex', codex), agentRow('agent-opencode', 'OpenCode', opencode), agentRow('agent-pi', 'Pi', pi));
   }
 
   // This machine

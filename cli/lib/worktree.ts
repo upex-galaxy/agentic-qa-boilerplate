@@ -177,6 +177,7 @@ export const AUDIT_RULES: readonly AuditRule[] = [
   { pattern: /^\.context\/PBI(\/|$)/, class: 'cache', note: '`bun run context:hydrate`' },
   { pattern: /^\.context\/_framework(\/|$)/, class: 'cache', note: 'its generating script' },
   { pattern: /^\.opencode\//, class: 'cache', note: 'OpenCode installs it' },
+  { pattern: /^\.pi\//, class: 'disposable', note: 'Pi package runtime state: loops, tasks, subagents' },
   { pattern: /^env\.d\.ts$/, class: 'cache', note: '`bunx varlock load`' },
   { pattern: /^docs\/manifest\.json$/, class: 'cache', note: '`bun run docs:build`' },
   { pattern: /^\.direnv(\/|$)/, class: 'cache', note: 'direnv' },

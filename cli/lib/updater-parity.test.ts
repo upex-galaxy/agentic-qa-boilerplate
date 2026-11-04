@@ -332,7 +332,7 @@ describe('collectParityFindings', () => {
     const codex = byPath('.codex/config.toml');
     expect(codex.surface).toBe('mcp');
     expect(codex.blocking).toBe(true);
-    expect(codex.evidence).toMatch(/^missing: n8n \(declared in \.mcp\.json\); only here: acme \(not in \.mcp\.json\): declare them in \.mcp\.json and opencode\.jsonc, or remove them; port upstream additions only: "mcp_servers\.n8n"; keep project-only key: "mcp_servers\.acme"; \d+ hunks? \(\+\d+\/-\d+\); codex mcp registry$/);
+    expect(codex.evidence).toMatch(/^missing: n8n \(declared in \.mcp\.json\); only here: acme \(not in \.mcp\.json\): declare them in \.mcp\.json, or remove them; port upstream additions only: "mcp_servers\.n8n"; keep project-only key: "mcp_servers\.acme"; \d+ hunks? \(\+\d+\/-\d+\); codex mcp registry$/);
     // Following `take upstream` literally would delete `acme`, the project's own
     // server: a row naming project-only content always suggests `merge`.
     expect(codex.suggested).toBe('merge');
@@ -1106,7 +1106,7 @@ describe('renderParityReport', () => {
     // A watched path is never overwritten; a row that is not a two-copy contest says so with `-`.
     expect(prompt).toContain('| 10 | Env | .env | - |');
     expect(prompt).toContain('`Now` is the copy on disk today');
-    expect(prompt).toMatch(/\| MCP \| \.codex\/config\.toml \| kept \| missing: n8n \(declared in \.mcp\.json\); only here: acme \(not in \.mcp\.json\): declare them in \.mcp\.json and opencode\.jsonc, or remove them; port upstream additions only: "mcp_servers\.n8n"[^|]* \| merge \(BLOCKING\) \|/);
+    expect(prompt).toMatch(/\| MCP \| \.codex\/config\.toml \| kept \| missing: n8n \(declared in \.mcp\.json\); only here: acme \(not in \.mcp\.json\): declare them in \.mcp\.json, or remove them; port upstream additions only: "mcp_servers\.n8n"[^|]* \| merge \(BLOCKING\) \|/);
     expect(prompt).toContain('`take upstream` is suggested only where the project lacks the content entirely');
     expect(prompt.trimEnd().endsWith('Post-merge: bun run agents:compat && bun run agents:compat:check && bun run repo:check')).toBe(true);
     // Scannable: never the diff itself, never rule numbers.
@@ -1194,8 +1194,10 @@ describe('never a destructive default for project-only content', () => {
     return { root, upstreamDir: upstream, drift: [], compatErrors: [], archivedSkills: [], archivedSkillsDir: join(root, 'x'), heldBack: [], envNewKeys: [] };
   }
 
-  test('an MCP host with project-only servers suggests merge and names the other two registries; missing-only still takes upstream', () => {
+  test('an MCP host with project-only servers suggests merge and names the other registries in use; missing-only still takes upstream', () => {
     const root = temporaryRoot();
+    mkdirSync(join(root, '.agents'), { recursive: true });
+    writeFileSync(join(root, '.agents', 'project.yaml'), 'harnesses: [claude, opencode, codex]\n');
     const findings = collectParityFindings({
       ...base(root, temporaryRoot()),
       compatErrors: [
