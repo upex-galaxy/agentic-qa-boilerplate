@@ -55,8 +55,8 @@ claude --model <full-model-id> --effort {{DEFAULT_EFFORT}} --dangerously-skip-pe
 #   4. send the prompt:  [ORCHESTRATION_TOOL] terminal send, the text between the quotes above
 #   5. name it:          the worker renames its own tab to <label>--<handle> as its first action; the
 #                        conductor re-issues [ORCHESTRATION_TOOL] terminal rename with the same title
-#                        in every sweep; on Codex, OpenCode v2.2 and Pi also terminal send the rename
-#                        verb ('/rename <label>--<handle>', Pi '/name <label>--<handle>')
+#                        in every sweep; on Codex and OpenCode v2.2 also terminal send the rename
+#                        verb ('/rename <label>--<handle>')
 
 # OpenCode (v1.19.5 / v2.2.0; opencode.ai/docs/cli and /docs/permissions, read 2026-10-28): -m/--model,
 # --agent, --prompt, --auto (bypass: auto-approve every permission not explicitly denied; hidden

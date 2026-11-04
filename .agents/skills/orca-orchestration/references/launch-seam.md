@@ -62,12 +62,12 @@ for the real grammar. Only this skill spells out commands, because only this ski
   claude --model <full-model-id> --effort <level> --dangerously-skip-permissions '<prompt>'
   opencode --model <provider/model> --auto --prompt '<prompt>'                        # v1.19.5 / v2.2.0
   codex --model <full-model-id> --dangerously-bypass-approvals-and-sandbox '<prompt>' # rust-v0.165.0
-  pi --approve -n "<label>${ORCA_TERMINAL_HANDLE:+--$ORCA_TERMINAL_HANDLE}" '<prompt>' # v1.4.0, not a supported harness
+  pi --approve '<prompt>'                                                             # v1.4.0
   ```
 
-  Claude Code's line carries no `-n`: a name flag marks the name as human-set, and the identity hook
-  then never appends the handle, so the hook names the session from the prompt token instead
-  (`references/session-identity.md` §2b). Codex's bypass flag is the full one on purpose:
+  The lines of Claude Code and Pi carry no `-n`: a name flag marks the name as human-set, and the
+  identity hook or the adapter then never appends the handle, so they name the session from the prompt
+  token instead (`references/session-identity.md` §2b). `--approve` trusts the folder for that one run. Codex's bypass flag is the full one on purpose:
   `-a never -s workspace-write` never prompts but keeps `.git` read-only and the network off, so the
   worker cannot commit. The full set, with the Claude Code source and the auto-mode flags:
   `templates/launch.txt`.

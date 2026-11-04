@@ -175,7 +175,8 @@ Your SESSION name is set for you, never by you:
 
 - **Claude Code**: the repo's identity hook composes `<label>--<handle>` from your first prompt's
   `/<workflow-skill> <label> fleet worker` opening plus `ORCA_TERMINAL_HANDLE`. Nothing to do.
-- **Codex, OpenCode v2.2, Pi**: the conductor types the rename verb into your terminal once you are
+- **Pi**: the repo's adapter does the same from the same opening. Nothing to do.
+- **Codex, OpenCode v2.2**: the conductor types the rename verb into your terminal once you are
   ready. Nothing to do either.
 - **OpenCode v1, or any harness that cannot be renamed**: the roster maps your name to your handle.
 

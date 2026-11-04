@@ -31,18 +31,18 @@ they answer "which of the six" and nothing else. No AI attribution of any kind i
 
 ## 2 · Per-harness table
 
-| Axis | Claude Code | OpenCode | Codex CLI | Pi (not a supported harness of this repo; researched 2026-10-28) |
+| Axis | Claude Code | OpenCode | Codex CLI | Pi (ADR-0026) |
 |---|---|---|---|---|
-| id from inside a shell | `CLAUDE_CODE_SESSION_ID`, `CLAUDE_PID` | no env var (only a terminal marker) | no confirmed env var; resolve from disk | not researched |
-| id via a hook | stdin JSON `session_id`, on every event | plugin context exposes the session id | **(unverified)** | not researched |
-| id from disk | `~/.claude/sessions/<PID>.json` → `.sessionId` | the local app data store; `opencode session list` | `$CODEX_HOME/sessions/YYYY/MM/DD/rollout-<ts>-<uuid>.jsonl` (respects `CODEX_HOME`) | not researched |
+| id from inside a shell | `CLAUDE_CODE_SESSION_ID`, `CLAUDE_PID` | no env var (only a terminal marker) | no confirmed env var; resolve from disk | `PI_SESSION_ID`, `PI_SESSION_FILE` in its shell tools; the extension process has neither |
+| id via a hook | stdin JSON `session_id`, on every event | plugin context exposes the session id | **(unverified)** | extension: `ctx.sessionManager.getSessionId()` |
+| id from disk | `~/.claude/sessions/<PID>.json` → `.sessionId` | the local app data store; `opencode session list` | `$CODEX_HOME/sessions/YYYY/MM/DD/rollout-<ts>-<uuid>.jsonl` (respects `CODEX_HOME`) | session JSONL under `~/.pi/agent/sessions/` |
 | name at launch | `-n, --name <name>` | none in the TUI (`opencode run --title` only; `--prompt`, `--model`, `--agent`, `--auto`, `-s`, `-c`, `--fork` exist) | none (rust-v0.165.0) | `-n, --name <name>` (v1.4.0) |
-| rename in session | `/rename <name>` (≤200 chars); **queued while the session is busy** | v1.19.5: `/rename` opens a dialog and takes no argument; v2.2.0: `/rename <name>` inline. Also `PATCH /session/:id {title}` on the TUI's server, only when it was launched with a fixed `--port` (that port then also accepts prompts). **Not** a `session rename` subcommand | `/rename <name>`, accepted mid-task (rust-v0.165.0) | `/name <name>`, works mid-run (v1.4.0) |
-| rename from another process | only by typing `/rename` into the TUI; the identity hook sets the name itself (§2b) | typing into the TUI, or the `--port` REST route above | typing into the TUI; the app-server `thread/name/set` needs an experimental `--remote` TUI, so it is not usable | typing into the TUI |
-| name from disk | `~/.claude/sessions/<PID>.json` → `.name` + `.nameSource` (`user` \| `derived` \| `hook`) | `opencode session list`, Title column (auto-generated from the first message) | `$CODEX_HOME/session_index.jsonl` → `{id, thread_name, updated_at}` | not researched |
-| resume by id | `claude -r <id>`, `--session-id <uuid>`, `--fork-session` | `opencode -s <id>`, `-c`, `--fork` | `codex resume <id>`, `--last` | not researched |
-| resume by name | `claude --resume <term>` opens a filtered picker; direct resolution **(unverified)** | not supported | first class: `codex resume <name-or-id>` | not researched |
-| transcripts | `~/.claude/projects/<slug>/<uuid>.jsonl` | `opencode export [id]` | under `$CODEX_HOME/sessions/` | not researched |
+| rename in session | `/rename <name>` (≤200 chars); **queued while the session is busy** | v1.19.5: `/rename` opens a dialog and takes no argument; v2.2.0: `/rename <name>` inline. Also `PATCH /session/:id {title}` on the TUI's server, only when it was launched with a fixed `--port` (that port then also accepts prompts). **Not** a `session rename` subcommand | `/rename <name>`, accepted mid-task (rust-v0.165.0) | `/name <name>`; an extension calls `pi.setSessionName()` |
+| rename from another process | only by typing `/rename` into the TUI; the identity hook sets the name itself (§2b) | typing into the TUI, or the `--port` REST route above | typing into the TUI; the app-server `thread/name/set` needs an experimental `--remote` TUI, so it is not usable | typing `/name` into the TUI; the adapter sets the name itself (§2b) |
+| name from disk | `~/.claude/sessions/<PID>.json` → `.name` + `.nameSource` (`user` \| `derived` \| `hook`) | `opencode session list`, Title column (auto-generated from the first message) | `$CODEX_HOME/session_index.jsonl` → `{id, thread_name, updated_at}` | `session_info` entry (`name`) in the session JSONL |
+| resume by id | `claude -r <id>`, `--session-id <uuid>`, `--fork-session` | `opencode -s <id>`, `-c`, `--fork` | `codex resume <id>`, `--last` | `pi --session <path\|id>`, `--session-id <id>`, `-c`, `-r`, `--fork <path\|id>` |
+| resume by name | `claude --resume <term>` opens a filtered picker; direct resolution **(unverified)** | not supported | first class: `codex resume <name-or-id>` | `pi -r` opens a picker; direct resolution **(unverified)** |
+| transcripts | `~/.claude/projects/<slug>/<uuid>.jsonl` | `opencode export [id]` | under `$CODEX_HOME/sessions/` | `~/.pi/agent/sessions/`, one JSONL per session; `pi --export <file>` |
 
 Versions are the ones the research read (2026-10-28): Codex CLI rust-v0.165.0, OpenCode v1.19.5 and <!-- volatile-ok: harness flags carry the version they were read at -->
 v2.2.0, Pi v1.4.0. Harness flags move, so the launch line is always confirmed against `<harness> <!-- volatile-ok: harness flags carry the version they were read at -->
@@ -63,7 +63,8 @@ There is no name flag and no effort flag, so an OpenCode worker is named by the 
 itself: on v2.2 the conductor types `/rename <name>` into it once it is ready; on v1 `/rename` opens a
 dialog with no argument, so the roster carries the name instead (§2b).
 
-**Claude Code is the only harness where a hook both reads and writes the session name**: a hook
+**Claude Code and Pi are the harnesses where a hook both reads and writes the session name.** On
+Pi it is the extension, through `pi.getSessionName()` and `pi.setSessionName()`. On Claude Code a hook
 receives the current title and can emit a title field to set it. The exact field name and the events
 that honour it are owned by the hook emitter (`.agents/hooks/personality-reinject.mjs`), which
 verifies them against the official docs before emitting anything — this file does not restate them,
@@ -100,10 +101,13 @@ subagent hand-back), neither launches the session nor names it.
 - **Do not rename a Claude Code worker whose prompt carried the token** at launch (after a resume
   the conductor does, §5), and do not pass a name flag on its launch line. A rename or `--name` marks the name as human-set, and the emitter then leaves it
   alone forever: the handle never gets appended, which is correct behaviour and not what you wanted.
-- **Codex, OpenCode v2.2 and Pi have no hook that can set a name.** The conductor drives their TUI
-  with the harness's rename verb (`/rename <label>--<handle>`; Pi `/name <label>--<handle>`) once the
-  screen shows the worker ready (`references/coordinator-playbook.md` §1 step 5), then reads it back
-  on the status bar.
+- **Pi names itself the same way.** The adapter (`.pi/extensions/agentic-qa.js`) composes the same
+  name from the same token and leaves alone a name it did not set (`/name`, `--name`). Do not rename a
+  Pi worker whose prompt carried the token, and do not pass `-n` on its launch line. After a resume
+  it needs the rename verb too (`/name <label>--<new handle>`, §5).
+- **Codex and OpenCode v2.2 have no hook that can set a name.** The conductor drives their TUI
+  with the harness's rename verb (`/rename <label>--<handle>`) once the screen shows the worker ready
+  (`references/coordinator-playbook.md` §1 step 5), then reads it back on the status bar.
 - **OpenCode v1 (`/rename` opens a dialog and takes no argument), or any harness that cannot be
   renamed**: the roster maps name ↔ handle, the worker's `Session:` trailer carries the roster name,
   and the conductor says so once in the run report.

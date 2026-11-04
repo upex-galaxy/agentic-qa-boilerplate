@@ -249,7 +249,7 @@ state is read:
 | plan | identical: same topology decision, same triage-time collision check, same rounds |
 | brief | identical: `COMMON.md` + `W-<label>.md` in the scope, cited by absolute path |
 | launch | the conductor prints `launch.txt` and the human opens N terminals and pastes N lines. This is the ONLY path where the launch line itself is the payload, which is why the file is still written unconditionally |
-| identity | Claude Code: the identity hook names the session from the prompt token (the line carries no name flag); Pi: the line's own name flag; Codex and OpenCode v2.2: the human types `/rename <label>--<handle>` once it is up (`<label>` alone outside Orca); a worker never renames its own session |
+| identity | Claude Code and Pi: the identity hook or the adapter names the session from the prompt token (the line carries no name flag); Codex and OpenCode v2.2: the human types `/rename <label>--<handle>` once it is up (`<label>` alone outside Orca); a worker never renames its own session |
 | state | the workflow's own blocked-state tokens plus the tracker, exactly as a single session already does |
 | questions | the worker writes the question in its report with options and a recommendation, and keeps going on what does not depend on the answer |
 | close | the human closes the terminals |
