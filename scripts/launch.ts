@@ -5,7 +5,7 @@
  *   bun --no-env-file scripts/launch.ts [--warn] <bin> [args...]
  *
  * Behind the `test*` scripts, `allure:run` and `allure:agent`. It never starts an AI harness:
- * `claude`, `codex` and `opencode` are refused (`HARNESS_BINARIES`), because
+ * `claude`, `codex`, `opencode` and `pi` are refused (`HARNESS_BINARIES`), because
  * `varlock run -- <harness>` would export every `.env` value into the AI's own
  * process, where any command it runs can read them (ADR-0014). A harness opens
  * bare; every MCP server loads `.env` itself through its loader (ADR-0011).
@@ -46,7 +46,7 @@ import { fileValues, findDrift, hasEnvFiles, loadVarlockMetadata, varlockBin, wi
 const REPO_ROOT = join(import.meta.dir, '..');
 
 /** The AI harnesses this launcher refuses to start (ADR-0014). */
-export const HARNESS_BINARIES: readonly string[] = ['claude', 'codex', 'opencode'];
+export const HARNESS_BINARIES: readonly string[] = ['claude', 'codex', 'opencode', 'pi'];
 
 /** The drift notice: names and lengths, the reason, the remedy. */
 export function driftMessage(bin: string, hits: DriftHit[]): string[] {
@@ -78,7 +78,7 @@ export function launch(argv: string[], deps: LaunchDeps): number {
   if (HARNESS_BINARIES.includes(basename(bin))) {
     deps.err(`launch: refusing to start ${bin}. This launcher would export every .env value into the AI's own process.`);
     deps.err(`Open it directly instead (\`${bin}\` in the repo folder, or the desktop app): every MCP server loads .env itself.`);
-    deps.err('A `claude` / `codex` / `opencode` script in package.json that runs this launcher is retired upstream: delete it.');
+    deps.err('A `claude` / `codex` / `opencode` / `pi` script in package.json that runs this launcher is retired upstream: delete it.');
     return 2;
   }
 

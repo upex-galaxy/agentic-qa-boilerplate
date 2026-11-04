@@ -37,24 +37,31 @@ function fixture(files: readonly string[], yaml?: string, packageName = 'my-qa-p
 const ALL_FILES = HARNESSES.flatMap(h => [...HARNESS_FILES[h]]);
 
 describe('declaredHarnesses', () => {
-  test('the boilerplate checks all three, whatever its yaml and its files say', () => {
+  test('the boilerplate checks every harness, whatever its yaml and its files say', () => {
     const root = fixture(HARNESS_FILES.claude, 'harnesses: [claude]\n', 'agentic-qa-boilerplate');
-    expect(declaredHarnesses(root)).toMatchObject({ harnesses: ['claude', 'opencode', 'codex'], skipped: [], source: 'boilerplate' });
+    expect(declaredHarnesses(root)).toMatchObject({ harnesses: [...HARNESSES], skipped: [], source: 'boilerplate' });
   });
 
   test('an explicit list wins over the files present, in its own order', () => {
     const root = fixture(ALL_FILES, 'harnesses: [codex, opencode]\n');
-    expect(declaredHarnesses(root)).toMatchObject({ harnesses: ['codex', 'opencode'], skipped: ['claude'], source: 'declared', warnings: [] });
+    expect(declaredHarnesses(root)).toMatchObject({ harnesses: ['codex', 'opencode'], skipped: ['claude', 'pi'], source: 'declared', warnings: [] });
   });
 
   test('absent or null detects: a harness is in use while ANY of its files exists', () => {
     const claudeOnly = fixture([...HARNESS_FILES.claude, '.codex/hooks.json']);
-    expect(declaredHarnesses(claudeOnly)).toMatchObject({ harnesses: ['claude', 'codex'], skipped: ['opencode'], source: 'detected' });
+    expect(declaredHarnesses(claudeOnly)).toMatchObject({ harnesses: ['claude', 'codex'], skipped: ['opencode', 'pi'], source: 'detected' });
     const nullKey = fixture(HARNESS_FILES.opencode, 'project:\n  project_name: X\nharnesses: null\n');
     expect(declaredHarnesses(nullKey)).toMatchObject({ harnesses: ['opencode'], source: 'detected' });
   });
 
-  test('nothing found checks all three', () => {
+  test('Pi runtime state and its settings never put Pi in use; its own files do', () => {
+    const runtime = fixture([...HARNESS_FILES.claude, '.pi/loops/loops-1.json', '.pi/tasks/t.json', '.pi/settings.json', '.pi/extensions/mine.js']);
+    expect(declaredHarnesses(runtime)).toMatchObject({ harnesses: ['claude'], source: 'detected' });
+    expect(declaredHarnesses(fixture(['.pi/mcp.json']))).toMatchObject({ harnesses: ['pi'], source: 'detected' });
+    expect(declaredHarnesses(fixture(['.pi/extensions/agentic-qa.js']))).toMatchObject({ harnesses: ['pi'], source: 'detected' });
+  });
+
+  test('nothing found checks every harness', () => {
     expect(declaredHarnesses(fixture([]))).toMatchObject({ harnesses: [...HARNESSES], source: 'fallback' });
   });
 
@@ -62,7 +69,7 @@ describe('declaredHarnesses', () => {
     const typo = fixture(ALL_FILES, 'harnesses: [claude, cursor, claude]\n');
     const selected = declaredHarnesses(typo);
     expect(selected.harnesses).toEqual(['claude']);
-    expect(selected.warnings).toEqual(['harnesses: ignored "cursor" (one of claude, opencode, codex)']);
+    expect(selected.warnings).toEqual(['harnesses: ignored "cursor" (one of claude, opencode, codex, pi)']);
 
     const scalar = declaredHarnesses(fixture(HARNESS_FILES.codex, 'harnesses: codex\n'));
     expect(scalar).toMatchObject({ harnesses: ['codex'], source: 'detected' });
@@ -93,6 +100,7 @@ describe('helpers', () => {
     expect(skippedHarnessNotes(declared)).toEqual([
       'opencode: not declared in .agents/project.yaml harnesses, skipped',
       'codex: not declared in .agents/project.yaml harnesses, skipped',
+      'pi: not declared in .agents/project.yaml harnesses, skipped',
     ]);
   });
 });

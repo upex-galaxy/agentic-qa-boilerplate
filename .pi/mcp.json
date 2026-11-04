@@ -1,0 +1,79 @@
+{
+  "mcpServers": {
+    "context7": {
+      "command": "bunx",
+      "args": ["-y", "@upstash/context7-mcp@4.0.3"],
+      "exposure": "deferred",
+      "description": "Official library and framework docs: resolve a library id, then query its docs"
+    },
+    "slack-aurora": {
+      "command": "bunx",
+      "args": [
+        "-p",
+        "varlock@1.20.0",
+        "varlock",
+        "run",
+        "--no-redact-stdout",
+        "--inject",
+        "vars",
+        "--filter",
+        "SLACK_MCP_XOXP_TOKEN,SLACK_MCP_REACTION_TOOL",
+        "--",
+        "bunx",
+        "-y",
+        "slack-mcp-server@latest",
+        "--transport",
+        "stdio"
+      ],
+      "env": {
+        "SLACK_MCP_ADD_MESSAGE_TOOL": "true"
+      },
+      "exposure": "deferred",
+      "description": "Slack workspace: read channels and threads, post as the project bot"
+    },
+    "dbhub": {
+      "command": "bunx",
+      "args": [
+        "-p",
+        "varlock@1.20.0",
+        "varlock",
+        "run",
+        "--no-redact-stdout",
+        "--inject",
+        "vars",
+        "--filter",
+        "DBHUB_TYPE,DBHUB_HOST,DBHUB_PORT,DBHUB_DATABASE,DBHUB_USER,DBHUB_PASSWORD",
+        "--",
+        "bunx",
+        "-y",
+        "@bytebase/dbhub@1.2.1",
+        "--config",
+        "dbhub.toml"
+      ],
+      "exposure": "deferred",
+      "description": "Project database: read-oriented SQL through DBHub"
+    },
+    "openapi": {
+      "command": "bunx",
+      "args": [
+        "-p",
+        "varlock@1.20.0",
+        "varlock",
+        "run",
+        "--no-redact-stdout",
+        "--inject",
+        "vars",
+        "--filter",
+        "API_BASE_URL,OPENAPI_SPEC_PATH",
+        "--",
+        "bunx",
+        "-y",
+        "@ivotoby/openapi-mcp-server@1.16.1",
+        "--tools",
+        "dynamic"
+      ],
+      "exposure": "deferred",
+      "description": "API schema: discover endpoints and read their shapes; execute requests with curl"
+    }
+  }
+}

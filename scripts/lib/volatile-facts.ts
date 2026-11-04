@@ -69,7 +69,7 @@ export const CURRENT_STATE_PATTERNS: ReadonlyArray<RegExp> = [
   // measured sizes: "~2k tokens", "2271 bytes"
   /~\s?\d+k tokens\b|\b\d+ bytes\b/gi,
   // a tool version in prose: "orca 1.4.190", "acli v1.3.18", "Claude Code 2.1.278", "verified against v1.3.18"
-  /\b(?:orca|acli|gentle-ai|bun|playwright|node|codex|opencode|claude code|verified against|as of) v?\d+\.\d+\.\d+\b/gi,
+  /\b(?:orca|acli|gentle-ai|bun|playwright|node|codex|opencode|pi|claude code|verified against|as of) v?\d+\.\d+\.\d+\b/gi,
 ];
 
 /** Paths the rule exempts by genre: a dated record is right forever because the date is part of the claim. */

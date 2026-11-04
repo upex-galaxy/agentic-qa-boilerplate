@@ -73,7 +73,7 @@ testing:
     # Read directly by skills (not a {{VAR}} token).
     pair_mode: null
 
-# Host harnesses this project uses (ADR-0012), any of: claude, opencode, codex.
+# Host harnesses this project uses (ADR-0012), any of: claude, opencode, codex, pi.
 # Every compatibility gate (agents:compat:check, setup:doctor, the installer, `bun sync`)
 # checks only these; the files of a harness left out may be deleted. null = detect from
 # the files present (a harness is in use while ANY of its files exists). `bun setup`

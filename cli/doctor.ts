@@ -256,9 +256,9 @@ export interface AgentCompatibilityDiagnostic {
     canonical_skills: boolean
     claude_alias: boolean
   }
-  hooks: { claude: boolean, opencode: boolean, codex: boolean, ok: boolean }
+  hooks: { claude: boolean, opencode: boolean, codex: boolean, pi: boolean, ok: boolean }
   /** `expected_servers` is whatever the canonical MCP config declares, never a literal count. */
-  mcp: { expected_servers: number, claude: boolean, opencode: boolean, codex: boolean, parity: boolean }
+  mcp: { expected_servers: number, claude: boolean, opencode: boolean, codex: boolean, pi: boolean, parity: boolean }
   codex: {
     config_exists: boolean
     cli_detected: boolean
@@ -538,6 +538,7 @@ export function diagnoseAgentCompatibility(
       claude: !uses('claude') || !hasHookError('.claude/settings.json'),
       opencode: !uses('opencode') || (!hasHookError('opencode.jsonc') && !hasHookError('.opencode/plugins')),
       codex: !uses('codex') || (codexHooksExist && !hasHookError('.codex/hooks.json') && !hasHookError('.codex/config.toml')),
+      pi: !uses('pi') || (!hasHookError('.pi/extensions') && !hasHookError('Pi adapter')),
       ok: hookErrors.length === 0,
     },
     mcp: {
@@ -545,6 +546,7 @@ export function diagnoseAgentCompatibility(
       claude: !uses('claude') || !hasMcpError('.mcp.json'),
       opencode: !uses('opencode') || !hasMcpError('opencode.jsonc'),
       codex: !uses('codex') || (codexConfigExists && !hasMcpError('.codex/config.toml')),
+      pi: !uses('pi') || !hasMcpError('.pi/mcp.json'),
       parity: mcpErrors.length === 0,
     },
     codex: {
@@ -1172,7 +1174,7 @@ function printHuman(report: DoctorReport): void {
   const compat = report.agent_compatibility;
   const inUse = (harness: Harness): boolean => compat.harnesses.includes(harness);
   const notUsed = `${tui.statusIcon('ok')} not used`;
-  const hostList = (hosts: { claude: boolean, opencode: boolean, codex: boolean }): string =>
+  const hostList = (hosts: { claude: boolean, opencode: boolean, codex: boolean, pi: boolean }): string =>
     compat.harnesses.map(host => `${host}:${hosts[host] ? 'ok' : 'FAIL'}`).join(' ');
   const fileRow = (exists: boolean, harness: Harness): string =>
     !inUse(harness) ? notUsed : exists ? tui.statusIcon('ok') : tui.statusIcon('fail');

@@ -19,8 +19,8 @@
  * declares one gets the generic cross-host check, nothing stricter.
  *
  * Every contract binds only the harnesses the project uses
- * (`declaredHarnesses`, ADR-0012): a project on one harness deletes the other
- * two's files, and the boilerplate itself always checks all three.
+ * (`declaredHarnesses`, ADR-0012): a project on one harness deletes the others'
+ * files, and the boilerplate itself always checks every harness.
  *
  * Import-closed: only Node builtins and `cli/lib` siblings (see the header of
  * `agent-compatibility.ts` for why `cli/` must never import a sibling
@@ -32,7 +32,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 
 import { isSchemaOwner } from './agents-schema.ts';
-import { canonicalMcpHarness, declaredHarnesses } from './harness-selection.ts';
+import { canonicalMcpHarness, declaredHarnesses, HARNESSES } from './harness-selection.ts';
 
 /**
  * Servers whose per-host shape this boilerplate pins (`EXPECTED_MCP`). The
@@ -164,7 +164,7 @@ export function unwrapEnvLoader(command: string, args: readonly string[]): Unwra
 }
 
 export type KnownMcpId = (typeof KNOWN_MCP_IDS)[number];
-export type McpHost = 'claude' | 'opencode' | 'codex';
+export type McpHost = 'claude' | 'opencode' | 'codex' | 'pi';
 type Transport = 'stdio' | 'http';
 
 /**
@@ -307,6 +307,7 @@ export const EXPECTED_MCP: Record<McpHost, Record<KnownMcpId, NormalizedMcpServe
   claude: EVERY_HOST,
   opencode: EVERY_HOST,
   codex: CODEX_SHAPE,
+  pi: EVERY_HOST,
 };
 
 function object(value: unknown, label: string): JsonObject {
@@ -491,10 +492,15 @@ function sorted(names: Iterable<string>): string[] {
   return [...new Set(names)].sort();
 }
 
-function normalizeClaude(root: JsonObject): NormalizedMcpConfig {
-  const servers = object(root.mcpServers, '.mcp.json mcpServers');
+/**
+ * Claude Code's `mcpServers` shape, which Pi reads too. Pi's own keys
+ * (`exposure`, `toolExposure`, `description`) change how a tool reaches the
+ * model, never which server runs, so they are not part of the comparison.
+ */
+function normalizeMcpServers(root: JsonObject, file: string): NormalizedMcpConfig {
+  const servers = object(root.mcpServers, `${file} mcpServers`);
   return Object.fromEntries(Object.entries(servers).map(([id, raw]) => {
-    const label = `.mcp.json ${id}`;
+    const label = `${file} ${id}`;
     const server = object(raw, label);
     const transport: Transport = server.type === 'http' || typeof server.url === 'string' ? 'http' : 'stdio';
     const env = server.env === undefined ? undefined : object(server.env, `${label}.env`);
@@ -633,6 +639,7 @@ const MCP_CONFIG_FILE: Record<McpHost, string> = {
   claude: '.mcp.json',
   opencode: 'opencode.jsonc',
   codex: '.codex/config.toml',
+  pi: '.pi/mcp.json',
 };
 
 function isKnownMcpId(id: string): id is KnownMcpId {
@@ -727,14 +734,16 @@ export function validateMcpParity(root = process.cwd(), options: McpParityOption
 }
 
 const NORMALIZE: Record<McpHost, (root: JsonObject) => NormalizedMcpConfig> = {
-  claude: normalizeClaude,
+  claude: root => normalizeMcpServers(root, MCP_CONFIG_FILE.claude),
   opencode: normalizeOpenCode,
   codex: normalizeCodex,
+  pi: root => normalizeMcpServers(root, MCP_CONFIG_FILE.pi),
 };
 const PARSE: Record<McpHost, (path: string) => JsonObject> = {
   claude: parseJson,
   opencode: parseJsonc,
   codex: parseToml,
+  pi: parseJson,
 };
 
 /** One host's MCP config, normalized; null when its file is absent. Throws when it is malformed. */
@@ -759,7 +768,7 @@ export function validateMcpParityFindings(root = process.cwd(), options: McpPari
     try {
       const config = readHostMcpConfig(resolvedRoot, host);
       if (config === null) {
-        const why = schemaOwner ? 'the boilerplate checks all three harnesses' : 'a harness in use; declare `harnesses:` in .agents/project.yaml to drop it';
+        const why = schemaOwner ? 'the boilerplate checks every harness' : 'a harness in use; declare `harnesses:` in .agents/project.yaml to drop it';
         errors.push(`MCP config missing for ${host}: ${MCP_CONFIG_FILE[host]} (${why})`);
         continue;
       }
@@ -901,6 +910,34 @@ export function validateOpenCodePluginEntrypoints(plugin: string): string[] {
   return errors;
 }
 
+/**
+ * The Pi adapter is one extension over the shared emitter. It checks only the
+ * event names and exports it depends on, because Pi moves fast and the rest of
+ * its API is not this repo's to pin.
+ */
+export function validatePiAdapter(adapter: string): string[] {
+  const errors: string[] = [];
+  if (!adapter.includes('../../.agents/hooks/personality-reinject.mjs')) {
+    errors.push('Pi adapter must import the shared hook contract.');
+  }
+  if (!adapter.includes('agentContextLines')) {
+    errors.push('Pi adapter must inject the shared context lines (agentContextLines), identity line included.');
+  }
+  if (!adapter.includes('\'input\'')) {
+    errors.push('Pi adapter must classify the raw prompt from the input event: before_agent_start sees /skill: already expanded.');
+  }
+  if (!adapter.includes('\'before_agent_start\'')) {
+    errors.push('Pi adapter must inject its lines in before_agent_start.');
+  }
+  if (!adapter.includes('setSessionName') || !adapter.includes('proposeSessionTitle')) {
+    errors.push('Pi adapter must name the session (setSessionName from the shared proposeSessionTitle).');
+  }
+  if (!adapter.includes('\'tool_call\'') || !adapter.includes('secretBlockReason')) {
+    errors.push('Pi adapter must keep the secret block in tool_call: Pi has no deny config.');
+  }
+  return errors;
+}
+
 function readHookCommand(settings: JsonObject, host: 'claude' | 'codex'): JsonObject {
   const hooks = object(settings.hooks, `${host} hooks`);
   const event = hooks.UserPromptSubmit;
@@ -919,6 +956,7 @@ export const HOOK_ADAPTER_FILE: Record<Harness, string> = {
   claude: '.claude/settings.json',
   opencode: '.opencode/plugins/personality-reinject.js',
   codex: '.codex/hooks.json',
+  pi: '.pi/extensions/agentic-qa.js',
 };
 
 /**
@@ -932,7 +970,7 @@ export function validateHookCompatibility(root = process.cwd(), harnesses: reado
   const uses = (harness: Harness): boolean => harnesses.includes(harness);
   const required = [
     '.agents/hooks/personality-reinject.mjs',
-    ...(['claude', 'opencode', 'codex'] as const).filter(uses).map(harness => HOOK_ADAPTER_FILE[harness]),
+    ...HARNESSES.filter(uses).map(harness => HOOK_ADAPTER_FILE[harness]),
   ];
   for (const path of required) {
     if (!existsSync(join(resolvedRoot, path))) {
@@ -1014,6 +1052,11 @@ export function validateHookCompatibility(root = process.cwd(), harnesses: reado
       }
       errors.push(...validateOpenCodePluginEntrypoints(plugin));
       sources.push(['OpenCode adapter', plugin]);
+    }
+    if (uses('pi')) {
+      const adapter = readFileSync(join(resolvedRoot, HOOK_ADAPTER_FILE.pi), 'utf8');
+      errors.push(...validatePiAdapter(adapter));
+      sources.push(['Pi adapter', adapter]);
     }
     for (const [label, source] of sources) {
       if (personalAbsolutePath(source)) {
@@ -1101,8 +1144,9 @@ export const REARM_SESSION_START_SOURCES = { compact: 'compaction', clear: '/cle
 
 /**
  * Claude Code re-surfaces an unread route once, on the first tool call that
- * reads none of the routed sections (`ROUTE-PENDING:`, ADR-0017). Codex and
- * OpenCode carry no such hook: their agents get the `ROUTE:` cue only.
+ * reads none of the routed sections (`ROUTE-PENDING:`, ADR-0017), and the Pi
+ * adapter does the same from `tool_result`. Codex and OpenCode carry no such
+ * hook: their agents get the `ROUTE:` cue only.
  */
 export const ROUTE_RESURFACE_EVENT = 'PostToolUse';
 
@@ -1193,6 +1237,16 @@ export function validateInstructionRouterHooks(root = process.cwd(), harnesses: 
     }
   }
 
+  if (harnesses.includes('pi')) {
+    const adapter = readFileSync(join(resolvedRoot, HOOK_ADAPTER_FILE.pi), 'utf8');
+    if (!adapter.includes('\'session_compact\'') || !adapter.includes('rearmRoutes')) {
+      errors.push('Pi adapter must re-arm the routes in session_compact.');
+    }
+    if (!adapter.includes('\'tool_result\'') || !adapter.includes('pendingRouteReminder')) {
+      errors.push('Pi adapter must re-surface unread routes in tool_result (ROUTE-PENDING).');
+    }
+  }
+
   // Codex reads AGENTS.md natively and cuts it at the byte; the other two
   // harnesses carry no such budget.
   const bytes = Buffer.byteLength(l0);
@@ -1267,10 +1321,12 @@ export function compatibilityContractPaths(root = process.cwd()): string[] {
   return [
     '.agents/hooks/personality-reinject.mjs',
     '.opencode/plugins/personality-reinject.js',
+    '.pi/extensions/agentic-qa.js',
     '.claude/settings.json',
     '.codex/hooks.json',
     '.mcp.json',
     'opencode.jsonc',
     '.codex/config.toml',
+    '.pi/mcp.json',
   ].map(path => relative(resolvedRoot, join(resolvedRoot, path)));
 }

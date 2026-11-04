@@ -1226,7 +1226,7 @@ export const RETIRED_ENVRC = '.envrc';
  * The package.json sync never re-adds them (it only appends keys upstream
  * has); a project's copy is left alone and reported once per run as removable.
  */
-export const RETIRED_HARNESS_SCRIPTS: readonly string[] = ['claude', 'codex', 'opencode'];
+export const RETIRED_HARNESS_SCRIPTS: readonly string[] = ['claude', 'codex', 'opencode', 'pi'];
 
 /**
  * The retired harness scripts this project still declares: a key named after a

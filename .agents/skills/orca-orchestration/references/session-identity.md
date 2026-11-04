@@ -45,7 +45,7 @@ they answer "which of the six" and nothing else. No AI attribution of any kind i
 | transcripts | `~/.claude/projects/<slug>/<uuid>.jsonl` | `opencode export [id]` | under `$CODEX_HOME/sessions/` | not researched |
 
 Versions are the ones the research read (2026-10-28): Codex CLI rust-v0.165.0, OpenCode v1.19.5 and <!-- volatile-ok: harness flags carry the version they were read at -->
-v2.2.0, Pi v1.4.0. Harness flags move, so the launch line is always confirmed against `<harness>
+v2.2.0, Pi v1.4.0. Harness flags move, so the launch line is always confirmed against `<harness> <!-- volatile-ok: harness flags carry the version they were read at -->
 --help` on the machine.
 
 Claude Code flags this skill relies on (confirm with `claude --help` before writing a launch line): `-n, --name`, `--model`,

@@ -99,10 +99,12 @@ function compatibilityFixture(): string {
     '.agents/hooks/personality-reinject.mjs',
     '.claude/settings.json',
     '.opencode/plugins/personality-reinject.js',
+    '.pi/extensions/agentic-qa.js',
     '.codex/hooks.json',
     '.codex/config.toml',
     '.mcp.json',
     'opencode.jsonc',
+    '.pi/mcp.json',
   ].filter(path => existsSync(join(REPO_ROOT, path)))) { copyPath(root, path); }
   return root;
 }

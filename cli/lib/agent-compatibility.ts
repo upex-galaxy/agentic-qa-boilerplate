@@ -128,7 +128,7 @@ export const COMPATIBILITY_GROUP_LABEL: Record<CompatibilityErrorGroup, string> 
   alias: 'Claude skills alias (.claude/skills)',
   commands: 'Commands shadowing a skill (.claude/commands, .opencode/commands)',
   hooks: 'Hook adapters',
-  mcp: 'MCP parity (.mcp.json, opencode.jsonc, .codex/config.toml)',
+  mcp: 'MCP parity (.mcp.json, opencode.jsonc, .codex/config.toml, .pi/mcp.json)',
   lint: 'Lint config wiring (eslint.config.js <- eslint.config.base.js)',
 };
 
@@ -136,7 +136,7 @@ export const COMPATIBILITY_GROUP_LABEL: Record<CompatibilityErrorGroup, string> 
 export function compatibilityErrorGroup(message: string): CompatibilityErrorGroup {
   // An MCP config error names its file even when the parser's message lacks
   // the word (e.g. a placeholder Codex refuses).
-  if (/\bMCP\b|\.mcp\.json|opencode\.jsonc|\.codex\/config\.toml/.test(message)) { return 'mcp'; }
+  if (/\bMCP\b|\.mcp\.json|opencode\.jsonc|\.codex\/config\.toml|\.pi\/mcp\.json/.test(message)) { return 'mcp'; }
   if (/command shadows skill/i.test(message)) { return 'commands'; }
   if (/skills alias|\.claude\/skills/i.test(message)) { return 'alias'; }
   if (/hook/i.test(message)) { return 'hooks'; }

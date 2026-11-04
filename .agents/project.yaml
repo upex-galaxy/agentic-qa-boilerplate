@@ -30,7 +30,7 @@ testing:
   browser:
     pair_mode: null
 
-harnesses: [claude, opencode, codex]
+harnesses: [claude, opencode, codex, pi]
 
 qa:
   formal_blocked_gate: true

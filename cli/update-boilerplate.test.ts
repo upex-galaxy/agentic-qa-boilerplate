@@ -241,7 +241,7 @@ describe('one-harness projects (ADR-0012)', () => {
       writeFileSync(join(root, file), '{}\n');
     }
     const unused = unusedHarnessPaths(root);
-    expect(unused).toEqual(['opencode.jsonc', '.opencode/plugins', '.codex']);
+    expect(unused).toEqual(['opencode.jsonc', '.opencode/plugins', '.codex', '.pi/mcp.json', '.pi/extensions/agentic-qa.js']);
 
     const watched = resolveProtectedWatchlist(root).map(e => e.path);
     expect(watched).toContain('.mcp.json');
@@ -254,6 +254,8 @@ describe('one-harness projects (ADR-0012)', () => {
     for (const file of shipped) { expect(isRepoOnlyPath(file, unused)).toBe(true); }
     expect(isRepoOnlyPath('.agents/hooks/personality-reinject.mjs', unused)).toBe(false);
     expect(isRepoOnlyPath('.opencode/commands/mine.md', unused)).toBe(false);
+    expect(isRepoOnlyPath('.pi/mcp.json', unused)).toBe(true);
+    expect(isRepoOnlyPath('.pi/extensions/mine.js', unused)).toBe(false);
   });
 
   test('a project with all three (or none detected) keeps the full delivery', () => {

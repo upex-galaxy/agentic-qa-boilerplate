@@ -664,7 +664,7 @@ export const IDENTITY_PATHS: readonly string[] = [
   'testing.tms_cli',
   'qa.qa_epics.*.key',
   'environments.*.*',
-  // Which harnesses THIS repo runs on: the boilerplate checks all three, a
+  // Which harnesses THIS repo runs on: the boilerplate checks every harness, a
   // project declares its own or leaves it null to detect (ADR-0012).
   'harnesses',
   // The sprint modules' block (ADR-0019) is MIXED: its source choice, tickets
