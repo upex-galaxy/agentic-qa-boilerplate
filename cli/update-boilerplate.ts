@@ -187,6 +187,7 @@ const ENV_SCHEMA_FILES = ['.env.schema', '.env.core.schema'];
 // The hook adapter carries no project state and keeps flowing.
 const CODEX_FRAMEWORK_FILES = ['hooks.json'];
 const PI_ADAPTER_FILES = ['agentic-qa.js'];
+const PI_CONFIG_FILES = ['mcp.json'];
 const CLAUDE_ROOT_CONFIG_FILES = ['settings.json'];
 // The framework helpers under `tests/utils/`: pure logic every project runs as
 // is (outcome classes, the known-defect marker, the Xray JSON body) plus their
@@ -308,6 +309,9 @@ export const COMPONENTS: Component[] = [
   // The Pi adapter alone, never `.pi/extensions`: a project's own extensions
   // and Pi's runtime state live beside it.
   { name: 'pi-adapter', type: 'file-list', paths: ['.pi/extensions'], files: PI_ADAPTER_FILES },
+  // Delivered once when missing, then project-owned (watchlist): a project that
+  // declares Pi later has no other way to receive its registry.
+  { name: 'pi-config', type: 'file-list', paths: ['.pi'], files: PI_CONFIG_FILES, bootstrapOnly: true },
   { name: 'codex-config', type: 'directory', paths: ['.codex'], bootstrapOnly: true, frameworkFiles: CODEX_FRAMEWORK_FILES },
   // Delivered once when missing, then project-owned (watchlist). A file-list on
   // the `.claude` root: `.claude/commands` is the project's own (never synced),
