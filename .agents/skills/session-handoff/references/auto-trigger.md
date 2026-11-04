@@ -21,6 +21,7 @@ The owner's position, recorded: manual is preferred (*"prefiero que el humano lo
 | OpenCode | `event` plugin hook on `message.part.updated` | **yes, indirectly**: a `step-finish` part carries `tokens.input` / `tokens.output`, accumulable for free | no |
 | Codex CLI | `UserPromptSubmit` hook input | no | n/a |
 | Codex CLI | `PreCompact` / `PostCompact` hook events | no, and the hook output wire carries only universal fields | **yes** |
+| Pi | extension `ctx.getContextUsage()`, read from any event | **yes** | `session_before_compact`, `session_compact` events |
 
 Sources: `https://code.claude.com/docs/en/hooks`, `https://code.claude.com/docs/en/statusline`, the OpenCode plugin and session schema packages, and the Codex `hooks` and `protocol` crates.
 

@@ -2,7 +2,7 @@
 name: business-api-context
 description: "What the API of the system under test MEANS to the business: every endpoint group, who calls it and why, what it changes, which auth level and role it needs, the business flows that cross several endpoints, error semantics and the external integrations behind them. Load it whenever a task touches an API test, a request or response, an auth or permission question, a status code that looks wrong, contract coverage, or asks which endpoint does what, even when nobody says 'API map'. Reads its map through `bun run context:map business-api-context`. Pure knowledge plus a self-update proposal path: NOT the OpenAPI contract itself (that is the schema), NOT for running a QA stage, NOT for entities (business-data-context) or user journeys (business-e2e-context)."
 license: MIT
-compatibility: [claude-code, codex, opencode]
+compatibility: [claude-code, codex, opencode, pi]
 metadata:
   kind: context
   writes: [references/]

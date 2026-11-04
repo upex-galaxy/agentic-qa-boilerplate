@@ -2,7 +2,7 @@
 name: iql-context
 description: "The methodology index of this repo: how the IQL (Integrated Quality Lifecycle) is structured, why the QA process runs as eight named stages, what the artifact ladder (MTP / FTP / STP / ATP / ATS / ATR / STR / RTP / RTR) means, where each invariant is enforced, and how THIS project adapts it. Load it whenever someone asks why the process is shaped this way, what a stage / step / phase / cycle / altitude is, what IQL, TMLC, TALC, Early-Game / Mid-Game / Late-Game, Trifuerza, light mode, autonomy level or execution profile mean, which skill owns a stage, or how the website's methodology maps onto the skills here, even when they do not say 'IQL'. Pure knowledge: it changes what the agent knows, never what it does next. NOT for running a stage (the workflow skills), NOT for SUT knowledge (the project's own <aspect>-context skills)."
 license: MIT
-compatibility: [claude-code, codex, opencode]
+compatibility: [claude-code, codex, opencode, pi]
 metadata:
   kind: context
 ---

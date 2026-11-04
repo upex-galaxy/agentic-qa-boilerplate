@@ -2,7 +2,7 @@
 name: infra-context
 description: "How the system under test is built, run and deployed: its architecture and external services, the backend and frontend stacks with their run and test commands, the auth flow, the environments and their URLs, the CI/CD pipelines, and the non-functional budgets it must hold (performance, security, reliability, observability). Load it whenever a task wires the test framework to the stack, touches an environment, a deploy, a pipeline, auth in tests, test IDs, or a performance or security budget, or asks how the product runs or where it is deployed, even when nobody says 'infrastructure' or 'architecture'. Reads its map through `bun run context:map infra-context`. Pure knowledge plus a self-update proposal path: NOT for running a QA stage or editing CI, NOT for business vocabulary (business-domain-context) or data lifecycles (business-data-context)."
 license: MIT
-compatibility: [claude-code, codex, opencode]
+compatibility: [claude-code, codex, opencode, pi]
 metadata:
   kind: context
   writes: [references/]

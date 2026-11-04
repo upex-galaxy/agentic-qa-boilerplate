@@ -2,7 +2,7 @@
 name: test-framework-adaptation
 description: "Adapt this boilerplate's KATA test architecture, auth, schemas, variables, env schema, fixtures, CI, MCPs, and reporting to a project already reverse-engineered by project-discovery. Use for adapt framework, adapt KATA, wire fixtures, connect boilerplate to target stack, wire auth, or test framework adaptation (formerly adapt-framework). Strict gate: analysis and plan first, explicit approval, then writes."
 license: MIT
-compatibility: [claude-code, copilot, cursor, codex, opencode]
+compatibility: [claude-code, copilot, cursor, codex, opencode, pi]
 complementary_categories: [testing-e2e, testing-api, ci-cd, meta-skill]
 metadata:
   kind: workflow

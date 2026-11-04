@@ -2,7 +2,7 @@
 name: framework-development
 description: "Framework evolution mode — evolves the QA boilerplate itself (KATA, fixtures, cli/, scripts/, api/schemas/ pipeline, package.json deps). Self-contained Plan → Code → Verify → Archive pipeline; needs nothing outside the repo (no SDD-* skills). Use when adding new fixture APIs, refactoring KATA base classes, evolving the installer, modifying the OpenAPI sync pipeline, or any change to the framework infrastructure that is NOT per-ticket test writing or manual QA. Triggers on: /framework-development, \"evolve framework\", \"framework refactor\", \"new fixture API\", \"modify KATA base\", \"refactor cli\", \"boilerplate evolution\", \"sync AI context\", \"sync AI memory\" (the docs follow-through after a boilerplate change), and mode `instructions` for any edit to AGENTS.md, an instruction section, the ROUTER or a section's triggers (\"edit AGENTS.md\", \"add a rule\", \"where does this rule go\", \"router row\", \"tune the triggers\", \"new instruction section\"). Do NOT use for: writing tests for a ticket (use /test-automation), manual QA per ticket (use /sprint-testing), documenting test cases (use /test-documentation), running regression suites (use /regression-testing)."
 license: MIT
-compatibility: [claude-code, copilot, cursor, codex, opencode]
+compatibility: [claude-code, copilot, cursor, codex, opencode, pi]
 complementary_categories: [framework-evolution, meta-skill]
 metadata:
   kind: workflow

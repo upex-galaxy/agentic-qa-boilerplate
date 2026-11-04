@@ -2,7 +2,7 @@
 name: test-documentation
 description: "Analyze, prioritize, and document test cases in TMS (Jira/Xray), repair an existing Story-ATS-ATP-ATR-TC cascade through a sealed explicit mode, or run the sealed post-promotion `merged` pass once automated tests land on the production branch. Use for Test/ATP/ATR artifacts, ROI and automation verdicts, maintaining traceability, fix-traceability, or broken TMS links. The repair-traceability mode audits, plans, waits for explicit approval, applies, and verifies without launching the general documentation workflow. Do NOT use for writing test code (test-automation) or running suites (regression-testing)."
 license: MIT
-compatibility: [claude-code, copilot, cursor, codex, opencode]
+compatibility: [claude-code, copilot, cursor, codex, opencode, pi]
 complementary_categories: [tms, issue-tracker]
 metadata:
   kind: workflow

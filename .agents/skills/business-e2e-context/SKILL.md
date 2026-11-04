@@ -2,7 +2,7 @@
 name: business-e2e-context
 description: "How people actually use the system under test end to end: the personas, the user journeys first (entry point, steps, branches, where money or data changes hands, where it can fail), then the feature catalog those journeys cross and the flows that span several features. Load it whenever a task touches an E2E or UI test, a user flow, a smoke or regression scope, an exploratory session, a story's place in a bigger journey, or asks what a user can do in the product, even when nobody says 'feature map' or 'journey'. Reads its map through `bun run context:map business-e2e-context`. Pure knowledge plus a self-update proposal path: NOT for running a QA stage, NOT for entities (business-data-context) or endpoint contracts (business-api-context)."
 license: MIT
-compatibility: [claude-code, codex, opencode]
+compatibility: [claude-code, codex, opencode, pi]
 metadata:
   kind: context
   writes: [references/]

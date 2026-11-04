@@ -2,7 +2,7 @@
 name: project-context
 description: "Generate or refresh the business context maps (the HTML maps inside business-data-context, business-api-context and business-e2e-context) and the master test plan. Use for business-data-map, business-api-map, business-e2e-map, business-feature-map, user journeys map, master-test-plan, refresh project context, refresh all context, entity map, feature inventory, API business map, or risk-ranked test roadmap. Also scaffolds a project-owned <aspect>-context skill for any other aspect (context-skill mode), and builds the coverage inventory (coverage mode: coverage gaps, gap list, weak tests, what is not tested, behaviours vs tests). Routes exactly one mode at a time unless refresh-all is explicit. UPDATE regenerates only stale sections and always shows a diff and waits for approval before writing."
 license: MIT
-compatibility: [claude-code, copilot, cursor, codex, opencode]
+compatibility: [claude-code, copilot, cursor, codex, opencode, pi]
 complementary_categories: [testing-e2e, testing-api, meta-skill]
 metadata:
   kind: workflow

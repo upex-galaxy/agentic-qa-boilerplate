@@ -211,6 +211,7 @@ ask again.
 | Codex | `request_user_input` | exec mode; outside Plan mode unless the feature flag `default_mode_request_user_input` is on |
 | OpenCode | `question` | `opencode run`; disabled by its permission key `question` |
 | Gemini CLI | `ask_user` | non-interactive runs |
+| Pi | none built in | always, unless a package adds one: the fallback below |
 | any other | its own question tool, if its tool list shows one | otherwise the fallback below |
 
 Tool names and limits move with harness versions (read 2026-10-22, harness docs and binaries): the tool

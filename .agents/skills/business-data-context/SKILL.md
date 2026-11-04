@@ -2,7 +2,7 @@
 name: business-data-context
 description: "What the system under test IS at the data level: business entities and why they exist, their relationships, state machines, automatic processes (DB triggers, cron jobs, webhooks), external integrations and the business flows that move data between them. Load it whenever a task touches the database, data validation, a SQL query, test data setup, an entity's lifecycle or status transitions, a trigger or a background job, or asks how the product works under the hood, even when nobody says 'data map'. Reads its map through `bun run context:map business-data-context`. Pure knowledge plus a self-update proposal path: NOT for running a QA stage, NOT for endpoint contracts (business-api-context) or user journeys (business-e2e-context)."
 license: MIT
-compatibility: [claude-code, codex, opencode]
+compatibility: [claude-code, codex, opencode, pi]
 metadata:
   kind: context
   writes: [references/]

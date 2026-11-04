@@ -2,7 +2,7 @@
 name: sprint-testing
 description: "Orchestrates in-sprint manual QA per issue across Stages 1 (Planning), 2 (Execution) and 3 (Reporting). Use for user-story testing, bug retesting, and sprint-wide QA loops. Creates the PBI folder, drives session-start, runs the triage + veto + risk-score decision tree on bugs, produces the ATP + ATR + TC artifacts in the TMS, executes smoke and trifuerza (UI/API/DB) exploration, and files the final QA comment + bug reports. Triggers on: test this ticket, QA this user story, retest this bug, verify bug fix, explore this ticket's feature, smoke test a feature, process the sprint, plan the sprint QA backlog, next ticket in sprint, resume sprint testing, continue-from a ticket. Do NOT use for ticket-free exploration of a module, a flow or the whole app (exploratory-testing), booting or resuming the sprint conductor that runs a fleet with the Sprint Board and the test-environment watch (sprint-conductor), Stage 4 TMS documentation + ROI (test-documentation), Stage 5 automation coding (test-automation), Stage 6 regression suite execution (regression-testing), or onboarding a new repo (project-discovery)."
 license: MIT
-compatibility: [claude-code, copilot, cursor, codex, opencode]
+compatibility: [claude-code, copilot, cursor, codex, opencode, pi]
 complementary_categories: [testing-e2e, testing-api, issue-tracker]
 metadata:
   kind: workflow

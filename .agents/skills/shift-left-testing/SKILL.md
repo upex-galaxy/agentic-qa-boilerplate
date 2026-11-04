@@ -2,7 +2,7 @@
 name: shift-left-testing
 description: "Orchestrates pre-sprint Shift-Left QA on a batch of backlog Stories. Use when the user wants to refine acceptance criteria, surface ambiguities + gaps, draft an ATP outline, and hand off to PO/Dev BEFORE the Story enters a sprint — so defects are prevented in the requirements, not detected after implementation. Triggers on: shift-left testing, shift-left these stories, groom the backlog, pre-sprint QA, refine these N stories, pre-sprint refinement batch, prepare backlog for sprint planning, run AC refinement on UPEX-100/101/102, run shift-left QA, do early-game testing, pre-sprint test planning. ALSO trigger when the user pastes a comma-separated list of Story IDs sitting in Backlog / Shift-Left QA / Estimation / Ready For Dev and asks any variant of \"refine\", \"groom\", \"clean these ACs\", \"shift-left these\". Do NOT use for: in-sprint manual QA per ticket (use /sprint-testing — entry status is Ready For QA, this skill's entry status is Backlog/Shift-Left QA), Stage 4 TMS documentation + ROI (test-documentation), Stage 5 automation code (test-automation), Stage 6 regression suite execution (regression-testing), bugs (this skill only accepts Stories — bugs are reactive and have no upstream ACs to refine), epic-level test strategy (use feature-test-planning inside /sprint-testing for that)."
 license: MIT
-compatibility: [claude-code, copilot, cursor, codex, opencode]
+compatibility: [claude-code, copilot, cursor, codex, opencode, pi]
 complementary_categories: [testing-e2e, issue-tracker, tms]
 metadata:
   kind: workflow

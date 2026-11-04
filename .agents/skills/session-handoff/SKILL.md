@@ -2,7 +2,7 @@
 name: session-handoff
 description: "Compact an entire agent session into a handoff document so a NEW session resumes exactly where this one stopped, as if the context window had been extended rather than reset. Use when the context window is getting high (default threshold ~500k tokens, beyond which the model degrades and starts inventing), when work must continue past the end of this session, or on any variant of: hagamos el handoff, pasa el contexto a otra sesion, continua esto en otra sesion, hand this session over, continue this in a fresh session, write a handoff, session handoff. Produces <<PRIMARY_ROOT>>/.session/handoffs/<session-name>-handoff-NN.md (the primary checkout, also from a worktree) and, when an orchestration runtime is reachable, launches the successor itself in the SAME worktree and the SAME harness. Do NOT use for: delegating a scoped task to a worker while you keep working (that is orca-orchestration), one-shot subagent dispatch, or persisting durable project facts across projects (that is Engram memory)."
 license: MIT
-compatibility: [claude-code, copilot, cursor, codex, opencode]
+compatibility: [claude-code, copilot, cursor, codex, opencode, pi]
 complementary_categories: [meta-skill, orchestration]
 metadata:
   kind: workflow

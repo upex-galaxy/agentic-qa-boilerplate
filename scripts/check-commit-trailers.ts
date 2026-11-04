@@ -28,7 +28,7 @@ const SESSION_TRAILER = /^Session: \S.*$/;
 
 /** A trailer KEY that names a tool or vendor instead of the work. */
 const BRANDED_SESSION_TRAILER = /^[\w.-]+-Session:/i;
-const AI_NAMES = /claude|anthropic|openai|chatgpt|\bgpt\b|codex|copilot|gemini|opencode|cursor|aider|\bai\b/i;
+const AI_NAMES = /claude|anthropic|openai|chatgpt|\bgpt\b|codex|copilot|gemini|opencode|\bpi\b|cursor|aider|\bai\b/i;
 const CO_AUTHOR = /^Co-Authored-By:/i;
 const GENERATED_WITH = /\bgenerated (?:with|by)\b/i;
 

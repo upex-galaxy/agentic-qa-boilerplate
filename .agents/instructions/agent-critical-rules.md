@@ -18,7 +18,7 @@ paths: []
 
    **Using a value without seeing it**: the shell expands `$NAME` inside the command, so the command text carries the name and the output carries only the result (`playwright-cli --raw fill <ref> "$STAGING_USER_PASSWORD"`, `source .auth/tokens.env && curl -H "Authorization: Bearer $API_TOKEN_<ROLE>_<ENV>" ...`). Sourcing a file inside the same call is using it by name; printing what it holds is not.
 
-   **Enforcement**: the deny rules in `.claude/settings.json` (`permissions.deny`) and `opencode.jsonc` (`permission.read` / `permission.bash`) refuse the common reads, `printenv` and `env`. They match command patterns, so a subprocess can still open a file: this text is what binds, the deny list is the net. Commands that print, the safe forms, the presence check and what to do when a value leaks → `.agents/skills/agentic-qa-core/references/secret-hygiene.md`.
+   **Enforcement**: the deny rules in `.claude/settings.json` (`permissions.deny`) and `opencode.jsonc` (`permission.read` / `permission.bash`) and the Pi adapter's `tool_call` block refuse the common reads, `printenv` and `env`. They match command patterns, so a subprocess can still open a file: this text is what binds, the deny list is the net. Commands that print, the safe forms, the presence check and what to do when a value leaks → `.agents/skills/agentic-qa-core/references/secret-hygiene.md`.
 
    Example keys: `LOCAL_USER_EMAIL`, `STAGING_USER_PASSWORD` (project-scope examples: the adopting repo renames or deletes them; the framework never requires them, `config.testUser` fails by name at the point of use). Scope of every variable → `cli/lib/variables-manifest.ts`; doctrine → `.context/ADR/ADR-0005-validation-scope.md`.
 

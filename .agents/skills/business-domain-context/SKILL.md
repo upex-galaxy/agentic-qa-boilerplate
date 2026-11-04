@@ -2,7 +2,7 @@
 name: business-domain-context
 description: "The vocabulary and the business of the system under test: what the product is for, who pays and why, and what every domain term means (the business meaning, the label the UI shows, the identifier the code uses, how it relates to other terms). Load it whenever a task names, labels or explains a domain concept: writing or refining acceptance criteria, authoring an ATP, naming a test case or a test file, filing a bug in business language, or asking what a term means or why a feature exists, even when nobody says 'glossary' or 'business model'. Reads its map through `bun run context:map business-domain-context`. Pure knowledge plus a self-update proposal path: NOT for running a QA stage, NOT for data structure and lifecycles (business-data-context), endpoints (business-api-context) or journeys (business-e2e-context)."
 license: MIT
-compatibility: [claude-code, codex, opencode]
+compatibility: [claude-code, codex, opencode, pi]
 metadata:
   kind: context
   writes: [references/]

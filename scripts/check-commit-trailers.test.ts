@@ -33,6 +33,11 @@ describe('commitTrailerWarnings', () => {
     expect(commitTrailerWarnings('feat: x\n\nSession: b\nWorktree: a\n')[0]).toContain('LAST two lines');
   });
 
+  test('a Pi co-author is attribution, and the word alone in the body is not', () => {
+    expect(commitTrailerWarnings('feat: x\n\nCo-Authored-By: Pi <noreply@pi.dev>\nWorktree: a\nSession: b\n')).toContain('AI "Co-Authored-By:" trailer is attribution and is forbidden.');
+    expect(commitTrailerWarnings('feat: x\n\nThe pi adapter routes here.\nWorktree: a\nSession: b\n')).toEqual([]);
+  });
+
   test('warns on a harness-branded session trailer even when the forensic pair is there', () => {
     const raw = 'feat: x\n\nClaude-Session: https://claude.ai/code/session_0123\nWorktree: a\nSession: b\n';
     expect(commitTrailerWarnings(raw)).toEqual(['harness-branded trailer "Claude-Session:" is forbidden; use "Worktree:" + "Session:" instead.']);

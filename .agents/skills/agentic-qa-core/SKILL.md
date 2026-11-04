@@ -2,7 +2,7 @@
 name: agentic-qa-core
 description: "Foundation skill that hosts shared references cited by other workflow skills (briefing template, dispatch patterns, orchestration doctrine, skill composition strategy). Loaded on demand by any skill that declares `agentic-qa-core` in its Dependencies block. Do NOT use for: adapting KATA tests (use `/test-framework-adaptation`), or onboarding the target project (use `/project-discovery`)."
 license: MIT
-compatibility: [claude-code, copilot, cursor, codex, opencode]
+compatibility: [claude-code, copilot, cursor, codex, opencode, pi]
 complementary_categories: [meta-skill]
 metadata:
   kind: core

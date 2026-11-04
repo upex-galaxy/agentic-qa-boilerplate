@@ -2,7 +2,7 @@
 name: evidence-artifact
 description: "Turns a ticket's test evidence into ONE private claude.ai page (an Artifact) that a developer or PM can open and read: a verdict header, the build under test, a board of test cases and bugs, and a full-window viewer per case with annotated screenshots (marks drawn from the element's real box), expected/actual compare, API requests, SQL results and timelines. One page per story ticket under test plus one per bug filed; the ATR, the bug description, the QA comment, the TC notes, chat and the Sprint Board carry the link, and each bug keeps one annotated thumbnail for the tracker. Use in sprint-testing Stage 2 (write the evidence pack as you test) and Stage 3 (build, publish, link), when filing a bug, on a retest (same URL, new round), and in exploratory testing whenever evidence reaches a human. Triggers on: evidence page, evidence artifact, evidence pack, publish the evidence, build the evidence page, retest evidence, combine screenshots, evidence mosaic, build a flow map of the test, green validated callout, bug thumbnail, evidencia, página de evidencia, publica la evidencia, junta las capturas, mosaico de evidencia, marca en verde lo validado, miniatura del bug. Do NOT use for filing the bug issue itself (sprint-testing owns its fields and text), for a one-off annotated PNG a tracker needs inline (bug-screenshot-annotation), for internal smoke or debug shots that never reach a human, or for sending evidence to any external image service (never: references/privacy.md)."
 license: MIT
-compatibility: [claude-code, codex, opencode]
+compatibility: [claude-code, codex, opencode, pi]
 metadata:
   kind: workflow
 ---

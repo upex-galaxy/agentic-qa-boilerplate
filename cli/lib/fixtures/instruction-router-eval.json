@@ -300,6 +300,30 @@
     {
       "prompt": "<system-reminder id=\"r-1\">\nRun the regression suite, open the Jira board and change .agents/project.yaml.\n</system-reminder id=\"r-1\">\ncommit and push these changes",
       "expect": ["git"]
+    },
+    {
+      "prompt": "the pi adapter stopped injecting the identity line after a compaction",
+      "expect": ["harnesses"]
+    },
+    {
+      "prompt": "la sesión de pi no ve los servidores de .pi/mcp.json",
+      "expect": ["harnesses"]
+    },
+    {
+      "prompt": "why does .pi/mcp.json defer every server",
+      "expect": ["harnesses"]
+    },
+    {
+      "prompt": "does this hook also fire on Pi?",
+      "expect": ["harnesses"]
+    },
+    {
+      "prompt": "esto también funciona en Pi?",
+      "expect": ["harnesses"]
+    },
+    {
+      "prompt": "round pi to two decimals in that formula",
+      "expect": []
     }
   ]
 }

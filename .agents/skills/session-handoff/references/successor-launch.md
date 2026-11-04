@@ -25,7 +25,7 @@ Preconditions, all three, verified before launching:
 
 Then create one terminal in the active worktree whose command is the harness's own launch line, carrying two things: the session name (the handoff basename without the extension) and a first prompt that names the handoff file by absolute path and says to read it top to bottom and continue.
 
-The launch line is the harness's, not the runtime's. A Claude predecessor launches a Claude successor; OpenCode launches OpenCode; Codex launches Codex.
+The launch line is the harness's, not the runtime's. A Claude predecessor launches a Claude successor; OpenCode launches OpenCode; Codex launches Codex; Pi launches Pi (`pi -n <name> "<first prompt>"`).
 
 **Announce the launch to the owner before firing it**, and say which terminal will carry it. The owner is about to have a second session appear on their board.
 

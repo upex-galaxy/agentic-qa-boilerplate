@@ -2,7 +2,7 @@
 name: sprint-conductor
 description: "Boot, run and resume the sprint QA conductor: one session that conducts a fleet of sprint-testing workers (one per ticket) on Orca and watches the whole sprint from one fixed point, the Sprint Board. Boots in one pass (sprint and board, the conductor-owned pre-flight, the Run, the sentinel, what the owner and the workers left, one status screen), runs one watch pass per sentinel wake (tickets that reached the test environment, the deploy check, launch under the worker cap, owner answers, finished workers, the redeploy notice), closes each round with one verification subagent, and resumes the fleet after a reboot or a session resume. Requires Orca: without a reachable runtime it stops with one line. Triggers on: /sprint-conductor, sprint conductor, conduct the sprint, boot the conductor, run the sprint fleet with the board, watch the test environment for arrivals, conductor watch pass, close the round, resume the conductor after a reboot, conductor del sprint, arranca el conductor, conduce el sprint, vigila el entorno de pruebas, retoma el conductor despues del reinicio. Do NOT use for: testing one ticket or walking the sprint queue in one session (sprint-testing), a sprint fan-out on a machine without Orca (sprint-testing sprint-wide with N executors, which writes paste-ready launch lines), multi-session orchestration that is not sprint QA (orca-orchestration), a single board command (cli/sprint-board README), or regression suites (regression-testing)."
 license: MIT
-compatibility: [claude-code, codex, opencode]
+compatibility: [claude-code, codex, opencode, pi]
 complementary_categories: [orchestration, issue-tracker, tms]
 metadata:
   kind: workflow

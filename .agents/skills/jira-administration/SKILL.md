@@ -2,7 +2,7 @@
 name: jira-administration
 description: "Run bounded Jira administration workflows for project Components or Atlassian instance migration. Use for jira-components, sync Jira components, jira-instance-migration, changed Jira URL, or repoint Jira. Both modes are sealed behind read-first analysis and explicit user approval before any Jira, credential-session, or repository mutation."
 license: MIT
-compatibility: [claude-code, copilot, cursor, codex, opencode]
+compatibility: [claude-code, copilot, cursor, codex, opencode, pi]
 complementary_categories: [issue-tracker, meta-skill]
 metadata:
   kind: workflow

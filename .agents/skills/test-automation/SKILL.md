@@ -2,7 +2,7 @@
 name: test-automation
 description: "Plan, write, and review automated tests following KATA (Komponent Action Test Architecture) on Playwright + TypeScript, or explain existing automated tests in a sealed read-only mode. Use when writing E2E or API/integration tests, creating Page or Api components, designing ATCs, parameterizing test data, registering fixtures, reviewing test code for KATA compliance, or requesting break-down-tests / a plain-English test breakdown. The explain mode reads source and renders an HTML breakdown of assertions without entering Plan-Code-Review or editing tests. Do NOT use for running suites (regression-testing), documenting TCs in Jira/Xray (test-documentation), onboarding a repo (project-discovery), or orchestrating sprint-wide testing (sprint-testing)."
 license: MIT
-compatibility: [claude-code, copilot, cursor, codex, opencode]
+compatibility: [claude-code, copilot, cursor, codex, opencode, pi]
 complementary_categories: [testing-e2e, testing-api, testing-component, automation-cli, accessibility]
 metadata:
   kind: workflow

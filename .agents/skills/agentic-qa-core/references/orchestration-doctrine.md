@@ -12,6 +12,8 @@
 
 **DO NOT USE SUBAGENTS FOR**: quick lookups, memory reads/writes, task tracking, asking user, planning.
 
+**A HARNESS WITHOUT SUBAGENTS** (Pi ships none): run the work inline, or use a supervised worker when its gate allows. A brief that says "dispatch" still binds what the dispatch would have done, its report format included.
+
 **TWO EXECUTORS**: one-shot subagents are the DEFAULT and nothing below changes for them. A second, OPTIONAL executor exists: the **supervised worker** — a persistent agent session coordinated through `/orca-orchestration` (conductor ↔ worker mailbox), gated on the orchestration binary AND a reachable runtime. When the gate fails the repo says NOTHING about it and the work runs on subagents plus the launch lines a human pastes.
 
 | | One-shot subagent (default) | Supervised worker (optional) |

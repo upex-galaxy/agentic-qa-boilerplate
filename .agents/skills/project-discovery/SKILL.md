@@ -2,7 +2,7 @@
 name: project-discovery
 description: "Onboard a project through four discovery phases: Constitution, Architecture, Infrastructure, and Specification. Produces the domain map (business model + glossary) inside `business-domain-context` and the infra map (architecture, NFRs, backend, frontend, environments, CI/CD) inside `infra-context`, plus `.context/project-config.md` and a backlog connection check, then hands the business maps and the master test plan to `project-context`. Use for set up this project, onboard this repo, connect to project, discover architecture, or create PRD/SRS. Do NOT use for incremental context refresh (`project-context`), writing tests, TMS documentation, running suites, adapting KATA (`test-framework-adaptation`), or technical OpenAPI sync (`bun run api:sync`)."
 license: MIT
-compatibility: [claude-code, copilot, cursor, codex, opencode]
+compatibility: [claude-code, copilot, cursor, codex, opencode, pi]
 complementary_categories: [meta-skill]
 metadata:
   kind: workflow
