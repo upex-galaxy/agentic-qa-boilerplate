@@ -142,7 +142,7 @@ build/
 .template/upstream-sha/
 
 # ===== MCP Configuration =====
-# .mcp.json, opencode.jsonc and .codex/config.toml are COMMITTED — they name
+# .mcp.json, opencode.jsonc, .codex/config.toml and .pi/mcp.json are COMMITTED — they name
 # variables only; each MCP server reads its values from .env (ignored above)
 # through the .env loader (`varlock run --filter`).
 # Local per-developer overrides go in *.local.* files (ignored below).
@@ -152,6 +152,19 @@ dbhub.local.toml
 # Installer state (cli/install.ts) — gitignored; tracks what bun setup
 # already did so re-runs are idempotent.
 .template/installer.state.json
+
+# ===== Pi runtime state =====
+# Packages write loops, tasks and subagent state under .pi/. What a project
+# commits (its MCP registry, extensions, settings) is allowlisted back.
+.pi/*
+!.pi/mcp.json
+!.pi/settings.json
+!.pi/SYSTEM.md
+!.pi/APPEND_SYSTEM.md
+!.pi/extensions/
+!.pi/skills/
+!.pi/prompts/
+!.pi/themes/
 
 # ===== Local Useful Files =====
 

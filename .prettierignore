@@ -77,6 +77,19 @@ docs/mcp/
 .template/
 
 # ===========================================
+# Pi runtime state - generated, gitignored
+# ===========================================
+# Packages write JSON under .pi/ (loops, tasks, subagents) that prettier would
+# fail on. Prettier reads only this file, so the .gitignore ladder is repeated.
+.pi/*
+!.pi/mcp.json
+!.pi/settings.json
+!.pi/extensions/
+!.pi/skills/
+!.pi/prompts/
+!.pi/themes/
+
+# ===========================================
 # Runtime session artifacts - generated, gitignored
 # ===========================================
 # Saved auth state and Playwright session output are regenerated every QA run
