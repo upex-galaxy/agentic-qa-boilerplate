@@ -10,7 +10,7 @@
     "cli/lib/ui/browser-sink.test.ts": "86d49ff448f8c7b12502367ff0581c7de03d6517eac5cae097f8e0840467639f",
     "cli/lib/ui/browser-sink.ts": "b4f6eb1f85a86d28c69e5436c357a995f8245b6a0d11b3be6504d88a7b5c925b",
     "cli/lib/ui/env-detect.test.ts": "241fe819851f0e2456e4b65e0a8a5f24a3d96eff809735a133dae0904dead371",
-    "cli/lib/ui/env-detect.ts": "fe09087febd458f42912b6f34f772bd813ea774e884e105dfbee1b62c70f5057",
+    "cli/lib/ui/env-detect.ts": "53f1739d19035aafd52241ab36d86f9bc0570f8a5d67feef6a0bd67fe23a9df8",
     "cli/lib/ui/events.test.ts": "9954ee6733fb828ad537afd3f59e9a6fae11ca872cc4407cf3d82fcfa836d5e5",
     "cli/lib/ui/events.ts": "18adcc3321e5884a17250039f3e68a05edd07bc2415e2545f128d1f818202d3b",
     "cli/lib/ui/imports.test.ts": "75f5312f7160af75445569b98ddfbbbbb0929ee559700a7b45b6b20ab6ec7761",
@@ -28,15 +28,15 @@
     "cli/lib/ui/reporter.ts": "da7b898fbd0a2e28a31209330d715124958d10dc2c2683ec00cb8b279ec9d67d",
     "cli/lib/ui/secrets.test.ts": "b56d9036d1e3aca38bf56c57b84890072783e5dc9f70fe90e350022533660bca",
     "cli/lib/ui/strings.test.ts": "832aaf89191ccf5767dc896fe4320aa15c1c7fe928dadbff7c04bed6c1a2261a",
-    "cli/lib/ui/strings.ts": "2b738ba34826d7dfb5164c335b1029d2be1a4fdfb681fb81e6ef57b4d00fa3b3",
+    "cli/lib/ui/strings.ts": "f63a583c2dba328f30bcfe37af378a5dce8529e55c901c866a290d1fb64285ab",
     "cli/lib/ui/summary.test.ts": "1bc51be24d30fe0fd4158d46750df34785218015174e6f2019450e53b6571dfe",
     "cli/lib/ui/summary.ts": "b4724b29f320adb7eef34fb0d37489adfdbe2cbbdd8c6b88e678c3a6d925e3ac",
     "cli/lib/ui/updater-run.test.ts": "69b82b8dab84dfd649d6c24e5b8c65c4bd7dc19286db73c494a6ee08eece38c2",
     "cli/lib/ui/updater-run.ts": "9852c94b80561963c655efb03846551d199b47e583d062a27c172444d8aa0e3b",
     "cli/lib/ui/updater-sink.test.ts": "cd525f1f9958d411a39620a2e50ea1f1b543d3d8321a4971ac51adced4515139",
     "cli/lib/ui/updater-sink.ts": "4132405933f7f691dfbc25c5c0314f298df9c77ba9a57aaa005511fdb75ff9e0",
-    "cli/preflight.test.ts": "1a7172186d8e68c2dd4f6f9c41df690d9062d11adcd09abf975344196f0129f5",
-    "cli/preflight.ts": "cd47ecc0bf2f209380a6db9cbf8c6c25c602d666fa14c48bc439d61c0ed8cfff",
+    "cli/preflight.test.ts": "55017ab0f7f2573984182b71be73ff122a1f628c57704bb66d954082aed02e25",
+    "cli/preflight.ts": "f599c8fb62a72d6fe1caced604a89aec096575226531f8550fe19d233eda3c81",
     "scripts/shared-check.ts": "e87918e2223972ba64a232a344e502f0d81a6ef29d7576d5c8fbc70969e0783b"
   }
 }
