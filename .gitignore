@@ -246,3 +246,6 @@ dbhub.local.toml
 # `bunx skills add` in a throwaway repo — the dotted name above never appears.
 !skills-lock.json
 !**/skills-lock.json
+
+# Pi harness runtime state (loops, tasks): per machine, never committed.
+.pi/
