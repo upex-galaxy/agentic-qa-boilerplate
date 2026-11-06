@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-10-29T04:05:13.180Z`
+> Generated: `2026-11-06T05:50:29.419Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -573,12 +573,13 @@ Skills indexed: 29
 - 1:N is the default: a non-trivial AC implies multiple outlines (valid partition + each distinct invalid + boundaries + states). A 1-outline AC requires a written "trivially atomic" justification — never the default.
 - Tag each refinement gap to a technique: ranges/limits → BVA; status/lifecycle fields → State-Transition; 2+ interacting conditions → Decision Table; 3+ combinable factors → Pairwise.
 - A refined AC (Given/When/Then) is the business assertion; the outline (`Should <behavior> <condition>`) is its exploration. Keep them distinct.
-- Stories ONLY (no bugs — nothing to refine upstream). Entry status Backlog / Shift-Left QA / Estimation / Ready For Dev.
+- Stories ONLY (no bugs — nothing to refine upstream). Entry status Backlog / Shift-Left QA / Ready For Dev.
 - Output = refined ACs + gap/ambiguity questions + the pre-sprint ATP in the `{{jira.acceptance_test_plan}}` field (outline NAMES + coverage estimate, no test code, no execution, NO Test Plan item — `/sprint-testing` Stage 1 creates the item from the field) + the closed `[QA] Shift-Left Review` subtask + the batch report.
 - Tracking subtask `[QA] Shift-Left Review` per accepted Story: find-or-create in Phase 1 (assignee = self; Jira's `create` lands it in `{{jira.status.subtask.active}}`), close in Phase 3 handoff via `{{jira.transition.subtask.complete}}` (-> `{{jira.status.subtask.close}}`). The subtask workflow's status NAMES are `ACTIVE` / `Close`, not "In Progress" / "Done". Exhaustive session annotations (long analysis, refinement traces) go on the SUBTASK, keeping the Story clean. Work type + transitions resolved from `.agents/jira-workflows.json`; no subtask work type in the catalog → skip with a warning, never block.
 - The heart of the skill (Phase 2) = edge cases not in story + ambiguities + gaps — feed them to PO/Dev as questions AND as derived outlines.
 - On taking a Story into refinement (first QA pickup), set `qa_assignee` to self — read-before-write, never overwrite an existing owner (`agentic-qa-core/references/defect-management-doctrine.md` Part 2). This skill files NO Bug/Defect/Improvement; only the QA-Assignee hook applies.
-- On completion: add label `shift-left-reviewed`; transition Backlog → Shift-Left QA → Estimation.
+- On completion: add label `shift-left-reviewed`; transition Backlog → Shift-Left QA → Ready For Dev.
+- **AI Effort (binding)**: in Phase 3 set `{{jira.ai_effort}}` (Low / Medium / High) on every refined Story, using `references/ai-effort-checklist.md`. It is the effort of the whole item in an agentic workflow, implementing AND verifying it: never a time and never a token forecast. `High` means the handoff comment PROPOSES a split of the Story; the PO decides and the person signs, the agent never splits or creates Stories on its own. Field absent → structured `## AI Effort` comment, never block. DTU/QTU (`{{jira.development_token_usage}}`, `{{jira.quality_token_usage}}`) are written later by dev and QA agents, never here.
 
 **Read full SKILL.md when**: running the batch grooming pipeline, writing the per-Story `shift-left-refinement.md`, or handling the PO/Dev handoff.
 
@@ -626,6 +627,7 @@ Skills indexed: 29
 - `priority` (native) is auto-derived from `{{jira.severity}}` (critica→Highest, mayor→High, moderada→Medium, menor→Low, trivial→Lowest); override with a 1-line justification (Part 5.1).
 - Mode from `$ARGUMENTS`: a first token naming a mode (`single-issue`, `sprint-wide`) IS the mode and the rest is forwarded; otherwise ASK the mode question, never infer it.
 - Three stages, always in order: Stage 1 Planning → Stage 2 Execution → Stage 3 Reporting. Hand off Stages 4/5/6 to `test-documentation` / `test-automation` / `regression-testing`.
+- **QTU duty**: when Stage 3 approves a Story (`qa_sign_off` to `{{jira.status.story.qa_approved}}`), write `{{jira.quality_token_usage}}` with the MEASURED tokens (thousands) the QA agent spent on the item; field absent → structured Jira comment, never block; harness exposes no figure → leave it empty and the verifier line says N/A with the reason. NEVER estimate or invent it.
 - Jira is source of truth. Read tickets via `bun run jira:sync-issues get <KEY> --include-comments`, then the synced `.md`. NEVER `acli workitem view` for custom fields (returns `null`).
 - Bugs run the veto + triage + risk-score decision tree BEFORE any ATP is written.
 - Stage 1's Shift-Left short-circuit is fail-closed: the `shift-left-reviewed` + dated labels alone run the FULL flow. Phases 1-3 are skipped only on cited evidence: a pre-sprint ATP body in the synced `acceptance-test-plan.md` (or its `## Acceptance Test Plan (ATP)` fallback comment), a dated label under 30 days old, refined ACs that still match the Story. Stage 1 never writes those labels or that field before the check (`references/acceptance-test-planning.md` §0.0).

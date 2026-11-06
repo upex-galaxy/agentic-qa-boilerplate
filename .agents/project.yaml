@@ -62,7 +62,7 @@ board:
   timezone: null
   statuses:
     tickets:
-      not_ready: [backlog, estimation, shift_left_qa, ready_for_dev, to_do, in_progress, in_review]
+      not_ready: [backlog, shift_left_qa, ready_for_dev, to_do, in_progress, in_review]
       in_test: [ready_for_qa, in_test]
       tested: [qa_approved, ready_for_release, deployed_to_production, fixed, automated, completed]
       blocked: [blocked]

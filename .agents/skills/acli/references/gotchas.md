@@ -60,7 +60,7 @@ Everything the official docs do not make obvious. Every item here is something t
 
 Two things to remember about the shape:
 
-- **Numeric IDs only.** Name-addressing (`"Story Points"`) is not supported.
+- **Numeric IDs only.** Name-addressing (`"AI Effort"`) is not supported.
 - **The three documented value shapes** are: single-select option `{"value": "..."}`, bare number, bare string. All other shapes (multiselect, date, datetime, user-picker, cascading select, ADF rich text) are inferred from the Jira REST contract and not officially documented by acli — see `references/workitem.md` §Custom fields.
 
 **Fix.** Always run `acli jira workitem create --generate-json` to get the canonical template before composing a payload. Validate by trial when using shapes not in the documented three.

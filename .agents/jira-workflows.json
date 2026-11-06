@@ -72,11 +72,6 @@
         "id": "10039",
         "name": "Backlog",
         "category": "new"
-      },
-      "estimation": {
-        "id": "10023",
-        "name": "Estimation",
-        "category": "indeterminate"
       }
     },
     "transitions": {
@@ -240,9 +235,9 @@
         "from_canonical": "in_progress",
         "to_canonical": "ready_for_dev"
       },
-      "refiened": {
+      "refined": {
         "id": "3",
-        "name": "refiened",
+        "name": "refined",
         "from_status_id": "10041",
         "to_status_id": "10013",
         "from_canonical": "shift_left_qa",
@@ -263,38 +258,6 @@
         "to_status_id": "10042",
         "from_canonical": "ready_for_qa",
         "to_canonical": "in_test"
-      },
-      "ready_to_estimate": {
-        "id": "15",
-        "name": "Ready to Estimate",
-        "from_status_id": "10039",
-        "to_status_id": "10023",
-        "from_canonical": "backlog",
-        "to_canonical": "estimation"
-      },
-      "estimate": {
-        "id": "3",
-        "name": "Estimate",
-        "from_status_id": "10041",
-        "to_status_id": "10023",
-        "from_canonical": "shift_left_qa",
-        "to_canonical": "estimation"
-      },
-      "estimated_and_ready_to_work": {
-        "id": "4",
-        "name": "Estimated and Ready to work",
-        "from_status_id": "10023",
-        "to_status_id": "10013",
-        "from_canonical": "estimation",
-        "to_canonical": "ready_for_dev"
-      },
-      "back_from_estimation": {
-        "id": "16",
-        "name": "back",
-        "from_status_id": "10023",
-        "to_status_id": "10039",
-        "from_canonical": "estimation",
-        "to_canonical": "backlog"
       }
     }
   },

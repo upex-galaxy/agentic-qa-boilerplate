@@ -28,7 +28,6 @@ AND issueType = Story
 AND status in (
   "{{jira.status.story.backlog}}",
   "{{jira.status.story.shift_left_qa}}",
-  "{{jira.status.story.estimation}}",
   "{{jira.status.story.ready_for_dev}}"
 )
 ORDER BY priority DESC, created DESC
@@ -118,7 +117,7 @@ If veto fires, write the reason into the candidate row and skip Step 4.
 | Dynamic data (API / DB) | +3 | Not hardcoded / static |
 | Explicit ACs present | +2 | Acceptance criteria defined in the Story |
 | User-facing | +2 | Affects UI or visible behavior |
-| High effort | +2 | Story-point estimate >= 5 OR description >= 600 words |
+| High effort | +2 | AI Effort = High OR description >= 600 words |
 | High priority | +1 | Priority High or Critical |
 | Multi-component | +1 | Multiple codebase areas touched (frontend + backend, multiple services) |
 | External dependency | +1 | Mentions third-party API, library upgrade, partner integration |

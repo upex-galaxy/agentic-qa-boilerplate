@@ -228,7 +228,7 @@ The QA work in this boilerplate runs as named stages: Shift-Left before the spri
 
 | Stage | Skill | When | What happens |
 | ----- | ----- | ---- | ------------ |
-| Shift-Left | `/shift-left-testing` | PRE-SPRINT (batch) | AC refinement on a batch of backlog Stories, gap-spotting, early authoring of the Story's single ATP into the `{{jira.acceptance_test_plan}}` field (outline maturity, no Test Plan item yet: `/sprint-testing` Planning creates the item FROM that field and refines the same ATP), tracked by a `[QA] Shift-Left Review` subtask, transition `backlog → shift_left_qa → estimation`. Adds labels `shift-left-reviewed` + `shift-left-{YYYY-MM-DD}` (the dated one dates the pass for the freshness window `/sprint-testing` declares; the Stage 1 short-circuit opens only on the published ATP body, never on the labels alone). |
+| Shift-Left | `/shift-left-testing` | PRE-SPRINT (batch) | AC refinement on a batch of backlog Stories, gap-spotting, early authoring of the Story's single ATP into the `{{jira.acceptance_test_plan}}` field (outline maturity, no Test Plan item yet: `/sprint-testing` Planning creates the item FROM that field and refines the same ATP), tracked by a `[QA] Shift-Left Review` subtask, sets `{{jira.ai_effort}}`, transition `backlog → shift_left_qa → ready_for_dev`. Adds labels `shift-left-reviewed` + `shift-left-{YYYY-MM-DD}` (the dated one dates the pass for the freshness window `/sprint-testing` declares; the Stage 1 short-circuit opens only on the published ATP body, never on the labels alone). |
 | Planning → Execution → Reporting | `/sprint-testing` | IN-SPRINT (ticket) | Per-ticket: ATS, ATP, then ATR. Smoke + trifuerza (UI/API/DB) exploration. Planning short-circuits its first phases only when the Story's published ATP body backs a Shift-Left pass within the window `/sprint-testing` declares (the labels alone open nothing). |
 | Planning → Execution → Reporting, as a fleet | `/sprint-conductor` | IN-SPRINT (whole sprint, on Orca) | One `/sprint-testing` worker per ticket, launched when the ticket really reaches the test environment, watched from the Sprint Board; the conductor never tests, it boots, watches, closes each worker with its own read-back and resumes the fleet after a reboot. |
 | Execution without a ticket | `/exploratory-testing` | ON DEMAND (in-sprint or post-sprint) | Ticket-free exploration of a flow, a module or the whole app: charter, parallel recon, refutation, tie-break. Every candidate executed live, marked NEW / WEAK / COVERED against existing coverage and `oracle: observed` until a person confirms it; feeds Documentation. |
@@ -242,10 +242,10 @@ The QA work in this boilerplate runs as named stages: Shift-Left before the spri
 > **Authoritative source: `.agents/jira-workflows.json`.** Status and transition names below are copied from that file (regenerate with `bun run jira:sync-workflows`). Never write a Jira status from memory — if it is not in `.agents/jira-workflows.json`, it does not exist in the instance.
 
 ```
-Backlog → Shift-Left QA → Estimation → Ready For Dev → In Progress → In Review → Ready For QA → In Test → QA Approved → Ready For Release → Deployed to Production
+Backlog → Shift-Left QA → Ready For Dev → In Progress → In Review → Ready For QA → In Test → QA Approved → Ready For Release → Deployed to Production
 ```
 
-`/shift-left-testing` drives the upstream transitions (Backlog → Shift-Left QA → Estimation). `/sprint-testing` drives the downstream ones (Ready For QA → In Test → QA Approved). PO/Dev lead drive the middle leg (Estimation → Ready For Dev → In Progress → In Review). A defect found in test sends the story `In Test → BLOCKED` (transition `defect reported`); `ABORTED` is the other terminal.
+`/shift-left-testing` drives the upstream transitions (Backlog → Shift-Left QA → Ready For Dev). `/sprint-testing` drives the downstream ones (Ready For QA → In Test → QA Approved). PO/Dev lead drive the middle leg (Ready For Dev → In Progress → In Review). A defect found in test sends the story `In Test → BLOCKED` (transition `defect reported`); `ABORTED` is the other terminal.
 
 (For bugs found during QA: `Open → In Progress → In Review → Ready For QA → Closed` — the `ReTest Passed` transition closes it after fix verification. Non-fix terminals: `Deferred`, `Duplicated`, `Enhancement`, `Cannot Reproduce`, `REJECTED`, `ABORTED`.)
 

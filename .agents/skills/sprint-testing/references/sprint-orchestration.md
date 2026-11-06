@@ -82,7 +82,7 @@ and mirrors them onto the **STP** issue (`STP: Sprint#{N}: {objective}`, a Test 
    | `{{jira.status.story.in_review}}` | Dev Complete — PR open | Wave 2 |
    | `{{jira.status.story.in_progress}}` | Still in development | Pipeline |
    | `{{jira.status.story.blocked}}` | Defect blocking release (monitor) | Pipeline |
-   | `{{jira.status.story.shift_left_qa}}` / `estimation` / `ready_for_dev` / `backlog` | Not started | Backlog |
+   | `{{jira.status.story.shift_left_qa}}` / `ready_for_dev` / `backlog` | Not started | Backlog |
    | `{{jira.status.story.qa_approved}}` *with artifacts* / `ready_for_release` / `deployed_to_production` | Verified / released | Done |
    | `{{jira.status.story.aborted}}` | Cancelled (terminal) | Cancelled |
 
@@ -93,7 +93,7 @@ and mirrors them onto the **STP** issue (`STP: Sprint#{N}: {objective}`, a Test 
    - Wave 1 = `{{jira.status.story.in_test}}` + `{{jira.status.story.ready_for_qa}}` + retroactive `{{jira.status.story.qa_approved}}` (no ATP/ATR). Sort: Priority then QA assignment.
    - Wave 2 = `{{jira.status.story.in_review}}` (Dev Complete — PR open). Sort by Priority.
    - Pipeline = `{{jira.status.story.in_progress}}` + `{{jira.status.story.blocked}}`, grouped separately.
-   - Backlog = `{{jira.status.story.backlog}}` / `shift_left_qa` / `estimation` / `ready_for_dev`.
+   - Backlog = `{{jira.status.story.backlog}}` / `shift_left_qa` / `ready_for_dev`.
    - Done = `{{jira.status.story.qa_approved}}` (with artifacts) / `ready_for_release` / `deployed_to_production`.
    - Cancelled = `{{jira.status.story.aborted}}`.
 6. **Detect QA automation tasks**: `Type = QA Task` OR title contains "E2E Tests" / "Integration Tests", assigned to `qa_lead`. Collect them as their own wave in the queue.
@@ -546,6 +546,7 @@ Exact instructions:
        - **Bug FAILED** -> non-strict fallback: leave the bug in `{{jira.status.bug.ready_for_qa}}` with the QA comment surfacing the failure. If the bug is already `{{jira.status.bug.closed}}` (regression caught after sign-off), use `{{jira.transition.bug.back}}` (`closed` -> `ready_for_qa`) or `{{jira.transition.bug.re_open}}` (any -> `open`) per project policy.
      Append the executed transition (or skip reason) to `Stage Results > Reporting > Transition Trail` in `test-session-memory.md`. Never close the ticket yourself; never bypass the substrate slug.
   5a. **Re-read `assignee` after the transition** — `qa_sign_off` is one of the transitions measured carrying an undocumented assign post-function (ADR-0006), so it can hand the Story to the QA engineer on the way to `qa_approved`. Same rule as Stage 2 step 1b: if the transition moved `assignee`, restore the previous owner and record the post-function in the Transition Trail. `{{jira.qa_assignee}}` is where QA ownership belongs; the native `assignee` is the dev's.
+  5b. **Quality Token Usage (Story PASSED, or a recalibrated GO-with-debt)** — after `qa_sign_off` lands, write `{{jira.quality_token_usage}}` (QTU, thousands of tokens) with the QA agent's MEASURED consumption for this item (exploration, test design, execution, retests), read from the harness's own usage report. Field absent from `.agents/jira-fields.json` -> post a structured comment `Quality Token Usage (K): <n>` instead, never block. The harness exposes no figure -> leave QTU empty and let the light stage verifier line say N/A with that reason. Never estimate, round up or invent a number. Record the value (or the N/A reason) in `Stage Results > Reporting` of `test-session-memory.md`.
   6. For each BUG_FOUND from Stage 2, file the quality report per `agentic-qa-core/references/defect-management-doctrine.md` (and reporting-templates.md §1):
        a. **CLASSIFY the issue type** — **Bug** (feature already live above Staging, end-user visible) vs **Defect** (feature still pre-release / Staging or below — the normal sprint-testing case) vs **Improvement** (not a broken AC) — by the FEATURE's lifecycle stage, NOT where it was found (Part 1). The create call uses this type; do NOT hardcode `--type Bug`.
        b. [ISSUE_TRACKER_TOOL] Create Issue --type <Bug|Defect|Improvement> with the summary format `<EPIC>: <COMPONENT>: <ISSUE_SUMMARY>` from reporting-templates.md §1.2; populate description, repro steps, evidence links, and the §1.10 field set.

@@ -17,7 +17,7 @@ The skeleton below is the canonical body for `shift-left-refinement.md`, the `[L
 ```markdown
 # Shift-Left Refinement: {{PROJECT_KEY}}-{n} — {Title}
 
-**Status**: Refined — Awaiting PO Estimation
+**Status**: Refined — Ready For Dev
 **Mode**: Shift-Left (pre-sprint, batch grooming)
 **Refined on**: {{YYYY-MM-DD}}
 **Refined by**: QA — Shift-Left batch session
@@ -48,7 +48,8 @@ The skeleton below is the canonical body for `shift-left-refinement.md`, the `[L
 | Data validation | Low / Medium / High | ... |
 | UI | Low / Medium / High | ... |
 
-**Estimated test effort**: ... (informs PO estimation)
+**Estimated test effort**: ... (feeds the AI Effort call)
+**AI Effort**: Low / Medium / High (checklist: `references/ai-effort-checklist.md`; High adds a split proposal in the handoff comment)
 
 ### Epic-level inheritance (if applicable)
 - Risks restated at Story level: ...
@@ -130,7 +131,7 @@ If Partial / No, list issues:
 | Boundary | Z | Min / max / empty / null / unicode |
 | Integration | W | Per integration point |
 | API | V | Per endpoint touched |
-| **Total** | **N** | (drives PO estimation) |
+| **Total** | **N** | (feeds the AI Effort call) |
 
 **Rationale**: 2-3 sentences explaining why this count given the complexity axes from Phase 1.
 
@@ -152,7 +153,7 @@ If Partial / No, list issues:
 - **Should validate Auth0-issued OTP via /verify endpoint** — Pre: Auth0 sandbox configured. Expected: 200 from Auth0 + 200 from app.
 - ...
 
-> **NOT included here** (deferred to in-sprint planning by `/sprint-testing` Stage 1): parametrization tables, per-outline test-data JSON, numbered test steps, Faker generation strategies. Coverage estimate IS included because PO uses it for estimation.
+> **NOT included here** (deferred to in-sprint planning by `/sprint-testing` Stage 1): parametrization tables, per-outline test-data JSON, numbered test steps, Faker generation strategies. Coverage estimate IS included because it feeds the AI Effort call and the split decision.
 
 ---
 
@@ -238,8 +239,9 @@ If Partial / No, list issues:
 ## Next steps
 
 - [ ] PO answers Critical Questions before sprint planning
-- [ ] Dev answers Technical Questions before estimation
-- [ ] Story enters sprint at status `{{jira.status.story.ready_for_dev}}` once estimated
+- [ ] Dev answers Technical Questions before the Story is pulled into a sprint
+- [ ] If AI Effort is High, PO decides on the proposed split before sprint commitment
+- [ ] Story enters sprint from status `{{jira.status.story.ready_for_dev}}`
 - [ ] When Story reaches `{{jira.status.story.ready_for_qa}}`, `/sprint-testing` will short-circuit refinement on this published ATP body plus the fresh `shift-left-*` labels (never on the label alone)
 ```
 
@@ -256,7 +258,7 @@ If Partial / No, list issues:
 | Phase 5 Faker recipes | YES | NO |
 | TC creation in Xray (Modality jira-xray) | YES — sprint `Test` issues in Stage 1 | NO — no TC work items pre-sprint |
 | Bug variant section | YES | NO — bugs out of scope |
-| Status flag at top | "Test Analysis — Ready for Execution" | "Refined — Awaiting PO Estimation" |
+| Status flag at top | "Test Analysis — Ready for Execution" | "Refined — Ready For Dev" |
 
 When `/sprint-testing` later runs Stage 1 on a Story with `shift-left-reviewed` label fresh (<30 days), it syncs and reads `acceptance-test-plan.md` (which at that point holds THIS body, published to Jira in Phase 3) and:
 
@@ -274,5 +276,5 @@ When `/sprint-testing` later runs Stage 1 on a Story with `shift-left-reviewed` 
 1. **The skeleton above is canonical.** Do not reorder sections. Section names map 1:1 to the Jira description block PO sees during planning.
 2. **NEEDS PO/DEV CONFIRMATION** marker is verbatim — never paraphrased. The Stage 0 DoD (`agentic-qa-core/references/stage-gates.md`) checks for it.
 3. **Empty sections stay**, just with "None identified." — easier for the reviewer to verify completeness than to discover an absent section.
-4. **Coverage estimate table** must show 0 for empty Types. Hidden zeros bias PO estimation.
+4. **Coverage estimate table** must show 0 for empty Types. Hidden zeros bias the AI Effort call.
 5. **Mirror discipline**: the local file is the source of truth for what gets pushed to Jira in Phase 3. Diff = error.

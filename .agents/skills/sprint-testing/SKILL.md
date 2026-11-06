@@ -22,6 +22,7 @@ compact_rules: |
   - `priority` (native) is auto-derived from `{{jira.severity}}` (critica→Highest, mayor→High, moderada→Medium, menor→Low, trivial→Lowest); override with a 1-line justification (Part 5.1).
   - Mode from `$ARGUMENTS`: a first token naming a mode (`single-issue`, `sprint-wide`) IS the mode and the rest is forwarded; otherwise ASK the mode question, never infer it.
   - Three stages, always in order: Stage 1 Planning → Stage 2 Execution → Stage 3 Reporting. Hand off Stages 4/5/6 to `test-documentation` / `test-automation` / `regression-testing`.
+  - **QTU duty**: when Stage 3 approves a Story (`qa_sign_off` to `{{jira.status.story.qa_approved}}`), write `{{jira.quality_token_usage}}` with the MEASURED tokens (thousands) the QA agent spent on the item; field absent → structured Jira comment, never block; harness exposes no figure → leave it empty and the verifier line says N/A with the reason. NEVER estimate or invent it.
   - Jira is source of truth. Read tickets via `bun run jira:sync-issues get <KEY> --include-comments`, then the synced `.md`. NEVER `acli workitem view` for custom fields (returns `null`).
   - Bugs run the veto + triage + risk-score decision tree BEFORE any ATP is written.
   - Stage 1's Shift-Left short-circuit is fail-closed: the `shift-left-reviewed` + dated labels alone run the FULL flow. Phases 1-3 are skipped only on cited evidence: a pre-sprint ATP body in the synced `acceptance-test-plan.md` (or its `## Acceptance Test Plan (ATP)` fallback comment), a dated label under 30 days old, refined ACs that still match the Story. Stage 1 never writes those labels or that field before the check (`references/acceptance-test-planning.md` §0.0).
@@ -99,6 +100,7 @@ Requires `agentic-qa-core`. Loads on demand:
 
 - Mode from `$ARGUMENTS`: a first token naming a mode (`single-issue`, `sprint-wide`) IS the mode and the rest is forwarded; otherwise ASK the mode question, never infer it.
 - Three stages, always in order: Stage 1 Planning → Stage 2 Execution → Stage 3 Reporting. Hand off Stages 4/5/6 to `test-documentation` / `test-automation` / `regression-testing`.
+- **QTU duty**: when Stage 3 approves a Story (`qa_sign_off` to `{{jira.status.story.qa_approved}}`), write `{{jira.quality_token_usage}}` with the MEASURED tokens (thousands) the QA agent spent on the item; field absent → structured Jira comment, never block; harness exposes no figure → leave it empty and the verifier line says N/A with the reason. NEVER estimate or invent it.
 - Jira is source of truth. Read tickets via `bun run jira:sync-issues get <KEY> --include-comments`, then the synced `.md`. NEVER `acli workitem view` for custom fields (returns `null`).
 - Bugs run the veto + triage + risk-score decision tree BEFORE any ATP is written.
 - Stage 1's Shift-Left short-circuit is fail-closed: the `shift-left-reviewed` + dated labels alone run the FULL flow. Phases 1-3 are skipped only on cited evidence: a pre-sprint ATP body in the synced `acceptance-test-plan.md` (or its `## Acceptance Test Plan (ATP)` fallback comment), a dated label under 30 days old, refined ACs that still match the Story. Stage 1 never writes those labels or that field before the check (`references/acceptance-test-planning.md` §0.0).
@@ -650,6 +652,7 @@ All references are self-contained. Load one at a time.
 - [ ] Stage 2 smoke test executed FIRST, Go/No-Go recorded
 - [ ] Evidence captured under the ticket's `evidence/` folder
 - [ ] Stage 3 ATR filled + QA comment posted + ticket transitioned
+- [ ] Story approved: `{{jira.quality_token_usage}}` written from measured consumption, or N/A stated with the reason (`sprint-orchestration.md` Stage 3 step 5b)
 - [ ] Stage 3 closed the Stage-1 artifacts: ATR → `{{jira.status.test_execution.close}}` · ATS → `{{jira.status.test_set.close}}` · ATP → `{{jira.status.test_plan.completed}}` (or each one's unmapped slug went through the `artifact-lifecycle.md` §4 fallback and was ASKED, never silently skipped)
 - [ ] Light stage verifier run at the close of each stage per `agentic-qa-core/references/artifact-lifecycle.md` §5 — every line YES or a stated N/A
 - [ ] Per-stage progress checkpoint appended to `.session/sprint-testing/<scope>/progress.md` after each Stage subagent returned
