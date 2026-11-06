@@ -29,10 +29,25 @@
     "type": "array",
     "name": "Agent Sessions"
   },
+  "ai_effort": {
+    "id": "customfield_10212",
+    "type": "option",
+    "name": "AI Effort",
+    "options": {
+      "high": "10253",
+      "low": "10251",
+      "medium": "10252"
+    }
+  },
   "approver_groups": {
     "id": "customfield_10163",
     "type": "array",
     "name": "Approver groups"
+  },
+  "atlassian_project": {
+    "id": "customfield_10036",
+    "type": "atlas-project",
+    "name": "Atlassian Project"
   },
   "backout_plan": {
     "id": "customfield_10115",
@@ -74,6 +89,11 @@
     "id": "customfield_10053",
     "type": "string",
     "name": "DESCRIPCIÓN DEL BUG"
+  },
+  "development_token_usage": {
+    "id": "customfield_10213",
+    "type": "number",
+    "name": "Development Token Usage (K)"
   },
   "epic_color": {
     "id": "customfield_10013",
@@ -273,6 +293,11 @@
       "xray_only": "10085"
     }
   },
+  "quality_token_usage": {
+    "id": "customfield_10214",
+    "type": "number",
+    "name": "Quality Token Usage (K)"
+  },
   "rank": {
     "id": "customfield_10019",
     "type": "any",
@@ -377,20 +402,6 @@
     "id": "customfield_10035",
     "type": "number",
     "name": "Story Points"
-  },
-  "story_points_estimation": {
-    "id": "customfield_10100",
-    "type": "option",
-    "name": "Story Points Estimation",
-    "options": {
-      "1": "10057",
-      "2": "10058",
-      "3": "10059",
-      "5": "10060",
-      "8": "10061",
-      "13": "10062",
-      "21": "10063"
-    }
   },
   "target_end": {
     "id": "customfield_10023",

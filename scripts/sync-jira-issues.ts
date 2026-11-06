@@ -128,7 +128,9 @@ const SLUG_MAPPING = {
   scope: 'scope',
   mockup: 'mockup',
   workflow: 'workflow',
-  storyPoints: 'story_points',
+  aiEffort: 'ai_effort',
+  developmentTokenUsage: 'development_token_usage',
+  qualityTokenUsage: 'quality_token_usage',
   webLink: 'weblink',
   outOfScope: 'out_of_scope',
   specImplementationPlan: 'spec_implementation_plan',
@@ -256,7 +258,9 @@ const STORY_FIELDS = [
   CUSTOM_FIELDS.specImplementationPlan,
   CUSTOM_FIELDS.acceptanceTestPlan,
   CUSTOM_FIELDS.acceptanceTestResults,
-  CUSTOM_FIELDS.storyPoints,
+  CUSTOM_FIELDS.aiEffort,
+  CUSTOM_FIELDS.developmentTokenUsage,
+  CUSTOM_FIELDS.qualityTokenUsage,
   CUSTOM_FIELDS.webLink,
   'issuelinks', // For traceability (tests, defects, bugs, etc.)
 ].filter(Boolean); // drop unresolved fields ('') so they never hit the Jira API
@@ -1717,6 +1721,32 @@ function isoDateTime(raw: string): string {
   return Number.isNaN(d.getTime()) ? 'Unknown' : `${d.toISOString().slice(0, 16).replace('T', ' ')} UTC`;
 }
 
+/** Display value of the AI Effort select ('-' when unset or the field is not on the instance). */
+function aiEffortOf(issue: JiraIssue): string {
+  const raw: unknown = issue.fields[CUSTOM_FIELDS.aiEffort];
+  return raw !== null && typeof raw === 'object' && 'value' in raw ? String((raw as { value: unknown }).value) : '-';
+}
+
+/** One-line AI Effort distribution of a set of stories, e.g. `Low 3 / Medium 2 / High 1 / unset 4`. */
+function aiEffortSummary(stories: JiraIssue[]): string {
+  const counts = new Map<string, number>();
+  for (const story of stories) {
+    const level = aiEffortOf(story);
+    counts.set(level, (counts.get(level) ?? 0) + 1);
+  }
+  const order = ['Low', 'Medium', 'High', '-'];
+  return order
+    .filter(level => counts.has(level))
+    .map(level => `${level === '-' ? 'unset' : level} ${counts.get(level)}`)
+    .join(' / ') || 'none';
+}
+
+/** Measured token usage in thousands (K), or '-' when nobody wrote it. */
+function tokensOf(issue: JiraIssue, key: 'developmentTokenUsage' | 'qualityTokenUsage'): string {
+  const raw: unknown = issue.fields[CUSTOM_FIELDS[key]];
+  return typeof raw === 'number' ? String(raw) : '-';
+}
+
 function generateEpicMarkdown(
   epic: JiraIssue,
   stories: JiraIssue[],
@@ -1732,19 +1762,13 @@ function generateEpicMarkdown(
     MODULE_CONTEXT_HEADING,
   ).body;
 
-  // Calculate total story points
-  const totalPoints = stories.reduce((sum, story) => {
-    const points = story.fields[CUSTOM_FIELDS.storyPoints];
-    return sum + (typeof points === 'number' ? points : 0);
-  }, 0);
-
   const lines: string[] = [
     `# EPIC: ${fields.summary}`,
     '',
     `**Jira Key:** [${epic.key}](${config.displayUrl}/browse/${epic.key})`,
     `**Priority:** ${fields.priority?.name || 'Not set'}`,
     `**Status:** ${fields.status?.name || 'Unknown'}`,
-    `**Total Story Points:** ${totalPoints}`,
+    `**AI Effort:** ${aiEffortSummary(stories)}`,
     '',
     '---',
     '',
@@ -1756,13 +1780,12 @@ function generateEpicMarkdown(
 
   // Add stories table if there are any
   if (stories.length > 0) {
-    lines.push('---', '', '## User Stories', '', '| Key | Story | Points | Priority | Status |', '| --- | ----- | ------ | -------- | ------ |');
+    lines.push('---', '', '## User Stories', '', '| Key | Story | AI Effort | Priority | Status |', '| --- | ----- | --------- | -------- | ------ |');
 
     for (const story of stories) {
       const storyFields = story.fields;
-      const points = storyFields[CUSTOM_FIELDS.storyPoints] as number | undefined;
       lines.push(
-        `| [${story.key}](${config.displayUrl}/browse/${story.key}) | ${String(storyFields.summary)} | ${points ?? '-'} | ${String(storyFields.priority?.name || '-')} | ${String(storyFields.status?.name || '-')} |`,
+        `| [${story.key}](${config.displayUrl}/browse/${story.key}) | ${String(storyFields.summary)} | ${aiEffortOf(story)} | ${String(storyFields.priority?.name || '-')} | ${String(storyFields.status?.name || '-')} |`,
       );
     }
 
@@ -1812,7 +1835,6 @@ function generateStoryMarkdown(
 
   // Index only — rich-text fields live in their own files (see `presentFields`).
   const description = adfToMarkdown(fields.description);
-  const storyPoints = fields[CUSTOM_FIELDS.storyPoints] as number | undefined;
   const webLink = fields[CUSTOM_FIELDS.webLink] as string | null;
 
   const lines: string[] = [
@@ -1829,7 +1851,8 @@ function generateStoryMarkdown(
     `**Type:** ${String(fields.issuetype?.name || 'Story')}`,
     `**Status:** ${String(fields.status?.name || 'Unknown')}`,
     `**Priority:** ${String(fields.priority?.name || 'Not set')}`,
-    `**Story Points:** ${storyPoints ?? '-'}`,
+    `**AI Effort:** ${aiEffortOf(story)}`,
+    `**Token usage (K):** DTU ${tokensOf(story, 'developmentTokenUsage')} | QTU ${tokensOf(story, 'qualityTokenUsage')}`,
   );
   if (webLink) {
     lines.push(`**Web Link:** ${webLink}`);
@@ -2323,23 +2346,17 @@ function generateEpicTreeMarkdown(
   ];
 
   for (const { epic, stories } of epics) {
-    const totalPoints = stories.reduce((sum, story) => {
-      const points = story.fields[CUSTOM_FIELDS.storyPoints];
-      return sum + (typeof points === 'number' ? points : 0);
-    }, 0);
-
     lines.push(
       `## [${epic.key}](${config.displayUrl}/browse/${epic.key}) - ${epic.fields.summary}`,
       '',
-      `**Status:** ${epic.fields.status?.name} | **Stories:** ${stories.length} | **Points:** ${totalPoints}`,
+      `**Status:** ${epic.fields.status?.name} | **Stories:** ${stories.length} | **AI Effort:** ${aiEffortSummary(stories)}`,
       '',
     );
 
     if (stories.length > 0) {
       for (const story of stories) {
-        const points = story.fields[CUSTOM_FIELDS.storyPoints] as number | undefined;
         const status = String(story.fields.status?.name || 'Unknown');
-        lines.push(`- [${story.key}](${config.displayUrl}/browse/${story.key}) ${String(story.fields.summary)} _(${points ?? '-'} pts, ${status})_`);
+        lines.push(`- [${story.key}](${config.displayUrl}/browse/${story.key}) ${String(story.fields.summary)} _(${aiEffortOf(story)}, ${status})_`);
       }
       lines.push('');
     }

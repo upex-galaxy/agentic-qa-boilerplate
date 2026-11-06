@@ -30,7 +30,7 @@
 #   label  — the human heading used in the comment/description block.
 #   Contract: scripts/sync-jira-issues.ts emits a pointer stub for an unresolved
 #   field's dedicated .md; skills then read the fallback (comments.md/description).
-#   Fields with NO `fallback:` are PO/planning-owned (mockup, story_points,
+#   Fields with NO `fallback:` are PO/planning-owned (mockup,
 #   weblink) — skills read them, never author them, so no fallback is needed.
 
 required:
@@ -86,11 +86,34 @@ required:
     description: User journey / workflow narrative for the story.
     used_by: [sync-jira-issues]
 
-  story_points:
-    name: Story Points
+  ai_effort:
+    name: AI Effort
+    type: option
+    fallback: { target: comment, label: AI Effort }
+    options: [low, medium, high]
+    description: |
+      Categorical effort of the whole work item in an agentic workflow, implementing AND verifying it
+      (never a time or token estimate). Set by QA in shift-left, before the sprint. `high` triggers the
+      split checklist in shift-left-testing.
+    used_by: [sync-jira-issues, shift-left-testing]
+
+  development_token_usage:
+    name: Development Token Usage (K)
     type: number
-    description: Agile estimate for the story (planning poker).
+    fallback: { target: comment, label: Development Token Usage (K) }
+    description: |
+      DTU. Thousands of tokens the agents spent implementing the item: measured, not estimated.
+      Written by the dev agent when the item moves to Ready For QA.
     used_by: [sync-jira-issues]
+
+  quality_token_usage:
+    name: Quality Token Usage (K)
+    type: number
+    fallback: { target: comment, label: Quality Token Usage (K) }
+    description: |
+      QTU. Thousands of tokens the agents spent verifying the item (exploration, test design,
+      execution, retests): measured, not estimated. Written by the QA agent when the item is approved.
+    used_by: [sync-jira-issues, sprint-testing]
 
   weblink:
     name: Weblink (URL) 🌍️
@@ -393,8 +416,8 @@ work_types:
     required_statuses:
       backlog: { description: Initial state for a freshly created story }
       shift_left_qa: { description: Story under early QA review (shift-left quality check) }
-      estimation: { description: Story being estimated (planning poker / sizing) }
-      ready_for_dev: { description: Estimated and ready to be picked up by a developer }
+      ready_for_dev:
+        { description: Refined by shift-left QA and ready to be picked up by a developer }
       in_progress: { description: Developer actively working }
       in_review: { description: Pull request open / code review }
       ready_for_qa: { description: Deployed and ready for QA to test }
@@ -413,12 +436,10 @@ work_types:
         to: shift_left_qa
         description: QA pulls a backlog item for early shift-left review
 
-      ready_to_estimate:
-        { from: backlog, to: estimation, description: Story sized for planning poker }
-      estimate:
-        { from: shift_left_qa, to: estimation, description: 'After shift-left QA, send to sizing' }
-      estimated_and_ready_to_work:
-        { from: estimation, to: ready_for_dev, description: Sized and ready for dev pickup }
+      refined:
+        from: shift_left_qa
+        to: ready_for_dev
+        description: Shift-left QA refinement done; ready for dev pickup
       start_working:
         { from: ready_for_dev, to: in_progress, description: Developer picks up the story }
       pull_request: { from: in_progress, to: in_review, description: PR opened }
@@ -470,8 +491,6 @@ work_types:
 
       back_from_in_progress:
         { from: in_progress, to: ready_for_dev, description: Dev returns story to ready_for_dev }
-      back_from_estimation:
-        { from: estimation, to: backlog, description: Cannot estimate — return to backlog }
       back_from_shift_left_qa:
         from: shift_left_qa
         to: backlog

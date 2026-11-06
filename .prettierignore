@@ -133,3 +133,4 @@ docs/mcp/
 # checkout. Prettier (which honors only .prettierignore, not .git metadata)
 # would otherwise recurse into it and flag formatting on files we don't own here.
 .claude/worktrees/
+

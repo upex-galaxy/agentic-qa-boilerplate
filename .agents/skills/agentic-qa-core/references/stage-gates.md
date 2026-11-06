@@ -107,7 +107,7 @@ approval to advance, while any CAUTION or NO-GO is signed by a person.
 
 | Stage | The agent does | The person signs | Evidence that must survive | Autonomy | Separate verifier |
 |---|---|---|---|---|---|
-| **Shift-Left** | Rewrites ACs as Given/When/Then with concrete data, surfaces gaps and ambiguities, authors the pre-sprint ATP into the Story field, applies the Test-Design Checklist | The batch of candidate Stories and the per-Story summary; never lets the Story pass `Estimation` | Rewritten ACs, gaps as open questions to PO/Dev, dated label, review subtask | **2** | **none** — the PO/Dev refining the Story is the natural reviewer |
+| **Shift-Left** | Rewrites ACs as Given/When/Then with concrete data, surfaces gaps and ambiguities, authors the pre-sprint ATP into the Story field, applies the Test-Design Checklist, sets `AI Effort` | The batch of candidate Stories and the per-Story summary; never lets the Story pass `Ready For Dev` without `AI Effort` set | Rewritten ACs, gaps as open questions to PO/Dev, dated label, review subtask | **2** | **none** — the PO/Dev refining the Story is the natural reviewer |
 | **Planning** | Creates ATS → ATP → ATR set-first, derives TCs or outlines per modality, decides the UI/API/DB surfaces by triage + veto + risk score | The Story Explanation checkpoint (the skill explains the story and waits) | ATP as a Test Plan item, ATR carrying its Test Environment (hard gate), coverage stated on both axes | **2** | **none** |
 | **Execution** | Runs smoke as Go/No-Go, executes the outlines, explores past them across the trifuerza, proposes bugs with derived severity | The triage of every bug and the **filing** of every bug; any security/auth severity recalibration | Screenshots under the PBI `evidence/` folder, smoke demonstrably run first | **3** | **none** |
 | **Execution** (exploration without a ticket) | Writes the charter, fans out recon across UI / API / DB, refutes every Medium+ anomaly, settles disagreements in the main thread, marks every candidate NEW / WEAK / COVERED against existing coverage, drafts bugs and coverage Tech Story proposals | The charter (unless the request already said go); every oracle answer ("is this intended?"); the **filing** of every bug; every coverage Tech Story; every module-context write | `charter.md`, one finding file per finding (confirmed and refuted), `candidate-scenarios.md` with marks and outcomes, captures verified on disk, `created_rows` re-read gone | **3** | **none** — the Refute step is an internal adversarial check, not a separate verifier |
@@ -158,11 +158,11 @@ terminal there) is `artifact-lifecycle.md` §1. Do not restate it; resolve again
 
 | Stage | Artifacts whose status this stage owns | Where they must be when the stage closes |
 |---|---|---|
-| **Shift-Left** | Story · `[QA] Shift-Left Review` subtask | Story at `estimation` (via `analyze` → `estimate`, stopping there); subtask at `close` (via `complete`) |
+| **Shift-Left** | Story · `[QA] Shift-Left Review` subtask | Story at `ready_for_dev` (via `analyze` → `refined`, stopping there) with `{{jira.ai_effort}}` set; subtask at `close` (via `complete`) |
 | **Planning** | ATP · ATS · ATR · sprint TCs (xray) · STP | ATP at `ready` (via `designed`); ATS still `designing` (membership is not final until Reporting); ATR `active` **carrying its Test Environment**; TCs at `ready` (via `start_design` → `ready_to_run`), parented to **QA Test Repository**; STP at `ready` once the sprint scope is set |
 | **Execution** | Story / coverable | at `in_test` (via `start_testing`), `qa_assignee` set to self |
 | **Execution** (exploration without a ticket) | filed Bug / Improvement · coverage Tech Story (only those a person approved) | each filed issue at `open`, parented to **QA Defect Management**; each coverage Tech Story at the status its `create` transition lands it, parented to **QA Test Repository** (`artifact-lifecycle.md` §1, row "Coverage Tech Story"); no Test is created here |
-| **Reporting** | ATR · ATS · ATP · Story · filed Bug/Defect/Improvement | ATR at `close` (via `complete`, after every run status is recorded); ATS at `close` (via `done`); ATP at `completed` (via `complete`); Story at `qa_approved` or `blocked`; each filed issue at `open`, parented to **QA Defect Management** |
+| **Reporting** | ATR · ATS · ATP · Story · filed Bug/Defect/Improvement | ATR at `close` (via `complete`, after every run status is recorded); ATS at `close` (via `done`); ATP at `completed` (via `complete`); Story at `qa_approved` (with `{{jira.quality_token_usage}}` written) or `blocked`; each filed issue at `open`, parented to **QA Defect Management** |
 | **Sprint close** | STP · STR | STP at `completed` (via `complete`); STR at `close` (via `complete`) after the verdict is written |
 | **Documentation** | promoted TCs · RTP · feature TS · Preconditions | Candidate TCs at `candidate` (via `automation_review_from_ready` → `approve_to_automate`); Manual TCs at `manual` (via `for_manual`, **from `ready` — there is no `in_review` → `manual` edge**); Deferred TCs stay `ready`; RTP at `ready` and **stays there** (long-lived, never `completed`); feature TS stays `designing`; Preconditions stay `active` (no transition exists) |
 | **Automation** | TCs in scope | `in_automation` at Code start (via `start_automation`); `pull_request` when the ticket PR opens (via `create_pr`); `automated` ONLY once the code is on the production branch (`git_strategy.branches.production`) with CI green (via `merged`), never at a trunk or integration merge (`discovery-driven-doctrine.md` §6) |
@@ -208,6 +208,7 @@ the stage NEEDS REVISION.
     `trivially atomic` justification
 [ ] Coverage estimate reflects the real 1:N (not a minimized count)
 [ ] Inferred scenarios marked NEEDS PO/DEV CONFIRMATION
+[ ] `{{jira.ai_effort}}` set (Low/Medium/High; a High proposed a split to the PO)
 [ ] NO TMS test entities created (outlines only); label + transition applied
 [ ] Artifact statuses match §"Lifecycle expectations per stage"; light stage verifier run
 ```
@@ -282,6 +283,7 @@ the stage NEEDS REVISION.
 ```
 [ ] ATR authored as a **Test Execution** item (`ATR: {STORY-KEY}: Story Testing`); Story custom field only as fallback
 [ ] QA comment posted; ticket transitioned to the correct status
+[ ] On approval, `{{jira.quality_token_usage}}` written from measured consumption (comment fallback when the field is absent); harness exposes no figure -> left empty and the verifier line says N/A with the reason
 [ ] No case left `BLOCKED`; every `DEFERRED (execution)` recorded in the ATR and listed in the QA comment
 [ ] Regression follow-up noted for any regression-worthy bug (Stage-4 hand-off); bug retest (xray):
     repro Test's run recorded PASSED/FAILED in the retest Execution

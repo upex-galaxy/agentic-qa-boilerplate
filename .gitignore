@@ -259,3 +259,4 @@ dbhub.local.toml
 # `bunx skills add` in a throwaway repo — the dotted name above never appears.
 !skills-lock.json
 !**/skills-lock.json
+

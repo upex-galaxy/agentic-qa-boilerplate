@@ -642,7 +642,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <p class="kicker">por qué · en cada proyecto</p>
   <h2 class="h2" data-anim="fade-up">Qué Previene Shift-Left — en Todo Proyecto</h2>
   <div class="grid g3 mt-m">
-    <div class="card card-accent"><h4>Ambigüedad → retrabajo</h4><p class="dim">Un AC que admite dos lecturas → dev elige la equivocada → re-diseño. Resuelto como pregunta a PO antes de estimar.</p></div>
+    <div class="card card-accent"><h4>Ambigüedad → retrabajo</h4><p class="dim">Un AC que admite dos lecturas → dev elige la equivocada → re-diseño. Resuelto como pregunta a PO antes de que la Story llegue a Ready For Dev.</p></div>
     <div class="card card-accent"><h4>Hueco → defecto en prod</h4><p class="dim">Un camino negativo sin AC → nadie lo construye ni lo prueba → falla en producción. Surgido como gap antes del sprint.</p></div>
     <div class="card card-accent"><h4>AC no testeable → falso positivo</h4><p class="dim">"Muestra error" sin texto exacto → QA escribe un assert que pasa con el error equivocado. Vuelto medible antes de codear.</p></div>
   </div>
@@ -657,7 +657,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <h1 class="h1">El Pipeline<br><span class="grad">Shift-Left — Antes del Sprint</span></h1>
     <p class="lede">Tres fases, siempre en orden: Selección → Refinamiento → Handoff. Batch por diseño: una sesión refina N Stories para un solo pase de grooming con el equipo.</p>
   </div>
-  <div class="notes">Shift-Left es el primer stage del pipeline QA (históricamente Stage 0). Entra en el backlog, sale en estimation. Batch de 1-12 Stories.</div>
+  <div class="notes">Shift-Left es el primer stage del pipeline QA (históricamente Stage 0). Entra en el backlog, sale en Ready For Dev. Batch de 1-12 Stories.</div>
 </section>
 
 <!-- 8. THE PIPELINE -->
@@ -667,7 +667,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="flow mt-m">
     <div class="stage"><div class="sx">1</div><div><h4>Selección</h4><p>Filtra candidatos del backlog (solo Stories), aplica veto + risk score, presenta tabla rankeada. WAIT por OK del usuario.</p></div></div>
     <div class="stage"><div class="sx">2</div><div><h4>Refinamiento <span class="dim2">(el corazón)</span></h4><p>Por Story: ambigüedades + huecos + edge cases no escritos + testabilidad. Refina ACs (Given/When/Then) y bosqueja outlines. Sin ejecutar.</p></div></div>
-    <div class="stage"><div class="sx">3</div><div><h4>Handoff</h4><p>Escribe a Jira: ACs refinados, ATP pre-sprint (alcance outline), preguntas a PO/Dev, labels, transición backlog → estimation. Batch report.</p></div></div>
+    <div class="stage"><div class="sx">3</div><div><h4>Handoff</h4><p>Escribe a Jira: ACs refinados, ATP pre-sprint (alcance outline), preguntas a PO/Dev, labels, AI Effort, transición backlog → ready_for_dev. Batch report.</p></div></div>
   </div>
   <div class="callout mt-m"><h4>Batch por diseño</h4><p>No hay modo single-issue: una sesión refina N Stories (sweet spot <b>1-12</b>) para que PO + Dev lead corran un solo pase de grooming con el equipo. >12 → divide en sesiones.</p></div>
   <div class="notes">Selección → Refinamiento → Handoff, siempre en ese orden. Cada fase tiene un gate de usuario. Batch porque shift-left se hace en grooming de equipo.</div>
@@ -681,15 +681,15 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <thead><tr><th>Eje</th><th>/shift-left-testing</th><th>/sprint-testing</th></tr></thead>
     <tbody>
       <tr><td><b>Cadencia</b></td><td>Pre-sprint, batch de N Stories</td><td>In-sprint, ticket por ticket</td></tr>
-      <tr><td><b>Entry status</b></td><td>Backlog / Shift-Left QA / Estimation</td><td>Ready For QA</td></tr>
-      <tr><td><b>Exit status</b></td><td>Estimation (refinado, sin estimar)</td><td>QA Approved (ejecutado)</td></tr>
+      <tr><td><b>Entry status</b></td><td>Backlog / Shift-Left QA / Ready For Dev</td><td>Ready For QA</td></tr>
+      <tr><td><b>Exit status</b></td><td>Ready For Dev (refinado, con AI Effort)</td><td>QA Approved (ejecutado)</td></tr>
       <tr><td><b>Audiencia</b></td><td>PO / BA + tester</td><td>Dev + tester</td></tr>
       <tr><td><b>Output</b></td><td>ACs refinados + risk map + ATP (alcance outline)</td><td>el MISMO ATP como superset ejecutable + ATR + bugs + evidencia</td></tr>
       <tr><td><b>Ejecución</b></td><td><b>Ninguna</b> — la feature no existe aún</td><td>Smoke + UI/API/DB</td></tr>
     </tbody>
   </table>
   <div class="callout mt-m"><h4>Reutilización deliberada</h4><p>La mayor parte de la lógica de refinamiento ya vive en <span class="mono">acceptance-test-planning.md</span>. Shift-left la cita, no la duplica — y el trabajo hecho aquí se <b>reutiliza</b> in-sprint (no se repite).</p></div>
-  <div class="notes">Misma metodología base, distinto momento y profundidad. Shift-left no ejecuta (la feature no existe). El output alimenta la estimación de PO.</div>
+  <div class="notes">Misma metodología base, distinto momento y profundidad. Shift-left no ejecuta (la feature no existe). El output alimenta el AI Effort y la decisión de partir.</div>
 </section>
 
 <!-- 10. SCOPE BOUNDARIES -->
@@ -700,7 +700,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <ul class="blist">
       <li><b>Solo Stories</b> — Bugs, Spikes, Sub-tasks, Tech-debt: rechazados. Un bug es reactivo, no tiene ACs upstream que refinar.</li>
       <li><b>Refina, no ejecuta</b> — sin smoke, sin DB queries, sin API calls. La feasibility se establece <b>leyendo</b> código + APIs + schema.</li>
-      <li><b>Para en Estimation</b> — nunca avanza más allá. PO + Dev lead son dueños de <span class="mono">estimate → ready_for_dev</span>.</li>
+      <li><b>Para en Ready For Dev</b>: nunca avanza más allá. La Story sale con el AI Effort asignado y el PO decide si se parte.</li>
     </ul>
     <ul class="blist">
       <li><b>Sin código, sin commit</b> — Jira es canónico. El <span class="mono">shift-left-refinement.md</span> es working artifact gitignored.</li>
@@ -709,7 +709,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     </ul>
   </div>
   <div class="callout warn mt-m"><h4>La línea con sprint-testing</h4><p>Todo lo que requiere correr el sistema (generación de datos, parametrización, fixtures) pertenece a <span class="mono">/sprint-testing</span> Planning. Shift-left es <b>doc-only</b>.</p></div>
-  <div class="notes">Límites claros: Stories only, no ejecución, para en estimation, no código. La feature aún no existe — por eso nada de datos/fixtures/TCs.</div>
+  <div class="notes">Límites claros: Stories only, no ejecución, para en Ready For Dev, no código. La feature aún no existe — por eso nada de datos/fixtures/TCs.</div>
 </section>
 
 <!-- 11. DIVIDER PART 2 -->
@@ -729,7 +729,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="terminal mt-s">
     <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>JQL · candidatos (statuses de ejemplo: los reales en .agents/jira-workflows.json)</span></div>
 <pre><span class="kw">project</span> = {{PROJECT_KEY}} <span class="kw">AND</span> issueType = Story
-<span class="kw">AND</span> status <span class="kw">in</span> (Backlog, <span class="str">"Shift-Left QA"</span>, Estimation, <span class="str">"Ready For Dev"</span>)
+<span class="kw">AND</span> status <span class="kw">in</span> (Backlog, <span class="str">"Shift-Left QA"</span>, <span class="str">"Ready For Dev"</span>)
 <span class="kw">ORDER BY</span> priority DESC, created DESC
 
 <span class="cmt"># filtros opcionales:</span>
@@ -740,7 +740,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="card card-soft"><h4>Filtro de tipo (duro)</h4><p class="dim">Solo <b>Story</b>. Bug/Spike/Sub-task/Tech-debt → rechazo, con razón de una línea. Nunca drop silencioso.</p></div>
     <div class="card card-soft"><h4>Freshness de label</h4><p class="dim"><span class="mono">shift-left-reviewed</span> &lt;30 días → ya refinada (surfacear: refrescar?). &gt;30 días → re-refinar (pudo derivar).</p></div>
   </div>
-  <div class="notes">Entry: los estados de la JQL (backlog/shift-left-qa/estimation/ready-for-dev en el proyecto de ejemplo). Solo Stories. Las ya revisadas se surfacean, no se auto-saltan.</div>
+  <div class="notes">Entry: los estados de la JQL (backlog/shift-left-qa/ready-for-dev en el proyecto de ejemplo). Solo Stories. Las ya revisadas se surfacean, no se auto-saltan.</div>
 </section>
 
 <!-- 13. VETO TABLE -->
@@ -845,7 +845,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="grid g2 mt-s">
     <div class="card card-accent"><h4>1 · Ambigüedades</h4><p class="dim">Texto que admite varias lecturas → ubicación + pregunta a PO + impacto en testing + clarificación sugerida.</p></div>
     <div class="card card-accent"><h4>2 · Gaps (info faltante)</h4><p class="dim">Tipo (AC / detalle técnico / regla de negocio) + por qué crítico + qué añadir + riesgo si se omite.</p></div>
-    <div class="card card-accent"><h4>3 · Edge cases no escritos</h4><p class="dim">Escenario + comportamiento esperado (mejor estimación) + criticidad + acción. Marcado <span class="mono">NEEDS PO/DEV CONFIRMATION</span>.</p></div>
+    <div class="card card-accent"><h4>3 · Edge cases no escritos</h4><p class="dim">Escenario + comportamiento esperado (mejor suposición) + criticidad + acción. Marcado <span class="mono">NEEDS PO/DEV CONFIRMATION</span>.</p></div>
     <div class="card card-accent"><h4>4 · Testabilidad</h4><p class="dim">Yes / Partial / No + lista de issues (AC vago, sin texto de error, sin datos de ejemplo, sin criterio de perf, no aislable).</p></div>
   </div>
   <div class="callout mt-m"><h4>5 · Contradicciones</h4><p>Secciones de la Story que se contradicen. Surfacear explícito: <i>"La descripción dice X pero el AC3 dice Y"</i>.</p></div>
@@ -1029,7 +1029,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div>
     <p class="part-no">PARTE 04</p>
     <h1 class="h1">Artefactos + Handoff<br><span class="grad">Entregar a PO y Dev</span></h1>
-    <p class="lede">El ATP pre-sprint hace estimable la Story. El handoff la mueve a Estimation con labels que dejan que el sprint reutilice el trabajo — no lo repita.</p>
+    <p class="lede">El ATP pre-sprint deja a la vista el esfuerzo de verificar la Story. El handoff la mueve a Ready For Dev con labels que dejan que el sprint reutilice el trabajo — no lo repita.</p>
   </div>
   <div class="notes">Phase 3. El output llega a Jira: ACs refinados, ATP pre-sprint, preguntas, labels, transición. Y el batch report.</div>
 </section>
@@ -1045,7 +1045,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <li>Phase 1 — Análisis Crítico (contexto + complejidad)</li>
         <li>Phase 2 — Calidad (ambigüedades, gaps, edge, testabilidad)</li>
         <li>Phase 3 — ACs Refinados (Given/When/Then)</li>
-        <li>Phase 4 — Outlines (NOMBRES) + estimación de cobertura</li>
+        <li>Phase 4 — Outlines (NOMBRES) + conteo de cobertura</li>
         <li>Critical Questions PO · Tech Questions Dev</li>
         <li>Suggested Improvements · Data feasibility</li>
       </ul>
@@ -1057,20 +1057,20 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <li><span class="tag no">NO</span> test-data JSON por outline</li>
         <li><span class="tag no">NO</span> pasos numerados ni Faker</li>
         <li><span class="tag no">NO</span> creación de TCs</li>
-        <li><span class="tag ok">SÍ</span> estimación de cobertura (para PO)</li>
+        <li><span class="tag ok">SÍ</span> conteo de cobertura (alimenta el AI Effort)</li>
         <li><span class="tag ok">SÍ</span> outline names + precondición de 1 línea</li>
       </ul>
     </div>
   </div>
-  <div class="callout mt-m"><h4>Status: "Refined — Awaiting PO Estimation"</h4><p>El ATP es <b>uno y real desde el día cero</b>: pre-sprint vive SOLO en el campo <span class="mono">acceptance_test_plan</span> (<b>field-first</b>) — <span class="mono">shift-left-refinement.md</span> es solo el <b>buffer local de staging</b>. Lo que cambia después no es la identidad sino la <b>madurez</b>: pre-sprint, outline (y con eso la Story ya es <b>estimable</b>); en sprint, <span class="mono">/sprint-testing</span> Planning crea el Test Plan item <span class="mono">"ATP: {STORY-KEY}: {título}"</span> DESDE ese campo y añade lo diferido (datos, parametrización, pasos) en el <b>superset ejecutable</b>.</p></div>
+  <div class="callout mt-m"><h4>Status: "Refined — Ready For Dev"</h4><p>El ATP es <b>uno y real desde el día cero</b>: pre-sprint vive SOLO en el campo <span class="mono">acceptance_test_plan</span> (<b>field-first</b>) — <span class="mono">shift-left-refinement.md</span> es solo el <b>buffer local de staging</b>. Lo que cambia después no es la identidad sino la <b>madurez</b>: pre-sprint, outline (y con eso ya se puede juzgar el AI Effort); en sprint, <span class="mono">/sprint-testing</span> Planning crea el Test Plan item <span class="mono">"ATP: {STORY-KEY}: {título}"</span> DESDE ese campo y añade lo diferido (datos, parametrización, pasos) en el <b>superset ejecutable</b>.</p></div>
   <div class="callout mt-m"><h4>Las dos modalidades TMS</h4><p>Esto aplica igual en <span class="mono">jira-native</span> (la modalidad default) y en <span class="mono">jira-xray</span>: ninguna de las dos crea el item Test Plan en esta etapa — pre-sprint solo existe el campo <span class="mono">acceptance_test_plan</span>.</p></div>
-  <div class="notes">Un solo ATP por Story, field-first: shift-left lo autoría temprano en madurez outline dentro del campo acceptance_test_plan (nombres + cobertura, sin test data/parametrización/TCs); el Test Plan item nace en Planning desde ese campo, refinado al superset ejecutable. shift-left-refinement.md es solo el buffer local; los labels shift-left-reviewed + fecha marcan el pase pre-sprint. La estimación de cobertura SÍ va (alimenta a PO).</div>
+  <div class="notes">Un solo ATP por Story, field-first: shift-left lo autoría temprano en madurez outline dentro del campo acceptance_test_plan (nombres + cobertura, sin test data/parametrización/TCs); el Test Plan item nace en Planning desde ese campo, refinado al superset ejecutable. shift-left-refinement.md es solo el buffer local; los labels shift-left-reviewed + fecha marcan el pase pre-sprint. El conteo de cobertura SÍ va (alimenta el AI Effort).</div>
 </section>
 
-<!-- 28. COVERAGE ESTIMATE -->
+<!-- 28. COVERAGE COUNT -->
 <section class="slide" data-title="Cobertura">
-  <p class="kicker">el dato que estima PO</p>
-  <h2 class="h2" data-anim="fade-up">Estimación de Cobertura</h2>
+  <p class="kicker">el dato que alimenta el AI Effort</p>
+  <h2 class="h2" data-anim="fade-up">Conteo de Cobertura</h2>
   <table class="dtable mt-s" style="font-size:15px">
     <thead><tr><th>Tipo</th><th>Count</th><th>Notas</th></tr></thead>
     <tbody>
@@ -1078,33 +1078,33 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <tr><td><b>Negative</b></td><td>5</td><td>inputs inválidos, no autorizado, campos faltantes</td></tr>
       <tr><td><b>Boundary</b></td><td>2</td><td>min/max/empty/null/unicode</td></tr>
       <tr><td><b>Integration</b></td><td>1</td><td>por punto de integración</td></tr>
-      <tr><td><b>Total</b></td><td><b>12</b></td><td>(maneja la estimación de PO)</td></tr>
+      <tr><td><b>Total</b></td><td><b>12</b></td><td>(alimenta el AI Effort)</td></tr>
     </tbody>
   </table>
-  <div class="callout warn mt-m"><h4>Muestra el 0, no lo escondas</h4><p>La tabla debe mostrar <b>0</b> en los tipos vacíos. Los ceros ocultos sesgan la estimación de PO. El conteo por tipo es lo que convierte el refinamiento en story points defendibles.</p></div>
-  <div class="notes">La estimación de cobertura es el puente con la estimación de PO. Siempre incluir la tabla, incluso con tipos en 0 — los ceros ocultos sesgan los puntos.</div>
+  <div class="callout warn mt-m"><h4>Muestra el 0, no lo escondas</h4><p>La tabla debe mostrar <b>0</b> en los tipos vacíos. Los ceros ocultos sesgan el AI Effort. El conteo por tipo es lo que hace defendible la decisión de partir una Story.</p></div>
+  <div class="notes">El conteo de cobertura es el puente con el AI Effort. Siempre incluir la tabla, incluso con tipos en 0: los ceros ocultos sesgan la etiqueta.</div>
 </section>
 
 <!-- 29. HANDOFF STATE MACHINE -->
 <section class="slide" data-title="Handoff">
   <p class="kicker">la máquina de estados</p>
-  <h2 class="h2" data-anim="fade-up">El Handoff — Backlog → Estimation</h2>
+  <h2 class="h2" data-anim="fade-up">El Handoff: Backlog → Ready For Dev</h2>
   <div class="lifecycle">
     <span class="lstate new">Backlog</span>
     <span class="arr">— analyze →</span>
     <span class="lstate prog">Shift-Left QA</span>
-    <span class="arr">— estimate →</span>
-    <span class="lstate good">Estimation ✓</span>
+    <span class="arr">— refined →</span>
+    <span class="lstate good">Ready For Dev ✓</span>
     <span class="arr">⊘</span>
-    <span class="lstate bad">Ready For Dev</span>
+    <span class="lstate bad">In Progress</span>
   </div>
   <div class="grid g3 mt-l">
     <div class="card card-soft"><h4 class="mono" style="font-size:14px">Escribe a Jira</h4><p class="dim">ACs refinados al campo · ATP pre-sprint al campo <span class="mono">acceptance_test_plan</span> (el Test Plan item nace en Planning) · sección "QA Refinements" en la descripción (append, nunca overwrite).</p></div>
     <div class="card card-soft"><h4 class="mono" style="font-size:14px">Notifica</h4><p class="dim">1 comentario de handoff con @PO / @Dev (solo si el handle está en project.yaml).</p></div>
-    <div class="card card-soft"><h4 class="mono" style="font-size:14px">Transiciona</h4><p class="dim">analyze → estimate. Si ya pasó estimation: log warning + SKIP (el refinamiento igual aterriza). La subtask <span class="mono">[QA] Shift-Left Review</span> (en <span class="mono">ACTIVE</span> desde la aceptación en Phase 1) pasa a <b>Close</b> con la transición <span class="mono">complete</span>.</p></div>
+    <div class="card card-soft"><h4 class="mono" style="font-size:14px">Transiciona</h4><p class="dim">analyze → refined. Si ya pasó ready_for_dev: log warning + SKIP (el refinamiento igual aterriza). La subtask <span class="mono">[QA] Shift-Left Review</span> (en <span class="mono">ACTIVE</span> desde la aceptación en Phase 1) pasa a <b>Close</b> con la transición <span class="mono">complete</span>.</p></div>
   </div>
-  <div class="callout warn mt-m"><h4>Guardrail: NUNCA más allá de Estimation</h4><p>PO + Dev lead son dueños de <span class="mono">estimate → ready_for_dev</span>. Shift-left para en estimation — la Story queda lista para que el equipo le ponga puntos.</p></div>
-  <div class="notes">Máquina de estados: backlog→(analyze)→shift_left_qa→(estimate)→estimation. Guardrail duro: nunca past estimation. Descripción se hace append, nunca overwrite.</div>
+  <div class="callout warn mt-m"><h4>Guardrail: NUNCA más allá de Ready For Dev</h4><p>Shift-left para en Ready For Dev con el AI Effort asignado (Low, Medium o High): el esfuerzo de implementar y verificar la Story completa con agentes, no un tiempo ni un conteo de tokens. High significa que cruza capas, toca auth, dinero o datos, no se verifica sola o no cabe en una oración: QA propone partirla y el PO decide. El costo pasó de construir a verificar, por eso se etiqueta el esfuerzo de verificar.</p></div>
+  <div class="notes">Máquina de estados: backlog→(analyze)→shift_left_qa→(refined)→ready_for_dev. Guardrail duro: nunca past ready_for_dev. Los tokens no se estiman: Development Token Usage (K) y Quality Token Usage (K) se miden después, y el sprint se lee con los promedios del sprint anterior. Descripción se hace append, nunca overwrite.</div>
 </section>
 
 <!-- 30. LABELS + SHORT-CIRCUIT -->
@@ -1134,7 +1134,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <li>ACs refinados al campo de Jira</li>
         <li>ATP pre-sprint al campo <span class="mono">acceptance_test_plan</span></li>
         <li>Preguntas a PO (bloquean) + a Dev</li>
-        <li>2 labels + transición a estimation</li>
+        <li>2 labels + AI Effort + transición a ready_for_dev</li>
       </ul>
     </div>
     <div class="card card-accent">
@@ -1160,11 +1160,11 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="qitem">
       <div class="qq"><span class="qn">Q1</span><span>Una Story refinada está en estado Backlog. Hasta dónde la transiciona el handoff?</span></div>
       <div class="opts">
-        <div class="opt"><span class="mk">A</span><span>Hasta Ready For Dev — lista para el sprint</span></div>
-        <div class="opt" data-correct="1"><span class="mk">B</span><span>Hasta Estimation (analyze → estimate) y para ahí — guardrail</span></div>
+        <div class="opt" data-correct="1"><span class="mk">A</span><span>Hasta Ready For Dev (analyze → refined) y para ahí: guardrail</span></div>
+        <div class="opt"><span class="mk">B</span><span>Hasta In Progress, para que el dev arranque</span></div>
         <div class="opt"><span class="mk">C</span><span>Hasta QA Approved</span></div>
       </div>
-      <div class="qexp"><b>Estimation.</b> backlog → (analyze) → shift_left_qa → (estimate) → estimation. Guardrail duro: nunca más allá. PO + Dev lead son dueños de estimate → ready_for_dev; ellos le ponen los puntos.</div>
+      <div class="qexp"><b>Ready For Dev.</b> backlog → (analyze) → shift_left_qa → (refined) → ready_for_dev. Guardrail duro: nunca más allá. La Story sale con el AI Effort asignado y, si es High, el PO decide si se parte.</div>
     </div>
     <div class="qitem">
       <div class="qq"><span class="qn">Q2</span><span>Para qué sirve el label <span class="mono">shift-left-reviewed</span> cuando la Story llega luego a Ready For QA?</span></div>
@@ -1176,7 +1176,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="qexp"><b>Short-circuit.</b> /sprint-testing Planning lo lee, pero el label solo es un reclamo: salta las Phases 1-3 cuando además encuentra el cuerpo del ATP publicado pre-sprint y los ACs siguen iguales. Esa reutilización es la economía del shift-left: refinas una vez en la fase 1×, no repites en la 10×.</div>
     </div>
   </div>
-  <div class="notes">Guardrail (para en estimation) y el short-circuit (labels frescos + ATP publicado permiten reutilizar el trabajo in-sprint). Las dos claves del handoff.</div>
+  <div class="notes">Guardrail (para en Ready For Dev) y el short-circuit (labels frescos + ATP publicado permiten reutilizar el trabajo in-sprint). Las dos claves del handoff.</div>
 </section>
 
 <!-- 33. ANTI-PATTERNS -->
@@ -1188,16 +1188,16 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <li><b>L1 · No fuerces preguntas</b> para llenar checklist. Story limpia = lista vacía válida.</li>
       <li><b>L2 · No saltes el label</b> <span class="mono">shift-left-reviewed</span> al transicionar — rompe el short-circuit.</li>
       <li><b>L3 · No mezcles bugs</b> con Stories en el batch. Solo Stories.</li>
-      <li><b>L5 · No transiciones a Estimation</b> sin el ATP pre-sprint poblado — sin él, PO estima a ciegas.</li>
+      <li><b>L5 · No transiciones a Ready For Dev</b> sin el ATP pre-sprint poblado: sin él, el AI Effort se asigna a ciegas.</li>
     </ul>
     <ul class="blist">
       <li><b>L4 · No escribas ADF a mano</b> — Markdown local, deja que la conversión md-to-ADF actúe.</li>
       <li><b>L6 · No refines &gt;12 Stories</b> por sesión — la calidad y la atención colapsan.</li>
       <li><b>L7 · No preguntes lo que el AC ya responde</b> — la banda del lector es el recurso más escaso.</li>
-      <li><b>Guardrail · No avances más allá de Estimation</b> — PO/Dev son dueños de estimar.</li>
+      <li><b>Guardrail · No avances más allá de Ready For Dev</b>: el PO decide si se parte y qué entra al sprint.</li>
     </ul>
   </div>
-  <div class="notes">Los anti-patrones L1-L7 + el guardrail. L1 (no forzar preguntas) y L5 (ATP poblado antes de estimar) son los más load-bearing.</div>
+  <div class="notes">Los anti-patrones L1-L7 + el guardrail. L1 (no forzar preguntas) y L5 (ATP poblado antes de pasar a Ready For Dev) son los más load-bearing.</div>
 </section>
 
 <!-- 34. HOW TO DO IT WELL -->
@@ -1214,11 +1214,11 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <ul class="blist">
       <li><b>Marca lo inferido</b> con <span class="mono">NEEDS PO/DEV CONFIRMATION</span>.</li>
       <li><b>Clasifica con juicio</b> — Critical (bloquea PO) vs Edge (no bloquea).</li>
-      <li><b>Incluye la estimación de cobertura</b> — alimenta los story points.</li>
+      <li><b>Incluye el conteo de cobertura</b>: alimenta el AI Effort.</li>
       <li><b>Calidad &gt; cantidad</b> — una pregunta real vale más que diez de relleno.</li>
     </ul>
   </div>
-  <div class="callout mt-m"><h4>La meta</h4><p>Que PO + Dev lleguen al sprint planning con ACs sin ambigüedad, riesgos visibles y una Story estimable — para que Dev construya lo correcto a la primera.</p></div>
+  <div class="callout mt-m"><h4>La meta</h4><p>Que PO + Dev lleguen al sprint planning con ACs sin ambigüedad, riesgos visibles y un AI Effort asignado, para que Dev construya lo correcto a la primera.</p></div>
   <div class="notes">El checklist operativo del CÓMO hacerlo bien. Cada punto es una palanca de calidad del refinamiento.</div>
 </section>
 
@@ -1251,7 +1251,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 <section class="slide center tc" data-title="Cierre">
   <div>
     <h1 class="h1"><span class="grad">Mueve la Calidad a la Izquierda.</span></h1>
-    <p class="lede" style="margin:14px auto">Selecciona por riesgo → refina el corazón (ambigüedades, huecos, el banco de preguntas) → entrega un ATP pre-sprint estimable que el sprint refina — no repite. Previene el defecto donde cuesta 1×, no donde cuesta 100×.</p>
+    <p class="lede" style="margin:14px auto">Selecciona por riesgo → refina el corazón (ambigüedades, huecos, el banco de preguntas) → entrega un ATP pre-sprint con el AI Effort asignado, que el sprint refina — no repite. Previene el defecto donde cuesta 1×, no donde cuesta 100×.</p>
     <p class="lede" style="margin:14px auto">← → navegar · S notas del orador · O resumen · T tema</p>
   </div>
   <div class="notes">Cierra atando porqué + cómo. Shift-left no es una ceremonia extra: es la inversión más barata en calidad que un proyecto puede hacer.</div>

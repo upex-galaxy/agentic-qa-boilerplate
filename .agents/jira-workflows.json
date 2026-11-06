@@ -18,6 +18,11 @@
         "name": "Ready For Release",
         "category": "done"
       },
+      "in_progress": {
+        "id": "3",
+        "name": "In Progress",
+        "category": "indeterminate"
+      },
       "blocked": {
         "id": "10027",
         "name": "BLOCKED",
@@ -33,31 +38,6 @@
         "name": "Ready For QA",
         "category": "new"
       },
-      "estimation": {
-        "id": "10023",
-        "name": "Estimation",
-        "category": "indeterminate"
-      },
-      "shift_left_qa": {
-        "id": "10041",
-        "name": "Shift-Left QA",
-        "category": "indeterminate"
-      },
-      "in_test": {
-        "id": "10042",
-        "name": "In Test",
-        "category": "indeterminate"
-      },
-      "backlog": {
-        "id": "10039",
-        "name": "Backlog",
-        "category": "new"
-      },
-      "in_progress": {
-        "id": "3",
-        "name": "In Progress",
-        "category": "indeterminate"
-      },
       "deployed_to_production": {
         "id": "10044",
         "name": "Deployed to Production",
@@ -68,14 +48,29 @@
         "name": "In Review",
         "category": "indeterminate"
       },
+      "shift_left_qa": {
+        "id": "10041",
+        "name": "Shift-Left QA",
+        "category": "indeterminate"
+      },
       "qa_approved": {
         "id": "10021",
         "name": "QA Approved",
         "category": "done"
       },
+      "in_test": {
+        "id": "10042",
+        "name": "In Test",
+        "category": "indeterminate"
+      },
       "ready_for_dev": {
         "id": "10013",
         "name": "Ready For Dev",
+        "category": "new"
+      },
+      "backlog": {
+        "id": "10039",
+        "name": "Backlog",
         "category": "new"
       }
     },
@@ -135,30 +130,6 @@
         "to_status_id": "10042",
         "from_canonical": "qa_approved",
         "to_canonical": "in_test"
-      },
-      "estimated_and_ready_to_work": {
-        "id": "4",
-        "name": "Estimated and Ready to work",
-        "from_status_id": "10023",
-        "to_status_id": "10013",
-        "from_canonical": "estimation",
-        "to_canonical": "ready_for_dev"
-      },
-      "back_from_estimation": {
-        "id": "16",
-        "name": "back",
-        "from_status_id": "10023",
-        "to_status_id": "10039",
-        "from_canonical": "estimation",
-        "to_canonical": "backlog"
-      },
-      "needs_quality": {
-        "id": "26",
-        "name": "needs quality",
-        "from_status_id": "10023",
-        "to_status_id": "10041",
-        "from_canonical": "estimation",
-        "to_canonical": "shift_left_qa"
       },
       "back_from_blocked": {
         "id": "21",
@@ -240,14 +211,6 @@
         "from_canonical": "backlog",
         "to_canonical": "shift_left_qa"
       },
-      "ready_to_estimate": {
-        "id": "15",
-        "name": "Ready to Estimate",
-        "from_status_id": "10039",
-        "to_status_id": "10023",
-        "from_canonical": "backlog",
-        "to_canonical": "estimation"
-      },
       "pull_request": {
         "id": "7",
         "name": "Pull Request",
@@ -272,13 +235,13 @@
         "from_canonical": "in_progress",
         "to_canonical": "ready_for_dev"
       },
-      "estimate": {
+      "refined": {
         "id": "3",
-        "name": "Estimate",
+        "name": "refined",
         "from_status_id": "10041",
-        "to_status_id": "10023",
+        "to_status_id": "10013",
         "from_canonical": "shift_left_qa",
-        "to_canonical": "estimation"
+        "to_canonical": "ready_for_dev"
       },
       "back_from_shift_left_qa": {
         "id": "14",

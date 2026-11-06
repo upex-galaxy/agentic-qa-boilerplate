@@ -36,7 +36,7 @@ decides that, not the skill. Everything after that is the harness's job.
 
 | Artifact | Work type | Created by | Created in | Moved by → target (transition slug) | Terminal |
 |---|---|---|---|---|---|
-| **Story** | `story` | PO (external) | `backlog` | `/shift-left-testing` handoff: `analyze` → `shift_left_qa`, then `estimate` → `estimation` · `/sprint-testing` Execution: `start_testing` → `in_test` · Reporting PASSED: `qa_sign_off` → `qa_approved` · Reporting FAILED (formal gate): `defect_reported` → `blocked` | `deployed_to_production` (released by the team, never by the harness) |
+| **Story** | `story` | PO (external) | `backlog` | `/shift-left-testing` handoff: `analyze` → `shift_left_qa`, then `refined` → `ready_for_dev` · `/sprint-testing` Execution: `start_testing` → `in_test` · Reporting PASSED: `qa_sign_off` → `qa_approved` · Reporting FAILED (formal gate): `defect_reported` → `blocked` | `deployed_to_production` (released by the team, never by the harness) |
 | **Bug / Defect / Improvement** | `bug` / `defect` / `improvement` | `/sprint-testing` Reporting (filed) | `open` | dev owns `start_fixing` → `in_progress` … `fixed_and_deployed` → `ready_for_qa` · `/sprint-testing` retest PASSED: `retest_passed` → `closed` · regression after close: `back` → `ready_for_qa`, or `re_open` → `open` | `closed` |
 | **Product Epic** | `epic` | PO (external) | `backlog` | **the harness never moves a product epic.** `plan` / `ready_to_work` / `complete` belong to the PO | `done` |
 | **QA process epics** (QA Defect Management · QA Test Repository · QA Master Test Plan · QA Test Artifacts) | `epic` | project setup (`qa.qa_epics.*`) | `backlog` | **never moved** — permanent buckets, not work. Do not "complete" one | n/a (stays wherever setup left it) |
@@ -193,7 +193,7 @@ all of them added by the project's own screen configuration. A stage that reads 
    has real content for (the test outline it just authored, the automation type the ROI verdict
    already decided) is written and the transition retried. This is the normal resolution and
    needs no user interaction.
-3. **Never invent a value to satisfy a validator.** An estimation, a risk rating or a
+3. **Never invent a value to satisfy a validator.** A token-usage figure, a risk rating or a
    regression flag the stage does not actually know is fabricated data that outlives the
    session and is later read as QA's judgement.
 4. **Whatever is left → ONE `AskUserQuestion`**, naming the artifact, the target status, the
@@ -228,6 +228,9 @@ Light stage verifier — <Stage name>
 [ ] Assignee set on every artifact CREATED this stage (§2)
 [ ] Parent = the right QA process epic; components set (§3)
 [ ] Jira fields / comments written (the body actually landed, not just the item)
+    (Shift-Left: `{{jira.ai_effort}}` set · the approval stage: `{{jira.quality_token_usage}}`
+    written from the harness's measured consumption, or a stated N/A with the reason when the
+    harness does not expose it. Tokens are measured, never estimated.)
 [ ] progress.md checkpoint appended (session-management.md §7)
 [ ] Session footer printed in chat (session-footer-contract.md)
 ```

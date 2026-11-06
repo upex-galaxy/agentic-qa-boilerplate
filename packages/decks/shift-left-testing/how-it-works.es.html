@@ -496,7 +496,7 @@ h4,.h4{font-size:17px;color:var(--text-1)}
     </div>
     <div class="wf-row">
       <div class="wf-node"><span class="wf-num">3</span>Handoff ×N</div>
-      <div class="wf-what">Mutaciones Jira por Story · labels · qa_assignee · transición <b>Backlog → Shift-Left QA → Estimation</b> y STOP · <b>light stage verifier</b></div>
+      <div class="wf-what">Mutaciones Jira por Story · labels · qa_assignee · AI Effort · transición <b>Backlog → Shift-Left QA → Ready For Dev</b> y STOP · <b>light stage verifier</b></div>
       <div class="wf-side"><span class="fb">campo ausente → comment fallback</span><span class="fb">subtask → Close vía complete</span></div>
     </div>
     <div class="wf-row">
@@ -506,7 +506,7 @@ h4,.h4{font-size:17px;color:var(--text-1)}
     </div>
   </div>
   <p class="dim2 mt-s" style="font-size:13px"><span class="gate">GATE</span> espera aprobación humana &nbsp;·&nbsp; <span class="fb">caja punteada</span> fallback / camino adyacente &nbsp;·&nbsp; <span class="hand">→</span> handoff a otra skill</p>
-  <div class="callout mt-m"><h4>El contrato agéntico de Shift-Left</h4><p>El <b>agente</b> reescribe los ACs como Given/When/Then con datos concretos, saca a la luz gaps y ambigüedades, redacta el ATP pre-sprint en el campo de la Story y aplica el Test-Design Checklist. La <b>persona</b> firma el lote de Stories candidatas y el resumen por Story, y nunca deja pasar una Story a <span class="mono">Estimation</span> sin eso. <b>Evidencia que sobrevive</b>: los ACs reescritos, los gaps como preguntas abiertas a PO/Dev, la label fechada y la subtask de revisión. Autonomía CSA <b>2</b> y <b>sin verificador separado</b>: el PO o el dev que refina la Story es el revisor natural.</p></div>
+  <div class="callout mt-m"><h4>El contrato agéntico de Shift-Left</h4><p>El <b>agente</b> reescribe los ACs como Given/When/Then con datos concretos, saca a la luz gaps y ambigüedades, redacta el ATP pre-sprint en el campo de la Story, asigna el AI Effort (Low, Medium o High) y aplica el Test-Design Checklist. La <b>persona</b> firma el lote de Stories candidatas y el resumen por Story, y nunca deja pasar una Story a <span class="mono">Ready For Dev</span> sin eso. <b>Evidencia que sobrevive</b>: los ACs reescritos, los gaps como preguntas abiertas a PO/Dev, la label fechada y la subtask de revisión. Autonomía CSA <b>2</b> y <b>sin verificador separado</b>: el PO o el dev que refina la Story es el revisor natural.</p></div>
   <div class="notes">Memoriza esta columna: Preflight → Init → Selection → Refinement → Handoff → Batch report. Cada fila es una sección del deck; al final vienen el verificador de cierre, el session footer y el fleet opcional. A la derecha viven los caminos adyacentes: gates de aprobación, fallbacks y handoffs hacia otras skills.</div>
 </section>
 
@@ -622,7 +622,7 @@ h4,.h4{font-size:17px;color:var(--text-1)}
         <li><b>Fase 1 · Critical Analysis</b>: contexto negocio + técnico; lecturas de código LIGERAS (es viable?), sin reproducción</li>
         <li><b>Fase 2 · Story Quality Analysis</b>: el corazón (siguiente slide)</li>
         <li><b>Fase 3 · Refined ACs</b>: Given/When/Then con datos específicos</li>
-        <li><b>Fase 4 · outlines</b>: solo NOMBRES + coverage estimate (guía la estimación del PO)</li>
+        <li><b>Fase 4 · outlines</b>: solo NOMBRES + conteo de cobertura (alimenta el AI Effort y la decisión de partir)</li>
         <li><b>Fase 5 · edge cases</b>: solo nombres + criticidad</li>
       </ul>
     </div>
@@ -716,7 +716,7 @@ h4,.h4{font-size:17px;color:var(--text-1)}
     <div class="step"><div class="num">3</div><h4>ATP</h4><p>Puebla el campo <code>acceptance_test_plan</code> con el ATP pre-sprint (madurez outline), <b>field-first</b>: el Test Plan item <b>"ATP: {STORY-KEY}: {título}"</b> NO se crea aquí; lo crea <code>/sprint-testing</code> Planning desde este MISMO campo, sin variante de título. Fallback si el campo no existe: comentario "## Acceptance Test Plan (ATP)".</p></div>
     <div class="step"><div class="num">4</div><h4>Comentario</h4><p>UN comentario de handoff: puntero al campo (@PO / @Dev-lead solo si están en <code>project.yaml</code>). Body completo inline SOLO si el campo no existe.</p></div>
     <div class="step"><div class="num">5</div><h4>Labels + QA Assignee</h4><p><code>shift-left-reviewed</code> + <code>shift-left-{YYYY-MM-DD}</code>. <code>qa_assignee</code> = self, read-before-write, vía REST PUT (acli no escribe customfields).</p></div>
-    <div class="step"><div class="num">6</div><h4>Transición + subtask + traza</h4><p>analyze → estimate y STOP en Estimation. La subtask <b>[QA] Shift-Left Review</b> recibe las anotaciones exhaustivas de sesión y se cierra con <code>complete</code> → <code>Close</code> (la Story queda limpia). Re-sync: el ATP aterrizó en el campo y el comentario es un PUNTERO; el body inline solo aplica en modo fallback. <code>test-documentation</code> modo <code>repair-traceability</code> lo audita después.</p></div>
+    <div class="step"><div class="num">6</div><h4>Transición + subtask + traza</h4><p>analyze → refined y STOP en Ready For Dev, con el AI Effort ya asignado. La subtask <b>[QA] Shift-Left Review</b> recibe las anotaciones exhaustivas de sesión y se cierra con <code>complete</code> → <code>Close</code> (la Story queda limpia). Re-sync: el ATP aterrizó en el campo y el comentario es un PUNTERO; el body inline solo aplica en modo fallback. <code>test-documentation</code> modo <code>repair-traceability</code> lo audita después.</p></div>
   </div>
   <div class="callout" style="margin-top:24px"><h4>Ni ADF a mano ni Markdown crudo</h4><p>Los cuerpos rich-text (ATP, ATR, descripción del Test) se escriben en Markdown, se convierten y validan con el conversor <code>.agents/skills/acli/scripts/md-to-adf.ts</code>, y lo que se publica es el ADF JSON resultante; por la vía CLI, <code>acli</code> nunca convierte Markdown solo. Markdown crudo se ve en Jira con <code>#</code> y <code>**</code> literales; ADF artesanal se aleja del contenido que audita <code>repair-traceability</code>.</p></div>
   <div class="notes">Secuencial, una Story a la vez, para que revises el estado de Jira antes de la siguiente mutación. El subagente devuelve un log por Story: atp_container (campo o comentario fallback), subtask, labels, transiciones, light_verifier y trace_status.</div>
@@ -725,19 +725,19 @@ h4,.h4{font-size:17px;color:var(--text-1)}
 <!-- 11. PHASE 3 · GUARDRAILS -->
 <section class="slide" data-title="Phase 3 · Guardrails">
   <p class="kicker">phase 3: guardrails de transición + resume</p>
-  <h2 class="h2" data-anim="fade-up">STOP en Estimation, <span class="grad">y todo re-ejecutable</span></h2>
+  <h2 class="h2" data-anim="fade-up">STOP en Ready For Dev, <span class="grad">y todo re-ejecutable</span></h2>
   <div class="grid g2 mt-m" style="align-items:start;gap:30px">
     <div>
       <table class="dtable" style="margin-top:0">
         <thead><tr><th>Status actual</th><th>Acción</th></tr></thead>
         <tbody>
-          <tr><td><b>Backlog</b></td><td><code>analyze</code> → Shift-Left QA, luego <code>estimate</code> → Estimation</td></tr>
-          <tr><td><b>Shift-Left QA</b></td><td>solo <code>estimate</code></td></tr>
-          <tr><td><b>Estimation</b></td><td>nada: ya está en el objetivo</td></tr>
-          <tr><td><b>Más allá</b> (Ready For Dev…)</td><td>SKIP + warning: el refinamiento aterriza igual, el workflow no se toca</td></tr>
+          <tr><td><b>Backlog</b></td><td><code>analyze</code> → Shift-Left QA, luego <code>refined</code> → Ready For Dev</td></tr>
+          <tr><td><b>Shift-Left QA</b></td><td>solo <code>refined</code></td></tr>
+          <tr><td><b>Ready For Dev</b></td><td>nada: ya está en el objetivo</td></tr>
+          <tr><td><b>Más allá</b> (In Progress…)</td><td>SKIP + warning: el refinamiento aterriza igual, el workflow no se toca</td></tr>
         </tbody>
       </table>
-      <div class="callout warn" style="margin-top:12px"><h4>La estimación es del PO + Dev lead</h4><p>QA jamás avanza <code>estimate → ready_for_dev</code> ni compromete la Story a un sprint. Y NUNCA se transiciona a Estimation sin el ATP pre-sprint poblado: ese ATP es lo que hace estimable a la Story (anti-patrón L5).</p></div>
+      <div class="callout warn" style="margin-top:12px"><h4>Partir una Story es decisión del PO</h4><p>QA jamás compromete la Story a un sprint. Si el AI Effort sale High, QA propone partirla y el PO decide. Y NUNCA se transiciona a Ready For Dev sin el ATP pre-sprint poblado ni el AI Effort asignado: sin ATP no hay con qué juzgar el esfuerzo de verificar (anti-patrón L5).</p></div>
     </div>
     <div class="card">
       <h4>Resume seguro: cada paso es idempotente</h4>
@@ -749,7 +749,7 @@ h4,.h4{font-size:17px;color:var(--text-1)}
       </ul>
     </div>
   </div>
-  <div class="notes">Dos innegociables: parar en Estimation (la estimación es decisión de negocio) y ambos labels siempre; sin ellos se rompe el cortocircuito de /sprint-testing el próximo sprint.</div>
+  <div class="notes">Dos innegociables: parar en Ready For Dev (partir una Story es decisión del PO) y ambos labels siempre; sin ellos se rompe el cortocircuito de /sprint-testing el próximo sprint.</div>
 </section>
 
 <!-- 12. PHASE 3 · LIGHT STAGE VERIFIER + DoD -->
@@ -760,8 +760,8 @@ h4,.h4{font-size:17px;color:var(--text-1)}
     <div>
       <div class="term" style="font-size:12.5px">
         <div class="bar"><span class="tdot"></span><span class="tdot"></span><span class="tdot"></span><span>light stage verifier: líneas propias de Shift-Left</span></div>
-<pre>[ ] Story en <span class="fn">{{jira.status.story.estimation}}</span>
-    vía analyze → estimate, y STOP ahí
+<pre>[ ] Story en <span class="fn">{{jira.status.story.ready_for_dev}}</span>
+    vía analyze → refined, y STOP ahí
     <span class="cmt">(ya más allá: refinamiento sí, transición no)</span>
 [ ] Subtask [QA] Shift-Left Review en <span class="fn">Close</span>
     vía complete
@@ -781,7 +781,7 @@ h4,.h4{font-size:17px;color:var(--text-1)}
         <li>ACs refinados en Given/When/Then con datos concretos</li>
         <li>Gaps, ambigüedades y edge cases como preguntas a PO/Dev</li>
         <li>Test-Design Checklist aplicado: cada AC no trivial explotado por técnica, o justificación <code>trivially atomic</code></li>
-        <li>Coverage estimate con el 1:N real, sin conteo minimizado</li>
+        <li>Conteo de cobertura con el 1:N real, sin conteo minimizado</li>
         <li>Inferidos marcados <code>NEEDS PO/DEV CONFIRMATION</code></li>
         <li>Ninguna entidad TMS creada; label + transición aplicadas</li>
         <li>Statuses según el lifecycle; light verifier corrido</li>
@@ -889,7 +889,8 @@ Refinements proposed: 1 →
         <span class="chip" style="font-size:12.5px">Refined ACs en Jira</span>
         <span class="chip" style="font-size:12.5px">ATP pre-sprint en el campo</span>
         <span class="chip" style="font-size:12.5px">2 labels</span>
-        <span class="chip" style="font-size:12.5px">Status: Estimation</span>
+        <span class="chip" style="font-size:12.5px">AI Effort asignado</span>
+        <span class="chip" style="font-size:12.5px">Status: Ready For Dev</span>
         <span class="chip" style="font-size:12.5px">Subtask en Close</span>
         <span class="chip" style="font-size:12.5px">batch-report.md</span>
       </div>

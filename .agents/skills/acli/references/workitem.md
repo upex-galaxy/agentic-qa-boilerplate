@@ -565,7 +565,7 @@ acli jira workitem watcher remove --key "{{PROJECT_KEY}}-123" --user 5b10ac8d82e
 
 ## <a id="custom-fields"></a>Custom fields
 
-This is one of the rougher edges in `acli`. Read this section carefully — the CLI exposes first-class flags only for built-in fields (`summary`, `description`, `assignee`, `labels`, `priority`, `parent`, `type`). Everything else — story points, acceptance criteria, business rules, scope, mockup, workflow — must go through `--from-json` on `create`. **Editing custom-field values on existing items has no documented `acli` path** and requires REST/MCP.
+This is one of the rougher edges in `acli`. Read this section carefully — the CLI exposes first-class flags only for built-in fields (`summary`, `description`, `assignee`, `labels`, `priority`, `parent`, `type`). Everything else — AI Effort, acceptance criteria, business rules, scope, mockup, workflow — must go through `--from-json` on `create`. **Editing custom-field values on existing items has no documented `acli` path** and requires REST/MCP.
 
 ### What `acli` documents officially
 
@@ -589,7 +589,7 @@ This is one of the rougher edges in `acli`. Read this section carefully — the 
 Three things to internalize:
 
 1. **Wrapper key**: `additionalAttributes` (NOT `fields`, NOT flat at the root).
-2. **Field address**: numeric `customfield_NNNNN` ID only. **Name-addressing (`"Story Points"`) is not supported.**
+2. **Field address**: numeric `customfield_NNNNN` ID only. **Name-addressing (`"AI Effort"`) is not supported.**
 3. **Documented value shapes** (only three are illustrated by the template):
    - **Single-select / option**: `{"value": "..."}`
    - **Number**: bare numeric literal (e.g. `50`)
@@ -633,7 +633,7 @@ Running `acli jira workitem edit --generate-json` produces:
 
 **No `additionalAttributes` block.** The flag list on `edit --help` confirms: only built-in fields are supported (`--summary`, `--description`, `--description-file`, `--assignee`, `--labels`, `--type`, `--remove-assignee`, `--remove-labels`).
 
-For editing a custom-field value on an existing work item (e.g. updating Story Points after estimation, polishing ACs after a 3-amigos), fall back to REST:
+For editing a custom-field value on an existing work item (e.g. updating Quality Token Usage (K) when a Story is approved, polishing ACs after a 3-amigos), fall back to REST:
 
 ```bash
 SITE="$(bun run --silent jira:url --slug)"
