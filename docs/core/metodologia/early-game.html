@@ -123,16 +123,16 @@
               <td>
                 Reescribe los criterios de aceptación en Given/When/Then con datos concretos,
                 detecta los gaps y los redacta como preguntas al PO o al dev, escribe el ATP en el
-                campo <code>acceptance_test_plan</code>, aplica el Test-Design Checklist y deja el
-                label fechado y la subtarea de revisión.
+                campo <code>acceptance_test_plan</code>, asigna el campo <code>AI Effort</code>,
+                aplica el Test-Design Checklist y deja el label fechado y la subtarea de revisión.
               </td>
             </tr>
             <tr>
               <th>La persona firma</th>
               <td>
                 Aprueba el lote de historias candidatas y el resumen por historia, y contesta los
-                gaps. La historia nunca pasa de <code>Estimation</code>: ese es el tope duro del
-                stage.
+                gaps. La historia sale del stage en <code>Ready For Dev</code> con el AI Effort
+                puesto. Si es High, el PO decide si se parte.
               </td>
             </tr>
             <tr>
@@ -157,7 +157,7 @@
               <th>Transiciones en Jira</th>
               <td>
                 US: Backlog → Shift-Left QA (<em>Analyze</em>)<br />
-                US: Shift-Left QA → Estimation (<em>Estimate</em>)<br />
+                US: Shift-Left QA → Ready For Dev (<em>refined</em>)<br />
                 Subtarea [QA] Shift-Left Review: ACTIVE → Close (<em>Complete</em>)
               </td>
             </tr>
@@ -168,6 +168,19 @@
           </tbody>
         </table>
       </div>
+
+      <p>
+        Para dimensionar la historia, QA asigna el campo <code>AI Effort</code> (Low, Medium o High)
+        durante el shift-left. Mide el esfuerzo de implementar y verificar la historia completa con
+        un flujo agéntico. No es un tiempo ni un pronóstico de tokens. High significa que la
+        historia cruza capas, toca auth, dinero o datos, no se puede verificar sola o no cabe en una
+        oración: QA propone partirla y el PO decide. Los tokens se miden después, nunca se estiman:
+        <code>Development Token Usage (K)</code> lo escribe el agente de desarrollo cuando la
+        historia llega a Ready For QA y <code>Quality Token Usage (K)</code> lo escribe el agente de
+        QA al aprobar. El sprint no se pronostica: el equipo lee los promedios de tokens del sprint
+        anterior. El costo pasó de construir a verificar, así que lo que merece una etiqueta es el
+        esfuerzo de verificar y si la historia es lo bastante chica para verificarse sola.
+      </p>
 
       <h3 id="stage-planning">Planning (dentro del sprint)</h3>
       <p>
@@ -738,7 +751,7 @@
           <tbody>
             <tr>
               <td>1 · Refinamiento</td>
-              <td>Backlog → Shift-Left QA → Estimation</td>
+              <td>Backlog → Shift-Left QA</td>
             </tr>
             <tr>
               <td>2 · Desarrollo</td>
@@ -763,10 +776,6 @@
         <summary>Transiciones que el diagrama omite</summary>
         <ul>
           <li>Casi toda etapa vuelve a la anterior con <code>back</code>.</li>
-          <li>
-            <code>Ready to Estimate</code>: Backlog salta a Estimation sin pasar por Shift-Left QA.
-          </li>
-          <li><code>needs quality</code>: Estimation vuelve a Shift-Left QA.</li>
           <li><code>Pushed</code>: In Progress salta a Ready For QA.</li>
           <li><code>back to dev</code>: BLOCKED vuelve a Ready For Dev.</li>
           <li><code>Recover</code>: una historia ABORTED vuelve a Ready For Dev.</li>
