@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Una fuente, tres harnesses</title>
+    <title>Una fuente, todos los harnesses</title>
     <meta
       name="description"
-      content="Cómo el boilerplate Agentic QA corre igual en Claude Code, OpenCode y Codex con un solo cuerpo de instrucciones, un solo store de skills y adaptadores finos donde los harnesses difieren de verdad."
+      content="Cómo el boilerplate Agentic QA corre igual en Claude Code, OpenCode, Codex y Pi con un solo cuerpo de instrucciones, un solo store de skills y adaptadores finos donde los harnesses difieren de verdad."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -29,6 +29,7 @@
         --claude: #ffa657;
         --opencode: #d2a8ff;
         --codex: #79c0ff;
+        --pi: #56d4dd;
         --grad: linear-gradient(120deg, var(--claude), var(--opencode) 52%, var(--codex));
         --font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
         --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
@@ -375,6 +376,9 @@
       th.h-codex {
         color: var(--codex);
       }
+      th.h-pi {
+        color: var(--pi);
+      }
       td.rowlabel {
         color: var(--text-1);
         font-weight: 600;
@@ -498,6 +502,9 @@
       }
       .legend .lx {
         color: var(--codex);
+      }
+      .legend .lp {
+        color: var(--pi);
       }
 
       /* ---------- delta bars ---------- */
@@ -676,6 +683,7 @@
           <li><a href="#trailers">Trailers</a></li>
           <li><a href="#mcp">MCP</a></li>
           <li><a href="#migracion">Migración</a></li>
+          <li><a href="#pi">Pi</a></li>
           <li><a href="#limites">Límites</a></li>
         </ul>
       </nav>
@@ -684,10 +692,10 @@
     <main>
       <div class="hero wrap">
         <span class="tag">Release · agosto 2026</span>
-        <h1>Una fuente de verdad, <em>tres harnesses</em> que la leen</h1>
+        <h1>Una fuente de verdad, <em>todos los harnesses</em> que la leen</h1>
         <p class="lead">
-          El repositorio corre igual en Claude Code, OpenCode y Codex (CLI y Desktop). Existe una
-          sola copia de cada instrucción y de cada skill. Donde los harnesses difieren de verdad
+          El repositorio corre igual en Claude Code, OpenCode, Codex (CLI y Desktop) y Pi. Existe
+          una sola copia de cada instrucción y de cada skill. Donde los harnesses difieren de verdad
           —formato de MCP, API de hook— cada uno conserva un adaptador fino, versionado y
           verificado. Nada más está duplicado.
         </p>
@@ -697,8 +705,8 @@
             <div class="t">cuerpo de instrucciones</div>
           </div>
           <div class="stat">
-            <div class="n">3</div>
-            <div class="t">harnesses soportados</div>
+            <div class="n">1</div>
+            <div class="t">adaptador fino por harness</div>
           </div>
           <div class="stat">
             <div class="n">1</div>
@@ -709,8 +717,8 @@
             <div class="t">archivos de comando: skill + modo</div>
           </div>
           <div class="stat">
-            <div class="n">3</div>
-            <div class="t">configs MCP en paridad</div>
+            <div class="n">1</div>
+            <div class="t">set de servidores MCP, un archivo por harness</div>
           </div>
           <div class="stat">
             <div class="n">1</div>
@@ -722,9 +730,9 @@
       <section id="decision">
         <div class="wrap">
           <div class="kicker">Instrucciones</div>
-          <h2>Ningún nombre de archivo lo descubren los tres</h2>
+          <h2>Ningún nombre de archivo lo descubren todos los harnesses</h2>
           <p class="lede">
-            Claude Code carga <code>CLAUDE.md</code>. OpenCode y Codex cargan
+            Claude Code carga <code>CLAUDE.md</code>. OpenCode, Codex y Pi cargan
             <code>AGENTS.md</code>. Mantener dos documentos completos y compararlos en CI no elimina
             el drift: lo detecta tarde, después de que alguien ya trabajó con la copia vieja.
           </p>
@@ -740,7 +748,7 @@
             Ese cuerpo además está en capas. <code>AGENTS.md</code> carga en cada sesión y guarda
             solo lo que ata en cada turno, más un router; cada tema vive en su propio archivo bajo
             <code>.agents/instructions/</code> y se lee cuando el router, o una línea
-            <code>ROUTE:</code> que agrega el hook, lo nombra. Los tres hosts siguen leyendo el
+            <code>ROUTE:</code> que agrega el hook, lo nombra. Todos los hosts siguen leyendo el
             mismo archivo de entrada; lo que cambió es cuánto carga siempre. El mecanismo:
             <a href="./decks/progressive-disclosure/how-it-works.es.html">Progressive disclosure</a
             >.
@@ -749,9 +757,9 @@
           <figure>
             <div class="figscroll">
               <svg
-                viewBox="0 0 720 320"
+                viewBox="0 0 760 320"
                 role="img"
-                aria-label="Los tres harnesses convergen en AGENTS.md: OpenCode y Codex lo cargan nativamente, Claude Code llega a través de un shim generado de once bytes llamado CLAUDE.md"
+                aria-label="Todos los harnesses convergen en AGENTS.md: OpenCode, Codex y Pi lo cargan nativamente, Claude Code llega a través de un shim generado de once bytes llamado CLAUDE.md"
               >
                 <defs>
                   <marker
@@ -787,12 +795,22 @@
                   >
                     <path d="M0,0 L10,5 L0,10 z" fill="#79c0ff" />
                   </marker>
+                  <marker
+                    id="d1p"
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="6"
+                    markerHeight="6"
+                    orient="auto-start-reverse"
+                  >
+                    <path d="M0,0 L10,5 L0,10 z" fill="#56d4dd" />
+                  </marker>
                 </defs>
-
                 <rect
-                  x="24"
+                  x="10"
                   y="20"
-                  width="190"
+                  width="170"
                   height="54"
                   rx="10"
                   fill="#161b22"
@@ -800,7 +818,7 @@
                   stroke-width="1.5"
                 />
                 <text
-                  x="119"
+                  x="95"
                   y="43"
                   text-anchor="middle"
                   font-family="JetBrains Mono, monospace"
@@ -812,7 +830,7 @@
                   CLAUDE CODE
                 </text>
                 <text
-                  x="119"
+                  x="95"
                   y="61"
                   text-anchor="middle"
                   font-family="Inter, sans-serif"
@@ -821,11 +839,10 @@
                 >
                   busca CLAUDE.md
                 </text>
-
                 <rect
-                  x="265"
+                  x="200"
                   y="20"
-                  width="190"
+                  width="170"
                   height="54"
                   rx="10"
                   fill="#161b22"
@@ -833,7 +850,7 @@
                   stroke-width="1.5"
                 />
                 <text
-                  x="360"
+                  x="285"
                   y="43"
                   text-anchor="middle"
                   font-family="JetBrains Mono, monospace"
@@ -845,7 +862,7 @@
                   OPENCODE
                 </text>
                 <text
-                  x="360"
+                  x="285"
                   y="61"
                   text-anchor="middle"
                   font-family="Inter, sans-serif"
@@ -854,11 +871,10 @@
                 >
                   busca AGENTS.md
                 </text>
-
                 <rect
-                  x="506"
+                  x="390"
                   y="20"
-                  width="190"
+                  width="170"
                   height="54"
                   rx="10"
                   fill="#161b22"
@@ -866,7 +882,7 @@
                   stroke-width="1.5"
                 />
                 <text
-                  x="601"
+                  x="475"
                   y="43"
                   text-anchor="middle"
                   font-family="JetBrains Mono, monospace"
@@ -878,7 +894,7 @@
                   CODEX CLI + DESKTOP
                 </text>
                 <text
-                  x="601"
+                  x="475"
                   y="61"
                   text-anchor="middle"
                   font-family="Inter, sans-serif"
@@ -887,18 +903,49 @@
                 >
                   busca AGENTS.md
                 </text>
-
+                <rect
+                  x="580"
+                  y="20"
+                  width="170"
+                  height="54"
+                  rx="10"
+                  fill="#161b22"
+                  stroke="#56d4dd"
+                  stroke-width="1.5"
+                />
+                <text
+                  x="665"
+                  y="43"
+                  text-anchor="middle"
+                  font-family="JetBrains Mono, monospace"
+                  font-size="12"
+                  font-weight="700"
+                  fill="#56d4dd"
+                  letter-spacing="0.06em"
+                >
+                  PI
+                </text>
+                <text
+                  x="665"
+                  y="61"
+                  text-anchor="middle"
+                  font-family="Inter, sans-serif"
+                  font-size="10.5"
+                  fill="#9aa6b2"
+                >
+                  busca AGENTS.md
+                </text>
                 <line
-                  x1="119"
+                  x1="95"
                   y1="74"
-                  x2="119"
+                  x2="95"
                   y2="136"
                   stroke="#ffa657"
                   stroke-width="1.5"
                   marker-end="url(#d1c)"
                 />
                 <text
-                  x="128"
+                  x="104"
                   y="110"
                   font-family="Inter, sans-serif"
                   font-size="10.5"
@@ -906,11 +953,10 @@
                 >
                   carga nativa
                 </text>
-
                 <rect
-                  x="29"
+                  x="10"
                   y="142"
-                  width="180"
+                  width="170"
                   height="48"
                   rx="10"
                   fill="#161b22"
@@ -919,7 +965,7 @@
                   stroke-dasharray="5 4"
                 />
                 <text
-                  x="119"
+                  x="95"
                   y="164"
                   text-anchor="middle"
                   font-family="JetBrains Mono, monospace"
@@ -930,7 +976,7 @@
                   CLAUDE.md
                 </text>
                 <text
-                  x="119"
+                  x="95"
                   y="180"
                   text-anchor="middle"
                   font-family="Inter, sans-serif"
@@ -939,16 +985,15 @@
                 >
                   una línea · shim generado
                 </text>
-
                 <polyline
-                  points="119,190 119,224 244,224 244,242"
+                  points="95,190 95,224 260,224 260,242"
                   fill="none"
                   stroke="#ffa657"
                   stroke-width="1.5"
                   marker-end="url(#d1c)"
                 />
                 <text
-                  x="130"
+                  x="106"
                   y="216"
                   font-family="Inter, sans-serif"
                   font-size="10.5"
@@ -957,18 +1002,17 @@
                   import
                   <tspan font-family="JetBrains Mono, monospace" fill="#e6edf3">@AGENTS.md</tspan>
                 </text>
-
                 <line
-                  x1="360"
+                  x1="285"
                   y1="74"
-                  x2="360"
+                  x2="285"
                   y2="242"
                   stroke="#d2a8ff"
                   stroke-width="1.5"
                   marker-end="url(#d1o)"
                 />
                 <text
-                  x="369"
+                  x="294"
                   y="160"
                   font-family="Inter, sans-serif"
                   font-size="10.5"
@@ -976,16 +1020,33 @@
                 >
                   carga nativa
                 </text>
-
-                <polyline
-                  points="601,74 601,224 476,224 476,242"
-                  fill="none"
+                <line
+                  x1="475"
+                  y1="74"
+                  x2="475"
+                  y2="242"
                   stroke="#79c0ff"
                   stroke-width="1.5"
                   marker-end="url(#d1x)"
                 />
                 <text
-                  x="592"
+                  x="484"
+                  y="160"
+                  font-family="Inter, sans-serif"
+                  font-size="10.5"
+                  fill="#9aa6b2"
+                >
+                  carga nativa
+                </text>
+                <polyline
+                  points="665,74 665,224 520,224 520,242"
+                  fill="none"
+                  stroke="#56d4dd"
+                  stroke-width="1.5"
+                  marker-end="url(#d1p)"
+                />
+                <text
+                  x="656"
                   y="160"
                   text-anchor="end"
                   font-family="Inter, sans-serif"
@@ -994,9 +1055,8 @@
                 >
                   carga nativa
                 </text>
-
                 <rect
-                  x="170"
+                  x="190"
                   y="248"
                   width="380"
                   height="58"
@@ -1006,7 +1066,7 @@
                   stroke-width="2"
                 />
                 <text
-                  x="360"
+                  x="380"
                   y="273"
                   text-anchor="middle"
                   font-family="JetBrains Mono, monospace"
@@ -1017,7 +1077,7 @@
                   AGENTS.md
                 </text>
                 <text
-                  x="360"
+                  x="380"
                   y="292"
                   text-anchor="middle"
                   font-family="Inter, sans-serif"
@@ -1031,13 +1091,13 @@
             <div class="legend">
               <span class="lc"><i></i> Claude Code</span>
               <span class="lo"><i></i> OpenCode</span>
-              <span class="lx"><i></i> Codex</span>
+              <span class="lx"><i></i> Codex</span> <span class="lp"><i></i> Pi</span>
               <span><i class="dash"></i> artefacto generado</span>
             </div>
             <figcaption>
-              Dos de los tres llegan directo. El tercero llega por un salto de once bytes que nadie
-              escribe a mano. Ese salto es toda la diferencia entre los harnesses en la superficie
-              de instrucciones.
+              OpenCode, Codex y Pi llegan directo. Claude Code llega por un salto de once bytes que
+              nadie escribe a mano. Ese salto es toda la diferencia entre los harnesses en la
+              superficie de instrucciones.
             </figcaption>
           </figure>
 
@@ -1059,7 +1119,7 @@
           <div class="kicker">Las cinco superficies</div>
           <h2>Qué consume cada harness, superficie por superficie</h2>
           <p>
-            Cinco superficies por tres harnesses. Lo marcado como
+            Cinco superficies, una columna por harness. Lo marcado como
             <span class="chip nat">nativo</span> lo descubre el harness por su cuenta; lo marcado
             como <span class="chip gen">generado</span> es salida de un script y no se edita a mano.
           </p>
@@ -1071,6 +1131,7 @@
                   <th class="h-claude">Claude Code</th>
                   <th class="h-opencode">OpenCode</th>
                   <th class="h-codex">Codex CLI + Desktop</th>
+                  <th class="h-pi">Pi</th>
                 </tr>
               </thead>
               <tbody>
@@ -1082,6 +1143,7 @@
                   </td>
                   <td><span class="chip nat">nativo</span><br /><code>AGENTS.md</code></td>
                   <td><span class="chip nat">nativo</span><br /><code>AGENTS.md</code></td>
+                  <td><span class="chip nat">nativo</span><br /><code>AGENTS.md</code></td>
                 </tr>
                 <tr>
                   <td class="rowlabel">Skills</td>
@@ -1089,6 +1151,7 @@
                     <span class="chip gen">generado</span><br /><code>.claude/skills</code>
                     <span class="cellsub">symlink en POSIX, junction en Windows</span>
                   </td>
+                  <td><span class="chip nat">nativo</span><br /><code>.agents/skills/</code></td>
                   <td><span class="chip nat">nativo</span><br /><code>.agents/skills/</code></td>
                   <td><span class="chip nat">nativo</span><br /><code>.agents/skills/</code></td>
                 </tr>
@@ -1105,6 +1168,12 @@
                   <td>
                     <span class="chip none">ninguno</span>
                     <span class="cellsub">skill y modo, en prosa</span>
+                  </td>
+                  <td>
+                    <span class="chip none">ninguno</span>
+                    <span class="cellsub"
+                      >skill + modo: <code>/skill:project-context data</code></span
+                    >
                   </td>
                 </tr>
                 <tr>
@@ -1127,12 +1196,20 @@
                       <code>commandWindows</code></span
                     >
                   </td>
+                  <td>
+                    <code>.pi/extensions/agentic-qa.js</code>
+                    <span class="cellsub">una extensión de JS plano sobre el emisor</span>
+                  </td>
                 </tr>
                 <tr>
                   <td class="rowlabel">MCP</td>
                   <td><code>.mcp.json</code><span class="cellsub">JSON</span></td>
                   <td><code>opencode.jsonc</code><span class="cellsub">JSONC</span></td>
                   <td><code>.codex/config.toml</code><span class="cellsub">TOML</span></td>
+                  <td>
+                    <code>.pi/mcp.json</code
+                    ><span class="cellsub">JSON, con <code>exposure: "deferred"</code></span>
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -1150,7 +1227,7 @@
               <p>
                 Solo dos superficies tienen adaptador real: el hook y el MCP. Ahí los harnesses
                 difieren en la API, no en la intención. Instrucciones y skills son la misma fuente
-                vista desde tres lugares, y archivos de comando no hay.
+                vista desde cada harness, y archivos de comando no hay.
               </p>
             </div>
           </div>
@@ -1536,7 +1613,7 @@
             </div>
           </div>
 
-          <p>La forma es la misma en los tres harnesses. Cambia solo cómo la escribís:</p>
+          <p>La forma es la misma en todos los harnesses. Cambia solo cómo la escribís:</p>
 
           <pre
             class="code"
@@ -1545,7 +1622,10 @@
 <b>/test-automation</b> <span class="k">explain</span> &lt;target&gt;
 
 <span class="c"># OpenCode y Codex: lo mismo, en prosa</span>
-carga <b>project-context</b>, modo <span class="k">data</span></pre>
+carga <b>project-context</b>, modo <span class="k">data</span>
+
+<span class="c"># Pi: el slash propio de las skills</span>
+<b>/skill:project-context</b> <span class="k">data</span></pre>
 
           <p>
             La regla del primer token: el primer token de <code>$ARGUMENTS</code> que coincide con
@@ -1586,8 +1666,9 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
               <h3>Nada que mantener por host</h3>
               <p>
                 Claude Code llega a la skill por su slash, a través de <code>.claude/skills</code>.
-                OpenCode y Codex la cargan por nombre. En ninguno hay un archivo intermedio que se
-                pueda desincronizar.
+                OpenCode y Codex la cargan por nombre, y Pi con
+                <code>/skill:&lt;nombre&gt; &lt;modo&gt;</code>. En ninguno hay un archivo
+                intermedio que se pueda desincronizar.
               </p>
             </div>
             <div class="card">
@@ -1605,12 +1686,12 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
       <section id="hook">
         <div class="wrap">
           <div class="kicker">Hook</div>
-          <h2>Un emisor, tres adaptadores</h2>
+          <h2>Un emisor, un adaptador por harness</h2>
           <p class="lede">
             Lo que el hook agrega a cada prompt vive una sola vez, en
             <code>.agents/hooks/personality-reinject.mjs</code>. El archivo exporta funciones y
             además escribe a <code>stdout</code> cuando se lo ejecuta como script. Esas dos formas
-            de consumirlo son las que necesitan los tres harnesses. El contrato de salida de
+            de consumirlo son las que necesitan los harnesses. El contrato de salida de
             <code>AGENTS.md</code> no va en el emisor: el harness lo carga una vez por sesión, así
             que no se reinyecta en cada prompt.
           </p>
@@ -1644,9 +1725,9 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
           <figure>
             <div class="figscroll">
               <svg
-                viewBox="0 0 720 272"
+                viewBox="0 0 720 340"
                 role="img"
-                aria-label="Un único emisor de hook alimenta tres adaptadores: Claude y Codex lo ejecutan como command hook y su stdout se agrega como contexto de desarrollador, mientras OpenCode importa el emisor desde un plugin"
+                aria-label="Un único emisor de hook alimenta un adaptador por harness: Claude y Codex lo ejecutan como command hook y su stdout se agrega como contexto de desarrollador, mientras OpenCode y Pi importan el emisor desde un plugin o una extensión"
               >
                 <defs>
                   <marker
@@ -1682,8 +1763,18 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
                   >
                     <path d="M0,0 L10,5 L0,10 z" fill="#79c0ff" />
                   </marker>
+                  <marker
+                    id="d3p"
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="6"
+                    markerHeight="6"
+                    orient="auto-start-reverse"
+                  >
+                    <path d="M0,0 L10,5 L0,10 z" fill="#56d4dd" />
+                  </marker>
                 </defs>
-
                 <rect
                   x="24"
                   y="100"
@@ -1710,7 +1801,6 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
                 <text x="40" y="157" font-family="Inter, sans-serif" font-size="10" fill="#6e7681">
                   exporta sus funciones · imprime a stdout
                 </text>
-
                 <line x1="294" y1="133" x2="338" y2="133" stroke="#9aa6b2" stroke-width="1.5" />
                 <polyline
                   points="336,133 336,47 424,47"
@@ -1722,7 +1812,6 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
                 <text x="342" y="40" font-family="Inter, sans-serif" font-size="10" fill="#ffa657">
                   ejecuta
                 </text>
-
                 <line
                   x1="336"
                   y1="133"
@@ -1735,7 +1824,6 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
                 <text x="342" y="126" font-family="Inter, sans-serif" font-size="10" fill="#79c0ff">
                   ejecuta
                 </text>
-
                 <polyline
                   points="336,133 336,219 424,219"
                   fill="none"
@@ -1746,7 +1834,16 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
                 <text x="342" y="212" font-family="Inter, sans-serif" font-size="10" fill="#d2a8ff">
                   importa
                 </text>
-
+                <polyline
+                  points="336,133 336,305 424,305"
+                  fill="none"
+                  stroke="#56d4dd"
+                  stroke-width="1.5"
+                  marker-end="url(#d3p)"
+                />
+                <text x="342" y="298" font-family="Inter, sans-serif" font-size="10" fill="#56d4dd">
+                  importa
+                </text>
                 <rect
                   x="428"
                   y="18"
@@ -1769,7 +1866,6 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
                 <text x="442" y="56" font-family="Inter, sans-serif" font-size="9.5" fill="#9aa6b2">
                   UserPromptSubmit · stdout → developer context
                 </text>
-
                 <rect
                   x="428"
                   y="104"
@@ -1798,7 +1894,6 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
                 >
                   UserPromptSubmit · stdout → developer context
                 </text>
-
                 <rect
                   x="428"
                   y="190"
@@ -1827,12 +1922,40 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
                 >
                   muta output.system en el lugar
                 </text>
+                <rect
+                  x="428"
+                  y="276"
+                  width="268"
+                  height="58"
+                  rx="10"
+                  fill="#161b22"
+                  stroke="#56d4dd"
+                  stroke-width="1.5"
+                />
+                <text
+                  x="442"
+                  y="298"
+                  font-family="JetBrains Mono, monospace"
+                  font-size="11"
+                  fill="#e6edf3"
+                >
+                  .pi/extensions/agentic-qa.js
+                </text>
+                <text
+                  x="442"
+                  y="314"
+                  font-family="Inter, sans-serif"
+                  font-size="9.5"
+                  fill="#9aa6b2"
+                >
+                  una extensión de JS plano sobre el emisor
+                </text>
               </svg>
             </div>
             <figcaption>
               Los verbos de las flechas son la diferencia real: dos harnesses ejecutan el archivo y
-              leen su salida, uno lo importa como módulo. El texto de esas líneas es el mismo en los
-              tres porque nunca se copió.
+              leen su salida, dos lo importan como módulo. El texto de esas líneas es el mismo en
+              todos porque nunca se copió.
             </figcaption>
           </figure>
 
@@ -1860,13 +1983,20 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
             de asumir el directorio de trabajo.
           </p>
           <p>
+            El adaptador de Pi es un solo archivo de JavaScript plano,
+            <code>.pi/extensions/agentic-qa.js</code>, sobre el mismo emisor. Da la identidad y las
+            líneas <code>ORCA</code> y <code>ROUTE</code>, da <code>ROUTE-PENDING</code> y le pone
+            nombre a la sesión a partir del token de flota, igual que el hook de Claude Code.
+          </p>
+          <p>
             Las rutas se rearman solas. Claude Code y Codex registran dos grupos
             <code>SessionStart</code>, con matcher <code>compact</code> y con <code>clear</code>: al
             compactar o limpiar el contexto, las secciones ya ruteadas dejan de contar como leídas y
             el emisor las vuelve a pedir en el prompt siguiente. OpenCode 1 hace lo mismo con
-            <code>experimental.session.compacting</code>. Solo Claude Code corre además el emisor en
+            <code>experimental.session.compacting</code>. Claude Code corre además el emisor en
             <code>PostToolUse</code>: ahí no escribe líneas nuevas, solo una vez por prompt una
-            línea <code>ROUTE-PENDING:</code> si una sección ruteada sigue sin leerse.
+            línea <code>ROUTE-PENDING:</code> si una sección ruteada sigue sin leerse. Pi da esa
+            misma línea desde su extensión, y también re-arma las rutas al compactar.
           </p>
           <p>
             Hay un segundo hook, separado de este: <code>.agents/hooks/doc-contracts.mjs</code>.
@@ -1874,8 +2004,8 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
             (<code>PostToolUse</code>). Cuando la edición cae dentro de una región marcada con
             <code>LINT.IfChange</code>, agrega una línea <code>DOCS:</code> con las páginas que
             describen ese código, una vez por sesión. El que bloquea es el gate de pre-push y de CI;
-            el hook solo adelanta el aviso al momento de editar. OpenCode no lo registra. Vale solo
-            en el repo del boilerplate (ADR-0016).
+            el hook solo adelanta el aviso al momento de editar. OpenCode y Pi no lo registran. Vale
+            solo en el repo del boilerplate (ADR-0016).
           </p>
         </div>
       </section>
@@ -1930,10 +2060,10 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
       <section id="mcp">
         <div class="wrap">
           <div class="kicker">MCP</div>
-          <h2>Un solo set de servidores, tres formatos, paridad semántica</h2>
+          <h2>Un solo set de servidores, un formato por host, paridad semántica</h2>
           <p class="lede">
             Los servidores que declara <code>.mcp.json</code> existen en las configuraciones de los
-            harnesses que usa el proyecto (las tres en el boilerplate). La comparación no puede ser
+            harnesses que usa el proyecto (todas, en el boilerplate). La comparación no puede ser
             textual: los archivos ni siquiera comparten lenguaje.
           </p>
           <div class="note">
@@ -1943,7 +2073,7 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
               (<code>agents:compat:check</code>, <code>setup:doctor</code>, el instalador,
               <code>bun sync</code>) revisa solo esos. Sin la lista, o en <code>null</code>, se
               detectan por los archivos presentes; una lista explícita manda. El boilerplate mismo
-              revisa siempre los tres. Decisión:
+              revisa siempre todos. Decisión:
               <code>.context/ADR/ADR-0012-declared-harnesses.md</code>.
             </p>
           </div>
@@ -1951,14 +2081,15 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
             <span class="server">.mcp.json</span>
             <span class="server">opencode.jsonc</span>
             <span class="server">.codex/config.toml</span>
+            <span class="server">.pi/mcp.json</span>
           </div>
 
           <figure>
             <div class="figscroll">
               <svg
-                viewBox="0 0 720 230"
+                viewBox="0 0 720 298"
                 role="img"
-                aria-label="Los tres formatos nativos de configuración MCP se normalizan a una forma común de transporte, comando, argumentos, url, variables de entorno y estado, y recién ahí se comparan entre sí"
+                aria-label="Los formatos nativos de configuración MCP se normalizan a una forma común de transporte, comando, argumentos, url, variables de entorno y estado, y recién ahí se comparan entre sí"
               >
                 <defs>
                   <marker
@@ -2053,12 +2184,34 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
                 <text x="38" y="194" font-family="Inter, sans-serif" font-size="10" fill="#6e7681">
                   TOML · Codex
                 </text>
+                <rect
+                  x="24"
+                  y="224"
+                  width="180"
+                  height="48"
+                  rx="10"
+                  fill="#161b22"
+                  stroke="#56d4dd"
+                  stroke-width="1.5"
+                />
+                <text
+                  x="38"
+                  y="246"
+                  font-family="JetBrains Mono, monospace"
+                  font-size="11"
+                  fill="#e6edf3"
+                >
+                  .pi/mcp.json
+                </text>
+                <text x="38" y="262" font-family="Inter, sans-serif" font-size="10" fill="#6e7681">
+                  JSON · Pi
+                </text>
 
                 <line
                   x1="204"
                   y1="44"
                   x2="244"
-                  y2="86"
+                  y2="106"
                   stroke="#9aa6b2"
                   stroke-width="1.5"
                   marker-end="url(#d4n)"
@@ -2067,7 +2220,7 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
                   x1="204"
                   y1="112"
                   x2="244"
-                  y2="112"
+                  y2="129"
                   stroke="#9aa6b2"
                   stroke-width="1.5"
                   marker-end="url(#d4n)"
@@ -2076,119 +2229,142 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
                   x1="204"
                   y1="180"
                   x2="244"
-                  y2="138"
+                  y2="152"
+                  stroke="#9aa6b2"
+                  stroke-width="1.5"
+                  marker-end="url(#d4n)"
+                />
+                <line
+                  x1="204"
+                  y1="248"
+                  x2="244"
+                  y2="175"
                   stroke="#9aa6b2"
                   stroke-width="1.5"
                   marker-end="url(#d4n)"
                 />
 
-                <rect
-                  x="248"
-                  y="62"
-                  width="204"
-                  height="100"
-                  rx="12"
-                  fill="#1c2230"
-                  stroke="#e6edf3"
-                  stroke-width="2"
-                />
-                <text
-                  x="350"
-                  y="88"
-                  text-anchor="middle"
-                  font-family="Inter, sans-serif"
-                  font-size="12"
-                  font-weight="700"
-                  fill="#e6edf3"
-                >
-                  normalización
-                </text>
-                <text
-                  x="350"
-                  y="112"
-                  text-anchor="middle"
-                  font-family="JetBrains Mono, monospace"
-                  font-size="10"
-                  fill="#9aa6b2"
-                >
-                  transporte · comando · args
-                </text>
-                <text
-                  x="350"
-                  y="128"
-                  text-anchor="middle"
-                  font-family="JetBrains Mono, monospace"
-                  font-size="10"
-                  fill="#9aa6b2"
-                >
-                  url · env vars · estado
-                </text>
-                <text
-                  x="350"
-                  y="148"
-                  text-anchor="middle"
-                  font-family="Inter, sans-serif"
-                  font-size="10"
-                  fill="#6e7681"
-                >
-                  una forma común, sin sintaxis
-                </text>
+                <g transform="translate(0 34)">
+                  <rect
+                    x="248"
+                    y="62"
+                    width="204"
+                    height="100"
+                    rx="12"
+                    fill="#1c2230"
+                    stroke="#e6edf3"
+                    stroke-width="2"
+                  />
+                  <text
+                    x="350"
+                    y="88"
+                    text-anchor="middle"
+                    font-family="Inter, sans-serif"
+                    font-size="12"
+                    font-weight="700"
+                    fill="#e6edf3"
+                  >
+                    normalización
+                  </text>
+                  <text
+                    x="350"
+                    y="112"
+                    text-anchor="middle"
+                    font-family="JetBrains Mono, monospace"
+                    font-size="10"
+                    fill="#9aa6b2"
+                  >
+                    transporte · comando · args
+                  </text>
+                  <text
+                    x="350"
+                    y="128"
+                    text-anchor="middle"
+                    font-family="JetBrains Mono, monospace"
+                    font-size="10"
+                    fill="#9aa6b2"
+                  >
+                    url · env vars · estado
+                  </text>
+                  <text
+                    x="350"
+                    y="148"
+                    text-anchor="middle"
+                    font-family="Inter, sans-serif"
+                    font-size="10"
+                    fill="#6e7681"
+                  >
+                    una forma común, sin sintaxis
+                  </text>
 
-                <line
-                  x1="452"
-                  y1="112"
-                  x2="500"
-                  y2="112"
-                  stroke="#3fb950"
-                  stroke-width="1.5"
-                  marker-end="url(#d4v)"
-                />
-                <text
-                  x="476"
-                  y="104"
-                  text-anchor="middle"
-                  font-family="Inter, sans-serif"
-                  font-size="10"
-                  fill="#3fb950"
-                >
-                  compara
-                </text>
+                  <line
+                    x1="452"
+                    y1="112"
+                    x2="500"
+                    y2="112"
+                    stroke="#3fb950"
+                    stroke-width="1.5"
+                    marker-end="url(#d4v)"
+                  />
+                  <text
+                    x="476"
+                    y="104"
+                    text-anchor="middle"
+                    font-family="Inter, sans-serif"
+                    font-size="10"
+                    fill="#3fb950"
+                  >
+                    compara
+                  </text>
 
-                <rect
-                  x="504"
-                  y="80"
-                  width="192"
-                  height="64"
-                  rx="10"
-                  fill="#161b22"
-                  stroke="#3fb950"
-                  stroke-width="1.5"
-                />
-                <text
-                  x="518"
-                  y="104"
-                  font-family="Inter, sans-serif"
-                  font-size="12"
-                  font-weight="700"
-                  fill="#e6edf3"
-                >
-                  cada servidor × hosts en uso
-                </text>
-                <text x="518" y="122" font-family="Inter, sans-serif" font-size="10" fill="#9aa6b2">
-                  agregarlo a uno solo
-                </text>
-                <text x="518" y="136" font-family="Inter, sans-serif" font-size="10" fill="#ff7b72">
-                  es un fallo, no un aviso
-                </text>
+                  <rect
+                    x="504"
+                    y="80"
+                    width="192"
+                    height="64"
+                    rx="10"
+                    fill="#161b22"
+                    stroke="#3fb950"
+                    stroke-width="1.5"
+                  />
+                  <text
+                    x="518"
+                    y="104"
+                    font-family="Inter, sans-serif"
+                    font-size="12"
+                    font-weight="700"
+                    fill="#e6edf3"
+                  >
+                    cada servidor × hosts en uso
+                  </text>
+                  <text
+                    x="518"
+                    y="122"
+                    font-family="Inter, sans-serif"
+                    font-size="10"
+                    fill="#9aa6b2"
+                  >
+                    agregarlo a uno solo
+                  </text>
+                  <text
+                    x="518"
+                    y="136"
+                    font-family="Inter, sans-serif"
+                    font-size="10"
+                    fill="#ff7b72"
+                  >
+                    es un fallo, no un aviso
+                  </text>
+                </g>
               </svg>
             </div>
             <figcaption>
-              Sin el paso del medio, la comparación solo podría decir que los tres archivos son
+              Sin el paso del medio, la comparación solo podría decir que los archivos son
               distintos. Con él, dice si describen los mismos servidores.
             </figcaption>
           </figure>
           <p>
-            Las credenciales llegan igual en los tres hosts: cada servidor que necesita valores de
+            Las credenciales llegan igual en todos los hosts: cada servidor que necesita valores de
             <code>.env</code> arranca detrás del mismo loader,
             <code>varlock run --inject vars --filter A,B -- &lt;server&gt;</code>, que lee
             <code>.env</code> (o el gestor de secretos que nombre el esquema) al arrancar el
@@ -2196,6 +2372,17 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
             commiteadas llevan nombres, nunca valores, y ese <code>--filter</code> es justo el
             conjunto de dependencias que compara la paridad
             (<code>.context/ADR/ADR-0011-mcp-env-loader.md</code>).
+          </p>
+          <p>
+            En Pi el registro es <code>.pi/mcp.json</code>, con la misma forma
+            <code>mcpServers</code> que <code>.mcp.json</code> y las mismas líneas del loader. Cada
+            servidor lleva <code>exposure: "deferred"</code> y una <code>description</code> de una
+            línea. Los servidores de nivel usuario van en <code>~/.pi/agent/mcp.json</code> (<code
+              >pi mcp add</code
+            >); los conectores de claude.ai no existen en Pi. Como <code>engram setup</code> no
+            nombra a Pi, el instalador imprime
+            <code>pi mcp add engram --exposure deferred -- engram mcp --tools=agent</code> para que
+            lo corras a mano.
           </p>
           <div class="note warn">
             <p>
@@ -2566,6 +2753,61 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
         </div>
       </section>
 
+      <section id="pi">
+        <div class="wrap">
+          <div class="kicker">Pi</div>
+          <h2>Qué trae Pi y qué le falta</h2>
+          <p class="lede">
+            Pi lee <code>AGENTS.md</code> y <code>.agents/skills/</code> de forma nativa y tiene dos
+            archivos propios: <code>.pi/mcp.json</code> y <code>.pi/extensions/agentic-qa.js</code>.
+            La detección lee solo esos dos. Todo lo demás bajo <code>.pi/</code> es estado de
+            ejecución y queda fuera de git por una lista de permitidos. Se abre pelado,
+            <code>pi</code>, nunca dentro de un loader.
+          </p>
+          <div class="grid2">
+            <div class="card">
+              <h3>Primero, la confianza</h3>
+              <p>
+                Sin confianza de proyecto, una sesión recibe <code>AGENTS.md</code> y nada más: ni
+                skills, ni MCP, ni el adaptador. Dentro de Pi se da con <code>/trust</code>.
+                <code>bun run setup:doctor</code> la reporta aparte de la corrección de los
+                archivos. Una máquina que corre workers confía en la carpeta madre.
+              </p>
+            </div>
+            <div class="card">
+              <h3>El bloqueo es un cinturón de seguridad</h3>
+              <p>
+                Pi no tiene configuración de denegados ni sistema de aprobaciones: el bypass es su
+                único estado. El adaptador rechaza la lectura directa de <code>.env*</code> (no de
+                <code>.env.example</code> ni de los schemas), de <code>.auth/**</code> y de
+                <code>.claude/settings.local.json</code>, y los comandos tipo <code>printenv</code>.
+                Variantes por shell como <code>cat .env</code> pasan, los hijos en segundo plano de
+                <code>pi-subagents</code> no se probaron, y solo existe donde el adaptador carga:
+                una sesión sin confianza, o una de print o RPC bajo <code>ask</code>, no lo tiene.
+              </p>
+            </div>
+            <div class="card">
+              <h3>Lo que no trae</h3>
+              <p>
+                Subagentes, tool de preguntas y modo plan. El trabajo corre en línea o en un worker
+                supervisado, y las preguntas usan la lista numerada. Tampoco tiene un hook de
+                contratos de docs al editar: lo cubre el gate del pre-push.
+              </p>
+            </div>
+            <div class="card">
+              <h3>Orca y el instalador</h3>
+              <p>
+                Orca lo lanza con <code>worker-start --agent pi</code>. El worker arranca con el
+                modelo de su propia configuración y el conductor escribe <code>/model</code>. El
+                instalador lo ofrece con el slug <code>pi</code>, preseleccionado solo si lo
+                detecta. Un proyecto existente no recibe archivos de Pi salvo que declare Pi o los
+                archivos ya existan.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section id="limites">
         <div class="wrap">
           <div class="kicker">Límites conocidos</div>
@@ -2596,12 +2838,22 @@ carga <b>project-context</b>, modo <span class="k">data</span></pre>
               disco.
             </li>
             <li class="warn">
-              <b>Una variable que exportaste en tu shell gana sobre <code>.env</code>.</b>
-              El harness se abre tal cual (<code>claude</code>, <code>opencode</code>,
-              <code>codex</code> o su app de escritorio) y cada MCP lee <code>.env</code> por su
-              cuenta, pero un valor viejo exportado en el perfil de tu shell tapa el del archivo en
-              todo lo que arranques desde ahí. <code>bun run vars:env:check</code> te dice cuál, sin
-              mostrar el valor.
+              <b
+                >Pi necesita confianza de proyecto, y su bloqueo de secretos es un cinturón de
+                seguridad.</b
+              >
+              Sin confianza solo carga <code>AGENTS.md</code>. Sin denegados ni aprobaciones, el
+              adaptador frena lecturas directas de <code>.env*</code>, pero
+              <code>cat .env</code> por shell pasa y los hijos de <code>pi-subagents</code> no se
+              probaron.
+            </li>
+            <li class="warn">
+              <b>Una variable que exportaste en tu shell gana sobre <code>.env</code>.</b> El
+              harness se abre tal cual (<code>claude</code>, <code>opencode</code>,
+              <code>codex</code>, <code>pi</code> o su app de escritorio) y cada MCP lee
+              <code>.env</code> por su cuenta, pero un valor viejo exportado en el perfil de tu
+              shell tapa el del archivo en todo lo que arranques desde ahí.
+              <code>bun run vars:env:check</code> te dice cuál, sin mostrar el valor.
             </li>
           </ul>
         </div>

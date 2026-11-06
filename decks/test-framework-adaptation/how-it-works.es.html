@@ -524,7 +524,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="wf-node alt"><p class="n">Fase 6</p><p class="t">Primera entidad</p><p class="c">fixtures · smoke<br>borra los Example*</p></div>
     </div>
     <div class="wf-row mt-s">
-      <div class="wf-node alt"><p class="n">Fase 7</p><p class="t">CI, manifest y MCP</p><p class="c">workflows · kata-manifest<br>los tres hosts</p></div>
+      <div class="wf-node alt"><p class="n">Fase 7</p><p class="t">CI, manifest y MCP</p><p class="c">workflows · kata-manifest<br>cada host</p></div>
       <span class="wf-arr">→</span>
       <div class="wf-node gate"><p class="n">Fase 8</p><p class="t">Gate de validación</p><p class="c">en orden, frena<br>en la primera falla</p></div>
       <span class="wf-arr">→</span>
@@ -716,7 +716,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="grid g3 mt-m" style="gap:20px">
       <div class="card card-accent"><p class="lbl">Regla de oro</p><p class="small mt-s">Un componente importa de <span class="mono">@schemas/{domain}.types</span>, nunca de <span class="mono">@openapi</span>. El escaneo final lo verifica con un grep sobre <span class="mono">tests/components/</span>.</p></div>
       <div class="card"><p class="lbl">Qué adapta</p><p class="small mt-s"><span class="mono">auth.types.ts</span> al login real, un facade nuevo por entidad (copiando el patrón de <span class="mono">example.types.ts</span>) y el re-export en <span class="mono">api/schemas/index.ts</span>.</p></div>
-      <div class="card" style="border-color:var(--warn)"><p class="lbl" style="color:var(--warn)">Sin spec</p><p class="small mt-s">Primero <span class="mono">curl</span> a los endpoints reales, después interfaces escritas a mano. Se anota en Discovery Gaps y el MCP <span class="mono">openapi</span> se desactiva en los tres hosts.</p></div>
+      <div class="card" style="border-color:var(--warn)"><p class="lbl" style="color:var(--warn)">Sin spec</p><p class="small mt-s">Primero <span class="mono">curl</span> a los endpoints reales, después interfaces escritas a mano. Se anota en Discovery Gaps y el MCP <span class="mono">openapi</span> se desactiva en cada host.</p></div>
     </div>
     <div class="notes">El MCP openapi es de solo lectura de schemas: descubre endpoints y lee contratos. Las requests autenticadas van por curl con el token de api:login, según agentic-qa-core/references/api-testing-doctrine.md.</div>
   </section>
@@ -773,7 +773,7 @@ bun run api:login &lt;env&gt;
         <div class="card card-accent"><p class="lbl">Secrets de GitHub</p><p class="small mt-s">Te deja un bloque para copiar. Si <span class="mono">gh</span> está autenticado y aprobás, los carga desde <span class="mono">.env</span> con <span class="mono">gh secret set</span>, sin mostrar nunca un valor. <span class="mono">TMS_PROVIDER</span> va como Variable, no como secreto.</p></div>
       </div>
       <div class="stack" style="gap:12px">
-        <div class="card" style="border-color:var(--warn)"><p class="lbl" style="color:var(--warn)">MCP en los tres hosts</p><p class="small mt-s">Todo cambio entra igual en <span class="mono">.mcp.json</span>, <span class="mono">opencode.jsonc</span> y <span class="mono">.codex/config.toml</span>, cada uno con su sintaxis. <span class="mono">bun run agents:compat:check</span> lo prueba. Si falta uno, ese host pierde el servidor.</p></div>
+        <div class="card" style="border-color:var(--warn)"><p class="lbl" style="color:var(--warn)">MCP en cada host</p><p class="small mt-s">Todo cambio entra igual en <span class="mono">.mcp.json</span>, <span class="mono">opencode.jsonc</span>, <span class="mono">.codex/config.toml</span> y <span class="mono">.pi/mcp.json</span>, cada uno con su sintaxis. <span class="mono">bun run agents:compat:check</span> lo prueba. Si falta uno, ese host pierde el servidor.</p></div>
         <div class="card"><p class="lbl">Solo servidores locales</p><p class="small mt-s">Búsqueda web, Postman y Atlassian se conectan a nivel harness, una vez por máquina, nunca en los archivos del proyecto. Te recomienda Exa, Tavily y Context7.</p></div>
         <div class="card"><p class="lbl"><span class="mono">dbhub.toml</span> y <span class="mono">allurerc.mjs</span></p><p class="small mt-s">La base que corresponda (o <span class="mono">dbhub</span> desactivado si no hay base) y el nombre real del reporte Allure.</p></div>
       </div>
@@ -821,7 +821,7 @@ repo:check</div>
           <tr><td class="small"><b>Facades</b></td><td class="small">Ningún componente importa <span class="mono">@openapi</span></td></tr>
           <tr><td class="small"><b>URLs</b></td><td class="small"><span class="mono">envDataMap</span> igual a los entornos de <span class="mono">project.yaml</span></td></tr>
           <tr><td class="small"><b>Auth</b></td><td class="small"><span class="mono">.auth/*.json</span> no vacíos y <span class="mono">API_TOKEN_&lt;ROLE&gt;_&lt;ENV&gt;</span> en <span class="mono">tokens.env</span></td></tr>
-          <tr><td class="small"><b>MCP</b></td><td class="small">Paridad en los tres hosts y <span class="mono">harness:env:check</span> en verde</td></tr>
+          <tr><td class="small"><b>MCP</b></td><td class="small">Paridad en cada host y <span class="mono">harness:env:check</span> en verde</td></tr>
           <tr><td class="small"><b>Gate</b></td><td class="small"><span class="mono">bun run repo:check</span> sale en 0</td></tr>
         </table>
       </div>
@@ -863,7 +863,7 @@ repo:check</div>
     <div class="grid g3 mt-m" style="gap:22px;align-items:start">
       <div class="card">
         <p class="lbl">Cómo se invoca</p>
-        <p class="small mt-s"><b>Claude Code:</b> <span class="mono">/test-framework-adaptation</span>, o con una entidad para acotar el primer componente: <span class="mono">/test-framework-adaptation &lt;entidad&gt;</span>.<br><b>OpenCode y Codex:</b> cargá la skill <span class="mono">test-framework-adaptation</span>, modo <span class="mono">adapt</span>.</p>
+        <p class="small mt-s"><b>Claude Code:</b> <span class="mono">/test-framework-adaptation</span>, o con una entidad para acotar el primer componente: <span class="mono">/test-framework-adaptation &lt;entidad&gt;</span>.<br><b>OpenCode y Codex:</b> cargá la skill <span class="mono">test-framework-adaptation</span>, modo <span class="mono">adapt</span>.<br><b>Pi:</b> <span class="mono">/skill:test-framework-adaptation</span></p>
         <p class="small mt-s">Tiene un solo modo, <span class="mono">adapt</span>. También se activa con <i>"adapt framework"</i> o <i>"wire fixtures"</i>.</p>
       </div>
       <div class="card">
@@ -877,7 +877,7 @@ repo:check</div>
     </div>
     <div class="card card-accent mt-m">
       <p class="lbl">Lo que deja la skill</p>
-      <p class="small mt-s">Un repo sin restos del ejemplo · login real en Playwright y en el curl del agente · la primera entidad con su smoke en <span class="mono">@critical</span> · variables, CI y MCPs alineados en los tres hosts · <span class="mono">.context/reports/test-framework-adaptation-plan.md</span> en <span class="mono">COMPLETED</span>.</p>
+      <p class="small mt-s">Un repo sin restos del ejemplo · login real en Playwright y en el curl del agente · la primera entidad con su smoke en <span class="mono">@critical</span> · variables, CI y MCPs alineados en cada host · <span class="mono">.context/reports/test-framework-adaptation-plan.md</span> en <span class="mono">COMPLETED</span>.</p>
     </div>
     <p class="small dim mt-m">Canon: <span class="mono">.agents/skills/test-framework-adaptation/SKILL.md</span> y <span class="mono">references/adaptation-workflow.md</span>, que es dueño del flujo completo de Fase 0 a 9.</p>
     <div class="notes">Fin del recorrido. El mapa del slide 3 resume todo: verificar el contexto, preguntar lo que falta, escribir el plan, esperar tu aprobación y recién ahí adaptar, validar y escanear.</div>

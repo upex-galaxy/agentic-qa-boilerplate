@@ -102,10 +102,10 @@
       <h2 id="configurar">Configurar el MCP</h2>
       <p>
         El server <code>openapi</code> ya está declarado en <code>.mcp.json</code>,
-        <code>opencode.jsonc</code> y <code>.codex/config.toml</code>, igual en los tres: arranca
-        detrás del loader de <code>.env</code>, que lee de <code>.env</code> solo las dos variables
-        de su <code>--filter</code>. Así queda en <code>.mcp.json</code> (las versiones están
-        fijadas ahí):
+        <code>opencode.jsonc</code>, <code>.codex/config.toml</code> y <code>.pi/mcp.json</code>,
+        igual en todos: arranca detrás del loader de <code>.env</code>, que lee de
+        <code>.env</code> solo las dos variables de su <code>--filter</code>. Así queda en
+        <code>.mcp.json</code> (las versiones están fijadas ahí):
       </p>
       <pre data-lang="json"><code>"openapi": {
   "command": "bunx",
@@ -152,8 +152,8 @@
       </div>
       <p>
         Como con cualquier MCP, las variables se leen al arrancar la sesión. Abre el agente como
-        siempre (<code>claude</code>, <code>opencode</code> o <code>codex</code>, o su app de
-        escritorio) y reinícialo si cambias alguna de las dos.
+        siempre (<code>claude</code>, <code>opencode</code>, <code>codex</code> o <code>pi</code>, o
+        su app de escritorio) y reinícialo si cambias alguna de las dos.
       </p>
       <p>
         Para comprobar que funciona, pregunta al agente qué endpoints tiene la API. Debería llamar a
@@ -169,9 +169,9 @@
         mientras el otro parece bien.
       </p>
       <dl class="defs">
-        <dt>Claude Code, OpenCode y Codex</dt>
+        <dt>Claude Code, OpenCode, Codex y Pi</dt>
         <dd>
-          Los tres arrancan este MCP con <code>varlock run --no-redact-stdout ... --</code> delante,
+          Todos arrancan este MCP con <code>varlock run --no-redact-stdout ... --</code> delante,
           así que lee <code>.env</code> aunque la app no tenga variables de entorno. Hace falta
           <code>bun install</code> una vez (el loader es la dependencia <code>varlock</code>) y un
           <code>.env</code> con valores en la raíz del proyecto. Si cambias <code>.env</code>,
@@ -324,10 +324,10 @@ curl -s -H "Authorization: Bearer $API_TOKEN_ADMIN_STAGING" \
       <div class="callout danger">
         <span class="callout-title">Nunca edites <code>.mcp.json</code> para renovar un token</span>
         <p>
-          Tampoco <code>opencode.jsonc</code> ni <code>.codex/config.toml</code>. El MCP no tiene
-          credenciales a propósito. Un JWT caducado se renueva con <code>bun run api:login</code>,
-          que reescribe <code>.auth/tokens.env</code>, y con nada más. No pegues un token en un
-          comando, un artefacto, un commit ni en el chat.
+          Tampoco <code>opencode.jsonc</code>, <code>.codex/config.toml</code> ni
+          <code>.pi/mcp.json</code>. El MCP no tiene credenciales a propósito. Un JWT caducado se
+          renueva con <code>bun run api:login</code>, que reescribe <code>.auth/tokens.env</code>, y
+          con nada más. No pegues un token en un comando, un artefacto, un commit ni en el chat.
         </p>
       </div>
 

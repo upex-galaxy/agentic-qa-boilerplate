@@ -939,10 +939,10 @@ table.tbl .mono{font-size:13px}
     <div class="notes">Fuente: agentic-qa-core/references/stage-gates.md — contrato agéntico por stage y escala CSA 0-5. El punto pedagógico: el DoD dice qué tiene que ser verdad; el contrato dice quién tuvo permiso de hacerlo. Un orquestador que avanza un stage sin honrar el contrato se salteó un gate exactamente igual que uno que tildó un DoD que no verificó. Y Observation existe para que nadie crea que el ciclo cierra en CI.</div>
   </section>
 
-  <!-- 15c. INVOCACIÓN EN TRES HOSTS -->
-  <section class="slide" data-title="Invocación en tres hosts">
-    <p class="kicker run">cómo se invoca · claude code, opencode, codex</p>
-    <h2 class="h2">Un nombre de skill, tres hosts, <span class="grad">sin modos</span></h2>
+  <!-- 15c. INVOCACIÓN POR HOST -->
+  <section class="slide" data-title="Invocación por host">
+    <p class="kicker run">cómo se invoca · claude code, opencode, codex, pi</p>
+    <h2 class="h2">Un nombre de skill, todos los hosts, <span class="grad">sin modos</span></h2>
     <p class="lede" style="font-size:17px">La skill no declara modos: lo que viaja después del nombre son <b>args-as-answers</b> (suite, env, grep o test_file). El preflight solo pregunta lo que falte; sin suite, "run regression" pelado corre <b>regression</b> en el env por defecto.</p>
     <table class="tbl mt-m">
       <thead><tr><th>Host</th><th>Cómo se invoca</th><th>Ejemplo</th></tr></thead>
@@ -950,13 +950,14 @@ table.tbl .mono{font-size:13px}
         <tr><td><b>Claude Code</b></td><td>Slash command con la skill, args detrás</td><td class="mono">/regression-testing smoke staging</td></tr>
         <tr><td><b>OpenCode</b></td><td>Sin slash commands: se nombra en prosa</td><td>"carga la skill <span class="mono">regression-testing</span>, suite smoke en staging"</td></tr>
         <tr><td><b>Codex</b></td><td>Igual que OpenCode, en prosa</td><td>"carga la skill <span class="mono">regression-testing</span> y corre sanity con grep @auth"</td></tr>
+        <tr><td><b>Pi</b></td><td>Slash de skill, args detrás</td><td class="mono">/skill:regression-testing smoke staging</td></tr>
       </tbody>
     </table>
     <div class="cards c2 mt-m">
       <div class="callout"><h4>Frases que la disparan</h4><p>"run regression", "smoke suite", "analyze test results", "GO/NO-GO decision", "release readiness", "quality report", "flaky tests", "pass rate".</p></div>
       <div class="callout"><h4>Rutas que no son modos</h4><p>Los reportes privados se piden con una frase: "reportes privados", "protege los reportes con login", "no publiques evidencia pública". Lo mismo GitHub Pages ("publish the reports site") y el version-currency check ("is Allure up to date?").</p></div>
     </div>
-    <div class="notes">Fuente: SKILL.md (frontmatter description, §Readiness Preflight Gate y §Specific tasks) y .agents/instructions/agent-skills-and-mcps.md Skill modes. La skill no tiene sección Mode routing, así que en Claude Code el primer token no selecciona un modo: todo lo que va después del nombre se lee como respuesta del preflight. En OpenCode y Codex no existen slash commands, se pide en prosa nombrando la skill.</div>
+    <div class="notes">Fuente: SKILL.md (frontmatter description, §Readiness Preflight Gate y §Specific tasks) y .agents/instructions/agent-skills-and-mcps.md Skill modes. La skill no tiene sección Mode routing, así que en Claude Code el primer token no selecciona un modo: todo lo que va después del nombre se lee como respuesta del preflight. En OpenCode y Codex no existen slash commands, se pide en prosa nombrando la skill. En Pi se invoca con /skill:regression-testing.</div>
   </section>
 
   <!-- 16. CIERRE -->
@@ -966,7 +967,7 @@ table.tbl .mono{font-size:13px}
     <div class="cards c3 mt-m" style="align-items:start">
       <div class="card acc">
         <h4>Invocación</h4>
-        <p><span class="mono">/regression-testing</span> en Claude Code; "carga la skill <span class="mono">regression-testing</span>" en OpenCode y Codex. Detalle en la slide anterior.</p>
+        <p><span class="mono">/regression-testing</span> en Claude Code; "carga la skill <span class="mono">regression-testing</span>" en OpenCode y Codex; <span class="mono">/skill:regression-testing</span> en Pi. Detalle en la slide anterior.</p>
       </div>
       <div class="card acc">
         <h4>Handoffs</h4>

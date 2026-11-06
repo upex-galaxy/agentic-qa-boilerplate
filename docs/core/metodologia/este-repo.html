@@ -505,7 +505,7 @@ components    -&gt;  módulo del producto  (qué parte del producto toca)</code>
       <h2 id="skills">Skills</h2>
       <p>
         Una skill es una capacidad del agente guardada en <code>.agents/skills/</code> (compartida
-        por Claude Code, OpenCode y Codex). Se activa cuando lo que pides coincide con su
+        por Claude Code, OpenCode, Codex y Pi). Se activa cuando lo que pides coincide con su
         descripción, o la invocas por nombre. Las de la comunidad las instala
         <code>cli/install.ts</code> a nivel de proyecto y no están versionadas en el repo. El
         catálogo es <code>.agents/skills/REGISTRY.md</code> (generado por
@@ -518,9 +518,10 @@ components    -&gt;  módulo del producto  (qué parte del producto toca)</code>
       <p>
         No hay archivos de comando: una skill se invoca por su nombre más un modo. En Claude Code es
         <code>/project-context test-plan</code>; en OpenCode y Codex nombras la skill y el modo en
-        prosa. El primer token de tus argumentos que coincide con un modo es el modo y el resto se
-        le pasa a la skill; si ninguno coincide, la skill pregunta. Los modos de cada skill están en
-        su <code>SKILL.md</code>.
+        prosa, y en Pi escribes <code>/skill:&lt;nombre&gt; &lt;modo&gt;</code>. El primer token de
+        tus argumentos que coincide con un modo es el modo y el resto se le pasa a la skill; si
+        ninguno coincide, la skill pregunta. Los modos de cada skill están en su
+        <code>SKILL.md</code>.
       </p>
 
       <h2 id="integraciones">Integraciones</h2>
@@ -573,7 +574,8 @@ components    -&gt;  módulo del producto  (qué parte del producto toca)</code>
       <p>
         Un MCP (Model Context Protocol) es un puente entre el agente y un sistema vivo. El conjunto
         canónico es lo que declara <code>.mcp.json</code> (Claude Code). El mismo conjunto existe en
-        <code>opencode.jsonc</code> y en <code>.codex/config.toml</code>, cada uno en su formato, y
+        <code>opencode.jsonc</code>, en <code>.codex/config.toml</code> y en
+        <code>.pi/mcp.json</code>, cada uno en su formato, y
         <code>bun run agents:compat:check</code> falla si un server aparece en un host y no en otro.
         Solo viven ahí los servers locales que leen valores del proyecto y los que no necesitan
         clave; los remotos cuyo único contenido era una API key (búsqueda web, Postman) se conectan

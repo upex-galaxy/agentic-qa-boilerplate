@@ -973,12 +973,12 @@
                 <div class="t">de doctrina publicados</div>
               </div>
               <div class="stat">
-                <div class="n">3</div>
-                <div class="t">harnesses</div>
+                <div class="n">Harnesses</div>
+                <div class="t">con una sola fuente</div>
               </div>
               <div class="stat">
                 <div class="n">MCPs</div>
-                <div class="t">con paridad en los tres hosts</div>
+                <div class="t">con paridad en todos los hosts</div>
               </div>
             </div>
           </div>
@@ -1458,10 +1458,10 @@
         <div class="wrap">
           <div class="sec-head">
             <p class="eyebrow">03 · Compatibilidad</p>
-            <h2>Un solo origen, tres harnesses</h2>
+            <h2>Un solo origen, todos los harnesses</h2>
             <p>
-              El repo corre igual en Claude Code, OpenCode y Codex, en CLI y en Desktop. No hay tres
-              copias de las instrucciones ni tres carpetas de skills: hay una sola fuente y
+              El repo corre igual en Claude Code, OpenCode, Codex (CLI y Desktop) y Pi. No hay una
+              copia de las instrucciones ni una carpeta de skills por harness: hay una sola fuente y
               adaptadores finos donde los hosts realmente difieren.
             </p>
           </div>
@@ -1471,9 +1471,9 @@
             <div class="fig-scroll">
               <svg
                 class="diagram d-harness"
-                viewBox="0 0 720 306"
+                viewBox="0 0 720 378"
                 role="img"
-                aria-label="Claude Code, OpenCode y Codex convergen en una sola fuente: AGENTS.md y .agents/skills/. OpenCode y Codex la leen nativo; Claude Code entra por un shim generado. Los adaptadores generados (hook, MCP y alias de skills) se verifican con bun run agents:compat:check."
+                aria-label="Claude Code, OpenCode, Codex y Pi convergen en una sola fuente: AGENTS.md y .agents/skills/. OpenCode, Codex y Pi la leen nativo; Claude Code entra por un shim generado. Los adaptadores generados (hook, MCP y alias de skills) se verifican con bun run agents:compat:check."
               >
                 <defs>
                   <marker
@@ -1492,42 +1492,43 @@
                 <rect class="box" x="16" y="16" width="176" height="56" rx="8" />
                 <text class="t-name" x="32" y="41">Claude Code</text>
                 <text class="t-mono" x="32" y="58">.mcp.json</text>
-
-                <rect class="box" x="16" y="96" width="176" height="56" rx="8" />
-                <text class="t-name" x="32" y="121">OpenCode</text>
-                <text class="t-mono" x="32" y="138">opencode.jsonc</text>
-
-                <rect class="box" x="16" y="176" width="176" height="56" rx="8" />
-                <text class="t-name" x="32" y="201">Codex · CLI + Desktop</text>
-                <text class="t-mono" x="32" y="218">.codex/config.toml</text>
-
-                <path class="flow" d="M192,44 H272 V124" />
-                <path class="flow" d="M192,204 H272 V124" />
-                <line class="flow" x1="192" y1="124" x2="348" y2="124" marker-end="url(#ah3)" />
+                <rect class="box" x="16" y="92" width="176" height="56" rx="8" />
+                <text class="t-name" x="32" y="117">OpenCode</text>
+                <text class="t-mono" x="32" y="134">opencode.jsonc</text>
+                <rect class="box" x="16" y="168" width="176" height="56" rx="8" />
+                <text class="t-name" x="32" y="193">Codex · CLI + Desktop</text>
+                <text class="t-mono" x="32" y="210">.codex/config.toml</text>
+                <rect class="box" x="16" y="244" width="176" height="56" rx="8" />
+                <text class="t-name" x="32" y="269">Pi</text>
+                <text class="t-mono" x="32" y="286">.pi/mcp.json</text>
+                <path class="flow" d="M192,44 H272 V152" />
+                <path class="flow" d="M192,120 H272 V152" />
+                <path class="flow" d="M192,196 H272 V152" />
+                <path class="flow" d="M192,272 H272 V152" />
+                <line class="flow" x1="272" y1="152" x2="348" y2="152" marker-end="url(#ah3)" />
                 <text class="t-mono" x="200" y="36">shim generado</text>
-                <text class="t-mono" x="200" y="116">nativo</text>
-                <text class="t-mono" x="200" y="196">nativo</text>
-
-                <rect class="accent-box" x="356" y="70" width="308" height="108" rx="10" />
-                <text class="t-phase t-amber" x="510" y="94" text-anchor="middle">
+                <text class="t-mono" x="200" y="112">nativo</text>
+                <text class="t-mono" x="200" y="188">nativo</text>
+                <text class="t-mono" x="200" y="264">nativo</text>
+                <rect class="accent-box" x="356" y="98" width="308" height="108" rx="10" />
+                <text class="t-phase t-amber" x="510" y="122" text-anchor="middle">
                   UNA SOLA FUENTE
                 </text>
-                <text class="t-code" x="510" y="122" text-anchor="middle">AGENTS.md</text>
-                <text class="t-code" x="510" y="146" text-anchor="middle">.agents/skills/</text>
-                <text class="t-sub" x="510" y="165" text-anchor="middle">
+                <text class="t-code" x="510" y="150" text-anchor="middle">AGENTS.md</text>
+                <text class="t-code" x="510" y="174" text-anchor="middle">.agents/skills/</text>
+                <text class="t-sub" x="510" y="193" text-anchor="middle">
                   instrucciones y skills, sin copias
                 </text>
-
-                <rect class="dashed" x="16" y="252" width="648" height="44" rx="8" />
-                <text class="t-phase" x="32" y="272">ADAPTADORES GENERADOS</text>
-                <text class="t-mono" x="32" y="288">
+                <rect class="dashed" x="16" y="324" width="648" height="44" rx="8" />
+                <text class="t-phase" x="32" y="344">ADAPTADORES GENERADOS</text>
+                <text class="t-mono" x="32" y="360">
                   hook · MCP · alias de skills: bun run agents:compat:check
                 </text>
               </svg>
             </div>
             <figcaption>
-              Las tres flechas entran al mismo bloque. Lo único que cambia por host es el formato de
-              config de MCP y cómo llega a las instrucciones: OpenCode y Codex leen
+              Todas las flechas entran al mismo bloque. Lo único que cambia por host es el formato
+              de config de MCP y cómo llega a las instrucciones: OpenCode, Codex y Pi leen
               <code>AGENTS.md</code> nativo, Claude Code lo alcanza por un shim de una línea. Todo
               lo generado se verifica en el pre-push.
             </figcaption>
@@ -1548,8 +1549,8 @@
             </li>
             <li>
               <b>Paridad verificada</b>
-              Los MCP declarados en <code>.mcp.json</code> existen en las tres configs y se comparan
-              normalizadas: agregar un server en un solo host es un fallo, no un olvido.
+              Los MCP declarados en <code>.mcp.json</code> existen en la config de cada host y se
+              comparan normalizadas: agregar un server en un solo host es un fallo, no un olvido.
             </li>
           </ul>
 
@@ -1810,7 +1811,7 @@
               </a>
               <a class="deck" href="./harnesses.es.html#migracion">
                 <span class="tag">Migración</span>
-                <h3>De la era Claude a tres harnesses</h3>
+                <h3>De la era Claude a todos los harnesses</h3>
                 <span class="go">→</span>
                 <p>
                   Qué hace <code>bun sync</code> la primera vez sobre un repo con el layout viejo:

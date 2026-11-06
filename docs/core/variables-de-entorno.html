@@ -204,10 +204,10 @@ bun run vars:schema:check      # el core está al día, todo secreto es @sensiti
       <h2 id="harness">Qué lee cada harness</h2>
       <p>
         Un harness arranca sus servidores MCP antes de que corra cualquier hook, y una app de
-        escritorio o un worker lanzado de forma nativa no trae variables en su entorno. Por eso los
-        tres harnesses leen igual: cada MCP que necesita valores de <code>.env</code> arranca con el
-        mismo loader delante, en <code>.mcp.json</code>, <code>opencode.jsonc</code> y
-        <code>.codex/config.toml</code>.
+        escritorio o un worker lanzado de forma nativa no trae variables en su entorno. Por eso
+        todos los harnesses leen igual: cada MCP que necesita valores de <code>.env</code> arranca
+        con el mismo loader delante, en <code>.mcp.json</code>, <code>opencode.jsonc</code>,
+        <code>.codex/config.toml</code> y <code>.pi/mcp.json</code>.
       </p>
       <pre
         data-lang="bash"
@@ -226,7 +226,7 @@ bun run vars:schema:check      # el core está al día, todo secreto es @sensiti
               <td>
                 El server recibe solo esas variables: una clave del esquema heredada que no está en
                 la lista se quita, y la validación mira solo la lista. Es también la lista de
-                dependencias que <code>bun run agents:compat:check</code> compara entre los tres
+                dependencias que <code>bun run agents:compat:check</code> compara entre todos los
                 hosts
               </td>
             </tr>
@@ -264,9 +264,9 @@ bun run vars:schema:check      # el core está al día, todo secreto es @sensiti
         <code>bun run harness:env</code> dejó copias en el bloque <code>env</code> de
         <code>.claude/settings.local.json</code> o en <code>.auth/opencode/</code>, el comando de
         ahora las retira y <code>setup:doctor</code> las reporta. En Windows es igual: abres
-        <code>claude</code>, <code>opencode</code> o <code>codex</code> (o su app de escritorio) y
-        cada MCP lee <code>.env</code> por su cuenta. Ningún secreto se exporta a tu shell: los
-        scripts de Bun (<code>bun run jira:*</code>, <code>bun run api:login</code>,
+        <code>claude</code>, <code>opencode</code>, <code>codex</code> o <code>pi</code> (o su app
+        de escritorio) y cada MCP lee <code>.env</code> por su cuenta. Ningún secreto se exporta a
+        tu shell: los scripts de Bun (<code>bun run jira:*</code>, <code>bun run api:login</code>,
         <code>bun xray</code>) leen <code>.env</code> con su propio autoload y <code>acli</code> usa
         su login guardado.
       </p>
@@ -310,9 +310,9 @@ bun run vars:schema:check      # el core está al día, todo secreto es @sensiti
       <p>
         El principio: un server remoto cuyo único contenido del lado del proyecto era una API key es
         asunto del harness, no del repo. Solo los servers locales (stdio) viven en
-        <code>.mcp.json</code>, <code>opencode.jsonc</code> y <code>.codex/config.toml</code>. El
-        navegador no es un MCP: toda la automatización de navegador pasa por
-        <code>/playwright-cli</code>.
+        <code>.mcp.json</code>, <code>opencode.jsonc</code>, <code>.codex/config.toml</code> y
+        <code>.pi/mcp.json</code>. El navegador no es un MCP: toda la automatización de navegador
+        pasa por <code>/playwright-cli</code>.
       </p>
       <div class="table-wrap">
         <table>
@@ -327,7 +327,8 @@ bun run vars:schema:check      # el core está al día, todo secreto es @sensiti
             <tr>
               <td>
                 Los servers locales: los que declara <code>.mcp.json</code> (con sus espejos en
-                <code>opencode.jsonc</code> y <code>.codex/config.toml</code>)
+                <code>opencode.jsonc</code>, <code>.codex/config.toml</code> y
+                <code>.pi/mcp.json</code>)
               </td>
               <td>
                 En el proyecto. Las variables que lee cada uno, y su alcance, están en
@@ -400,6 +401,11 @@ bun run vars:schema:check      # el core está al día, todo secreto es @sensiti
                 <code>--bearer-token-env-var</code> si usas la app de escritorio: lee una variable
                 del entorno del proceso, y abierta desde el Dock no tiene ninguna.
               </td>
+            </tr>
+            <tr>
+              <td>Pi</td>
+              <td><code>~/.pi/agent/mcp.json</code></td>
+              <td><code>pi mcp add</code>. Los conectores de claude.ai no existen en Pi.</td>
             </tr>
           </tbody>
         </table>
@@ -484,7 +490,14 @@ bun run setup:doctor --json   # env_var_scopes[] y harness_level_mcps para un ag
         >
         y <code>opencode.jsonc</code>), así que un descuido se bloquea antes de leer nada. Son una
         red de seguridad y se pueden esquivar con un subproceso; lo que obliga a la IA es la regla.
-        El detalle completo, con los comandos seguros y qué hacer si un valor se filtra, está en
+        Pi no tiene configuración de denegados ni sistema de aprobaciones: su adaptador
+        (<code>.pi/extensions/agentic-qa.js</code>) rechaza la lectura directa de
+        <code>.env*</code> (no de <code>.env.example</code> ni de los schemas), de
+        <code>.auth/**</code> y de <code>.claude/settings.local.json</code>, y los comandos tipo
+        <code>printenv</code>. Es un cinturón de seguridad: variantes por shell como
+        <code>cat .env</code> pasan, los hijos en segundo plano de <code>pi-subagents</code> no se
+        probaron, y solo existe donde el adaptador carga: una sesión sin confianza no lo tiene. El
+        detalle completo, con los comandos seguros y qué hacer si un valor se filtra, está en
         <code>.agents/skills/agentic-qa-core/references/secret-hygiene.md</code>.
       </p>
 

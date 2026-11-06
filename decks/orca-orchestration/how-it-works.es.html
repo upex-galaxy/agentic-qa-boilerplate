@@ -611,7 +611,7 @@ LAYER 1 · APP                 la app corriendo · runtime alcanzable · board �
 
   <!-- 6b. MODOS E INVOCACIÓN -->
   <section class="slide dense" data-title="Modos e invocación">
-    <p class="kicker">Quién carga qué · y cómo se invoca en los tres hosts</p>
+    <p class="kicker">Quién carga qué · y cómo se invoca en cada host</p>
     <h2 class="h2 md">El modo lo decide el <span class="grad">rol</span> de la sesión</h2>
     <table class="tt xs mt-s">
       <thead><tr><th style="width:150px">Modo</th><th style="width:220px">Quién</th><th>Carga</th><th>No carga</th></tr></thead>
@@ -623,7 +623,7 @@ LAYER 1 · APP                 la app corriendo · runtime alcanzable · board �
       </tbody>
     </table>
     <div class="grid g2 mt-m">
-      <div class="card card-accent"><p class="lbl">Invocación en los tres hosts</p><p class="small mt-s"><b>Claude Code:</b> <span class="mono">/orca-orchestration</span>, o una frase como "orquesta esto" o "lanza workers".<br><b>OpenCode y Codex:</b> no hay slash commands; se pide en prosa: "carga la skill <span class="mono">orca-orchestration</span>". No hay token de modo que escribir: la sesión que habla con el owner es el CONDUCTOR.</p></div>
+      <div class="card card-accent"><p class="lbl">Invocación en cada host</p><p class="small mt-s"><b>Claude Code:</b> <span class="mono">/orca-orchestration</span>, o una frase como "orquesta esto" o "lanza workers".<br><b>OpenCode y Codex:</b> no hay slash commands; se pide en prosa: "carga la skill <span class="mono">orca-orchestration</span>". <b>Pi:</b> <span class="mono">/skill:orca-orchestration</span>. No hay token de modo que escribir: la sesión que habla con el owner es el CONDUCTOR.</p></div>
       <div class="card"><p class="lbl">Cómo entra un worker</p><p class="small mt-s">El modo WORKER se activa cuando un brief nombra esta skill. Su prompt abre con <span class="mono">/&lt;workflow-skill&gt; &lt;label&gt; fleet worker</span>: ese token le dice a la skill de dominio que corre en flota, le dice al hook que es una sesión lanzada (no le pregunta nada al humano) y, en Claude Code, le da al hook de identidad el label con el que compone el nombre <span class="mono">&lt;label&gt;--&lt;handle&gt;</span>.</p></div>
     </div>
     <div class="notes">El SKILL no tiene una sección de mode routing con tokens: el modo sale del rol. CONDUCTOR para quien habla con el owner, WORKER cuando un brief nombra la skill, AUTOMATION para una rutina desatendida. El dispatcher de una automatización crea el worker que produce y cierra su sesión; si se descubre escribiendo el entregable, se salió de su tarea.</div>
@@ -816,7 +816,7 @@ LAYER 1 · APP                 la app corriendo · runtime alcanzable · board �
   <section class="slide dense" data-title="Provisioning">
     <p class="kicker">Paso 5 · antes de lanzar, no después</p>
     <h2 class="h2 md">Un worktree nuevo <span class="grad">no</span> es un clon listo</h2>
-    <p class="small dim mt-s">Lo que está commiteado viaja solo (la configuración de MCP de los tres harnesses, el hook, las skills T1). Lo que está gitignoreado no viaja, y cada hueco se disfraza de otro fallo. La tabla es lo que cierra <span class="mono">bun run worktree:provision</span>; su <span class="mono">--dry-run</span> imprime qué haría sin tocar nada.</p>
+    <p class="small dim mt-s">Lo que está commiteado viaja solo (la configuración de MCP de cada harness, el hook, las skills T1). Lo que está gitignoreado no viaja, y cada hueco se disfraza de otro fallo. La tabla es lo que cierra <span class="mono">bun run worktree:provision</span>; su <span class="mono">--dry-run</span> imprime qué haría sin tocar nada.</p>
     <div class="grid g2 mt-m">
       <table class="tt sm">
         <thead><tr><th style="width:200px">Hueco</th><th>Cómo se cierra</th></tr></thead>
@@ -871,7 +871,7 @@ scripts:
   <section class="slide dense" data-title="Identidad y forense">
     <p class="kicker">Quién hizo qué · identidad y trazas</p>
     <h2 class="h2 md">Una línea de identidad, dos <span class="grad">trailers</span></h2>
-    <div class="mk sm mt-s">AGENT IDENTITY: worktree=&lt;nombre|primary&gt; session=&lt;label&gt; harness=&lt;claude-code|codex|opencode&gt;
+    <div class="mk sm mt-s">AGENT IDENTITY: worktree=&lt;nombre|primary&gt; session=&lt;label&gt; harness=&lt;claude-code|codex|opencode|pi&gt;
 # sesión en la que escribe el humano (independiente o conductor)
 ORCA: available. Multi-session orchestration -&gt; /orca-orchestration. Independent session or
 conductor: ask the human directly (sweep small items, mkd deck for heavy ones). A session launched
@@ -881,11 +881,11 @@ ORCA: available. Launched by a conductor (fleet worker token): report through th
 mailbox and never ask the human (no question tool, no mkd deck, no sweep) unless the human asked you
 in this session; your launcher relays.</div>
     <div class="grid g3 mt-m">
-      <div class="card"><p class="lbl">Un emisor, tres adaptadores</p><p class="small mt-s">El hook de <span class="mono">.agents/hooks/personality-reinject.mjs</span> calcula la identidad una vez por prompt y la inyecta en el contexto. La segunda línea aparece solo cuando el binario está presente (sin él, silencio) y su texto depende del rol de la sesión. Como mucho se suma un aviso de setup (<span class="mono">CREDENTIALS:</span> o <span class="mono">WORKTREE:</span>).</p></div>
+      <div class="card"><p class="lbl">Un emisor, un adaptador por harness</p><p class="small mt-s">El hook de <span class="mono">.agents/hooks/personality-reinject.mjs</span> calcula la identidad una vez por prompt y la inyecta en el contexto. La segunda línea aparece solo cuando el binario está presente (sin él, silencio) y su texto depende del rol de la sesión. Como mucho se suma un aviso de setup (<span class="mono">CREDENTIALS:</span> o <span class="mono">WORKTREE:</span>).</p></div>
       <div class="card"><p class="lbl">La regla del label</p><p class="small mt-s">Nombre puesto por el usuario o por el hook → ese nombre. Nombre derivado o automático → <span class="mono">nombre (id corto)</span>. Solo id → el id completo. Nada → <span class="mono">unknown</span>.</p></div>
       <div class="card card-accent"><p class="lbl">Los trailers forenses</p><p class="small mt-s">Cada commit termina con <span class="mono">Worktree:</span> y <span class="mono">Session:</span>. Son <b>forense, no atribución</b>: no hay atribución de IA en los commits, ni trailers con marca del harness. Canon: <span class="mono">/git-flow-master</span>.</p></div>
     </div>
-    <p class="small mt-m">Un worker tiene <b>un solo nombre</b>, <span class="mono">&lt;label&gt;--&lt;handle&gt;</span>: sesión, pestaña, roster y trailer <span class="mono">Session:</span>. En Claude Code lo compone el hook desde el token del prompt más <span class="mono">ORCA_TERMINAL_HANDLE</span>; en Codex, OpenCode v2.2 y Pi lo teclea el <b>conductor</b>; en OpenCode v1 vive solo en el roster. El worker renombra su propia pestaña, nunca su sesión.</p>
+    <p class="small mt-m">Un worker tiene <b>un solo nombre</b>, <span class="mono">&lt;label&gt;--&lt;handle&gt;</span>: sesión, pestaña, roster y trailer <span class="mono">Session:</span>. En Claude Code lo compone el hook desde el token del prompt más <span class="mono">ORCA_TERMINAL_HANDLE</span>, y en Pi lo hace el adaptador igual; en Codex y OpenCode v2.2 lo teclea el <b>conductor</b>; en OpenCode v1 vive solo en el roster. El worker renombra su propia pestaña, nunca su sesión.</p>
     <div class="notes">Ejemplo de nombre: TK-123-add-google-auth--term_ seguido del uuid del handle; se parsea cortando en el último --term_. El worker renombra su pestaña como primera acción porque es una llamada al CLI; su sesión no, porque /rename es input del usuario. El conductor vuelve a renombrar la pestaña en cada barrido. El footer del agente en pantalla muestra las líneas de id y de sesión, legibles leyendo la pantalla renderizada. Eso es útil para el roster y para recuperar una sesión.</div>
   </section>
 
@@ -958,7 +958,7 @@ in this session; your launcher relays.</div>
         <tr><td><b>plan</b></td><td><b>Idéntico</b>: misma decisión de topología, mismo chequeo de colisiones en triage, mismos rounds.</td></tr>
         <tr><td><b>brief</b></td><td><b>Idéntico</b>: <span class="mono">COMMON.md</span> + <span class="mono">W-&lt;label&gt;.md</span> en el scope, citados por ruta absoluta.</td></tr>
         <tr><td><b>launch</b></td><td>El conductor imprime <span class="mono">launch.txt</span> y el humano abre N terminales y pega N líneas. Es la ÚNICA vía donde la línea misma es el payload, y por eso el archivo se escribe sin condiciones.</td></tr>
-        <tr><td><b>identidad</b></td><td>En Claude Code la línea no lleva bandera de nombre: el hook nombra la sesión desde el token del prompt. En Codex y OpenCode v2.2, que no tienen bandera, el humano teclea <span class="mono">/rename &lt;label&gt;--&lt;handle&gt;</span> cuando la sesión arranca (solo <span class="mono">&lt;label&gt;</span> fuera de Orca). Un worker nunca renombra su propia sesión.</td></tr>
+        <tr><td><b>identidad</b></td><td>En Claude Code y Pi la línea no lleva bandera de nombre: el hook, o el adaptador en Pi, nombra la sesión desde el token del prompt. En Codex y OpenCode v2.2, que no tienen bandera, el humano teclea <span class="mono">/rename &lt;label&gt;--&lt;handle&gt;</span> cuando la sesión arranca (solo <span class="mono">&lt;label&gt;</span> fuera de Orca). Un worker nunca renombra su propia sesión.</td></tr>
         <tr><td><b>estado</b></td><td>Los tokens de bloqueo del propio workflow más el tracker, exactamente como ya hace una sesión sola.</td></tr>
         <tr><td><b>preguntas</b></td><td>El worker escribe la pregunta en su reporte, con opciones y una recomendación, y sigue con lo que no dependa de la respuesta.</td></tr>
         <tr><td><b>cierre</b></td><td>El humano cierra las terminales.</td></tr>

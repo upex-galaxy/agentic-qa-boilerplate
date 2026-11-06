@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-06T05:53:03.714Z",
+  "generatedAt": "2026-11-06T06:25:22.979Z",
   "children": [
     {
       "type": "folder",
@@ -156,7 +156,7 @@
               "type": "page",
               "path": "core/fundamentos/harness.html",
               "title": "Harness engineering",
-              "description": "Qué es un harness (instrucciones, hooks, skills, MCP, memoria y gates alrededor del modelo), cómo este repo mantiene un solo cuerpo de instrucciones para Claude Code, OpenCode y Codex, y qué gates impiden que se desincronice.",
+              "description": "Qué es un harness (instrucciones, hooks, skills, MCP, memoria y gates alrededor del modelo), cómo este repo mantiene un solo cuerpo de instrucciones para Claude Code, OpenCode, Codex y Pi, y qué gates impiden que se desincronice.",
               "order": 30
             },
             {
