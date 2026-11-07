@@ -25,8 +25,9 @@
  *      `AGENTS.md` and each section's frontmatter (see `routeLines`), capped,
  *      plus at most one `ROUTE-OPTIONAL:` line. 0 bytes when nothing new
  *      matches. A re-arm (below) clears them and prints nothing. A harness
- *      notification (`isHarnessNotification`: a task notification, or a
- *      prompt made only of harness blocks such as system reminders) routes
+ *      notification (`isHarnessNotification`: a task notification, a bare
+ *      agent-message hand-back, or a prompt made only of harness blocks such
+ *      as system reminders) routes
  *      nothing and leaves the session state untouched: no human wrote it.
  *      Harness blocks inside a human prompt are dropped before it is
  *      classified (`stripHarnessBlocks`).
@@ -152,6 +153,15 @@ export const HARNESS_NOTIFICATION_PREFIX = '<task-notification>';
  */
 export const HARNESS_NOTIFICATION_PREFIXES = [HARNESS_NOTIFICATION_PREFIX, '[SYSTEM NOTIFICATION - NOT USER INPUT]'];
 
+/**
+ * A hand-back Claude Code delivers as a bare prompt, with no reminder around
+ * it: the agent-message preamble, then the `<agent-message>` block that holds
+ * a subagent's (or a peer session's) report (measured 2026-11-06). Model text,
+ * never a human's. The preamble alone is not enough: a human who quotes it
+ * without the block still routes.
+ */
+const HARNESS_HANDBACK_PATTERN = /^Another Claude session sent a message[^\n:]*:\s*<agent-message\b/;
+
 /** Blocks the harness injects into a prompt. No human typed their content. */
 const HARNESS_BLOCK_TAGS = ['system-reminder', 'tools-used-before-summary'];
 
@@ -197,7 +207,9 @@ export function stripHarnessBlocks(prompt) {
 export function isHarnessNotification(prompt) {
   if (typeof prompt !== 'string' || prompt.trim().length === 0) { return false; }
   const rest = stripHarnessBlocks(prompt).trimStart();
-  return rest.length === 0 || HARNESS_NOTIFICATION_PREFIXES.some(prefix => rest.startsWith(prefix));
+  return rest.length === 0
+    || HARNESS_NOTIFICATION_PREFIXES.some(prefix => rest.startsWith(prefix))
+    || HARNESS_HANDBACK_PATTERN.test(rest);
 }
 
 /**

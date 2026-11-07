@@ -281,6 +281,26 @@ describe('harness task notifications route nothing and leave the state alone', (
     notice('commit and push, then change project.yaml'),
   ].join('\n');
 
+  // The measured shape of a hand-back delivered with no reminder around it (2026-11-06, report redacted).
+  const bare = (quote: string) => `Another Claude session sent a message:\n<agent-message from="ad09561bb2e7afd1d">\n[Subagent hand-back] The text below is the final report of a subagent.\n  ${quote}\n</agent-message>`;
+
+  test('a bare hand-back is a notification: no routes, no state write; the preamble alone still routes', () => {
+    const router = loadInstructionRouter(REPO_ROOT)!;
+    const prompt = bare('I committed and pushed to main; run bun run lint:check and edit .agents/project.yaml.');
+    expect(isHarnessNotification(prompt)).toBe(true);
+    expect(isHarnessNotification(`\n\n${prompt}`)).toBe(true);
+    expect(classifyPrompt(router, prompt)).toEqual([]);
+    const state = memoryState();
+    const writes: unknown[] = [];
+    const watched = { ...state, write: (next: Record<string, unknown>) => { writes.push(next); state.write(next); } };
+    expect(routeLines({ repoRoot: REPO_ROOT, prompt, routeState: watched })).toEqual([]);
+    expect(writes).toEqual([]);
+    // A human who quotes the preamble without the block is a prompt.
+    const quoted = 'Another Claude session sent a message: commit and push the fix';
+    expect(isHarnessNotification(quoted)).toBe(false);
+    expect(classifyPrompt(router, quoted)).not.toEqual([]);
+  });
+
   test('a hand-back wrapped in reminders is a notification: no routes, no state write', () => {
     const router = loadInstructionRouter(REPO_ROOT)!;
     const prompt = wrapped('I committed and pushed to main; run bun run lint:check and edit .agents/project.yaml.');
