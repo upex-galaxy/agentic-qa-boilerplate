@@ -102,8 +102,10 @@ required:
     type: number
     fallback: { target: comment, label: Development Token Usage (K) }
     description: |
-      DTU. Thousands of tokens the agents spent implementing the item: measured, not estimated.
-      Written by the dev agent when the item moves to Ready For QA.
+      DTU. Thousands of tokens (input plus output, cache reads apart) the agents spent
+      implementing the item: measured, never estimated, and optional (empty is valid).
+      Written by the dev agent or a human when the item moves to Ready For QA; cumulative
+      across fix loops (read, add the cycle delta, never overwrite).
     used_by: [sync-jira-issues]
 
   quality_token_usage:
@@ -112,7 +114,9 @@ required:
     fallback: { target: comment, label: Quality Token Usage (K) }
     description: |
       QTU. Thousands of tokens the agents spent verifying the item (exploration, test design,
-      execution, retests): measured, not estimated. Written by the QA agent when the item is approved.
+      execution, retests): measured, never estimated, and optional (empty is valid).
+      Written by the QA agent or a human when the item is approved; cumulative across retests
+      (read, add the cycle delta, never overwrite).
     used_by: [sync-jira-issues, sprint-testing]
 
   weblink:
@@ -238,10 +242,11 @@ required:
     type: user
     fallback: { target: comment, label: QA Assignee }
     description: |
-      The QA who owns testing for a work item — the QA-lane parallel of the native
-      `assignee` (dev owner), distinct from `reporter` (who raised it ≠ who retests it).
-      Set on EVERY work-type issue (story / tech_story / tech_debt / bug / defect /
-      improvement) to the authenticated session user (self-assign); NEVER overwrite an
+      Record of the QA who followed and answers for a work item, distinct from `reporter`
+      (who raised it is not who retests it). Filled during shift-left, kept for the item's
+      whole life; the dev reads it to know who to assign when the item reaches Ready For QA.
+      Set on every work-type issue (story / tech_story / tech_debt / bug / defect /
+      improvement) to the authenticated session user when empty; NEVER overwrite an
       existing owner except on an explicit, justified handover. Doctrine:
       agentic-qa-core/references/defect-management-doctrine.md (Part 2).
     used_by:
