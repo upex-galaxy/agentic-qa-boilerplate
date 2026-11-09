@@ -6,9 +6,9 @@
  * there on every commit.
  */
 
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { afterAll, afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
 const REPO_ROOT = resolve(import.meta.dir, '..', '..');
@@ -145,12 +145,15 @@ describe.skipIf(!HAS_ADAPTER)('Pi adapter: secret block', () => {
   const blocked = (toolName: string, input: Record<string, unknown>): boolean => adapter.secretBlockReason(toolName, input) !== '';
 
   // Parity is derived from Claude Code's deny list, so a secret entry added
-  // there fails here until the adapter covers it.
-  const deny = (JSON.parse(readFileSync(join(REPO_ROOT, '.claude/settings.json'), 'utf8')) as { permissions: { deny: string[] } }).permissions.deny;
+  // there fails here until the adapter covers it. `cli` ships to every project,
+  // and one without Claude Code has no list to compare against.
+  const SETTINGS = join(REPO_ROOT, '.claude/settings.json');
+  const HAS_CLAUDE = existsSync(SETTINGS);
+  const deny = HAS_CLAUDE ? (JSON.parse(readFileSync(SETTINGS, 'utf8')) as { permissions: { deny: string[] } }).permissions.deny : [];
   const readEntries = deny.flatMap(entry => /^Read\((.*)\)$/.exec(entry)?.[1] ?? []);
   const secretCommands = deny.flatMap(entry => /^Bash\(((?:bunx )?(?:varlock |printenv|env\b).*)\)$/.exec(entry)?.[1] ?? []);
 
-  test('the parity source still names both kinds of entry', () => {
+  test.skipIf(!HAS_CLAUDE)('the parity source still names both kinds of entry', () => {
     expect(readEntries.length).toBeGreaterThan(0);
     expect(secretCommands.length).toBeGreaterThan(0);
   });
@@ -177,7 +180,7 @@ describe.skipIf(!HAS_ADAPTER)('Pi adapter: secret block', () => {
     expect(blocked('read', { path })).toBe(false);
   });
 
-  test.each(['ls -la', 'env FOO=1 ls', 'git log --grep printenv', 'bunx varlock load --agent', 'bun run test'])('lets the command %s through', (command) => {
+  test.each(['ls -la', 'env FOO=1 ls', 'env FOO=1 ls > out', 'envsubst > f', 'git log --grep printenv', 'bunx varlock load --agent', 'bun run test'])('lets the command %s through', (command) => {
     expect(blocked('bash', { command })).toBe(false);
   });
 
@@ -198,6 +201,25 @@ describe.skipIf(!HAS_ADAPTER)('Pi adapter: secret block', () => {
   ])('refuses the path variant %s', (path) => {
     expect(blocked('read', { path })).toBe(true);
     expect(blocked('grep', { path })).toBe(true);
+  });
+
+  test.each([
+    'file:///repo/%2Eenv',
+    'file:///repo/.en%76',
+    'file:///repo/%2Eauth/x',
+    'file:///repo/.claude/settings%2Elocal.json',
+    '@file:///repo/%2Eenv',
+  ])('refuses the percent-encoded URL %s, which Pi decodes', (path) => {
+    expect(blocked('read', { path })).toBe(true);
+    expect(blocked('grep', { path })).toBe(true);
+  });
+
+  test('a file URL that cannot be decoded fails closed', () => {
+    expect(blocked('read', { path: 'file:///repo/a%2Fb' })).toBe(true);
+  });
+
+  test.each(['file:///repo/README.md', 'file:///repo/%2Eenv.example'])('lets the URL %s through', (path) => {
+    expect(blocked('read', { path })).toBe(false);
   });
 
   test.each(['.ENV.EXAMPLE', '.Env.Schema', 'other/settings.local.json', '.claude/settings.json'])('still lets %s through', (path) => {
@@ -227,7 +249,7 @@ describe.skipIf(!HAS_ADAPTER)('Pi adapter: secret block', () => {
     expect(blocked('bash', { command })).toBe(false);
   });
 
-  test.each(['FOO="a b" printenv', 'true & printenv', 'echo \'ok\'; printenv'])('still refuses %s', (command) => {
+  test.each(['FOO="a b" printenv', 'true & printenv', 'echo \'ok\'; printenv', 'env 2>&1', 'env > f', 'env>f', 'env >> f', 'env -0', 'env -0 > f', 'env < /dev/null', 'env 2>&1 | cat'])('still refuses %s', (command) => {
     expect(blocked('bash', { command })).toBe(true);
   });
 
@@ -263,6 +285,7 @@ describe.skipIf(!HAS_ADAPTER || RG === null)('Pi adapter: grep output against re
     '.env.staging': `TOKEN=${CANARY}\n`,
     '.auth/state.json': `{"t":"${CANARY}"}\n`,
     '.claude/settings.local.json': `{"t":"${CANARY}"}\n`,
+    '.claude/settings.json': `{"t":"${CANARY}_SHARED"}\n`,
     '.env.example': `TOKEN=${CANARY}_EXAMPLE\n`,
     'src/app.ts': `// ${CANARY}_APP\n`,
   };
@@ -273,10 +296,11 @@ describe.skipIf(!HAS_ADAPTER || RG === null)('Pi adapter: grep output against re
   Bun.spawnSync(['git', 'init', '-q'], { cwd: repo });
 
   /** What Pi's grep tool would hand the model, before the adapter. */
-  const piGrep = (glob?: string): string => {
-    const args = ['--no-config', '--json', '--line-number', '--color=never', '--hidden', ...(glob ? ['--glob', glob] : []), '--', CANARY, '.'];
+  const piGrep = (glob?: string, dir = '.'): string => {
+    const searchDir = resolve(repo, dir);
+    const args = ['--no-config', '--json', '--line-number', '--color=never', '--hidden', ...(glob ? ['--glob', glob] : []), '--', CANARY, searchDir];
     const out = new TextDecoder().decode(Bun.spawnSync([RG!, ...args], { cwd: repo }).stdout);
-    return out.split('\n').filter(Boolean).map(line => JSON.parse(line) as { type: string, data: { path: { text: string }, line_number: number, lines: { text: string } } }).filter(event => event.type === 'match').map(event => `${event.data.path.text.replace(/^\.\//, '')}:${event.data.line_number}: ${event.data.lines.text.trimEnd()}`).join('\n');
+    return out.split('\n').filter(Boolean).map(line => JSON.parse(line) as { type: string, data: { path: { text: string }, line_number: number, lines: { text: string } } }).filter(event => event.type === 'match').map(event => `${relative(searchDir, event.data.path.text)}:${event.data.line_number}: ${event.data.lines.text.trimEnd()}`).join('\n');
   };
 
   test.each([undefined, '*', '**', '.*', '*.local', '*.staging', '*.json'])('glob %s: no secret line reaches the model', (glob) => {
@@ -285,6 +309,37 @@ describe.skipIf(!HAS_ADAPTER || RG === null)('Pi adapter: grep output against re
     const result = fire('tool_result', { toolName: 'grep', input: { pattern: CANARY, glob }, content, parentToolCallId: 'p' });
     const text = (result?.content ?? content).map((part: { text: string }) => part.text).join('\n');
     expect(text).not.toMatch(new RegExp(`${CANARY}(?!_)`));
+  });
+
+  const modelSees = (input: Record<string, unknown>, raw: string): string => {
+    const { fire } = fakePi();
+    const content = [{ type: 'text', text: raw }];
+    const result = fire('tool_result', { toolName: 'grep', input: { pattern: CANARY, ...input }, content, parentToolCallId: 'p' });
+    return (result?.content ?? content).map((part: { text: string }) => part.text).join('\n');
+  };
+
+  // Pi prints each match relative to the search directory, so a search rooted at
+  // `.claude` prints a bare `settings.local.json:1: ...`.
+  describe.each(['.claude', './.claude/', '.claude/x/..'])('a search rooted at %s', (path) => {
+    test.each(['*.json', '*', 'settings.*'])('glob %s: the local settings are withheld, the shared ones stay', (glob) => {
+      const raw = piGrep(glob, path);
+      expect(raw).toMatch(new RegExp(`^settings\\.local\\.json:1: .*${CANARY}(?!_)`, 'm'));
+      const text = modelSees({ path, glob }, raw);
+      expect(text).not.toMatch(new RegExp(`${CANARY}(?!_)`));
+      expect(text).toContain(`${CANARY}_SHARED`);
+    });
+  });
+
+  test('a search root written as @ or as a percent-encoded URL is the same directory', () => {
+    const raw = piGrep('*.json', '.claude');
+    for (const path of ['@.claude', `file://${repo}/%2Eclaude`]) {
+      expect(modelSees({ path, glob: '*.json' }, raw)).not.toMatch(new RegExp(`${CANARY}(?!_)`));
+    }
+  });
+
+  test('a search rooted elsewhere keeps a file that only shares the name', () => {
+    const raw = `settings.local.json:1: ${CANARY}`;
+    expect(modelSees({ path: 'other' }, raw)).toContain(CANARY);
   });
 
   test('the measurement is real: without the filter `*` returns the canaries, and the rest survive it', () => {
@@ -309,5 +364,66 @@ describe.skipIf(!HAS_ADAPTER || RG === null)('Pi adapter: grep output against re
     expect(adapter.withholdSecretLines([{ type: 'text', text: 'src/a.ts:4: fine' }])).toBeNull();
     const { fire } = fakePi();
     expect(fire('tool_result', { toolName: 'read', input: { path: 'x' }, content: [{ type: 'text', text: `.env:1: ${CANARY}` }], parentToolCallId: 'p' })).toBeUndefined();
+  });
+});
+
+describe.skipIf(!HAS_ADAPTER)('Pi adapter: a long grep keeps no withheld line in details', () => {
+  const secret = '.env:1: TOKEN=CANARY_VALUE_NOT_A_SECRET';
+  const truncation = { truncated: true, truncatedBy: 'bytes', outputBytes: 60000, maxBytes: 51200, content: `${secret}\nsrc/a.ts:1: fine` };
+  const event = { toolName: 'grep', input: { pattern: 'x' }, content: [{ type: 'text', text: `${secret}\nsrc/a.ts:1: fine` }], details: { truncation, matchLimitReached: 100 } };
+
+  test('the retained text is blanked and the flags the renderer reads stay', () => {
+    const { fire } = fakePi();
+    const result = fire('tool_result', { ...event, parentToolCallId: 'p' });
+    expect(result.details).toEqual({ truncation: { ...truncation, content: '' }, matchLimitReached: 100 });
+    expect(event.details.truncation.content).toContain(secret);
+  });
+
+  test('the return that carries ROUTE-PENDING blanks it too', () => {
+    const { prompt, fire } = fakePi();
+    prompt('commit and push this to the branch');
+    const result = fire('tool_result', event);
+    expect(result.content.at(-1).text).toContain('ROUTE-PENDING:');
+    expect(result.details.truncation.content).toBe('');
+  });
+
+  test('a result with nothing withheld keeps its details', () => {
+    const { fire } = fakePi();
+    const clean = { ...event, content: [{ type: 'text', text: 'src/a.ts:1: fine' }], parentToolCallId: 'p' };
+    expect(fire('tool_result', clean)).toBeUndefined();
+  });
+});
+
+// `cli` ships to every project, whichever harnesses it keeps: this file has to
+// run clean in a project with no Claude Code settings. The copies re-run this
+// same file, so the guard stops them from copying themselves.
+const COPY_RUN = 'PI_ADAPTER_TEST_COPY';
+
+describe.skipIf(process.env[COPY_RUN] === '1')('Pi adapter test: a project without Claude Code', () => {
+  const runCopy = (paths: string[]): { exitCode: number, output: string } => {
+    const root = mkdtempSync(join(tmpdir(), 'pi-adapter-copy-'));
+    try {
+      for (const path of ['cli/lib/pi-adapter.test.ts', ...paths]) {
+        cpSync(join(REPO_ROOT, path), join(root, path), { recursive: true });
+      }
+      const run = Bun.spawnSync([process.execPath, 'test', './cli/lib/pi-adapter.test.ts'], { cwd: root, env: { ...process.env, [COPY_RUN]: '1' } });
+      return { exitCode: run.exitCode, output: `${run.stdout.toString()}${run.stderr.toString()}` };
+    }
+    finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  };
+
+  test('with no adapter either, everything skips and the run exits 0', () => {
+    const { exitCode, output } = runCopy([]);
+    expect(output).not.toContain('ENOENT');
+    expect(exitCode).toBe(0);
+  });
+
+  test.skipIf(!HAS_ADAPTER)('with the adapter and no settings, the adapter tests still run and pass', () => {
+    const { exitCode, output } = runCopy([relative(REPO_ROOT, ADAPTER), 'AGENTS.md', '.agents/hooks', '.agents/instructions']);
+    expect(output).not.toContain('ENOENT');
+    expect(output).toMatch(/[1-9]\d* pass/);
+    expect(exitCode).toBe(0);
   });
 });

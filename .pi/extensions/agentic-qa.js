@@ -1,4 +1,5 @@
 import { posix } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { agentContextLines, pendingRouteReminder, proposeSessionTitle, rearmRoutes, resolveWorktree, sessionLabel } from '../../.agents/hooks/personality-reinject.mjs';
 
@@ -23,10 +24,20 @@ import { agentContextLines, pendingRouteReminder, proposeSessionTitle, rearmRout
 // untested, and it exists only where this adapter loads: an untrusted session,
 // or a print or RPC session under `ask`, has no block at all.
 
+/** Pi's own path handling before the checks: `@` stripped, a `file://` URL decoded. Null when it cannot be decoded. */
+function fsPath(path) {
+  const raw = String(path ?? '').replace(/\\/g, '/').replace(/^@/, '');
+  if (!/^file:\/\//.test(raw)) { return raw; }
+  try { return fileURLToPath(raw); }
+  catch { return null; }
+}
+
 /** `.env`, `.env.local`, `.env.<x>`: what Rule #1 forbids, minus the committed files. */
 function isSecretPath(path) {
   // Pi resolves paths and a Mac disk folds case, so `.env/.` and `.ENV` open the same file.
-  const normalized = posix.normalize(String(path ?? '').replace(/\\/g, '/').replace(/^@/, '')).toLowerCase();
+  const resolved = fsPath(path);
+  if (resolved === null) { return true; }
+  const normalized = posix.normalize(resolved).toLowerCase();
   const segments = normalized.split('/').filter(segment => segment !== '' && segment !== '.');
   const name = segments.at(-1) ?? '';
   if (segments.includes('.auth')) { return true; }
@@ -41,7 +52,7 @@ function globNamesSecret(glob) {
   return /(?:^|\/)\.auth(?:\/|$)|settings\.local|\.env/.test(value) && !/\.env\.example$|\.schema$/.test(value);
 }
 
-const SECRET_COMMAND = /^(?:(?:bunx\s+)?varlock\s+(?:printenv|reveal)\b|printenv\b|env\s*$)/;
+const SECRET_COMMAND = /^(?:(?:bunx\s+)?varlock\s+(?:printenv|reveal)\b|printenv\b|env(?:\s+-0)*\s*(?:\d*[<>].*)?$)/;
 
 /** One shell line's simple commands: quoted text blanked, leading `NAME=value` assignments dropped. */
 function simpleCommands(command) {
@@ -73,27 +84,33 @@ export function secretBlockReason(toolName, input) {
  * `grep` passes one `--glob` to ripgrep, which overrides `.gitignore`, so `*`
  * reaches `.env`, and `--no-config` leaves no way to force an exclusion. The
  * output is filtered instead: Pi prints `<path>:<line>: <text>` and, for context,
- * `<path>-<line>- <text>`. A line is checked under both shapes, because a line of
- * text can look like the other one.
+ * `<path>-<line>- <text>`, each path relative to the search directory. A line is
+ * checked under both shapes, because a line of text can look like the other one.
  */
-function isSecretOutputLine(line) {
+function isSecretOutputLine(line, searchPath) {
+  const base = isText(searchPath) ? fsPath(searchPath) ?? '' : '';
   const match = /^(.+?):\d+: /.exec(line)?.[1];
   const context = /^(.+?)-\d+- /.exec(line)?.[1];
-  return [match, context].some(path => path !== undefined && isSecretPath(path));
+  return [match, context].some(path => path !== undefined && isSecretPath(posix.join(base, path)));
 }
 
 /** The same `grep` result without lines from secret files, or null when it has none. */
-export function withholdSecretLines(content) {
+export function withholdSecretLines(content, searchPath) {
   let withheld = 0;
   const filtered = content.map((part) => {
     if (part?.type !== 'text' || !isText(part.text)) { return part; }
     const lines = part.text.split('\n');
-    const kept = lines.filter(line => !isSecretOutputLine(line));
+    const kept = lines.filter(line => !isSecretOutputLine(line, searchPath));
     withheld += lines.length - kept.length;
     return { ...part, text: kept.join('\n') };
   });
   if (withheld === 0) { return null; }
   return [...filtered, { type: 'text', text: `[${withheld} line(s) from secret files withheld (Critical Rule #1).]` }];
+}
+
+/** A long `grep` keeps its whole retained text in `details.truncation.content`, which reaches the session file. */
+function withoutRetainedText(details) {
+  return details?.truncation ? { ...details, truncation: { ...details.truncation, content: '' } } : details;
 }
 
 /** Pi's tool names and arguments, as the emitter's `sectionsReadBy` reads them. */
@@ -154,8 +171,9 @@ export default function agenticQa(pi) {
 
   pi.on('tool_result', (event, ctx) => {
     // Before the nested-call return: a codemode script's `grep` reaches the model too.
-    const content = event.toolName === 'grep' ? withholdSecretLines(event.content) ?? event.content : event.content;
-    const changed = content === event.content ? undefined : { content, structuredContent: event.structuredContent };
+    const withheld = event.toolName === 'grep' ? withholdSecretLines(event.content, event.input?.path) : null;
+    const content = withheld ?? event.content;
+    const changed = withheld ? { content, structuredContent: event.structuredContent, details: withoutRetainedText(event.details) } : undefined;
     if (event.parentToolCallId) { return changed; }
     const reminder = pendingRouteReminder({
       sessionId: ctx.sessionManager.getSessionId(),
@@ -163,6 +181,6 @@ export default function agenticQa(pi) {
       ...emitterToolCall(event.toolName, event.input),
     });
     if (!reminder) { return changed; }
-    return { content: [...content, { type: 'text', text: reminder }], structuredContent: event.structuredContent };
+    return { ...changed, content: [...content, { type: 'text', text: reminder }], structuredContent: event.structuredContent };
   });
 }
