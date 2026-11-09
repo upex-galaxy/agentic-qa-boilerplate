@@ -773,7 +773,7 @@ export function validateMcpParityFindings(root = process.cwd(), options: McpPari
   const schemaOwner = options.schemaOwner ?? readSchemaOwner(resolvedRoot);
   const hosts = options.harnesses ?? declaredHarnesses(resolvedRoot, { schemaOwner: options.schemaOwner }).harnesses;
   // Only the harnesses in use are read: a project on one harness has deleted
-  // the others' files on purpose. A declared host whose file is missing or
+  // the other two's files on purpose. A declared host whose file is missing or
   // malformed fails here, under the MCP group.
   const configs: Partial<Record<McpHost, NormalizedMcpConfig>> = {};
   for (const host of hosts) {

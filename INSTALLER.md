@@ -363,7 +363,7 @@ engram setup opencode
 engram setup codex
 ```
 
-`engram setup` does not name Pi, so for Pi the installer prints the line to run yourself: `pi mcp add engram --exposure deferred -- engram mcp --tools=agent`.
+`engram setup` does not name Pi, so for Pi the installer prints the line to run yourself: `pi mcp add engram --exposure deferred -- engram mcp --tools=agent`. It prints it on every run with a Pi agent, a re-run that finds Engram already wired included, because the installer cannot tell whether you ran it.
 
 Each call registers the `engram` MCP server for that agent (on Claude Code through `claude mcp add`, into the user config). `--protocol=slim` keeps Claude Code's session-start protocol short and writes no block into your instructions file.
 
