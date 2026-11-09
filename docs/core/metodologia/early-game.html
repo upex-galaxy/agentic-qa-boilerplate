@@ -174,12 +174,15 @@
         durante el shift-left. Mide el esfuerzo de implementar y verificar la historia completa con
         un flujo agéntico. No es un tiempo ni un pronóstico de tokens. High significa que la
         historia cruza capas, toca auth, dinero o datos, no se puede verificar sola o no cabe en una
-        oración: QA propone partirla y el PO decide. Los tokens se miden después, nunca se estiman:
+        oración: QA deja una nota de que puede necesitar partirse. Es solo un aviso: la historia
+        sigue a Ready For Dev y partirla es opcional. Los tokens son una ayuda de auditoría
+        opcional, se miden y nunca se estiman, y vacío es válido:
         <code>Development Token Usage (K)</code> lo escribe el agente de desarrollo cuando la
-        historia llega a Ready For QA y <code>Quality Token Usage (K)</code> lo escribe el agente de
-        QA al aprobar. El sprint no se pronostica: el equipo lee los promedios de tokens del sprint
-        anterior. El costo pasó de construir a verificar, así que lo que merece una etiqueta es el
-        esfuerzo de verificar y si la historia es lo bastante chica para verificarse sola.
+        historia llega a Ready For QA y <code>Quality Token Usage (K)</code> lo escribe QA al
+        aprobar, acumulando cada vuelta a QA. K es entrada más salida, con la caché aparte. El
+        sprint no se pronostica: el equipo lee los promedios de tokens del sprint anterior. El costo
+        pasó de construir a verificar, así que lo que merece una etiqueta es el esfuerzo de
+        verificar y si la historia es lo bastante chica para verificarse sola.
       </p>
 
       <h3 id="stage-planning">Planning (dentro del sprint)</h3>

@@ -1,6 +1,6 @@
-# AI Effort Checklist — sizing a Story and deciding whether to propose a split
+# AI Effort Checklist — sizing a Story and noting when it may need a split
 
-> **Subagent context**: this file is the "Context docs" reference for the step that sets `{{jira.ai_effort}}` in Phase 3 (see `shift-left-testing/SKILL.md` §Phase 3 and `references/handoff-protocol.md` Step 2b). It reads the finished `shift-left-refinement.md` (Critical Analysis, refined ACs, coverage estimate) and produces ONE value, `low | medium | high`, plus, for `high`, the split proposal that goes into the handoff comment.
+> **Subagent context**: this file is the "Context docs" reference for the step that sets `{{jira.ai_effort}}` in Phase 3 (see `shift-left-testing/SKILL.md` §Phase 3 and `references/handoff-protocol.md` Step 2b). It reads the finished `shift-left-refinement.md` (Critical Analysis, refined ACs, coverage estimate) and produces ONE value, `low | medium | high`, plus, for `high`, a note in the handoff comment that the Story may be too large.
 
 ## What AI Effort is
 
@@ -44,33 +44,43 @@ Rules of thumb:
 
 - A Story that crosses UI + API + DB is High even when each layer is small, because the verification must follow the data across all three.
 - Question 4 alone makes a Story High. A one-line change to a refund calculation is High.
-- When two levels both fit, pick the higher one and say which question tipped it. Under-sizing hides the split conversation; over-sizing costs one comment.
+- When two levels both fit, pick the higher one and say which question tipped it. Under-sizing hides the size warning; over-sizing costs one comment.
 
-## When the result is High: the split checklist
+## When the result is High: the size note
 
-High triggers a split PROPOSAL in the handoff comment. The PO decides and the person signs. The agent never splits a Story on its own, never creates the child Stories, and never moves the original Story out of its flow because of a split.
+High only WARNS, it never blocks. The handoff comment gets a note that the Story may be too large and may need splitting, and the Story still moves to Ready For Dev and the dev still works it. A PO may clone or split it and re-refine when shorter Stories are wanted, but that is optional and never a gate. The agent never splits a Story on its own, never creates the child Stories, and never holds the Story back because of the size.
 
-Before writing the proposal, look for the cut lines, in this order:
+To make the note useful, look for the cut lines, in this order:
 
 1. By layer: an API slice that can be verified through the API alone, then the UI that consumes it.
 2. By risk: the auth, money or data part separated from the plain part, so the risky part gets its own verification.
 3. By AC: a group of ACs that already stands alone (one actor, one state, one rule).
 4. By data variation: one entity type, role or payment method first, the rest after.
 
-A proposed slice is acceptable only if it passes questions 1 to 3 of the checklist on its own. A slice that still scores High is cut again or reported as not splittable, with the reason.
+A suggested slice is worth listing only if it passes questions 1 to 3 of the checklist on its own. A slice that still scores High is cut again or reported as not splittable, with the reason.
 
-The handoff comment for a High Story adds this block after the ATP pointer (the full comment template is in `references/handoff-protocol.md` Step 3):
+The handoff comment for a High Story adds this note after the ATP pointer (the full comment template is in `references/handoff-protocol.md` Step 3):
 
 ```markdown
-### AI Effort: High (split proposed)
+### AI Effort: High (may need splitting)
 Tipped by: {question numbers and one-line reason, e.g. "3 (UI + API + DB), 4 (refund amount)"}.
-Proposed slices (PO decides):
+Suggested slices (optional, nobody has to act on them):
 1. {slice 1, one sentence} (verifiable on its own through {UI | API | DB})
 2. {slice 2, one sentence}
 Not splittable because: {only when no slicing passes questions 1-3, one line}
 ```
 
-There is no separate field for the split verdict. The AI Effort value plus this comment is the whole record.
+There is no separate field for the split verdict. The AI Effort value plus this comment is the record.
+
+### Optional split labels
+
+When someone does resolve the size note, they record the outcome as ONE label out of three. The label is optional, added by whoever resolves the split (a PO, a dev lead or QA); a Story without any of them is valid and nothing checks for them.
+
+| Label | Meaning |
+|-------|---------|
+| `split-accepted` | The suggested split was taken as proposed. |
+| `split-edited` | A split was made, with slices different from the suggestion. |
+| `split-rejected` | The Story stays whole. |
 
 ## Worked example
 
@@ -89,13 +99,13 @@ Story: "As a customer I can request a partial refund on an order" with ACs cover
 Result: High (questions 3, 4 and 7 each force it). Handoff comment block:
 
 ```markdown
-### AI Effort: High (split proposed)
+### AI Effort: High (may need splitting)
 Tipped by: 3 (UI + API + DB), 4 (refund amount), 7 (open cap policy question).
-Proposed slices (PO decides):
+Suggested slices (optional):
 1. Refund API: validates the amount against the cap and records the refund (verifiable on its own through the API and DB)
 2. Provider call and failure handling on top of slice 1 (verifiable through the API with the provider sandbox)
 3. Refund form and confirmation email consuming the API (verifiable through the UI)
 Not splittable because: n/a
 ```
 
-Slice 1 is one layer and verifiable alone, but it still touches money (question 4), so it stays High until the cap answer lands. The comment says so, because the cap answer is the prerequisite for the whole split. The PO accepts, edits or rejects the split; QA records the final AI Effort on whatever Stories result.
+Slice 1 is one layer and verifiable alone, but it still touches money (question 4), so it stays High until the cap answer lands. The comment says so, because the cap answer is the prerequisite for the whole split. If someone splits the Story, the resulting Stories are re-refined and carry their own AI Effort; the Story is never held back meanwhile.

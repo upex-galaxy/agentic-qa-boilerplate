@@ -96,21 +96,20 @@ without an assignee is a blocker waiting to happen.
 Alongside it, on **work items** (story / tech_story / tech_debt / bug / defect /
 improvement) the harness sets `{{jira.qa_assignee}}` to self per
 `defect-management-doctrine.md` Part 2 — **read-before-write, never overwrite an existing
-owner.** `qa_assignee` is the QA owner and is DISTINCT from the native dev `assignee`.
+owner.** `qa_assignee` is the record of the QA who followed the work item (filled in
+Shift-Left, kept for its whole life) and is DISTINCT from the native `assignee`.
 
 **Before EDITING an artifact that already exists**: read its `assignee` first. If it is
 someone else, **ask the user before reassigning** — do not take ownership silently to make
 an edit go through. If the user declines, report the edit as blocked with the owner named.
 
-**A transition can reassign the issue behind your back.** Some workflows carry an *assign*
-post-function that is invisible in the transition catalog. Measured on a live project (see ADR-0006): on a work item,
-both `start_testing` and `qa_sign_off` silently moved the native `assignee` from the developer
-to the QA engineer who fired them, on a project whose doctrine deliberately keeps the two
-owners distinct. So on any transition of a work item: read `assignee` before firing (the same
-GET that lists the available transitions gives it), read it back after, and if the transition
-moved it, **restore the previous owner** and record the post-function in the stage's Transition
-Trail. QA ownership belongs in `{{jira.qa_assignee}}`; the native `assignee` belongs to whoever
-the project says owns delivery. Canon: `defect-management-doctrine.md` Part 2.
+**The native `assignee` of a work item follows the dev model.** When a Story reaches
+Ready For QA the dev moves `assignee` to the QA named in `{{jira.qa_assignee}}`, and
+transitions that put the QA in `assignee` (`start_testing`, `qa_sign_off`) are
+expected: the harness does not restore a previous owner. `qa_assignee` stays as the
+record of the QA who followed the Story. Canon: `defect-management-doctrine.md` Part 2.
+This ownership rule never relaxes the artifact rule above: QA artifacts are assigned to
+the QA self at create time.
 
 ## 3. Parenting rule — one line, cited
 
@@ -229,8 +228,10 @@ Light stage verifier — <Stage name>
 [ ] Parent = the right QA process epic; components set (§3)
 [ ] Jira fields / comments written (the body actually landed, not just the item)
     (Shift-Left: `{{jira.ai_effort}}` set · the approval stage: `{{jira.quality_token_usage}}`
-    written from the harness's measured consumption, or a stated N/A with the reason when the
-    harness does not expose it. Tokens are measured, never estimated.)
+    written when a figure is available, cumulative across returns to QA (read the current
+    value, add this cycle's measured delta, one `QTU cycle N: +x K (total y K) source=<harness|human>`
+    comment, never overwrite). Empty is a valid stated N/A and never fails this verifier.
+    Tokens are measured, never estimated.)
 [ ] progress.md checkpoint appended (session-management.md §7)
 [ ] Session footer printed in chat (session-footer-contract.md)
 ```

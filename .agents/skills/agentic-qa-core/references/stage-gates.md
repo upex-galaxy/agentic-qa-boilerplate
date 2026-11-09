@@ -160,9 +160,9 @@ terminal there) is `artifact-lifecycle.md` §1. Do not restate it; resolve again
 |---|---|---|
 | **Shift-Left** | Story · `[QA] Shift-Left Review` subtask | Story at `ready_for_dev` (via `analyze` → `refined`, stopping there) with `{{jira.ai_effort}}` set; subtask at `close` (via `complete`) |
 | **Planning** | ATP · ATS · ATR · sprint TCs (xray) · STP | ATP at `ready` (via `designed`); ATS still `designing` (membership is not final until Reporting); ATR `active` **carrying its Test Environment**; TCs at `ready` (via `start_design` → `ready_to_run`), parented to **QA Test Repository**; STP at `ready` once the sprint scope is set |
-| **Execution** | Story / coverable | at `in_test` (via `start_testing`), `qa_assignee` set to self |
+| **Execution** | Story / coverable | at `in_test` (via `start_testing`), `qa_assignee` set (filled in Shift-Left; self when still empty) |
 | **Execution** (exploration without a ticket) | filed Bug / Improvement · coverage Tech Story (only those a person approved) | each filed issue at `open`, parented to **QA Defect Management**; each coverage Tech Story at the status its `create` transition lands it, parented to **QA Test Repository** (`artifact-lifecycle.md` §1, row "Coverage Tech Story"); no Test is created here |
-| **Reporting** | ATR · ATS · ATP · Story · filed Bug/Defect/Improvement | ATR at `close` (via `complete`, after every run status is recorded); ATS at `close` (via `done`); ATP at `completed` (via `complete`); Story at `qa_approved` (with `{{jira.quality_token_usage}}` written) or `blocked`; each filed issue at `open`, parented to **QA Defect Management** |
+| **Reporting** | ATR · ATS · ATP · Story · filed Bug/Defect/Improvement | ATR at `close` (via `complete`, after every run status is recorded); ATS at `close` (via `done`); ATP at `completed` (via `complete`); Story at `qa_approved` (`{{jira.quality_token_usage}}` written when a figure is available) or `blocked`; each filed issue at `open`, parented to **QA Defect Management** |
 | **Sprint close** | STP · STR | STP at `completed` (via `complete`); STR at `close` (via `complete`) after the verdict is written |
 | **Documentation** | promoted TCs · RTP · feature TS · Preconditions | Candidate TCs at `candidate` (via `automation_review_from_ready` → `approve_to_automate`); Manual TCs at `manual` (via `for_manual`, **from `ready` — there is no `in_review` → `manual` edge**); Deferred TCs stay `ready`; RTP at `ready` and **stays there** (long-lived, never `completed`); feature TS stays `designing`; Preconditions stay `active` (no transition exists) |
 | **Automation** | TCs in scope | `in_automation` at Code start (via `start_automation`); `pull_request` when the ticket PR opens (via `create_pr`); `automated` ONLY once the code is on the production branch (`git_strategy.branches.production`) with CI green (via `merged`), never at a trunk or integration merge (`discovery-driven-doctrine.md` §6) |
@@ -208,7 +208,7 @@ the stage NEEDS REVISION.
     `trivially atomic` justification
 [ ] Coverage estimate reflects the real 1:N (not a minimized count)
 [ ] Inferred scenarios marked NEEDS PO/DEV CONFIRMATION
-[ ] `{{jira.ai_effort}}` set (Low/Medium/High; a High proposed a split to the PO)
+[ ] `{{jira.ai_effort}}` set (Low/Medium/High; a High carries a size note and still moves on, a split is optional)
 [ ] NO TMS test entities created (outlines only); label + transition applied
 [ ] Artifact statuses match §"Lifecycle expectations per stage"; light stage verifier run
 ```
@@ -283,7 +283,7 @@ the stage NEEDS REVISION.
 ```
 [ ] ATR authored as a **Test Execution** item (`ATR: {STORY-KEY}: Story Testing`); Story custom field only as fallback
 [ ] QA comment posted; ticket transitioned to the correct status
-[ ] On approval, `{{jira.quality_token_usage}}` written from measured consumption (comment fallback when the field is absent); harness exposes no figure -> left empty and the verifier line says N/A with the reason
+[ ] On approval, `{{jira.quality_token_usage}}` written when a figure is available (cumulative: current value read, this cycle's delta added, one `QTU cycle N` comment; comment fallback when the field is absent); no figure -> left empty, a valid stated N/A that never fails this verifier
 [ ] No case left `BLOCKED`; every `DEFERRED (execution)` recorded in the ATR and listed in the QA comment
 [ ] Regression follow-up noted for any regression-worthy bug (Stage-4 hand-off); bug retest (xray):
     repro Test's run recorded PASSED/FAILED in the retest Execution

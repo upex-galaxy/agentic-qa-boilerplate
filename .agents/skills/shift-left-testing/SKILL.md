@@ -87,7 +87,7 @@ Requires `agentic-qa-core`. Loads on demand:
 - The heart of the skill (Phase 2) = edge cases not in story + ambiguities + gaps — feed them to PO/Dev as questions AND as derived outlines.
 - On taking a Story into refinement (first QA pickup), set `qa_assignee` to self — read-before-write, never overwrite an existing owner (`agentic-qa-core/references/defect-management-doctrine.md` Part 2). This skill files NO Bug/Defect/Improvement; only the QA-Assignee hook applies.
 - On completion: add label `shift-left-reviewed`; transition Backlog → Shift-Left QA → Ready For Dev.
-- **AI Effort (binding)**: in Phase 3 set `{{jira.ai_effort}}` (Low / Medium / High) on every refined Story, using `references/ai-effort-checklist.md`. It is the effort of the whole item in an agentic workflow, implementing AND verifying it: never a time and never a token forecast. `High` means the handoff comment PROPOSES a split of the Story; the PO decides and the person signs, the agent never splits or creates Stories on its own. Field absent → structured `## AI Effort` comment, never block. DTU/QTU (`{{jira.development_token_usage}}`, `{{jira.quality_token_usage}}`) are written later by dev and QA agents, never here.
+- **AI Effort (binding)**: in Phase 3 set `{{jira.ai_effort}}` (Low / Medium / High) on every refined Story, using `references/ai-effort-checklist.md`. It is the effort of the whole item in an agentic workflow, implementing AND verifying it: never a time and never a token forecast. `High` only WARNS, it never blocks: the handoff comment notes the Story may be too large and may need splitting, and the Story still moves to Ready For Dev and the dev still works it. A PO may clone or split and re-refine, which is optional and not a gate; the agent never splits or creates Stories on its own. Whoever resolves a split may add ONE optional label (`split-accepted`, `split-edited`, `split-rejected`); absence is valid. Field absent → structured `## AI Effort` comment, never block. DTU/QTU (`{{jira.development_token_usage}}`, `{{jira.quality_token_usage}}`) are optional audit aids written later by dev and QA when a figure is available, never here.
 
 **Read full SKILL.md when**: running the batch grooming pipeline, writing the per-Story `shift-left-refinement.md`, or handling the PO/Dev handoff.
 
@@ -164,7 +164,7 @@ Phase 3 — Handoff
            NO Test Plan item — /sprint-testing Stage 1 creates it from the field)
          - Labels: shift-left-reviewed + shift-left-{YYYY-MM-DD}
          - Set AI Effort {{jira.ai_effort}} (references/ai-effort-checklist.md);
-           High -> the handoff comment proposes a split (PO decides)
+           High -> the handoff comment warns the Story may need splitting (never a gate)
          - Transition: backlog -> shift_left_qa (analyze) -> ready_for_dev (refined)
          - Subtask "[QA] Shift-Left Review": post session annotations -> complete -> close
        -> Light stage verifier (artifact-lifecycle.md §5) closes the stage
@@ -288,7 +288,7 @@ For each accepted Story, dispatch ONE Refinement subagent. The subagent loads th
 | Phase 1 — Critical Analysis | Run as-is. Light code exploration only (feasibility check, not reproduction). |
 | Phase 2 — Story Quality Analysis | Run as-is. **This is the heart of shift-left** — ambiguities + gaps + edge cases not in story + testability validation. |
 | Phase 3 — Refined ACs | Run as-is — Given/When/Then with specific data. Mark inferred scenarios with **NEEDS PO/DEV CONFIRMATION**. |
-| Phase 4 — Test Design (outlines) | **OUTLINE NAMES ONLY**. No parametrization tables. No exhaustive per-outline test-data JSON. Coverage estimate (Positive / Negative / Boundary / Integration counts) IS included — it feeds the AI Effort call and the split decision. |
+| Phase 4 — Test Design (outlines) | **OUTLINE NAMES ONLY**. No parametrization tables. No exhaustive per-outline test-data JSON. Coverage estimate (Positive / Negative / Boundary / Integration counts) IS included — it feeds the AI Effort call and any later split decision. |
 | Phase 5 — Edge case + Test-data summary | **Edge-case names + criticality only**. No data generation strategy, no Faker recipes — feature does not exist yet. |
 | Phase 6 — Traceability + Ticket updates | Phase 3 of THIS skill owns this. Refinement subagent only WRITES the local file; Handoff subagent does Jira mutations. |
 | Phase 7 — Final QA Feedback Report | Per-Story summary returned to orchestrator. Aggregated into the batch report in Phase 3. |
@@ -362,8 +362,8 @@ For each refined Story, dispatch a Handoff subagent. Sequential, one Story at a 
          {{jira.ai_effort}}: <low | medium | high>
      # FALLBACK (field absent): structured "## AI Effort" comment per
      #   .agents/jira-required.yaml fallback: key. Never block.
-     # High: step 3's comment ALSO carries the split proposal block from the checklist
-     #   (PO decides; the agent never splits or creates Stories).
+     # High: step 3's comment ALSO carries the size note from the checklist
+     #   (a warning only: the Story still moves to ready_for_dev; the agent never splits or creates Stories).
 
 3. Handoff notification on the Story (the ATP lives in {{jira.acceptance_test_plan}} — do NOT mirror it; inline the full body as a `## Acceptance Test Plan (ATP)` comment ONLY if that field is absent — fallback per jira-required.yaml):
      [ISSUE_TRACKER_TOOL] Add Comment:
@@ -373,8 +373,8 @@ For each refined Story, dispatch a Handoff subagent. Sequential, one Story at a 
          The ATP lives in the {{jira.acceptance_test_plan}} field.
          # FALLBACK ONLY (field absent): replace the pointer line above with the full staged refinement body.
          AI Effort: {low | medium | high}
-         # High only: append the "### AI Effort: High (split proposed)" block from
-         #   references/ai-effort-checklist.md. PO decides; the agent never splits.
+         # High only: append the "### AI Effort: High (may need splitting)" note from
+         #   references/ai-effort-checklist.md. A warning, never a gate; the agent never splits.
 
 4. Labels:
      [ISSUE_TRACKER_TOOL] Update Issue:
@@ -485,7 +485,7 @@ After the batch report lands, append the final progress entry `## Phase 3 — Ha
 
 | After Phase 3 you need... | Load this skill / command | Reason |
 |---------------------------|---------------------------|--------|
-| Commit the Story into a sprint and start development | (manual / PO + Dev) | This skill stops at `{{jira.status.story.ready_for_dev}}`. PO + Dev lead drive sprint commitment; for an AI Effort `High` Story, the PO decides on the proposed split first. |
+| Commit the Story into a sprint and start development | (manual / PO + Dev) | This skill stops at `{{jira.status.story.ready_for_dev}}`. PO + Dev lead drive sprint commitment; for an AI Effort `High` Story a PO may split it first, which is optional and not a gate. |
 | In-sprint manual QA once the Story reaches `Ready For QA` | `/sprint-testing` | Will check the `shift-left-*` labels are fresh AND that the synced ATP body this skill published exists (fail-closed, `sprint-testing/references/acceptance-test-planning.md` §0.0), short-circuit Phases 1-3 only then, and run Phases 4-8 + Stages 2 + 3 normally. Stage 1 also creates the Test Plan ITEM from the `{{jira.acceptance_test_plan}}` field this skill populated. |
 | Formal TC creation + ROI scoring after Story ships | `/test-documentation` | Stage 4 turns the outlines + refined ACs into formal Xray TCs (Modality jira-xray) or Jira Test issues (Modality jira-native) with ROI scoring. |
 | Automated test code | `/test-automation` | Stage 5. |
@@ -521,7 +521,7 @@ All references are self-contained. Load one at a time.
 | `references/refinement-playbook.md` | Phase 2 — running the per-Story refinement subagent. Cites `acceptance-test-planning.md` Phases 1-3 + outline-only Phase 4. Documents the shift-left deltas (no parametrization, no test-data gen, outline names only). |
 | `references/atp-outline-template.md` | Phase 2 — body skeleton for `shift-left-refinement.md` (the pre-sprint ATP at outline maturity). Different from sprint-testing's full ATP body. |
 | `references/refinement-questions.md` | Phase 2 — catalog of typical PO / Dev / Design gap-spotting questions, grouped by AC archetype (auth, money, search, state machine, etc.). Use as a checklist when the Story is sparse. |
-| `references/ai-effort-checklist.md` | Phase 3 — setting `{{jira.ai_effort}}`: the ordered yes/no checklist, how answers map to Low / Medium / High, the split proposal block a High Story adds to the handoff comment, and a worked split example. |
+| `references/ai-effort-checklist.md` | Phase 3 — setting `{{jira.ai_effort}}`: the ordered yes/no checklist, how answers map to Low / Medium / High, the size note a High Story adds to the handoff comment, the optional split labels, and a worked example. |
 | `references/handoff-protocol.md` | Phase 3 — exact Jira mutation sequence per Story (field-first ATP write, subtask close), label + transition rules, batch report template + epic-comment posting rules. |
 | `../agentic-qa-core/references/artifact-lifecycle.md` | Before any transition — the Story + subtask lifecycle rows (§1), assignee-at-create (§2), the unmapped-status fallback protocol (§4), the light stage verifier template (§5). |
 | `../agentic-qa-core/references/session-management.md` | Phase 0 + Phase 4 — resume contract, plan.md/progress.md schemas, archive policy, Engram per-phase checkpoint. This skill is a producer of `session/shift-left-testing/<batch-id>/...` topic keys. |
@@ -540,7 +540,7 @@ All references are self-contained. Load one at a time.
 - [ ] Phase 1 found-or-created the `[QA] Shift-Left Review` subtask per accepted Story, assignee = self, at `{{jira.status.subtask.active}}` (or skipped with warning — no subtask work type)
 - [ ] Phase 2 ran ONE refinement subagent per accepted Story, user OK'd each summary
 - [ ] Per-Story `shift-left-refinement.md` written under each Story's PBI folder
-- [ ] Phase 3 handoff applied per Story: Jira description + ATP field (`{{jira.acceptance_test_plan}}`, both modalities) + AI Effort (`{{jira.ai_effort}}`, split proposed in the comment when High) + handoff comment + labels + transition (stops at `ready_for_dev`) — NO Test Plan item created
+- [ ] Phase 3 handoff applied per Story: Jira description + ATP field (`{{jira.acceptance_test_plan}}`, both modalities) + AI Effort (`{{jira.ai_effort}}`, size note in the comment when High) + handoff comment + labels + transition (stops at `ready_for_dev`) — NO Test Plan item created
 - [ ] Subtask closed per Story: session annotations posted on it + `{{jira.transition.subtask.complete}}` fired → `{{jira.status.subtask.close}}` (or skipped with warning)
 - [ ] Light stage verifier run per `agentic-qa-core/references/artifact-lifecycle.md` §5 — every line YES or a stated N/A
 - [ ] Trace verified per Story (both modalities: field populated + pointer comment; full body in comment only in fallback mode)

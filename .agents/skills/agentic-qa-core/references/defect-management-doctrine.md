@@ -92,11 +92,12 @@ classifying correctly **up front** — the transitions are a fallback, not the p
 
 ## Part 2 — QA Assignee (the quality owner of the issue)
 
-`qa_assignee` (`{{jira.qa_assignee}}`, single User Picker) names the QA who owns
-testing for an issue. It is the QA-lane parallel of the native `assignee` (the
-dev owner) and is **distinct from `reporter`** — the person who *raised* an issue
-is often not the person who *retests* it. That gap is exactly why this field
-exists and why it carries the per-issue QA accountability that `reporter` cannot.
+`qa_assignee` (`{{jira.qa_assignee}}`, single User Picker) is a RECORD of the QA
+who followed an issue and answers for it. It is distinct from `reporter` (the
+person who *raised* an issue is often not the person who *retests* it) and from
+the native `assignee`, which follows the dev model: it names the current holder
+of the issue and moves to the QA when the Story reaches Ready For QA. The
+record survives every later reassignment, which is why the field exists.
 
 ### Scope — nearly every work item, not just bugs
 
@@ -106,10 +107,13 @@ Test cases — those route through the Test Repository epic, Part 4.)
 
 ### When to set it (binding)
 
-- **On first pickup of a work item to test** — when a QA starts working a Story
-  (or tech-story / tech-debt) for QA, set `qa_assignee` to themselves. Setting it
-  is part of *taking* the ticket, the same moment you transition it into testing.
-- **On filing any Bug / Defect / Improvement** — set `qa_assignee` to the QA who
+- **During Shift-Left**: the first QA pickup of a Story (the refinement pass)
+  sets `qa_assignee` to that QA. It is kept for the Story's whole life, and the
+  dev reads it to know WHO to assign when the Story is deployed (Ready For QA).
+- **On first pickup to test, only if still empty**: a Story (or tech-story /
+  tech-debt) that reached testing without a Shift-Left pass gets `qa_assignee`
+  set to the QA taking it, at `start_testing`.
+- **On filing any Bug / Defect / Improvement**: set `qa_assignee` to the QA who
   is filing (the same authenticated identity creating the report).
 
 ### Who is "the QA" (binding)
@@ -131,30 +135,19 @@ issue has its own QA owner; clobbering it destroys accountability and metrics.
   write only if empty (or on explicit, justified override). The REST writer
   (Part 6) enforces this — never blind-set the field.
 
-### Transitions that reassign (binding)
+### Native `assignee` follows the dev model (binding)
 
-The never-overwrite rule protects `qa_assignee` from the harness. It does not
-protect the native `assignee` from **Jira itself**: a workflow transition may
-carry an *assign* post-function that the transition catalog does not show.
-Measured on a live project (see ADR-0006): `start_testing` and `qa_sign_off` each
-silently moved a Story's `assignee` from the developer to the QA engineer who
-fired the transition. On a project whose doctrine keeps the two owners distinct
-— this one — QA sign-off quietly took delivery ownership off the dev on every
-Story it passed, and nothing reported it.
+When a Story reaches Ready For QA, the dev moves the native `assignee` to the QA
+named in `qa_assignee`. Workflow transitions that put the QA in `assignee`
+(`start_testing`, `qa_sign_off`) are therefore expected, and the harness does
+NOT restore a previous owner after them.
 
-Binding, on every transition the harness fires on a work item:
-
-1. **Read `assignee` before firing.** The `Get Transitions` call the transition
-   step already makes returns the issue: take the value from that read.
-2. **Read it back after.** One field on one issue — covered by the single extra
-   read the light stage verifier already allows (`artifact-lifecycle.md` §5).
-3. **Moved by a post-function → restore the previous owner**, and record the
-   post-function in the stage's Transition Trail so the next session expects it.
-4. **A project may genuinely want QA as `assignee` while testing.** That is the
-   user's decision, not a default: ask once, record the answer, stop restoring
-   for that project.
-5. **Never "solve" it by leaving `qa_assignee` empty.** The two fields answer
-   different questions; collapsing them is the drift this Part exists to stop.
+1. **Never overwrite `qa_assignee` because `assignee` changed.** The record
+   answers "who followed this Story", the native field answers "who holds it now".
+2. **A Story in testing whose native `assignee` is still someone else** is not
+   something the harness fixes silently: note it in the report and ask before
+   reassigning.
+3. **Never "solve" a mismatch by leaving `qa_assignee` empty.**
 
 ---
 
@@ -399,7 +392,7 @@ Load `/acli` first — it owns the syntax, auth, and the REST-PUT pattern below.
 ## Part 7 — Where this fires (per skill)
 
 - **`/sprint-testing`** — primary filer. Sets `qa_assignee` when a Story is taken
-  into testing (Stage 1); classifies + files Bug/Defect/Improvement with the full
+  into testing (Stage 1) and the Shift-Left pass left it empty; classifies + files Bug/Defect/Improvement with the full
   matrix in Stage 3; parents to the Defect epic; links to the source Story.
 - **`/regression-testing`** — a regression failure is classified and filed **in
   Jira** (Bug if the feature is live above Staging, Defect if pre-release) with

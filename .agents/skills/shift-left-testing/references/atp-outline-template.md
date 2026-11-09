@@ -49,7 +49,7 @@ The skeleton below is the canonical body for `shift-left-refinement.md`, the `[L
 | UI | Low / Medium / High | ... |
 
 **Estimated test effort**: ... (feeds the AI Effort call)
-**AI Effort**: Low / Medium / High (checklist: `references/ai-effort-checklist.md`; High adds a split proposal in the handoff comment)
+**AI Effort**: Low / Medium / High (checklist: `references/ai-effort-checklist.md`; High adds a size note in the handoff comment)
 
 ### Epic-level inheritance (if applicable)
 - Risks restated at Story level: ...
@@ -240,7 +240,7 @@ If Partial / No, list issues:
 
 - [ ] PO answers Critical Questions before sprint planning
 - [ ] Dev answers Technical Questions before the Story is pulled into a sprint
-- [ ] If AI Effort is High, PO decides on the proposed split before sprint commitment
+- [ ] If AI Effort is High, the handoff comment carries the size note (a warning: a split is optional and never a gate)
 - [ ] Story enters sprint from status `{{jira.status.story.ready_for_dev}}`
 - [ ] When Story reaches `{{jira.status.story.ready_for_qa}}`, `/sprint-testing` will short-circuit refinement on this published ATP body plus the fresh `shift-left-*` labels (never on the label alone)
 ```
