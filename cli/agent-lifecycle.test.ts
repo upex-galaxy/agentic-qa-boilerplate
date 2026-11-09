@@ -14,6 +14,7 @@ import {
   discoverRequiredEnvVars,
   ENGRAM_PI_MANUAL,
   ENGRAM_PLUGIN_COMMANDS,
+  engramPiNotice,
   engramSetupArgs,
   mergedHarnesses,
   migrateAgentIds,
@@ -171,6 +172,12 @@ describe('installer Codex lifecycle', () => {
       ]);
   });
 
+  test('the Pi Engram line is owed to every run with a Pi agent, a mixed one included', () => {
+    expect(engramPiNotice(['claude-code', 'pi'])).toContain(ENGRAM_PI_MANUAL);
+    expect(engramPiNotice(['pi'])).toContain(ENGRAM_PI_MANUAL);
+    expect(engramPiNotice(['claude-code', 'codex'])).toBeNull();
+  });
+
   test('wires Engram per agent with engram setup, slim protocol on Claude Code only', () => {
     expect(ENGRAM_PI_MANUAL).toContain('--exposure deferred');
     expect(engramSetupArgs('claude-code')).toEqual(['setup', 'claude-code', '--protocol=slim']);
@@ -222,7 +229,7 @@ describe('installer Codex lifecycle', () => {
 
   test.skipIf(!HAS_ALL_HARNESSES || !MAINTAINER_CHECKOUT)('discovers the MCP environment contracts from the loader filter on every host, and exposes launch guidance', async () => {
     // Each server names what it reads in its `.env` loader's `--filter`, the
-    // same list on all three hosts: the six DBHUB_* dbhub.toml interpolates,
+    // same list on every host: the six DBHUB_* dbhub.toml interpolates,
     // the two SLACK_MCP_*, the OpenAPI pair. None is core scope (project or
     // tooling), so the installer defers them to `bun run setup:doctor` instead
     // of prompting. No remote server's key appears: those run at harness level.

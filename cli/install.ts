@@ -1041,6 +1041,18 @@ export function engramSetupArgs(agent: Exclude<AgentId, 'pi'>): string[] {
 /** Registers Engram at Pi's user level; the human runs it, because it writes user config. */
 export const ENGRAM_PI_MANUAL = 'pi mcp add engram --exposure deferred -- engram mcp --tools=agent';
 
+/**
+ * The manual line for a Pi agent, or null without one. Printed on every run
+ * that wires Engram, the one that skips as "already wired" included: the
+ * installer cannot tell whether the human ran it, and a mixed `[claude-code, pi]`
+ * run marks the step done after printing it once.
+ */
+export function engramPiNotice(agents: readonly AgentId[]): string | null {
+  return agents.includes('pi')
+    ? tr(`Pi: conecta Engram a mano, una vez por máquina: ${ENGRAM_PI_MANUAL}`, `Pi: connect Engram by hand, once per machine: ${ENGRAM_PI_MANUAL}`)
+    : null;
+}
+
 /** The Engram Claude Code plugin ships the session hooks `engram setup` does not write. */
 export const ENGRAM_PLUGIN_COMMANDS: string[][] = [
   ['plugin', 'marketplace', 'add', 'Gentleman-Programming/engram'],
@@ -1112,6 +1124,8 @@ async function runEngramStep(agents: AgentId[], state: InstallState, forceKeys: 
     return;
   }
   if (!shouldRunStep(state, key, forceKeys) && !FORCE_ENGRAM) {
+    const piNotice = engramPiNotice(agents);
+    if (piNotice) { stepOut(step).info(piNotice); }
     step.end('skipped', tr('ya conectado en una corrida anterior', 'already wired in an earlier run'));
     return;
   }
@@ -1119,7 +1133,7 @@ async function runEngramStep(agents: AgentId[], state: InstallState, forceKeys: 
   let failed = 0;
   for (const agent of agents) {
     if (agent === 'pi') {
-      out.info(tr(`Pi: conecta Engram a mano, una vez por máquina: ${ENGRAM_PI_MANUAL}`, `Pi: connect Engram by hand, once per machine: ${ENGRAM_PI_MANUAL}`));
+      out.info(engramPiNotice([agent])!);
       continue;
     }
     out.dim(`engram ${engramSetupArgs(agent).join(' ')}`);
