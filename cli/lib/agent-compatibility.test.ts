@@ -83,6 +83,24 @@ const temporaryRoots: string[] = [];
  */
 const OPENCODE_PLUGIN = '.opencode/plugins/personality-reinject.js';
 const PI_ADAPTER = '.pi/extensions/agentic-qa.js';
+/**
+ * The Pi files exist only where a project keeps Pi: `cli` ships to every
+ * project, so a fixture stands in for the adapter elsewhere, and the tests that
+ * read the real files skip.
+ */
+const HAS_PI_ADAPTER = existsSync(join(REPO_ROOT, PI_ADAPTER));
+const HAS_PI_MCP = existsSync(join(REPO_ROOT, '.pi/mcp.json'));
+/** The smallest adapter the Pi contract (`validatePiAdapter`) accepts. */
+const PI_ADAPTER_FIXTURE = [
+  'import { agentContextLines, proposeSessionTitle } from \'../../.agents/hooks/personality-reinject.mjs\';',
+  'export function secretBlockReason() { return \'\'; }',
+  'export default function adapter(pi) {',
+  '  pi.on(\'input\', () => {});',
+  '  pi.on(\'before_agent_start\', () => { pi.setSessionName(proposeSessionTitle({})); return agentContextLines({}); });',
+  '  pi.on(\'tool_call\', event => (secretBlockReason(event) ? { block: true } : undefined));',
+  '}',
+  '',
+].join('\n');
 const HAS_OPENCODE = existsSync(join(REPO_ROOT, OPENCODE_PLUGIN));
 // eslint-disable-next-line ts/no-explicit-any -- a plain-JS adapter with no type declarations
 const opencodePlugin: any = HAS_OPENCODE ? (await import(join(REPO_ROOT, OPENCODE_PLUGIN))).default : null;
@@ -461,7 +479,8 @@ function contractFixture(prefix?: string, ids = BOILERPLATE_IDS): string {
   const root = temporaryRoot(prefix);
   copyFromRepo(root, '.agents/hooks/personality-reinject.mjs');
   if (HAS_OPENCODE) { copyFromRepo(root, OPENCODE_PLUGIN); }
-  copyFromRepo(root, PI_ADAPTER);
+  if (HAS_PI_ADAPTER) { copyFromRepo(root, PI_ADAPTER); }
+  else { write(root, PI_ADAPTER, PI_ADAPTER_FIXTURE); }
   write(root, '.pi/mcp.json', mcpJson(ids));
   write(root, '.claude/settings.json', hookSettings(CLAUDE_HOOK_COMMAND));
   write(root, '.codex/hooks.json', hookSettings(CODEX_HOOK_COMMAND, CODEX_HOOK_COMMAND_WINDOWS));
@@ -996,7 +1015,7 @@ export const KATA_IMPORT_ALIASES = { files: ['tests/**/*.ts'], rules: {} };
 });
 
 describe.skipIf(!HAS_OPENCODE)('hook adapters', () => {
-  test('accepts the three adapters wired to the shared emitter', () => {
+  test('accepts every adapter wired to the shared emitter', () => {
     expect(validateHookCompatibility(contractFixture())).toEqual([]);
   });
 
@@ -1396,8 +1415,8 @@ describe('MCP semantic parity', () => {
 
 describe('project-declared MCP set', () => {
   // A downstream project (no `dbhub`, no `postman`, plus `supabase`) is the
-  // canonical set for ITS three configs: `.mcp.json` declares, the other two
-  // must match.
+  // canonical set for ITS configs: `.mcp.json` declares, the others must
+  // match.
 
   test('accepts a project whose set differs from the boilerplate on every host', () => {
     const root = contractFixture(undefined, PROJECT_IDS);
@@ -1887,7 +1906,7 @@ describe('one-harness projects (ADR-0012)', () => {
     expect(validateMcpParity(root).some(error => error.includes('.pi/mcp.json') || error.includes('between claude and pi'))).toBe(true);
   });
 
-  test('Pi own keys do not count as drift, and the real registry defers every server', () => {
+  test.skipIf(!HAS_PI_MCP)('Pi own keys do not count as drift, and the real registry defers every server', () => {
     const root = contractFixture();
     copyFromRepo(root, '.pi/mcp.json');
     expect(validateMcpParity(root)).toEqual([]);
@@ -1930,8 +1949,12 @@ describe('one-harness projects (ADR-0012)', () => {
   });
 
   test('the Pi adapter contract names what it depends on', () => {
-    expect(validatePiAdapter(readFileSync(join(REPO_ROOT, PI_ADAPTER), 'utf8'))).toEqual([]);
+    expect(validatePiAdapter(PI_ADAPTER_FIXTURE)).toEqual([]);
     expect(validatePiAdapter('export default () => {};\n')).toHaveLength(6);
+  });
+
+  test.skipIf(!HAS_PI_ADAPTER)('the real Pi adapter meets that contract', () => {
+    expect(validatePiAdapter(readFileSync(join(REPO_ROOT, PI_ADAPTER), 'utf8'))).toEqual([]);
   });
 
   test('the boilerplate keeps failing on a deleted adapter', () => {

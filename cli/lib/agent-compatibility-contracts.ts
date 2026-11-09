@@ -773,7 +773,7 @@ export function validateMcpParityFindings(root = process.cwd(), options: McpPari
   const schemaOwner = options.schemaOwner ?? readSchemaOwner(resolvedRoot);
   const hosts = options.harnesses ?? declaredHarnesses(resolvedRoot, { schemaOwner: options.schemaOwner }).harnesses;
   // Only the harnesses in use are read: a project on one harness has deleted
-  // the other two's files on purpose. A declared host whose file is missing or
+  // the others' files on purpose. A declared host whose file is missing or
   // malformed fails here, under the MCP group.
   const configs: Partial<Record<McpHost, NormalizedMcpConfig>> = {};
   for (const host of hosts) {
@@ -1266,8 +1266,8 @@ export function validateInstructionRouterHooks(root = process.cwd(), harnesses: 
     }
   }
 
-  // Codex reads AGENTS.md natively and cuts it at the byte; the other two
-  // harnesses carry no such budget.
+  // Codex reads AGENTS.md natively and cuts it at the byte; no other
+  // harness carries such a budget.
   const bytes = Buffer.byteLength(l0);
   if (harnesses.includes('codex') && bytes > CODEX_PROJECT_DOC_MAX_BYTES) {
     errors.push(`AGENTS.md is ${bytes} bytes: Codex cuts the always-on file at ${CODEX_PROJECT_DOC_MAX_BYTES} bytes, router included.`);
