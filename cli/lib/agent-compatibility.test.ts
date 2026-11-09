@@ -90,14 +90,16 @@ const PI_ADAPTER = '.pi/extensions/agentic-qa.js';
  */
 const HAS_PI_ADAPTER = existsSync(join(REPO_ROOT, PI_ADAPTER));
 const HAS_PI_MCP = existsSync(join(REPO_ROOT, '.pi/mcp.json'));
-/** The smallest adapter the Pi contract (`validatePiAdapter`) accepts. */
+/** The smallest adapter the Pi contracts (`validatePiAdapter`, the router hooks) accept. */
 const PI_ADAPTER_FIXTURE = [
-  'import { agentContextLines, proposeSessionTitle } from \'../../.agents/hooks/personality-reinject.mjs\';',
+  'import { agentContextLines, pendingRouteReminder, proposeSessionTitle, rearmRoutes } from \'../../.agents/hooks/personality-reinject.mjs\';',
   'export function secretBlockReason() { return \'\'; }',
   'export default function adapter(pi) {',
   '  pi.on(\'input\', () => {});',
   '  pi.on(\'before_agent_start\', () => { pi.setSessionName(proposeSessionTitle({})); return agentContextLines({}); });',
   '  pi.on(\'tool_call\', event => (secretBlockReason(event) ? { block: true } : undefined));',
+  '  pi.on(\'tool_result\', () => pendingRouteReminder({}));',
+  '  pi.on(\'session_compact\', () => rearmRoutes({}));',
   '}',
   '',
 ].join('\n');
