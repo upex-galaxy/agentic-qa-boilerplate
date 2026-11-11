@@ -194,7 +194,7 @@ model with unit tests; UI uses the existing table-action slot.
 
 - [x] Unit tests pass (`bun run test domain/bulk-assign`)
 - [x] Lint green (`bun run lint:check`)
-- [x] Types green (`tsc --noEmit`)
+- [x] Types green (`bun run types:check`)
 - [ ] Manual smoke test on staging after merge
 
 ## Traceability

@@ -40,6 +40,9 @@ import { playwrightBrowsersInstalled, playwrightCacheCandidates } from './lib/pl
 import { formatBytes, freeBytes, isLocalSource, parseVersion, reachable, readJson, runCmd, versionAtLeast, worktreeInfo } from './lib/probes.ts';
 import { BRAND } from './lib/ui/brand.ts';
 
+/** First Bun that ships `bun check` (the built-in type checker the `types:check` script runs). */
+const MIN_BUN: [number, number, number] = [1, 4, 3];
+
 export type Verdict = 'clear' | 'warn' | 'block';
 
 export interface PreflightCheck extends Check {
@@ -76,7 +79,7 @@ const T = {
     tools: 'Herramientas',
     net: 'Red',
     machine: 'Esta máquina',
-    bunMsg: 'Instala Bun 1.0 o más nuevo: <code>curl -fsSL https://bun.sh/install | bash</code>.',
+    bunMsg: 'Instala Bun 1.4.3 o más nuevo: <code>curl -fsSL https://bun.sh/install | bash</code>.',
     nodeMsg: 'Los hooks de tu agente corren con Node. Instala Node 18+ (nodejs.org o <code>brew install node</code>). La actualización sigue sin él.',
     gitMissing: 'git no está instalado. El actualizador necesita git 2.25 o más nuevo.',
     gitOld: (v: string): string => `Tu git es ${v}. El actualizador necesita 2.25+: <code>brew upgrade git</code> / <code>apt install git</code>.`,
@@ -99,7 +102,7 @@ const T = {
     tools: 'Tools',
     net: 'Network',
     machine: 'This machine',
-    bunMsg: 'Install Bun 1.0 or newer: <code>curl -fsSL https://bun.sh/install | bash</code>.',
+    bunMsg: 'Install Bun 1.4.3 or newer: <code>curl -fsSL https://bun.sh/install | bash</code>.',
     nodeMsg: 'Your agent\'s hooks run on Node. Install Node 18+ (nodejs.org or <code>brew install node</code>). The update continues without it.',
     gitMissing: 'git is not installed. The updater needs git 2.25 or newer.',
     gitOld: (v: string): string => `Your git is ${v}. The updater needs 2.25+: <code>brew upgrade git</code> / <code>apt install git</code>.`,
@@ -137,7 +140,7 @@ export async function runUpPreflight(o: UpPreflightOptions): Promise<PreflightRe
 
   // Tools
   const bunV = process.versions.bun ?? '';
-  checks.push(versionAtLeast(parseVersion(bunV), [1, 0, 0])
+  checks.push(versionAtLeast(parseVersion(bunV), MIN_BUN)
     ? { id: 'bun', group: L.tools, label: 'Bun', value: bunV, state: 'ok', neededBy: 'fetch' }
     : { id: 'bun', group: L.tools, label: 'Bun', value: bunV || '-', state: 'block', msg: L.bunMsg, neededBy: 'fetch' });
 
@@ -253,7 +256,7 @@ const S = {
     agents: 'Agentes de IA',
     net: 'Red',
     machine: 'Esta máquina',
-    bunMsg: 'Instala Bun 1.0 o más nuevo: <code>curl -fsSL https://bun.sh/install | bash</code> (macOS/Linux).',
+    bunMsg: 'Instala Bun 1.4.3 o más nuevo: <code>curl -fsSL https://bun.sh/install | bash</code> (macOS/Linux).',
     nodeMsg: 'Los hooks de tu agente corren con Node. Instala Node 18+ (nodejs.org o <code>brew install node</code>) y vuelve a comprobar.',
     gitMissing: 'git no está instalado. Instálalo (git-scm.com) y vuelve a comprobar.',
     gitIdentity: 'git no sabe quién eres, y lo necesita para tu primer commit y para subir a GitHub: <code>git config --global user.name "Tu nombre"</code> y <code>git config --global user.email tu@correo</code>.',
@@ -294,7 +297,7 @@ const S = {
     agents: 'AI agents',
     net: 'Network',
     machine: 'This machine',
-    bunMsg: 'Install Bun 1.0 or newer: <code>curl -fsSL https://bun.sh/install | bash</code> (macOS/Linux).',
+    bunMsg: 'Install Bun 1.4.3 or newer: <code>curl -fsSL https://bun.sh/install | bash</code> (macOS/Linux).',
     nodeMsg: 'Your agent\'s hooks run on Node. Install Node 18+ (nodejs.org or <code>brew install node</code>) and check again.',
     gitMissing: 'git is not installed. Install it (git-scm.com) and check again.',
     gitIdentity: 'git does not know who you are, and needs to for your first commit and the GitHub push: <code>git config --global user.name "Your name"</code> and <code>git config --global user.email you@example.com</code>.',
@@ -416,7 +419,7 @@ export async function runSetupPreflight(o: SetupPreflightOptions): Promise<Prefl
 
   // Tools
   const bunV = process.versions.bun ?? '';
-  checks.push(versionAtLeast(parseVersion(bunV), [1, 0, 0])
+  checks.push(versionAtLeast(parseVersion(bunV), MIN_BUN)
     ? { id: 'bun', group: L.tools, label: 'Bun', value: bunV, state: 'ok', neededBy: 'install' }
     : { id: 'bun', group: L.tools, label: 'Bun', value: bunV || '-', state: 'block', msg: L.bunMsg, neededBy: 'install' });
 
@@ -609,7 +612,7 @@ export function depsPresent(cwd: string): boolean {
 export async function runSetupGate(o: { cwd: string, lang: Lang, write?: (s: string) => void, install?: () => number }): Promise<number> {
   const write = o.write ?? ((s: string) => { process.stdout.write(s); });
   const es = o.lang === 'es';
-  if (!versionAtLeast(parseVersion(process.versions.bun ?? ''), [1, 0, 0])) {
+  if (!versionAtLeast(parseVersion(process.versions.bun ?? ''), MIN_BUN)) {
     write(`✖ ${plainMsg(S[o.lang].bunMsg)}\n`);
     return 2;
   }

@@ -395,7 +395,7 @@ If the user provided context, use it. If not, ask:
 
 5. **Never** `git commit --no-verify` to bypass the hook unless the user explicitly authorises it. Hooks exist for a reason.
 
-**Prevention**: run the hooks' commands locally before committing (`bun run lint:check`, `tsc --noEmit`, etc.). Faster than discovering the failure at commit time.
+**Prevention**: run the hooks' commands locally before committing (`bun run lint:check`, `bun run types:check`, etc.). Faster than discovering the failure at commit time.
 
 ---
 

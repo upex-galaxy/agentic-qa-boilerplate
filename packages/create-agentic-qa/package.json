@@ -45,7 +45,7 @@
     "build": "bun build src/cli.ts --target=node --outfile dist/cli.js --minify && chmod +x dist/cli.js",
     "dev": "bun run src/cli.ts",
     "test": "bun test",
-    "types:check": "tsc --noEmit",
+    "types:check": "bun check",
     "gen:manifest": "bun run scripts/gen-install-manifest.ts",
     "check:manifest": "bun run scripts/gen-install-manifest.ts --check",
     "prepublishOnly": "bun run check:manifest && bun run build"

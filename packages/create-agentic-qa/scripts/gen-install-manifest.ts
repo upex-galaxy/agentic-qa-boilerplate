@@ -192,7 +192,7 @@ export const NOT_APPLICABLE: Record<string, string> = {
 function prerequisites(mcpsWithKeys: string[]): PrerequisiteSpec[] {
   return [
     {
-      name: 'bun >= 1.0',
+      name: 'bun >= 1.4.3',
       required: true,
       purpose: 'JavaScript runtime and package manager used by every script and the installer itself.',
       installHint: 'https://bun.sh/docs/installation',
