@@ -36,7 +36,7 @@
     "cli/lib/ui/updater-sink.test.ts": "cd525f1f9958d411a39620a2e50ea1f1b543d3d8321a4971ac51adced4515139",
     "cli/lib/ui/updater-sink.ts": "4132405933f7f691dfbc25c5c0314f298df9c77ba9a57aaa005511fdb75ff9e0",
     "cli/preflight.test.ts": "55017ab0f7f2573984182b71be73ff122a1f628c57704bb66d954082aed02e25",
-    "cli/preflight.ts": "f599c8fb62a72d6fe1caced604a89aec096575226531f8550fe19d233eda3c81",
+    "cli/preflight.ts": "279e4191a68b28db11d9180be92f976495ed790459c772098fda1a977e82d37a",
     "scripts/shared-check.ts": "e87918e2223972ba64a232a344e502f0d81a6ef29d7576d5c8fbc70969e0783b"
   }
 }
