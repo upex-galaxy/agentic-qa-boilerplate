@@ -22,7 +22,7 @@ The classifier rules:
 - **Re-arm after compaction or `/clear`.** `SessionStart` with matcher `compact` or `clear` (Claude Code, Codex) or `experimental.session.compacting` (OpenCode 1) or `session_compact` (Pi) clears that state, so a file the compaction or the clear dropped is routed again the next time a prompt needs it.
 - **OpenCode 2 is router-only**: no documented hook hands a plugin the prompt text, so the model follows the ROUTER and the LOAD PROTOCOL with no `ROUTE:` cue. A declared degradation, re-verified on OpenCode upgrades.
 
-A miss is fixed in the section's `triggers:` and the prompt is added to the labelled set in `cli/lib/fixtures/instruction-router-eval.json`, whose `targets` (recall, precision) `cli/lib/instruction-router.test.ts` asserts. Relabelling a prompt to hide a false hit is not a fix. A trigger that fires on everything also costs a binding slot: under the cap it pushes a section the prompt needed onto the optional line.
+A miss is fixed in the section's `triggers:` and the prompt is added to the labelled set in `cli/lib/fixtures/instruction-router-eval.json`, whose `targets` (recall, precision) `bun run instructions:check` enforces. Relabelling a prompt to hide a false hit is not a fix. A trigger that fires on everything also costs a binding slot: under the cap it pushes a section the prompt needed onto the optional line.
 
 ## How a section is shaped
 

@@ -95,8 +95,8 @@ login for a day), `collect.log`. Gitignored like all of `.session/`.
   cadence; `0` turns the loop off.
 - **Force a reading**: `bun cli/sprint-board/merge-collect.ts --reason owner`. The page updates
   within a second.
-- **Check it without touching anything real**: `bun test cli/sprint-board/merge.test.ts
-  cli/sprint-board/merge-build.test.ts` (a recorded reading, no network).
+- **Check it without touching anything real**: in the boilerplate's own checkout, the
+  sprint-board merge unit tests replay a recorded reading (no network).
 - **When it says Not updating**: read the collector line it shows. `COLLECT fail ...` names what
   failed; `degraded github` or `git` means the network or GitHub; no line at all means the board
   server is not running.
