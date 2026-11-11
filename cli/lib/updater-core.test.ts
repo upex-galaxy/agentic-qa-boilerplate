@@ -9,6 +9,7 @@ import { afterEach, describe, expect, test } from 'bun:test';
 import {
   advanceSyncStateV7,
   classifyFile,
+  cleanupBoilerplateCopies,
   collectContextMapBootstrap,
   componentOwnedPaths,
   componentsWithoutDelta,
@@ -1023,5 +1024,79 @@ describe('self-update guards (the updater refreshing itself)', () => {
     write(repo, 'cli/dep.ts', 'export const yes = 1;\n');
     expect(selfUpdateImportError(join(repo, 'cli/ok.ts'), repo)).toBeNull();
     expect(selfUpdateImportError(join(repo, 'cli/broken.ts'), repo)).toContain('gone');
+  });
+});
+
+describe('cleanupBoilerplateCopies (upstream copies that stopped travelling)', () => {
+  const comps: Component[] = [{ name: 'cli', type: 'directory', paths: ['cli'] }];
+  const lists = { paths: ['cli/fixtures'], patterns: [/^cli\/.*\.test\.ts$/] };
+
+  /** An upstream clone with a cursor commit and a newer HEAD, and a project holding a mix of copies. */
+  function scene(): { template: string, repo: string, cursor: string } {
+    const template = temporaryRoot();
+    git(template, ['init', '-q']);
+    write(template, 'cli/old.test.ts', 'v1\n');
+    write(template, 'cli/edited.test.ts', 'upstream\n');
+    write(template, 'cli/kept.test.ts', 'protected\n');
+    write(template, 'cli/tool.ts', 'tool\n');
+    write(template, 'cli/tool.test.ts', 'sibling\n');
+    write(template, 'cli/fixtures/data.json', '{}\n');
+    git(template, ['add', '-A']);
+    git(template, ['-c', 'user.email=t@x.invalid', '-c', 'user.name=t', 'commit', '-qm', 'cursor']);
+    const cursor = git(template, ['rev-parse', 'HEAD']).trim();
+    write(template, 'cli/old.test.ts', 'v2\n');
+    write(template, 'cli/head.test.ts', 'head\n');
+    git(template, ['add', '-A']);
+    git(template, ['-c', 'user.email=t@x.invalid', '-c', 'user.name=t', 'commit', '-qm', 'head']);
+
+    const repo = temporaryRoot();
+    write(repo, 'cli/old.test.ts', 'v1\n'); // the cursor's copy
+    write(repo, 'cli/head.test.ts', 'head  \n'); // HEAD's copy, whitespace only
+    write(repo, 'cli/edited.test.ts', 'the project changed it\n');
+    write(repo, 'cli/own.test.ts', 'the project wrote it\n');
+    write(repo, 'cli/kept.test.ts', 'protected\n');
+    write(repo, 'cli/tool.ts', 'project merge\n');
+    write(repo, 'cli/tool.test.ts', 'sibling\n');
+    write(repo, 'cli/fixtures/data.json', '{}\n');
+    write(repo, 'cli/lib.ts', 'not boilerplate-only\n');
+    return { template, repo, cursor };
+  }
+
+  const cfg = { components: comps, bootstrapOnlyPaths: ['cli/kept.test.ts', 'cli/tool.ts'], cleanupRepoOnly: lists };
+
+  test('only unedited upstream copies go, with a backup; edited and protected stay with a reason; the project\'s own is silent', () => {
+    const { template, repo, cursor } = scene();
+    const r = cleanupBoilerplateCopies(cfg, repo, template, { cli: cursor }, false);
+    expect(r.removed).toEqual(['cli/fixtures/data.json', 'cli/head.test.ts', 'cli/old.test.ts']);
+    expect(r.kept).toEqual([
+      { path: 'cli/edited.test.ts', reason: 'edited' },
+      { path: 'cli/kept.test.ts', reason: 'protected' },
+      { path: 'cli/tool.test.ts', reason: 'protected' },
+    ]);
+    for (const p of r.removed) {
+      expect(existsSync(join(repo, p))).toBe(false);
+      expect(existsSync(join(r.backupDir!, p))).toBe(true);
+    }
+    for (const p of ['cli/edited.test.ts', 'cli/own.test.ts', 'cli/kept.test.ts', 'cli/tool.test.ts', 'cli/lib.ts']) {
+      expect(existsSync(join(repo, p))).toBe(true);
+    }
+    expect(existsSync(join(repo, 'cli/fixtures'))).toBe(false);
+  });
+
+  test('a dry-run lists the same removals and writes nothing', () => {
+    const { template, repo, cursor } = scene();
+    const r = cleanupBoilerplateCopies(cfg, repo, template, { cli: cursor }, true);
+    expect(r.removed).toEqual(['cli/fixtures/data.json', 'cli/head.test.ts', 'cli/old.test.ts']);
+    expect(r.backupDir).toBeNull();
+    expect(existsSync(join(repo, 'cli/old.test.ts'))).toBe(true);
+  });
+
+  test('fail closed: a cursor the clone lacks proves nothing, and no lists means no cleanup', () => {
+    const { template, repo } = scene();
+    const r = cleanupBoilerplateCopies(cfg, repo, template, { cli: 'deadbeefdeadbeef' }, false);
+    expect(r.removed).toEqual(['cli/fixtures/data.json', 'cli/head.test.ts']);
+    expect(r.kept).toContainEqual({ path: 'cli/old.test.ts', reason: 'unverified' });
+    expect(r.kept).toContainEqual({ path: 'cli/own.test.ts', reason: 'unverified' });
+    expect(cleanupBoilerplateCopies({ ...cfg, cleanupRepoOnly: undefined }, repo, template, {}, false)).toEqual({ removed: [], kept: [], backupDir: null });
   });
 });

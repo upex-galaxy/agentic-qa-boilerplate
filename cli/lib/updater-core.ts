@@ -25,6 +25,7 @@
 
 import type {
   AppliedFile,
+  BoilerplateCopyKept,
   ChangeStatus,
   Component,
   CoreLogger,
@@ -1304,12 +1305,12 @@ export function dirtyTreeExemptions(
  * blocks: the sync does not write there.
  */
 export function isWithinWriteSurface(
-  cfg: Pick<UpdaterConfig, 'components' | 'ignoreFiles' | 'packageJsonSpecs' | 'deprecatedFiles' | 'excludePaths' | 'repoOnlyPaths' | 'bootstrapOnlyPaths'>,
+  cfg: Pick<UpdaterConfig, 'components' | 'ignoreFiles' | 'packageJsonSpecs' | 'deprecatedFiles' | 'excludePaths' | 'repoOnlyPaths' | 'repoOnlyPatterns' | 'bootstrapOnlyPaths'>,
   relPath: string,
 ): boolean {
   const p = relPath.replace(/\\/g, '/');
   const never = new Set([...(cfg.excludePaths ?? []), ...cfg.bootstrapOnlyPaths].map(x => x.replace(/\\/g, '/')));
-  if (never.has(p) || isRepoOnlyPath(p, cfg.repoOnlyPaths ?? [])) { return false; }
+  if (never.has(p) || isRepoOnlyForRun(cfg, p)) { return false; }
   if (isProjectLocalSkillPath(p)) { return false; } // a consumer's `<aspect>-context/`: never written by the sync
   const exact = new Set<string>([
     ...cfg.ignoreFiles.map(ig => ig.path),
@@ -2501,6 +2502,158 @@ export function restoreSelfUpdate(refreshed: readonly string[], backupDir: strin
   }
 }
 
+// ============================================================================
+// BOILERPLATE COPIES CLEANUP (upstream's unedited copies a project already has)
+// ============================================================================
+
+export interface BoilerplateCleanupResult {
+  /** Removed (or, on a dry-run, that a real run removes), repo-relative. */
+  removed: string[]
+  /** Kept with a row: edited by the project, protected, or not verifiable. */
+  kept: BoilerplateCopyKept[]
+  /** The backup the removed copies went to; null when nothing was removed. */
+  backupDir: string | null
+}
+
+/** The bytes of `rel` at `rev` in the upstream clone; null when that revision has no such file. */
+function upstreamBlobAt(templateDir: string, rev: string, rel: string): Buffer | null {
+  const r = spawnSync('git', ['-C', templateDir, 'show', `${rev}:${rel}`], { stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 64 * 1024 * 1024 });
+  return r.status === 0 ? r.stdout : null;
+}
+
+/** `dir/name.ts` -> `dir/name.test.ts` (also `.js`, `.mjs`): the test of a protected file stays with it. */
+function protectedTestSibling(filePath: string): string | null {
+  const match = /^(.*)\.(ts|js|mjs)$/.exec(filePath.replace(/\\/g, '/'));
+  if (match === null || match[1].endsWith('.test')) { return null; }
+  return `${match[1]}.test.${match[2]}`;
+}
+
+/** Whether the clone holds commit `rev` (a shallow fallback clone may not). */
+function cloneHasCommit(templateDir: string, rev: string): boolean {
+  if (!/^[0-9a-f]{7,64}$/i.test(rev)) { return false; }
+  return spawnSync('git', ['-C', templateDir, 'cat-file', '-e', `${rev}^{commit}`], { stdio: 'ignore' }).status === 0;
+}
+
+/** Same content, under the whitespace normalization `classifyFile` applies. */
+function sameContent(local: Buffer, upstream: Buffer | null): boolean {
+  if (upstream === null) { return false; }
+  return Buffer.compare(local, upstream) === 0 || normalizeWhitespace(local.toString('utf8')) === normalizeWhitespace(upstream.toString('utf8'));
+}
+
+/** Every file below the components' paths in `repoRoot`, repo-relative (node_modules and .git skipped). */
+function localComponentFiles(components: readonly Component[], repoRoot: string): string[] {
+  const out = new Set<string>();
+  const walk = (rel: string): void => {
+    const abs = path.join(repoRoot, rel);
+    let stat: fs.Stats;
+    try { stat = fs.lstatSync(abs); }
+    catch { return; }
+    if (stat.isSymbolicLink()) { return; }
+    if (stat.isFile()) { out.add(rel); return; }
+    if (!stat.isDirectory()) { return; }
+    for (const name of fs.readdirSync(abs)) {
+      if (name === 'node_modules' || name === '.git') { continue; }
+      walk(`${rel}/${name}`);
+    }
+  };
+  for (const c of components) {
+    if (c.bootstrapOnly) { continue; }
+    for (const p of componentOwnedPaths(c)) { if (p !== '.' && p !== '') { walk(p.replace(/\\/g, '/').replace(/\/+$/, '')); } }
+  }
+  return [...out].sort();
+}
+
+/**
+ * Remove from a project the boilerplate-only files (`cfg.cleanupRepoOnly`:
+ * the boilerplate's own tests, snapshots, fixtures, maintainer scripts) that
+ * stopped travelling, but only upstream's UNEDITED copies. A file goes when
+ * ALL four hold, and is kept otherwise (fail closed):
+ *  1. it matches `cfg.cleanupRepoOnly` (and is no project-local skill);
+ *  2. upstream has the path at the clone's HEAD or at its component's lock
+ *     cursor;
+ *  3. the local bytes equal that copy (the whitespace normalization of
+ *     `classifyFile`);
+ *  4. it is not bootstrap-only (watchlist, `updater.protected_paths`) and not
+ *     the `.test.*` sibling of a bootstrap-only file.
+ * A removed file is copied to the run's backup first. A kept file gets a
+ * reason (`edited`, `protected`, `unverified` when upstream's copy could not
+ * be read); a file upstream never had is the project's own and is silent. On
+ * a dry-run nothing is written and `removed` lists what a real run removes.
+ */
+export function cleanupBoilerplateCopies(
+  cfg: Pick<UpdaterConfig, 'components' | 'bootstrapOnlyPaths' | 'agentsFrameworkFiles' | 'cleanupRepoOnly'>,
+  repoRoot: string,
+  templateDir: string,
+  cursors: Record<string, string>,
+  dryRun: boolean,
+  logger: CoreLogger = silentLogger,
+): BoilerplateCleanupResult {
+  const result: BoilerplateCleanupResult = { removed: [], kept: [], backupDir: null };
+  const lists = cfg.cleanupRepoOnly;
+  if (!lists) { return result; }
+  const matches = (rel: string): boolean => isRepoOnlyForRun({ repoOnlyPaths: lists.paths, repoOnlyPatterns: lists.patterns }, rel) && !isProjectLocalSkillPath(rel);
+  const heldSiblings = new Set((cfg.bootstrapOnlyPaths ?? []).map(p => protectedTestSibling(p)).filter((p): p is string => p !== null));
+
+  for (const rel of localComponentFiles(cfg.components, repoRoot).filter(matches)) {
+    const component = cfg.components.find(c => !c.bootstrapOnly && isRepoOnlyPath(rel, componentOwnedPaths(c)));
+    if (isBootstrapOnlyFile(rel, component, cfg.bootstrapOnlyPaths ?? [], cfg.agentsFrameworkFiles ?? []) || heldSiblings.has(rel)) {
+      result.kept.push({ path: rel, reason: 'protected' });
+      continue;
+    }
+    let local: Buffer;
+    try { local = fs.readFileSync(path.join(repoRoot, rel)); }
+    catch {
+      result.kept.push({ path: rel, reason: 'unverified' });
+      continue;
+    }
+    const headPath = path.join(templateDir, rel);
+    const head = fs.existsSync(headPath) ? fs.readFileSync(headPath) : null;
+    const cursor = component ? cursors[component.name] : undefined;
+    const cursorKnown = cursor !== undefined && cloneHasCommit(templateDir, cursor);
+    const atCursor = cursorKnown ? upstreamBlobAt(templateDir, cursor, rel) : null;
+    if (sameContent(local, head) || sameContent(local, atCursor)) {
+      result.removed.push(rel);
+      continue;
+    }
+    if (!cursorKnown) {
+      // An older upstream copy cannot be ruled out: unproven either way.
+      result.kept.push({ path: rel, reason: 'unverified' });
+      continue;
+    }
+    if (head === null && atCursor === null) { continue; } // upstream never had it: the project's own file
+    result.kept.push({ path: rel, reason: 'edited' });
+  }
+
+  if (result.removed.length === 0) { return result; }
+  if (dryRun) {
+    logger.info(`[dry-run] eliminaría ${result.removed.length} copia(s) de archivos propios del boilerplate (tests, fixtures): ${result.removed.slice(0, 5).join(', ')}${result.removed.length > 5 ? ', …' : ''}`);
+    return result;
+  }
+  const backupDir = createBackupDir(repoRoot);
+  const removed: string[] = [];
+  for (const rel of result.removed) {
+    const src = path.join(repoRoot, rel);
+    try {
+      const saved = path.join(backupDir, rel);
+      fs.mkdirSync(path.dirname(saved), { recursive: true });
+      fs.copyFileSync(src, saved);
+      fs.unlinkSync(src);
+      pruneEmptyParents(repoRoot, rel);
+      removed.push(rel);
+    }
+    catch (err) {
+      logger.warning(`No se pudo eliminar ${rel}: ${errorMessage(err)}`);
+      result.kept.push({ path: rel, reason: 'unverified' });
+    }
+  }
+  result.removed = removed;
+  result.backupDir = removed.length > 0 ? backupDir : null;
+  if (removed.length > 0) {
+    logger.success(`Eliminadas ${removed.length} copia(s) sin editar de archivos propios del boilerplate (tests, fixtures); backup en ${path.relative(repoRoot, backupDir)}.`);
+  }
+  return result;
+}
+
 /**
  * Drop the `deleted-upstream` entries of files `cleanupDeprecated` removes in
  * Phase 5 anyway. Left in, the interactive run asks about the same delete
@@ -3159,6 +3312,15 @@ export async function runUpdate(
       sink.warn(`afterApply hook falló: ${errorMessage(err)}`);
     }
   };
+  // Upstream's unedited copies of the boilerplate-only files that stopped
+  // travelling: removed with a backup (dry-run: listed), the rest kept with a
+  // row. Before the no-change exit, so a project already at HEAD is cleaned too.
+  const cleanup = cfg.cleanupRepoOnly
+    ? cleanupBoilerplateCopies(cfg, repoRoot, templateDir, v7State?.perComponentCommit ?? {}, opts.dryRun, makeCoreLoggerFromSink(sink))
+    : null;
+  const cleanupFacts: Pick<RunSummary, 'boilerplateCopiesRemoved' | 'boilerplateCopiesKept' | 'boilerplateCleanupBackup'> = cleanup
+    ? { boilerplateCopiesRemoved: cleanup.removed, boilerplateCopiesKept: cleanup.kept, boilerplateCleanupBackup: cleanup.backupDir }
+    : {};
   const finish = async (summary: RunSummary): Promise<RunSummary> => {
     await runAfterApply(summary);
     recordLastApply(summary, summary.promptSaved ? (cfg.promptFile ?? null) : null);
@@ -3167,7 +3329,7 @@ export async function runUpdate(
   };
   if (visible.length === 0 && ignoreDeltasPre.length === 0 && pkgJsonDeltasPre.length === 0 && settledBootstrap.length === 0) {
     sink.step('Sin cambios detectados respecto al upstream. Nada que sincronizar.');
-    return finish({ ...emptySummary, newHeadSha, testSiblingsHeldBack });
+    return finish({ ...emptySummary, newHeadSha, testSiblingsHeldBack, ...cleanupFacts });
   }
   if (visible.length > 0) {
     let suffix = '';
@@ -3686,6 +3848,7 @@ export async function runUpdate(
     packageJsonKept,
     packageJsonAppended,
     testSiblingsHeldBack,
+    ...cleanupFacts,
   };
 
   // State write

@@ -224,6 +224,12 @@ export interface PackageJsonKeptKey {
   resolution: 'skip' | 'mine'
 }
 
+/** A boilerplate-only path the cleanup kept: the project edited its copy, protects it, or upstream's copy could not be read. */
+export interface BoilerplateCopyKept {
+  path: string
+  reason: 'edited' | 'protected' | 'unverified'
+}
+
 export interface RunSummary {
   applied: AppliedFile[]
   skipped: DeltaEntry[]
@@ -248,6 +254,12 @@ export interface RunSummary {
   packageJsonAppended?: { file: string, section: string, key: string, value: string }[]
   /** Test siblings of protected files the run did not deliver or overwrite. */
   testSiblingsHeldBack?: { path: string, protectedPath: string }[]
+  /** Upstream's unedited copies of boilerplate-only files this run removed (`cleanupBoilerplateCopies`). */
+  boilerplateCopiesRemoved?: string[]
+  /** Boilerplate-only paths the project holds that the cleanup kept, with why. */
+  boilerplateCopiesKept?: BoilerplateCopyKept[]
+  /** Where the removed copies were saved (`.backups/update-<ts>/`), when any were removed. */
+  boilerplateCleanupBackup?: string | null
   /** Paths recorded in `.template/last-apply.json`: the updater's own uncommitted output, exempt from the next dirty-tree guard. */
   lastApplyPaths?: number
   /** Set by the wrapper's parity hook when it saved the prompt file (`UpdaterConfig.promptFile`). */
@@ -511,6 +523,13 @@ export interface UpdaterConfig {
    * the resolved watchlist.
    */
   holdTestSiblingsOf?: string[]
+  /**
+   * Boilerplate-only files (the boilerplate's own tests, snapshots, fixtures,
+   * maintainer scripts) to REMOVE from a project that already holds upstream's
+   * unedited copy (`cleanupBoilerplateCopies`). Unset in the boilerplate's own
+   * checkout, where the cleanup is inert.
+   */
+  cleanupRepoOnly?: { paths: string[], patterns: RegExp[] }
   /**
    * Generated, per-repo files that live INSIDE a synced component but must NEVER
    * be synced (each repo regenerates its own). Matched by exact repo-relative

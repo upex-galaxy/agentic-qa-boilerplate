@@ -1867,4 +1867,19 @@ describe('an appended script whose target file is absent', () => {
     expect(findings[0]).toMatchObject({ path: 'scripts/lint-skills.test.ts', blocking: false, suggested: 'keep project', side: 'kept' });
     expect(findings[0].evidence).toContain('`scripts/lint-skills.ts`');
   });
+
+  test('the boilerplate-copies cleanup is one row for what left, with its backup, and one per file kept', () => {
+    const root = temporaryRoot();
+    const findings = collectParityFindings({
+      ...base(root, temporaryRoot()),
+      boilerplateCopiesRemoved: ['cli/a.test.ts', 'cli/b.test.ts'],
+      boilerplateCleanupBackup: join(root, '.backups', 'update-x'),
+      boilerplateCopiesKept: [{ path: 'cli/c.test.ts', reason: 'edited' }, { path: 'scripts/sync-jira-issues.test.ts', reason: 'protected' }],
+    });
+    expect(findings.map(f => f.path)).toEqual(['2 boilerplate-only files', 'cli/c.test.ts', 'scripts/sync-jira-issues.test.ts']);
+    expect(findings.every(f => !f.blocking && f.suggested === 'keep project')).toBe(true);
+    expect(findings[0].evidence).toContain('.backups/update-x');
+    expect(findings[1].evidence).toContain('bun test cli/c.test.ts');
+    expect(findings[2].evidence).toContain('protected');
+  });
 });

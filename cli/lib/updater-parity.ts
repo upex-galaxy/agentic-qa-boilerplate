@@ -198,6 +198,12 @@ export interface ParityInput {
   packageJsonAppended?: { file: string, section: string, key: string, value: string }[]
   /** Test siblings of kept protected files the run held back (`testSiblingsToHoldBack`). */
   testSiblingsHeldBack?: { path: string, protectedPath: string }[]
+  /** Upstream's unedited copies of boilerplate-only files the run removed (`cleanupBoilerplateCopies`). */
+  boilerplateCopiesRemoved?: string[]
+  /** Boilerplate-only paths the project holds that the cleanup kept, with why. */
+  boilerplateCopiesKept?: { path: string, reason: 'edited' | 'protected' | 'unverified' }[]
+  /** Absolute backup directory of the removed copies. */
+  boilerplateCleanupBackup?: string | null
   /** The run applied nothing: a target the upstream clone holds is one the real run delivers. */
   dryRun?: boolean
   /** Quality gates run after the apply; only failed / timed-out ones become rows. */
@@ -1941,6 +1947,38 @@ export function collectParityFindings(input: ParityInput): ParityFinding[] {
       surface: 'components',
       path: held.path,
       evidence: `informational: held back with its protected file \`${held.protectedPath}\`: your copy differs from upstream's, and upstream's test asserts upstream's copy. Take both together when you merge \`${held.protectedPath}\` (\`bun test ${held.path}\` is the check)`,
+      suggested: 'keep project',
+      blocking: false,
+      side: 'kept',
+    });
+  }
+
+  // 8d. The boilerplate's own tests, fixtures and maintainer scripts no longer
+  //     travel: upstream's unedited copies left this run (one row, with the
+  //     backup), and every copy the project edited or protects stays, one row each.
+  const removedCopies = input.boilerplateCopiesRemoved ?? [];
+  if (removedCopies.length > 0) {
+    const shown = removedCopies.slice(0, 5).map(p => `\`${p}\``).join(', ');
+    const where = input.boilerplateCleanupBackup ? `; copies in \`${path.relative(input.root, input.boilerplateCleanupBackup)}\`` : '';
+    findings.push({
+      surface: 'components',
+      path: removedCopies.length === 1 ? removedCopies[0] : `${removedCopies.length} boilerplate-only files`,
+      evidence: `informational: ${input.boilerplateCleanupBackup ? 'removed' : 'the real run removes'} upstream's unedited copies of the boilerplate's own tests, fixtures and maintainer scripts, which no longer travel (${shown}${removedCopies.length > 5 ? `, and ${removedCopies.length - 5} more` : ''})${where}. Commit the deletions with the sync`,
+      suggested: 'keep project',
+      blocking: false,
+      side: 'kept',
+    });
+  }
+  for (const kept of input.boilerplateCopiesKept ?? []) {
+    const why = kept.reason === 'edited'
+      ? `your copy differs from upstream's, so it is yours now; it may fail against newer cli code (\`bun test ${kept.path}\` is the check), delete it if you do not need it`
+      : kept.reason === 'protected'
+        ? 'it is protected (or the test of a protected file), so the cleanup never touches it'
+        : 'upstream\'s copy could not be read to prove it unedited, so it stays; delete it by hand if it is upstream\'s';
+    findings.push({
+      surface: 'components',
+      path: kept.path,
+      evidence: `informational: project-owned file under a boilerplate-only path, kept: ${why}`,
       suggested: 'keep project',
       blocking: false,
       side: 'kept',
