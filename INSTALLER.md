@@ -106,7 +106,7 @@ That runs git-flow-master's Strategy Setup: it resolves your branching flow (sol
 - When a page run ends, a static copy of it is saved under `.session/runs/` (gitignored; the oldest copies are pruned) and the open page shows its path. No secret value reaches the page, the log or that copy.
 - `bun sync --auto`, typed by a person on a real terminal, opens a read-only page: no question cards, the deferred items listed in the report. An `--auto` implied by "no terminal" never opens it.
 
-The page code lives in `cli/lib/ui/` and is byte-identical in this repo and agentic-dev-boilerplate; `scripts/shared-files.json` lists the shared files and `bun run shared:check` (part of `repo:check`) fails when one drifts.
+The page code lives in `cli/lib/ui/` and is byte-identical in this repo and agentic-dev-boilerplate; `scripts/shared-files.json` lists the shared files and `bun run shared:check` (part of `repo:check`) fails when one drifts. Outside the boilerplate's own checkout it is inert and exits 0: a project has no sibling repo.
 
 ---
 

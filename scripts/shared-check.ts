@@ -19,12 +19,19 @@
  * The check also fails on a file under `cli/lib/ui/` the manifest does not
  * list, so a new page module cannot be forgotten by the port.
  *
+ * Inert outside the boilerplate's own checkout (`contractsEnforced`, the same
+ * test the documentation contracts make): a project has no sibling repo, and
+ * the manifest lists boilerplate tests that never reach it. It exits 0 there,
+ * so a `repo:check` that still calls it stays green.
+ *
  * Shared file: byte-identical in agentic-qa-boilerplate and agentic-dev-boilerplate.
  */
 
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
+
+import { contractsEnforced } from './lib/doc-contracts.ts';
 
 const toPosix = (p: string): string => p.replace(/\\/g, '/');
 
@@ -58,6 +65,10 @@ function readManifest(): Manifest {
 }
 
 function main(): void {
+  if (!contractsEnforced(ROOT)) {
+    process.stdout.write('shared:check: inert outside the boilerplate\'s own checkout (contractsEnforced).\n');
+    return;
+  }
   const argv = process.argv.slice(2);
   const manifest = readManifest();
   const listed = Object.keys(manifest.files).sort();
