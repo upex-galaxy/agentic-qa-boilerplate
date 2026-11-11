@@ -338,7 +338,7 @@ describe('compatibility repair lifecycle', () => {
 });
 
 describe('doctor and updater parity', () => {
-  test.skipIf(!HAS_CODEX)('reports file correctness separately from Codex trust and CLI availability', () => {
+  test.skipIf(!HAS_CLAUDE || !HAS_CODEX)('reports file correctness separately from Codex trust and CLI availability', () => {
     const root = compatibilityFixture();
     repairRepositoryCompatibility(root, 'linux');
     const diagnostic = diagnoseAgentCompatibility(root, { platform: 'linux', codexCliDetected: false });
@@ -359,7 +359,7 @@ describe('doctor and updater parity', () => {
     });
   });
 
-  test.skipIf(!HAS_CODEX)('reports a missing alias and grouped errors without throwing', () => {
+  test.skipIf(!HAS_CLAUDE || !HAS_CODEX)('reports a missing alias and grouped errors without throwing', () => {
     const root = compatibilityFixture();
     repairRepositoryCompatibility(root, 'linux');
     rmSync(join(root, '.claude/skills'));
