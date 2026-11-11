@@ -54,6 +54,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 
 import * as path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import { CONTEXT_MAP_SKILLS } from './context-maps';
 import { testSiblingsToHoldBack } from './updater-drift';
@@ -2395,6 +2396,111 @@ function pruneEmptyParents(repoRoot: string, relPath: string): void {
   }
 }
 
+// ============================================================================
+// SELF-UPDATE GUARDS
+// ============================================================================
+
+/**
+ * What the self-update refreshes: every file of the self-update component that
+ * differs from upstream (blob sha), minus the repo-only ones (they never
+ * travel, `isRepoOnlyForRun`) and minus the protected ones the project has
+ * (`selfUpdateKeptProtected`, listed apart so the run can name them).
+ */
+export function selfUpdatePlan(
+  cfg: Pick<UpdaterConfig, 'repoOnlyPaths' | 'repoOnlyPatterns' | 'bootstrapOnlyPaths' | 'agentsFrameworkFiles'>,
+  selfComp: Component,
+  templateDir: string,
+  repoRoot: string,
+): { selfFiles: string[], stale: string[], keptProtected: string[] } {
+  const selfFiles = collectComponentRelPaths(selfComp, templateDir).filter(relPath => !isRepoOnlyForRun(cfg, relPath));
+  const differing: string[] = [];
+  for (const relPath of selfFiles) {
+    const localPath = path.join(repoRoot, relPath);
+    let upstreamSha: string;
+    try {
+      upstreamSha = execSync(
+        `git -C "${templateDir}" hash-object "${relPath}"`,
+        { stdio: ['pipe', 'pipe', 'pipe'] },
+      ).toString().trim();
+    }
+    catch {
+      continue;
+    }
+    let localSha = '';
+    if (fs.existsSync(localPath)) {
+      try {
+        localSha = execSync(
+          `git hash-object "${localPath}"`,
+          { stdio: ['pipe', 'pipe', 'pipe'] },
+        ).toString().trim();
+      }
+      catch {
+        localSha = '';
+      }
+    }
+    if (localSha !== upstreamSha) {
+      differing.push(relPath);
+    }
+  }
+  const keptProtected = selfUpdateKeptProtected(differing, selfComp, cfg, repoRoot);
+  return { selfFiles, stale: differing.filter(rel => !keptProtected.includes(rel)), keptProtected };
+}
+
+/**
+ * The stale updater files the self-update may NOT overwrite: a bootstrap-only
+ * path (`bootstrapOnlyPaths`, which carries `updater.protected_paths`) the
+ * project already has. Bootstrap-only means "delivered once when missing", so a
+ * missing protected file is still refreshed. The protected-drift row of the
+ * parity table reports the kept copy, as it does for every other component.
+ */
+export function selfUpdateKeptProtected(
+  stale: readonly string[],
+  selfComp: Component,
+  cfg: Pick<UpdaterConfig, 'bootstrapOnlyPaths' | 'agentsFrameworkFiles'>,
+  repoRoot: string,
+): string[] {
+  return stale.filter(rel => fs.existsSync(path.join(repoRoot, rel))
+    && isBootstrapOnlyFile(rel, selfComp, cfg.bootstrapOnlyPaths ?? [], cfg.agentsFrameworkFiles ?? []));
+}
+
+/**
+ * Load the refreshed updater entry in a throwaway process without running it
+ * (`import.meta.main` is false for an imported module; `UPEX_UPDATER_REEXEC=1`
+ * is a second guard). A refreshed file that imports a kept protected file which
+ * no longer fits fails HERE, at module load, instead of bricking `bun sync`
+ * for good. Null when the entry loads, else the loader's error text.
+ */
+export function selfUpdateImportError(entry: string, repoRoot: string): string | null {
+  const url = pathToFileURL(path.resolve(entry)).href;
+  const r = spawnSync(process.execPath, ['-e', `await import(${JSON.stringify(url)})`], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+    timeout: 60_000,
+    env: { ...process.env, UPEX_UPDATER_REEXEC: '1' },
+  });
+  if (r.error) { return r.error.message; }
+  if (r.status === 0) { return null; }
+  const text = `${r.stderr ?? ''}${r.stdout ?? ''}`.trim();
+  return text.split('\n').filter(Boolean).slice(-6).join('\n') || `exit ${r.status ?? 'signal'}`;
+}
+
+/**
+ * Undo a self-update copy: every overwritten file comes back from
+ * `backupDir`, every file the copy CREATED is removed (it has no backup).
+ */
+export function restoreSelfUpdate(refreshed: readonly string[], backupDir: string, repoRoot: string): void {
+  for (const rel of refreshed) {
+    const saved = path.join(backupDir, rel);
+    const dst = path.join(repoRoot, rel);
+    if (fs.existsSync(saved)) { fs.copyFileSync(saved, dst); }
+    else if (fs.existsSync(dst)) {
+      fs.unlinkSync(dst);
+      pruneEmptyParents(repoRoot, rel);
+    }
+  }
+}
+
 /**
  * Drop the `deleted-upstream` entries of files `cleanupDeprecated` removes in
  * Phase 5 anyway. Left in, the interactive run asks about the same delete
@@ -2712,35 +2818,11 @@ export async function runUpdate(
   if (cfg.selfUpdateComponent && process.env.UPEX_UPDATER_REEXEC !== '1') {
     const selfComp = cfg.components.find(c => c.name === cfg.selfUpdateComponent);
     if (selfComp) {
-      const selfFiles = collectComponentRelPaths(selfComp, templateDir);
-      const stale: string[] = [];
-      for (const relPath of selfFiles) {
-        const localPath = path.join(repoRoot, relPath);
-        let upstreamSha: string;
-        try {
-          upstreamSha = execSync(
-            `git -C "${templateDir}" hash-object "${relPath}"`,
-            { stdio: ['pipe', 'pipe', 'pipe'] },
-          ).toString().trim();
-        }
-        catch {
-          continue;
-        }
-        let localSha = '';
-        if (fs.existsSync(localPath)) {
-          try {
-            localSha = execSync(
-              `git hash-object "${localPath}"`,
-              { stdio: ['pipe', 'pipe', 'pipe'] },
-            ).toString().trim();
-          }
-          catch {
-            localSha = '';
-          }
-        }
-        if (localSha !== upstreamSha) {
-          stale.push(relPath);
-        }
+      // Repo-only files never travel; a protected file the project has is kept,
+      // as in every other component, and the protected-drift row reports it.
+      const { selfFiles, stale, keptProtected } = selfUpdatePlan(cfg, selfComp, templateDir, repoRoot);
+      if (keptProtected.length > 0) {
+        sink.warn(`Self-update: ${keptProtected.length} archivo(s) protegido(s) del CLI se conservan (difieren de upstream): ${keptProtected.join(', ')}.`);
       }
       if (stale.length > 0 && opts.dryRun) {
         // The running script, located inside the self-update component: by its
@@ -2810,6 +2892,17 @@ export async function runUpdate(
           sink.step(`  · ${relPath}`);
         }
         sink.step(`Backup en ${path.relative(repoRoot, selfBackupDir)}`);
+        // The new updater must load against the files it did NOT refresh (a
+        // kept protected one). If it cannot, put the old CLI back and stop:
+        // re-exec'ing it would brick `bun sync` until a hand repair.
+        const importError = selfUpdateImportError(process.argv[1] ?? '', repoRoot);
+        if (importError !== null) {
+          restoreSelfUpdate(stale, selfBackupDir, repoRoot);
+          const blame = keptProtected.length > 0 ? ` Archivo(s) protegido(s) que el CLI nuevo no puede cargar: ${keptProtected.join(', ')}. Fusiona upstream en ellos o quítalos de updater.protected_paths, y re-ejecuta.` : '';
+          sink.error(`Self-update abortado: el CLI nuevo no carga, se restauró el anterior (${stale.length} archivo(s) desde ${path.relative(repoRoot, selfBackupDir)}).${blame}\n${importError}`);
+          cleanupTempDir(cfg.tempDir);
+          return abortedSummary;
+        }
         sink.step('Re-ejecutando con código actualizado…');
         // The child inherits what WE dirtied (preflight output + the CLI files
         // just written) so its own dirty-tree guard can tell it apart from

@@ -29,8 +29,11 @@ import {
   prefetchedUpstreamDir,
   readLastApply,
   reconcileComponentsByContent,
+  restoreSelfUpdate,
   selfUpdateComponentByContent,
   selfUpdatedComponents,
+  selfUpdateImportError,
+  selfUpdatePlan,
   splitByLastApply,
   syncStateWriteNeeded,
   UPDATER_OWNED_PATHS_ENV,
@@ -967,5 +970,58 @@ describe('collectContextMapBootstrap: context map skills delivered once', () => 
     const first = collectContextMapBootstrap(narrowed, template, repo);
     expect(first).toHaveLength(3);
     expect(collectContextMapBootstrap(narrowed, template, repo, first)).toEqual([]);
+  });
+});
+
+describe('self-update guards (the updater refreshing itself)', () => {
+  const cli: Component = { name: 'cli', type: 'directory', paths: ['cli'] };
+
+  function pair(): { template: string, repo: string } {
+    const template = temporaryRoot();
+    const repo = temporaryRoot();
+    write(template, 'cli/update-boilerplate.ts', 'export const v = 2;\n');
+    write(template, 'cli/lib/tui.ts', 'export const tui = 2;\n');
+    write(template, 'cli/lib/new-module.ts', 'export const fresh = 1;\n');
+    write(template, 'cli/lib/tui.test.ts', 'test\n');
+    write(repo, 'cli/update-boilerplate.ts', 'export const v = 1;\n');
+    write(repo, 'cli/lib/tui.ts', 'export const tui = 1; // project merge\n');
+    return { template, repo };
+  }
+
+  test('a protected cli path the project has is kept, never in stale; a repo-only one is never copied', () => {
+    const { template, repo } = pair();
+    const plan = selfUpdatePlan({ bootstrapOnlyPaths: ['cli/lib/tui.ts'], repoOnlyPatterns: [/\.test\.ts$/] }, cli, template, repo);
+    expect(plan.keptProtected).toEqual(['cli/lib/tui.ts']);
+    expect(plan.stale.sort()).toEqual(['cli/lib/new-module.ts', 'cli/update-boilerplate.ts']);
+    expect(plan.selfFiles).not.toContain('cli/lib/tui.test.ts');
+  });
+
+  test('a protected path the project lacks is delivered: bootstrap-only means once when missing', () => {
+    const { template, repo } = pair();
+    rmSync(join(repo, 'cli/lib/tui.ts'));
+    const plan = selfUpdatePlan({ bootstrapOnlyPaths: ['cli/lib/tui.ts'] }, cli, template, repo);
+    expect(plan.keptProtected).toEqual([]);
+    expect(plan.stale).toContain('cli/lib/tui.ts');
+    expect(plan.stale).toContain('cli/lib/tui.test.ts');
+  });
+
+  test('restore puts overwritten files back and removes the ones the copy created', () => {
+    const repo = temporaryRoot();
+    const backup = temporaryRoot();
+    write(repo, 'cli/update-boilerplate.ts', 'new\n');
+    write(backup, 'cli/update-boilerplate.ts', 'old\n');
+    write(repo, 'cli/lib/fresh/only.ts', 'created by the copy\n');
+    restoreSelfUpdate(['cli/update-boilerplate.ts', 'cli/lib/fresh/only.ts'], backup, repo);
+    expect(readFileSync(join(repo, 'cli/update-boilerplate.ts'), 'utf8')).toBe('old\n');
+    expect(existsSync(join(repo, 'cli/lib/fresh'))).toBe(false);
+  });
+
+  test('the import check passes a loadable entry and names the failure of one that cannot load', () => {
+    const repo = temporaryRoot();
+    write(repo, 'cli/ok.ts', 'import { yes } from \'./dep.ts\';\nexport const ok = yes;\n');
+    write(repo, 'cli/broken.ts', 'import { gone } from \'./dep.ts\';\nexport const ok = gone;\n');
+    write(repo, 'cli/dep.ts', 'export const yes = 1;\n');
+    expect(selfUpdateImportError(join(repo, 'cli/ok.ts'), repo)).toBeNull();
+    expect(selfUpdateImportError(join(repo, 'cli/broken.ts'), repo)).toContain('gone');
   });
 });
