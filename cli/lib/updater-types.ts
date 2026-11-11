@@ -540,6 +540,14 @@ export interface UpdaterConfig {
    */
   repoOnlyPaths?: string[]
   /**
+   * On top of `repoOnlyPaths`, matched against the repo-relative path: upstream
+   * paths no consumer receives that a prefix cannot name (a file NAME shape
+   * spread across folders, such as the boilerplate's own unit tests). Applies
+   * to every delivery route, the self-update of the updater included
+   * (`isRepoOnlyForRun`).
+   */
+  repoOnlyPatterns?: RegExp[]
+  /**
    * Extra repo-relative paths added to the sparse-checkout of the template
    * clone. Not synced — they exist so afterApply hooks can READ the upstream
    * copy (e.g. the protected-file drift watchlist). Without them the partial

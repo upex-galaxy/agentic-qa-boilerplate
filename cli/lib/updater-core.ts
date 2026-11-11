@@ -103,6 +103,16 @@ export function isRepoOnlyPath(filePath: string, prefixes: string[]): boolean {
 }
 
 /**
+ * True when `relPath` never travels to this repo: a repo-only path, or a
+ * repo-only pattern (`UpdaterConfig.repoOnlyPatterns`). Applies to every
+ * delivery route, the self-update of the updater included.
+ */
+export function isRepoOnlyForRun(cfg: Pick<UpdaterConfig, 'repoOnlyPaths' | 'repoOnlyPatterns'>, relPath: string): boolean {
+  const rel = relPath.replace(/\\/g, '/');
+  return isRepoOnlyPath(rel, cfg.repoOnlyPaths ?? []) || (cfg.repoOnlyPatterns ?? []).some(re => re.test(rel));
+}
+
+/**
  * Context skills a consumer authors (`<aspect>-context/`, the judgment layer
  * over its own `.context/` maps) are PROJECT-LOCAL by construction: the sync
  * never delivers, overwrites or deletes one, even on the day upstream ships a
@@ -2946,6 +2956,10 @@ export async function runUpdate(
   // for the same reason: all detection paths converge on `entries`.
   if (cfg.repoOnlyPaths && cfg.repoOnlyPaths.length > 0) {
     entries = entries.filter(e => !isRepoOnlyPath(e.path, cfg.repoOnlyPaths ?? []));
+  }
+  if (cfg.repoOnlyPatterns && cfg.repoOnlyPatterns.length > 0) {
+    const patterns = cfg.repoOnlyPatterns;
+    entries = entries.filter(e => !patterns.some(re => re.test(e.path.replace(/\\/g, '/'))));
   }
 
   // A deprecated file leaves through cleanupDeprecated (Phase 5), not the delete prompt.

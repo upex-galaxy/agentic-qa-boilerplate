@@ -21,6 +21,7 @@ import {
   isBootstrapOnlyFile,
   isLocalTemplateSource,
   isProjectLocalSkillPath,
+  isRepoOnlyForRun,
   isRepoOnlyPath,
   isWithinWriteSurface,
   LAST_APPLY_FILE,
@@ -838,6 +839,21 @@ describe('isRepoOnlyPath', () => {
 
   test('no prefixes configured means nothing is filtered', () => {
     expect(isRepoOnlyPath('docs/reports/x.md', [])).toBe(false);
+  });
+});
+
+describe('isRepoOnlyForRun (repo-only prefixes plus patterns)', () => {
+  const cfg = { repoOnlyPaths: ['docs/reports'], repoOnlyPatterns: [/^cli\/.*\.test\.ts$/] };
+
+  test('a prefix or a pattern match keeps the path out, whatever the separator', () => {
+    expect(isRepoOnlyForRun(cfg, 'docs/reports/x.md')).toBe(true);
+    expect(isRepoOnlyForRun(cfg, 'cli/lib/updater-core.test.ts')).toBe(true);
+    expect(isRepoOnlyForRun(cfg, 'cli\\lib\\updater-core.test.ts')).toBe(true);
+  });
+
+  test('everything else travels, and no pattern configured filters nothing', () => {
+    expect(isRepoOnlyForRun(cfg, 'cli/lib/updater-core.ts')).toBe(false);
+    expect(isRepoOnlyForRun({ repoOnlyPaths: [] }, 'cli/lib/updater-core.test.ts')).toBe(false);
   });
 });
 
