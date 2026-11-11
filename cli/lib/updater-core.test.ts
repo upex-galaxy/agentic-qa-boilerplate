@@ -30,6 +30,7 @@ import {
   prefetchedUpstreamDir,
   readLastApply,
   reconcileComponentsByContent,
+  repairParentOverwrites,
   restoreSelfUpdate,
   selfUpdateComponentByContent,
   selfUpdatedComponents,
@@ -1098,5 +1099,52 @@ describe('cleanupBoilerplateCopies (upstream copies that stopped travelling)', (
     expect(r.kept).toContainEqual({ path: 'cli/old.test.ts', reason: 'unverified' });
     expect(r.kept).toContainEqual({ path: 'cli/own.test.ts', reason: 'unverified' });
     expect(cleanupBoilerplateCopies({ ...cfg, cleanupRepoOnly: undefined }, repo, template, {}, false)).toEqual({ removed: [], kept: [], backupDir: null });
+  });
+});
+
+describe('repairParentOverwrites (a self-update parent older than selfUpdatePlan)', () => {
+  const cli: Component = { name: 'cli', type: 'directory', paths: ['cli'] };
+  const cfg = { bootstrapOnlyPaths: ['cli/lib/manifest.ts'] };
+
+  /** The state the re-exec child finds: the old parent copied upstream over a protected file, backup in .backups/. */
+  function overwritten(projectCopy: string): { template: string, repo: string } {
+    const template = temporaryRoot();
+    const repo = temporaryRoot();
+    write(template, 'cli/lib/manifest.ts', 'export const v = \'upstream\';\nexport const added = 1;\n');
+    write(template, 'cli/lib/tui.ts', 'export const tui = 2;\n');
+    write(repo, 'cli/lib/manifest.ts', 'export const v = \'upstream\';\nexport const added = 1;\n');
+    write(repo, 'cli/lib/tui.ts', 'export const tui = 2;\n');
+    write(repo, '.backups/update-2026-01-01T00-00-00-000Z-1/cli/lib/manifest.ts', 'stale\n');
+    write(repo, '.backups/update-2026-01-02T00-00-00-000Z-2/cli/lib/manifest.ts', projectCopy);
+    write(repo, '.backups/update-2026-01-02T00-00-00-000Z-2/cli/lib/tui.ts', 'export const tui = 1;\n');
+    return { template, repo };
+  }
+
+  test('the protected copy comes back from the newest backup; an unprotected one stays refreshed', () => {
+    const { template, repo } = overwritten('export const v = \'project\';\nexport const added = 1;\n');
+    write(repo, 'cli/entry.ts', 'import { added } from \'./lib/manifest.ts\';\nexport const probe = added;\n');
+    const r = repairParentOverwrites(cfg, cli, template, repo, ['cli/lib/manifest.ts', 'cli/lib/tui.ts', 'cli/missing.ts'], join(repo, 'cli/entry.ts'));
+    expect(r.restored).toEqual(['cli/lib/manifest.ts']);
+    expect(r.unloadable).toEqual([]);
+    expect(readFileSync(join(repo, 'cli/lib/manifest.ts'), 'utf8')).toContain('project');
+    expect(readFileSync(join(repo, 'cli/lib/tui.ts'), 'utf8')).toBe('export const tui = 2;\n');
+  });
+
+  test('a protected copy the new updater cannot load stays upstream\'s and is reported unloadable', () => {
+    const { template, repo } = overwritten('export const v = \'project\';\n');
+    write(repo, 'cli/entry.ts', 'import { added } from \'./lib/manifest.ts\';\nexport const probe = added;\n');
+    const r = repairParentOverwrites(cfg, cli, template, repo, ['cli/lib/manifest.ts'], join(repo, 'cli/entry.ts'));
+    expect(r).toMatchObject({ restored: [], unloadable: ['cli/lib/manifest.ts'] });
+    expect(readFileSync(join(repo, 'cli/lib/manifest.ts'), 'utf8')).toContain('upstream');
+  });
+
+  test('nothing to repair: a path the parent did not write, a local copy that is not upstream\'s, or no backup', () => {
+    const { template, repo } = overwritten('export const v = \'project\';\nexport const added = 1;\n');
+    const entry = join(repo, 'cli/lib/tui.ts');
+    expect(repairParentOverwrites(cfg, cli, template, repo, [], entry).restored).toEqual([]);
+    write(repo, 'cli/lib/manifest.ts', 'export const v = \'merged by hand\';\nexport const added = 1;\n');
+    expect(repairParentOverwrites(cfg, cli, template, repo, ['cli/lib/manifest.ts'], entry).restored).toEqual([]);
+    rmSync(join(repo, '.backups'), { recursive: true });
+    expect(repairParentOverwrites(cfg, cli, template, repo, ['cli/lib/manifest.ts'], entry)).toEqual({ restored: [], unloadable: [], backupDir: null });
   });
 });

@@ -204,6 +204,8 @@ export interface ParityInput {
   boilerplateCopiesKept?: { path: string, reason: 'edited' | 'protected' | 'unverified' }[]
   /** Absolute backup directory of the removed copies. */
   boilerplateCleanupBackup?: string | null
+  /** Protected updater files an older parent overwrote during the self-update (`repairParentOverwrites`). */
+  selfUpdateRepair?: { restored: string[], unloadable: string[], backupDir: string | null } | null
   /** The run applied nothing: a target the upstream clone holds is one the real run delivers. */
   dryRun?: boolean
   /** Quality gates run after the apply; only failed / timed-out ones become rows. */
@@ -1982,6 +1984,30 @@ export function collectParityFindings(input: ParityInput): ParityFinding[] {
       suggested: 'keep project',
       blocking: false,
       side: 'kept',
+    });
+  }
+
+  // 8e. A self-update parent older than this updater overwrote protected
+  //     updater files: restored (informational), or the project's copy no longer
+  //     loads with the new updater and upstream's stays in place (blocking).
+  const repair = input.selfUpdateRepair;
+  const repairBackup = repair?.backupDir ? `\`${path.relative(input.root, repair.backupDir)}\`` : 'the run\'s backup';
+  for (const p of repair?.restored ?? []) {
+    findings.push({
+      surface: 'components',
+      path: p,
+      evidence: `informational: protected, and the previous updater overwrote it during the self-update; your copy was restored from ${repairBackup}. Later syncs keep it`,
+      suggested: 'keep project',
+      blocking: false,
+    });
+  }
+  for (const p of repair?.unloadable ?? []) {
+    findings.push({
+      surface: 'components',
+      path: p,
+      evidence: `protected, but your copy no longer loads with the new updater, so upstream's copy is in place and yours is in ${repairBackup}. Merge your change into upstream's copy, keep the path in updater.protected_paths, and run \`bun sync\` again`,
+      suggested: 'merge',
+      blocking: true,
     });
   }
 

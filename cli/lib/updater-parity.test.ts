@@ -1882,4 +1882,15 @@ describe('an appended script whose target file is absent', () => {
     expect(findings[1].evidence).toContain('bun test cli/c.test.ts');
     expect(findings[2].evidence).toContain('protected');
   });
+
+  test('a protected updater file an older parent overwrote: restored is informational, unloadable blocks', () => {
+    const root = temporaryRoot();
+    const findings = collectParityFindings({
+      ...base(root, temporaryRoot()),
+      selfUpdateRepair: { restored: ['cli/lib/a.ts'], unloadable: ['cli/lib/b.ts'], backupDir: join(root, '.backups', 'update-y') },
+    });
+    expect(findings.map(f => [f.path, f.blocking])).toEqual([['cli/lib/a.ts', false], ['cli/lib/b.ts', true]]);
+    expect(findings[0].evidence).toContain('.backups/update-y');
+    expect(findings[1].suggested).toBe('merge');
+  });
 });

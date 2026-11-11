@@ -260,6 +260,8 @@ export interface RunSummary {
   boilerplateCopiesKept?: BoilerplateCopyKept[]
   /** Where the removed copies were saved (`.backups/update-<ts>/`), when any were removed. */
   boilerplateCleanupBackup?: string | null
+  /** Protected updater files a parent older than this updater overwrote, and what the re-exec child did about them (`repairParentOverwrites`). */
+  selfUpdateRepair?: { restored: string[], unloadable: string[], backupDir: string | null }
   /** Paths recorded in `.template/last-apply.json`: the updater's own uncommitted output, exempt from the next dirty-tree guard. */
   lastApplyPaths?: number
   /** Set by the wrapper's parity hook when it saved the prompt file (`UpdaterConfig.promptFile`). */

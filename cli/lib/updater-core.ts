@@ -2502,6 +2502,68 @@ export function restoreSelfUpdate(refreshed: readonly string[], backupDir: strin
   }
 }
 
+/** The newest `.backups/update-*` directory of `repoRoot` (the timestamped names sort), or null. */
+function newestUpdateBackup(repoRoot: string): string | null {
+  const root = path.join(repoRoot, '.backups');
+  let names: string[];
+  try { names = fs.readdirSync(root).filter(n => n.startsWith('update-')).sort(); }
+  catch { return null; }
+  const newest = names.at(-1);
+  return newest === undefined ? null : path.join(root, newest);
+}
+
+export interface ParentOverwriteRepair {
+  /** Protected updater files put back from the parent's backup. */
+  restored: string[]
+  /** Protected copies the new updater cannot load: upstream's copy stays in place. */
+  unloadable: string[]
+  /** The backup the copies came from; null when nothing qualified. */
+  backupDir: string | null
+}
+
+/**
+ * Run in a self-update re-exec child. A parent updater older than
+ * `selfUpdatePlan` overwrote every stale updater file, a protected one
+ * included (with a backup, no row), so the first sync after that fix would
+ * still lose the project's copy. A path comes back from the newest
+ * `.backups/update-*` only when ALL hold: the parent says it wrote it
+ * (`ownedPaths`, from UPDATER_OWNED_PATHS_ENV); it is bootstrap-only here;
+ * its local bytes equal upstream's (the overwrite happened); and the backup
+ * holds a different copy. Then the entry is import-checked: when it no longer
+ * loads, upstream's copies are put back and the paths are `unloadable`.
+ */
+export function repairParentOverwrites(
+  cfg: Pick<UpdaterConfig, 'bootstrapOnlyPaths' | 'agentsFrameworkFiles'>,
+  selfComp: Component,
+  templateDir: string,
+  repoRoot: string,
+  ownedPaths: readonly string[],
+  entry: string,
+): ParentOverwriteRepair {
+  const none: ParentOverwriteRepair = { restored: [], unloadable: [], backupDir: null };
+  const backupDir = newestUpdateBackup(repoRoot);
+  if (backupDir === null) { return none; }
+  const restored: string[] = [];
+  for (const raw of new Set(ownedPaths)) {
+    const rel = raw.replace(/\\/g, '/');
+    if (!isRepoOnlyPath(rel, componentOwnedPaths(selfComp))) { continue; }
+    if (!isBootstrapOnlyFile(rel, selfComp, cfg.bootstrapOnlyPaths ?? [], cfg.agentsFrameworkFiles ?? [])) { continue; }
+    const local = path.join(repoRoot, rel);
+    const upstream = path.join(templateDir, rel);
+    const saved = path.join(backupDir, rel);
+    if (!fs.existsSync(local) || !fs.existsSync(upstream) || !fs.existsSync(saved)) { continue; }
+    const localBytes = fs.readFileSync(local);
+    if (Buffer.compare(localBytes, fs.readFileSync(upstream)) !== 0) { continue; }
+    if (Buffer.compare(localBytes, fs.readFileSync(saved)) === 0) { continue; }
+    fs.copyFileSync(saved, local);
+    restored.push(rel);
+  }
+  if (restored.length === 0) { return none; }
+  if (selfUpdateImportError(entry, repoRoot) === null) { return { restored, unloadable: [], backupDir }; }
+  for (const rel of restored) { fs.copyFileSync(path.join(templateDir, rel), path.join(repoRoot, rel)); }
+  return { restored: [], unloadable: restored, backupDir };
+}
+
 // ============================================================================
 // BOILERPLATE COPIES CLEANUP (upstream's unedited copies a project already has)
 // ============================================================================
@@ -3080,6 +3142,25 @@ export async function runUpdate(
     }
   }
 
+  // --- SELF-UPDATE REPAIR (re-exec child) ---
+  // A parent older than this updater overwrote protected updater files too;
+  // put the project's copies back before anything reads them.
+  let selfUpdateRepair: ParentOverwriteRepair | null = null;
+  if (cfg.selfUpdateComponent && process.env.UPEX_UPDATER_REEXEC === '1' && process.env[UPDATER_SELF_UPDATED_ENV] && !opts.dryRun) {
+    const selfComp = cfg.components.find(c => c.name === cfg.selfUpdateComponent);
+    if (selfComp) {
+      const owned = (process.env[UPDATER_OWNED_PATHS_ENV] ?? '').split('\n').filter(Boolean);
+      selfUpdateRepair = repairParentOverwrites(cfg, selfComp, templateDir, repoRoot, owned, process.argv[1] ?? '');
+      if (selfUpdateRepair.restored.length > 0) {
+        sink.warn(`Self-update: el updater anterior sobrescribió ${selfUpdateRepair.restored.length} archivo(s) protegido(s); restaurado(s) desde ${path.relative(repoRoot, selfUpdateRepair.backupDir ?? '')}: ${selfUpdateRepair.restored.join(', ')}.`);
+      }
+      if (selfUpdateRepair.unloadable.length > 0) {
+        sink.warn(`Self-update: tu copia protegida no carga con el CLI nuevo; queda la de upstream (la tuya en ${path.relative(repoRoot, selfUpdateRepair.backupDir ?? '')}): ${selfUpdateRepair.unloadable.join(', ')}.`);
+      }
+    }
+  }
+  const repairFacts: Pick<RunSummary, 'selfUpdateRepair'> = selfUpdateRepair && (selfUpdateRepair.restored.length > 0 || selfUpdateRepair.unloadable.length > 0) ? { selfUpdateRepair } : {};
+
   // --- PHASE 2 — DETECT ---
   sink.phase(2, 'DETECT');
 
@@ -3329,7 +3410,7 @@ export async function runUpdate(
   };
   if (visible.length === 0 && ignoreDeltasPre.length === 0 && pkgJsonDeltasPre.length === 0 && settledBootstrap.length === 0) {
     sink.step('Sin cambios detectados respecto al upstream. Nada que sincronizar.');
-    return finish({ ...emptySummary, newHeadSha, testSiblingsHeldBack, ...cleanupFacts });
+    return finish({ ...emptySummary, newHeadSha, testSiblingsHeldBack, ...cleanupFacts, ...repairFacts });
   }
   if (visible.length > 0) {
     let suffix = '';
@@ -3849,6 +3930,7 @@ export async function runUpdate(
     packageJsonAppended,
     testSiblingsHeldBack,
     ...cleanupFacts,
+    ...repairFacts,
   };
 
   // State write
