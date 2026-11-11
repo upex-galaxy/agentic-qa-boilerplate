@@ -76,6 +76,7 @@
 import type { VolatileKind } from './lib/volatile-facts.ts';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
+import { isBoilerplateOnlyPath } from '../cli/lib/boilerplate-only.ts';
 import { isProjectLocalSkillPath } from '../cli/lib/updater-core.ts';
 import { contractsEnforced, scanContracts } from './lib/doc-contracts.ts';
 import { listSections, projectSkillRows, SKILL_ROUTER_HEADING, skillRouterSource, skillTableRows } from './lib/instructions.ts';
@@ -474,8 +475,14 @@ export function lintDocs(root: string): { files: number, findings: DocFinding[] 
   // scaffolder while `.context/ADR/README.md` and the docs still link them: a
   // link to one is not dead there, it is upstream history the project never got.
   // Left in, every push of a scaffolded project was refused by its own hook.
+  //
+  // Same for the boilerplate's own tests, fixtures and maintainer scripts
+  // (`isBoilerplateOnlyPath`): they never reach a project, and a page the
+  // project kept from an earlier release (`INSTALLER.md` is not synced) may
+  // still cite one.
   const prunedAdrs = !contractsEnforced(root);
-  const findings = raw.filter(f => !isRef(f) || !(ignored.has(resolvedOf(f)) || (prunedAdrs && isBoilerplateAdr(resolvedOf(f)))));
+  const neverShipped = (rel: string): boolean => prunedAdrs && (isBoilerplateAdr(rel) || isBoilerplateOnlyPath(rel));
+  const findings = raw.filter(f => !isRef(f) || !(ignored.has(resolvedOf(f)) || neverShipped(resolvedOf(f))));
   const agentsFile = join(root, 'AGENTS.md');
   const instructionFiles = listSections(root).map(s => join(root, s.rel));
   findings.push(...lintRoster(root));

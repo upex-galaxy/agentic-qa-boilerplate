@@ -59,6 +59,22 @@ describe('lint-docs', () => {
     expect(lintDocs(root).findings.filter(f => f.kind !== 'meta')).toEqual([]);
   });
 
+  // The boilerplate's own tests never reach a project; a page it kept from an
+  // earlier release (INSTALLER.md is not synced) may still cite one.
+  test('a project: a citation of a boilerplate-only test or fixture is not dead; any other missing path still is', () => {
+    write('cli/present.ts', 'export {};');
+    write('INSTALLER.md', '`cli/updater-host-types.test.ts`, `cli/sprint-board/fixtures/merge-reading/reading.json` and `cli/gone.ts`.');
+    expect(lintDocs(root).findings.filter(f => f.kind === 'path').map(f => f.target)).toEqual(['cli/gone.ts']);
+  });
+
+  test('the boilerplate checkout: a citation of a missing boilerplate test is still dead', () => {
+    write('cli/present.ts', 'export {};');
+    write('package.json', JSON.stringify({ name: 'agentic-qa-boilerplate' }));
+    write('.agents/project.yaml', '# MAINTAINER COPY: fixture\nproject:\n  project_name: x\n');
+    write('INSTALLER.md', '`cli/updater-host-types.test.ts`.');
+    expect(lintDocs(root).findings.filter(f => f.kind === 'path').map(f => f.target)).toEqual(['cli/updater-host-types.test.ts']);
+  });
+
   test('the boilerplate checkout: a link to a missing recorded ADR is still dead', () => {
     write('package.json', JSON.stringify({ name: 'agentic-qa-boilerplate' }));
     write('.agents/project.yaml', '# MAINTAINER COPY: fixture\nproject:\n  project_name: x\n');
