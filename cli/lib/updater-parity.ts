@@ -1453,6 +1453,41 @@ export function readGitStrategyStamp(projectYaml: string | null): GitStrategySta
   return { present: true, strategy, source };
 }
 
+/** A test file name `bun test` collects. */
+const BUN_TEST_FILE = /(?:\.test|_test_|\.spec|_spec_)\.[cm]?[jt]sx?$/;
+
+function hasTestFile(dir: string): boolean {
+  let entries: fs.Dirent[];
+  try { entries = fs.readdirSync(dir, { withFileTypes: true }); }
+  catch { return false; }
+  return entries.some(e => e.name !== 'node_modules' && e.name !== '.git' && (e.isDirectory() ? hasTestFile(path.join(dir, e.name)) : BUN_TEST_FILE.test(e.name)));
+}
+
+/**
+ * The paths a `bun test` in a package.json script searches, when that run
+ * finds no test file and so exits 1 ("no tests found"); null when every
+ * `bun test` in the command finds one, or passes `--pass-with-no-tests`.
+ */
+export function bunTestFindsNothing(root: string, command: string): string[] | null {
+  for (const segment of command.split(/&&|\|\||;/)) {
+    const tokens = segment.trim().split(/\s+/);
+    const at = tokens.findIndex((t, i) => t === 'bun' && tokens[i + 1] === 'test');
+    if (at < 0 || tokens.includes('--pass-with-no-tests')) { continue; }
+    let base = root;
+    const targets: string[] = [];
+    for (let i = at + 2; i < tokens.length; i++) {
+      if (tokens[i] === '--cwd') { base = path.resolve(root, tokens[++i] ?? '.'); continue; }
+      if (tokens[i].startsWith('-')) { continue; }
+      targets.push(tokens[i]);
+    }
+    const searched = targets.length > 0 ? targets : ['.'];
+    if (!searched.some(t => hasTestFile(path.resolve(base, t)))) {
+      return searched.map(t => path.relative(root, path.resolve(base, t)).replace(/\\/g, '/') || '.');
+    }
+  }
+  return null;
+}
+
 /**
  * Build the findings for this run. Reads the two trees and shells `git diff
  * --no-index` for counts; writes nothing.
@@ -1908,12 +1943,17 @@ export function collectParityFindings(input: ParityInput): ParityFinding[] {
   // 8. package.json keys kept at the project's value: the terminal FYI is
   //    lost on a non-interactive run; the row survives, the values go to the file.
   for (const kept of input.packageJsonKept ?? []) {
+    // A kept test script over tests that are gone (the boilerplate's own no
+    // longer travel) fails every run: that is not a preference, it blocks.
+    const empty = kept.section === 'scripts' ? bunTestFindsNothing(input.root, kept.localValue) : null;
     findings.push({
       surface: 'package',
       path: kept.file,
-      evidence: `${kept.section}.${kept.key}: project value kept; upstream differs`,
-      suggested: 'decide',
-      blocking: false,
+      evidence: empty
+        ? `${kept.section}.${kept.key}: project value kept, and it will exit 1: \`bun test\` finds no test file under ${empty.map(p => `\`${p}\``).join(', ')} (the boilerplate's own tests no longer travel). Take upstream's value, or add --pass-with-no-tests`
+        : `${kept.section}.${kept.key}: project value kept; upstream differs`,
+      suggested: empty ? 'take upstream' : 'decide',
+      blocking: empty !== null,
       side: 'kept',
       detail: `project (kept):\n  ${kept.localValue}\nupstream:\n  ${kept.upstreamValue}`,
     });

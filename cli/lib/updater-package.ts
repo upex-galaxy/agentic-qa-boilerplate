@@ -30,6 +30,7 @@ import type {
   PackageJsonSpec,
   SyncStateV7,
 } from './updater-types';
+import { spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
@@ -116,6 +117,19 @@ export function getSection(data: Record<string, unknown>, section: string): Reco
  * file is missing or unparseable. State's `appliedKeys` is subtracted from
  * `upstreamOnlyKeys` so previously-applied keys never re-surface.
  */
+/**
+ * The section of upstream's package.json as it was at the last sync (the blob
+ * `lastSyncedSha` the lock recorded), read from the clone; null when the lock
+ * has none or the clone cannot produce that blob.
+ */
+function sectionAtLastSync(templateDir: string, sha: string | undefined, section: string): Record<string, string> | null {
+  if (!sha || !/^[0-9a-f]{7,64}$/i.test(sha)) { return null; }
+  const r = spawnSync('git', ['-C', templateDir, 'cat-file', '-p', sha], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+  if (r.status !== 0) { return null; }
+  try { return getSection(JSON.parse(r.stdout) as Record<string, unknown>, section); }
+  catch { return null; }
+}
+
 export function detectPackageJsonDelta(
   spec: PackageJsonSpec,
   repoRoot: string,
@@ -156,6 +170,7 @@ export function detectPackageJsonDelta(
     const appliedKeys = state?.packageJsonSync?.[spec.path]?.[section]?.appliedKeys ?? [];
     const appliedSet = new Set(appliedKeys);
     const keptKeys = state?.packageJsonSync?.[spec.path]?.[section]?.keptKeys ?? {};
+    let cursorMap: Record<string, string> | null | undefined;
 
     const upstreamOnlyKeys: Record<string, string> = {};
     const localOverrideKeys: Record<string, { localValue: string, upstreamValue: string }> = {};
@@ -173,7 +188,9 @@ export function detectPackageJsonDelta(
         // Suppress keys the user already chose to keep ('mine') against this
         // exact upstream value. If upstream changed since, re-surface it.
         if (keptKeys[key] === upstreamValue) { continue; }
-        localOverrideKeys[key] = { localValue, upstreamValue };
+        cursorMap ??= sectionAtLastSync(templateDir, state?.packageJsonSync?.[spec.path]?.[section]?.lastSyncedSha, section);
+        const cursorValue = cursorMap?.[key];
+        localOverrideKeys[key] = { localValue, upstreamValue, ...(cursorValue !== undefined ? { cursorValue } : {}) };
       }
     }
 

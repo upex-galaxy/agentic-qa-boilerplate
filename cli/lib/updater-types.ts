@@ -362,6 +362,8 @@ export interface PackageJsonSpec {
 export interface PackageJsonKeyDrift {
   localValue: string
   upstreamValue: string
+  /** Upstream's value at the last sync (the lock's `lastSyncedSha`), when the clone holds it. */
+  cursorValue?: string
 }
 
 export interface PackageJsonSectionDelta {
