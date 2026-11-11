@@ -346,6 +346,39 @@ export const COMPONENTS: Component[] = [
   { name: 'playwright-cli-config', type: 'file-list', paths: ['.playwright'], files: PLAYWRIGHT_CLI_CONFIG_FILES, bootstrapOnly: true },
 ];
 
+// --- BOILERPLATE-ONLY FILES INSIDE cli/ AND scripts/ ---
+//
+// The boilerplate's own unit tests, their snapshots and test fixtures, and the
+// maintainer-only scripts. They verify THIS repo in its CI; in a project the
+// test runner picks them up and they fail against the project's own files.
+// Never delivered (repoOnlyPatterns / repoOnlyPaths, the self-update included)
+// and removed from a project that already has upstream's unedited copy
+// (`--auto` cleanup). Mirrored in TEMPLATE_EXCLUDES and
+// TEMPLATE_EXCLUDE_PATTERNS (packages/create-agentic-qa/src/prepare.ts).
+//
+// Kept: `scripts/api-login.test.ts` (it guards the project's own
+// `scripts/api-login.project.ts`) and the runtime data in `fixtures/` folders
+// (the router eval, the board and evidence demos), which a gate reads.
+export const BOILERPLATE_TEST_PATTERNS: RegExp[] = [
+  /^(?!scripts\/api-login\.test\.ts$)(?:cli|scripts)\/.*\.test\.[cm]?[jt]s$/,
+  /^(?:cli|scripts)\/(?:.*\/)?__snapshots__\//,
+];
+export const BOILERPLATE_TEST_PATHS: string[] = [
+  'cli/lib/behaviour-coverage/fixtures',
+  'cli/lib/evidence-page/fixtures/recorded',
+  'cli/lib/fixtures/ui-up-dry-run.journal.json',
+  'cli/lib/fixtures/ui-up-dry-run.transcript.json',
+  'cli/lib/sprint-source/fixtures/demo/snapshot.json',
+  'cli/lib/sprint-source/fixtures/recorded',
+  'cli/sprint-board/fixtures',
+  'cli/sprint-board/test-fixtures.ts',
+  'scripts/lib/ui-up-transcript.ts',
+  'scripts/ui-record-up.ts',
+  'scripts/ui-replay.ts',
+  'scripts/ui-setup-fixture.ts',
+  'scripts/ui-up-fixture.ts',
+];
+
 // --- ARG PARSE ---
 interface ParsedArgs {
   commands: string[]
@@ -2322,15 +2355,20 @@ async function main(): Promise<void> {
     // `.context/ADR/` needs no entry here: `.context` is not a synced component,
     // so ADRs only ever travel through the scaffold tarball, which prunes the
     // recorded ones (`ADR-<digits>-*`) and keeps the template and the README. A
-    // prefix entry would drop those two as well, and this list has no pattern
-    // form; the component-registry test holds the invariant instead. The synced
+    // prefix entry would drop those two as well, and with `.context` unsynced no
+    // pattern is needed either; the component-registry test holds the invariant. The synced
     // linters skip a cite of a pruned ADR outside the boilerplate.
     repoOnlyPaths: [
       'docs/reports',
+      // The boilerplate's own tests, fixtures and maintainer-only scripts.
+      ...BOILERPLATE_TEST_PATHS,
       // The files of a harness this project does not use (ADR-0012): it
       // deleted them on purpose, so no detection path re-delivers them.
       ...unusedHarnessPaths(process.cwd()),
     ],
+    // The boilerplate's own unit tests and snapshots, wherever they sit under
+    // cli/ and scripts/ (BOILERPLATE_TEST_PATTERNS).
+    repoOnlyPatterns: BOILERPLATE_TEST_PATTERNS,
     // Watchlist files are NOT synced — included in the sparse clone only so
     // the protected-drift detection can read their upstream copies.
     sparseExtraPaths: watchlist.map(e => e.path),

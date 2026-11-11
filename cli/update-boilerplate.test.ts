@@ -11,9 +11,9 @@ import { parse as parseYaml } from 'yaml';
 import { isMaintainerCopy, isSchemaOwner, stripYamlComments } from './lib/agents-schema.ts';
 import { unusedHarnessPaths } from './lib/harness-selection.ts';
 import { loadBoardConfig } from './lib/sprint-source/index.ts';
-import { cleanupDeprecated, componentOwnedPaths, isRepoOnlyPath, validateComponentRegistry } from './lib/updater-core.ts';
+import { cleanupDeprecated, componentOwnedPaths, isRepoOnlyForRun, isRepoOnlyPath, validateComponentRegistry } from './lib/updater-core.ts';
 import { RETIRED_SECTION_FILES } from './lib/updater-instructions.ts';
-import { backfillProjectYamlFromSchema, COMPONENTS, DEPRECATED_FILES, extractIndentedYamlBlock, GATE_SCRIPTS, gatesSummaryLine, parseArgs, resolveProtectedWatchlist, RETIRED_COMMAND_WRAPPERS, RETIRED_SKILL_FILES, runGate, summarizeGates, sweepStaleCloneDirs, TEMP_DIR, worktreeRefusal } from './update-boilerplate.ts';
+import { backfillProjectYamlFromSchema, BOILERPLATE_TEST_PATHS, BOILERPLATE_TEST_PATTERNS, COMPONENTS, DEPRECATED_FILES, extractIndentedYamlBlock, GATE_SCRIPTS, gatesSummaryLine, parseArgs, resolveProtectedWatchlist, RETIRED_COMMAND_WRAPPERS, RETIRED_SKILL_FILES, runGate, summarizeGates, sweepStaleCloneDirs, TEMP_DIR, worktreeRefusal } from './update-boilerplate.ts';
 
 /**
  * The boilerplate's own checkout: the package name AND the maintainer sentinel
@@ -186,6 +186,50 @@ describe('component registry', () => {
     expect(isRepoOnlyPath('docs/core/setup/dbhub.html', owned)).toBe(true);
     // Retired pages stay listed so their upstream deletion reaches older projects.
     expect(isRepoOnlyPath('docs/setup/mcp-dbhub.md', owned)).toBe(true);
+  });
+});
+
+describe('boilerplate-only files under cli/ and scripts/', () => {
+  const REPO = join(import.meta.dir, '..');
+  const repoOnly = (rel: string): boolean => isRepoOnlyForRun({ repoOnlyPaths: BOILERPLATE_TEST_PATHS, repoOnlyPatterns: BOILERPLATE_TEST_PATTERNS }, rel);
+  const tracked = (): string[] => {
+    const r = spawnSync('git', ['-C', REPO, 'ls-files', '--', 'cli', 'scripts'], { encoding: 'utf8' });
+    return r.status === 0 ? r.stdout.split('\n').filter(Boolean) : [];
+  };
+
+  test('the runtime data a gate reads and the project-guarding test keep travelling', () => {
+    for (const keep of [
+      'scripts/api-login.test.ts',
+      'cli/lib/fixtures/instruction-router-eval.json',
+      'cli/lib/sprint-source/fixtures/demo/project.yaml',
+      'cli/lib/sprint-source/fixtures/demo/tickets.yaml',
+      'cli/lib/evidence-page/fixtures/demo/checkout-error.png',
+      'cli/update-boilerplate.ts',
+      'scripts/board-check.ts',
+    ]) {
+      expect(repoOnly(keep)).toBe(false);
+    }
+    for (const drop of ['cli/lib/ui/page.test.ts', 'scripts/lib/router-eval.test.ts', 'cli/lib/ui/__snapshots__/installer-run.test.ts.snap', 'cli/sprint-board/fixtures/merge-reading/reading.json', 'scripts/ui-up-fixture.ts']) {
+      expect(repoOnly(drop)).toBe(true);
+    }
+  });
+
+  // A file that still travels and imports one that does not would break at
+  // module load in every project, the failure CLI_IMPORT_CLOSURE guards against.
+  test.skipIf(!MAINTAINER_CHECKOUT)('every listed path exists, and no file that travels imports one that does not', () => {
+    const files = tracked();
+    for (const p of BOILERPLATE_TEST_PATHS) {
+      expect(files.some(f => f === p || f.startsWith(`${p}/`))).toBe(true);
+    }
+    const offenders: string[] = [];
+    for (const file of files.filter(f => /\.[cm]?[jt]s$/.test(f) && !repoOnly(f))) {
+      const text = readFileSync(join(REPO, file), 'utf8');
+      for (const m of text.matchAll(/(?:\bfrom\s+|\bimport\s*\(\s*|\bimport\s+)['"](\.{1,2}\/[^'"]+)['"]/g)) {
+        const target = join(dirname(file), m[1]).replace(/\\/g, '/');
+        if (repoOnly(target)) { offenders.push(`${file} -> ${target}`); }
+      }
+    }
+    expect(offenders).toEqual([]);
   });
 });
 

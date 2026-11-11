@@ -4,10 +4,11 @@ import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
+import { BOILERPLATE_TEST_PATHS, BOILERPLATE_TEST_PATTERNS } from '../../../cli/update-boilerplate.ts';
 import { parseArgs } from '../src/args.ts';
 import { buildTarArgs } from '../src/download.ts';
 import { CliError } from '../src/errors.ts';
-import { pruneAdrIndex, pruneBootstrapExcludes, resetGitStrategyMeta, rewriteProjectYaml, sanitizeProjectName, seedProjectInstructionsFromTemplate, seedProjectYamlFromSchema } from '../src/prepare.ts';
+import { pruneAdrIndex, pruneBootstrapExcludes, resetGitStrategyMeta, rewriteProjectYaml, sanitizeProjectName, seedProjectInstructionsFromTemplate, seedProjectYamlFromSchema, TEMPLATE_EXCLUDE_PATTERNS, TEMPLATE_EXCLUDES } from '../src/prepare.ts';
 
 describe('parseArgs', () => {
   test('accepts a project name as positional', () => {
@@ -308,6 +309,43 @@ describe('pruneBootstrapExcludes', () => {
     writeFileSync(join(dir, 'keep.txt'), 'keep me');
     await pruneBootstrapExcludes(dir);
     expect(existsSync(join(dir, 'keep.txt'))).toBe(true);
+  });
+
+  // The boilerplate's own unit tests verify the boilerplate; in a project the
+  // test runner picks them up and they fail against the project's files.
+  test('prunes cli/ and scripts/ tests, snapshots and test fixtures at any depth, keeping the runtime ones', async () => {
+    const files = [
+      'cli/lib/ui/page.test.ts',
+      'cli/lib/ui/__snapshots__/installer-run.test.ts.snap',
+      'scripts/lib/router-eval.test.ts',
+      'cli/sprint-board/fixtures/merge-reading/reading.json',
+      'scripts/ui-up-fixture.ts',
+      'scripts/api-login.test.ts',
+      'cli/lib/ui/page.ts',
+      'cli/lib/fixtures/instruction-router-eval.json',
+      'cli/lib/sprint-source/fixtures/demo/project.yaml',
+      'tests/utils/xrayResults.test.ts',
+    ];
+    for (const f of files) {
+      mkdirSync(join(dir, f, '..'), { recursive: true });
+      writeFileSync(join(dir, f), '// x');
+    }
+
+    await pruneBootstrapExcludes(dir);
+
+    expect(files.filter(f => existsSync(join(dir, f)))).toEqual([
+      'scripts/api-login.test.ts',
+      'cli/lib/ui/page.ts',
+      'cli/lib/fixtures/instruction-router-eval.json',
+      'cli/lib/sprint-source/fixtures/demo/project.yaml',
+      'tests/utils/xrayResults.test.ts',
+    ]);
+  });
+
+  // `bun sync` must not re-deliver what the scaffold pruned, nor prune less.
+  test('the test excludes mirror the updater\'s repo-only lists exactly', () => {
+    expect(TEMPLATE_EXCLUDE_PATTERNS.map(String)).toEqual(BOILERPLATE_TEST_PATTERNS.map(String));
+    expect(TEMPLATE_EXCLUDES.filter(p => /^(?:cli|scripts)\//.test(p)) as string[]).toEqual(BOILERPLATE_TEST_PATHS);
   });
 
   // Our working notes about evolving the framework are not framework the

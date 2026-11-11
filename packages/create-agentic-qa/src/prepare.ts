@@ -424,7 +424,7 @@ export function initGitRepo(projectDir: string): void {
 // Paths committed in the template repo but never wanted in a freshly
 // bootstrapped project (e.g. the CLI source itself). Hardcoded here — adding
 // or removing an entry requires republishing @upex/create-agentic-qa.
-const TEMPLATE_EXCLUDES = [
+export const TEMPLATE_EXCLUDES = [
   'packages',
   // The boilerplate's own release history, versioned against the boilerplate
   // and the create-agentic-qa npm package. A fresh consumer project starts its
@@ -451,7 +451,48 @@ const TEMPLATE_EXCLUDES = [
   // `repoOnlyPaths` (cli/update-boilerplate.ts) so `bun sync` cannot
   // re-deliver what this prunes.
   'docs/reports',
+  // The boilerplate's own test fixtures and maintainer-only scripts under cli/
+  // and scripts/. Mirrors BOILERPLATE_TEST_PATHS (cli/update-boilerplate.ts);
+  // a test there holds the two lists equal.
+  'cli/lib/behaviour-coverage/fixtures',
+  'cli/lib/evidence-page/fixtures/recorded',
+  'cli/lib/fixtures/ui-up-dry-run.journal.json',
+  'cli/lib/fixtures/ui-up-dry-run.transcript.json',
+  'cli/lib/sprint-source/fixtures/demo/snapshot.json',
+  'cli/lib/sprint-source/fixtures/recorded',
+  'cli/sprint-board/fixtures',
+  'cli/sprint-board/test-fixtures.ts',
+  'scripts/lib/ui-up-transcript.ts',
+  'scripts/ui-record-up.ts',
+  'scripts/ui-replay.ts',
+  'scripts/ui-setup-fixture.ts',
+  'scripts/ui-up-fixture.ts',
 ] as const;
+
+/**
+ * Repo-relative file paths under `cli/` and `scripts/` the scaffold prunes at
+ * any depth: the boilerplate's own unit tests and snapshots (they verify THIS
+ * repo; in a project the test runner picks them up). `scripts/api-login.test.ts`
+ * stays: it guards the project's own `scripts/api-login.project.ts`. Mirrors
+ * BOILERPLATE_TEST_PATTERNS (cli/update-boilerplate.ts).
+ */
+export const TEMPLATE_EXCLUDE_PATTERNS: readonly RegExp[] = [
+  /^(?!scripts\/api-login\.test\.ts$)(?:cli|scripts)\/.*\.test\.[cm]?[jt]s$/,
+  /^(?:cli|scripts)\/(?:.*\/)?__snapshots__\//,
+];
+
+/** Every file below `dir` (repo-relative, POSIX separators); empty when it is missing. */
+function filesUnder(projectDir: string, dir: string): string[] {
+  const abs = join(projectDir, dir);
+  if (!existsSync(abs)) { return []; }
+  const out: string[] = [];
+  for (const entry of readdirSync(abs, { withFileTypes: true })) {
+    const rel = `${dir}/${entry.name}`;
+    if (entry.isDirectory()) { out.push(...filesUnder(projectDir, rel)); }
+    else { out.push(rel); }
+  }
+  return out;
+}
 
 /**
  * Directories the consumer keeps, but from which the boilerplate's own content is
@@ -508,6 +549,13 @@ export async function pruneBootstrapExcludes(projectDir: string): Promise<void> 
       await rm(abs, { recursive: true, force: true });
       pruned++;
     }
+  }
+
+  // The boilerplate's own unit tests and snapshots, at any depth.
+  for (const rel of [...filesUnder(projectDir, 'cli'), ...filesUnder(projectDir, 'scripts')]) {
+    if (!TEMPLATE_EXCLUDE_PATTERNS.some(re => re.test(rel))) { continue; }
+    await rm(join(projectDir, rel), { force: true });
+    pruned++;
   }
 
   // Directories the project keeps, minus the boilerplate's own content inside them.
