@@ -1903,7 +1903,9 @@ async function closeUi(status: 'done' | 'done-with-pending' | 'failed' | 'aborte
 
 // --- SINK ---
 function abortOnCancel<T>(v: T | symbol): T {
-  if (tui.isCancel(v)) {
+  // A plain `typeof` narrowing: an adopted app resolves `@clack/prompts` to a
+  // newer minor whose `isCancel` guard no longer narrows `T | symbol` to `T`.
+  if (typeof v === 'symbol' || tui.isCancel(v)) {
     throw Object.assign(new Error('Aborted by user.'), { name: 'ExitPromptError' });
   }
   return v;
