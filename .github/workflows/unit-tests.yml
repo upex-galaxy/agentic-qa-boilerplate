@@ -4,7 +4,8 @@
 # Purpose: Run the boilerplate's own unit tests (`bun test`: cli/, scripts/,
 # tests/utils/, packages/, .agents/skills/) and the repo:check gates that
 # build.yml does not run, on every push. Before this workflow those tests gated
-# only on a laptop. The Playwright suites are not here: bunfig.toml keeps
+# only on a laptop. Job ConsumerMatrix syncs one throwaway downstream project
+# per harness shape from the pushed commit and runs a project's gates there. The Playwright suites are not here: bunfig.toml keeps
 # `bun test` off tests/e2e/ and tests/integration/.
 
 name: Unit Tests
@@ -106,3 +107,50 @@ jobs:
       - name: Unit Tests
         if: steps.upstream.outputs.enforced == 'true'
         run: bun test
+
+  ConsumerMatrix:
+    name: consumer ${{ matrix.leg }}
+    # Same trigger rule as UnitTests: push runs, plus fork PRs.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      # Every leg reports: one harness shape failing says nothing about the others.
+      fail-fast: false
+      matrix:
+        leg: [all, claude-only, no-pi-legacy, codex-only]
+    # One downstream project per harness shape, synced from this commit with
+    # `bun sync --auto` and held to the gates a project runs, so a change that
+    # breaks consumers (a test that assumes a harness, a synced page citing a
+    # file that does not travel) is caught here instead of in every project.
+    # The legs live in packages/consumer-fixture/run-leg.ts.
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Full history: the fixture rolls the consumer back 30 commits.
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install
+
+      - name: Boilerplate checkout?
+        id: upstream
+        run: |
+          enforced=$(bun -e "import { contractsEnforced } from './scripts/lib/doc-contracts.ts'; console.log(contractsEnforced(process.cwd()))")
+          echo "enforced=$enforced" >> "$GITHUB_OUTPUT"
+          if [ "$enforced" != "true" ]; then
+            echo "consumer-matrix: inert outside the boilerplate's own checkout (contractsEnforced, scripts/lib/doc-contracts.ts)"
+          fi
+        # The installer delivers this workflow to projects, which have no
+        # packages/consumer-fixture: every later step runs only in the boilerplate.
+
+      - name: Consumer Leg
+        if: steps.upstream.outputs.enforced == 'true'
+        run: bun packages/consumer-fixture/run-leg.ts --leg ${{ matrix.leg }} --out "$RUNNER_TEMP/consumer-fixture"
