@@ -120,28 +120,28 @@
     "vars:schema:check": "bun scripts/env-schema.ts --check"
   },
   "dependencies": {
-    "@clack/prompts": "^1.4.0",
-    "@inquirer/prompts": "^8.1.0",
+    "@clack/prompts": "^1.8.1",
+    "@inquirer/prompts": "^8.7.5",
     "boxen": "^8.0.1",
     "cli-table3": "^0.6.5",
     "figures": "^6.1.0",
     "picocolors": "^1.1.1",
-    "yaml": "^2.8.2"
+    "yaml": "^2.9.1"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^4.16.0",
     "@faker-js/faker": "^9.8.0",
     "@playwright/test": "^1.60.0",
-    "@types/bun": "^1.3.7",
-    "@types/node": "^24.10.1",
+    "@types/bun": "^1.4.4",
+    "@types/node": "^24.19.2",
     "allure": "^3.14.1",
     "allure-js-commons": "^3.10.2",
     "allure-playwright": "^3.10.2",
-    "eslint": "^9.28.0",
+    "eslint": "^9.39.5",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
-    "openapi-typescript": "^7.10.1",
-    "prettier": "^3.7.4",
+    "openapi-typescript": "^7.13.0",
+    "prettier": "^3.9.10",
     "typescript": "^5.8.3",
     "varlock": "1.20.0"
   },
