@@ -48,6 +48,7 @@ import {
   retiredMcpNote,
   runVerdict,
   scriptFileTargets,
+  selfUpdateBlockedFindings,
   strictVerdict,
   structuralEvidence,
   SURFACE_ORDER,
@@ -1950,5 +1951,13 @@ describe('a stale test script after the boilerplate tests stopped travelling', (
     });
     expect(findings.map(f => [f.evidence.split(':')[0], f.blocking, f.suggested])).toEqual([['scripts.test', true, 'take upstream'], ['scripts.lint', false, 'decide']]);
     expect(findings[0].evidence).toContain('`cli`');
+  });
+});
+describe('a run the self-update aborted (the new updater does not load)', () => {
+  test('one blocking merge row per kept protected file, naming the loader error; one for cli/ when none was kept', () => {
+    const rows = selfUpdateBlockedFindings({ protectedPaths: ['cli/lib/variables-manifest.ts'], error: 'SyntaxError: Export named \'x\' not found\nBun v1' });
+    expect(rows.map(r => [r.path, r.blocking, r.suggested])).toEqual([['cli/lib/variables-manifest.ts', true, 'merge']]);
+    expect(rows[0].evidence).toContain('Export named \'x\' not found');
+    expect(selfUpdateBlockedFindings({ protectedPaths: [], error: 'boom' }).map(r => r.path)).toEqual(['cli/']);
   });
 });

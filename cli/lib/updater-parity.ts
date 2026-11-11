@@ -2191,6 +2191,26 @@ export function renderParityReport(findings: ParityFinding[], meta: ParityMeta):
   };
 }
 
+/**
+ * The rows of a run the self-update aborted (`RunSummary.selfUpdateBlocked`):
+ * the new updater does not load, the old one is back. One blocking row per
+ * protected file it kept, the likely cause; one for `cli/` when none was kept.
+ */
+export function selfUpdateBlockedFindings(blocked: { protectedPaths: string[], error: string }): ParityFinding[] {
+  const loader = blocked.error.split('\n').find(line => line.trim() !== '') ?? 'the entry did not load';
+  const paths = blocked.protectedPaths.length > 0 ? blocked.protectedPaths : ['cli/'];
+  return paths.map((p, i) => ({
+    id: i + 1,
+    surface: 'components' as const,
+    path: p,
+    evidence: blocked.protectedPaths.length > 0
+      ? `protected, and the new updater does not load with your copy, so the self-update was undone and the run stopped (loader: ${loader}). Merge upstream's changes into it, or drop it from updater.protected_paths, then run \`bun sync\` again`
+      : `the new updater does not load, so the self-update was undone and the run stopped (loader: ${loader})`,
+    suggested: 'merge' as const,
+    blocking: true,
+  }));
+}
+
 // ============================================================================
 // EXIT VERDICT (--strict, aborts)
 // ============================================================================

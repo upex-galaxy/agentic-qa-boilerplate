@@ -3159,7 +3159,7 @@ export async function runUpdate(
           const blame = keptProtected.length > 0 ? ` Archivo(s) protegido(s) que el CLI nuevo no puede cargar: ${keptProtected.join(', ')}. Fusiona upstream en ellos o quítalos de updater.protected_paths, y re-ejecuta.` : '';
           sink.error(`Self-update abortado: el CLI nuevo no carga, se restauró el anterior (${stale.length} archivo(s) desde ${path.relative(repoRoot, selfBackupDir)}).${blame}\n${importError}`);
           cleanupTempDir(cfg.tempDir);
-          return abortedSummary;
+          return { ...abortedSummary, newHeadSha, selfUpdateBlocked: { protectedPaths: keptProtected, error: importError } };
         }
         sink.step('Re-ejecutando con código actualizado…');
         // The child inherits what WE dirtied (preflight output + the CLI files
