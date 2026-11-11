@@ -61,7 +61,7 @@ The checks, as `src/doctor.ts` defines them:
 | ------------- | -------- | --------------------------------------------------------- |
 | `bun`         | yes      | Runs this CLI, `bun install`, and `bun setup`.        |
 | `git`         | yes      | `git init` + initial commit on `main` (skipped on `--no-git`). |
-| `node >= 18`  | yes      | Some downstream tools shell out to a Node 18+ runtime. Probes the real binary — under `bunx`, `process.versions.node` is emulated by Bun and would pass on a machine with no Node. |
+| `node >= 22`  | yes      | Some downstream tools shell out to a Node 22+ runtime. Probes the real binary — under `bunx`, `process.versions.node` is emulated by Bun and would pass on a machine with no Node. |
 | `gh`          | optional | Needed only for the GitHub phase of `bun setup` (create the remote and push). |
 | `internet`    | yes      | Reaches `api.github.com` to fetch the template tarball.   |
 | `disk space`  | optional | Warns if less than 200 MB free in the current directory.  |

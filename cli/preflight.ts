@@ -43,6 +43,9 @@ import { BRAND } from './lib/ui/brand.ts';
 /** First Bun that ships `bun check` (the built-in type checker the `types:check` script runs). */
 const MIN_BUN: [number, number, number] = [1, 4, 3];
 
+/** Node the hooks run on: lint-staged and the scaffolder bundle need Node 22. */
+const MIN_NODE: [number, number, number] = [22, 0, 0];
+
 export type Verdict = 'clear' | 'warn' | 'block';
 
 export interface PreflightCheck extends Check {
@@ -80,7 +83,7 @@ const T = {
     net: 'Red',
     machine: 'Esta máquina',
     bunMsg: 'Instala Bun 1.4.3 o más nuevo: <code>curl -fsSL https://bun.sh/install | bash</code>.',
-    nodeMsg: 'Los hooks de tu agente corren con Node. Instala Node 18+ (nodejs.org o <code>brew install node</code>). La actualización sigue sin él.',
+    nodeMsg: 'Los hooks de tu agente corren con Node. Instala Node 22+ (nodejs.org o <code>brew install node</code>). La actualización sigue sin él.',
     gitMissing: 'git no está instalado. El actualizador necesita git 2.25 o más nuevo.',
     gitOld: (v: string): string => `Tu git es ${v}. El actualizador necesita 2.25+: <code>brew upgrade git</code> / <code>apt install git</code>.`,
     ghMissing: 'El actualizador descarga el boilerplate con GitHub CLI. Instálalo (cli.github.com) y corre <code>gh auth login</code>.',
@@ -103,7 +106,7 @@ const T = {
     net: 'Network',
     machine: 'This machine',
     bunMsg: 'Install Bun 1.4.3 or newer: <code>curl -fsSL https://bun.sh/install | bash</code>.',
-    nodeMsg: 'Your agent\'s hooks run on Node. Install Node 18+ (nodejs.org or <code>brew install node</code>). The update continues without it.',
+    nodeMsg: 'Your agent\'s hooks run on Node. Install Node 22+ (nodejs.org or <code>brew install node</code>). The update continues without it.',
     gitMissing: 'git is not installed. The updater needs git 2.25 or newer.',
     gitOld: (v: string): string => `Your git is ${v}. The updater needs 2.25+: <code>brew upgrade git</code> / <code>apt install git</code>.`,
     ghMissing: 'The updater downloads the boilerplate with GitHub CLI. Install it (cli.github.com) and run <code>gh auth login</code>.',
@@ -148,7 +151,7 @@ export async function runUpPreflight(o: UpPreflightOptions): Promise<PreflightRe
   // images built on Bun alone have none (preflight.md asks block for setup).
   const node = runCmd('node', ['--version'], { timeoutMs: 2000 });
   const nodeV = parseVersion(node.stdout);
-  checks.push(node.ok && versionAtLeast(nodeV, [18, 0, 0])
+  checks.push(node.ok && versionAtLeast(nodeV, MIN_NODE)
     ? { id: 'node', group: L.tools, label: 'Node', value: node.stdout.replace(/^v/, ''), state: 'ok', neededBy: 'apply' }
     : { id: 'node', group: L.tools, label: 'Node', value: node.ok ? node.stdout : '-', state: 'warn', msg: L.nodeMsg, neededBy: 'apply' });
 
@@ -257,7 +260,7 @@ const S = {
     net: 'Red',
     machine: 'Esta máquina',
     bunMsg: 'Instala Bun 1.4.3 o más nuevo: <code>curl -fsSL https://bun.sh/install | bash</code> (macOS/Linux).',
-    nodeMsg: 'Los hooks de tu agente corren con Node. Instala Node 18+ (nodejs.org o <code>brew install node</code>) y vuelve a comprobar.',
+    nodeMsg: 'Los hooks de tu agente corren con Node. Instala Node 22+ (nodejs.org o <code>brew install node</code>) y vuelve a comprobar.',
     gitMissing: 'git no está instalado. Instálalo (git-scm.com) y vuelve a comprobar.',
     gitIdentity: 'git no sabe quién eres, y lo necesita para tu primer commit y para subir a GitHub: <code>git config --global user.name "Tu nombre"</code> y <code>git config --global user.email tu@correo</code>.',
     repoMissing: (scaffolder: string): string => `No hay un <code>package.json</code> aquí. Corre <code>bun setup</code> desde la raíz del proyecto, o crea uno con <code>npx ${scaffolder}</code>.`,
@@ -298,7 +301,7 @@ const S = {
     net: 'Network',
     machine: 'This machine',
     bunMsg: 'Install Bun 1.4.3 or newer: <code>curl -fsSL https://bun.sh/install | bash</code> (macOS/Linux).',
-    nodeMsg: 'Your agent\'s hooks run on Node. Install Node 18+ (nodejs.org or <code>brew install node</code>) and check again.',
+    nodeMsg: 'Your agent\'s hooks run on Node. Install Node 22+ (nodejs.org or <code>brew install node</code>) and check again.',
     gitMissing: 'git is not installed. Install it (git-scm.com) and check again.',
     gitIdentity: 'git does not know who you are, and needs to for your first commit and the GitHub push: <code>git config --global user.name "Your name"</code> and <code>git config --global user.email you@example.com</code>.',
     repoMissing: (scaffolder: string): string => `There is no <code>package.json</code> here. Run <code>bun setup</code> from the project root, or create one with <code>npx ${scaffolder}</code>.`,
@@ -425,7 +428,7 @@ export async function runSetupPreflight(o: SetupPreflightOptions): Promise<Prefl
 
   const node = run('node', ['--version'], { timeoutMs: 2000 });
   const nodeV = parseVersion(node.stdout);
-  checks.push(node.ok && versionAtLeast(nodeV, [18, 0, 0])
+  checks.push(node.ok && versionAtLeast(nodeV, MIN_NODE)
     ? { id: 'node', group: L.tools, label: 'Node', value: node.stdout.replace(/^v/, ''), state: 'ok', neededBy: 'team' }
     : { id: 'node', group: L.tools, label: 'Node', value: node.ok ? node.stdout : '-', state: 'block', msg: L.nodeMsg, neededBy: 'team' });
 

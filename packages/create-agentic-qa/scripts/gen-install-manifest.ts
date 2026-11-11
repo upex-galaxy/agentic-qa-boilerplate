@@ -200,7 +200,7 @@ function prerequisites(mcpsWithKeys: string[]): PrerequisiteSpec[] {
       preflight: ['bun'],
     },
     {
-      name: 'node >= 18',
+      name: 'node >= 22',
       required: true,
       purpose: 'Your agent\'s hooks run on Node, so bun setup does not start without it; the npx wrapper of create-agentic-qa needs it too.',
       installHint: 'https://nodejs.org/en/download',

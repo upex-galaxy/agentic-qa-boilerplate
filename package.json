@@ -122,7 +122,7 @@
   "dependencies": {
     "@clack/prompts": "^1.8.1",
     "@inquirer/prompts": "^8.7.5",
-    "boxen": "^8.0.1",
+    "boxen": "^9.0.0",
     "cli-table3": "^0.6.5",
     "figures": "^6.1.0",
     "picocolors": "^1.1.1",

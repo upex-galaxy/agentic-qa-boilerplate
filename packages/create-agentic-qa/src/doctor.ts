@@ -65,13 +65,13 @@ function checkNodeVersion(): { ok: boolean, hint: string } {
     shell: process.platform === 'win32',
   });
   if (probe.error || probe.status !== 0) {
-    return { ok: false, hint: 'not found on PATH — install node >= 18: https://nodejs.org' };
+    return { ok: false, hint: 'not found on PATH — install node >= 22: https://nodejs.org' };
   }
 
   const raw = (probe.stdout ?? '').trim().replace(/^v/, '');
   const major = Number.parseInt(raw.split('.')[0] ?? '0', 10);
-  if (!major || major < 18) {
-    return { ok: false, hint: `node ${raw || 'unknown'} — upgrade to node >= 18` };
+  if (!major || major < 22) {
+    return { ok: false, hint: `node ${raw || 'unknown'} — upgrade to node >= 22` };
   }
   return { ok: true, hint: `node ${raw}` };
 }
@@ -101,10 +101,10 @@ export async function runDoctor(): Promise<{ allPassed: boolean, rows: DoctorRow
     required: true,
   });
 
-  // 3. node >= 18
+  // 3. node >= 22
   const nodeCheck = checkNodeVersion();
   rows.push({
-    name: 'node >= 18',
+    name: 'node >= 22',
     status: nodeCheck.ok ? 'ok' : 'fail',
     hint: nodeCheck.hint,
     required: true,
