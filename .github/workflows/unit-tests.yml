@@ -108,29 +108,19 @@ jobs:
         if: steps.upstream.outputs.enforced == 'true'
         run: bun test
 
-  ConsumerMatrix:
-    name: consumer ${{ matrix.leg }}
+  UpstreamGate:
+    name: boilerplate checkout?
     # Same trigger rule as UnitTests: push runs, plus fork PRs.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    strategy:
-      # Every leg reports: one harness shape failing says nothing about the others.
-      fail-fast: false
-      matrix:
-        leg: [all, claude-only, no-pi-legacy, codex-only]
-    # One downstream project per harness shape, synced from this commit with
-    # `bun sync --auto` and held to the gates a project runs, so a change that
-    # breaks consumers (a test that assumes a harness, a synced page citing a
-    # file that does not travel) is caught here instead of in every project.
-    # The legs live in packages/consumer-fixture/run-leg.ts.
-
+    timeout-minutes: 5
+    outputs:
+      enforced: ${{ steps.upstream.outputs.enforced }}
+    # One small job decides for the matrix, so a project (the installer
+    # delivers this workflow) starts no matrix runner at all.
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          # Full history: the fixture rolls the consumer back 30 commits.
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -148,9 +138,41 @@ jobs:
           if [ "$enforced" != "true" ]; then
             echo "consumer-matrix: inert outside the boilerplate's own checkout (contractsEnforced, scripts/lib/doc-contracts.ts)"
           fi
-        # The installer delivers this workflow to projects, which have no
-        # packages/consumer-fixture: every later step runs only in the boilerplate.
+
+  ConsumerMatrix:
+    name: consumer ${{ matrix.leg }}
+    needs: UpstreamGate
+    if: needs.UpstreamGate.outputs.enforced == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      # Every leg reports: one harness shape failing says nothing about the others.
+      fail-fast: false
+      matrix:
+        leg: [all, claude-only, no-pi-legacy, codex-only, legacy-updater]
+    # One downstream project per harness shape, synced from this commit with
+    # `bun sync --auto` and held to the gates a project runs, so a change that
+    # breaks consumers (a test that assumes a harness, a synced page citing a
+    # file that does not travel) is caught here instead of in every project.
+    # `legacy-updater` runs the first sync of a project made before the
+    # boilerplate's tests stopped travelling: its old updater runs first.
+    # The legs live in packages/consumer-fixture/run-leg.ts.
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Full history: the fixture rolls the consumer back 30 commits, and
+          # the legacy leg checks out an older commit.
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install
 
       - name: Consumer Leg
-        if: steps.upstream.outputs.enforced == 'true'
         run: bun packages/consumer-fixture/run-leg.ts --leg ${{ matrix.leg }} --out "$RUNNER_TEMP/consumer-fixture"

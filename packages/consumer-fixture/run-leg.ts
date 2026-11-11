@@ -5,7 +5,7 @@
  *
  *   bun packages/consumer-fixture/run-leg.ts --leg <name> --out <dir>
  *
- * Legs (LEGS below): `all` (every harness), `claude-only`, `codex-only`, and
+ * Legs (LEGS below): `all` (every harness), `claude-only`, `codex-only`,
  * `no-pi-legacy` (three harnesses, no `.pi/`: the shape of a project made
  * before Pi existed, which a fresh install would never reproduce).
  *
@@ -25,7 +25,7 @@
 
 import type { Harness } from '../../cli/lib/harness-selection.ts';
 import { spawnSync } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 import { HARNESS_FILES, HARNESSES } from '../../cli/lib/harness-selection.ts';
@@ -38,13 +38,30 @@ export interface Leg {
   harnesses: Harness[]
   /** Also delete `.pi/` as a whole (a project from before Pi). */
   noPiDir?: boolean
+  /**
+   * `cli/`, `package.json` and `INSTALLER.md` at LEGACY_UPDATER_COMMIT, plus
+   * one `cli/` test the project edited: the first sync of a project made
+   * before the boilerplate's tests stopped travelling, run by its OLD updater.
+   */
+  legacyUpdater?: boolean
 }
+
+/**
+ * The last boilerplate commit whose updater still delivered its own tests (the
+ * base of the change that stopped it). A fixed point in history: the shape
+ * every project made before then has on its first sync after it.
+ */
+export const LEGACY_UPDATER_COMMIT = '1ee62b4b435c2f0cdc938eb1a99363ba307c6635';
+/** The `cli/` test the legacy leg's project edited: it must survive with its edit. */
+export const EDITED_CLI_TEST = 'cli/lib/updater-drift.test.ts';
+const PROJECT_EDIT = '\n// project edit: kept by the team\n';
 
 export const LEGS: Record<string, Leg> = {
   'all': { harnesses: ['claude', 'opencode', 'codex', 'pi'] },
   'claude-only': { harnesses: ['claude'] },
   'no-pi-legacy': { harnesses: ['claude', 'opencode', 'codex'], noPiDir: true },
   'codex-only': { harnesses: ['codex'] },
+  'legacy-updater': { harnesses: ['claude', 'opencode', 'codex', 'pi'], legacyUpdater: true },
 };
 
 /** The gates a consumer runs (its `repo:check` minus format and `git:policy`, which need a host session). */
@@ -104,15 +121,33 @@ export function runLeg(name: string, out: string): LegResult {
   const check = (label: string, ok: boolean, detail = ''): void => { result.checks.push({ check: label, ok, detail }); };
 
   const { upstream, consumer } = buildUpFixture(resolve(out), { back: 30 });
+  if (leg.legacyUpdater) {
+    git(consumer, 'checkout', LEGACY_UPDATER_COMMIT, '--', 'cli', 'package.json', 'INSTALLER.md');
+    appendFileSync(join(consumer, EDITED_CLI_TEST), PROJECT_EDIT);
+    // A real project's lock records upstream's package.json at its last sync.
+    const lockPath = join(consumer, '.template', 'boilerplate.lock.json');
+    const lock = JSON.parse(readFileSync(lockPath, 'utf8')) as Record<string, unknown>;
+    const blob = run(consumer, ['git', 'rev-parse', `${LEGACY_UPDATER_COMMIT}:package.json`]).out.trim();
+    lock.packageJsonSync = { 'package.json': Object.fromEntries(['scripts', 'devDependencies', 'dependencies', 'lint-staged'].map(s => [s, { lastSyncedSha: blob, appliedKeys: [] }])) };
+    // Its updater synced `cli/` at that commit, so the `cli` cursor sits there.
+    (lock.perComponentCommit as Record<string, string>).cli = LEGACY_UPDATER_COMMIT;
+    writeFileSync(lockPath, `${JSON.stringify(lock, null, 2)}\n`);
+  }
   shapeConsumer(consumer, leg);
   check('consumer is not the boilerplate (contractsEnforced false)', !contractsEnforced(consumer));
 
   const sync = run(consumer, ['bun', 'cli/update-boilerplate.ts', '--auto', '--no-gates'], { UPEX_TEMPLATE_REPO: upstream });
   check('bun sync --auto exits 0', sync.status === 0, sync.status === 0 ? '' : sync.out.split('\n').slice(-15).join('\n'));
 
+  const kept = new Set<string>();
+  if (leg.legacyUpdater) {
+    const edited = join(consumer, EDITED_CLI_TEST);
+    check(`the project's edited ${EDITED_CLI_TEST} survives with its edit`, existsSync(edited) && readFileSync(edited, 'utf8').endsWith(PROJECT_EDIT));
+    kept.add(EDITED_CLI_TEST);
+  }
   const lists = { repoOnlyPaths: BOILERPLATE_TEST_PATHS, repoOnlyPatterns: BOILERPLATE_TEST_PATTERNS };
-  const left = [...filesUnder(consumer, 'cli'), ...filesUnder(consumer, 'scripts')].filter(f => isRepoOnlyForRun(lists, f));
-  check('no boilerplate-only file left in cli/ or scripts/', left.length === 0, left.slice(0, 10).join(', '));
+  const left = [...filesUnder(consumer, 'cli'), ...filesUnder(consumer, 'scripts'), ...filesUnder(consumer, '.agents/skills')].filter(f => isRepoOnlyForRun(lists, f) && !kept.has(f));
+  check('no boilerplate-only file left in cli/, scripts/ or the skills', left.length === 0, left.slice(0, 10).join(', '));
 
   const undeclared = HARNESSES.filter(h => !leg.harnesses.includes(h)).flatMap(h => HARNESS_FILES[h].filter(f => existsSync(join(consumer, f))));
   check('no file of an undeclared harness delivered', undeclared.length === 0, undeclared.join(', '));
@@ -122,7 +157,7 @@ export function runLeg(name: string, out: string): LegResult {
     check(`bun run ${gate}`, r.status === 0, r.status === 0 ? '' : r.out.split('\n').slice(-12).join('\n'));
   }
   const tests = run(consumer, ['bun', 'test']);
-  const ranBoilerplateTest = /^(?:cli|scripts)\/(?!api-login\.test\.ts:).*\.test\.[cm]?[jt]s:$/m.test(tests.out);
+  const ranBoilerplateTest = tests.out.split('\n').some(l => /^(?:cli|scripts)\/.*\.test\.[cm]?[jt]s:$/.test(l) && l !== 'scripts/api-login.test.ts:' && !kept.has(l.slice(0, -1)));
   check('bare bun test exits 0', tests.status === 0, tests.status === 0 ? '' : tests.out.split('\n').filter(l => /^\(fail\)|^ *\d+ (?:pass|fail)/.test(l)).slice(0, 15).join('\n'));
   check('bare bun test ran no boilerplate test', !ranBoilerplateTest);
   return result;

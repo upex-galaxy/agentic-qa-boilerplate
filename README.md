@@ -601,7 +601,7 @@ The `.template/boilerplate.lock.json` file is committable: commit it so your tea
 
 ### GitHub Actions Workflows
 
-The workflows are the files in `.github/workflows/`; each one's `on:` block is its trigger (a PR to `main`, a cron, a manual dispatch). The suite workflows (smoke, sanity, regression) run the Playwright tags and patterns their names say, `build.yml` validates that the framework compiles, `unit-tests.yml` runs this repository's own unit tests (`bun test`) and the `repo:check` gates no other workflow runs on every push, plus a consumer matrix that syncs one throwaway downstream project per harness shape from that commit and runs its gates and `bun test` (`packages/consumer-fixture/run-leg.ts`; both jobs inert in a project created from the template), and the `pages*` workflows publish and maintain the decks site.
+The workflows are the files in `.github/workflows/`; each one's `on:` block is its trigger (a PR to `main`, a cron, a manual dispatch). The suite workflows (smoke, sanity, regression) run the Playwright tags and patterns their names say, `build.yml` validates that the framework compiles, `unit-tests.yml` runs this repository's own unit tests (`bun test`) and the `repo:check` gates no other workflow runs on every push, plus a consumer matrix that syncs one throwaway downstream project per harness shape from that commit and runs its gates and `bun test`, one of them a project whose first sync is run by its previous updater with an edited `cli/` test (`packages/consumer-fixture/run-leg.ts`; inert in a project created from the template, where one small gate job starts no matrix runner), and the `pages*` workflows publish and maintain the decks site.
 
 ### Environment Secrets
 
