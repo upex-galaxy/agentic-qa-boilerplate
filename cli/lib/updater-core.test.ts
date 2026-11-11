@@ -31,6 +31,7 @@ import {
   readLastApply,
   reconcileComponentsByContent,
   repairParentOverwrites,
+  restoreParentOverwrittenEdits,
   restoreSelfUpdate,
   selfUpdateComponentByContent,
   selfUpdatedComponents,
@@ -1146,5 +1147,41 @@ describe('repairParentOverwrites (a self-update parent older than selfUpdatePlan
     expect(repairParentOverwrites(cfg, cli, template, repo, ['cli/lib/manifest.ts'], entry).restored).toEqual([]);
     rmSync(join(repo, '.backups'), { recursive: true });
     expect(repairParentOverwrites(cfg, cli, template, repo, ['cli/lib/manifest.ts'], entry)).toEqual({ restored: [], unloadable: [], backupDir: null });
+  });
+});
+
+describe('restoreParentOverwrittenEdits (an older parent replaced a project-edited boilerplate-only file)', () => {
+  const comps: Component[] = [{ name: 'cli', type: 'directory', paths: ['cli'] }];
+  const cfg = { components: comps, cleanupRepoOnly: { paths: ['cli/fixtures'], patterns: [/^cli\/.*\.test\.ts$/] } };
+
+  test('the project\'s edit comes back; upstream\'s copy at HEAD or at the cursor, or a file the parent created, stays for the cleanup', () => {
+    const template = temporaryRoot();
+    git(template, ['init', '-q']);
+    write(template, 'cli/edited.test.ts', 'v1\n');
+    write(template, 'cli/old.test.ts', 'v1\n');
+    git(template, ['add', '-A']);
+    git(template, ['-c', 'user.email=t@x.invalid', '-c', 'user.name=t', 'commit', '-qm', 'cursor']);
+    const cursor = git(template, ['rev-parse', 'HEAD']).trim();
+    for (const f of ['cli/edited.test.ts', 'cli/old.test.ts', 'cli/created.test.ts', 'cli/tool.ts']) { write(template, f, 'v2\n'); }
+    git(template, ['add', '-A']);
+    git(template, ['-c', 'user.email=t@x.invalid', '-c', 'user.name=t', 'commit', '-qm', 'head']);
+
+    const repo = temporaryRoot();
+    for (const f of ['cli/edited.test.ts', 'cli/old.test.ts', 'cli/created.test.ts', 'cli/tool.ts']) { write(repo, f, 'v2\n'); }
+    const backup = '.backups/update-2026-01-02T00-00-00-000Z-2';
+    write(repo, `${backup}/cli/edited.test.ts`, 'v1 plus the project\'s edit\n');
+    write(repo, `${backup}/cli/old.test.ts`, 'v1  \n');
+    write(repo, `${backup}/cli/tool.ts`, 'the project tool\n');
+
+    const owned = ['cli/edited.test.ts', 'cli/old.test.ts', 'cli/created.test.ts', 'cli/tool.ts'];
+    expect(restoreParentOverwrittenEdits(cfg, template, repo, owned, { cli: cursor })).toEqual(['cli/edited.test.ts']);
+    expect(readFileSync(join(repo, 'cli/edited.test.ts'), 'utf8')).toContain('the project\'s edit');
+    expect(readFileSync(join(repo, 'cli/old.test.ts'), 'utf8')).toBe('v2\n');
+    expect(readFileSync(join(repo, 'cli/tool.ts'), 'utf8')).toBe('v2\n');
+    // Then the cleanup keeps the restored copy and removes the rest.
+    const r = cleanupBoilerplateCopies({ ...cfg, bootstrapOnlyPaths: [] }, repo, template, { cli: cursor }, true);
+    expect(r.kept).toContainEqual({ path: 'cli/edited.test.ts', reason: 'edited' });
+    expect(r.removed).toEqual(['cli/created.test.ts', 'cli/old.test.ts']);
+    expect(restoreParentOverwrittenEdits({ ...cfg, cleanupRepoOnly: undefined }, template, repo, owned, { cli: cursor })).toEqual([]);
   });
 });

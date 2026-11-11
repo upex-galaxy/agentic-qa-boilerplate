@@ -2564,6 +2564,49 @@ export function repairParentOverwrites(
   return { restored: [], unloadable: restored, backupDir };
 }
 
+/**
+ * Run in a self-update re-exec child, before `cleanupBoilerplateCopies`. A
+ * parent older than this updater copied upstream's HEAD over every differing
+ * updater file, the project's edited copy of a boilerplate-only one (a `cli/`
+ * test, snapshot or fixture) included, so the cleanup would then find
+ * upstream's bytes and delete the file as an unedited copy. Each such path the
+ * parent says it wrote (`ownedPaths`) is judged by the copy it left in the
+ * newest `.backups/update-*`, with the cleanup's own rule: upstream's at HEAD or
+ * at the lock cursor (the cleanup's whitespace normalization) stays as the
+ * parent left it, for the cleanup to remove; anything else is the project's and
+ * comes back, so the cleanup keeps it as `edited`. A path the parent created
+ * has no backup copy and is upstream's by construction.
+ */
+export function restoreParentOverwrittenEdits(
+  cfg: Pick<UpdaterConfig, 'components' | 'cleanupRepoOnly'>,
+  templateDir: string,
+  repoRoot: string,
+  ownedPaths: readonly string[],
+  cursors: Record<string, string>,
+): string[] {
+  const lists = cfg.cleanupRepoOnly;
+  const backupDir = newestUpdateBackup(repoRoot);
+  if (!lists || backupDir === null) { return []; }
+  const restored: string[] = [];
+  for (const raw of new Set(ownedPaths)) {
+    const rel = raw.replace(/\\/g, '/');
+    if (!isRepoOnlyForRun({ repoOnlyPaths: lists.paths, repoOnlyPatterns: lists.patterns }, rel) || isProjectLocalSkillPath(rel)) { continue; }
+    const saved = path.join(backupDir, rel);
+    if (!fs.existsSync(saved)) { continue; }
+    const projectCopy = fs.readFileSync(saved);
+    const headPath = path.join(templateDir, rel);
+    const head = fs.existsSync(headPath) ? fs.readFileSync(headPath) : null;
+    const component = cfg.components.find(c => !c.bootstrapOnly && isRepoOnlyPath(rel, componentOwnedPaths(c)));
+    const cursor = component ? cursors[component.name] : undefined;
+    const atCursor = cursor !== undefined && cloneHasCommit(templateDir, cursor) ? upstreamBlobAt(templateDir, cursor, rel) : null;
+    if (sameContent(projectCopy, head) || sameContent(projectCopy, atCursor)) { continue; }
+    fs.mkdirSync(path.dirname(path.join(repoRoot, rel)), { recursive: true });
+    fs.copyFileSync(saved, path.join(repoRoot, rel));
+    restored.push(rel);
+  }
+  return restored.sort();
+}
+
 // ============================================================================
 // BOILERPLATE COPIES CLEANUP (upstream's unedited copies a project already has)
 // ============================================================================
@@ -3151,6 +3194,12 @@ export async function runUpdate(
     if (selfComp) {
       const owned = (process.env[UPDATER_OWNED_PATHS_ENV] ?? '').split('\n').filter(Boolean);
       selfUpdateRepair = repairParentOverwrites(cfg, selfComp, templateDir, repoRoot, owned, process.argv[1] ?? '');
+      // The project's edited copies of boilerplate-only files the parent replaced
+      // come back before the cleanup judges them (it keeps them as `edited`).
+      const editsBack = restoreParentOverwrittenEdits(cfg, templateDir, repoRoot, owned, v7State?.perComponentCommit ?? {});
+      if (editsBack.length > 0) {
+        sink.warn(`Self-update: el updater anterior reemplazó ${editsBack.length} copia(s) editada(s) por el proyecto de archivos propios del boilerplate; restaurada(s) desde su backup: ${editsBack.join(', ')}.`);
+      }
       if (selfUpdateRepair.restored.length > 0) {
         sink.warn(`Self-update: el updater anterior sobrescribió ${selfUpdateRepair.restored.length} archivo(s) protegido(s); restaurado(s) desde ${path.relative(repoRoot, selfUpdateRepair.backupDir ?? '')}: ${selfUpdateRepair.restored.join(', ')}.`);
       }
