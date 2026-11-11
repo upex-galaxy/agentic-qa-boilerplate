@@ -289,7 +289,7 @@ If any step fails, fix before moving to Review.
 For the test you just wrote, run Allure (`bunx allure`, version pinned in `package.json`) in **agent mode** to get a markdown report you can read directly without parsing HTML:
 
 ```bash
-bun allure:agent           # `bunx allure agent -- bunx playwright test`, through the env launcher
+bun allure:agent           # `bunx allure agent -- bunx --bun playwright test`, through the env launcher
 ```
 
 Allure lives as a devDep — `bunx allure` resolves to the local `node_modules/.bin/allure`, no global install required. Use this when:
@@ -301,7 +301,7 @@ Allure lives as a devDep — `bunx allure` resolves to the local `node_modules/.
 For human review of the same run, switch to:
 
 ```bash
-bun allure:run             # `bunx allure run -- bunx playwright test`, through the env launcher (full HTML report)
+bun allure:run             # `bunx allure run -- bunx --bun playwright test`, through the env launcher (full HTML report)
 bun allure:open            # serve the last generated report locally
 ```
 

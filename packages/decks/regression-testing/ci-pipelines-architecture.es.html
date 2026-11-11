@@ -818,7 +818,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
       - <span class="key">name</span>: <span class="str">Skill Activation Evals Check</span>
         <span class="key">run</span>: bun run skills:evals
       - <span class="key">name</span>: <span class="str">Playwright Compile Check</span>
-        <span class="key">run</span>: bunx playwright test --list</pre></div>
+        <span class="key">run</span>: bunx --bun playwright test --list</pre></div>
       <div>
         <ul class="blist" style="margin-top:0">
           <li><b>Contesta «este PR rompe el framework?».</b> Un test que no compila no falla: no existe. Por eso <code class="k">playwright test --list</code> es el step clave: compila cada spec sin ejecutarlo y sin credenciales de app.</li>

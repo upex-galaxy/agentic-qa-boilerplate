@@ -23,7 +23,7 @@ env:
   TEST_ENV: 'staging'
   # Test-user pair for the selected TEST_ENV. OPTIONAL here: nothing in this
   # job logs in, the env schema no longer requires a project credential, and
-  # test:env:check validates the shape only. Kept so `bunx playwright test
+  # test:env:check validates the shape only. Kept so `bunx --bun playwright test
   # --list` and config resolution see the same environment a real run would.
   # A fork PR has no secrets and still passes.
   STAGING_USER_EMAIL: ${{ secrets.STAGING_USER_EMAIL }}
@@ -100,10 +100,10 @@ jobs:
         # header for scope.
 
       - name: Playwright Compile Check
-        run: bunx playwright test --list
+        run: bunx --bun playwright test --list
         # This validates that all test files compile correctly without executing them
 
       - name: Validate Playwright Config
         run: |
           echo "Validating Playwright configuration..."
-          bunx playwright test --config=playwright.config.ts --list > /dev/null 2>&1 && echo "Configuration valid" || echo "Configuration warning detected"
+          bunx --bun playwright test --config=playwright.config.ts --list > /dev/null 2>&1 && echo "Configuration valid" || echo "Configuration warning detected"

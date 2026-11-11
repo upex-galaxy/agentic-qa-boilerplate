@@ -30,7 +30,7 @@ The shipped PR gate deliberately runs NO tests. It validates that the framework 
 Key points:
 - No test execution on PRs — actual suite runs live in the scheduled `regression.yml` / `smoke.yml` and the manual `sanity.yml`.
 - The env-prefixed pair for the selected `TEST_ENV` (`STAGING_USER_EMAIL` / `STAGING_USER_PASSWORD`) is OPTIONAL here: `test:env:check` validates shape only and the env schema requires no project credential, so a fork PR with no secrets passes. URLs are NOT secrets — they resolve from `.agents/project.yaml` via `config/variables.ts`.
-- `bunx playwright test --list` catches broken imports and type errors in specs without spending CI minutes on browsers.
+- `bunx --bun playwright test --list` catches broken imports and type errors in specs without spending CI minutes on browsers.
 
 ---
 
@@ -171,10 +171,10 @@ strategy:
   matrix:
     shard: [1/4, 2/4, 3/4, 4/4]
 steps:
-  - run: bunx playwright test --shard=${{ matrix.shard }}
+  - run: bunx --bun playwright test --pass-with-no-tests --shard=${{ matrix.shard }}
 ```
 
-4 shards = ~4x faster. Merge reports at the end with `playwright merge-reports`.
+4 shards = ~4x faster. `--pass-with-no-tests` is required: a shard that matches no test fails with "No tests found" without it. Merge reports at the end with `playwright merge-reports`; the blob reporter clears its output folder at the start of every run, so each shard uploads its own `blob-report/` as an artifact before anything else writes there. Playwright runs on the Bun runtime here (`bunx --bun`), the same as the `test*` scripts.
 
 ### Dependency caching
 

@@ -195,7 +195,7 @@ export default defineConfig({
 
     // ============================================
     // Sandbox - Isolated tests without dependencies (for debugging/experiments)
-    // Usage: bun playwright test --project=sandbox
+    // Usage: bunx --bun playwright test --project=sandbox
     // ============================================
     {
       name: 'sandbox',

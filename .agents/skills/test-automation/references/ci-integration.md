@@ -266,11 +266,11 @@ The project-level sharding used in CI pipelines is out of scope here. This secti
 Use sharding locally only when debugging CI-style execution order. Two-shard split:
 
 ```bash
-bunx playwright test --shard=1/2
-bunx playwright test --shard=2/2
+bunx --bun playwright test --pass-with-no-tests --shard=1/2
+bunx --bun playwright test --pass-with-no-tests --shard=2/2
 ```
 
-Each shard gets a deterministic subset of the test files — useful for reproducing a "test fails only in shard 2" issue. The global `--shard` flag is orthogonal to `--project`: you can shard a single project with `--project=integration --shard=1/2`.
+Each shard gets a deterministic subset of the test files (a shard that matches nothing fails with "No tests found" unless `--pass-with-no-tests` is passed) — useful for reproducing a "test fails only in shard 2" issue. The global `--shard` flag is orthogonal to `--project`: you can shard a single project with `--project=integration --shard=1/2`.
 
 ### 6.3 Merging reports from local shards
 
@@ -278,7 +278,18 @@ Each shard gets a deterministic subset of the test files — useful for reproduc
 bunx playwright merge-reports --reporter=html ./blob-report
 ```
 
-Required only if you set `reporter: 'blob'` per shard. Normal authoring loops do not need this.
+Required only if you set `reporter: 'blob'` per shard. The blob reporter clears its output folder when a run starts, so move or upload each shard's `blob-report/` before the next run writes there. Normal authoring loops do not need this.
+
+### 6.4 The runner is Bun
+
+Every Playwright run in this repo (the `test*` scripts, `allure:run`, `allure:agent`, the CI jobs) goes through `bunx --bun playwright`. Without `--bun`, `bunx playwright` starts the runner on Node; `--bun` is what moves it to the Bun runtime. Limits Playwright documents for the Bun runner, which matter here:
+
+- No watch mode: UI mode does not re-run on a file change, and `--only-changed` does not follow imports.
+- `--tsconfig` and the JSX options of `tsconfig.json` have no effect, and custom ESM loaders are unsupported.
+- Stack traces lack async frames and API names lose their class (`click` instead of `locator.click`), so step titles, locations and error messages can differ from a Node run. A message regex in `playwright.config.ts` (the Allure `categories`) must be checked against a Bun-run failure.
+- A test's console output does not reach the trace or UI mode.
+
+`--ui` and `--debug` need a display and have no recorded Bun run in this repo: if one misbehaves, run that one command on Node (`bunx playwright test --ui`).
 
 ---
 
@@ -322,7 +333,7 @@ bun run test -- --project=e2e --browser=firefox
 
 ```bash
 # Open the HTML report from the last run
-bunx playwright show-report
+bunx --bun playwright show-report
 
 # Generate Allure site from allure-results/
 bun run allure:generate

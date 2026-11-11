@@ -157,8 +157,8 @@ Allure (major pinned in `package.json`) is a devDep — `bunx allure` resolves t
 
 | Use case | Script | Underlying command |
 |---|---|---|
-| Run tests + auto-generate report (human review) | `bun allure:run` | `bunx allure run -- bunx playwright test`, through the env launcher like the `test*` scripts |
-| Run tests + emit markdown for AI review | `bun allure:agent` | `bunx allure agent -- bunx playwright test`, through the env launcher like the `test*` scripts |
+| Run tests + auto-generate report (human review) | `bun allure:run` | `bunx allure run -- bunx --bun playwright test`, through the env launcher like the `test*` scripts |
+| Run tests + emit markdown for AI review | `bun allure:agent` | `bunx allure agent -- bunx --bun playwright test`, through the env launcher like the `test*` scripts |
 | Generate report from existing `./allure-results` | `bun allure:generate` | `bunx allure generate ./allure-results` |
 | Serve last generated report locally | `bun allure:open` | `bunx allure open` |
 | Live-refresh report during iterative dev | `bun allure:watch` | `bunx allure watch ./allure-results` |

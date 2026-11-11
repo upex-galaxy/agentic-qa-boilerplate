@@ -65,6 +65,13 @@ describe('package.json', () => {
     }
   });
 
+  test('every script that runs Playwright runs it on the Bun runtime', () => {
+    // `bunx playwright` starts the runner on Node; `--bun` is what moves it to Bun.
+    const runs = Object.entries(scripts).filter(([, cmd]) => /\bplaywright (?:test|show-report)\b/.test(cmd));
+    expect(runs.map(([name]) => name)).toEqual(expect.arrayContaining(['test', 'test:e2e', 'allure:run', 'allure:agent']));
+    for (const [, cmd] of runs) { expect(cmd).toContain('bunx --bun playwright'); }
+  });
+
   test('no script starts an AI harness', () => {
     for (const name of HARNESS_BINARIES) { expect(scripts[name]).toBeUndefined(); }
     for (const cmd of Object.values(scripts)) {
