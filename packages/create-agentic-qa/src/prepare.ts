@@ -452,7 +452,7 @@ export const TEMPLATE_EXCLUDES = [
   // re-deliver what this prunes.
   'docs/reports',
   // The boilerplate's own test fixtures and maintainer-only scripts under cli/
-  // and scripts/. Mirrors BOILERPLATE_TEST_PATHS (cli/update-boilerplate.ts);
+  // and scripts/. Mirrors BOILERPLATE_TEST_PATHS (cli/lib/boilerplate-only.ts);
   // a test there holds the two lists equal.
   'cli/lib/behaviour-coverage/fixtures',
   'cli/lib/evidence-page/fixtures/recorded',
@@ -470,15 +470,16 @@ export const TEMPLATE_EXCLUDES = [
 ] as const;
 
 /**
- * Repo-relative file paths under `cli/` and `scripts/` the scaffold prunes at
- * any depth: the boilerplate's own unit tests and snapshots (they verify THIS
- * repo; in a project the test runner picks them up). `scripts/api-login.test.ts`
+ * Repo-relative file paths the scaffold prunes at any depth: the boilerplate's
+ * own unit tests and snapshots under `cli/` and `scripts/`, and the skills'
+ * tests (they verify THIS repo; in a project the test runner picks them up). `scripts/api-login.test.ts`
  * stays: it guards the project's own `scripts/api-login.project.ts`. Mirrors
- * BOILERPLATE_TEST_PATTERNS (cli/update-boilerplate.ts).
+ * BOILERPLATE_TEST_PATTERNS (cli/lib/boilerplate-only.ts).
  */
 export const TEMPLATE_EXCLUDE_PATTERNS: readonly RegExp[] = [
   /^(?!scripts\/api-login\.test\.ts$)(?:cli|scripts)\/.*\.test\.[cm]?[jt]s$/,
   /^(?:cli|scripts)\/(?:.*\/)?__snapshots__\//,
+  /^\.agents\/skills\/[^/]+\/.*\.test\.[cm]?[jt]s$/,
 ];
 
 /** Every file below `dir` (repo-relative, POSIX separators); empty when it is missing. */
@@ -552,7 +553,7 @@ export async function pruneBootstrapExcludes(projectDir: string): Promise<void> 
   }
 
   // The boilerplate's own unit tests and snapshots, at any depth.
-  for (const rel of [...filesUnder(projectDir, 'cli'), ...filesUnder(projectDir, 'scripts')]) {
+  for (const rel of ['cli', 'scripts', '.agents/skills'].flatMap(dir => filesUnder(projectDir, dir))) {
     if (!TEMPLATE_EXCLUDE_PATTERNS.some(re => re.test(rel))) { continue; }
     await rm(join(projectDir, rel), { force: true });
     pruned++;

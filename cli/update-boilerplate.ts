@@ -23,6 +23,7 @@ import * as path from 'node:path';
 import pc from 'picocolors';
 import { checkAgentCompatibility, repairAgentSurfaces, SHADOWING_COMMANDS_BACKUP_DIR, SKILLS_ALIAS_DEFERRED_MARKER } from './lib/agent-compatibility.ts';
 import { applyInsertions, changedDefaults, describeChangedDefault, isMaintainerCopy, isSchemaOwner, planInsertions, projectDelta, SCHEMA_FILE, SCHEMA_SOURCE } from './lib/agents-schema.ts';
+import { BOILERPLATE_TEST_PATHS, BOILERPLATE_TEST_PATTERNS } from './lib/boilerplate-only.ts';
 import { declaredHarnesses, isUnderAny, unusedHarnessPaths } from './lib/harness-selection.ts';
 import * as tui from './lib/tui';
 import { startUpdaterUi } from './lib/ui/updater-run.ts';
@@ -346,19 +347,10 @@ export const COMPONENTS: Component[] = [
   { name: 'playwright-cli-config', type: 'file-list', paths: ['.playwright'], files: PLAYWRIGHT_CLI_CONFIG_FILES, bootstrapOnly: true },
 ];
 
-// --- BOILERPLATE-ONLY FILES INSIDE cli/ AND scripts/ ---
-//
-// The boilerplate's own unit tests, their snapshots and test fixtures, and the
-// maintainer-only scripts. They verify THIS repo in its CI; in a project the
-// test runner picks them up and they fail against the project's own files.
-// Never delivered (repoOnlyPatterns / repoOnlyPaths, the self-update included)
-// and removed from a project that already has upstream's unedited copy
-// (`--auto` cleanup). Mirrored in TEMPLATE_EXCLUDES and
-// TEMPLATE_EXCLUDE_PATTERNS (packages/create-agentic-qa/src/prepare.ts).
-//
-// Kept: `scripts/api-login.test.ts` (it guards the project's own
-// `scripts/api-login.project.ts`) and the runtime data in `fixtures/` folders
-// (the router eval, the board and evidence demos), which a gate reads.
+// --- BOILERPLATE-ONLY FILES (cli/lib/boilerplate-only.ts) ---
+
+export { BOILERPLATE_TEST_PATHS, BOILERPLATE_TEST_PATTERNS };
+
 /**
  * The boilerplate's own checkout: the package name AND the maintainer sentinel
  * (the test `contractsEnforced` makes in scripts/lib/doc-contracts.ts; cli/ may
@@ -370,26 +362,6 @@ export function isBoilerplateCheckout(root: string): boolean {
   return fs.existsSync(pkg) && isSchemaOwner(fs.readFileSync(pkg, 'utf8'))
     && fs.existsSync(yaml) && isMaintainerCopy(fs.readFileSync(yaml, 'utf8'));
 }
-
-export const BOILERPLATE_TEST_PATTERNS: RegExp[] = [
-  /^(?!scripts\/api-login\.test\.ts$)(?:cli|scripts)\/.*\.test\.[cm]?[jt]s$/,
-  /^(?:cli|scripts)\/(?:.*\/)?__snapshots__\//,
-];
-export const BOILERPLATE_TEST_PATHS: string[] = [
-  'cli/lib/behaviour-coverage/fixtures',
-  'cli/lib/evidence-page/fixtures/recorded',
-  'cli/lib/fixtures/ui-up-dry-run.journal.json',
-  'cli/lib/fixtures/ui-up-dry-run.transcript.json',
-  'cli/lib/sprint-source/fixtures/demo/snapshot.json',
-  'cli/lib/sprint-source/fixtures/recorded',
-  'cli/sprint-board/fixtures',
-  'cli/sprint-board/test-fixtures.ts',
-  'scripts/lib/ui-up-transcript.ts',
-  'scripts/ui-record-up.ts',
-  'scripts/ui-replay.ts',
-  'scripts/ui-setup-fixture.ts',
-  'scripts/ui-up-fixture.ts',
-];
 
 // --- ARG PARSE ---
 interface ParsedArgs {
@@ -2383,7 +2355,7 @@ async function main(): Promise<void> {
       ...unusedHarnessPaths(process.cwd()),
     ],
     // The boilerplate's own unit tests and snapshots, wherever they sit under
-    // cli/ and scripts/ (BOILERPLATE_TEST_PATTERNS).
+    // cli/, scripts/ and the skills (BOILERPLATE_TEST_PATTERNS).
     repoOnlyPatterns: BOILERPLATE_TEST_PATTERNS,
     // A project that still holds upstream's unedited copies of them (they
     // travelled before) loses those copies, with a backup and a row; inert in

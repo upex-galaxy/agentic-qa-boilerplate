@@ -313,7 +313,7 @@ describe('pruneBootstrapExcludes', () => {
 
   // The boilerplate's own unit tests verify the boilerplate; in a project the
   // test runner picks them up and they fail against the project's files.
-  test('prunes cli/ and scripts/ tests, snapshots and test fixtures at any depth, keeping the runtime ones', async () => {
+  test('prunes cli/, scripts/ and skill tests, snapshots and test fixtures at any depth, keeping the runtime ones', async () => {
     const files = [
       'cli/lib/ui/page.test.ts',
       'cli/lib/ui/__snapshots__/installer-run.test.ts.snap',
@@ -325,6 +325,8 @@ describe('pruneBootstrapExcludes', () => {
       'cli/lib/fixtures/instruction-router-eval.json',
       'cli/lib/sprint-source/fixtures/demo/project.yaml',
       'tests/utils/xrayResults.test.ts',
+      '.agents/skills/acli/scripts/md-to-adf.test.ts',
+      '.agents/skills/acli/scripts/md-to-adf.ts',
     ];
     for (const f of files) {
       mkdirSync(join(dir, f, '..'), { recursive: true });
@@ -339,6 +341,7 @@ describe('pruneBootstrapExcludes', () => {
       'cli/lib/fixtures/instruction-router-eval.json',
       'cli/lib/sprint-source/fixtures/demo/project.yaml',
       'tests/utils/xrayResults.test.ts',
+      '.agents/skills/acli/scripts/md-to-adf.ts',
     ]);
   });
 

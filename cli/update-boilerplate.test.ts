@@ -193,7 +193,7 @@ describe('boilerplate-only files under cli/ and scripts/', () => {
   const REPO = join(import.meta.dir, '..');
   const repoOnly = (rel: string): boolean => isRepoOnlyForRun({ repoOnlyPaths: BOILERPLATE_TEST_PATHS, repoOnlyPatterns: BOILERPLATE_TEST_PATTERNS }, rel);
   const tracked = (): string[] => {
-    const r = spawnSync('git', ['-C', REPO, 'ls-files', '--', 'cli', 'scripts'], { encoding: 'utf8' });
+    const r = spawnSync('git', ['-C', REPO, 'ls-files', '--', 'cli', 'scripts', '.agents/skills'], { encoding: 'utf8' });
     return r.status === 0 ? r.stdout.split('\n').filter(Boolean) : [];
   };
 
