@@ -245,7 +245,7 @@ export class Journal {
   /** Append one event: stamped, redacted, then delivered to every listener. */
   append(ev: RunEvent): JournalEntry {
     this.seq += 1;
-    const entry = { ...this.redactor.deep(ev), seq: this.seq, ts: Math.max(0, this.now() - this.t0) } as JournalEntry;
+    const entry = { ...this.redactor.deep(ev), seq: this.seq, ts: Math.max(0, this.now() - this.t0) };
     this.entries.push(entry);
     for (const fn of this.listeners) {
       try { fn(entry); }
@@ -258,7 +258,7 @@ export class Journal {
   appendRecorded(entry: JournalEntry): JournalEntry {
     this.seq += 1;
     const { seq: _seq, ts, ...ev } = entry;
-    const out = { ...this.redactor.deep(ev as RunEvent), seq: this.seq, ts } as JournalEntry;
+    const out = { ...this.redactor.deep(ev), seq: this.seq, ts };
     this.entries.push(out);
     for (const fn of this.listeners) {
       try { fn(out); }

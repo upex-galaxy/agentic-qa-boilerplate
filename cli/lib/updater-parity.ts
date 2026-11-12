@@ -1273,7 +1273,7 @@ export function legacyPlaywrightProfileKeys(root: string): string[] {
   const block = browser as Record<string, unknown>;
   const keys: string[] = [];
   if (block.isolated === false) { keys.push('browser.isolated: false'); }
-  if (Object.prototype.hasOwnProperty.call(block, 'userDataDir')) { keys.push('browser.userDataDir'); }
+  if (Object.hasOwn(block, 'userDataDir')) { keys.push('browser.userDataDir'); }
   return keys;
 }
 

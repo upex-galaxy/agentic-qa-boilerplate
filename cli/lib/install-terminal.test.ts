@@ -13,11 +13,11 @@ const CANCEL = Symbol('cancel');
 function fakePrompts(queue: unknown[]): Partial<Prompts> {
   const next = async (): Promise<never> => queue.shift() as never;
   return {
-    confirm: next as unknown as Prompts['confirm'],
-    select: next as unknown as Prompts['select'],
-    multiselect: next as unknown as Prompts['multiselect'],
-    text: next as unknown as Prompts['text'],
-    password: next as unknown as Prompts['password'],
+    confirm: next,
+    select: next,
+    multiselect: next,
+    text: next,
+    password: next,
     isCancel: ((v: unknown) => v === CANCEL) as unknown as Prompts['isCancel'],
   };
 }

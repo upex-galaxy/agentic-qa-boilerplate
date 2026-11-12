@@ -114,7 +114,7 @@ describe('terminal fallback (owner answer Q6)', () => {
       aborted: [] as string[],
       ask: async (q: AskEvent | { id: string }, signal: AbortSignal) => new Promise<unknown>((resolve, reject) => {
         t.asked.push(q.id);
-        const timer = setTimeout(() => resolve(value), answerAfterMs);
+        const timer = setTimeout(resolve, answerAfterMs, value);
         signal.addEventListener('abort', () => { clearTimeout(timer); t.aborted.push(q.id); reject(new Error('aborted')); });
       }),
     };

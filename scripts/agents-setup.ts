@@ -913,8 +913,8 @@ function renderUpdatedYaml(
           let j = i + 1;
           while (j < inputLines.length) {
             const next = inputLines[j];
-            if (next.match(/^[a-z_][a-z0-9_]*:/)) { break; } // new top-level section
-            if (next.match(/^ {2}[a-z_][a-z0-9_]*:\s*(?:#.*)?$/)) { break; } // sibling env
+            if (/^[a-z_][a-z0-9_]*:/.test(next)) { break; } // new top-level section
+            if (/^ {2}[a-z_][a-z0-9_]*:\s*(?:#.*)?$/.test(next)) { break; } // sibling env
             j++;
           }
           i = j - 1; // outer for-loop will i++; we want the loop to land on j

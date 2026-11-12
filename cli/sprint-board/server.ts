@@ -151,7 +151,7 @@ export async function serve(opts: { port: number, open: boolean, syncMinutes: nu
     }
   };
   setInterval(check, 1000);
-  setInterval(() => push(': ping\n\n'), 5000);
+  setInterval(push, 5000, ': ping\n\n');
   startMergeLoop(opts.mergeEvery ?? 90);
 
   if (opts.syncMinutes > 0) {

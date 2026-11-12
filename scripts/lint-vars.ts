@@ -168,7 +168,7 @@ function loadDeclaredVariables(yamlPath: string): DeclaredVars {
         envNames.add(envName);
         const perEnv = new Set<string>();
         if (envVal && typeof envVal === 'object' && !Array.isArray(envVal)) {
-          for (const leafKey of Object.keys(envVal as Record<string, unknown>)) {
+          for (const leafKey of Object.keys(envVal)) {
             envScoped.add(leafKey.toUpperCase());
             perEnv.add(leafKey);
           }

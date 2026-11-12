@@ -948,7 +948,7 @@ export function validateVarManifest(manifest: readonly VarSpec[] = VAR_MANIFEST)
         throw new VarManifestError(`Var '${spec.name}' has invalid 'required' (expected boolean | { ifEnv }).`);
       }
       const clause = spec.required.ifEnv;
-      if (typeof clause !== 'string' || !clause.includes('=') || clause.indexOf('=') === 0) {
+      if (typeof clause !== 'string' || !clause.includes('=') || clause.startsWith('=')) {
         throw new VarManifestError(
           `Var '${spec.name}' has malformed 'required.ifEnv' (expected 'KEY=VALUE'): '${String(clause)}'.`,
         );
@@ -1013,7 +1013,7 @@ export function validateVarManifest(manifest: readonly VarSpec[] = VAR_MANIFEST)
       const { required, type, example, docs, default: dflt } = spec.schema;
       if (required !== undefined && typeof required !== 'boolean') {
         const clause = (required as VarRequiredIfEnv | null)?.ifEnv;
-        if (typeof clause !== 'string' || !clause.includes('=') || clause.indexOf('=') === 0) {
+        if (typeof clause !== 'string' || !clause.includes('=') || clause.startsWith('=')) {
           throw new VarManifestError(`Var '${spec.name}' has malformed 'schema.required' (expected boolean | { ifEnv: 'KEY=VALUE' }).`);
         }
       }

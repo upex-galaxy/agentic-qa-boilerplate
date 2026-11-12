@@ -148,7 +148,7 @@ const touch = (f: string) => {
 
 interface BoardSide { mainBranch: string, requiredApprovals: number, timezone: string, ticketKey: string, tracker: Record<string, TrackerRow>, warn?: string }
 function boardSide(): BoardSide {
-  const tzNow = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const tzNow = new Intl.DateTimeFormat().resolvedOptions().timeZone;
   let mainBranch = 'main';
   let requiredApprovals = 1;
   let timezone = tzNow;

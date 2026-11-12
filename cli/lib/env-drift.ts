@@ -93,6 +93,7 @@ export function parseVarlockMetadata(stdout: string): VarlockOverrides | null {
 export function loadVarlockMetadata(root: string, env: EnvMap = process.env): VarlockOverrides | null {
   const bin = varlockBin(root, env);
   if (bin === null) { return null; }
+  // eslint-disable-next-line ts/no-unnecessary-type-assertion -- a host that requires NODE_ENV on ProcessEnv (Next.js) rejects EnvMap
   const res = spawnSync(bin, ['load', '--format', 'json-full', '--agent'], { cwd: root, env: env as NodeJS.ProcessEnv, encoding: 'utf8' });
   return typeof res.stdout === 'string' ? parseVarlockMetadata(res.stdout) : null;
 }

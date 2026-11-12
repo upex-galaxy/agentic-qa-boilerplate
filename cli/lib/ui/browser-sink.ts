@@ -150,7 +150,7 @@ export async function startBrowserSink(opts: BrowserSinkOptions): Promise<Browse
             if (e.seq > lastSent) { lastSent = e.seq; send(sse(e)); }
           }
           replaying = false;
-          beat = setInterval(() => send(': hb\n\n'), heartbeatMs);
+          beat = setInterval(send, heartbeatMs, ': hb\n\n');
         },
         cancel() { cleanup(); },
       });

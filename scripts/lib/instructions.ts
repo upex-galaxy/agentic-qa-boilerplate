@@ -70,7 +70,7 @@ export function splitFrontmatter(text: string): { data: SectionFrontmatter | nul
     if (data === null || typeof data !== 'object' || Array.isArray(data)) {
       return { data: null, error: 'frontmatter is not a mapping' };
     }
-    return { data: data as SectionFrontmatter };
+    return { data };
   }
   catch (error) {
     return { data: null, error: (error as Error).message.split('\n')[0] };

@@ -224,7 +224,7 @@ function splitFrontmatter(text: string): { frontmatter: SkillFrontmatter, body: 
   if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
     return { frontmatter: {}, body };
   }
-  return { frontmatter: parsed as SkillFrontmatter, body };
+  return { frontmatter: parsed, body };
 }
 
 /**

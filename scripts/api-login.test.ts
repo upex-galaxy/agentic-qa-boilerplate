@@ -326,7 +326,7 @@ describe('the authenticate escape hatch', () => {
   }
 
   async function runWith(argv: string[], root: string, calls: FetchCall[], adapter: Partial<ApiLoginAdapter>) {
-    return runApiLogin({ ...projectAdapter, ...adapter } as ApiLoginAdapter, {
+    return runApiLogin({ ...projectAdapter, ...adapter }, {
       argv,
       authDir: root,
       apiStatePath: join(root, 'api-state.json'),

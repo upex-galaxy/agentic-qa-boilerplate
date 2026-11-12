@@ -1192,7 +1192,7 @@ async function syncWorkType(
     workflowId = workflow.id;
   }
   else if (workflow.id && typeof workflow.id === 'object' && 'workflowId' in workflow.id) {
-    workflowId = (workflow.id as { workflowId?: string }).workflowId ?? null;
+    workflowId = (workflow.id).workflowId ?? null;
   }
 
   // 4. Build per-status discovered map (slug → JiraStatus). Names + categories

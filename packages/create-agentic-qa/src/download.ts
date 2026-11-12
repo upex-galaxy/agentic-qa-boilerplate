@@ -134,6 +134,7 @@ async function streamToFile(res: Response, path: string): Promise<void> {
     throw new CliError('NETWORK', 'Empty response body from GitHub.');
   }
   // Node's fetch.body is a web stream; Readable.fromWeb adapts it.
+  // eslint-disable-next-line ts/no-unnecessary-type-assertion -- bun check types res.body as the DOM stream, not node:stream/web
   const nodeStream = Readable.fromWeb(res.body as unknown as import('node:stream/web').ReadableStream);
   await pipeline(nodeStream, createWriteStream(path));
 }

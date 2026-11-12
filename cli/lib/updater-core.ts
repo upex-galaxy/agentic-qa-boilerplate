@@ -608,7 +608,7 @@ export function classifyFile(
       templateOldBytes = execSync(
         `git -C "${templateDir}" show ${entry.templateOldSha}`,
         { stdio: ['pipe', 'pipe', 'pipe'] },
-      ) as unknown as Buffer;
+      );
     }
     catch {
       // Cannot retrieve blob — safe fallback to diverged

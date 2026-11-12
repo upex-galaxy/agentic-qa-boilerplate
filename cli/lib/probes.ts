@@ -26,6 +26,7 @@ export interface CmdResult {
 /** Runs a command with a timeout; never throws. */
 export function runCmd(cmd: string, args: string[], opts: { timeoutMs?: number, cwd?: string } = {}): CmdResult {
   const r = spawnSync(cmd, args, { cwd: opts.cwd, encoding: 'utf8', timeout: opts.timeoutMs ?? 3000, stdio: ['ignore', 'pipe', 'pipe'] });
+  // eslint-disable-next-line ts/no-unnecessary-type-assertion -- bun check types r.error as Error, which has no code
   const err = r.error as NodeJS.ErrnoException | undefined;
   return {
     ok: !err && r.status === 0,

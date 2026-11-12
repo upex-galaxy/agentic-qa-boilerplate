@@ -112,7 +112,7 @@ if (import.meta.main) {
     env: process.env,
     meta: loadVarlockMetadata,
     varlock: varlockBin,
-    spawn: (cmd, args, env) => spawnSync(cmd, args, { stdio: 'inherit', cwd: REPO_ROOT, env: env as NodeJS.ProcessEnv }).status ?? 1,
+    spawn: (cmd, args, env) => spawnSync(cmd, args, { stdio: 'inherit', cwd: REPO_ROOT, env }).status ?? 1,
     err: line => console.error(line),
   }));
 }

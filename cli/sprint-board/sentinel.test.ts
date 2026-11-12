@@ -42,7 +42,7 @@ const tracker = (tickets: Record<string, string>, opts: { syncedAt?: string, unt
   tickets: Object.fromEntries(Object.entries(tickets).map(([id, status]) => [id, { status, title: `${id} title`, tcs: [] }])),
   bugs: {},
   discover: opts.untracked ? { at: '2026-10-19T12:00:00Z', sprintRows: 10, untracked: opts.untracked } : undefined,
-} as TrackerSnapshot);
+});
 /** Monday 2026-10-19 (local), at hh:mm. */
 const mon = (h: number, m = 0) => new Date(2026, 9, 19, h, m);
 const sat = (h: number, m = 0) => new Date(2026, 9, 24, h, m);

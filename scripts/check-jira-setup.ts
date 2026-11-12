@@ -873,7 +873,7 @@ function printHumanReport(
         if (exp.description) { console.log(`    Purpose: ${exp.description.trim().split('\n')[0]}`); }
       }
       else if (r.scope === 'unmapped') {
-        const exp = r.expected as UnmappedEntry;
+        const exp = r.expected;
         console.log(`  - ${r.slug} (unmapped)`);
         const desc = (exp.description ?? '').trim().split('\n')[0];
         if (desc) { console.log(`    ${desc}`); }
@@ -960,8 +960,8 @@ function printHumanReport(
   }
 
   // ----- Exit code (sum across both blocks) -----------------------------------
-  const fieldExitTrigger = missing.filter(r => r.scope === 'required').length > 0
-    || mismatch.filter(r => r.scope === 'required').length > 0;
+  const fieldExitTrigger = missing.some(r => r.scope === 'required')
+    || mismatch.some(r => r.scope === 'required');
   const workTypeExitTrigger = workTypeResults.some(
     r => r.severity === 'missing' || r.severity === 'mismatch',
   );

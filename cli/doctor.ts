@@ -834,6 +834,7 @@ export function orchestratorCli(yamlText: string, platform: string, env: Record<
 export function orchestratorState(cli: string | null, spawn: typeof spawnSync = spawnSync): OrchestratorState {
   if (cli === null) { return 'not-configured'; }
   const r = spawn(cli, ['status', '--json'], { encoding: 'utf8', timeout: 5000, stdio: ['ignore', 'pipe', 'pipe'] });
+  // eslint-disable-next-line ts/no-unnecessary-type-assertion -- bun check types r.error as Error, which has no code
   if ((r.error as NodeJS.ErrnoException | undefined)?.code === 'ENOENT') { return 'not-installed'; }
   try {
     const parsed = JSON.parse(String(r.stdout ?? '')) as { result?: { runtime?: { reachable?: unknown } } };

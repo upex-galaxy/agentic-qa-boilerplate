@@ -521,7 +521,7 @@ function parseNestedList(metadataBlock: string, key: string): string[] | undefin
     }
     return values;
   }
-  return metadataBlock.match(new RegExp(`^[ \\t]+${key}:`, 'm')) ? [] : undefined;
+  return new RegExp(`^[ \\t]+${key}:`, 'm').test(metadataBlock) ? [] : undefined;
 }
 
 // -----------------------------------------------------------------------------

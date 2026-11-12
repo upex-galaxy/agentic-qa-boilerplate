@@ -214,7 +214,7 @@ export function buildDocuments(r: Reading, p: BuildParams, prev: J | null): Buil
       const rsum = arr(rr.reviews).filter(v => CLAUDE.test(v.user?.login ?? '') && (ts2e(v.submitted_at) ?? 0) >= t0 && (v.body ?? '') !== '' && !CLEAN_RE.test(v.body ?? ''));
       const unanswered = [...plain, ...rsum].filter((x) => {
         const at = ts2e(x.created_at ?? x.submitted_at) ?? 0;
-        return ics.filter(c => !CLAUDE.test(c.user?.login ?? '') && (ts2e(c.created_at) ?? 0) > at).length === 0;
+        return !ics.some(c => !CLAUDE.test(c.user?.login ?? '') && (ts2e(c.created_at) ?? 0) > at);
       });
       const openN = bthreads.filter(t => !t.resolved).length + unanswered.length;
       const items = bthreads.length + plain.length + rsum.length;

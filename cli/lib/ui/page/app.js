@@ -30,11 +30,11 @@
   };
   const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   /** Limited markup: escape everything, then re-enable <b>, <code>, `code` and double-bracket glossary buttons. */
-  const safe = s => esc(s == null ? '' : s)
+  const safe = s => esc(s ?? '')
     .replace(/&lt;(\/?)(b|code)&gt;/g, '<$1$2>')
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     .replace(/\[\[([a-z0-9-]+)\|([^\]]+)\]\]/g, '<button type="button" class="term-btn" data-g="$1">$2</button>');
-  const plain = s => String(s == null ? '' : s).replace(/\[\[[^|\]]+\|([^\]]+)\]\]/g, '$1').replace(/<\/?(?:b|code)>/g, '').replace(/`/g, '');
+  const plain = s => String(s ?? '').replace(/\[\[[^|\]]+\|([^\]]+)\]\]/g, '$1').replace(/<\/?(?:b|code)>/g, '').replace(/`/g, '');
   const fill = (t, vars) => String(t).replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m));
 
   const ICON = {
