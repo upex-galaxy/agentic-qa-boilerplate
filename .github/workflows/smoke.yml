@@ -87,7 +87,7 @@ jobs:
 
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 1
 
@@ -121,7 +121,7 @@ jobs:
 
       - name: Upload Allure Results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: smoke-allure-results
           path: allure-results/
@@ -129,7 +129,7 @@ jobs:
 
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: smoke-test-results
           path: test-results/
@@ -137,7 +137,7 @@ jobs:
 
       - name: Upload Failure Evidence
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: smoke-failure-evidence
           path: |
@@ -173,10 +173,10 @@ jobs:
       # Full repo checkout: the report is generated with the repo's own
       # allurerc.mjs + allure devDependency (identical to local runs).
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Get Allure History
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: gh-pages
           path: gh-pages
@@ -184,7 +184,8 @@ jobs:
         continue-on-error: true
 
       - name: Download Smoke Test Artifacts
-        uses: actions/download-artifact@v4
+        id: download_results
+        uses: actions/download-artifact@v8
         with:
           name: smoke-allure-results
           path: smoke-artifacts/allure-results
@@ -193,7 +194,14 @@ jobs:
       - name: Check Allure Results
         id: check_allure
         shell: bash
+        env:
+          DOWNLOAD_OUTCOME: ${{ steps.download_results.outcome }}
         run: |
+          # continue-on-error above lets a skipped test job pass; it also hides a
+          # download-artifact v8 digest mismatch, so a failed download is named here.
+          if [ "$DOWNLOAD_OUTCOME" = "failure" ]; then
+            echo "::warning title=Artifact not downloaded::smoke-allure-results was not downloaded: absent, or its digest did not match the upload. See the Download step log."
+          fi
           if [ -d "smoke-artifacts/allure-results" ] && [ -n "$(ls -A smoke-artifacts/allure-results 2>/dev/null)" ]; then
             echo "Allure results found."
             echo "has_results=true" >> $GITHUB_OUTPUT

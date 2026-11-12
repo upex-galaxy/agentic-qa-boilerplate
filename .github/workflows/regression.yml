@@ -110,7 +110,7 @@ jobs:
 
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 1
 
@@ -146,7 +146,7 @@ jobs:
 
       - name: Upload Integration Allure Results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: integration-allure-results
           path: allure-results/
@@ -154,7 +154,7 @@ jobs:
 
       - name: Upload Integration Test Results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: integration-test-results
           path: test-results/
@@ -166,7 +166,7 @@ jobs:
       # test-results upload would move junit.xml one level down inside it.
       - name: Upload Integration ATC Results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: integration-atc-results
           path: |
@@ -196,7 +196,7 @@ jobs:
 
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 1
 
@@ -232,7 +232,7 @@ jobs:
 
       - name: Upload E2E Allure Results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-allure-results
           path: allure-results/
@@ -240,7 +240,7 @@ jobs:
 
       - name: Upload E2E Test Results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-test-results
           path: test-results/
@@ -252,7 +252,7 @@ jobs:
       # test-results upload would move junit.xml one level down inside it.
       - name: Upload E2E ATC Results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-atc-results
           path: |
@@ -263,7 +263,7 @@ jobs:
 
       - name: Upload Playwright Report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-playwright-report
           path: playwright-report/
@@ -271,7 +271,7 @@ jobs:
 
       - name: Upload Failure Evidence
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-failure-evidence
           path: |
@@ -308,10 +308,10 @@ jobs:
       # Full repo checkout: the report is generated with the repo's own
       # allurerc.mjs + allure devDependency (identical to local runs).
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Get Allure History
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: gh-pages
           path: gh-pages
@@ -319,14 +319,16 @@ jobs:
         continue-on-error: true
 
       - name: Download Integration Allure Results
-        uses: actions/download-artifact@v4
+        id: download_integration
+        uses: actions/download-artifact@v8
         with:
           name: integration-allure-results
           path: regression-artifacts/integration-allure-results
         continue-on-error: true
 
       - name: Download E2E Allure Results
-        uses: actions/download-artifact@v4
+        id: download_e2e
+        uses: actions/download-artifact@v8
         with:
           name: e2e-allure-results
           path: regression-artifacts/e2e-allure-results
@@ -335,7 +337,18 @@ jobs:
       - name: Merge Allure Results
         id: merge_results
         shell: bash
+        env:
+          INTEGRATION_OUTCOME: ${{ steps.download_integration.outcome }}
+          E2E_OUTCOME: ${{ steps.download_e2e.outcome }}
         run: |
+          # continue-on-error above lets a skipped test job pass; it also hides a
+          # download-artifact v8 digest mismatch, so a failed download is named here.
+          if [ "$INTEGRATION_OUTCOME" = "failure" ]; then
+            echo "::warning title=Artifact not downloaded::integration-allure-results was not downloaded: absent, or its digest did not match the upload. See the Download step log."
+          fi
+          if [ "$E2E_OUTCOME" = "failure" ]; then
+            echo "::warning title=Artifact not downloaded::e2e-allure-results was not downloaded: absent, or its digest did not match the upload. See the Download step log."
+          fi
           mkdir -p merged-allure-results
 
           # Merge Integration results
@@ -368,7 +381,7 @@ jobs:
 
       - name: Upload Merged Allure Results
         if: steps.check_allure.outputs.has_results == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: merged-allure-results-${{ env.TEST_ENV }}
           path: merged-allure-results/
@@ -458,7 +471,7 @@ jobs:
 
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 1
 
@@ -471,14 +484,16 @@ jobs:
         run: bun install
 
       - name: Download Integration ATC Results
-        uses: actions/download-artifact@v4
+        id: download_integration_atc
+        uses: actions/download-artifact@v8
         with:
           name: integration-atc-results
           path: xray-artifacts/integration
         continue-on-error: true
 
       - name: Download E2E ATC Results
-        uses: actions/download-artifact@v4
+        id: download_e2e_atc
+        uses: actions/download-artifact@v8
         with:
           name: e2e-atc-results
           path: xray-artifacts/e2e
@@ -527,8 +542,19 @@ jobs:
         id: payload
         if: steps.gate.outputs.enabled == 'true'
         shell: bash
+        env:
+          INTEGRATION_OUTCOME: ${{ steps.download_integration_atc.outcome }}
+          E2E_OUTCOME: ${{ steps.download_e2e_atc.outcome }}
         run: |
           set -euo pipefail
+          # A failed download (absent, or a download-artifact v8 digest mismatch)
+          # leaves that leg's verdicts out of the import: name it.
+          if [ "$INTEGRATION_OUTCOME" = "failure" ]; then
+            echo "::warning title=Artifact not downloaded::integration-atc-results was not downloaded, so its verdicts are not imported. See the Download step log."
+          fi
+          if [ "$E2E_OUTCOME" = "failure" ]; then
+            echo "::warning title=Artifact not downloaded::e2e-atc-results was not downloaded, so its verdicts are not imported. See the Download step log."
+          fi
           bun run --silent xray:payload --execution "${STP_EXECUTION_KEY}" --out xray-results.json \
             xray-artifacts/integration/atc_results.json xray-artifacts/e2e/atc_results.json
           if [ -f xray-results.json ]; then
@@ -628,7 +654,7 @@ jobs:
 #     - name: Run ${{ matrix.module }} Tests
 #       run: ${{ matrix.testCommand }}
 #     - name: Upload ${{ matrix.prefix }} Artifacts
-#       uses: actions/upload-artifact@v4
+#       uses: actions/upload-artifact@v7
 #       with:
 #         name: ${{ matrix.prefix }}-allure-results
 #         path: allure-results/
