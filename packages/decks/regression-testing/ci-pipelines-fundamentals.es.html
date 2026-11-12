@@ -795,7 +795,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
         <tr><td><b>Job</b></td><td>Un conjunto de steps que corre en UNA máquina. Los jobs corren en paralelo salvo que declares <code class="k">needs</code>.</td><td class="mono">IntegrationTests, E2ETests</td></tr>
         <tr><td><b>Step</b></td><td>Una acción dentro del job: un comando (<code class="k">run</code>) o una acción reutilizable (<code class="k">uses</code>).</td><td class="mono">run: bun run test:smoke</td></tr>
         <tr><td><b>Runner</b></td><td>La máquina virtual que ejecuta el job. GitHub la crea limpia y la destruye al terminar.</td><td class="mono">runs-on: ubuntu-latest</td></tr>
-        <tr><td><b>Action</b></td><td>Un step empaquetado por alguien (GitHub, Oven, Playwright…) que enchufás con <code class="k">uses:</code>.</td><td class="mono">actions/checkout@v4</td></tr>
+        <tr><td><b>Action</b></td><td>Un step empaquetado por alguien (GitHub, Oven, Playwright…) que enchufás con <code class="k">uses:</code>.</td><td class="mono">actions/checkout@v7</td></tr>
         <tr><td><b>Artifact</b></td><td>Archivos que el job guarda al terminar para que los bajes o los use otro job.</td><td class="mono">smoke-allure-results</td></tr>
       </table>
       <div>
@@ -808,7 +808,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
   <span class="key">SmokeTest</span>:                <span class="c"># job 1</span>
     <span class="key">runs-on</span>: ubuntu-latest  <span class="c"># el runner</span>
     <span class="key">steps</span>:
-      - <span class="key">uses</span>: actions/checkout@v4   <span class="c"># step (action)</span>
+      - <span class="key">uses</span>: actions/checkout@v7   <span class="c"># step (action)</span>
       - <span class="key">run</span>: bun run test:smoke      <span class="c"># step (comando)</span>
   <span class="key">allure-report</span>:            <span class="c"># job 2</span>
     <span class="key">needs</span>: SmokeTest        <span class="c"># espera al job 1</span></pre></div>
@@ -849,7 +849,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
     <span class="key">timeout-minutes</span>: <span class="kw">15</span></span>
 <span class="row" data-x="uses">    <span class="key">steps</span>:
       - <span class="key">name</span>: <span class="str">Checkout Repo</span>
-        <span class="key">uses</span>: <span class="str">actions/checkout@v4</span>
+        <span class="key">uses</span>: <span class="str">actions/checkout@v7</span>
         <span class="key">with</span>:
           <span class="key">fetch-depth</span>: <span class="kw">0</span>
           <span class="c"># Full history: the documentation-contract step diffs the PR range.</span></span>
@@ -869,7 +869,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
           <div data-x="conc"><h4><span class="mono">concurrency</span> con cancelación</h4><p>Un solo build por rama (<code class="k">group: build-${{ github.ref }}</code>). Si haces push dos veces seguidas, el primer run <b>se cancela</b>: no publica nada, así que cancelarlo es gratis y ahorra minutos.</p><p>Compara con las suites: ellas usan <code class="k">cancel-in-progress: false</code> porque publican un reporte. Lo vemos en el Capítulo 4.</p><div class="hint">docs: control-workflow-concurrency</div></div>
           <div data-x="env"><h4><span class="mono">env:</span> variables para todos los jobs</h4><p>A nivel de workflow, <code class="k">env</code> define variables de entorno que heredan todos los jobs y steps. <code class="k">CI: true</code> es una convención que muchas herramientas leen (Playwright activa <code class="k">forbidOnly</code>, por ejemplo).</p><p>Las credenciales NO están escritas aquí: se leen de <code class="k">${{ secrets.X }}</code>, que GitHub inyecta enmascaradas. Copiar un valor de tu <code class="k">.env</code> al YAML es la falta más grave del curso.</p><p>En build.yml el par de test-user es <b>opcional</b>: nada en este job hace login, así que un PR de fork, que no recibe secrets, pasa igual.</p><div class="hint">docs: use-variables · use-secrets</div></div>
           <div data-x="job"><h4>el job <span class="mono">TestBuild</span></h4><p>La clave <code class="k">TestBuild</code> es el id (lo usa <code class="k">needs</code>); <code class="k">name</code> es lo que ves en la UI. <code class="k">runs-on: ubuntu-latest</code> pide una VM Linux de GitHub, limpia. <code class="k">timeout-minutes: 15</code> mata el job si se cuelga: sin él, el default es 360 minutos de factura.</p><div class="hint">docs: workflow-syntax → jobs.&lt;job_id&gt;</div></div>
-          <div data-x="uses"><h4>steps con <span class="mono">uses:</span> (acciones)</h4><p><code class="k">actions/checkout@v4</code> clona el repo en el runner (sin esto, la máquina está vacía). <code class="k">fetch-depth: 1</code> traería solo el último commit (más rápido, y es lo que usan smoke, sanity y regression). build.yml usa <code class="k">fetch-depth: 0</code>, el historial completo, porque el step Documentation Contracts compara el rango del PR y lee los mensajes de sus commits. El siguiente step (Setup Bun, omitido aquí) es <code class="k">oven-sh/setup-bun@v2</code>, que instala Bun.</p><p><code class="k">@v4</code> es una etiqueta de versión mayor. Para máxima seguridad, GitHub recomienda fijar un <b>SHA de commit</b> completo en acciones de terceros: una etiqueta se puede mover, un SHA no.</p><div class="hint">docs: find-and-customize-actions · security/secure-use</div></div>
+          <div data-x="uses"><h4>steps con <span class="mono">uses:</span> (acciones)</h4><p><code class="k">actions/checkout@v7</code> clona el repo en el runner (sin esto, la máquina está vacía). <code class="k">fetch-depth: 1</code> traería solo el último commit (más rápido, y es lo que usan smoke, sanity y regression). build.yml usa <code class="k">fetch-depth: 0</code>, el historial completo, porque el step Documentation Contracts compara el rango del PR y lee los mensajes de sus commits. El siguiente step (Setup Bun, omitido aquí) es <code class="k">oven-sh/setup-bun@v2</code>, que instala Bun.</p><p><code class="k">@v7</code> es una etiqueta de versión mayor. Para máxima seguridad, GitHub recomienda fijar un <b>SHA de commit</b> completo en acciones de terceros: una etiqueta se puede mover, un SHA no.</p><div class="hint">docs: find-and-customize-actions · security/secure-use</div></div>
           <div data-x="run"><h4>steps con <span class="mono">run:</span> (comandos)</h4><p>Cada <code class="k">run</code> es un comando de shell en el runner. Aquí corren los mismos scripts de <code class="k">package.json</code> que corres en local: <code class="k">lint:check</code> y <code class="k">docs:check</code> / <code class="k">skills:check</code> (además de <code class="k">types:check</code> y otros steps, omitidos por espacio). Los dos últimos son los gates de documentación: el PR queda rojo si hay links o paths muertos, o si rompe un contrato de documentación. <code class="k">playwright test --list</code> compila todos los specs sin ejecutarlos: valida que la suite ES ejecutable.</p><p>Regla del repo: el YAML nunca inventa comandos. Llama a los scripts de <code class="k">package.json</code>, así local y CI hacen exactamente lo mismo.</p><div class="hint">Rule #11 de AGENTS.md: los scripts viven en package.json</div></div>
         </div>
       </div>
@@ -1169,7 +1169,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
       <div class="yaml"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>.github/workflows/smoke.yml</b> · extracto: steps de setup (idéntico en sanity y regression)</span><span class="badge real">real</span></div>
 <pre class="sm">    <span class="key">steps</span>:
       - <span class="key">name</span>: <span class="str">Checkout Repo</span>
-        <span class="key">uses</span>: <span class="str">actions/checkout@v4</span>        <span class="c"># 1 · trae el código</span>
+        <span class="key">uses</span>: <span class="str">actions/checkout@v7</span>        <span class="c"># 1 · trae el código</span>
         <span class="key">with</span>:
           <span class="key">fetch-depth</span>: <span class="kw">1</span>
       - <span class="key">name</span>: <span class="str">Setup Bun</span>
@@ -1192,7 +1192,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
         <ul class="blist mt-s">
           <li><b>El orden importa.</b> Los steps de un job corren en secuencia, en la misma máquina. Instalar browsers antes de <code class="k">bun install</code> fallaría: el script <code class="k">pw:install</code> vive en <code class="k">node_modules</code>.</li>
           <li><b><code class="k">test:env:check</code> es el step 4 a propósito.</b> Falla en 2 segundos si falta un secret, antes de gastar 3 minutos instalando Chromium. Fallar temprano y con un mensaje claro es diseño, no suerte.</li>
-          <li><b><code class="k">@v4</code>, <code class="k">@v2</code>: versiones mayores.</b> Se actualizan solas dentro del mayor. Para acciones de terceros críticas, la doc de GitHub recomienda fijar el <b>SHA completo</b> del commit (40 caracteres) con un comentario <code class="k"># v4.2.2</code>: una etiqueta se puede mover; un SHA no.</li>
+          <li><b><code class="k">@v7</code>, <code class="k">@v2</code>: versiones mayores.</b> Se actualizan solas dentro del mayor. Para acciones de terceros críticas, la doc de GitHub recomienda fijar el <b>SHA completo</b> del commit (40 caracteres) con un comentario <code class="k"># v4.2.2</code>: una etiqueta se puede mover; un SHA no.</li>
           <li><b><code class="k">name</code> es para humanos.</b> Aparece en el log del run. «Install Playwright Browsers» se lee; «step 5» no.</li>
         </ul>
       </div>
@@ -1476,14 +1476,14 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
       <div class="yaml tight"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t"><b>.github/workflows/smoke.yml</b> · extracto: steps Upload … (sube) · Download Smoke Test Artifacts (baja)</span><span class="badge real">real</span></div>
 <pre class="sm">      - <span class="key">name</span>: <span class="str">Upload Allure Results</span>
         <span class="key">if</span>: always()
-        <span class="key">uses</span>: <span class="str">actions/upload-artifact@v4</span>
+        <span class="key">uses</span>: <span class="str">actions/upload-artifact@v7</span>
         <span class="key">with</span>:
           <span class="key">name</span>: smoke-allure-results     <span class="c"># único por run</span>
           <span class="key">path</span>: allure-results/
           <span class="key">retention-days</span>: <span class="kw">10</span>
       - <span class="key">name</span>: <span class="str">Upload Failure Evidence</span>
         <span class="key">if</span>: failure()
-        <span class="key">uses</span>: <span class="str">actions/upload-artifact@v4</span>
+        <span class="key">uses</span>: <span class="str">actions/upload-artifact@v7</span>
         <span class="key">with</span>:
           <span class="key">name</span>: smoke-failure-evidence
           <span class="key">path</span>: |                        <span class="c"># varias rutas</span>
@@ -1492,7 +1492,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
           <span class="key">retention-days</span>: <span class="kw">10</span>
 <span class="c">…</span>   <span class="c"># en el job allure-report (otro runner):</span>
       - <span class="key">name</span>: <span class="str">Download Smoke Test Artifacts</span>
-        <span class="key">uses</span>: <span class="str">actions/download-artifact@v4</span>
+        <span class="key">uses</span>: <span class="str">actions/download-artifact@v8</span>
         <span class="key">with</span>:
           <span class="key">name</span>: smoke-allure-results
           <span class="key">path</span>: smoke-artifacts/allure-results
@@ -2820,13 +2820,13 @@ $$('.ifsim').forEach(function(box){
     envs.split(',').forEach(function(e){ var E=e.trim().toUpperCase(); y += '  '+E+'_USER_EMAIL: ${{ secrets.'+E+'_USER_EMAIL }}\n  '+E+'_USER_PASSWORD: ${{ secrets.'+E+'_USER_PASSWORD }}\n'; });
     if(tms) y += '  TMS_PROVIDER: ${{ vars.TMS_PROVIDER || \'xray\' }}\n  AUTO_SYNC: ${{ secrets.AUTO_SYNC || \'false\' }}\n  XRAY_CLIENT_ID: ${{ secrets.XRAY_CLIENT_ID }}\n  XRAY_CLIENT_SECRET: ${{ secrets.XRAY_CLIENT_SECRET }}\n  STP_EXECUTION_KEY: ${{ github.event.inputs.execution_key }}\n';
     y += '\njobs:\n  '+upper+'Test:\n    name: '+upper+' Test Suite\n    runs-on: ubuntu-latest\n    timeout-minutes: 30\n    environment:\n      name: ${{ github.event.inputs.environment || \'staging\' }}\n\n    steps:\n';
-    y += '      - name: Checkout Repo\n        uses: actions/checkout@v4\n        with:\n          fetch-depth: 1\n\n      - name: Setup Bun\n        uses: oven-sh/setup-bun@v2\n        with:\n          bun-version: latest\n\n      - name: Install Dependencies\n        run: bun install\n\n      - name: Validate Test Environment Variables\n        run: bun run test:env:check\n\n      - name: Install Playwright Browsers\n        run: bun run pw:install\n\n';
+    y += '      - name: Checkout Repo\n        uses: actions/checkout@v7\n        with:\n          fetch-depth: 1\n\n      - name: Setup Bun\n        uses: oven-sh/setup-bun@v2\n        with:\n          bun-version: latest\n\n      - name: Install Dependencies\n        run: bun install\n\n      - name: Validate Test Environment Variables\n        run: bun run test:env:check\n\n      - name: Install Playwright Browsers\n        run: bun run pw:install\n\n';
     y += '      - name: Run '+upper+' Tests on ${{ env.TEST_ENV }}\n        run: '+script+'\n\n';
     if(tms) y += '      # Después de que Playwright salió: reports/atc_results.json lo escribe KataReporter.onEnd()\n      - name: Sync Results to TMS\n        if: always() && env.AUTO_SYNC == \'true\' && (env.TMS_PROVIDER != \'xray\' || env.STP_EXECUTION_KEY != \'\')\n        run: bun run test:sync\n\n';
-    y += '      - name: Upload Allure Results\n        if: always()\n        uses: actions/upload-artifact@v4\n        with:\n          name: '+suite+'-allure-results\n          path: allure-results/\n          retention-days: 10\n\n';
-    y += '      - name: Upload Failure Evidence\n        if: failure()\n        uses: actions/upload-artifact@v4\n        with:\n          name: '+suite+'-failure-evidence\n          path: |\n            test-results/\n            playwright-report/\n          retention-days: 10\n\n';
+    y += '      - name: Upload Allure Results\n        if: always()\n        uses: actions/upload-artifact@v7\n        with:\n          name: '+suite+'-allure-results\n          path: allure-results/\n          retention-days: 10\n\n';
+    y += '      - name: Upload Failure Evidence\n        if: failure()\n        uses: actions/upload-artifact@v7\n        with:\n          name: '+suite+'-failure-evidence\n          path: |\n            test-results/\n            playwright-report/\n          retention-days: 10\n\n';
     y += '      - name: Cleanup Workspace\n        if: always()\n        run: |\n          rm -rf node_modules allure-results test-results playwright-report\n';
-    if(allureJob) y += '\n  allure-report:\n    name: Build & Deploy Allure Report\n    needs: '+upper+'Test\n    runs-on: ubuntu-latest\n    if: ${{ always() && github.event.inputs.generate_allure != \'false\' }}\n    steps:\n      - uses: actions/checkout@v4\n      - name: Get Allure History\n        uses: actions/checkout@v4\n        with: { ref: gh-pages, path: gh-pages, fetch-depth: 1 }\n        continue-on-error: true\n      - uses: actions/download-artifact@v4\n        with: { name: '+suite+'-allure-results, path: '+suite+'-artifacts/allure-results }\n        continue-on-error: true\n      - uses: oven-sh/setup-bun@v2\n      - run: bun install\n      - name: Build & Publish Allure Report (Allure 3)\n        run: |\n          bun scripts/ci/publish-allure-pages.ts --env "${{ env.TEST_ENV }}" --suite '+suite+' \\\n            --run "${{ github.run_number }}" --results '+suite+'-artifacts/allure-results --pages gh-pages --keep 10\n';
+    if(allureJob) y += '\n  allure-report:\n    name: Build & Deploy Allure Report\n    needs: '+upper+'Test\n    runs-on: ubuntu-latest\n    if: ${{ always() && github.event.inputs.generate_allure != \'false\' }}\n    steps:\n      - uses: actions/checkout@v7\n      - name: Get Allure History\n        uses: actions/checkout@v7\n        with: { ref: gh-pages, path: gh-pages, fetch-depth: 1 }\n        continue-on-error: true\n      - uses: actions/download-artifact@v8\n        with: { name: '+suite+'-allure-results, path: '+suite+'-artifacts/allure-results }\n        continue-on-error: true\n      - uses: oven-sh/setup-bun@v2\n      - run: bun install\n      - name: Build & Publish Allure Report (Allure 3)\n        run: |\n          bun scripts/ci/publish-allure-pages.ts --env "${{ env.TEST_ENV }}" --suite '+suite+' \\\n            --run "${{ github.run_number }}" --results '+suite+'-artifacts/allure-results --pages gh-pages --keep 10\n';
     out.innerHTML = esc(y);
   }
   $$('#wb .tog').forEach(function(t){ t.addEventListener('click',function(){ t.classList.toggle('on'); render(); }); });
@@ -2856,7 +2856,7 @@ $$('.ifsim').forEach(function(box){
       p = '<b>Quién dispara:</b> la app, como un job más de SU pipeline. <b>Feedback:</b> nativo, el job aparece rojo o verde en el mismo run; <span class="mono">needs</span> es el gate. <b>Coste:</b> el repo QA debe declarar <span class="mono">workflow_call</span> con inputs/secrets, y <span class="mono">secrets: inherit</span> exige misma organización. La opción más limpia cuando ambos repos viven en la misma org.';
     } else {
       y += '# ---- REPO QA: EJEMPLO ILUSTRATIVO: reaccionar al deploy de la plataforma (Vercel, Render…) ----\n';
-      y += 'on:\n  deployment_status:      # lo emite la plataforma de hosting; no se dispara con state=inactive\n\njobs:\n  '+suite+':\n    if: github.event.deployment_status.state == \'success\'\n      && github.event.deployment.environment == \'staging\'\n    runs-on: ubuntu-latest\n    env:\n      TEST_ENV: staging\n      BASE_URL_OVERRIDE: ${{ github.event.deployment_status.environment_url }}\n    steps:\n      - uses: actions/checkout@v4\n      - uses: oven-sh/setup-bun@v2\n      - run: bun install && bun run pw:install\n      - run: '+({smoke:'bun run test:smoke',sanity:'bun run test:e2e',regression:'bun run test'}[suite])+'\n';
+      y += 'on:\n  deployment_status:      # lo emite la plataforma de hosting; no se dispara con state=inactive\n\njobs:\n  '+suite+':\n    if: github.event.deployment_status.state == \'success\'\n      && github.event.deployment.environment == \'staging\'\n    runs-on: ubuntu-latest\n    env:\n      TEST_ENV: staging\n      BASE_URL_OVERRIDE: ${{ github.event.deployment_status.environment_url }}\n    steps:\n      - uses: actions/checkout@v7\n      - uses: oven-sh/setup-bun@v2\n      - run: bun install && bun run pw:install\n      - run: '+({smoke:'bun run test:smoke',sanity:'bun run test:e2e',regression:'bun run test'}[suite])+'\n';
       y += '\n# El evento llega al repo donde ocurrió el deployment. Si la app y QA son repos distintos,\n# el deploy de la app NO produce deployment_status en este repo: habría que combinarlo con\n# repository_dispatch, o que el runtime de tests viva en el repo de la app.\n';
       p = '<b>Quién dispara:</b> la plataforma de hosting, sin tocar el pipeline de la app. <b>Payload útil:</b> <span class="mono">state</span> (success/failure/pending…) y <span class="mono">environment_url</span> (la URL efímera del deploy). <b>Límite:</b> el evento solo existe en el repo que recibió el deployment; en un repo QA separado no llega solo. <b>Gate:</b> '+(gate==='block'?'para bloquear producción habría que devolver un status al commit, como en repository_dispatch.':'informativo por naturaleza: corre DESPUÉS del deploy.');
     }

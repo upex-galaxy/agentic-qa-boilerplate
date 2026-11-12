@@ -243,7 +243,7 @@ Do NOT reach for retries — the doctrine is `retries: 0` (a retry hides the fla
 ### "Artifacts not uploaded"
 Add `if: always()`:
 ```yaml
-- uses: actions/upload-artifact@v4
+- uses: actions/upload-artifact@v7
   if: always()
 ```
 Without it, a failed test step aborts the job and skips artifact upload.
