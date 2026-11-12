@@ -66,8 +66,31 @@ function parseArgs(argv: string[]): Args {
   return out as Args;
 }
 
-function sh(cmd: string, args: string[], opts: { cwd?: string } = {}): string {
-  const res = spawnSync(cmd, args, { cwd: opts.cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] });
+/**
+ * Git config for an authenticated push, carried in the child's environment
+ * (`GIT_CONFIG_COUNT`, git >= 2.31): the token reaches git without being
+ * written to `.git/config`, a file or argv. Same header actions/checkout sets.
+ * Throws when the token is missing: a bootstrap without it can only fail at
+ * `git push`, so it fails here first, naming the variable.
+ */
+export function gitAuthEnv(token: string | undefined): NodeJS.ProcessEnv {
+  if (!token) {
+    throw new Error(
+      'GITHUB_TOKEN is not set: bootstrapping gh-pages needs it to push. '
+      + 'Set GITHUB_TOKEN to github.token in the step env, or rerun with --no-push.',
+    );
+  }
+  const basic = Buffer.from(`x-access-token:${token}`, 'utf8').toString('base64');
+  return {
+    GIT_CONFIG_COUNT: '1',
+    GIT_CONFIG_KEY_0: 'http.https://github.com/.extraheader',
+    GIT_CONFIG_VALUE_0: `AUTHORIZATION: basic ${basic}`,
+  };
+}
+
+function sh(cmd: string, args: string[], opts: { cwd?: string, env?: NodeJS.ProcessEnv } = {}): string {
+  const env = opts.env ? { ...process.env, ...opts.env } : undefined;
+  const res = spawnSync(cmd, args, { cwd: opts.cwd, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] });
   if (res.status !== 0) {
     throw new Error(`Command failed (${res.status}): ${cmd} ${args.join(' ')}`);
   }
@@ -94,6 +117,9 @@ function main(): void {
   const historyFile = path.join(suiteDir, 'history.jsonl');
   const localHistory = path.resolve(repoRoot, '.allure/history.jsonl');
   const reportDir = path.resolve(repoRoot, 'allure-report');
+  // Extra env for push/pull: set only when this run bootstraps gh-pages. A
+  // gh-pages tree made by actions/checkout pushes with its own credentials.
+  let pushEnv: NodeJS.ProcessEnv | undefined;
 
   if (!fs.existsSync(resultsDir) || fs.readdirSync(resultsDir).length === 0) {
     throw new Error(`No Allure results at ${resultsDir} — nothing to publish.`);
@@ -108,13 +134,12 @@ function main(): void {
     sh('git', ['init', '-b', 'gh-pages'], { cwd: pagesDir });
     const originUrl = sh('git', ['remote', 'get-url', 'origin'], { cwd: repoRoot }).trim();
     sh('git', ['remote', 'add', 'origin', originUrl], { cwd: pagesDir });
-    // Share the runner's auth (actions/checkout persisted credentials on the
-    // main checkout via http.extraheader in its local git config).
-    try {
-      const header = sh('git', ['config', '--local', '--get', 'http.https://github.com/.extraheader'], { cwd: repoRoot }).trim();
-      if (header) { sh('git', ['config', 'http.https://github.com/.extraheader', header], { cwd: pagesDir }); }
+    // A bootstrapped repo has no persisted credentials: actions/checkout v6+
+    // keeps them in a file under $RUNNER_TEMP that only its own checkouts
+    // include, so the token the workflow passes is handed to the push below.
+    if (args.push) {
+      pushEnv = gitAuthEnv(process.env.GITHUB_TOKEN);
     }
-    catch { /* fine — credentials may come from the environment instead */ }
     fs.writeFileSync(path.join(pagesDir, '.nojekyll'), '');
   }
 
@@ -176,14 +201,16 @@ function main(): void {
     return;
   }
   try {
-    sh('git', ['push', 'origin', 'gh-pages'], { cwd: pagesDir });
+    sh('git', ['push', 'origin', 'gh-pages'], { cwd: pagesDir, env: pushEnv });
   }
-  catch {
-    console.log('Push rejected — rebasing on remote gh-pages and retrying once…');
-    sh('git', ['pull', '--rebase', 'origin', 'gh-pages'], { cwd: pagesDir });
-    sh('git', ['push', 'origin', 'gh-pages'], { cwd: pagesDir });
+  catch (err) {
+    console.log(`Push rejected (${(err as Error).message}) — rebasing on remote gh-pages and retrying once…`);
+    sh('git', ['pull', '--rebase', 'origin', 'gh-pages'], { cwd: pagesDir, env: pushEnv });
+    sh('git', ['push', 'origin', 'gh-pages'], { cwd: pagesDir, env: pushEnv });
   }
   console.log(`Published ${args.env}/${args.suite} run ${args.run} (keeping last ${args.keep} runs).`);
 }
 
-main();
+if (import.meta.main) {
+  main();
+}
