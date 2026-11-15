@@ -1,6 +1,6 @@
 ---
 name: judgment-day
-description: "Trigger: judgment day, dual review, adversarial review, juzgar. Run blind dual review, fix confirmed issues, then re-judge."
+description: "Run a blind dual review with two independent judges, fix confirmed issues, then re-judge. Use when asked for judgment day, a dual or adversarial review, or a separate verifier of a change."
 license: Apache-2.0
 complementary_categories: [meta-skill]
 metadata:
