@@ -367,6 +367,15 @@ loader cell neither cites its loader in backticks nor says "user-invoked only".
 | `github-actions-docs` | xixu-me/skills | `/framework-development` and `/regression-testing` when EDITING or diagnosing `.github/workflows/**` (both name it; reading a workflow does not need it) |
 | `html-ppt` | lewislulu/html-ppt-skill | **user-invoked only.** `packages/decks/` is hand-authored; this is for a one-off deck outside that tree |
 | `mkd` | upex-galaxy/agentic-user-skills | any flow that reaches the decision threshold in `agentic-qa-core/references/decision-elicitation-doctrine.md` (a heavy decision: real tradeoffs, architecture, a larger change; small decisions are swept with the harness question tool instead) |
+| `humanizer` | upex-galaxy/agentic-user-skills | `/sprint-testing` and `/test-documentation`, for any report, comment or message a person will read; it replaces the humanizer already at user level |
+| `writing-for-agents` | upex-galaxy/agentic-user-skills | `/framework-development`, when the change writes or edits a skill or instruction file |
+| `grilling` | upex-galaxy/agentic-user-skills | `/shift-left-testing`, when a story or plan has open questions to settle one at a time |
+| `domain-modeling` | upex-galaxy/agentic-user-skills | `/project-discovery`, when the domain language of the app under test is being captured |
+| `to-questionnaire` | upex-galaxy/agentic-user-skills | `/shift-left-testing`, when several open questions go to the PO or Dev as one questionnaire |
+| `retro` | upex-galaxy/agentic-user-skills | `/sprint-conductor`, at the close of a sprint or fleet run |
+| `blast-radius` | upex-galaxy/agentic-user-skills | `/regression-testing`, when sizing which suites a change can affect |
+| `diagnosing-bugs` | upex-galaxy/agentic-user-skills | `/sprint-testing`, when a failure needs a root cause before a bug report |
+| `show-me-your-work` | upex-galaxy/agentic-user-skills | `/sprint-testing`, when a QA verdict must be backed by evidence the reader can check |
 | `orchestration.orchestrator_skills` | the orchestration binary | `/orca-orchestration`, ALONGSIDE it — the vendor owns the command grammar, the repo skill owns when and what |
 
 Plus the project-level community skills in the `PROJECT_LEVEL_SKILLS` array of `cli/install.ts`, installed into `.agents/skills/` (not committed). `skill-creator`, among them, is the builder of every skill this repo scaffolds: `/framework-development` loads it when the change IS a skill, and `project-context` mode `context-skill` loads it for a consumer's `<aspect>-context`; both scaffold from `agentic-qa-core/references/skill-scaffold.md`. See `cli/install.ts` `PROJECT_LEVEL_SKILLS` and `USER_LEVEL_SKILLS` arrays.

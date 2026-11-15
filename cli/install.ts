@@ -479,6 +479,24 @@ export const USER_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [
   // of items (decision / question / report / table) and the user answers in a
   // browser deck, pasting the Result JSON back into the chat (non-blocking).
   { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'mkd' },
+  // Prose pass for anything a person will read (reports, comments, messages); replaces the blader humanizer.
+  { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'humanizer' },
+  // Structure pass for instructions and skills an agent reads.
+  { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'writing-for-agents' },
+  // Relentless one-question-at-a-time interview used to settle a plan or requirement.
+  { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'grilling' },
+  // Builds and checks the shared domain language and its glossary.
+  { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'domain-modeling' },
+  // Turns open questions into a questionnaire a person can answer once.
+  { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'to-questionnaire' },
+  // End-of-work retrospective: what went well, what to change.
+  { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'retro' },
+  // Maps what a change can reach before it ships.
+  { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'blast-radius' },
+  // Root-cause method for a failing behaviour before any fix.
+  { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'diagnosing-bugs' },
+  // Asks an agent to prove a claim with evidence, not assertion.
+  { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'show-me-your-work' },
 ];
 
 // Matches Claude Code ${VAR} and ${VAR:-default} placeholders in .mcp.json.
