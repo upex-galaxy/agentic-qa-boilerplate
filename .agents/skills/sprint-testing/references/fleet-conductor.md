@@ -1,6 +1,6 @@
 # Fleet Conductor: sprint-wide QA with N executors
 
-Read this when sprint-wide mode runs with more than one executor. The scope by executors axis is defined in `SKILL.md` §"Executors — the second axis". The queue, the waves, the STP parity and the per-issue 4-dispatch cadence are unchanged and live in `sprint-orchestration.md`. This file covers what N>1 adds and nothing else.
+Read this when sprint-wide mode runs with more than one executor. The scope by executors axis is defined in `SKILL.md` §"Executors: the second axis". The queue, the waves, the STP parity and the per-issue 4-dispatch cadence are unchanged and live in `sprint-orchestration.md`. This file covers what N>1 adds and nothing else.
 
 > N=1 is untouched. Every rule here is additive: a sprint-wide run with one executor behaves as it did before this file existed. A rule below that would change N=1 behaviour is wrong.
 
@@ -87,7 +87,7 @@ A worker:
 - writes no `## Module Context (QA)` section of its Epic, neither a first draft nor an update. It stages what it learned about the module under a `## Module Learnings (candidate)` heading in its own `test-session-memory.md`, and the conductor publishes it (§10 "Module learnings");
 - mints no tokens and runs no bulk sync (§2);
 - reports once when done, plus `ask` / `escalation` as needed, and then stops. Periodic "still alive" messages wake the conductor for nothing and the worker contract prohibits them (`orca-orchestration/references/worker-contract.md`), overriding any generic launcher preamble;
-- takes its test-case format from the brief and never asks for it (`SKILL.md` §"Test-case format — ask once per batch"). The conductor asks the user once per batch, the worker applies the declared format to its whole batch, and a silent brief earns one `ask`, not a guess.
+- takes its test-case format from the brief and never asks for it (`SKILL.md` §"Test-case format: ask once per batch"). The conductor asks the user once per batch, the worker applies the declared format to its whole batch, and a silent brief earns one `ask`, not a guess.
 
 ---
 

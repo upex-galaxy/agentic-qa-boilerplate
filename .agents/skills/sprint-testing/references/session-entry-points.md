@@ -636,7 +636,7 @@ RISK ASSESSMENT
   If regresses: {user impact}
 ```
 
-When the reproduction steps are missing or the bug reproduces only some of the time, call the Skill tool with "diagnosing-bugs" to pin down the triggering condition (not to fix it). Not installed: narrow the repro inline (smallest data, one variable at a time) and say so. A bug still without a repro goes back to the reporter.
+When the reproduction steps are missing or the bug reproduces only some of the time, call the Skill tool with "diagnosing-bugs" to pin down the triggering condition (not to fix it, and with no instrumentation of product code). Not installed: narrow the repro inline (smallest data, one variable at a time) and say so. A bug still without a repro goes back to the reporter.
 
 #### Step 1.8 — Load Playwright CLI skill
 

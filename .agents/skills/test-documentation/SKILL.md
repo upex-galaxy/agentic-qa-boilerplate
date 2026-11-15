@@ -1,6 +1,6 @@
 ---
 name: test-documentation
-description: "Document already-validated tests in the TMS (Jira or Xray): analyze scenarios, score ROI, create TCs, ATP and ATR. Use when documenting test cases or deciding what to automate; repairing broken Story-ATS-ATP-ATR-TC traceability (repair-traceability mode); running the post-promotion merged pass once automated tests land on the production branch. Not for writing test code (test-automation) or running suites (regression-testing)."
+description: "Document already-validated tests in the TMS: ROI verdicts, TCs, ATP and ATR. Use when documenting test cases or deciding what to automate; repairing broken Story-ATS-ATP-ATR-TC traceability (repair-traceability); running the post-promotion merged pass. Not for test code (test-automation) or running suites (regression-testing)."
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode, pi]
 complementary_categories: [tms, issue-tracker]
@@ -258,7 +258,7 @@ After the scope is confirmed, write `.session/test-documentation/<scope>/plan.md
 - Approach: the per-phase dispatch table above.
 - Phase breakdown: Phase 1 Analyze, Phase 2 Prioritize, Phase 3 TC creation with its chunk count, Traceability, Final report.
 - Risks, and a verification checklist (all TCs created with traceability, both reports written, the Deferred list mirrored to Jira).
-- Cross-references: `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/test-cases/*.md` per-TC files, `.context/reports/COVERAGE-MATRIX-<scope>.md` and `.context/reports/PRIORITIZATION-<scope>.md` (filenames per §"Reports — fixed filenames").
+- Cross-references: `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/test-cases/*.md` per-TC files, `.context/reports/COVERAGE-MATRIX-<scope>.md` and `.context/reports/PRIORITIZATION-<scope>.md` (filenames per §"Reports: fixed filenames").
 
 Then append `## Phase -1 — Session resume check — <ts>` with `status: completed` and `next: Phase 0 — Resolve TMS modality` to `progress.md`.
 
@@ -406,7 +406,7 @@ Every scenario ends in exactly one of these buckets. There is no fourth.
 |---------|------------|--------------------|------------------|
 | **Candidate** | ROI > 3.0, OR (ROI 1.5-3.0 AND prior bug), OR critical happy path | Feeds `test-automation` skill | Draft -> In Design -> READY -> In Review -> Candidate |
 | **Manual** | ROI 0.5-1.5 AND not automatable (human judgment, visual inspection), OR explicitly manual-only | Terminal: manual regression suite | Draft -> In Design -> READY -> MANUAL |
-| **Deferred** | ROI < 0.5, OR failed Phase-0 filter, OR one-time validation, OR **it matched neither row above** (Deferred is the default bucket: ROI under 3.0 with no prior bug and no critical-path justification lands here) | Terminal: not in regression. Can be revisited if system changes | **jira-native**: do not create a TC in the TMS. Document as Deferred in `.context/reports/PRIORITIZATION-<scope>.md` AND in the mirrored Jira comment (§"Reports — fixed filenames"; the local file is `[LOCAL]`, the comment is the durable record). **jira-xray**: the sprint `Test` (created in `/sprint-testing` Stage 1) is **not promoted** to the Regression Test Plan (RTP); it stays as a sprint execution artifact, not deleted. |
+| **Deferred** | ROI < 0.5, OR failed Phase-0 filter, OR one-time validation, OR **it matched neither row above** (Deferred is the default bucket: ROI under 3.0 with no prior bug and no critical-path justification lands here) | Terminal: not in regression. Can be revisited if system changes | **jira-native**: do not create a TC in the TMS. Document as Deferred in `.context/reports/PRIORITIZATION-<scope>.md` AND in the mirrored Jira comment (§"Reports: fixed filenames"; the local file is `[LOCAL]`, the comment is the durable record). **jira-xray**: the sprint `Test` (created in `/sprint-testing` Stage 1) is **not promoted** to the Regression Test Plan (RTP); it stays as a sprint execution artifact, not deleted. |
 
 > **Band authority**: the three outcomes above collapse the 5-band table in `references/tms-conventions.md` §9 ("ROI decision thresholds (strict)"), which is the authority on band boundaries. It resolves the middle bands explicitly: `1.5-3.0` is "Case by case: prior bug? critical flow? **If no, defer**", and `0.5-1.5` is "Probably defer: include only if prior bug". Read it whenever a score falls between `0.5` and `3.0`.
 

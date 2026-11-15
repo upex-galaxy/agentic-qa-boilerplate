@@ -186,7 +186,7 @@ it, `agentic-qa-core/references/decision-protocol.md` decides what reaches a per
 | Waiting point | A supervised worker | A routine |
 |---|---|---|
 | resume, restart or abort offer (0.1) | the launching conductor answers | resume when live workers exist, since resuming loses nothing; otherwise start fresh and say so |
-| the sprint or the cap (rule 3) | the launcher's brief names them | the brief names them; without one, take the CURRENT board and `orchestration.max_workers`, and report the assumption |
+| the sprint or the cap (rule 3) | the launcher's brief names them | the brief names them; without one, take the CURRENT board and `orchestration.max_workers`, and report the assumption; if the board and the tracker disagree or no board exists, launch nothing and report |
 | a failed sibling fetch, a failed credential, a fixture gap | the launcher is told in the report | hold the affected tickets as `held`, record the blocker on the board (`needs-you`), launch nothing that depends on it |
 | a message to a developer | the launcher relays | draft it on the board, never send |
 | a subagent failure (retry, skip or abort) | the launcher decides | skip that ticket, record why, report; never auto-fix |

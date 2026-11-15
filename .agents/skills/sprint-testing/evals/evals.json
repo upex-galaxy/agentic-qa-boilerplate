@@ -26,7 +26,7 @@
     },
     {
       "name": "should-trigger-spanish-bug-retest",
-      "prompt": "El dev dice que ya arregló el bug PROJ-445, ¿puedes volver a probarlo y verificar el fix?",
+      "prompt": "El dev dice que ya arregló el bug PROJ-445, puedes volver a probarlo y verificar el fix?",
       "expected_behavior": "Activates sprint-testing in single-issue / bug mode by meaning: Session Start, triage (veto table, then risk score), Bug Analysis, ATP + ATR, fix verification. Replies in Spanish.",
       "category": "positive"
     },
