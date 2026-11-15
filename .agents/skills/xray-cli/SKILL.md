@@ -1,6 +1,6 @@
 ---
 name: xray-cli
-description: "Run Xray Cloud test management through the `bun xray` CLI. Use when creating or listing tests, executions, plans or sets; importing JUnit, Cucumber or Xray JSON results; updating run status or linking defects; backing up or restoring a project; verifying coverage traceability; authenticating to Xray. Not for documenting test cases or ROI (test-documentation)."
+description: "Run Xray Cloud test management through the `bun xray` CLI. Use when creating or listing tests, executions, plans or sets; importing JUnit, Cucumber or Xray JSON results; updating run status or linking defects; backing up or restoring a project; syncing or verifying coverage traceability; authenticating to Xray. Not for documenting test cases or ROI (test-documentation)."
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode, pi]
 allowed-tools: Bash(bun xray:*)
@@ -35,7 +35,7 @@ This skill owns the literal `bun xray` syntax for Xray Cloud. Workflow skills de
 - When moving between sites, restore in sync-by-key mode (GraphQL ids are re-assigned per site, keys are not), re-authenticate between export and restore because auth holds one site at a time, and finish with the Jira instance-migration flow: field ids are reassigned and an old id silently resolves to a different field.
 - Push no run results for TCs the ROI verdict marked terminal-Manual (`to_be_automated=no`). It creates audit noise and breaks the Candidate / Manual / Deferred reporting.
 - When Xray credentials are missing or broken, stop per Critical Rule #10: name `XRAY_CLIENT_ID` / `XRAY_CLIENT_SECRET`, point at `.env`, and ask for a session restart. Nothing reaches the Xray GraphQL layer without them.
-- Three steps need a person's confirmation: the `link delete` itself, applying an import or restore after its dry-run, and the credential fix above. With a person present, ask. With a supervised worker, the conductor holds the gate. In a routine with nobody, the delegating brief is the approval when it names the action; otherwise do the read-only and dry-run work, stop before the delete, import or restore, and report. `agentic-qa-core/references/decision-protocol.md` has the full rule.
+- Two writes are irreversible and need an approval source: applying a `backup restore` after its dry-run, and the credential fix (Critical Rule #10). With a person present, ask. With a supervised worker, the conductor holds the gate. In a routine with nobody, the delegating brief is the approval when it names the restore; otherwise do the dry-run, stop and report (`agentic-qa-core/references/decision-protocol.md`). Importing results onto an existing Execution, after the dry-run and the key check, is the stage's normal write and needs no extra confirmation. `link delete` runs with `--yes` after its dry-run, inside the repair the trace call justified.
 
 **Read full SKILL.md when**: composing a specific command, wiring the canonical end-to-end Story flow, running backup/restore or a cross-site migration, or enriching the synced PBI cache.
 
@@ -54,8 +54,8 @@ bun xray auth login --client-id ABC123 --client-secret xyz789
 bun xray test list --project DEMO
 # Create a test execution
 bun xray exec create --project DEMO --summary "Sprint 1 Tests"
-# Import JUnit results
-bun xray import junit --file results.xml --project DEMO
+# Import results onto an existing Execution (build the payload with `bun run xray:payload`)
+bun xray import xray --file xray-results.json --execution DEMO-200
 ```
 
 ## Issue references: Jira keys vs numeric IDs
@@ -558,9 +558,9 @@ candidate is reported as ambiguity rather than dropped.
 ### Import Results
 
 ```bash
-# Import JUnit XML
+# Import JUnit XML (refused when a testcase has no test_key)
 bun xray import junit --file results.xml
-bun xray import junit --file results.xml --project DEMO
+bun xray import junit --file results.xml --project DEMO   # refused without test keys
 bun xray import junit --file results.xml --plan DEMO-100
 bun xray import junit --file results.xml --execution DEMO-200
 

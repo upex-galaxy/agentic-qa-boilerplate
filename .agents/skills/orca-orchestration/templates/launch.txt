@@ -25,7 +25,7 @@
 #      it. The worker's NAME is <label>--<handle> (references/session-identity.md §2b): the identity
 #      hook composes it on Claude Code from the token plus ORCA_TERMINAL_HANDLE, and the workflow
 #      skill detects fleet mode from the token. A launch without the token leaves the tab titled
-#      "worker task ..." and the session with a generated title. The prompt also carries the
+#      "worker-<task id>" and the session with a generated title. The prompt also carries the
 #      continuation sentence: run every stage without returning to the prompt until worker_done is
 #      sent. Both paths, every harness.
 #   9. An environment prefix is at most a redundant signal on this path and never reaches a native
@@ -60,10 +60,10 @@ claude --model <full-model-id> --effort {{DEFAULT_EFFORT}} --dangerously-skip-pe
 #   4. send the prompt:  [ORCHESTRATION_TOOL] terminal send, the text between the quotes above
 #   5. name it:          the worker renames its own tab to <label>--<handle> as its first action; the
 #                        conductor re-issues [ORCHESTRATION_TOOL] terminal rename with the same title
-#                        in every sweep; on Codex and OpenCode v2.2 also terminal send the rename
+#                        in every sweep; on Codex and an OpenCode whose `/rename` takes an argument also terminal send the rename
 #                        verb ('/rename <label>--<handle>')
 #   6. read it back:     read the tab title and the session name off the screen. A tab still reading
-#                        "worker task ..." or a generated session title means the token was missing:
+#                        "worker-<task id>" or a generated session title means the token was missing:
 #                        rename now and fix the line before the next launch.
 
 # OpenCode (v1.19.5 / v2.2.0; opencode.ai/docs/cli and /docs/permissions, read 2026-10-28): -m/--model,

@@ -65,7 +65,7 @@ Render this as written, substituting the placeholders:
 | `{base}`        | PR base branch (resolved from the strategy, see the table below).                                                                                                                                                             |
 | `{strategy}`    | Active strategy slug (`solo-main`, `main-integration`, etc.). Helps reviewers understand the merge target.                                                                                                                 |
 | `<<EVIDENCE>>`  | Pointer to `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/evidence/` when applicable (screenshots, traces, logs). For backend/CLI PRs without visual evidence, leave the placeholder so the author can fill it in or delete it. |
-| `<<RISK>>`      | Short risk assessment: blast radius, affected modules, rollback plan. One paragraph.                                                                                                                                       |
+| `<<RISK>>`      | The merge danger, two lines (`**Door:**` one-way or two-way, `**Blast radius:**` in a word or two), each with optional detail; see Merge danger below.                                                                                                                                       |
 
 A padded section invites skim-reads, so write each one at the size its content needs.
 

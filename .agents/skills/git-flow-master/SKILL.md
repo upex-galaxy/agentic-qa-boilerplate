@@ -23,7 +23,8 @@ It does not assume one branching model. The project may run on `main` only, on `
 - Resolve the branching strategy from the `git_strategy:` block in `.agents/project.yaml` first, then layout heuristics, then by asking; never pick one silently. Persist the resolution back into that block, not into a separate file and not as policy prose in `AGENTS.md`. The yaml snippets in `references/` (per-strategy field rules, policy examples) are illustrations: a claim about THIS repo's strategy, branches or policy cites `.agents/project.yaml` (or `git:policy verify` output) read in the same turn.
 - When `git_strategy.meta.strategy_source` is `chosen`, the strategy is confirmed, whatever `project.project_name` holds, and there is no offer. Otherwise, when `git_strategy.strategy` is set but `project.project_name` is null, or `meta.strategy_source` is `inherited` (or absent) on a named project, the strategy came from the template and nobody chose it. Treat it as unconfirmed and offer Strategy Setup once per session. Never auto-run it, and on a "no" proceed under the inherited strategy.
 - Consult `git_strategy.policy.direct_push_to_protected` before any direct push to a protected branch. `allowed` is standing authorization (asking anyway collapses it into `confirm`), `confirm` asks every time, `forbidden` refuses and routes through a PR. A missing or null block behaves as `confirm`.
-- Never force-push, `--force-with-lease`, `--no-verify`, amend or rebase a pushed commit, or otherwise rewrite pushed history, unless the user explicitly authorizes it AND the branch is unshared.
+- Never amend, rebase or otherwise rewrite a pushed commit (Critical Rule #6, an invariant: no authorization relaxes it). Fix forward with a new commit.
+- Never force-push, `--force-with-lease` or `--no-verify` unless the user explicitly authorizes it AND the branch is unshared.
 - Never run a repo-wide discard (`git restore .`, `git checkout -- .`, `git reset --hard`, untargeted `git stash`, `git clean -f`): concurrent sessions may share this working tree. Discard only explicit paths this session modified, and when ownership is unclear, stop and ask.
 - Never `git add -A` or `git add .`. List explicit paths, so a secret or another session's work cannot ride along.
 - One commit has one responsibility, in conventional format (`{type}({ISSUE-KEY}): {description}`). Commit messages, branch names and PR bodies are English and carry no AI attribution.
@@ -503,7 +504,7 @@ Compact Rules above carry the detail. These are the numbered rules other files c
 2. One commit, one responsibility (3.2).
 3. No AI attribution in commits or PR bodies (Critical Reminder #3 in `AGENTS.md`). The two forensic trailers of 3.2 (`Worktree:` / `Session:`) always close a commit message: they name a working tree and a session, never a tool, so they are not attribution and not optional.
 4. Confirm before pushing to any protected branch. Strategy-driven; see 3.3 (Critical Reminder #5 in `AGENTS.md`).
-5. Never force-push, never rewrite pushed history, never `--no-verify` unless the user explicitly authorises it AND the branch is unshared (Critical Reminder #6 in `AGENTS.md`).
+5. Never rewrite pushed history (Critical Rule #6, an invariant). Never force-push or `--no-verify` unless the user explicitly authorises it AND the branch is unshared.
 6. Explicit paths only: no `git add -A` or `git add .`.
 7. Show proposed commits, branches and PR body and wait for OK. The user can accept, modify or reject any item.
 8. `gh` is the PR transport. If it is missing or unauthenticated (`gh auth status` fails), stop and surface the blocker; do not pretend a PR was opened.
@@ -533,7 +534,7 @@ Gotchas: a fresh worktree contains only the tracked files of its base, so untrac
 - [ ] The operation followed the runbook for that strategy.
 - [ ] Each commit is atomic, conventional, free of AI attribution, and ends with the two forensic trailers (values from the `AGENT IDENTITY:` line, or `unknown`).
 - [ ] No `git add -A`, `--force`, `--no-verify` or global discard ran unless explicitly authorised; any discard targeted explicit session-owned paths.
-- [ ] PR (if created): title under 70 characters, body with Summary / Changes / Test Plan / Traceability / Risk, base branch matches the strategy, URL returned, no merge attempted.
+- [ ] PR (if created): title under 70 characters, body with Summary / Changes / Test Plan / Traceability / Evidence / Merge danger, base branch matches the strategy, URL returned, no merge attempted.
 - [ ] Conflicts (if any) are resolved and verified (`git status` clean, `git log` sensible).
 - [ ] If Strategy Setup ran: branches were proposed and not auto-created, ff-syncs were true fast-forwards only (a diverged pair went to conflict resolution), and the `git_strategy:` block in `.agents/project.yaml` was written in place with the fields that apply (strategy / branches / decisions / policy / protected / branch_prefixes / description / meta), preserving the rest of the file.
 

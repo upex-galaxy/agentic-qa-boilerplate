@@ -36,6 +36,18 @@
       "prompt": "Generate the project test guide and business data map for this codebase.",
       "expected_behavior": "Does NOT activate xray-cli. Should route to project-discovery, which owns context-file generation. No Xray commands are involved.",
       "category": "negative"
+    },
+    {
+      "name": "should-trigger-import-execution-spanish",
+      "prompt": "Importá los resultados de la última corrida en la ejecución DEMO-200 de Xray.",
+      "expected_behavior": "Activates xray-cli. Builds the Xray JSON payload and imports it onto the existing Execution DEMO-200 after a dry-run.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-backup-spanish",
+      "prompt": "Hacé un backup del proyecto de Xray antes de migrarlo al sitio nuevo.",
+      "expected_behavior": "Activates xray-cli. Runs `bun xray backup` with an explicit `--limit` and points to the migration runbook.",
+      "category": "positive"
     }
   ]
 }

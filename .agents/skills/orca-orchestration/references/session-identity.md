@@ -108,10 +108,10 @@ subagent hand-back), neither launches the session nor names it.
   from the same token and leaves alone a name it did not set (`/name`, `--name`). Do not rename a Pi
   worker whose prompt carried the token, and do not pass `-n` on its launch line. After a resume it
   needs the rename verb too (`/name <label>--<new handle>`, §5).
-- Codex and OpenCode v2.2 have no hook that can set a name. The conductor drives their TUI with the
+- Codex and an OpenCode whose `/rename` takes an argument have no hook that can set a name. The conductor drives their TUI with the
   harness's rename verb (`/rename <label>--<handle>`) once the screen shows the worker ready
   (`references/coordinator-playbook.md` §1 step 5), then reads it back on the status bar.
-- On OpenCode v1 (`/rename` opens a dialog and takes no argument), or any harness that cannot be
+- On an OpenCode whose `/rename` opens a dialog and takes no argument, or any harness that cannot be
   renamed, the roster maps name to handle, the worker's `Session:` trailer carries the roster name,
   and the conductor says so once in the run report.
 - A worker never renames its own session. `/rename` is user input on every harness, not a command a
@@ -140,7 +140,7 @@ One rule, applied in order, so two sessions never produce two label formats:
 | nothing is resolvable | `unknown` |
 
 A fleet worker's composed `<label>--<handle>` is a hook name (`nameSource == hook`, first row), so it
-is the label as-is, handle included. A conductor-typed rename on Codex, OpenCode v2.2 or Pi is a
+is the label as-is, handle included. A conductor-typed rename on Codex, an OpenCode whose `/rename` takes an argument or Pi is a
 `user` name and lands in the same row.
 
 The name beats the id because the name persists and the id does not. Resuming a session can mint a

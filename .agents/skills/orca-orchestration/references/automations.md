@@ -121,13 +121,13 @@ failure is classified against what was deployed, not against what the tracker sa
 An unattended run can do real damage by being confidently wrong, so everything it produces passes
 three brakes in order, and a run that cannot pass one reports instead of pushing on:
 
-1. **Checks.** The worker's output passes the repo's own gates (tests, types, lint, as
+1. Checks: the worker's output passes the repo's own gates (tests, types, lint, as
    `package.json` names them) before the run counts it as done. A failing check is a result to
    report, not something the dispatcher repairs.
-2. **Automatic review.** A reviewer worker that did not write the output reads it against the brief
+2. Automatic review: a reviewer worker that did not write the output reads it against the brief
    and returns findings. The author never reviews its own work, and the dispatcher produces nothing,
    so the review is one more worker under the same cap (§2.2).
-3. **Human review.** A person reads the result later. The routine never waits for that review and
+3. Human review: a person reads the result later. The routine never waits for that review and
    never blocks on it: it leaves the output where the team reads it (a report, a draft, an open PR or
    a card comment) and takes no outward or irreversible action that depends on the review having
    happened. Merging, publishing, and Jira or message writes that need a person's judgment stay

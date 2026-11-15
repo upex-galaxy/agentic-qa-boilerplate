@@ -119,9 +119,9 @@ and no `<` or `>`, and `ROUTE-SCOPE:` is the last sentence on its line.
    `references/worker-contract.md` §Session naming). On the supervised path there is no name flag:
    on Claude Code the identity hook, and on Pi the adapter, composes the session name from the
    prompt's `/<workflow-skill> <label> fleet worker` opening plus `ORCA_TERMINAL_HANDLE`, and on
-   Codex and OpenCode v2.2 the conductor types the rename verb. The brief never asks the worker to
+   Codex and an OpenCode whose `/rename` takes an argument the conductor types the rename verb. The brief never asks the worker to
    rename its own SESSION, because `/rename` is user input and a model cannot run it. Where the
-   harness cannot be renamed (OpenCode v1), the brief gives the roster name the trailer carries.
+   harness cannot be renamed (an OpenCode whose `/rename` takes no argument), the brief gives the roster name the trailer carries.
    Detail: `references/session-identity.md` §2b.
 
 8. **Trailer reminder.** The two forensic trailers as the last lines of every commit, with the
@@ -133,7 +133,7 @@ and no `<` or `>`, and `ROUTE-SCOPE:` is the last sentence on its line.
 ## 4 · Skeleton
 
 ```
-# W-<label> — <one-line scope>
+# W-<label>: <one-line scope>
 
 Read <ABS>/.session/orchestration/<slug>/COMMON.md first, then this file.
 

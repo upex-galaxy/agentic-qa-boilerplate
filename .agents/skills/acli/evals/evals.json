@@ -47,6 +47,30 @@
       "prompt": "Seed the backlog with 30 stories from the PRD — refine ACs, INVEST check, ready-for-dev checklist.",
       "expected_behavior": "Does NOT activate acli skill as the entry point. Should route to a product-management / backlog-grooming workflow skill because this is backlog seeding + AC refinement, not raw CLI work. That workflow may delegate the bulk-create step to acli (`workitem create-bulk --from-csv`), but the orchestration, INVEST check, and Gherkin authoring belong to the workflow skill.",
       "category": "negative"
+    },
+    {
+      "name": "should-trigger-search-bugs-spanish",
+      "prompt": "Desde la terminal, buscá todos los bugs abiertos de {{PROJECT_KEY}} y exportalos a CSV.",
+      "expected_behavior": "Activates acli skill. Uses `acli jira workitem search` with a JQL for open bugs and a CSV output.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-view-acs-spanish",
+      "prompt": "Necesito ver los criterios de aceptación de {{PROJECT_KEY}}-123 sin abrir Jira, desde la consola.",
+      "expected_behavior": "Activates acli skill. Reads the work item with `acli jira workitem view` and reports the acceptance criteria.",
+      "category": "positive"
+    },
+    {
+      "name": "should-not-trigger-atlassian-mcp",
+      "prompt": "Configurá el servidor MCP de Atlassian en .mcp.json.",
+      "expected_behavior": "Does not activate acli. The Atlassian MCP is a different integration.",
+      "category": "negative"
+    },
+    {
+      "name": "should-not-trigger-xray-documentation",
+      "prompt": "Documentá en Xray los casos de prueba de {{PROJECT_KEY}}-120 con su ROI.",
+      "expected_behavior": "Does not activate acli. Test case documentation belongs to test-documentation and xray-cli.",
+      "category": "negative"
     }
   ]
 }

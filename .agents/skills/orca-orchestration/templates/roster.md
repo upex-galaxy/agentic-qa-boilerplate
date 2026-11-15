@@ -12,12 +12,12 @@
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | W1 | <KEY> | `<label>--term_…` | `task_…` | `dispatch_…` | `term_…` | primary | claude | <full model id> | bypass | `<harness resume command>` | <out tok / ctx at close> | in-flight |
 | W2 | <KEY> | `<label>--term_…` | `task_…` | - | `term_…` | <wt name> | claude | <full model id> | bypass | `<harness resume command>` | - | waiting on claim |
-| W3 | <KEY> | `<label>--term_…` (roster only: OpenCode v1) | `task_…` | `dispatch_…` | `term_…` | <wt name> | opencode | <provider/model> | bypass | `<harness resume command>` | <out tok / ctx> | done, released |
+| W3 | <KEY> | `<label>--term_…` (roster only: an OpenCode whose `/rename` takes no argument) | `task_…` | `dispatch_…` | `term_…` | <wt name> | opencode | <provider/model> | bypass | `<harness resume command>` | <out tok / ctx> | done, released |
 
 `Name` is the worker's one name, `<label>--<handle>`. `<label>` is `[<KEY>-]<slug>`, the token the
 worker's prompt opens with; `<handle>` is the `Terminal` column, read from `worker-list`
 `agentTerminalHandle` after a native launch (gotcha G78). It is the session name, the tab title and
-the `Session:` trailer. Where the harness cannot be renamed (OpenCode v1), this row is the only place
+the `Session:` trailer. Where the harness cannot be renamed (an OpenCode whose `/rename` takes no argument), this row is the only place
 the name exists: mark it `(roster only)`, the worker's trailer carries it, and the run report says so
 once. `Label` is the owner's short alias (W1). `Mode` is the permission mode verified on the worker's
 screen or argv at readiness, against `orchestration.permission_modes.worker`.

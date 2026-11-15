@@ -1,6 +1,6 @@
 ---
 name: acli
-description: "Atlassian CLI (`acli`) for Jira, Confluence and org admin from a terminal or CI. Use when creating, editing, transitioning, commenting on, linking or bulk-changing Jira work items; managing projects, boards, sprints or filters; managing Confluence spaces or blogs; activating org users; logging in with an API token; publishing rich text to Jira. Not for the Atlassian MCP, Bitbucket or the Appfire acli."
+description: "Atlassian CLI (`acli`) for Jira, Confluence and org admin from a terminal. Use when creating, viewing, searching, editing, transitioning, commenting on, linking or bulk-changing Jira work items; managing projects, boards, sprints, filters or field definitions; managing Confluence spaces, blogs or pages; activating org users; logging in or switching sites; publishing rich text to Jira. Not for the Atlassian MCP, Bitbucket or the Appfire acli."
 license: MIT
 compatibility: [claude-code, cursor, codex, opencode, pi]
 allowed-tools: Bash(acli:*)
@@ -19,12 +19,12 @@ This skill covers driving `acli` for any intent: one-off commands, batch mutatio
 
 - Pass `--paginate` (or an explicit `--limit`) on any search whose result is counted, iterated or decided on. Pagination is opt-in and truncation is silent: there is no warning.
 - Exit 0 does not prove a subcommand exists. An unknown subcommand falls back to the parent help and exits 0, so check that the help body actually changed. Every multi-word flag is kebab-case; do not invent flags.
-- Verify auth status before any bulk mutation (`acli jira auth status`). Auth is per product (jira, confluence, admin and global are separate sessions), and a silent expiry leaves the batch half-applied with no clean rollback (T4).
+- Verify auth status before any bulk mutation (`acli jira auth status`). Auth is per product (jira, confluence, admin and global are separate sessions), and a silent expiry leaves the batch half-applied with no clean rollback (anti-pattern T4).
 - Pass the non-interactive confirmation flag on every mutating command in CI, or the command hangs waiting on stdin.
-- Author rich text in Markdown, convert it with `scripts/md-to-adf.ts` and pass the ADF (T1). The CLI never converts Markdown and stores the literal characters, and hand-written ADF trips the combined-marks bug.
+- Author rich text in Markdown, convert it with `scripts/md-to-adf.ts` and pass the ADF (anti-pattern T1). The CLI never converts Markdown and stores the literal characters, and hand-written ADF trips the combined-marks bug.
 - Let the converter's validation gate run on every ADF document before publishing, and read the field back after writing. The gate catches node-level errors; only the read-back catches Jira's silent server-side coercion.
 - Measure the serialized ADF of every rich-text value (description, comment, rich-text custom field) before writing it: `jq -c . <file>.adf.json | wc -m` must stay at or under 30000 (T5). Jira's cap counts the ADF JSON, which is several times longer than the Markdown. Over budget means stop and propose which sections move where; truncating, or splitting one value across two fields or comments, is off the table. Detail: "Size budget" under "Publishing rich text".
-- `workitem edit` takes no custom-field values. It hard-rejects every shape with exit 1, so editing a custom field on an existing item works only through the REST PUT path (T3).
+- `workitem edit` takes no custom-field values. It hard-rejects every shape with exit 1, so editing a custom field on an existing item works only through the REST PUT path (anti-pattern T3).
 - `workitem edit` does not set COMPONENTS either: there is no flag and no `--from-json` key, so the edit succeeds and leaves components untouched without saying so. Set them at create time, or change them through the same REST PUT path.
 - The vendor's own `--help` examples are not safe to copy. Several omit the subcommand the flags live on (`workitem comment --key …` instead of `workitem comment create --key …`) and fail with `unknown flag`. The forms in this skill's references are the tested ones.
 - Resolve a `customfield_NNNNN` id through the host project's slug catalog instead of hardcoding it in a script or generated output (T2). Ids differ per workspace; slugs travel.
@@ -51,11 +51,11 @@ This body covers what applies to almost every session. `references/` holds the d
 
 ## Composable skills
 
-`acli` is itself the canonical `issue-tracker` skill, so the category usually has no overlapping T3 skills. To resolve it anyway:
+`acli` is itself the canonical `issue-tracker` skill, so the category usually has no overlapping tier-T3 skills. To resolve it anyway:
 
 1. Read `complementary_categories` from this frontmatter (`issue-tracker`).
 2. Scan the skills actually installed (the host repo's strategy doc §3.1): the session's skill list plus every `.agents/skills/*/SKILL.md` on disk, git-ignored community folders included. `.agents/skills/REGISTRY.md` lists committed skills only, so it is not that scan.
-3. Apply the threshold rule from the host repo's skill-composition strategy doc (T1 and T3 silent; T4 silent only when a doctrine names it for this moment, otherwise ask).
+3. Apply the threshold rule from the host repo's skill-composition strategy doc (tier-T1 and tier-T3 silent; tier-T4 silent only when a doctrine names it for this moment, otherwise ask).
 
 If the catalog is unavailable, skip the scan and log `skill_resolution: "fallback-inline"` plus `missing: [<categories>]`, per the strategy doc's composability fallback contract. Which workflow skills load `acli` is in `<repo-core>/references/acli-integration.md` §Composability.
 
@@ -522,11 +522,11 @@ Each of these needs REST or MCP (confirm against the installed binary with `acli
 
 ## With nobody at the keyboard
 
-Where this skill stops for a person: the over-budget proposal in "Size budget", the T4 composable-skill question, an `acli` auth that cannot be fixed (which switches to the MCP or REST path), and the check on link direction.
+Where this skill stops for a person: the over-budget proposal in "Size budget", the tier-T4 composable-skill question, and an `acli` auth that cannot be fixed (which switches to the MCP or REST path).
 
 | Case | What happens |
 |---|---|
-| A person is present | Unchanged: they decide which sections move, answer the T4 question, and fix the login. |
+| A person is present | Unchanged: they decide which sections move, answer the tier-T4 question, and fix the login. |
 | A supervised worker | The conductor or launcher holds the decision and answers through the dispatch channel. |
 | A routine with nobody | The delegating brief is the approval source when it names the decision. Without one, do the reversible work (author, convert, measure, read back), make no Jira write that depends on the open decision, and report the proposal with its sizes. An unfixable auth is reported with the exact variable name; the link direction check is automatic, so a backwards link is deleted and recreated. |
 

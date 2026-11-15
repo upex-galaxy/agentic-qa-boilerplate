@@ -105,6 +105,20 @@
       "expected_output": "Skill reads git_strategy.policy.direct_push_to_protected from the git_strategy block in .agents/project.yaml. For github-flow the default is 'forbidden', so the skill REFUSES the direct push to the protected branch main and redirects to the PR flow (3.4) — propose a work branch + gh pr create. Because git_strategy.policy.admin_bypass is false, it does NOT offer an admin bypass regardless of role. No --force, no --no-verify, no AI attribution. (Had policy been allowed it would push after the normal confirm; had it been confirm it would always ask first.)",
       "should_trigger": true,
       "files": []
+    },
+    {
+      "id": 16,
+      "prompt": "commiteá estos cambios y subilos a la rama",
+      "expected_output": "Skill reads repo state, proposes atomic conventional commits with explicit paths and the forensic trailers, and pushes per the recorded push policy.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 17,
+      "prompt": "me rechazó el push, qué hago",
+      "expected_output": "Skill diagnoses the rejection (non-fast-forward, hook or protection), classifies it, and offers options ranked by safety without a force flag.",
+      "should_trigger": true,
+      "files": []
     }
   ]
 }

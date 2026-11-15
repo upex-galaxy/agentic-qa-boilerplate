@@ -36,7 +36,7 @@ native one.
 Naming the worker is part of the launch. The task spec opens with the token
 `/<workflow-skill> <label> fleet worker` (step 2), the conductor renames the tab as soon as the
 handle exists (step 4b), and readiness is not confirmed until the screen shows `<label>--<handle>`
-(step 5). A tab still titled `worker task ...`, or a harness-generated session title, means a step
+(step 5). A tab still titled `worker-<task id>`, or a harness-generated session title, means a step
 was skipped.
 
 ```bash
@@ -108,11 +108,11 @@ orca terminal read --terminal <handle> --screen --json </dev/null
 #     want, all read off the screen and none assumed from a receipt:
 #     (a) NAME. The tab and the session name in the status bar both read `<label>--<handle>`.
 #         Claude Code and Pi: the identity hook or adapter composed it from the prompt token plus
-#         the handle. Codex and OpenCode v2.2 have no hook that can: once the screen shows the TUI
+#         the handle. Codex and an OpenCode whose `/rename` takes an argument have no hook that can: once the screen shows the TUI
 #         ready, `terminal send --enter --text '/rename <label>--<handle>'`, then read the bar back.
-#         A name that still reads `worker task ...`, a generated title or a bare label is a failed
-#         step: rename again and re-read before dispatching. OpenCode v1 (`/rename` opens a dialog,
-#         no argument) or any harness that cannot be renamed: the roster `Name` column is the only
+#         A name that still reads `worker-<task id>`, a generated title or a bare label is a failed
+#         step: rename again and re-read before dispatching. an OpenCode whose `/rename` opens a dialog
+#         and takes no argument or any harness that cannot be renamed: the roster `Name` column is the only
 #         record, so mark it `(roster only)`, give the worker that name for its `Session:` trailer
 #         and say so once in the run report. A worker cannot run `/rename` on itself, so the brief
 #         cannot carry this step.
@@ -181,7 +181,7 @@ The native launch is the only supervised one, and it gives up some things:
 
 | Given up | Consequence | Compensation |
 |---|---|---|
-| the session-name flag, and any say over the tab title | the roster, the board card and the `Session:` commit trailer all key off the name, and the runtime titles the tab `worker-<task id>` (G71) | the prompt token and the identity hook (the adapter on Pi) name the session; the conductor renames the tab (step 4b, §5) and types the rename verb on Codex and OpenCode v2.2 (step 5). `references/session-identity.md` §2b |
+| the session-name flag, and any say over the tab title | the roster, the board card and the `Session:` commit trailer all key off the name, and the runtime titles the tab `worker-<task id>` (G71) | the prompt token and the identity hook (the adapter on Pi) name the session; the conductor renames the tab (step 4b, §5) and types the rename verb on Codex and an OpenCode whose `/rename` takes an argument (step 5). `references/session-identity.md` §2b |
 | environment variables in the launch line | a worker cannot be marked as a fleet worker by an exported variable | the brief and the prompt token carry it. `sprint-testing` detects worker mode from them, not from the environment |
 | the prompt in the launch itself | the worker starts idle at its prompt | step 6: `terminal send` immediately after readiness. Until it lands, the worker has nothing to do |
 | a launch line that also loads the env file | every MCP server reads the worktree's own `.env` through the `.env` loader on any harness, and every other process loads its own config; a worktree without `.env` hands every server empty values | step 5: verify credentials on screen BEFORE dispatching work (`references/orca-machine-setup.md` §3.2) |
@@ -393,7 +393,7 @@ fallback that works with no runtime.
    shows it ready, send the rename verb of step 5 on every harness, Claude Code included
    (`terminal send --enter --text '/rename <label>--<new handle>'`; Pi `/name`), and read the bar
    back. On Claude Code that makes the name human-set, so the hook leaves it alone from then on,
-   which is what a resume wants. OpenCode v1, or a harness that cannot be renamed: mark the row
+   which is what a resume wants. An OpenCode whose `/rename` takes no argument, or a harness that cannot be renamed: mark the row
    `(roster only)` as at launch. Update the roster's `name` column (keep the old name in the row's
    notes) BEFORE the first message to the resumed worker, and give it the new name in that message
    on a harness with no identity hook. Every `Session:` trailer after the resume carries the new

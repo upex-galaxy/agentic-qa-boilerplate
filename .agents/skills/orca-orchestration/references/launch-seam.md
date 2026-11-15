@@ -81,7 +81,7 @@ for the real grammar. Only this skill spells out commands, because it is the too
   `bun run vars:env:check` names such a variable (names and lengths only). `<label>` is the worker's
   roster label, the same token the prompt opens with, and the worker's name is `<label>--<handle>`.
   On a harness with no name flag (Codex, OpenCode), the human types `/rename <label>--<handle>` once
-  the session is up (`<label>` alone outside Orca; OpenCode v1's `/rename` takes no argument, so the
+  the session is up (`<label>` alone outside Orca; an OpenCode whose `/rename` takes no argument, so the
   roster carries the name), because a model cannot rename its own session.
 
 This line is for a human, or for a terminal nobody will supervise. Two things about it do not survive

@@ -309,9 +309,11 @@ Run `/jira-administration instance-migration`. It repoints `.agents/project.yaml
 
 The gates in this runbook are: the credential backup (Step 0), the destination configuration (Step 3b), the go-ahead before the real restore (Step 5), and the decision about Tests lost at the source (Step 2). Decision rules: `agentic-qa-core/references/decision-protocol.md`.
 
-- **A person is present**: run the steps as written.
-- **A supervised worker**: the conductor or launcher holds each gate. The worker stops at the gate, reports what it found, and continues when the launcher answers.
-- **A routine with nobody**: do the reversible work, which is Steps 0b to 2, the preflight (Step 4), the gate re-check (Step 4b) and the dry-run (Step 5). An export only writes local files. Do not run `auth login` while the cached config is the sole copy of the source keys and nobody has backed it up (the agent cannot make that copy). Stop before Step 3b if the destination is not configured and before Step 6 unless the delegating brief names the project, both sites and approves the restore. Report the inventory, the counts, the dry-run summary and the gate that stopped you.
+| Who is running | What happens at each gate |
+|---|---|
+| A person is present | Run the steps as written. |
+| A supervised worker | The conductor or launcher holds each gate. The worker stops at the gate, reports what it found, and continues when the launcher answers. |
+| A routine with nobody | Do the reversible work, which is Steps 0b to 2, the preflight (Step 4), the gate re-check (Step 4b) and the dry-run (Step 5). An export only writes local files. Do not run `auth login` while the cached config is the sole copy of the source keys and nobody has backed it up (the agent cannot make that copy). Stop before Step 3b if the destination is not configured and before Step 6 unless the delegating brief names the project, both sites and approves the restore. Report the inventory, the counts, the dry-run summary and the gate that stopped you. |
 
 ## Gotchas (carry these into every run)
 
