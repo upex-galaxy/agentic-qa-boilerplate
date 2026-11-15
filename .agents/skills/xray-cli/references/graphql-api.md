@@ -33,8 +33,8 @@ curl https://xray.cloud.getxray.app/api/v2/graphql \
 
 ### Get Test (single)
 
-There is no `getTest(issueId:)` in the CLI — a single test is fetched through
-`getTests` with a `key = X` JQL and `limit: 1` (`QUERIES.getTest`):
+The CLI has no `getTest(issueId:)`. It fetches a single test through `getTests`
+with a `key = X` JQL and `limit: 1` (`QUERIES.getTest`):
 
 ```graphql
 query GetTest($jql: String!) {
@@ -56,8 +56,8 @@ query GetTest($jql: String!) {
 ### Get Test By Id
 
 Same projection, addressed by numeric `issueId` instead of JQL
-(`QUERIES.getTestById`). issueIds are the only stable handle during a
-cross-site migration, where the same key resolves to a different id per site:
+(`QUERIES.getTestById`). During a cross-site migration the same key resolves to a
+different id per site, so the issueId is the only stable handle:
 
 ```graphql
 query GetTestById($issueIds: [String]) {
@@ -112,7 +112,7 @@ query GetTestExecution($issueId: String!) {
 
 ### Get Test Run
 
-The run query is `getTestRunById(id:)` — NOT `getTestRun` (`QUERIES.getTestRunById`):
+The run query is `getTestRunById(id:)`, not `getTestRun` (`QUERIES.getTestRunById`):
 
 ```graphql
 query GetTestRunById($id: String!) {
@@ -145,7 +145,7 @@ query GetTestRunById($id: String!) {
 The test type is passed as an `UpdateTestTypeInput!` object (e.g.
 `{ name: "Manual" }`), the project key travels inside `jira.fields.project`,
 and inline `steps` are accepted by the schema but silently dropped by Xray
-Cloud — see the Manual-steps gotcha in SKILL.md (always `addTestStep` after):
+Cloud. See the Manual-steps gotcha in SKILL.md and call `addTestStep` after creating the test:
 
 ```graphql
 mutation CreateTest(
@@ -199,8 +199,8 @@ mutation AddTestStep($issueId: String!, $step: CreateStepInput!) {
 
 ### Update Test Step
 
-Backs `bun xray test update-step <test> --step <stepId>` — partial update, only
-the fields present in the input change.
+Backs `bun xray test update-step <test> --step <stepId>`. It is a partial update:
+only the fields present in the input change.
 
 ```graphql
 mutation UpdateTestStep($stepId: String!, $step: UpdateStepInput!) {
@@ -244,7 +244,7 @@ mutation UpdateTestType($issueId: String!, $testType: UpdateTestTypeInput!) {
 
 These mutations have dedicated CLI commands (`bun xray precondition create` /
 `add-to-test` / `update` / `remove-from-test`; reads via `precondition list` /
-`get`) — no need to drop to raw GraphQL. The type input is
+`get`), so raw GraphQL is not needed. The type input is
 `UpdatePreconditionTypeInput!` (e.g. `{ name: "Manual" }`) and the project key
 travels inside `jira.fields.project`:
 
@@ -302,9 +302,8 @@ mutation UpdatePrecondition($issueId: String!, $data: UpdatePreconditionInput!) 
 ### Add Test Environments To Test Execution
 
 Backs `bun xray exec create --environment <e>` and `bun xray exec set-environment`.
-Pinning an execution to a Test Environment makes results congruent and comparable
-across environments (e.g. a `staging` run is never blindly compared with a `production`
-run).
+Pinning an execution to a Test Environment keeps results comparable across
+environments (a `staging` run is not mistaken for a `production` run).
 
 ```graphql
 mutation AddTestEnvironmentsToTestExecution(
@@ -355,11 +354,11 @@ mutation CreateTestExecution(
 > or comma-separated). For an existing execution use `bun xray exec set-environment`
 > (backed by `addTestEnvironmentsToTestExecution`, below).
 
-### Test Plan ↔ Test Execution Association
+### Test Plan and Test Execution association
 
 Backs `bun xray plan add-executions <plan> --executions <keys>`. This is the
-Xray-internal Plan↔Execution association (the Execution shows up under the
-Plan's board) — distinct from any Jira issue link.
+Xray-internal association between Plan and Execution (the Execution shows up under the
+Plan's board), separate from any Jira issue link.
 
 ```graphql
 mutation AddTestExecutionsToTestPlan($issueId: String!, $testExecIssueIds: [String]!) {
@@ -377,8 +376,8 @@ mutation RemoveTestExecutionsFromTestPlan($issueId: String!, $testExecIssueIds: 
 ### Add Evidence To Test Run
 
 Attaches one or more files (screenshots, PDFs, logs, ...) to a Test Run. Each
-attachment is sent as base64-encoded data inside the GraphQL variables — there
-is no multipart endpoint. Xray Cloud caps the request body at **20 MB**, so
+attachment is sent as base64-encoded data inside the GraphQL variables, because
+there is no multipart endpoint. Xray Cloud caps the request body at **20 MB**, so
 the CLI auto-chunks large batches at ~15 MB of base64 to keep headroom for
 the GraphQL envelope.
 
@@ -442,7 +441,7 @@ mutation AddEvidenceToTestRunStep(
 ### Remove Evidence From Test Run
 
 Either pass `evidenceIds` (returned by `getTestRunById { evidence { id } }`)
-or `evidenceFilenames` — the CLI exposes both via `--evidence` and `--filename`.
+or `evidenceFilenames`. The CLI exposes both through `--evidence` and `--filename`.
 
 ```graphql
 mutation RemoveEvidenceFromTestRun(
@@ -473,24 +472,23 @@ For the REST path, the `evidence` array is part of each test object inside the J
 
 ## Verified API limits (schema introspection, 2026-08)
 
-Two hard boundaries of the Xray Cloud GraphQL schema, verified by introspection —
-do not go looking for mutations that do not exist:
+Two hard boundaries of the Xray Cloud GraphQL schema, verified by introspection.
+The mutations below do not exist, so use the stated alternative:
 
-- **No coverage mutation.** Requirement coverage ("this Story is covered") is not
-  an Xray GraphQL concept at write time — it is a **Jira issue link** of the
+- **No coverage mutation.** At write time, requirement coverage ("this Story is
+  covered") is not an Xray GraphQL concept. It is a **Jira issue link** of the
   `test` type (link-type slug `test` in `.agents/jira-required.yaml`) whose entry
-  ON THE STORY carries the artifact under `inwardIssue`. Write it via
+  on the Story carries the artifact under `inwardIssue`. Write it with
   `bun xray link create <ARTIFACT> <STORY> --type test` (Jira REST
-  `POST /rest/api/3/issueLink`), never via GraphQL. GraphQL only *reads* coverage
-  (`coverableIssues` on a Test, `getCoverableIssue(issueId).tests` from the Story
-  side — the query that measured the direction; see SKILL.md §Direction).
-- **Datasets/parametrization are READ-only.** The schema exposes `getDataset` /
-  `getDatasets` queries and **zero** dataset mutations, so parameter values and
-  shared Parameter Lists cannot be created or edited by any API client — they
-  are UI-managed. Parametrizing Manual tests is therefore a **documented
-  convention** (Gherkin `Scenario Outline` + `Examples` via `--gherkin`, or
-  Manual step `data` fields), not a CLI feature. See "Parametrized Tests" in
-  SKILL.md.
+  `POST /rest/api/3/issueLink`), not through GraphQL. GraphQL only *reads* coverage:
+  `coverableIssues` on a Test, and `getCoverableIssue(issueId).tests` from the Story
+  side (the query that measured the direction; see SKILL.md §Direction).
+- **Datasets and parametrization are read-only.** The schema exposes `getDataset` /
+  `getDatasets` queries and **no** dataset mutations, so no API client can create or
+  edit parameter values and shared Parameter Lists. They are managed in the UI.
+  Parametrizing Manual tests is therefore a **documented convention** (Gherkin
+  `Scenario Outline` + `Examples` via `--gherkin`, or Manual step `data` fields)
+  and not a CLI feature. See "Parametrized Tests" in SKILL.md.
 
 ## Test Types
 
@@ -502,11 +500,11 @@ do not go looking for mutations that do not exist:
 
 ## Test Run Statuses
 
-Xray's DEFAULT vocabulary. It is **not** the instance's: run statuses are
-per-project configuration (Xray Settings → Test Run Statuses), and a project may
+This is Xray's default vocabulary, and an instance may differ: run statuses are
+per-project configuration (Xray Settings > Test Run Statuses), and a project may
 define only the first four. The mutation is rejected for a status the project
-does not define — measured on a live instance that accepts `TODO` / `EXECUTING` /
-`PASSED` / `FAILED` and nothing else.
+does not define. Measured on a live instance that accepts `TODO`, `EXECUTING`,
+`PASSED` and `FAILED` and nothing else.
 
 | Status | Description | Availability |
 |--------|-------------|--------------|
@@ -517,14 +515,14 @@ does not define — measured on a live instance that accepts `TODO` / `EXECUTING
 | `ABORTED` | Test aborted | Xray default; may be absent |
 | `BLOCKED` | Test blocked by dependency | Xray default; may be absent |
 
-When the status you need is absent, record the run in one the project DOES define
-and say why in the run comment (`run comment --id <runId> --comment ...`). Never
-leave the run at `TODO`: that reads as "never executed", which is a different
+When the status you need is absent, record the run in one the project defines
+and say why in the run comment (`run comment --id <runId> --comment ...`). Move
+the run off `TODO`, because `TODO` reads as "never executed", which is a different
 fact from "executed and blocked".
 
 ## GraphQL Schema Explorer
 
-Full schema documentation available at:
+Full schema documentation:
 `https://us.xray.cloud.getxray.app/doc/graphql/index.html`
 
 ## Error Handling
@@ -540,9 +538,9 @@ Full schema documentation available at:
 ### Rate Limits
 
 Xray Cloud has rate limits. For bulk operations:
-- Use batch sizes of 100 or less
-- Add delays between requests if hitting limits
-- The CLI handles batching automatically
+- Use batch sizes of 100 or less.
+- Add delays between requests if you hit a limit.
+- The CLI batches automatically.
 
 ## CLI Implementation
 
@@ -567,7 +565,7 @@ const result = await graphql<ResponseType>(MUTATIONS.createTest, {
 
 ### JUnit Import
 
-The CLI refuses a file with any testcase lacking a `test_key` / `test_id` property: Xray would create a new Generic Test for it (see `../SKILL.md` §Import Results).
+The CLI refuses a file with any testcase lacking a `test_key` / `test_id` property, because Xray would create a new Generic Test for it (see `../SKILL.md` §Import Results).
 
 ```bash
 POST /api/v2/import/execution/junit?projectKey=DEMO

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Xray supports three test types, each designed for different testing approaches:
+Xray supports three test types, one per testing approach:
 
 | Type | ID | Purpose | Data Field |
 |------|----|---------|------------|
@@ -38,14 +38,14 @@ Manual tests contain structured steps that a tester follows.
 
 ### Creating Manual Tests
 
-Manual steps are created in **two phases**: create the test WITHOUT inline steps,
-then add each step with its own `test add-step` call.
+Create a Manual test without inline steps, then add each step with its own
+`test add-step` call.
 
 ```bash
 # 1. Create the Manual test (no inline steps)
 bun xray test create --project DEMO --summary "Verify login" --type Manual
 
-# 2. Add each step (one call per step) — this is the reliable path
+# 2. Add each step (one call per step), the reliable path
 bun xray test add-step --test <issueId> --action "Open app" --result "Login form displayed"
 bun xray test add-step --test <issueId> --action "Enter credentials" --data "user@test.com" --result "Success"
 
@@ -53,23 +53,23 @@ bun xray test add-step --test <issueId> --action "Enter credentials" --data "use
 bun xray test remove-step --test <issueId> --step <stepId>
 ```
 
-> **Why two phases (gotcha).** Xray Cloud's `createTest` mutation accepts a `steps`
-> argument but does **not** persist it — steps silently drop (observed `stepCount:0`
-> right after a "Test created" success). The `--step` flag on `test create` is
-> therefore **deprecated**: if passed, the test is still created but the CLI prints a
-> loud WARNING listing the exact `test add-step` commands to run. Always verify steps
-> landed with `bun xray test get <key>` (or the GraphQL `getTest { steps { id } }`).
+Why two phases: Xray Cloud's `createTest` mutation accepts a `steps` argument but
+does not persist it, so steps silently drop (observed `stepCount:0` right after a
+"Test created" success). The `--step` flag on `test create` is deprecated for that
+reason: the test is still created, and the CLI prints a warning listing the exact
+`test add-step` commands to run. Verify steps landed with `bun xray test get <key>`
+(or the GraphQL `getTest { steps { id } }`).
 
 ### Step Fields (add-step)
 
 `test add-step` takes one step per call via explicit flags:
-- `--action <text>` - what the tester does (required)
-- `--data <text>` - input values / test data (optional)
-- `--result <text>` - expected observable outcome (optional)
+- `--action <text>`: what the tester does (required)
+- `--data <text>`: input values or test data (optional)
+- `--result <text>`: expected observable outcome (optional)
 
 ## Generic Tests
 
-Generic tests store a definition (usually automation code reference or command).
+Generic tests store a definition, usually an automation code reference or a command.
 
 ### Structure
 
@@ -200,9 +200,9 @@ Cucumber: "[Feature Name]"
 
 ### Step Guidelines (Manual)
 
-1. **Action**: What the tester does (imperative verb)
-2. **Data**: Input values or test data needed
-3. **Result**: Expected observable outcome
+1. Action: what the tester does, as an imperative verb.
+2. Data: input values or test data needed.
+3. Result: expected observable outcome.
 
 ```
 Good:
