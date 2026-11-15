@@ -1,21 +1,21 @@
 # Coverage Inventory
 
-Cross what the product DOES (the business maps) with what is TESTED (the KATA manifest, the TMS test
+Cross what the product does (the business maps) with what is tested (the KATA manifest, the TMS test
 repository, the regression repository) and put every behaviour in exactly one bucket: `automated`,
-`manual-only`, `weak`, `uncovered`. The gaps (`weak` + `uncovered`) are ordered by the Master Test Plan's
+`manual-only`, `weak`, `uncovered`. The gaps (`weak` and `uncovered`) are ordered by the Master Test Plan's
 risk and become coverage Tech Stories once a person approves them. This is the `inventory` step of the
 discovery-driven flow (`../../agentic-qa-core/references/discovery-driven-doctrine.md` §1).
 
 **Target**: $ARGUMENTS (a module filter, `--tms none`, or blank for the whole product)
 
-This mode reads the maps; it is not one. It never edits a test, never writes a map, never runs in
-`refresh-all`, and writes only its own session files (below) until a person approves a tracker write.
+Until a person approves a tracker write, this mode edits no test, writes no map, stays out of `refresh-all`
+and writes only its own session files (below).
 
 ---
 
 ## The three steps
 
-The behaviour -> test join is not deterministic (a map row and a Test share no key), so the work is split:
+The join from behaviour to test is not deterministic (a map row and a Test share no key), so the work is split:
 
 | Step | Who | Does | Writes |
 |---|---|---|---|
@@ -23,15 +23,15 @@ The behaviour -> test join is not deterministic (a map row and a Test share no k
 | judge | agent | decides which behaviours count, which test covers each one, whether its assertions exercise it, and its MTP risk | `judgments.json` |
 | `bun run context:coverage classify` | script | validates the judgments against `collect.json`, buckets, orders, flags stale judgments, diffs against the previous run | `gap-list.json`, `gap-list.md`, `runs/<run-id>.json` |
 
-Two sessions with the same judgments get the same gap list. That is what makes the run recomputable and
-the progress measurable: judgments carry over by stable id from run to run.
+Two sessions with the same judgments get the same gap list, so the run is recomputable and progress is
+measurable. Judgments carry over by stable id from run to run.
 
 ## Files
 
 `<<PRIMARY_ROOT>>/.session/project-context/coverage/` (the script resolves the primary checkout, so a run
 from a worktree lands where the next run looks). `project-context` opts out of the session Phase 0
-(`../../agentic-qa-core/references/session-management.md` §"Skills that opt out"); these are this mode's
-companion files, not a resumable session.
+(`../../agentic-qa-core/references/session-management.md` §"Skills that opt out"): these are companion
+files, not a resumable session.
 
 ```
 collect.json      last collect: sources, seed, test inventory, anchors, warnings
@@ -45,23 +45,23 @@ proposals/        dry-run Tech Story payloads, one .json + .md each
 ## Step 0: before collecting
 
 1. Maps: `bun run context:map <slug> --list` for `business-e2e-context`, `business-api-context`,
-   `business-data-context`. All placeholders: `collect` exits 2 with the stated note; STOP and name
-   `project-context e2e` (then `data`, `api`). Never write an empty gap list.
+   `business-data-context`. All placeholders: `collect` exits 2 with the stated note; stop and name
+   `project-context e2e` (then `data`, `api`). An empty gap list reads as "no gaps", so none is written.
 2. TMS: the project has one when `.agents/project.yaml` sets `project.project_key` and
-   `issue_tracker.atlassian_url`. Check credentials by NAME with the repo's redacted presence check
+   `issue_tracker.atlassian_url`. Check credentials by name with the repo's redacted presence check
    (Critical Rule #1). If they are missing, or `collect` reports `TMS not read: <reason>` on a project that
-   HAS a TMS, STOP and ask before continuing manifest-only (Critical Rule #10 posture): a manifest-only run
+   has a TMS, stop and ask before continuing manifest-only (Critical Rule #10 posture): a manifest-only run
    reports `manual-only` as `unknown` and is not comparable with a TMS run.
 3. MTP cache: `.context/PBI/qa-artifacts/master-test-plan.md`. Missing is soft: every gap is `unranked` and
    the report says "run `project-context test-plan`, then `bun run jira:sync-issues get <MTP-KEY>`".
 
 ## Step 2: judging (the agent's part)
 
-Read the maps through `bun run context:map <slug> --section <id>`, never the raw HTML. Start from
+Read the maps through `bun run context:map <slug> --section <id>`; the raw HTML carries markup the AI should not parse. Start from
 `collect.json` `seed`; previous `judgments.json` rows carry over, and the stale ones are re-judged first.
 
 **Granularity.** Every `BR-NNN` and `FEAT-NNN` in the seed is a behaviour: judge it, or leave it in the
-report's unjudged list (never silently drop it). A section of the api or data map with no rule ids is one
+report's unjudged list so it stays visible. A section of the api or data map with no rule ids is one
 behaviour per testable statement you can name; give it a kebab local id once (`api#orders-endpoints/refund-window`)
 and keep it. Section-level rows (`e2e#feature-billing`) are for maps with no finer structure.
 
@@ -69,14 +69,14 @@ and keep it. Section-level rows (`e2e#feature-billing`) are for maps with no fin
 
 **Covered by.** One row per test that claims the behaviour: the TMS key or ATC id from `collect.json`
 `tests`, a `verdict`, and ONE evidence line. Find candidates through the test's linked coverables,
-components and title; claim nothing on a title match alone.
+components and title; a title match alone is not enough to claim a behaviour.
 
 | Verdict | When | Evidence is |
 |---|---|---|
 | `exercises` | an assertion (ATC) or an expected result (manual step) fails if the behaviour breaks | that assertion or step, quoted or named |
 | `weak` | the test runs through the behaviour but nothing it checks would fail if it broke | what the test checks instead |
 
-Assertions come from the existing readers, never a new one: the breakdown of `/test-automation` mode
+Assertions come from the existing readers, not a new one: the breakdown of `/test-automation` mode
 `explain` when one exists, else the ATC method at the manifest's file and line; for a manual Test, its steps
 and expected results. The verdict is an agent judgment: `classify` marks every row `judged_by: agent`.
 
@@ -110,7 +110,7 @@ expect some stale noise there, never a wrong bucket.
 | at least one `exercises` row on an ATC in the production manifest | `automated` |
 | at least one `exercises` row, all manual TMS Tests | `manual-only` |
 
-Fail-closed: a row does not count (it stays in the report with the reason) when it has no evidence, when its
+The gate fails closed: a row does not count (it stays in the report with the reason) when it has no evidence, when its
 Test is `deprecated`, when its Test is still in design (the statuses the `create` and `start_design`
 transitions of `test_case` lead to in `.agents/jira-workflows.json`: not an approved Test yet), or when its key
 cannot be verified because the TMS was not read (`not verified: TMS not read`). When the TMS WAS read, a key
@@ -127,17 +127,18 @@ Gaps are ordered: risk (CRITICAL first, `unranked` last), then `uncovered` befor
 ## Step 4: report and approval
 
 Show `gap-list.md` (sources, totals with their denominators, gaps by risk, stale judgments, the run-over-run
-diff, `## Discovery Gaps`). A bucket the run could not measure prints `unknown`, never 0. While seed rows are
+diff, `## Discovery Gaps`). A bucket the run could not measure prints `unknown`; 0 would claim a measurement. While seed rows are
 not judged, the Gaps section opens with how many: an empty or partial judgment never reads as "no gaps".
 
 Creating Tech Stories is an outward write a person signs (`../../agentic-qa-core/references/decision-protocol.md`).
-The channel is picked by the weight of the decision, never by the count (`AGENTS.md` §2): a batch with real
+The channel follows the weight of the decision, not the count (`AGENTS.md` §2): a batch with real
 choices per item (the grain, which gaps become Tech Stories) goes to the `mkd` decision deck; a single
-yes/no on one proposal goes through the question tool.
+yes/no on one proposal goes through the question tool. With nobody at the keyboard the run ends at
+`proposals/`: the launcher or the brief holds this approval (`../SKILL.md`, `## With nobody at the keyboard`).
 
 ## Step 5: coverage Tech Stories
 
-1. `bun run context:coverage propose --grain gap|module` (the grain the person picked). DRY RUN: it writes
+1. `bun run context:coverage propose --grain gap|module` (the grain the person picked). It is a dry run: it writes
    `proposals/` and never calls a tracker. A gap already named by a `coverage-gap` Tech Story is skipped
    with its key. A null parent means `qa.qa_epics.test_repository_epic.key` is unset: resolve the QA Test
    Repository epic by name (find-or-create, asking first) before creating anything.
@@ -183,5 +184,5 @@ in `cli/lib/behaviour-coverage/types.ts`; renaming a key is a schema version bum
 
 ## Report (chat)
 
-Headline: gaps by risk level and the change since the previous run. Then one bullet per CRITICAL / HIGH gap,
+Headline: gaps by risk level and the change since the previous run. Then one bullet per CRITICAL or HIGH gap,
 the stale judgments, the unmeasured buckets, and the proposals waiting for approval.

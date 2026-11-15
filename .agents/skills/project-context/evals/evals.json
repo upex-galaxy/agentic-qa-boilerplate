@@ -1,0 +1,46 @@
+{
+  "evals": [
+    {
+      "name": "should-trigger-data-map",
+      "prompt": "Generate the business data map for this project: entities, flows and state machines.",
+      "expected_behavior": "Activates project-context, routes to mode data, loads only references/data.md, and writes only business-data-context's business-data-map.html. In UPDATE mode it shows a section diff and waits for approval.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-coverage-gaps",
+      "prompt": "Which behaviours of the product have no test? I want the coverage gap list.",
+      "expected_behavior": "Activates project-context, routes to mode coverage, loads references/coverage.md, runs collect, judges, classify, and writes only the session files. No Tech Story is created before approval.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-ambiguous-refresh",
+      "prompt": "Refresh the project context.",
+      "expected_behavior": "Activates project-context and asks which mode to run. It does not infer refresh-all from a generic request.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-spanish-master-test-plan",
+      "prompt": "Necesito armar el plan de pruebas maestro del proyecto, ordenado por riesgo.",
+      "expected_behavior": "Activates project-context and routes to mode test-plan, loading references/test-plan.md. Replies in Spanish; the artifact is written in English.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-spanish-coverage",
+      "prompt": "Qué partes del producto no están probadas todavía? Quiero ver los huecos de cobertura.",
+      "expected_behavior": "Activates project-context and routes to mode coverage. Replies in Spanish and builds the gap list without editing any test or map.",
+      "category": "positive"
+    },
+    {
+      "name": "should-not-trigger-write-tests",
+      "prompt": "Write Playwright tests for the checkout flow.",
+      "expected_behavior": "Does not activate project-context. Routes to test-automation.",
+      "category": "negative"
+    },
+    {
+      "name": "should-not-trigger-answer-from-map",
+      "prompt": "What does the refund state mean in our data model?",
+      "expected_behavior": "Does not activate project-context. Answering from an existing map belongs to business-data-context.",
+      "category": "negative"
+    }
+  ]
+}
