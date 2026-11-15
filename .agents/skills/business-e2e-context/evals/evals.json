@@ -21,6 +21,27 @@
       "expected_output": "Should NOT be driven by business-e2e-context: page objects and locators are KATA code owned by /test-automation. The e2e map may be cited for the journey, never used as a code source.",
       "should_trigger": false,
       "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "necesito armar el alcance del smoke para el release: ¿cuáles son los recorridos de usuario principales del producto?",
+      "expected_output": "Loads business-e2e-context, reads the map through `bun run context:map business-e2e-context` and answers journeys first, citing section ids. Answers in Spanish.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "¿qué puede hacer un usuario con rol admin en la app? quiero saber por qué flujos pasa antes de escribir el test E2E",
+      "expected_output": "Loads business-e2e-context and answers from the personas and journeys of the map, then the feature catalog. Answers in Spanish.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "List the columns of the orders table and the triggers that fire on insert.",
+      "expected_output": "Should NOT be driven by business-e2e-context: entities and triggers belong to business-data-context.",
+      "should_trigger": false,
+      "files": []
     }
   ]
 }
