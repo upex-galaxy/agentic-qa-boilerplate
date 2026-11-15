@@ -10,7 +10,7 @@ paths: ['tests/', 'api/schemas/', 'scripts/']
 
 ## 10. KATA QUICK-REFERENCE
 
-> **FULL KATA + TypeScript rules**: `.agents/skills/test-automation/references/kata-architecture.md` + `.../typescript-patterns.md`. LOAD `/test-automation` BEFORE writing or reviewing any test code.
+> Full KATA and TypeScript rules: `.agents/skills/test-automation/references/kata-architecture.md` and `.agents/skills/test-automation/references/typescript-patterns.md`. Load `/test-automation` before writing or reviewing any test code.
 
 KATA layer flow:
 
@@ -26,14 +26,14 @@ TestFixture (L4: dependency injection)
 Test files (orchestrate ATCs)
 ```
 
-**Hard rules** (full detail in skill refs: load `/test-automation`):
+Hard rules, with the full detail in the skill's references (load `/test-automation`):
 
-- ATC = complete mini-flow, atomic, NEVER calls another ATC. Reusable chains → Steps module. (binding: `/test-automation`)
-- Max 2 positional params. 3+ → object param.
-- Locators inline in ATC. Extract only if used 2+ times.
-- Imports use aliases (`@api/`, `@schemas/`, `@utils/`). No relative imports.
-- Public methods: fail fast. Utilities: silent fail (return null).
-- Fixture selection: API only → `{ api }` (no browser). UI only → `{ ui }`. Hybrid → `{ test }`.
-- **Repo-relative paths in `scripts/` go through `scripts/lib/posix-path.ts`** (`toPosix` / `relativePosix`). `relative()` and `join()` emit `\` on Windows, and this repo has shipped that bug repeatedly (ADR-0006; downstream issue #26). **Exception: path GUARDS compare in the platform's own `sep`, never normalised**, because normalising a traversal prefix is how a `\` candidate slips past a `/` prefix.
-- `scripts/api-login.project.ts` may export an optional `authenticate` hook that replaces the core's single POST for auth flows a single request cannot express. It is a LAST RESORT: a project that adopts it stops receiving upstream improvements to the request phase. Prefer `buildAuthPayload`.
-- DRY scope: `api/schemas/` = OpenAPI facades. `tests/utils/` = agnostic utilities only. `UiBase` = all Playwright/Page helpers. `ApiBase` = all HTTP helpers. `TestContext` = shared across both.
+- An ATC is a complete, atomic mini-flow and never calls another ATC. A reusable chain goes in a Steps module. (binding: `/test-automation`)
+- A method takes at most 2 positional params; with 3 or more, use an object param.
+- Locators sit inline in the ATC. Extract one only when 2 or more places use it.
+- Imports use the aliases (`@api/`, `@schemas/`, `@utils/`), not relative paths.
+- Public methods fail fast. Utilities fail silently and return null.
+- Fixture selection: API only takes `{ api }` (no browser), UI only takes `{ ui }`, a hybrid test takes `{ test }`.
+- Repo-relative paths in `scripts/` go through `scripts/lib/posix-path.ts` (`toPosix` / `relativePosix`). `relative()` and `join()` emit `\` on Windows, and this repo has shipped that bug repeatedly (ADR-0006; downstream issue #26). The exception: path guards compare in the platform's own `sep` and are never normalised, because normalising a traversal prefix is how a `\` candidate slips past a `/` prefix.
+- `scripts/api-login.project.ts` may export an optional `authenticate` hook that replaces the core's single POST for auth flows one request cannot express. It is a last resort: a project that adopts it stops receiving upstream improvements to the request phase. Prefer `buildAuthPayload`.
+- DRY scope: `api/schemas/` holds the OpenAPI facades, `tests/utils/` holds agnostic utilities only, `UiBase` holds all Playwright and Page helpers, `ApiBase` holds all HTTP helpers, and `TestContext` is shared across both.
