@@ -541,7 +541,7 @@ h4,.h4{font-size:17px;color:var(--text-1)}
       <li><b>0.0 Resume check.</b> Existe <code>progress.md</code> del batch? → ofrecer <b>resume / restart / abort</b>. Restart archiva lo anterior como <code>-aborted</code>.</li>
       <li><b>0.1 Modalidad TMS.</b> El mismo probe automático de <code>test-documentation</code> §Phase 0 (A: Xray · B: Jira-native); solo pregunta si fallan los chequeos. Se persiste en <code>plan.md</code> §Inputs.</li>
       <li><b>0.2 Tool skills.</b> <code>/acli</code> siempre (escrituras + búsqueda trivial). Lecturas de detalle → <code>bun run jira:sync-issues</code>, nunca <code>acli view</code>.</li>
-      <li><b>0.3 Contexto generado.</b> <code>bun run context:map &lt;slug&gt; --list</code> por cada mapa de negocio + el master test plan. Que el archivo exista no alcanza: un placeholder pasa ese chequeo vacío. Aviso de placeholder o plan ausente → STOP → <b>/project-discovery</b> o el modo de <code>project-context</code>.</li>
+      <li><b>0.3 Contexto generado.</b> <code>bun run context:map &lt;slug&gt; --list</code> por cada mapa de negocio + el master test plan. Que el archivo exista no alcanza: un placeholder pasa ese chequeo vacío. Aviso de placeholder o plan ausente → STOP → <b>/project-discovery</b> o el modo de <code>project-context</code>. El glosario <code>business-domain-context</code> se lee igual, pero no frena: un placeholder solo significa que no hay glosario todavía y se refina con las palabras de la Story.</li>
       <li><b>0.4 Candidatos.</b> IDs explícitos (UPEX-100,101,102) o JQL de backlog. Sweet spot 1-12; &gt;12 se divide en sesiones.</li>
       <li><b>0.5 Carpeta de sesión</b> + <code>plan.md</code> (Goal · Inputs · fases · riesgos) + primer entry en <code>progress.md</code>.</li>
     </ul>
@@ -605,6 +605,7 @@ h4,.h4{font-size:17px;color:var(--text-1)}
       <p class="sm mt-s">Phase 1 termina con una tabla ranqueada: <b>Accepted</b> (riesgo · score · veto override · data-feasibility), <b>Rejected</b> (no-Story, con motivo), <b>Skipped</b> (LOW), <b>Already Reviewed</b> (skip/refresh?), orden recomendado y preguntas abiertas.</p>
       <p class="sm mt-s"><b>No se refina nada</b> hasta que el humano confirme el set. Puede vetar Stories, rescatar LOWs o cambiar el orden. La lista aceptada final se persiste en <code>progress.md</code>, dentro del entry de Phase 1.</p>
       <p class="sm mt-s"><b>Tras el OK</b>, por cada Story aceptada: find-or-create de la subtask <code>[QA] Shift-Left Review</code> con <b>assignee = self</b> desde el create. Nace en <code>{{jira.status.subtask.active}}</code> (status <code>ACTIVE</code>) y ahí queda hasta Phase 3; si ya existía cerrada, se reabre con <code>reactive</code>. Sin work type subtask en el catálogo → skip con warning, nunca bloquea.</p>
+      <p class="sm mt-s"><b>Opcional, con una persona al teclado</b>: si la lectura de las Stories ya muestra gaps que no piden leer código (un AC sin camino de fallo, un término sin definir, un número sin unidad), se juntan y deduplican y se llama a la skill <code>to-questionnaire</code> para armar <b>un</b> cuestionario para el PO. Se escribe en <code>.session/shift-left-testing/&lt;batch-id&gt;/</code>; así las respuestas pueden llegar mientras se refina el lote.</p>
     </div>
   </div>
   <div class="notes">La selección es una propuesta y el humano decide. Este gate mantiene al humano dirigiendo el lote, con el mismo patrón que el Story Explanation gate de sprint-testing. La subtask hace visible en el tablero el trabajo pre-sprint de QA y después recibe las anotaciones largas, para que la Story quede limpia.</div>
@@ -699,6 +700,8 @@ h4,.h4{font-size:17px;color:var(--text-1)}
         <li><b>Bootstrap</b>: si la carpeta PBI no existe, el subagente la crea con un <code>context.md</code> mínimo. Sin <code>evidence/</code>.</li>
         <li><b>Convención de outline</b>: <code>Should &lt;behavior&gt; &lt;condition&gt;</code>, agrupados por tipo con tabla de coverage (Positive / Negative / Boundary / Integration).</li>
         <li><b>Retorno al orquestador</b>: JSON compacto con quality, #gaps, #preguntas PO/Dev, outlines por tipo, flags.</li>
+        <li><b>Entrevista</b>: si el resumen trae dudas reales y hay una persona al teclado, el orquestador llama a la skill <code>grilling</code>: rondas numeradas, cada pregunta con respuesta recomendada, y no pregunta lo que la Story ya responde. El marcador <code>NEEDS PO/DEV CONFIRMATION</code> solo cae con la respuesta de quien lo posee (PO o BA para comportamiento, Dev para factibilidad).</li>
+        <li><b>Glosario</b>: si una respuesta fija un término que <code>business-domain-context</code> no tiene, <code>domain-modeling</code> lo propone como sección nueva con evidencia y se aplica solo si la persona dice sí. La skill nunca edita el mapa por su cuenta.</li>
         <li><b>GATE</b>: el orquestador presenta el resumen, espera tu OK, registra el checkpoint <code>Phase 2.&lt;n&gt;</code> en <code>progress.md</code> y recién entonces despacha la siguiente Story.</li>
       </ul>
     </div>
@@ -863,6 +866,7 @@ Refinements proposed: 1 →
     <div class="card card-accent"><h4>El OK por Story se muda al conductor</h4><p class="sm">El conductor presenta el resumen de cada worker a medida que llega y espera el mismo approve / veto antes del handoff de Phase 3 de esa Story. Un fleet que se saltea esto ya no está corriendo esta skill.</p></div>
     <div class="card card-accent"><h4>Un escritor por Story</h4><p class="sm">Dos workers nunca refinan la misma Story, y toda escritura Jira de una Story es de su worker. El batch report y el comentario en el epic quedan en el conductor.</p></div>
   </div>
+  <div class="callout warn" style="margin-bottom:12px"><h4>Sin humano al teclado, nada espera</h4><p>Un worker o una rutina no puede contestar: la entrevista sigue el camino autónomo de <code>grilling</code> (cada duda con su respuesta recomendada en <code>## Open Questions</code>, lo inferido sigue marcado y el reporte dice qué se asumió), los términos nuevos van como "Proposed glossary terms" y no se edita el mapa, y <code>to-questionnaire</code> escribe el archivo y se sigue.</p></div>
   <div class="callout"><h4>Regla de silencio</h4><p>Cuando la máquina no tiene transporte de orquestación, la skill no lo menciona: no aparece en el preflight, ni en el batch report, ni en el chat. El <code>launch.txt</code> queda escrito igual.</p></div>
   <div class="notes">La paralelización no compra velocidad a costa del humano: el gate por Story sigue existiendo, solo cambia quién lo presenta. Por defecto la skill corre secuencial, que es el ritmo de un grooming en equipo.</div>
 </section>
