@@ -3,15 +3,15 @@
 Source: the official UPEX methodology site, https://www.upexgalaxy.com/metodologia (sections
 `#principios`, `#stages`, `#vista-ejecutiva`, `#bucle`) and its phase pages
 https://www.upexgalaxy.com/metodologia/early-game and https://www.upexgalaxy.com/metodologia/late-game.
-Fetched 2026-09-23 and re-checked 2026-09-24. Spanish original; translated here.
+The site is in Spanish; this file translates it.
 
 This file ports only what the site states and the repo does not encode by name. The repo's
 executable contract per stage (autonomy scale CSA 0-5, contract table, verifier posture, DoD per
-stage) lives in `agentic-qa-core/references/stage-gates.md` and **wins on any conflict**; nothing
-from it is restated here. Where the site and the repo disagree, the site's value is written and the
-repo path is pointed at; the disagreement is not resolved in this file.
+stage) lives in `agentic-qa-core/references/stage-gates.md`, and that file wins on any conflict.
+Nothing from it is restated here. Where the site and the repo disagree, this file writes the
+site's value and points at the repo path, and leaves the disagreement open.
 
-Vocabulary translated once, then used in English: Lectura = Read, Escritura = Write, Aprobación =
+Vocabulary is translated once and used in English from here on: Lectura = Read, Escritura = Write, Aprobación =
 Approval, Secretos = Secrets, Validación = Validation, Trazabilidad = Traceability, Checkpoints =
 Checkpoints. Roles keep the site's English names: QA Analyst, QA Lead, QA Automation Engineer,
 Executor, Verifier, Guardian.
@@ -35,19 +35,19 @@ vocabulary.
 | Regression | QA Automation Engineer, QA Lead, Executor, Guardian | Read, Approval, Secrets, Validation, Traceability, Checkpoints | 3 (repo: see `agentic-qa-core/references/stage-gates.md`, which allows 4 on a clean GO) | not needed |
 | Observation | QA Lead, Guardian | Read, Approval, Secrets, Validation, Checkpoints | 3 | does not apply yet |
 
-Readings the table makes visible: Regression is the one stage the site lists without the Write
-guardrail (the suite reads, the person decides); Secrets appears only where the agent touches a
-running environment or a pipeline (Execution, Automation, Regression, Observation); Verifier is a
-role only where a separate verifier exists (Documentation, Automation); Guardian appears only in
+The table shows four patterns. Regression is the one stage the site lists without the Write
+guardrail (the suite reads, the person decides). Secrets appears only where the agent touches a
+running environment or a pipeline (Execution, Automation, Regression, Observation). Verifier is a
+role only where a separate verifier exists (Documentation, Automation). Guardian appears only in
 the two stages that run on CI or in production. Each card also states what the agent does, what the
-person signs and what evidence is demanded; those three columns are the repo's contract table and
-are cited from `agentic-qa-core/references/stage-gates.md`, not copied here.
+person signs and what evidence is demanded; those three columns are the repo's contract table, cited
+from `agentic-qa-core/references/stage-gates.md` and not copied here.
 
 ## The seven guardrails
 
 Source: https://www.upexgalaxy.com/metodologia#principios ("Los guardrails del agente"). The site
 lists the seven and, on the stage cards, which ones govern each stage. It defines only two of them
-in prose; the rest are named, not defined, and this table says so rather than inventing a definition.
+in prose. The rest are named without a definition, and the table says so instead of inventing one.
 
 | Guardrail | What the site says | Defined or only named |
 |---|---|---|
@@ -85,11 +85,11 @@ boilerplate: without a declared environment the result says nothing); the explic
 before filing each bug; the approval of the automation plan before writing code; the human approval
 of the merge.
 
-Repo posture: the repo has no light mode. The four never-collapsed items exist as hard gates in the
+Repo posture: the repo has no light mode. The four never-collapsed items are hard gates in the
 Planning DoD, the Execution contract and the Automation contract of
-`agentic-qa-core/references/stage-gates.md`; the four collapsible gates exist there as ordinary
-gates with no collapse path, so a session asked to "run light" has nothing to invoke and should say
-so, then cite this section.
+`agentic-qa-core/references/stage-gates.md`. The four collapsible gates are ordinary gates there,
+with no collapse path. A session asked to "run light" has nothing to invoke: it says so and cites
+this section.
 
 ## Quality attributes declared by risk
 
@@ -147,7 +147,7 @@ loop without such a number as a sequence with an ending.
 Source: https://www.upexgalaxy.com/metodologia/late-game (after the Observation card, "La rutina
 agéntica"). The site defines the agentic routine as the operating unit of the stages that do not fit
 in a session: it runs alone, on a schedule or on a trigger, and its product is evidence with an
-addressee. It is what lets Regression and Observation exist without someone sitting to watch them.
+addressee. It lets Regression and Observation exist without someone sitting to watch them.
 Observation has no skill on the site or in the repo; the routine is its declared unit.
 
 | Element | What the site requires |
@@ -160,8 +160,8 @@ Observation has no skill on the site or in the repo; the routine is its declared
 Repo twins: the Observation entries of `agentic-qa-core/references/stage-gates.md` (declared, no
 skill, no DoD, autonomy and verifier stated in the contract table) and the AUTOMATION mode of
 `.agents/skills/orca-orchestration/SKILL.md` (an unattended scheduled routine whose dispatcher
-never produces output). Neither names the four elements; a routine written in the repo should be
-checked against this table until the repo carries its own.
+never produces output). Neither names the four elements, so check any routine written in the repo
+against this table until the repo carries its own.
 
 ## Golden sets and evals
 

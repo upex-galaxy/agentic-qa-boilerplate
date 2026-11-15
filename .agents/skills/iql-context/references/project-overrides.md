@@ -1,6 +1,6 @@
 # Project overrides for `iql-context`
 
-> Project-owned. Delivered once by the scaffold or by `bun sync` when missing, then NEVER overwritten (bootstrap-only path in the updater). The shipped `SKILL.md` and its other references keep syncing from upstream; everything a project needs to say about ITS way of running the IQL goes here, and here it wins over the index for this project only. Values (which stages run, gate strictness, execution profile) do not go here: they live in `.agents/project.yaml` → `qa.methodology`.
+> Project-owned. The scaffold or `bun sync` delivers it once when it is missing and never overwrites it afterwards (bootstrap-only path in the updater). The shipped `SKILL.md` and its other references keep syncing from upstream. Everything a project needs to say about its own way of running the IQL goes here, and here it wins over the index for this project only. Values (which stages run, gate strictness, execution profile) live in `qa.methodology` in `.agents/project.yaml`, not here.
 
 ## What belongs here
 
@@ -11,9 +11,9 @@
 
 ## What does NOT belong here
 
-- Facts about the product under test → `.context/` maps and the project's `<aspect>-context` skills.
-- A lesson about the method itself → a refinement proposal upstream (`agentic-qa-core/references/upstream-feedback.md`), so every project gets it.
-- Status or transition names → `.agents/jira-workflows.json`.
+- Facts about the product under test: they go in `.context/` maps and the project's `<aspect>-context` skills.
+- A lesson about the method itself: send a refinement proposal upstream (`agentic-qa-core/references/upstream-feedback.md`) so every project gets it.
+- Status or transition names: they live in `.agents/jira-workflows.json`.
 
 ## Overrides
 

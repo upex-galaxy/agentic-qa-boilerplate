@@ -1,14 +1,14 @@
 # IQL principles: the thirteen invariants, the three seams, the two execution profiles
 
 Source: the official UPEX methodology site, https://www.upexgalaxy.com/metodologia, section `#principios`
-("Principios e invariantes", "Las tres costuras de la I", "Los dos perfiles de ejecución"). Fetched
-2026-09-23 and re-checked 2026-09-24. Spanish original; translated here, slugs kept verbatim.
+("Principios e invariantes", "Las tres costuras de la I", "Los dos perfiles de ejecución"). The site
+is in Spanish; this file translates it and keeps the slugs verbatim.
 
 This file states what the site declares as invariant and points at where the repo enforces it. It
-never restates the repo's procedure. **On any conflict the repo's executable doctrine wins**: the
-references under `agentic-qa-core/references/` are what the skills run against; this file is the
+does not restate the repo's procedure. On any conflict the repo's executable doctrine wins: the
+references under `agentic-qa-core/references/` are what the skills run against, and this file is the
 reading of the public method that a session can cite when a user asks "why". Where the site and the
-repo disagree the site's reading is written here with a pointer, never a resolution.
+repo disagree, this file writes the site's reading with a pointer and leaves the disagreement open.
 
 ## The thirteen invariants
 
@@ -34,8 +34,8 @@ site alone. `partial` means the repo encodes a consequence of the invariant, not
 | 12 | `agent-is-measured` | The agent is measured too: every stage has its golden set (a reference ATP, a reference ROI verdict, a reference failure classification) and its evals; without them "evidence proves" tests the product and not the executor, and there is no ground to raise autonomy. | partial: skill evals in `agentic-qa-core/references/skill-scaffold.md` (`evals/evals.json`); no golden artifact sets |
 | 13 | `loop-not-sequence` | The cycle is a loop, not a queue: production feeds the next cycle's analysis through a named mechanism (the error budget and the escape rate), not through good intentions; without a number that returns to step 1 the last step is an ending, not a return. | web only (Observation is declared without a skill in `agentic-qa-core/references/stage-gates.md`; no metric flows back to Shift-Left in the repo) |
 
-Reading note: the site orders these as a list of principles; the repo orders its doctrine by stage.
-A session citing an invariant cites the slug and this table, then the repo path in the last column.
+The site orders these as a list of principles; the repo orders its doctrine by stage. A session
+citing an invariant cites the slug and this table, then the repo path in the last column.
 
 ### Where each invariant lands
 
@@ -104,7 +104,7 @@ section (detail in `agentic-contract.md` of this skill):
 | Explicit agreement before filing each bug | `agentic-qa-core/references/stage-gates.md` (Execution); `agentic-qa-core/references/defect-management-doctrine.md` |
 | Approval of the automation plan before code | `agentic-qa-core/references/stage-gates.md` (Automation) |
 
-The repo does not name the two profiles; every workflow skill assumes the agentic one, and the
+The repo does not name the two profiles. Every workflow skill assumes the agentic one, and the
 manual profile is what a person does when running the same stages without a harness. A session
-should not present "manual" as a degraded mode: the site presents it as the same method with a
-different executor and the same gates.
+presents "manual" as the same method with a different executor and the same gates, which is how the
+site presents it, and not as a degraded mode.

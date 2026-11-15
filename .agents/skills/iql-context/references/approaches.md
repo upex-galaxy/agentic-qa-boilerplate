@@ -1,10 +1,10 @@
 # The eight approaches the IQL integrates
 
-**What this file is.** The eight testing approaches the official UPEX website says the IQL integrates, each with the phase the web assigns it and the concrete IQL step or artifact that makes it operational rather than an intention. Where the repo already enforces the approach through executable doctrine, the row points at that file; this file never restates the doctrine.
+This file lists the eight testing approaches the official UPEX website says the IQL integrates, each with the phase the web assigns it and the concrete IQL step or artifact that makes it operational instead of an intention. Where the repo already enforces an approach through executable doctrine, the row points at that file; this file does not restate the doctrine.
 
-**Source.** The eight tabs under `https://www.upexgalaxy.com/metodologia#fases` ("Los 8 enfoques que el IQL integra"), captured in the 2026-09-24 re-crawl (the 2026-09-23 capture only had the AI-Driven tab open). Phase assignments come from the badges on each tab. Spanish text translated to English; proper nouns (Early-Game, Mid-Game, Late-Game, Trifuerza, TMLC, TALC, KATA) and artifact acronyms kept as-is.
+Source: the eight tabs under `https://www.upexgalaxy.com/metodologia#fases` ("Los 8 enfoques que el IQL integra"). Phase assignments come from the badges on each tab. The Spanish text is translated to English; proper nouns (Early-Game, Mid-Game, Late-Game, Trifuerza, TMLC, TALC, KATA) and artifact acronyms stay as printed.
 
-**Conflict rule.** The repo's executable doctrine wins on conflict. Where the web reads differently, the row writes the web reading and adds "(repo: see ...)" without resolving it.
+Conflict rule: the repo's executable doctrine wins. Where the web reads differently, the row writes the web reading and adds "(repo: see ...)" and leaves the disagreement open.
 
 ## Summary
 
@@ -107,7 +107,7 @@ Each phase page (`https://www.upexgalaxy.com/metodologia/early-game`, `/mid-game
 
 ## Where the web's assignment sits oddly against its own steps
 
-Listed, not resolved. Each line is a web-internal reading; the repo side is cited where it exists.
+The table lists these without resolving them. Each line is a web-internal reading, with the repo side cited where it exists.
 
 | Approach | The tab says | Elsewhere the web says | Repo side |
 |---|---|---|---|
@@ -118,4 +118,4 @@ Listed, not resolved. Each line is a web-internal reading; the repo side is cite
 
 ## Reading rule for the skill
 
-When a task names one of the eight approaches by word ("do this risk-based", "shift-left these stories", "explore the feature"), resolve it to the operational step or artifact on its card and load the repo doctrine in the last row. The approach name is the reader's vocabulary; the step and the artifact are what the harness executes; the repo file is what gates it. None of the eight is a stage, a skill or a Jira status.
+When a task names one of the eight approaches by word ("do this risk-based", "shift-left these stories", "explore the feature"), resolve it to the operational step or artifact on its card and load the repo doctrine in the last row. The approach name is the reader's vocabulary, the step and the artifact are what the harness executes, and the repo file is what gates it. None of the eight is a stage, a skill or a Jira status.

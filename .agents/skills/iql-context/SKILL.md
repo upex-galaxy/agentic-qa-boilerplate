@@ -1,6 +1,6 @@
 ---
 name: iql-context
-description: "The methodology index of this repo: how the IQL (Integrated Quality Lifecycle) is structured, why the QA process runs as eight named stages, what the artifact ladder (MTP / FTP / STP / ATP / ATS / ATR / STR / RTP / RTR) means, where each invariant is enforced, and how THIS project adapts it. Load it whenever someone asks why the process is shaped this way, what a stage / step / phase / cycle / altitude is, what IQL, TMLC, TALC, Early-Game / Mid-Game / Late-Game, Trifuerza, light mode, autonomy level or execution profile mean, which skill owns a stage, or how the website's methodology maps onto the skills here, even when they do not say 'IQL'. Pure knowledge: it changes what the agent knows, never what it does next. NOT for running a stage (the workflow skills), NOT for SUT knowledge (the project's own <aspect>-context skills)."
+description: "Methodology index of this repo: the IQL (Integrated Quality Lifecycle), its stages, artifact ladder and invariants. Use when asked why the QA process is shaped this way; what a stage, step, phase, cycle or altitude is; what TMLC, TALC, Trifuerza, light mode or an autonomy level means; which skill owns a stage; or how the website's methodology maps here. Knowledge only; the workflow skills run stages."
 license: MIT
 compatibility: [claude-code, codex, opencode, pi]
 metadata:
@@ -9,24 +9,24 @@ metadata:
 
 # iql-context
 
-> Kind `context` (`agentic-qa-core/references/skill-composition-strategy.md` §2b). Shipped upstream and synced verbatim; a project adapts it through the two seams in §"How a project adapts it", never by editing this file.
+> Kind `context` (`agentic-qa-core/references/skill-composition-strategy.md` §2b). Shipped upstream and synced verbatim. A project adapts it through the two seams in §"How a project adapts it" and leaves this file alone.
 
 ## Compact Rules
 
-- DO: answer "why is the process shaped this way" from the index below, then point at the canonical reference for the procedure; never restate a DoD, a transition table or a link catalog that a reference already owns.
-- DO: name stages by word (Shift-Left, Planning, Execution, Reporting, Documentation, Automation, Regression, Observation), never by number; a numbered "Stage N" in an older doc resolves through `agentic-qa-core/references/stage-gates.md`.
-- DO: read `.agents/project.yaml` → `qa.methodology` before saying which stages a project runs or how strict its gates are; the shipped values are a default, not a decision.
-- DO: read `references/project-overrides.md` for the project's own rules and exceptions; they win over this index for THAT project, and only there.
-- DO NOT: resolve a web-vs-repo disagreement on your own. The repo's executable doctrine (`agentic-qa-core/references/*`) is what the skills enforce; the website is the public narrative. State both readings and cite both.
-- DO NOT: treat this skill as SUT knowledge. Entities, endpoints, infra and Jira content live in `.context/` maps and the project's `<aspect>-context` skills.
-- DO NOT: edit this SKILL.md or its synced references in a consumer project; propose a refinement per `agentic-qa-core/references/skill-refinement-protocol.md` (project-owned prose goes in `references/project-overrides.md`).
-- WHEN a question is about ONE aspect (phases and steps, the agentic contract, the eight approaches, the thirteen invariants): load only that reference from §"References".
+- Answer "why is the process shaped this way" from the index below, then point at the canonical reference for the procedure. Do not restate a DoD, a transition table or a link catalog that a reference already owns; the copy drifts.
+- Name stages by word (Shift-Left, Planning, Execution, Reporting, Documentation, Automation, Regression, Observation), never by number. A numbered "Stage N" in an older doc resolves through `agentic-qa-core/references/stage-gates.md`.
+- Read `qa.methodology` in `.agents/project.yaml` before saying which stages a project runs or how strict its gates are. The shipped values are a default, not a decision.
+- Read `references/project-overrides.md` for the project's own rules and exceptions. They win over this index for that project, and only there.
+- When the website and the repo disagree, do not resolve it on your own. The repo's executable doctrine (`agentic-qa-core/references/*`) is what the skills enforce and the website is the public narrative, so state both readings and cite both.
+- This skill is not SUT knowledge. Entities, endpoints, infra and Jira content live in `.context/` maps and the project's `<aspect>-context` skills.
+- In a consumer project, do not edit this SKILL.md or its synced references. Propose a refinement per `agentic-qa-core/references/skill-refinement-protocol.md`, and put project-owned prose in `references/project-overrides.md`.
+- A question about one aspect (phases and steps, the agentic contract, the eight approaches, the thirteen invariants) needs only that reference from §"References".
 
 **Read full SKILL.md when**: building a briefing that must explain the methodology to a subagent, answering "why" questions about the ladder or the stages, or checking which invariant a proposed shortcut violates.
 
 ## What this skill knows
 
-One aspect of this repository: **its own QA methodology**, the IQL, as the official site narrates it and as the repo enforces it. It knows the shape (phases, stages, steps, cycles, altitudes), the invariants, the agentic contract (autonomy, verifier, guardrails, execution profiles, light mode) and, per project, the adaptation values. It does not know the product under test.
+One aspect of this repository: its own QA methodology, the IQL, as the official site narrates it and as the repo enforces it. The skill knows the shape (phases, stages, steps, cycles, altitudes), the invariants, the agentic contract (autonomy, verifier, guardrails, execution profiles, light mode) and, per project, the adaptation values. It knows nothing about the product under test.
 
 ## Sources of truth (cited, never copied)
 
@@ -46,7 +46,7 @@ One aspect of this repository: **its own QA methodology**, the IQL, as the offic
 
 ## Index of invariants
 
-Each row states ONE invariant and cites where it comes from. "web" = the anchor on https://www.upexgalaxy.com/metodologia unless a phase page is named. "repo: none" = the repo does not encode it; the skill indexes it by web citation only (see `references/`).
+Each row states one invariant and cites where it comes from. "web" is the anchor on https://www.upexgalaxy.com/metodologia unless a phase page is named. "repo: none" means the repo does not encode the invariant, so the skill indexes it by web citation only (see `references/`).
 
 | Topic | Invariant | Web | Repo |
 |---|---|---|---|
@@ -89,29 +89,29 @@ Each row states ONE invariant and cites where it comes from. "web" = the anchor 
 
 ## Rules (judgment, dated)
 
-- 2026-09-24 · When the website and the repo disagree, the repo's executable doctrine is what the skills enforce; say so, cite both, and never "fix" one side from this skill. Measured: the disagreement ledger in the context-skills implementation report (fleet worker `context-a`), which lists the known cases with both readings.
+- 2026-09-24 · When the website and the repo disagree, the repo's executable doctrine is what the skills enforce. Say so, cite both, and leave both sides unedited: this skill does not "fix" either. Measured: the disagreement ledger in the context-skills implementation report (fleet worker `context-a`), which lists the known cases with both readings.
 - 2026-09-24 · "ATC" has two legitimate readings: on the site it is the Acceptance Test Case (a TC born from an acceptance criterion; A is never Automated), and in KATA `@atc('KEY')` is the code representation of that same case. Read `.agents/instructions/agent-code-quickref.md` "ATC" as the code method. Measured: `#artefactos` vs `.agents/instructions/agent-code-quickref.md`.
-- 2026-09-24 · A "Stage N" in an older skill or comment is a historical number, not a name; resolve it through the table in `agentic-qa-core/references/stage-gates.md` and answer with the name. Measured: numbers still appear in `.agents/instructions/agent-skills-and-mcps.md` and in the sprint-testing / regression-testing headings.
-- 2026-09-24 · Regression autonomy is stated as "3" on the site; the repo's contract table carries its own wording with a condition for a clean GO. Quote the repo when a skill asks what it may decide alone. Measured: `#stages` card Regression vs `agentic-qa-core/references/stage-gates.md`.
+- 2026-09-24 · A "Stage N" in an older skill or comment is a historical number, not a name. Resolve it through the table in `agentic-qa-core/references/stage-gates.md` and answer with the name. Measured: numbers still appear in `.agents/instructions/agent-skills-and-mcps.md` and in the sprint-testing / regression-testing headings.
+- 2026-09-24 · The site states Regression autonomy as "3"; the repo's contract table has its own wording, with a condition for a clean GO. Quote the repo when a skill asks what it may decide alone. Measured: `#stages` card Regression vs `agentic-qa-core/references/stage-gates.md`.
 
 ## Not here
 
-- The product under test (entities, endpoints, infra, personas) → `.context/` maps and the project's own `<aspect>-context` skills (`project-context` mode `context-skill`).
-- Any procedure: what a stage DOES step by step → the owning workflow skill.
-- Jira content and status names → `.context/PBI/` (the synced mirror) and `.agents/jira-workflows.json`.
-- A test-architecture decision → `.context/ADR/`.
+- The product under test (entities, endpoints, infra, personas): `.context/` maps and the project's own `<aspect>-context` skills (`project-context` mode `context-skill`).
+- Any procedure, meaning what a stage does step by step: the owning workflow skill.
+- Jira content and status names: `.context/PBI/` (the synced mirror) and `.agents/jira-workflows.json`.
+- A test-architecture decision: `.context/ADR/`.
 
 ## How a project adapts it (two seams, the body stays synced)
 
 | Kind of adaptation | Seam | Mechanism |
 |---|---|---|
-| Values: which stages the project runs, gate strictness, execution profile | `.agents/project.yaml` → `qa.methodology` | the yaml is bootstrap-only and schema-diffed, so a key upstream adds later is offered insert-only by `bun sync` |
+| Values: which stages the project runs, gate strictness, execution profile | `qa.methodology` in `.agents/project.yaml` | the yaml is bootstrap-only and schema-diffed, so a key upstream adds later is offered insert-only by `bun sync` |
 | Prose: a project rule, a local exception, a renamed artifact | `references/project-overrides.md` | delivered once when missing, never overwritten (bootstrap-only), project-owned |
 | The skill body and the other references | none | synced verbatim; a direct edit gets a parity row on the next sync, and the fix is a refinement proposal upstream |
 
 ## References
 
-Load one per aspect; none is needed to answer from the index above.
+Load one per aspect. The index above answers most questions without any of them.
 
 | Reference | Read when |
 |---|---|
@@ -124,4 +124,4 @@ Load one per aspect; none is needed to answer from the index above.
 
 ## Refinements
 
-Lessons land as proposals per `agentic-qa-core/references/skill-refinement-protocol.md`, never as direct edits. A refinement that belongs to this project alone goes to `references/project-overrides.md`; one that belongs to the method goes upstream per `agentic-qa-core/references/upstream-feedback.md`.
+Lessons land as proposals per `agentic-qa-core/references/skill-refinement-protocol.md`, not as direct edits. A refinement that belongs to this project alone goes to `references/project-overrides.md`. One that belongs to the method goes upstream per `agentic-qa-core/references/upstream-feedback.md`.

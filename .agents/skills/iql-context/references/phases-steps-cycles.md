@@ -1,12 +1,12 @@
 # IQL phases, steps and cycles: the structure the web carries and the repo does not
 
-**What this file is.** The skeleton of the Integrated Quality Lifecycle (IQL) as published on the official UPEX website: three phases, four moments, four maturity blocks, fifteen steps, the SDLC events around the loop, and the five named internal cycles. It carries only what the repo's executable doctrine does not already encode. The repo has the eight stages by name, one DoD per stage, the agentic contract and the artifact lifecycle; this file never restates them, it cites them.
+This file is the skeleton of the Integrated Quality Lifecycle (IQL) as the official UPEX website publishes it: three phases, four moments, four maturity blocks, fifteen steps, the SDLC events around the loop, and the five named internal cycles. It carries only what the repo's executable doctrine does not already encode. The repo has the eight stages by name, one DoD per stage, the agentic contract and the artifact lifecycle; this file cites them and does not restate them.
 
-**Source.** `https://www.upexgalaxy.com/metodologia` (fetched 2026-09-23; collapsed accordions and tabs re-crawled 2026-09-24) and the three phase pages `https://www.upexgalaxy.com/metodologia/early-game`, `/mid-game`, `/late-game` (fetched 2026-09-23). Spanish text translated to English; proper nouns (Early-Game, Mid-Game, Late-Game, Trifuerza, TMLC, TALC, SDC, BLC, PLC, KATA) and artifact acronyms kept as-is.
+Source: `https://www.upexgalaxy.com/metodologia` (fetched 2026-09-23; collapsed accordions and tabs re-crawled 2026-09-24) and the three phase pages `https://www.upexgalaxy.com/metodologia/early-game`, `/mid-game`, `/late-game` (fetched 2026-09-23). The Spanish text is translated to English. Proper nouns (Early-Game, Mid-Game, Late-Game, Trifuerza, TMLC, TALC, SDC, BLC, PLC, KATA) and artifact acronyms stay as the site writes them.
 
-**Conflict rule.** The repo's executable doctrine wins on conflict. Where the web reads differently, this file writes the web reading and points at the repo file with "(repo: see ...)" without resolving it.
+Conflict rule: the repo's executable doctrine wins. Where the web reads differently, this file writes the web reading and points at the repo file with "(repo: see ...)", leaving the difference unresolved.
 
-**Vocabulary the web fixes (`#stages`).** A stage has a name, never a number, and is what gets executed and gated. A step is the breakdown inside a stage. A phase groups steps, not stages, so one stage can straddle two phases.
+Vocabulary the web fixes (`#stages`): a stage has a name, never a number, and is what gets executed and gated. A step is the breakdown inside a stage. A phase groups steps, not stages, so one stage can straddle two phases.
 
 ## Three phases
 
@@ -18,7 +18,7 @@ Source: `https://www.upexgalaxy.com/metodologia#fases` ("Navegar el IQL completo
 | Mid-Game | Detection (Detección) | 5-9 | QA Automation Engineer | "Does the software meet the requirements?" | Continuous Testing, Agile Testing, AI-Driven | Playwright, GitHub Actions (or equivalent CI), Docker, Xray |
 | Late-Game | Observation (Observación) | 10-15 | QA + DevOps | "How does it behave in the real world?" | Shift-Right, Chaos Engineering, Production Monitoring, AI Ops | Sentry / Grafana / Datadog, progressive delivery / feature flags, k6, UptimeRobot (or availability monitor) |
 
-Three readings the phase badges on the stage cards (`#stages`) make explicit:
+The phase badges on the stage cards (`#stages`) make three readings explicit:
 
 | Reading | Where the web says it |
 |---|---|
@@ -76,9 +76,9 @@ Source: the stage cards under `https://www.upexgalaxy.com/metodologia#stages` ("
 | 14 | Chaos Engineering | Observation | Late-Game | QA + DevOps | Resilience, Panorama | Robust system with validated recovery |
 | 15 | Feedback Loop | Observation | Late-Game | QA + DevOps | Continuous Learning, Panorama | Continuous product improvement, feeding the next Early-Game cycle |
 
-Step 2 is counted among the fifteen so the cycle reads as a whole, and it is drawn differently: it is the SDLC synchronization point, the period when development builds while QA works in parallel, and the only step that belongs to no stage (`early-game` page, "Evento del SDLC").
+Step 2 is counted among the fifteen so the cycle reads as a whole, and it is drawn differently. It is the SDLC synchronization point, the period when development builds while QA works in parallel, and the only step that belongs to no stage (`early-game` page, "Evento del SDLC").
 
-Step 1 has three sub-steps on the web (`early-game` page): [1a] Epic analysis -> FTP (macro context; a living document refined during the whole Epic), [1b] analysis of the Epic's sibling stories (delivered, in development, and only defined) -> the full picture of the feature, [1c] Story analysis -> ATP, citing the FTP instead of re-deriving it.
+Step 1 has three sub-steps on the web (`early-game` page): [1a] Epic analysis produces the FTP (macro context; a living document refined during the whole Epic), [1b] analysis of the Epic's sibling stories (delivered, in development, and only defined) gives the full picture of the feature, [1c] Story analysis produces the ATP, citing the FTP instead of re-deriving it.
 
 Tools the web names per step, with the web's own classification (RECOMMENDED = implementation standard default; ADAPTABLE = implementation standard, swappable; CLIENT-CONTROLLED = the environment brings it):
 
@@ -113,7 +113,7 @@ Source: the "Los eventos del SDLC" accordion under `https://www.upexgalaxy.com/m
 | Desarrollo e implementación | Development and implementation | none | in-sprint | The SDLC sync point: development builds while QA prepares. Counted among the 15 steps so the cycle reads, which is why it is the only step that belongs to no stage | the development team (step 2 of 15) |
 | Cierre de sprint | Sprint close | STR | post-sprint | Recaps the sprint and closes the STP. Not the sum of the ATRs: on the results side there is no structural aggregation, so the ATRs are read and reviewed together, beside the STR | `/sprint-testing` or `/regression-testing`, whichever arrives first (repo: see `agentic-qa-core/references/stage-gates.md` §"Sprint close" and `agentic-qa-core/references/traceability-linking.md` §3 on the results side having no roll-up edge) |
 
-The loop (`#bucle`) draws three return arrows a linear model cannot: the defect, the NO-GO, and production feeding the next cycle's analysis. The web names the mechanism for the third arrow (error budget and escape rate): without a number that returns to step 1, the last step is an ending, not a return.
+The loop (`#bucle`) draws three return arrows a linear model cannot: the defect, the NO-GO, and production feeding the next cycle's analysis. The web names the mechanism for the third arrow (error budget and escape rate). Without a number that returns to step 1, the last step is an ending and not a return.
 
 ## Internal cycles
 
@@ -137,7 +137,7 @@ Source: `https://www.upexgalaxy.com/metodologia#ciclos` ("Los ciclos que corren 
 | 3rd | CI Verification | 8, Suite Verification in CI | Automation, Review + CI |
 | 4th | PR Review | 9, Pull Request Review | Automation, Review |
 
-The web names Documentation's sub-phases Prioritize and Document only; the repo names Analyze / Prioritize / Document (repo: see `agentic-qa-core/references/stage-gates.md` §"Documentation"). The TMLC -> TALC seam (step 5 -> step 6) is what the web calls the I of Integrated.
+The web names Documentation's sub-phases Prioritize and Document only; the repo names Analyze / Prioritize / Document (repo: see `agentic-qa-core/references/stage-gates.md` §"Documentation"). The seam where TMLC hands over to TALC (step 5 to step 6) is what the web calls the I of Integrated.
 
 **SDC, BLC and PLC** (the web: two real state machines and one declared-empty cycle):
 
@@ -164,7 +164,7 @@ Source: the eight stage cards under `https://www.upexgalaxy.com/metodologia#stag
 | Regression | Cierre y release | Late-Game | L3 Continuous Detection | none | `regression-testing` | 3 (repo: 3, with 4 allowed on a clean GO; see `agentic-qa-core/references/stage-gates.md` §"Autonomy scale") | not needed | QA Automation Engineer, QA Lead, Executor, Guardian | `agentic-qa-core/references/stage-gates.md` §"Regression" |
 | Observation | Producción | Late-Game | L4 Production Observation | PLC (declared empty) | none: the operating unit is an agentic routine | 3 | not applicable yet | QA Lead, Guardian | `agentic-qa-core/references/stage-gates.md` §"Observation" |
 
-Two things the web carries per stage that the repo contract table does not name: the role vocabulary above (QA Analyst, QA Lead, QA Automation Engineer, Executor, Verifier, Guardian) and a seven-word guardrail vocabulary (Lectura, Escritura, Aprobación, Secretos, Validación, Trazabilidad, Checkpoints: read, write, approval, secrets, validation, traceability, checkpoints) with a per-stage subset on each card. Both are indexed here by web citation only (`#stages`, and `#principios` "Los guardrails del agente").
+The web carries two things per stage that the repo contract table does not name: the role vocabulary above (QA Analyst, QA Lead, QA Automation Engineer, Executor, Verifier, Guardian) and a seven-word guardrail vocabulary (Lectura, Escritura, Aprobación, Secretos, Validación, Trazabilidad, Checkpoints: read, write, approval, secrets, validation, traceability, checkpoints) with a per-stage subset on each card. Both are indexed here by web citation only (`#stages`, and `#principios` "Los guardrails del agente").
 
 The web shows one Execution card, scoped to the Story. The repo adds a second, ticket-free entry into the same stage, owned by `exploratory-testing` (a flow, a module or a whole-product sweep; autonomy 3, no separate verifier, its refutation pass is internal): no new stage on either side (`agentic-qa-core/references/stage-gates.md` §"Execution (exploration without a ticket)").
 
