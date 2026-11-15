@@ -66,7 +66,7 @@ Dispatch depth per scope is in "Pick the scope first": fresh onboarding delegate
 
 ---
 
-## Phase 0 — Session resume check (MANDATORY, inline)
+## Phase 0 (session resume check, mandatory, inline)
 
 Before scope selection or any target-repo discovery, run the resume contract from `agentic-qa-core/references/session-management.md` §4:
 

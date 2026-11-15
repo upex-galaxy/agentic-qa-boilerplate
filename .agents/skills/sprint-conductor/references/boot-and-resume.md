@@ -143,7 +143,7 @@ browser session, because a browser call without the named session falls back to 
    (`[ORCHESTRATION_TOOL] terminal send --enter --text '/rename <KEY>--<new handle>'`; Pi
    `/name <KEY>--<new handle>`), then read it back on the status bar as a bare token
    (`orca-orchestration/references/session-identity.md` §5). On Claude Code this makes the name human-set,
-   so the hook leaves it alone from then on, which is what a resume wants. OpenCode v1, or a harness that
+   so the hook leaves it alone from then on, which is what a resume wants. An OpenCode whose `/rename` opens a dialog, or a harness that
    cannot be renamed: mark the roster row `(roster only)` as at launch. Write the new name into the
    roster's `Name` column and keep the old one in its `## Notes per worker`; every `Session:` trailer made
    after the resume carries the new name (commits made before keep the old one). All of this lands before

@@ -10,7 +10,7 @@
     },
     {
       "id": 2,
-      "prompt": "el mapa de infra dice que el pipeline de CI corre los tests E2E contra staging, pero el workflow ahora apunta a un entorno preview por PR. ¿lo corregimos?",
+      "prompt": "el mapa de infra dice que el pipeline de CI corre los tests E2E contra staging, pero el workflow ahora apunta a un entorno preview por PR. lo corregimos?",
       "expected_output": "Loads infra-context and follows references/refresh.md: proposes a one-section edit to `ci-cd` (and `environments` if the preview environment is new) with the workflow file at its commit as evidence, before/after text, and applies it only on explicit approval. Does not edit the CI workflow itself. Answers in Spanish.",
       "should_trigger": true,
       "files": []

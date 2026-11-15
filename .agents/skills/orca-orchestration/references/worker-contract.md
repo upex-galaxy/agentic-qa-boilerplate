@@ -171,8 +171,8 @@ outside Orca) there is no tab to rename, so skip it.
 
 Your session name is set for you, so there is nothing to do. On Claude Code the repo's identity hook
 and on Pi the adapter compose `<label>--<handle>` from your first prompt's
-`/<workflow-skill> <label> fleet worker` opening plus `ORCA_TERMINAL_HANDLE`. On Codex and OpenCode
-v2.2 the conductor types the rename verb into your terminal once you are ready, and where a harness
+`/<workflow-skill> <label> fleet worker` opening plus `ORCA_TERMINAL_HANDLE`. On Codex and an OpenCode
+whose `/rename` takes an argument the conductor types the rename verb into your terminal once you are ready, and where a harness
 cannot be renamed the roster maps your name to your handle (`references/session-identity.md` §2b).
 
 You cannot rename your own session. `/rename` is user input, not a command you can run (G83), so do

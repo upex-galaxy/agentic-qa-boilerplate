@@ -102,7 +102,7 @@ Nothing NEW or RECHECK: go straight to §5.
 3. `launch.txt` regenerated whole (`fleet-conductor.md` §5), the new line under an `## Arrivals`
    group; every line syntax-checked.
 4. Launch natively and confirm on screen (`orca-orchestration/references/coordinator-playbook.md` §1
-   steps 4-6): the agent footer within a short wait, credentials loaded, the prompt delivered. A harness
+   steps 4-6): the tab renamed to `<KEY>--<handle>` and read back with the session name, the agent footer within a short wait, credentials loaded, the prompt delivered. A harness
    error on screen is reported, not retried blindly.
 5. Board: `bun run board start <KEY> --worker <handle> --by conductor` and
    `bun run board arrival <KEY> launched "<one line>"`.

@@ -657,7 +657,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 
   <!-- 11 · CRAFT · KATA LAYERS -->
   <section class="slide" data-title="Craft · KATA layers">
-    <p class="kicker">code craft · the architecture: never collapse layers (T3)</p>
+    <p class="kicker">code craft · the architecture: never collapse layers (gotcha 19)</p>
     <h2 class="h2" data-anim="fade-up">The <span class="grad">KATA</span> layers, bottom to top</h2>
     <div class="layers anim-stagger-list">
       <div class="layer"><span class="lx">L1</span><div><h4>TestContext</h4><p>Playwright drivers (page, request), config, environment and DataFactory. No HTTP or UI helpers.</p></div></div>
@@ -767,7 +767,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 <span class="o">from the integration trunk, push, Sanity-CI, PR into the trunk, merge --no-ff.</span></pre>
     </div>
     <p class="small dim2 mt-s">After that, in the pipeline: <span class="mono">/regression-testing</span> (Regression) runs the suites in CI and issues GO / CAUTION / NO-GO.</p>
-    <div class="notes">The skill announces the handoff and invokes no git operation. Sanity CI on the branch belongs to git-flow-master + regression-testing, never to this skill. Test PRs follow the test/* convention with the title {type}({ISSUE-KEY}): {description}. Never mix product code and test code in the same PR (anti-pattern T8); under sdet, non-test work goes on a Plus Branch into the trunk. sdet runbook: .agents/skills/git-flow-master/references/sdet-integration-trunk.md.</div>
+    <div class="notes">The skill announces the handoff and invokes no git operation. Sanity CI on the branch belongs to git-flow-master + regression-testing, never to this skill. Test PRs follow the test/* convention with the title {type}({ISSUE-KEY}): {description}. Never mix product code and test code in the same PR (gotcha 21); under sdet, non-test work goes on a Plus Branch into the trunk. sdet runbook: .agents/skills/git-flow-master/references/sdet-integration-trunk.md.</div>
   </section>
 
   <!-- 16a · TC LIFECYCLE -->

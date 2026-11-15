@@ -60,8 +60,8 @@ nobody (gotcha G28).
 OpenCode flags this skill relies on (confirm with `opencode --help`): `-m, --model`, `-c, --continue`, `-s, --session`,
 `--fork`, `--prompt`, `--agent`, `--auto` (auto-approve permissions not explicitly denied), `--mini`.
 There is no name flag and no effort flag, so the conductor names an OpenCode worker, never the worker
-itself: on v2.2 the conductor types `/rename <name>` into it once it is ready, and on v1 `/rename`
-opens a dialog with no argument, so the roster carries the name instead (§2b).
+itself: where `/rename` takes an argument the conductor types `/rename <name>` into it once it is ready, and where it
+opens a dialog and takes none the roster carries the name instead (§2b).
 
 On Claude Code and Pi a hook both reads and writes the session name. On Pi it is the extension,
 through `pi.getSessionName()` and `pi.setSessionName()`. On Claude Code a hook receives the current

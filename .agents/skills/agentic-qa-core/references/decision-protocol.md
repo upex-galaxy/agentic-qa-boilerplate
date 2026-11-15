@@ -195,7 +195,7 @@ write up what it decided.
 | one ticket, needed by the team or another machine | the artifact the stage already writes for that ticket: the ATP, the ATR, the QA comment. Jira is the shared record; `.session/` alone is not |
 | a fleet task | the worker's report to the conductor, which keeps the run's decision file |
 | an owner decision batch | `.session/decisions/<topic>-<date>.json`, the file §2 source 2 reads |
-| test architecture AND hard to reverse | an ADR as well (`./adr-doctrine.md`): the log says a call was made, the ADR records the invariant |
+| a test-architecture decision that passes the three gates of `./adr-doctrine.md` §1 | an ADR as well (`./adr-doctrine.md`): the log says a call was made, the ADR records the invariant |
 | a lesson for future sessions | Engram `mem_save` |
 
 Each entry is append-only and carries the question in the shape a later search would use, the decision as

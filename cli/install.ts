@@ -483,19 +483,19 @@ export const USER_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [
   { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'humanizer' },
   // Structure pass for instructions and skills an agent reads.
   { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'writing-for-agents' },
-  // Relentless one-question-at-a-time interview used to settle a plan or requirement.
+  // Interview in rounds of numbered questions, each with a recommended answer, to stress-test a plan or requirement.
   { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'grilling' },
   // Builds and checks the shared domain language and its glossary.
   { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'domain-modeling' },
   // Turns open questions into a questionnaire a person can answer once.
   { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'to-questionnaire' },
-  // End-of-work retrospective: what went well, what to change.
+  // End-of-work retrospective that proposes improvements to the agent's environment.
   { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'retro' },
   // Decision log format (ts, phase, decision, why, evidence, result) for routines and long workers.
   { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'show-me-your-work' },
   // Sizes what a change can break elsewhere (callers, shared helpers, wire formats) for a risk score.
   { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'blast-radius' },
-  // Pins down the cause of a bug that reproduces unreliably, before it is filed.
+  // Diagnosis loop for hard bugs and performance regressions, run before a bug is filed.
   { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'diagnosing-bugs' },
 ];
 

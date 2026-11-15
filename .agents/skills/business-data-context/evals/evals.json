@@ -10,7 +10,7 @@
     },
     {
       "id": 2,
-      "prompt": "oye, acabo de correr un SELECT en staging y la tabla subscriptions tiene una columna paused_until que el mapa de datos no menciona para nada. ¿lo arreglamos?",
+      "prompt": "oye, acabo de correr un SELECT en staging y la tabla subscriptions tiene una columna paused_until que el mapa de datos no menciona para nada. lo arreglamos?",
       "expected_output": "Loads business-data-context and follows references/refresh.md: locates the section via --list / --section, PROPOSES a one-section edit in the fixed proposal shape (section id, evidence = the query, before/after, figure unchanged or redraw) and waits for an explicit yes before editing only that section of references/business-data-map.html and bumping data-updated. Answers in Spanish. Does not touch any file outside the skill's references/.",
       "should_trigger": true,
       "files": []

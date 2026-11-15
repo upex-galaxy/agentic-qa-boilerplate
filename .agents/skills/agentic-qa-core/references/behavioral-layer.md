@@ -23,7 +23,7 @@ The headline reports user, business or quality value, not the technical action: 
 
 ## Visual mapping
 
-When content maps naturally (a comparison, a sequence, a hierarchy, a state machine), a table or a plain-ASCII diagram replaces the prose instead of decorating it. Full canonical text in `AGENTS.md` §2 VISUAL MAPPING BIAS.
+When content maps naturally (a comparison, a sequence, a hierarchy, a state machine), a table or a plain-ASCII diagram replaces the prose instead of decorating it. Full canonical text in `AGENTS.md` §2 Visual mapping.
 
 ## Language detection + mirroring
 

@@ -657,7 +657,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 
   <!-- 11 · CRAFT · CAPAS KATA -->
   <section class="slide" data-title="Craft · capas KATA">
-    <p class="kicker">craft del code · la arquitectura — nunca colapses capas (T3)</p>
+    <p class="kicker">craft del code · la arquitectura — nunca colapses capas (gotcha 19)</p>
     <h2 class="h2" data-anim="fade-up">Las capas <span class="grad">KATA</span>, de abajo hacia arriba</h2>
     <div class="layers anim-stagger-list">
       <div class="layer"><span class="lx">L1</span><div><h4>TestContext</h4><p>Drivers de Playwright (page, request), config, entorno y DataFactory. Sin helpers HTTP ni de UI.</p></div></div>
@@ -767,7 +767,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 <span class="o">from the integration trunk, push, Sanity-CI, PR into the trunk, merge --no-ff.</span></pre>
     </div>
     <p class="small dim2 mt-s">Después, en el pipeline: <span class="mono">/regression-testing</span> (Regression) corre las suites en CI y emite GO / CAUTION / NO-GO.</p>
-    <div class="notes">La skill anuncia el handoff y no invoca ninguna operación de git. Sanity CI en la branch es de git-flow-master + regression-testing, nunca de esta skill. Los PRs de test siguen la convención test/* con título {type}({ISSUE-KEY}): {description}. Nunca mezclar código de producto y de test en el mismo PR (anti-pattern T8); bajo sdet, el trabajo que no es de test va en una Plus Branch hacia el trunk. Runbook sdet: .agents/skills/git-flow-master/references/sdet-integration-trunk.md.</div>
+    <div class="notes">La skill anuncia el handoff y no invoca ninguna operación de git. Sanity CI en la branch es de git-flow-master + regression-testing, nunca de esta skill. Los PRs de test siguen la convención test/* con título {type}({ISSUE-KEY}): {description}. Nunca mezclar código de producto y de test en el mismo PR (gotcha 21); bajo sdet, el trabajo que no es de test va en una Plus Branch hacia el trunk. Runbook sdet: .agents/skills/git-flow-master/references/sdet-integration-trunk.md.</div>
   </section>
 
   <!-- 16a · CICLO DE VIDA DEL TC -->

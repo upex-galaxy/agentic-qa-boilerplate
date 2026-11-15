@@ -37,7 +37,7 @@ One aspect of the system under test: how it is built and where it runs. That cov
 | the product repos (`{{BACKEND_REPO}}`, `{{FRONTEND_REPO}}`), their manifests, compose files and CI workflows | the real stack, commands and pipelines | wins over the map on any conflict |
 | `.agents/project.yaml` `environments` | environment URLs | the only source for a URL |
 | `.env` / `.env.example` | credentials and their key names | the only source for a secret |
-| `.context/ADR/` | the hard-to-reverse test-architecture decisions | cited from `architecture` |
+| `.context/ADR/` | the test-architecture decisions that pass the three ADR gates | cited from `architecture` |
 | `project-discovery` Phases 2-3 | the generator that creates the map and updates its stale sections | owns regeneration |
 
 ## Rules (judgment, dated)

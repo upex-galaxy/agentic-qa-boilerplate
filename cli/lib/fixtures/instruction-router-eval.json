@@ -50,7 +50,7 @@
       "expect": ["project-variables", ".agents/project.yaml"]
     },
     {
-      "prompt": "¿qué valor tiene {{PROJECT_KEY}} acá?",
+      "prompt": "qué valor tiene {{PROJECT_KEY}} acá?",
       "expect": ["project-variables", ".agents/project.yaml"]
     },
     {
@@ -134,7 +134,7 @@
       "expect": ["skills-and-mcps"]
     },
     {
-      "prompt": "¿qué tier tiene la skill playwright-cli?",
+      "prompt": "qué tier tiene la skill playwright-cli?",
       "expect": ["skills-and-mcps", "tool-resolution"]
     },
     {
@@ -150,7 +150,7 @@
       "expect": ["tool-resolution", "local-context-pbi", "project-variables"]
     },
     {
-      "prompt": "¿cómo uso bun xray para importar resultados JUnit?",
+      "prompt": "cómo uso bun xray para importar resultados JUnit?",
       "expect": ["tool-resolution", "package.json"]
     },
     {
@@ -230,7 +230,7 @@
       "expect": ["package.json"]
     },
     {
-      "prompt": "¿cómo corro el lint y el typecheck?",
+      "prompt": "cómo corro el lint y el typecheck?",
       "expect": ["package.json"]
     },
     {
@@ -325,7 +325,7 @@
       "expect": ["context-map", "project-variables", ".agents/project.yaml"]
     },
     {
-      "prompt": "el host de Jira cambió, ¿dónde se configura?",
+      "prompt": "el host de Jira cambió, dónde se configura?",
       "expect": ["project-variables", ".agents/project.yaml"]
     },
     {
@@ -341,7 +341,7 @@
       "expect": ["orchestration-detail", "context-map"]
     },
     {
-      "prompt": "¿qué dice la regla 15 sobre git stash?",
+      "prompt": "qué dice la regla 15 sobre git stash?",
       "expect": ["critical-rules", "git"]
     },
     {

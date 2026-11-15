@@ -776,16 +776,16 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <h2 class="h2">Los rieles que te <span class="grad">protegen</span></h2>
     <table class="tt tight mt-m">
       <tr><th style="width:110px">Regla</th><th>Nunca</th><th style="width:360px">Por qué te importa</th></tr>
-      <tr><td class="small mono">F1 · F3</td><td class="small">Trabajo por ticket ni componentes de módulo en <code>tests/components/</code></td><td class="small">esa superficie es de <code>/test-automation</code></td></tr>
-      <tr><td class="small mono">F2</td><td class="small">Colapsar las capas KATA</td><td class="small">rompe la cadena que asume cada componente</td></tr>
-      <tr><td class="small mono">F4</td><td class="small">Saltear el pipeline en un "refactor rápido"</td><td class="small">es la vía más segura a una regresión sin detectar</td></tr>
-      <tr><td class="small mono">F5</td><td class="small">Subir de versión mayor Playwright, Bun o TypeScript sin una corrida de regresión E2E</td><td class="small">los upgrades juntos esconden roturas de fixtures, locators y tipos</td></tr>
-      <tr><td class="small mono">F6</td><td class="small">Una fixture API sin su archivo de fixture, <code>kata-manifest.json</code> y un test que la use</td><td class="small">una fixture huérfana se pudre</td></tr>
-      <tr><td class="small mono">F7</td><td class="small">Tocar <code>cli/install.ts</code> sin probar en un clon limpio</td><td class="small">un bug ahí llega en silencio a cada usuario nuevo</td></tr>
-      <tr><td class="small mono">F8</td><td class="small">Una decisión de arquitectura difícil de revertir sin ADR</td><td class="small">se re-discute o se viola sin aviso</td></tr>
+      <tr><td class="small mono">Alcance</td><td class="small">Trabajo por ticket ni componentes de módulo en <code>tests/components/</code></td><td class="small">esa superficie es de <code>/test-automation</code></td></tr>
+      <tr><td class="small mono">Capas</td><td class="small">Colapsar las capas KATA</td><td class="small">rompe la cadena que asume cada componente</td></tr>
+      <tr><td class="small mono">Pipeline</td><td class="small">Saltear el pipeline en un "refactor rápido"</td><td class="small">es la vía más segura a una regresión sin detectar</td></tr>
+      <tr><td class="small mono">Upgrades</td><td class="small">Subir de versión mayor Playwright, Bun o TypeScript sin una corrida de regresión E2E</td><td class="small">los upgrades juntos esconden roturas de fixtures, locators y tipos</td></tr>
+      <tr><td class="small mono">Fixtures</td><td class="small">Una fixture API sin su archivo de fixture, <code>kata-manifest.json</code> y un test que la use</td><td class="small">una fixture huérfana se pudre</td></tr>
+      <tr><td class="small mono">Instalador</td><td class="small">Tocar <code>cli/install.ts</code> sin probar en un clon limpio</td><td class="small">un bug ahí llega en silencio a cada usuario nuevo</td></tr>
+      <tr><td class="small mono">ADR</td><td class="small">Una decisión de arquitectura difícil de revertir sin ADR</td><td class="small">se re-discute o se viola sin aviso</td></tr>
     </table>
     <p class="small dim mt-s">Critical Rules en las que se apoya: #2, #7, #12, #15 y #17. Tampoco edita artefactos generados (<code>api/openapi-types.ts</code>, <code>kata-manifest.json</code>, <code>reports/</code>) ni credenciales.</p>
-    <div class="notes">Critical Rules: #2 plan antes de código, #7 tests → types → lint, #12 manifest como fuente de verdad, #15 sin descartes globales, #17 la prosa nombra al dueño y no copia su valor. Fuente: sección "Anti-patterns" de la SKILL.md (F1 a F8), Compact Rules y kata-invariants.md §9. Ante un fallo de subagente: STOP, reportar, sin re-ejecutar solo; vos decidís retry, skip o abort.</div>
+    <div class="notes">Critical Rules: #2 plan antes de código, #7 tests → types → lint, #12 manifest como fuente de verdad, #15 sin descartes globales, #17 la prosa nombra al dueño y no copia su valor. Fuente: Compact Rules de la SKILL.md (donde se plegaron las reglas F1 a F8) y kata-invariants.md §9. Ante un fallo de subagente: STOP, reportar, sin re-ejecutar solo; vos decidís retry, skip o abort.</div>
   </section>
 
   <!-- 16. ENTRADAS Y SALIDAS -->

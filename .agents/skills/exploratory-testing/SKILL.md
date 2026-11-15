@@ -145,7 +145,7 @@ Full doctrine: `agentic-qa-core/references/preflight-gate.md`. Two laws apply: a
 
 ---
 
-## Phase 0 — Session resume check + Session Init
+## Phase 0 (session resume check and session init)
 
 0.0 **Resume check** (`agentic-qa-core/references/session-management.md` §4). Compute `<scope>` = `<YYYY-MM-DD>-<scope-slug>`. Check `<<PRIMARY_ROOT>>/.session/exploratory-testing/<scope>/progress.md` (from a worktree, say so in one line and look in the primary). If it exists, read `plan.md`, `charter.md` and the tail of `progress.md`, surface the last completed step and the next one, and offer **resume / restart / abort**. On `restart`, archive the directory to `.session/.archive/<YYYY-MM-DD>-exploratory-testing-<scope>-aborted/` first.
 

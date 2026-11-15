@@ -69,9 +69,9 @@ claude --model <full-model-id> --effort {{DEFAULT_EFFORT}} --dangerously-skip-pe
 # OpenCode (v1.19.5 / v2.2.0; opencode.ai/docs/cli and /docs/permissions, read 2026-10-28): -m/--model,
 # --agent, --prompt, --auto (bypass: auto-approve every permission not explicitly denied; hidden
 # aliases --yolo, --dangerously-skip-permissions), -s/--session, -c/--continue, --fork. There is no
-# name flag and no effort flag. Once the session is up, type '/rename <label>--<handle>' into it on
-# v2.2; on v1 /rename opens a dialog with no argument, so the roster carries the name (a model cannot
-# rename its own session).
+# name flag and no effort flag. Once the session is up, type '/rename <label>--<handle>' into it when
+# /rename takes an argument; when it opens a dialog and takes none, the roster carries the name (a model
+# cannot rename its own session).
 opencode --model <provider/model> --auto --prompt '/<workflow-skill> <label> fleet worker. Read <ABS>/.session/orchestration/<slug>/COMMON.md then <ABS>/.session/orchestration/<slug>/W-<label>.md and execute your brief. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints. Channel: {{MESSAGE_VERB}}. No heartbeats. ROUTE-SCOPE: <section ids>'
 
 # Codex CLI (rust-v0.165.0; Codex approvals and security docs plus codex-rs at that tag, read

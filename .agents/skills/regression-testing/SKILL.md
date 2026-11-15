@@ -95,7 +95,7 @@ One conductor reads the run, classifies and owns the verdict, so triage is never
 
 ---
 
-## Readiness Preflight Gate (MANDATORY — runs before Phase 0)
+## Readiness preflight gate (mandatory, runs before Phase 0)
 
 > Full doctrine: `agentic-qa-core/references/preflight-gate.md`. The gate runs before the resume check and any `gh workflow run`, on two laws: **args-as-answers** (the suite, env and any grep or test_file are provided args, so ask only the gaps) and **probe, don't assume**. Gaps and REDs go out as ONE `AskUserQuestion` checklist, a self-fix needs approval and an explanation, and a blocking RED stops the run. The generic baseline (env resolution, secret and restart handling, output contract) is the reference §3.1; below is only this skill's capability delta.
 
@@ -113,7 +113,7 @@ Test-user creds, the OpenAPI / API token, DBHub and Playwright browsers live ins
 
 ---
 
-## Phase 0 — Session resume check (MANDATORY, inline)
+## Phase 0 (session resume check, mandatory, inline)
 
 Before suite selection or any `gh workflow run`, run the resume contract from `agentic-qa-core/references/session-management.md` §4:
 
@@ -174,7 +174,7 @@ Allure (major pinned in `package.json`) is a devDep: `bunx allure` resolves to t
 
 `bun allure:agent` writes a markdown summary an agent reads without parsing HTML. Use it for a structured pass/fail breakdown after a local re-run while triaging a CI failure (Phase 2 step 1, before downloading `merged-allure-results-{env}`). CI produces those artifacts and `gh run download` fetches them (Phase 2). The GitHub Pages reports come from `scripts/ci/publish-allure-pages.ts` with the SAME `allurerc.mjs` and `allure` devDep as local runs; `/{env}/{suite}/` redirects into the latest run's Awesome report, with per-suite trend history and the `--keep` retention that script applies.
 
-### Allure version-currency check (MANDATORY during any Allure/Pages setup)
+### Allure version-currency check (required during any Allure or Pages setup)
 
 The boilerplate pins the Allure packages at scaffold time, so a fresh install is usually behind upstream. Run this check first on any **Allure setup** (first local report, or a RED on the "Allure local" preflight row) or **GitHub Pages setup** (`references/github-pages-setup.md`):
 
@@ -191,7 +191,7 @@ Keep these on upgrade (context in the `allurerc.mjs` comments):
 
 ---
 
-## Phase 1 — Execute
+## Phase 1: Execute
 
 ### Preflight (always)
 
@@ -287,7 +287,7 @@ A short execution summary: workflow name, run ID, environment, duration, conclus
 
 ---
 
-## Phase 2 — Analyze
+## Phase 2: Analyze
 
 ### Step 1: Collect data
 
@@ -418,7 +418,7 @@ An analysis block with the metrics table, trend delta, one section per failure c
 
 ---
 
-## Phase 3 — Report & Decide
+## Phase 3: Report and decide
 
 ### GO / CAUTION / NO-GO scoring
 
