@@ -4,7 +4,9 @@
 
 ## LOAD PROTOCOL
 
-Before acting on a request, match it against the ROUTER and read every matched section file not already in this conversation. A `ROUTE:` line injected by the hook is binding and wins over your own judgment: read its file before acting. A `ROUTE-OPTIONAL:` line is not binding: read one of its files only when the task needs it. A `ROUTE-PENDING:` line names a binding file still unread: read it before the next step. A section once read is not re-read unless compaction or `/clear` removed it. Unsure whether a section applies → read it: a skipped section is the failure this design guards against. A section binds exactly like this file. A `§N` citation anywhere names the numbered heading kept verbatim in the file the ROUTER lists for it.
+Before acting, match the request against the ROUTER and read each matched section file not yet in this conversation. A `ROUTE:` line from the hook is binding and wins over your judgment: read its file first. `ROUTE-OPTIONAL:` is not binding; read it only if the task needs it. `ROUTE-PENDING:` names a binding file still unread: read it next. Re-read only after compaction or `/clear`. Unsure whether a section applies: read it, a skipped section is the failure this design guards against. A section binds like this file; a `§N` citation names its numbered heading in the file the ROUTER lists.
+
+Skills and sections load by meaning in any language: a Spanish or other prompt loads what its English equivalent loads. With no `ROUTE:` line, route it yourself from the ROUTER. Replies still mirror the user's language (Critical Rule 14).
 
 ---
 

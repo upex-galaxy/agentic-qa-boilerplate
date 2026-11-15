@@ -2,7 +2,7 @@
 id: ticket-work
 title: 'AI behavior during testing'
 load_when: 'testing a story or bug, test design, filing a defect, artifact lifecycle, environment selection, session close of a workflow skill'
-triggers: ['\btest(ing)? (this|the|a) (story|ticket|bug)', '\bQA\b', '\bprueba', '\bprobar\b', '\bstory\b', '\bhistoria\b', '\bbug\b', '\bdefect', '\bimprovement\b', '\bATP\b', '\bATR\b', '\btest cases?\b', '\bcasos? de prueba']
+triggers: ['\btest(ing)? (this|the|a) (story|ticket|bug)', '\bQA\b', '\bstory\b', '\bbug\b', '\bdefect', '\bimprovement\b', '\bATP\b', '\bATR\b', '\btest cases?\b']
 paths: []
 ---
 

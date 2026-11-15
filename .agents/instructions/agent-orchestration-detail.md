@@ -2,7 +2,7 @@
 id: orchestration-detail
 title: 'Orchestration detail'
 load_when: 'choosing an executor, dispatch patterns, a supervised worker or fleet, value provenance, fail-closed gates, session material in a dispatch, workflow-skill compliance'
-triggers: ['\bsubagent', '\bdispatch', '\bworkers?\b', '\bfleet\b', '\bflota\b', '\borquest', '\borchestrat', '\bgate\b', '\bevidence\b', '\bHAR\b', '\btrace\b', '\bstage_owner\b']
+triggers: ['\bsubagent', '\bdispatch', '\bworkers?\b', '\bfleet\b', '\borchestrat', '\bgate\b', '\bevidence\b', '\bHAR\b', '\btrace\b', '\bstage_owner\b']
 paths: []
 ---
 

@@ -2,7 +2,7 @@
 id: git
 title: 'Git workflow and strategy'
 load_when: 'any git, branch, commit, push, PR, merge, rebase, conflict or branching-strategy intent'
-triggers: ['\bgit\b', '\bcommit', '\bpush', '\bPR\b', '\bpull request', '\bbranch', '\brama\b', '\bmerge', '\brebase', '\bconflict', '\bconflicto']
+triggers: ['\bgit\b', '\bcommit', '\bpush', '\bPR\b', '\bpull request', '\bbranch', '\bmerge', '\brebase', '\bconflict']
 paths: ['.husky/', '.github/']
 ---
 

@@ -2,7 +2,7 @@
 id: critical-rules
 title: 'Critical rules: full text'
 load_when: 'about to break, unsure about, or asked about a Critical Rule'
-triggers: ['\bcritical rule', '\brule #?\d+\b', '\bregla #?\d+\b']
+triggers: ['\bcritical rule', '\brule #?\d+\b']
 paths: []
 ---
 

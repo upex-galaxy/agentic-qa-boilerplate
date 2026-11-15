@@ -1,5 +1,5 @@
 {
-  "description": "Labelled prompts for the instruction router of .agents/hooks/personality-reinject.mjs, in this repository's own QA vocabulary. Each `expect` lists what a careful reader of the AGENTS.md router would load for the prompt: a section id (frontmatter `id`) or an import path, companions of a fired row included. Labels follow the router, not the classifier: a miss or a false hit is fixed in a section's `triggers:`, never by relabelling. Bilingual on purpose (ES/EN).",
+  "description": "Labelled prompts for the instruction router of .agents/hooks/personality-reinject.mjs, in this repository's own QA vocabulary. Each `expect` lists what a careful reader of the AGENTS.md router would load for the prompt: a section id (frontmatter `id`) or an import path, companions of a fired row included. Labels follow the router, not the classifier: a miss or a false hit is fixed in a section's `triggers:`, never by relabelling. The scored set is bilingual where an English and a Spanish prompt share a token (neutral stems such as regres, explorat); Spanish-only prompts live in `meaningOnly`.",
   "targets": {
     "recall": 0.95,
     "precision": 0.8
@@ -7,10 +7,6 @@
   "prompts": [
     {
       "prompt": "boot the sprint conductor for sprint 7 and keep watching the test environment from the board",
-      "expect": ["context-map", "project-variables", ".agents/project.yaml"]
-    },
-    {
-      "prompt": "arranca el conductor del sprint 7 y vigila el entorno de pruebas desde el board",
       "expect": ["context-map", "project-variables", ".agents/project.yaml"]
     },
     {
@@ -66,10 +62,6 @@
       "expect": ["project-variables", ".agents/project.yaml"]
     },
     {
-      "prompt": "el host de Jira cambió, ¿dónde se configura?",
-      "expect": ["project-variables", ".agents/project.yaml"]
-    },
-    {
       "prompt": "sync the Jira issues into the PBI cache",
       "expect": ["local-context-pbi", "project-variables"]
     },
@@ -90,20 +82,12 @@
       "expect": ["context-map", "ticket-work", "local-context-pbi", "project-variables"]
     },
     {
-      "prompt": "probá la historia BK-301 y reportá los bugs",
-      "expect": ["context-map", "ticket-work", "local-context-pbi", "project-variables"]
-    },
-    {
       "prompt": "retest the bug BK-412 after the fix",
       "expect": ["context-map", "ticket-work", "local-context-pbi", "project-variables"]
     },
     {
       "prompt": "write the ATP for the checkout story",
       "expect": ["context-map", "ticket-work", "local-context-pbi"]
-    },
-    {
-      "prompt": "diseñá los casos de prueba para el login",
-      "expect": ["ticket-work", "local-context-pbi"]
     },
     {
       "prompt": "file a defect for the broken export button",
@@ -212,10 +196,6 @@
     {
       "prompt": "launch three workers in parallel, one per story",
       "expect": ["orchestration-detail"]
-    },
-    {
-      "prompt": "orquestá una flota para el sprint 4",
-      "expect": ["orchestration-detail", "context-map"]
     },
     {
       "prompt": "dispatch a subagent to run the verification gates",
@@ -344,6 +324,29 @@
     {
       "prompt": "does this also work on pi",
       "expect": ["harnesses"]
+    }
+  ],
+  "meaningOnlyNote": "the regex hook cannot match these prompts: they carry no token the language-neutral triggers share with English. The agent routes them by reading the ROUTER (LOAD PROTOCOL), per owner decision 5. The scorer reads only `prompts`, so this key is ignored by the gate.",
+  "meaningOnly": [
+    {
+      "prompt": "arranca el conductor del sprint 7 y vigila el entorno de pruebas desde el board",
+      "expect": ["context-map", "project-variables", ".agents/project.yaml"]
+    },
+    {
+      "prompt": "el host de Jira cambió, ¿dónde se configura?",
+      "expect": ["project-variables", ".agents/project.yaml"]
+    },
+    {
+      "prompt": "probá la historia BK-301 y reportá los bugs",
+      "expect": ["context-map", "ticket-work", "local-context-pbi", "project-variables"]
+    },
+    {
+      "prompt": "diseñá los casos de prueba para el login",
+      "expect": ["ticket-work", "local-context-pbi"]
+    },
+    {
+      "prompt": "orquestá una flota para el sprint 4",
+      "expect": ["orchestration-detail", "context-map"]
     }
   ]
 }
