@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-11-11T02:45:08.543Z`
+> Generated: `2026-11-15T07:40:20.774Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -116,15 +116,15 @@ Skills indexed: 29
 
 ## Skill: business-api-context
 
-**Purpose**: What the API of the system under test MEANS to the business: every endpoint group, who calls it and why, what it changes, which auth leve...
+**Purpose**: The business meaning of the system's API: endpoint groups, callers, auth, flows, errors, integrations.
 
 **Compact Rules**:
-- DO: read the map through `bun run context:map business-api-context` (or `--section <id>` for one endpoint group). NEVER read `references/business-api-map.html` raw: its SVG is most of the bytes and none of the facts.
-- DO: treat a placeholder map as "no map". Say so and hand the user `project-context` mode `api`; never answer API questions as if the API were empty.
-- DO: take field names, types and required flags from the schema (`[API_TOOL]` schema read, `api/schemas/`), and the MEANING from the map. On a conflict the schema wins for shape, the running API wins for behaviour.
-- WHEN a session observes something that contradicts a section (a status, a field, an auth rule): PROPOSE the one-section edit with its evidence to the user (or to the conductor when you are a supervised worker), apply it only on approval. Procedure: `references/refresh.md`.
-- DO NOT: write anywhere but this skill's own `references/`. No Jira, no `.context/`, no other skill, no `api/schemas/`, no product code.
-- DO NOT: copy map content into this SKILL.md. Judgment goes in `## Rules` or `references/gotchas.md`, dated and measured.
+- Read the map through `bun run context:map business-api-context` (or `--section <id>` for one endpoint group). Skip `references/business-api-map.html` raw: its SVG is most of the bytes and none of the facts.
+- A placeholder map means there is no map. Say so and hand the user `project-context` mode `api`, so nobody mistakes an empty map for an empty API.
+- Take field names, types and required flags from the schema (`[API_TOOL]` schema read, `api/schemas/`) and the meaning from the map. When they conflict, the schema wins for shape and the running API wins for behaviour.
+- When a session observes something that contradicts a section (a status, a field, an auth rule), propose the one-section edit with its evidence to the user, or to the conductor when you are a supervised worker, and apply it only on approval. Procedure: `references/refresh.md`.
+- Write only inside this skill's own `references/`. Jira, `.context/`, other skills, `api/schemas/` and product code are out of scope, because this skill owns one map and nothing else.
+- Keep map content out of this SKILL.md. Judgment goes in `## Rules` or `references/gotchas.md`, dated and measured.
 - Before a step that uses `api-schema` (verifying a section) or `diagrams` (redrawing a figure), run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8.
 
 **Read full SKILL.md when**: building a briefing for an API-level dispatch, deciding whether a section is stale, or proposing an edit to the map.
@@ -242,30 +242,30 @@ Skills indexed: 29
 
 ## Skill: framework-development
 
-**Purpose**: Framework evolution mode — evolves the QA boilerplate itself (KATA, fixtures, cli/, scripts/, api/schemas/ pipeline, package.json deps).
+**Purpose**: Evolve the QA boilerplate itself: KATA bases, fixtures, installer, scripts, OpenAPI pipeline, instruction files.
 
 **Compact Rules**:
-- DO NOT: use this skill for per-ticket work — test writing is `/test-automation`, manual QA is `/sprint-testing`, TMS docs are `/test-documentation`, suite runs are `/regression-testing`. This skill governs the architectural surface only.
-- DO: clear the readiness preflight, then run the Phase 0 path self-check against `references/kata-invariants.md` §10 before dispatching anything. A FORBIDDEN path aborts and redirects to the skill named in the row; a path in neither table is ASKED about, never assumed.
-- WHEN one change spans both ALLOWED and FORBIDDEN paths: split it. This skill changes the base; `/test-automation` migrates the consuming specs in a follow-up.
-- DO: run Plan → Code → Verify → Archive in order for every non-trivial framework change. The pipeline IS the gate; "it's a quick refactor" is not an exemption.
-- DO NOT: edit per-ticket tests from a framework-development session: the specs under `tests/e2e/` and `tests/integration/` and the per-module Page / Api / Steps components are `/test-automation` surface. The KATA bases (`TestContext.ts`, `ApiBase.ts`, `UiBase.ts`) and the fixture files ARE yours (`references/kata-invariants.md` §10.1).
-- DO NOT: collapse the KATA layers (TestContext / Base / Domain / Fixture) under a simplicity argument. They are framework architecture, not speculative abstraction.
-- DO NOT: add a new fixture API without updating the matching fixture file AND `kata-manifest.json` AND citing at least one existing test that consumes it. Orphan fixtures rot, and the manifest is the anti-duplication gate.
-- DO NOT: bump a major version of Playwright / Bun / TypeScript without a regression run on a representative E2E suite — lockstep upgrades hide breaks in fixture lifecycle, locator engines, and type emit.
-- DO NOT: refactor `cli/install.ts` without exercising the full install flow on a clean clone. Verification on an already-installed repo proves nothing, and the installer is the one surface where a bug ships silently to every new user.
-- WHEN the chosen approach reshapes test architecture (KATA layers, a fixture API, the runner, the isolation/parallelization model, the OpenAPI/type pipeline) AND is hard to reverse: record an ADR under `.context/ADR/` after plan approval and before coding. The plan approval IS the decision, so the ADR is written `Accepted` citing it, never handed back for acceptance (`Proposed` only for a question still open). ADRs are append-only — supersede, never rewrite.
-- DO: verify with all four checks (test, types, lint, skills) and treat any non-zero exit as REJECT — present retry / skip-and-document / abort, never auto-fix. A skill that itself broke (a wrong step, a missing verifier, a stale rule) is reported upstream per `../agentic-qa-core/references/upstream-feedback.md`: drafted and redacted locally, filed only on explicit OK, verified with `gh issue view`.
-- WHEN the change IS a skill (a new or restructured `.agents/skills/<slug>/`): scaffold it per `../agentic-qa-core/references/skill-scaffold.md` (frontmatter incl. `metadata.kind`, per-kind files and sections, Definition of Done). `skill-creator` (T3, installed at project level) is ALWAYS the builder: load it for the draft, the test prompts, the evals and the description pass; the scaffold contract stays this repo's. Missing on the machine → scaffold from the reference's template and say so. Consumer SUT context skills are NOT this skill's job: `project-context` mode `context-skill` owns them.
-- DO NOT: let a subagent write `progress.md`; it is orchestrator-only. Code subagents return one-line summaries per task, and the orchestrator does not read their diffs.
-- DO: close every change that adds, renames or retires a skill, a `package.json` script or a doc path, OR changes a behaviour a page describes, with the docs follow-through (Phase 3): patch `.agents/instructions/agent-context-map.md` and `.agents/instructions/agent-skills-and-mcps.md`, `README.md`, `INSTALLER.md`, `CONTEXT.md`, the `docs/core/` pages, the decks (`packages/decks/**`) and the Pages home (`packages/pages-home/**`) in the same PR. `bun run docs:check` proves the router and the quoted scripts; the prose is judgment.
-- WHEN an edit lands inside a `LINT.IfChange(<label>)` region (the hook prints a `DOCS:` line; ADR-0016): update EVERY page its `LINT.ThenChange(...)` names in the same push. Only when the documented behaviour did not change, add `Docs-Checked: <label> <reason>` to a commit message; NEVER add it by reflex or without a reason. Pre-push and CI block otherwise. A drift found later gets a new marker.
-- WHEN the change touches `cli/`, `scripts/`, `.husky/`, `AGENTS.md` or `.agents/instructions/`: run the V5 drift sweep after the four verifiers, report-only (Phase 3). It greps the doc surface for prose that describes the OLD behaviour and counts the `Docs-Checked:` trailers the change used.
-- DO: archive the session directory only after all four verifiers pass. On REJECT it stays in place so the run can be debugged or resumed.
-- DO: route every change to `AGENTS.md`, a section under `.agents/instructions/`, the ROUTER or a `triggers:` list through mode `instructions`: place each sentence with `references/instructions-doctrine.md` §2, close with `bun run instructions:check`. NEVER paste section prose into `AGENTS.md`, and NEVER add a ROUTER row without the ADR that decides it (`--accept-router ADR-NNNN`, ADR-0013).
-- WHEN a trigger misses or over-fires: fix the section's `triggers:` and add the prompts to `cli/lib/fixtures/instruction-router-eval.json`; NEVER relabel a prompt to hide a miss.
+- Use this skill for the architectural surface only. Test writing is `/test-automation`, manual QA is `/sprint-testing`, TMS docs are `/test-documentation`, suite runs are `/regression-testing`.
+- Clear the readiness preflight, then run the Phase 0 path self-check against `references/kata-invariants.md` §10 before dispatching anything. A FORBIDDEN path aborts and redirects to the skill named in its row. A path in neither table is asked about, not assumed.
+- When one change spans ALLOWED and FORBIDDEN paths, split it. This skill changes the base; `/test-automation` migrates the consuming specs in a follow-up.
+- Run Plan, Code, Verify, Archive in order for every non-trivial framework change. The pipeline is the gate, and "it is a quick refactor" is not an exemption: skipping it for `ApiBase.ts`, `UiBase.ts`, `TestContext.ts`, fixtures, the installer or the OpenAPI pipeline reliably ships undetected regressions.
+- Leave per-ticket tests alone: the specs under `tests/e2e/` and `tests/integration/` and the per-module Page, Api and Steps components are `/test-automation` surface. The KATA bases (`TestContext.ts`, `ApiBase.ts`, `UiBase.ts`) and the fixture files are yours (`references/kata-invariants.md` §10.1).
+- Keep the KATA layers (TestContext, Base, Domain, Fixture) intact, whatever the simplicity argument. They are framework architecture, not speculative abstraction.
+- A new fixture API comes with the matching fixture file, an updated `kata-manifest.json`, and at least one existing test that consumes it. Orphan fixtures rot, and the manifest is the anti-duplication gate (Critical Rule #12).
+- A major bump of Playwright, Bun or TypeScript needs a regression run on a representative E2E suite first. Lockstep upgrades hide breaks in fixture lifecycle, locator engines and type emit.
+- A change to `cli/install.ts` is exercised through the full install flow on a clean clone. Checking on an already-installed repo proves nothing, and the installer is where a bug ships silently to every new user.
+- When the chosen approach reshapes test architecture (KATA layers, a fixture API, the runner, the isolation or parallelization model, the OpenAPI/type pipeline) and is hard to reverse, record an ADR under `.context/ADR/` after plan approval and before coding. The plan approval is the decision, so the ADR is written `Accepted` and cites it; it is never handed back for acceptance. `Proposed` is only for a question still open. ADRs are append-only: supersede, do not rewrite.
+- Verify with all four checks (test, types, lint, skills) and treat any non-zero exit as REJECT: present retry, skip-and-document or abort, and do not auto-fix. A skill that itself broke (a wrong step, a missing verifier, a stale rule) is reported upstream per `../agentic-qa-core/references/upstream-feedback.md`: drafted and redacted locally, filed only on explicit OK, verified with `gh issue view`.
+- When the change is a skill (a new or restructured `.agents/skills/<slug>/`), scaffold it per `../agentic-qa-core/references/skill-scaffold.md` (frontmatter including `metadata.kind`, per-kind files and sections, Definition of Done). Write the skill text with the `writing-for-agents` and `humanizer` skills (see "Writing a skill"), and let `skill-creator` build the draft, the test prompts, the evals and the description pass. Missing on the machine: scaffold from the reference's template and say so. Consumer SUT context skills are not this skill's job: `project-context` mode `context-skill` owns them.
+- `progress.md` is orchestrator-only. Code subagents return one-line summaries per task, and the orchestrator does not read their diffs.
+- Close every change that adds, renames or retires a skill, a `package.json` script or a doc path, or that changes a behaviour a page describes, with the docs follow-through (Phase 3): patch `.agents/instructions/agent-context-map.md`, `.agents/instructions/agent-skills-and-mcps.md`, `README.md`, `INSTALLER.md`, `CONTEXT.md`, the `docs/core/` pages, the decks (`packages/decks/**`) and the Pages home (`packages/pages-home/**`) in the same PR. `bun run docs:check` proves the router and the quoted scripts; the prose is judgment.
+- When an edit lands inside a `LINT.IfChange(<label>)` region (the hook prints a `DOCS:` line; ADR-0016), update every page its `LINT.ThenChange(...)` names in the same push. Add `Docs-Checked: <label> <reason>` to a commit message only when the documented behaviour did not change, and never by reflex or without a reason. Pre-push and CI block otherwise. A drift found later gets a new marker.
+- When the change touches `cli/`, `scripts/`, `.husky/`, `AGENTS.md` or `.agents/instructions/`, run the V5 drift sweep after the four verifiers, report-only (Phase 3). It greps the doc surface for prose that describes the old behaviour and counts the `Docs-Checked:` trailers the change used.
+- Archive the session directory only after all four verifiers pass. On REJECT it stays in place so the run can be debugged or resumed.
+- Route every change to `AGENTS.md`, a section under `.agents/instructions/`, the ROUTER or a `triggers:` list through mode `instructions`: place each sentence with `references/instructions-doctrine.md` §2 and close with `bun run instructions:check`. Section prose does not get pasted into `AGENTS.md`, and a ROUTER row needs the ADR that decides it (`--accept-router ADR-NNNN`, ADR-0013).
+- When a trigger misses or over-fires, fix the section's `triggers:` and add the prompts to `cli/lib/fixtures/instruction-router-eval.json`. A prompt is never relabelled to hide a miss.
 
-**Read full SKILL.md when**: writing the plan artifact, batching Code-phase tasks, resuming an interrupted session, running mode `instructions`, or reading the ALLOWED/FORBIDDEN path tables themselves.
+**Read full SKILL.md when**: writing the plan artifact, batching Code-phase tasks, resuming an interrupted session, running mode `instructions`, writing a skill, or reading the ALLOWED/FORBIDDEN path tables themselves.
 
 > Source: `.agents/skills/framework-development/SKILL.md` · phase: `unknown` · kind: `workflow` · stage owner · extraction strategy: A
 
@@ -566,20 +566,21 @@ Skills indexed: 29
 
 ## Skill: shift-left-testing
 
-**Purpose**: Orchestrates pre-sprint Shift-Left QA on a batch of backlog Stories.
+**Purpose**: Refine acceptance criteria on a batch of backlog Stories before they enter a sprint.
 
 **Compact Rules**:
-- ACs are the FLOOR. Refinement's job is to push past the happy-path contract: surface the boundaries, exceptions, states, and anomalies the Story is silent on.
-- 1:N is the default: a non-trivial AC implies multiple outlines (valid partition + each distinct invalid + boundaries + states). A 1-outline AC requires a written "trivially atomic" justification — never the default.
-- Tag each refinement gap to a technique: ranges/limits → BVA; status/lifecycle fields → State-Transition; 2+ interacting conditions → Decision Table; 3+ combinable factors → Pairwise.
+- ACs are the floor. Push past the happy path and surface the boundaries, exceptions, states and anomalies the Story is silent on.
+- 1:N is the default: a non-trivial AC implies several outlines (valid partition, each distinct invalid input, boundaries, states). One outline for an AC needs a written "trivially atomic" justification.
+- Tag each gap to a technique: ranges to BVA, status or lifecycle fields to State-Transition, two or more interacting conditions to Decision Table, three or more combinable factors to Pairwise.
 - A refined AC (Given/When/Then) is the business assertion; the outline (`Should <behavior> <condition>`) is its exploration. Keep them distinct.
-- Stories ONLY (no bugs — nothing to refine upstream). Entry status Backlog / Shift-Left QA / Ready For Dev.
-- Output = refined ACs + gap/ambiguity questions + the pre-sprint ATP in the `{{jira.acceptance_test_plan}}` field (outline NAMES + coverage estimate, no test code, no execution, NO Test Plan item — `/sprint-testing` Stage 1 creates the item from the field) + the closed `[QA] Shift-Left Review` subtask + the batch report.
-- Tracking subtask `[QA] Shift-Left Review` per accepted Story: find-or-create in Phase 1 (assignee = self; Jira's `create` lands it in `{{jira.status.subtask.active}}`), close in Phase 3 handoff via `{{jira.transition.subtask.complete}}` (-> `{{jira.status.subtask.close}}`). The subtask workflow's status NAMES are `ACTIVE` / `Close`, not "In Progress" / "Done". Exhaustive session annotations (long analysis, refinement traces) go on the SUBTASK, keeping the Story clean. Work type + transitions resolved from `.agents/jira-workflows.json`; no subtask work type in the catalog → skip with a warning, never block.
-- The heart of the skill (Phase 2) = edge cases not in story + ambiguities + gaps — feed them to PO/Dev as questions AND as derived outlines.
-- On taking a Story into refinement (first QA pickup), set `qa_assignee` to self — read-before-write, never overwrite an existing owner (`agentic-qa-core/references/defect-management-doctrine.md` Part 2). This skill files NO Bug/Defect/Improvement; only the QA-Assignee hook applies.
-- On completion: add label `shift-left-reviewed`; transition Backlog → Shift-Left QA → Ready For Dev.
-- **AI Effort (binding)**: in Phase 3 set `{{jira.ai_effort}}` (Low / Medium / High) on every refined Story, using `references/ai-effort-checklist.md`. It is the effort of the whole item in an agentic workflow, implementing AND verifying it: never a time and never a token forecast. `High` only WARNS, it never blocks: the handoff comment notes the Story may be too large and may need splitting, and the Story still moves to Ready For Dev and the dev still works it. A PO may clone or split and re-refine, which is optional and not a gate; the agent never splits or creates Stories on its own. Whoever resolves a split may add ONE optional label (`split-accepted`, `split-edited`, `split-rejected`); absence is valid. Field absent → structured `## AI Effort` comment, never block. DTU/QTU (`{{jira.development_token_usage}}`, `{{jira.quality_token_usage}}`) are optional audit aids written later by dev and QA when a figure is available, never here.
+- Stories only, in Backlog, Shift-Left QA or Ready For Dev. Bugs are reactive and have no upstream ACs.
+- The output is refined ACs, gap and ambiguity questions, the pre-sprint ATP in `{{jira.acceptance_test_plan}}` (outline names and a coverage estimate; no test code, no execution, no Test Plan item, which `/sprint-testing` Stage 1 creates from the field), the closed `[QA] Shift-Left Review` subtask and the batch report.
+- Each accepted Story gets a `[QA] Shift-Left Review` subtask: find or create it in Phase 1 with assignee = self (`create` lands it in `{{jira.status.subtask.active}}`), close it in Phase 3 with `{{jira.transition.subtask.complete}}` (to `{{jira.status.subtask.close}}`). Its status names are `ACTIVE` and `Close`. Long annotations go on the subtask to keep the Story clean. No subtask work type in `.agents/jira-workflows.json` means skip with a warning, never block.
+- Phase 2 is the heart of the skill: edge cases, ambiguities and gaps the Story leaves out. They reach PO and Dev as questions and as derived outlines.
+- On first QA pickup set `qa_assignee` to self, read before writing, never overwriting an existing owner (`defect-management-doctrine.md` Part 2).
+- On completion add the label `shift-left-reviewed` and transition Backlog to Shift-Left QA to Ready For Dev.
+- AI Effort is binding: in Phase 3 set `{{jira.ai_effort}}` (Low / Medium / High) on every refined Story with `references/ai-effort-checklist.md`. It sizes the whole item in an agentic workflow, implementing and verifying it, never a time or token forecast. `High` only warns: the handoff comment says the Story may need splitting, and it still moves to Ready For Dev. A PO may split and re-refine; the agent never splits or creates Stories. Whoever resolves a split may add one optional label (`split-accepted`, `split-edited`, `split-rejected`). With the field absent, write a structured `## AI Effort` comment, never block. DTU and QTU (`{{jira.development_token_usage}}`, `{{jira.quality_token_usage}}`) are written later by dev and QA, never here.
+- Each interview step has a path for runs with nobody at the keyboard (`## With nobody at the keyboard`): record the questions and continue.
 
 **Read full SKILL.md when**: running the batch grooming pipeline, writing the per-Story `shift-left-refinement.md`, or handling the PO/Dev handoff.
 
