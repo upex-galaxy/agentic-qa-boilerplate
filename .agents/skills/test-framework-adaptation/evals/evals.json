@@ -1,0 +1,46 @@
+{
+  "evals": [
+    {
+      "name": "should-trigger-adapt-framework",
+      "prompt": "Adapt the framework to our app now that project-discovery is done: wire the auth and the first entity.",
+      "expected_behavior": "Activates test-framework-adaptation. Loads references/adaptation-workflow.md, runs the Phase 0 genericness scan and prerequisite check, and writes the plan to .context/reports/test-framework-adaptation-plan.md with Status: PENDING APPROVAL before any code write.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-wire-fixtures",
+      "prompt": "Wire the fixtures and the KATA components to our staging stack and delete the Example files.",
+      "expected_behavior": "Activates test-framework-adaptation. Starts at Phase 0, builds the GENERIC/ADAPTED table, and does not delete or edit anything until the plan is approved.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-recheck-generic",
+      "prompt": "Check how generic the repo still is and finish whatever adaptation is missing.",
+      "expected_behavior": "Activates test-framework-adaptation. Runs the Phase 9 detection signals first, lists the GENERIC rows as the work-list, and skips the ADAPTED rows.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-es-adaptar-framework",
+      "prompt": "Adapta el framework KATA a mi proyecto: conecta el login, las variables y los fixtures con el stack real.",
+      "expected_behavior": "Activates test-framework-adaptation from a Spanish prompt. Follows the same Phase 0-2 plan-first flow, replies in Spanish, and writes repo artifacts in English.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-es-conectar-boilerplate",
+      "prompt": "Conecta el boilerplate con el backend de mi app: configura la autenticación, el esquema de entorno y el CI.",
+      "expected_behavior": "Activates test-framework-adaptation from a Spanish prompt. Starts with the genericness scan and prerequisites, then writes the plan and waits for approval before Phase 3.",
+      "category": "positive"
+    },
+    {
+      "name": "should-not-trigger-write-feature-test",
+      "prompt": "Write an automated Playwright test for the checkout ticket PROJ-310 using the existing Page components.",
+      "expected_behavior": "Does not activate test-framework-adaptation. Routes to test-automation, because the framework is already adapted and the work is a ticket-level test.",
+      "category": "negative"
+    },
+    {
+      "name": "should-not-trigger-reverse-engineer-repo",
+      "prompt": "Reverse-engineer the target repo and generate the architecture and infrastructure maps for it.",
+      "expected_behavior": "Does not activate test-framework-adaptation. Routes to project-discovery, which owns the discovery maps and is the prerequisite of this skill.",
+      "category": "negative"
+    }
+  ]
+}
