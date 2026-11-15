@@ -1,15 +1,15 @@
 # Confluence Cloud (`acli confluence`)
 
-Confluence surface. Coverage (confirm with `acli confluence <group> --help`):
+What the Confluence surface covers (confirm with `acli confluence <group> --help`):
 
-| Group   | Subcommands                                       | Completeness                                       |
-| ------- | ------------------------------------------------- | -------------------------------------------------- |
-| `auth`  | login · logout · status · switch                  | Full                                               |
-| `space` | archive · create · list · restore · update · view | Near-full (no `delete` — only archive/restore)     |
-| `blog`  | create · list · view                              | Read + create only (no update / delete)            |
-| `page`  | view                                              | **Read only** — no create / update / delete / list |
+| Group   | Subcommands                                       | Completeness                                    |
+| ------- | ------------------------------------------------- | ----------------------------------------------- |
+| `auth`  | login · logout · status · switch                  | Full                                            |
+| `space` | archive · create · list · restore · update · view | Near-full (no `delete`, only archive/restore)   |
+| `blog`  | create · list · view                              | Read + create only (no update / delete)         |
+| `page`  | view                                              | **Read only**: no create / update / delete / list |
 
-**Critical limitation**: `page` is read-only. To create or modify Confluence pages from the CLI you must fall back to REST (`POST/PUT/DELETE /wiki/api/v2/pages`). Despite this, blog posts and spaces have a usable CRUD-ish surface — fine for the common workflows of "publish release notes", "set up a new team space", "archive a deprecated workspace".
+The `page` group is read-only. To create or modify Confluence pages from the CLI, fall back to REST (`POST/PUT/DELETE /wiki/api/v2/pages`). Blog posts and spaces have a usable CRUD-ish surface, which covers the common workflows: publish release notes, set up a new team space, archive a deprecated workspace.
 
 ## Table of contents
 
@@ -22,7 +22,7 @@ Confluence surface. Coverage (confirm with `acli confluence <group> --help`):
 
 ## <a id="auth"></a>auth
 
-Same model as `acli jira auth` — see `references/auth.md` for the full picture. Subcommands: `login`, `logout`, `status`, `switch`. Confluence keeps its own session even when authenticated to the same Atlassian site as Jira.
+Same model as `acli jira auth`; `references/auth.md` has the full picture. Subcommands: `login`, `logout`, `status`, `switch`. Confluence keeps its own session even on the same Atlassian site as Jira.
 
 ```bash
 # API token (scriptable)
@@ -40,11 +40,11 @@ acli confluence auth switch --site mysite.atlassian.net --email you@example.com
 acli confluence auth logout
 ```
 
-Token is the same Atlassian-account token you'd use for Jira. The session is stored independently from the Jira session, so you typically log in to both even with identical credentials.
+The token is the same Atlassian-account token you use for Jira. The session is stored separately from the Jira one, so log in to both even with identical credentials.
 
 ## <a id="space"></a>space
 
-Confluence space CRUD. The most fleshed-out group in the Confluence surface.
+Confluence space CRUD, the most complete group in the Confluence surface.
 
 ### list
 
@@ -91,7 +91,7 @@ acli confluence space view --id 123456 --icon --labels --permissions
 
 Flags: `--id` (numeric), `--icon`, `--labels`, `--operations`, `--permissions`, `--properties`, `--role-assignments` (EAP sites only), `--include-all`, `--desc-format` (`plain` · `view`), `--json`.
 
-> **Asymmetry**: `space view` takes `--id` (numeric), but `space create / update / archive / restore` use `--key` (the human-readable key like `ENG`). Use `space list --json` to find the numeric ID for a known key.
+> **Asymmetry**: `space view` takes `--id` (numeric), but `space create / update / archive / restore` take `--key` (the human-readable key like `ENG`). Run `space list --json` to find the numeric ID for a known key.
 
 ### create
 
@@ -130,7 +130,7 @@ Flags: `--key` (required), `--name`, `--description`, `--status`, `--type`, `--j
 
 ### archive / restore
 
-Spaces are NOT permanently deletable via the CLI — only `archive`/`restore`. Permanent deletion requires the Confluence UI (admin → space management) or REST.
+The CLI cannot permanently delete a space, only `archive` and `restore` it. Permanent deletion goes through the Confluence UI (admin, space management) or REST.
 
 ```bash
 # Archive
@@ -142,11 +142,11 @@ acli confluence space restore --key "OLDPROJ"
 
 ## <a id="blog"></a>blog
 
-Create + list + view. No `update` or `delete` (use REST for either).
+Create, list and view. There is no `update` or `delete`; use REST for either.
 
 ### create
 
-The richest single Confluence command — supports `--body`, `--body-file`, `--from-json`, `--generate-json`, drafts, scheduled timestamps, and private posts.
+The richest single Confluence command. It supports `--body`, `--body-file`, `--from-json`, `--generate-json`, drafts, scheduled timestamps and private posts.
 
 ```bash
 # Inline body (HTML / Confluence storage format)
@@ -161,7 +161,7 @@ acli confluence blog create \
   --title "Quarterly review" \
   --from-file ./review.html
 
-# Draft (does not publish — visible only to author)
+# Draft (does not publish, visible only to author)
 acli confluence blog create \
   --space-id 12345 \
   --title "Work in progress" \
@@ -227,7 +227,7 @@ acli confluence blog list --cursor "<cursor-from-previous-call>" --limit 25 --js
 
 Flags: `--id`, `--space-id`, `--title`, `--status` (`current` · `deleted` · `trashed`), `--body-format` (`storage` · `atlas_doc_format` · etc.), `--cursor` (pagination token), `--sort`, `-l, --limit` (default **25**), `-j, --json`, `--csv`.
 
-> Pagination on `blog list` uses `--cursor`, NOT `--paginate`. The cursor token comes from the previous response (in JSON output). This is the only Confluence command that exposes cursor-based pagination.
+> Pagination on `blog list` uses `--cursor`, not `--paginate`. The cursor token comes from the previous response (in JSON output). This is the only Confluence command with cursor-based pagination.
 
 ### view
 
@@ -250,11 +250,11 @@ acli confluence blog view --id 98765 --include labels,properties,likes
 
 Flags: `--id` (required), `--body-format`, `--version` (int), `--draft`, `--status` (`current` · `trashed` · `deleted` · `historical` · `draft`), `--include` (comma-separated: `labels, properties, operations, likes, versions, version, favorited, webresources, collaborators, all`), `-j, --json`.
 
-> `blog view` uses a single `--include` flag with comma-separated values. `page view` (next section) uses individual `--include-*` boolean flags. Inconsistent across the surface — copy from `--help`, do not guess.
+> `blog view` takes one `--include` flag with comma-separated values. `page view` (next section) takes individual `--include-*` boolean flags. The surface is inconsistent, so copy flag names from `--help` instead of guessing.
 
 ## <a id="page"></a>page
 
-**Read only.** The only subcommand is `view`. No create, no update, no delete, no list. To make any page change, fall back to REST (see [§REST fallback for pages](#rest-fallback)).
+Read only. The only subcommand is `view`; there is no create, update, delete or list. For any page change, fall back to REST (see [§REST fallback for pages](#rest-fallback)).
 
 ```bash
 # By page ID
@@ -286,16 +286,16 @@ Include flags (each is a separate boolean): `--include-collaborators`, `--includ
 
 ## <a id="body-formats"></a>Body formats and Confluence storage format
 
-Several commands accept `--body-format` (read) or expect a body in a particular format on input (write). The values you'll encounter:
+Several commands accept `--body-format` (read) or expect a body in a particular format on input (write). The values:
 
 | Value              | What it is                                                          | When to use                                                           |
 | ------------------ | ------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| `storage`          | Confluence "storage format" — XHTML with Confluence-specific macros | Writing body content for `blog create`                                |
+| `storage`          | Confluence "storage format": XHTML with Confluence-specific macros | Writing body content for `blog create`                                |
 | `atlas_doc_format` | ADF (the same JSON structure used in Jira rich text)                | Programmatic content generation, especially for AI-assisted authoring |
 | `view`             | Pre-rendered HTML as displayed to readers                           | Reading rendered content for downstream rendering                     |
 | `plain`            | Plain text (only valid for `space view --desc-format`)              | Simple display                                                        |
 
-For input via `--body` or `--body-file`, the documented expectation is **storage format** (XHTML). Markdown is not converted automatically — convert it yourself before submission, or use a JSON payload via `--from-json` with `atlas_doc_format`.
+Input via `--body` or `--body-file` is documented as storage format (XHTML). Markdown is not converted automatically, so convert it yourself before submitting, or send a JSON payload through `--from-json` with `atlas_doc_format`.
 
 Quick reference for storage format:
 
@@ -360,19 +360,19 @@ curl -s -X DELETE "https://mysite.atlassian.net/wiki/rest/api/space/$SPACE_KEY" 
   -H "Authorization: Basic $AUTH"
 ```
 
-> Pages REST takes the **numeric page ID**, not the title or URL slug. To find a page ID, navigate to the page in the browser and look at the URL: `https://mysite.atlassian.net/wiki/spaces/ENG/pages/<PAGE_ID>/Title`.
-> The `version.number` on update must be the current version + 1, otherwise you'll get `409 Conflict`. Read first via `acli confluence page view --id $PAGE_ID --include-version --json | jq '.version.number'`.
+> Pages REST takes the numeric page ID, not the title or URL slug. To find it, open the page in the browser and read the URL: `https://mysite.atlassian.net/wiki/spaces/ENG/pages/<PAGE_ID>/Title`.
+> The `version.number` on update must be the current version + 1, or the call returns `409 Conflict`. Read it first with `acli confluence page view --id $PAGE_ID --include-version --json | jq '.version.number'`.
 
 ## When to prefer MCP over `acli`
 
-For Confluence specifically, the Atlassian MCP server tends to be more ergonomic for page CRUD because the MCP wraps the REST endpoints and handles the version-bumping dance. Use it when:
+For page CRUD the Atlassian MCP server is usually easier, because it wraps the REST endpoints and handles the version bump. It is opt-in. Prefer it when:
 
-- You need to create or update Confluence pages from an AI session.
-- You're chaining many page operations and don't want to manage version increments by hand.
-- You want a uniform interface alongside Jira MCP calls in the same session.
+- you create or update Confluence pages from an AI session;
+- you chain many page operations and do not want to manage version increments by hand;
+- you want one interface alongside Jira MCP calls in the same session.
 
-Use `acli confluence` instead when:
+Prefer `acli confluence` when:
 
-- You're scripting a one-off bulk operation (create 50 spaces from a CSV).
-- You need CSV/JSON output piped into other shell tools.
-- You're already authenticated to `acli` and don't want to negotiate MCP credentials separately.
+- you script a one-off bulk operation (create 50 spaces from a CSV);
+- you need CSV or JSON output piped into other shell tools;
+- you are already authenticated to `acli` and do not want to set up MCP credentials separately.

@@ -1,6 +1,6 @@
 # Output formats, piping, automation, CI
 
-Everything related to getting data **out** of `acli` and feeding it into other tools.
+How to get data out of `acli` and feed it into other tools.
 
 ## Output flags
 
@@ -8,7 +8,7 @@ Every list/search/view command supports:
 
 | Flag      | Use                                            |
 | --------- | ---------------------------------------------- |
-| (default) | Human-readable table — do not parse in scripts |
+| (default) | Human-readable table; do not parse it in scripts |
 | `--json`  | JSON blob. Structured, stable, script-friendly |
 | `--csv`   | Spreadsheet-friendly flat columns              |
 
@@ -17,21 +17,21 @@ Most search/list commands also take:
 | Flag           | Use                                                  |
 | -------------- | ---------------------------------------------------- |
 | `--paginate`   | Fetch all pages. Silently overrides `--limit`.       |
-| `-l, --limit`  | Cap at N rows. Default ~30–50 depending on endpoint. |
+| `-l, --limit`  | Cap at N rows. Default ~30-50 depending on endpoint. |
 | `--count`      | Return only the row count (no rows). Fast and cheap. |
 | `-f, --fields` | Restrict returned columns.                           |
 
 ### Critical pagination rule
 
-`workitem search`, `project list`, `filter search`, `dashboard search`, `board search`, `sprint list-workitems`, `board list-sprints` and the comment/attachment/link list variants **all** silently truncate at the server default when `--paginate` is not set. No warning. No exit code signal.
+`workitem search`, `project list`, `filter search`, `dashboard search`, `board search`, `sprint list-workitems`, `board list-sprints` and the comment/attachment/link list variants all silently truncate at the server default when `--paginate` is not set. There is no warning and no exit-code signal.
 
-**Any script that counts, iterates, or makes decisions on the result set must pass `--paginate`.** The only case where you can skip it is when you have already passed an explicit `--limit` you are comfortable with.
+Any script that counts, iterates or decides on the result set must pass `--paginate`. You can skip it only when you pass an explicit `--limit` you are comfortable with.
 
-## JSON structure — what to expect
+## JSON structure
 
-The JSON emitted by `workitem search`, `workitem view`, and similar commands mirrors the Jira REST v3 shape. Two key facts:
+The JSON from `workitem search`, `workitem view` and similar commands mirrors the Jira REST v3 shape. Two facts matter:
 
-- The top-level array from `search` is `issues`, **not** `workitems` (the rename is UI/CLI-surface only).
+- The top-level array from `search` is `issues`, not `workitems` (the rename exists only on the CLI surface).
 - Each issue has the standard REST shape: `{ id, key, self, fields: { summary, status, assignee, customfield_NNNN, ... } }`.
 
 ```bash
@@ -47,16 +47,16 @@ acli jira workitem search --jql "project = {{PROJECT_KEY}} AND sprint in openSpr
   | jq -r '.issues[].fields.assignee.displayName' \
   | sort | uniq -c | sort -rn
 
-# Pluck a custom field by ID (real IDs are workspace-specific — see references/workitem.md §Custom fields)
+# Pluck a custom field by ID (real IDs are workspace-specific, see references/workitem.md §Custom fields)
 acli jira workitem view {{PROJECT_KEY}}-N --json \
   | jq '.fields.customfield_NNNN'
 ```
 
-> Repo integration: host repos typically reference custom fields by stable slug rather than the numeric ID shown above. See `<repo-core>/references/acli-integration.md` for the slug catalog.
+> Host repos usually reference custom fields by stable slug, not the numeric ID shown above. The slug catalog is in `<repo-core>/references/acli-integration.md`.
 
 ## Piping with `jq`
 
-Patterns that come up repeatedly:
+Patterns that come up often:
 
 ```bash
 # All keys
@@ -77,19 +77,19 @@ jq '.fields | keys[] | select(startswith("customfield_"))'
 
 ## CSV output
 
-`--csv` emits a header row and one row per record. Column set follows the `--fields` flag.
+`--csv` emits a header row and one row per record. The `--fields` flag sets the columns.
 
 ```bash
 # Default fields (issuetype,key,assignee,priority,status,summary)
 acli jira workitem search --jql "project = {{PROJECT_KEY}}" --paginate --csv > project.csv
 
-# Custom columns — sprint snapshot
+# Custom columns: sprint snapshot
 acli jira workitem search --jql "project = {{PROJECT_KEY}} AND sprint in openSprints()" --paginate \
   --fields "key,summary,assignee,status,priority,created,updated" \
   --csv > sprint-detailed.csv
 ```
 
-CSV is simpler than JSON for spreadsheet handoff and works cleanly with `csvkit`, `xsv`, or `Miller (mlr)`.
+CSV is simpler than JSON for spreadsheet handoff and works with `csvkit`, `xsv` and `Miller (mlr)`.
 
 ## Redirection, chaining, piping
 
@@ -109,12 +109,12 @@ acli jira workitem search --jql 'project = {{PROJECT_KEY}}' --limit 10 | grep "I
 acli jira workitem view {{PROJECT_KEY}}-N --json | jq '.fields.summary'
 ```
 
-The default human-readable table is stable enough for `grep`/`awk` inspection, but not for production parsing — use `--json` or `--csv`.
+The default table is stable enough for `grep` or `awk` inspection but not for production parsing; use `--json` or `--csv` there.
 
 ### zsh does not word-split an unquoted expansion (bites every loop over key pairs)
 
-A loop that expands two keys from one variable works in `bash` and **silently
-passes ONE argument** in `zsh`, which is the default interactive shell on macOS:
+A loop that expands two keys from one variable works in `bash` but silently
+passes one argument in `zsh`, the default interactive shell on macOS:
 
 ```bash
 # BROKEN under zsh: each iteration passes the literal string "KEY-1 KEY-2"
@@ -136,15 +136,15 @@ done < pairs.csv
 
 The failure is loud but misleading: the command reports a missing or malformed
 argument, so the reader blames the CLI rather than the shell. Measured while
-repairing links in a batch. Any documented one-liner in this repo that expands a
-pair from a variable should use the CSV form above, which is portable across
-`bash`, `zsh` and CI runners alike.
+repairing links in a batch. Any one-liner in this repo that expands a pair from a
+variable should use the CSV form above, which is portable across `bash`, `zsh`
+and CI runners.
 
 ## Confirmation, errors, batches
 
 | Flag              | Purpose                                                             |
 | ----------------- | ------------------------------------------------------------------- |
-| `-y, --yes`       | Skip the interactive confirmation prompt. **Required in CI.**       |
+| `-y, --yes`       | Skip the interactive confirmation prompt. Required in CI.           |
 | `--ignore-errors` | Continue after a per-item failure in a batch.                       |
 | `--generate-json` | Emit an input-template JSON document to stdout.                     |
 | `--from-json`     | Read payload from a JSON file.                                      |
@@ -153,10 +153,10 @@ pair from a variable should use the CSV form above, which is portable across
 
 `--yes` and `--ignore-errors` are independent:
 
-- Without `--yes`, `acli` prints a preview and waits for user confirmation on stdin. In CI this causes the command to hang until the pipeline times out.
-- Without `--ignore-errors`, the first item that fails aborts the remaining batch.
+- Without `--yes`, `acli` prints a preview and waits for confirmation on stdin. In CI the command then hangs until the pipeline times out.
+- Without `--ignore-errors`, the first failing item aborts the rest of the batch.
 
-## Error handling & trace IDs
+## Error handling and trace IDs
 
 When something fails server-side, `acli` prints:
 
@@ -164,22 +164,22 @@ When something fails server-side, `acli` prints:
 unexpected error, trace id: XXXXXXXX
 ```
 
-The trace ID is the only thing Atlassian Support can correlate. Capture it in logs:
+Atlassian Support can correlate only the trace ID, so capture it in logs:
 
 ```bash
 acli jira workitem create --project {{PROJECT_KEY}} --type Task --summary "Ship it" 2>&1 \
   | tee -a acli.log
 ```
 
-There is **no `--verbose` or `--debug` flag**. If a command misbehaves and you need more context, options are:
+There is no `--verbose` or `--debug` flag. If a command misbehaves and you need more context:
 
-- Re-run with `--json` — error bodies may include more detail in JSON form.
-- Fall back to the equivalent REST call with curl — `-v` gives wire-level detail.
+- Re-run with `--json`; error bodies may carry more detail in JSON form.
+- Fall back to the equivalent REST call with curl, where `-v` gives wire-level detail.
 - File a support ticket with the trace ID.
 
 ## Dry-run pattern (the CLI has none built in)
 
-There is no `--dry-run` on any `acli` command. For high-blast-radius batches, wrap the operation:
+No `acli` command has a `--dry-run`. For high-blast-radius batches, wrap the operation:
 
 ```bash
 #!/usr/bin/env bash
@@ -188,7 +188,7 @@ set -euo pipefail
 JQL="project = {{PROJECT_KEY}} AND status = 'Ready For Dev'"
 NEW_STATUS="In Progress"
 
-echo "Preview — items that would transition to '$NEW_STATUS':"
+echo "Preview: items that would transition to '$NEW_STATUS':"
 acli jira workitem search --jql "$JQL" --paginate \
   --fields "key,summary,assignee" --csv
 
@@ -201,11 +201,11 @@ acli jira workitem transition --jql "$JQL" --status "$NEW_STATUS" \
 
 ## CI pipelines
 
-Three pieces to every pipeline:
+Every pipeline needs three things:
 
-1. **Install a pinned binary.** Do not use `latest/` in production — a same-day minor bump has broken pipelines in the field.
-2. **Authenticate via stdin-piped token** against a bot account.
-3. **Always pass `--yes`** on mutating commands.
+1. Install a pinned binary. Do not use `latest/` in production, because a same-day minor bump has broken pipelines in the field.
+2. Authenticate with a stdin-piped token against a bot account.
+3. Pass `--yes` on every mutating command.
 
 ### GitHub Actions
 
@@ -282,10 +282,8 @@ sync-jira:
 
 ### Points-based rate limits
 
-Atlassian's point-based rate limits (per-organization buckets; see the vendor docs for the current buckets) apply to the REST API that `acli` calls under the hood. A batch edit over 3000 items can exhaust the hourly budget in one shot and produce 429s for the rest of the hour.
+Atlassian's point-based rate limits (per-organization buckets; the vendor docs list the current ones) apply to the REST API that `acli` calls under the hood. A batch edit over 3000 items can exhaust the hourly budget at once and produce 429s for the rest of the hour. To stay under it:
 
-Mitigation:
-
-- Spread work across the hour, not all at once.
-- Prefer `--jql` scoped batches of predictable size over full-project sweeps.
-- Capture 429 responses (trace ID + HTTP status appear in output) and implement retry-after backoff in wrapper scripts.
+- Spread work across the hour.
+- Prefer `--jql`-scoped batches of predictable size over full-project sweeps.
+- Capture 429 responses (trace ID and HTTP status appear in the output) and add retry-after backoff to wrapper scripts.

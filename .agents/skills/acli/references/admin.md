@@ -2,16 +2,16 @@
 
 Org-level operations. Authenticated by an API key, not a user API token.
 
-This is rarely used from a DEV workflow — most stories never need org-level user lifecycle. Documented here for completeness; the common DEV moment to reach for `admin` is a one-off "deactivate departed teammate" or "onboard a new dev" task.
+A dev workflow rarely needs this, since most stories never touch org-level user lifecycle. The usual moment to reach for `admin` is a one-off "deactivate departed teammate" or "onboard a new dev" task.
 
 Subcommands: `auth`, `user`.
 
 ## auth
 
-Parallel to `acli jira auth` but requires an **organization API key** instead of an Atlassian account API token.
+Parallel to `acli jira auth` but requires an organization API key instead of an Atlassian account API token.
 
 ```bash
-# Login — reads API key from stdin
+# Login, reads API key from stdin
 echo "$ATLASSIAN_ADMIN_API_KEY" | acli admin auth login --email admin@example.com --token
 
 # Status / switch / logout
@@ -20,9 +20,9 @@ acli admin auth switch
 acli admin auth logout
 ```
 
-Create the API key at `admin.atlassian.com → Settings → API Keys`. It is organization-wide and carries directory-manager permissions — treat it with more care than a personal API token.
+Create the API key at `admin.atlassian.com → Settings → API Keys`. It is organization-wide and carries directory-manager permissions, so handle it with more care than a personal API token.
 
-A session authenticated via `acli jira auth login` does not permit `admin user activate` and vice versa. Each product keeps a separate credential.
+A session authenticated via `acli jira auth login` cannot run `admin user activate`, and the reverse holds too. Each product keeps a separate credential.
 
 ## user
 
@@ -72,7 +72,7 @@ acli admin user cancel-delete --email gone@example.com
 acli admin user delete --from-file leavers.txt --ignore-errors --json
 ```
 
-**Note**: `admin user delete` and `admin user cancel-delete` do NOT accept `--yes`. The flag list is `--email, --from-file, --id, --ignore-errors, --json`. Use `--ignore-errors` for batch resilience. The commands run non-interactively by default (no confirmation prompt).
+Note: `admin user delete` and `admin user cancel-delete` do NOT accept `--yes`. The flag list is `--email, --from-file, --id, --ignore-errors, --json`. Use `--ignore-errors` for batch resilience. The commands run non-interactively by default (no confirmation prompt).
 
 ## Common patterns
 
@@ -95,4 +95,4 @@ comm -23 expected.txt succeeded.txt > failed.txt
 acli admin user deactivate --from-file departed.txt --ignore-errors --json > deactivation.log
 ```
 
-`--ignore-errors` is essential — a single already-deactivated user should not abort the whole batch.
+`--ignore-errors` matters here: a single already-deactivated user should not abort the whole batch.

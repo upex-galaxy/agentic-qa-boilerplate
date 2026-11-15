@@ -1,8 +1,8 @@
 # Work items (`acli jira workitem`)
 
-This is the largest surface in `acli`. Every Jira ticket operation routes through `jira workitem`. Actions covered: `create`, `create-bulk`, `view`, `search`, `edit`, `transition`, `assign`, `clone`, `archive`, `unarchive`, `delete`, `comment`, `link`, `attachment`, `watcher`.
+`jira workitem` is the largest surface in `acli`: every Jira ticket operation goes through it. Actions covered: `create`, `create-bulk`, `view`, `search`, `edit`, `transition`, `assign`, `clone`, `archive`, `unarchive`, `delete`, `comment`, `link`, `attachment`, `watcher`.
 
-> Note on terminology: Atlassian renamed `issue` → `workitem` across CLI and UI throughout 2025. The JSON payload shape still uses the old spelling — the response from `workitem search --json` has a top-level `issues[]` array, and `create-bulk` CSV columns are `summary, projectKey, issueType, description, label, parentIssueId, assignee`. The rename is surface-level only.
+> Terminology: Atlassian renamed `issue` to `workitem` across the CLI and UI, but the JSON payload shape kept the old spelling. The response from `workitem search --json` has a top-level `issues[]` array, and `create-bulk` CSV columns are `summary, projectKey, issueType, description, label, parentIssueId, assignee`. The rename is surface-level only.
 
 ## Table of contents
 
@@ -23,7 +23,7 @@ This is the largest surface in `acli`. Every Jira ticket operation routes throug
 
 ## <a id="the-three-selector-pattern"></a>The three-selector pattern
 
-Every mutating command on `workitem` (except `create`, `view`) accepts **exactly one** of:
+Every mutating command on `workitem` (except `create`, `view`) accepts exactly one of:
 
 | Flag              | Form                 | Example                                                                     |
 | ----------------- | -------------------- | --------------------------------------------------------------------------- |
@@ -32,14 +32,14 @@ Every mutating command on `workitem` (except `create`, `view`) accepts **exactly
 | `--filter`        | Saved filter ID      | `--filter 10001`                                                            |
 | `-f, --from-file` | File listing keys    | `--from-file keys.txt` (some commands)                                      |
 
-JQL and filter selectors can target many items at once — the command becomes a batch. Always pair with `-y, --yes` (skip confirmation) and usually `--ignore-errors` (do not abort the batch on a single failure).
+JQL and filter selectors can target many items at once, which makes the command a batch. Pair a batch with `-y, --yes` (skip confirmation) and usually `--ignore-errors` (do not abort on a single failure).
 
 ## <a id="create"></a>create
 
 Three input modes:
 
 ```bash
-# 1. Direct flags — simplest case
+# 1. Direct flags, the simplest case
 acli jira workitem create \
   --project "{{PROJECT_KEY}}" \
   --type "Story" \
@@ -63,7 +63,7 @@ acli jira workitem create \
   --from-file "bug-repro.md" \
   --assignee "user@example.com"
 
-# 3. Full JSON payload — needed for custom fields and rich ADF
+# 3. Full JSON payload, needed for custom fields and rich ADF
 acli jira workitem create --generate-json > workitem.json   # scaffold
 $EDITOR workitem.json                                        # edit
 acli jira workitem create --from-json workitem.json          # submit
@@ -76,24 +76,24 @@ Useful flags:
 | `-p, --project`      | Project key (e.g. `{{PROJECT_KEY}}`)                                       |
 | `-t, --type`         | Work item type name (`Epic`, `Story`, `Task`, `Bug`)               |
 | `-s, --summary`      | One-line title                                                     |
-| `-d, --description`  | Plain text or ADF. Markdown is **not** interpreted.                |
+| `-d, --description`  | Plain text or ADF. Markdown is not interpreted.                    |
 | `--description-file` | Description from a file                                            |
 | `-a, --assignee`     | Email, account ID, `@me` (self), or `default` (project's default)  |
 | `-l, --label`        | Comma-separated labels                                             |
-| `--parent`           | Parent work item key (for subtasks, epic children, bug→story link) |
+| `--parent`           | Parent work item key (for subtasks, epic children, bug to story link) |
 | `-e, --editor`       | Open `$EDITOR` to write summary + description                      |
 | `--json`             | Emit result as JSON                                                |
 
-**Publishing rich text in `description` or custom-field values**: pass an ADF JSON document, not Markdown. `acli` does not interpret Markdown. Use `scripts/md-to-adf.ts` (bundled with this skill) to produce the ADF document, then inject it into the `--from-json` payload. See the "Publishing rich text" section in `SKILL.md` for the full recipe and a worked example.
+Rich text in `description` or a custom-field value takes an ADF JSON document, because `acli` does not interpret Markdown. Produce the document with `scripts/md-to-adf.ts` (bundled with this skill) and inject it into the `--from-json` payload. The "Publishing rich text" section in `SKILL.md` has the full recipe and a worked example.
 
-**Parenting in `--from-json`: the field is `parentIssueId`, and `parentIssueKey` does not exist.** A payload carrying `parentIssueKey` is rejected outright (`json: unknown field`), which reads as "this tool cannot parent to an Epic" and sends the caller off to REST for nothing. It can: `parentIssueId` accepts a KEY (`{{PROJECT_KEY}}-100`), exactly like the `--parent` flag and the `create-bulk` CSV column of the same name. Its `--generate-json` description mentions sub-tasks only — that description is narrower than the behaviour, and every quality artifact this repo parents to a QA-process Epic goes through this field. Measured against a live instance while parenting Defects to a QA Epic.
+In `--from-json` the parent field is `parentIssueId`; `parentIssueKey` does not exist. A payload carrying `parentIssueKey` is rejected outright (`json: unknown field`), which reads as "this tool cannot parent to an Epic" and sends the caller off to REST for nothing. It can: `parentIssueId` accepts a KEY (`{{PROJECT_KEY}}-100`), like the `--parent` flag and the `create-bulk` CSV column of the same name. Its `--generate-json` description mentions sub-tasks only, which is narrower than the behaviour, and every quality artifact this repo parents to a QA-process Epic goes through this field. Measured against a live instance while parenting Defects to a QA Epic.
 
 ### create-bulk
 
 For many items at once, use JSON or CSV input:
 
 ```bash
-# CSV path — fastest for spreadsheet-style input
+# CSV path, the fastest for spreadsheet-style input
 acli jira workitem create-bulk --from-csv stories.csv --yes
 ```
 
@@ -113,18 +113,18 @@ $EDITOR bulk.json
 acli jira workitem create-bulk --from-json bulk.json --yes
 ```
 
-`--yes` is **mandatory** in non-interactive contexts — without it, `create-bulk` hangs waiting for stdin confirmation.
+In non-interactive contexts `create-bulk` needs `--yes`; without it the command hangs waiting for stdin confirmation.
 
 ## <a id="view"></a>view
 
 ```bash
-# Default fields — quick peek at a story
+# Default fields, a quick peek at a story
 acli jira workitem view {{PROJECT_KEY}}-123
 
 # Select fields
 acli jira workitem view {{PROJECT_KEY}}-123 --fields "summary,status,assignee,description,parent"
 
-# JSON for scripting — feed a downstream generator
+# JSON for scripting, to feed a downstream generator
 acli jira workitem view {{PROJECT_KEY}}-123 --json | jq '.fields | {
   summary,
   status: .status.name,
@@ -147,25 +147,25 @@ The `--fields` selector supports meta-tokens documented by the CLI:
 | `fieldName`  | Include named field  |
 | `-fieldName` | Exclude named field  |
 
-Example: `--fields "*navigable,-comment"` — everything navigable except the comment list.
+Example: `--fields "*navigable,-comment"` returns everything navigable except the comment list.
 
 Default view fields: `key,issuetype,summary,status,assignee,description`.
 
-> The `customfield_NNNNN` IDs above are placeholders. Real IDs are workspace-specific and have no name-addressing in `acli` — see the "Custom fields" section below for the discovery recipe.
+> The `customfield_NNNNN` IDs above are placeholders. Real IDs are workspace-specific and have no name-addressing in `acli`. The "Custom fields" section below has the discovery recipe.
 
 ## <a id="search"></a>search
 
 ```bash
-# JQL search — what's ready for someone to pick up
+# JQL search: what is ready for someone to pick up
 acli jira workitem search --jql "project = {{PROJECT_KEY}} AND status = 'Ready For Dev' AND assignee = currentUser()"
 
 # Saved filter (sprint dashboard, etc.)
 acli jira workitem search --filter 10001
 
-# Count only — sprint scorecards
+# Count only, for sprint scorecards
 acli jira workitem search --jql "project = {{PROJECT_KEY}} AND sprint in openSprints() AND status = 'In Progress'" --count
 
-# Full result set — always pass --paginate when iterating
+# Full result set: pass --paginate when iterating
 acli jira workitem search --jql "project = {{PROJECT_KEY}} AND sprint in openSprints()" --paginate --json
 
 # CSV for spreadsheets
@@ -185,15 +185,15 @@ Flags:
 | `-f, --fields`     | Comma-separated field list (default `issuetype,key,assignee,priority,status,summary`) |
 | `--json` / `--csv` | Output format                                                                         |
 | `-l, --limit`      | Max rows (default ~50, server-capped; truncates silently)                             |
-| `--paginate`       | Fetch all pages. Ignores `--limit`. **Use this in any automation script.**            |
+| `--paginate`       | Fetch all pages. Ignores `--limit`. Use this in any automation script.                |
 | `-w, --web`        | Open the search in the browser                                                        |
 
-**Silent truncation** is the top pitfall here. Without `--paginate`, `search` stops at the server page size (~30-50) with no warning. If your logic relies on "all matching items", always pass `--paginate`.
+Silent truncation is the top pitfall here. Without `--paginate`, `search` stops at the server page size (about 30 to 50) with no warning, so any logic that relies on "all matching items" needs `--paginate`.
 
 ## <a id="edit"></a>edit
 
 ```bash
-# Simple flag-based edit — fix a typo in the summary
+# Simple flag-based edit: fix a typo in the summary
 acli jira workitem edit --key "{{PROJECT_KEY}}-123" --summary "Updated story title" --yes
 
 # Re-assign a batch of stories with JQL
@@ -208,20 +208,19 @@ acli jira workitem edit --key "{{PROJECT_KEY}}-123" --remove-assignee
 Editable flags via `acli jira workitem edit` (`acli jira workitem edit --help` is the authority): `--summary`, `--description`, `--description-file`, `--assignee`, `--labels`, `--type`.
 Removal flags: `--remove-assignee`, `--remove-labels`.
 
-**That is the whole surface `--help` documents — and `components` is not on it.** There is no
+That is the whole surface `--help` documents, and `components` is not on it. There is no
 `--components` / `--component` flag and no `--from-json` key for it, so the field
-this repo's defect doctrine makes MANDATORY on every quality issue cannot be set
-or changed by `workitem edit` at all. Set components at CREATE time where
-possible; to change them later, use the same REST path as custom fields:
+this repo's defect doctrine requires on every quality issue cannot be set or
+changed by `workitem edit` at all. Set components at create time where possible;
+to change them later, use the same REST path as custom fields:
 `PUT /rest/api/3/issue/{KEY}` with `{"fields": {"components": [{"name": "<Module>"}]}}`.
-Worth stating plainly because the omission is silent: an edit that does not
-mention components simply leaves them as they were, and a caller who assumed the
-flag existed never sees an error. Measured while writing sprint-altitude fields
-on a live instance.
+The omission is silent: an edit that does not mention components leaves them as
+they were, and a caller who assumed the flag existed never sees an error.
+Measured while writing sprint-altitude fields on a live instance.
 
-**Critical limitation — `workitem edit` hard-rejects custom fields.** `acli jira workitem edit --from-json` validates the payload against a strict whitelist of built-in keys (the ones `acli jira workitem edit --help` documents; no custom-field key is among them). Every custom-field shape — `additionalAttributes.customfield_X`, `fields.customfield_X`, or `customfield_X` at the root — raises `✗ Error: json: unknown field …` and exits 1. Confirmed empirically against a live workitem; no silent drop, no escape hatch.
+`workitem edit` hard-rejects custom fields. `acli jira workitem edit --from-json` validates the payload against a strict whitelist of built-in keys (the ones `acli jira workitem edit --help` documents; no custom-field key is among them). Every custom-field shape (`additionalAttributes.customfield_X`, `fields.customfield_X`, or `customfield_X` at the root) raises `✗ Error: json: unknown field …` and exits 1. Confirmed empirically against a live workitem: no silent drop, no escape hatch.
 
-**The only working path** is REST `PUT /rest/api/3/issue/{KEY}` with `{"fields": {customfield_NNNNN: <value-or-ADF>}}` — see the dedicated `SKILL.md` "WORKAROUND" subsection for the turnkey curl recipe and `references/gotchas.md` §4 for the wire-level detail. Both use the session env vars `$ATLASSIAN_EMAIL` and `$ATLASSIAN_API_TOKEN` exported from the shell, plus the host from `bun run --silent jira:url` (read from `.agents/project.yaml`, not from the environment).
+The only working path is REST `PUT /rest/api/3/issue/{KEY}` with `{"fields": {customfield_NNNNN: <value-or-ADF>}}`. The `SKILL.md` "WORKAROUND" subsection has the turnkey curl recipe and `references/gotchas.md` §4 the wire-level detail. Both read `ATLASSIAN_EMAIL` and `ATLASSIAN_API_TOKEN` from `.env` through the loader (they are not exported into the shell) and take the host from `bun run --silent jira:url` (read from `.agents/project.yaml`, not from the environment).
 
 ## <a id="transition"></a>transition
 
@@ -233,7 +232,7 @@ acli jira workitem transition --key "{{PROJECT_KEY}}-123" --status "In Progress"
 acli jira workitem transition --key "{{PROJECT_KEY}}-123" --status "In Review"
 acli jira workitem transition --key "{{PROJECT_KEY}}-123" --status "Ready For QA"
 
-# Batch via JQL — close out everything that shipped last release
+# Batch via JQL: close out everything that shipped last release
 acli jira workitem transition --jql "project = {{PROJECT_KEY}} AND fixVersion = '2026.05'" \
   --status "Done" --yes --ignore-errors
 
@@ -241,12 +240,12 @@ acli jira workitem transition --jql "project = {{PROJECT_KEY}} AND fixVersion = 
 acli jira workitem transition --filter 10001 --status "Ready For Dev" --yes
 ```
 
-`--status` is a **status name**, not a transition ID. The target must be reachable from the current status through the project's workflow.
+`--status` is a status name, not a transition ID. The target must be reachable from the current status through the project's workflow.
 
 Two known limitations:
 
-- **No `--transition-id`.** If two transitions lead to the same status with different validators (e.g. both "Resolve" and "Cancel" end in "Closed"), `acli` may pick the wrong one and fail.
-- **Loop transitions** (actions that keep the status the same) are supported — just pass the same status name.
+- There is no `--transition-id`. If two transitions lead to the same status with different validators (both "Resolve" and "Cancel" end in "Closed", say), `acli` may pick the wrong one and fail.
+- Loop transitions (actions that keep the status the same) are supported: pass the same status name.
 
 Fallback when the CLI cannot disambiguate: call `POST /rest/api/3/issue/{key}/transitions` directly with an explicit transition ID. See `references/gotchas.md` §9 for the wire-level pattern.
 
@@ -256,14 +255,14 @@ Fallback when the CLI cannot disambiguate: call `POST /rest/api/3/issue/{key}/tr
 # Self-assign
 acli jira workitem assign --key "{{PROJECT_KEY}}-123" --assignee "@me"
 
-# Batch reassign via JQL — handover when someone leaves the team
+# Batch reassign via JQL, for a handover when someone leaves the team
 acli jira workitem assign --jql "project = {{PROJECT_KEY}} AND assignee = formerdev@example.com" \
   --assignee "newdev@example.com" --yes
 
 # Reset to the project default
 acli jira workitem assign --key "{{PROJECT_KEY}}-123" --assignee "default"
 
-# Unassign — putting it back in the pool
+# Unassign, putting it back in the pool
 acli jira workitem assign --key "{{PROJECT_KEY}}-123" --remove-assignee
 ```
 
@@ -271,7 +270,7 @@ Assignee values: email, Atlassian account ID, `@me`, or `default`.
 
 ## <a id="clone"></a>clone
 
-`clone` accepts the full selector set (`--key`, `--jql`, `--filter`, `--from-file`) — useful for cloning stories from a template project, or duplicating a recurring chore.
+`clone` accepts the full selector set (`--key`, `--jql`, `--filter`, `--from-file`), which suits cloning stories from a template project or duplicating a recurring chore.
 
 ```bash
 # Clone within the same project (single or many)
@@ -291,19 +290,19 @@ acli jira workitem clone --filter 10001 --to-project "{{PROJECT_KEY}}" --yes
 acli jira workitem clone --key "{{PROJECT_KEY}}-1" --to-project "{{PROJECT_KEY}}" --to-site "othersite.atlassian.net"
 ```
 
-The clone copies summary, description, labels, and most routine fields. Attachments and comment history are **not** cloned. Parent/epic links may or may not carry depending on project settings.
+The clone copies summary, description, labels, and most routine fields. Attachments and comment history are not cloned. Parent/epic links may or may not carry depending on project settings.
 
 ## <a id="archive"></a>archive / unarchive / delete
 
 ```bash
-# Archive — reversible
+# Archive (reversible)
 acli jira workitem archive --key "{{PROJECT_KEY}}-100,{{PROJECT_KEY}}-101" --yes
 acli jira workitem archive --jql "project = {{PROJECT_KEY}} AND resolved < -180d" --yes --ignore-errors
 
-# Unarchive — only --key and --from-file selectors are supported
+# Unarchive: only --key and --from-file selectors are supported
 acli jira workitem unarchive --key "{{PROJECT_KEY}}-100,{{PROJECT_KEY}}-101" --yes
 
-# Delete — destructive, use with care (only for items created by mistake)
+# Delete is destructive: use it only for items created by mistake
 acli jira workitem delete --key "{{PROJECT_KEY}}-999" --yes
 ```
 
@@ -314,7 +313,7 @@ Archived items no longer appear in normal search results and cannot be edited, b
 ### create
 
 ```bash
-# Plain text — renders as a single ADF paragraph, no markdown
+# Plain text: renders as a single ADF paragraph, no markdown
 acli jira workitem comment create --key "{{PROJECT_KEY}}-123" --body "PR opened: https://github.com/org/repo/pull/456"
 
 # Comment body from a file (longer notes)
@@ -331,18 +330,18 @@ acli jira workitem comment create --key "{{PROJECT_KEY}}-123" --body "Updated me
 acli jira workitem comment create --key "{{PROJECT_KEY}}-123" --editor
 ```
 
-**`acli`'s own `--help` examples for this command are stale — do not copy them.**
-`acli jira workitem comment create --help` prints its examples WITHOUT the
+The vendor's own `--help` examples for this command are stale, so do not copy them.
+`acli jira workitem comment create --help` prints its examples without the
 `create` subcommand:
 
 ```bash
-# WRONG — this is what the vendor's --help shows, and it fails
+# WRONG: this is what the vendor's --help shows, and it fails
 acli jira workitem comment --key "{{PROJECT_KEY}}-1" --body "..."
 # ✗ unknown flag: --key
 ```
 
 `--key` / `--body` / `--body-file` live on `create`, not on the `comment` group,
-so the vendor's own example exits non-zero. Always spell the subcommand. The
+so the vendor's own example exits non-zero. Spell the subcommand out. The
 forms in this file are the tested ones; `--help` is the authority when they disagree.
 
 `comment create` accepts ADF via `-F, --body-file`. The flag's `--help` text reads "Plain text file with text or Atlassian Document Format (ADF)"; when the file begins with `{`, `acli` forwards the content as ADF. To author rich comments:
@@ -352,7 +351,7 @@ bun .agents/skills/acli/scripts/md-to-adf.ts notes.md notes.adf.json
 acli jira workitem comment create --key {{PROJECT_KEY}}-123 -F notes.adf.json
 ```
 
-The plain `-b, --body` flag is plain text only — Markdown syntax in `--body` is stored literally as a single ADF paragraph. For any rich content, use `-F` with an ADF file produced by the bundled converter. See "Publishing rich text" in `SKILL.md` for the full workflow.
+The plain `-b, --body` flag is plain text only: Markdown syntax in `--body` is stored literally as a single ADF paragraph. For any rich content, use `-F` with an ADF file produced by the bundled converter. See "Publishing rich text" in `SKILL.md` for the full workflow.
 
 ### list
 
@@ -372,7 +371,7 @@ CID=$(acli jira workitem comment list --key "{{PROJECT_KEY}}-123" --json | jq -r
 acli jira workitem comment delete --key "{{PROJECT_KEY}}-123" --id "$CID"
 ```
 
-Flags: `--key` (target work item), `--id` (comment ID). No batch selectors — operates on one comment at a time.
+Flags: `--key` (target work item), `--id` (comment ID). No batch selectors: it operates on one comment at a time.
 
 ### update
 
@@ -397,20 +396,20 @@ acli jira workitem comment visibility --group
 
 ## <a id="link"></a>link
 
-### Directionality — EMPIRICAL FLAG INVERSION (read this before any `link create`)
+### Directionality: the empirical flag inversion (read this before any `link create`)
 
-The flag names `--out` and `--in` suggest "outward" and "inward" as defined by Jira's link-type catalog (outward description = "depends on" / "blocks" / "causes"; inward description = "is dependency for" / "is blocked by" / "is caused by"). **Empirically, acli swaps them.** Running:
+The flag names `--out` and `--in` suggest "outward" and "inward" as defined by Jira's link-type catalog (outward description = "depends on" / "blocks" / "causes"; inward description = "is dependency for" / "is blocked by" / "is caused by"). Empirically, acli swaps them. Running:
 
 ```bash
 acli jira workitem link create --out X --in Y --type Dependencies
 ```
 
-produces "**Y** depends on **X**" — i.e. **Y becomes the outward party**, **X becomes the inward party**, the opposite of what the flag names suggest. The same inversion applies to every outward-asymmetric link type.
+produces "Y depends on X": Y becomes the outward party and X the inward party, the opposite of what the flag names suggest. The same inversion applies to every outward-asymmetric link type.
 
-**Reverse-mapping rule of thumb**:
+The reverse-mapping rule of thumb:
 
-- `--out` takes the **prerequisite** (the issue that satisfies someone else's dependency / is blocked / causes / is duplicated)
-- `--in` takes the **dependent** (the issue that depends on / blocks / is caused by / duplicates)
+- `--out` takes the prerequisite (the issue that satisfies someone else's dependency / is blocked / causes / is duplicated)
+- `--in` takes the dependent (the issue that depends on / blocks / is caused by / duplicates)
 
 #### Per-link-type quick reference
 
@@ -430,11 +429,11 @@ Illustrative rows for the built-in link types; the live set of a site is `.agent
 | `Test Execute`  | executes             | is executed by          | the test                     | the execution               |
 | `Relates`       | relates to           | relates to              | either                       | either (symmetric)          |
 
-> Symmetric types (`Relates`) are immune to the inversion — direction is lost regardless of argument order. All outward-asymmetric types are affected.
+> Symmetric types (`Relates`) are immune to the inversion: direction is lost regardless of argument order. All outward-asymmetric types are affected.
 
 #### Mandatory post-create verification
 
-Every `link create` call MUST be followed by a direction check:
+Follow every `link create` call with a direction check:
 
 ```bash
 # Confirm direction for "DEPENDENT depends on PREREQUISITE"
@@ -443,7 +442,7 @@ acli jira workitem link list --key DEPENDENT --json | jq '.[] | select(.id == "<
 # Wrong direction? -> acli link delete --id <linkId> --yes && retry with swapped --out/--in
 ```
 
-The `outwardIssueKey` field in the JSON response names the outward partner from the DEPENDENT's perspective. If it matches the intended prerequisite, the link is correct; otherwise the link is inverted and must be deleted + recreated.
+The `outwardIssueKey` field in the JSON response names the outward partner from the DEPENDENT's perspective. If it matches the intended prerequisite, the link is correct; otherwise the link is inverted and must be deleted and recreated.
 
 ### create
 
@@ -458,17 +457,17 @@ acli jira workitem link create --out {{PROJECT_KEY}}-124 --in {{PROJECT_KEY}}-12
 
 # Verify direction (mandatory)
 acli jira workitem link list --key {{PROJECT_KEY}}-123 --json
-# Expected: outwardIssueKey == {{PROJECT_KEY}}-124 (123 is the outward party, looking outward "blocks" → 124)
+# Expected: outwardIssueKey == {{PROJECT_KEY}}-124 (123 is the outward party, looking outward "blocks" 124)
 
-# Intent: "{{PROJECT_KEY}}-456 RELATES TO {{PROJECT_KEY}}-123" — symmetric, immune to inversion
+# Intent: "{{PROJECT_KEY}}-456 RELATES TO {{PROJECT_KEY}}-123", symmetric and immune to inversion
 acli jira workitem link create --out {{PROJECT_KEY}}-456 --in {{PROJECT_KEY}}-123 --type "Relates" --yes
 
-# Batch via JSON — the same inversion applies to outwardIssue / inwardIssue keys in the payload
+# Batch via JSON: the same inversion applies to outwardIssue / inwardIssue keys in the payload
 acli jira workitem link create --generate-json > links.json
 $EDITOR links.json
 acli jira workitem link create --from-json links.json --yes
 
-# Batch via CSV — 3 columns, header row ignored
+# Batch via CSV: 3 columns, header row ignored
 #   outwardId,inwardId,linkType
 # CSV column names carry the inversion too: outwardId column = inward partner; inwardId column = outward partner.
 acli jira workitem link create --from-csv links.csv --yes
@@ -497,21 +496,20 @@ acli jira workitem link delete --from-json links-to-remove.json --yes --ignore-e
 acli jira workitem link delete --from-csv link-ids.csv --yes
 ```
 
-Flags: `--id`, `--from-csv`, `--from-json`, `--ignore-errors`, `--yes`. No work-item selector — operates on link IDs directly.
+Flags: `--id`, `--from-csv`, `--from-json`, `--ignore-errors`, `--yes`. No work-item selector: it operates on link IDs directly.
 
-**Deletion is the only way to fix a link's direction.** Jira dedupes a link
+Deleting the link is the only way to fix its direction. Jira dedupes a link
 between the same pair and the same type regardless of direction, so adding the
-corrected link on top of a wrong one is a **silent no-op**: no error, no new
-link, nothing changed. Anyone "repairing" direction by creating a second link
-achieves exactly nothing and has no way to notice. The sequence is: read the id
-(`link list --key <KEY> --json`), delete it, then create the link the right way
+corrected link on top of a wrong one is a silent no-op: no error, no new link,
+nothing changed, and nothing tells the caller. The sequence is: read the id
+(`link list --key <KEY> --json`), delete it, create the link the right way
 round, then verify. Measured on a live instance while repairing coverage links.
 
 > Under Modality jira-xray the Story↔test-artifact coverage link is owned by
 > `/xray-cli`, which has its own delete + recreate pair and a traceability gate
 > that prints the offending link id. Use this command for the Jira-layer link
-> types `/acli` owns; do not repair a coverage link from here without reading
-> that skill's direction statement first.
+> types `/acli` owns; read that skill's direction statement before repairing a
+> coverage link from here.
 
 ### Linking an external URL via remote link
 
@@ -531,7 +529,7 @@ curl -s -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
   }'
 ```
 
-If a GitHub-for-Jira integration is installed on the org, mentioning the story key (e.g. `{{PROJECT_KEY}}-123`) in the PR title or body is enough — the integration auto-links. The REST recipe above is the manual fallback.
+If a GitHub-for-Jira integration is installed on the org, mentioning the story key (e.g. `{{PROJECT_KEY}}-123`) in the PR title or body is enough, because the integration auto-links. The REST recipe above is the manual fallback.
 
 ## <a id="attachment"></a>attachment
 
@@ -540,7 +538,7 @@ acli jira workitem attachment list --key "{{PROJECT_KEY}}-123" --json
 acli jira workitem attachment delete --key "{{PROJECT_KEY}}-123" --id 12345
 ```
 
-Upload is not covered by the CLI — use REST (`POST /rest/api/3/issue/{key}/attachments`).
+The CLI does not cover upload; use REST (`POST /rest/api/3/issue/{key}/attachments`).
 
 ## <a id="watcher"></a>watcher
 
@@ -551,7 +549,7 @@ Upload is not covered by the CLI — use REST (`POST /rest/api/3/issue/{key}/att
 acli jira workitem watcher list --key "{{PROJECT_KEY}}-123" --json
 ```
 
-Returns the watch count and the list of watcher accounts (each with `accountId`, `displayName`, `emailAddress` — the same shape Jira REST returns).
+Returns the watch count and the list of watcher accounts (each with `accountId`, `displayName`, `emailAddress`, the same shape Jira REST returns).
 
 ### remove
 
@@ -561,11 +559,11 @@ acli jira workitem watcher remove --key "{{PROJECT_KEY}}-123" --user 5b10ac8d82e
 
 `--user` takes an Atlassian account ID (not email). To get an account ID, run `watcher list --json` first (or look it up via `GET /rest/api/3/user/search?query=email`).
 
-**Adding watchers is not exposed by `acli`** — REST fallback: `POST /rest/api/3/issue/{key}/watchers` with the account ID as a quoted JSON string in the body.
+`acli` does not expose adding watchers. The REST fallback is `POST /rest/api/3/issue/{key}/watchers` with the account ID as a quoted JSON string in the body.
 
 ## <a id="custom-fields"></a>Custom fields
 
-This is one of the rougher edges in `acli`. Read this section carefully — the CLI exposes first-class flags only for built-in fields (`summary`, `description`, `assignee`, `labels`, `priority`, `parent`, `type`). Everything else — AI Effort, acceptance criteria, business rules, scope, mockup, workflow — must go through `--from-json` on `create`. **Editing custom-field values on existing items has no documented `acli` path** and requires REST/MCP.
+Custom fields are one of the rougher edges in `acli`. The CLI exposes first-class flags only for built-in fields (`summary`, `description`, `assignee`, `labels`, `priority`, `parent`, `type`). Everything else (AI Effort, acceptance criteria, business rules, scope, mockup, workflow) goes through `--from-json` on `create`. Editing custom-field values on existing items has no documented `acli` path and requires REST/MCP.
 
 ### What `acli` documents officially
 
@@ -586,18 +584,18 @@ This is one of the rougher edges in `acli`. Read this section carefully — the 
 }
 ```
 
-Three things to internalize:
+Three things hold for every payload:
 
-1. **Wrapper key**: `additionalAttributes` (NOT `fields`, NOT flat at the root).
-2. **Field address**: numeric `customfield_NNNNN` ID only. **Name-addressing (`"AI Effort"`) is not supported.**
-3. **Documented value shapes** (only three are illustrated by the template):
-   - **Single-select / option**: `{"value": "..."}`
-   - **Number**: bare numeric literal (e.g. `50`)
-   - **String / text**: bare string
+1. The wrapper key is `additionalAttributes`, not `fields` and not flat at the root.
+2. A field is addressed by its numeric `customfield_NNNNN` ID only. Name-addressing (`"AI Effort"`) is not supported.
+3. Only three value shapes are illustrated by the template:
+   - single-select / option: `{"value": "..."}`
+   - number: bare numeric literal (such as `50`)
+   - string / text: bare string
 
-### What `acli` does NOT document — inferred from the Jira REST contract
+### What `acli` does not document, inferred from the Jira REST contract
 
-`acli` forwards `additionalAttributes` straight to the Jira REST `/rest/api/3/issue` endpoint, so the Jira REST shape applies for everything beyond the three documented types. The shapes below are inferred from REST and from `workitem view --json` output — validate by trial:
+`acli` forwards `additionalAttributes` straight to the Jira REST `/rest/api/3/issue` endpoint, so the Jira REST shape applies for everything beyond the three documented types. The shapes below are inferred from REST and from `workitem view --json` output, so validate by trial:
 
 | Field type       | Likely input shape inside `additionalAttributes`                                                                                        |
 | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
@@ -609,11 +607,11 @@ Three things to internalize:
 | User picker      | `{"accountId": "5b10ac8d82e05b22cc7d4ef5"}`                                                                                             |
 | Cascading select | `{"value": "Parent", "child": {"value": "Child"}}`                                                                                      |
 | Rich text (ADF)  | full ADF doc tree (same shape as `description`). Produce the tree from Markdown via `scripts/md-to-adf.ts`, then nest the result inside `additionalAttributes` for `create`, or inside `{"fields": {...}}` for a REST `PUT` on an existing item. See "Publishing rich text" in `SKILL.md`. |
-| Sprint           | array of sprint IDs `[5]` — but **this fails in practice (`JRACLOUD-97107` when this was written)**, see [Sprint field cannot be set](./gotchas.md#sprint) |
+| Sprint           | array of sprint IDs `[5]`, but this fails in practice (`JRACLOUD-97107`), see [Sprint field cannot be set](./gotchas.md#sprint) |
 
-If a shape isn't listed here, the safest source of truth is `acli jira workitem view <KEY-WITH-FIELD-SET> --fields "*all" --json` — the read shape is usually identical to the write shape for that field type.
+If a shape isn't listed here, the safest source of truth is `acli jira workitem view <KEY-WITH-FIELD-SET> --fields "*all" --json`: the read shape is usually identical to the write shape for that field type.
 
-### Critical limitation: `workitem edit` does not document custom-field input
+### `workitem edit` does not document custom-field input
 
 Running `acli jira workitem edit --generate-json` produces:
 
@@ -631,7 +629,7 @@ Running `acli jira workitem edit --generate-json` produces:
 }
 ```
 
-**No `additionalAttributes` block.** The flag list on `edit --help` confirms: only built-in fields are supported (`--summary`, `--description`, `--description-file`, `--assignee`, `--labels`, `--type`, `--remove-assignee`, `--remove-labels`).
+The template has no `additionalAttributes` block. The flag list on `edit --help` confirms: only built-in fields are supported (`--summary`, `--description`, `--description-file`, `--assignee`, `--labels`, `--type`, `--remove-assignee`, `--remove-labels`).
 
 For editing a custom-field value on an existing work item (e.g. updating Quality Token Usage (K) when a Story is approved, polishing ACs after a 3-amigos), fall back to REST:
 
@@ -645,7 +643,7 @@ curl -s -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
 
 Note the REST shape uses `{"fields": {...}}`, not `additionalAttributes`.
 
-### Critical limitation: bulk operations do not document custom-field input
+### Bulk operations do not document custom-field input
 
 `acli jira workitem create-bulk --generate-json` and the CSV column list (`summary, projectKey, issueType, description, label, parentIssueId, assignee`) both omit any way to set custom fields. If you need bulk creation with custom fields (e.g. seeding a backlog with ACs already attached), the workaround is single-create-in-a-loop or REST batch.
 
@@ -659,23 +657,23 @@ SITE="$(bun run --silent jira:url --slug)"
 # From an existing item that has the field set
 acli jira workitem view {{PROJECT_KEY}}-123 --json | jq '.fields | keys[] | select(startswith("customfield_"))'
 
-# From the field admin UI — the ID is in the URL when editing the field
+# From the field admin UI: the ID is in the URL when editing the field
 # https://${SITE}/secure/admin/EditCustomField!default.jspa?id=NNNNN
 
-# From REST — the only way to enumerate ALL fields on the site
+# From REST, the only way to enumerate every field on the site
 curl -s -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
   "https://${SITE}/rest/api/3/field" | jq '.[] | {id, name, custom, schema}'
 ```
 
 > Repo integration: host repos typically cache the field catalog under `.agents/` and reference fields by stable slug rather than numeric ID. See the host repo's `<repo-core>/references/acli-integration.md` for the slug catalog and refresh script.
 
-### Putting it together — full `create` example with custom fields
+### Putting it together: a full `create` example with custom fields
 
 ```bash
 # 1. Scaffold
 acli jira workitem create --generate-json > new-story.json
 
-# 2. Edit to include custom fields (IDs come from your workspace — see "Finding a custom field ID" above)
+# 2. Edit to include custom fields (IDs come from your workspace; see "Finding a custom field ID" above)
 cat > new-story.json <<'JSON'
 {
   "summary": "Add empty-states to the dashboard",
@@ -694,4 +692,4 @@ JSON
 acli jira workitem create --from-json new-story.json
 ```
 
-_(IDs like `customfield_NNNN` and `customfield_NNNNN` are placeholders — substitute your workspace's real IDs.)_
+_(IDs like `customfield_NNNN` and `customfield_NNNNN` are placeholders; substitute your workspace's real IDs.)_

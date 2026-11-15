@@ -1,6 +1,6 @@
 # Projects, boards, sprints, filters, dashboards, fields
 
-Everything outside the `workitem` surface. These commands are narrower but share the same output conventions (`--json`, `--csv`, `--paginate`, `--limit`) and the same confirmation/error flags on mutations (`--yes`, `--ignore-errors`).
+Everything outside the `workitem` surface. These commands are narrower but share its output conventions (`--json`, `--csv`, `--paginate`, `--limit`) and its confirmation and error flags on mutations (`--yes`, `--ignore-errors`).
 
 ## Table of contents
 
@@ -18,7 +18,7 @@ Subcommands: `create`, `view`, `list`, `update`, `archive`, `restore`, `delete`.
 ### list
 
 ```bash
-# All visible projects — default limit 30
+# All visible projects (default limit 30)
 acli jira project list
 
 # Recently viewed (up to 20)
@@ -59,9 +59,9 @@ acli jira project create --from-json project.json
 
 Notes:
 
-- **Only company-managed projects can be cloned.** Team-managed projects cannot be used as `--from-project` sources.
+- Only company-managed projects can be cloned. A team-managed project cannot be a `--from-project` source.
 - If `--lead-email` is omitted, the new project inherits the parent project's lead.
-- `project create` does NOT let you pick the issue-type scheme or workflow scheme — clone-from-existing is the only way to inherit those. For projects with custom schemes, fall back to REST.
+- `project create` cannot pick the issue-type scheme or workflow scheme; cloning from an existing project is the only way to inherit them. For projects with custom schemes, fall back to REST.
 
 ### update
 
@@ -76,7 +76,7 @@ acli jira project update --project-key "UPEX1" --from-json project-changes.json
 acli jira project update --generate-json
 ```
 
-`--project-key` identifies the project to update; `--key` is the new key value. Updatable fields are limited to: `key, name, description, lead-email, url`. Workflow / issue-type / permission scheme changes still require REST.
+`--project-key` identifies the project to update; `--key` is the new key value. Only `key, name, description, lead-email, url` can be updated. Workflow, issue-type and permission scheme changes still need REST.
 
 ### archive / restore / delete
 
@@ -105,8 +105,8 @@ Flags:
 | `--name`     | Case-insensitive partial match                                         |
 | `--type`     | `scrum` · `kanban` · `simple`                                          |
 | `--project`  | Project key filter                                                     |
-| `--filter`   | Saved filter ID (**not supported for next-gen / team-managed boards**) |
-| `--order-by` | `name` · `-name` · `+name` (kebab-case — NOT `--orderBy`)              |
+| `--filter`   | Saved filter ID (not supported for next-gen / team-managed boards)     |
+| `--order-by` | `name` · `-name` · `+name` (kebab-case, not `--orderBy`)               |
 | `--private`  | Include private boards (name/type filters ignored when set)            |
 | `--limit`    | Default **50**                                                         |
 | `--paginate` | Pull all pages                                                         |
@@ -244,7 +244,7 @@ acli jira sprint list-workitems \
 
 Both `--sprint` (sprint ID, integer) and `--board` (board ID, integer) are required.
 
-**Adding individual work items to a sprint is NOT supported by `acli`** (see `references/gotchas.md` for the REST fallback). You CAN create / update / close the sprint itself — just not move tickets in or out of one via the CLI.
+`acli` cannot add individual work items to a sprint (see `references/gotchas.md` for the REST fallback). It can create, update and close the sprint itself, but it cannot move tickets in or out of one.
 
 ## <a id="filters"></a>Filters (`acli jira filter`)
 
@@ -289,7 +289,7 @@ Search params are ANDed. Default limit **30**. `--paginate` to bypass.
 acli jira filter add-favourite --filter-id 10001
 ```
 
-**Flag is `--filter-id`, NOT `--id`.** This is the only filter subcommand with that exception — `change-owner`, `update`, `reset-columns` all use `--id`.
+The flag is `--filter-id`, not `--id`. It is the only filter subcommand with that exception: `change-owner`, `update` and `reset-columns` all use `--id`.
 
 ### change-owner
 
@@ -304,7 +304,7 @@ acli jira filter change-owner --from-file filter-ids.txt --owner "newowner@examp
 ### update
 
 ```bash
-# Update name/description
+# Update name and description
 acli jira filter update --id 10001 --name "Active sprint" --description "Open issues in active sprint"
 
 # Update the JQL backing the filter
@@ -318,7 +318,7 @@ Flags: `--id` (required), `--name`, `--description`, `--jql`, `--share-permissio
 
 ### get-columns / reset-columns
 
-Filters can override the default issue-list columns shown in Jira's UI. These two commands inspect and reset that override.
+A filter can override the default issue-list columns in Jira's UI. These two commands inspect and reset that override.
 
 ```bash
 # Inspect (--key takes a filter ID despite the flag name)
@@ -342,12 +342,12 @@ acli jira dashboard search --paginate --csv
 
 Subcommands: `cancel-delete`, `create`, `delete`, `update`.
 
-> **Important — what this group does and does not do**:
+> **What this group does and does not do**:
 >
-> - **What it manages**: custom-field DEFINITIONS at the site/admin level (the schema — name, type, description, searcher).
-> - **What it does NOT manage**: custom-field VALUES on individual work items (use `workitem create --from-json` with `additionalAttributes` instead — and even that has limitations; see `references/workitem.md` §Custom fields).
-> - **What is missing entirely**: there is **no `list`, `get`, `view`, or `search` subcommand**. To enumerate all custom fields on a site, fall back to REST `GET /rest/api/3/field` (or `cat .agents/jira-fields.json` if `bun run jira:sync-fields` has been run).
-> - **What is also missing**: there is no command to manage select/dropdown OPTIONS for an existing field. To add or remove dropdown options, fall back to REST `/rest/api/3/field/{fieldId}/option`.
+> - It manages custom-field definitions at the site/admin level: the schema, meaning name, type, description and searcher.
+> - It does not manage custom-field values on individual work items. Use `workitem create --from-json` with `additionalAttributes` for those (even that has limits; see `references/workitem.md` §Custom fields).
+> - It has no `list`, `get`, `view` or `search` subcommand. To enumerate all custom fields on a site, fall back to REST `GET /rest/api/3/field`, or `cat .agents/jira-fields.json` if `bun run jira:sync-fields` has been run.
+> - It cannot manage select/dropdown options of an existing field. To add or remove options, fall back to REST `/rest/api/3/field/{fieldId}/option`.
 
 ### create
 
@@ -369,9 +369,9 @@ acli jira field create \
   --description "The planned release date"
 ```
 
-Flags: `--name`, `--type`, `--searcher-key` (kebab-case — NOT `--searcherKey`), `--description`, `--json`.
+Flags: `--name`, `--type`, `--searcher-key` (kebab-case, not `--searcherKey`), `--description`, `--json`.
 
-`--type` takes the Atlassian field-type key, **not** a friendly name. Common values:
+`--type` takes the Atlassian field-type key, not a friendly name. Common values:
 
 | Friendly name        | Type key                                                            |
 | -------------------- | ------------------------------------------------------------------- |
@@ -406,11 +406,11 @@ acli jira field update --id customfield_10122 \
 acli jira field update --id customfield_10122 --from-json field-changes.json
 ```
 
-Flags: `--id` (required), `--name`, `--description`, `--searcher-key`, `--from-json`, `--json`. Note: changing `--type` after creation is NOT supported by Jira itself — to change a field's type you must delete and recreate.
+Flags: `--id` (required), `--name`, `--description`, `--searcher-key`, `--from-json`, `--json`. Jira itself does not support changing `--type` after creation; to change a field's type, delete and recreate it.
 
 ### delete / cancel-delete
 
-Field deletion is a two-phase operation in Jira (scheduled, then executed). `cancel-delete` undoes a pending deletion if the field has not yet been removed.
+Jira deletes a field in two phases (scheduled, then executed). `cancel-delete` undoes a pending deletion while the field still exists.
 
 ```bash
 # Schedule a field for deletion
