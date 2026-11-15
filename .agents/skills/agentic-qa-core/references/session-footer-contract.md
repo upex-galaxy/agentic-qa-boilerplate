@@ -1,22 +1,22 @@
 # Session Footer Contract (shared, chat-facing)
 
-> Cited by: every skill marked `metadata.stage_owner: true` in its frontmatter. Reference/utility skills are exempt (they run inside a workflow session that already honors this).
+> Cited by: every skill marked `metadata.stage_owner: true` in its frontmatter. Reference and utility skills are exempt (they run inside a workflow session that already honors this).
 
-Chat-facing reporting contract: two things the AI must surface to the human operator **without being asked**, every session, in every workflow skill. Neither block goes into a Jira comment, ATR body, or any ticket-facing artifact — those keep their own templates and voice; this contract governs the terminal/chat conversation only.
+A chat-facing reporting contract. In every workflow skill, every session, the AI tells the human operator two things without being asked: where the screenshots are, and which tools and testing levels the session used. Neither block goes into a Jira comment, ATR body or any ticket-facing artifact. Those keep their own templates and voice, and this contract governs the terminal and chat conversation only.
 
-**Gate:** if you are about to tell the user a session/flow is done and you haven't printed the two blocks below, stop — you're not actually done reporting.
+The gate: before telling the user a session or flow is done, print the two blocks below. Without them the reporting is not finished.
 
-**Why it exists (real precedent on a sibling project; see ADR-0006):** after a full sprint-testing run, the operator had to explicitly ask for the annotated bug screenshot's relative path to open it, and separately ask which tools and testing levels were actually applied — a business-outcome summary alone didn't make that legible. Both questions are cheap to pre-empt and expensive to keep re-asking; hence a standing contract instead of a one-off answer.
+The reason, from a real precedent on a sibling project (ADR-0006): after a full sprint-testing run, the operator had to ask for the annotated bug screenshot's relative path to open it, and separately ask which tools and testing levels were actually applied. A business-outcome summary alone did not make that legible. Both questions are cheap to answer up front and expensive to keep re-asking, so the answer is a standing contract.
 
 ---
 
-## Part 1 — Evidence path surfacing (whenever a screenshot exists)
+## Part 1 · Evidence path surfacing (whenever a screenshot exists)
 
-Two trigger points; **both** apply:
+Two trigger points, and both apply.
 
-**1a. Immediately, not deferred.** The instant a screenshot/annotation is captured and relevant, state its **repo-relative** path in chat in that same turn. Extra weight on annotated bug images — the human's next move is almost always "attach that to the bug", so the path must be sitting right there ready to copy.
+1a. Immediately. The moment a screenshot or annotation is captured and relevant, state its repo-relative path in chat in that same turn. Annotated bug images matter most: the human's next move is almost always "attach that to the bug", so the path should sit ready to copy.
 
-**1b. Consolidated at session close.** The final chat report of ANY completed workflow session includes the full list of every screenshot/annotation the session captured. Bug annotations lead the list.
+1b. Consolidated at session close. The final chat report of any completed workflow session lists every screenshot and annotation the session captured. Bug annotations lead the list.
 
 Template:
 
@@ -32,19 +32,19 @@ Other evidence:
 
 Rules:
 
-- Omit the "Bug annotations" group entirely if none exist this session — no empty headings.
-- **Repo-relative paths** here (they open inline in chat/editor). The Evidence Handoff (`sprint-testing/references/reporting-templates.md` §3.5) links the evidence pages and names the local pack by its FULL ABSOLUTE path, for the operator on this machine (and lists absolute screenshot paths only while a page is not published yet). Produce both where both apply — they don't conflict.
-- List only files verified on disk (`ls` the evidence dir) — never claim a capture a subagent only *said* it took. Canon: `evidence-conventions.md` §3.
+- Omit the "Bug annotations" group when none exist this session. No empty headings.
+- Use repo-relative paths here, since they open inline in chat and the editor. The Evidence Handoff (`sprint-testing/references/reporting-templates.md` §3.5) links the evidence pages and names the local pack by its full absolute path, for the operator on this machine (and lists absolute screenshot paths only while a page is not published yet). Produce both where both apply. They do not conflict.
+- List only files verified on disk (`ls` the evidence dir). A capture a subagent only said it took does not count. Canon: `evidence-conventions.md` §3.
 
-## Part 2 — Session-close footer: tools used + testing levels touched
+## Part 2 · Session-close footer: tools used and testing levels touched
 
-Printed once, at session/flow close, in chat:
+Printed once, in chat, at session or flow close:
 
-- **Skills loaded** — every skill invoked this session (the orchestrating workflow skill itself, plus anything loaded inside it or inside its subagents).
-- **MCPs used** — every MCP server actually *called* (not just connected).
-- **CLIs used** — every CLI tool actually invoked.
-- **Testing levels touched** — one line per testing-pyramid level the session actually exercised, each with a one-clause note of WHAT was done there. Say **"none"** explicitly for an expected-but-untouched level — never omit it silently, and never pad coverage that didn't happen.
-- **Refinements proposed** — `N → <path>` where the path is the running skill's `.session/<skill-slug>/<scope>/refinements.md` (`skill-refinement-protocol.md` §2). `0` when none, and no path. The proposals are never applied by the session: the line exists so the human knows there is something to review.
+- Skills loaded: every skill invoked this session (the orchestrating workflow skill itself, plus anything loaded inside it or inside its subagents).
+- MCPs used: every MCP server actually called, not just connected.
+- CLIs used: every CLI tool actually invoked.
+- Testing levels touched: one line per testing-pyramid level the session exercised, each with a one-clause note of what was done there. Say "none" for an expected-but-untouched level, so the omission is visible, and do not pad coverage that did not happen.
+- Refinements proposed: `N → <path>` where the path is the running skill's `.session/<skill-slug>/<scope>/refinements.md` (`skill-refinement-protocol.md` §2). `0` when none, with no path. The session never applies its proposals; the line tells the human there is something to review.
 
 Template:
 
@@ -66,20 +66,24 @@ Refinements proposed: 1 → .session/sprint-testing/PROJ-277/refinements.md
 
 | Skill | Framing | "Testing levels touched" means |
 |---|---|---|
-| `sprint-testing`, `exploratory-testing`, `shift-left-testing`, `regression-testing`, `sprint-conductor` (the levels its workers' ATRs exercised, read from the close reports) | **Execution** | Which pyramid levels were manually/exploratorily (or via CI suite) exercised: Unit, API/Integration, Database, UI/E2E, Cross-browser, Accessibility, Security, Performance. |
-| `test-automation` | **Authoring** | Which levels got NEW automated coverage written (Unit, API, E2E/UI) + which KATA layer the code landed in (L2 base / L3 component / Steps / fixture / spec). |
-| `test-documentation` | **Curation** | How the TCs processed this session break down by level — e.g. "6 API-level Candidates, 2 UI-level Candidates, 1 Manual". |
-| `framework-development` | **Meta** | Which verify surfaces ran (types / lint / skills-lint / test suite) + which framework layers were touched; product-testing levels are usually all "none (meta-work)". |
+| `sprint-testing`, `exploratory-testing`, `shift-left-testing`, `regression-testing`, `sprint-conductor` (the levels its workers' ATRs exercised, read from the close reports) | Execution | Which pyramid levels were manually or exploratorily (or via CI suite) exercised: Unit, API/Integration, Database, UI/E2E, Cross-browser, Accessibility, Security, Performance. |
+| `test-automation` | Authoring | Which levels got new automated coverage written (Unit, API, E2E/UI) and which KATA layer the code landed in (L2 base / L3 component / Steps / fixture / spec). |
+| `test-documentation` | Curation | How the TCs processed this session break down by level, for example "6 API-level Candidates, 2 UI-level Candidates, 1 Manual". |
+| `framework-development` | Meta | Which verify surfaces ran (types / lint / skills-lint / test suite) and which framework layers were touched. Product-testing levels are usually all "none (meta-work)". |
 
 ## Multi-subagent aggregation rule
 
-No single subagent sees the whole session — the **orchestrator** is the one place that can compile this footer. Two options:
+No single subagent sees the whole session, so the orchestrator is the one place that can compile this footer. Two options:
 
-1. **Schema-driven (preferred for dispatch-heavy flows):** every stage subagent's structured report includes the fields below; the orchestrator unions them at close.
-2. **Orchestrator-tracked:** the orchestrator records tools/levels as it dispatches (fine for simpler flows).
+1. Schema-driven (preferred for dispatch-heavy flows): every stage subagent's structured report includes the fields below, and the orchestrator unions them at close.
+2. Orchestrator-tracked: the orchestrator records tools and levels as it dispatches (fine for simpler flows).
 
-Either way: the footer is compiled ONCE, by the orchestrator, at the very end — never per-stage, never per-subagent (that fragments it into partial, confusing blocks).
+Either way the orchestrator compiles the footer once, at the very end. A footer per stage or per subagent fragments it into partial, confusing blocks.
 
-### Briefing snippet (paste into component 6 — Report format)
+### Briefing snippet (paste into component 6, Report format)
 
-> **Session-footer fields (mandatory in your structured report):** `skills_loaded` (array), `mcps_used` (array), `clis_used` (array), `testing_levels_touched` (array of `{level, note}`; include a `{level, note: "none"}` entry for any pyramid level your stage would normally be expected to touch but didn't), `screenshots_captured` (array of repo-relative paths, tagging which ones are bug annotations). Never omit any of the five fields even if empty — report empty arrays explicitly rather than dropping the field.
+> **Session-footer fields (mandatory in your structured report):** `skills_loaded` (array), `mcps_used` (array), `clis_used` (array), `testing_levels_touched` (array of `{level, note}`; include a `{level, note: "none"}` entry for any pyramid level your stage would normally be expected to touch but didn't), `screenshots_captured` (array of repo-relative paths, tagging which ones are bug annotations). Never omit any of the five fields even if empty: report empty arrays explicitly rather than dropping the field.
+
+## With nobody at the keyboard
+
+Nothing here waits for a person. A supervised worker puts the five fields in its report, and the conductor compiles the footer for the fleet. A routine prints the footer in its final report, which is where a person reads it later.

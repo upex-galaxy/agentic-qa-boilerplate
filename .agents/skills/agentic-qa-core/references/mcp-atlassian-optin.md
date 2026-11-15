@@ -9,7 +9,7 @@
 
 Only when a task needs something `acli` does not expose and the owner accepts one more
 long-running server per session. Nothing in the skills requires it: `[ISSUE_TRACKER_TOOL]` and
-`[TMS_TOOL]` resolve to the CLIs first, and the MCP is named only as their fallback.
+`[TMS_TOOL]` resolve to the CLIs first, and the MCP is named only as their fallback. Enabling it is the owner's call, since it adds a server to every host config and credentials to `.env`. A worker or routine never enables it on its own: it reports that the task needs it and stops there (`decision-protocol.md`).
 
 ## The server
 
@@ -19,14 +19,14 @@ same way the committed configs pin every `bunx` package: pin the version you ins
 
 | Variable the server reads | Where the value comes from |
 |---|---|
-| `JIRA_URL` | the site host in `.agents/project.yaml` → `issue_tracker.atlassian_url`. Print it with `bun run --silent jira:url` and paste the LITERAL value. It is not an env var and never a `{{ATLASSIAN_URL}}` token: an MCP config cannot run a command, and a second env copy of the host is exactly what goes stale (`.agents/instructions/agent-project-variables.md`). |
+| `JIRA_URL` | the site host in `.agents/project.yaml`, key `issue_tracker.atlassian_url`. Print it with `bun run --silent jira:url` and paste the literal value. It is not an env var and not a `{{ATLASSIAN_URL}}` token: an MCP config cannot run a command, and a second env copy of the host is exactly what goes stale (`.agents/instructions/agent-project-variables.md`). |
 | `JIRA_USERNAME` | `ATLASSIAN_EMAIL` in `.env` |
 | `JIRA_API_TOKEN` | `ATLASSIAN_API_TOKEN` in `.env` |
 
 After a site migration: update `.agents/project.yaml` first, then re-paste `JIRA_URL` in every
 config. `bun run setup:doctor` cannot see a stale value inside an MCP config.
 
-## Enable it on EVERY host, in one change
+## Enable it on every host, in one change
 
 The parity check (below) fails when a server exists in one host only, so the block goes into
 `.mcp.json`, `opencode.jsonc`, `.codex/config.toml` and `.pi/mcp.json` together. Replace
@@ -126,7 +126,7 @@ naming the server and the host.
   names, so different spellings of one name are parity, not drift.
 - **A stdio server that needs `.env` values launches through the loader on every host, and
   only through it.** A host-side reference beside the loader (`${VAR}`, `{env:}`, `{file:}`,
-  `env_vars`) is reported: an unset `${VAR}` breaks a desktop launch, and an EMPTY inherited
+  `env_vars`) is reported: an unset `${VAR}` breaks a desktop launch, and an empty inherited
   value shadows `.env`. Codex passes placeholders inside `args` or `[mcp_servers.X.env]` as
   literal text, so a `${DBHUB_HOST}` there would reach dbhub as that string; the check rejects a
   placeholder inside a Codex `env` table. ERROR in the boilerplate, WARNING downstream that names
@@ -135,6 +135,6 @@ naming the server and the host.
   `cli/lib/agent-compatibility-contracts.ts`) when declared. Any other server, `atlassian`
   included, gets the generic comparison only, so a project may add or drop servers freely.
 - **Failure is silent on every host** (AGENTS.md Critical Rule #10): an unset optional variable
-  reaches the server as absent or empty and the server dies on its first authenticated call. A
-  401/403 from `atlassian` means `bunx varlock load --agent` (redacted) to see whether
-  `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` are set; the human fixes `.env`; restart the session.
+  reaches the server as absent or empty, and the server dies on its first authenticated call. On a
+  401 or 403 from `atlassian`, run `bunx varlock load --agent` (redacted) to see whether
+  `ATLASSIAN_EMAIL` and `ATLASSIAN_API_TOKEN` are set. The human fixes `.env`, then restarts the session.

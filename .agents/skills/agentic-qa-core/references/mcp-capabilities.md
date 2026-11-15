@@ -6,9 +6,9 @@
 
 A tool name has two halves: `mcp__<server>__<tool>`. The **prefix** is the server the host registered; the **suffix** is what the tool does. The same Tavily tool arrives as `mcp__tavily__tavily_search` from the project `.mcp.json`, as `mcp__claude_ai_<connector>__tavily_search` from a claude.ai connector, and under yet another prefix from a user-level server. A worker once concluded "no Tavily" because it matched the prefix. So:
 
-- Skills declare the **capability** they need, never a server name.
-- The AI resolves a capability by looking for **any available tool whose name ends in (or, for DBHub, starts with) one of the suffixes below**, whatever its prefix.
-- Nothing alarms at session start when a server is disabled (people disable MCPs to save tokens). The only alarm is the point-of-use STOP in §4.
+- Skills declare the capability they need, never a server name.
+- The AI resolves a capability by looking for any available tool whose name ends in (or, for DBHub, starts with) one of the suffixes below, whatever its prefix.
+- Nothing alarms at session start when a server is disabled, because people disable MCPs to save tokens. The only alarm is the point-of-use stop in §4.
 
 ## 2. Vocabulary
 
@@ -17,7 +17,7 @@ A tool name has two halves: `mcp__<server>__<tool>`. The **prefix** is the serve
 | `web-search` | Exa first: `web_search_exa`, `web_fetch_exa` (plus `web_search_advanced_exa` when the server enables it). Tavily second: `tavily_search`, `tavily_extract`, `tavily_research` | HARNESS level, never `.mcp.json`: a claude.ai connector, a user-scope Claude server, the OpenCode or Codex user config (the list of moved servers: `cli/lib/harness-level-mcps.ts`) | `[WEB_SEARCH_TOOL]`: community fixes, error lookups, non-doc research, spikes. Prefer an Exa tool when both providers are available; Tavily when Exa is absent or the user asks for it |
 | `library-docs` | `resolve-library-id`, `query-docs` | committed `context7` (no key) | `[DOCS_TOOL]`: official library / framework / SDK / CLI docs |
 | `db` | `execute_sql_<source_id>`, `search_objects_<source_id>` (DBHub appends the `dbhub.toml` source id, e.g. `execute_sql_primary`) | committed `dbhub` (project-scope `DBHUB_*`) | `[DB_TOOL]`: data validation, schema discovery (`./db-testing-doctrine.md`) |
-| `api-schema` | `list-api-endpoints`, `get-api-endpoint-schema` (the server also ships `invoke-api-endpoint`; never use it, execution is curl's job) | committed `openapi` (project-scope `OPENAPI_SPEC_PATH`, `API_BASE_URL`) | `[API_TOOL]` schema-read leg only (`./api-testing-doctrine.md`) |
+| `api-schema` | `list-api-endpoints`, `get-api-endpoint-schema` (the server also ships `invoke-api-endpoint`, which stays unused: execution is curl's job) | committed `openapi` (project-scope `OPENAPI_SPEC_PATH`, `API_BASE_URL`) | `[API_TOOL]` schema-read leg only (`./api-testing-doctrine.md`) |
 | `diagrams` | not an MCP tool: a loadable SKILL named `diagram-design` (a plugin-namespaced `…:diagram-design` counts) | a SKILL, installed at project level by `cli/install.ts` (`PROJECT_LEVEL_SKILLS`); a user-level install or a harness plugin satisfies it too | the figures of the context maps, drawn by `project-context` and `project-discovery` (`./business-context-maps.md` §7) |
 
 Only LOCAL (stdio) servers are committed in the project MCP files. Browser automation is not a capability: `[AUTOMATION_TOOL]` resolves to `/playwright-cli`, a CLI, and no browser MCP is committed or resolved (a downstream project that keeps one keeps it as a project-only server). A remote server whose only project-side content is an API key (web search, Postman) is the harness's business: connected once per machine, resolved here by suffix (ADR-0005). A server no skill instructs gets no capability name; add one here AND in `KNOWN_CAPABILITIES` the day a skill needs it; the lint rejects an undeclared name on purpose.
@@ -32,15 +32,17 @@ metadata:
   requires_capabilities: [db, api-schema]
 ```
 
-**Correspondence rule.** A skill declares a capability when its `SKILL.md` or a reference INSTRUCTS the AI to use it (a `[DB_TOOL]` / `[API_TOOL]` / `[DOCS_TOOL]` / `[WEB_SEARCH_TOOL]` step, or the tool names above). Naming a server in a table, an env-var checklist or an "N/A here" sentence is not use. Nothing declared goes unused; nothing used goes undeclared. The `CAPABILITY-VOCAB` check in `scripts/lint-skills.ts` (ERROR) rejects a name outside §2; `CAPABILITY-UNDECLARED` (WARN) flags a `SKILL.md` body that carries one of the `[…_TOOL]` resolution tags for a capability in §2 without declaring the matching capability. That heuristic reads the `SKILL.md` body only (not `references/`), so a tag in a legend table trips it: treat the WARN as "declare it or drop the row", never as noise to silence in the script.
+**Correspondence rule.** A skill declares a capability when its `SKILL.md` or a reference instructs the AI to use it (a `[DB_TOOL]` / `[API_TOOL]` / `[DOCS_TOOL]` / `[WEB_SEARCH_TOOL]` step, or the tool names above). Naming a server in a table, an env-var checklist or an "N/A here" sentence is not use. Every declared capability is used, and every used capability is declared. The `CAPABILITY-VOCAB` check in `scripts/lint-skills.ts` (ERROR) rejects a name outside §2; `CAPABILITY-UNDECLARED` (WARN) flags a `SKILL.md` body that carries one of the `[…_TOOL]` resolution tags for a capability in §2 without declaring the matching capability. That heuristic reads the `SKILL.md` body only (not `references/`), so a tag in a legend table trips it: treat the WARN as "declare it or drop the row" and leave the script alone.
 
-Each declaring skill cites the point-of-use procedure with one line in its Compact Rules or its preflight section; the procedure itself lives ONLY in `./preflight-gate.md` §8.
+Each declaring skill cites the point-of-use procedure with one line in its Compact Rules or its preflight section; the procedure itself lives only in `./preflight-gate.md` §8.
 
 ## 4. Point-of-use STOP (summary; procedure in `./preflight-gate.md` §8)
 
-Before the step that uses a declared capability, check that at least one available tool provides it (by suffix). None → STOP and tell the user, in one message: which capability is missing, which server normally provides it (§2), and how to enable it (§5). Never degrade to another tool on your own: built-in `WebSearch` / `WebFetch` are NOT a silent fallback for `web-search` or `library-docs`, and reading route files is not a silent fallback for `api-schema`. The user decides; their explicit "use X instead" is the only thing that unblocks a substitute.
+Before the step that uses a declared capability, check that at least one available tool provides it (by suffix). With none, stop and tell the user in one message which capability is missing, which server normally provides it (§2) and how to enable it (§5). The user decides what replaces it: built-in `WebSearch` / `WebFetch` are not a silent fallback for `web-search` or `library-docs`, reading route files is not one for `api-schema`, and the user's explicit "use X instead" is what unblocks a substitute.
 
-**User prompts follow the same rule.** "Search the web for X", "look up the Prisma docs", "query the staging DB" each clearly need one capability; when no tool provides it, answer with the same one-message STOP instead of a substitute.
+A user prompt such as "search the web for X", "look up the Prisma docs" or "query the staging DB" needs one capability too, and gets the same one-message stop when no tool provides it.
+
+With nobody at the keyboard, the stop message goes into the run report, the step is skipped and no substitute is used (`./preflight-gate.md` §9).
 
 ## 5. Enabling a missing capability
 
@@ -54,4 +56,4 @@ Before the step that uses a declared capability, check that at least one availab
 
 `bun run setup:doctor` reports which harness-level servers this machine's user configs declare; a cloud connector leaves no file and is reported as not detectable, never as missing.
 
-Server enabled but the first call returns 401/403 or a mystery failure → that is the credential case of `AGENTS.md` Critical Rule #10: name the env var, point to `.env` / `.env.example`, ask for the fix and a RESTART (values are read at MCP spawn time).
+A server that is enabled but whose first call returns 401/403 or a mystery failure is the credential case of `AGENTS.md` Critical Rule #10: name the env var, point to `.env` / `.env.example`, ask for the fix and a RESTART (values are read at MCP spawn time).

@@ -1,7 +1,7 @@
-# Dispatch Patterns — Decision Guide
+# Dispatch Patterns: Decision Guide
 
 > Cited by: workflow skills' "Subagent Dispatch Strategy" tables.
-> Pairs with: `agentic-qa-core/references/briefing-template.md` (the 7-component briefing format that every dispatch must follow).
+> Pairs with: `agentic-qa-core/references/briefing-template.md` (the 7-component briefing format every dispatch follows).
 
 ## When to use each pattern
 
@@ -14,15 +14,13 @@
 
 ## Heuristic
 
-Pick the pattern by walking these gates in order. The first one that matches wins.
+Walk these gates in order. The first one that matches wins, and when two seem to fit, take the earlier one because it is more specific.
 
-1. Is the work CPU-bound and short (<2 min) and reads/writes ≤2 files? → **inline** (no dispatch). Just call `Read`/`Edit` directly.
-2. Long, blocking, monitorable from outside (e.g. `gh run watch`, a CI suite, a long build)? → **Background**.
-3. N independent jobs of the same shape, where N > 1? → **Parallel** (fan out in one tool-call block).
-4. Pipeline of stages where each stage consumes the previous stage's output? → **Sequential** (one dispatch per stage; feed Stage N's report into Stage N+1).
-5. Single non-trivial task (touches 3+ files OR loads a heavy skill OR runs a multi-step verification) that benefits from isolating the orchestrator's context? → **Single**.
-
-If two gates seem to fit, prefer the earlier one — it's more specific.
+1. Is the work CPU-bound and short (<2 min) and does it read or write 2 files or fewer? Stay **inline**: call `Read` / `Edit` directly, no dispatch.
+2. Is it long, blocking and monitorable from outside (for example `gh run watch`, a CI suite, a long build)? **Background**.
+3. Are there N independent jobs of the same shape, with N > 1? **Parallel**, fanned out in one tool-call block.
+4. Is it a pipeline where each stage consumes the previous stage's output? **Sequential**: one dispatch per stage, with Stage N's report fed into Stage N+1.
+5. Is it a single non-trivial task (3+ files, a heavy skill load, or a multi-step verification) that benefits from isolating the orchestrator's context? **Single**.
 
 ---
 
@@ -30,22 +28,22 @@ If two gates seem to fit, prefer the earlier one — it's more specific.
 
 | Pattern    | Example skill / file                                                                                                  | What gets dispatched                                                                                          |
 |------------|-----------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
-| Parallel   | `.agents/skills/regression-testing/SKILL.md` Phase 2 (Analyze) — artifact downloads after a CI run                    | 3 agents in parallel: `allure-results`, `playwright-report`, `evidence/`. Each scoped to one `gh run download`. |
-| Background | `.agents/skills/regression-testing/SKILL.md` Phase 1 (Execute) — wait for the CI run to terminate                     | 1 agent blocking on `gh run watch <RUN_ID> --exit-status` for 20-60 minutes.                                  |
-| Sequential | `.agents/skills/test-automation/SKILL.md` (Stage 5) — Plan → Code → Review                                            | 3 agents one at a time: Plan writes spec.md+automation-plan.md, Code consumes them, Review verifies.       |
-| Single     | `.agents/skills/sprint-testing/SKILL.md` Stage 1 — fetch+analyse one Jira ticket                                       | 1 agent that loads `/acli`, fetches the ticket, analyses ACs against `tests/` references, writes ATP draft.    |
+| Parallel   | `.agents/skills/regression-testing/SKILL.md` Phase 2 (Analyze), artifact downloads after a CI run                     | 3 agents in parallel: `allure-results`, `playwright-report`, `evidence/`. Each scoped to one `gh run download`. |
+| Background | `.agents/skills/regression-testing/SKILL.md` Phase 1 (Execute), wait for the CI run to terminate                      | 1 agent blocking on `gh run watch <RUN_ID> --exit-status` for 20-60 minutes.                                  |
+| Sequential | `.agents/skills/test-automation/SKILL.md` (Stage 5), Plan, Code, Review                                               | 3 agents one at a time: Plan writes spec.md+automation-plan.md, Code consumes them, Review verifies.       |
+| Single     | `.agents/skills/sprint-testing/SKILL.md` Stage 1, fetch and analyse one Jira ticket                                   | 1 agent that loads `/acli`, fetches the ticket, analyses ACs against `tests/` references, writes ATP draft.    |
 
-When extending an existing skill, mirror the pattern of the closest sibling rather than inventing a new one. Consistency makes the orchestration legible.
+When extending an existing skill, copy the pattern of its closest sibling rather than inventing a new one. Consistency keeps the orchestration legible.
 
 ---
 
-## What NOT to do
+## What not to do
 
-- **Don't dispatch 1-file reads.** `Read` inline is faster and doesn't cost a sub-conversation slot. Subagent overhead only pays off when the agent does meaningful work (3+ files, a skill load, multi-step verification).
-- **Don't Parallel-dispatch >10 agents to the same external API** (Jira, Xray, GitHub). The remote service rate-limits you, your orchestrator gets back a flood of 429s, and recovery is messy. Cap fan-out at 10. Above that, batch by chunking and Sequential the chunks.
-- **Don't Background a task that's already <5 min.** Background carries a sleep cost: when you wake up after `delaySeconds > 300`, the prompt cache is gone and the next turn re-reads the full conversation. For tasks under 5 minutes, just wait inline (or Single-dispatch if you want context isolation).
-- **Don't Sequential when Parallel works.** If A and B are truly independent, Parallel is strictly better — same wall-clock cost as the slowest one, vs sum-of-both for Sequential. The classic mistake is artificially Sequencing two reads that don't depend on each other.
-- **Don't delegate planning.** The orchestrator owns the plan and its scope; subagents execute it. Inside the plan a subagent decides technical calls and reports them as DECIDED (`decision-protocol.md`), and escalates to the orchestrator only the four §5 kinds (product behaviour, a new security posture, an irreversible or outward action, what the owner reserved). A subagent that's allowed to "decide what to do next" beyond the plan will silently expand its scope and make the orchestrator's view of progress incoherent.
-- **Don't fan out without a clear merge step.** Parallel agents return reports — the orchestrator must know what to do with N reports BEFORE dispatching them. If you can't articulate the merge, you don't have a Parallel job; you have a Sequential job pretending to be one.
-- **Don't reuse a subagent across phases.** Each dispatch is a fresh agent. Treat the contract as one-shot: briefing in, report out. Carrying state across multiple dispatches is a code smell — the state should live in files the orchestrator owns, not in agent memory.
-- **Don't apply the one-shot contract to a supervised worker.** A persistent worker launched through `/orca-orchestration` is the declared exception to the bullet above: it keeps context, is spoken to mid-task, and reports through the run mailbox. Every other rule here still binds it — a fleet with no merge step is still a broken fan-out.
+- **Dispatch 1-file reads.** `Read` inline is faster and costs no sub-conversation slot. A subagent pays off only when it does meaningful work (3+ files, a skill load, multi-step verification).
+- **Fan out more than 10 agents against the same external API** (Jira, Xray, GitHub). The service rate-limits you, the orchestrator gets back a flood of 429s, and recovery is messy. Cap fan-out at 10; above that, chunk the work and run the chunks Sequentially.
+- **Background a task under 5 minutes.** Background carries a sleep cost: after a `delaySeconds > 300` wait the prompt cache is gone and the next turn re-reads the whole conversation. Wait inline, or Single-dispatch if you want context isolation.
+- **Run Sequential when Parallel works.** If A and B are independent, Parallel costs the slowest one instead of the sum. The classic mistake is sequencing two reads that do not depend on each other.
+- **Delegate planning.** The orchestrator owns the plan and its scope; subagents execute it. Inside the plan a subagent decides technical calls and reports them as DECIDED (`decision-protocol.md`), and escalates to the orchestrator only the four §5 kinds (product behaviour, a new security posture, an irreversible or outward action, what the owner reserved). A subagent allowed to decide what to do next beyond the plan silently expands its scope, and the orchestrator's view of progress stops making sense.
+- **Fan out without a merge step.** Parallel agents return reports, and the orchestrator must know what to do with N reports before dispatching them. If you cannot say what the merge is, you have a Sequential job pretending to be Parallel.
+- **Reuse a subagent across phases.** Each dispatch is a fresh agent and the contract is one-shot: briefing in, report out. State carried across dispatches belongs in files the orchestrator owns, not in agent memory.
+- **Apply the one-shot contract to a supervised worker.** A persistent worker launched through `/orca-orchestration` is the declared exception to the previous bullet: it keeps context, is spoken to mid-task, and reports through the run mailbox. Every other rule here still binds it, and a fleet with no merge step is still a broken fan-out.

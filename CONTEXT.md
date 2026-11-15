@@ -143,7 +143,7 @@ Two systems, two consumers, two lifecycles. Use the right substrate for the righ
 ├── project-config.md          → Project config written by `/project-discovery` (committed)
 │
 ├── ADR/                       → Architecture Decision Records — test architecture (append-only, never regenerated)
-│   ├── README.md                  → When-to-write (two-gate) + status lifecycle + index
+│   ├── README.md                  → When-to-write (three-gate) + status lifecycle + index
 │   └── ADR-NNNN-template.md       → Copy → ADR-NNNN-<slug>.md per decision (supersede, never delete)
 │
 ├── PBI/                       → Per-module + per-ticket context — GITIGNORED cache of Jira
@@ -379,7 +379,7 @@ Never write the update into `CLAUDE.md`: it is a generated one-line shim, and `a
 ### When to Record an ADR
 
 - A hard-to-reverse **test-architecture** decision is made (test runner, fixture / test-data strategy, isolation & parallelization model, auth-in-tests, selector contract, flake-retry policy)
-- It passes the two-gate test (architectural **AND** hard to reverse) → author `.context/ADR/ADR-NNNN-<slug>.md` (append-only; supersede, never edit). A decision the human already approved is written `Accepted`, citing the approval; `Proposed` only while a question is still open
+- It passes the three-gate test (hard to reverse, surprising without context, a real trade-off) within the test-architecture scope → author `.context/ADR/ADR-NNNN-<slug>.md` (append-only; supersede, never edit). A decision the human already approved is written `Accepted`, citing the approval; `Proposed` only while a question is still open
 - Ticket-local test trade-offs stay in the ticket's plan, not an ADR. Detection + authoring: `agentic-qa-core/references/adr-doctrine.md`; convention: `.context/ADR/README.md`
 
 ---

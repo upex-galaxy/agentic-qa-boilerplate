@@ -1,21 +1,21 @@
 # Subagent Briefing Template
 
 > Cited by: workflow skills (`sprint-testing`, `test-documentation`, `test-automation`, `regression-testing`, `project-discovery`) when they delegate to a subagent.
-> Format: every dispatch MUST fill the 7 components below.
+> Every dispatch fills the 7 components below. The subagent sees only its briefing, so a gap in the briefing is a gap in the subagent.
 
 ## The 7 components
 
-1. **Goal** — one sentence. What outcome the subagent must achieve.
-2. **Context docs** — files the subagent reads before acting. Absolute paths. The checkout's root is written as `<<REPO_ROOT>>` and the primary checkout's as `<<PRIMARY_ROOT>>` — session variables defined in `.agents/README.md` §"Checkout roots" — which the orchestrator resolves to real absolute paths at dispatch time (a subagent's cwd resets between calls, so relative paths are unsafe). Tracked files go under `<<REPO_ROOT>>`; session state (`.session/**`), evidence and other durable gitignored output go under `<<PRIMARY_ROOT>>`, so a worker in a worktree never writes state that dies with it.
-3. **Project Standards (auto-resolved)** — REQUIRED. Compact rules of skills relevant to this dispatch. Pulled from `.agents/skills/REGISTRY.md` (built once per session by `bun run skills:registry`). The subagent treats this section as authoritative for the listed conventions and does NOT re-read the full SKILL.md unless explicitly told to. Context skills (`<aspect>-context`, `iql-context`) are included ONLY when the dispatch touches their aspect. Protocol: `agentic-qa-core/references/skill-resolver.md`.
-4. **Skills to load** — skill triggers (e.g. `/acli`, `/xray-cli`, `/playwright-cli`) the subagent must invoke before issuing tool calls. The orchestrator never inlines tool syntax — that lives in the owning skill.
-5. **Exact instructions** — numbered steps. No ambiguity. Each step names the tool / skill action.
-6. **Report format** — what the subagent returns to the orchestrator. Either a JSON object with named fields, or a bullet list with explicit headings. Avoid free-form prose. For workflow-skill stage dispatches, append the mandatory session-footer fields (`skills_loaded`, `mcps_used`, `clis_used`, `testing_levels_touched`, `screenshots_captured`) per `agentic-qa-core/references/session-footer-contract.md` §Briefing snippet — the orchestrator unions them into ONE session-close footer. A dispatch that logs in, loads a state file, captures traffic (HAR, trace, network log) or dumps a database ALSO returns two session-material fields (`.agents/instructions/agent-orchestration-detail.md` "SESSION MATERIAL IN A DISPATCH"):
+1. **Goal**: one sentence, the outcome the subagent must achieve.
+2. **Context docs**: files the subagent reads before acting, as absolute paths (a subagent's cwd resets between calls, so relative paths are unsafe). Write the checkout's root as `<<REPO_ROOT>>` and the primary checkout's as `<<PRIMARY_ROOT>>`: session variables defined in `.agents/README.md` §"Checkout roots", which the orchestrator resolves at dispatch time. Tracked files go under `<<REPO_ROOT>>`. Session state (`.session/**`), evidence and other durable gitignored output go under `<<PRIMARY_ROOT>>`, so a worker in a worktree never writes state that dies with it.
+3. **Project Standards (auto-resolved)**: required. The compact rules of the skills relevant to this dispatch, pulled from `.agents/skills/REGISTRY.md` (built once per session by `bun run skills:registry`). The subagent treats them as authoritative for the listed conventions and does not re-read the full SKILL.md unless told to. Include a context skill (`<aspect>-context`, `iql-context`) only when the dispatch touches its aspect. Protocol: `agentic-qa-core/references/skill-resolver.md`.
+4. **Skills to load**: skill triggers (for example `/acli`, `/xray-cli`, `/playwright-cli`) the subagent invokes before issuing tool calls. Tool syntax lives in the owning skill, and the orchestrator does not inline it.
+5. **Exact instructions**: numbered steps, each naming the tool or skill action, with no room for a second reading.
+6. **Report format**: what the subagent returns, either a JSON object with named fields or a bullet list with explicit headings, with no free-form prose. A workflow-skill stage dispatch also returns the session-footer fields (`skills_loaded`, `mcps_used`, `clis_used`, `testing_levels_touched`, `screenshots_captured`) per `agentic-qa-core/references/session-footer-contract.md` §Briefing snippet, and the orchestrator unions them into one session-close footer. A dispatch that logs in, loads a state file, captures traffic (HAR, trace, network log) or dumps a database also returns two session-material fields (`.agents/instructions/agent-orchestration-detail.md` "SESSION MATERIAL IN A DISPATCH"):
    - `secrets_materialized`: `none`, or the kinds and paths written (`storage state .auth/staging-admin.json`, `trace <evidence path>`), never the values.
-   - `cleaned`: `yes` (nothing left outside `.auth/`), `kept-in-auth` (only the sanctioned store holds it), or `no (<reason>)`. The orchestrator treats `no` as a blocker and surfaces it; a missing field on such a dispatch counts as `no`.
-7. **Rules** — constraints (relevant Critical Rules from `AGENTS.md`, project-specific guardrails, Git rules, env-selection rules). Two rules ride in component 7 of every dispatch they can bind (`AGENTS.md` §3 RULE REACHABILITY), because the executor never opens the reference that owns them:
-   - **Decisions** (any dispatch that can meet a fork or a question for a person): run `agentic-qa-core/references/decision-protocol.md` before asking. Follow what the record settles, decide a technical call inside the approved plan and report it as DECIDED with the option it beat, and escalate only the four kinds of §5 (product behaviour, a new security posture, an irreversible or outward action, what the stage's "The person signs" column lists). A subagent escalates to the orchestrator, never to the user directly.
-   - **Identity** (any dispatch that logs in, loads a state file or acts as a role): every role signs in through the app's own login only (UI form → `.auth/<env>-<role>.json`, or `bun run api:login --role <role>`). NEVER obtain a session through a service-role / admin key, an admin user-management API, a server-generated magic link or reset token, a locally signed JWT or a database session row; seeding test DATA through API / DB stays allowed. A check that seems to need a shortcut is a blocker to report. Canon: `agentic-qa-core/references/browser-sessions.md` §4.
+   - `cleaned`: `yes` (nothing left outside `.auth/`), `kept-in-auth` (only the sanctioned store holds it), or `no (<reason>)`. The orchestrator treats `no` as a blocker and surfaces it, and a missing field on such a dispatch counts as `no`.
+7. **Rules**: constraints, meaning the relevant Critical Rules from `AGENTS.md`, project guardrails, Git rules and env-selection rules. Two rules go in component 7 of every dispatch they can bind (`AGENTS.md` §3 RULE REACHABILITY), because the executor never opens the reference that owns them:
+   - Decisions (any dispatch that can meet a fork or a question for a person): run `agentic-qa-core/references/decision-protocol.md` before asking. Follow what the record settles, decide a technical call inside the approved plan and report it as DECIDED with the option it beat, and escalate only the four kinds of §5 (product behaviour, a new security posture, an irreversible or outward action, what the stage's "The person signs" column lists). A subagent escalates to the orchestrator and never asks the user directly.
+   - Identity (any dispatch that logs in, loads a state file or acts as a role): every role signs in through the app's own login only (UI form to `.auth/<env>-<role>.json`, or `bun run api:login --role <role>`). A session never comes from a service-role or admin key, an admin user-management API, a server-generated magic link or reset token, a locally signed JWT or a database session row. Seeding test data through API or DB stays allowed, and a check that seems to need a shortcut is a blocker to report. Canon: `agentic-qa-core/references/browser-sessions.md` §4.
 
 ## Filled template (skeleton)
 
@@ -56,15 +56,13 @@ Rules:
   - Identity (dispatch logs in or acts as a role): the app's own login only; never a service-role / admin key, admin user API, server-made magic link or reset token, locally signed JWT or DB session row (browser-sessions.md §4).
 ```
 
-> The `Project Standards (auto-resolved)` section is built by the orchestrator from `.agents/skills/REGISTRY.md` (see `agentic-qa-core/references/skill-resolver.md` for the protocol). The subagent treats those bullets as authoritative for the listed conventions and skips re-reading full SKILL.md files unless the briefing explicitly says otherwise.
-
 ---
 
 ## Examples (one per pattern)
 
 ### Parallel — Download 3 CI artifacts in regression-testing
 
-When a CI run finishes in `regression-testing` Stage 6, the orchestrator fans out THREE subagents in parallel — one per artifact type. They are independent (different artifact, different output dir), so Parallel is correct.
+When a CI run finishes in `regression-testing` Stage 6, the orchestrator fans out three subagents in parallel, one per artifact type. They are independent (different artifact, different output dir), so Parallel is correct.
 
 ```
 Goal: Download the Allure report artifact for run <<RUN_ID>> and unpack it into the local reports directory.
@@ -73,7 +71,7 @@ Context docs:
   - <<REPO_ROOT>>/.github/workflows/regression.yml
   - <<REPO_ROOT>>/.agents/skills/regression-testing/SKILL.md
 
-Skills to load: (none — this is a pure gh CLI task)
+Skills to load: (none, this is a pure gh CLI task)
 
 Exact instructions:
   1. Run: gh run download <<RUN_ID>> -n allure-results -D ./allure-results-<<RUN_ID>>
@@ -93,7 +91,7 @@ Report format:
 
 Rules:
   - Critical Rule #7 (Quality Verification): if generate fails, do not silently continue.
-  - Do not delete prior allure-results-* directories — the orchestrator may diff runs.
+  - Do not delete prior allure-results-* directories, since the orchestrator may diff runs.
 ```
 
 The two sibling agents follow the same shape: one for `playwright-report` and one for `evidence/` (screenshots, traces, videos). All three dispatch in the same `<function_calls>` block so the network I/O overlaps.
@@ -108,7 +106,7 @@ Goal: Block on `gh run watch <<RUN_ID>>` until the workflow run reaches a termin
 Context docs:
   - <<REPO_ROOT>>/.github/workflows/regression.yml
 
-Skills to load: (none — pure gh CLI)
+Skills to load: (none, pure gh CLI)
 
 Exact instructions:
   1. Capture start time as ISO-8601 (date -Iseconds).
@@ -130,7 +128,7 @@ Report format:
 
 Rules:
   - Critical Rule #7: do not interpret failure types here. Classification belongs to the orchestrator's Analyze phase.
-  - Do not retry the watch — if it errors, report and let the orchestrator decide.
+  - Do not retry the watch; if it errors, report and let the orchestrator decide.
 ```
 
 ### Sequential — Plan → Code → Review in test-automation
@@ -138,7 +136,7 @@ Rules:
 In `test-automation`, the three stages have a strict data dependency: Code reads what Plan wrote, and Review reads what Code wrote. Sequential is the only correct pattern.
 
 ```
-Stage 1 — Plan agent
+Stage 1: Plan agent
 ============================
 
 Goal: Produce a feature-level test plan and an implementation plan for ticket <<ISSUE_KEY>> under .context/PBI/epics/EPIC-<<EPIC_KEY>>-<<EPIC_SLUG>>/stories/STORY-<<ISSUE_KEY>>-<<SLUG>>/.
@@ -202,32 +200,32 @@ Report format:
 
 Rules:
   - Critical Rule #8 (File Operations): preserve existing formatting and indentation.
-  - Critical Rule #7 (Quality Verification): if either verification step fails, report and STOP — do not auto-fix.
+  - Critical Rule #7 (Quality Verification): if either verification step fails, report and STOP, do not auto-fix.
 ```
 
 ---
 
-## Anti-patterns (do NOT delegate)
+## When not to delegate
 
-- **Quick lookups (1-2 file reads)** — inline `Read` is faster, doesn't pay the subagent overhead.
-- **Memory reads/writes** — orchestrator owns memory. Subagents never read or write persistent memory and never edit `AGENTS.md` or an instruction section. `AGENTS.md` (L0) loads by itself in every session; a subagent reads only the `.agents/instructions/` sections its briefing names.
-- **Task tracking** (TaskCreate / TaskUpdate / progress files) — orchestrator owns tasks.
-- **Asking the user for input** — only the orchestrator can prompt the user. A subagent that meets a question runs `decision-protocol.md` first: a technical call inside the approved plan is decided and reported as DECIDED with the option it beat, and only the four §5 kinds (product behaviour, a new security posture, an irreversible or outward action, what the stage or the owner reserves) stop the subagent and go back to the orchestrator.
-  - Exception, supervised workers ONLY: for a §5 question, a persistent worker launched through `/orca-orchestration` sends its conductor a blocking `ask` over the run mailbox instead of stopping, and still never prompts the user (nobody is watching its terminal). Subagents keep stop-and-report for the §5 kinds.
-- **Planning** — the orchestrator owns the plan and decides what to do next. Subagents execute the planned steps and decide only the technical calls inside them, reported as DECIDED.
-- **Sleeping / polling** — if you would `sleep`, you probably wanted Background pattern instead.
-- **Running tests on someone else's behalf** — verification is part of the same agent that made the change. Don't fan out a "verify" agent for a 1-step edit.
+- A quick lookup (one or two file reads): an inline `Read` is faster than the subagent overhead.
+- Memory reads and writes, and task tracking (TaskCreate, TaskUpdate, progress files): the orchestrator owns them. A subagent reads and writes no persistent memory and edits neither `AGENTS.md` nor an instruction section. `AGENTS.md` loads by itself in every session, and a subagent reads only the `.agents/instructions/` sections its briefing names.
+- Asking the user for input: only the orchestrator prompts the user. A subagent that meets a question runs `decision-protocol.md` first. A technical call inside the approved plan is decided and reported as DECIDED with the option it beat, and only the four §5 kinds (product behaviour, a new security posture, an irreversible or outward action, what the stage or the owner reserves) stop the subagent and go back to the orchestrator.
+  - Supervised workers are the one exception. For a §5 question, a persistent worker launched through `/orca-orchestration` sends its conductor a blocking `ask` over the run mailbox instead of stopping, and it still never prompts the user, since nobody watches its terminal. Subagents keep stop-and-report.
+  - With no person and no conductor (an unattended routine), the delegating brief is the approval source when it covers the decision. Otherwise the subagent parks the item and reports it.
+- Planning: the orchestrator owns the plan and decides what runs next. Subagents execute the planned steps and decide only the technical calls inside them.
+- Sleeping or polling: if you would `sleep`, you wanted the Background pattern.
+- Running tests on someone else's behalf: the agent that made the change verifies it. Do not fan out a "verify" agent for a one-step edit.
 
 ---
 
 ## Error protocol (mirrors AGENTS.md §3 Orchestration Mode)
 
-If a subagent fails:
+When a subagent fails:
 
-1. **STOP** — do not auto-retry.
-2. Report full context to the orchestrator: which step failed, the error message, the partial output if any.
-3. The orchestrator surfaces options to the user: **retry / skip / abort**.
-4. Do NOT auto-fix without approval. The user may need to fix env config, restore credentials, or re-scope the task.
-5. Pre-existing files written by failed subagents are NOT cleaned up automatically. The orchestrator decides whether to restore.
+1. Stop, with no automatic retry.
+2. Report full context to the orchestrator: the failed step, the error message, and any partial output.
+3. The orchestrator surfaces the options to the user: retry, skip or abort.
+4. Fix nothing without approval. The user may need to fix env config, restore credentials or re-scope the task.
+5. Files written by the failed subagent are not cleaned up automatically. The orchestrator decides whether to restore them.
 
-This protocol mirrors `AGENTS.md` §3 (Orchestration Mode). When in doubt, the live `AGENTS.md` is canonical.
+When in doubt, the live `AGENTS.md` §3 is canonical.

@@ -1,6 +1,6 @@
-# DB Testing Maneuver — Doctrine (canonical)
+# DB testing maneuver: doctrine (canonical)
 
-> Loaded by any skill that validates data in the database: the DB leg of the `/sprint-testing`
+> Load this for any validation that reads the database: the DB leg of the `/sprint-testing`
 > trifuerza (UI / API / DB), test-data lookups, and bug evidence that needs a row, not a
 > screenshot. Sibling of `api-testing-doctrine.md`.
 
@@ -14,9 +14,9 @@
 
 ## The tool: DBHub MCP
 
-`[DB_TOOL]` resolves to the DBHub MCP (`.agents/instructions/agent-tool-resolution.md`); Supabase MCP or raw SQL are the fallback.
-DBHub names its tools `{tool}_{source_id}`. `dbhub.toml` ships one source with `id = "primary"`,
-so the tools are:
+`[DB_TOOL]` resolves to the DBHub MCP (`.agents/instructions/agent-tool-resolution.md`); the
+Supabase MCP or raw SQL are the fallback. DBHub names its tools `{tool}_{source_id}`, and
+`dbhub.toml` ships one source with `id = "primary"`, so the tools are:
 
 | Tool | Use |
 |---|---|
@@ -28,29 +28,33 @@ A project that adds a second `[[sources]]` block with `id = "reporting"` gets
 
 ## Configuration and credentials
 
-- **`dbhub.toml` is committed and holds no secret.** Every connection value is a `${DBHUB_*}`
-  placeholder. Never put a literal password in it and never gitignore it: the file is shared
-  config, the values are not.
-- **`dbhub` itself does the interpolation**, from the environment of the process it was spawned
-  in, so the `DBHUB_*` variables `.env.example` declares must reach that process. That is why every host starts
-  it through the `.env` loader with those six names in its `--filter` (`.mcp.json`,
-  `opencode.jsonc`, `.codex/config.toml`, `.pi/mcp.json`): the loader reads `.env` from the project root at spawn
-  time and hands dbhub exactly those names. Parity is checked
-  (`mcp-atlassian-optin.md`, MCP parity contract).
-- **It fails late and quietly.** A missing variable does not stop startup: `dbhub` substitutes
-  the literal `${DBHUB_HOST}` and the connection fails on the first query, which reads like a
-  database problem. Check which `DBHUB_*` variables are set with `bunx varlock load --agent --filter 'DBHUB_*'`
-  (redacted; never open `.env`); once the human fixes `.env`,
-  RESTART the agent session (spawn-time env, Critical Rule #10).
-- **Read-only user by default.** Validation needs `SELECT`; ask for write grants only on a
-  non-production environment and only when a test must seed data directly.
+`dbhub.toml` is committed and holds no secret. Every connection value is a `${DBHUB_*}`
+placeholder: keep literal passwords out of it and keep it out of `.gitignore`, because the file
+is shared config and only the values are private.
+
+`dbhub` does the interpolation itself, from the environment of the process it was spawned in,
+so the `DBHUB_*` variables `.env.example` declares must reach that process. That is why every
+host starts it through the `.env` loader with those six names in its `--filter` (`.mcp.json`,
+`opencode.jsonc`, `.codex/config.toml`, `.pi/mcp.json`): the loader reads `.env` from the
+project root at spawn time and hands dbhub exactly those names. Parity is checked
+(`mcp-atlassian-optin.md`, MCP parity contract).
+
+It fails late and quietly. A missing variable does not stop startup: `dbhub` substitutes the
+literal `${DBHUB_HOST}` and the connection fails on the first query, which reads like a
+database problem. To see which `DBHUB_*` variables are set, run
+`bunx varlock load --agent --filter 'DBHUB_*'` (redacted; `.env` stays unopened). Once the
+human fixes `.env`, restart the agent session, since the env is read at spawn time (Critical
+Rule #10).
+
+The database user is read-only by default. Validation needs `SELECT`; ask for write grants only
+on a non-production environment and only when a test must seed data directly.
 
 ## Validation cookbook
 
 Queries are Postgres-flavoured. Dialect notes: `NOW() - INTERVAL '1 minute'` is
 `DATEADD(minute, -1, SYSDATETIME())` on SQL Server and `NOW() - INTERVAL 1 MINUTE` on MySQL;
 `LIMIT n` is `TOP n` on SQL Server; placeholders are `$1` (Postgres), `@p1` (SQL Server),
-`?` (MySQL). `DBHUB_TYPE` tells you which one you are on.
+`?` (MySQL). `DBHUB_TYPE` says which one you are on.
 
 ### Five things to validate
 
@@ -71,8 +75,8 @@ LEFT JOIN orders o ON oi.order_id = o.id
 WHERE o.id IS NULL;
 ```
 
-Prefer `LEFT JOIN ... IS NULL` over `NOT IN (SELECT ...)`: `NOT IN` returns no rows at all when
-the subquery contains a `NULL`.
+Prefer `LEFT JOIN ... IS NULL` over `NOT IN (SELECT ...)`, because `NOT IN` returns no rows at
+all when the subquery contains a `NULL`.
 
 ### Duplicates
 
@@ -112,13 +116,13 @@ a miss a bug.
 
 ### Four strategies
 
-1. **Snapshot before / after.** Read the value, perform the action through UI or API, read it
+1. Snapshot before and after. Read the value, perform the action through UI or API, read it
    again, assert the delta (stock went down by the ordered quantity).
-2. **Compare against the source of truth.** Recompute what the row should hold (sum of items,
+2. Compare against the source of truth. Recompute what the row should hold (sum of items,
    subtotal minus discount) and compare with what was stored.
-3. **Business constraints.** Query for rows that must not exist (`balance < 0`, an active order
+3. Business constraints. Query for rows that must not exist (`balance < 0`, an active order
    with no items); the expected count is zero.
-4. **Cross-table.** Validate that several tables agree after one action (order, items,
+4. Cross-table. Validate that several tables agree after one action (order, items,
    inventory, notification).
 
 ### By test level
@@ -150,10 +154,12 @@ a miss a bug.
 | `too many connections` | parallel sessions not closing connections | fewer parallel workers; a pooler |
 | `SSL connection is required` / SSL errors | server and `sslmode` disagree | check the `sslmode` value in `dbhub.toml`; a local database without TLS needs that line changed in the project's copy |
 
-## Anti-patterns (NEVER)
+## Anti-patterns
 
-- **NEVER** run `UPDATE` / `DELETE` against a shared environment to "fix" test data without the
+- Never run `UPDATE` / `DELETE` against a shared environment to "fix" test data without the
   owner's OK. Seed through the API or a fixture instead.
-- **NEVER** paste a connection string with a password into a command, artifact or chat.
-- **NEVER** use the database to log in as someone: no session or refresh-token row written or read to obtain a session. Seeding the rows a scenario needs is this doctrine; the session it runs in comes from the real login (`browser-sessions.md` §4).
-- **NEVER** report a data mismatch as a bug before ruling out replication lag or a clock skew.
+- Never paste a connection string with a password into a command, artifact or chat.
+- Never use the database to log in as someone: no session or refresh-token row is written or
+  read to obtain a session. Seeding the rows a scenario needs is this doctrine; the session it
+  runs in comes from the real login (`browser-sessions.md` §4).
+- Rule out replication lag and clock skew before reporting a data mismatch as a bug.

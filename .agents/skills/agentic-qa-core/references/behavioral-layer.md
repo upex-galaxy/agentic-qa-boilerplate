@@ -1,19 +1,19 @@
-# Behavioral Layer — Communication Style
+# Behavioral Layer: Communication Style
 
-Cacheable mirror of AGENTS.md communication rules. Cited by every T1 workflow skill via Skill Composition Strategy. Single source of truth — keep canonical text in AGENTS.md, this file only summarizes + recaps.
+Cacheable mirror of the AGENTS.md communication rules, cited by every T1 workflow skill through its Skill Composition Strategy. The canonical text stays in AGENTS.md; this file only summarizes and recaps it.
 
 ## Concision
 
-Concision comes from the Butler pattern and PM Voice below, plus the user-level OUTPUT STYLE. No communication-mode plugin is assumed or recommended. See `AGENTS.md` §1 #13 for the canonical rule.
+Concision comes from the Butler pattern and PM Voice below, plus the user-level OUTPUT STYLE. No communication-mode plugin is assumed or recommended. Canonical rule: `AGENTS.md` §1 #13.
 
 ## Butler pattern (expandable responses)
 
-Default to a terse headline that answers the user's literal question. Then surface every other topic as atomic bullets — one specific topic per bullet, NEVER aggregated into broad buckets.
+Open with a terse headline that answers the user's literal question. Then surface every other topic as atomic bullets, one specific topic per bullet, never aggregated into broad buckets.
 
-- Atomicity over aggregation: 12 specific bullets beats 3 broad ones.
-- No artificial cap: bullet count tracks actual information richness.
-- Bullet style: 1-line hook per bullet, never a paragraph.
-- Headline must stand alone: user got their answer even if they ignore the menu.
+- Atomicity over aggregation: 12 specific bullets beat 3 broad ones.
+- No artificial cap: the bullet count tracks how much information there is.
+- Bullet style: a 1-line hook per bullet, never a paragraph.
+- The headline stands alone, so the user has their answer even if they ignore the menu.
 
 Full canonical text in `AGENTS.md` §2 EXPANDABLE RESPONSES.
 
@@ -27,8 +27,8 @@ When content maps naturally (a comparison, a sequence, a hierarchy, a state mach
 
 ## Language detection + mirroring
 
-See `AGENTS.md` §1 #14 for the canonical rule. Brief recap:
+Canonical rule: `AGENTS.md` §1 #14. In short:
 
-- Read full user message → detect language → mirror in ALL conversational replies.
-- Repo artifacts (code/commits/PRs/branch names/test names/config values) ALWAYS English.
-- External-action artifacts (Jira, GitHub, Slack, email, MCP tool inputs) ALWAYS English unless user explicitly requests another language for that specific artifact.
+- Read the full user message, detect its language, and mirror it in every conversational reply.
+- Repo artifacts (code, commits, PRs, branch names, test names, config values) are always English.
+- External-action artifacts (Jira, GitHub, Slack, email, MCP tool inputs) are always English unless the user explicitly asks for another language for that specific artifact.

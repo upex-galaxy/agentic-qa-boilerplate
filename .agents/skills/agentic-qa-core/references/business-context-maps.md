@@ -6,9 +6,9 @@
 
 ## 1 · Why a map lives in a skill, not in `.context/`
 
-`.context/` holds what a SCRIPT pulls from a source of truth (Jira, OpenAPI, a CI log) plus the few things this repo itself is the source of truth for. A context map is neither: an AI reads code, the database, the API contract and the infrastructure and writes a synthesis. Two sessions would write it differently and rebuilding it costs thousands of tokens, so it is authored knowledge, and authored knowledge that must arrive unasked is a skill (`./skill-scaffold.md` §3).
+`.context/` holds what a script pulls from a source of truth (Jira, OpenAPI, a CI log), plus the few things this repo itself is the source of truth for. A context map is neither. An AI reads code, the database, the API contract and the infrastructure, and writes a synthesis. Two sessions would write it differently and rebuilding it costs thousands of tokens, so it is authored knowledge, and authored knowledge that must arrive unasked is a skill (`./skill-scaffold.md` §3).
 
-So each context map is ONE HTML file inside its context skill, at `references/<map>.html`. A human opens it in a browser (or in `bun run docs`, §6); the AI reads it through `bun run context:map` (§3). There is no markdown twin and no second copy: the twin is always the one that drifts.
+So each context map is one HTML file inside its context skill, at `references/<map>.html`. A human opens it in a browser (or in `bun run docs`, §6), and the AI reads it through `bun run context:map` (§3). There is no markdown twin and no second copy, because the twin is the one that drifts.
 
 ## 2 · Anatomy (the contract the generator writes and the reader parses)
 
@@ -23,7 +23,7 @@ So each context map is ONE HTML file inside its context skill, at `references/<m
 | Last section | `<section id="discovery-gaps">`: what could not be verified. "I could not verify X" beats an invented answer |
 | Provenance | a section migrated from a legacy markdown file carries `data-migrated-from="<path>"` once, dropped the first time the section is regenerated |
 
-A generated map legitimately contains counts (rows per table, endpoints per group): it is a generated artifact, exempt from Critical Rule #17 like every generated file (`./volatile-facts.md`).
+A generated map legitimately contains counts (rows per table, endpoints per group). It is a generated artifact, exempt from Critical Rule #17 like every generated file (`./volatile-facts.md`).
 
 ## 3 · Reading a map (the AI never reads the raw HTML)
 
@@ -35,53 +35,55 @@ Inline SVG is most of a map's bytes and none of its facts. Read through the read
 | one section (a dispatch that touches one entity) | `bun run context:map <slug> --section <id>` |
 | the index for a staleness check | `bun run context:map <slug> --list` (id · updated · sources) |
 
-A placeholder map prints a notice naming its generator and exits 0: treat it as "no map", never as an empty system. A briefing injects the COMMAND, not the file path (`./skill-resolver.md`).
+A placeholder map prints a notice naming its generator and exits 0. Read it as "no map", not as an empty system. A briefing injects the command, not the file path (`./skill-resolver.md`).
 
 ## 4 · Generating and updating (owned by each map's generator)
 
 | State | What runs | Writes |
 |---|---|---|
 | map absent or placeholder | its generator CREATE: every section from the sources; the legacy markdown files the skill replaces (the entry's `legacy` list in `CONTEXT_MAP_SKILLS`) are read as INPUT when present and cited in `data-migrated-from` | the whole file, once |
-| map generated | its generator UPDATE: run the staleness check (§5), regenerate ONLY the stale sections, show a section-level diff, WAIT for approval | the approved sections only |
+| map generated | its generator UPDATE: run the staleness check (§5), regenerate only the stale sections, show a section-level diff, wait for approval | the approved sections only |
 | a section's facts changed and it has a figure | redraw that figure only | one `<figure>` |
 
-No path regenerates a whole generated map. That is the token saving, and the section id is what makes it mechanical: an edit over one `<section>` block.
+No path regenerates a whole generated map. That is the token saving, and the section id makes it mechanical: an edit over one `<section>` block.
 
-The legacy markdown files (every path in a `legacy` list) are never deleted by any of this. They stay where a project committed them and are read as input.
+Nothing here deletes a legacy markdown file (every path in a `legacy` list). They stay where a project committed them and are read as input.
+
+The UPDATE approval comes from the user when one is present and from the conductor when the session is a supervised worker. A routine with nobody to ask applies it only when the delegating brief covers it. Otherwise it writes the proposed diff to its report and leaves the map as it was (`./decision-protocol.md`).
 
 ## 5 · Staleness check
 
 For each section from `--list`:
 
-- a repo path in `data-sources` → `git log --since=<data-updated> --oneline -- <path>` in the repo that holds it; any commit → stale.
-- `openapi:<x>` → the contract changed since the date (`bun run api:sync` output, or the spec file's `git log`).
-- `db:<table>` → the schema changed (a migration since the date, or `[DB_TOOL]` shows a column / constraint the section does not describe).
-- `route:<path>` → the route or page file changed since the date.
+- a repo path in `data-sources`: `git log --since=<data-updated> --oneline -- <path>` in the repo that holds it. Any commit makes the section stale.
+- `openapi:<x>`: the contract changed since the date (`bun run api:sync` output, or the spec file's `git log`).
+- `db:<table>`: the schema changed (a migration since the date, or `[DB_TOOL]` shows a column or constraint the section does not describe).
+- `route:<path>`: the route or page file changed since the date.
 
-A section with no declared sources is reported as `unknown`, never silently fresh.
+A section with no declared sources is reported as `unknown`, never as fresh.
 
 ## 6 · Self-update from a session (the context skill's own write path)
 
-A context skill does not run workflows. It DOES keep its own map honest: when a session observes something that contradicts a section (a query shows a column the map omits, an endpoint answers a status the map says is impossible, a journey has a step the map skips), the skill PROPOSES the edit and applies it only on approval.
+A context skill does not run workflows, but it keeps its own map honest. When a session observes something that contradicts a section (a query shows a column the map omits, an endpoint answers a status the map says is impossible, a journey has a step the map skips), the skill proposes the edit and applies it only on approval.
 
 1. **Locate**: `bun run context:map <slug> --list`, then `--section <id>` for the section the observation touches.
 2. **Evidence**: the observation that contradicts it, measured (a query, a request, a file path at a commit, a session label). No evidence, no proposal.
-3. **Propose** to whoever owns the session: the user in the main thread, or the conductor when the session is a supervised worker (through the channel it already reports on; a one-shot subagent puts the proposal in its report instead). The proposal names the skill, the section id, the evidence and the before/after text in one message.
-4. **Apply on approval only**: re-read the section (another session may have edited it), edit that ONE `<section>` block, set `data-updated` to the date of the edit, add any new signal to `data-sources`, redraw its figure only if the figure's facts changed (§7).
+3. **Propose** to whoever owns the session: the user in the main thread, or the conductor when the session is a supervised worker (through the channel it already reports on). A one-shot subagent puts the proposal in its report instead. The proposal names the skill, the section id, the evidence and the before/after text in one message.
+4. **Apply on approval only**: re-read the section (another session may have edited it), edit that one `<section>` block, set `data-updated` to the date of the edit, add any new signal to `data-sources`, and redraw its figure only if the figure's facts changed (§7). A routine with no person to approve follows the rule in §4: the brief approves, or the proposal stays in the report.
 5. **Verify**: `bun run context:map <slug> --section <id>` prints the new text.
 
-Scope: the skill writes files under its OWN `references/` and nowhere else (`metadata.writes: [references/]`, gated by `scripts/lint-skills.ts` `CONTEXT-WRITES`). It never touches Jira, another skill, `.context/` or product code. A proposed rule of judgment (not a fact) goes to `references/gotchas.md` or `## Rules` through the same approval, per `./skill-refinement-protocol.md`.
+Scope: the skill writes files under its own `references/` and nowhere else (`metadata.writes: [references/]`, gated by `scripts/lint-skills.ts` `CONTEXT-WRITES`). It does not touch Jira, another skill, `.context/` or product code. A proposed rule of judgment (not a fact) goes to `references/gotchas.md` or `## Rules` through the same approval, per `./skill-refinement-protocol.md`.
 
 ## 7 · Diagrams: capability `diagrams`
 
-Figures are drawn with the diagram-design skill (installed at project level by `cli/install.ts`; a user-level install or a harness plugin satisfies it too). Capability `diagrams` resolves by the SKILL's presence, not by an MCP tool: before drawing, check that a `diagram-design` skill is loadable. Absent → STOP at the point of use and name the install line (`bunx skills add https://github.com/cathrynlavery/diagram-design --skill diagram-design --yes`); never ship a map with hand-drawn SVG or ASCII in its place (`./mcp-capabilities.md` §4).
+Figures are drawn with the diagram-design skill (installed at project level by `cli/install.ts`; a user-level install or a harness plugin satisfies it too). Capability `diagrams` resolves by the skill's presence, not by an MCP tool: before drawing, check that a `diagram-design` skill is loadable. When it is absent, stop at the point of use and name the install line (`bunx skills add https://github.com/cathrynlavery/diagram-design --skill diagram-design --yes`). A map never ships with hand-drawn SVG or ASCII in its place (`./mcp-capabilities.md` §4).
 
-Style is diagram-design's business. Its own `.diagram-design` marker at the repo root (`profile: <slug>`) selects a saved profile when a project wants one; without it the skill runs its own first-run gate. The repo records nothing else about style: two machines may render different skins, and the information in the text is what matters.
+Style is diagram-design's business. Its own `.diagram-design` marker at the repo root (`profile: <slug>`) selects a saved profile when a project wants one, and without it the skill runs its own first-run gate. The repo records nothing else about style: two machines may render different skins, and the information in the text is what matters.
 
 ## 8 · Where the maps are rendered for humans
 
-`bun run docs` serves each context map IN PLACE from its skill folder, under a "Mapas de contexto" sidebar folder, so the portal and the AI read the same file. There is no copy under `docs/`.
+`bun run docs` serves each context map in place from its skill folder, under a "Mapas de contexto" sidebar folder, so the portal and the AI read the same file. There is no copy under `docs/`.
 
 ## 9 · Delivery and the updater
 
-The context map skills listed in `CONTEXT_MAP_SKILLS` are the one exception to "every `<aspect>-context` is project-local" (`isProjectLocalSkillPath`): `bun sync` DELIVERS a skill's folder once when it is absent, then never overwrites or deletes anything inside it. A missing or placeholder map, and any legacy file of its `legacy` list beside it, produce an informational row (never blocking), and `bun run setup:doctor` prints the same line.
+The context map skills listed in `CONTEXT_MAP_SKILLS` are the one exception to "every `<aspect>-context` is project-local" (`isProjectLocalSkillPath`). `bun sync` delivers a skill's folder once when it is absent, then never overwrites or deletes anything inside it. A missing or placeholder map, and any legacy file of its `legacy` list beside it, produce an informational row (never blocking), and `bun run setup:doctor` prints the same line.
