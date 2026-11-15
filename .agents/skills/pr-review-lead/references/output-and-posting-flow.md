@@ -1,71 +1,71 @@
 # Output and Posting Flow
 
-> Read at Steps 4-7 of `SKILL.md`. Covers the findings table, the triage conversation, the feedback draft, and posting.
+> Read at Steps 4 to 7 of `SKILL.md`. Covers the findings table, the triage conversation, the feedback draft and posting. Write the table headers, severity names and prose in the user's language; the examples below are in English.
 
-## Step 4 — Findings presentation template
+## Step 4: Findings presentation template
 
-Group by bucket, severity within bucket, always include the citation column, always include the Positive list even before the user asks for it:
+Group by bucket, then severity, always with the citation column, and include the Positive list before the user asks for it. The Axis column is Spec or Standards for test-automation PRs (see `SKILL.md` Step 3) and can be left out when the PR has no ticket or plan to check against.
 
 ```
-| # | Severidad | Archivo/Ubicación | Observación (con evidencia) |
-|---|---|---|---|
-| 1 | Crítico | config/variables.ts:34 | Password fallback hardcodeada en código (`\|\| 'Demo123!'`). AGENTS.md Regla Crítica #1 (CREDENTIALS = BY NAME, NEVER BY VALUE): "NEVER hardcode or guess." |
-| 2 | Mayor | (PR-wide) | 97% del diff (+36k líneas) es un commit de sync de template no relacionado; dificulta la revisión aun con nota aclaratoria del autor. |
+| # | Severity | Axis | File/Location | Finding (with evidence) |
+|---|---|---|---|---|
+| 1 | Critical | Standards | config/variables.ts:34 | Hardcoded password fallback in code (`\|\| 'Demo123!'`). AGENTS.md Critical Rule #1 (CREDENTIALS = BY NAME, NEVER BY VALUE): "NEVER hardcode or guess." |
+| 2 | Major | Spec | (PR-wide) | 97% of the diff (+36k lines) is an unrelated template-sync commit; it makes the review harder even with the author's note. |
 ```
 
 Close with:
 
 ```
-Puntos fuertes:
+Strengths:
 - <positive finding 1, with its own evidence>
 - <positive finding 2>
 
-Score: X.X / 10 — <one-line rationale tied to the buckets that drove it>
+Score: X.X / 10: <one-line rationale tied to the buckets that drove it>
 ```
 
-Nothing here is sent anywhere yet. This is the checkpoint the user reacts to in Step 5.
+Nothing is sent anywhere yet. This is the checkpoint the user reacts to in Step 5.
 
-## Step 5 — Triage conversation
+## Step 5: Triage conversation
 
-Expect and welcome pushback of these shapes, and act on it directly rather than re-arguing the original call:
+Pushback comes in a few shapes. Act on it directly instead of re-arguing the first call:
 
-- "Solo los críticos y mayores" — filter the set that goes to the draft; don't re-run analysis, just re-scope.
-- "Ese no es un error, es un patrón" — reclassify from Real/Reliability to Pattern/Doctrine-deviation (or drop entirely if it was already borderline), re-state the score with the new weighting, ask if the new score is acceptable before moving on.
-- "No seamos tan duros con los patrones" — this is a strictness-level change mid-review, not a one-off reclassification. Re-walk every Pattern-bucket finding under the new level (see `references/severity-and-scoring.md`) and re-present the updated table before drafting anything, don't just quietly adjust the next one.
+- "Only the critical and major ones": filter the set that goes to the draft. Do not re-run the analysis, just re-scope.
+- "That's not an error, it's a pattern": move the finding from Real/Reliability to Pattern/Doctrine-deviation (or drop it if it was borderline), restate the score under the new weighting, and ask whether that score is acceptable before moving on.
+- "Let's not be so hard on patterns": this changes the strictness level for the whole review, not one finding. Re-walk every Pattern-bucket finding under the new level (`references/severity-and-scoring.md`) and re-present the updated table before drafting.
 
-Once the user has told you which findings ship and confirmed a score they're comfortable with, move to drafting. Don't draft speculatively before this point — a draft the user didn't ask for is a draft you'll have to redo.
+Draft only after the user has said which findings ship and accepted a score. A draft nobody asked for gets redone.
 
-## Step 6 — Draft template (sandwich, the validated default)
+## Step 6: Draft template (sandwich, the validated default)
 
-Use this shape unless the user specifies a different structure. Keep the constructive middle section tightly evidence-linked — every point references the citation from the findings table, not a rephrased vague version of it.
+Use this shape unless the user sets another. Keep the constructive middle tied to the citations in the findings table, not to a vaguer rephrasing of them.
 
 ```
-## Feedback — PR #<N>: <title>
+## Feedback: PR #<N> <title>
 
-<Name>, <one genuine, specific opening observation — not generic praise. Name the
-actual thing done well and why it mattered, exactly like a finding, evidence and all.>
+<Name>, <one genuine, specific opening observation, not generic praise. Name the
+actual thing done well and why it mattered, evidence and all, like a finding.>
 
-<second positive if there's a natural second one — don't pad if there's only one strong point.>
+<second positive if there is a natural one; do not pad if there is only one strong point.>
 
-<Transition into the constructive section — one sentence, no hedging preamble.>
+<One sentence moving into the constructive section, no hedging preamble.>
 
-**1. <Finding title> (<severity>).** <What's wrong, where, why it matters, and — when
-there's an obvious one — a concrete suggested fix.>
+**1. <Finding title> (<severity>).** <What is wrong, where, why it matters, and, when
+there is an obvious one, a concrete suggested fix.>
 
 **2. <Finding title> (<severity>).** <Same shape.>
 
-<Optional: lighter pattern-level notes, explicitly framed as comparison not error,
-grouped separately from the numbered real findings.>
+<Optional: lighter pattern-level notes, framed as comparison and not error,
+grouped apart from the numbered real findings.>
 
 **Score: X.X / 10**
 
-<Closing positive — genuine, forward-looking, not a repeat of the opening. Tie it to
-what the fix path looks like or what's already solid enough to build on.>
+<Closing positive: genuine, forward-looking, not a repeat of the opening. Tie it to
+what the fix path looks like or what is already solid enough to build on.>
 ```
 
-## Step 7 — Confirm, then post
+## Step 7: Confirm, then post
 
-The confirmation has to be unambiguous and about *this* draft. "Se ve bien" while you're still discussing severity levels is not the same as "postealo" once the final draft is shown. If in doubt, show the full draft one more time and ask directly rather than inferring.
+The confirmation has to be unambiguous and about this draft. "Looks good" while you are still discussing severity is not the same as "post it" after the final draft is shown. When in doubt, show the full draft again and ask directly.
 
 Posting commands:
 
@@ -82,6 +82,6 @@ gh pr comment <N> --body-file <scratchpad>/pr<N>_feedback.md
 gh pr comment <N> --repo <owner>/<repo> --body-file <scratchpad>/pr<N>_feedback.md
 ```
 
-Report back the comment URL `gh pr comment` returns — that's the confirmation the action actually happened, not just that the command was run.
+Report the comment URL that `gh pr comment` returns. That URL, not the fact that the command ran, shows the action happened.
 
-If the user approved only part of a multi-PR review batch (e.g. "post PR #1, hold PR #2"), post exactly that subset and say plainly what's still pending and why — don't let an earlier "yes" for one PR imply consent for a sibling PR still being triaged.
+If the user approved only part of a multi-PR batch ("post PR #1, hold PR #2"), post exactly that subset and say plainly what is pending and why. An earlier yes for one PR is not consent for a sibling PR still being triaged.
