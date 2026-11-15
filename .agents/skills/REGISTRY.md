@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-11-15T10:22:53.061Z`
+> Generated: `2026-11-15T10:32:05.209Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -67,23 +67,23 @@ Skills indexed: 29
 
 ## Skill: agentic-qa-onboard
 
-**Purpose**: Walks new users through this repo's QA flow — Playwright + KATA + Allure + Xray stack, Jira QA state machine (statuses read from `.agents...
+**Purpose**: Onboards a newcomer to this QA repo: the stack, the IQL stages, MCPs and env vars, then hands off to the right skill.
 
 **Compact Rules**:
-- DO: act as a guided tour, not an executor. The tour ends the moment the user knows which skill to call; hand off there and step back.
-- DO NOT: do the downstream work yourself. Pre-sprint refinement is `/shift-left-testing`, per-ticket QA `/sprint-testing`, TMS authoring `/test-documentation`, automated tests `/test-automation`, suite runs `/regression-testing`, a new target repo `/project-discovery`, KATA adaptation `/test-framework-adaptation`.
-- WHEN someone is lost or asks how a skill works: suspend the terse working register for the whole explanation — full sentences, warm tone, and each technical term defined the first time it appears. Resume the normal register once they are oriented.
-- DO: mirror the user's language in the explanation. The visual decks ship in Spanish only (technical terms stay English) — say so before opening one for an English speaker.
-- WHEN the goal is unclear: ask ONE question first (testing a ticket, or understanding the whole flow?). Never dump every stage on someone who asked about one.
-- DO: name a stage by its word (Shift-Left, Planning, Execution, Reporting, Documentation, Automation, Regression, Observation), never by number. A "Stage N" in an older doc resolves through `agentic-qa-core/references/stage-gates.md`; the why behind the stages is `iql-context`.
-- WHEN someone asks about running several sessions at once ("parallelize the sprint", "one session per story", "orquestar", "lanza workers"): explain the two executors in plain words — a one-shot subagent lives inside the current turn and is the default for almost everything, a supervised worker is a persistent session you keep talking to — then hand off to `/orca-orchestration`. Its deck is `packages/decks/orca-orchestration/how-it-works.es.html`.
-- DO: explain the concept in plain words, and why it matters, BEFORE any command, flag, or file path.
-- DO NOT: open a how-it-works deck without asking — it launches the user's default browser. Open exactly ONE, then let them come back with questions before offering the next.
-- WHEN opening a deck: prefer the published GitHub Pages URL over the local file, because a project scaffolded from this boilerplate may not carry the HTML. Use the local copy only offline or on explicit request.
-- DO: route a brand-new project through the ordered 4-phase setup path (foundation → Jira catalogs → discovery + adapt → git Strategy Setup). The joining-an-adapted-project checklist covers phase 1 only and is not a substitute.
-- DO NOT: state a Jira status or transition from memory. `.agents/jira-workflows.json` is authoritative — if a status is not in there, it does not exist in the instance.
-- DO: point library-docs questions at Context7 and troubleshooting at the `web-search` capability (a harness-level server); ticket WRITES at `/acli`, and detailed ticket READS (custom fields, ACs, ATP/ATR, comments) at the Jira sync script, whose synced `.md` is what you read.
-- DO NOT: suggest swapping the stack. Playwright + KATA + Allure + TypeScript + bun is locked, and KATA is Playwright-specific — a project needing another runner should not start from this boilerplate.
+- The skill is a tour, not an executor. It ends the moment the user knows which skill to call; hand off there and step back.
+- Leave the downstream work to its owner: pre-sprint refinement is `/shift-left-testing`, per-ticket QA `/sprint-testing`, TMS authoring `/test-documentation`, automated tests `/test-automation`, suite runs `/regression-testing`, a new target repo `/project-discovery`, KATA adaptation `/test-framework-adaptation`.
+- When someone is lost or asks how a skill works, drop the terse working register for the whole explanation: full sentences, a warm tone, each technical term defined the first time it appears. Go back to the normal register once they are oriented.
+- Explain in the user's language. The visual decks are Spanish only (technical terms stay English), so say that before opening one for an English speaker.
+- When the goal is unclear, ask one question first (testing a ticket, or understanding the whole flow?). Someone who asked about one stage does not need all of them.
+- Name a stage by its word (Shift-Left, Planning, Execution, Reporting, Documentation, Automation, Regression, Observation), never by number. A "Stage N" in an older doc resolves through `agentic-qa-core/references/stage-gates.md`; the why behind the stages is `iql-context`.
+- When someone asks about running several sessions at once ("parallelize the sprint", "one session per story", "fleet", "launch workers"), explain the two executors in plain words (a one-shot subagent lives inside the current turn and is the default for almost everything; a supervised worker is a persistent session you keep talking to), then hand off to `/orca-orchestration`. Its deck is `packages/decks/orca-orchestration/how-it-works.es.html`.
+- Explain the concept and why it matters before any command, flag or file path.
+- Ask before opening a how-it-works deck, because it launches the user's default browser. Open exactly one, then let them come back with questions before offering the next.
+- Prefer the published GitHub Pages URL over the local file: a project scaffolded from this boilerplate may not carry the HTML. Use the local copy offline or on explicit request.
+- Route a brand-new project through the ordered 4-phase setup path (foundation, Jira catalogs, discovery + adapt, git Strategy Setup). The joining-an-adapted-project checklist covers phase 1 only.
+- State a Jira status or transition only from `.agents/jira-workflows.json`. A status that is not in that file does not exist in the instance.
+- Library-docs questions go to Context7, troubleshooting to the `web-search` capability (a harness-level server), ticket WRITES to `/acli`, and detailed ticket READS (custom fields, ACs, ATP/ATR, comments) to the Jira sync script, whose synced `.md` is what you read.
+- Leave the stack as it is. Playwright + KATA + Allure + TypeScript + bun is locked, and KATA is Playwright-specific: a project that needs another runner should not start from this boilerplate.
 
 **Read full SKILL.md when**: walking the full 4-phase new-project setup, listing env vars or MCPs in detail, or answering which deck covers a given topic.
 
@@ -93,20 +93,20 @@ Skills indexed: 29
 
 ## Skill: bug-screenshot-annotation
 
-**Purpose**: Turns a raw bug screenshot into a QA-style annotated evidence image — circles/ovals around the broken region, arrows, callout text boxes,...
+**Purpose**: Annotates a bug screenshot with circles, arrows, callouts and a corner badge, rendered locally.
 
 **Compact Rules**:
-- DO NOT route a QA screenshot through ANY external image service, generative or otherwise — real product/customer data is in the frame. Explicit user authorization in chat does NOT lift this; everything renders locally over a loopback HTTP server and a local browser capture.
-- WHEN a bug is visual or positional (overlap, misalignment, wrong date/offset on an axis, an element in the wrong place) and a raw screenshot would need a paragraph to explain: annotate it. DO NOT use this skill to file the bug itself, or on before/after shots that already read clearly raw.
-- DO: work from a screenshot that already exists on disk. This skill overlays shapes on an existing image; it never generates or edits an image from a text description.
-- DO: produce exactly ONE evidence file — the final annotated PNG in the ticket's `evidence/` folder, named `{KEY}-BUG-{BUG-KEY}-annotated.png`. The crop and the annotation HTML are scratchpad working files, never written to `evidence/` and never cited from a ticket.
-- DO: copy the commented overlay blocks from `references/shapes.html` instead of designing from scratch, and keep both its z-index scale (base image → shapes → callout boxes → corner badge topmost) and its utf-8 meta tag; a copied block that drops either produces a hidden badge or mojibake.
-- DO NOT: load the annotation HTML over `file://` — the browser-automation CLI refuses it before rendering. Serve over loopback HTTP, and kill that server before the session ends.
-- DO: size the capture viewport equal to or larger than the HTML canvas. A smaller viewport clips callouts.
-- DO: read the rendered PNG back and expect at least one adjustment pass (move a circle, rewrap callout text, nudge the badge out of a collision). It is not one-shot.
-- DO: state the final PNG's repo-relative path in chat the moment it lands, unprompted, and repeat it leading the "Bug annotations" group in the session-close screenshot list.
-- WHEN embedding the annotated PNG into the bug issue: offer it and let the human confirm first; once published it leads the bug's Evidence section, ahead of the raw capture.
-- DIRECTION: the evidence page (the `evidence-artifact` skill) keeps marks as data on one page per ticket and per bug; when a ticket has one, link it and keep this PNG only where a tracker needs an inline image.
+- Keep every QA screenshot off external image services, generative or not: real product and customer data is in the frame. A user's authorization in chat does not lift this. Everything renders locally, over a loopback HTTP server and a local browser capture.
+- Annotate when a bug is visual or positional (overlap, misalignment, wrong date or offset on an axis, an element in the wrong place) and a raw screenshot would need a paragraph to explain it. Do not use this skill to file the bug, or on before/after shots that already read clearly raw.
+- Work from a screenshot that already exists on disk. The skill overlays shapes; it never generates or edits an image from a text description.
+- Produce exactly one evidence file: the final annotated PNG in the ticket's `evidence/` folder, named `{KEY}-BUG-{BUG-KEY}-annotated.png`. The crop and the annotation HTML are scratchpad working files, never written to `evidence/` and never cited from a ticket.
+- Copy the commented overlay blocks from `references/shapes.html` instead of designing from scratch, and keep its z-index scale (base image, shapes, callout boxes, corner badge topmost) and its utf-8 meta tag. A copied block that drops either produces a hidden badge or mojibake.
+- Serve the annotation HTML over loopback HTTP, never `file://` (the browser-automation CLI refuses it before rendering), and kill that server before the session ends.
+- Size the capture viewport equal to or larger than the HTML canvas. A smaller viewport clips callouts.
+- Read the rendered PNG back and expect at least one adjustment pass (move a circle, rewrap callout text, nudge the badge out of a collision). It is not one-shot.
+- State the final PNG's repo-relative path in chat the moment it lands, unprompted, and repeat it leading the "Bug annotations" group in the session-close screenshot list.
+- Offer the annotated PNG for the bug issue and let the human confirm before publishing. Once published it leads the bug's Evidence section, ahead of the raw capture.
+- When the ticket has an evidence page (the `evidence-artifact` skill), the page keeps marks as data, one page per ticket and per bug. Link it, and keep this PNG only where a tracker needs an inline image.
 
 **Read full SKILL.md when**: building the annotation HTML, choosing shape types, or handling a case the local render cannot cover (e.g. a photo of physical signage that would need anonymization).
 
@@ -135,15 +135,15 @@ Skills indexed: 29
 
 ## Skill: business-data-context
 
-**Purpose**: What the system under test IS at the data level: business entities and why they exist, their relationships, state machines, automatic pro...
+**Purpose**: The system under test at the data level: entities, relationships, state machines, triggers, cron jobs, webhooks, integrations.
 
 **Compact Rules**:
-- DO: read the map through `bun run context:map business-data-context` (or `--section <id>` for one entity or flow). NEVER read `references/business-data-map.html` raw: its SVG is most of the bytes and none of the facts.
-- DO: treat a placeholder map as "no map". Say so and hand the user `project-context` mode `data`; never answer data questions as if the system were empty.
-- DO: cite a fact with its section id and `data-updated` date. A section older than the code it describes is a hypothesis to check with `[DB_TOOL]`, not an answer.
-- WHEN a session observes something that contradicts a section: PROPOSE the one-section edit with its evidence to the user (or to the conductor when you are a supervised worker), apply it only on approval. Procedure: `references/refresh.md`.
-- DO NOT: write anywhere but this skill's own `references/`. No Jira, no `.context/`, no other skill, no product code.
-- DO NOT: copy map content into this SKILL.md. Judgment (a rule for READING the data) goes in `## Rules` or `references/gotchas.md`, dated and measured.
+- Read the map through `bun run context:map business-data-context` (or `--section <id>` for one entity or flow). Skip `references/business-data-map.html` raw: its SVG is most of the bytes and none of the facts.
+- A placeholder map means there is no map. Say so and hand the user `project-context` mode `data`, so nobody mistakes an empty map for an empty system.
+- Cite a fact with its section id and `data-updated` date. A section older than the code it describes is a hypothesis to check with `[DB_TOOL]`, not an answer.
+- When a session observes something that contradicts a section, propose the one-section edit with its evidence to the user, or to the conductor when you are a supervised worker, and apply it only on approval. Procedure: `references/refresh.md`.
+- Write only inside this skill's own `references/`. Jira, `.context/`, other skills and product code are out of scope, because this skill owns one map and nothing else.
+- Keep map content out of this SKILL.md. A rule for reading the data goes in `## Rules` or `references/gotchas.md`, dated and measured.
 - Before a step that uses `db` (verifying a section) or `diagrams` (redrawing a figure), run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8.
 
 **Read full SKILL.md when**: building a briefing for a DB-level dispatch, deciding whether a section is stale, or proposing an edit to the map.
@@ -154,16 +154,16 @@ Skills indexed: 29
 
 ## Skill: business-domain-context
 
-**Purpose**: The vocabulary and the business of the system under test: what the product is for, who pays and why, and what every domain term means (th...
+**Purpose**: Business vocabulary of the system under test: what the product is for, who pays, and what each domain term means.
 
 **Compact Rules**:
-- DO: read the map through `bun run context:map business-domain-context` (or `--section term-<slug>` for one term). NEVER read `references/business-domain-map.html` raw.
-- DO: treat a placeholder map as "no glossary". Say so and hand the user `project-discovery` Phase 1; never name test cases or rewrite ACs in invented vocabulary.
-- DO: use the business term the map gives, and quote the UI label when a step talks about the screen. The code identifier belongs in code and selectors, never in a TC title or a bug summary.
-- WHEN a session observes a term the map lacks, or a label or meaning that contradicts a section: PROPOSE the one-section edit with its evidence to the user (or to the conductor when you are a supervised worker), apply it only on approval. Procedure: `references/refresh.md`.
-- DO NOT: write anywhere but this skill's own `references/`. No Jira, no `.context/`, no other skill, no test code, no product code.
-- DO NOT: copy map content into this SKILL.md. Judgment goes in `## Rules` or `references/gotchas.md`, dated and measured.
-- Figures are optional here: the glossary is tables. Before a step that draws one, run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8.
+- Read the map through `bun run context:map business-domain-context`, or add `--section term-<slug>` for one term. The raw `references/business-domain-map.html` is generated markup, so the reader is the only way in.
+- A placeholder map means there is no glossary. Say so and hand the user `project-discovery` Phase 1. Test cases and ACs named in invented vocabulary mislead the whole team.
+- Use the business term the map gives, and quote the UI label when a step talks about the screen. The code identifier belongs in code and selectors, not in a TC title or a bug summary.
+- When a session observes a term the map lacks, or a label or meaning that contradicts a section, propose the one-section edit with its evidence to the user (to the conductor when you are a supervised worker) and apply it only on approval. Procedure: `references/refresh.md`.
+- Write only inside this skill's own `references/`: no Jira, no `.context/`, no other skill, no test code, no product code.
+- Keep map content out of this SKILL.md. Judgment goes in `## Rules` or `references/gotchas.md`, dated and measured.
+- Figures are optional here because the glossary is tables. Before a step that draws one, run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8.
 
 **Read full SKILL.md when**: building a briefing for an ATP, TC naming or AC refinement dispatch, deciding whether a term is stale, or proposing an edit to the map.
 
@@ -173,15 +173,15 @@ Skills indexed: 29
 
 ## Skill: business-e2e-context
 
-**Purpose**: How people actually use the system under test end to end: the personas, the user journeys first (entry point, steps, branches, where mone...
+**Purpose**: Knowledge of how people use the product end to end: personas, user journeys, the feature catalog and cross-feature flows.
 
 **Compact Rules**:
-- DO: read the map through `bun run context:map business-e2e-context` (or `--section <id>` for one journey or feature). NEVER read `references/business-e2e-map.html` raw: its SVG is most of the bytes and none of the facts.
-- DO: treat a placeholder map as "no map". Say so and hand the user `project-context` mode `e2e`; never plan E2E coverage as if the product had no journeys.
-- DO: start from the journey, then the feature. A story is tested inside the journey that reaches it; the feature catalog answers "what exists", the journeys answer "what a user does and where it breaks".
-- WHEN a session observes something that contradicts a section (a step, a branch, a state the UI shows): PROPOSE the one-section edit with its evidence to the user (or to the conductor when you are a supervised worker), apply it only on approval. Procedure: `references/refresh.md`.
-- DO NOT: write anywhere but this skill's own `references/`. No Jira, no `.context/`, no other skill, no test code, no product code.
-- DO NOT: copy map content into this SKILL.md. Judgment goes in `## Rules` or `references/gotchas.md`, dated and measured.
+- Read the map through `bun run context:map business-e2e-context` (or `--section <id>` for one journey or feature). Do not read `references/business-e2e-map.html` raw: its SVG is most of the bytes and none of the facts.
+- A placeholder map counts as no map. Say so and hand the user `project-context` mode `e2e`; do not plan E2E coverage as if the product had no journeys.
+- Start from the journey, then the feature. A story is tested inside the journey that reaches it; the feature catalog answers "what exists", the journeys answer "what a user does and where it breaks".
+- When a session observes something that contradicts a section (a step, a branch, a state the UI shows), propose the one-section edit with its evidence to the user, or to the conductor when you are a supervised worker, and apply it only on approval. Procedure: `references/refresh.md`.
+- Write only inside this skill's own `references/`: no Jira, no `.context/`, no other skill, no test code, no product code.
+- Keep map content out of this SKILL.md. Judgment goes in `## Rules` or `references/gotchas.md`, dated and measured.
 - Before a step that uses `diagrams` (redrawing a figure), run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8.
 
 **Read full SKILL.md when**: building a briefing for a UI or E2E dispatch, scoping a smoke or regression run, deciding whether a section is stale, or proposing an edit to the map.
@@ -192,22 +192,22 @@ Skills indexed: 29
 
 ## Skill: evidence-artifact
 
-**Purpose**: Turns a ticket's test evidence into ONE private claude.ai page (an Artifact) that a developer or PM can open and read: a verdict header,...
+**Purpose**: Builds a ticket's test evidence into one private claude.ai page (an Artifact) from a JSON evidence pack.
 
 **Compact Rules**:
-- DO: load this skill in any dispatch whose stage captures evidence (sprint-testing Stage 2) or reports it (Stage 3, filing a bug), and append every proof to `<PBI>/evidence/evidence-pack.json` AS you test, never reconstructed at the end.
-- DO: take marks from the element's box via `playwright-cli eval` (`coords: "px"`); do NOT read a screenshot back to place a mark unless no element reaches it.
-- DO NOT: mask with a mark. Personal data on screen goes in the image's `redact` boxes, which the build burns into the pixels.
-- DO NOT: put a trace, a HAR, a token, a cookie or an `.auth` file in a pack. Credentials in API/SQL text are written as `<redacted>`; the build refuses the rest and names the field.
-- DO: give a bug its own pack (`evidence-pack-<BUG>.json`, `kind: "bug"`, a `repro` case) once the bug issue exists, and build and publish bug pages BEFORE the story page: a story's `RETEST PASSED` / `RETEST FAILED` bug card is refused unless the bug's own pack confirms it.
-- DO: build with `bun run evidence build --pack <pack>`; it needs Python 3.9+ and Pillow and names the one thing to install when either is missing.
-- DO: publish with the Artifact tool; when the pack already has `artifact.url`, run `Artifact action: "read"` on it first and publish with that `url`. Omitting `url` mints a second page and orphans every link.
-- DO: record the URL with `bun run evidence record --pack <pack> --url <url>` and on the board (`bun run board evidence-artifact <KEY> <url> [--bug <BUG>] --by worker`), add it to the issue with `bun run evidence link --pack <pack>`, then link it from the ATR, the bug description, the QA comment footer and each TC's notes.
-- DO: embed a bug's ONE thumbnail with `bun run evidence attach --pack <bug pack>` (`--dry-run` first prints every call), after the bug page link is in its Description; write "(image embedded below)" and pass `bun run board bug ... --evidence-embedded` only once a live run printed `read-back OK` (a dry run never does).
-- DO NOT: run `bun run evidence attach --replace` without a person's OK: it deletes the bug's earlier thumbnail attachment, which cannot be undone. `attach` refuses on its own when an earlier thumbnail (same name, other bytes) is there.
-- DO: on a retest, keep every earlier case and item with its `round`, set `currentRound` and `rounds[]`, append the retest case, and republish to the SAME URL. A retest never passes on a DEFERRED case.
-- DO: report the URLs as published private for the owner to share; when the Artifact tool is unavailable, report the pack path instead (the conductor publishes).
-- DO NOT: send evidence to any external image service, whatever the chat authorises.
+- Load this skill in any dispatch whose stage captures evidence (sprint-testing Stage 2) or reports it (Stage 3, filing a bug). Append every proof to `<PBI>/evidence/evidence-pack.json` as you test, because a pack rebuilt from memory at the end loses what the screen showed.
+- Take marks from the element's box via `playwright-cli eval` (`coords: "px"`). Read a screenshot back to place a mark only when no element reaches it.
+- A mark does not mask anything, since viewers can toggle marks off. Personal data on screen goes in the image's `redact` boxes, which the build burns into the pixels.
+- Keep a trace, a HAR, a token, a cookie and an `.auth` file out of every pack. Write credentials in API/SQL text as `<redacted>`; the build refuses the rest and names the field.
+- Give a bug its own pack (`evidence-pack-<BUG>.json`, `kind: "bug"`, a `repro` case) once the bug issue exists. Build and publish bug pages before the story page: a story's `RETEST PASSED` / `RETEST FAILED` bug card is refused unless the bug's own pack confirms it.
+- Build with `bun run evidence build --pack <pack>`. It needs Python 3.9+ and Pillow and names the one thing to install when either is missing.
+- Publish with the Artifact tool. When the pack already has `artifact.url`, run `Artifact action: "read"` on it first and publish with that `url`; omitting `url` mints a second page and orphans every link.
+- Record the URL with `bun run evidence record --pack <pack> --url <url>` and on the board (`bun run board evidence-artifact <KEY> <url> [--bug <BUG>] --by worker`), add it to the issue with `bun run evidence link --pack <pack>`, then link it from the ATR, the bug description, the QA comment footer and each TC's notes.
+- Embed a bug's ONE thumbnail with `bun run evidence attach --pack <bug pack>` (`--dry-run` first prints every call), after the bug page link is in its Description. Write "(image embedded below)" and pass `bun run board bug ... --evidence-embedded` only once a live run printed `read-back OK`; a dry run never does.
+- Run `bun run evidence attach --replace` only with a person's OK. It deletes the bug's earlier thumbnail attachment, which cannot be undone, and `attach` refuses on its own when an earlier thumbnail (same name, other bytes) is there.
+- On a retest, keep every earlier case and item with its `round`, set `currentRound` and `rounds[]`, append the retest case, and republish to the SAME URL. A retest never passes on a DEFERRED case.
+- Report the URLs as published private for the owner to share. When the Artifact tool is unavailable, report the pack path instead and the conductor publishes.
+- Send evidence to no external image service, whatever the chat authorises (`references/privacy.md`).
 
 **Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
 
@@ -303,16 +303,16 @@ Skills indexed: 29
 
 ## Skill: infra-context
 
-**Purpose**: How the system under test is built, run and deployed: its architecture and external services, the backend and frontend stacks with their...
+**Purpose**: Infra context: how the system under test is built, run and deployed.
 
 **Compact Rules**:
-- DO: read the map through `bun run context:map infra-context` (or `--section backend`, `--section environments`, ...). NEVER read `references/infra-map.html` raw: its SVG is most of the bytes and none of the facts.
-- DO: treat a placeholder map as "no infra map". Say so and hand the user `project-discovery` Phases 2-3; never guess a run command, an environment URL or an auth flow.
-- DO: take environment URLs from `.agents/project.yaml` and credentials from `.env`. The map says which environments exist and how they differ; it never holds a secret or a value that has its own source.
-- WHEN a session observes something that contradicts a section (a command that no longer runs, a pipeline step, an auth request that changed): PROPOSE the one-section edit with its evidence to the user (or to the conductor when you are a supervised worker), apply it only on approval. Procedure: `references/refresh.md`.
-- DO NOT: write anywhere but this skill's own `references/`. No Jira, no `.context/`, no CI files, no other skill, no product code.
-- DO NOT: copy map content into this SKILL.md. Judgment goes in `## Rules` or `references/gotchas.md`, dated and measured.
-- Before a step that uses `diagrams` (redrawing the architecture figure), run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8. A table is fine where it says it better.
+- Read the map through `bun run context:map infra-context`, or add `--section backend`, `--section environments` and so on. The raw `references/infra-map.html` is mostly SVG, so the reader is the only way in.
+- A placeholder map means there is no infra map. Say so and hand the user `project-discovery` Phases 2-3. A guessed run command, environment URL or auth flow sends the whole session down the wrong path.
+- Take environment URLs from `.agents/project.yaml` and credentials from `.env`. The map says which environments exist and how they differ; it holds no secret and no value that has its own source.
+- When a session observes something that contradicts a section (a command that no longer runs, a changed pipeline step, a changed auth request), propose the one-section edit with its evidence to the user (to the conductor when you are a supervised worker) and apply it only on approval. Procedure: `references/refresh.md`.
+- Write only inside this skill's own `references/`: no Jira, no `.context/`, no CI files, no other skill, no product code.
+- Keep map content out of this SKILL.md. Judgment goes in `## Rules` or `references/gotchas.md`, dated and measured.
+- Before a step that redraws the architecture figure (`diagrams`), run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8. A table is fine where it says it better.
 
 **Read full SKILL.md when**: building a briefing for framework adaptation, an environment or CI change, an auth-in-tests decision or a non-functional check; deciding whether a section is stale; or proposing an edit to the map.
 
@@ -322,17 +322,17 @@ Skills indexed: 29
 
 ## Skill: iql-context
 
-**Purpose**: The methodology index of this repo: how the IQL (Integrated Quality Lifecycle) is structured, why the QA process runs as eight named stag...
+**Purpose**: Methodology index of this repo: the IQL (Integrated Quality Lifecycle), its stages, artifact ladder and invariants.
 
 **Compact Rules**:
-- DO: answer "why is the process shaped this way" from the index below, then point at the canonical reference for the procedure; never restate a DoD, a transition table or a link catalog that a reference already owns.
-- DO: name stages by word (Shift-Left, Planning, Execution, Reporting, Documentation, Automation, Regression, Observation), never by number; a numbered "Stage N" in an older doc resolves through `agentic-qa-core/references/stage-gates.md`.
-- DO: read `.agents/project.yaml` → `qa.methodology` before saying which stages a project runs or how strict its gates are; the shipped values are a default, not a decision.
-- DO: read `references/project-overrides.md` for the project's own rules and exceptions; they win over this index for THAT project, and only there.
-- DO NOT: resolve a web-vs-repo disagreement on your own. The repo's executable doctrine (`agentic-qa-core/references/*`) is what the skills enforce; the website is the public narrative. State both readings and cite both.
-- DO NOT: treat this skill as SUT knowledge. Entities, endpoints, infra and Jira content live in `.context/` maps and the project's `<aspect>-context` skills.
-- DO NOT: edit this SKILL.md or its synced references in a consumer project; propose a refinement per `agentic-qa-core/references/skill-refinement-protocol.md` (project-owned prose goes in `references/project-overrides.md`).
-- WHEN a question is about ONE aspect (phases and steps, the agentic contract, the eight approaches, the thirteen invariants): load only that reference from §"References".
+- Answer "why is the process shaped this way" from the index below, then point at the canonical reference for the procedure. Do not restate a DoD, a transition table or a link catalog that a reference already owns; the copy drifts.
+- Name stages by word (Shift-Left, Planning, Execution, Reporting, Documentation, Automation, Regression, Observation), never by number. A numbered "Stage N" in an older doc resolves through `agentic-qa-core/references/stage-gates.md`.
+- Read `qa.methodology` in `.agents/project.yaml` before saying which stages a project runs or how strict its gates are. The shipped values are a default, not a decision.
+- Read `references/project-overrides.md` for the project's own rules and exceptions. They win over this index for that project, and only there.
+- When the website and the repo disagree, do not resolve it on your own. The repo's executable doctrine (`agentic-qa-core/references/*`) is what the skills enforce and the website is the public narrative, so state both readings and cite both.
+- This skill is not SUT knowledge. Entities, endpoints, infra and Jira content live in `.context/` maps and the project's `<aspect>-context` skills.
+- In a consumer project, do not edit this SKILL.md or its synced references. Propose a refinement per `agentic-qa-core/references/skill-refinement-protocol.md`, and put project-owned prose in `references/project-overrides.md`.
+- A question about one aspect (phases and steps, the agentic contract, the eight approaches, the thirteen invariants) needs only that reference from §"References".
 
 **Read full SKILL.md when**: building a briefing that must explain the methodology to a subagent, answering "why" questions about the ladder or the stages, or checking which invariant a proposed shortcut violates.
 
@@ -342,20 +342,17 @@ Skills indexed: 29
 
 ## Skill: jira-administration
 
-**Purpose**: Run bounded Jira administration workflows for project Components or Atlassian instance migration.
+**Purpose**: Administer Jira in two approval-gated modes: Components reconciliation and instance migration.
 
 **Compact Rules**:
-- Exactly ONE mode per run: `components` (`references/components.md`) or `instance-migration` (`references/instance-migration.md`). Load only that mode's reference. Never combine the two, never fall through into the other.
-- Mode unclear → ASK. Do not infer one from a bare "fix Jira" / "sync Jira" request.
+- One mode per run. Load only its reference, never combine the two or fall through into the other, and run only the selected reference's verification steps.
 - Load `/acli` before any Jira operation. Load other tool-owner skills only when the selected reference requires them.
-- Missing MCP or Jira credentials = HARD STOP (`AGENTS.md` Critical Rule #10). Name the exact env var, point at `.env` / `.env.example`, ask for an agent-session restart. No workaround, no partial run.
-- Read-first on every mutation: inspect the live state before authoring any plan. Nothing is created, applied, deleted, or repointed without the user's explicit approval given inside the same run.
-- `components`: derive and inspect → author the plan file → dry-run → WAIT for explicit approval → only then `--apply`.
-- `instance-migration`: resolve and confirm BOTH instances → audit and verify reachability → WAIT for explicit approval → only then change files or the `acli` session. That session lives at `~/.config/acli` and is machine-global: re-login repoints every repo on the host, not just this one.
-- The Atlassian host lives in `.agents/project.yaml` → `issue_tracker.atlassian_url` and NOWHERE else locally. A stale `ATLASSIAN_URL` in `.env` or the process environment is contamination to DELETE, never to update — a second copy is what goes stale.
-- Template-repo carve-out: if `.agents/project.yaml` → `project.project_name` is `null`, the repo is an un-onboarded template. Leave `atlassian_url` and `project_key` `null`, say so in the report, and never manufacture a commit to hide the emptiness.
-- Run only the selected reference's verification steps. Never run the other mode's.
-- Mode from `$ARGUMENTS`: when its first token matches a mode in the Mode routing table, that token IS the mode and the rest is forwarded to it unchanged. No matching first token → ASK which mode.
+- Missing MCP or Jira credentials is a hard stop (`AGENTS.md` Critical Rule #10). Name the exact env var, point at `.env` and `.env.example`, ask for an agent-session restart. No workaround, no partial run.
+- Read the live state before authoring any plan. Nothing is created, applied, deleted or repointed without the user's explicit approval given inside the same run.
+- `components`: derive and inspect, author the plan file, dry-run, wait for explicit approval, then `--apply`.
+- `instance-migration`: resolve and confirm both instances, audit and verify reachability, wait for explicit approval, then change files or the `acli` session. That session lives at `~/.config/acli` and is machine-global, so a re-login repoints every repo on the host, not only this one.
+- The Atlassian host lives in `.agents/project.yaml` under `issue_tracker.atlassian_url` and nowhere else locally. A stale `ATLASSIAN_URL` in `.env` or the process environment is contamination: delete it, never update it, because a second copy is what goes stale.
+- Template-repo carve-out: when `.agents/project.yaml` has `project.project_name` set to `null`, the repo is an un-onboarded template. Leave `atlassian_url` and `project_key` as `null`, say so in the report, and do not create a commit to hide the emptiness.
 
 **Read full SKILL.md when**: the mode is ambiguous, a dry-run diff or migration audit looks wrong, or you need the selected reference's step-by-step phases and verification list.
 
@@ -367,7 +364,7 @@ Skills indexed: 29
 
 > ⚠ LOW-CONFIDENCE (extraction strategy B): bullets scraped without context — read the full SKILL.md before relying on any rule below.
 
-**Purpose**: Trigger: judgment day, dual review, adversarial review, juzgar.
+**Purpose**: Run a blind dual review with two independent judges, fix confirmed issues, then re-judge.
 
 **Compact Rules**:
 - `/test-automation` — Review phase, as one of the two ways to satisfy its MANDATORY separate verifier (this skill OR `/pr-review-lead`), for every change, not only high-risk ones. That Review step counts as the explicit request above.
@@ -430,22 +427,23 @@ Skills indexed: 29
 
 ## Skill: pr-review-lead
 
-**Purpose**: Acts as a QA Lead / QA Architect reviewing a pull request's test-automation work against this repo's KATA doctrine (or the target repo's...
+**Purpose**: Reviews a colleague's test-automation pull request as a QA lead, citing doctrine or code for every finding.
 
 **Compact Rules**:
-- DO: run the strictness preflight (Flexible / Standard / Strict) before reading a single line of diff — unless the invocation already answered it, in which case do not re-ask what was given.
-- WHEN strictness is Flexible or Standard: doctrine-pattern deviations are observations framed as a comparison, never errors, and they must not move the score the way a Real/Reliability defect does. Strict widens what counts as a finding; it still does not turn a pattern note into an error.
-- DO: load the target repo's OWN doctrine in full before analyzing when it ships one — an external repo forked from this boilerplate may have evolved its conventions. Only when it has none do this repo's KATA conventions become the reference standard, and say so explicitly in the output.
-- DO NOT: state a "best practice" as if the repo required it without a file:section citation. An ungrounded call is labeled as opinion, in those words.
-- DO: bucket every finding into exactly one of Real/Reliability, Pattern/Doctrine-deviation, or Positive, with a severity tier (Critical/Major/Minor/Trivial) mirroring the user's language.
-- DO: always populate the Positive bucket. A review with zero positives on a PR that clearly has some is uncalibrated, not rigorous.
-- DO: read the actual diffs, never the PR description. On a PR too large for a single diff, page the per-file patches; check the commit headlines first so an unrelated bulk-sync or vendor-update commit is not reviewed line by line.
-- DO: present the findings table + positives + a score out of 10 as a CHECKPOINT, then let the user triage and re-classify on the spot. The user's context decides what ships; do not defend the first-pass severity.
-- WHEN the user has not specified tone or structure: draft praise → constructive → praise, with a real strength at each end, not a token compliment wrapped around a list of complaints.
-- DO NOT: post anything to GitHub without an explicit go-ahead at the final step. Approval given earlier in the same session for a DIFFERENT PR does not carry over, and silence is not approval.
-- DO NOT: delegate drafting or posting the feedback to a subagent — tone decisions and externally-visible actions stay with the orchestrator.
-- WHEN a PR under review genuinely needs framework-level process: say so and point at `/framework-development`. Do not chain SDD skills from this workflow.
-- DO: default the posted comment to English per the repo-artifact language rule, unless the user asked for another language for that specific artifact.
+- Run the strictness preflight (Flexible, Standard or Strict) before reading any diff. If the invocation already answered it, do not ask again.
+- At Flexible and Standard, a doctrine-pattern deviation is an observation framed as a comparison, never an error, and it does not move the score. Strict widens what counts as a finding; it does not turn a pattern note into an error.
+- When the target repo ships its own doctrine, load it in full before analyzing: a repo forked from this boilerplate may have evolved its conventions. Only when it has none is this repo's KATA the reference standard, and the output says so.
+- State a "best practice" as a repo requirement only with a file:section citation. An ungrounded call is labeled as opinion, in those words.
+- Put every finding in exactly one bucket (Real/Reliability, Pattern/Doctrine-deviation, Positive) with a severity tier (Critical, Major, Minor, Trivial) in the user's language.
+- Fill the Positive bucket. A review with no positives on a PR that clearly has some is uncalibrated, not rigorous.
+- Read the actual diffs. On a PR too large for one diff, page the per-file patches, and check the commit headlines first so an unrelated bulk-sync or vendor-update commit is not read line by line.
+- Review on two axes, Spec and Standards, and check the tests for lying tests (LT-1 to LT-3). The checks live in `test-automation/references/review-checklists.md`.
+- Present the findings table, the positives and a score out of 10 as a checkpoint, then let the user triage and re-classify. Their context decides what ships; do not defend the first-pass severity.
+- When the user gave no tone or structure, draft praise, then constructive points, then praise, with a real strength at each end.
+- Post to GitHub only after an explicit go-ahead at the final step. Approval for a different PR does not carry over, and silence is not approval.
+- Drafting and posting stay with the orchestrator, because tone and an outward action are not for a subagent.
+- When a PR under review needs framework-level process, say so and point at `/framework-development`. Do not chain SDD skills from this workflow.
+- Write the posted comment in English unless the user asked for another language for that artifact.
 
 **Read full SKILL.md when**: applying the severity rubric or score weighting, probing an external repo for its doctrine, or drafting the posting flow itself.
 
@@ -540,24 +538,24 @@ Skills indexed: 29
 
 > ⚠ LOW-CONFIDENCE (extraction strategy B): bullets scraped without context — read the full SKILL.md before relying on any rule below.
 
-**Purpose**: Compact an entire agent session into a handoff document so a NEW session resumes exactly where this one stopped, as if the context window...
+**Purpose**: Hand a whole session to a fresh successor through a handoff file, so work continues as if the context window had been extended.
 
 **Compact Rules**:
-- the context window is past the owner's threshold (~500k tokens unless the owner names a different one; it is a per-owner judgement about where this model starts degrading, not project configuration, so it stays in the conversation and not in a yaml key) <!-- volatile-ok: owner-stated judgement threshold, explicitly not config -->
-- the session is about to end with work still in flight
-- the session is about to do something that will itself consume a large slice of the window (a big harvest, a long file read) and the remaining budget will not cover the work after it
-- the owner asks
-- **Capture.** Walk `.agents/skills/session-handoff/references/capture-contract.md` section by section. Every section is mandatory; a section with nothing in it is written as an explicit `none` line, never omitted. Omission is indistinguishable from forgetting, and the successor cannot tell which happened.
-- **Write.** Fill `.agents/skills/session-handoff/templates/handoff.md` to `<<PRIMARY_ROOT>>/.session/handoffs/<session-name>-handoff-NN.md`. Naming contract below.
-- **Launch the successor.** Follow `.agents/skills/session-handoff/references/successor-launch.md`. With a runtime, this session launches it. Without one, this session prints the line and the human pastes it.
-- `.session/` is gitignored, and a handoff is disposable by design: it describes one session's state, it is not a project record, and committing it would put a decaying snapshot under version control.
-- It lives in the PRIMARY checkout, `<<PRIMARY_ROOT>>` (`.agents/README.md` §"Checkout roots"), even when the session runs in a linked worktree. A handoff written inside a worktree dies with the worktree, and two worktrees of one lineage would each count `NN` from their own empty directory. The successor still launches in the SAME worktree as the predecessor; only the file lives in the primary. A handoff written into a worktree's own `.session/` by mistake is rescued by `bun run worktree:audit --rescue` before the worktree goes.
-- `NN` is zero-padded, two digits, starting at `01`, incrementing across the whole lineage. List `<<PRIMARY_ROOT>>/.session/handoffs/` before choosing; never assume, and never count from a worktree's own `.session/`.
-- **The successor's session name is the handoff file's basename without the extension.** That is the entire naming rule, and it makes the lineage readable from the file list alone: `<base>`, then `<base>-handoff-01`, then `<base>-handoff-01-handoff-02`. Long names are the point; a lineage you cannot read is a lineage you cannot audit.
-- `<predecessor-session-name>` is the `session=` value of the `AGENT IDENTITY:` line the prompt hook injects (the same label the commit trailers carry), with spaces and parentheses replaced by `-`. When it reads `unknown`, ask the owner for a name rather than inventing one.
-- A durable fact that outlives the session does not belong in the handoff. It belongs in Engram, in the repo, or in the tracker. The handoff cites it.
-- **Label every claim `measured`, `read` or `predicted`.** The predecessor's guesses about what the successor will find are useful and are also the first thing to go stale. A predicted branch stated as fact sends the successor down a path that no longer exists. Measured means: this session ran it and read the output. Read means: it came from a document and was believed.
-- **Mark perishable state `PERISHABLE`, with the wall-clock time it was measured.** Running workers, open mailboxes, in-flight PRs and live runs decay between writing and reading. The successor's instruction for anything marked perishable is: re-verify before acting, not act then discover.
+- The context window is past the owner's threshold (about 500k tokens unless the owner names another). It is a per-owner judgement about where this model starts degrading, not project configuration, so it stays in the conversation and not in a yaml key. <!-- volatile-ok: owner-stated judgement threshold, explicitly not config -->
+- The session is about to end with work still in flight.
+- The next step will consume a large slice of the window and what remains would not cover the work after it.
+- The owner asks.
+- **Capture.** Walk `.agents/skills/session-handoff/references/capture-contract.md` section by section. Every section is mandatory. A section with nothing in it gets an explicit `none` line, because an omitted section looks the same as a forgotten one and the successor cannot ask which it was.
+- **Write.** Fill `.agents/skills/session-handoff/templates/handoff.md` into `<<PRIMARY_ROOT>>/.session/handoffs/<session-name>-handoff-NN.md`, following the naming contract below. Finish the file before the next step: a successor that starts first reads a file that does not exist yet.
+- **Launch the successor.** Follow `.agents/skills/session-handoff/references/successor-launch.md`. With a reachable runtime, this session launches it. Without one, this session prints the launch line and the owner pastes it.
+- `.session/` is gitignored, and a handoff is disposable: it describes one session's state and is not a project record. Committing it would put a decaying snapshot under version control.
+- The file lives in the primary checkout, `<<PRIMARY_ROOT>>` (`.agents/README.md` §"Checkout roots"), even when the session runs in a linked worktree. A handoff written inside a worktree dies with the worktree, and two worktrees of one lineage would each count `NN` from their own empty directory. The successor still launches in the same worktree as the predecessor. A handoff written into a worktree's own `.session/` by mistake is rescued by `bun run worktree:audit --rescue` before the worktree goes.
+- `NN` is zero-padded to two digits, starts at `01` and increments across the whole lineage. List `<<PRIMARY_ROOT>>/.session/handoffs/` before choosing, and never count from a worktree's own `.session/`.
+- The successor's session name is the handoff file's basename without the extension. That makes the lineage readable from the file list alone: `<base>`, then `<base>-handoff-01`, then `<base>-handoff-01-handoff-02`.
+- `<predecessor-session-name>` is the `session=` value of the `AGENT IDENTITY:` line the prompt hook injects (the label the commit trailers carry), with spaces and parentheses replaced by `-`. When it reads `unknown`, ask the owner for a name. With nobody to ask (a worker or routine), take the name from the launching brief; if the brief has none, write the handoff under `unnamed-session` and say in the report that the name was a stand-in.
+- A durable fact that outlives the session belongs in Engram, the repo or the tracker. The handoff cites it.
+- Label every claim `measured`, `read` or `predicted`. Measured means this session ran it and read the output. Read means it came from a document and was believed. A predecessor's guess about what the successor will find goes stale first, and a predicted branch stated as fact sends the successor down a path that no longer exists.
+- Mark perishable state `PERISHABLE`, with the wall-clock time it was measured. Running workers, open mailboxes, in-flight PRs and live runs decay between writing and reading, so the successor re-verifies, then acts.
 - (truncated — read full SKILL.md for the rest)
 
 **Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
