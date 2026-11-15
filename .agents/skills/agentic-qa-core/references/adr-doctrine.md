@@ -44,7 +44,7 @@ Passes all three: test-runner or framework choice with lock-in (Playwright vs Cy
 
 Fails a gate: flaky-fix root causes (they go to engram and the regression report), renaming a spec, a one-off `waitFor`, an assertion helper for a single spec, single-use scaffolding, and ticket-local test decisions (they stay in the ticket's `acceptance-test-planning.md` or automation plan). A ticket-local trade-off that changes one spec and is easy to undo never becomes an ADR; over-recording buries the decisions that matter.
 
-When you are unsure, ask the user one question instead of recording or skipping silently: "This looks like a hard-to-reverse test-architecture call, record it as an ADR?" With nobody to ask, `decision-protocol.md` applies: record it as `Proposed` and report it.
+When you are unsure, ask the user one question instead of recording or skipping silently: "This looks like a hard-to-reverse test-architecture call, record it as an ADR?" A supervised worker asks its conductor. With nobody to ask, `decision-protocol.md` applies: record it as `Proposed` and report it.
 
 ---
 

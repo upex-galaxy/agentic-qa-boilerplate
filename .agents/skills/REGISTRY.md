@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-11-15T08:12:49.798Z`
+> Generated: `2026-11-15T08:30:40.847Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -42,7 +42,7 @@ Skills indexed: 29
 
 ## Skill: agentic-qa-core
 
-**Purpose**: Shared reference host for the QA workflow skills, loaded on demand by shift-left-testing, sprint-testing, exploratory-testing, test-docum...
+**Purpose**: Shared doctrine host for the QA skills.
 
 **Compact Rules**:
 - Do not create, modify or delete any file while acting as `agentic-qa-core`. It is a passive reference library with no write path of its own.

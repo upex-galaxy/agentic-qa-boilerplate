@@ -44,7 +44,7 @@ Authoring notes (delete this comment in the real ADR):
 - Add a row to .context/ADR/README.md → Index after creating this file.
 - Append-only: once Accepted, do not rewrite the Decision/Consequences. To change course,
   write a NEW ADR that Supersedes this one and flip this file's Status + Superseded-by line.
-- Only ADR-worthy decisions belong here: architectural AND hard to reverse. Ticket-local
-  test trade-offs stay in the ticket's acceptance-test-planning.md / automation plan.
-  See .context/ADR/README.md.
+- Only ADR-worthy decisions belong here: they pass the three gates in
+  .context/ADR/README.md. Ticket-local test trade-offs stay in the ticket's
+  acceptance-test-planning.md / automation plan.
 -->

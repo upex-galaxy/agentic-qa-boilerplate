@@ -10,7 +10,7 @@ paths: []
 
 > Heavy detail lives in a skill's `references/`. Project values live in `.agents/project.yaml`. Scripts come from `package.json`. User-facing setup is in `README.md` and `docs/`.
 
-## 4. CONTEXT LOADING MAP: TASK TO WHAT TO LOAD
+## 4. Context loading map: task to what to load
 
 Before answering a task, name its type, load the matching skill, then read the context the table lists. For scripts and commands, read `package.json` directly (Rule #11). Skills and sections load by meaning, so a prompt in any language matches the same row as its English equivalent.
 

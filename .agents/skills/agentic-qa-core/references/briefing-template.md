@@ -224,7 +224,7 @@ When a subagent fails:
 
 1. Stop, with no automatic retry.
 2. Report full context to the orchestrator: the failed step, the error message, and any partial output.
-3. The orchestrator surfaces the options to the user: retry, skip or abort.
+3. The orchestrator surfaces the options to the user: retry, skip or abort. With no person present, the brief answers when it covers the case; otherwise the run reports the error and takes no outward or irreversible step (`./decision-protocol.md`).
 4. Fix nothing without approval. The user may need to fix env config, restore credentials or re-scope the task.
 5. Files written by the failed subagent are not cleaned up automatically. The orchestrator decides whether to restore them.
 

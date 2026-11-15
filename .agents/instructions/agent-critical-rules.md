@@ -8,11 +8,11 @@ paths: []
 
 # Critical rules: full text
 
-> Each rule below has the same number and name as its binding sentence in `AGENTS.md` §1. The sentences there are copied verbatim from the text below, so an edit here and the matching L0 line change together. This file holds the whole rule, its reason and its measurements.
+> Each rule below has the same number and name as its binding sentence in `AGENTS.md` §1. The sentences there are copied verbatim from the text below, so an edit here and the matching L0 line change together. This file holds the whole rule, its reason and its measurements. A rule that asks the person follows `agentic-qa-core/references/decision-protocol.md` when nobody is present: the brief decides, or the action is not taken and is reported.
 
 ## 1. Credentials by name, never by value
 
-Reference a secret only through its variable name (`$STAGING_USER_PASSWORD` expanded by the shell, `process.env.X` in code, a name in the MCP loader's `--filter` list). Never open, print or paste a secret value: no `Read`/`cat`/`grep` of `.env*` (except `.env.example` and the committed `.env*.schema` files), `.auth/**` or `.claude/settings.local.json`; no `printenv`, `env`, `echo $SECRET`, `set -x`, `curl -v`, `varlock printenv|reveal`, or `varlock load` without `--agent`. To learn whether a variable is set, run the repo's redacted presence check: `bunx varlock load --agent` prints every variable by name and redacts each `@sensitive` value. A missing secret value is the human's to type, in a terminal or the secret manager, never through the chat. Never hardcode or guess one.
+Reference a secret only through its variable name (`$STAGING_USER_PASSWORD` expanded by the shell, `process.env.X` in code, a name in the MCP loader's `--filter` list). Never open, print or paste a secret value: no `Read`/`cat`/`grep` of `.env*` (except `.env.example` and the committed `.env*.schema` files), `.auth/**` or `.claude/settings.local.json`; no `printenv`, `env`, `echo $SECRET`, `set -x`, `curl -v`, `varlock printenv|reveal`, or `varlock load` without `--agent`. To learn whether a variable is set, run `bunx varlock load --agent`. It is the repo's redacted presence check: it prints every variable by name and redacts each `@sensitive` value. A missing secret value is the human's to type, in a terminal or the secret manager, never through the chat. Never hardcode or guess one.
 
 A secret is anything the schema marks `@sensitive` (`.env.schema`, `.env.core.schema`, `.env.provider.schema`) and anything obviously secret even when unmarked: credentials, passwords, API keys, tokens, cookies, session state. The AI names the variable and stops. A non-sensitive value (a URL, a project key, a flag, a port) is the one thing the AI may write into `.env`, only when the human asks, and only through `bun run env:set KEY=value`. That command refuses every key the schema marks `@sensitive`, does not declare, or whose name reads as a secret, and it prints names only. Editing `.env` by hand, with `sed` or with a heredoc is out.
 
@@ -74,7 +74,7 @@ Never quote test or build commands from this file or any doc, because they drift
 
 ## 13. Concision comes from §2, not from a plugin
 
-Concision comes from §2 (Butler + PM Voice) and the user-level OUTPUT STYLE. No communication-mode plugin is assumed or recommended. Butler controls granularity (a terse headline plus an atomic menu the user pulls from), PM Voice controls register, and OUTPUT STYLE controls how the reply looks and sounds. A harness plugin that rewrites the register (a word-compression mode, a persona) is the user's own user-level choice: the repo does not install it, does not depend on it, and writes no rule whose meaning changes when it is present.
+Butler and PM Voice set the content, and the user-level reply rules (`## Replies`) plus the `humanizer` skill set how it looks. No communication-mode plugin is assumed or recommended. Butler controls granularity (a terse headline plus an atomic menu the user pulls from), PM Voice controls register, and the user-level reply rules and `humanizer` control how the reply looks and sounds. A harness plugin that rewrites the register (a word-compression mode, a persona) is the user's own user-level choice: the repo does not install it, does not depend on it, and writes no rule whose meaning changes when it is present.
 
 ## 14. Language detection + mirroring
 
@@ -88,7 +88,7 @@ Never run repo-wide destructive git commands: `git restore .`, `git checkout -- 
 
 `ok: true`, exit 0, `accepted`, `delivered` and a returned id all say the request was well formed. None of them says the thing happened. Four measured cases: a message delivered to the wrong session by prefix match and returned success; a terminal created for a command that died in the shell; a send receipt carrying `"delivered_at": null, "read": 0` in the same payload that proved acceptance; a dispatch still reading `dispatched` against a terminal that had been replaced. A green receipt is the most dangerous kind of green, because it suppresses the verification that would have caught the failure.
 
-So a write is verified by reading it back from the destination, a message by the recipient answering it, a transition by re-reading the issue's status, a file write by re-parsing the file, a dispatch by the worker's own first report. This binds subagent reports, `[ISSUE_TRACKER_TOOL]` writes, MCP calls, the updater and every CLI in §6.5, not only orchestration. Where verifying is genuinely expensive, say the claim is unverified instead of letting the receipt stand in for it.
+A write is verified by reading it back from the destination, a message by the recipient answering it, a transition by re-reading the issue's status, a file write by re-parsing the file, a dispatch by the worker's own first report. This binds subagent reports, `[ISSUE_TRACKER_TOOL]` writes, MCP calls, the updater and every CLI in §6.5, not only orchestration. Where verifying is genuinely expensive, say the claim is unverified instead of letting the receipt stand in for it.
 
 ## 17. Committed prose names the source of truth, never its current value
 

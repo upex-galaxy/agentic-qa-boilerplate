@@ -47,7 +47,7 @@ A gate that opens on a value the gated agent wrote itself (a label it added, a f
 
 QA logs in on purpose, so its sanctioned store is `.auth/` (gitignored, `chmod 600`, one writer per fleet: `agentic-qa-core/references/browser-sessions.md` §3, §7), and session scratch or the evidence folder is not that store. A dispatch that logs in, loads a state file, captures traffic (HAR, trace, network log) or dumps a database returns `secrets_materialized` and `cleaned` in its report (`agentic-qa-core/references/briefing-template.md` component 6). Material left outside `.auth/` is a blocker the orchestrator surfaces. It is never echoed into a report, plan, commit, PR or tracker comment, and a trace or HAR is attached as evidence only after scrubbing (`agentic-qa-core/references/evidence-conventions.md` §1). binding: `/sprint-testing`
 
-### WORKFLOW SKILL COMPLIANCE
+### Workflow skill compliance
 
 Every skill marked `metadata.stage_owner: true` in its frontmatter has a `## Subagent Dispatch Strategy` section built on the 7-component briefing, and closes its final stage per `agentic-qa-core/references/session-footer-contract.md`. Every other skill (reference, utility, generator) is exempt. `.agents/skills/REGISTRY.md` lists which skills carry the flag. (enforced: `bun run skills:check`, check `STAGE-OWNER-DISPATCH`)
 

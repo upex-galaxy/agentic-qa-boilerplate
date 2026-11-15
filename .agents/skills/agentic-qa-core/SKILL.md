@@ -1,6 +1,6 @@
 ---
 name: agentic-qa-core
-description: "Shared reference host for the QA workflow skills, loaded on demand by shift-left-testing, sprint-testing, exploratory-testing, test-documentation, test-automation, regression-testing, project-discovery, framework-development, sprint-conductor and pr-review-lead for the doctrine in its references/."
+description: "Shared doctrine host for the QA skills. A skill loads the references/ files its ## Dependencies block names."
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode, pi]
 complementary_categories: [meta-skill]

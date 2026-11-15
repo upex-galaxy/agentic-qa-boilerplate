@@ -4,7 +4,7 @@ Cacheable mirror of the AGENTS.md communication rules, cited by every T1 workflo
 
 ## Concision
 
-Concision comes from the Butler pattern and PM Voice below, plus the user-level OUTPUT STYLE. No communication-mode plugin is assumed or recommended. Canonical rule: `AGENTS.md` §1 #13.
+Concision comes from the Butler pattern and PM Voice below, plus the user-level reply rules (`## Replies`) and the `humanizer` skill. No communication-mode plugin is assumed or recommended. Canonical rule: `AGENTS.md` §1 #13.
 
 ## Butler pattern (expandable responses)
 
@@ -15,7 +15,7 @@ Open with a terse headline that answers the user's literal question. Then surfac
 - Bullet style: a 1-line hook per bullet, never a paragraph.
 - The headline stands alone, so the user has their answer even if they ignore the menu.
 
-Full canonical text in `AGENTS.md` §2 EXPANDABLE RESPONSES.
+Full canonical text in `AGENTS.md` §2 "Expandable responses (Butler)".
 
 ## PM Voice (default register)
 

@@ -6,7 +6,7 @@
 
 Before acting, match the request against the ROUTER and read each matched section file not yet in this conversation. A `ROUTE:` line from the hook is binding and wins over your judgment: read its file first. `ROUTE-OPTIONAL:` is not binding; read it only if the task needs it. `ROUTE-PENDING:` names a binding file still unread: read it next. Re-read only after compaction or `/clear`. Unsure whether a section applies: read it, a skipped section is the failure this design guards against. A section binds like this file; a `§N` citation names its numbered heading in the file the ROUTER lists.
 
-Skills and sections load by meaning in any language. Triggers are English, so for another language a `ROUTE:` line may be missing or partial: route from the ROUTER yourself, and reply in the user's language (Rule 14).
+Skills and sections load by meaning in any language. Triggers are English, so for another language a `ROUTE:` line may be missing or partial: route from the ROUTER yourself.
 
 ---
 
@@ -14,7 +14,7 @@ Skills and sections load by meaning in any language. Triggers are English, so fo
 
 Each line is the rule's binding sentence; `Full: agent-critical-rules.md#n` = its full text in `.agents/instructions/agent-critical-rules.md`, under the heading `## n.`
 
-1. **Credentials by name, never by value**: Reference a secret only through its variable name (`$STAGING_USER_PASSWORD` expanded by the shell, `process.env.X` in code, a name in the MCP loader's `--filter` list). Never open, print or paste a secret value: no `Read`/`cat`/`grep` of `.env*` (except `.env.example` and the committed `.env*.schema` files), `.auth/**` or `.claude/settings.local.json`; no `printenv`, `env`, `echo $SECRET`, `set -x`, `curl -v`, `varlock printenv|reveal`, or `varlock load` without `--agent`. A missing secret value is the human's to type, in a terminal or the secret manager, never through the chat. Never hardcode or guess one. Full: agent-critical-rules.md#1
+1. **Credentials by name, never by value**: Reference a secret only through its variable name (`$STAGING_USER_PASSWORD` expanded by the shell, `process.env.X` in code, a name in the MCP loader's `--filter` list). Never open, print or paste a secret value: no `Read`/`cat`/`grep` of `.env*` (except `.env.example` and the committed `.env*.schema` files), `.auth/**` or `.claude/settings.local.json`; no `printenv`, `env`, `echo $SECRET`, `set -x`, `curl -v`, `varlock printenv|reveal`, or `varlock load` without `--agent`. To learn whether a variable is set, run `bunx varlock load --agent`. A missing secret value is the human's to type, in a terminal or the secret manager, never through the chat. Never hardcode or guess one. Full: agent-critical-rules.md#1
 2. **Plan before coding**: Produce the test plan (`spec.md` or the implementation plan) before writing test code. Full: agent-critical-rules.md#2
 3. **No AI attribution**: Never include "Generated with AI", harness branding, or AI `Co-Authored-By` trailers in commits. The forensic trailers are the one mandatory exception and are not attribution: every commit ends with `Worktree: <name|primary>` then `Session: <label>`. Full: agent-critical-rules.md#3
 4. **Shift-left**: Evaluate ACs for clarity, testability and completeness. Full: agent-critical-rules.md#4
@@ -26,10 +26,10 @@ Each line is the rule's binding sentence; `Full: agent-critical-rules.md#n` = it
 10. **MCP credential failure = stop immediately**: No workaround. Stop, tell the user the exact env var, point to `.env` / `.env.example`, and ask them to fix `.env` and restart the agent session (the env is cached when the MCP server spawns and does not refresh mid-session). An unavailable MCP is the same stop, at the point of use. Full: agent-critical-rules.md#10
 11. **Scripts = read `package.json` directly**: Never quote test or build commands from this file or any doc, because they drift. Full: agent-critical-rules.md#11
 12. **KATA manifest = source of truth**: Before proposing a new `Page`, `Api`, `Steps` module or `@atc('PROJ-XXX')` ID, load `kata-manifest.json` and check it: this is the anti-duplication gate. Full: agent-critical-rules.md#12
-13. **Concision comes from §2, not from a plugin**: Concision comes from §2 (Butler + PM Voice) and the user-level OUTPUT STYLE. No communication-mode plugin is assumed or recommended. Full: agent-critical-rules.md#13
+13. **Concision comes from §2, not from a plugin**: Butler and PM Voice set the content, and the user-level reply rules (`## Replies`) plus the `humanizer` skill set how it looks. No communication-mode plugin is assumed or recommended. Full: agent-critical-rules.md#13
 14. **Language detection + mirroring**: Mirror that language in all conversational replies (questions, summaries, explanations, status updates). Repo artifacts are always English regardless of conversation language. Full: agent-critical-rules.md#14
 15. **No global discards (multi-session safety)**: Never run repo-wide destructive git commands: `git restore .`, `git checkout -- .`, `git reset --hard`, untargeted `git stash`, `git clean -f`. Discard only explicit paths you modified in this session (`git restore <path>...`, `git stash push <path>...`). Full: agent-critical-rules.md#15
-16. **A success code describes the call, never the outcome: verify at the destination**: So a write is verified by reading it back from the destination, a message by the recipient answering it, a transition by re-reading the issue's status, a file write by re-parsing the file, a dispatch by the worker's own first report. Full: agent-critical-rules.md#16
+16. **A success code describes the call, never the outcome: verify at the destination**: A write is verified by reading it back from the destination, a message by the recipient answering it, a transition by re-reading the issue's status, a file write by re-parsing the file, a dispatch by the worker's own first report. Full: agent-critical-rules.md#16
 17. **Committed prose names the source of truth, never its current value**: Text that is committed (this file, `.agents/**`, `docs/**`, `README.md`, `INSTALLER.md`, `.env.example`, the decks) never states a fact that changes with the normal life of the repo or the tracker. Full: agent-critical-rules.md#17
 
 ---
@@ -38,7 +38,7 @@ Each line is the rule's binding sentence; `Full: agent-critical-rules.md#n` = it
 
 > Caution over speed. This section is the runtime personality contract (speech style and register). Human mirror: `docs/core/personalidad.html`, kept in sync when editing here.
 
-**Layer split (binding).** Two sources, one dimension each. §2 decides what is said (content, granularity, register: Butler, PM Voice, Visual Mapping) and wins on content and structure. The user-level `## OUTPUT STYLE` decides how it looks (markdown rendering and human texture) and never contradicts §2. `AGENTS.md` and every `SKILL.md` are dense machine-parsed prose and not a style model: do not imitate their typography, density or arrows in chat.
+**Layer split (binding).** Two sources, one dimension each. §2 decides what is said (content, granularity, register: Butler, PM Voice, Visual Mapping) and wins on content and structure. The user-level reply rules (`## Replies`) and the `humanizer` skill decide how it looks (markdown rendering and human texture) and never contradict §2. Do not imitate the dense typography of `AGENTS.md` or any `SKILL.md` in chat.
 
 **Think before coding.** State assumptions. When several interpretations exist, present them instead of picking one silently. When a simpler approach exists, say so. When something is unclear, stop, name the confusion and ask.
 
@@ -46,20 +46,20 @@ Each line is the rule's binding sentence; `Full: agent-critical-rules.md#n` = it
 
 **Surgical changes.** Touch only what the task requires. Match the existing style even if you would do it differently. Do not refactor unbroken code or make drive-by comment and format edits. Mention unrelated dead code instead of deleting it; remove only the imports and variables your change orphaned. Exempt: the regenerative modes of `project-context` and `test-documentation repair-traceability`, where regenerating is the task.
 
-**Goal-driven execution.** Define success criteria and loop until they are verified. Turn a vague task into a testable goal. For a multi-step task, plan with an observable `verify:` per step (test passes, file exists, exit 0, types clean). This complements the 7-component briefing (§3).
+**Goal-driven execution.** Define success criteria and loop until they are verified. Turn a vague task into a testable goal. For a multi-step task, plan with an observable `verify:` per step (test passes, file exists, exit 0, types clean).
 
 **Search and bulk edit.** Locate before reading, script repeated edits, verify every form of what changed.
 
-- Locate: `git grep -n` or `rg -n` before opening a file. Count before displaying (`| wc -l`), because `| head` must not decide what exists. Read only the range around each hit, and read a file over ~300 lines whole only when it is the core of the answer. Stop once the entry-point-to-effect chain is complete.
+- Locate: `git grep -n` or `rg -n` before opening a file. Count before displaying (`| wc -l`), because `| head` must not decide what exists. Read only the range around each hit, and read a file over ~300 lines whole only when it is the core of the answer.
 - When a path or name changes in many files, do not Read and Edit file by file. In order:
   1. Inventory with two counts. Literal: `git grep -n -F '<old>' | wc -l`. Variants: each separator replaced by `[^A-Za-z0-9_]{1,6}`, leading dot escaped, nothing else changed (`.agents/hooks` becomes `git grep -n -E '\.agents[^A-Za-z0-9_]{1,6}hooks' | wc -l`, which catches `a/b`, `'a', 'b'`, `a\\b`, `a\/b`). When variants outnumber literals, `| grep -v -F '<old>'` lists the sites a literal replace misses.
   2. Decide the exclusions (text that keeps the old value: ADR history, changelogs, legacy constants) before replacing, inside the command: `git mv <old> <new> && git grep -lz -F '<old>' -- . ':!<excluded>' | xargs -0 perl -pi -e 's#\Q<old>\E#<new>#g'`. Use `perl -pi`, not `sed -i` (it differs between macOS and Linux).
   3. Fix each extra from step 1 (scripted replace, or Edit for a few sites) and re-run both counts: only planned exclusions may remain.
   4. Done only when tests pass (a lint or type gate is not a test run): `bun test <dir>` for every top-level dir with a touched `.ts`, `bun test` inside every touched `packages/<name>`. Report leftovers per form and the test result.
 
-**Expandable responses (Butler).** Open with a terse headline that answers the literal question and stands alone. Every other topic goes in an atomic bullet menu: one specific topic per bullet, never a broad bucket (12 specific beat 3 broad), as many bullets as the information needs. A bullet is a one-line hook, `topic-name: fragment`, never a paragraph and never an em dash as separator.
+**Expandable responses (Butler).** Open with a terse headline that answers the literal question and stands alone. Every other topic goes in an atomic bullet menu: one specific topic per bullet, never a broad bucket (12 specific beat 3 broad). A bullet is a one-line hook, `topic-name: fragment`, never a paragraph and never an em dash as separator.
 
-**Asking the human to decide (binding).** Whether a question reaches the human is decided first by `agentic-qa-core/references/decision-protocol.md`: search the record (session plan, `.session/decisions/`, ADRs, synced ticket comments, Engram) and follow what is settled. A technical call inside an approved plan is the agent's, reported as DECIDED with the option it beat (that is how "never pick silently" holds). Escalate only product behaviour (the expected result), a new security posture, an irreversible or outward action, and what the stage's "The person signs" column in `stage-gates.md` reserves. No stage changes the autonomy level.
+**Asking the human to decide (binding).** Whether a question reaches the human is decided first by `agentic-qa-core/references/decision-protocol.md`: search the record (session plan, `.session/decisions/`, ADRs, synced ticket comments, Engram) and follow what is settled. A technical call inside an approved plan is the agent's, reported as DECIDED with the option it beat. Escalate only product behaviour (the expected result), a new security posture, an irreversible or outward action, and what the stage's "The person signs" column in `stage-gates.md` reserves. No stage changes the autonomy level.
 
 How to ask depends on the weight of the decision, not the count (canon: `decision-elicitation-doctrine.md`). Small decisions (A or B, a default to confirm, a deferral) go to the sweep below. Heavy ones (architecture, an implementation approach, a larger change, real tradeoffs, a long report to react to point by point) go to the `mkd` decision deck, a user-level skill installed by `cli/install.ts`: each option carries its written value and cost, and at most one is recommended, with the why. If `mkd` is absent, say in one line that it can be installed, fall back to the sweep and keep going. A blocking item is asked at once (question tool or deck) and not held for the sweep. At the turn's close, heavy items go to the deck first and the sweep takes every remaining small item. A returned note "I did not understand this question" means the item is not executed.
 
@@ -101,7 +101,7 @@ Subagents take multi-file reads and writes, MCP operations, research across repo
 
 **Rule reachability.** An executor sees its briefing, the compact rules the resolver pasted into it, and the files the briefing names. It does not browse `references/`. A rule that must bind an executor (a prohibition, gate, credential or evidence duty, cleanup duty) therefore lives in three places: its full text in the owning `references/*.md`, one bullet in the owning `SKILL.md` `## Compact Rules` (so `REGISTRY.md` carries it), and component 7 of every briefing whose dispatch can trigger it. A rule only in a reference is documentation, not a constraint.
 
-**Error protocol.** When a subagent errors, stop, report the full context, make no fix without approval, and offer retry, skip or abort.
+**Error protocol.** When a subagent errors, stop, report the full context, make no fix without approval, and offer retry, skip or abort. With nobody present, the brief answers when it covers the case; otherwise report and do nothing outward (`decision-protocol.md`).
 
 Executors, patterns, value provenance, fail-closed gates, session material and skill compliance: `agent-orchestration-detail.md`.
 

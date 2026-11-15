@@ -38,7 +38,7 @@ The ladder is for a session §0 lets ask the human.
 | A long report or plan the human should react to point by point | `mkd` report items | anchors each reaction to the exact section instead of a prose reply the AI has to guess-map back |
 | Row-by-row verdicts over tabular data | `mkd` table item | one answer per row, not a paragraph about rows |
 | The approach itself is unsettled and needs exploring before anything is built | plan mode | this is not a decision yet |
-| No human is at the wheel (CI, an unattended routine) | none of the above | state the assumption, proceed, record it in the report; never block on a question nobody will see |
+| No human is at the wheel (CI, an unattended routine) | none of the above | state the technical assumption, proceed, record it in the report; a question of the four kinds (`./decision-protocol.md` §5) is parked, never assumed |
 
 Weight decides, not count: nine small decisions are one sweep, one heavy decision is a deck, and a mixed batch splits. A deck for a small decision is ceremony, and ceremony is how a good instrument gets abandoned.
 

@@ -45,7 +45,7 @@ The conductor keeps using subagents for its own reads and verifications, which k
 
 **VALUE PROVENANCE.** Rule #11 (scripts come from `package.json`) holds for every project value. A claim about this project's configuration (an env URL, a Jira field id or transition slug, a git policy, a `playwright.config.ts` setting, a TMS modality) names the file it was read from, in the same turn. A value seen in a skill reference, a template, a worked example or another project's file is illustrative: do not report it, brief it or test against it as this project's state. This keeps an orchestrator from briefing a worker with the example yaml of a reference instead of the project's own. It composes with Rule #16 (verify at the destination) and Rule #17 (prose names the source).
 
-**RULE REACHABILITY.** An executor sees its briefing, the compact rules the resolver pasted into it, and the files the briefing names. It does not browse `references/`. A rule that must bind the executor (a prohibition, a gate, a credential or evidence duty, a cleanup duty) therefore lives in all three places:
+**Rule reachability.** An executor sees its briefing, the compact rules the resolver pasted into it, and the files the briefing names. It does not browse `references/`. A rule that must bind the executor (a prohibition, a gate, a credential or evidence duty, a cleanup duty) therefore lives in all three places:
 
 | Where | Why |
 |---|---|
@@ -74,9 +74,9 @@ Two QA gates are written this way: the Shift-Left short-circuit (`sprint-testing
 - Material stays out of every report, plan, commit, PR and tracker comment.
 - A trace or HAR attached as evidence is scrubbed first (`./evidence-conventions.md` §1): a Playwright trace carries request headers, cookies, storage and every typed value.
 
-**ERROR PROTOCOL.** When a subagent errors, stop and report the full context. Do not fix anything without approval, and offer retry, skip or abort. With no person present, the conductor's brief answers the offer when it covers it. Otherwise the run reports the error and does nothing outward or irreversible (`./decision-protocol.md`).
+**Error protocol.** When a subagent errors, stop and report the full context. Do not fix anything without approval, and offer retry, skip or abort. With no person present, the conductor's brief answers the offer when it covers it. Otherwise the run reports the error and does nothing outward or irreversible (`./decision-protocol.md`).
 
-**WORKFLOW SKILL COMPLIANCE.** Every skill marked `metadata.stage_owner: true` in its frontmatter has a `## Subagent Dispatch Strategy` section using the 7-component briefing. Every other skill (reference, utility, generator) is exempt and needs no dispatch table. The split mirrors `AGENTS.md` §3.
+**Workflow skill compliance.** Every skill marked `metadata.stage_owner: true` in its frontmatter has a `## Subagent Dispatch Strategy` section using the 7-component briefing. Every other skill (reference, utility, generator) is exempt and needs no dispatch table. The split mirrors `AGENTS.md` §3.
 
 **Deep detail** (further references):
 

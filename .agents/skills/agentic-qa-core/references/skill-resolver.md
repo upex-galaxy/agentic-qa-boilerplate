@@ -147,7 +147,7 @@ Frontmatter first (authoritative). A SKILL.md whose frontmatter carries a `compa
 To make a skill registry-friendly, authors should (but are not required to):
 
 1. Add an explicit `## Compact Rules` (or `## Standards`) section near the top of the SKILL.md body. The build script's Strategy A picks it up verbatim; otherwise it falls back to bullet extraction (Strategy B), which is best-effort.
-2. Aim for 5-15 bullets, each starting with `DO:`, `DO NOT:` or `WHEN <cond>:`. The section is carried whole, never truncated: every bullet in it reaches every briefing (AGENTS.md §3 RULE REACHABILITY), so a long section costs briefing tokens, not rules.
+2. Aim for 5-15 bullets, one rule each, opening on the verb or the condition ("Read X before Y", "When X, do Y"). The section is carried whole, never truncated: every bullet in it reaches every briefing (AGENTS.md §3 RULE REACHABILITY), so a long section costs briefing tokens, not rules.
 3. End the section with a single line `**Read full SKILL.md when**: ...` so the registry passes the trigger through verbatim.
 
 Skills that skip this still work, because Strategy B extracts whatever bullets it finds. Strategy A is faster, cleaner and gives the author full control over what subagents see.

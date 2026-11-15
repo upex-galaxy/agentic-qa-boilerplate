@@ -298,7 +298,7 @@ This doc is authoritative for the tier model, the composition protocol, the cate
 2. The `find-skills` meta-skill runs automatically, but only as a last resort. This decision is `find-skills`'s named loader in the §3.2 sense: when step 3 fires it loads without asking, and anything it would install still asks. Invocation order:
    1. Scan T1 + T2 (always available).
    2. Scan T3 + T4 already installed (the §3.1 scan: session skill list + `.agents/skills/` on disk).
-   3. If a task domain has no match in steps 1-2 and the task would benefit significantly from a specialized skill, invoke `find-skills` automatically to suggest installable skills. Ask the user before installing.
+   3. If a task domain has no match in steps 1-2 and the task would benefit significantly from a specialized skill, invoke `find-skills` automatically to suggest installable skills. Ask the user before installing. With nobody to ask, do not install: name the suggestion in the report.
 
 3. `judgment-day` adoption. It is a vendored T2 skill, available on demand. It lives committed under `.agents/skills/judgment-day/` (Apache-2.0, attribution preserved) and is not auto-invoked. The user invokes `/judgment-day` explicitly, or a host orchestrator cites it: `test-automation` Phase 3 names it as one of the two options for the required separate verifier (the other is `/pr-review-lead`; `agentic-qa-core/references/stage-gates.md`), and `git-flow-master` offers it as an optional pre-PR gate.
 

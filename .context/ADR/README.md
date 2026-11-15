@@ -12,12 +12,13 @@ The point: a future human or AI session can read these instead of re-litigating 
 
 An ADR captures a single decision: the context that forced it, the option chosen, the alternatives rejected, and the consequences the team accepted. It is a **source-of-truth document**, not a cache — nothing regenerates it, and it is committed to git like the test code.
 
-It is the right artifact when a decision passes **both** gates:
+It is the right artifact when a decision is about the test suite's structure, a cross-cutting test concern, or an invariant every test must uphold, and it passes all three gates:
 
-| Gate                  | Question                                                                                                       |
-| --------------------- | -------------------------------------------------------------------------------------------------------------- |
-| **1 — Architectural** | Does it shape the test-suite structure, a cross-cutting test concern, or an invariant every test must uphold?  |
-| **2 — Hard to reverse** | Would changing it later mean rewriting many tests, migrating fixtures/test-data setup, or coordinating across the QA team? |
+| Gate                          | Question                                                                                                                   |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| **1 — Hard to reverse**       | Would changing it later mean rewriting many tests, migrating fixtures/test-data setup, or coordinating across the QA team? |
+| **2 — Surprising without context** | Would a future reader wonder why it was done this way?                                                              |
+| **3 — A real trade-off**      | Were there genuine alternatives, with a reason the chosen one won?                                                         |
 
 Examples that earn an ADR: test-runner / framework choice with real lock-in (Playwright vs Cypress vs WebdriverIO), Page-Object vs Screenplay vs raw, fixture / test-data strategy (factories vs seeded DB vs API setup vs static fixtures), test-isolation & parallelization model (per-worker DB, transactional rollback, namespacing), auth-in-tests strategy (storageState reuse vs login-per-test vs token injection), the selector / `data-testid` contract with the app, the exploratory-vs-scripted boundary, reporting / CI sharding strategy, flake-retry & timeout policy.
 
@@ -26,7 +27,7 @@ Examples that earn an ADR: test-runner / framework choice with real lock-in (Pla
 - A flaky-test fix or its root cause → engram `mem_save` + the regression report.
 - Renaming a test file, a one-off `waitFor`, picking an assertion helper for a single spec → just the commit.
 - Single-use test scaffolding → no record needed.
-- **Ticket-local test decisions** (which fixture for one ATC, one selector tweak, a one-spec trade-off) → they stay in that ticket's `acceptance-test-planning.md` / automation plan under `## Technical Decisions`. Promote one to an ADR **only** when it passes both gates above.
+- **Ticket-local test decisions** (which fixture for one ATC, one selector tweak, a one-spec trade-off) → they stay in that ticket's `acceptance-test-planning.md` / automation plan under `## Technical Decisions`. Promote one to an ADR **only** when it passes all three gates above.
 
 ---
 
