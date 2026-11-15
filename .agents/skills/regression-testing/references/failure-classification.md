@@ -2,7 +2,7 @@
 
 Read this when classifying a borderline failure, when the SKILL.md decision tree is ambiguous, when you need the full error-pattern catalogue, or when computing flakiness over historical runs.
 
-Classification dictates release-blocking behavior. A wrong classification either blocks a safe release (false REGRESSION) or ships a bug (false FLAKY). Follow the rules below — do not improvise.
+Classification dictates release-blocking behavior. A wrong class either blocks a safe release (false REGRESSION) or ships a bug (false FLAKY), so follow the rules below as written.
 
 ---
 
@@ -10,14 +10,14 @@ Classification dictates release-blocking behavior. A wrong classification either
 
 | Category | Definition | Release impact | Typical action |
 |----------|------------|----------------|----------------|
-| **KNOWN-BLOCKED** | Test tagged `@blocked:{BUG-KEY}` with `test.fail('Blocked by {BUG-KEY}')` — deliberately parked behind an already-filed bug | LOW — excluded from the gating pass-rate | List in the report with the blocking `{BUG-KEY}`; **no new Jira bug** (the marker already names the open one) |
-| **REGRESSION** | Test passed recently, now fails consistently due to a code or data change | HIGH — blocks release | Open issue, assign, fix, verify, re-run |
-| **FLAKY** | Test fails intermittently (> 20% failure rate over last 10 runs) on an unchanged build | MEDIUM — does not block | Quarantine or stabilize next sprint |
-| **KNOWN ISSUE** | Failure is tracked by an existing backlog ticket | LOW — documented, does not block | Reference the ticket in the report |
-| **ENVIRONMENT** | Failure is caused by infrastructure, network, or external dependency — not the app under test | MEDIUM — does not block | Re-run after infra fix |
-| **NEW TEST FAILURE** | First-ever execution, no history to compare against | LOW — needs manual verification | Reproduce manually, then classify |
+| **KNOWN-BLOCKED** | Test tagged `@blocked:{BUG-KEY}` with `test.fail('Blocked by {BUG-KEY}')`, deliberately parked behind an already-filed bug | LOW: excluded from the gating pass-rate | List in the report with the blocking `{BUG-KEY}`; no new Jira bug (the marker already names the open one) |
+| **REGRESSION** | Test passed recently, now fails consistently due to a code or data change | HIGH: blocks release | Open issue, assign, fix, verify, re-run |
+| **FLAKY** | Test fails intermittently (> 20% failure rate over last 10 runs) on an unchanged build | MEDIUM: does not block | Quarantine or stabilize next sprint |
+| **KNOWN ISSUE** | Failure is tracked by an existing backlog ticket | LOW: documented, does not block | Reference the ticket in the report |
+| **ENVIRONMENT** | Failure is caused by infrastructure, network, or an external dependency, not the app under test | MEDIUM: does not block | Re-run after infra fix |
+| **NEW TEST FAILURE** | First-ever execution, no history to compare against | LOW: needs manual verification | Reproduce manually, then classify |
 
-A failure can only belong to ONE category. When multiple rules match, apply this precedence (the same order as the SKILL.md decision tree, top to bottom):
+A failure belongs to one category. When several rules match, apply this precedence (the same order as the SKILL.md decision tree, top to bottom):
 
 ```
 KNOWN-BLOCKED > KNOWN ISSUE > ENVIRONMENT > NEW TEST > FLAKY > REGRESSION
@@ -25,13 +25,17 @@ KNOWN-BLOCKED > KNOWN ISSUE > ENVIRONMENT > NEW TEST > FLAKY > REGRESSION
 
 FLAKY outranks REGRESSION only when its citation is complete (at least 5 runs, the same build across them). REGRESSION is the residual class: what no proven class claims is REGRESSION, so it never needs to win a comparison.
 
-**INSUFFICIENT HISTORY is a label, not a seventh class.** A test with 1-4 recorded runs cannot be proven FLAKY, so its failure is classified REGRESSION, written in the report as `REGRESSION (INSUFFICIENT HISTORY)` and counted as REGRESSION for the verdict (fail-closed). It is re-evaluated on the next run; with 5 runs behind it, it can become FLAKY with its citation. A test with NO recorded run is a different case: NEW TEST.
+INSUFFICIENT HISTORY is a label, not a seventh class. A test with 1-4 recorded runs cannot be proven FLAKY, so its failure is classified REGRESSION, written in the report as `REGRESSION (INSUFFICIENT HISTORY)` and counted as REGRESSION for the verdict (fail-closed). It is re-evaluated on the next run, and with 5 runs behind it can become FLAKY with its citation. A test with no recorded run at all is a different case: NEW TEST.
 
-Rationale: a `@blocked:{BUG-KEY}` marker is definitive — the test was parked on purpose, so no other rule applies (and it never enters the gating pass-rate; see SKILL.md §Compute metrics). If a ticket already tracks the failure, stop looking. If the error is clearly infrastructure, do not blame the code. A test with no history cannot be a regression yet.
+The order follows how definitive each signal is: a `@blocked:{BUG-KEY}` marker settles it (the test was parked on purpose and never enters the gating pass-rate; SKILL.md §Compute metrics), a tracking ticket ends the search, plainly infrastructure errors are not the code's fault, and a test with no history cannot be a regression yet.
 
-**Read the run's counts from `reports/test-outcomes.json`, never from Allure's status** (Allure is the source for each failure's detail and for the history behind FLAKY, and the stated fallback for counts only when the file is missing from the downloaded artifacts: SKILL.md Phase 2 Step 2). `KataReporter` writes one record per test with an outcome class (`passed`, `failed`, `known-defect`, `unexpected-pass`, `skipped`) and computes the run headline from those records (ADR-0020). Allure files an expected failure as passed, and Playwright reports a test skipped by a failed `beforeAll`, serial sibling or setup project as ok; the records count both. A `known-defect` record is the input for KNOWN-BLOCKED below (its `knownDefect` field holds the key); an `unexpected-pass` record is an action item: retest the bug, never a silent pass; a `failed` record with cause `setup-cascade` or `dependency-failed` never ran its body, so classify its ROOT test (the `rootTestId`) and count the rest as not observed.
+Read the run's counts from `reports/test-outcomes.json`, not from Allure's status. Allure is the source for each failure's detail and for the history behind FLAKY, and the stated fallback for counts only when the file is missing from the downloaded artifacts (SKILL.md Phase 2 Step 2). `KataReporter` writes one record per test with an outcome class (`passed`, `failed`, `known-defect`, `unexpected-pass`, `skipped`) and computes the run headline from those records (ADR-0020). Allure files an expected failure as passed, and Playwright reports a test skipped by a failed `beforeAll`, serial sibling or setup project as ok; the records count both. Three record kinds need handling:
 
-**Every class except REGRESSION needs a citation.** Those classes let a failure past the release gate, and the classifier picks them, so the choice is fail-closed (`agentic-qa-core/references/orchestration-doctrine.md`, FAIL-CLOSED GATES): each STOP in §2 names what to cite, and a class whose citation is missing, empty, or points at a ticket filed during this session is recorded as REGRESSION instead. The precedence above decides between classes that are proven; it never promotes a class that is not.
+- A `known-defect` record is the input for KNOWN-BLOCKED below (its `knownDefect` field holds the key).
+- An `unexpected-pass` record is an action item: retest the bug, never a silent pass.
+- A `failed` record with cause `setup-cascade` or `dependency-failed` never ran its body, so classify its root test (the `rootTestId`) and count the rest as not observed.
+
+Every class except REGRESSION needs a citation, because those classes let a failure past the release gate and the classifier picks them (`agentic-qa-core/references/orchestration-doctrine.md`, FAIL-CLOSED GATES). Each STOP in §2 names what to cite. A class whose citation is missing, empty, or points at a ticket filed during this session is recorded as REGRESSION instead. Precedence decides between proven classes and never promotes one that is not.
 
 ---
 
@@ -74,11 +78,11 @@ Input: one failed test result
 
 ### Parallel classification (default for >10 failures)
 
-When the failure list has more than 10 entries, classifying serially burns the orchestrator's context with raw test logs. Instead we shard. This is the canonical reference for the **Parallel** dispatch declared in `regression-testing/SKILL.md` §"Subagent Dispatch Strategy" → "Classify failures (chunks of ~10 tests each)" row.
+Past 10 failures, serial classification fills the orchestrator's context with raw logs, so the work is sharded. This is the canonical reference for the **Parallel** dispatch declared in `regression-testing/SKILL.md` §"Subagent Dispatch Strategy" → "Classify failures (chunks of ~10 tests each)" row.
 
-**Sharding rule**: split the failure list into chunks of ~10 failures (round up). Cap total subagents at 10 — if there are >100 failures, batches must be larger than 10 each.
+Sharding rule: split the failure list into chunks of about 10 failures (round up). Cap total subagents at 10, so with more than 100 failures the chunks grow past 10 each.
 
-**Dispatch (Parallel pattern)** — one briefing per chunk, all dispatched in a single message, following the 7-component format from `agentic-qa-core/references/briefing-template.md`:
+Dispatch (Parallel pattern): one briefing per chunk, all sent in a single message, following the 7-component format from `agentic-qa-core/references/briefing-template.md`:
 
 ```
 Goal: Classify <N> test failures in chunk <CHUNK_INDEX>/<TOTAL_CHUNKS> against the rubric.
@@ -104,15 +108,13 @@ Rules:
   - A class other than REGRESSION without its `evidence` is wrong: classify it REGRESSION instead.
 ```
 
-**Aggregation in the main thread**: after all parallel subagents return, the orchestrator merges the JSON arrays, sums the counts, and feeds the totals into the GO/NO-GO decision. Any entry classified other than REGRESSION with an empty or missing `evidence` is merged as REGRESSION before counting; the subagent's label alone never lowers the gate. Low-confidence classifications get re-reviewed inline by the orchestrator before the verdict is computed — never auto-promoted.
-
-**Fallback to serial**: if the failure count is ≤10, classify inline — the dispatch overhead is not justified. The same decision tree above is applied per failure, just without the fan-out.
+Aggregation in the main thread: the orchestrator merges the JSON arrays, sums the counts and feeds the totals into the GO/NO-GO decision. An entry classified other than REGRESSION with an empty or missing `evidence` is merged as REGRESSION before counting, because a subagent's label alone never lowers the gate. Low-confidence classifications are re-reviewed inline before the verdict, never auto-promoted. With 10 or fewer failures, classify inline with the same tree and no fan-out.
 
 ---
 
 ## 3. Environment error patterns (verbatim matches)
 
-If the error message contains any of the strings below, it is an environment indicator.
+An error message containing any string below is an environment indicator.
 
 ### Network / infrastructure
 - `ECONNREFUSED`
@@ -135,10 +137,10 @@ If the error message contains any of the strings below, it is an environment ind
 - `browserType.launch`
 - `Browser has been closed`
 - `Target page, context or browser has been closed`
-- `Navigation timeout` (usually — see caveat below)
+- `Navigation timeout` (usually; see the caveat below)
 
 ### Caveat: Navigation timeout
-`Navigation timeout` on a single page after the app deploys is usually REGRESSION (slow or broken page). `Navigation timeout` across multiple unrelated pages in the same run is usually ENVIRONMENT (infra-wide slowdown). Check the scope before classifying.
+`Navigation timeout` on a single page after the app deploys is usually REGRESSION (slow or broken page). Across several unrelated pages in the same run it is usually ENVIRONMENT (an infra-wide slowdown). Check the scope before classifying.
 
 ---
 
@@ -187,11 +189,11 @@ A test is FLAKY if its failure rate over the last N runs on unchanged applicatio
 
 ### Retry-aware flakiness (conscious-divergence projects only)
 
-This repo ships `retries: 0` everywhere (`playwright.config.ts` — deterministic tests; a retry hides the flake). With the shipped config a retry-pass signal **cannot occur**: every flake surfaces as a plain failure and is caught by the >20% rule above. Skip this subsection unless your project has consciously diverged.
+This repo ships `retries: 0` everywhere (`playwright.config.ts`), so every flake surfaces as a plain failure and the >20% rule catches it. Skip this subsection unless your project has consciously diverged.
 
-If a downstream project has deliberately enabled retries (see the "Conscious divergence: enabling retries" box in `ci-cd-integration.md`), a test that passes on retry is a hidden flake. Check Allure `retriesCount` for each result — a `passed` result with `retriesCount > 0` counts as a flake observation even though the final status is green.
+If a downstream project has enabled retries (see the "Conscious divergence: enabling retries" box in `ci-cd-integration.md`), a test that passes on retry is a hidden flake. Check Allure `retriesCount` for each result: a `passed` result with `retriesCount > 0` counts as a flake observation even though the final status is green.
 
-When reporting flakiness rate on such a project, include retry-passes in the numerator:
+When reporting the flakiness rate on such a project, include retry-passes in the numerator:
 ```
 effective_failure_rate = (failed + retried_passes) / total
 ```
@@ -215,35 +217,34 @@ done
 
 ## 6. REGRESSION vs FLAKY — the hard cases
 
-The decision is easy when history is clean. The hard cases:
+The decision is easy when history is clean. When it is not, and the log does not settle the cause, call the Skill tool with "diagnosing-bugs" for diagnosis only. Its Phases 1 to 3 (build a loop that reproduces the failure, minimise it, form hypotheses) find the condition that triggers it, and you classify from what it proved. Add no instrumentation to product code and write no fix; both belong to the developer. When the skill is not installed, narrow the cause inline (re-run the one test, change one variable at a time, diff the commits between the last pass and this failure) and say so in the report. A cause still unproven leaves the failure at REGRESSION (fail-closed).
 
 ### Case 1: First failure after a green streak
 Test passed 5 runs in a row, now fails once.
-- If a code change deployed between the last pass and this failure → REGRESSION.
-- If no deploy, same commit → FLAKY candidate (monitor next run).
+- A code change deployed between the last pass and this failure makes it REGRESSION.
+- No deploy and the same commit makes it a FLAKY candidate (monitor the next run).
 
 ### Case 2: Intermittent pattern matches release cadence
 Test fails every Monday morning but passes other days.
-- Look at scheduled jobs, cron, maintenance windows → probably ENVIRONMENT (infra cycle).
+- Look at scheduled jobs, cron and maintenance windows: it is probably ENVIRONMENT (an infra cycle).
 
 ### Case 3: Passes on retry consistently (retry-enabled projects only)
-Every run shows `failed → passed on retry` — only possible on a project that consciously diverged from the shipped `retries: 0`.
-- This is FLAKY. The user sees green but the underlying test is unstable. Stabilize it.
+Every run shows `failed` then `passed` on retry, which only a project that diverged from the shipped `retries: 0` can see. This is FLAKY: the run is green but the test is unstable, so stabilize it.
 
 ### Case 4: One assertion flakes within a test with N assertions
-The same assertion in a multi-assertion test fails intermittently; others always pass.
-- The test itself is FLAKY. Do not mark the entire test REGRESSION. Fix the one assertion (usually a timing issue).
+The same assertion in a multi-assertion test fails intermittently while the others always pass.
+- The test itself is FLAKY. Do not mark the whole test REGRESSION. Fix the one assertion (usually a timing issue).
 
 ### Case 5: Fails on one browser only
 Test passes on chromium + firefox, fails on webkit.
-- If the feature uses browser-specific APIs → REGRESSION (browser compat broken).
-- If it is visual or layout-sensitive → could be FLAKY on webkit's slower render. Check history per browser.
+- If the feature uses browser-specific APIs, it is REGRESSION (browser compat broken).
+- If it is visual or layout-sensitive, it could be FLAKY on webkit's slower render. Check history per browser.
 
 ---
 
 ## 7. Severity (orthogonal to classification)
 
-Severity = business impact. A FLAKY test on checkout is still CRITICAL severity.
+Severity is business impact. A FLAKY test on checkout is still CRITICAL severity.
 
 | Severity | Criteria |
 |----------|----------|
@@ -263,7 +264,7 @@ Severity inputs:
 |----------------|----------|------|--------|-----|
 | **REGRESSION** | NO-GO | NO-GO | CAUTION | CAUTION |
 | **FLAKY**      | CAUTION + stabilize now | CAUTION | monitor | monitor |
-| **KNOWN-BLOCKED** | excluded from gating — reassess `{BUG-KEY}` urgency | excluded, document | excluded, document | excluded, document |
+| **KNOWN-BLOCKED** | excluded from gating, reassess `{BUG-KEY}` urgency | excluded, document | excluded, document | excluded, document |
 | **KNOWN**      | CAUTION (reassess ticket) | document | document | document |
 | **ENV**        | re-run, escalate infra | re-run | re-run | re-run |
 | **NEW TEST**   | verify manually before GO | verify | verify | verify |
@@ -272,7 +273,7 @@ Severity inputs:
 
 ## 8. Classification report sections
 
-Every classified failure needs this evidence block, regardless of category:
+Every classified failure gets this evidence block, whatever its category:
 
 ```markdown
 #### {test_name}
@@ -297,13 +298,10 @@ Every classified failure needs this evidence block, regardless of category:
 
 ## 9. Anti-patterns
 
-- **Classifying without reading the error.** The error text is usually definitive. Never classify based on test name alone.
-- **Calling everything "flaky".** FLAKY is allowed only after ruling out ENVIRONMENT and with its full citation (at least 5 runs on the same build); without it the failure is REGRESSION. Lazy flaky-tagging hides real regressions.
-- **Calling everything "environment".** If only one test in the suite fails with a network error and that endpoint is hit successfully by other tests in the same run, it is not environment — it is a bug in the code path that test exercises.
-- **Marking NEW TEST as REGRESSION.** A first-run failure has no prior pass to regress from. Mark as NEW TEST, verify manually, then reclassify.
-- **Ignoring retry-passes (retry-enabled projects only).** With the shipped `retries: 0` there are no retry-passes to ignore. On a project that consciously enabled retries, a test that passes on retry is unstable — surface it in the flaky bucket even though Allure shows green.
-- **Guessing flakiness with < 5 runs of history.** Not enough data: label it INSUFFICIENT HISTORY, count it as REGRESSION for the verdict, and revisit on the next run.
-- **A non-blocking class on the classifier's word.** KNOWN-BLOCKED, KNOWN ISSUE, ENVIRONMENT, NEW TEST and FLAKY each need the citation §2 names. Without it the failure is REGRESSION, and filing a ticket mid-session to make a failure "known" does not supply one.
+§1 and §2 already cover a non-blocking class chosen without evidence, FLAKY under 5 runs, and a NEW TEST marked REGRESSION. Two more mistakes:
+
+- Classifying without reading the error. The error text is usually definitive; the test name never is.
+- Calling everything "environment". One test failing with a network error while other tests in the same run hit that endpoint fine means a bug in that test's code path.
 
 ---
 
