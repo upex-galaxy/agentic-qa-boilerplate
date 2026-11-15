@@ -618,7 +618,7 @@ LAYER 1 · APP                 la app corriendo · runtime alcanzable · board �
       <tbody>
         <tr><td><b>CONDUCTOR</b></td><td>la sesión que habla con el owner</td><td>este <span class="mono">SKILL.md</span> + <span class="mono">references/coordinator-playbook.md</span> + cada stub de <span class="mono">orchestration.orchestrator_skills</span>, de entrada; un tema profundo del binario solo cuando un stub apunta a él</td><td>nada más: sus lecturas van por subagentes</td></tr>
         <tr><td><b>WORKER</b></td><td>cada sesión lanzada</td><td>los stubs de <span class="mono">orchestration.orchestrator_skills</span> + <span class="mono">references/worker-contract.md</span> + <span class="mono">references/channel-discipline.md</span> + su skill de dominio (<span class="mono">/sprint-testing</span>, <span class="mono">/test-automation</span>…)</td><td>nada más: el preámbulo inyectado lleva el resto de su contrato</td></tr>
-        <tr><td><b>AUTOMATION</b></td><td>una rutina programada, sin nadie al volante</td><td><span class="mono">references/automations.md</span> + este <span class="mono">SKILL.md</span> en modo conductor</td><td>todo lo que produce: <b>el dispatcher nunca produce</b>. Además toma el lock de la rutina antes de nada (<span class="mono">lock.json</span>, sin esperar ni encolar), abre como mucho <span class="mono">orchestration.max_workers</span> workers en una ronda, y una corrida vacía es un resultado válido (<span class="mono">references/automations.md</span>)</td></tr>
+        <tr><td><b>AUTOMATION</b></td><td>una rutina programada, sin nadie al volante</td><td><span class="mono">references/automations.md</span> + este <span class="mono">SKILL.md</span> en modo conductor</td><td>todo lo que produce: <b>el dispatcher nunca produce</b>. Frena con tres controles: checks automáticos, una revisión en frío de un lector que no escribió el trabajo, y una persona que revisa después sin bloquear la corrida; un fix run nunca encadena otro. Además toma el lock de la rutina antes de nada (<span class="mono">lock.json</span>, sin esperar ni encolar), abre como mucho <span class="mono">orchestration.max_workers</span> workers en una ronda, y una corrida vacía es un resultado válido (<span class="mono">references/automations.md</span>)</td></tr>
         <tr><td><b>OWNER</b></td><td>el usuario, por chat o desde el móvil</td><td>el phrasebook</td><td></td></tr>
       </tbody>
     </table>
@@ -641,10 +641,10 @@ LAYER 1 · APP                 la app corriendo · runtime alcanzable · board �
       <li><b>5 · El ciclo del playbook, en ese orden</b>, y sin partir crear + lanzar + briefar.</li>
       <li><b>6 · Esperar dentro del turno</b>, un solo waiter, ventanas rodantes de 540 s como máximo, ack verificado en el mismo comando que re-arma.</li>
       <li><b>7 · Cerrar cada worker terminado en el mismo turno</b>; auditoría de huérfanos antes de borrar cualquier worktree.</li>
-      <li><b>8 · Cosechar</b> <span class="mono">learnings.md</span> y <span class="mono">skill-improvements.md</span>, escribir <span class="mono">kickoff.md</span>, y reportar al owner.</li>
+      <li><b>8 · Cosechar</b> <span class="mono">learnings.md</span> y <span class="mono">skill-improvements.md</span> llamando a la skill <span class="mono">retro</span> (sin ella, se cosecha en línea y se dice en el reporte), escribir <span class="mono">kickoff.md</span>, y reportar al owner.</li>
     </ul>
     <p class="small dim mt-m">El paso 5 es el que más incidentes produjo: <b>crear + lanzar + entregar el brief es una operación indivisible</b>. Un worker quedó ocioso durante horas porque el brief nunca llegó (G32).</p>
-    <div class="notes">El paso 2 tiene una razón de coste: el stub de usuario es pequeño y se carga; lo grande es el payload profundo que sirve el binario, y ese sigue siendo on-demand. Son artefactos distintos y confundirlos es la trampa. La medición que lo decidió está en ADR-0006. El paso 7 tiene una razón de estabilidad: los worktrees vivos que nadie cerró tumbaron el runtime (G31 en references/gotchas.md).</div>
+    <div class="notes">En la cosecha, retro ordena candidatos y no aplica ninguno: los deja escritos para que decida quien lanzó la corrida. Una rutina o un worker de larga duración lleva además un decision log en el scope del run (decisions.tsv, o decisions-&lt;label&gt;.tsv por worker) con el formato de la skill show-me-your-work: una fila por decisión y la evidencia como puntero. El paso 2 tiene una razón de coste: el stub de usuario es pequeño y se carga; lo grande es el payload profundo que sirve el binario, y ese sigue siendo on-demand. Son artefactos distintos y confundirlos es la trampa. La medición que lo decidió está en ADR-0006. El paso 7 tiene una razón de estabilidad: los worktrees vivos que nadie cerró tumbaron el runtime (G31 en references/gotchas.md).</div>
   </section>
 
   <!-- 8. LANZAMIENTO -->
@@ -656,6 +656,7 @@ LAYER 1 · APP                 la app corriendo · runtime alcanzable · board �
         <p class="lbl">Native path · el default supervisado</p>
         <p class="small mt-s">El verbo <span class="mono">worker-start</span> con task, worktree, agente, modelo y nivel de esfuerzo. El runtime lanza al agente, así que lo reconoce y lo supervisa.</p>
         <p class="small mt-s">El spec de la task ya llega como primer prompt (G58), así que se basta solo. El prompt que se envía después de verificar la pantalla <b>debe empezar por</b> <span class="mono">/&lt;workflow-skill&gt; &lt;label&gt; fleet worker …</span>, para que el hook de identidad pueda nombrar la sesión <span class="mono">&lt;label&gt;--&lt;handle&gt;</span>; después va el puntero al brief y la frase de continuidad, y el prompt cierra con una última frase <span class="mono">ROUTE-SCOPE:</span> que nombra los ids de sección de instrucciones que el trabajo necesita (o <span class="mono">none</span>).</p>
+        <p class="small mt-s">Apenas se lee el handle, el conductor renombra la pestaña a <span class="mono">&lt;label&gt;--&lt;handle&gt;</span>, y la lectura de readiness incluye leer de vuelta, en pantalla, el nombre de pestaña y de sesión. Un título como <span class="mono">worker task …</span> o uno generado es un paso fallido que se rehace antes de despachar (G84).</p>
         <p class="small mt-s"><b>Credenciales sin argv:</b> cada MCP, en cualquier harness, lee el <span class="mono">.env</span> del propio worktree a través del loader de <span class="mono">.env</span> de las configs MCP. Ningún secreto se exporta al shell del worker: los scripts de Bun leen el <span class="mono">.env</span> con su propio autoload y <span class="mono">acli</span> usa su login guardado. El conductor <b>verifica las credenciales en la pantalla del worker</b> antes de despacharle trabajo.</p>
       </div>
       <div class="card">
@@ -923,7 +924,7 @@ in this session; your launcher relays.</div>
           <tr><td>un <span class="mono">orchestration send</span></td><td>la respuesta del destinatario: el recibo puede traer <span class="mono">"delivered_at": null</span> (G67)</td></tr>
           <tr><td>un dispatch en <span class="mono">dispatched</span></td><td>la terminal: pudo haber sido reemplazada (G68)</td></tr>
           <tr><td>el brief entregado</td><td>un status del árbol de trabajo unos minutos después</td></tr>
-          <tr><td>un worker listo</td><td>sus credenciales, en su propia pantalla</td></tr>
+          <tr><td>un worker listo</td><td>sus credenciales y su nombre (pestaña y sesión), en su propia pantalla</td></tr>
           <tr><td>un worker terminado</td><td>la integración: <span class="mono">git cherry</span>, el PR, el estado en el tracker, antes de cerrar</td></tr>
         </tbody>
       </table>

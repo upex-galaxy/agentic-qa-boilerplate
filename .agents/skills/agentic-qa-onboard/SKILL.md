@@ -372,7 +372,8 @@ loader cell neither cites its loader in backticks nor says "user-invoked only".
 | `grilling` | upex-galaxy/agentic-user-skills | `/shift-left-testing`, when a story or plan has open questions to settle one at a time |
 | `domain-modeling` | upex-galaxy/agentic-user-skills | `/shift-left-testing`, when an interview answer settles a domain term for `business-domain-context` |
 | `to-questionnaire` | upex-galaxy/agentic-user-skills | `/shift-left-testing`, when several open questions go to the PO or Dev as one questionnaire |
-| `retro` | upex-galaxy/agentic-user-skills | `/framework-development`, in Phase 4 Archive |
+| `retro` | upex-galaxy/agentic-user-skills | `/framework-development`, in Phase 4 Archive; `/orca-orchestration`, in the harvest step at the close of a wave |
+| `show-me-your-work` | upex-galaxy/agentic-user-skills | `/orca-orchestration`, in its `## Decision log` section, for a routine or a long-running worker |
 | `orchestration.orchestrator_skills` | the orchestration binary | `/orca-orchestration`, ALONGSIDE it — the vendor owns the command grammar, the repo skill owns when and what |
 
 Plus the project-level community skills in the `PROJECT_LEVEL_SKILLS` array of `cli/install.ts`, installed into `.agents/skills/` (not committed). `skill-creator`, among them, is the builder of every skill this repo scaffolds: `/framework-development` loads it when the change IS a skill, and `project-context` mode `context-skill` loads it for a consumer's `<aspect>-context`; both scaffold from `agentic-qa-core/references/skill-scaffold.md`. See `cli/install.ts` `PROJECT_LEVEL_SKILLS` and `USER_LEVEL_SKILLS` arrays.

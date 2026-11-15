@@ -1,30 +1,45 @@
-# Brief Template — The Fleet Extension of the 7-Component Briefing
+# Brief template: the fleet extension of the 7-component briefing
 
 > Loaded by: the conductor, when it seeds a worker.
-> Base: `agentic-qa-core/references/briefing-template.md`. Those 7 components are NOT replaced.
-> A worker brief is that briefing plus the eight fleet fields below, because a persistent worker
-> has something a one-shot subagent does not: siblings, a channel, a lifecycle and a git identity.
+> Base: `agentic-qa-core/references/briefing-template.md`. Those 7 components stay. A worker brief is
+> that briefing plus the eight fleet fields below, because a persistent worker has what a one-shot
+> subagent lacks: siblings, a channel, a lifecycle and a git identity.
 
 ---
 
-## 1 · The two files
+## 1 · The two files and the launch prompt
 
-A brief is split in two, deliberately:
+A brief is split in two on purpose:
 
 | File | Written | Read by | Holds |
 |---|---|---|---|
 | `.session/orchestration/<slug>/COMMON.md` | once per wave | every worker, FIRST | the repo rules, the lint traps, the commit rules, the channel, the prohibitions |
 | `.session/orchestration/<slug>/W-<label>.md` | once per worker | that worker only | goal, context docs, file ownership, claims, instructions, report path |
 
-Why split: the common part is identical for six workers, so writing it once makes it impossible for
-five of them to get a slightly different version. The per-worker part is the only place a worker's
-scope is defined, so there is exactly one file to read when a scope is disputed.
+The common part is identical for six workers, so writing it once keeps five of them from getting a
+slightly different version. The per-worker part is the only place a worker's scope is defined, so
+there is exactly one file to read when a scope is disputed.
 
 Templates to copy: `templates/COMMON.md` and `templates/W-brief.md`.
 
-**One message, one task.** The brief goes in a FILE and the launch prompt cites it by ABSOLUTE path
-into the primary checkout. Never paste a long brief into a message (it truncates) and never put it in
-a system temp directory (it triggers a permission prompt on some harnesses).
+**One message, one task.** The brief goes in a file, and the launch prompt cites it by absolute path
+into the primary checkout. A long brief pasted into a message truncates, and one in a system temp
+directory triggers a permission prompt on some harnesses.
+
+**The launch prompt opens with the naming token.** The worker's readable name (`<label>--<handle>`,
+owner decision 15) exists only if the prompt starts with `/<workflow-skill> <label> fleet worker`:
+that opening is the one place the fleet label reaches the session. Without it the tab reads as Orca's
+default and the session carries a title the harness generated (G84). Use this prompt on every path,
+unchanged apart from the placeholders (the full shape and the reasons for each part:
+`references/launch-seam.md` §2.1b):
+
+```
+/<workflow-skill> <label> fleet worker. Read <ABS>/.session/orchestration/<slug>/COMMON.md then <ABS>/.session/orchestration/<slug>/W-<label>.md and execute your brief. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints. Channel: {{MESSAGE_VERB}}. No heartbeats. ROUTE-SCOPE: <section ids the work needs, or none>
+```
+
+`<label>` is `[<TICKET-KEY>-]<slug>`, a slug of 3 or 4 words (`references/session-identity.md`), and
+nothing sits between it and `fleet worker`. Once the placeholders are filled, the prompt has no `"`
+and no `<` or `>`, and `ROUTE-SCOPE:` is the last sentence on its line.
 
 ---
 
@@ -35,7 +50,7 @@ a system temp directory (it triggers a permission prompt on some harnesses).
 | 1 | **Goal** | unchanged: one sentence |
 | 2 | **Context docs** | ABSOLUTE paths into the PRIMARY checkout. A relative path resolves against a cwd the worker may not share, and a path inside the worker's own worktree may not exist there at all |
 | 3 | **Project Standards (auto-resolved)** | unchanged: compact rules pasted from the generated skill registry. A worker trusts them and does not re-read the full SKILL.md unless told to |
-| 4 | **Skills to load** | the domain skill by trigger, `orca-orchestration` in WORKER mode, AND the stubs in `orchestration.orchestrator_skills` (the vendor command grammar — load them, they are small and skipping them is what produces invented flags) |
+| 4 | **Skills to load** | the domain skill by trigger, `orca-orchestration` in WORKER mode, and the stubs in `orchestration.orchestrator_skills` (the vendor command grammar: they are small, and skipping them is what produces invented flags) |
 | 5 | **Exact instructions** | numbered, each naming its tool or skill action, and each verifiable |
 | 6 | **Report format** | two destinations now: the long report FILE, and the `worker_done` message that points at it |
 | 7 | **Rules** | the relevant Critical Rules, plus the fleet prohibitions below |
@@ -44,74 +59,73 @@ a system temp directory (it triggers a permission prompt on some harnesses).
 
 ## 3 · The eight fleet fields
 
-1. **Identity and ids** — the worker label, `Task: <task_id>`, `Dispatch: <dispatch_id>` when it has
-   one, and `Run: <run_id>` **only** when the worker was launched WITHOUT a dispatch (with an
-   active dispatch the recipient defaults to the owning Run, so a stray `Run:` line invites the
-   worker to address it manually and get it wrong).
+1. **Identity and ids.** The worker label, `Task: <task_id>`, `Dispatch: <dispatch_id>` when it has
+   one, and `Run: <run_id>` only when the worker was launched without a dispatch. With an active
+   dispatch the recipient defaults to the owning Run, so a stray `Run:` line invites the worker to
+   address it manually and get it wrong.
 
-2. **Sibling roster** — one line per other live worker: label, scope, state. This is not courtesy: it
-   is what lets a worker who discovers a fact that changes someone ELSE's decision broadcast it
-   instead of burying it in its own report. Say explicitly that a cross-cutting discovery goes to the
-   conductor immediately, not at the end.
+2. **Sibling roster.** One line per other live worker: label, scope, state. It lets a worker who
+   discovers a fact that changes someone else's decision broadcast it instead of burying it in its
+   own report. Say explicitly that a cross-cutting discovery goes to the conductor immediately, not
+   at the end.
 
-3. **Channel and prohibitions** — the orchestration mailbox is the channel. Name the three message
+3. **Channel and prohibitions.** The orchestration mailbox is the channel. Name the three message
    types and prohibit, in writing:
    - the harness's agent-to-agent messaging tool (from an isolated worktree the conductor is not
      addressable);
    - the harness's user-question prompt, any structured-question tool, and an `mkd` decision deck
      (nobody is watching them; inside Orca a deck blocks until someone presses Send);
-   - **periodic heartbeats** — and say WHY the prohibition is there, because the injected preamble
-     asks for them and a worker obeying its preamble is behaving correctly from its own side.
+   - periodic heartbeats, with the reason stated: the injected preamble asks for them, and a worker
+     obeying its preamble is behaving correctly from its own side.
 
-4. **File ownership** — the exact paths this worker may edit, and the instruction for everything
-   else: do NOT touch it, put the edit you wanted in your report. In a same-checkout fleet also
-   repeat: stage explicit paths, commit with a pathspec, re-read before every edit, retry on
-   `index.lock`, no global discards (Critical Rule #15).
+4. **File ownership.** The exact paths this worker may edit, and the instruction for everything else:
+   do not touch it, and put the edit you wanted in your report. In a same-checkout fleet also repeat:
+   stage explicit paths, commit with a pathspec, re-read before every edit, retry on `index.lock`, no
+   global discards (Critical Rule #15).
 
-5. **Claims, PRE-GRANTED** — the per-worker claim list produced at triage
+5. **Claims, pre-granted.** The per-worker claim list produced at triage
    (`references/claims-protocol.md` §5). Say in the brief, in those words, that everything listed is
    **already granted**: the worker announces it and works, and only a claim discovered mid-run waits
    for arbitration. A brief that lists claims while the protocol says "wait for the grant" is the
-   contradiction that stalled a real worker on nothing.
-   Include the consequence or the alternative per row: for `write`, what to do if it is ever revoked;
-   for `enumerate`, the standing consequence that no assertion may rest on that collection.
+   contradiction that stalled a real worker on nothing. Give the consequence or the alternative per
+   row: for `write`, what to do if it is ever revoked; for `enumerate`, the standing consequence that
+   no assertion may rest on that collection.
 
-6. **Reporting protocol** — the report path, the six report sections, and the exact `worker_done`
-   shape: once, with an explicit outcome, with the modified files, with the report path. Plus:
-   after `worker_done`, stop; do not close your own terminal. And, for a worker launched without a
-   dispatch, the `BLOCKED: ` status form that replaces `escalation` on that path.
+6. **Reporting protocol.** The report path, the six report sections, and the exact `worker_done`
+   shape: once, with an explicit outcome, with the modified files, with the report path. After
+   `worker_done` the worker stops and does not close its own terminal. For a worker launched without
+   a dispatch, add the `BLOCKED: ` status form that replaces `escalation` on that path.
 
    **Continuation, in writing**: run every stage without returning to the prompt until `worker_done`
-   is sent; a stage boundary is not a checkpoint. It belongs here AND in the launch prompt, because
-   as a file pointer the same sentence reads as reference material — measured on a real fleet
-   (G58): workers stopped mid-work on briefs that already said it. The prompt is what makes it an
-   instruction.
+   is sent; a stage boundary is not a checkpoint. It belongs here and in the launch prompt, because
+   as a file pointer the same sentence reads as reference material. Workers stopped mid-work on
+   briefs that already said it (G58), and the prompt is what makes it an instruction.
 
-   **The mandatory `ask`**: name it explicitly — when the worker's own measurement contradicts a
-   conductor instruction, it stops and asks with both readings and its evidence. Never silent
-   compliance, never silent deviation.
+   **The mandatory `ask`**: when the worker's own measurement contradicts a conductor instruction, it
+   stops and asks with both readings and its evidence. Silent compliance and silent deviation are
+   both wrong.
 
    **Escalation goes to the launcher** (`references/worker-contract.md` rule 16): the four kinds of
    `agentic-qa-core/references/decision-protocol.md` §5 and every error or blocker the worker cannot
    clear inside the brief go to the conductor as a blocking `ask`, an `escalation` or a `BLOCKED: `
-   status, never guessed and never asked to the human; technical calls inside the brief are the
-   worker's, reported as DECIDED. Say in writing if the brief grants the worker a direct question to
-   the human (the one exception besides the human typing into the worker's own session).
+   status. The worker never guesses and never asks the human. Technical calls inside the brief are
+   the worker's, reported as DECIDED. Say in writing if the brief grants the worker a direct question
+   to the human (the one exception besides the human typing into the worker's own session).
 
-7. **Session label** — the worker's roster label `[<KEY>-]<slug>`, which the prompt token carries;
-   the worker's full name is `<label>--<handle>`, composed once the terminal exists, and it is the
-   one value the session, the tab, the roster's `Name` column and the commit trailer all key off. The
-   brief tells the worker to rename its own TAB as its first action (the exact command is in
+7. **Session label.** The worker's roster label `[<KEY>-]<slug>`, which the prompt token carries. The
+   full name is `<label>--<handle>`, composed once the terminal exists, and it is the one value the
+   session, the tab, the roster's `Name` column and the commit trailer all key off. The brief tells
+   the worker to rename its own TAB as its first action (the exact command is in
    `references/worker-contract.md` §Session naming). On the supervised path there is no name flag:
-   on Claude Code the identity hook, and on Pi the adapter, composes the session name from the prompt's
-   `/<workflow-skill> <label> fleet worker` opening plus `ORCA_TERMINAL_HANDLE`, and on Codex and
-   OpenCode v2.2 the conductor types the rename verb. The brief never asks the worker to
-   rename its own SESSION: `/rename` is user input, and a model cannot run it. Where the harness
-   cannot be renamed (OpenCode v1), the brief gives the roster name the trailer carries. Detail:
-   `references/session-identity.md` §2b.
+   on Claude Code the identity hook, and on Pi the adapter, composes the session name from the
+   prompt's `/<workflow-skill> <label> fleet worker` opening plus `ORCA_TERMINAL_HANDLE`, and on
+   Codex and OpenCode v2.2 the conductor types the rename verb. The brief never asks the worker to
+   rename its own SESSION, because `/rename` is user input and a model cannot run it. Where the
+   harness cannot be renamed (OpenCode v1), the brief gives the roster name the trailer carries.
+   Detail: `references/session-identity.md` §2b.
 
-8. **Trailer reminder** — the two forensic trailers as the last lines of every commit, and the
-   reminder that they are forensics, not attribution, and that no AI attribution of any kind is
+8. **Trailer reminder.** The two forensic trailers as the last lines of every commit, with the
+   reminder that they are forensics and not attribution, and that no AI attribution of any kind is
    allowed (Critical Rule #3).
 
 ---
@@ -200,6 +214,7 @@ Then send worker_done exactly once, outcome succeeded|failed, with --files-modif
 | no escalation rule in the brief | the worker guesses a product answer, or opens a question prompt or a deck nobody is watching, and the run stalls on it (G36) |
 | claims listed in the brief while the protocol says "wait for the grant" | the worker cannot tell which document governs and stalls on a claim that was never disputed. Measured |
 | the continuation rule only in the brief, never in the prompt | the worker reads it as reference material and stops at the first stage boundary anyway. Measured on a real fleet (G58) |
+| a launch prompt that does not open with `/<workflow-skill> <label> fleet worker` | the tab reads as Orca's default name and the session as a generated title, so the owner cannot tell which worker is which (G84) |
 | a launch prompt with no closing `ROUTE-SCOPE:` sentence | the prompt hook routes on the task block's incidental words (a path, "worker", the channel name) instead of the sections the work needs, and the worker reads routes that do not matter or skips the ones that do (ADR-0017) |
 | a launch prompt containing `"` or `<` / `>` | the shell mangles the line; the terminal reports success and nothing ran |
 | "report when you are done" with no path and no shape | a prose report the conductor cannot diff, aggregate or hand to the next wave |

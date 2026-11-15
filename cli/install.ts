@@ -491,6 +491,8 @@ export const USER_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [
   { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'to-questionnaire' },
   // End-of-work retrospective: what went well, what to change.
   { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'retro' },
+  // Decision log format (ts, phase, decision, why, evidence, result) for routines and long workers.
+  { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'show-me-your-work' },
 ];
 
 // Matches Claude Code ${VAR} and ${VAR:-default} placeholders in .mcp.json.
