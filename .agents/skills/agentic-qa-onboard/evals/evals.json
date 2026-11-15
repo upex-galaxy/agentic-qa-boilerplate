@@ -29,6 +29,27 @@
       "category": "positive"
     },
     {
+      "name": "should-trigger-spanish-how-skill-works",
+      "prompt": "No entiendo cómo funciona sprint-testing, me lo explicas paso a paso?",
+      "expected_skill": "agentic-qa-onboard",
+      "expected_behavior": "Activates agentic-qa-onboard as the front desk for a lost user. Explains in Spanish, in plain language with each technical term defined at first use, asks before opening the sprint-testing how-it-works deck, and hands off to /sprint-testing once the person is oriented. Does not run any QA work.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-spanish-new-project-setup",
+      "prompt": "Cómo configuro el repo completo para mi proyecto nuevo, desde cero?",
+      "expected_skill": "agentic-qa-onboard",
+      "expected_behavior": "Activates agentic-qa-onboard and walks the ordered 4-phase new-project path (foundation, Jira catalogs, /project-discovery + /test-framework-adaptation, git Strategy Setup) instead of stopping at `bun setup`. May answer in Spanish.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-show-me-how-it-works",
+      "prompt": "Show me how /test-automation works, I'm lost on where to begin.",
+      "expected_skill": "agentic-qa-onboard",
+      "expected_behavior": "Activates agentic-qa-onboard in teaching mode, explains the concept in plain words, and asks before opening the test-automation how-it-works deck (Spanish only, so says so first). Hands off to /test-automation after.",
+      "category": "positive"
+    },
+    {
       "name": "should-not-trigger-test-ticket",
       "prompt": "Test ticket UPEX-277 — empty states on the user list filter.",
       "expected_skill": "sprint-testing",

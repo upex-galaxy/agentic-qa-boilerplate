@@ -1,6 +1,6 @@
 ---
 name: agentic-qa-onboard
-description: "Walks new users through this repo's QA flow — Playwright + KATA + Allure + Xray stack, Jira QA state machine (statuses read from `.agents/jira-workflows.json`, never from memory), the IQL stages by name, /shift-left-testing for pre-sprint AC refinement on backlog Stories, /sprint-testing for in-sprint manual QA, /test-documentation for TMS test cases, /test-automation for KATA-compliant E2E/API tests, /regression-testing for CI suite execution, /framework-development for boilerplate evolution, MCPs available (the servers `.mcp.json` declares; web search and Postman connect at harness level and resolve by capability; Atlassian is opt-in via agentic-qa-core/references/mcp-atlassian-optin.md), env vars by scope (framework / tooling / project-under-test, never a blocker), and the ordered 4-phase NEW-PROJECT setup path (foundation → Jira catalogs → /project-discovery + /test-framework-adaptation → git Strategy Setup). ALSO the front desk for anyone who is lost or wants to understand how the repo or any workflow skill works — conceptually AND visually: it explains in plain human language (suspending the terse working register) and can open per-skill how-it-works presentations (Spanish, technical terms in English) in the user's default browser after asking. Triggers on: `onboard me to QA`, `explain this QA repo`, `first time using this`, `primer vez en QA`, `/agentic-qa-onboard`, `I don't know how to use this`, `how does sprint-testing / test-automation work`, `how does this skill work`, `show me how it works`, `teach me how QA works here`, `walk me through this skill`, `no sé cómo usar esto`, `no entiendo cómo funciona el repo`, `cómo funciona este skill`, `explícame cómo funciona`, `enséñame cómo se hace`, `how do I set this repo up for my app`, `full setup for a new project`, `cómo configuro el repo para mi proyecto`, `setup completo del repo`. Do NOT use for: pre-sprint refinement (use /shift-left-testing), feature QA on a ticket (use /sprint-testing), authoring test cases in TMS (use /test-documentation), writing automated tests (use /test-automation), running regression suites (use /regression-testing), launching or supervising a fleet of parallel worker sessions (use /orca-orchestration — this skill only explains that the option exists)."
+description: "Onboards a newcomer to this QA repo: the stack, the IQL stages, MCPs and env vars, then hands off to the right skill. Use when someone is new or lost (\"onboard me\", \"I don't know how to use this\"); asks how a workflow skill works or wants its how-it-works deck; or needs the full setup path for a new project."
 license: MIT
 compatibility: [claude-code, opencode, codex, pi]
 phase: bootstrap
@@ -9,51 +9,44 @@ metadata:
   kind: workflow
 ---
 
-# Agentic QA Onboard — First-time tour of this repo
+# Agentic QA Onboard: first-time tour of this repo
 
-Activate when a user lands on this repo for the first time and asks "where do I start?", "how does QA work here?", or invokes `/agentic-qa-onboard`. The skill is a guided tour, not an executor: it explains the stack, the QA pipeline (the IQL stages, always by name: Shift-Left before the sprint, then Planning, Execution, Reporting, Documentation, Automation and Regression), the MCPs, and the env vars that everything depends on, then hands off to the right downstream skill.
+This skill is a guided tour for someone who just landed on the repo and asks "where do I start?", "how does QA work here?" or runs `/agentic-qa-onboard`. It explains the stack, the QA pipeline (the IQL stages, always by name: Shift-Left before the sprint, then Planning, Execution, Reporting, Documentation, Automation and Regression), the MCPs and the env vars everything depends on. Then it hands off to the downstream skill and steps back.
 
-This skill is specific to **this** Playwright + KATA QA boilerplate and points at the concrete entry points (`/shift-left-testing`, `/sprint-testing`, `/sprint-conductor`, `/exploratory-testing`, `/test-automation`, `/test-documentation`, `/regression-testing`, `/framework-development`).
+It is specific to **this** Playwright + KATA QA boilerplate and points at the concrete entry points: `/shift-left-testing`, `/sprint-testing`, `/sprint-conductor`, `/exploratory-testing`, `/test-automation`, `/test-documentation`, `/regression-testing`, `/framework-development`.
 
 ---
 
 ## Compact Rules
 
-- DO: act as a guided tour, not an executor. The tour ends the moment the user knows which skill to call; hand off there and step back.
-- DO NOT: do the downstream work yourself. Pre-sprint refinement is `/shift-left-testing`, per-ticket QA `/sprint-testing`, TMS authoring `/test-documentation`, automated tests `/test-automation`, suite runs `/regression-testing`, a new target repo `/project-discovery`, KATA adaptation `/test-framework-adaptation`.
-- WHEN someone is lost or asks how a skill works: suspend the terse working register for the whole explanation — full sentences, warm tone, and each technical term defined the first time it appears. Resume the normal register once they are oriented.
-- DO: mirror the user's language in the explanation. The visual decks ship in Spanish only (technical terms stay English) — say so before opening one for an English speaker.
-- WHEN the goal is unclear: ask ONE question first (testing a ticket, or understanding the whole flow?). Never dump every stage on someone who asked about one.
-- DO: name a stage by its word (Shift-Left, Planning, Execution, Reporting, Documentation, Automation, Regression, Observation), never by number. A "Stage N" in an older doc resolves through `agentic-qa-core/references/stage-gates.md`; the why behind the stages is `iql-context`.
-- WHEN someone asks about running several sessions at once ("parallelize the sprint", "one session per story", "orquestar", "lanza workers"): explain the two executors in plain words — a one-shot subagent lives inside the current turn and is the default for almost everything, a supervised worker is a persistent session you keep talking to — then hand off to `/orca-orchestration`. Its deck is `packages/decks/orca-orchestration/how-it-works.es.html`.
-- DO: explain the concept in plain words, and why it matters, BEFORE any command, flag, or file path.
-- DO NOT: open a how-it-works deck without asking — it launches the user's default browser. Open exactly ONE, then let them come back with questions before offering the next.
-- WHEN opening a deck: prefer the published GitHub Pages URL over the local file, because a project scaffolded from this boilerplate may not carry the HTML. Use the local copy only offline or on explicit request.
-- DO: route a brand-new project through the ordered 4-phase setup path (foundation → Jira catalogs → discovery + adapt → git Strategy Setup). The joining-an-adapted-project checklist covers phase 1 only and is not a substitute.
-- DO NOT: state a Jira status or transition from memory. `.agents/jira-workflows.json` is authoritative — if a status is not in there, it does not exist in the instance.
-- DO: point library-docs questions at Context7 and troubleshooting at the `web-search` capability (a harness-level server); ticket WRITES at `/acli`, and detailed ticket READS (custom fields, ACs, ATP/ATR, comments) at the Jira sync script, whose synced `.md` is what you read.
-- DO NOT: suggest swapping the stack. Playwright + KATA + Allure + TypeScript + bun is locked, and KATA is Playwright-specific — a project needing another runner should not start from this boilerplate.
+- The skill is a tour, not an executor. It ends the moment the user knows which skill to call; hand off there and step back.
+- Leave the downstream work to its owner: pre-sprint refinement is `/shift-left-testing`, per-ticket QA `/sprint-testing`, TMS authoring `/test-documentation`, automated tests `/test-automation`, suite runs `/regression-testing`, a new target repo `/project-discovery`, KATA adaptation `/test-framework-adaptation`.
+- When someone is lost or asks how a skill works, drop the terse working register for the whole explanation: full sentences, a warm tone, each technical term defined the first time it appears. Go back to the normal register once they are oriented.
+- Explain in the user's language. The visual decks are Spanish only (technical terms stay English), so say that before opening one for an English speaker.
+- When the goal is unclear, ask one question first (testing a ticket, or understanding the whole flow?). Someone who asked about one stage does not need all of them.
+- Name a stage by its word (Shift-Left, Planning, Execution, Reporting, Documentation, Automation, Regression, Observation), never by number. A "Stage N" in an older doc resolves through `agentic-qa-core/references/stage-gates.md`; the why behind the stages is `iql-context`.
+- When someone asks about running several sessions at once ("parallelize the sprint", "one session per story", "fleet", "launch workers"), explain the two executors in plain words (a one-shot subagent lives inside the current turn and is the default for almost everything; a supervised worker is a persistent session you keep talking to), then hand off to `/orca-orchestration`. Its deck is `packages/decks/orca-orchestration/how-it-works.es.html`.
+- Explain the concept and why it matters before any command, flag or file path.
+- Ask before opening a how-it-works deck, because it launches the user's default browser. Open exactly one, then let them come back with questions before offering the next.
+- Prefer the published GitHub Pages URL over the local file: a project scaffolded from this boilerplate may not carry the HTML. Use the local copy offline or on explicit request.
+- Route a brand-new project through the ordered 4-phase setup path (foundation, Jira catalogs, discovery + adapt, git Strategy Setup). The joining-an-adapted-project checklist covers phase 1 only.
+- State a Jira status or transition only from `.agents/jira-workflows.json`. A status that is not in that file does not exist in the instance.
+- Library-docs questions go to Context7, troubleshooting to the `web-search` capability (a harness-level server), ticket WRITES to `/acli`, and detailed ticket READS (custom fields, ACs, ATP/ATR, comments) to the Jira sync script, whose synced `.md` is what you read.
+- Leave the stack as it is. Playwright + KATA + Allure + TypeScript + bun is locked, and KATA is Playwright-specific: a project that needs another runner should not start from this boilerplate.
 
 **Read full SKILL.md when**: walking the full 4-phase new-project setup, listing env vars or MCPs in detail, or answering which deck covers a given topic.
 
 ---
 
-## Teaching mode — when someone is lost or wants to understand a skill
+## Teaching mode: when someone is lost or wants to understand a skill
 
-This skill is also the **front desk** for anyone who is confused: *"I don't know how to use this"*, *"how does `/sprint-testing` actually work?"*, *"what does this repo even do?"*, *"explain test-automation to me"*, *"no entiendo cómo funciona esto"*. When that happens, step into the scene as a friendly guide and follow these rules:
-
-1. **Speak like a human, not a terminal.** For the whole explanation, **suspend the terse working register** — full sentences, warm tone, simple words, zero unexplained jargon. Define each technical term the first time you use it ("an ATC — basically one complete test case, start to finish"). This is an explicit in-skill override of the default register; resume your normal style once the person is oriented.
-2. **Mirror the user's language.** Spanish in → explain in Spanish. English in → explain in English — but note that the visual decks ship in Spanish only (technical terms stay in English inside them).
-3. **Start from where they are.** If the goal is unclear, ask ONE quick question ("are you trying to test a ticket, or understand the whole flow?"). Don't dump every stage on someone who asked about one.
-4. **Concept first, in plain words** — what the activity is and *why* it matters — before any command, flag, or file path.
-5. **Then offer the visual presentation.** Each workflow skill has a `how-it-works` deck that walks the skill's workflow step by step: a cover slide, a full workflow map (main path + adjacent paths), then one phase per slide with the craft concepts embedded where they apply. Offer to open it in their browser — follow the opening protocol below.
-6. **Hand off when oriented.** Once they know which skill to call, point them at it and step back.
+The skill is also the front desk for anyone confused: "I don't know how to use this", "how does `/sprint-testing` actually work?", "what does this repo even do?". The person should leave understanding, so the Compact Rules about register, language and concept-first apply. In order: start from where they are, give the concept and its why, then offer the skill's `how-it-works` deck (follow the opening protocol below), and once they know which skill to call, point at it and step back. Define jargon at first use ("an ATC, basically one complete test case, start to finish").
 
 ---
 
 ## How-it-works presentations (visual, in the browser)
 
-Most workflow skills ship a **self-contained HTML presentation** (Spanish; technical terms in English) that teaches the skill as a **step-by-step workflow**. Two category decks explain a family of skills at once, `agentic-qa-core` adds cross-cutting reference decks, and some skills carry craft or curriculum decks. Each how-it-works deck follows the same shape: slide 1 is the cover (`/skill-name`), slide 2 is the full workflow map (main path + adjacent paths: gates, fallbacks, handoffs), then one phase per slide with the craft concepts embedded where they apply, closing with handoffs and how to invoke the skill on each host.
+Most workflow skills ship a self-contained HTML presentation (Spanish, technical terms in English) that teaches the skill as a step-by-step workflow. Two category decks cover a family of skills at once, `agentic-qa-core` adds cross-cutting reference decks, and some skills carry craft or curriculum decks. Every how-it-works deck has the same shape: slide 1 is the cover (`/skill-name`), slide 2 the workflow map (main path plus gates, fallbacks and handoffs), then one phase per slide, closing with handoffs and how to invoke the skill on each host.
 
 Every path below is relative to `packages/decks/`, which is also the published path segment (see "Published site"). `ls packages/decks/` is the source index; the published catalog with a card per deck is the homepage.
 
@@ -95,7 +88,7 @@ Offer them by intent, not by skill:
 | User intent | Deck (Spanish) |
 | --- | --- |
 | "How is everything named?": artifact / test / branch / ID naming conventions | `agentic-qa-core/naming-conventions.es.html` |
-| "How do the skills fit together?": the E2E flow (story → refinement → dev → testing) as **inputs & outputs** per skill: what each phase reads, which skills it loads, what it produces, which Jira fields/transitions it touches | `agentic-qa-core/skills-io-flow.es.html` |
+| "How do the skills fit together?": the E2E flow (story, refinement, dev, testing) as inputs and outputs per skill: what each phase reads, which skills it loads, what it produces, which Jira fields and transitions it touches | `agentic-qa-core/skills-io-flow.es.html` |
 | "Why does the AI write like this?": the output style (layer split, how replies look and sound) | `agentic-qa-core/output-style.es.html` |
 
 ### CI mini-course (regression-testing)
@@ -111,7 +104,7 @@ They stop where `regression-testing/how-it-works.es.html` starts (failure classi
 
 ### Craft and curriculum decks
 
-The craft decks teach the QA judgment behind a stage; the test-automation curriculum is a learning path from programming basics to KATA. Offer them when the person wants to learn the discipline, not just the skill.
+The craft decks teach the QA judgment behind a stage; the test-automation curriculum is a learning path from programming basics to KATA. Offer them when the person wants to learn the discipline, not only the skill.
 
 | User intent | Deck (Spanish) |
 | --- | --- |
@@ -121,13 +114,13 @@ The craft decks teach the QA judgment behind a stage; the test-automation curric
 | Write test cases: scopes, naming, ROI | `test-documentation/test-case-craft.es.html` |
 | Automation curriculum, in order | `test-automation/coding-base.es.html` → `coding-classes.es.html` → `dev-craft.es.html` → `playwright-pro.es.html` → `dojo-lab-1.es.html` → `kata-bridge.es.html` → `automation-patterns.es.html` → `api-automation-playwright.es.html` |
 
-The skills-io deck is the best single answer to "what does skill X need / produce" or "show me the whole pipeline". It renders as a Mac-style terminal with one tab per phase (arrow keys or `1-9` to switch tabs).
+The skills-io deck is the best single answer to "what does skill X need or produce" and "show me the whole pipeline". It renders as a Mac-style terminal with one tab per phase (arrow keys or `1-9` switch tabs).
 
-Single files (CSS + JS inlined): they open by double-click, no server. Navigate with `←` `→`, `S` for speaker notes, `O` for the slide overview, `F` for fullscreen.
+Each deck is a single file (CSS and JS inlined) that opens by double-click, no server. Keys: `←` `→` to move, `S` for speaker notes, `O` for the slide overview, `F` for fullscreen.
 
-### Published site (PREFERRED source — works in every project)
+### Published site (preferred source, works in every project)
 
-All decks, plus the interactive **KATA Academy** and the boilerplate homepage, are published on the boilerplate's GitHub Pages hub:
+All decks, the interactive **KATA Academy** and the boilerplate homepage are published on the boilerplate's GitHub Pages hub:
 
 ```
 https://upex-galaxy.github.io/agentic-qa-boilerplate/                         ← homepage (deck catalog)
@@ -135,26 +128,26 @@ https://upex-galaxy.github.io/agentic-qa-boilerplate/kata/                    �
 https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/<folder>/<file>.es.html
 ```
 
-Example: `.../decks/sprint-testing/how-it-works.es.html`. The `<folder>/<file>.es.html` segment is exactly the path in the tables above; always use the `.es.html` file, since an older name without `.es` is not a current deck. **Prefer the published URL**: it always works, even in consumer projects scaffolded from this boilerplate (which may not carry the local HTML files). Use the local file only when offline or when the user explicitly wants the repo copy.
+Example: `.../decks/sprint-testing/how-it-works.es.html`. The `<folder>/<file>.es.html` segment is exactly the path in the tables above. Use the `.es.html` file: an older name without `.es` is not a current deck. The published URL works even in consumer projects scaffolded from this boilerplate; the local file is for offline use or an explicit request.
 
 ### The docs site (second surface, local)
 
-The repo also ships a human documentation site under `docs/` (Spanish, technical terms in English): "Empezar aquí", Setup (Jira + Xray, DBHub, OpenAPI), the IQL methodology pages, Exploration (Postman, SQL cookbook) and the AI personality page. Where a deck teaches one skill's workflow, the site is the reference to come back to.
+The repo also ships a human documentation site under `docs/` (Spanish, technical terms in English): "Empezar aquí", Setup (Jira + Xray, DBHub, OpenAPI), the IQL methodology pages, Exploration (Postman, SQL cookbook) and the AI personality page. A deck teaches one skill's workflow; the site is the reference to come back to.
 
 | Intent | Command |
 |---|---|
 | Open the docs site | `bun run docs` (portal; `-- --page core/setup/dbhub.html` opens one page) |
 | Open the "start here" page | `bun run onboarding` |
 
-Both start a blocking local server and open the browser, so the same rule applies: ask first, and suggest the user runs it in their own terminal (`! bun run docs`) rather than chaining it with another command.
+Both start a blocking local server and open the browser, so the same rule applies: ask first, and suggest the user runs it in their own terminal (`! bun run docs`) instead of chaining it with another command.
 
-### Opening protocol (ALWAYS ask first)
+### Opening protocol (ask first)
 
-Opening a deck launches the user's default browser — an outward, local action — so **never open one without asking, and open only ONE at a time.**
+Opening a deck launches the user's default browser, so it needs a yes, one deck at a time.
 
-1. **Announce + ask.** "I can open a short visual deck that walks through how `/sprint-testing` works — the full workflow map first, then each phase step by step. Want me to open it in your browser?"
-2. **Decks are Spanish-only** (`.es.html`). If the user speaks English, mention the deck is in Spanish (technical terms stay in English) before opening it.
-3. **On a yes, open exactly one deck** — published URL first; local file as offline fallback (pick the OS command for the user's platform):
+1. Announce and ask: "I can open a short visual deck that walks through how `/sprint-testing` works, the full workflow map first, then each phase step by step. Want me to open it in your browser?"
+2. If the user speaks English, mention first that the deck is in Spanish (technical terms stay in English).
+3. On a yes, open exactly one deck, published URL first and the local file as the offline fallback (pick the OS command for the user's platform):
    ```bash
    open "https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/sprint-testing/how-it-works.es.html"  # macOS → default browser
    xdg-open "https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/sprint-testing/how-it-works.es.html" # Linux
@@ -162,17 +155,16 @@ Opening a deck launches the user's default browser — an outward, local action 
    # offline / repo-copy fallback (only if the file exists locally):
    open "packages/decks/sprint-testing/how-it-works.es.html"
    ```
-4. **One at a time.** Let the person watch and come back with questions before offering the next skill's deck. Do not batch-open several.
-5. **After it opens,** tell them the keys (`←` `→` to move, `S` for speaker notes) and offer to walk the slides together or answer questions as they go.
-6. **For "how does KATA work" / architecture questions,** also offer the interactive KATA Academy (`.../kata/`) — interactive chapters, Spanish, presentation mode with the `P` key.
+4. After it opens, give them the keys (`←` `→` to move, `S` for speaker notes), offer to walk the slides together, and let them come back with questions before offering the next deck.
+5. For "how does KATA work" or architecture questions, also offer the interactive KATA Academy (`.../kata/`): interactive chapters in Spanish, presentation mode with the `P` key.
 
 ---
 
 ## Welcome
 
-This is the **Agentic QA Boilerplate** — a QA-only boilerplate for testing web applications with AI agents in the loop. The repo ships skills, scripts, and conventions that turn a Jira QA ticket into documented test cases and automated regression coverage through the IQL stages (eight named stages; `iql-context` explains why the process is shaped this way). It does **not** ship the application under test — that lives in a separate target repo (configured via `.agents/project.yaml`).
+This is the **Agentic QA Boilerplate**, a QA-only boilerplate for testing web applications with AI agents in the loop. The repo ships skills, scripts and conventions that turn a Jira QA ticket into documented test cases and automated regression coverage through the IQL stages (`iql-context` explains why the process is shaped this way). It does not ship the application under test: that lives in a separate target repo, configured in `.agents/project.yaml`.
 
-If you cloned this repo and you don't yet have `bun setup` complete, start there. Everything else assumes the foundation is green.
+Everything else assumes `bun setup` is complete and the foundation is green.
 
 ---
 
@@ -189,7 +181,7 @@ If you cloned this repo and you don't yet have `bun setup` complete, start there
 | Lint/format | ESLint + Prettier (pre-commit hooks)         |
 | AI agent    | the hosts declared in `.agents/instructions/agent-harnesses.md`     |
 
-The stack is intentionally locked. If your QA project needs a different stack (Cypress, Robot Framework, etc.), this boilerplate is not the right starting point — the KATA architecture is Playwright-specific.
+The stack is locked on purpose (see the Compact Rules): KATA is Playwright-specific, so Cypress or Robot Framework projects start elsewhere.
 
 ---
 
@@ -201,76 +193,76 @@ Run the interactive installer once after cloning:
 bun setup
 ```
 
-This bootstraps `.agents/`, records the agents you select in `harnesses:` (`.agents/project.yaml`) and offers to delete the files of the harnesses left out, asks where secret values live (`.env` by default, or a secret manager), wires Engram persistent memory into each selected agent (`engram setup`), configures the MCPs in `.mcp.json`, downloads Playwright browsers, installs the community skills `cli/install.ts` declares (`USER_LEVEL_SKILLS` + `PROJECT_LEVEL_SKILLS`), verifies the variables each MCP server's `.env` loader `--filter` names against your `.env`, and retires any plaintext MCP credential copy an older install left behind (the same thing `bun run harness:env` does). Full details in [`INSTALLER.md`](../../../INSTALLER.md).
+It bootstraps `.agents/`, records the agents you select in `harnesses:` (`.agents/project.yaml`) and offers to delete the files of the harnesses left out, asks where secret values live (`.env` by default, or a secret manager), wires Engram persistent memory into each selected agent (`engram setup`), configures the MCPs in `.mcp.json`, downloads Playwright browsers, installs the community skills `cli/install.ts` declares (`USER_LEVEL_SKILLS` + `PROJECT_LEVEL_SKILLS`), verifies the variables each MCP server's `.env` loader `--filter` names against your `.env`, and retires any plaintext MCP credential copy an older install left behind (the same thing `bun run harness:env` does). Full details in [`INSTALLER.md`](../../../INSTALLER.md).
 
-After setup, fill `.env` with the credentials the rest of the workflow expects (see "Critical env vars" below), then restart the agent session: MCP servers read `.env` through the `.env` loader when the harness spawns them. `bun run setup:doctor` is the health check.
+After setup, fill `.env` with the credentials the workflow expects (see "Env vars, by scope") and restart the agent session: MCP servers read `.env` through the `.env` loader when the harness spawns them. `bun run setup:doctor` is the health check.
 
 ---
 
-## New project path — from a fresh clone to a repo adapted to YOUR app
+## New project path: from a fresh clone to a repo adapted to your app
 
-`bun setup` is phase 1 of 4, not the whole story. A brand-new project (new app under test, new Jira project) walks this ordered sequence before the first ticket. Each phase self-defends (later steps gate on earlier ones), but knowing the order saves you from discovering it by error message:
+`bun setup` is phase 1 of 4, not the whole story. A brand-new project (new app under test, new Jira project) walks this ordered sequence before its first ticket. Each phase checks the earlier ones, but knowing the order saves you from discovering it through an error message.
 
 | Phase | Goal | How |
 | ----- | ---- | --- |
 | 1. Foundation | Tooling green on this machine | `bun setup` (it also asks the project identity + environments for `.agents/project.yaml`, downloads Chromium and syncs the Jira catalogs) → fill the `.env` values left for later → restart the agent session → `bun run setup:doctor` |
 | 2. Jira side | The tracker's catalogs mirrored locally | `bun run jira:sync-fields` + `jira:sync-workflows` + `jira:sync-link-types` (generate the `.agents/*.json` catalogs every skill reads) → `/jira-administration components` (reconcile Jira Components against the app's real modules). First-time Jira provisioning: `docs/core/setup/jira-xray.html` (docs site, `bun run docs`) |
-| 3. App under test | The framework knows and fits YOUR app | `/project-discovery` (reverse-engineers the target repo → the domain and infra maps inside `business-domain-context` and `infra-context`, plus `.context/project-config.md`) → `/project-context data` (the `business-data-context` map; mode `api` too when no OpenAPI spec is reachable) → `/test-framework-adaptation` (adapts KATA, config, CI, MCPs to the stack; its Phase 0 GATES on those maps through `bun run context:map <slug> --list` and on `project-config.md`, so the order is enforced) |
-| 4. Git strategy | Branch policy is a decision, not an inherited default | Ask **"set up our git strategy"** (git-flow-master's Strategy Setup: 4 questions → `git_strategy:` block in `.agents/project.yaml`), then optionally `bun run git:policy apply` to mirror it on GitHub. If you skip this, git-flow-master OFFERS it on your first real git action anyway (template-trap guard) — and `bun run git:policy verify` runs on every push via the pre-push hook |
+| 3. App under test | The framework knows and fits YOUR app | `/project-discovery` (reverse-engineers the target repo → the domain and infra maps inside `business-domain-context` and `infra-context`, plus `.context/project-config.md`) → `/project-context data` (the `business-data-context` map; mode `api` too when no OpenAPI spec is reachable) → `/test-framework-adaptation` (adapts KATA, config, CI, MCPs to the stack; its Phase 0 gates on those maps through `bun run context:map <slug> --list` and on `project-config.md`, so the order is enforced) |
+| 4. Git strategy | Branch policy is a decision, not an inherited default | Ask **"set up our git strategy"** (git-flow-master's Strategy Setup: a short question set → `git_strategy:` block in `.agents/project.yaml`), then optionally `bun run git:policy apply` to mirror it on GitHub. If you skip it, git-flow-master offers it on your first real git action anyway (template-trap guard), and `bun run git:policy verify` runs on every push through the pre-push hook |
 
-After phase 4: `bun run context:hydrate` to pull the Jira cache, then `/sprint-testing <KEY>` for the first ticket. Joining an ALREADY-adapted project instead? Skip phases 2-4 (someone did them) and just run the checklist at the end of this tour.
+After phase 4, run `bun run context:hydrate` to pull the Jira cache, then `/sprint-testing <KEY>` for the first ticket. Joining a project that is already adapted? Someone did phases 2 to 4: run only the checklist at the end of this tour.
 
 ---
 
 ## Primary pipeline: the IQL stages and the skill that owns each
 
-The QA work in this boilerplate runs as named stages: Shift-Left before the sprint, then a per-ticket pipeline inside the sprint. Stages are named, never numbered (`agentic-qa-core/references/stage-gates.md` §"The stages, by name" holds each one's DoD and contract). Each stage maps to a skill.
+QA work here runs as named stages: Shift-Left before the sprint, then a per-ticket pipeline inside it. Stages are named, never numbered (`agentic-qa-core/references/stage-gates.md` §"The stages, by name" holds each one's DoD and contract). Each stage maps to a skill.
 
 | Stage | Skill | When | What happens |
 | ----- | ----- | ---- | ------------ |
 | Shift-Left | `/shift-left-testing` | PRE-SPRINT (batch) | AC refinement on a batch of backlog Stories, gap-spotting, early authoring of the Story's single ATP into the `{{jira.acceptance_test_plan}}` field (outline maturity, no Test Plan item yet: `/sprint-testing` Planning creates the item FROM that field and refines the same ATP), tracked by a `[QA] Shift-Left Review` subtask, sets `{{jira.ai_effort}}`, transition `backlog → shift_left_qa → ready_for_dev`. Adds labels `shift-left-reviewed` + `shift-left-{YYYY-MM-DD}` (the dated one dates the pass for the freshness window `/sprint-testing` declares; the Stage 1 short-circuit opens only on the published ATP body, never on the labels alone). |
-| Planning → Execution → Reporting | `/sprint-testing` | IN-SPRINT (ticket) | Per-ticket: ATS, ATP, then ATR. Smoke + trifuerza (UI/API/DB) exploration. Planning short-circuits its first phases only when the Story's published ATP body backs a Shift-Left pass within the window `/sprint-testing` declares (the labels alone open nothing). |
-| Planning → Execution → Reporting, as a fleet | `/sprint-conductor` | IN-SPRINT (whole sprint, on Orca) | One `/sprint-testing` worker per ticket, launched when the ticket really reaches the test environment, watched from the Sprint Board; the conductor never tests, it boots, watches, closes each worker with its own read-back and resumes the fleet after a reboot. |
-| Execution without a ticket | `/exploratory-testing` | ON DEMAND (in-sprint or post-sprint) | Ticket-free exploration of a flow, a module or the whole app: charter, parallel recon, refutation, tie-break. Every candidate executed live, marked NEW / WEAK / COVERED against existing coverage and `oracle: observed` until a person confirms it; feeds Documentation. |
+| Planning → Execution → Reporting | `/sprint-testing` | IN-SPRINT (ticket) | Per ticket: ATS, ATP, then ATR. Smoke + trifuerza (UI/API/DB) exploration. Planning short-circuits its first phases only when the Story's published ATP body backs a Shift-Left pass within the window `/sprint-testing` declares (the labels alone open nothing). |
+| Planning → Execution → Reporting, as a fleet | `/sprint-conductor` | IN-SPRINT (whole sprint, on Orca) | One `/sprint-testing` worker per ticket, launched when the ticket really reaches the test environment, watched from the Sprint Board. The conductor never tests: it boots, watches, closes each worker with its own read-back and resumes the fleet after a reboot. |
+| Execution without a ticket | `/exploratory-testing` | ON DEMAND (in-sprint or post-sprint) | Ticket-free exploration of a flow, a module or the whole app: charter, parallel recon, refutation, tie-break. Every candidate is executed live and marked NEW / WEAK / COVERED against existing coverage, and stays `oracle: observed` until a person confirms it. Feeds Documentation. |
 | Documentation | `/test-documentation` | IN-SPRINT (post-QA) | Refine the executed test cases into TMS Tests, one ROI verdict per scenario (Candidate/Manual/Deferred), Candidates added to the RTP. |
 | Automation | `/test-automation` | POST-SPRINT | KATA-compliant E2E + API tests on Playwright. Plan → Code → Review, with a required separate verifier. |
 | Regression | `/regression-testing` | PRE-RELEASE | CI suite execution. Failure classification. GO/CAUTION/NO-GO release verdict. |
 | Observation | none | PRODUCTION | Declared and empty: no skill owns it yet. |
 
-**Jira QA state machine:**
+### Jira QA state machine
 
-> **Authoritative source: `.agents/jira-workflows.json`.** Status and transition names below are copied from that file (regenerate with `bun run jira:sync-workflows`). Never write a Jira status from memory — if it is not in `.agents/jira-workflows.json`, it does not exist in the instance.
+The authority is `.agents/jira-workflows.json`. The names below are copied from it (regenerate with `bun run jira:sync-workflows`); write a Jira status only from that file, because a status missing from it does not exist in the instance.
 
 ```
 Backlog → Shift-Left QA → Ready For Dev → In Progress → In Review → Ready For QA → In Test → QA Approved → Ready For Release → Deployed to Production
 ```
 
-`/shift-left-testing` drives the upstream transitions (Backlog → Shift-Left QA → Ready For Dev). `/sprint-testing` drives the downstream ones (Ready For QA → In Test → QA Approved). PO/Dev lead drive the middle leg (Ready For Dev → In Progress → In Review). A defect found in test sends the story `In Test → BLOCKED` (transition `defect reported`); `ABORTED` is the other terminal.
+`/shift-left-testing` drives the upstream transitions (Backlog → Shift-Left QA → Ready For Dev) and `/sprint-testing` the downstream ones (Ready For QA → In Test → QA Approved). PO and Dev lead drive the middle leg (Ready For Dev → In Progress → In Review). A defect found in test sends the story `In Test → BLOCKED` (transition `defect reported`); `ABORTED` is the other terminal.
 
-(For bugs found during QA: `Open → In Progress → In Review → Ready For QA → Closed` — the `ReTest Passed` transition closes it after fix verification. Non-fix terminals: `Deferred`, `Duplicated`, `Enhancement`, `Cannot Reproduce`, `REJECTED`, `ABORTED`.)
+Bugs found during QA go `Open → In Progress → In Review → Ready For QA → Closed`, and the `ReTest Passed` transition closes one after the fix is verified. Non-fix terminals: `Deferred`, `Duplicated`, `Enhancement`, `Cannot Reproduce`, `REJECTED`, `ABORTED`.
 
-(Test cases in the TMS have their own lifecycle too: `Draft → In Design → READY → In Review → Candidate → In Automation → Pull Request → AUTOMATED`. `MANUAL` is the terminal for tests that will never be automated, and `DEPRECATED` retires a test.)
+Test cases in the TMS have their own lifecycle: `Draft → In Design → READY → In Review → Candidate → In Automation → Pull Request → AUTOMATED`. `MANUAL` is the terminal for tests that will never be automated, and `DEPRECATED` retires a test.
 
-Each Story gets three canonical TMS artifacts: the **ATP** (plan), the **ATR** (results), and the **ATS** (Acceptance Test Set — groups ALL the Story's TCs; its link to the Story is what fills the Xray coverage panel). Above the Story sits the planning ladder: **FTP** per feature/Epic (`/sprint-testing` feature-test-planning), **STP** at sprint start + **STR** recap at sprint close (`/sprint-testing`, with `/regression-testing` as fallback/completer), the long-lived **RTP** (Regression Test Plan, fed by `/test-documentation`) with one **RTR** (Regression Test Results) per regular regression run, which `/regression-testing` creates before the CI trigger and closes with its GO / CAUTION / NO-GO verdict, and the **MTP** Epic from `project-context` mode `test-plan`.
+Each Story gets three canonical TMS artifacts: the **ATP** (plan), the **ATR** (results) and the **ATS** (Acceptance Test Set, which groups ALL the Story's TCs; its link to the Story is what fills the Xray coverage panel). Above the Story sits the planning ladder: **FTP** per feature or Epic (`/sprint-testing` feature-test-planning), **STP** at sprint start and **STR** recap at sprint close (`/sprint-testing`, with `/regression-testing` as fallback and completer), the long-lived **RTP** (Regression Test Plan, fed by `/test-documentation`) with one **RTR** (Regression Test Results) per regular regression run, which `/regression-testing` creates before the CI trigger and closes with its GO / CAUTION / NO-GO verdict, and the **MTP** Epic from `project-context` mode `test-plan`.
 
-Two conventions apply to every quality issue you file along the way. **Components** are the target app's functional modules — mandatory on bugs, defects, improvements, and Tests — and are reconciled against the app's real modules via `jira-administration` mode `components`. And bugs parent to the QA process epics (e.g. "QA Defect Management"), never a product/dev epic, carrying the source Story via an issue-link: parent = QA bucket, link = source Story, components = product module (the three-axis model).
+Two conventions apply to every quality issue filed along the way. **Components** are the target app's functional modules, mandatory on bugs, defects, improvements and Tests, and reconciled against the app's real modules through `jira-administration` mode `components`. Bugs parent to the QA process epics (for example "QA Defect Management"), never to a product or dev epic, and carry the source Story as an issue-link: parent = QA bucket, link = source Story, components = product module (the three-axis model).
 
-`/sprint-testing` orchestrates Planning, Execution and Reporting. Documentation onwards are explicit hand-offs. Wondering what is already covered before Documentation or Automation? `bun run tests:map` renders the synced Epic → Story → Test tree (plus orphans and a component rollup) as one HTML page, and the `/xray-cli` skill's `test enrich` command backfills the synced Test cache with the Xray-internal associations (Preconditions, Test Set membership) the Jira REST sync cannot see.
+`/sprint-testing` orchestrates Planning, Execution and Reporting; Documentation onwards are explicit hand-offs. To see what is already covered before Documentation or Automation, `bun run tests:map` renders the synced Epic → Story → Test tree (plus orphans and a component rollup) as one HTML page, and the `/xray-cli` skill's `test enrich` command backfills the synced Test cache with the Xray-internal associations (Preconditions, Test Set membership) that the Jira REST sync cannot see.
 
 ### Planning → Reporting example flow
 
 `/sprint-testing UPEX-277`:
 
-1. Syncs the ticket from Jira via `bun run jira:sync-issues get <KEY> --include-comments` (canonical detailed read — `acli view` returns null for custom fields), then reads the materialized `.md` files.
+1. Syncs the ticket from Jira with `bun run jira:sync-issues get <KEY> --include-comments` (the canonical detailed read: `acli view` returns null for custom fields), then reads the materialized `.md` files.
 2. Loads the synced context from `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/` (Module = Epic; Jira-synced files are a read-only cache).
 3. Explores the relevant code in the target repo.
-4. Authors the ATP (Acceptance Test Plan) → writes it to the Jira field (or fallback comment) → re-syncs; hand-writes only NON-Jira files (context.md, evidence/).
+4. Authors the ATP (Acceptance Test Plan), writes it to the Jira field (or the fallback comment), re-syncs, and hand-writes only the non-Jira files (`context.md`, `evidence/`).
 5. Executes smoke + trifuerza exploration (UI / API / DB).
-6. Files ATR (Acceptance Test Results) + bug reports if defects found.
-7. Transitions the ticket through QA states.
-8. Hands off to Documentation (`/test-documentation`) to document the executed test cases in the TMS and score ROI — its Candidate verdicts are what feed `/test-automation`. Where those Candidates physically go: Documentation refines each one (the sprint TC is a draft, its title re-derived to the canonical `{US_ID}: TC#: should …` form), groups them into named e2e regression flows, and adds every one to the project's long-lived **Regression Test Plan (RTP)** with the `regression-candidate` label — that RTP membership, not any local report, is what `/test-automation` and `/regression-testing` read downstream, and every regular regression run records its results in an RTR linked to that RTP (the STR stays the sprint-close recap).
+6. Files the ATR (Acceptance Test Results) and bug reports if defects show up.
+7. Transitions the ticket through the QA states.
+8. Hands off to Documentation (`/test-documentation`) to document the executed test cases in the TMS and score ROI; its Candidate verdicts are what feed `/test-automation`. Documentation refines each Candidate (the sprint TC is a draft, its title re-derived to the canonical `{US_ID}: TC#: should …` form), groups them into named e2e regression flows and adds every one to the project's long-lived **Regression Test Plan (RTP)** with the `regression-candidate` label. That RTP membership, not any local report, is what `/test-automation` and `/regression-testing` read downstream, and every regular regression run records its results in an RTR linked to that RTP (the STR stays the sprint-close recap).
 
-You confirm at the gates.
+A person confirms at the gates.
 
 ---
 
@@ -281,112 +273,97 @@ You confirm at the gates.
 | Pre-sprint AC refinement / batch grooming of backlog Stories               | `/shift-left-testing` (Shift-Left)                                   |
 | Routine in-sprint QA on a Jira ticket (most cases)                         | `/sprint-testing` (ticket-driven)                                    |
 | Authoring new automated test for a Candidate TC                            | `/test-automation`                                                   |
-| Refactor of the boilerplate itself — KATA bases, fixtures, cli/, scripts/  | `/framework-development`                                             |
+| Refactor of the boilerplate itself: KATA bases, fixtures, cli/, scripts/   | `/framework-development`                                             |
 
-`/framework-development` covers framework evolution (changes to the boilerplate's own infrastructure, not per-ticket test writing). Self-contained Plan → Code → Verify → Archive pipeline; needs nothing outside the repo.
+`/framework-development` covers framework evolution: changes to the boilerplate's own infrastructure, not per-ticket test writing. It is a self-contained Plan → Code → Verify → Archive pipeline that needs nothing outside the repo.
 
 ---
 
 ## Running several sessions at once (optional)
 
-Everything above assumes one AI session at a time, and that is the normal way to work. There is a second way, and it is worth knowing it exists before someone asks for it.
+One AI session at a time is the normal way to work. A second way exists, and a newcomer should know it is there before they ask.
 
-The AI has **two executors**. A *one-shot subagent* lives inside the current turn: it reads, verifies or maps something, reports back, and its memory dies with the report. That is the default and it covers almost all work. A *supervised worker* is a persistent session with its own scope that the conductor session keeps talking to — useful when the work does not fit inside a turn: a whole story tested end to end, a module automated and integrated, a cluster of CI failures chased down.
+The AI has two executors. A *one-shot subagent* lives inside the current turn: it reads, verifies or maps something and reports back, and that is the default for almost all work. A *supervised worker* is a persistent session with its own scope that the conductor session keeps talking to, for work that does not fit inside a turn (a whole story tested end to end, a module automated, a cluster of CI failures chased down).
 
-`/orca-orchestration` owns that second executor: one **conductor** (the session talking to you) coordinating a **fleet** of workers, in **rounds** of a few at a time. Each workflow skill still owns _what_ gets done; the orchestration skill owns _how_ the sessions are launched, briefed, supervised and closed, plus the claims protocol that stops two workers from fighting over the same test user or fixture.
+`/orca-orchestration` owns the second executor: one **conductor** (the session talking to you) coordinating a **fleet** of workers in **rounds**, with a claims protocol so two workers never fight over the same test user or fixture. Each workflow skill still owns what gets done; the orchestration skill owns how sessions are launched, briefed, supervised and closed.
 
-Two things to tell a newcomer:
+Tell a newcomer two things. It is optional: it needs an orchestration runtime, and without one a workflow skill writes its launch file as before and you paste the lines into your own terminals. And it is not "faster QA": the dogfooded sprint (figures in ADR-0006) showed value in three sessions measuring the same environment from three angles, including a conductor instruction that a worker rightly refused because its own measurement disagreed.
 
-- **It is optional.** The transport needs an orchestration runtime installed and reachable. Without it, a workflow skill never mentions it — it writes its launch file exactly as before and you paste the lines into your own terminals. Same plan, same briefs, more manual work.
-- **It is not "faster QA".** It was dogfooded on a real sprint: three of the most delayed stories tested in parallel (the figures are in ADR-0006). The value that showed up was not the hour saved — it was three sessions measuring the same environment from three angles, catching things a single session structurally cannot, including one conductor instruction that was simply wrong and that a worker refused to follow because its own measurement disagreed.
-
-Visual deck: `packages/decks/orca-orchestration/how-it-works.es.html` (same opening protocol as every other deck — ask first).
+Visual deck: `packages/decks/orca-orchestration/how-it-works.es.html` (same opening protocol as every other deck, so ask first).
 
 ---
 
 ## MCPs available
 
-The project MCP files (`.mcp.json` and its OpenCode / Codex / Pi twins) commit only LOCAL (stdio) servers: the ones that read `.env` values (the app's database and API, the Slack bot) and the docs server, which needs no key. The set is whatever `.mcp.json` declares (`KNOWN_MCP_IDS` in `cli/lib/agent-compatibility-contracts.ts` pins the shipped ones), and the capability each server provides is in `agentic-qa-core/references/mcp-capabilities.md` §2.
+The project MCP files (`.mcp.json` and its OpenCode / Codex / Pi twins) commit only LOCAL (stdio) servers: the ones that read `.env` values (the app's database and API, the Slack bot) and the keyless docs server. The set is whatever `.mcp.json` declares (`KNOWN_MCP_IDS` in `cli/lib/agent-compatibility-contracts.ts` pins the shipped ones), and the capability each server provides is in `agentic-qa-core/references/mcp-capabilities.md` §2.
 
-A remote server whose only project-side content was an API key is the harness's business (ADR-0005; the list of moved servers and how to connect each one per host: `cli/lib/harness-level-mcps.ts`, human guide `docs/core/variables-de-entorno.html`). The **Atlassian MCP is opt-in** (setup in `agentic-qa-core/references/mcp-atlassian-optin.md`) — the primary Jira tools are `/acli` and `bun run jira:sync-issues`.
+A remote server whose only project-side content was an API key is the harness's business (ADR-0005; the list of moved servers and how to connect each one per host: `cli/lib/harness-level-mcps.ts`, human guide `docs/core/variables-de-entorno.html`). The **Atlassian MCP is opt-in** (setup in `agentic-qa-core/references/mcp-atlassian-optin.md`); the primary Jira tools are `/acli` and `bun run jira:sync-issues`.
 
-**Decision rule** (tools resolve by CAPABILITY, i.e. by tool-name suffix, so a user-level server or a claude.ai connector exposing the same tools counts; a capability nobody provides is a point-of-use STOP, never a silent fallback: `agentic-qa-core/references/mcp-capabilities.md`):
+Tools resolve by capability, that is by tool-name suffix, so a user-level server or a claude.ai connector exposing the same tools counts. A capability nobody provides is a point-of-use STOP, not a silent fallback (`agentic-qa-core/references/mcp-capabilities.md`). The decision rule:
 
-- Use **Context7** (capability `library-docs`) for "how to use X" — official docs, current API
-- Use the **web-search** capability (a harness-level server: Exa first, Tavily second) for "how to solve X" — community fixes, troubleshooting
-- Use `/acli` for ticket WRITES (create, transition, comment, link); for detailed READS (custom fields, ACs, ATP/ATR, comments) use `bun run jira:sync-issues get`/`jql`
-- Use `/playwright-cli` for every browser interaction, ad-hoc or scripted: there is no browser MCP
+- Context7 (capability `library-docs`) for "how to use X": official docs, current API.
+- The `web-search` capability (a harness-level server: Exa first, Tavily second) for "how to solve X": community fixes, troubleshooting.
+- `/acli` for ticket WRITES (create, transition, comment, link); `bun run jira:sync-issues get`/`jql` for detailed READS (custom fields, ACs, ATP/ATR, comments).
+- `/playwright-cli` for every browser interaction, ad-hoc or scripted. There is no browser MCP.
 
-`.mcp.json` lives at the repo root and is **committed**: it is secret-free, naming secrets only in each server's `.env` loader `--filter`. Every MCP server that needs `.env` values starts through that loader on every host (`.mcp.json`, `opencode.jsonc`, `.codex/config.toml`, `.pi/mcp.json`; `MCP_ENV_LOADER_*` in `cli/lib/agent-compatibility-contracts.ts`), which reads `.env` from the project root itself, so even a desktop or Dock launch sees the values and no plaintext copy is written anywhere. Only `.mcp.local.json` (personal overrides) is gitignored.
+`.mcp.json` sits at the repo root and is **committed**: it is secret-free and names secrets only in each server's `.env` loader `--filter`. Every MCP server that needs `.env` values starts through that loader on every host (`.mcp.json`, `opencode.jsonc`, `.codex/config.toml`, `.pi/mcp.json`; `MCP_ENV_LOADER_*` in `cli/lib/agent-compatibility-contracts.ts`). The loader reads `.env` from the project root itself, so even a desktop or Dock launch sees the values and no plaintext copy is written anywhere. Only `.mcp.local.json` (personal overrides) is gitignored.
 
 ---
 
 ## Env vars, by scope
 
-Every variable carries a scope in `cli/lib/variables-manifest.ts` (human guide: `docs/core/variables-de-entorno.html`). Nothing blocks install or the doctor: a value is validated by the code that reads it, with a named error. Fill what your work needs: the list is `.env.example` (each variable documented in place, its scope in the manifest), `bun run vars:env:check` verifies them, and `bun run setup:doctor` shows every variable with its scope. The Jira site HOST is NOT in `.env` — it lives in `.agents/project.yaml` -> `issue_tracker.atlassian_url`; read it with `bun run --silent jira:url`.
+Every variable carries a scope in `cli/lib/variables-manifest.ts` (human guide: `docs/core/variables-de-entorno.html`). Nothing blocks install or the doctor: the code that reads a value validates it, with a named error. The list is `.env.example` (each variable documented in place, its scope in the manifest), `bun run vars:env:check` verifies them, and `bun run setup:doctor` shows every variable with its scope and which harness-level servers your user config declares. The Jira site HOST is not in `.env`: it lives in `.agents/project.yaml` -> `issue_tracker.atlassian_url`; read it with `bun run --silent jira:url`.
 
-Not in `.env`: web search and Postman are MCP servers connected at harness level (a claude.ai connector, a user-scope server, the OpenCode / Codex user config, `~/.pi/agent/mcp.json` on Pi; claude.ai connectors do not exist there), and `acli` / `resend` keep their own login. `bun run setup:doctor` shows every variable with its scope and which harness-level servers your user config declares.
+Not in `.env`: web search and Postman are MCP servers connected at harness level (a claude.ai connector, a user-scope server, the OpenCode / Codex user config, `~/.pi/agent/mcp.json` on Pi; claude.ai connectors do not exist there), and `acli` / `resend` keep their own login.
 
-`.env` is **gitignored**. Never commit it. `.agents/project.yaml` (committed) holds non-secret context (URLs, project key, environment names); `.env` holds the matching secrets.
-
-`.mcp.json` is **committed** and safe to commit: it never holds a secret value, only variable names in each loader's `--filter`. `.env` is the single source, read by the loader at spawn time; `bun run setup:doctor` reports any plaintext copy an older `bun run harness:env` left behind, and `bun run harness:env` retires it. Personal overrides go in the gitignored `.mcp.local.json`.
-
-Verify your config with `bun run vars:check` (should report 0 errors when fully configured). The full health check is `bun run setup:doctor`.
+`.env` is **gitignored**: do not commit it. `.agents/project.yaml` (committed) holds non-secret context (URLs, project key, environment names) and `.env` holds the matching secrets. `bun run setup:doctor` reports any plaintext copy an older `bun run harness:env` left behind (`bun run harness:env` retires it). Verify your config with `bun run vars:check` (0 errors when fully configured).
 
 ---
 
 ## Local skills (committed in this repo)
 
-The committed skills, with their triggers and purpose, are listed in `.agents/instructions/agent-skills-and-mcps.md` (a project's own skills, in the `## Project context skills` table of `.agents/instructions/agent-project.md`) and indexed in `.agents/skills/REGISTRY.md` (generated by `bun run skills:registry`); this skill keeps no copy.
+The committed skills, with their triggers and purpose, are listed in `.agents/instructions/agent-skills-and-mcps.md` (a project's own skills, in the `## Project context skills` table of `.agents/instructions/agent-project.md`) and indexed in `.agents/skills/REGISTRY.md` (generated by `bun run skills:registry`). This skill keeps no copy.
 
 ---
 
 ## Persistent memory (Engram)
 
-`bun setup` wires **Engram** into each selected agent with the engram binary's own `engram setup <agent>`: it registers the Engram MCP server and nothing else. On Claude Code the installer then offers the Engram plugin (`claude plugin install engram@engram`), which adds the session hooks the MCP registration does not install ([`INSTALLER.md`](../../../INSTALLER.md), "What `engram setup` adds"). The boilerplate does not use gentle-ai's workflow layer; its own workflow skills (`/shift-left-testing`, `/sprint-testing`, `/test-automation`, `/test-documentation`, `/regression-testing`) cover Plan → Code → Verify natively.
+`bun setup` wires **Engram** into each selected agent with the engram binary's own `engram setup <agent>`, which registers the Engram MCP server and nothing else. On Claude Code the installer then offers the Engram plugin (`claude plugin install engram@engram`), which adds the session hooks the MCP registration does not install ([`INSTALLER.md`](../../../INSTALLER.md), "What `engram setup` adds"). The boilerplate does not use gentle-ai's workflow layer: its own workflow skills cover Plan → Code → Verify.
 
-Two things worth telling a new user: the agent saves memories only when it decides to (`mem_save`), and search matches keywords, not meaning, so a short keyword query finds more than a full question.
-
-Full details in [`INSTALLER.md`](../../../INSTALLER.md).
+Tell a new user two things: the agent saves memories only when it decides to (`mem_save`), and search matches keywords, not meaning, so a short keyword query finds more than a full question.
 
 ## Community skills installed at user level
 
-`bun setup` also runs `bunx skills add --global` for the cross-project skills in the `USER_LEVEL_SKILLS` array of `cli/install.ts` (the last row of the table below is NOT one of them — the orchestration binary installs it, not `setup`). It asks per skill, all pre-checked; a skill you uncheck is recorded as declined and not offered again, and a non-interactive run installs every skill not declined:
+`bun setup` also runs `bunx skills add --global` for the cross-project skills in the `USER_LEVEL_SKILLS` array of `cli/install.ts` (the last row of the table below is not one of them: the orchestration binary installs it, not `setup`). It asks per skill with all of them pre-checked; a skill you uncheck is recorded as declined and not offered again, and a non-interactive run installs every skill not declined.
 
-**Every installed skill needs a LOADER, or it should not be installed.** An install that no flow
-ever reaches is tokens spent on a capability nobody invokes — and the failure is silent, because an
-unused skill looks exactly like a working one. So the third column is not decoration: it names the
-skill and the moment that loads this one, or says plainly that only a human invokes it. A loader named here is
-what lets the agent load the skill without asking (`agentic-qa-core/references/skill-composition-strategy.md` §3.2),
-and `bun run skills:check` (`T4-LOADER`) fails when a `USER_LEVEL_SKILLS` slug has no row, or a row whose
-loader cell neither cites its loader in backticks nor says "user-invoked only".
+An installed skill needs a loader, or it should not be installed. An install that no flow reaches is tokens spent on a capability nobody invokes, and the failure is silent because an unused skill looks exactly like a working one. So the third column names the skill and the moment that loads this one, or says that only a human invokes it. A loader named here lets the agent load the skill without asking (`agentic-qa-core/references/skill-composition-strategy.md` §3.2). `bun run skills:check` (`T4-LOADER`) fails when a `USER_LEVEL_SKILLS` slug has no row, or when a row's loader cell neither cites its loader in backticks nor says "user-invoked only". When a skill is not installed, the step that would call it runs inline and says so; it never blocks.
 
 | Skill | Source | Loaded by / when |
 | --- | --- | --- |
-| `find-skills` | vercel-labs/skills | **automatic, last resort.** `agentic-qa-core/references/skill-composition-strategy.md` §11.2: scan T1+T2, then installed T3+T4, and only if a task domain still has no match does any flow invoke this — then asks before installing |
-| `github-actions-docs` | xixu-me/skills | `/framework-development` and `/regression-testing` when EDITING or diagnosing `.github/workflows/**` (both name it; reading a workflow does not need it) |
-| `html-ppt` | lewislulu/html-ppt-skill | **user-invoked only.** `packages/decks/` is hand-authored; this is for a one-off deck outside that tree |
-| `mkd` | upex-galaxy/agentic-user-skills | any flow that reaches the decision threshold in `agentic-qa-core/references/decision-elicitation-doctrine.md` (a heavy decision: real tradeoffs, architecture, a larger change; small decisions are swept with the harness question tool instead) |
-| `humanizer` | upex-galaxy/agentic-user-skills | `/framework-development`, for the prose pass on a skill or instruction file it writes |
-| `writing-for-agents` | upex-galaxy/agentic-user-skills | `/framework-development`, when the change writes or edits a skill or instruction file |
-| `grilling` | upex-galaxy/agentic-user-skills | `/shift-left-testing`, when a story or plan has open questions to settle one at a time |
-| `domain-modeling` | upex-galaxy/agentic-user-skills | `/shift-left-testing`, when an interview answer settles a domain term for `business-domain-context` |
-| `to-questionnaire` | upex-galaxy/agentic-user-skills | `/shift-left-testing`, when several open questions go to the PO or Dev as one questionnaire |
-| `retro` | upex-galaxy/agentic-user-skills | `/framework-development`, in Phase 4 Archive; `/orca-orchestration`, in the harvest step at the close of a wave |
-| `show-me-your-work` | upex-galaxy/agentic-user-skills | `/orca-orchestration`, in its `## Decision log` section, for a routine or a long-running worker |
-| `blast-radius` | upex-galaxy/agentic-user-skills | `/sprint-testing`, the step that calls `Skill` with "blast-radius" in `sprint-testing/SKILL.md` (bug risk score), `sprint-testing/references/session-entry-points.md` Step 1.3 and `sprint-testing/references/acceptance-test-planning.md` section 0.2, and the step in `regression-testing/SKILL.md` under "When to run each suite" (suite choice from a change); not installed means the step runs inline |
-| `diagnosing-bugs` | upex-galaxy/agentic-user-skills | `/sprint-testing`, the step that calls `Skill` with "diagnosing-bugs" in `sprint-testing/SKILL.md` (bug retest Execute) and `sprint-testing/references/session-entry-points.md` Step 1.7, and the borderline-failure step in `regression-testing/SKILL.md` Step 4 plus `regression-testing/references/failure-classification.md` section 6; not installed means the step runs inline |
-| `orchestration.orchestrator_skills` | the orchestration binary | `/orca-orchestration`, ALONGSIDE it — the vendor owns the command grammar, the repo skill owns when and what |
+| `find-skills` | vercel-labs/skills | automatic, last resort. `agentic-qa-core/references/skill-composition-strategy.md` §11.2 (Invocation order, steps 2 and 3): scan T1 and T2, then installed T3 and T4, and only when a task domain still has no match does a flow invoke it. It asks before installing anything |
+| `github-actions-docs` | xixu-me/skills | `/regression-testing` (`regression-testing/SKILL.md`, the `.github/workflows/*.yml` bullet under its context files) and `/framework-development` (its `/github-actions-docs` row in the optional-skills dispatch table), when EDITING or diagnosing `.github/workflows/**`; reading a workflow does not need it |
+| `html-ppt` | lewislulu/html-ppt-skill | user-invoked only. `packages/decks/` is hand-authored; this is for a one-off deck outside that tree |
+| `mkd` | upex-galaxy/agentic-user-skills | `agentic-qa-core/references/decision-elicitation-doctrine.md` §3 (the installed row: "call the Skill tool with "mkd""), reached by any flow at the heavy-decision threshold of that doctrine (real tradeoffs, architecture, a larger change; small decisions go through the harness question tool instead); also named as the Handoff deck instrument in `exploratory-testing/SKILL.md` |
+| `humanizer` | upex-galaxy/agentic-user-skills | `/framework-development` (`framework-development/SKILL.md`, the "Prose" step of the three jobs of a skill change) and `agentic-qa-core/references/skill-scaffold.md`, for the prose pass on a skill or instruction file it writes |
+| `writing-for-agents` | upex-galaxy/agentic-user-skills | `/framework-development` (`framework-development/SKILL.md`, the instruction-file note and the "Structure" step of the three jobs of a skill change) and `agentic-qa-core/references/skill-scaffold.md`, when the change writes or edits a skill or instruction file |
+| `grilling` | upex-galaxy/agentic-user-skills | `/shift-left-testing` (`shift-left-testing/SKILL.md`, Phase 3 Handoff, step 1 of the interview), when a Story or plan has open questions to settle one at a time |
+| `domain-modeling` | upex-galaxy/agentic-user-skills | `/shift-left-testing` (`shift-left-testing/SKILL.md`, Phase 3 Handoff, step 3 of the interview, and `shift-left-testing/references/refinement-playbook.md`), when an answer settles a domain term for `business-domain-context` |
+| `to-questionnaire` | upex-galaxy/agentic-user-skills | `/shift-left-testing` (`shift-left-testing/SKILL.md`, Phase 1 step 7, and the PO questionnaire step under `## With nobody at the keyboard`), when several open questions go to the PO or Dev as one questionnaire |
+| `retro` | upex-galaxy/agentic-user-skills | `/framework-development` (`framework-development/SKILL.md`, Phase 4 Archive, step 2) and `/orca-orchestration` (`orca-orchestration/references/coordinator-playbook.md`, the harvest at the close of a wave) |
+| `show-me-your-work` | upex-galaxy/agentic-user-skills | `/orca-orchestration` (`orca-orchestration/SKILL.md`, `## Decision log`), for a routine or a long-running worker |
+| `blast-radius` | upex-galaxy/agentic-user-skills | `/sprint-testing` (`sprint-testing/SKILL.md`, the bug risk score in the Bug mode branch; `sprint-testing/references/session-entry-points.md` Step 1.3; `sprint-testing/references/acceptance-test-planning.md` §0.2) and `/regression-testing` (`regression-testing/SKILL.md`, `## When to run each suite`, suite choice from a change). Not installed: the step runs inline |
+| `diagnosing-bugs` | upex-galaxy/agentic-user-skills | `/sprint-testing` (`sprint-testing/SKILL.md`, the bug retest Execute step; `sprint-testing/references/session-entry-points.md` Step 1.7) and `/regression-testing` (`regression-testing/SKILL.md` Step 4, and `regression-testing/references/failure-classification.md` §6), for diagnosis only. Not installed: the step runs inline |
+| `orchestration.orchestrator_skills` | the orchestration binary | `/orca-orchestration`, ALONGSIDE it: the vendor owns the command grammar, the repo skill owns when and what |
 
-Plus the project-level community skills in the `PROJECT_LEVEL_SKILLS` array of `cli/install.ts`, installed into `.agents/skills/` (not committed). `skill-creator`, among them, is the builder of every skill this repo scaffolds: `/framework-development` loads it when the change IS a skill, and `project-context` mode `context-skill` loads it for a consumer's `<aspect>-context`; both scaffold from `agentic-qa-core/references/skill-scaffold.md`. See `cli/install.ts` `PROJECT_LEVEL_SKILLS` and `USER_LEVEL_SKILLS` arrays.
+The project-level community skills (the `PROJECT_LEVEL_SKILLS` array of `cli/install.ts`) install into `.agents/skills/` and are not committed. `skill-creator`, among them, builds every skill this repo scaffolds: `/framework-development` loads it when the change is a skill, and `project-context` mode `context-skill` loads it for a consumer's `<aspect>-context`. Both scaffold from `agentic-qa-core/references/skill-scaffold.md`.
 
 ---
 
 ## Next steps after the onboard
 
-**On a brand-new project** (new app under test / new Jira project): follow the 4-phase "New project path" above — this checklist alone is not enough, it only covers phase 1.
+**On a brand-new project** (new app under test, new Jira project) follow the 4-phase "New project path" above. This checklist alone is not enough: it covers phase 1 only.
 
-**Joining an already-adapted project**: run through this checklist before you reach for your first ticket:
+**Joining an already-adapted project**: go through this checklist before your first ticket.
 
 - [ ] Did you run `bun setup`?
 - [ ] Did you fill `.env` with what your work needs (`.env.example` documents each variable and its scope) and connect web search at harness level?
@@ -395,26 +372,38 @@ Plus the project-level community skills in the `PROJECT_LEVEL_SKILLS` array of `
 - [ ] Does `bun run vars:check` exit clean (0 errors)?
 - [ ] Did you run `bun run jira:check` to verify Jira credentials?
 - [ ] Are the Playwright browsers installed? (`bun setup` downloads Chromium; `bun run pw:install` if that step was skipped)
-- [ ] Did you run `bun run context:hydrate` to build the `.context/PBI/` Jira cache? (gitignored and regenerable — Jira stays the source of truth)
-- [ ] Does the `git_strategy:` block in `.agents/project.yaml` reflect a CHOSEN strategy (`meta.strategy_source: chosen`)? If it still says `inherited`, git-flow-master will offer Strategy Setup on your first git action — accepting takes 4 questions.
+- [ ] Did you run `bun run context:hydrate` to build the `.context/PBI/` Jira cache? (gitignored and regenerable; Jira stays the source of truth)
+- [ ] Does the `git_strategy:` block in `.agents/project.yaml` reflect a CHOSEN strategy (`meta.strategy_source: chosen`)? If it still says `inherited`, git-flow-master offers Strategy Setup on your first git action.
 - [ ] Does engram persistent memory respond (try `mem_context` after restart)?
 - [ ] Ready for your first QA ticket: `/sprint-testing <UPEX-XXX>`
 
-If any box is unchecked, fix that first. The downstream skills assume a green foundation.
+Fix any unchecked box first: the downstream skills assume a green foundation.
 
 ---
 
-## What this skill does NOT do
+## With nobody at the keyboard
 
-- Refine backlog Stories pre-sprint → use `/shift-left-testing`
-- Test a ticket → use `/sprint-testing`
-- Run the sprint as a fleet watched from the Sprint Board → use `/sprint-conductor`
-- Explore a module, a flow or the whole app with no ticket → use `/exploratory-testing`
-- Document test cases in TMS → use `/test-documentation`
-- Write automated tests → use `/test-automation`
-- Run a regression suite → use `/regression-testing`
-- Discover a brand-new target project → use `/project-discovery`
-- Adapt the KATA test architecture to a target stack → use `/test-framework-adaptation`
-- Launch or supervise several parallel sessions → use `/orca-orchestration`
+The tour has two waits: the one clarifying question, and the yes before a deck or docs server opens. `agentic-qa-core/references/decision-protocol.md` says who may ask.
 
-The onboard tour ends once the user knows which skill to call next. From there, the relevant workflow skill takes over.
+| Situation | Path |
+| --- | --- |
+| A person is present | unchanged: ask, wait for the yes, open one deck |
+| A supervised worker | the question and any deck go to the launcher, which holds the gate; the worker answers from the files and opens nothing |
+| A routine with nobody | the delegating brief is the approval source when it names a deck or a topic; otherwise write the explanation as text, open no browser and no local server, and report |
+
+---
+
+## What this skill does not do
+
+- Refine backlog Stories pre-sprint: `/shift-left-testing`
+- Test a ticket: `/sprint-testing`
+- Run the sprint as a fleet watched from the Sprint Board: `/sprint-conductor`
+- Explore a module, a flow or the whole app with no ticket: `/exploratory-testing`
+- Document test cases in TMS: `/test-documentation`
+- Write automated tests: `/test-automation`
+- Run a regression suite: `/regression-testing`
+- Discover a brand-new target project: `/project-discovery`
+- Adapt the KATA test architecture to a target stack: `/test-framework-adaptation`
+- Launch or supervise several parallel sessions: `/orca-orchestration`
+
+The tour ends once the user knows which skill to call next, and the workflow skill takes over from there.
