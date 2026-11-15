@@ -25,6 +25,18 @@
       "category": "positive"
     },
     {
+      "name": "should-trigger-spanish-sweep",
+      "prompt": "Haz un barrido de toda la app antes de la demo del viernes, solo lectura, con datos y seguridad primero, sin ningun ticket de por medio.",
+      "expected_behavior": "Activates exploratory-testing in Whole-App Sweep mode with a read-only mutation budget, same pipeline as the English sweep case. Artifacts are written in English; the conversation stays in Spanish.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-spanish-coverage-gaps",
+      "prompt": "El inventario de cobertura dice que el modulo de suscripciones tiene huecos. Explora esos huecos y dime cuales valen la pena como candidatos para regresion.",
+      "expected_behavior": "Activates exploratory-testing in Module-Targeted mode with the gap list as input, same pipeline as the English gap-list case. Candidates are marked NEW / WEAK / COVERED and stay oracle: observed until a person confirms them. Artifacts are in English; the conversation stays in Spanish.",
+      "category": "positive"
+    },
+    {
       "name": "should-trigger-from-gap-list",
       "prompt": "The coverage inventory says the subscriptions module has six uncovered behaviours and two weak ones. Go explore those gaps and tell me which ones are real candidates for the regression suite.",
       "expected_behavior": "Activates exploratory-testing in Module-Targeted mode with the gap list as input: the queue is the module's gaps in gap-list order, deduped through tests[].covers. A behaviour whose only covers are weak stays WEAK and is handed off naming the weak test; it is never marked COVERED. Candidates go to test-documentation only after a person confirms each oracle.",

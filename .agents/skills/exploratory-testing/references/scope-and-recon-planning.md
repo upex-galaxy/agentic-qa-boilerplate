@@ -1,17 +1,12 @@
 # Scope, Charter and Recon Planning (step Charter)
 
-Read this before picking a scope or building the recon fan-out plan. The Charter step runs entirely on the
-main thread: it is planning, and planning is never delegated (`../../agentic-qa-core/references/briefing-template.md`
-anti-patterns).
+Read this before picking a scope or building the recon fan-out plan. The Charter step runs entirely on the main thread, because planning is not delegated (`../../agentic-qa-core/references/briefing-template.md`, anti-patterns).
 
 ---
 
 ## 1. Pick the scope mode first
 
-Every invocation picks exactly one mode, and there is no default. A first `$ARGUMENTS` token `flow`, `module`
-or `sweep` IS the mode; so is a request that clearly names one flow, one module or a whole-product sweep
-(args-as-answers, `../../agentic-qa-core/references/preflight-gate.md`). When the request names none of them,
-or could mean more than one, ask.
+Every invocation picks exactly one mode, and there is no default. A first `$ARGUMENTS` token of `flow`, `module` or `sweep` is the mode, and so is a request that clearly names one flow, one module or a whole-product sweep (args-as-answers, `../../agentic-qa-core/references/preflight-gate.md`). When the request names none of them, or could mean more than one, ask.
 
 | Mode | Token | Input | Typical fan-out | Use when |
 |---|---|---|---|---|
@@ -19,14 +14,13 @@ or could mean more than one, ask.
 | **Module-Targeted** | `module` | one module: a product Epic, its Jira component, its section of the business maps | 1-3 agents (DB + API, + UI if the module has a UI surface) | "explore the orders module for bugs", or seeding `test-documentation` for one area |
 | **Whole-App Sweep** | `sweep` | none: a periodic health-check round over every module | one agent per major module, capped by `orchestration.max_workers` in `.agents/project.yaml` | between sprints, or as a scheduled round |
 
-If the request names a ticket key, this is the wrong skill: route to `sprint-testing`, which tests one
-ticket against its ACs. This skill is deliberately ticket-free.
+A request that names a ticket key belongs to `sprint-testing`, which tests one ticket against its ACs. This skill is ticket-free on purpose.
 
 ---
 
 ## 2. Where the scope comes from
 
-The scope is read, never invented:
+Read the scope from these sources; do not invent it:
 
 | Source | Read with | Gives |
 |---|---|---|
@@ -36,16 +30,13 @@ The scope is read, never invented:
 | The module's QA knowledge | the synced `module-context.md` of the module's Epic folder under `.context/PBI/epics/` | known fixtures, gotchas, trap instances, prior exploratory rounds |
 | Recent executions | the ATR of the module's recent coverables: the synced `acceptance-test-results.md` under jira-native, the synced `ATR-<KEY>-<slug>.md` under `.context/PBI/test-executions/` under jira-xray | what changed lately and is worth re-checking |
 
-A placeholder map (the `--list` call prints the placeholder notice) is a scope limitation, not a blocker
-for a narrow module run: say so in the charter and narrow the scope to what the code and the live
-environment show. A sweep with every map a placeholder STOPs and names `project-context e2e`.
+A placeholder map (the `--list` call prints the placeholder notice) limits the scope but does not block a narrow module run: say so in the charter and narrow the scope to what the code and the live environment show. A sweep where every map is a placeholder stops and names `project-context e2e`.
 
 ---
 
 ## 3. The charter
 
-The charter is the reviewable, resumable record of what this round is for. Write it to `charter.md` in the
-session directory before any dispatch. One page, these headings:
+The charter is the reviewable, resumable record of what this round is for. Write it to `charter.md` in the session directory before any dispatch. Keep it to one page, with these headings:
 
 ```markdown
 # Charter: <scope> (<mode>)
@@ -64,8 +55,7 @@ session directory before any dispatch. One page, these headings:
 <"gap list <run_id>" or "built locally: coverage-view.json"; the counts of behaviours already covered>
 
 ## Oracle
-Every behaviour without an AC is recorded `oracle: observed`; a person answers "is this intended?" at
-Handoff (discovery-driven-doctrine §4).
+Every behaviour without an AC is recorded `oracle: observed`, and a person answers "is this intended?" at Handoff (discovery-driven-doctrine §4).
 
 ## Agents
 <one line per Recon agent: surface, levels (UI / API / DB), fixtures from module-context>
@@ -84,23 +74,17 @@ Handoff (discovery-driven-doctrine §4).
 
 ## 4. The coverage view (what already exists, before fan-out)
 
-Exploration that ignores existing coverage hands documentation a pile of scenarios the repository already
-holds. Build the view before Recon, from one of two sources.
+Exploration that ignores existing coverage hands documentation scenarios the repository already holds. Build the view before Recon, from one of two sources.
 
 **The gap list exists** (`schema_version: 1`, generated by `bun run context:coverage classify`):
 
-- Restrict it to the scope: the `behaviours[]` whose `module` or id prefix is in scope. Their `gaps` order
-  IS the exploration queue.
-- Dedupe through the inverse view `tests[].covers` and each behaviour's `covered_by[]`. Only rows with
-  `counted: true` count. A `weak` verdict is never coverage. A row marked `stale`, or `verified: false`
-  because the TMS was not read, never dedupes: it is treated as absent (fail-closed).
-- A gap list older than the KATA manifest or the TMS changes in scope is still usable; say how old it is in
-  the charter and recommend a fresh `project-context coverage` run, never block on it.
+- Restrict it to the scope: the `behaviours[]` whose `module` or id prefix is in scope. Their `gaps` order is the exploration queue.
+- Dedupe through the inverse view `tests[].covers` and each behaviour's `covered_by[]`. Only rows with `counted: true` count, and a `weak` verdict is not coverage. A row marked `stale`, or `verified: false` because the TMS was not read, does not dedupe: treat it as absent (fail-closed).
+- A gap list older than the KATA manifest or the TMS changes in scope is still usable. Say how old it is in the charter and recommend a fresh `project-context coverage` run without waiting on it.
 
 **No gap list.** Build `coverage-view.json` in the session directory from:
 
-- `kata-manifest.json` (Critical Rule #12): every ATC whose component or file belongs to the module, with
-  its file and method, on `git_strategy.branches.production`.
+- `kata-manifest.json` (Critical Rule #12): every ATC whose component or file belongs to the module, with its file and method, on `git_strategy.branches.production`.
 - The TMS Tests of the module, read the way the inventory reads them: `bun run context:coverage collect
   --out-dir <session dir>`. Its `collect.json` `tests[]` holds the TMS test repository (key, title,
   components, the coverables each Test reaches, status, regression membership) in both modalities, next to
@@ -110,22 +94,15 @@ holds. Build the view before Recon, from one of two sources.
   coverable's `test-cases/` folder (`bun run jira:sync-issues get <COVERABLE-KEY>` materializes them);
   under jira-xray the manual steps live in Xray, read through `[TMS_TOOL]` (`/xray-cli`, `test get <KEY>`).
 
-**TMS not read (fail-closed).** `collect` reads no TMS when no business map is generated, with `--tms none`,
-without a project key or credentials, or when the instance is unreachable; `collect.json`
-`sources.tms.reason` says which. Then the charter's `## Coverage view` line says `TMS not read: <reason>`,
-and no manual Test can cover anything this round: a candidate claiming one is `NEW` with that reason,
-never `COVERED`. The same holds for any single Test whose assertions could not be read.
+**TMS not read (fail-closed).** `collect` reads no TMS when no business map is generated, with `--tms none`, without a project key or credentials, or when the instance is unreachable; `collect.json` `sources.tms.reason` says which. Then the charter's `## Coverage view` line says `TMS not read: <reason>`, and no manual Test covers anything this round: a candidate that claims one is `NEW` with that reason, not `COVERED`. The same holds for any single Test whose assertions could not be read.
 
-Each entry is `{ test, kind, behaviour, verdict, evidence }` with the same scale as the gap list:
-`exercises` when an assertion or expected result fails if the behaviour breaks, `weak` when the test runs
-through it without checking it. Every entry is `judged_by: agent`. Claim nothing on a title match alone.
-Recommend `project-context coverage` once in the report so the next round starts from a recomputable list.
+Each entry is `{ test, kind, behaviour, verdict, evidence }` with the same scale as the gap list: `exercises` when an assertion or expected result fails if the behaviour breaks, `weak` when the test runs through it without checking it. Every entry is `judged_by: agent`. A title match alone is not enough to claim coverage. Recommend `project-context coverage` once in the report so the next round starts from a recomputable list.
 
 ---
 
 ## 5. Building the recon plan
 
-For the chosen mode, produce a short plan (a few lines, recorded in the charter's `## Agents`):
+For the chosen mode, write a short plan (a few lines, recorded in the charter's `## Agents`):
 
 1. **Surfaces in scope**: from the flow's modules, the single module, or every major module.
 2. **Prior context per surface**: the module's `module-context.md` (refresh it first with
@@ -135,10 +112,8 @@ For the chosen mode, produce a short plan (a few lines, recorded in the charter'
    gets a UI sub-task; a pure-backend concern may not need one.
 4. **Fixture candidates**: two or three known-good fixtures per surface from `module-context.md`, so
    agents are not hunting blind.
-5. **Mutation budget**: read-only by default for a sweep; module and flow modes may create preconditions,
-   named up front with their cleanup (`recon-fanout.md` §5).
-6. **The coverage view** of §4, passed to every agent as the list of behaviour ids and their existing
-   covers.
+5. **Mutation budget**: read-only by default for a sweep. Module and flow modes may create preconditions, named up front with their cleanup (`recon-fanout.md` §5).
+6. **The coverage view** of §4, passed to every agent as the behaviour ids and their existing covers.
 
 ---
 
@@ -154,18 +129,20 @@ Reuse `../../agentic-qa-core/references/preflight-gate.md`; do not restate it:
 - **Sibling repository freshness**: a finding that cites source code cites the branch deployed to that
   environment; check the backend and frontend repositories of `.agents/project.yaml` the way the preflight
   gate describes before quoting a file.
-- **Tool probe (never bypassed)**: the capabilities this skill declares (`db`, `api-schema`) per
-  `preflight-gate.md` §8, plus the browser when a surface has UI. A sweep leans on the DB and the API far
-  harder than a ticket pass, so a missing capability narrows every agent at once: STOP, name it, and record
-  it in the charter as a scope limitation if the user chooses to continue without it.
+- **Tool probe (always run)**: the capabilities this skill declares (`db`, `api-schema`) per `preflight-gate.md` §8, plus the browser when a surface has UI. A sweep leans on the DB and the API far harder than a ticket pass, so a missing capability narrows every agent at once. Stop, name it, and record it in the charter as a scope limitation if the user chooses to continue without it.
 
 ---
 
 ## 7. Present the plan, wait for confirmation
 
-Before dispatching Recon, present the charter (scope, agents, mutation budget, environment, time box) and
-wait for an OK. A sweep can spawn many agents and touch many tables; a short confirmation costs far less
-than discovering mid-run that the scope or the budget was wrong.
+Before dispatching Recon, present the charter (scope, agents, mutation budget, environment, time box) and wait for an OK. A sweep can spawn many agents and touch many tables, and a short confirmation costs far less than finding out mid-run that the scope or budget was wrong.
 
-Exception: when the request already named the scope AND said "go" (or an equivalent), that is the
-confirmation. Do not manufacture a redundant stop.
+When the request already named the scope and said "go" (or an equivalent), that is the confirmation, so do not add a second stop.
+
+Who confirms depends on who is running:
+
+- A person is present: wait for their OK, as above.
+- A supervised worker: the conductor or launcher holds the gate and answers for the person; report the charter to it and wait for its reply.
+- A routine with nobody: the delegating brief is the approval when it names the scope and covers the mutation budget. Without that, write the charter, stop before dispatching any Recon agent that would mutate, and report. Read-only agents may still run.
+
+The rules for what reaches a person are in `../../agentic-qa-core/references/decision-protocol.md`.

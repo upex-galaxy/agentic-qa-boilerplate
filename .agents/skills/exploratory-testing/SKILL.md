@@ -1,6 +1,6 @@
 ---
 name: exploratory-testing
-description: "Ticket-free exploratory testing of a critical flow, a module or the whole product, across UI, API and DB together, in the Execution stage. Runs a charter, a parallel reconnaissance fan-out, a refutation pass whose job is to kill each finding, a main-thread tie-break, and a handoff where every candidate scenario is executed live, marked NEW / WEAK / COVERED against existing coverage (the coverage gap list, or the KATA manifest plus the TMS), and marked `oracle: observed` until a person confirms it. Feeds `test-documentation` (ROI decides per scenario) and, for behaviour with no Story, the coverage Tech Story. Use whenever the user wants to hunt bugs or find test candidates without a specific ticket, explore a module or flow end to end, run a periodic sweep or health-check round, go back for the gaps the coverage inventory found, or seed test-documentation with validated scenarios. Triggers on: exploratory testing, explore the <module> module, find bugs in <flow>, sweep the app, health-check round, hunt for bugs, discover test candidates, explore the coverage gaps, characterize what the product does, testing exploratorio, explora el modulo de X, busca bugs en, barrido de la app, recorre los huecos de cobertura. Do NOT use for: testing one ticket against its ACs (sprint-testing), formalizing TCs with ROI (test-documentation), writing automated test code (test-automation), building the coverage inventory itself (project-context mode coverage), or pre-code refinement (shift-left-testing)."
+description: "Exploratory testing of a flow, a module or the whole app without a ticket, hunting bugs and test candidates across UI, API and DB. Use when asked to explore a module or flow, run a sweep or health-check round, go after the coverage gaps, or find validated scenarios for test-documentation. Not for a named ticket (sprint-testing)."
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode, pi]
 complementary_categories: [testing-e2e, testing-api, issue-tracker, tms]
@@ -11,55 +11,45 @@ metadata:
 # compact_rules is consumed VERBATIM by scripts/build-skill-registry.ts (frontmatter-first,
 # no truncation). Keep in sync with the binding doctrine below and in references/.
 compact_rules: |
-  - Ticket-free entry into the Execution stage: the scope is a flow, a module or a sweep, never a ticket key (a named ticket routes to `sprint-testing`). Mode from the first `$ARGUMENTS` token (`flow` | `module` | `sweep`), or from a request that clearly names one flow, one module or a sweep (args-as-answers); otherwise ASK.
-  - Five steps, always in order: Charter (main thread) -> Recon (Parallel) -> Refute (Parallel) -> Tie-break (main thread) -> Handoff (main thread). Planning and tie-breaks are never delegated. The charter is presented and confirmed before any Recon dispatch, unless the request already named the scope and said go.
-  - Build the coverage view BEFORE Recon: the gap list of `project-context` mode `coverage` when it exists, else `coverage-view.json` from `kata-manifest.json` + the TMS Tests read by `bun run context:coverage collect` (never by `jira:sync-issues`: Tests are `sync: never`); a TMS not read is stated `TMS not read` and no manual cover counts. Every candidate is marked NEW / WEAK / COVERED; only a counted `exercises` cover makes COVERED; a `weak`, stale or unverified cover never dedupes a candidate away.
+  - Entry is by scope, never by ticket: a flow, a module or a sweep. A named ticket key routes to `sprint-testing`. The mode comes from the first `$ARGUMENTS` token (`flow` | `module` | `sweep`), or from a request that clearly names one flow, one module or a sweep (args-as-answers); otherwise ask.
+  - Five steps in this order: Charter (main thread), Recon (Parallel), Refute (Parallel), Tie-break (main thread), Handoff (main thread). Planning and tie-breaks stay on the main thread. Present the charter and get it confirmed before any Recon dispatch, unless the request already named the scope and said go.
+  - Build the coverage view before Recon: the gap list of `project-context` mode `coverage` when it exists, else `coverage-view.json` from `kata-manifest.json` plus the TMS Tests read by `bun run context:coverage collect` (not by `jira:sync-issues`, because Tests are `sync: never`). A TMS that was not read is stated as `TMS not read`, and no manual cover counts. Mark every candidate NEW, WEAK or COVERED. Only a counted `exercises` cover makes COVERED; a `weak`, stale or unverified cover never dedupes a candidate away.
   - Compare at least 2-3 rows plus a control group before calling anything anomalous, and state the detection query verbatim.
-  - Refute mandate: every Medium+ anomaly gets a Parallel verifier told to REFUTE it (join fan-out, data quirk, intended behaviour, harness artifact); it survives only if it cannot be explained away. Check a row's own invariant, not just that it differs from another row; execute competing hypotheses side by side, never infer them. Canon: `agentic-qa-core/references/adversarial-verification.md`.
-  - Verifier disagreement goes to a main-thread tie-break: a decisive query plus a direct read of the live code path. Never a third verifier, never an average, never one agent's verdict alone on a data-integrity, money or security finding.
-  - Oracle: behaviour with no AC is `oracle: observed`; "is this intended?" goes to a person (decision-protocol kind 1), a batch through the `mkd` deck, a single question through the question tool. `oracle: confirmed` (who, where, when) makes the observation PASSED; `not intended` makes it FAILED and a proposed defect. Canon: `agentic-qa-core/references/discovery-driven-doctrine.md` §4.
-  - A candidate is PASSED or FAILED only when observed in the environment its precondition names; a code read, unit test, green CI or another environment leaves it NOT RUN with exactly one reason, BLOCKED or DEFERRED (execution), and it climbs the blocking ladder; with no coverable yet, its follow-up lives on the coverage Tech Story once approved, and until then as an item of the Handoff deck. Canon: `agentic-qa-core/references/discovery-driven-doctrine.md` §5.
-  - Never call anything that sends, notifies or pushes downstream; reads and previews are fine. A project's own list (`## Never-call endpoints` in `agent-project.md`) is carried verbatim in briefing component 7.
-  - Mutations only to set up a precondition, within the charter's budget. Every created row goes into `created_rows` the moment it exists; cleanup re-reads each one (a delete's response code is not proof).
-  - Person-signed writes: every bug (`sprint-testing/references/reporting-templates.md` §1, gate §1.12, classified per `defect-management-doctrine.md` Part 1), every coverage Tech Story (`discovery-driven-doctrine.md` §3), every module-context write. This skill creates no Test and scores no ROI.
+  - Refute mandate: every Medium+ anomaly gets a Parallel verifier told to REFUTE it (join fan-out, data quirk, intended behaviour, harness artifact). It survives only if it cannot be explained away. Check a row's own invariant, not just that it differs from another row, and execute competing hypotheses side by side instead of inferring them. Canon: `agentic-qa-core/references/adversarial-verification.md`.
+  - Verifier disagreement goes to a main-thread tie-break: a decisive query plus a direct read of the live code path. Never settle it with a third verifier or an average, and never let one agent's verdict stand alone on a data-integrity, money or security finding.
+  - Oracle: behaviour with no AC is `oracle: observed`. "Is this intended?" goes to a person (decision-protocol kind 1): a batch through the `mkd` deck, a single question through the question tool. `oracle: confirmed` (who, where, when) makes the observation PASSED; `not intended` makes it FAILED and a proposed defect. Canon: `agentic-qa-core/references/discovery-driven-doctrine.md` §4.
+  - A candidate is PASSED or FAILED only when observed in the environment its precondition names. A code read, unit test, green CI or another environment leaves it NOT RUN with exactly one reason, BLOCKED or DEFERRED (execution), and it climbs the blocking ladder. With no coverable yet, its follow-up lives on the coverage Tech Story once approved, and until then as an item of the Handoff deck. Canon: `agentic-qa-core/references/discovery-driven-doctrine.md` §5.
+  - Never call anything that sends, notifies or pushes downstream; reads and previews are fine. A project's own list (`## Never-call endpoints` in `agent-project.md`) goes verbatim into briefing component 7.
+  - Mutate only to set up a precondition, within the charter's budget. Record every created row in `created_rows` the moment it exists; cleanup re-reads each one (a delete's response code is not proof).
+  - A person signs every write: each bug (`sprint-testing/references/reporting-templates.md` §1, gate §1.12, classified per `defect-management-doctrine.md` Part 1), each coverage Tech Story (`discovery-driven-doctrine.md` §3), each module-context write. This skill creates no Test and scores no ROI.
   - Evidence that reaches a person goes through the `evidence-artifact` skill; raw captures stay in the session `evidence/` until a coverable exists.
-  - On any subagent failure: STOP, report which surface or finding failed, offer retry / skip-surface / abort; a skipped surface is recorded "not covered this round", never dropped silently. A skill that itself broke is reported upstream per `agentic-qa-core/references/upstream-feedback.md`.
+  - On any subagent failure, stop, report which surface or finding failed, and offer retry, skip-surface or abort. A skipped surface is recorded as "not covered this round", never dropped silently. A skill that itself broke is reported upstream per `agentic-qa-core/references/upstream-feedback.md`.
 ---
 
 ## Forbidden invocations
 
-**NEVER invoke `/sdd-*` skills from this workflow.** SDD is an optional
-user-installed ceremony; this skill ships self-contained and does not chain
-SDD under any condition. If you need to refactor KATA, fixtures, cli/,
-scripts/, or api/schemas/ pipeline, exit this skill first and invoke
-`/framework-development`.
+This workflow never invokes `/sdd-*` skills. SDD is an optional ceremony the user installs; this skill is
+self-contained and does not chain into it. To refactor KATA, fixtures, `cli/`, `scripts/` or the
+`api/schemas/` pipeline, leave this skill and invoke `/framework-development`.
 
-This boundary is mechanical, not advisory: `scripts/lint-skills.ts` rejects
-any `/sdd-` mention outside this section. See:
-`.agents/skills/agentic-qa-core/references/skill-composition-strategy.md` §4
-(governs users who manually install SDD).
+`scripts/lint-skills.ts` enforces the boundary: it rejects any `/sdd-` mention outside this section
+(`.agents/skills/agentic-qa-core/references/skill-composition-strategy.md` §4 covers users who install SDD).
 
-# Exploratory Testing — Find Bugs, Discover Test Candidates, Without a Ticket
+# Exploratory Testing
 
-Freestyle but precise testing across a critical flow, a module, or the whole product: UI, API and DB
-together, never one alone. No ticket required. This skill hunts for real bugs in the highest-risk surfaces
-(data integrity and security first) and produces candidate scenarios that were **executed live** and
-**checked against existing coverage**, so `test-documentation` receives new work, not a second copy of
-what the repository already holds.
+Freestyle but precise testing across a critical flow, a module or the whole product, with UI, API and DB
+together and no ticket. The goal is real bugs in the highest-risk surfaces (data integrity and security
+first), plus candidate scenarios that were executed live and checked against existing coverage, so
+`test-documentation` receives new work and not a second copy of what the repository already holds.
 
-The method rests on four disciplines, and skipping any of them is how a plausible-looking anomaly becomes
-a wrong bug report: a parallel reconnaissance fan-out, a refutation pass whose job is to kill findings, a
-main-thread tie-break when verifiers disagree, and evidence-backed reporting. This repository adds the
-fifth: the coverage view, built before anyone explores, so every candidate says whether it is NEW, WEAK or
-already COVERED.
-
----
+Five disciplines carry the method, and skipping one is how a plausible anomaly becomes a wrong bug report:
+a parallel reconnaissance fan-out, a refutation pass whose job is to kill findings, a main-thread
+tie-break when verifiers disagree, evidence-backed reporting, and a coverage view built before anyone
+explores, so every candidate says whether it is NEW, WEAK or already COVERED.
 
 ## Position in the pipeline
 
-This is the second entry into the **Execution** stage (`agentic-qa-core/references/stage-gates.md`
-§"The stages, by name"): same stage, entry by SCOPE instead of by ticket. It is the `explore` and `confirm`
-steps of the discovery-driven flow (`agentic-qa-core/references/discovery-driven-doctrine.md` §1).
+This is the second entry into the Execution stage (`agentic-qa-core/references/stage-gates.md` §"The stages, by name"): the same stage, entered by scope instead of by ticket. It is the `explore` and `confirm` steps of the discovery-driven flow (`agentic-qa-core/references/discovery-driven-doctrine.md` §1).
 
 ```
 project-context coverage (gap list) --+
@@ -73,50 +63,31 @@ project-context coverage (gap list) --+
             retests later)   test-documentation
 ```
 
----
-
 ## Dependencies
 
-Requires `agentic-qa-core`. Loads on demand:
+Requires `agentic-qa-core`. These load on demand:
 
-- `agentic-qa-core/references/adversarial-verification.md`: **MANDATORY before the Refute and Tie-break steps.**
-- `agentic-qa-core/references/discovery-driven-doctrine.md`: **MANDATORY before marking any candidate** (the oracle rule §4, the outcome vocabulary and blocking ladder §5, the coverage anchor §3, risk vs ROI §7).
-- `agentic-qa-core/references/defect-management-doctrine.md`: **MANDATORY before proposing any Bug / Defect / Improvement.**
+- `agentic-qa-core/references/adversarial-verification.md`: read before the Refute and Tie-break steps.
+- `agentic-qa-core/references/discovery-driven-doctrine.md`: read before marking any candidate (the oracle rule §4, the outcome vocabulary and blocking ladder §5, the coverage anchor §3, risk vs ROI §7).
+- `agentic-qa-core/references/defect-management-doctrine.md`: read before proposing any Bug, Defect or Improvement.
 - `agentic-qa-core/references/test-design-doctrine.md`: techniques applied to the code, the schema and the observed behaviour instead of an AC (Part 2).
-- `agentic-qa-core/references/briefing-template.md`, `agentic-qa-core/references/dispatch-patterns.md`, `agentic-qa-core/references/orchestration-doctrine.md`, `agentic-qa-core/references/session-management.md`, `agentic-qa-core/references/preflight-gate.md`, `agentic-qa-core/references/decision-elicitation-doctrine.md`: cited inline by the sections that use them.
+- `agentic-qa-core/references/briefing-template.md`, `dispatch-patterns.md`, `orchestration-doctrine.md`, `session-management.md`, `preflight-gate.md` and `decision-elicitation-doctrine.md` (same folder): cited inline where they apply.
 
 ## Compact Rules
 
-**Exploration operational rules (binding):**
-
-- Ticket-free entry into the Execution stage: the scope is a flow, a module or a sweep, never a ticket key (a named ticket routes to `sprint-testing`). Mode from the first `$ARGUMENTS` token (`flow` | `module` | `sweep`), or from a request that clearly names one flow, one module or a sweep (args-as-answers); otherwise ASK.
-- Five steps, always in order: Charter (main thread) -> Recon (Parallel) -> Refute (Parallel) -> Tie-break (main thread) -> Handoff (main thread). Planning and tie-breaks are never delegated. The charter is presented and confirmed before any Recon dispatch, unless the request already named the scope and said go.
-- Build the coverage view BEFORE Recon: the gap list of `project-context` mode `coverage` when it exists, else `coverage-view.json` from `kata-manifest.json` + the TMS Tests read by `bun run context:coverage collect` (never by `jira:sync-issues`: Tests are `sync: never`); a TMS not read is stated `TMS not read` and no manual cover counts. Every candidate is marked NEW / WEAK / COVERED; only a counted `exercises` cover makes COVERED; a `weak`, stale or unverified cover never dedupes a candidate away.
-- Compare at least 2-3 rows plus a control group before calling anything anomalous, and state the detection query verbatim.
-
-**Verification doctrine (binding — full canon: `agentic-qa-core/references/adversarial-verification.md`):**
-
-- Refute mandate: every Medium+ anomaly gets a Parallel verifier told to REFUTE it (join fan-out, data quirk, intended behaviour, harness artifact); it survives only if it cannot be explained away. Check a row's own invariant, not just that it differs from another row; execute competing hypotheses side by side, never infer them.
-- Verifier disagreement goes to a main-thread tie-break: a decisive query plus a direct read of the live code path. Never a third verifier, never an average, never one agent's verdict alone on a data-integrity, money or security finding.
-
-**Oracle and outcomes (binding — full canon: `agentic-qa-core/references/discovery-driven-doctrine.md` §4, §5):**
-
-- Oracle: behaviour with no AC is `oracle: observed`; "is this intended?" goes to a person (decision-protocol kind 1), a batch through the `mkd` deck, a single question through the question tool. `oracle: confirmed` (who, where, when) makes the observation PASSED; `not intended` makes it FAILED and a proposed defect.
-- A candidate is PASSED or FAILED only when observed in the environment its precondition names; a code read, unit test, green CI or another environment leaves it NOT RUN with exactly one reason, BLOCKED or DEFERRED (execution), and it climbs the blocking ladder; with no coverable yet, its follow-up lives on the coverage Tech Story once approved, and until then as an item of the Handoff deck.
-
-**Safety and signatures (binding):**
-
-- Never call anything that sends, notifies or pushes downstream; reads and previews are fine. A project's own list (`## Never-call endpoints` in `agent-project.md`) is carried verbatim in briefing component 7.
-- Mutations only to set up a precondition, within the charter's budget. Every created row goes into `created_rows` the moment it exists; cleanup re-reads each one (a delete's response code is not proof).
-- Person-signed writes: every bug (`sprint-testing/references/reporting-templates.md` §1, gate §1.12, classified per `defect-management-doctrine.md` Part 1), every coverage Tech Story (`discovery-driven-doctrine.md` §3), every module-context write. This skill creates no Test and scores no ROI.
-- Evidence that reaches a person goes through the `evidence-artifact` skill; raw captures stay in the session `evidence/` until a coverable exists.
-- On any subagent failure: STOP, report which surface or finding failed, offer retry / skip-surface / abort; a skipped surface is recorded "not covered this round", never dropped silently. A skill that itself broke is reported upstream per `agentic-qa-core/references/upstream-feedback.md`.
+The binding rules of this skill are the `compact_rules` key in the frontmatter above. The registry hands that
+text to every executor verbatim, and the sections below explain how to carry each rule out. They cover the
+entry by scope, the five-step order, the coverage view, the 2-3 rows comparison, the refute mandate, the
+tie-break, the oracle, the outcome vocabulary, the never-call and mutation boundaries, the person-signed
+writes, evidence and subagent failure.
 
 **Read full SKILL.md when**: starting a round cold, resuming a session, or handling a sweep, a tie-break or a Handoff not covered by the rules above.
 
 ---
 
-## Inputs — read these first, in this order
+## Inputs
+
+Read these first, in this order:
 
 1. `.agents/project.yaml`: environments, `testing.default_env`, `testing.tc_creation_stage`, the backend and frontend repositories, `orchestration.max_workers`, `qa.qa_epics`.
 2. The gap list of `project-context` mode `coverage` (`<<PRIMARY_ROOT>>/.session/project-context/coverage/gap-list.json`; schema: `project-context/references/coverage.md` §"gap-list.json"). Optional: without it, the Charter step builds the coverage view itself.
@@ -132,9 +103,9 @@ Requires `agentic-qa-core`. Loads on demand:
 
 > **Orchestration & Session contracts**: this skill follows `agentic-qa-core/references/orchestration-doctrine.md` (mandatory subagent dispatch — main thread is command center) AND `agentic-qa-core/references/session-management.md` (Phase 0 resume check, plan-first persistence at `.session/<skill-slug>/<scope>/`, archive on completion). Phase 0 (resume check) and Phase 1 (plan write) are NOT optional.
 
-This skill is **per-round scope**: `<scope>` = `<YYYY-MM-DD>-<scope-slug>` (e.g. `2026-05-20-orders`, `2026-05-20-checkout-flow`, `2026-05-20-sweep`). Session state lives at `<<PRIMARY_ROOT>>/.session/exploratory-testing/<scope>/` per `agentic-qa-core/references/session-management.md` §3 + §9; its files are listed in `references/handoff-and-reporting.md`. The plan write is the charter: `plan.md` follows the §6 schema and points at `charter.md`.
+A round is one scope: `<scope>` = `<YYYY-MM-DD>-<scope-slug>` (for example `2026-05-20-orders`, `2026-05-20-checkout-flow`, `2026-05-20-sweep`). Session state lives at `<<PRIMARY_ROOT>>/.session/exploratory-testing/<scope>/` (`agentic-qa-core/references/session-management.md` §3 and §9); `references/handoff-and-reporting.md` lists its files. The plan write is the charter: `plan.md` follows the §6 schema and points at `charter.md`.
 
-Every dispatch follows the 7-component briefing (`agentic-qa-core/references/briefing-template.md`); the pattern per step follows `agentic-qa-core/references/dispatch-patterns.md`. The orchestrator verifies each step's DoD (`agentic-qa-core/references/stage-gates.md` §"Execution (exploration without a ticket)") before recording its checkpoint and advancing.
+Every dispatch uses the 7-component briefing (`agentic-qa-core/references/briefing-template.md`) and the pattern for its step (`agentic-qa-core/references/dispatch-patterns.md`). Before recording a step's checkpoint and advancing, the orchestrator verifies that step's definition of done (`agentic-qa-core/references/stage-gates.md` §"Execution (exploration without a ticket)").
 
 | Step | Pattern | Subagent role | Reference |
 |---|---|---|---|
@@ -144,28 +115,24 @@ Every dispatch follows the 7-component briefing (`agentic-qa-core/references/bri
 | Tie-break | inline (main thread) | none: a subagent's verdict on a data-integrity, money or security finding is never the last word | `agentic-qa-core/references/adversarial-verification.md` §4 |
 | Handoff | Single per artifact | one subagent per bug draft or per anchor proposal; `candidate-scenarios.md`, the oracle deck and the module-context harvest stay in the main thread (they need the whole round's state) | `references/handoff-and-reporting.md` |
 
-> **Why Parallel for Recon and Refute**: each surface and each finding is independent: no shared state, no ordering. A sweep of many modules run serially would take hours; the fan-out is the point.
+Recon and Refute run in parallel because each surface and each finding is independent, with no shared state or ordering; a sweep of many modules run serially would take hours. Charter and Tie-break stay on the main thread because the charter is planning and a single agent's verdict on a high-cost finding is not trustworthy enough to be final.
 
-> **Why the main thread for Charter and Tie-break**: the charter is planning; the tie-break exists because a single agent's verdict on a high-cost finding is not trustworthy enough to be final.
-
-> **On any subagent failure**: STOP, report the partial state (which surfaces and findings completed, which rows were created), present retry / skip-surface / abort. A skipped surface is recorded in `session.md` as "not covered this round", never silently omitted. No auto-fix, no auto-rollback. A skill that itself broke (a wrong step, a missing verifier, a stale rule) is reported upstream per `../agentic-qa-core/references/upstream-feedback.md`: drafted and redacted locally, filed only on explicit OK, verified with `gh issue view`.
-
----
+On a subagent failure, report the partial state (which surfaces and findings completed, which rows were created) and offer retry, skip-surface or abort. Record a skipped surface in `session.md` as "not covered this round". Do not auto-fix or auto-roll-back. A skill that itself broke (a wrong step, a missing verifier, a stale rule) is reported upstream per `../agentic-qa-core/references/upstream-feedback.md`: drafted and redacted locally, filed only on explicit OK, and verified with `gh issue view`.
 
 ## Fleet seam (optional)
 
-Recon runs on in-turn subagents by default. A sweep large enough to outgrow one turn may run one persistent worker per module instead, only when the user asks for it:
+Recon runs on in-turn subagents by default. A sweep large enough to outgrow one turn may run one persistent worker per module, only when the user asks for it:
 
-- **Topology: same checkout.** Recon writes nothing to the repository, only the session directory, one `recon/<surface>.json` per worker. No worktree is needed.
-- The conductor writes `launch.txt` in the session directory, one self-contained line per module, **always**. Launching and supervising those sessions is `orca-orchestration/SKILL.md` (`[ORCHESTRATION_TOOL]`); `launch.txt` is the payload for the human-paste fallback.
-- **Refute, Tie-break and Handoff stay with the conductor.** Workers return Recon reports and their `created_rows`; they never file, never ask the person, never tie-break.
-- **Silence rule**: the absence of an orchestration transport is never named to the user and never appears in the charter or the session record.
+- Same checkout. Recon writes nothing to the repository, only the session directory (one `recon/<surface>.json` per worker), so no worktree is needed.
+- The conductor always writes `launch.txt` in the session directory, one self-contained line per module. Launching and supervising those sessions is `orca-orchestration/SKILL.md` (`[ORCHESTRATION_TOOL]`); `launch.txt` is the payload for the human-paste fallback.
+- Refute, Tie-break and Handoff stay with the conductor. Workers return Recon reports and their `created_rows`; they do not file, ask the person or tie-break.
+- The absence of an orchestration transport is not mentioned to the user and does not appear in the charter or the session record.
 
 ---
 
-## Readiness Preflight Gate (MANDATORY — runs before Phase 0)
+## Readiness Preflight Gate (runs before Phase 0)
 
-> Full doctrine: `agentic-qa-core/references/preflight-gate.md`. Two laws: (1) **args-as-answers**: the mode, the scope and a named environment are provided args; ask only the gaps. (2) **probe, don't assume**. Surface gaps and REDs as ONE checklist question; STOP on a blocking RED. The generic baseline (environment, test-user credentials by name, secret and restart handling) is inherited from §3.1. Below is only this skill's delta.
+Full doctrine: `agentic-qa-core/references/preflight-gate.md`. Two laws apply: args-as-answers (the mode, the scope and a named environment are provided, so ask only the gaps) and probe, don't assume. Surface the gaps and REDs as one checklist question, and stop on a blocking RED. The generic baseline (environment, test-user credentials by name, secret and restart handling) comes from §3.1; the table is this skill's delta.
 
 | Capability | Need | Why here |
 |---|---|---|
@@ -188,7 +155,9 @@ Recon runs on in-turn subagents by default. A sweep large enough to outgrow one 
 
 ---
 
-## Workflow — five steps, always in this order
+## Workflow
+
+Five steps, in this order.
 
 ```
 Charter -- mode + scope source + charter.md + coverage view + recon plan + env gate
@@ -207,26 +176,42 @@ Handoff (main thread) -- findings/FNN-*.md (confirmed AND refuted)
                                                               references/handoff-and-reporting.md
 ```
 
-Every step closes with its checkpoint in `progress.md`. A step that returns a partial result is NEEDS REVISION, never advanced (`stage-gates.md` §"The gate rule").
+Each step closes with its checkpoint in `progress.md`. A step that returns a partial result is NEEDS REVISION and does not advance (`stage-gates.md` §"The gate rule").
 
 ### Handoff decisions, by weight
 
-The instrument follows the weight of the decisions, never their count (`AGENTS.md` §2). A round's Handoff is usually a report the person reacts to point by point, each item with its own option set: the oracle answer per candidate, file or discard per finding, the grain and approval of each Tech Story, the module context harvest. That report goes into one `mkd` decision deck (`agentic-qa-core/references/decision-elicitation-doctrine.md`); a round with a single small item asks it through the question tool. A blocking item (a row that cannot be cleaned up, a credential failure) is asked at once, never held for the deck.
+The instrument follows the weight of the decisions, not their count (`AGENTS.md` §2). A round's Handoff is usually a report the person reacts to point by point, each item with its own options: the oracle answer per candidate, file or discard per finding, the grain and approval of each Tech Story, the module-context harvest. That report goes into one `mkd` decision deck (`agentic-qa-core/references/decision-elicitation-doctrine.md`); a round with a single small item asks it through the question tool. A blocking item (a row that cannot be cleaned up, a credential failure) is asked at once and does not wait for the deck.
+
+### With nobody at the keyboard
+
+The waits in this skill are the resume / restart / abort offer, the mode question, the preflight checklist, the charter confirmation, the subagent-failure choice, and the Handoff decisions. `agentic-qa-core/references/decision-protocol.md` says which of them reach a person at all. For the rest:
+
+| Wait | Supervised worker | Routine with nobody |
+|---|---|---|
+| Resume, restart or abort | the conductor answers | resume the existing session |
+| Mode and charter confirmation | the conductor confirms | proceed only when the delegating brief names the scope and says go; otherwise write the charter, stop and report |
+| Preflight RED | the conductor decides | stop and report the RED |
+| Subagent failure | the conductor chooses | skip the surface and record "not covered this round" |
+| Handoff deck | the conductor holds it | leave the deck unanswered: the session stays open, nothing is filed, no Tech Story or module-context write is made |
+
+Everything reversible still runs: Recon, Refute, Tie-break, the findings files, `candidate-scenarios.md` and cleanup. Every Jira write, and every oracle answer, waits for a person.
 
 ---
 
-## Gotchas — apply every invocation
+## Gotchas
 
-1. **A weak cover is not coverage.** A test that runs through a behaviour without checking it leaves the candidate WEAK, and WEAK is handed off. Only a counted `exercises` cover makes COVERED.
-2. **Observed is not intended.** Never write what the product did as the expected result of a scenario before a person confirms it; that freezes whatever defect was observed (doctrine §4).
+Apply on every invocation.
+
+1. **A weak cover is not coverage.** A test that runs through a behaviour without checking it leaves the candidate WEAK, and WEAK is handed off.
+2. **Observed is not intended.** Do not write what the product did as the expected result of a scenario before a person confirms it; that freezes whatever defect was observed (doctrine §4).
 3. **Compare 2-3 rows before calling an anomaly.** One row, or a loose `GROUP BY`, is a lead (`references/recon-fanout.md` §2).
 4. **Check the row's own invariant.** Two rows differing proves nothing; a row that breaks its own formula and matches another row's value is a copy (`adversarial-verification.md` §2).
 5. **Execute the simulation, never infer it.** Same rule as `sprint-testing/references/exploration-patterns.md` and doctrine §5.2.
-6. **Size by reachability.** A defect in a hidden or unlinked route is real, but its severity reflects who can reach it: map endpoint -> handler -> caller -> navigation entry first (`adversarial-verification.md` §4, §5).
+6. **Size by reachability.** A defect in a hidden or unlinked route is real, but its severity reflects who can reach it: map endpoint, handler, caller and navigation entry first (`adversarial-verification.md` §4, §5).
 7. **Sparse environment data breaks "regressed this sprint".** Say so in the finding instead of guessing at recency.
 8. **Read the live schema before a query leans on a column name**: project docs drift.
-9. **Language**: every artifact (charter, findings, candidate scenarios, bug drafts, commits) in English; the conversation mirrors the user.
-10. **Session footer, chat only**: capture paths the instant they exist and again at close, plus skills, MCPs, CLIs and testing levels, execution framing (`agentic-qa-core/references/session-footer-contract.md`).
+9. **Language.** Every artifact (charter, findings, candidate scenarios, bug drafts, commits) is in English; the conversation mirrors the user.
+10. **Session footer, chat only.** Capture paths the instant they exist and again at close, plus skills, MCPs, CLIs and testing levels, in execution framing (`agentic-qa-core/references/session-footer-contract.md`).
 
 ---
 
@@ -242,7 +227,7 @@ The instrument follows the weight of the decisions, never their count (`AGENTS.m
 
 ---
 
-## Cross-skill handoff — what this skill does NOT do
+## Cross-skill handoff
 
 | Before this skill | After this skill |
 |---|---|
@@ -267,7 +252,7 @@ This skill produces no ATP, ATR or TC, scores no ROI and writes no test code. A 
 
 ---
 
-## References — read the narrow one for the situation
+## References
 
 | Reference | Read when |
 |---|---|
@@ -284,11 +269,8 @@ This skill produces no ATP, ATR or TC, scores no ROI and writes no test code. A 
 - [ ] `module-context.md` read for every in-scope module
 - [ ] Coverage view built (gap list `run_id`, or `coverage-view.json`, with `TMS not read` stated when it was not) and passed to every Recon agent
 - [ ] Charter written and confirmed; environment gate and tool probe passed
-- [ ] Recon dispatched Parallel, one agent per surface, every report in the schema (`created_rows` even if empty)
-- [ ] Every Medium+ anomaly refuted or survived; every disagreement settled by the tie-break
-- [ ] One `findings/FNN-*.md` per finding, confirmed and refuted
-- [ ] Every candidate marked NEW / WEAK / COVERED and carrying its outcome and oracle state
-- [ ] The Handoff decisions asked by weight; only approved writes made, each read back
-- [ ] Module-context harvest asked for every touched module, or recorded as skipped ("nothing cleared the bar")
+- [ ] Every Recon report is in the schema (`created_rows` even if empty); every Medium+ anomaly is refuted or survived, and every disagreement is settled by the tie-break
+- [ ] One `findings/FNN-*.md` per finding, confirmed and refuted; every candidate marked NEW / WEAK / COVERED with its outcome and oracle state
+- [ ] Handoff decisions asked by weight; only approved writes made, each read back; module-context harvest asked per touched module or recorded as skipped ("nothing cleared the bar")
 - [ ] Every `created_rows` entry re-read gone
 - [ ] `session.md` written; session footer printed (execution framing); `Refinements proposed:` line present
