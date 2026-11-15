@@ -1,6 +1,6 @@
 # Automation Standards
 
-Canonical conventions for naming, tagging, folder layout, data management, anti-patterns, and quality gates in KATA. Load when the standards need verification — before opening a PR, when reviewing test code, or when structuring a new module. Architectural and code-style rules live in `kata-architecture.md` and `typescript-patterns.md`.
+The conventions for naming, tagging, folder layout, test data, stability and quality gates in KATA. Load it when you need to verify a standard: before opening a PR, while reviewing test code, or when structuring a new module. The layer rules live in `kata-architecture.md` and the code-style rules in `typescript-patterns.md`.
 
 ---
 
@@ -18,11 +18,11 @@ Canonical conventions for naming, tagging, folder layout, data management, anti-
 | Steps | `{Domain}Steps` | `AuthSteps.ts`, `CheckoutSteps.ts` |
 | Fixture | `{Type}Fixture` | `ApiFixture.ts`, `UiFixture.ts`, `TestFixture.ts` |
 
-File naming: PascalCase, matches class name exactly. All code in English (components, ATCs, variables, comments). Documentation may be Spanish or English per team preference; skills and context docs are English-only.
+File names are PascalCase and match the class name exactly. All code is in English (components, ATCs, variables, comments). Documentation may be Spanish or English per team preference; skills and context docs are English only.
 
 ### ATCs (Acceptance Test Cases)
 
-Pattern: `{verb}{Resource}{Scenario}` — always camelCase, always English.
+The pattern is `{verb}{Resource}{Scenario}`, always camelCase and always English.
 
 | Scenario | Suffix | Example |
 |----------|--------|---------|
@@ -32,11 +32,7 @@ Pattern: `{verb}{Resource}{Scenario}` — always camelCase, always English.
 | Expired | `WithExpired{X}` | `loginWithExpiredToken` |
 | Forbidden | `WithRestricted{X}` / `WithInsufficient{X}` | `loadDashboardWithRestrictedRole` |
 
-Rules:
-
-- Name must describe **what action** is performed and **what outcome** is expected.
-- Must be a complete test case, not a single interaction.
-- `clickLoginButton()`, `fillEmailSuccessfully()`, `submitFormSuccessfully()` are **wrong** — they describe interactions, not test cases.
+The name says what action is performed and what outcome is expected, and the ATC is a complete test case, not a single interaction. `clickLoginButton()`, `fillEmailSuccessfully()` and `submitFormSuccessfully()` are wrong because they describe interactions.
 
 ### Test Files
 
@@ -46,16 +42,13 @@ Rules:
 | Integration | `{verb}{Resource}.test.ts` | `authenticateUser.test.ts`, `createOrder.test.ts` |
 | Utility | `{util}.test.ts` | `decorators.test.ts` |
 
-Rules:
-
-- File-name verb describes the **user action** (apply, create, submit, refresh), not a test verb like `verify`, `check`, or `test`.
-- One file = one feature. A feature may have multiple `describe` blocks (tickets) that touch the same functionality.
-- One ticket = one `describe`. Never split a ticket across files.
-- Multiple tickets can coexist in one file when they test different aspects of the same feature.
+- The verb in the file name is the user action (apply, create, submit, refresh), not a test verb such as `verify`, `check` or `test`.
+- One file is one feature. A feature may have several `describe` blocks (tickets) that touch the same functionality.
+- One ticket is one `describe`, and a ticket is never split across files. Several tickets can share a file when they test different aspects of the same feature.
 
 ### Test Hierarchy
 
-The four-level hierarchy maps to how work is organized:
+The four levels map to how the work is organized:
 
 ```
 Module (directory)        -> tests/e2e/orders/
@@ -71,24 +64,24 @@ Module (directory)        -> tests/e2e/orders/
 | `describe()` | Ticket / User Story | `'{TICKET-ID}: Validate {feature}'` | `'UPEX-411: Validate discount codes'` |
 | `test()` | Scenario / test case | `'{TICKET-ID}: should {behavior} when {condition}'` | `'UPEX-411: should apply percentage discount when code is valid'` |
 
-Every `test()` must include the ticket ID as a prefix. `describe` blocks may include the ticket ID when the file is tied to a single ticket.
+Every `test()` carries the ticket ID as a prefix. A `describe` may carry it when the file is tied to a single ticket.
 
 ---
 
 ## 2. ATC Design Philosophy
 
-This section codifies the rules that determine what is an ATC, when two scenarios collapse into one ATC, and how assertions relate to test cases. These rules are the source of truth for KATA test design.
+This section decides what counts as an ATC, when two scenarios collapse into one ATC, and how assertions relate to test cases. It is the source of truth for KATA test design.
 
-### What is an ATC (and what is NOT)
+### What is an ATC (and what is not)
 
-An ATC represents a **complete action** that changes or validates system state. It maps 1:1 with a test case ticket in the TMS via `@atc('TICKET-ID')`.
+An ATC is a complete action that changes or validates system state. It maps 1:1 to a test case ticket in the TMS through `@atc('TICKET-ID')`.
 
 | Type | What it does | Example | Has `@atc`? |
 |------|-------------|---------|-------------|
-| **ATC** | Action that changes system state, or a GET whose response is the business outcome under test | `authenticateSuccessfully()`, `createOrderSuccessfully()`, `getOrdersUnauthorized()` | Yes |
-| **Helper** | Reads data another step needs (no outcome under test) | `getOrders(filters)`, `getCurrentUser()` | No (use `@step`) |
+| ATC | An action that changes system state, or a GET whose response is the business outcome under test | `authenticateSuccessfully()`, `createOrderSuccessfully()`, `getOrdersUnauthorized()` | Yes |
+| Helper | Reads data another step needs (no outcome under test) | `getOrders(filters)`, `getCurrentUser()` | No (use `@step`) |
 
-A GET that only prepares data is a helper, not an ATC. A GET is an ATC when the TC's expected result is what that read returns (business data, 401, 403, 404; `kata-architecture.md` Rule 7). A GET that verifies an action's outcome belongs **inside** the ATC as a verification step:
+A GET that only prepares data is a helper. A GET is an ATC when the test case's expected result is what that read returns (business data, 401, 403, 404; `kata-architecture.md` Rule 7). A GET that verifies the outcome of an action belongs inside that ATC as a verification step:
 
 ```typescript
 @atc('TICKET-ID')
@@ -106,12 +99,7 @@ async createOrderSuccessfully(orderData) {
 
 ### TC Identity Rule: Precondition + Action
 
-A test case's identity is determined by exactly two elements:
-
-1. **Precondition**: the state the system must be in
-2. **Action**: the user trigger
-
-**All expected results** from the same (precondition, action) pair belong to the **same TC** — regardless of which panel, endpoint, or UI section they validate.
+A test case is identified by exactly two things: the precondition (the state the system must be in) and the action (the user trigger). Every expected result from the same pair belongs to the same TC, whichever panel, endpoint or UI section it validates.
 
 ```
 TC Identity = Precondition + Action
@@ -121,13 +109,13 @@ TC Identity = Precondition + Action
 
 | Different TC? | Reason |
 |--------------|--------|
-| Yes | Different **precondition**: product out-of-stock vs in-stock |
-| Yes | Different **action**: open detail page vs click "Add to Cart" |
-| Yes | Different **equivalent partition**: percentage discount vs fixed-amount |
-| **No** | Same precondition + action, checking pricing block vs reviews block |
-| **No** | Same precondition + action, checking one more field in the response |
+| Yes | Different precondition: product out-of-stock vs in-stock |
+| Yes | Different action: open detail page vs click "Add to Cart" |
+| Yes | Different equivalence partition: percentage discount vs fixed-amount |
+| No | Same precondition and action, checking pricing block vs reviews block |
+| No | Same precondition and action, checking one more field in the response |
 
-**Anti-pattern — splitting by concern:**
+Splitting by concern is the common mistake:
 
 ```
 // WRONG: 3 separate TCs for the same input
@@ -137,7 +125,7 @@ TC-C: Open published product -> verify detail page structure
 // These share the SAME precondition and action -> they are ONE TC
 ```
 
-**Correct — one TC, all assertions:**
+The correct form is one TC with all the assertions:
 
 ```
 TC: Open product detail page for published in-stock product
@@ -153,14 +141,14 @@ TC: Open product detail page for published in-stock product
 
 ### Equivalence Partitioning
 
-Inputs that produce the **same output type** collapse into one parameterized ATC. Inputs that produce **different outputs** require separate ATCs.
+Inputs that produce the same output type collapse into one parameterized ATC. Inputs that produce different outputs need separate ATCs.
 
 | Same ATC (parameterize) | Different ATC (create new) |
 |--------------------------|---------------------------|
-| Different **data** but same **behavior** | Different **actions** or **behavior** |
+| Different data, same behavior | Different actions or behavior |
 | All inputs produce the same output type | Outputs are fundamentally different |
 | Buy 1 product vs buy 5 products (same checkout flow) | Credit card checkout vs bank transfer (different steps) |
-| Minor output variation -> use conditionals sparingly | Different endpoint, UI flow, or assertion set |
+| Minor output variation: use conditionals sparingly | Different endpoint, UI flow, or assertion set |
 
 ```typescript
 // WRONG: three ATCs that all produce HTTP 401
@@ -179,15 +167,15 @@ async loginWithInvalidCredentials(payload: LoginPayload) {
 }
 ```
 
-**Rule of thumb**: if the **actions** inside the ATC change, it is a different ATC. If only the **data** changes but the system behaves identically, it is the same ATC.
+Rule of thumb: if the actions inside the ATC change, it is a different ATC. If only the data changes and the system behaves identically, it is the same ATC.
 
-> **EP-merge collapses WITHIN a partition — never across.** Parameterizing the three invalid-credential inputs above into one 401 ATC is correct: they share a partition. It is a *defect* to use the same merge to swallow distinct partitions, boundaries, or states. A valid login (→ 200), a locked account (→ 423), and a value at `max+1` (→ 400 boundary) are **separate ATCs** — merging them loses coverage. EP is a 1:N expansion tool first (one ATC per partition) and a deduplication tool second (one ATC within a partition). See `agentic-qa-core/references/test-design-doctrine.md`.
+> EP-merge collapses within a partition, never across. Parameterizing the three invalid-credential inputs above into one 401 ATC is correct because they share a partition. Using the same merge to swallow distinct partitions, boundaries or states is a defect: a valid login (200), a locked account (423) and a value at `max+1` (400 boundary) are separate ATCs, and merging them loses coverage. EP is a 1:N expansion tool first (one ATC per partition) and a deduplication tool second (one ATC within a partition). See `agentic-qa-core/references/test-design-doctrine.md`.
 
-> **EP does not replace BVA.** Same-behavior merge hides off-by-one defects. Wherever a field has a range / limit / length / date-window, add explicit boundary ATCs (`min-1·min·min+1 … max-1·max·max+1`, plus zero / empty / null) — these are *distinct partitions at the edges*, so they are separate (often parameterized) ATCs, not folded into the happy-path case.
+> EP does not replace BVA. A same-behavior merge hides off-by-one defects. Wherever a field has a range, limit, length or date window, add explicit boundary ATCs (`min-1·min·min+1 … max-1·max·max+1`, plus zero, empty and null). They are distinct partitions at the edges, so they are separate (often parameterized) ATCs, never folded into the happy-path case.
 
 ### Tests validate FLOWS, not individual properties
 
-Do not create N tests checking N fields of the same response. One test validates the complete flow with multiple assertions.
+One test validates the complete flow with several assertions. Do not write N tests that check N fields of the same response.
 
 ```typescript
 // WRONG: 3 tests for the same API call
@@ -210,11 +198,11 @@ test('TICKET-ID: should create order with correct totals when discount applied',
 });
 ```
 
-Separate tests only when the **scenario is fundamentally different** (different flow, different preconditions, different user role) — not when checking a different field of the same response.
+Write separate tests only when the scenario is fundamentally different (a different flow, different preconditions, a different user role), not when you check a different field of the same response.
 
 ### Assertion layers
 
-Assertions exist at two levels and serve different purposes:
+Assertions live at two levels and serve different purposes:
 
 ```
 Test Flow
@@ -229,10 +217,10 @@ Test Flow
         +-- [Final state: total matches base - discount, tax correct]
 ```
 
-- **ATC assertions** (fixed, inside the ATC): validate that the individual action succeeded. These run every time the ATC is called, in every test.
-- **Test-level assertions** (in the test file): validate the overall outcome after combining multiple ATCs. These are specific to the scenario.
+- ATC assertions are fixed and live inside the ATC. They check that the individual action succeeded, and they run every time the ATC is called, in every test.
+- Test-level assertions live in the test file. They check the overall outcome after several ATCs combine, and they are specific to the scenario.
 
-Assertions are checkpoints along a flow, not the purpose of the test. The test is the journey; assertions are road signs.
+Assertions are checkpoints along a flow. The test is the journey and the assertions are the road signs.
 
 ---
 
@@ -296,35 +284,33 @@ export default defineConfig({
 });
 ```
 
-`test-results/` and `tests/data/downloads/` are gitignored. `tests/data/fixtures/` and `tests/data/uploads/` are committed. `tests/data/mocks/` is committed when it exists, but is create-on-demand — it is not present until a scope needs canned mock responses.
+`test-results/` and `tests/data/downloads/` are gitignored. `tests/data/fixtures/` and `tests/data/uploads/` are committed. `tests/data/mocks/` is committed when it exists, but it is create-on-demand: it does not appear until a scope needs canned mock responses.
 
 ### Test module folders (`{module}`)
 
-The `{module}` segment under `tests/integration/` and `tests/e2e/` is the **business domain**, named in **kebab-case, plural where natural**. It maps 1:1 to the Jira Component / product area, so the folder name and the Component label stay aligned.
+The `{module}` segment under `tests/integration/` and `tests/e2e/` is the business domain, in kebab-case and plural where natural. It maps 1:1 to the Jira Component or product area, so the folder name and the Component label stay aligned.
 
 | Good | Why |
 |------|-----|
 | `orders/`, `users/`, `payments/` | Business domain, plural where natural |
 | `user-management/`, `checkout-flows/` | Multi-word domain, kebab-case |
 
-Do not name a module folder after a UI section, a page, or a sprint (`tab-2/`, `Q3/`, `LoginScreen/`). The same `{module}` value is reused by the spec scaffolding (`{PREFIX}` abbreviation in `planning-playbook.md`) and by the Jira Component, so it must read as a product area.
+Do not name a module folder after a UI section, a page or a sprint (`tab-2/`, `Q3/`, `LoginScreen/`). The same `{module}` value is reused by the spec scaffolding (the `{PREFIX}` abbreviation in `planning-playbook.md`) and by the Jira Component, so it has to read as a product area.
 
 ---
 
 ## 4. Tagging Strategy
 
-Use Playwright tags on `test()` and `describe()` to group runs and drive the CI matrix.
+Playwright tags on `test()` and `describe()` group runs and drive the CI matrix.
 
 | Tag | Meaning | Typical use |
 |-----|---------|-------------|
-| `@critical` | Core user journey (login, checkout, payment). Blocks release if fails. | Smoke suite, gated deploys. |
+| `@critical` | Core user journey (login, checkout, payment). Blocks release if it fails. | Smoke suite, gated deploys. |
 | `@smoke` | Post-deploy health check. Runs on every deployment. | Smoke workflow. |
-| `@regression` | Full coverage. Runs nightly / pre-release. | Regression workflow. |
+| `@regression` | Full coverage. Runs nightly or pre-release. | Regression workflow. |
 | `@e2e` | End-to-end (UI + API). | Scope selection in CI. |
 | `@integration` | API / integration tests. | Scope selection in CI. |
-| `@flaky` | Known intermittent — under stabilization. | Excluded from `@critical` runs. |
-
-Example:
+| `@flaky` | Known intermittent, under stabilization. | Excluded from `@critical` runs. |
 
 ```typescript
 test.describe('TICKET-ID: Validate discount codes @regression', () => {
@@ -343,7 +329,7 @@ bun run test --grep "@regression"
 bun run test --grep-invert "@flaky"
 ```
 
-Every `@critical` test is also `@smoke` in practice. Tags are additive — you can carry multiple tags on the same test.
+Tags are additive, so a test can carry several. In practice every `@critical` test is also `@smoke`.
 
 ---
 
@@ -425,7 +411,7 @@ async signInSuccessfully(payload: SignInPayload):
 }
 ```
 
-"Arrange" for ATCs is usually empty — preconditions are passed in as parameters, not built inside the ATC.
+"Arrange" is usually empty for an ATC, because preconditions arrive as parameters instead of being built inside it.
 
 ### Return types
 
@@ -435,20 +421,11 @@ async signInSuccessfully(payload: SignInPayload):
 // UI ATC            Promise<void>
 ```
 
-API ATCs return tuples to enable chaining; UI ATCs typically return `void` because assertions are inside the ATC. When a UI ATC must expose data to the test file (e.g., a generated order ID from the confirmation page), return a typed object.
+API ATCs return tuples so they can be chained. UI ATCs usually return `void` because their assertions sit inside the ATC. When a UI ATC has to expose data to the test file (a generated order ID from the confirmation page, say), return a typed object.
 
 ### Docstrings
 
-Component class:
-
-```typescript
-/**
- * KATA Layer 3 — Auth API Component.
- * Handles authentication operations: sign in, sign out, user profile.
- */
-```
-
-ATC methods:
+Every component class opens with a `KATA Layer 3 — {Resource} API Component` docstring plus one line on what it handles (see the template above). ATC methods say what they do and what they return:
 
 ```typescript
 /**
@@ -463,13 +440,11 @@ async signInSuccessfully(payload: SignInPayload) { ... }
 
 ## 6. Test Data Strategy
 
-KATA distinguishes three sources of test data. Classify every data need in the plan before coding.
+KATA has three sources of test data. Classify every data need in the plan before you write code.
 
 ### Pre-Execution variables (static)
 
-Defined in `config/variables.ts` and `.env` before the run:
-
-Credentials are env-prefixed per environment and selected by `TEST_ENV` (the real pattern in `config/variables.ts`):
+These are defined in `config/variables.ts` and `.env` before the run. Credentials are env-prefixed per environment and selected by `TEST_ENV` (the real pattern in `config/variables.ts`):
 
 ```typescript
 // config/variables.ts (real pattern, simplified)
@@ -486,13 +461,11 @@ export const config = {
 };
 ```
 
-Tests read `config.testUser` from `@variables` — never `process.env` directly.
-
-Rule: credentials come from `.env` only (only the current `TEST_ENV`'s pair is required). Never hardcode, never check into git.
+Tests read `config.testUser` from `@variables` and never touch `process.env` directly. Credentials come from `.env` only (only the pair for the current `TEST_ENV` is required), are never hardcoded, and never reach git.
 
 ### Dynamic variables (runtime)
 
-Generated during test execution using `TestContext` utilities (typically `faker`):
+These are generated during the run with `TestContext` utilities (typically `faker`):
 
 ```typescript
 test('TICKET-ID: should create user with dynamic data', async ({ api }) => {
@@ -501,13 +474,11 @@ test('TICKET-ID: should create user with dynamic data', async ({ api }) => {
 });
 ```
 
-Rule: every test generates its own unique data so parallel runs and retries never collide.
+Every test generates its own unique data so parallel runs and retries never collide.
 
 ### Fixture files (parameterisation)
 
-For data-driven tests, load from JSON/CSV in `tests/data/fixtures/`.
-
-**File naming**: `{resource}-{variant}.json` — lowercase, kebab-case. The `{resource}` is the entity (`users`, `orders`, `payments`); the `{variant}` names the scenario or partition the rows belong to, so reuse is explicit at the import site.
+Data-driven tests load JSON or CSV from `tests/data/fixtures/`. Files are named `{resource}-{variant}.json`, lowercase and kebab-case. The `{resource}` is the entity (`users`, `orders`, `payments`) and the `{variant}` names the scenario or partition the rows belong to, so reuse is explicit at the import site.
 
 | File | Holds |
 |------|-------|
@@ -528,11 +499,11 @@ for (const user of usersData) {
 }
 ```
 
-Data flow: files → test arguments → ATC arguments.
+Data flows from files to test arguments to ATC arguments.
 
 ### Mock / stub response files
 
-When a test intercepts a backend call and supplies a canned response (Playwright `route.fulfill()`), the response body lives as a static fixture under `tests/data/mocks/`, named `tests/data/mocks/{endpoint-path}/{METHOD}.{status}.json`. The endpoint path mirrors the API route (discoverable); the HTTP method and status code in the filename signal exactly which interaction and outcome the mock stands in for.
+When a test intercepts a backend call and supplies a canned response (Playwright `route.fulfill()`), the body lives as a static fixture under `tests/data/mocks/`, named `tests/data/mocks/{endpoint-path}/{METHOD}.{status}.json`. The endpoint path mirrors the API route so the file is discoverable, and the method and status in the filename say which interaction and outcome the mock stands in for.
 
 | File | Stubs |
 |------|-------|
@@ -545,15 +516,15 @@ import loginOk from '@data/mocks/auth/login/POST.200.json';
 await page.route('**/auth/login', route => route.fulfill({ status: 200, json: loginOk }));
 ```
 
-Use mocks only to isolate the unit under test from an unavailable or non-deterministic dependency — prefer real backend calls (the Discover → Modify → Generate strategy above) for functional coverage.
+Use mocks only to isolate the unit under test from an unavailable or non-deterministic dependency. For functional coverage, prefer real backend calls (the Discover → Modify → Generate strategy below).
 
 ### Discover → Modify → Generate
 
-The full data strategy (when to reuse staging data, when to mutate it, when to generate fresh) lives in `test-data-management.md`. At the standards level, three rules hold:
+The full strategy (when to reuse staging data, when to mutate it, when to generate fresh) lives in `test-data-management.md`. Three rules hold at the standards level:
 
-1. **Never assume data exists.** If a test needs a user, either create one via API or generate from faker.
-2. **Never mutate someone else's data.** If a test updates a record, it must create that record first.
-3. **Never share state between tests.** Parallel runs depend on it.
+1. Never assume data exists. If a test needs a user, create one through the API or generate it with faker.
+2. Never mutate someone else's data. A test that updates a record creates that record first.
+3. Never share state between tests, because parallel runs depend on it.
 
 ---
 
@@ -566,7 +537,7 @@ The full data strategy (when to reuse staging data, when to mutate it, when to g
 export default defineConfig({ retries: 0 });
 ```
 
-Retries mask real issues. Passing on retry is a red flag, not a success. Fix the root cause.
+Retries mask real issues. A test that passes on retry is a red flag, so fix the root cause.
 
 ### No hardcoded waits
 
@@ -612,7 +583,7 @@ async verifyOptionalField() { ... }
 
 ### Blocked by a known bug
 
-When a test cannot pass because of a **known product bug** (not a test bug, not flakiness), mark it `test.fail('Blocked by {BUG-KEY}')` AND tag it `@blocked:{BUG-KEY}`:
+When a test cannot pass because of a known product bug (not a test bug, not flakiness), mark it `test.fail('Blocked by {BUG-KEY}')` and tag it `@blocked:{BUG-KEY}`:
 
 ```typescript
 test('TICKET-ID: should reject signup with invalid email @blocked:UPEX-999', async ({ api }) => {
@@ -621,47 +592,23 @@ test('TICKET-ID: should reject signup with invalid email @blocked:UPEX-999', asy
 });
 ```
 
-The test stays in the suite (no silent skip) so the failure remains informative, and the `@blocked:{BUG-KEY}` tag lets regression runs filter it out of GO/NO-GO until the bug is fixed. Remove both markers when the bug closes and the test goes green.
+The test stays in the suite instead of being silently skipped, so the failure stays informative, and the `@blocked:{BUG-KEY}` tag lets regression runs filter it out of GO/NO-GO until the bug is fixed. Remove both markers when the bug closes and the test goes green.
 
-Inside the test body, `knownDefect('{BUG-KEY}')` (`tests/utils/knownDefect.ts`) replaces the `test.fail(...)` line: it sets the expected failure and records the key in one call, so the two never drift apart. Keep the `@blocked:{BUG-KEY}` title tag for the regression filter. `KataReporter` classifies the test as `known-defect` while it fails and as `unexpected-pass` once it passes, an action item that keeps the run headline red until the markers are removed (ADR-0020). A bare `test.fail()` that names no key is an action item too. Never mark an expected failure any other way.
+Inside the test body, `knownDefect('{BUG-KEY}')` (`tests/utils/knownDefect.ts`) replaces the `test.fail(...)` line: one call sets the expected failure and records the key, so the two never drift apart. Keep the `@blocked:{BUG-KEY}` title tag for the regression filter. `KataReporter` classifies the test as `known-defect` while it fails and as `unexpected-pass` once it passes, an action item that keeps the run headline red until the markers are removed (ADR-0020). A bare `test.fail()` that names no key is an action item too. Mark an expected failure only through these forms.
 
 | Marker | Means | Use when |
 |--------|-------|----------|
-| `test.fail('Blocked by {BUG-KEY}')` + `@blocked:{BUG-KEY}` | A known product bug prevents passing | The product is broken — a bug key exists |
-| `softFail` (decorator option) | Non-critical assertion tolerated | Optional field / exploratory check that should not stop the flow |
-| `@flaky` (tag) | Intermittent, under stabilization | The test itself is unstable — no product bug |
+| `test.fail('Blocked by {BUG-KEY}')` + `@blocked:{BUG-KEY}` | A known product bug prevents passing | The product is broken and a bug key exists |
+| `softFail` (decorator option) | Non-critical assertion tolerated | Optional field or exploratory check that should not stop the flow |
+| `@flaky` (tag) | Intermittent, under stabilization | The test itself is unstable and there is no product bug |
 
-These three are distinct: `@blocked:{BUG-KEY}` blames the product (a filed bug), `softFail` tolerates a non-critical assertion, and `@flaky` flags an unstable test. Never use one in place of another. (Regression GO/NO-GO consumption of `@blocked:{BUG-KEY}` is documented in `regression-testing`.)
+The three are distinct and never stand in for one another: `@blocked:{BUG-KEY}` blames the product (a filed bug), `softFail` tolerates a non-critical assertion, and `@flaky` flags an unstable test. Regression GO/NO-GO consumption of `@blocked:{BUG-KEY}` is documented in `regression-testing`.
 
 ---
 
 ## 8. Error Handling
 
-### Inside ATCs (the methods a test can reach)
-
-Fail fast with a descriptive error.
-
-```typescript
-async apiGET<T>(endpoint: string): Promise<[APIResponse, T]> {
-  if (!this.request) {
-    throw new Error('Request context not set. Ensure fixture provides request.');
-  }
-  ...
-}
-```
-
-### Inside utilities (private helpers)
-
-Silent fail — return `null` / `undefined` for missing data.
-
-```typescript
-private async parseResponseBody<T>(response: Response): Promise<T | null> {
-  try { return (await response.json()) as T; }
-  catch { return null; }
-}
-```
-
-Never swallow errors inside an ATC without re-throwing — the test must fail visibly.
+The rule is in `typescript-patterns.md` §7: a public ATC or helper fails fast with a descriptive error, a private utility returns `null` / `undefined` for missing data, and an ATC never swallows an error without re-throwing, because the test has to fail visibly.
 
 ---
 
@@ -686,22 +633,13 @@ bun run types:check  # tsc --noEmit
 
 ### Import aliases (mandatory)
 
-```typescript
-// RIGHT
-import { config, env } from '@variables';
-import { ApiBase } from '@api/ApiBase';
-
-// WRONG
-import { config } from '../../../config/variables';
-```
-
-See `typescript-patterns.md` for the full alias list.
+Imports use the path aliases (`@variables`, `@api/ApiBase`, and so on), never relative paths such as `../../../config/variables`. The full alias list and the lint rule behind it are in `typescript-patterns.md` §8.
 
 ---
 
 ## 10. Review Checklists
 
-Every component and every test file is gated by a checklist before merge. Paste this into PR reviews.
+Every component and every test file passes a checklist before merge. Paste these into PR reviews.
 
 ### Component review
 
@@ -732,7 +670,7 @@ Every component and every test file is gated by a checklist before merge. Paste 
 - [ ] Name follows `{verb}{Feature}.test.ts` camelCase with a user-action verb.
 - [ ] Every `test()` has the ticket ID prefix and `should {behavior} when {condition}` format.
 - [ ] Uses the correct fixture: `{ api }`, `{ ui }`, or `{ test }` (Steps classes are instantiated directly, not requested as a fixture).
-- [ ] Creates its own test data — no shared state with other tests.
+- [ ] Creates its own test data, with no shared state with other tests.
 - [ ] Test-level assertions validate business logic, not individual fields of a single response.
 - [ ] Tags applied where needed (`@critical`, `@smoke`, `@regression`).
 - [ ] No relative imports.
@@ -759,7 +697,7 @@ Common mistakes that fail code review.
 | Test name without ticket ID | Breaks TMS traceability | `test('TICKET-ID: should ... when ...')` |
 | Six tests checking six fields of one response | Violates TC Identity rule | One test with multiple assertions |
 
-### Worked anti-pattern examples
+The three-ATCs-one-401 example is under Equivalence Partitioning in §2. The other worked examples:
 
 ```typescript
 // ATC with a single interaction — WRONG
@@ -767,11 +705,6 @@ Common mistakes that fail code review.
 async clickAddToCartButton() {
   await this.page.click('[data-testid="add-to-cart"]');
 }
-
-// Multiple ATCs, same output (HTTP 401) — WRONG
-@atc('T1') async loginWithWrongEmail() { /* -> 401 */ }
-@atc('T2') async loginWithWrongPassword() { /* -> 401 */ }
-@atc('T3') async loginWithEmptyFields() { /* -> 401 */ }
 
 // Separate locator file — WRONG
 // locators/checkout.ts
@@ -802,32 +735,13 @@ These gates block PR merge. Run them locally before opening the PR.
 | Tags correct | visual | `@critical` / `@smoke` / `@regression` applied as planned |
 | No AI attribution in commits | `git log` | No "Co-Authored-By: Claude" or similar |
 
-### Validation loop
-
-```bash
-# 1. Write code
-# 2. Run the new test
-bun run test tests/integration/orders/createOrder.test.ts
-
-# 3. If green, check types
-bun run types:check
-
-# 4. If clean, lint
-bun run lint:check
-
-# 5. If clean, extract manifest and verify ATC IDs
-bun run kata:manifest
-
-# 6. Open PR, confirm reviewer checklist passes
-```
-
-Order matters. Do not chase lint errors before tests pass — the test may remove the problematic code.
+Run them in order: tests, then types, then lint. Fixing lint before the tests pass wastes effort, because the test may remove the code the linter complained about. §14 has the full loop with the manifest steps.
 
 ---
 
 ## 13. Complementary Testing (Optional)
 
-KATA covers functional testing. For other testing types, integrate as needed without breaking the architecture.
+KATA covers functional testing. For other testing types, integrate them as needed without breaking the architecture.
 
 | Type | Tools | When to use |
 |------|-------|-------------|
@@ -835,13 +749,13 @@ KATA covers functional testing. For other testing types, integrate as needed wit
 | Accessibility | `@axe-core/playwright` | Public-facing apps, compliance requirements |
 | Performance | Lighthouse CI, k6, Playwright Performance API | SLAs, performance-critical paths |
 
-These live alongside functional tests but are out of KATA's core scope. Add them when the project requires them; do not force them into ATCs.
+These live alongside functional tests but sit outside KATA's core scope. Add them when the project requires them, and keep them out of ATCs.
 
 ---
 
 ## 14. Quick Reference
 
-**Validation loop** — run for every task, in this order:
+The validation loop runs for every task, in this order:
 
 ```bash
 # 0. PRE-CODE — load kata-manifest.json (Critical Rule #12).

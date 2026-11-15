@@ -1,6 +1,6 @@
-# KATA Architecture — Layers, Fixtures, ATCs, Steps
+# KATA architecture: layers, fixtures, ATCs, Steps
 
-Full reference for the Komponent Action Test Architecture (KATA). Load when designing new components, picking fixtures, wiring ATCs, or building Steps chains.
+The full reference for the Komponent Action Test Architecture (KATA). Load it when you design a component, pick a fixture, wire an ATC or build a Steps chain.
 
 > **Canonical formula — the one sentence every KATA surface must agree with:**
 >
@@ -17,7 +17,7 @@ Full reference for the Komponent Action Test Architecture (KATA). Load when desi
 
 ---
 
-## 1. The Four Layers
+## 1. The four layers
 
 ```
 Layer 4 — Fixtures (DI)
@@ -49,11 +49,11 @@ Layer 1 — TestContext
 | 4 — Fixtures | DI entry point | `TestFixture.ts`, `ApiFixture.ts`, `UiFixture.ts` |
 | Tests | Orchestrate ATCs into scenarios | `tests/e2e/**`, `tests/integration/**` |
 
-Rule: a component in a higher layer may use a lower layer, never the other way round.
+A component in a higher layer may use a lower layer. A lower layer never reaches up.
 
 ---
 
-## 2. Directory Structure
+## 2. Directory structure
 
 ```
 /config
@@ -100,9 +100,9 @@ Rule: a component in a higher layer may use a lower layer, never the other way r
 | `types.ts` | Payload / domain TypeScript types shared by factories and ATCs | `UserPayload`, `OrderPayload` |
 | `constants.ts` | Static test values, magic numbers, boundary constants | `MAX_ORDER_ITEMS`, `DEFAULT_PAGE_SIZE` |
 
-These three complement the static data folders: `tests/data/fixtures/` (parameterization rows as JSON/CSV) and `tests/data/mocks/` (canned mock/stub responses). Factories generate fresh runtime data; fixtures and mocks hold committed static data. Naming + folder conventions for those two live in `automation-standards.md` §6.
+Factories generate fresh runtime data. `tests/data/fixtures/` and `tests/data/mocks/` hold committed static data; their naming and folder conventions are in `automation-standards.md` §6.
 
-Import aliases are mandatory (no relative imports):
+Use the import aliases, never relative imports:
 
 ```typescript
 import { config, env } from '@variables';
@@ -116,19 +116,17 @@ import { TestContext, type TestContextOptions } from '@TestContext';
 
 ## 3. TestContext (Layer 1)
 
-Stores Playwright drivers and global utilities. Every higher layer extends it or receives its options.
+TestContext holds the Playwright drivers and the global utilities. Every higher layer extends it or receives its options.
 
 ```typescript
 interface TestContextOptions {
-  page?: Page;                   // Optional — API tests don't need it
-  request?: APIRequestContext;   // Optional — some setups don't need it
+  page?: Page;                   // optional: API tests don't need it
+  request?: APIRequestContext;   // optional: some setups don't need it
   environment?: Environment;
 }
 ```
 
-Responsibilities: hold the Playwright drivers (`page`, `request`); select URLs/credentials from `config` based on `TEST_ENV`; expose the environment label (`env`); expose `DataFactory` (the faker-backed test data, through `data`). It has no logger and no `faker` field of its own: faker lives inside `tests/data/DataFactory.ts`.
-
-Do not put Playwright-specific logic here (belongs in UiBase). Do not put HTTP-specific logic here (belongs in ApiBase).
+It holds the Playwright drivers (`page`, `request`), selects URLs and credentials from `config` based on `TEST_ENV`, and exposes the environment label (`env`) and `DataFactory` (through `data`). It has no logger and no `faker` field; faker lives inside `tests/data/DataFactory.ts`. Playwright logic belongs in UiBase and HTTP logic in ApiBase.
 
 ---
 
@@ -151,24 +149,22 @@ protected async apiDELETE<T>(path: string): Promise<[APIResponse, T]>
 
 Extends `TestContext`. Adds Playwright helpers: response interception, network waiting, storage-state snapshots, Allure attachments.
 
-Rule: anything that needs `PageContext` goes in UiBase; anything needing `APIRequestContext` goes in ApiBase; anything agnostic (allure attachments, string helpers) goes in `tests/utils/`.
+Anything that needs `PageContext` goes in UiBase, anything that needs `APIRequestContext` goes in ApiBase, and anything agnostic (Allure attachments, string helpers) goes in `tests/utils/`.
 
-**Why E2E API calls carry the browser session.** `ApiBase`'s `request` getter returns `this._page.request` whenever a page exists and falls back to the standalone `APIRequestContext` only in API-only fixtures (`tests/components/api/ApiBase.ts`). `page.request` shares cookies and storage with the browser, so under `{ test }` or `{ ui }` an API call is authenticated by the UI session cookie. That is the mechanism, not the fixtures sharing an options object. Consequence: a negative auth test (clear the Bearer token, expect 401) belongs under `{ api }`, where no cookie exists; under `{ test }` the cookie still authenticates and the test gets 200.
+**Why E2E API calls carry the browser session.** `ApiBase`'s `request` getter returns `this._page.request` whenever a page exists and falls back to the standalone `APIRequestContext` only in API-only fixtures (`tests/components/api/ApiBase.ts`). `page.request` shares cookies and storage with the browser, so under `{ test }` or `{ ui }` the UI session cookie authenticates an API call. A negative auth test (clear the Bearer token, expect 401) therefore belongs under `{ api }`, where no cookie exists. Under `{ test }` the cookie still authenticates and the test gets 200.
 
 ---
 
 ## 5. Domain Components (Layer 3)
 
-One component per file. Max 15–20 ATCs per component — split if larger.
-
-Sizing heuristics. A component groups conceptually related ATCs, has a name that says what is in it, and does not depend on other components. Split it when any of these shows up: more than ~500 lines, unrelated responsibilities in one class, a specific ATC is hard to find, or the name no longer describes the content.
+One component per file, with at most 15 to 20 ATCs. A component groups related ATCs, has a name that says what is in it and does not depend on other components. Split it when it passes about 500 lines, mixes unrelated responsibilities, makes a specific ATC hard to find, or no longer matches its name.
 
 | Type | Class | File |
 |------|-------|------|
 | API | `{Resource}Api` | `{Resource}Api.ts` |
 | UI | `{Page}Page` | `{Page}Page.ts` |
 
-Order inside the class: constructor → navigation (UI only) → helpers (no decorator or `@step`) → ATCs (`@atc`).
+Order inside the class: constructor, navigation (UI only), helpers (no decorator or `@step`), then ATCs (`@atc`).
 
 ### API component template
 
@@ -229,15 +225,15 @@ export class LoginPage extends UiBase {
 
 ## 6. ATC Rules
 
-An ATC (Acceptance Test Case) is a **complete test case (mini-flow), not a single interaction**. Each ATC maps 1:1 to a ticket via `@atc('TICKET-ID')`.
+An ATC (Acceptance Test Case) is a complete test case, a mini-flow, and never a single interaction. Each ATC maps 1:1 to a ticket through `@atc('TICKET-ID')`.
 
-### Rule 1 — Complete flow
+### Rule 1: complete flow
 
 ```typescript
-// WRONG — single interaction
+// WRONG: single interaction
 @atc('TICKET-ID') async clickLoginButton() { await this.page.click('#login'); }
 
-// RIGHT — complete mini-flow
+// RIGHT: complete mini-flow
 @atc('TICKET-ID')
 async loginWithValidCredentials(data: LoginData) {
   await this.page.goto('/login');
@@ -248,17 +244,17 @@ async loginWithValidCredentials(data: LoginData) {
 }
 ```
 
-### Rule 2 — TC Identity = Precondition + Action
+### Rule 2: TC identity is precondition plus action
 
-A TC is defined by exactly two elements: the precondition (state) and the action (trigger). Every expected result from the same precondition + action is an assertion of the **same TC**, no matter which panel or endpoint it validates.
+A TC is defined by two elements: the precondition (state) and the action (trigger). Every expected result from the same precondition and action is an assertion of the same TC, whichever panel or endpoint it validates.
 
 ```
-// WRONG — three TCs share the same precondition and action
+// WRONG: three TCs share the same precondition and action
 TC-A: Open published product -> verify Pricing block
 TC-B: Open published product -> verify Reviews block
 TC-C: Open published product -> verify page structure
 
-// RIGHT — one TC with all assertions
+// RIGHT: one TC with all assertions
 TC: Open product detail page for published in-stock product
   Precondition: product is published and stock > 0
   Action: user navigates to the product detail page
@@ -270,30 +266,30 @@ TC: Open product detail page for published in-stock product
     - Add to Cart enabled
 ```
 
-A TC is only different when the **precondition** or **action** changes — not when you check a different field of the same response.
+A TC differs only when the precondition or the action changes. Checking a different field of the same response does not make a new TC.
 
-### Rule 3 — Equivalence Partitioning
+### Rule 3: equivalence partitioning
 
 Same expected output = one parameterized ATC.
 
 ```typescript
-// WRONG — three ATCs, same output (HTTP 401)
+// WRONG: three ATCs, same output (HTTP 401)
 @atc('T1') async loginWithWrongEmail() {}
 @atc('T2') async loginWithWrongPassword() {}
 @atc('T3') async loginWithEmptyFields() {}
 
-// RIGHT — one parameterized ATC
+// RIGHT: one parameterized ATC
 @atc('T1')
 async loginWithInvalidCredentials(payload: LoginPayload) {
   // Test file parameterizes different invalid inputs; all produce 401
 }
 ```
 
-Different status codes, different UI states, or different business outcomes = separate ATCs. Same outcome, different data = one parameterized ATC. Minor conditional variations within the same behavior are acceptable; fundamentally different behavior is a separate ATC.
+Different status codes, UI states or business outcomes are separate ATCs. The same outcome with different data is one parameterized ATC. Minor conditional variations inside the same behavior are fine; a fundamentally different behavior is its own ATC.
 
-> Rule 3 is a *within-partition* dedup rule — it does NOT authorize collapsing distinct partitions, boundaries, or states into one ATC, and it does NOT replace Boundary Value Analysis. One AC still maps to multiple ATCs (1:N): one per partition + boundary cases + state transitions. Derivation canon + triggers: `agentic-qa-core/references/test-design-doctrine.md`.
+> Rule 3 removes duplicates inside one partition. It does not authorize collapsing distinct partitions, boundaries or states into one ATC, and it does not replace Boundary Value Analysis. One AC still maps to several ATCs (1:N): one per partition, boundary case and state transition. The derivation canon and its triggers are in `agentic-qa-core/references/test-design-doctrine.md`.
 
-### Rule 4 — Locators inline
+### Rule 4: locators inline
 
 Locators go inside the ATC, not in separate files.
 
@@ -318,11 +314,11 @@ class CheckoutPage extends UiBase {
 }
 ```
 
-Never extract a locator used once. Never wrap a single `page.fill()` or `page.click()` in a helper.
+A locator used once stays inline, and a single `page.fill()` or `page.click()` is never worth wrapping in a helper.
 
-### Rule 5 — ATCs do not call ATCs
+### Rule 5: ATCs do not call ATCs
 
-ATCs are atomic. For reusable chains across multiple test files, use the Steps module (Section 8).
+ATCs are atomic. A chain reused across test files goes in the Steps module (§8).
 
 ```typescript
 // WRONG
@@ -332,16 +328,16 @@ async checkoutWithNewUser() {
   await this.addToCartSuccessfully(product);
 }
 
-// RIGHT — test file orchestrates, or Steps module
+// RIGHT: test file orchestrates, or Steps module
 test('TICKET-ID: should checkout with new user', async ({ ui }) => {
   await ui.signup.signupWithValidCredentials(userData);
   await ui.cart.addToCartSuccessfully(product);
 });
 ```
 
-### Rule 6 — Fixed assertions inside, flow assertions outside
+### Rule 6: fixed assertions inside, flow assertions outside
 
-Fixed assertions (status code, required fields, URL redirect) go inside the ATC. Test-level assertions (business outcomes combining multiple ATCs) go in the test file.
+Fixed assertions (status code, required fields, URL redirect) go inside the ATC. Test-level assertions, the business outcomes that combine several ATCs, go in the test file.
 
 ```typescript
 @atc('TICKET-ID')
@@ -359,20 +355,20 @@ test('TICKET-ID: should persist session after login', async ({ test }) => {
 });
 ```
 
-### Rule 7 — Helpers vs ATCs
+### Rule 7: helpers vs ATCs
 
 | Type | What it does | `@atc` |
 |------|-------------|--------|
-| Helper | A GET that only prepares data or reads context another step needs | No — optional `@step` for tracing |
-| ATC | An action that changes state, OR a GET whose response IS the business outcome under test | Yes — `@atc('TICKET-ID')` |
+| Helper | A GET that only prepares data or reads context another step needs | No (optional `@step` for tracing) |
+| ATC | An action that changes state, or a GET whose response is the business outcome under test | Yes, `@atc('TICKET-ID')` |
 
-The question is whether the GET is the subject of the test case. When the TC's expected result is what a read endpoint returns (the right business data and shape, 401 without auth, 403 for the wrong role, 404 for an unknown id), that GET is an ATC: `api-patterns.md` §5 names one ATC per expected outcome, reads included. A GET that only fetches data for a later step is a helper. A GET that confirms an action's effect belongs *inside* that action's ATC as a verification step. A GET whose only assertion is status 200 verifies no business outcome, so it is a disguised helper, not an ATC (`planning-playbook.md`, "Disguised helpers").
+Ask whether the GET is the subject of the test case. When the TC's expected result is what a read endpoint returns (the right business data and shape, 401 without auth, 403 for the wrong role, 404 for an unknown id), that GET is an ATC: `api-patterns.md` §5 names one ATC per expected outcome, reads included. A GET that only fetches data for a later step is a helper. A GET that confirms an action's effect sits inside that action's ATC as a verification step. A GET whose only assertion is status 200 verifies no business outcome, so it is a disguised helper (`planning-playbook.md`, "Disguised helpers").
 
 ```typescript
-// WRONG — a data-preparation GET wearing @atc (no business outcome asserted)
+// WRONG: a data-preparation GET wearing @atc (no business outcome asserted)
 @atc('TICKET-ID') async getOrderForCheckout(id: string) { /* status 200 only */ }
 
-// RIGHT — the GET is the outcome under test (access control on a read endpoint)
+// RIGHT: the GET is the outcome under test (access control on a read endpoint)
 @atc('TICKET-ID')
 async getCurrentUserUnauthorized(): Promise<[APIResponse, ApiErrorResponse]> {
   const [response, body] = await this.apiGET<ApiErrorResponse>('/auth/me');
@@ -381,7 +377,7 @@ async getCurrentUserUnauthorized(): Promise<[APIResponse, ApiErrorResponse]> {
   return [response, body];
 }
 
-// RIGHT — a GET confirming an action stays inside that action's ATC
+// RIGHT: a GET confirming an action stays inside that action's ATC
 @atc('TICKET-ID')
 async loginWithInvalidCredentials(credentials: LoginPayload) {
   const [loginResp] = await this.apiPOST('/auth/login', credentials);
@@ -416,7 +412,7 @@ Format: `{verb}{Resource}{Scenario}`
 
 ## 7. Fixtures (Layer 4)
 
-Fixtures wire components together and expose them to tests. Three kinds (see `tests/components/TestFixture.ts` — the source of truth):
+Fixtures wire components together and expose them to tests. There are three kinds; `tests/components/TestFixture.ts` is the source of truth.
 
 | Fixture | Exposes | Opens browser? |
 |---------|---------|----------------|
@@ -424,11 +420,11 @@ Fixtures wire components together and expose them to tests. Three kinds (see `te
 | `UiFixture` | `ui.login`, `ui.checkout`, ... | Yes |
 | `TestFixture` | `test.api` + `test.ui` in one object (shared context) | Yes |
 
-Steps classes are NOT a fixture — they live in `tests/components/steps/` and are instantiated directly (see §8).
+Steps classes are not a fixture. They live in `tests/components/steps/` and tests instantiate them directly (§8).
 
 ### TestFixture definition
 
-The real file (`tests/components/TestFixture.ts`) extends Playwright's `test` with the three fixtures. Simplified shape:
+The real file extends Playwright's `test` with the three fixtures. Simplified shape:
 
 ```typescript
 import { test as base } from '@playwright/test';
@@ -452,7 +448,7 @@ export { expect } from '@playwright/test';
 
 ### Lazy initialisation
 
-Playwright only instantiates the fixtures a test requests. API-only tests never open a browser.
+Playwright instantiates only the fixtures a test requests, so API-only tests never open a browser.
 
 ```typescript
 // No browser
@@ -480,7 +476,7 @@ test('TICKET-ID: should create via API and verify via UI', async ({ test }) => {
 | UI only | `{ ui }` | Yes | UI-focused testing, no API setup. |
 | Hybrid | `{ test }` | Yes | API setup + UI action + API verification. |
 
-Reusable precondition chains (3+ ATCs repeated across 3+ files) are NOT a fixture — they go in a Steps class (§8), instantiated directly in the test.
+A reusable precondition chain (3+ ATCs repeated across 3+ files) is not a fixture. It goes in a Steps class (§8), instantiated directly in the test.
 
 ### Registration pattern
 
@@ -498,7 +494,7 @@ export class UiFixture extends TestContext {
 }
 ```
 
-Creating a component without registering it in the fixture means tests cannot reach it. Registration is mandatory.
+Register every new component in its fixture: an unregistered component is unreachable from tests.
 
 ---
 
@@ -506,9 +502,9 @@ Creating a component without registering it in the fixture means tests cannot re
 
 When three or more ATCs run in the same order across three or more tests, the chain becomes a Step.
 
-Steps are NOT ATCs: no `@atc` decorator, not reported individually to the TMS, purpose is eliminating repetition in **preconditions**.
+Steps are not ATCs: they carry no `@atc` decorator and the TMS does not receive them individually. Their purpose is to remove repetition in preconditions.
 
-The real pattern lives in `tests/components/steps/ExampleSteps.ts`: a Steps class extends `TestContext`, takes `TestContextOptions` in its constructor, and drives `this._page` / `this._request` directly. No fixture registration.
+The real pattern is `tests/components/steps/ExampleSteps.ts`: a Steps class extends `TestContext`, takes `TestContextOptions` in its constructor and drives `this._page` / `this._request` directly. It needs no fixture registration.
 
 ```typescript
 // tests/components/steps/AuthSteps.ts
@@ -547,7 +543,7 @@ export class AuthSteps extends TestContext {
 }
 ```
 
-Usage — instantiate the Steps class directly in the test (there is no `{ steps }` fixture):
+Usage: instantiate the Steps class directly in the test (there is no `{ steps }` fixture):
 
 ```typescript
 import { AuthSteps } from '@steps/AuthSteps';
@@ -560,27 +556,20 @@ test('TICKET-ID: should display confirmation after checkout', async ({ ui, page,
 });
 ```
 
-When to use Steps vs direct ATC calls:
-
-| Scenario | Steps | Direct ATCs |
-|----------|-------|-------------|
-| Same 3+ ATC chain in 3+ test files | Yes | No |
-| One-off precondition for one test | No | Yes |
-| Complex setup with 5+ ATCs | Yes | No |
-| Simple single-ATC setup | No | Yes |
+A one-off precondition or a single-ATC setup uses direct ATC calls. A setup of 5 or more ATCs is a Step even before it repeats.
 
 ---
 
-## 9. Tests Validate FLOWS
+## 9. Tests validate flows
 
-Tests orchestrate ATCs; they do not implement logic. One test validates a complete flow with multiple assertions.
+Tests orchestrate ATCs and implement no logic. One test validates a complete flow with several assertions.
 
 ```typescript
-// WRONG — six tests, same call, different field checks
+// WRONG: six tests, same call, different field checks
 test('should return orders', async ({ api }) => { ... });
 test('should have referenceNumber', async ({ api }) => { ... });
 
-// RIGHT — one test, complete contract
+// RIGHT: one test, complete contract
 test('TICKET-ID: should create order with correct totals when discount is applied', async ({ api }) => {
   const [, order] = await api.orders.createOrderSuccessfully(orderData);
   const totals = await api.orders.getTotals({ orderId: order.id });
@@ -590,15 +579,15 @@ test('TICKET-ID: should create order with correct totals when discount is applie
 });
 ```
 
-Separate tests only when the scenario is fundamentally different (different precondition, role, or outcome).
+Split into separate tests only when the scenario is fundamentally different (different precondition, role or outcome).
 
-Every `test()` must have the ticket ID as a prefix: `test('TICKET-ID: should {behavior} when {condition}', ...)`. One ticket per `describe`; never split a ticket across files. Multiple tickets can coexist in one file when they test different aspects of the same feature.
+Every `test()` starts with the ticket ID: `test('TICKET-ID: should {behavior} when {condition}', ...)`. Use one ticket per `describe` and keep a ticket in one file. A file may hold several tickets when they test different aspects of the same feature.
 
-Test independence: no shared state, each test generates its own data via `TestContext` helpers or faker, never rely on test ordering.
+Tests are independent: no shared state, each test generates its own data through `TestContext` helpers or faker, and none relies on test order.
 
 ---
 
-## 10. Decorators — @atc and @step
+## 10. Decorators: @atc and @step
 
 ```typescript
 @atc('TICKET-ID')
@@ -617,22 +606,22 @@ async getCurrentUser() { ... }
 | Apply to | Layer 3 state-changing ATCs | Layer 3 read-only helpers |
 | NDJSON export | Yes | No |
 
-`@atc` options: `softFail` (failure logs but does not block), `severity` for reporting. `severity` takes ALLURE's vocabulary — `'blocker' | 'critical' | 'normal' | 'minor' | 'trivial'` (`tests/utils/decorators.ts`) — because the value is forwarded straight to Allure. It is NOT the `critical/high/medium/low` scale used by the review checklists; passing one of those is a type error. Both decorators mask sensitive parameters (`password`, `token`, `secret`) in trace output.
+`@atc` options: `softFail` (a failure logs but does not block) and `severity` for reporting. `severity` takes Allure's vocabulary, `'blocker' | 'critical' | 'normal' | 'minor' | 'trivial'` (`tests/utils/decorators.ts`), because the value goes straight to Allure. The `critical/high/medium/low` scale of the review checklists is a type error here. Both decorators mask sensitive parameters (`password`, `token`, `secret`) in trace output.
 
-Never apply decorators to Layer 2 base methods or private helpers. Detailed tracing mechanics live in a separate tracing reference.
+Decorators stay off Layer 2 base methods and private helpers. Tracing mechanics are in `atc-tracing.md`.
 
-`bun run kata:manifest` extracts every component and ATC into `kata-manifest.json`. **MUST be loaded before proposing any new Component or ATC** — Critical Rule #12 in `AGENTS.md`. The manifest is authoritative; the file system is not. Husky enforces freshness on commit (`bun run kata:manifest:check`), so the committed manifest is always trustworthy as the registry of record.
+`bun run kata:manifest` extracts every component and ATC into `kata-manifest.json`. Load the manifest before proposing any new Component or ATC (Critical Rule #12 in `AGENTS.md`). The manifest is the registry of record, not the file system, and Husky enforces its freshness on commit (`bun run kata:manifest:check`).
 
 ---
 
 ## 11. Migrating an existing suite to KATA
 
-For a project that already has Playwright tests and adopts this boilerplate. One area at a time; the old tests keep running until their replacement is proven.
+This is for a project that already has Playwright tests and adopts this boilerplate. Migrate one area at a time and keep the old tests running until the replacement is proven.
 
-1. **Find ATC candidates.** Read the current tests for blocks that repeat, map each to a Jira/Xray test case, and start with the most reused. A block with no test case behind it goes to `/test-documentation` first (signed ROI, `../SKILL.md` §"TC source gate"); never create the test case from here. Check `kata-manifest.json` first (Critical Rule #12): the boilerplate may already ship the component.
-2. **Adapt Layers 1-2, do not rewrite them.** `TestContext`, `ApiBase` and `UiBase` ship in `tests/components/`; wire your URLs and credentials through `config/variables.ts` and `.env` (`/test-framework-adaptation` does this).
-3. **Extract the first component.** Pick one functional area, create `{Resource}Api` or `{Page}Page`, move its methods in as ATCs with `@atc('{TICKET-ID}')`, helpers with `@step`.
-4. **Register it in the fixture.** Add it to `ApiFixture` / `UiFixture` (`tests/components/`), then rewrite ONE test to use `{ api }` / `{ ui }` / `{ test }` per the fixture selection table (§7).
-5. **Migrate progressively.** One component per change, legacy tests running in parallel, each new ATC shown to behave like the code it replaces before the legacy code goes. Run `bun run kata:manifest` after each.
-6. **Turn on traceability last.** Once ATCs carry real ticket ids, enable the TMS write-back (`AUTO_SYNC`, see `ci-integration.md` §5) and confirm the first synced run in Jira/Xray.
+1. Find ATC candidates. Read the current tests for blocks that repeat, map each to a Jira/Xray test case, and start with the most reused. A block with no test case behind it goes to `/test-documentation` first (signed ROI, `../SKILL.md` §"TC source gate"); this stage does not create the test case. Check `kata-manifest.json` first (Critical Rule #12): the boilerplate may already ship the component.
+2. Adapt Layers 1-2 and leave them in place. `TestContext`, `ApiBase` and `UiBase` ship in `tests/components/`; wire your URLs and credentials through `config/variables.ts` and `.env` (`/test-framework-adaptation` does this).
+3. Extract the first component. Pick one functional area, create `{Resource}Api` or `{Page}Page`, move its methods in as ATCs with `@atc('{TICKET-ID}')`, helpers with `@step`.
+4. Register it in the fixture. Add it to `ApiFixture` / `UiFixture` (`tests/components/`), then rewrite ONE test to use `{ api }` / `{ ui }` / `{ test }` per the fixture selection table (§7).
+5. Migrate progressively. One component per change, legacy tests running in parallel, each new ATC shown to behave like the code it replaces before the legacy code goes. Run `bun run kata:manifest` after each.
+6. Turn on traceability last. Once ATCs carry real ticket ids, enable the TMS write-back (`AUTO_SYNC`, see `ci-integration.md` §5) and confirm the first synced run in Jira/Xray.
 

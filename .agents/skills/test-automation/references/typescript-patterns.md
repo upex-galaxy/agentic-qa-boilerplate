@@ -1,12 +1,12 @@
 # TypeScript Patterns for KATA
 
-Coding conventions that apply to every Layer 2, 3, and 3.5 file. Load when writing or reviewing component code. For architectural rules (layers, ATC identity, fixture selection), see `kata-architecture.md`.
+The coding conventions for every Layer 2, 3 and 3.5 file. Load it when you write or review component code. The architectural rules (layers, ATC identity, fixture selection) are in `kata-architecture.md`, and naming and tagging are in `automation-standards.md`.
 
 ---
 
 ## 1. Parameter Pattern (Max 2 Positional)
 
-If a function has 3+ parameters, use an object parameter. No exceptions.
+A function with 3 or more parameters takes an object parameter instead. There are no exceptions.
 
 ```typescript
 // WRONG
@@ -29,15 +29,15 @@ interface InterceptArgs {
 function interceptResponse(args: InterceptArgs) { ... }
 ```
 
-Benefits: self-documenting call sites, IDE autocomplete shows parameter names, order-independent, easy to add optional params without breaking changes.
+The call sites document themselves, autocomplete shows the parameter names, order stops mattering, and adding an optional parameter breaks no caller.
 
-This rule applies to ATCs as well. An ATC that took `(email, password, rememberMe, redirectUrl)` must take `(args: LoginArgs)` instead.
+ATCs follow the same rule: one that took `(email, password, rememberMe, redirectUrl)` takes `(args: LoginArgs)` instead.
 
 ---
 
-## 2. DRY by Layer — Where Does Code Live?
+## 2. DRY by Layer: Where Does Code Live?
 
-The physical location of helper code matters. Moving a helper to the wrong place creates coupling and fragile tests.
+A helper in the wrong place creates coupling and fragile tests, so its location matters.
 
 | Location | When to put code here | Example |
 |----------|-----------------------|---------|
@@ -47,19 +47,19 @@ The physical location of helper code matters. Moving a helper to the wrong place
 | `TestContext` | Shared across API + UI, no external Playwright deps | `faker`, `config` accessors, environment selection |
 | Layer 3 component | Domain-specific logic for one resource/page | `generateOrderPayload()` inside `OrdersApi` |
 
-Architectural principle:
+The principle:
 
 > Anything that needs `PageContext` goes in UiBase.
 > Anything that needs `APIRequestContext` goes in ApiBase.
 > Only truly agnostic utilities go in `tests/utils/`.
 
-If you are tempted to put an API helper in `tests/utils/`, stop — it means the utility still depends on `APIRequestContext`, which means it belongs in `ApiBase`.
+An API helper that seems to fit in `tests/utils/` still depends on `APIRequestContext`, so it belongs in `ApiBase`.
 
 ---
 
 ## 3. Shared Locator Pattern (UI)
 
-If a locator is used in 2+ ATCs of the same component, extract it to a class property. If used once, keep it inline.
+A locator used in 2 or more ATCs of the same component becomes a class property. One used once stays inline.
 
 ```typescript
 class CheckoutPage extends UiBase {
@@ -83,22 +83,13 @@ class CheckoutPage extends UiBase {
 }
 ```
 
-When to extract:
+Extract when the locator is used in 2 or more ATCs of the same component, when it is a complex selector with fallbacks, or when it is a dynamic selector that takes parameters.
 
-- Used in 2+ ATCs of the same component.
-- Complex selector with fallbacks.
-- Dynamic selector that takes parameters.
+Keep it inline when it is used once, including a simple, obvious selector like `button[type="submit"]`.
 
-When to keep inline:
+Move it to UiBase when it is used across multiple components (rare), such as a global nav element.
 
-- Used only once.
-- Simple, obvious selector like `button[type="submit"]` used once.
-
-When to move to UiBase:
-
-- Used across **multiple components** (rare) — e.g., a global nav element.
-
-Never extract to a separate `locators/*.ts` file. That is an anti-pattern in KATA.
+A separate `locators/*.ts` file is an anti-pattern in KATA, so do not extract there.
 
 ---
 
@@ -134,16 +125,16 @@ export interface InterceptResponseArgs {
 export class UiBase { ... }
 ```
 
-Every payload and response type used by a component should be defined here (or imported from `@schemas/{domain}.types` if generated from OpenAPI). Avoid inline object types in method signatures — always name the interface.
+Define every payload and response type a component uses here, or import it from `@schemas/{domain}.types` when it is generated from OpenAPI. Name the interface instead of writing an inline object type in a method signature.
 
 ---
 
 ## 5. Generic Type Parameters
 
-Use descriptive generic names and default to `unknown`.
+Give generics descriptive names and default them to `unknown`.
 
 ```typescript
-// GOOD — clear intent with defaults
+// GOOD: clear intent with defaults
 async interceptResponse<TRequest = unknown, TResponse = unknown>(
   args: InterceptResponseArgs,
 ): Promise<InterceptedData<TRequest, TResponse>> { ... }
@@ -161,23 +152,23 @@ const { responseBody } = await this.interceptResponse({
 });
 ```
 
-Never use single-letter generics (`T`, `U`) in public APIs — they give no hint about intent. Internal private methods may use `T` if obvious.
+Single-letter generics (`T`, `U`) tell a reader nothing about intent, so keep them out of public APIs. Internal private methods may use `T` when it is obvious.
 
 ---
 
 ## 6. Private vs Public Methods
 
-Private helpers live only inside the class; public methods form the external API.
+Private helpers live only inside the class, and the public methods form its external API.
 
 ```typescript
 class UiBase extends TestContext {
-  // PUBLIC — part of the class API, documented
+  // PUBLIC: part of the class API, documented
   async interceptResponse<T>(args: InterceptResponseArgs): Promise<T> {
     const response = await this.waitForMatchingResponse(args.urlPattern);
     return this.parseResponseBody(response);
   }
 
-  // PRIVATE — internal helper
+  // PRIVATE: internal helper
   private matchesPattern(url: string, pattern: string | RegExp): boolean {
     if (pattern instanceof RegExp) return pattern.test(url);
     const regexPattern = pattern.replace(/\*\*/g, '.*').replace(/\*/g, '[^/]*');
@@ -191,16 +182,16 @@ class UiBase extends TestContext {
 }
 ```
 
-Do not mark a method `public` if it is a helper inside an ATC. Keep private methods private — ATCs stay the public API surface.
+A helper inside an ATC is not `public`. Private methods stay private so the ATCs remain the public API surface.
 
 ---
 
 ## 7. Error Handling
 
-Fail fast in the methods a test can reach with a descriptive error. Silent fail in utility helpers that legitimately may not find data.
+Methods a test can reach fail fast with a descriptive error. Utility helpers that may legitimately find no data fail silently.
 
 ```typescript
-// REACHABLE BY A TEST (an ATC) — fail fast
+// REACHABLE BY A TEST (an ATC): fail fast
 @atc('TICKET-ID')
 async createOrderSuccessfully(payload: OrderPayload): Promise<[APIResponse, OrderResponse, OrderPayload]> {
   const [response, body, sent] = await this.apiPOST<OrderResponse, OrderPayload>('/orders', payload);
@@ -213,27 +204,27 @@ async createOrderSuccessfully(payload: OrderPayload): Promise<[APIResponse, Orde
 // from its `get request()` getter when no context is available — there is no
 // `setRequestContext()` to call, the context is constructor-injected.
 
-// UTILITY — silent fail, return null/undefined
+// UTILITY: silent fail, return null/undefined
 private async parseResponseBody<T>(response: Response): Promise<T | null> {
   try { return (await response.json()) as T; }
-  catch { return null; }    // response may not be JSON — that is not an error
+  catch { return null; }    // response may not be JSON: that is not an error
 }
 ```
 
-Rule:
+The rule:
 
 | Method type | On unexpected state | Rationale |
 |-------------|---------------------|-----------|
 | Public ATC or helper | Throw with descriptive message | Test should fail loudly at the call site |
 | Private utility (parser, matcher) | Return `null` / `undefined` | Caller decides what to do with missing data |
 
-Never swallow errors inside ATCs without re-throwing — the test must fail visibly.
+An ATC never swallows an error without re-throwing, because the test has to fail visibly.
 
 ---
 
 ## 8. Import Organization
 
-Group imports in order: type imports, external value imports, internal value imports. One blank line between groups.
+Group imports in this order, with one blank line between groups: type imports, external value imports, internal value imports.
 
 ```typescript
 // 1. Type imports (use 'import type')
@@ -249,11 +240,11 @@ import { buildUrl, config } from '@variables';
 import { attachRequestResponseToAllure } from '@utils/allure';
 ```
 
-Always prefer `import type` for types that are only referenced in type positions — it erases cleanly at build time.
+Use `import type` for anything referenced only in type positions; it erases cleanly at build time.
 
 ### Import aliases are mandatory
 
-No relative imports. The aliases are declared in `tsconfig.base.json` (synced); the project half is `tsconfig.json`.
+Relative imports are not allowed. The aliases are declared in `tsconfig.base.json` (synced); the project half is `tsconfig.json`.
 
 ```typescript
 // RIGHT
@@ -264,13 +255,13 @@ import { UsersApi } from '@api/UsersApi';
 import { config } from '../../../config/variables';
 ```
 
-Lint rejects relative imports: `KATA_IMPORT_ALIASES` in `eslint.config.base.js`, a core `no-restricted-imports` block scoped to `tests/**/*.ts` + `playwright.config.ts`. Dynamic `await import('./x')` is outside the rule. Fix them — do not disable the rule.
+Lint rejects relative imports: `KATA_IMPORT_ALIASES` in `eslint.config.base.js`, a core `no-restricted-imports` block scoped to `tests/**/*.ts` + `playwright.config.ts`. Dynamic `await import('./x')` is outside the rule. Fix the imports and leave the rule enabled.
 
 ---
 
 ## 9. Test Design Conventions (code-level)
 
-These conventions apply to every test file. They are the code-level expression of the TC-identity rule (documented in `kata-architecture.md`).
+These conventions apply to every test file. They are the code-level expression of the TC-identity rule in `kata-architecture.md`. Naming, the flows-not-properties rule and the assertion layers are stated once in `automation-standards.md` §1 and §2, and this section adds only what shows up in code.
 
 ### Helpers live at the top of the component
 
@@ -288,14 +279,9 @@ OrdersApi.ts:
 
 Helpers can be called inside ATCs as verification steps, inside test files for preconditions, or inside Steps for setup chains.
 
-### Test file naming
+### Test file and block naming
 
-Pattern: `{verb}{Feature}.test.ts` in camelCase with a verb describing the user action.
-
-- Good: `applyDiscount.test.ts`, `createOrder.test.ts`, `refreshCatalog.test.ts`, `authenticateUser.test.ts`.
-- Bad: `discount.test.ts` (no verb), `orderFlow.test.ts` (too broad), `check_discount.test.ts` (verb is a test verb, not a user action).
-
-### Test block naming
+File names follow `{verb}{Feature}.test.ts` in camelCase, with a verb for the user action: `applyDiscount.test.ts` and `authenticateUser.test.ts` are good, while `discount.test.ts` (no verb), `orderFlow.test.ts` (too broad) and `check_discount.test.ts` (a test verb, not a user action) are not.
 
 ```typescript
 test.describe('TICKET-ID: Validate discount codes', () => {
@@ -305,31 +291,11 @@ test.describe('TICKET-ID: Validate discount codes', () => {
 });
 ```
 
-- `describe` may include the ticket ID when the file is tied to a single ticket.
-- Every `test()` includes the ticket ID as a prefix followed by `should {behavior} when {condition}`.
-- One ticket per `describe`; never split a ticket across files. Multiple tickets can coexist in one file when they test different aspects of the same feature.
+The `describe` may carry the ticket ID when the file is tied to a single ticket. Every `test()` starts with the ticket ID followed by `should {behavior} when {condition}`. The full rules for files, tickets and hierarchy are in `automation-standards.md` §1.
 
-### Tests validate FLOWS, not properties
+### Tests validate flows, not properties
 
-One test validates a complete flow with multiple assertions. Do NOT split six tests that each check one field of the same response.
-
-```typescript
-// WRONG — splits a single flow into six tests
-test('should return orders', async ({ api }) => { ... });
-test('should have referenceNumber', async ({ api }) => { ... });
-test('should have totalAmount', async ({ api }) => { ... });
-
-// RIGHT — one test, complete contract
-test('TICKET-ID: should create order with correct totals when discount applied', async ({ api }) => {
-  const [, order] = await api.orders.createOrderSuccessfully(orderData);
-  const totals = await api.orders.getTotals({ orderId: order.id });
-  expect(order.id).toBeDefined();
-  expect(order.discountApplied).toBe(true);
-  expect(totals.finalAmount).toBe(totals.baseAmount - totals.discountAmount);
-});
-```
-
-Separate tests only when the scenario is fundamentally different:
+One test covers a complete flow with several assertions, and six tests that each check one field of the same response are wrong (worked example in `automation-standards.md` §2). Split only when the scenario really differs:
 
 | Separate test? | Reason |
 |----------------|--------|
@@ -341,34 +307,17 @@ Separate tests only when the scenario is fundamentally different:
 
 ### Test independence
 
-- No shared state between tests.
-- Each test generates its own data via `TestContext` helpers or faker (e.g., `api.generateUserData()`).
-- Do not rely on test ordering.
+- No shared state between tests, and no reliance on test ordering.
+- Each test generates its own data through `TestContext` helpers or faker (for example `api.generateUserData()`).
 - Clean up in `afterEach` only when the test created state that would persist and affect others.
-
-### Assertion layers
-
-```
-Test flow
-  ├── ATC 1: createOrderSuccessfully()
-  │     └── [ATC assertions: status 201, order persisted]
-  ├── ATC 2: applyDiscountSuccessfully()
-  │     └── [ATC assertions: discount applied, total recalculated]
-  └── Test-level assertions:
-        └── [Final state: final total = base - discount, tax applied correctly]
-```
-
-ATC assertions validate that each individual action worked. Test-level assertions validate the outcome of combining multiple actions.
 
 ### Preconditions strategy
 
-Each test sets up its own data via API (or DB) before executing the scenario:
+Each test sets up its own data through the API (or the DB) before running the scenario, in this order: preconditions create the scenario, actions perform the steps (API calls or UI interactions), and assertions validate the expected behavior with that data. Tests neither depend on nor interfere with each other, and preconditions come from API endpoints or the DB connection. Shared environments are used collaboratively, but the data inside each test is managed per test.
 
-1. Preconditions — prepare test data to create the scenario.
-2. Actions — perform the test steps (API calls or UI interactions).
-3. Assertions — validate expected behavior with the given data.
+### Assertion layers
 
-Rules: each test creates its own scenario independently; tests must not depend on or interfere with others; preconditions come from API endpoints or the DB connection; shared environments are used collaboratively but data inside each test is managed per-test.
+ATC assertions validate that each individual action worked. Test-level assertions validate the outcome of combining several actions (diagram in `automation-standards.md` §2).
 
 ### Integration vs E2E test design
 
@@ -380,7 +329,7 @@ Rules: each test creates its own scenario independently; tests must not depend o
 | Preconditions | API calls | API calls (setup) + UI (action) |
 | Value | Validates business logic correctness | Validates user experience |
 
-Both follow the same principles: complete flows, ATCs for actions and helpers for reads, multiple assertions per test, separate tests only for fundamentally different scenarios.
+Both follow the same principles: complete flows, ATCs for actions and helpers for reads, several assertions per test, and separate tests only for fundamentally different scenarios.
 
 ---
 

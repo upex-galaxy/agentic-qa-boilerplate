@@ -47,6 +47,18 @@
       "prompt": "KEY-7012 has no Xray tests yet. Create the missing tests and automate them.",
       "expected_behavior": "Activates test-automation. The TC source gate finds no signed Candidate for KEY-7012, so it STOPS and reports: it routes KEY-7012 to test-documentation (Analyze, ROI, the person's signature) and does not resume in this run. It creates no Test, writes no Verdict signed line and does not wait; a later run re-reads Jira and counts only a signature created and last updated before that run started.",
       "category": "positive"
+    },
+    {
+      "name": "should-trigger-spanish-automate-api-test",
+      "prompt": "Automatiza las pruebas de API del endpoint POST /api/orders siguiendo el patrón KATA, con su componente y su registro en el fixture.",
+      "expected_behavior": "Activates test-automation by meaning, even though the prompt is in Spanish. Runs the TC source gate, plans first, then codes an Api component with @atc, registers it in ApiFixture and uses the { api } fixture.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-spanish-review-kata",
+      "prompt": "Revisa el test que escribí en tests/e2e/procesarPago.test.ts y dime si cumple con KATA.",
+      "expected_behavior": "Activates test-automation by meaning. Runs Phase 3 Review: the three verifiers plus the spec and standards reviewers, with the lying-test check, and reports blockers per item.",
+      "category": "positive"
     }
   ]
 }

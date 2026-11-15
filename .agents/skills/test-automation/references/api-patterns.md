@@ -1,8 +1,8 @@
-# API Patterns — Components, OpenAPI Types, Status Matrix
+# API Patterns: Components, OpenAPI Types, Status Matrix
 
-> **Subagent context**: when the test-automation Code phase is dispatched (Sequential, see SKILL.md §Subagent Dispatch Strategy), this file is part of the subagent's "Context docs" briefing component.
+> Subagent context: when the test-automation Code phase is dispatched (Sequential, see SKILL.md §Subagent Dispatch Strategy), this file is part of the subagent's "Context docs" briefing component.
 
-How to write a KATA `Api` component and integration test. Load when building a new API component, importing OpenAPI types, choosing ATCs for success/error status codes, or handling auth headers. KATA layer mechanics (tuple returns, `ApiBase.apiGET/POST/...`, ATC atomicity, fixture selection) live in `kata-architecture.md` and `automation-standards.md` — this reference only covers API-specific mechanics.
+How to write a KATA `Api` component and integration test. Load it when building a new API component, importing OpenAPI types, choosing ATCs for success and error status codes, or handling auth headers. KATA layer mechanics (tuple returns, `ApiBase.apiGET/POST/...`, ATC atomicity, fixture selection) live in `kata-architecture.md` and `automation-standards.md`; this file covers only what is specific to APIs.
 
 ---
 
@@ -19,8 +19,8 @@ api/
     orders.types.ts
 
 tests/components/api/
-  ApiBase.ts                   # Layer 2 — HTTP helpers, auth, Allure attach
-  AuthApi.ts                   # Layer 3 — one file per resource
+  ApiBase.ts                   # Layer 2: HTTP helpers, auth, Allure attach
+  AuthApi.ts                   # Layer 3: one file per resource
   OrdersApi.ts
 tests/components/ApiFixture.ts # registers every Api component
 tests/integration/{module}/{verbResource}.test.ts
@@ -39,7 +39,7 @@ import { expect } from '@playwright/test';
 import { ApiBase } from '@api/ApiBase';
 import { atc, step } from '@utils/decorators';
 
-// Import typed payloads/responses from the facade — NEVER from '@openapi'
+// Import typed payloads and responses from the facade, not from '@openapi'
 import type {
   Order,
   CreateOrderRequest,
@@ -72,13 +72,13 @@ export class OrdersApi extends ApiBase {
 }
 ```
 
-Method order: base endpoint → constructor → helpers (`@step`, no `@atc`) → success ATCs → error ATCs. Max 15–20 ATCs per file; split by resource.
+Method order: base endpoint → constructor → helpers (`@step`, no `@atc`) → success ATCs → error ATCs. Keep each file to 15-20 ATCs at most and split by resource.
 
 ---
 
-## 3. ApiBase — HTTP helpers
+## 3. ApiBase: HTTP helpers
 
-ApiBase wraps `APIRequestContext` with typed tuple returns and automatic Allure attachment. Never call `request.fetch` directly from a Layer-3 component.
+ApiBase wraps `APIRequestContext` with typed tuple returns and automatic Allure attachment. A Layer-3 component calls these helpers and never `request.fetch` directly, so every call gets the same typing and attachment.
 
 | Method | Return | Purpose |
 |--------|--------|---------|
@@ -123,13 +123,13 @@ const endpoint = qs.toString() ? `${this.baseEndpoint}?${qs}` : this.baseEndpoin
 const [response, body] = await this.apiGET<OrderListResponse>(endpoint);
 ```
 
-Use `URLSearchParams` for safety; never string-concatenate values directly.
+Build query strings with `URLSearchParams`, which escapes values; concatenating them by hand does not.
 
 ---
 
 ## 4. OpenAPI type facades
 
-The single most important rule when OpenAPI is available: **only facade files import from `@openapi`**. Components import from `@schemas/{domain}.types`. This keeps the generated file cohesive and lets you evolve type names without rewriting every component.
+When OpenAPI is available, only facade files import from `@openapi`. Components import from `@schemas/{domain}.types`. That keeps the generated file in one place and lets type names evolve without rewriting every component.
 
 ### Generation flow
 
@@ -146,9 +146,9 @@ The single most important rule when OpenAPI is available: **only facade files im
                                       └───────────────────────────────────┘
 ```
 
-**Prerequisite**: The backend must be running and exposing its Swagger/OpenAPI spec. The URL is configured in `api/.openapi-config.json` or passed via `--url`. If the backend is not running, `api:sync` will fail with `Connection refused`.
+The backend must be running and exposing its Swagger/OpenAPI spec. The URL is configured in `api/.openapi-config.json` or passed via `--url`; with the backend down, `api:sync` fails with `Connection refused`.
 
-**What gets committed**: Only `api/openapi-types.ts` is committed. `api/openapi.json` and `api/.openapi-config.json` are gitignored — they are local cache artifacts.
+Only `api/openapi-types.ts` is committed. `api/openapi.json` and `api/.openapi-config.json` are gitignored local caches.
 
 ### Sync commands
 
@@ -159,7 +159,7 @@ The single most important rule when OpenAPI is available: **only facade files im
 | `bun run api:sync --no-types` | Download only, skip type generation |
 | `bun run api:sync --help` | Help |
 
-Run `bun run api:sync` before every automation session that touches new endpoints. Commit the regenerated `openapi-types.ts`. `openapi.json` and `.openapi-config.json` stay gitignored.
+Run `bun run api:sync` before every automation session that touches new endpoints, and commit the regenerated `openapi-types.ts`.
 
 ### Facade file template
 
@@ -168,21 +168,21 @@ Each `api/schemas/{domain}.types.ts` has up to three sections:
 ```typescript
 import type { components, paths } from '@openapi';
 
-// ── Schema types — domain models from components.schemas ──
+// ── Schema types: domain models from components.schemas ──
 export type Order = components['schemas']['OrderListModel'];
 export type Product = components['schemas']['ProductModel'];
 
-// ── Endpoint types — POST /api/orders ──
+// ── Endpoint types: POST /api/orders ──
 type CreateOrderPath = paths['/api/orders']['post'];
 export type CreateOrderRequest  = CreateOrderPath['requestBody']['content']['application/json'];
 export type CreateOrderResponse = CreateOrderPath['responses']['201']['content']['application/json'];
 
-// ── Endpoint types — GET /api/orders/{id} ──
+// ── Endpoint types: GET /api/orders/{id} ──
 type GetOrderPath = paths['/api/orders/{id}']['get'];
 export type GetOrderParams   = GetOrderPath['parameters']['path'];
 export type GetOrderResponse = GetOrderPath['responses']['200']['content']['application/json'];
 
-// ── Custom types — not in the spec ──
+// ── Custom types: not in the spec ──
 export interface OrderErrorResponse {
   error: string;
   statusCode?: number;
@@ -199,7 +199,7 @@ export interface OrderErrorResponse {
 | Endpoint types | `paths[...][method]` | Request/response per endpoint |
 | Custom types | Plain `interface` | Error shapes, test helpers, anything not in the spec |
 
-Use a private helper `type XPath = paths[...][method]` so request/response/params extractions stay readable.
+Use a private helper `type XPath = paths[...][method]` so the request, response and params extractions stay readable.
 
 ### Import map
 
@@ -231,7 +231,7 @@ import type { LoginPayload, Order } from '@schemas';
 
 ### Type navigation (reading the generated file)
 
-The generated `openapi-types.ts` exposes two top-level types: `components` (schema models) and `paths` (endpoint signatures). Navigate them as follows:
+The generated `openapi-types.ts` exposes two top-level types: `components` (schema models) and `paths` (endpoint signatures). Navigate them like this:
 
 ```typescript
 import type { components, paths } from '@openapi';  // only in facade files
@@ -256,21 +256,21 @@ type OrderQueryParams =
   paths['/api/orders']['get']['parameters']['query'];
 ```
 
-Use these patterns inside facade files only. Components never drill into `paths` or `components` directly.
+Use these patterns inside facade files only; components do not drill into `paths` or `components`.
 
 ### OpenAPI integration best practices
 
-1. **Sync before writing tests** — run `bun run api:sync` to get the latest types before any automation session touching new endpoints.
-2. **Commit `openapi-types.ts`** — the generated types file is committed so CI and other team members have them without running the backend.
-3. **One facade per domain** — matches the API component it serves (`auth.types.ts` serves `AuthApi.ts`, `orders.types.ts` serves `OrdersApi.ts`).
-4. **Only facades import `@openapi`** — components never import directly from the generated file.
-5. **Re-export via barrel** — every facade must be re-exported from `api/schemas/index.ts` for cross-domain imports.
+1. Sync before writing tests, so the types match the backend as it is now.
+2. Commit `openapi-types.ts`, so CI and teammates have the types without running the backend.
+3. One facade per domain, matching the component it serves (`auth.types.ts` serves `AuthApi.ts`, `orders.types.ts` serves `OrdersApi.ts`).
+4. Only facades import `@openapi`.
+5. Re-export every facade from the barrel `api/schemas/index.ts` for cross-domain imports.
 
 ---
 
-## 5. Status-code matrix — one ATC per expected outcome
+## 5. Status-code matrix: one ATC per expected outcome
 
-Every HTTP outcome is a separate ATC because the expected status AND the response shape differ. Same status + different payload family = one parameterised ATC.
+Every HTTP outcome is a separate ATC because both the expected status and the response shape differ. The same status with a different payload family is one parameterised ATC.
 
 | Outcome | Status | ATC name pattern | Response type |
 |---------|--------|------------------|---------------|
@@ -284,7 +284,7 @@ Every HTTP outcome is a separate ATC because the expected status AND the respons
 | Not found | 404 | `get{Resource}WithNonExistentId` / `get{Resource}NotFound` | `ApiErrorResponse` |
 | Conflict | 409 | `create{Resource}WithDuplicate{Field}` | `ApiErrorResponse` |
 
-### Success — 201 Created
+### Success: 201 Created
 
 ```typescript
 @atc('TICKET-ID')
@@ -301,7 +301,7 @@ async createOrderSuccessfully(
 }
 ```
 
-### Success — 200 OK (list with pagination)
+### Success: 200 OK (list with pagination)
 
 ```typescript
 @atc('TICKET-ID')
@@ -322,7 +322,7 @@ async getAllOrdersSuccessfully(
 }
 ```
 
-### Delete — accept 200 or 204
+### Delete: accept 200 or 204
 
 ```typescript
 @atc('TICKET-ID')
@@ -333,7 +333,7 @@ async deleteOrderSuccessfully(id: string): Promise<[APIResponse, void]> {
 }
 ```
 
-### Error — 400 Validation
+### Error: 400 Validation
 
 ```typescript
 @atc('TICKET-ID')
@@ -349,7 +349,7 @@ async createOrderWithInvalidPayload(
 }
 ```
 
-### Error — 401 Unauthorized (explicitly without auth)
+### Error: 401 Unauthorized (explicitly without auth)
 
 ```typescript
 @atc('TICKET-ID')
@@ -362,7 +362,7 @@ async getOrdersUnauthorized(): Promise<[APIResponse, OrderErrorResponse]> {
 }
 ```
 
-### Error — 404 Not Found
+### Error: 404 Not Found
 
 ```typescript
 @atc('TICKET-ID')
@@ -374,11 +374,11 @@ async getOrderWithNonExistentId(id: string): Promise<[APIResponse, OrderErrorRes
 }
 ```
 
-Equivalence partitioning applies: three ATCs that all return 401 for different invalid logins collapse into one parameterised `loginWithInvalidCredentials(payload)`. See `kata-architecture.md` §6 Rule 3.
+Equivalence partitioning applies: three ATCs that return 401 for different invalid logins collapse into one parameterised `loginWithInvalidCredentials(payload)`. See `kata-architecture.md` §6 Rule 3.
 
 ---
 
-## 6. Authentication & token lifecycle
+## 6. Authentication and token lifecycle
 
 ### Automatic token propagation
 
@@ -431,7 +431,7 @@ export class ApiFixture extends ApiBase {
 }
 ```
 
-Forgetting to wire a new component into `setAuthToken` is the most common cause of surprise 401s in API suites.
+A new component missing from `setAuthToken` is the most common cause of surprise 401s in API suites.
 
 ---
 
@@ -466,7 +466,7 @@ test.describe('TICKET-ID: Validate orders API', () => {
   let customer: CustomerCandidate | null;
 
   test.beforeAll(async ({ api }) => {
-    // DISCOVER (see test-data-management.md) — no assertions
+    // DISCOVER (see test-data-management.md): no assertions
     await api.auth.signInSuccessfully({ email, password });
     customer = await api.customers.findAvailableCustomer();
   });
@@ -498,20 +498,20 @@ test.describe('TICKET-ID: Validate orders API', () => {
 });
 ```
 
-Rules applied above (all mandatory):
+The template applies these rules, all mandatory:
 
-- `{ api }` fixture for API-only tests — no browser opens.
-- Ticket ID prefix on describe and test.
+- API-only tests use the `{ api }` fixture, so no browser opens.
+- Describe and test titles carry the ticket ID prefix.
 - `beforeAll` discovers state without assertions; each test guards with `test.skip()`.
-- `api.data.*` generates data; never hardcoded.
-- Type imports come from `@schemas/orders.types`, never from `@openapi`.
-- Auth-dependent tests clear the token before running.
+- `api.data.*` generates the data, so nothing is hardcoded.
+- Type imports come from `@schemas/orders.types`, not from `@openapi`.
+- Tests that depend on auth state clear the token first.
 
 ---
 
 ## 9. Chaining ATCs at the test level
 
-ATCs are atomic. The test orchestrates them — one ATC never calls another.
+ATCs are atomic. The test orchestrates them, and one ATC does not call another.
 
 ```typescript
 test('TICKET-ID: should create order and appear in list', async ({ api }) => {
@@ -522,7 +522,7 @@ test('TICKET-ID: should create order and appear in list', async ({ api }) => {
 });
 ```
 
-For preconditions repeated across 3+ tests in 3+ files, extract into a `Steps` module — not into an ATC that calls another ATC. See `kata-architecture.md` §8.
+For preconditions repeated across 3+ tests in 3+ files, extract them into a `Steps` module instead of an ATC that calls another ATC. See `kata-architecture.md` §8.
 
 ---
 
@@ -553,11 +553,11 @@ bun run api:sync
 
 ## 11. Allure attachments
 
-`ApiBase` attaches the full request/response pair to the Allure report on every HTTP call. No manual attachment needed. Masking of `password` / `token` / `secret` parameters happens in the `@atc` / `@step` decorators. Keep those parameter names canonical so masking works out of the box.
+`ApiBase` attaches the full request and response to the Allure report on every HTTP call, so there is nothing to attach by hand. The `@atc` / `@step` decorators mask `password`, `token` and `secret` parameters; keep those parameter names canonical so masking works.
 
 ---
 
-## 12. Troubleshooting — OpenAPI sync
+## 12. Troubleshooting: OpenAPI sync
 
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
@@ -571,7 +571,7 @@ bun run api:sync
 
 ## 13. Implementation checklist (API coding phase)
 
-Before leaving the coding phase:
+Tick these before leaving the coding phase:
 
 - [ ] Component extends `ApiBase`, constructor takes `TestContextOptions` and calls `super`.
 - [ ] `baseEndpoint` constant at the top of the class.

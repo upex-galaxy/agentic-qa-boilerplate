@@ -477,7 +477,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="wf-node m" style="grid-column:2;grid-row:2"><span class="n">Phase 0</span><h4>Resume + scope</h4><p><span class="mono">.session/…</span> → resume / restart / abort. Scope: module · ticket · regression.</p></div>
       <div class="wf-node m" style="grid-column:3;grid-row:2"><span class="n">Phase 1</span><h4>Plan ✋</h4><p><span class="mono">spec.md</span> + <span class="mono">automation-plan.md</span>. TÚ apruebas antes de codear.</p></div>
       <div class="wf-node m" style="grid-column:4;grid-row:2"><span class="n">Phase 2</span><h4>Code</h4><p>TCs a In Automation, luego types → componente → fixture → test file → <span class="mono">bun run test</span>.</p></div>
-      <div class="wf-node m" style="grid-column:5;grid-row:2"><span class="n">Phase 3</span><h4>Review</h4><p>3 Verifiers paralelos: <span class="mono">test</span> · <span class="mono">types:check</span> · <span class="mono">lint:check</span>.</p></div>
+      <div class="wf-node m" style="grid-column:5;grid-row:2"><span class="n">Phase 3</span><h4>Review</h4><p>5 subagentes en paralelo: 3 Verifiers (<span class="mono">test</span> · <span class="mono">types:check</span> · <span class="mono">lint:check</span>) + revisor de Spec + revisor de Standards.</p></div>
       <div class="wf-node m last" style="grid-column:6;grid-row:2"><span class="n">Accept</span><h4>Handoff</h4><p>Checkpoint + archivo de sesión. La skill se detiene aquí — sin git.</p></div>
       <div class="wf-node side loop" style="grid-column:4/6;grid-row:3"><span class="n">reject</span><h4>STOP — sin auto-fix</h4><p>Reporte fallido verbatim; re-despachar Code SOLO con tu aprobación. Bug real → confirma y crea el bug.</p></div>
       <div class="wf-node side" style="grid-column:1/4;grid-row:3"><span class="n">modo explain · solo lectura</span><h4>Explicar tests que ya existen</h4><p>Lee el código y deja un HTML con cada assertion. Sin Plan → Code → Review, sin sesión, sin Jira.</p></div>
@@ -590,7 +590,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <li><b>4 · Fixture:</b> <span class="mono">{api}</span>, <span class="mono">{ui}</span> o <span class="mono">{test}</span> — los Steps no tienen fixture: se instancian directo.</li>
       <li><b>5 · Trazabilidad:</b> qué ATC ID del TMS mapea a qué método del componente.</li>
     </ul>
-    <div class="callout good"><h4>Gate de fase</h4><p>Un subagente Plan (patrón Single) produce los artefactos; el orquestador te presenta el plan y <b>ESPERA tu aprobación</b>. Phase 2 jamás arranca sin ella (anti-pattern T2: nunca saltar el Plan, ni para un test "simple").</p></div>
+    <div class="callout good"><h4>Gate de fase</h4><p>Un subagente Plan (patrón Single) produce los artefactos; el orquestador te presenta el plan y <b>ESPERA tu aprobación</b>. Phase 2 jamás arranca sin ella (nunca se salta el Plan, ni para un test "simple").</p></div>
     <div class="notes">El subagente único de Plan protege el contexto del orquestador de las lecturas KATA pesadas. El briefing SIEMPRE incluye kata-manifest.json como context doc.</div>
   </section>
 
@@ -668,7 +668,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     </div>
     <div class="callout"><h4>Los consumidores no son una capa</h4><p><span class="mono">tests/e2e/**</span> y <span class="mono">tests/integration/**</span> orquestan ATCs en escenarios y validan FLUJOS: <b>consumen</b> los Fixtures (L4), no son una quinta capa. Son <b>cuatro capas nombradas, más Steps opcional</b>.</p></div>
     <div class="callout"><h4>Dos reglas duras</h4><p>Una capa superior usa una inferior — <b>nunca al revés</b>. Imports SIEMPRE por alias (los de <span class="mono">tsconfig.base.json</span>, p. ej. <span class="mono">@api/ @ui/</span>) — el lint rechaza los relativos (<span class="mono">../../../</span>).</p></div>
-    <div class="notes">Aplanar capas es rechazo automático en Review (anti-pattern T3). La separación permite que helpers HTTP, helpers UI y utilidades agnósticas tengan un solo hogar cada uno.</div>
+    <div class="notes">Aplanar capas es rechazo automático en Review (gotcha 19 del SKILL.md). La separación permite que helpers HTTP, helpers UI y utilidades agnósticas tengan un solo hogar cada uno.</div>
   </section>
 
   <!-- 12 · CRAFT · FIXTURES -->
@@ -733,14 +733,15 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <!-- 15 · PHASE 3 · REVIEW -->
   <section class="slide" data-title="Review">
     <p class="kicker">phase 3 · review — el gate de merge</p>
-    <h2 class="h2" data-anim="fade-up">Tres Verifiers en paralelo; <span class="grad">cero</span> blockers para aceptar</h2>
+    <h2 class="h2" data-anim="fade-up">Cinco subagentes en paralelo; <span class="grad">cero</span> blockers para aceptar</h2>
     <table class="tt">
       <thead><tr><th>Verifier (paralelo)</th><th>Comando</th><th>Debe dar</th></tr></thead>
       <tbody>
         <tr><td><b>Tests</b></td><td class="mono">bun run test {path}</td><td>Todo verde, cero retries usados</td></tr>
         <tr><td><b>Types</b></td><td class="mono">bun run types:check</td><td>Sin errores</td></tr>
         <tr><td><b>Lint</b></td><td class="mono">bun run lint:check</td><td>Sin errores</td></tr>
-        <tr><td><b>+ Checklist KATA</b> (visual)</td><td class="mono">references/review-checklists.md</td><td>Fixture registrado · <span class="mono">@atc</span> ↔ TC real del TMS · naming — cada ítem fallido es un blocker</td></tr>
+        <tr><td><b>Revisor de Spec</b></td><td class="mono">diff + spec.md + TCs</td><td>Cada ATC planeado existe, nada fuera del plan, y ningún test miente: tautológico o que no puede fallar</td></tr>
+        <tr><td><b>Revisor de Standards</b></td><td class="mono">references/review-checklists.md</td><td>Fixture registrado · <span class="mono">@atc</span> ↔ TC real del TMS · naming · tests atados a la estructura (<span class="mono">nth-child</span>, cadenas de clases). Cada ítem fallido es un blocker</td></tr>
       </tbody>
     </table>
     <div class="cols c2 mt-m">
@@ -748,7 +749,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="callout good" style="margin-top:0"><h4>ACCEPT — cierre limpio</h4><p>Checkpoint final en <span class="mono">progress.md</span> → sesión archivada en <span class="mono">.session/.archive/</span> → <span class="mono">bun run kata:manifest</span> + <span class="mono">git add</span> para el gate de husky.</p></div>
     </div>
     <div class="callout"><h4>Verificador separado: requerido antes del merge</h4><p>El contrato de Automation exige un verificador separado en contexto limpio, para cualquier cambio y no solo los de alto riesgo: <span class="mono">/pr-review-lead</span> (review de QA lead anclado en la doctrina KATA) o <span class="mono">/judgment-day</span> (dos jueces ciegos en paralelo, aprueba solo si ambos coinciden). Eliges el que encaje con el cambio; saltarlo es una falla del DoD. Es el único stage con esta obligación, a cambio de más autonomía a la entrada (de 2 a 3 dentro del plan aprobado).</p></div>
-    <div class="notes">La agregación es inline: el orquestador lee los 3 reportes y decide. Si un test falla por un bug REAL de producto: busca bug existente, anota test.fail('Blocked by {BUG-KEY}') o crea el bug con tu confirmación — un test rojo sin bug key nunca es override aceptable.</div>
+    <div class="notes">Los dos revisores corren en contexto limpio y cada uno lee solo lo suyo: el de Spec no ve los estándares, el de Standards no ve el spec, así uno no tapa al otro. La agregación es inline: el orquestador lee los 5 reportes, sin fusionarlos ni reordenarlos, y decide. Sin nadie presente, el rechazo va al conductor o al reporte, y el cambio queda sin mergear. Si un test falla por un bug REAL de producto: busca bug existente, anota test.fail('Blocked by {BUG-KEY}') o crea el bug con tu confirmación — un test rojo sin bug key nunca es override aceptable.</div>
   </section>
 
   <!-- 16 · HANDOFF -->

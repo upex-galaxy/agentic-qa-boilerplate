@@ -3,9 +3,9 @@
 Explain what automated tests do, as one self-contained HTML page: which ATCs run, what every assertion checks (with its `file:line`), how data flows, and what a reviewer should look at. The AI reads the code and writes the facts as JSON; a synced renderer turns that JSON into the page, so the page looks the same on every run and every harness.
 
 **Input:** $ARGUMENTS
-(Scope: a file path, an ATC id, a ticket key, or a module name. Examples: `tests/integration/auth/user-session.test.ts`, `PROJ-101`, `UPEX-100`, `auth`.)
+(Scope: a file path, an ATC id, a ticket key or a module name. Examples: `tests/integration/auth/user-session.test.ts`, `PROJ-101`, `UPEX-100`, `auth`.)
 
-**Read-only.** This mode never edits tests, product code or `kata-manifest.json`, never calls Jira or the TMS, and keeps no session state. Its only writes are the two report files of Step 4.
+**Read-only.** This mode is sealed: it edits no tests, product code or `kata-manifest.json`, calls no Jira or TMS, and keeps no session state. Its only writes are the two report files of Step 4, so it never needs approval from anyone and runs the same with a person, a supervised worker or a routine.
 
 ---
 
@@ -22,7 +22,7 @@ The scope slug (lowercase, `a-z0-9-`) names the output files: the module name, t
 
 ## Step 2: Load the facts a script can give you
 
-Read `kata-manifest.json` first. It holds every ATC's `id`, `method`, component file and `line`. The renderer overwrites those four fields from the manifest anyway, so never guess them; an ATC id the manifest does not know is reported on the page as a finding.
+Read `kata-manifest.json` first. It holds every ATC's `id`, `method`, component file and `line`. The renderer overwrites those four fields from the manifest anyway, so do not guess them; an ATC id the manifest does not know shows up on the page as a finding.
 
 ## Step 3: Trace the code
 
@@ -32,9 +32,9 @@ For each test file in scope:
 2. Read each ATC the test calls, in `tests/components/`, and any Steps module used as a precondition.
 3. Read the shared setup the tests depend on (`beforeAll`, `beforeEach`, the setup projects under `tests/setup/`) and note what it produces and which tests reuse it.
 4. Record every `expect(...)` with its exact file and line, as positive (must be true) or negative (must NOT be true: an error status, a missing session, an absent element). Mark `expect.soft` as `soft: true`.
-5. Note anything only a reader can see, such as a `waitForTimeout` hard wait, as a finding with its location.
+5. Record anything only a reader can see, such as a `waitForTimeout` hard wait, as a finding with its location.
 
-Never invent an assertion. A count that does not match the code is a wrong page.
+Write only assertions you read in the code: a count that does not match the code makes the page wrong.
 
 ## Step 4: Write the JSON, render, open
 
@@ -44,11 +44,11 @@ Write `.context/reports/test-breakdown/<scope-slug>.json` (`.context/reports/` i
 bun run tests:explain:render .context/reports/test-breakdown/<scope-slug>.json
 ```
 
-The renderer validates the file and writes `<scope-slug>.html` next to it. A validation error names the JSON path to fix; fix the JSON and render again. An unknown `schemaVersion` is refused by name: write the version the renderer states.
+The renderer validates the file and writes `<scope-slug>.html` next to it. A validation error names the JSON path to fix, so fix it and render again. An unknown `schemaVersion` is refused by name; write the version the renderer states.
 
-**Language (deck decision D6).** `lang` is the conversation language, and every sentence you write (`value`, `text`, `actions`, setup `description`) is in that language. Test titles, ATC ids, method names, file paths and code stay verbatim. The renderer ships English and Spanish labels; for any other language, add a `labels` object with the translated UI strings (keys missing from it fall back to English, and the renderer says which).
+**Language (deck decision D6).** `lang` is the conversation language, and every sentence you write (`value`, `text`, `actions`, setup `description`) is in that language. Test titles, ATC ids, method names, file paths and code stay verbatim. The renderer ships English and Spanish labels; for another language, add a `labels` object with the translated UI strings (missing keys fall back to English, and the renderer says which).
 
-**Opening.** The owner asked for the page, so open it without asking. With the orchestration gate ready, open it through `[ORCHESTRATION_TOOL]` as a worktree-bound tab (`orca-orchestration/references/html-surfaces.md`: a read-only page, so the `file://` route). Otherwise run the render with `--open`, which uses the system opener, and say nothing else about how it was opened.
+**Opening.** The request was for the page, so open it without asking. With the orchestration gate ready, open it through `[ORCHESTRATION_TOOL]` as a worktree-bound tab (`orca-orchestration/references/html-surfaces.md`: a read-only page, so the `file://` route). Otherwise run the render with `--open`, which uses the system opener. A worker or routine with no screen skips the opening and reports the path.
 
 **Chat.** Three lines at most: what the scope proves in business terms, the counts (tests, ATCs, assertions, findings), and the repo-relative path of the HTML. The page carries the detail, and its "Copy as Markdown" button gives the summary table for a PR description.
 
@@ -121,11 +121,11 @@ The renderer (`scripts/tests-explain-render.ts`) is the authority: its types and
 
 ### What the page shows
 
-Overview (stat tiles, commit, sources) · what the suite proves (filterable table) · flow per test (setup → fixture → numbered ATC chain → assertion counts) · test cards (guard, actions, positive and negative assertions with `file:line`, data table with partitions) · data flow · findings (facts with a location, never a fix) · traceability (ATC → Jira Test → Story, read from the synced `.context/PBI/` cache on disk; with no cache it says so) · glossary. It embeds the docs site palette, follows the system light or dark theme, makes no network request, and prints cleanly.
+The page has these sections: overview (stat tiles, commit, sources); what the suite proves (filterable table); flow per test (setup, fixture, numbered ATC chain, assertion counts); test cards (guard, actions, positive and negative assertions with `file:line`, data table with partitions); data flow; findings (facts with a location, never a fix); traceability (ATC to Jira Test to Story, read from the synced `.context/PBI/` cache on disk, and it says so when there is no cache); glossary. It embeds the docs site palette, follows the system light or dark theme, makes no network request, and prints cleanly.
 
 ## Rules
 
-1. Read the code before writing the JSON. Never invent an assertion, an ATC, a line or a count.
-2. One JSON per scope; re-running overwrites both files, which is intended (they are regenerated output).
+1. Read the code before writing the JSON. Every assertion, ATC, line and count comes from what you read.
+2. One JSON per scope. Re-running overwrites both files, which is intended: they are regenerated output.
 3. Explain each test's value in business terms, in the conversation language.
-4. Never write outside `.context/reports/test-breakdown/`.
+4. Write only inside `.context/reports/test-breakdown/`.

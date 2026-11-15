@@ -1,22 +1,22 @@
 # Test Data Management
 
-Strategy and mechanics for supplying test data in a KATA project. Load when designing preconditions, writing `beforeAll` / `beforeEach` hooks, building `DataFactory` generators, adding fixture JSON, or deciding how a new test should obtain its data.
+How a KATA test obtains its data: strategy, placement and mechanics. Load it when you design preconditions, write `beforeAll` / `beforeEach` hooks, build `DataFactory` generators, add fixture JSON, or decide where a new test gets its data.
 
-Architectural rules (no shared state, credentials from `.env`, one generator per test) are stated once in `automation-standards.md` and are not repeated here. This reference covers strategy, placement, and mechanics.
-
----
-
-## 1. Golden Rule
-
-Never hardcode test data. Every test obtains its data at runtime — by discovering, modifying, or generating it. Hardcoded IDs, emails, or timestamps break the first time the environment changes.
-
-**Exception** — login credentials for pre-existing users come from `.env` (`LOCAL_USER_EMAIL`, `STAGING_USER_EMAIL`, and matching passwords). Everything else is dynamic.
+The architectural rules (no shared state, credentials from `.env`, one generator per test) live in `automation-standards.md` and are not repeated here.
 
 ---
 
-## 2. Strategy — Discover → Modify → Generate
+## 1. Golden rule
 
-Every precondition data need resolves to one of three patterns. Classify during the planning phase, not during coding.
+Every test obtains its data at runtime, by discovering, modifying or generating it. Hardcoded IDs, emails and timestamps break the first time the environment changes.
+
+The one exception is login credentials for pre-existing users, which come from `.env` (`LOCAL_USER_EMAIL`, `STAGING_USER_EMAIL` and the matching passwords). Everything else is dynamic.
+
+---
+
+## 2. Strategy: Discover, Modify, Generate
+
+Every precondition data need resolves to one of three patterns. Classify it in the planning phase, before coding.
 
 | Priority | Pattern | What it does | When to pick it |
 |----------|---------|-------------|-----------------|
@@ -24,11 +24,11 @@ Every precondition data need resolves to one of three patterns. Classify during 
 | 2 | **Modify** | Find existing data, then mutate it via API into the required state | Entity exists but not in the right state, API supports the mutation |
 | 3 | **Generate** | Create new data from scratch via API (or DB fallback) | No usable data exists, full CRUD is available, or the test mutates state |
 
-Discover is preferred — zero impact on the database, realistic data. Modify adds one mutation. Generate is the last resort because it pollutes the environment.
+Discover is preferred: it leaves the database untouched and returns realistic data. Modify adds one mutation. Generate is the last resort because it pollutes the environment.
 
-### Override — when Generate beats Discover
+### Override: when Generate beats Discover
 
-Use Generate even if data could be discovered when the test **mutates** state (POST, PUT, DELETE). Sharing a discovered entity across mutating tests creates order dependencies. Pair with `beforeEach` for isolation.
+When the test mutates state (POST, PUT, DELETE), use Generate even if data could be discovered. A discovered entity shared across mutating tests creates order dependencies. Pair it with `beforeEach` for isolation.
 
 ### Feasibility check (during planning)
 
@@ -37,9 +37,9 @@ Before accepting a TC as an automation candidate, answer in order:
 1. Can the entity be **discovered** reliably? (query DB or GET endpoint)
 2. If not, can existing data be **modified** to reach the required state? (PUT/PATCH endpoint available?)
 3. If not, can data be **created from scratch** via POST?
-4. If none of the above → flag as blocker. The test is not yet an automation candidate; escalate to backend/infra.
+4. If none of the above, flag a blocker. The test is not yet an automation candidate; escalate to backend or infra.
 
-This check belongs in the Implementation Plan (Data Discovery step), never during coding.
+The check belongs in the Implementation Plan (Data Discovery step), not in coding.
 
 ### Decision flowchart
 
@@ -53,9 +53,9 @@ Need data for entity X?
 
 ---
 
-## 3. DataFactory — central generator
+## 3. DataFactory: central generator
 
-Single static class at `tests/data/DataFactory.ts`. Propagated through `TestContext` so both API and UI components reach it as `this.data`.
+One static class at `tests/data/DataFactory.ts`. `TestContext` propagates it, so API and UI components reach it as `this.data`.
 
 ### Access patterns
 
@@ -74,7 +74,7 @@ DataFactory.createUser();
 
 ### Seeded generators (baseline)
 
-The baseline generators, their return types and their purpose: read `tests/data/DataFactory.ts`.
+`tests/data/DataFactory.ts` lists the baseline generators with their return types.
 
 Types live in `tests/data/types.ts`:
 
@@ -89,9 +89,9 @@ interface TestOrder { referenceNumber: string; productId: number; quantity: numb
 
 Add a method in `DataFactory.ts` and a matching interface in `types.ts`. Generator rules:
 
-- Every field uses `faker` or a deterministic random helper. No hardcoded values except domain enums.
-- Accept `overrides?: Partial<T>` as the last positional arg. Spread it after defaults so callers win.
-- Use prefixes that identify test-origin data: `test.`, `CONF-`, `ORD-`. Makes DB cleanup and log inspection trivial.
+- Every field uses `faker` or a deterministic random helper. Only domain enums may be hardcoded.
+- Accept `overrides?: Partial<T>` as the last positional argument and spread it after the defaults so callers win.
+- Prefix test-origin data (`test.`, `CONF-`, `ORD-`) so DB cleanup and log inspection are easy.
 
 ```typescript
 static createCategory(overrides?: Partial<TestCategory>): TestCategory {
@@ -105,9 +105,9 @@ static createCategory(overrides?: Partial<TestCategory>): TestCategory {
 }
 ```
 
-### Never import `faker` directly in tests or components
+### Import `faker` only inside DataFactory
 
-Always go through DataFactory. Direct `faker` imports bypass type contracts and spread random-data logic across the codebase.
+Tests and components go through DataFactory. A direct `faker` import bypasses the type contracts and spreads random-data logic across the codebase.
 
 ---
 
@@ -182,22 +182,22 @@ test('TICKET-ID: should register user with custom email', async ({ ui }) => {
 
 ---
 
-## 6. Precondition placement — `beforeAll` vs `beforeEach`
+## 6. Precondition placement: `beforeAll` vs `beforeEach`
 
-Where you put the setup determines test speed AND test isolation. Pick by asking "does the test mutate the data?"
+Where the setup sits decides both speed and isolation. Ask whether the test mutates the data.
 
 | Hook | Pick when | Why |
 |------|-----------|-----|
-| `beforeAll` | Data is **read-only** — tests observe but never mutate | Query runs once, not N times. Fast. |
-| `beforeAll` | Setup is **expensive and shared** (login, heavy seeding) | Avoid repeating costly calls |
-| `beforeEach` | Data is **mutated** by each test (POST, PUT, DELETE) | Each test needs a fresh isolated state |
-| `beforeEach` | Setup is **cheap and must stay isolated** (page navigation) | Ensures independence even if one test fails |
+| `beforeAll` | Data is read-only: tests observe but never mutate | The query runs once, not N times |
+| `beforeAll` | Setup is expensive and shared (login, heavy seeding) | Avoids repeating costly calls |
+| `beforeEach` | Each test mutates the data (POST, PUT, DELETE) | Each test needs a fresh isolated state |
+| `beforeEach` | Setup is cheap and must stay isolated (page navigation) | Keeps tests independent even when one fails |
 
-Rule of thumb: test **reads** → `beforeAll`. Test **writes** → `beforeEach`.
+In short, a test that reads uses `beforeAll` and a test that writes uses `beforeEach`.
 
 ### Passing data from setup to tests
 
-Declare variables at the `describe` scope. `beforeAll` populates them without assertions; each test validates its own precondition with `test.skip()`.
+Declare variables at the `describe` scope. `beforeAll` populates them without assertions, and each test checks its own precondition with `test.skip()`.
 
 ```typescript
 test.describe('Orders: page states', () => {
@@ -205,7 +205,7 @@ test.describe('Orders: page states', () => {
   let pendingOrder: OrderCandidate | null;
 
   test.beforeAll(async ({ api }) => {
-    // DISCOVER — no assertions here
+    // DISCOVER: no assertions here
     completedOrder = await api.orders.findOrderWithState('completed');
     pendingOrder = await api.orders.findOrderWithState('pending');
   });
@@ -224,23 +224,23 @@ test.describe('Orders: page states', () => {
 
 ---
 
-## 7. Never `expect` inside `beforeAll`
+## 7. No `expect` inside `beforeAll`
 
-If a `beforeAll` assertion fails, ALL tests in the describe block fail — including unrelated ones. That hides what really broke.
+If a `beforeAll` assertion fails, every test in the describe block fails, unrelated ones included, and the report hides what really broke.
 
 ```typescript
-// WRONG — one missing precondition kills every test in the block
+// WRONG: one missing precondition kills every test in the block
 test.beforeAll(async ({ api }) => {
   pendingOrder = await api.orders.findByState('pending');
   expect(pendingOrder, 'No pending order').toBeDefined();   // blocks unrelated tests
 });
 
-// WRONG — cryptic null access in the test
+// WRONG: cryptic null access in the test
 test('should display pending', async ({ ui }) => {
   await ui.orders.selectOrder(pendingOrder.id);  // TypeError: Cannot read 'id' of null
 });
 
-// RIGHT — beforeAll discovers only, each test skips with a message
+// RIGHT: beforeAll discovers only, each test skips with a message
 test.beforeAll(async ({ api }) => {
   pendingOrder = await api.orders.findByState('pending');
 });
@@ -251,22 +251,18 @@ test('TICKET-ID: should display pending', async ({ ui }) => {
 });
 ```
 
-Why:
-
-- `beforeAll` is shared setup — it must not contain assertions that block unrelated tests.
-- Each test validates its own precondition with `test.skip(true, reason)`.
-- The report distinguishes "skipped — missing data" from "failed — actual bug".
+Each test validates its own precondition with `test.skip(true, reason)`, so the report separates "skipped: missing data" from "failed: actual bug".
 
 ---
 
-## 8. Cleanup — `afterAll` and `afterEach`
+## 8. Cleanup: `afterAll` and `afterEach`
 
-If setup **modifies** or **generates** data, restore or delete it so the environment does not accumulate residue.
+If setup modifies or generates data, restore or delete it so the environment does not accumulate residue.
 
 | Hook | When to use |
 |------|-------------|
-| `afterEach` | Each test mutated data independently — restore after each |
-| `afterAll` | One shared mutation in `beforeAll` — restore once at end |
+| `afterEach` | Each test mutated data independently, so restore after each |
+| `afterAll` | One shared mutation in `beforeAll`, so restore once at the end |
 
 ```typescript
 test.describe('TICKET-ID: Validate order status actions', () => {
@@ -286,7 +282,7 @@ test.describe('TICKET-ID: Validate order status actions', () => {
 
 | Pattern used in setup | Cleanup required |
 |-----------------------|------------------|
-| Discover | None — data was only read |
+| Discover | None, the data was only read |
 | Modify | Restore original state in `afterAll` / `afterEach` |
 | Generate | Delete created entity in `afterEach` (or accept the leak if the env is disposable) |
 
@@ -304,7 +300,7 @@ test.describe('TICKET-ID: Validate order status actions', () => {
 
 ## 10. Static fixture files
 
-For reference data that does not change — roles, permission matrices, mock response bodies, configuration trees — use `tests/data/fixtures/` JSON (or CSV if tabular).
+Reference data that does not change (roles, permission matrices, mock response bodies, configuration trees) goes in `tests/data/fixtures/` as JSON, or CSV when tabular.
 
 | Fixtures (`tests/data/fixtures/`) | DataFactory |
 |-----------------------------------|-------------|
@@ -353,22 +349,22 @@ Commit `tests/data/fixtures/` and `tests/data/uploads/`. Gitignore `tests/data/d
 
 ## 11. Isolation & parallelism
 
-Even with a single worker (see `workers` in `playwright.config.ts`), uniqueness still matters — for reruns against the same environment and for the future parallelism upgrade. DataFactory guarantees it by combining a prefix, an epoch-ms timestamp, and a 6-char random suffix:
+Uniqueness matters even with a single worker (see `workers` in `playwright.config.ts`): it protects reruns against the same environment and the later move to parallelism. DataFactory builds it from a prefix, an epoch-ms timestamp and a 6-character random suffix:
 
 ```
 Email:   test.john.x7k2m9@example.com
 TestId:  order-1707312000000-x7k2m9
 ```
 
-That is enough to avoid collisions across reruns AND across workers once parallelism is enabled. Do not design tests that rely on sequential data (e.g., "the first order in the DB"); always tag with a unique marker first.
+That avoids collisions across reruns and, once parallelism is on, across workers. Do not design tests around sequential data such as "the first order in the DB"; tag the data with a unique marker first.
 
-For stabilization rules (no hardcoded waits, no retries, specific-condition waiting), see `automation-standards.md` §7.
+Stabilization rules (no hardcoded waits, no retries, waiting on a specific condition) are in `automation-standards.md` §7.
 
 ---
 
 ## 12. Credentials & sensitive data
 
-Credentials for pre-existing users come from environment variables. Never hardcode. Never check into git.
+Credentials for pre-existing users come from environment variables. They are not hardcoded and not committed to git.
 
 ```typescript
 // config/variables.ts
@@ -393,54 +389,23 @@ STAGING_USER_EMAIL=staging@example.com
 STAGING_USER_PASSWORD=StagingPassword123!
 ```
 
-Decorators (`@atc`, `@step`) automatically mask parameters named `password`, `token`, `secret` in trace output. Keep the names canonical so masking works.
+Decorators (`@atc`, `@step`) mask parameters named `password`, `token` and `secret` in trace output, so keep those names canonical.
 
 ---
 
-## 13. DO / DON'T
+## 13. Checklist
 
-### DO
-
-- Use `this.data.createX()` inside components, `ui.data.createX()` / `api.data.createX()` in tests.
-- Classify data as Discover / Modify / Generate during planning.
-- Declare describe-scope variables and let `beforeAll` populate them.
-- Guard every test that depends on discovered data with `test.skip()`.
-- Give generated entities identifiable prefixes (`test.`, `CONF-`, `ORD-`).
-- Clean up modified data in `afterAll`; delete generated data in `afterEach` when the env matters.
-
-### DON'T
-
-- Hardcode emails, IDs, reference numbers, or dates.
-- Put `expect` inside `beforeAll`.
-- Share generated data between tests.
-- Import `faker` directly — go through DataFactory.
-- Use production data.
-- Create generators without matching TypeScript interfaces.
-- Mutate data discovered by another test without restoring it.
+- Data comes from `this.data.createX()` inside components and `ui.data.createX()` / `api.data.createX()` in tests; `faker` stays inside DataFactory and every generator has a matching TypeScript interface.
+- Each data need is classified Discover, Modify or Generate during planning, and generated entities carry a prefix (`test.`, `CONF-`, `ORD-`).
+- Describe-scope variables are filled by `beforeAll` with no `expect`, and every test that depends on discovered data guards with `test.skip()`.
+- Modified data is restored in `afterAll` and generated data deleted in `afterEach` when the environment matters. A test never mutates data discovered by another test without restoring it.
+- No hardcoded emails, IDs, reference numbers or dates, no production data, and no generated data shared between tests.
 
 ---
 
 ## 14. Quick reference
 
-```typescript
-// From components
-this.data.createUser();
-this.data.createCredentials();
-this.data.createTestId('prefix');
-this.data.createProduct();
-this.data.createOrder();
-
-// From tests
-ui.data.createUser();
-api.data.createOrder({ productId: 42, quantity: 2 });
-
-// Direct
-import { DataFactory } from '@DataFactory';
-DataFactory.createUser();
-
-// With overrides
-this.data.createOrder({ totalAmount: 500 });
-```
+The call forms are in §4 and §5: `this.data.createUser()`, `createCredentials()`, `createTestId('prefix')`, `createProduct()` and `createOrder()` from components; `ui.data.*` and `api.data.*` from tests; `DataFactory.createUser()` by direct import; overrides as the last argument, for example `this.data.createOrder({ totalAmount: 500 })`.
 
 File shapes:
 

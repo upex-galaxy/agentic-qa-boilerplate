@@ -1,8 +1,8 @@
-# E2E Patterns — Page Components, Locators, Waits
+# E2E patterns: page components, locators, waits
 
 > **Subagent context**: when the test-automation Code phase is dispatched (Sequential, see SKILL.md §Subagent Dispatch Strategy), this file is part of the subagent's "Context docs" briefing component.
 
-How to write a KATA `Page` component and E2E test that drives Playwright. Load when writing UI ATCs, picking locators, handling waits, or wiring API-assisted UI flows. Architecture, fixture selection, AAA, ATC naming, and test-file structure live in `kata-architecture.md` and `automation-standards.md` — this reference focuses on Playwright-specific mechanics.
+How to write a KATA `Page` component and an E2E test that drives Playwright. Load it when you write UI ATCs, pick locators, handle waits or wire API-assisted UI flows. Architecture, fixture selection, AAA, ATC naming and test-file structure are in `kata-architecture.md` and `automation-standards.md`; this file covers the Playwright mechanics.
 
 ---
 
@@ -10,15 +10,15 @@ How to write a KATA `Page` component and E2E test that drives Playwright. Load w
 
 ```
 tests/components/ui/
-  UiBase.ts               # Layer 2 — Playwright helpers
-  LoginPage.ts            # Layer 3 — one file per page/feature
+  UiBase.ts               # Layer 2: Playwright helpers
+  LoginPage.ts            # Layer 3: one file per page/feature
   CheckoutPage.ts
 tests/components/UiFixture.ts       # registers every Page component
 tests/e2e/{module}/{verbFeature}.test.ts
 tests/setup/ui-auth.setup.ts        # storageState generator (optional)
 ```
 
-A Page component **is not** a 1:1 map of a URL. It is the smallest group of ATCs that share the same domain (login, checkout, product listing). Pages with more than ~15–20 ATCs should be split.
+A Page component is not a 1:1 map of a URL. It is the smallest group of ATCs that share a domain (login, checkout, product listing). Split a Page that passes about 15 to 20 ATCs.
 
 ---
 
@@ -67,7 +67,7 @@ export class LoginPage extends UiBase {
 }
 ```
 
-Method order inside the class: shared locators → constructor → navigation → ATCs. Private helpers at the bottom only if they are used 2+ times within the class.
+Method order inside the class: shared locators, constructor, navigation, ATCs. Private helpers go at the bottom, and only when the class uses them 2 or more times.
 
 ---
 
@@ -77,36 +77,17 @@ Method order inside the class: shared locators → constructor → navigation �
 
 | Priority | Strategy | Use when |
 |----------|---------|----------|
-| 1 | `getByTestId('X')` or `locator('[data-testid="X"]')` | Always preferred — contract between dev and QA |
+| 1 | `getByTestId('X')` or `locator('[data-testid="X"]')` | Preferred: it is the contract between dev and QA |
 | 2 | `getByRole('button', { name: 'Submit' })` | Semantic elements with accessible name |
 | 3 | `getByLabel('Email')` | Form inputs with an associated `<label>` |
 | 4 | `getByText('Sign in')` | Unique visible text; fragile if copy changes |
 | 5 | CSS / XPath (`button[type="submit"]`) | Last resort |
 
-Never mix priorities in one selector (`.container [data-testid="x"]`). Never chain DOM structure (`div > form > button:nth-child(3)`). Never reach for `.btn-primary` or other class hooks — styling can change.
-
-### Playwright selector syntax
-
-```typescript
-// CORRECT — getByTestId (preferred)
-const loginButton = page.getByTestId('login_submit_button');
-
-// CORRECT — locator with CSS attribute (also valid, same stability)
-const loginButton = page.locator('[data-testid="login_submit_button"]');
-
-// CORRECT — role-based when no testid exists
-const loginButton = page.getByRole('button', { name: /submit/i });
-
-// WRONG — CSS class (fragile, changes with styling)
-const loginButton = page.locator('.btn-primary');
-
-// WRONG — DOM structure (fragile, changes with layout refactors)
-const loginButton = page.locator('div > form > button:last-child');
-```
+Keep one priority per selector: no `.container [data-testid="x"]`, no DOM chains such as `div > form > button:nth-child(3)`, and no class hooks such as `.btn-primary`, because styling changes.
 
 ### `data-testid` naming contract (used in application code)
 
-The product code owns the contract; tests only read it. Expect:
+The product code owns the contract and tests only read it. Expect:
 
 | Context | Convention | Pattern | Example |
 |---------|-----------|---------|---------|
@@ -123,13 +104,13 @@ The product code owns the contract; tests only read it. Expect:
 
 General pattern: `{description}_{type}` where `type` identifies the element's role. Component roots use camelCase; all nested elements use snake_case.
 
-### Locator anti-patterns
+### Locator examples
 
 ```typescript
-// WRONG: CSS class selectors — break when styling changes
+// WRONG: CSS class selectors break when styling changes
 page.locator('.btn-primary');
 
-// WRONG: DOM structure selectors — break when layout changes
+// WRONG: DOM structure selectors break when layout changes
 page.locator('div > form > button:last-child');
 
 // WRONG: Text that may change (copy updates, i18n)
@@ -156,26 +137,26 @@ page.getByTestId(`product_card_${productSlug}`);
 
 ### When a `data-testid` is missing
 
-1. **Verify it exists** — use browser DevTools: `document.querySelectorAll('[data-testid]')` or the testid enumeration snippet in section 10.
-2. **File a ticket** against the application repo with: component path, route, element description, and a proposed name following the naming contract above.
-3. **Work around temporarily** with `getByRole` or `getByLabel` and leave a `// TODO: replace with getByTestId('X') when DEV adds the testid` comment.
-4. Never ship a brittle CSS/XPath fallback without the TODO — otherwise it hides the tech debt.
+1. Verify it is really missing in browser DevTools (`document.querySelectorAll('[data-testid]')`) or with the testid enumeration snippet in section 10.
+2. File a ticket against the application repo with the component path, route, element description and a proposed name that follows the naming contract above.
+3. Work around it temporarily with `getByRole` or `getByLabel` and leave a `// TODO: replace with getByTestId('X') when DEV adds the testid` comment.
+4. A brittle CSS or XPath fallback ships only with that TODO, so the tech debt stays visible.
 
 ### Inline vs shared locators
 
-Locators default to **inline** inside the ATC. Extract to a `private readonly` arrow function on the class only when the **same** locator is used in 2+ ATCs of that component.
+Locators stay inline inside the ATC. Extract one to a `private readonly` arrow function only when the same locator is used in 2 or more ATCs of that component (`kata-architecture.md` §6 Rule 4).
 
 ```typescript
-// inline (default) — used once
+// inline (default): used once
 await this.page.locator('[data-testid="forgot_password_link"]').click();
 
-// shared — used in 2+ ATCs of this class
+// shared: used in 2+ ATCs of this class
 private readonly cartTotal = () => this.page.locator('[data-testid="cart_total"]');
 private readonly productRow = (name: string) =>
   this.page.locator(`[data-product="${name}"]`);
 ```
 
-Never put locators in a separate `locators/*.ts` file. Never wrap a single `page.fill()` or `page.click()` in a private helper.
+Locators never go in a separate `locators/*.ts` file, and a single `page.fill()` or `page.click()` is not worth a private helper.
 
 ### Lists and dynamic IDs
 
@@ -197,15 +178,15 @@ await this.page.getByTestId(`edit_product_${productId}`).click();
 
 ---
 
-## 4. Waits — no timeouts, condition-first
+## 4. Waits: conditions, never timeouts
 
-Playwright auto-waits on locator actions (`click`, `fill`, `toBeVisible`). Explicit waits are only needed when timing depends on a specific network call, a navigation, or a DOM mutation that Playwright cannot infer.
+Playwright auto-waits on locator actions (`click`, `fill`, `toBeVisible`). Add an explicit wait only when timing depends on a specific network call, a navigation or a DOM mutation that Playwright cannot infer.
 
 ### Allowed wait patterns
 
 ```typescript
 // Network-driven
-await this.page.waitForLoadState('networkidle');         // last resort — slow
+await this.page.waitForLoadState('networkidle');         // last resort, slow
 await this.page.waitForResponse(r => r.url().includes('/api/cart') && r.ok());
 await this.page.waitForURL(u => !u.pathname.includes('/login'));
 
@@ -218,13 +199,13 @@ await expect(locator).toHaveCount(expected);
 ### Banned patterns
 
 ```typescript
-// NEVER
+// NEVER (arbitrary sleeps are flaky)
 await this.page.waitForTimeout(3000);                    // arbitrary, flaky
 await this.page.waitForTimeout(500);                     // even small values
 await setTimeout(...);                                   // node-level sleep
 ```
 
-Retries masks the same problem (`retries: 0` in `playwright.config.ts`). If a test passes on retry, it is flaky — investigate the root cause.
+Retries hide the same problem, so `playwright.config.ts` sets `retries: 0`. A test that passes on retry is flaky; find the root cause.
 
 ### Conditional UI (popups, modals)
 
@@ -245,11 +226,11 @@ await Promise.all([
 
 ---
 
-## 5. UiBase helpers — interception
+## 5. UiBase helpers: interception
 
-UiBase exposes two wrappers around Playwright's response APIs. Use them when a UI action fires a network call whose payload or status code is part of the assertion.
+UiBase wraps Playwright's response APIs twice. Use the wrappers when a UI action fires a network call whose payload or status code is part of the assertion.
 
-### `interceptResponse` — capture response from an action
+### `interceptResponse`: capture the response of an action
 
 ```typescript
 @atc('TICKET-ID')
@@ -269,7 +250,7 @@ async loginAndCaptureToken(credentials: LoginCredentials) {
 }
 ```
 
-### `waitForApiResponse` — wait for an already-triggered response
+### `waitForApiResponse`: wait for an already-triggered response
 
 ```typescript
 @atc('TICKET-ID')
@@ -285,13 +266,13 @@ async loadOrdersAndVerifyCount(): Promise<void> {
 }
 ```
 
-Intercepted payloads attach automatically to the Allure report.
+The Allure report receives intercepted payloads automatically.
 
 ---
 
 ## 6. Fixed assertions and test-level assertions
 
-Every UI ATC contains **fixed assertions** that validate the primary expected outcome:
+Every UI ATC holds fixed assertions that validate its primary expected outcome:
 
 ```typescript
 @atc('TICKET-ID')
@@ -300,13 +281,13 @@ async loginWithValidCredentials(data: LoginCredentials): Promise<void> {
   await this.passwordInput().fill(data.password);
   await this.submitButton().click();
 
-  // Fixed assertions — live inside the ATC
+  // Fixed assertions live inside the ATC
   await this.page.waitForURL(u => !u.pathname.includes('/login'));
   await expect(this.page).not.toHaveURL(/.*\/login.*/);
 }
 ```
 
-Additional, test-specific assertions go in the test file:
+Extra, test-specific assertions go in the test file (`kata-architecture.md` §6 Rule 6):
 
 ```typescript
 test('TICKET-ID: should show welcome banner after login', async ({ ui }) => {
@@ -326,7 +307,7 @@ test.describe('TICKET-ID: Validate checkout flow', () => {
   let product: ProductCandidate | null;
 
   test.beforeAll(async ({ api }) => {
-    // DISCOVER — no assertions (see test-data-management.md)
+    // DISCOVER, no assertions (see test-data-management.md)
     product = await api.products.findAvailableProduct();
   });
 
@@ -334,7 +315,7 @@ test.describe('TICKET-ID: Validate checkout flow', () => {
     if (!product) return test.skip(true, 'No available product');
     const { api, ui } = fixture;
 
-    // ARRANGE — API setup, UI action, API verification
+    // ARRANGE: API setup, UI action, API verification
     await api.auth.loginSuccessfully(credentials);
     const checkoutData = ui.data.createCheckoutData();
 
@@ -356,19 +337,19 @@ test.describe('TICKET-ID: Validate checkout flow', () => {
 });
 ```
 
-Rules applied in the skeleton above (all mandatory):
+The skeleton above applies these rules, and all of them are mandatory:
 
-- `test` imported from `@TestFixture` (not `@playwright/test`).
-- Ticket ID prefix in both `describe` and `test`.
-- `beforeAll` discovers data without assertions; each test guards with `test.skip()` (see `test-data-management.md` §7).
-- Dynamic data via `ui.data.*` / `api.data.*`, never hardcoded.
-- Tags (`@critical`, `@smoke`, `@regression`) applied at the correct level.
+- `test` comes from `@TestFixture`, not `@playwright/test`.
+- The ticket ID prefixes both `describe` and `test`.
+- `beforeAll` discovers data without assertions and each test guards with `test.skip()` (`test-data-management.md` §7).
+- Data comes from `ui.data.*` / `api.data.*`, never hardcoded.
+- Tags (`@critical`, `@smoke`, `@regression`) sit at the correct level.
 
 ---
 
-## 8. Hybrid testing — API setup + UI flow
+## 8. Hybrid testing: API setup plus UI flow
 
-The fastest reliable pattern: set up state via API (no browser UI fiddling), drive the feature via UI, verify via API.
+The fastest reliable pattern sets up state through the API, drives the feature through the UI and verifies through the API.
 
 ```typescript
 test('TICKET-ID: should create order via UI and verify via API', async ({ test: fixture }) => {
@@ -392,9 +373,9 @@ Pick the fixture by test shape (`automation-standards.md` §1 has the full matri
 
 ---
 
-## 9. Authenticated tests — storage state reuse
+## 9. Authenticated tests: storage state reuse
 
-For suites where login is a precondition for most tests, log in once and reuse the resulting storage state.
+When login is a precondition for most tests, log in once and reuse the resulting storage state.
 
 ```typescript
 // tests/setup/ui-auth.setup.ts
@@ -428,7 +409,7 @@ projects: [
 ],
 ```
 
-Use API login (not UI login) inside the setup — faster and less fragile. For multi-role test runs, generate one storageState per role.
+Log in through the API inside the setup, which is faster and less fragile than UI login. For multi-role runs, generate one storageState per role.
 
 ---
 
@@ -525,7 +506,7 @@ bun run allure:generate
 
 ## 12. Implementation checklist (E2E coding phase)
 
-Before leaving the coding phase and running the review:
+Tick these before leaving the coding phase for the review:
 
 - [ ] Component extends `UiBase`, constructor takes `TestContextOptions` and calls `super`.
 - [ ] Every ATC decorated with `@atc('TICKET-ID')` where the ID matches a real TMS case.
