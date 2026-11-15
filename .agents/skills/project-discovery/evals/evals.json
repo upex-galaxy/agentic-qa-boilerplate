@@ -19,6 +19,20 @@
       "category": "positive"
     },
     {
+      "name": "should-trigger-onboard-es",
+      "prompt": "Necesito onboardear este repo nuevo del cliente: descubrí la arquitectura y armá el contexto del proyecto antes de empezar a testear.",
+      "expected_behavior": "Activates project-discovery by meaning although the prompt is Spanish. Locks the target repo path, confirms the scope (Fresh onboarding), runs Phase 0 resume check, then Phase 1 and waits for 'Phase 1 complete' before advancing. Replies in Spanish; artifacts stay English.",
+      "category": "positive",
+      "should_trigger": true
+    },
+    {
+      "name": "should-trigger-prd-from-code-es",
+      "prompt": "Generá el PRD y el SRS de este proyecto a partir del código existente, y conectá el backlog de Jira.",
+      "expected_behavior": "Activates project-discovery. Explains that discovery reverse-engineers what the system does into the domain and infra maps (no to-be PRD/SRS markdown), then runs the four phases in order, ending with the Phase 4 backlog connection check (`bun run jira:check`) that writes no file.",
+      "category": "positive",
+      "should_trigger": true
+    },
+    {
       "name": "should-not-trigger-write-e2e-test",
       "prompt": "Write an E2E test for the login flow.",
       "expected_behavior": "Does NOT activate project-discovery. Should route to test-automation (KATA test authoring). project-discovery is for onboarding and context generation, not writing test code.",
