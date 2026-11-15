@@ -2,25 +2,25 @@
 
 > **Subagent context**: this file is part of the "Context docs" briefing component for the Stage 1 Planning subagent (see `sprint-testing/SKILL.md` §Subagent Dispatch Strategy and `sprint-orchestration.md` §"Briefing 2 — Stage 1 Planning subagent").
 
-Stage 1 Planning for a single ticket inside a sprint. The ATP is authored in-session; **where it lives depends on TMS modality** (resolved in Session Start §0):
+Stage 1 Planning for a single ticket inside a sprint. The ATP is authored in-session, and where it lives depends on the TMS modality (resolved in Session Start §0):
 
 - **Modality jira-native**: ATP = the Story's `{{jira.acceptance_test_plan}}` field (or `fallback:` comment), written via `[ISSUE_TRACKER_TOOL]`, then materialized to the read-only cache `.../stories/STORY-<KEY>-<slug>/acceptance-test-plan.md` by `bun run jira:sync-issues get <STORY_KEY> --include-comments`.
-- **Modality jira-xray**: ATP = the **Test Plan** issue's `description`, written via `[ISSUE_TRACKER_TOOL]`, then materialized to `.../test-plans/ATP-<ATP_KEY>-<slug>.md` by `bun run jira:sync-issues get <ATP_KEY>`. Filename note: the acronym prefix comes from a conforming ladder title; a Plan or Execution whose title does not follow the grammar keeps the legacy `TESTPLAN-` / `TESTEXEC-` / `RETESTEXEC-` prefix.
+- **Modality jira-xray**: ATP = the **Test Plan** issue's `description`, written via `[ISSUE_TRACKER_TOOL]`, then materialized to `.../test-plans/ATP-<ATP_KEY>-<slug>.md` by `bun run jira:sync-issues get <ATP_KEY>`. The acronym prefix comes from a conforming ladder title; a Plan or Execution whose title does not follow the grammar keeps the legacy `TESTPLAN-` / `TESTEXEC-` / `RETESTEXEC-` prefix.
 
-Read the synced ATP file for the active modality. Jira is source of truth; never hand-write the synced file.
+Read the synced ATP file for the active modality. Jira is the source of truth, so the synced file is never hand-written.
 
-This reference is for **manual / exploratory in-sprint testing per ticket (Stage 1 planning)**. Its planning output is **TC outlines** (names + 1-line precond/expected), not the persistent regression TC set. Per the modality-aware TC-creation-timing rule (`sprint-testing/SKILL.md` §"TC creation timing"): **jira-native** creates no `Test` work items here (regression TCs are created in Stage 4, regression-worthy only); **jira-xray** **creates + executes** `Test` issues for the planned outlines this sprint (the `Test` is Xray's execution unit), which Stage 4 then selects + promotes into the Regression Test Plan. Either way this reference does **not** compute ROI scores or decide Candidate/Manual/Deferred (see `test-documentation` for Stage 4), nor produce automation `spec.md` (see `test-automation/references/planning-playbook.md`). Bug reports are covered in `reporting-templates.md` (pass 5c).
+This reference covers **manual and exploratory in-sprint testing per ticket (Stage 1 planning)**. Its output is **TC outlines** (names plus a one-line precondition and expected result), not the persistent regression TC set. What happens to the outlines follows the modality-aware rule in `sprint-testing/SKILL.md` §"TC creation timing": **jira-native** creates no `Test` work items here (Stage 4 creates the regression-worthy ones); **jira-xray** **creates and executes** `Test` issues for the outlines this sprint (the `Test` is Xray's execution unit), and Stage 4 promotes them into the Regression Test Plan. ROI scores and Candidate/Manual/Deferred belong to `test-documentation` (Stage 4), automation `spec.md` to `test-automation/references/planning-playbook.md`, and bug reports to `reporting-templates.md` (pass 5c).
 
-For feature / multi-story scope see `feature-test-planning.md`.
+For feature or multi-story scope see `feature-test-planning.md`.
 
-> **Before publishing ATP body to Story rich-text fields** (`{{jira.acceptance_test_plan}}` or description), read `../../agentic-qa-core/references/jira-publishing-gotchas.md` — covers the two ADF conversion gotchas (`md-to-adf` mark collision + MCP batched custom-field rejection) that silently fail HTTP 400.
-> **And format for readability** per `../../acli/references/adf-authoring-style.md` — ATP test steps read best as a table (step → expected); use a panel for a shared precondition that spans scenarios. The field's hard-rule wins: if a scenario must be Gherkin, keep the fenced block — do not replace it with a table.
+> **Before publishing the ATP body to Story rich-text fields** (`{{jira.acceptance_test_plan}}` or description), read `../../agentic-qa-core/references/jira-publishing-gotchas.md`. It covers the two ADF conversion gotchas (`md-to-adf` mark collision and MCP batched custom-field rejection) that fail silently with HTTP 400.
+> **Format for readability** per `../../acli/references/adf-authoring-style.md`: ATP test steps read best as a table (step, expected), and a shared precondition fits a panel. A scenario that must be Gherkin keeps its fenced block, because the field's hard rule wins.
 
 ---
 
 ## The 4 Pillars of Spec-Driven Testing
 
-Every phase in this document is an application of **Spec-Driven Testing (SDT)**: the specification defines what to test, not the tester's intuition. The four pillars are:
+Every phase below applies **Spec-Driven Testing (SDT)**: the specification decides what to test, not the tester's intuition. Every case traces to a risk or an AC, and the ACs are where coverage starts, not where it ends.
 
 ### 1. Test from Specs
 
@@ -30,7 +30,7 @@ GOOD: "I'm going to start from STORY-XXX's ACs, then probe BEYOND them —
        boundaries, invalid data, states, and anomalies the ACs don't mention"
 ```
 
-Before testing: read the complete story, understand its ACs, and review documented test cases. The specification defines the **starting point** of coverage, not its limit. ACs are the floor — verifying them is the minimum, not the goal (Principle 1-2 of `agentic-qa-core/references/test-design-doctrine.md`). SDT means *anchored* testing (every case traces to a risk or an AC), NOT *AC-bounded* testing.
+Read the complete story, understand its ACs and review the documented test cases first. ACs are the floor of coverage, and verifying them is the minimum (Principle 1-2 of `agentic-qa-core/references/test-design-doctrine.md`).
 
 ### 2. Traceability
 
@@ -39,7 +39,7 @@ BAD:  Bug: "The button doesn't work"
 GOOD: Bug: "AC-3 of STORY-XXX fails: The submit button doesn't respond after click"
 ```
 
-Every finding (pass, fail, or bug) must reference the story AND the specific AC it validates or violates. Phase 6 of this reference enforces this.
+Every finding (pass, fail or bug) references the story and the specific AC it validates or violates. Phase 6 enforces this.
 
 ### 3. Coverage from Requirements
 
@@ -51,10 +51,10 @@ GOOD: "I verified each AC (the floor) AND probed the risk beyond it —
 
 Coverage has **two axes**, and reporting only the first reports the floor:
 
-1. **AC-conformance (the floor)** — % of ACs verified + % of test outlines executed.
-2. **Risk-beyond-AC** — boundary / negative / state-transition / anomaly cases derived by technique (EP, BVA, State-Transition, Decision Tables, Pairwise), per `agentic-qa-core/references/test-design-doctrine.md`.
+1. **AC-conformance (the floor)**: % of ACs verified + % of test outlines executed.
+2. **Risk-beyond-AC**: boundary, negative, state-transition and anomaly cases derived by technique (EP, BVA, State-Transition, Decision Tables, Pairwise), per `agentic-qa-core/references/test-design-doctrine.md`.
 
-Phase 4 builds the outline set across BOTH axes. Never present "100% of ACs verified" as completeness — state it as the floor, then report what was probed above it.
+Phase 4 builds the outline set across both axes. Report "100% of ACs verified" as the floor, then what was probed above it.
 
 ### 4. Exploratory with Purpose
 
@@ -63,17 +63,16 @@ BAD:  Random clicking through the application
 GOOD: Focused exploration on the story's risk areas
 ```
 
-Exploratory testing starts from the story and its ACs, looks for undocumented edge cases, and documents findings with full traceability. Phase 2 surfaces these; Phase 5 catalogs them.
+Exploration starts from the story and its ACs, looks for undocumented edge cases and documents findings with full traceability. Phase 2 surfaces them; Phase 5 catalogs them.
 
 ### SDT anti-patterns (reject on sight)
 
+Random testing, bugs without context and coverage by intuition are the BAD lines of the pillars above. Two more:
+
 | Anti-pattern | Problem | SDT correction |
 |--------------|---------|----------------|
-| **Random testing** — "click around and see what happens" | No focus, no measurable coverage, no traceability | Start from story + ACs, produce outlines first |
-| **Test without spec** — "I didn't read the story but I'll test anyway" | Cannot distinguish bug from expected behavior | Read the full ticket in Session Start before planning |
-| **Bug without context** — "Bug: the button doesn't work" | Dev cannot determine intended behavior | Reference story ID + AC number + reproduction steps |
-| **Coverage by intuition** — "I tested everything I could think of" | Subjective, gaps invisible | Measure against AC list (floor) + risk-beyond-AC outline checklist (EP / BVA / state / decision-table) |
-| **AC-bounded testing** — "all ACs pass, so we're done" | Stops at the floor; misses boundaries, errors, states the AC is silent on | Treat ACs as the entry condition; derive risk-beyond-AC cases by technique before declaring coverage |
+| **Test without spec**: "I didn't read the story but I'll test anyway" | Cannot distinguish bug from expected behavior | Read the full ticket in Session Start before planning |
+| **AC-bounded testing**: "all ACs pass, so we're done" | Stops at the floor; misses boundaries, errors, states the AC is silent on | Treat ACs as the entry condition; derive risk-beyond-AC cases by technique before declaring coverage |
 
 ### SDT workflow (how this reference implements it)
 
@@ -94,14 +93,14 @@ The phases below (0-8) are the concrete implementation of this pipeline for a si
 
 ## Inputs
 
-Read every item before planning. Fail fast if any project-wide context file is missing — hand off to `project-discovery`.
+Read every item before planning. If a project-wide context file is missing, stop and hand off to `project-discovery`.
 
-> **Prerequisite**: Load `/acli` skill before any `[ISSUE_TRACKER_TOOL]` WRITE. Detailed READS use `bun run jira:sync-issues` — not `/acli`. Skip the load if Session Start §0.1 in `SKILL.md` already loaded it.
+> **Prerequisite**: load `/acli` before any `[ISSUE_TRACKER_TOOL]` WRITE. Detailed READS use `bun run jira:sync-issues`, not `/acli`. Skip the load if Session Start §0.1 in `SKILL.md` already did it.
 
 | Input | Source |
 |-------|--------|
 | Ticket (title, description, ACs, priority, comments) | `bun run jira:sync-issues get <KEY> --include-comments` then read the synced `story.md` / `acceptance-criteria.md` / `comments.md` (Jira Key from `{STORY_PATH}/context.md`). NEVER `acli workitem view` for custom fields. |
-| Team Discussion | Synced `comments.md` — extract decisions, tech notes, edge cases (see `session-entry-points.md`) |
+| Team Discussion | Synced `comments.md`: extract decisions, tech notes, edge cases (see `session-entry-points.md`) |
 | Parent epic + feature plan | `.context/PBI/epics/EPIC-<KEY>-<slug>/feature-test-plan.md` if it exists (synced from the epic) |
 | Project-wide context | `bun run context:map business-data-context` / `business-e2e-context` / `business-api-context` (per touched level; `--section <id>` for one entity, journey or endpoint group), `.context/PBI/qa-artifacts/master-test-plan.md` |
 | Module context | `.context/PBI/epics/EPIC-<KEY>-<slug>/module-context.md` |
@@ -124,8 +123,8 @@ Read every item before planning. Fail fast if any project-wide context file is m
 ```
 
 Also:
-- Author the ATP body → write it to the Story's `{{jira.acceptance_test_plan}}` field (or `fallback:` comment) via `[ISSUE_TRACKER_TOOL]`; append the refined AC section to the ticket description.
-- Run `bun run jira:sync-issues get <KEY> --include-comments` to materialize `acceptance-test-plan.md`; read it back to confirm. The synced file is a read-only cache — do not hand-edit or commit hand-written ATP content.
+- Write the ATP body to the Story's `{{jira.acceptance_test_plan}}` field (or `fallback:` comment) via `[ISSUE_TRACKER_TOOL]`, and append the refined AC section to the ticket description.
+- Run `bun run jira:sync-issues get <KEY> --include-comments` to materialize `acceptance-test-plan.md`, then read it back to confirm. The synced file is a read-only cache: do not hand-edit it or commit hand-written ATP content.
 
 ---
 
@@ -135,9 +134,9 @@ Triage decides whether the ticket deserves a full ATP. **Vetoes beat risk score.
 
 ### 0.0 Shift-Left short-circuit (check FIRST)
 
-Before running the veto + risk score, check whether the Story already passed through `/shift-left-testing`.
+Before the veto and risk score, check whether the Story already passed through `/shift-left-testing`.
 
-This gate is **fail-closed** (`agentic-qa-core/references/orchestration-doctrine.md`, FAIL-CLOSED GATES). The labels only SAY a pre-sprint pass happened; the ATP body it published is the pass. So the default is the full flow, and short-circuit mode opens only when every row below holds, each with its evidence noted in the session:
+This gate is **fail-closed** (`agentic-qa-core/references/orchestration-doctrine.md`, FAIL-CLOSED GATES). The labels only say a pre-sprint pass happened; the ATP body it published is the pass. The default is therefore the full flow, and short-circuit mode opens only when every row below holds, each with its evidence noted in the session:
 
 | Condition | Evidence to cite | When it is missing or doubtful |
 |---|---|---|
@@ -150,16 +149,16 @@ Only `/shift-left-testing` produces this evidence. Stage 1 never adds the Shift-
 
 Short-circuit mode action:
 
-- READ the ATP body cited above: `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/acceptance-test-plan.md` (or the fallback comment), from the sync just run, so it reflects Jira.
+- READ the ATP body cited above, `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/acceptance-test-plan.md` (or the fallback comment), from the sync just run so it reflects Jira.
 
-  > **Read the synced ATP, never a local scratch file.** Shift-Left wrote its refinement into the Jira `acceptance_test_plan` field (field-first — pre-sprint the ATP lives ONLY in that field; the Test Plan ITEM is born in THIS stage, find-or-created from the field), so `acceptance-test-plan.md` IS the pre-sprint refinement at this point in the flow. A local staging file under a gitignored path (such as `shift-left-refinement.md`) does not exist on a teammate's machine or in a fresh session, so a short-circuit that reads it silently degrades to a full re-run and the pre-sprint savings evaporate with no error. Jira is the only copy every session can reach.
+  > **Read the synced ATP, never a local scratch file.** Shift-Left wrote its refinement into the Jira `acceptance_test_plan` field (field-first: pre-sprint the ATP lives ONLY in that field, and the Test Plan ITEM is born in THIS stage, find-or-created from the field), so `acceptance-test-plan.md` is the pre-sprint refinement here. A local staging file under a gitignored path (such as `shift-left-refinement.md`) does not exist in a fresh session or on a teammate's machine, and a short-circuit that reads it silently degrades to a full re-run. Jira is the only copy every session can reach.
 
-- VALIDATE: do the refined ACs still match the current Story description? If yes, **SKIP Phases 1, 2, 3** of this reference — they were done pre-sprint.
-- Continue from Phase 4 (Test Design — outlines), this time WITH parametrization tables + per-outline test-data JSON + numbered test steps. The pre-sprint draft outlined the NAMES only; this Phase 4 fills in the executable detail.
-- ALSO continue with Phase 5 (test-data generation strategy + Faker recipes) — also skipped pre-sprint.
-- The ATP authored here is a SUPERSET of the pre-sprint body, written back to the SAME `acceptance_test_plan` field AND into the Test Plan item this stage finds-or-creates FROM that field (pre-sprint there is no item — shift-left is field-first by design). One ATP per Story: the in-sprint version supersedes the pre-sprint one by design, and the `shift-left-{YYYY-MM-DD}` label records when the early pass happened.
+- VALIDATE: do the refined ACs still match the current Story description? If yes, **SKIP Phases 1, 2, 3** of this reference, since they were done pre-sprint.
+- Continue from Phase 4 (Test Design, outlines), this time WITH parametrization tables, per-outline test-data JSON and numbered test steps. The pre-sprint draft outlined the names only; this Phase 4 fills in the executable detail.
+- Also continue with Phase 5 (test-data generation strategy and Faker recipes), which was skipped pre-sprint too.
+- The ATP authored here is a SUPERSET of the pre-sprint body. Write it back to the SAME `acceptance_test_plan` field AND into the Test Plan item this stage finds-or-creates FROM that field (pre-sprint there is no item, because shift-left is field-first by design). There is one ATP per Story: the in-sprint version supersedes the pre-sprint one, and the `shift-left-{YYYY-MM-DD}` label records when the early pass happened.
 
-If any row of the table fails, or its evidence cannot be cited (refined ACs no longer match the current Story, the dated label is 30 days old or more, no ATP body after the sync), fall through to the standard Phase 0 below: run veto + risk + Phases 1-3 again. Re-running is cheaper than acting on stale or missing refinement.
+If any row of the table fails, or its evidence cannot be cited (refined ACs no longer match the current Story, the dated label is 30 days old or more, no ATP body after the sync), fall through to the standard Phase 0 below and run veto, risk and Phases 1-3 again. Re-running costs less than acting on stale or missing refinement.
 
 ### 0.1 Veto table
 
@@ -167,7 +166,7 @@ If any row of the table fails, or its evidence cannot be cited (refined ACs no l
 
 **REQUIRE TESTING (force Full regardless of score):** money / billing, data integrity on core entities, auth / authorization, external integrations, bug fix in a critical module, calculations / formulas.
 
-If SKIP → verify fix in code, comment on ticket, done. No ATP. If REQUIRE → skip to 0.3.
+On SKIP, verify the fix in code, comment on the ticket and stop: no ATP. On REQUIRE, skip to 0.3.
 
 ### 0.2 Risk score (only if no veto)
 
@@ -187,23 +186,25 @@ If SKIP → verify fix in code, comment on ticket, done. No ATP. If REQUIRE → 
 | 4-7 | MEDIUM | Full ATP (standard flow) |
 | 8+ | HIGH | Full ATP + extended edge cases |
 
-Present triage result to the user before proceeding.
+When the change is already in a diff (a bug fix, or a Story that reached Ready For QA), the Multi-component factor and the Phase 1 regression surface are better judged after seeing what else the change can break. Call the Skill tool with "blast-radius" for that. The skill never needs a person; carry its one safety fact, proven or marked `unproven`, into the triage note. When the skill is not installed, do the step inline (read the diff, list the modules and callers it touches) and say in the triage note that the skill was absent. Never block on it.
+
+Present the triage result to the user before proceeding. A supervised worker sends it to its conductor, and a routine with nobody present records it in the session notes and continues only when the delegating brief covers the decision (`agentic-qa-core/references/decision-protocol.md`).
 
 ### 0.3 Data feasibility check
 
-For each AC, assess whether test data is obtainable in staging. Classify using one of three patterns: **Discover** (data already exists as-is), **Modify** (existing data can be altered to match the precondition), **Generate** (must be created fresh via API/DB seeding or UI). If none applies, the AC is blocked pending data availability.
+For each AC, assess whether the test data is obtainable in staging. Classify with one of three patterns: **Discover** (data already exists as-is), **Modify** (existing data can be altered to match the precondition), **Generate** (must be created fresh via API/DB seeding or UI). If none applies, the AC is blocked pending data availability.
 
 | AC | Precondition | Data found? | Pattern | Notes |
 |----|--------------|-------------|---------|-------|
 | AC1 | {state} | Yes / No | Discover / Modify / Generate | {entity found or blocker} |
 
-If a critical precondition has no data path → flag as risk in the ATP. If a veto-level AC blocks data, escalate to the user before writing outlines.
+A critical precondition with no data path is flagged as a risk in the ATP. When a veto-level AC is blocked on data, escalate to the user before writing outlines (conductor for a supervised worker; in a routine, report the blocker and stop before any outline or Jira write).
 
 ---
 
 ## Phase 1 — Critical Analysis
 
-Anchor the ticket to business + technical context.
+Anchor the ticket to its business and technical context.
 
 ### Business context
 - Primary + secondary user personas affected
@@ -217,13 +218,13 @@ Anchor the ticket to business + technical context.
 - Integration points specific to this ticket
 
 ### Story complexity
-Rate Low / Medium / High on each axis: business logic, integration, data validation, UI. Estimate test effort. This drives coverage expectations in Phase 4.
+Rate Low / Medium / High on each axis: business logic, integration, data validation, UI. Estimate the test effort. This sets the coverage expectations in Phase 4.
 
 ### Epic-level inheritance
-From the feature plan + epic comments:
+From the feature plan and epic comments:
 - Epic-level risks that apply to this ticket (restate with ticket-level relevance)
 - Integration points inherited
-- PO / Dev answers already given at epic level (reuse, do not re-ask)
+- PO / Dev answers already given at epic level (reuse them, do not re-ask)
 - Test strategy inherited (levels, tools)
 - Unique considerations not covered at epic level
 
@@ -231,20 +232,20 @@ From the feature plan + epic comments:
 
 ## Phase 2 — Story Quality Analysis
 
-For each:
+For each of these, write the entry in the shape shown:
 
-- **Ambiguities**: location in story + question for PO/Dev + impact on testing + suggested clarification
-- **Gaps (missing info)**: type (AC / technical detail / business rule) + why critical + what to add + risk if omitted
-- **Edge cases not in story**: scenario + expected behavior (best guess, flag for PO confirmation) + criticality + action (add to AC / test only / ask PO)
+- **Ambiguities**: location in the story + question for PO/Dev + impact on testing + suggested clarification
+- **Gaps (missing info)**: type (AC / technical detail / business rule) + why it matters + what to add + risk if omitted
+- **Edge cases not in the story**: scenario + expected behavior (best guess, flagged for PO confirmation) + criticality + action (add to AC / test only / ask PO)
 - **Testability validation**: Yes / Partial / No + list of issues (vague AC, missing error messages, no test data examples, missing performance criteria, cannot isolate)
 
-If the story is already clear, say so — a short "no issues found" is better than inventing questions.
+If the story is already clear, say so. A short "no issues found" beats invented questions.
 
 ---
 
 ## Phase 3 — Refined Acceptance Criteria
 
-Rewrite each original AC as a Given / When / Then scenario with **specific data**. Add new scenarios for edge cases surfaced in Phase 2.
+Rewrite each original AC as a Given / When / Then scenario with **specific data**, and add new scenarios for the edge cases Phase 2 surfaced.
 
 Template per scenario:
 
@@ -256,17 +257,17 @@ Template per scenario:
 
 For Negative scenarios include the exact error message, status code, response error shape, and a "no DB change" verification.
 
-Mark edge-case scenarios sourced from Phase 2 with **NEEDS PO/DEV CONFIRMATION** until answered.
+Mark edge-case scenarios sourced from Phase 2 with **NEEDS PO/DEV CONFIRMATION** until someone answers.
 
-**1:N is the default (explode, then justify any collapse).** A non-trivial AC implies *several* scenarios — at minimum a valid partition, each distinct invalid partition, and the boundaries. Derive them with the techniques in Phase 4. Reduce an AC to a *single* scenario ONLY when it is trivially atomic (one boolean, no ranges, no states, no interacting inputs) and write the reason inline (`collapsed: trivially atomic`). The count is whatever the techniques yield — there is no minimum and no maximum, but it is never "1 by default". Anti-padding still holds: a scenario must explore a partition/boundary/state/risk a sibling does not. A complex money flow may need 12; a trivially-atomic toggle may justify 1.
+**1:N is the default: explode, then justify any collapse.** A non-trivial AC implies several scenarios: at minimum a valid partition, each distinct invalid partition, and the boundaries. Derive them with the Phase 4 techniques. Reduce an AC to a single scenario only when it is trivially atomic (one boolean, no ranges, no states, no interacting inputs), and write the reason inline (`collapsed: trivially atomic`). The count is whatever the techniques yield, with no minimum and no maximum, but never "1 by default". Anti-padding still holds: a scenario must explore a partition, boundary, state or risk that a sibling does not. A complex money flow may need 12, and a trivially atomic toggle may justify 1.
 
 ---
 
 ## Phase 4 — Test Design (Test Outlines)
 
-### Technique-driven derivation (run FIRST — it decides the outline set)
+### Technique-driven derivation (run FIRST, it decides the outline set)
 
-Do not jump to counts. For each refined AC, pick the technique(s) its shape demands (full canon + worked example: `agentic-qa-core/references/test-design-doctrine.md`). The triggers are binding:
+Counts come last. For each refined AC, pick the technique(s) its shape demands (canon and worked example: `agentic-qa-core/references/test-design-doctrine.md`). The triggers are binding:
 
 | Trigger in the AC | Technique | What it produces |
 |---|---|---|
@@ -277,7 +278,7 @@ Do not jump to counts. For each refined AC, pick the technique(s) its shape dema
 | 3+ combinable factors (browser × locale × plan …) | **Pairwise** | all-pairs selection; **log that pairwise was applied** so the reduction is visible |
 | Experience-based risk | **Error Guessing charter** | a time-boxed exploration mission (double-submit, back-button, `<script>`, expired token …) |
 
-Record, per AC: which technique(s) fired, and — if an AC collapsed to a single outline — the `trivially atomic` justification. An AC with a range that has no BVA outlines, or a status field with no transition outlines, is an incomplete plan.
+Record, per AC, which technique(s) fired and, if the AC collapsed to a single outline, the `trivially atomic` justification. An AC with a range and no BVA outlines, or a status field with no transition outlines, is an incomplete plan.
 
 ### Coverage estimate
 
@@ -289,7 +290,7 @@ Record, per AC: which technique(s) fired, and — if an AC collapsed to a single
 | Integration | W | Per integration point from Phase 1 |
 | API | V | Per endpoint touched |
 
-Rationale paragraph: why this count, given the complexity axes from Phase 1.
+Add a rationale paragraph: why this count, given the complexity axes from Phase 1.
 
 ### Parametrization
 
@@ -298,24 +299,24 @@ Identify groups where the same behavior runs with varying data. Render each grou
 | Param 1 | Param 2 | … | Expected |
 |---------|---------|---|----------|
 
-State total tests from parametrization and the benefit (deduplication, broader input coverage). If no parametrization, briefly explain why.
+State the total tests from parametrization and the benefit (deduplication, broader input coverage). If there is no parametrization, explain briefly why.
 
 ### Test outline naming (Shift-Left convention)
 
 Format: `Should <BEHAVIOR> <CONDITION>`.
 
 - **BEHAVIOR** = verb + object (login successfully, display error, calculate total)
-- **CONDITION** = context that makes the case unique (with valid credentials, when field is empty, for premium users, at limit)
+- **CONDITION** = the context that makes the case unique (with valid credentials, when field is empty, for premium users, at limit)
 
 Examples:
-- Positive — "Should login successfully with valid credentials"
-- Negative — "Should display authentication error when password is incorrect"
-- Boundary — "Should accept character limit when entering exactly 50 chars"
-- Edge — "Should handle cart when there are multiple same items"
+- Positive: "Should login successfully with valid credentials"
+- Negative: "Should display authentication error when password is incorrect"
+- Boundary: "Should accept character limit when entering exactly 50 chars"
+- Edge: "Should handle cart when there are multiple same items"
 
-Anti-patterns: `Login test`, `Login - error`, `Test the form`, `Negative case`. Always describe behavior AND condition.
+Names like `Login test`, `Login - error`, `Test the form` and `Negative case` fail, because they omit the behavior or the condition.
 
-**Note:** In Stage 4 `test-documentation` prepends `{US_ID}: TC#:` (always the User Story key, never the Test Set ID) to formalize these in Xray; Test Set membership is a `TC→ATS` issue link in both modalities (plus the Xray-internal membership in jira-xray, `agentic-qa-core/references/traceability-linking.md` §9), never the title. Do not add the prefix here — this is manual / shift-left, not formal TC.
+**Note:** in Stage 4, `test-documentation` prepends `{US_ID}: TC#:` (always the User Story key, never the Test Set ID) to formalize these in Xray. Test Set membership is a `TC→ATS` issue link in both modalities (plus the Xray-internal membership in jira-xray, `agentic-qa-core/references/traceability-linking.md` §9), never the title. Do not add the prefix here: this is manual / shift-left, not formal TC.
 
 ### Outline structure (per scenario)
 
@@ -329,9 +330,9 @@ For every outline produce:
 - **Test steps**: numbered actions with exact data (Data: Field1: "value1", …) and verifications (Verify: …)
 - **Expected result**: UI visual / message, API status+body JSON, DB state change with table + record + fields, system state change
 - **Test data**: JSON block of inputs and user context
-- **Post-conditions**: state after test, cleanup if any
+- **Post-conditions**: state after the test, cleanup if any
 
-Repeat for all scenarios identified in Phase 3. Do not truncate the list.
+Repeat for every scenario from Phase 3, and keep the full list.
 
 ### Integration outlines (if applicable)
 
@@ -340,9 +341,9 @@ For each integration point from Phase 1:
 - **Integration point**: FE↔API, API↔DB, API↔External
 - **Preconditions**: what must be running (backend up, mock configured, etc.)
 - **Flow**: request → processing → response → downstream
-- **Contract validation**: assertions against OpenAPI spec (request shape, response shape, status codes)
+- **Contract validation**: assertions against the OpenAPI spec (request shape, response shape, status codes)
 - **Mock strategy**: for external services (MSW / Nock / provider test mode); real integration validated in staging manually
-- **Expected result**: data flows correctly through the chain, no loss / transformation error
+- **Expected result**: data flows correctly through the chain, with no loss or transformation error
 
 ---
 
@@ -356,9 +357,9 @@ For each integration point from Phase 1:
 | Valid / Invalid / Boundary / Edge |
 
 ### Data generation strategy
-- **Static**: hardcoded because critical / specific
+- **Static**: hardcoded because critical or specific
 - **Dynamic (Faker.js)**: `faker.internet.email()`, `faker.person.firstName()`, `faker.number.int({min, max})`, `faker.date.recent()`
-- **Cleanup**: tests idempotent, data cleaned after execution, order-independent
+- **Cleanup**: tests are idempotent, data is cleaned after execution, order does not matter
 
 ---
 
@@ -366,29 +367,30 @@ For each integration point from Phase 1:
 
 ### Update ticket in Jira / TMS
 
-Append "QA Refinements (Shift-Left Analysis)" section to the ticket description:
+Append a "QA Refinements (Shift-Left Analysis)" section to the ticket description:
 - Refined Acceptance Criteria (Phase 3)
 - Edge Cases Identified (Phase 2)
 - Clarified Business Rules (Phase 2)
 
-### Create ATP + ATR — branch on TMS modality
+### Create ATP + ATR (branch on TMS modality)
 
-The modality was resolved in Session Start (§0) and persisted into `test-session-memory.md`. Apply the matching branch. Full reference: `test-documentation/references/tms-architecture.md` §Container per modality.
+The modality was resolved in Session Start (§0) and persisted into `test-session-memory.md`; apply the matching branch (`test-documentation/references/tms-architecture.md` §Container per modality).
 
-> **Prerequisite (both modalities)**: Load `/acli` skill before executing any `[ISSUE_TRACKER_TOOL]` block below. In Modality jira-xray, additionally load `/xray-cli` for `[TMS_TOOL]` calls. Skip if Session Start §0.1 in `SKILL.md` already loaded them.
+> **Prerequisite (both modalities)**: load `/acli` before executing any `[ISSUE_TRACKER_TOOL]` block below. In Modality jira-xray, also load `/xray-cli` for `[TMS_TOOL]` calls. Skip if Session Start §0.1 in `SKILL.md` already did.
 
-> **Title grammar (QA planning ladder)** — every Plan, Set and Run uses `{ACRONYM}: {scope-id}: {descriptor}`:
-> - **ATP** (Story Test Plan): `ATP: {STORY-KEY}: {story title}` — e.g. `ATP: PROJ-123: Apply discount at checkout`. Pre-sprint the ATP lives ONLY in the `{{jira.acceptance_test_plan}}` field (shift-left is field-first); Stage 1 finds-or-creates the item FROM the field.
-> - **ATS** (Acceptance Test Set, the Story's coverage backbone): `ATS: {US_ID}: {story title}` (`{US_ID}` = the Story key) — MANDATORY per Story, even with a single TC — e.g. `ATS: PROJ-123: Apply discount at checkout`. Components inherited from the Story (mandatory). Feature/suite-altitude grouping keeps the optional `TS: {EPIC|module}: Validate {feature}` form (components optional — it crosses modules).
-> - **ATR** (Story Test Execution): `ATR: {STORY-KEY}: Story Testing` — the Story-level run is named **Story Testing** and runs ONCE per sprint per Story — e.g. `ATR: PROJ-123: Story Testing`. ALWAYS created with the Test Environment (`active_env`).
-> - **FTP** (Feature Test Plan, feature/Epic altitude — see `feature-test-planning.md`): `FTP: {EPIC-KEY}: {feature}` — e.g. `FTP: PROJ-42: Checkout & Payments`. Item-first; find-or-created/updated when this skill loads the Epic's context, consumed thereafter.
-> Bug-fix verification keeps `ReTest: {BUG_KEY}: {summary}` (a Test Execution). Sprint altitude: `STP: Sprint#{N}: {objective}` is find-or-created at Session Start of the sprint's FIRST ticket (SKILL.md §Session Start 0.7) and updated per tested ticket; `STR: Sprint#{N}: Regression Testing` is created at sprint close (batch-close recap or `/regression-testing`, whichever arrives first). The ladder has no FTR or PRC rung (an FTR would duplicate the STR; Precondition is already an Xray entity without a ladder acronym).
+> **Title grammar (QA planning ladder)**: every Plan, Set and Run uses `{ACRONYM}: {scope-id}: {descriptor}`.
+> - **ATP** (Story Test Plan): `ATP: {STORY-KEY}: {story title}`, e.g. `ATP: PROJ-123: Apply discount at checkout`. Pre-sprint the ATP lives ONLY in the `{{jira.acceptance_test_plan}}` field (shift-left is field-first); Stage 1 finds-or-creates the item FROM the field.
+> - **ATS** (Acceptance Test Set, the Story's coverage backbone): `ATS: {US_ID}: {story title}` (`{US_ID}` = the Story key), MANDATORY per Story even with a single TC, e.g. `ATS: PROJ-123: Apply discount at checkout`. Components are inherited from the Story (mandatory). Feature/suite-altitude grouping keeps the optional `TS: {EPIC|module}: Validate {feature}` form (components optional, because it crosses modules).
+> - **ATR** (Story Test Execution): `ATR: {STORY-KEY}: Story Testing`. The Story-level run is named **Story Testing** and runs ONCE per sprint per Story, e.g. `ATR: PROJ-123: Story Testing`. ALWAYS created with the Test Environment (`active_env`).
+> - **FTP** (Feature Test Plan, feature/Epic altitude, see `feature-test-planning.md`): `FTP: {EPIC-KEY}: {feature}`, e.g. `FTP: PROJ-42: Checkout & Payments`. Item-first; find-or-created and updated when this skill loads the Epic's context, consumed thereafter.
+>
+> Bug-fix verification keeps `ReTest: {BUG_KEY}: {summary}` (a Test Execution). At sprint altitude, `STP: Sprint#{N}: {objective}` is find-or-created at Session Start of the sprint's FIRST ticket (SKILL.md §Session Start 0.7) and updated per tested ticket; `STR: Sprint#{N}: Regression Testing` is created at sprint close (batch-close recap or `/regression-testing`, whichever arrives first). The ladder has no FTR or PRC rung: an FTR would duplicate the STR, and Precondition is already an Xray entity without a ladder acronym.
 
-> **Items over fields (excellence default, both modalities)** — by excellence ATP is a **Test Plan** issue, ATR is a **Test Execution** issue and ATS is a **Test Set** issue; parent every Test Plan (ATP / FTP / STP) to the **QA Master Test Plan** epic and every Test Execution (ATR / STR) and Test Set (ATS) to the **QA Test Artifacts** epic. The Story custom field (`{{jira.acceptance_test_plan}}` / `{{jira.acceptance_test_results}}`) is a **fallback ONLY** when the Test Plan / Test Execution work types are unavailable in the instance.
+> **Items over fields (excellence default, both modalities)**: by excellence ATP is a **Test Plan** issue, ATR is a **Test Execution** issue and ATS is a **Test Set** issue. Parent every Test Plan (ATP / FTP / STP) to the **QA Master Test Plan** epic, and every Test Execution (ATR / STR) and Test Set (ATS) to the **QA Test Artifacts** epic. The Story custom field (`{{jira.acceptance_test_plan}}` / `{{jira.acceptance_test_results}}`) is a **fallback ONLY**, for instances where the Test Plan / Test Execution work types are unavailable.
 
 #### Modality jira-xray — Set-first order (AUTHORITATIVE)
 
-ATP = `Test Plan` issue. ATR = `Test Execution` issue. ATS = `Test Set` issue — the Story's coverage backbone (MANDATORY per Story, even with a single TC). Execute in THIS order; the ATP's and the ATR's test lists are DERIVED from the ATS membership — never maintained as three independent id lists.
+ATP = `Test Plan` issue. ATR = `Test Execution` issue. ATS = `Test Set` issue, the Story's coverage backbone (MANDATORY per Story, even with a single TC). Execute in THIS order. The ATP's and the ATR's test lists are DERIVED from the ATS membership, never maintained as three independent id lists.
 
 ```
 # ① ATS — create/update the Story's Test Set holding ALL its TCs
@@ -451,13 +453,13 @@ ATP = `Test Plan` issue. ATR = `Test Execution` issue. ATS = `Test Set` issue �
   inward:  {STORY_KEY}
 ```
 
-> Resolve the `test` link type by slug only and verify direction after each create — see `agentic-qa-core/references/traceability-linking.md` (§2 slug resolution, §4 directionality + mandatory verification).
+> Resolve the `test` link type by slug only and verify the direction after each create. See `agentic-qa-core/references/traceability-linking.md` (§2 slug resolution, §4 directionality + mandatory verification).
 
-Load `/xray-cli` skill for the concrete CLI syntax.
+Load `/xray-cli` for the concrete CLI syntax.
 
 #### Modality jira-native (no Xray) — first-class: same containers, no run engine
 
-This branch is the **degraded fallback** (Test Plan / Test Execution work types unavailable). ATP/ATR live on the Story itself — no separate issues. Use the custom field IDs from `test-documentation/references/jira-setup.md`: `{{jira.acceptance_test_plan}}` for ATP and `{{jira.acceptance_test_results}}` for ATR. Each field is the source of truth; a `## <label>` comment is posted ONLY as a fallback when the field is absent on the instance. `test-documentation` mode `repair-traceability` checks the field, or the fallback comment when the field is absent.
+This branch is the **degraded fallback** (Test Plan / Test Execution work types unavailable). ATP and ATR live on the Story itself, with no separate issues. Use the custom field IDs from `test-documentation/references/jira-setup.md`: `{{jira.acceptance_test_plan}}` for ATP and `{{jira.acceptance_test_results}}` for ATR. Each field is the source of truth; a `## <label>` comment is posted ONLY as a fallback when the field is absent on the instance. `test-documentation` mode `repair-traceability` checks the field, or the fallback comment when the field is absent.
 
 ```
 [ISSUE_TRACKER_TOOL] Update Issue:
@@ -479,29 +481,26 @@ This branch is the **degraded fallback** (Test Plan / Test Execution work types 
     {{jira.acceptance_test_results}}: "ATR: {STORY-KEY}: Story Testing — pending execution"
 ```
 
-Load `/acli` skill for the concrete Jira CLI syntax.
+Load `/acli` for the concrete Jira CLI syntax.
 
 ### Comment with full outlines
 
-Post the full ATP body as a notification comment with mentions for @PO, @Dev, @QA per project convention. Include an Action Required checklist (review ambiguities, answer critical questions, confirm edge-case behavior, validate parametrization strategy).
+Post the full ATP body as a notification comment with mentions for @PO, @Dev, @QA per project convention. Include an Action Required checklist (review ambiguities, answer critical questions, confirm edge-case behavior, validate the parametrization strategy). The comment is an outward Jira write, so a routine with nobody present posts it only when the delegating brief covers Jira writes, and otherwise stops before it and reports.
 
-In Modality jira-native, when `{{jira.acceptance_test_plan}}` is absent the structured `## Acceptance Test Plan (ATP)` fallback comment carries the ATP content — that is what `test-documentation` mode `repair-traceability` checks later.
+In Modality jira-native, when `{{jira.acceptance_test_plan}}` is absent the structured `## Acceptance Test Plan (ATP)` fallback comment carries the ATP content, and that is what `test-documentation` mode `repair-traceability` checks later.
 
 ### Materialize the local cache (from sync, never hand-written)
 
-After the ATP content is in Jira, materialize the read-only cache per modality, then read it back to confirm:
+After the ATP content is in Jira, materialize the read-only cache for the modality and read it back to confirm:
 
-- **Modality jira-native**: `bun run jira:sync-issues get <STORY_KEY> --include-comments` → `acceptance-test-plan.md` in the STORY folder.
-- **Modality jira-xray**: `bun run jira:sync-issues get <ATP_KEY>` → `test-plans/ATP-<ATP_KEY>-<slug>.md` (per `work_types.test_plan.sync` in `.agents/jira-required.yaml`).
+- **Modality jira-native**: `bun run jira:sync-issues get <STORY_KEY> --include-comments` produces `acceptance-test-plan.md` in the STORY folder.
+- **Modality jira-xray**: `bun run jira:sync-issues get <ATP_KEY>` produces `test-plans/ATP-<ATP_KEY>-<slug>.md` (per `work_types.test_plan.sync` in `.agents/jira-required.yaml`).
 
-Jira is source of truth; the synced file is a read-only cache — NEVER hand-write it.
+Jira is the source of truth and the synced file is a read-only cache. Never hand-write it.
 
 ### Status + ownership check (before the traceability check)
 
-Every artifact this phase created carries `assignee` = the authenticated session user, set at
-create time — an unassigned Test Plan cannot have its test list edited in Xray later
-(`agentic-qa-core/references/artifact-lifecycle.md` §2). And every artifact leaves the status
-Jira's `create` transition dropped it in (§1):
+Every artifact this phase created carries `assignee` = the authenticated session user, set at create time (an unassigned Test Plan cannot have its test list edited in Xray later, `agentic-qa-core/references/artifact-lifecycle.md` §2). Each artifact leaves Stage 1 in the status below, starting from the one Jira's `create` transition gave it (§1):
 
 | Artifact | Fire | Ends Stage 1 at |
 |---|---|---|
@@ -510,19 +509,22 @@ Jira's `create` transition dropped it in (§1):
 | ATS | — | stays `{{jira.status.test_set.designing}}` (membership final at Stage 3) |
 | ATR | — | stays `{{jira.status.test_execution.active}}` (the run has not happened) |
 
-On an unmapped slug run the fallback protocol in `agentic-qa-core/references/artifact-lifecycle.md`
-§4: list the LIVE transitions, propose the closest synonym in ONE `AskUserQuestion`, fire the live
-id on yes, recommend `bun run jira:sync-workflows`. Never skip silently, never guess an id.
+On an unmapped slug, run the fallback protocol in `agentic-qa-core/references/artifact-lifecycle.md` §4: list the LIVE transitions, propose the closest synonym in ONE `AskUserQuestion`, fire the live id on yes, and recommend `bun run jira:sync-workflows`. Do not skip silently and do not guess an id. A supervised worker passes that question to its conductor, and a routine with nobody present leaves the transition unfired and reports the unmapped slug.
 
 ### Traceability check
 
-After materializing, run the **three-edge check** (`agentic-qa-core/references/traceability-linking.md` §Traceability verification: Link List on Story + ATP + ATR, or `bun xray trace {TICKET}`) (Modality jira-xray) or verify the Story's `{{jira.acceptance_test_plan}}` is populated (or the `## Acceptance Test Plan (ATP)` fallback comment exists) (Modality jira-native). Traceability reads stay on `[TMS_TOOL]` / `/acli` — not the sync. In Modality jira-xray verify the Set-first model: **Story↔ATS via the `test` slug (the coverage link) + ATS membership complete + ATP/ATR test lists matching the ATS + Story↔ATP / Story↔ATR (administrative)**. Bugs produce ATP + ATR with the repro Test arriving at fix-verification time (jira-xray) or no TCs at all (jira-native); "missing TC" warnings on bugs before fix-verification are expected.
+After materializing, verify the links:
+
+- **Modality jira-xray**: run the **three-edge check** (`agentic-qa-core/references/traceability-linking.md` §Traceability verification: Link List on Story + ATP + ATR, or `bun xray trace {TICKET}`) and verify the Set-first model: **Story↔ATS via the `test` slug (the coverage link) + ATS membership complete + ATP/ATR test lists matching the ATS + Story↔ATP / Story↔ATR (administrative)**.
+- **Modality jira-native**: verify the Story's `{{jira.acceptance_test_plan}}` is populated, or that the `## Acceptance Test Plan (ATP)` fallback comment exists.
+
+Traceability reads stay on `[TMS_TOOL]` / `/acli`, not the sync. Bugs get the repro Test only at fix-verification (jira-xray) or no TCs at all (jira-native), so "missing TC" warnings on bugs before then are expected.
 
 ---
 
 ## Phase 7 — Final QA Feedback Report to the user
 
-Executive summary covering:
+An executive summary covering:
 
 - Story quality assessment (Good / Needs Improvement / Significant Issues)
 - Key findings (1-3 bullets)
@@ -532,7 +534,7 @@ Executive summary covering:
 - Testing recommendations (pre / during / post implementation)
 - Risks & mitigation (likelihood / impact / which outlines mitigate)
 - What was done (Jira updates + local files + test coverage totals)
-- Next steps + **BLOCKER** note if PO/Dev answers are required before Dev starts
+- Next steps, plus a **BLOCKER** note if PO/Dev answers are required before Dev starts
 
 If risk is HIGH, add an extended-edge-cases callout and recommend a pre-implementation exploratory session.
 
@@ -540,52 +542,47 @@ If risk is HIGH, add an extended-edge-cases callout and recommend a pre-implemen
 
 ## Phase 8 — No commit
 
-Nothing to commit in this stage. The ATP is canonical in Jira; the local `acceptance-test-plan.md` is a gitignored synced cache rebuilt by `bun run jira:sync-issues` (see `.agents/instructions/agent-local-context-pbi.md`). Never `git add` it — and never `git add -f` it, which would re-commit a generated Jira mirror.
+Nothing is committed in this stage. The ATP is canonical in Jira, and the local `acceptance-test-plan.md` is a gitignored synced cache rebuilt by `bun run jira:sync-issues` (see `.agents/instructions/agent-local-context-pbi.md`). Never `git add` it, and never `git add -f` it, which would re-commit a generated Jira mirror.
 
 ---
 
 ## Bug Analysis variant
 
-Bugs get ATP + ATR (the ATR is the retest Execution `ReTest: {BUG_KEY}: {summary}`, ALWAYS created with the Test Environment from `active_env`). **Modality jira-xray**: plan ONE repro `Test` by default — created at fix-verification time (Stage 2), 1:N only when the bug's scope genuinely covers distinct conditions (justify per `agentic-qa-core/references/test-design-doctrine.md`) — linked **Bug↔Test** via the `test` slug (Bug `is tested by` Test; bugs are coverable), executed in the retest Execution with PASSED/FAILED recorded. **Modality jira-native**: **no TCs in-sprint** — the bug ticket is the implicit test case; persistent-Test decisions defer to Stage 4 (golden rule unchanged). Replace Phases 1-4 with:
+Bugs get ATP + ATR. The ATR is the retest Execution `ReTest: {BUG_KEY}: {summary}`, ALWAYS created with the Test Environment from `active_env`. In **Modality jira-xray**, plan ONE repro `Test` by default: it is created at fix-verification time (Stage 2), linked **Bug↔Test** via the `test` slug (Bug `is tested by` Test; bugs are coverable) and executed in the retest Execution with PASSED/FAILED recorded. Go 1:N only when the bug's scope genuinely covers distinct conditions, and justify it per `agentic-qa-core/references/test-design-doctrine.md`. In **Modality jira-native** there are **no TCs in-sprint**: the bug ticket is the implicit test case, and persistent-Test decisions defer to Stage 4 (golden rule unchanged). Replace Phases 1-4 with:
 
-- **Reproduction**: exact steps from the bug ticket → expected vs actual
+- **Reproduction**: exact steps from the bug ticket, expected vs actual
 - **Root cause hypothesis** (from code exploration)
 - **Fix verification plan**: the steps that must now pass on staging
-- **Regression surface**: adjacent areas that could be destabilized by the fix
+- **Regression surface**: adjacent areas the fix could destabilize
 - **Data integrity check**: if the bug touched persisted state, list the DB queries to run via `[DB_TOOL]` to confirm no orphaned records
 
-Keep Phases 5-8 unchanged. Skip Phase 3 refinement since the bug ticket itself is the spec.
-
-See SKILL.md veto rules — veto beats risk score for bugs too.
+Keep Phases 5-8 unchanged and skip Phase 3, since the bug ticket itself is the spec. The veto beats the risk score for bugs too (SKILL.md veto rules).
 
 ---
 
 ## Gotchas
 
-1. **Plan before code** — no outline writing before the user OKs the story explanation from Session Start.
-2. **Specific data in scenarios** — "valid email" is not enough; write `"john+test@example.com"`.
-3. **Edge cases flagged for PO** — if you invented the expected behavior, mark it **NEEDS PO/DEV CONFIRMATION** and call it out in the final report.
-4. **Explode by default; justify any collapse (not the reverse)** — the count is whatever the Phase 4 techniques yield. A trivially-atomic AC may legitimately collapse to 1-2 outlines *with a stated reason* (`trivially atomic`); a money/range/stateful AC almost never does. Anti-padding = never add an outline that explores nothing a sibling does not — NOT "default to the smallest number". Both forcing 10 empty outlines and stopping at 2 when boundaries/states are untested are failures.
-5. **TC timing follows the modality** — `SKILL.md` §"TC creation timing" decides it (jira-xray: sprint `Test` issues created + executed in Stage 1; jira-native: outlines only, Stage 4 `test-documentation` creates the regression-worthy ones with ROI scoring). When TCs do exist, the TC body = the `Test` issue's `description` (synced in both modalities); the Xray Gherkin / Test-Steps plugin field is NOT synced — it only mirrors the description.
-6. **Epic inheritance beats duplication** — if the feature plan already answered a risk or integration point, cite it, do not re-derive.
-7. **Language** — artifacts + commit messages in English; conversation mirrors the user's language.
-8. **Data feasibility is a blocker** — if a critical AC has no reachable data, stop and surface the blocker before writing outlines.
-9. **Source order** — the canonical ATP is in Jira (jira-native: Story `{{jira.acceptance_test_plan}}` field or `## Acceptance Test Plan (ATP)` fallback comment; jira-xray: the Test Plan issue's `description`). The local synced file is a read-only cache materialized by `bun run jira:sync-issues` (jira-native → `acceptance-test-plan.md`; jira-xray → `test-plans/ATP-<ATP_KEY>-<slug>.md`). Never hand-write or hand-edit the synced file.
-10. **No ROI here** — prioritization for regression backlog is `test-documentation`'s job; this skill only tags Priority per outline.
+1. **Plan before code**: write no outlines before the user OKs the story explanation from Session Start. A supervised worker takes that OK from its conductor, and a routine takes it from the delegating brief, stopping before any outline when the brief does not cover it.
+2. **Specific data in scenarios**: "valid email" is not enough, write `"john+test@example.com"`.
+3. **Inferred behavior is flagged**: behavior you invented is marked **NEEDS PO/DEV CONFIRMATION** and called out in the final report.
+4. **Explode, then justify any collapse**: Phase 3 sets the rule. Forcing 10 empty outlines and stopping at 2 while boundaries and states go untested are both failures.
+5. **TC body**: when TCs exist, the body is the `Test` issue's `description` (synced in both modalities). The Xray Gherkin / Test-Steps plugin field is NOT synced, since it only mirrors the description.
+6. **Epic inheritance beats duplication**: if the feature plan already answered a risk or integration point, cite it.
+7. **Language**: artifacts and commit messages are in English, and the conversation mirrors the user's language.
+8. **Data feasibility blocks outlines**: see §0.3.
+9. **Source order**: the canonical ATP is in Jira and the local file is a cache (see the top of this file).
+10. **No ROI here**: this stage only tags Priority per outline.
 
 ---
 
 ## Checklist before handing off
 
 - [ ] Triage decision recorded (SKIP / Code-Review / Full + risk score if computed)
-- [ ] Data feasibility check complete with pattern column
-- [ ] Phases 1-4 produced with realistic scenario + outline counts
-- [ ] Edge cases labeled, PO-confirmation flags on any inferred behavior
-- [ ] Refined ACs + Edge Cases appended to ticket description
-- [ ] ATP content written to `{{jira.acceptance_test_plan}}` (or `## Acceptance Test Plan (ATP)` fallback comment)
-- [ ] jira-xray: Set-first order honored — ATP item find-or-created FROM the field · ATS created/updated with ALL the Story's TCs + linked to the Story via the `test` slug (components inherited) · ATP/ATR test lists derived from the ATS membership
-- [ ] jira-xray: ATR created WITH the Test Environment (`active_env`) — no environment, no ATR
-- [ ] Synced ATP cache materialized (not hand-written) — jira-native: `acceptance-test-plan.md` via `bun run jira:sync-issues get <STORY_KEY> --include-comments`; jira-xray: `test-plans/ATP-<ATP_KEY>-<slug>.md` via `bun run jira:sync-issues get <ATP_KEY>`
+- [ ] Data feasibility check complete, with the pattern column
+- [ ] Phases 1-4 produced, edge cases labeled, PO-confirmation flags on inferred behavior
+- [ ] Refined ACs + edge cases appended to the ticket description
+- [ ] ATP content written to `{{jira.acceptance_test_plan}}` (or the `## Acceptance Test Plan (ATP)` fallback comment)
+- [ ] jira-xray: Set-first order honored (ATP item from the field, ATS with ALL the Story's TCs linked via the `test` slug with components inherited, ATP/ATR lists derived from the ATS)
+- [ ] jira-xray: ATR created WITH the Test Environment (`active_env`), because no environment means no ATR
+- [ ] Synced ATP cache materialized, not hand-written (commands in Phase 6)
 - [ ] Three-edge traceability check passed (Story↔ATS coverage + ATP↔Story + ATR↔Story administrative + lists match)
-- [ ] Final report delivered to user with open questions + blocker note if needed
-- [ ] Nothing committed — synced ATP cache left untracked (gitignored; Jira is canonical)

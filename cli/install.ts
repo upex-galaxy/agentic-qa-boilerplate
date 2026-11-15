@@ -493,6 +493,10 @@ export const USER_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [
   { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'retro' },
   // Decision log format (ts, phase, decision, why, evidence, result) for routines and long workers.
   { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'show-me-your-work' },
+  // Sizes what a change can break elsewhere (callers, shared helpers, wire formats) for a risk score.
+  { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'blast-radius' },
+  // Pins down the cause of a bug that reproduces unreliably, before it is filed.
+  { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'diagnosing-bugs' },
 ];
 
 // Matches Claude Code ${VAR} and ${VAR:-default} placeholders in .mcp.json.

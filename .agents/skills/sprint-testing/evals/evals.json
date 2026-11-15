@@ -19,6 +19,18 @@
       "category": "positive"
     },
     {
+      "name": "should-trigger-spanish-single-story",
+      "prompt": "Necesito probar la historia de usuario UPEX-312 en staging, hagamos el QA completo de este ticket.",
+      "expected_behavior": "Activates sprint-testing in single-issue / user-story mode by meaning, even though the prompt is in Spanish. Runs the Readiness Preflight Gate, Phase 0, Session Start, then Stages 1 to 3. Replies in Spanish; repo artifacts stay English.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-spanish-bug-retest",
+      "prompt": "El dev dice que ya arregló el bug PROJ-445, ¿puedes volver a probarlo y verificar el fix?",
+      "expected_behavior": "Activates sprint-testing in single-issue / bug mode by meaning: Session Start, triage (veto table, then risk score), Bug Analysis, ATP + ATR, fix verification. Replies in Spanish.",
+      "category": "positive"
+    },
+    {
       "name": "should-not-trigger-automation",
       "prompt": "Automate the test cases for ticket UPEX-277. Write the Playwright E2E test.",
       "expected_behavior": "Does NOT activate sprint-testing. Should route to test-automation (Stage 5 — Plan -> Code -> Review for KATA component + test file). sprint-testing ends at Stage 3 and hands off.",

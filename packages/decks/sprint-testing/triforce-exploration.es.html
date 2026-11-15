@@ -1038,7 +1038,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       </ul>
     </div>
   </div>
-  <div class="callout warn mt-m"><h4>Por qué no parar por todo</h4><p>Pausar una pasada de 17 TCs por un hallazgo cosmético desperdicia el dispatch y pierde cobertura. Un finding no-bloqueante se registra y la pasada <b>continúa</b>; todos se surfacean juntos al cierre de Execution <span class="dim">(históricamente Stage 2)</span>. Un bloqueante genuino sí detiene de inmediato.</p></div>
+  <div class="callout warn mt-m"><h4>Por qué no parar por todo</h4><p>Pausar una pasada de 17 TCs por un hallazgo cosmético desperdicia el dispatch y pierde cobertura. Un finding no-bloqueante se registra y la pasada <b>continúa</b>; todos se surfacean juntos al cierre de Execution <span class="dim">(históricamente Stage 2)</span>. Un bloqueante genuino sí detiene de inmediato. Sin persona, un worker le reporta el bloqueo a su conductor y una rutina corta la exploración profunda, lo anota en Findings y no abre bug ni comentario sin un brief que lo cubra.</p></div>
   <div class="notes">La pausa graduada: bloqueante (env/corrupción/seguridad) detiene; no-bloqueante (cosmético/menor) se registra y la pasada sigue. Un FAIL no es auto-Critical. El objetivo es cobertura completa.</div>
 </section>
 
