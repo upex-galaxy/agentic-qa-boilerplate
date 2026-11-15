@@ -10,7 +10,7 @@
     },
     {
       "id": 2,
-      "prompt": "explorando el checkout vi que ahora hay un paso de verificación de dirección antes del pago que el mapa E2E no tiene. ¿qué hago con eso?",
+      "prompt": "explorando el checkout vi que ahora hay un paso de verificación de dirección antes del pago que el mapa E2E no tiene. qué hago con eso?",
       "expected_output": "Loads business-e2e-context and follows references/refresh.md: proposes a one-section edit to the checkout journey (evidence = the exploration, screenshot path or session label, before/after, figure redraw because the journey figure changes, which needs the diagrams capability) and applies it only on explicit approval. Answers in Spanish.",
       "should_trigger": true,
       "files": []
@@ -24,14 +24,14 @@
     },
     {
       "id": 4,
-      "prompt": "necesito armar el alcance del smoke para el release: ¿cuáles son los recorridos de usuario principales del producto?",
+      "prompt": "necesito armar el alcance del smoke para el release: cuáles son los recorridos de usuario principales del producto?",
       "expected_output": "Loads business-e2e-context, reads the map through `bun run context:map business-e2e-context` and answers journeys first, citing section ids. Answers in Spanish.",
       "should_trigger": true,
       "files": []
     },
     {
       "id": 5,
-      "prompt": "¿qué puede hacer un usuario con rol admin en la app? quiero saber por qué flujos pasa antes de escribir el test E2E",
+      "prompt": "qué puede hacer un usuario con rol admin en la app? quiero saber por qué flujos pasa antes de escribir el test E2E",
       "expected_output": "Loads business-e2e-context and answers from the personas and journeys of the map, then the feature catalog. Answers in Spanish.",
       "should_trigger": true,
       "files": []

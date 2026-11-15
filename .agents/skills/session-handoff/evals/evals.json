@@ -1,0 +1,47 @@
+{
+  "skill_name": "session-handoff",
+  "evals": [
+    {
+      "name": "should-trigger-session-handoff-1",
+      "prompt": "The context window is almost full. Write a handoff so a fresh session can continue exactly where we stopped.",
+      "expected_skill": "session-handoff",
+      "expected_behavior": "Activates session-handoff and writes the handoff file before any launch.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-session-handoff-2",
+      "prompt": "Hand this session over so we can continue it in a fresh session.",
+      "expected_skill": "session-handoff",
+      "expected_behavior": "Activates session-handoff.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-session-handoff-3",
+      "prompt": "hagamos el handoff a otra sesión, el contexto ya está muy alto",
+      "expected_skill": "session-handoff",
+      "expected_behavior": "Activates session-handoff in any language.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-session-handoff-4",
+      "prompt": "continuá esto en otra sesión, pasale todo el contexto",
+      "expected_skill": "session-handoff",
+      "expected_behavior": "Activates session-handoff and writes the handoff file.",
+      "category": "positive"
+    },
+    {
+      "name": "should-not-trigger-session-handoff-5",
+      "prompt": "Give this scoped task to another agent in its own worktree, I will keep working here.",
+      "expected_skill": "session-handoff",
+      "expected_behavior": "Does not use session-handoff: handing a task to another agent is orca-cli.",
+      "category": "negative"
+    },
+    {
+      "name": "should-not-trigger-session-handoff-6",
+      "prompt": "Launch a supervised worker for each story and report back when they finish.",
+      "expected_skill": "session-handoff",
+      "expected_behavior": "Does not use session-handoff: supervised workers are orca-orchestration.",
+      "category": "negative"
+    }
+  ]
+}

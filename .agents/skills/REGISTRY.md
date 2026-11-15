@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-11-15T10:32:05.209Z`
+> Generated: `2026-11-15T10:48:06.686Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -345,6 +345,7 @@ Skills indexed: 29
 **Purpose**: Administer Jira in two approval-gated modes: Components reconciliation and instance migration.
 
 **Compact Rules**:
+- Take the mode from the first token of `$ARGUMENTS`; with no match, ask, and a bare "fix Jira" or "sync Jira" picks none.
 - One mode per run. Load only its reference, never combine the two or fall through into the other, and run only the selected reference's verification steps.
 - Load `/acli` before any Jira operation. Load other tool-owner skills only when the selected reference requires them.
 - Missing MCP or Jira credentials is a hard stop (`AGENTS.md` Critical Rule #10). Name the exact env var, point at `.env` and `.env.example`, ask for an agent-session restart. No workaround, no partial run.
@@ -437,7 +438,7 @@ Skills indexed: 29
 - Put every finding in exactly one bucket (Real/Reliability, Pattern/Doctrine-deviation, Positive) with a severity tier (Critical, Major, Minor, Trivial) in the user's language.
 - Fill the Positive bucket. A review with no positives on a PR that clearly has some is uncalibrated, not rigorous.
 - Read the actual diffs. On a PR too large for one diff, page the per-file patches, and check the commit headlines first so an unrelated bulk-sync or vendor-update commit is not read line by line.
-- Review on two axes, Spec and Standards, and check the tests for lying tests (LT-1 to LT-3). The checks live in `test-automation/references/review-checklists.md`.
+- Review on two axes, Spec and Standards, each by its own reviewer in a fresh context when the PR has a spec to check, and check the tests for lying tests (LT-1 and LT-2 with Spec, LT-3 with Standards). The checks live in `test-automation/references/review-checklists.md`.
 - Present the findings table, the positives and a score out of 10 as a checkpoint, then let the user triage and re-classify. Their context decides what ships; do not defend the first-pass severity.
 - When the user gave no tone or structure, draft praise, then constructive points, then praise, with a real strength at each end.
 - Post to GitHub only after an explicit go-ahead at the final step. Approval for a different PR does not carry over, and silence is not approval.

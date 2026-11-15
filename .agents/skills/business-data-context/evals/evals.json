@@ -21,6 +21,20 @@
       "expected_output": "Should NOT be answered from business-data-context: endpoint contracts, statuses and auth levels belong to business-api-context (plus the OpenAPI schema). At most business-data-context is cited for what the order entity is.",
       "should_trigger": false,
       "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "qué tablas y estados intervienen cuando una orden pasa a pagada, necesito armar los datos de prueba",
+      "expected_output": "Loads business-data-context: entities and state transitions.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "hay un cron que cambia el estado de las suscripciones, cómo funciona en la base de datos",
+      "expected_output": "Loads business-data-context: background jobs and state machines.",
+      "should_trigger": true,
+      "files": []
     }
   ]
 }

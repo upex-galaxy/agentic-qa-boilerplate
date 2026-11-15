@@ -36,6 +36,20 @@
       "prompt": "Upload the bug screenshots to an online image editor and add red circles.",
       "expected_behavior": "Does NOT send evidence to any external image service. Explains that evidence is built locally only (references/privacy.md) and offers the evidence page or bug-screenshot-annotation instead.",
       "category": "negative"
+    },
+    {
+      "name": "should-trigger-evidence-artifact-7",
+      "prompt": "armá la página de evidencia de la historia con el pack JSON y publicala",
+      "expected_skill": "evidence-artifact",
+      "expected_behavior": "Activates evidence-artifact: builds the page from the pack and publishes it.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-evidence-artifact-8",
+      "prompt": "voy a reintentar el bug, actualizá la evidencia en la misma URL con una ronda nueva",
+      "expected_skill": "evidence-artifact",
+      "expected_behavior": "Activates evidence-artifact: same URL, new round.",
+      "category": "positive"
     }
   ]
 }

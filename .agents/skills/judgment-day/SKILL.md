@@ -1,6 +1,6 @@
 ---
 name: judgment-day
-description: "Run a blind dual review with two independent judges, fix confirmed issues, then re-judge. Use when asked for judgment day, a dual or adversarial review, or a separate verifier of a change."
+description: "Run a blind dual review with two independent judges, fix confirmed issues, then re-judge. Use when asked for judgment day, a dual or adversarial review, or when `/test-automation` Review needs its separate verifier."
 license: Apache-2.0
 complementary_categories: [meta-skill]
 metadata:
@@ -10,9 +10,11 @@ metadata:
   vendored_from: "https://github.com/Gentleman-Programming/gentle-ai"
 ---
 
+<!-- Local edits to the vendored file, keep them on a re-vendor: the frontmatter description (trigger wording and the test-automation verifier clause) and the activation line (language-neutral trigger). -->
+
 ## Activation Contract
 
-Load this skill only when the user explicitly asks for Judgment Day, dual/adversarial review, or equivalent Spanish trigger (`juzgar`, `que lo juzguen`). Review a specific target: files, feature, PR, or architecture slice.
+Load this skill only when the user explicitly asks for Judgment Day, dual/adversarial review, or the same request in any language. Review a specific target: files, feature, PR, or architecture slice.
 
 Within this QA boilerplate, this skill is cited by:
 - `/test-automation` — Review phase, as one of the two ways to satisfy its MANDATORY separate verifier (this skill OR `/pr-review-lead`), for every change, not only high-risk ones. That Review step counts as the explicit request above.

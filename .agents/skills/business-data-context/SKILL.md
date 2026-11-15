@@ -1,6 +1,6 @@
 ---
 name: business-data-context
-description: "The system under test at the data level: entities, relationships, state machines, triggers, cron jobs, webhooks, integrations. Use when a task touches the database, a SQL query, test data setup, a status transition or a background job; the data map needs a fix. Endpoint contracts are business-api-context."
+description: "The system under test at the data level: entities, relationships, state machines, triggers, cron jobs, webhooks, integrations. Use when a task touches the database, a SQL query, test data setup, a status transition or a background job; when the data map needs a fix. Endpoint contracts are business-api-context."
 license: MIT
 compatibility: [claude-code, codex, opencode, pi]
 metadata:

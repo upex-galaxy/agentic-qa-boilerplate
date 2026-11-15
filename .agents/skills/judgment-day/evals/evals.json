@@ -1,0 +1,47 @@
+{
+  "skill_name": "judgment-day",
+  "evals": [
+    {
+      "name": "should-trigger-judgment-day-1",
+      "prompt": "Run a judgment day on this refactor before we merge it.",
+      "expected_skill": "judgment-day",
+      "expected_behavior": "Activates judgment-day: two blind judges, fixes confirmed issues, re-judges.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-judgment-day-2",
+      "prompt": "I want an adversarial review of this change by two independent reviewers.",
+      "expected_skill": "judgment-day",
+      "expected_behavior": "Activates judgment-day as a blind dual review.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-judgment-day-3",
+      "prompt": "hagamos un juicio doble de este cambio, que dos revisores lo juzguen sin verse entre ellos",
+      "expected_skill": "judgment-day",
+      "expected_behavior": "Activates judgment-day in any language: two blind judges and a re-judge.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-judgment-day-4",
+      "prompt": "necesito una revisión adversarial de este diff antes del merge",
+      "expected_skill": "judgment-day",
+      "expected_behavior": "Activates judgment-day as a dual adversarial review.",
+      "category": "positive"
+    },
+    {
+      "name": "should-not-trigger-judgment-day-5",
+      "prompt": "Review my uncommitted diff and tell me what looks wrong.",
+      "expected_skill": "judgment-day",
+      "expected_behavior": "Does not use judgment-day: a single review of your own diff is code-review.",
+      "category": "negative"
+    },
+    {
+      "name": "should-not-trigger-judgment-day-6",
+      "prompt": "Review the test-automation PR from my colleague and score it against KATA.",
+      "expected_skill": "judgment-day",
+      "expected_behavior": "Does not use judgment-day: reviewing a colleague PR is pr-review-lead.",
+      "category": "negative"
+    }
+  ]
+}

@@ -35,6 +35,20 @@
       "expected_output": "Should NOT trigger: SUT knowledge belongs to business-data-context (its map, read via `bun run context:map business-data-context`), not to the methodology index.",
       "should_trigger": false,
       "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "por qué el proceso de QA de este repo tiene esas etapas y quién es dueño de cada una",
+      "expected_output": "Loads iql-context and answers from the methodology index.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 7,
+      "prompt": "qué significa Trifuerza y el modo light en la metodología IQL",
+      "expected_output": "Loads iql-context and explains the terms.",
+      "should_trigger": true,
+      "files": []
     }
   ]
 }

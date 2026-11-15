@@ -48,7 +48,7 @@ This skill takes a CI suite from trigger to release decision: it runs the suite,
 
 ## Inputs
 
-- `.github/workflows/*.yml`: the workflow files for the regression, smoke and sanity suites. They define the triggers, inputs and artifact uploads. Before editing or diagnosing one, call the `/github-actions-docs` skill: Actions syntax changes upstream without notice, and a guessed key fails at runner start with a message that points nowhere. Reading one does not need it.
+- `.github/workflows/*.yml`: the workflow files for the regression, smoke and sanity suites. They define the triggers, inputs and artifact uploads. Before editing or diagnosing one, call the Skill tool with "github-actions-docs"; when it is not installed, check the Actions syntax against the official docs (`library-docs` capability) and say so. Actions syntax changes upstream without notice, and a guessed key fails at runner start with a message that points nowhere. Reading one does not need it.
 - `.context/PBI/qa-artifacts/master-test-plan.md`: the regression Epic key and the pass-rate SLOs per suite.
 - `playwright.config.ts`: reporter config, retry policy and project matrix, needed to read retry counts and shard splits.
 - The previous run's Allure report (artifact URL, or a download under `./analysis/previous/`): the trend baseline.

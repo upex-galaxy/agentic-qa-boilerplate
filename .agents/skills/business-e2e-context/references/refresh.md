@@ -13,7 +13,7 @@
 
 A section with no declared sources is `unknown`, not fresh.
 
-## Two paths
+## Two paths, never mixed
 
 | Situation | Who writes | How |
 |---|---|---|

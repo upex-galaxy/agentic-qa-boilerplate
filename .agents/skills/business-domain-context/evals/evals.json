@@ -21,6 +21,20 @@
       "expected_output": "Should NOT be driven by business-domain-context: table structure, status fields and lifecycles are business-data-context (plus the DB tool). The domain map may be cited for what 'order' means, never as the schema source.",
       "should_trigger": false,
       "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "qué significa \"sprint\" en el negocio de este producto y cómo se llama en la UI y en el código",
+      "expected_output": "Loads business-domain-context: meaning, UI label and code identifier.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "estoy escribiendo los criterios de aceptación y necesito el vocabulario del dominio correcto",
+      "expected_output": "Loads business-domain-context.",
+      "should_trigger": true,
+      "files": []
     }
   ]
 }

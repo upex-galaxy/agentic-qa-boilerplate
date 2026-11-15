@@ -43,9 +43,9 @@ Input is a raw screenshot already on disk, typically in the ticket's PBI `eviden
 
 ## Process
 
-1. **Identify the region.** From the raw screenshot (or its accessibility snapshot), work out the pixel crop box and roughly where each annotation shape lands relative to it.
+1. Identify the region. From the raw screenshot (or its accessibility snapshot), work out the pixel crop box and roughly where each annotation shape lands relative to it.
 
-2. **Crop with Python and PIL, in the scratchpad.**
+2. Crop with Python and PIL, in the scratchpad.
 
    ```python
    from PIL import Image
@@ -54,15 +54,15 @@ Input is a raw screenshot already on disk, typically in the ticket's PBI `eviden
    ```
 
    
-3. **Build the annotation HTML, in the scratchpad.** The crop goes in as a background `<img>`; each annotation is one absolutely positioned `<div>` overlay. Copy and adjust the commented blocks in `references/shapes.html` (circle-callout, arrow-to-region, callout-box, badge-corner, axis-tick plus axis-tag, before-after) and keep its z-index scale.
+3. Build the annotation HTML, in the scratchpad. The crop goes in as a background `<img>`; each annotation is one absolutely positioned `<div>` overlay. Copy and adjust the commented blocks in `references/shapes.html` (circle-callout, arrow-to-region, callout-box, badge-corner, axis-tick plus axis-tag, before-after) and keep its z-index scale.
 
-4. **Serve it over loopback.** The browser-automation CLI errors out on `file://` URLs, so a local HTTP server is the only way:
+4. Serve it over loopback. The browser-automation CLI errors out on `file://` URLs, so a local HTTP server is the only way:
 
    ```bash
    python3 -m http.server <port> --bind 127.0.0.1 --directory <scratchpad>
    ```
 
-5. **Capture with the browser-automation CLI.** Load `/playwright-cli` first (CLI to skill auto-load rule) for exact verbs and flags. Open `http://127.0.0.1:<port>/annotation.html` in a named session of its own (`-s=<KEY>-annotate`; anonymous, case (a) of `../agentic-qa-core/references/browser-sessions.md`), resize the viewport to the HTML's real dimensions (equal or larger), then screenshot with an explicit destination path into the ticket's `evidence/` folder, named:
+5. Capture with the browser-automation CLI. Load `/playwright-cli` first (CLI to skill auto-load rule) for exact verbs and flags. Open `http://127.0.0.1:<port>/annotation.html` in a named session of its own (`-s=<KEY>-annotate`; anonymous, case (a) of `../agentic-qa-core/references/browser-sessions.md`), resize the viewport to the HTML's real dimensions (equal or larger), then screenshot with an explicit destination path into the ticket's `evidence/` folder, named:
 
    ```
    {KEY}-BUG-{BUG-KEY}-annotated.png
@@ -70,13 +70,13 @@ Input is a raw screenshot already on disk, typically in the ticket's PBI `eviden
 
    `{KEY}` is the ticket under test and `{BUG-KEY}` the filed bug, defect or improvement issue key; in the normal case they differ. Close the session once the PNG is on disk. This is the only file of the whole process that belongs in `evidence/`.
 
-6. **Inspect and iterate.** Read the PNG back and fix what collides: move a circle, rewrap callout text, nudge the badge or arrow. Expect at least one pass.
+6. Inspect and iterate. Read the PNG back and fix what collides: move a circle, rewrap callout text, nudge the badge or arrow. Expect at least one pass.
 
-7. **Clean up.** Kill the HTTP server (`kill <pid>` or `pkill -f "http.server <port>"`) before the session ends.
+7. Clean up. Kill the HTTP server (`kill <pid>` or `pkill -f "http.server <port>"`) before the session ends.
 
-8. **Report the path, immediately and unprompted.** State the final PNG's repo-relative path in chat the same turn it lands (`../agentic-qa-core/references/session-footer-contract.md` Part 1), and lead the "Bug annotations" group with it in the session-close list.
+8. Report the path, immediately and unprompted. State the final PNG's repo-relative path in chat the same turn it lands (`../agentic-qa-core/references/session-footer-contract.md` Part 1), and lead the "Bug annotations" group with it in the session-close list.
 
-9. **Embed into the bug issue (optional, this repo's upgrade over manual attach).** Jira accepts inline images through the bundled helper. Offer to publish the annotated PNG as an evidence comment on the bug, and publish only after the human confirms:
+9. Embed into the bug issue (optional, this repo's upgrade over manual attach). Jira accepts inline images through the bundled helper. Offer to publish the annotated PNG as an evidence comment on the bug, and publish only after the human confirms:
 
    ```bash
    bun .agents/skills/acli/scripts/jira-attach-media.ts <BUG-KEY> \

@@ -1,6 +1,6 @@
 ---
 name: iql-context
-description: "Methodology index of this repo: the IQL (Integrated Quality Lifecycle), its stages, artifact ladder and invariants. Use when asked why the QA process is shaped this way; what a stage, step, phase, cycle or altitude is; what TMLC, TALC, Trifuerza, light mode or an autonomy level means; which skill owns a stage; or how the website's methodology maps here. Knowledge only; the workflow skills run stages."
+description: "Methodology index of this repo: the IQL (Integrated Quality Lifecycle), its stages, artifact ladder and invariants. Use when asked why the QA process is shaped this way; what a stage, step, phase, cycle or altitude is; what TMLC, TALC, Early-Game, Mid-Game or Late-Game, Trifuerza, light mode or an autonomy level means; which skill owns a stage; or how the website's methodology maps here. Knowledge only; the workflow skills run stages."
 license: MIT
 compatibility: [claude-code, codex, opencode, pi]
 metadata:

@@ -142,7 +142,7 @@ Full doctrine: `agentic-qa-core/references/preflight-gate.md`. It runs first, be
 | Dev toolchain | REQUIRED | Phase 3 runs `bun run test`, `bun run types:check`, `bun run lint:check` and `bun run skills:check`. All four must resolve at the start. `bun install` if a dep is missing. |
 | `kata-manifest.json` clean | REQUIRED | Source of truth (Critical Rule #12), and framework changes can invalidate it. `bun run kata:manifest:check` must be clean; `bun run kata:manifest` regenerates. |
 | Playwright browsers | SCOPE: touching fixtures, KATA bases or tests | Verifying a fixture or base-class change runs the suite, which needs chromium (`bun run pw:install`). |
-| `/github-actions-docs` + `/playwright-best-practices` | OPTIONAL | Injected per dispatch when the change touches CI YAML or fixtures and tests (the briefing skeleton already notes it). |
+| `/github-actions-docs` + `/playwright-best-practices` | OPTIONAL | Injected per dispatch when the change touches CI YAML or fixtures and tests (the briefing skeleton already notes it). A skill that is not installed is skipped: do the step inline and say so. |
 
 Active env, test-user credentials, OpenAPI or API token, DBHub, issue tracker, TMS and `resend` are N/A. After the gate clears (all REQUIRED green), continue to Phase 0.
 

@@ -389,7 +389,7 @@ The tour has two waits: the one clarifying question, and the yes before a deck o
 | --- | --- |
 | A person is present | unchanged: ask, wait for the yes, open one deck |
 | A supervised worker | the question and any deck go to the launcher, which holds the gate; the worker answers from the files and opens nothing |
-| A routine with nobody | the delegating brief is the approval source when it names a deck or a topic; otherwise write the explanation as text, open no browser and no local server, and report |
+| A routine with nobody | the delegating brief is the approval source only when it names the deck to open; a brief that names only a topic gets the explanation as text, with no browser and no local server, and the report says so |
 
 ---
 

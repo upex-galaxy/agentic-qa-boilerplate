@@ -23,7 +23,7 @@ The shape of a good session: read the target repo's own conventions first, read 
 - Put every finding in exactly one bucket (Real/Reliability, Pattern/Doctrine-deviation, Positive) with a severity tier (Critical, Major, Minor, Trivial) in the user's language.
 - Fill the Positive bucket. A review with no positives on a PR that clearly has some is uncalibrated, not rigorous.
 - Read the actual diffs. On a PR too large for one diff, page the per-file patches, and check the commit headlines first so an unrelated bulk-sync or vendor-update commit is not read line by line.
-- Review on two axes, Spec and Standards, and check the tests for lying tests (LT-1 to LT-3). The checks live in `test-automation/references/review-checklists.md`.
+- Review on two axes, Spec and Standards, each by its own reviewer in a fresh context when the PR has a spec to check, and check the tests for lying tests (LT-1 and LT-2 with Spec, LT-3 with Standards). The checks live in `test-automation/references/review-checklists.md`.
 - Present the findings table, the positives and a score out of 10 as a checkpoint, then let the user triage and re-classify. Their context decides what ships; do not defend the first-pass severity.
 - When the user gave no tone or structure, draft praise, then constructive points, then praise, with a real strength at each end.
 - Post to GitHub only after an explicit go-ahead at the final step. Approval for a different PR does not carry over, and silence is not approval.
@@ -71,7 +71,7 @@ Three points wait for a person: the strictness choice (Step 0), the triage (Step
 
 ## Step 0: Preflight, strictness level (every invocation)
 
-Before reading any diff, ask how strict to be, with `AskUserQuestion`, unless the invocation already answered it ("review this strictly", "sé flexible, no me hagas la fama de las prácticas KATA").
+Before reading any diff, ask how strict to be, with `AskUserQuestion`, unless the invocation already answered it ("review this strictly", "be flexible, don't hold them to textbook KATA").
 
 Offer three levels, in the user's language:
 
@@ -85,16 +85,19 @@ In the same round, confirm the scope if it is not yet given: which PR (repo and 
 
 Review against what you just verified is documented, not against remembered conventions or generic best practice. Read first, opine second.
 
-- **This repo**: load `AGENTS.md` and the sections its router names for the PR's surface, plus the doctrine files listed under Dependencies. This is the reference standard.
-- **External repo**: check whether the target ships its own `AGENTS.md`, `.agents/skills/` or `.context/` doctrine before assuming anything. Many sibling projects fork this boilerplate and carry a possibly evolved copy of the KATA doctrine, but that has to be checked. If it has doctrine, that repo's doctrine is authoritative. If it has none, grade against this repo's KATA and say so in the output ("this repo has no doctrine of its own, findings are graded against `agentic-qa-boilerplate`'s KATA conventions").
+In this repo, load `AGENTS.md` and the sections its router names for the PR's surface, plus the doctrine files listed under Dependencies. This is the reference standard.
+
+For an external repo, check whether the target ships its own `AGENTS.md`, `.agents/skills/` or `.context/` doctrine before assuming anything. Many sibling projects fork this boilerplate and carry a possibly evolved copy of the KATA doctrine, but that has to be checked. If it has doctrine, that repo's doctrine is authoritative. If it has none, grade against this repo's KATA and say so in the output ("this repo has no doctrine of its own, findings are graded against `agentic-qa-boilerplate`'s KATA conventions").
 
 The exact `gh api` probes and the citation format are in `references/evidence-and-doctrine-lookup.md`. Read it now, before Step 2.
 
 ## Step 2: Gather the PR
 
-- **This repo, current branch's PR**: `gh pr view` and `gh pr diff` in the working repo.
-- **External repo**: `gh pr view <N> --repo <owner>/<repo> --json ...` for metadata, commits and files, then per-file patches from `gh api repos/<owner>/<repo>/pulls/<N>/files --paginate`. `gh pr diff` fails on very large PRs (`PullRequest.diff too_large`); fall back to the paginated per-file patches rather than skimming the description.
-- Separate real work from noise. A large diff is sometimes 95% an unrelated bulk sync or vendor update. Check `commits[].messageHeadline` first, and tell the user about the noise commit instead of reviewing it line by line.
+In this repo, take the current branch's PR with `gh pr view` and `gh pr diff`.
+
+For an external repo, run `gh pr view <N> --repo <owner>/<repo> --json ...` for metadata, commits and files, then read per-file patches from `gh api repos/<owner>/<repo>/pulls/<N>/files --paginate`. `gh pr diff` fails on very large PRs (`PullRequest.diff too_large`); fall back to the paginated per-file patches rather than skimming the description.
+
+Separate real work from noise. A large diff is sometimes 95% an unrelated bulk sync or vendor update. Check `commits[].messageHeadline` first, and tell the user about the noise commit instead of reviewing it line by line.
 
 For a PR with many files, do not load every diff into your own context. Dispatch per file or per logical group following `agentic-qa-core/references/briefing-template.md`, and pick the pattern from `agentic-qa-core/references/dispatch-patterns.md` (Parallel for N independent files, Single for one contained file or module). A handful of files is read inline.
 
@@ -107,9 +110,9 @@ For test-automation PRs, run the review on two axes, as `test-automation/referen
 - **Spec**: do the tests deliver what the ticket's acceptance criteria and the plan asked for? Missing coverage, scope creep, tests that look like they cover a requirement but check something else.
 - **Standards**: do the tests meet KATA and the E2E or API delta checks in that file?
 
-A PR can pass one axis and fail the other, and a single pass lets the first answer color the second, so keep them as separate passes. On a large PR, dispatch one reviewer per axis, each in a fresh context. Tag each finding with its axis. When the PR has no ticket, plan or ACs to check against (common on an external repo), say so and run Standards alone.
+A PR can pass one axis and fail the other, and one reviewer holding both lets the first answer color the second. So whenever the PR has a ticket, plan or ACs to check against, dispatch one Spec reviewer and one Standards reviewer, each in a fresh context, with the briefs in `review-checklists.md` under "Two-axis review". Do not merge or rerank their reports; tag each finding with its axis. When the PR has no ticket, plan or ACs (common on an external repo), say so and review Standards alone, inline.
 
-Also check for lying tests: LT-1 tautological, LT-2 cannot fail, LT-3 structure-sensitive (defined under "Lying tests" in the same checklist file). A green test is evidence only if it could have been red. These are Real/Reliability findings at every strictness level, because they leave a defect unprotected. The checklist's HIGH is a Major here, and its CRITICAL is a Critical.
+Also check for lying tests: LT-1 tautological, LT-2 cannot fail, LT-3 structure-sensitive (defined under "Lying tests" in the same checklist file). LT-1 and LT-2 go with the Spec axis, LT-3 with Standards. A green test is evidence only if it could have been red. These are Real/Reliability findings at every strictness level, because they leave a defect unprotected. The checklist's HIGH is a Major here, and its CRITICAL is a Critical.
 
 Bucket every finding into exactly one of:
 
@@ -133,7 +136,7 @@ Once the user confirms the findings and, if they have not set one, the tone and 
 
 ## Step 7: Confirm, then post
 
-Show the complete draft and wait for an explicit go-ahead ("post it", "dale", "sí, postea"). A posted PR comment is visible to others and not cheaply undone, so it gets the same explicit confirmation as any outward action. After the go:
+Show the complete draft and wait for an explicit go-ahead ("post it", or "dale", in any language). A posted PR comment is visible to others and not cheaply undone, so it gets the same explicit confirmation as any outward action. After the go:
 
 - This repo: `gh pr comment <N> --body-file <path>` (a plain PR comment, not a formal review).
 - External repo: `gh pr comment <N> --repo <owner>/<repo> --body-file <path>`.
@@ -150,6 +153,6 @@ This skill is not on AGENTS.md §3's mandatory-briefing list, but it reuses the 
 |---|---|---|
 | Probe external repo for its own doctrine (Step 1) | Single | one agent checks for `AGENTS.md`, `.agents/skills`, `.context` and reports what exists |
 | Fetch N independent file diffs (Step 2, large PR) | Parallel | one agent per file or small file group, returns the patch and a one-line summary; cap per `dispatch-patterns.md` |
-| Analyze against doctrine (Step 3) | Single, per axis, or inline | small and medium PRs inline, since the diffs and doctrine are already loaded; a large PR gets one reviewer per axis so each stays in a fresh context |
+| Analyze against doctrine (Step 3) | Parallel, one reviewer per axis | a Spec reviewer and a Standards reviewer, each in a fresh context, whenever the PR has a spec to check; with no spec, Standards runs inline |
 
 Steps 6 and 7 never go to a subagent. They carry user-facing tone and an outward action, which stay with the orchestrator per `agentic-qa-core/references/orchestration-doctrine.md` and the briefing template's anti-patterns list.

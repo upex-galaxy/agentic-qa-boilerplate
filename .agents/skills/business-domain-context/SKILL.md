@@ -1,6 +1,6 @@
 ---
 name: business-domain-context
-description: "Business vocabulary of the system under test: what the product is for, who pays, and what each domain term means. Covers the business meaning, the UI label and the code identifier. Use when a task names or explains a domain concept: writing ACs or an ATP, naming test cases, filing a bug in business language, asking what a term means."
+description: "Business vocabulary of the system under test: what the product is for, who pays, and what each domain term means. Use when a task names or explains a domain concept: writing ACs or an ATP, naming test cases, filing a bug in business language, asking what a term means."
 license: MIT
 compatibility: [claude-code, codex, opencode, pi]
 metadata:

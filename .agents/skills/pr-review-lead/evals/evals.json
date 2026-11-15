@@ -1,0 +1,47 @@
+{
+  "skill_name": "pr-review-lead",
+  "evals": [
+    {
+      "name": "should-trigger-pr-review-lead-1",
+      "prompt": "Review the test automation PR upex-galaxy/some-repo#42 and give me feedback for the author.",
+      "expected_skill": "pr-review-lead",
+      "expected_behavior": "Activates pr-review-lead on an external repo PR, drafts feedback citing doctrine or code.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-pr-review-lead-2",
+      "prompt": "Audit this PR from my teammate and score it against our KATA doctrine.",
+      "expected_skill": "pr-review-lead",
+      "expected_behavior": "Activates pr-review-lead and grades the PR against KATA.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-pr-review-lead-3",
+      "prompt": "revisá este PR de automatización y dame feedback para el que lo abrió",
+      "expected_skill": "pr-review-lead",
+      "expected_behavior": "Activates pr-review-lead in any language and drafts the review without posting.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-pr-review-lead-4",
+      "prompt": "calificá el PR de mi compañero contra las reglas KATA, sin postear nada todavía",
+      "expected_skill": "pr-review-lead",
+      "expected_behavior": "Activates pr-review-lead; drafts and holds posting until a go.",
+      "category": "positive"
+    },
+    {
+      "name": "should-not-trigger-pr-review-lead-5",
+      "prompt": "Review my own uncommitted changes before I commit.",
+      "expected_skill": "pr-review-lead",
+      "expected_behavior": "Does not use pr-review-lead: your own diff is code-review.",
+      "category": "negative"
+    },
+    {
+      "name": "should-not-trigger-pr-review-lead-6",
+      "prompt": "Run a blind dual review of this patch with two independent judges.",
+      "expected_skill": "pr-review-lead",
+      "expected_behavior": "Does not use pr-review-lead: a blind verdict is judgment-day.",
+      "category": "negative"
+    }
+  ]
+}

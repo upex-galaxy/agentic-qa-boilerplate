@@ -21,6 +21,20 @@
       "expected_output": "Should NOT be driven by infra-context: editing CI YAML is framework or regression work (/framework-development, /regression-testing). The infra map may be cited for how the product deploys, never used as the thing to change.",
       "should_trigger": false,
       "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "cómo se despliega el sistema y qué ambientes tiene, necesito saber el flujo de autenticación",
+      "expected_output": "Loads infra-context: deploy, environments and auth flow.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "qué comandos levantan el stack local y cuáles son los presupuestos de performance",
+      "expected_output": "Loads infra-context: run commands and budgets.",
+      "should_trigger": true,
+      "files": []
     }
   ]
 }

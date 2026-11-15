@@ -29,7 +29,7 @@ metadata:
 
 One aspect of the system under test: how it is built and where it runs. That covers its containers and external services, the stack and commands of each side, how a user authenticates, which environments exist, how code reaches them, and the budgets that turn a slow or fragile build into a defect. Loading it changes what the agent knows. The only thing it ever does is propose an edit to its own map.
 
-## Sources of truth
+## Sources of truth (cited, never copied)
 
 | Source | What lives there | Role |
 |---|---|---|
@@ -40,7 +40,7 @@ One aspect of the system under test: how it is built and where it runs. That cov
 | `.context/ADR/` | the hard-to-reverse test-architecture decisions | cited from `architecture` |
 | `project-discovery` Phases 2-3 | the generator that creates the map and updates its stale sections | owns regeneration |
 
-## Rules
+## Rules (judgment, dated)
 
 _(none yet: each rule carries `YYYY-MM-DD · rule · measured: how`)_
 

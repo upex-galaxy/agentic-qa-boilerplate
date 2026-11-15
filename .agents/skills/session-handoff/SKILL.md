@@ -1,6 +1,6 @@
 ---
 name: session-handoff
-description: "Hand a whole session to a fresh successor through a handoff file, so work continues as if the context window had been extended. Use when the context window is filling up; when work must outlive this session; when the owner asks to hand the session over or continue it in a fresh session."
+description: "Hand a whole session to a fresh successor through a handoff file, so work continues as if the context window had been extended. Use when the context window is filling up; when work must outlive this session; when the owner asks to hand the session over or continue it in a fresh session. Not for handing a task to another agent (orca-cli) or delegating to a supervised worker (orca-orchestration)."
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode, pi]
 complementary_categories: [meta-skill, orchestration]

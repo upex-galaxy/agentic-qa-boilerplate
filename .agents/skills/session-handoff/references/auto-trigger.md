@@ -6,7 +6,7 @@ Verified 2026-09-18 against Claude Code 2.1.276 and OpenCode 1.18.30 through off
 
 No harness hands the current context size to the agent. Two of the three expose it somewhere outside the model loop, so an automatic trigger is buildable, but it is new wiring and not a field waiting to be read. The hook adapters (`.agents/hooks/`) do not tap these mechanisms; check before assuming they do.
 
-The owner prefers manual (*"prefiero que el humano lo haga de manera manual"*). Read everything below as the answer to "could we", not as a plan.
+The owner prefers manual (*"I'd rather the human do it manually"*). Read everything below as the answer to "could we", not as a plan.
 
 ## What each harness exposes
 
