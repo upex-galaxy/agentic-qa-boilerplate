@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-11-15T09:45:59.878Z`
+> Generated: `2026-11-15T10:00:23.686Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -455,21 +455,21 @@ Skills indexed: 29
 
 ## Skill: project-context
 
-**Purpose**: Generate or refresh the business context maps (the HTML maps inside business-data-context, business-api-context and business-e2e-context)...
+**Purpose**: Generate or refresh the business context maps and the master test plan.
 
 **Compact Rules**:
-- Exactly ONE mode per run: `data` · `e2e` (synonym `features`) · `api` · `test-plan` · `refresh-all` · `context-skill` · `coverage`. Load only that mode's reference; never open a second one in the same pass.
-- `context-skill` scaffolds a project-owned `<aspect>-context` for an aspect the shipped context map skills (`CONTEXT_MAP_SKILLS`) do not cover (`../agentic-qa-core/references/skill-scaffold.md` §3): it cites its sources and never copies them. `refresh-all` never includes it. Its router row goes in the `## Project context skills` table of `.agents/instructions/agent-project.md`, its trigger phrases in that file's `triggers:`; NEVER in `agent-skills-and-mcps.md`, which `bun sync` overwrites.
-- `coverage` reads the maps, the KATA manifest and the TMS and buckets every behaviour (`automated` · `manual-only` · `weak` · `uncovered`); `refresh-all` never includes it. It writes only `<<PRIMARY_ROOT>>/.session/project-context/coverage/` (companion files: this skill opts out of the session Phase 0) and never edits a test or a map. The `weak` verdict and the risk level are agent judgments with one evidence line per row; the buckets, order and diff are `bun run context:coverage classify`. Coverage Tech Stories are created only after a person approves the gap list, picked by weight (`mkd` deck for per-item choices, the question tool for one yes/no).
-- Mode → reference → output: see the Mode routing table. A map mode writes ONLY its own skill's `references/<map>.html`; the legacy markdown files a project may hold (the skill's `legacy` list in `CONTEXT_MAP_SKILLS`, `cli/lib/context-maps.ts`) are read as input and never deleted. Domain vocabulary and architecture come from the maps `project-discovery` generates: `bun run context:map business-domain-context` and `bun run context:map infra-context`, never a `.context/` file. `test-plan` → `references/test-plan.md` → the `## Master Test Plan` section of the `QA Master Test Plan` Epic description in Jira (cached by the sync at `.context/PBI/qa-artifacts/master-test-plan.md`; never a local file).
-- User did not name a mode → ASK. NEVER infer `refresh-all` from a generic "refresh the context" request.
-- `refresh-all` runs strictly `data` → `e2e` → `api` → `test-plan`, one at a time. Each reference's own validation and approval gate must close before the next is loaded. Never skip ahead.
-- Artifact missing (or a placeholder map) = CREATE mode: may write once the analysis completes. Artifact exists = UPDATE mode: generate a candidate (for a map: only its stale sections), show the diff summary, WAIT for explicit approval. NEVER overwrite an existing artifact without that approval, and NEVER regenerate a whole generated map.
-- Stop the run on a hard dependency failure or a rejected overwrite. A missing SOFT dependency is not a stop: record it as a Discovery Gap and continue, exactly as the selected reference defines.
-- NEVER invent business facts. Read every source the selected reference requires; anything unverified belongs under the output's mandatory discovery-gaps section, not asserted in the body.
-- After a successful artifact write, add the pointer to `.agents/instructions/agent-project.md` ONLY when that pointer is missing. NEVER write it into `AGENTS.md` (boilerplate-owned, size-budgeted) or add operational prose to `CLAUDE.md`. Placement per `framework-development/references/instructions-doctrine.md` §4, then `bun run instructions:check`; any other instruction change is `/framework-development` mode `instructions`.
-- Mode from `$ARGUMENTS`: when its first token matches a mode in the Mode routing table, that token IS the mode and the rest is forwarded to it unchanged (`/project-context data` on Claude Code, "project-context mode data" in prose on OpenCode and Codex, `/skill:project-context data` on Pi). No matching first token → ASK which mode.
-- Before any step that uses a declared capability (`metadata.requires_capabilities`: `db`, `api-schema`, `diagrams` for the maps' figures), run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8: resolve by tool-name suffix, and when no available tool provides it STOP and name the capability + how to enable it, never a silent fallback.
+- One mode per run: `data`, `e2e` (synonym `features`), `api`, `test-plan`, `refresh-all`, `context-skill` or `coverage`. Load only that mode's reference, and open a second one only when `refresh-all` reaches it.
+- `context-skill` scaffolds a project-owned `<aspect>-context` for an aspect the shipped context map skills (`CONTEXT_MAP_SKILLS`) do not cover (`../agentic-qa-core/references/skill-scaffold.md` §3). It cites its sources and copies nothing from them. `refresh-all` never includes it. Its router row goes in the `## Project context skills` table of `.agents/instructions/agent-project.md` and its trigger phrases in that file's `triggers:`; `agent-skills-and-mcps.md` is the wrong place, because `bun sync` overwrites it.
+- `coverage` reads the maps, the KATA manifest and the TMS, and puts every behaviour in one bucket (`automated`, `manual-only`, `weak`, `uncovered`). `refresh-all` never includes it. It writes only `<<PRIMARY_ROOT>>/.session/project-context/coverage/` (companion files: this skill opts out of the session Phase 0) and edits no test and no map. The `weak` verdict and the risk level are agent judgments with one evidence line per row; the buckets, order and diff come from `bun run context:coverage classify`. Coverage Tech Stories are created only after a person approves the gap list, picked by weight (`mkd` deck for per-item choices, the question tool for one yes/no).
+- A map mode writes only its own skill's `references/<map>.html`. The legacy markdown files a project may hold (the skill's `legacy` list in `CONTEXT_MAP_SKILLS`, `cli/lib/context-maps.ts`) are read as input and are never deleted. Domain vocabulary and architecture come from the maps `project-discovery` generates (`bun run context:map business-domain-context` and `bun run context:map infra-context`), not from a `.context/` file. `test-plan` writes the `## Master Test Plan` section of the `QA Master Test Plan` Epic description in Jira (cached by the sync at `.context/PBI/qa-artifacts/master-test-plan.md`), never a local file.
+- When the user did not name a mode, ask. A generic "refresh the context" is not `refresh-all`.
+- `refresh-all` runs `data`, `e2e`, `api`, `test-plan` in that order, one at a time. Each reference's own validation and approval gate closes before the next one loads.
+- A missing artifact (or a placeholder map) is CREATE mode: write once the analysis completes. An existing artifact is UPDATE mode: generate a candidate (for a map, only its stale sections), show the diff summary and wait for explicit approval. Overwriting an existing artifact without that approval, or regenerating a whole generated map, loses work the maps' readers depend on.
+- Stop the run on a hard dependency failure or a rejected overwrite. A missing soft dependency is a Discovery Gap: record it and continue, as the selected reference defines.
+- Business facts come from sources. Read every source the selected reference requires; what stays unverified goes under the output's mandatory `## Discovery Gaps`, not into the body. In `coverage` the gap list is a recomputed session file, so the approval gate applies to the tracker write it proposes.
+- After a successful artifact write, add the pointer to `.agents/instructions/agent-project.md` when it is missing, and only there: `AGENTS.md` is boilerplate-owned and size-budgeted, and `CLAUDE.md` takes no operational prose. Placement follows `framework-development/references/instructions-doctrine.md` §4, then `bun run instructions:check`; any other instruction change is `/framework-development` mode `instructions`.
+- Mode from `$ARGUMENTS`: when its first token matches a mode in the Mode routing table, that token is the mode and the rest is forwarded to it unchanged (`/project-context data` on Claude Code, "project-context mode data" in prose on OpenCode and Codex, `/skill:project-context data` on Pi). No matching first token: ask which mode.
+- Before a step that uses a declared capability (`metadata.requires_capabilities`: `db`, `api-schema`, `diagrams` for the maps' figures), run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8. It resolves the capability by tool-name suffix; when no available tool provides it, stop and name the capability and how to enable it.
 
 **Read full SKILL.md when**: the requested mode is ambiguous, a `refresh-all` chain fails mid-sequence, or you need the selected reference's own analysis steps and validation gate.
 
@@ -479,27 +479,25 @@ Skills indexed: 29
 
 ## Skill: project-discovery
 
-**Purpose**: Onboard a project through four discovery phases: Constitution, Architecture, Infrastructure, and Specification.
+**Purpose**: Onboard a project by reverse-engineering its code into a domain map and an infra map.
 
 **Compact Rules**:
-- DO: run the four phases in order (Constitution → Architecture → Infrastructure → Specification), each gated on the previous. Show the output paths and wait for an explicit "Phase N complete" before continuing — never auto-chain.
-- DO NOT: write anything into the target repo. Discovery is read-only on it. The write targets are `.context/project-config.md`, `.context/ADR/`, and the maps of `business-domain-context` and `infra-context` (their `references/<map>.html`), nothing else (plus the Phase 1 `## Project Assessment (Phase 1)` block in `.agents/instructions/agent-project.md`); modifying the boilerplate itself is `test-framework-adaptation`.
-- DO: act as the GENERATOR of those two maps, per `agentic-qa-core/references/business-context-maps.md` (anatomy §2, reading §3, CREATE/UPDATE §4, staleness §5). Map absent or placeholder → CREATE every section. Map generated → UPDATE only the stale sections (§5 staleness check), show a section-level diff, WAIT for approval. Never regenerate a whole generated map.
-- DO: read a project's old `.context/business/`, `.context/SRS/` and `.context/infrastructure/` markdown files (the `legacy` list of `business-domain-context` and `infra-context` in `CONTEXT_MAP_SKILLS`, `cli/lib/context-maps.ts`) as INPUT when present, cite them in `data-migrated-from` on the sections they seed, and never delete or rewrite them.
-- DO: before drawing a figure, run the point-of-use check for capability `diagrams` (`agentic-qa-core/references/business-context-maps.md` §7). Figures are optional where a table says it better: the glossary is tables; the architecture overview usually earns a figure.
-- DO NOT: invent business entities, flows, requirements, or Jira/Xray field IDs and status names. Anything not verifiable from the source goes in the map's `discovery-gaps` section (or the `## Discovery Gaps` block of `project-config.md`).
-- DO: describe what the system DOES, not what product wants it to do. Discovery is reverse-engineering; a "to-be" PRD/SRS is out of scope — point the user at their own product workflow.
-- DO: lock the target repo path(s) before Phase 1 and block on ambiguity. A repo that is not cloned locally cannot be discovered from a URL — ask for the clone first.
-- WHEN the layout is split sibling repos: run the Phase 1 sub-steps once per repo and merge into ONE `project-config.md`, never interleaved. WHEN it is a monorepo: Phase 1 once project-wide, Phases 2-3 per package.
-- DO NOT: fill the `business-data-context`, `business-api-context` or `business-e2e-context` maps, and do not write personas, journeys, the feature catalog or the master test plan here. Those are `project-context` modes, which own their diff and overwrite approval. Exact API types are `bun run api:sync`.
-- DO NOT: create per-ticket PBI content or copy the backlog. Phase 4 is a connection check and writes no file; the committed `README.md` and `templates/` under `.context/PBI/` stay untouched.
-- DO NOT: paste credentials or a detected secret into any discovery output. Reference the `.env` key or the file path only; a hardcoded-secret hit is recorded as a HIGH risk (path only) in the Phase 1 assessment.
-- WHEN Phase 2 or 3 settles a test-architecture decision that is architectural AND hard to reverse (runner, isolation/parallelization, fixture and test-data strategy, auth-in-tests, selector contract, CI sharding): record it as an append-only ADR under `.context/ADR/`, drafted `Proposed` for the human to accept. In a brownfield repo the decision was DISCOVERED, not made here: write it `Proposed`, mark it discovered (where it was found), and have the human confirm it at that phase's completion checkpoint, which flips it to `Accepted`.
-- DO NOT: mix a discovery session with `test-framework-adaptation`, and do not use this skill for incremental map refreshes — the write boundaries differ.
-- DO NOT: skip Phase 1 or its domain glossary on a fresh start. Downstream skills load `business-domain-context` as a precondition for ATP authoring and TC naming.
-- WHEN both a DB schema/migrations and ORM models exist: prefer the schema or migrations. ORM definitions drift from the live schema.
-- DO: mention the IQL methodology only if the user asks why the discovery is structured this way — never lecture someone who just wants the artifact.
-- DO: before any step that uses a declared capability (`metadata.requires_capabilities`: `db`, `api-schema`, `diagrams`), run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8: resolve by tool-name suffix, and when no available tool provides it STOP and name the capability + how to enable it, never a silent fallback.
+- Run the four phases in order (Constitution, Architecture, Infrastructure, Specification), each gated on the previous. Show the output paths and wait for an explicit "Phase N complete" before continuing, because each phase builds on facts the human has just confirmed. Never auto-chain.
+- Discovery is read-only on the target repo. The write targets are `.context/project-config.md`, `.context/ADR/`, and the maps of `business-domain-context` and `infra-context` (their `references/<map>.html`), plus the Phase 1 `## Project Assessment (Phase 1)` block in `.agents/instructions/agent-project.md`. Nothing else. Modifying the boilerplate itself is `test-framework-adaptation`.
+- You are the generator of those two maps, per `agentic-qa-core/references/business-context-maps.md` (anatomy §2, reading §3, CREATE/UPDATE §4, staleness §5). Map absent or placeholder: CREATE every section. Map generated: UPDATE only the stale sections (§5 staleness check), show a section-level diff and wait for approval. Never regenerate a whole generated map.
+- Read a project's old `.context/business/`, `.context/SRS/` and `.context/infrastructure/` markdown files (the `legacy` list of `business-domain-context` and `infra-context` in `CONTEXT_MAP_SKILLS`, `cli/lib/context-maps.ts`) as input when present. Cite them in `data-migrated-from` on the sections they seed, and leave them in place untouched.
+- Before drawing a figure, run the point-of-use check for capability `diagrams` (`agentic-qa-core/references/business-context-maps.md` §7). Figures are optional where a table says it better: the glossary is tables, the architecture overview usually earns a figure.
+- Describe what the system does, not what product wants it to do. Discovery is reverse-engineering; a to-be PRD or SRS is out of scope, so point the user at their own product workflow. Do not invent business entities, flows, requirements, or Jira and Xray field IDs and status names: anything you cannot verify goes in the map's `discovery-gaps` section (or the `## Discovery Gaps` block of `project-config.md`). Field IDs come from `bun run jira:sync-fields --force` and are referenced as `{{jira.<slug>}}` through the slug catalog in `.agents/jira-required.yaml`.
+- Lock the target repo path(s) before Phase 1 and stop on ambiguity. A repo that is not cloned locally cannot be discovered from a URL, so ask for the clone first.
+- Split sibling repos: run the Phase 1 sub-steps once per repo and merge into one `project-config.md`, never interleaved. Monorepo: Phase 1 once project-wide, Phases 2-3 per package.
+- Do not fill the `business-data-context`, `business-api-context` or `business-e2e-context` maps, and do not write personas, journeys, the feature catalog or the master test plan here. Those are `project-context` modes, which own their diff and overwrite approval. Exact API types are `bun run api:sync`.
+- Do not create per-ticket PBI content or copy the backlog. Phase 4 is a connection check and writes no file; the committed `README.md` and `templates/` under `.context/PBI/` stay untouched.
+- Do not paste credentials or a detected secret into any discovery output. Reference the `.env` key or the file path only; a hardcoded-secret hit is recorded as a HIGH risk (path only) in the Phase 1 assessment.
+- When Phase 2 or 3 settles a test-architecture decision that passes the three-gate test of `agentic-qa-core/references/adr-doctrine.md` (hard to reverse, surprising without context, a real trade-off), record it as an append-only ADR under `.context/ADR/`, drafted `Proposed` for the human to accept. In a brownfield repo the decision was discovered, not made here: write it `Proposed`, mark it discovered (where it was found), and have the human confirm it at that phase's completion checkpoint, which flips it to `Accepted`.
+- Keep discovery sessions separate from `test-framework-adaptation` sessions, and do not use this skill for incremental refreshes of the other maps: the write boundaries differ.
+- Do not skip Phase 1 or its domain glossary on a fresh start. Later phases assume the project's values and stack are fixed, and downstream skills load `business-domain-context` as a precondition for ATP authoring and TC naming.
+- When a DB schema or migrations and ORM models both exist, prefer the schema or migrations: ORM definitions drift from the live schema.
+- Before any step that uses a declared capability (`metadata.requires_capabilities`: `db`, `api-schema`, `diagrams`), run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8: resolve by tool-name suffix, and when no available tool provides it, stop and name the capability and how to enable it. No silent fallback.
 
 **Read full SKILL.md when**: running any phase's sub-steps, applying a completion gate's content checks, or resolving the pre-`test-framework-adaptation` prerequisite list.
 
@@ -509,27 +507,27 @@ Skills indexed: 29
 
 ## Skill: regression-testing
 
-**Purpose**: Execute regression test suites via CI/CD, analyze results, classify failures, and produce GO/NO-GO release decisions.
+**Purpose**: Run regression, smoke or sanity suites through CI and decide GO / CAUTION / NO-GO.
 
 **Compact Rules**:
-- DO: run Execute → Analyze → Report in that order. Never skip analysis and jump to a report, and never classify a failure without reading its logs.
-- DO: clear the readiness preflight before triggering anything — `gh` authenticated, the suite's workflow file present, GitHub Actions secrets set, Allure resolvable, active env confirmed. A long run that 401s mid-way is the expensive failure.
-- DO: persist `RUN_ID` the moment the trigger returns, before anything else. Resume re-attaches to a live run instead of re-triggering CI; a trigger that landed without the id saved costs the whole run again.
-- DO NOT: mark a failure REGRESSION without checking its history first — the single most common misclassification. A first-ever failure with no history is NEW TEST, unverified, not a regression.
-- DO: classify every failure into exactly one of KNOWN-BLOCKED / KNOWN ISSUE / ENVIRONMENT / NEW TEST / FLAKY / REGRESSION, and assess severity on a separate axis — a FLAKY test on checkout is still CRITICAL. Classification is fail-closed: every class but REGRESSION cites its evidence (the `@blocked:{BUG-KEY}` marker; a ticket created BEFORE the run; the matching log line plus the other failures on that host; the empty history query; the ids and results of at least 5 runs on an unchanged build). No citation, or a ticket this session filed, = REGRESSION.
-- DO: exclude `@blocked:{BUG-KEY}` tests from the gating pass-rate and report their count with each blocking key. They are parked behind an already-filed bug: never REGRESSION, and never a new bug.
-- DO NOT: use ENVIRONMENT as a scapegoat. Many unrelated tests failing on one host is environment; one test failing on an endpoint other tests reach fine is more likely a REGRESSION.
-- DO NOT: call a test FLAKY on fewer than 5 runs of history. Label the failure INSUFFICIENT HISTORY and count it as REGRESSION for the verdict (fail-closed), then re-evaluate on the next run. When several classes match, the order is KNOWN-BLOCKED > KNOWN ISSUE > ENVIRONMENT > NEW TEST > FLAKY > REGRESSION: FLAKY wins only with its citation, REGRESSION is what is left.
-- DO: take the run's counts (total, passed, failed, skipped, pass-rate) from `reports/test-outcomes.json`. Allure is the source for each failure's detail and for the history behind FLAKY, and the fallback for counts only when the file is missing from the downloaded artifacts (always so for smoke and sanity runs; say so in the report).
-- DO NOT: emit GO while any REGRESSION-class failure stands. Hard vetoes regardless of score: any `@critical` test failing, any HIGH/CRITICAL-severity regression, or a pass rate below 90%.
-- DO: file only CONFIRMED product failures — the REGRESSION class, plus a NEW TEST failure once manually confirmed to be a real defect. FLAKY, ENVIRONMENT and KNOWN ISSUE get no issue at all. Triage decides WHETHER to file; the defect-management doctrine decides the type and the fields.
-- DO NOT: open a GitHub issue for a quality failure. It is filed in the issue tracker, parented to the QA Defect Management process epic and linked to the source Story — never to a product or dev epic.
-- DO: create the RTR (Regression Test Results, a Test Execution: `RTR: {scope-id}: Regression Testing`, parent QA Test Artifacts, Test Environment set, assignee self, `testPlan` → RTP) BEFORE triggering CI, persist its key beside `RUN_ID`, and pass it as the `execution_key` dispatch input. One RTR per verdict. The STR is created or completed ONLY when the run is the sprint close (then it links to both the STP and the RTP).
-- DO NOT: import a regular regression run into the sprint STR, and never let smoke or sanity write into a regression execution: they import only when an execution key is passed explicitly.
-- DO: close the RTR (or the sprint-close STR) via `complete` only AFTER the verdict comment is posted on it, and leave the RTP at its ready status: a suite run never completes the plan it ran from.
-- DO NOT: invent a sprint number. The RTR needs none (its scope-id is `{env}-{YYYY-MM-DD}` or a release tag). `N` matters only for the sprint-close STR: take it from the user or from the STP's own scope-id, and ask before creating anything at sprint altitude.
-- DO NOT: skip the artifact download on a red build (evidence vanishes after the retention window), and never merge smoke and regression results into one pass-rate — their SLOs differ.
-- DO: inspect traces and screenshots with `/playwright-cli` (`[AUTOMATION_TOOL]`); it is the only browser path, no MCP backs it.
+- Read a failure's logs before classifying it, and analyze before reporting.
+- Clear the readiness preflight before triggering anything (`gh` authenticated, workflow file present, GitHub Actions secrets set, Allure resolvable, active env confirmed): a long run that 401s halfway is the expensive failure.
+- Persist `RUN_ID` the moment the trigger returns, so resume re-attaches to a live run instead of re-triggering CI.
+- Check a failure's history before marking it REGRESSION; skipping that is the most common misclassification. A first-ever failure with no history is NEW TEST, unverified, not a regression.
+- Classify every failure into exactly one of KNOWN-BLOCKED / KNOWN ISSUE / ENVIRONMENT / NEW TEST / FLAKY / REGRESSION, and give severity on a separate axis (a FLAKY test on checkout is still CRITICAL). Classification fails closed: every class but REGRESSION cites its evidence (the `@blocked:{BUG-KEY}` marker; a ticket created BEFORE the run; the matching log line plus the other failures on that host; the empty history query; the ids and results of at least 5 runs on an unchanged build). No citation, or a ticket this session filed, means REGRESSION.
+- Exclude `@blocked:{BUG-KEY}` tests from the gating pass-rate and report their count with each blocking key. They are parked behind a bug that is already filed: never REGRESSION, never a new bug.
+- Use ENVIRONMENT only with evidence. Many unrelated tests failing on one host is environment; one test failing on an endpoint other tests reach fine is more likely a REGRESSION.
+- Call a test FLAKY only with at least 5 runs of history. With fewer, label the failure INSUFFICIENT HISTORY and count it as REGRESSION for the verdict (fail-closed), then re-evaluate on the next run. When several classes match, the order is KNOWN-BLOCKED > KNOWN ISSUE > ENVIRONMENT > NEW TEST > FLAKY > REGRESSION: FLAKY wins only with its citation, and REGRESSION is what is left.
+- Take the run's counts (total, passed, failed, skipped, pass-rate) from `reports/test-outcomes.json`. Allure supplies each failure's detail and the history behind FLAKY, and the counts only when that file is missing from the downloaded artifacts (always for smoke and sanity runs; say so in the report).
+- Do not emit GO while any REGRESSION-class failure stands. Hard vetoes regardless of score: any `@critical` test failing, any HIGH/CRITICAL-severity regression, or a pass rate below 90%.
+- File only CONFIRMED product failures: the REGRESSION class, plus a NEW TEST failure once manually confirmed as a real defect. FLAKY, ENVIRONMENT and KNOWN ISSUE get no issue at all. Triage decides WHETHER to file; the defect-management doctrine decides the type and the fields.
+- Do not open a GitHub issue for a quality failure. File it in the issue tracker, parented to the QA Defect Management process epic and linked to the source Story, never to a product or dev epic.
+- Create the RTR (Regression Test Results, a Test Execution) BEFORE triggering CI, persist its key beside `RUN_ID`, and pass it as the `execution_key` dispatch input; Phase 1 has its fields. One RTR per verdict. The STR is created or completed only when the run is the sprint close (then it links to both the STP and the RTP).
+- Do not import a regular regression run into the sprint STR. Smoke and sanity never write into a regression execution: they import only when an execution key is passed explicitly.
+- Close the RTR (or the sprint-close STR) via `complete` only AFTER the verdict comment is posted on it, and leave the RTP at its ready status: a suite run never completes the plan it ran from.
+- Do not invent a sprint number. The RTR needs none (its scope-id is `{env}-{YYYY-MM-DD}` or a release tag); only the sprint-close STR takes `N`, from the user or the STP's own scope-id. Ask before creating anything at sprint altitude.
+- Download the artifacts even on a red build (evidence vanishes after the retention window), and keep smoke and regression results in separate pass-rates because their SLOs differ.
+- Inspect traces and screenshots with `/playwright-cli` (`[AUTOMATION_TOOL]`). It is the only browser path; no MCP backs it.
 
 **Read full SKILL.md when**: driving the CI commands, applying the GO/CAUTION/NO-GO scoring table, resolving a borderline classification, wiring the TMS artifacts, or writing the report.
 
@@ -663,22 +661,20 @@ Skills indexed: 29
 
 ## Skill: test-automation
 
-**Purpose**: Plan, write, and review automated tests following KATA (Komponent Action Test Architecture) on Playwright + TypeScript, or explain existi...
+**Purpose**: Plan, write and review KATA tests on Playwright and TypeScript, or explain existing automated tests read-only.
 
 **Compact Rules**:
-- "All ACs covered" is the FLOOR, not the success bar. The ATC set must also cover risk-beyond-AC: invalid/boundary inputs, auth/error paths, state transitions, and anomalies the AC is silent on.
-- 1:N is the default: one AC maps to multiple ATCs. EP-merge collapses same-behavior inputs INSIDE one partition into a parameterized ATC — it must NEVER collapse across distinct partitions, boundaries, or states. BVA cases are required wherever a range/limit/length/date-window exists (EP alone misses off-by-one).
-- Apply techniques by trigger: EP always; BVA on ranges/limits; State-Transition for stateful flows; Decision Table when 2+ conditions interact; Pairwise when 3+ combinable factors (log the reduction).
-- Parametrize for artifact economy: same-behavior data variants → ONE parameterized `@atc` (fixture / data-factory rows iterated by the test) per partition, NOT N ATCs; split only when action / outcome / state differs. (Canon: doctrine §"Part 2.5".)
-- An AC is the business assertion; an ATC is its concrete exploration (Precondition + Action + Assertions). Run the Test-Design Checklist before finalizing the plan.
-- Plan → Code → Review, always in order, behind the TC source gate (also first on every resume): in scope = the Tests at `candidate` whose `Verdict signed:` ROI comment has Jira `created` AND `updated` older than this run's start; Manual and recorded-Deferred Tests are listed out of scope. STOP and route to `/test-documentation` only on a named TC that is not a signed Candidate, a Test with no verdict, or zero signed Candidates; never sign or wait inside the run. This skill never creates a Test, scores ROI or fires a verdict transition. Signed ROI is a hard gate, never collapsed.
-- A TC reaches `automated` (labels `+automated -automation-candidate`) only when its code is on the production branch (`git_strategy.branches.production`); a merge into an integration branch or a suite trunk is not `automated`. Canon: `agentic-qa-core/references/discovery-driven-doctrine.md` §6.
-- Fixture selection: API-only → `{ api }` (no browser); UI-only → `{ ui }`; hybrid → `{ test }`.
-- ATC = atomic mini-flow; NEVER calls another ATC. Reusable chains → a Steps module.
-- Max 2 positional params (3+ → object param). Locators inline (extract only at 2+ uses). Imports via aliases (`@api/`, `@schemas/`, `@utils/`) — no relative imports.
-- Public methods fail fast; utilities silent-fail (return null). Validate against `kata-manifest.json` before adding components/ATCs (anti-duplication gate).
-- Mode from `$ARGUMENTS`: a first token matching a mode in Mode routing (`explain`, `automate`) IS the mode and the rest is forwarded; otherwise `automate` for plain automation work, ASK when it could be either.
-- Before any step that uses a declared MCP capability (`metadata.requires_capabilities`: `db`, `api-schema`), run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8: resolve by tool-name suffix, and when no available tool provides it STOP and name the capability + how to enable it, never a silent fallback.
+- "All ACs covered" is the floor, not the success bar. The ATC set also covers risk beyond the AC: invalid and boundary inputs, auth and error paths, state transitions, and anomalies the AC is silent on.
+- 1:N is the default: one AC maps to several ATCs. EP-merge collapses same-behavior inputs inside one partition into a parameterized ATC; it never collapses across distinct partitions, boundaries or states. BVA cases are required wherever a range, limit, length or date window exists, because EP alone misses off-by-one.
+- Apply techniques by trigger: EP always; BVA on ranges and limits; State-Transition for stateful flows; Decision Table when 2+ conditions interact; Pairwise when 3+ combinable factors (log the reduction).
+- Same-behavior data variants become ONE parameterized `@atc` per partition, not N ATCs; split only when the action, outcome or state differs (doctrine §"Part 2.5"). Run the Test-Design Checklist before finalizing the plan.
+- Plan, Code, Review always run in order, even for a one-test regression, behind the TC source gate (also first on every resume). Only `Candidate` TCs are automated. In scope are the Tests at `candidate` whose `Verdict signed:` ROI comment has Jira `created` AND `updated` older than this run's start. Manual and recorded-Deferred Tests are listed out of scope. Stop and route to `/test-documentation` only on a named TC that is not a signed Candidate, a Test with no verdict, or zero signed Candidates. The run never signs, never waits for a signature, never creates a Test, never scores ROI and never fires a verdict transition. Signed ROI is a hard gate and never collapses.
+- A TC reaches `automated` (labels `+automated -automation-candidate`) only when its code is on the production branch (`git_strategy.branches.production`). A merge into an integration branch or a suite trunk is not `automated`. Canon: `agentic-qa-core/references/discovery-driven-doctrine.md` §6.
+- Fixtures: API-only uses `{ api }` (no browser), UI-only `{ ui }`, hybrid `{ test }`. An ATC never calls another ATC; a reusable chain goes in a Steps module. At most 2 positional params (3+ take an object param). Locators stay inline until 2+ uses. Imports go through aliases, never relative paths. Public methods fail fast; utilities fail silently (return null).
+- Check `kata-manifest.json` before adding a component or an ATC (the anti-duplication gate).
+- Mode comes from `$ARGUMENTS` (see Mode routing): `explain` or `automate`; ask when it could be either.
+- Before a step that uses a declared MCP capability (`metadata.requires_capabilities`: `db`, `api-schema`), run the point-of-use check in `agentic-qa-core/references/preflight-gate.md` §8: when no available tool provides it, stop and name the capability and how to enable it. No silent fallback.
+- Review runs on two axes besides the three verifiers: spec compliance and standards, checked by separate subagents, with a lying-test check on every new assertion (Phase 3).
 
 **Read full SKILL.md when**: writing KATA component code, choosing fixtures for a hybrid flow, or applying the Phase 3 review checklist.
 
@@ -720,17 +716,17 @@ Skills indexed: 29
 
 ## Skill: test-framework-adaptation
 
-> ⚠ LOW-CONFIDENCE (extraction strategy B): bullets scraped without context — read the full SKILL.md before relying on any rule below.
-
-**Purpose**: Adapt this boilerplate's KATA test architecture, auth, schemas, variables, env schema, fixtures, CI, MCPs, and reporting to a project alr...
+**Purpose**: Adapt this boilerplate's KATA architecture, auth, variables, fixtures, CI and MCPs to a project that project-discovery already mapped.
 
 **Compact Rules**:
-- This skill has one mode, `adapt`. Forward `$ARGUMENTS` unchanged and load `references/adaptation-workflow.md`.
-- The reference owns the complete idempotent Phase 0-9 workflow. Its boundary is mandatory: Phases 0-2 are analysis and planning only; Phase 3 begins only after explicit approval of `.context/reports/test-framework-adaptation-plan.md`. Never bypass its genericness scan, credential stops, or ordered verification gate.
+- Phases 0-2 are analysis and planning only. Phase 3 starts after explicit approval of `.context/reports/test-framework-adaptation-plan.md`; the reference says who approves when no person is present.
+- Run the genericness scan every time. A repo that is already adapted gets a report and no new work.
+- Stop at a missing credential or MCP value and name the variable. A secret value is typed by the user, never through the chat.
+- Run the verification gate in its order and stop at the first failure.
 
 **Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
 
-> Source: `.agents/skills/test-framework-adaptation/SKILL.md` · phase: `unknown` · kind: `workflow` · extraction strategy: B
+> Source: `.agents/skills/test-framework-adaptation/SKILL.md` · phase: `unknown` · kind: `workflow` · extraction strategy: A
 
 ---
 
