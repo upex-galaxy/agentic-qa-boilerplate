@@ -1,79 +1,79 @@
-# Strategy Setup — Mechanics (questionnaire, materialization, sync, persist, report)
+# Strategy Setup: mechanics (questionnaire, materialization, sync, persist, report)
 
-This file is the heavy reference behind operation **3.6 Strategy Setup** in `SKILL.md`. The SKILL.md section holds WHEN and the six-step flow; this file holds HOW. Per-strategy `git_strategy` field values live in `references/branching-strategies.md` → "git_strategy field rules (per strategy)" — this file does not duplicate them.
+This file is the how behind operation **3.6 Strategy Setup** in `SKILL.md`, which holds the when and the six-step flow. Per-strategy `git_strategy` field values live in `references/branching-strategies.md`, under "git_strategy field rules (per strategy)"; they are not repeated here.
 
-Strategy Setup is **detection + questionnaire → conditional materialization → write the `git_strategy:` block in `.agents/project.yaml`** (in place, preserving the rest of the file — NEVER a separate file). Nothing is baked in. A single-branch strategy creates no branches and writes a minimal block (integration null, all decisions `n/a`); a strategy with an integration branch creates/syncs exactly the branches its row in the materialization table requires and records them in the block.
+Strategy Setup detects the strategy, asks the decision questionnaire, creates only the branches the strategy needs, and writes the `git_strategy:` block in `.agents/project.yaml`, in place, keeping the rest of the file (never a separate file). Nothing is baked in. A single-branch strategy creates no branches and writes a minimal block (integration null, all decisions `n/a`). A strategy with an integration branch creates or syncs exactly the branches its row in the materialization table requires and records them in the block.
 
 ---
 
-## 1. Decision questionnaire — full detail
+## 1. Decision questionnaire, full detail
 
-Run after the strategy slug is resolved (Step 2). Ask the questions in order. For each question: if its `git_strategy.decisions.*` field (or, for Q4, its `git_strategy.policy.*` field) in `.agents/project.yaml` is already set (not `n/a`/empty/null-by-default), SKIP it (idempotent). If the question does not apply to the resolved strategy (gating column below), SKIP it. Present the default first and let the user override. Q1/Q2/Q3 are strategy-gated; **Q4 applies to ALL strategies**.
+Run it after the strategy slug is resolved (Step 2), in order. Skip a question when its `git_strategy.decisions.*` field (for Q4, its `git_strategy.policy.*` field) in `.agents/project.yaml` is already set, meaning not `n/a`, empty or null-by-default; that keeps a re-run idempotent. Skip it too when the resolved strategy does not need it (the "Applies to" line). Show the default first and let the user override it. Q1 to Q3 depend on the strategy; **Q4 applies to every strategy**.
 
-### Q1 — Promotion method, integration → production
+### Q1: promotion method, integration to production
 
-- **Applies to**: strategies that have an integration branch separate from production — `main-integration`, `gitlab-flow`, `enterprise`, and `gitflow` (where the `develop → main` release is the promotion).
-- **Skipped for**: `solo-main`, `github-flow`, `trunk-based` (no integration branch).
+- **Applies to**: strategies with an integration branch separate from production: `main-integration`, `gitlab-flow`, `enterprise`, and `gitflow` (where the `develop` to `main` release is the promotion).
+- **Skipped for**: `solo-main`, `github-flow`, `trunk-based`, which have no integration branch.
 - **Options (default first)**:
-  1. **Fast-forward only** — production is always a pure ancestor of integration; promotion is `git merge --ff-only`. Keeps the two branches byte-identical at release. This is the default.
-  2. **Merge commit (`--no-ff`)** — promotion creates a merge commit on production. Branches are NOT byte-identical; the ancestor invariant does not hold.
-  3. **Squash** — promotion squashes integration into one commit on production. Rewrites SHAs; invariant does not hold.
+  1. **Fast-forward only.** Production is always a pure ancestor of integration, and promotion is `git merge --ff-only`. The two branches stay byte-identical at release. This is the default.
+  2. **Merge commit (`--no-ff`).** Promotion creates a merge commit on production. The branches are not byte-identical, so the ancestor invariant no longer holds.
+  3. **Squash.** Promotion squashes integration into one commit on production. SHAs are rewritten and the invariant no longer holds.
 - **Persisted as**: `git_strategy.decisions.promote_method: ff-only|merge-commit|squash`
-- **Drives**: the promotion command shape in `references/branching-strategies.md`, and whether the "production is an ancestor of integration" invariant holds (only for `ff-only`).
+- **Drives**: the promotion command shape in `references/branching-strategies.md`, and whether "production is an ancestor of integration" holds (only for `ff-only`).
 
-### Q2 — Merge method, work-branch → integration (or → trunk)
+### Q2: merge method, work-branch to integration (or to trunk)
 
-- **Applies to**: all multi-branch strategies (any strategy where work branches off something and merges back). For `trunk-based` this is work-branch → trunk.
-- **Skipped for**: `solo-main` (work lands directly; PRs optional).
+- **Applies to**: every multi-branch strategy, meaning any strategy where work branches off something and merges back. For `trunk-based` this is work-branch to trunk.
+- **Skipped for**: `solo-main`, where work lands directly and PRs are optional.
 - **Options (default first)**:
-  1. **Merge commit (`--no-ff`)** — preserves the branch topology in history. Default.
-  2. **Squash** — one commit per work-branch on integration; linear history, loses intermediate commits.
-  3. **Rebase + merge** — replays work-branch commits onto integration; linear history, preserves individual commits.
+  1. **Merge commit (`--no-ff`).** Keeps the branch topology in history. Default.
+  2. **Squash.** One commit per work-branch on integration: linear history, intermediate commits lost.
+  3. **Rebase + merge.** Replays the work-branch commits onto integration: linear history, individual commits kept.
 - **Persisted as**: `git_strategy.decisions.feature_merge: merge-commit|squash|rebase-merge`
-- **Drives**: how integration history accrues; the merge command shape lives in `references/branching-strategies.md`.
+- **Drives**: how integration history accrues. The merge command shape lives in `references/branching-strategies.md`.
 
-### Q3 — Hotfix policy
+### Q3: hotfix policy
 
-- **Applies to**: strategies with a production branch distinct from where day-to-day work lands — `main-integration`, `gitlab-flow`, `enterprise`, `gitflow`.
-- **Skipped for**: `solo-main`, `github-flow`, `trunk-based` (production IS where work lands; a hotfix is just another change).
+- **Applies to**: strategies whose production branch differs from where daily work lands: `main-integration`, `gitlab-flow`, `enterprise`, `gitflow`.
+- **Skipped for**: `solo-main`, `github-flow`, `trunk-based`, where production is where work lands and a hotfix is just another change.
 - **Options (default first)**:
-  1. **Branch off production → PR to production → back-merge to integration same day** — keeps the ff-only invariant intact. Default.
-  2. **Always via integration** — hotfix flows through integration like any change; slower but no back-merge to forget.
-  3. **No policy** — decide per incident (records intent to NOT standardize).
+  1. **Branch off production, PR to production, back-merge to integration the same day.** Keeps the ff-only invariant intact. Default.
+  2. **Always via integration.** The hotfix flows through integration like any change. Slower, but there is no back-merge to forget.
+  3. **No policy.** Decide per incident, which records the intent not to standardize.
 - **Persisted as**: `git_strategy.decisions.hotfix_policy: branch-off-prod-backmerge|via-integration|none`
-- **Drives**: the hotfix command shape in `references/branching-strategies.md` + the invariant-maintenance note.
-- **Note (one-direction flows)**: for `gitlab-flow` the "back-merge to integration" is realized as a forward-port / cherry-pick up the environment chain (`production` → `pre-production` → `main`), not a literal merge back — gitlab-flow has no back-merges.
+- **Drives**: the hotfix command shape in `references/branching-strategies.md` and the invariant-maintenance note.
+- **One-direction flows**: in `gitlab-flow` the "back-merge to integration" is a forward-port or cherry-pick up the environment chain (`production`, `pre-production`, `main`), because that flow has no back-merges.
 
-> The defaults (ff-only / merge-commit / branch-off-prod-backmerge) are the `main-integration` worked-example choices. They are DEFAULTS. Always present them as overridable, never auto-select without showing the alternatives.
+The defaults (ff-only, merge-commit, branch-off-prod-backmerge) are the `main-integration` worked-example choices. Present them as overridable and show the alternatives before selecting any.
 
-### Q4 — Protected-branch bypass policy
+### Q4: protected-branch bypass policy
 
-- **Applies to**: **ALL strategies** (single-branch ones too — a solo `main` is still a protected branch). Q4 is never strategy-gated out.
-- **Drives**: the Push operation (SKILL.md 3.3) — how strictly a direct push to a protected branch is guarded, and whether an admin bypass may even be offered.
-- **Sub-questions (defaults are per-strategy — see `references/branching-strategies.md` → "git_strategy field rules (per strategy)")**:
-  1. **`direct_push_to_protected`** — `forbidden` | `confirm` | `allowed`. How a direct push to a protected branch is treated. `allowed` = standing authorization, push without a per-push confirm (the recorded value IS the authorization); `confirm` = always ask; `forbidden` = refuse the direct push, redirect to the PR flow. Default per strategy: `solo-main` = `allowed`; multi-branch (`main-integration` / `enterprise` / `gitflow` / `github-flow` / `trunk-based` / `gitlab-flow`) = `forbidden`; `sdet` = `confirm` (trunk self-merge).
-  2. **`admin_bypass`** — `true` | `false`. May a repo admin bypass PR/protection for an urgent change? Default `false`. **This is a team POLICY intent, NOT an enforcement check** — the real capability depends on the GitHub user's role. When `true`, the Push op may OFFER a bypass but MUST re-confirm at runtime (a) that the operator actually holds admin rights (ASK — the skill cannot know the role) and (b) the irreversible action. When `false`, never offer a bypass regardless of role.
-  3. **`require_pr_reviews`** — `null` | `0` | `N`. Minimum approvals before merge to a protected branch. Records the team's intent; Section 4.5 can materialize it onto the host in the same run, and `bun run git:policy verify` is what confirms the host enforces it. Default `null` for solo-main (`0`); strategy-appropriate otherwise (typically `1` for multi-branch flows; `0` on the sdet trunk / `1` on the final sdet PR).
-- **Persisted as**: `git_strategy.policy.direct_push_to_protected` + `git_strategy.policy.admin_bypass` + `git_strategy.policy.require_pr_reviews`.
+- **Applies to**: all strategies. A solo `main` is still a protected branch, so Q4 is never skipped for strategy reasons.
+- **Drives**: the Push operation (SKILL.md 3.3), meaning how strictly a direct push to a protected branch is guarded and whether an admin bypass may be offered at all.
+- **Sub-questions** (defaults are per strategy, see "git_strategy field rules (per strategy)" in `references/branching-strategies.md`):
+  1. **`direct_push_to_protected`**: `forbidden` | `confirm` | `allowed`. `allowed` is standing authorization, so the recorded value is the authorization and no per-push confirm happens. `confirm` always asks. `forbidden` refuses the direct push and redirects to the PR flow. Default per strategy: `solo-main` is `allowed`; the multi-branch strategies (`main-integration` / `enterprise` / `gitflow` / `github-flow` / `trunk-based` / `gitlab-flow`) are `forbidden`; `sdet` is `confirm` (trunk self-merge).
+  2. **`admin_bypass`**: `true` | `false`, default `false`. May a repo admin bypass PR protection for an urgent change? This records team policy, not an enforcement check; the real capability depends on the GitHub user's role. With `true`, the Push op may offer a bypass but re-confirms at runtime that the operator actually holds admin rights (ask, because the skill cannot know the role) and that the action is irreversible. With `false`, no bypass is offered whatever the role.
+  3. **`require_pr_reviews`**: `null` | `0` | `N`, the minimum approvals before merge to a protected branch. It records the team's intent; Section 4.5 can materialize it onto the host in the same run, and `bun run git:policy verify` confirms the host enforces it. Default `null` for solo-main (`0`), and a strategy-appropriate value otherwise (typically `1` for multi-branch flows; `0` on the sdet trunk and `1` on the final sdet PR).
+- **Persisted as**: `git_strategy.policy.direct_push_to_protected`, `git_strategy.policy.admin_bypass` and `git_strategy.policy.require_pr_reviews`.
 
-> Q4 has no single global default — each sub-field's default is keyed off the resolved strategy (per the branching-strategies.md field rules). Present each default first and let the user override.
+Q4 has no single global default. Each sub-field's default comes from the resolved strategy, so show each one first and let the user override.
 
-### `sdet` — questionnaire is mostly pre-answered
+### `sdet`: the questionnaire is mostly pre-answered
 
-`sdet` does not run the open Q1/Q2/Q3 questionnaire. Those answers are fixed by the strategy's definition (Q4 still runs — see below):
+`sdet` skips the open Q1 to Q3 questions because the strategy's definition fixes the answers. Q4 still runs.
 
-- **Q1 (promotion)** — n/a. There is no production deploy; `main` holds confirmed tests. The final `trunk → main` PR follows the **repo's allowed merge method** (prefer merge-commit to preserve the multi-branch look; squash collapses the suite). Leave `git_strategy.decisions.promote_method: n/a`.
-- **Q2 (work-branch merge)** — **fixed at `merge-commit` (`--no-ff`)**, set `git_strategy.decisions.feature_merge: merge-commit`. Never offer squash/rebase: preserving per-ticket history is a defining property of `sdet`.
-- **Q3 (hotfix)** — n/a. Leave `git_strategy.decisions.hotfix_policy: n/a`.
-- **Q4 (protection policy)** — STILL ASKED (Q4 is universal). `sdet` defaults: `git_strategy.policy.direct_push_to_protected: confirm` (the trunk is self-merged by the maintainer), `git_strategy.policy.admin_bypass: false`, `git_strategy.policy.require_pr_reviews: 0` on the trunk / `1` on the final `trunk → main` PR.
+- **Q1 (promotion)** does not apply. There is no production deploy, and `main` holds confirmed tests. The final `trunk` to `main` PR follows the repo's allowed merge method (prefer merge-commit to keep the multi-branch look; squash collapses the suite). Leave `git_strategy.decisions.promote_method: n/a`.
+- **Q2 (work-branch merge)** is fixed at `merge-commit` (`--no-ff`): set `git_strategy.decisions.feature_merge: merge-commit`. Do not offer squash or rebase, because keeping per-ticket history is what defines `sdet`.
+- **Q3 (hotfix)** does not apply. Leave `git_strategy.decisions.hotfix_policy: n/a`.
+- **Q4 (protection policy)** is asked as for every strategy. The `sdet` defaults are `git_strategy.policy.direct_push_to_protected: confirm` (the maintainer self-merges the trunk), `git_strategy.policy.admin_bypass: false`, and `git_strategy.policy.require_pr_reviews: 0` on the trunk and `1` on the final `trunk` to `main` PR.
 
-So Strategy Setup for `sdet` sets `git_strategy.strategy: sdet` + `git_strategy.decisions.feature_merge: merge-commit` + the `sdet` Q4 `policy` defaults (the other `decisions.*` stay `n/a`, `branches.integration` stays null, `branches.ephemeral_pattern: "test/<module>-suite"`), materializes nothing extra at setup (the trunk is per-suite, created on demand by the Branch operation). The full per-suite operational detail lives in `references/sdet-integration-trunk.md`.
+So Strategy Setup for `sdet` sets `git_strategy.strategy: sdet`, `git_strategy.decisions.feature_merge: merge-commit` and the `sdet` Q4 `policy` defaults. The other `decisions.*` stay `n/a`, `branches.integration` stays null, and `branches.ephemeral_pattern` is `"test/<module>-suite"`. Setup materializes nothing else, because the trunk is per suite and the Branch operation creates it on demand. The per-suite detail is in `references/sdet-integration-trunk.md`.
 
 ---
 
-## 2. Materialization table — what to ensure per strategy
+## 2. Materialization table: what to ensure per strategy
 
-For the resolved strategy, ensure the long-lived branches in this table exist. **If a branch already exists, never recreate it — only ff-sync it if it is behind its pair (Section 3).** Work-branch and on-demand branches (`feature/*`, `release/*`, `hotfix/*`) are NOT created at setup; they are created later by the Branch operation when work starts.
+For the resolved strategy, make sure the long-lived branches in this table exist. A branch that already exists is not recreated; it is only ff-synced when it is behind its pair (Section 3). Work-branches and on-demand branches (`feature/*`, `release/*`, `hotfix/*`) are not created at setup. The Branch operation creates them when work starts.
 
 | Strategy           | Long-lived branches to ensure                                                   | Work-branch base                              | Promotion path                                  | Production branch |
 | ------------------ | ------------------------------------------------------------------------------- | --------------------------------------------- | ----------------------------------------------- | ----------------- |
@@ -88,20 +88,20 @@ For the resolved strategy, ensure the long-lived branches in this table exist. *
 
 **Branch-creation rules**:
 
-- Single-branch strategies (`solo-main`, `github-flow`, `trunk-based`) ensure `main` only — there is nothing to create on a normal repo. No integration branch, ever.
-- `main-integration`: if the integration branch is missing, ASK its name (default `staging`), then propose creating it off `main` and ff-syncing (Section 3).
-- `gitflow`: ensure `develop` (create off `main` if missing); do not create `release/*` / `hotfix/*` at setup.
-- `gitlab-flow`: ensure `pre-production` and `production` (create off `main` in pipeline order if missing).
-- `enterprise`: ensure integration off `main`; `release/*` / `feature/*` are on-demand only.
-- `sdet`: ensure `main` only at setup — create NO integration branch. The per-suite trunk `test/<module>-suite` is created off `main` by the Branch operation when a suite starts and deleted after the final PR; it is never materialized at Strategy Setup time and is never ff-synced (it carries `--no-ff` merge commits by design).
+- `solo-main`, `github-flow` and `trunk-based` ensure `main` only. On a normal repo there is nothing to create, and they never get an integration branch.
+- `main-integration`: if the integration branch is missing, ask its name (default `staging`), then propose creating it off `main` and ff-syncing it (Section 3).
+- `gitflow`: ensure `develop`, created off `main` if missing. `release/*` and `hotfix/*` wait for the Branch operation.
+- `gitlab-flow`: ensure `pre-production` and `production`, created off `main` in pipeline order if missing.
+- `enterprise`: ensure integration off `main`. `release/*` and `feature/*` are on demand only.
+- `sdet`: ensure `main` only and create no integration branch. The per-suite trunk `test/<module>-suite` is created off `main` by the Branch operation when a suite starts and deleted after the final PR. It is never ff-synced, because it carries `--no-ff` merge commits by design.
 
-Always **propose** each branch creation (which branch, off what, why) and wait for OK. Never `git checkout -b` / `git branch` silently.
+Propose each branch creation (which branch, off what, why) and wait for the OK. A silent `git checkout -b` or `git branch` takes a decision that belongs to the operator.
 
 ---
 
-## 3. Sync mechanics — fast-forward ONLY, never `--force`
+## 3. Sync mechanics: fast-forward only, no `--force`
 
-A sync runs only when a long-lived pair exists (integration + production, or two env branches) and one is behind the other as a **pure ancestor**. The goal is to bring the behind branch up to the ahead branch without rewriting history.
+A sync runs only when a long-lived pair exists (integration and production, or two env branches) and one is a pure ancestor of the other. The goal is to bring the behind branch up to the ahead branch without rewriting history.
 
 ### 3.1 Ancestry check (decide direction)
 
@@ -110,26 +110,26 @@ git fetch origin
 git log --oneline <base>..<ahead>     # commits in <ahead> not in <base>; must be EMPTY for a ff in this direction
 ```
 
-- `git log <production>..<integration>` empty → `integration` has nothing `production` lacks; `integration` is a pure ancestor of `production` and is behind, while `production` is ahead (the common `main-integration` case where integration is behind a freshly-promoted `main` — e.g. `git log main..staging` empty when `staging` is behind `main`). The behind branch (`integration`) gets fast-forwarded up to `production`.
-- `git log <integration>..<production>` empty → production is a pure ancestor of integration; integration is ahead (integration has accumulated unreleased work ahead of production). The behind branch (`production`) gets fast-forwarded up to `integration`.
-- **Both non-empty** → the branches have **diverged both ways** → STOP. Do NOT sync. Hand to conflict resolution (SKILL.md 3.5). Never force.
+- `git log <production>..<integration>` empty: `integration` has nothing `production` lacks, so it is a pure ancestor of `production` and is the behind branch (the common `main-integration` case where integration trails a freshly promoted `main`, for example `git log main..staging` empty when `staging` is behind `main`). Fast-forward `integration` up to `production`.
+- `git log <integration>..<production>` empty: production is a pure ancestor of integration, and integration is ahead with unreleased work. Fast-forward `production` up to `integration`.
+- Both non-empty: the branches have diverged both ways. Stop, sync nothing, and hand over to conflict resolution (SKILL.md 3.5). Forcing would drop commits.
 
-### 3.2 Fast-forward push (the only sync we perform)
+### 3.2 Fast-forward push (the only sync performed)
 
-When exactly one direction is empty, the behind branch can be fast-forwarded to the ahead ref:
+When exactly one direction is empty, fast-forward the behind branch to the ahead ref:
 
 ```bash
 # bring <behind-branch> up to <ahead-ref> by a fast-forward push — NO --force
 git push origin <ahead-ref>:refs/heads/<behind-branch>
 ```
 
-(For the local checkout of the behind branch, `git merge --ff-only <ahead-ref>` is equivalent and fails loudly if it is not a true fast-forward — use it rather than a plain `git merge` so a non-ff is rejected instead of silently creating a merge commit.)
+For the local checkout of the behind branch, `git merge --ff-only <ahead-ref>` is equivalent, and it fails loudly when the move is not a true fast-forward. Prefer it to a plain `git merge`, which would silently create a merge commit.
 
 ### 3.3 Hard rules
 
-- **NEVER `--force`, never `--force-with-lease`** in a setup sync. A sync is a fast-forward or it is not a sync.
-- A push to a protected branch (integration or production) requires explicit confirmation first — a setup ff-sync push is still a push.
-- Diverged-both-ways → STOP → conflict resolution. Setup does not resolve conflicts itself.
+- No `--force` and no `--force-with-lease` in a setup sync. A sync is a fast-forward or it is not a sync.
+- A push to a protected branch (integration or production) needs explicit confirmation first, and a setup ff-sync push is still a push.
+- A pair diverged both ways goes to conflict resolution. Setup does not resolve conflicts itself.
 
 ---
 
@@ -137,35 +137,36 @@ git push origin <ahead-ref>:refs/heads/<behind-branch>
 
 Once branches are materialized and decisions captured, persist in this order:
 
-1. **Write the `git_strategy:` block in `.agents/project.yaml`** (in place — create the block if absent; overwrite the relevant fields if it exists; preserve the rest of the file, which holds project identity + env config). NEVER write a separate file. Values only, no comments: the file is loaded into every session and each key is documented in `.agents/project.schema.yaml` (ADR-0025). Populate the fields that apply to the resolved strategy (all nested under `git_strategy`):
-   - `strategy` — the resolved slug.
-   - `branches` — `production` (release/default branch), `integration` (long-lived integration branch name or `null`), `ephemeral_pattern` (strategy-specific on-demand trunk pattern or `null`).
-   - `protected` — branches whose direct pushes are gated by `policy.direct_push_to_protected` (not always a confirm: `allowed` is standing authorization).
-   - `decisions` — `promote_method` / `feature_merge` / `hotfix_policy`, each captured from Q1/Q2/Q3 or left `n/a` when the question does not apply.
-   - `policy` — `direct_push_to_protected` / `admin_bypass` / `require_pr_reviews`, captured from Q4 (applies to every strategy; defaults are per-strategy).
-   - `branch_prefixes` — `precedence` + naming patterns (carry the defaults unless the user overrides).
-   - `description` — the one-paragraph human summary of the flow for this repo.
-   - `meta.created` — the date of the run; bump `meta.setup_version` on a re-run that changes the schema. Leave `meta.policy_verified: null` and `meta.policy_source: declared`: only a clean `bun run git:policy verify --stamp` may change them (Section 4.5).
-   - `meta.strategy_source: chosen` — stamp it whenever the questionnaire actually ran. It ships `inherited`, and it is the only field that separates "this project picked `solo-main`" from "this project never chose and kept the default", because `strategy` itself is never null. Without the stamp the bootstrap offer keeps proposing a setup the user already completed.
-   Per-strategy field values: `references/branching-strategies.md` → "git_strategy field rules (per strategy)".
-2. **Set up local tracking** for any newly-ensured branch (`git branch --set-upstream-to=origin/<branch> <branch>` or `git checkout -b <branch> origin/<branch>`), so later operations don't re-detect.
+1. **Write the `git_strategy:` block in `.agents/project.yaml`.** Create the block if absent, overwrite the relevant fields if it exists, and keep the rest of the file, which holds project identity and environment config. Write values only, no comments: the file is loaded into every session and `.agents/project.schema.yaml` documents each key (ADR-0025). Fill the fields that apply to the resolved strategy, all nested under `git_strategy`:
+   - `strategy`: the resolved slug.
+   - `branches`: `production` (release/default branch), `integration` (long-lived integration branch name or `null`), `ephemeral_pattern` (strategy-specific on-demand trunk pattern or `null`).
+   - `protected`: branches whose direct pushes are gated by `policy.direct_push_to_protected` (not always a confirm, since `allowed` is standing authorization).
+   - `decisions`: `promote_method` / `feature_merge` / `hotfix_policy`, each captured from Q1 to Q3 or left `n/a` when the question does not apply.
+   - `policy`: `direct_push_to_protected` / `admin_bypass` / `require_pr_reviews`, captured from Q4 (every strategy, per-strategy defaults).
+   - `branch_prefixes`: `precedence` plus naming patterns, with the defaults unless the user overrides.
+   - `description`: the one-paragraph human summary of the flow for this repo.
+   - `meta.created`: the date of the run. Bump `meta.setup_version` on a re-run that changes the schema. Leave `meta.policy_verified: null` and `meta.policy_source: declared`; only a clean `bun run git:policy verify --stamp` changes them (Section 4.5).
+   - `meta.strategy_source: chosen`: stamp it whenever the questionnaire actually ran. It ships as `inherited`, and it is the only field that separates "this project picked `solo-main`" from "this project never chose and kept the default", because `strategy` itself is never null. Without the stamp, the bootstrap offer keeps proposing a setup the user already completed.
 
-The `## Git Strategy` section of `.agents/instructions/agent-git.md` is a shipped pointer to `.agents/project.yaml` (`git_strategy:` block) — NEVER write strategy policy there. The block is the source of truth; its `git_strategy.description` field is the human summary. A later Strategy Setup re-run re-reads the block and only fills the `git_strategy.decisions.*` / `git_strategy.policy.*` fields still unset.
+   Per-strategy field values: `references/branching-strategies.md`, "git_strategy field rules (per strategy)".
+2. **Set up local tracking** for every newly ensured branch (`git branch --set-upstream-to=origin/<branch> <branch>` or `git checkout -b <branch> origin/<branch>`), so later operations do not re-detect.
+
+The `## Git Strategy` section of `.agents/instructions/agent-git.md` is a shipped pointer to the `git_strategy:` block in `.agents/project.yaml`, so strategy policy is never written there. The block is the source of truth and its `git_strategy.description` field is the human summary. A later Strategy Setup re-run re-reads the block and fills only the `git_strategy.decisions.*` and `git_strategy.policy.*` fields still unset.
 
 ---
 
 ## 4.5 Materialize the policy onto the host (offer, never automatic)
 
-The questionnaire has just captured the branch policy, and the same answers describe a GitHub ruleset. Setup can therefore close the gap between intent and enforcement in the same run instead of leaving a `declared` block to drift until the first refused merge.
+The questionnaire has just captured the branch policy, and the same answers describe a GitHub ruleset. Setup can close the gap between intent and enforcement in the same run, so a `declared` block does not drift until the first refused merge.
 
-**Always start read-only**, because an existing repo usually already has protection:
+Start read-only, because an existing repo usually already has protection:
 
 ```bash
 bun run git:policy verify   # what the host enforces today vs what was just captured
 ```
 
-- **No drift** (or only divergences already listed in `git_strategy.policy.accepted_divergences`) → say so, run `bun run git:policy verify --stamp`, done. Nothing to write.
-- **Drift** → show it, then OFFER the write. Never perform it unasked: a ruleset governs who can merge, and the operator has to choose.
+- No drift, or only divergences already listed in `git_strategy.policy.accepted_divergences`: say so, run `bun run git:policy verify --stamp`, and stop. Nothing to write.
+- Drift: show it, then offer the write. A ruleset governs who can merge, so the operator chooses; the skill does not apply it unasked.
 
 ```bash
 bun run git:policy apply         # dry run: prints the exact payload
@@ -174,11 +175,11 @@ bun run git:policy apply --yes   # writes it
 
 Three rules for this step:
 
-1. **Show the dry run before proposing the write.** The payload is the proposal; a described change is not a reviewed one.
-2. **A refusal to loosen is a result, not an obstacle.** `apply` blocks any change that removes a guard, lowers the approval bar, turns off code-owner review, or widens the allowed merge methods. If `--allow-loosening` is needed, name exactly which guard is being given up and get an explicit yes for that specific thing.
-3. **Drift has three resolutions, and the host is only one of them.** The yaml may be the wrong side, so the fix is to edit the answer just captured. Or the divergence is intended, and then it is recorded as an entry in `git_strategy.policy.accepted_divergences` (the `field` exactly as `verify` printed it, plus `enforced`, `accepted` and `reason`), never as prose: `verify` then reports it as ACCEPTED, and `apply` carries the host's side of that field forward instead of deriving it away.
+1. Show the dry run before proposing the write. The payload is the proposal, and a described change is not a reviewed one.
+2. A refusal to loosen is a result. `apply` blocks any change that removes a guard, lowers the approval bar, turns off code-owner review, or widens the allowed merge methods. If `--allow-loosening` is needed, name exactly which guard is being given up and get an explicit yes for that specific thing.
+3. Drift has three resolutions, and the host is only one of them. The yaml may be the wrong side, so the fix is to edit the answer just captured. Or the divergence is intended, and then it is recorded as an entry in `git_strategy.policy.accepted_divergences` (the `field` exactly as `verify` printed it, plus `enforced`, `accepted` and `reason`), not as prose. `verify` then reports it as ACCEPTED, and `apply` carries the host's side of that field forward instead of deriving it away.
 
-Mapping table, the derived fields, accepted divergences and what the tool deliberately does not manage (`bypass_actors`, `CODEOWNERS`, org-level rulesets): `references/ruleset-parity.md`.
+The mapping table, the derived fields, accepted divergences and what the tool deliberately leaves unmanaged (`bypass_actors`, `CODEOWNERS`, org-level rulesets) are in `references/ruleset-parity.md`.
 
 ---
 
@@ -212,4 +213,16 @@ Definition: .agents/project.yaml (git_strategy block, <N> fields populated, stra
 Next: branch off <work-branch-base> to start work; the Branch operation will use this strategy automatically.
 ```
 
-If a diverged pair stopped the sync, the report instead states the divergence and points to conflict resolution (3.5) — it does NOT claim a successful sync.
+If a diverged pair stopped the sync, the report states the divergence and points to conflict resolution (3.5) instead, and it does not claim a successful sync.
+
+---
+
+## With nobody at the keyboard
+
+This flow asks a person for the questionnaire answers, each branch-creation OK, each push confirmation and the ruleset write. The decision protocol (`agentic-qa-core/references/decision-protocol.md`) decides which of those reach a person.
+
+| Who runs it | The gate |
+| --- | --- |
+| A person is present | Ask as written above. |
+| A supervised worker | The conductor or launcher answers the questions and gives the OK; the worker reports what it needs and waits. |
+| A routine with nobody | The delegating brief is the approval source when it names the strategy and answers. Without one, write nothing: the questionnaire defaults, the branch proposals and the `verify` drift are reported, and no branch is created, nothing is pushed and `apply --yes` is not run. |

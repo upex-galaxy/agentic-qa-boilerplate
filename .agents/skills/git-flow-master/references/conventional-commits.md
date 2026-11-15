@@ -1,8 +1,7 @@
-# Conventional Commits — Reference
+# Conventional Commits reference
 
-This is the commit-message contract for git-flow-master. The grammar is the standard [Conventional Commits](https://www.conventionalcommits.org/) spec, narrowed to the type vocabulary the project uses and extended with project-specific rules (issue keys, mixed-changes precedence, no-AI-attribution).
+This is the commit-message contract for git-flow-master: the standard [Conventional Commits](https://www.conventionalcommits.org/) grammar, narrowed to the project's type vocabulary, plus three project rules (issue keys, mixed-changes precedence, no AI attribution).
 
----
 
 ## Grammar
 
@@ -12,7 +11,7 @@ This is the commit-message contract for git-flow-master. The grammar is the stan
 [optional body]
 
 [optional BREAKING CHANGE: footer]
-[optional Refs / Closes / Co-authored-by footers — but NEVER Claude]
+[optional Refs / Closes / Co-authored-by footers, never a Claude one]
 ```
 
 Regex the message must match:
@@ -28,7 +27,6 @@ Description rules:
 - Under 72 characters for the subject line.
 - Body wraps at 72 characters; blank line between subject and body.
 
----
 
 ## Type vocabulary
 
@@ -37,7 +35,7 @@ Description rules:
 | `feat`     | New feature or user-visible capability                         | `feature`             |
 | `fix`      | Bug fix                                                        | `bugfix`              |
 | `docs`     | Documentation only (README, AGENTS.md, code comments)          | `docs`                |
-| `style`    | Formatting / whitespace / lint fixes — no behaviour change     | `chore`               |
+| `style`    | Formatting, whitespace, lint fixes; no behaviour change | `chore`               |
 | `refactor` | Code change without behaviour change                           | `chore`               |
 | `perf`     | Performance improvement (with measurable rationale in body)    | `feature` or `perf`   |
 | `test`     | Adding or updating automated tests with no product code change | `chore`               |
@@ -46,11 +44,10 @@ Description rules:
 | `ci`       | CI configuration (GitHub Actions, GitLab CI)                   | `chore`               |
 | `revert`   | Reverts a previous commit (Git auto-generates the format)      | matches reverted type |
 
----
 
 ## Issue keys
 
-When the work is tied to a tracker (Jira, Linear, GitHub Issues), include the key in the **scope** position:
+When the work is tied to a tracker (Jira, Linear, GitHub Issues), the key goes in the scope position:
 
 ```
 feat(UPEX-123): add bulk-assign action
@@ -65,17 +62,16 @@ feat: add bulk-assign action
 docs: clarify branch prefix vocabulary
 ```
 
-**Extraction order** (the skill applies this automatically):
+The skill extracts the key in this order:
 
 1. Current branch name regex: `(?:feat|feature|fix|test|docs|refactor|chore)/([A-Z]+-\d+)-`.
 2. `$ARGUMENTS` for `[A-Z]+-\d+`.
-3. Ask the user once. Accept "no key" gracefully.
+3. Ask the user once, and accept "no key". With nobody present, commit without a key and say so in the report.
 
----
 
 ## Scope (without an issue key)
 
-Scope is optional. Use it when it sharpens the message:
+Scope is optional. Add it when it sharpens the message:
 
 ```
 feat(auth): add JWT token refresh
@@ -84,13 +80,12 @@ chore(deps): bump bubbletea to v0.26
 refactor(parser): extract tokenizer
 ```
 
-Lowercase. Hyphen / underscore / dot allowed. No spaces. Match this regex: `^[a-z0-9._-]+$`.
+Lowercase, with hyphen, underscore or dot allowed and no spaces: `^[a-z0-9._-]+$`.
 
----
 
-## Mixed changes — precedence rule
+## Mixed changes: precedence rule
 
-A single commit may span multiple "types" (e.g. a feature ships its own tests). Pick the **dominant** type by this precedence:
+A single commit may span several types (a feature ships its own tests). Pick the dominant type by this precedence:
 
 ```
 feat > fix > refactor > test > docs > chore
@@ -104,9 +99,8 @@ Examples:
 - Pure docs (README updated, no code) → `docs:`.
 - Pure test additions for existing untested code → `test:`.
 
-This is also the **branch-prefix** precedence rule (a `feat/UPEX-123-foo` branch is fine even if it ships tests).
+The same precedence picks a branch prefix: a `feat/UPEX-123-foo` branch is fine even when it ships tests.
 
----
 
 ## Breaking changes
 
@@ -119,36 +113,33 @@ BREAKING CHANGE: the legacy endpoint POST /users/create now returns 410.
 Migrate clients to POST /users which keeps the same payload contract.
 ```
 
-The `!` flags the breaking change to changelog tooling. The footer documents the migration path.
+The `!` flags the breaking change to changelog tooling, and the footer documents the migration path.
 
 PR label hint: `breaking-change`.
 
----
 
-## Atomic commit checklist (run before staging)
+## Atomic commit checklist (before staging)
 
 - [ ] One commit = one responsibility. If you can describe the commit with the word "and", split it.
 - [ ] The repo still makes sense after applying only this commit (no half-implementations).
 - [ ] Tests / docs for this unit are included in the same commit.
 - [ ] Rollback is reasonable without reverting unrelated work.
-- [ ] Commit message explains the **outcome**, not the file list.
+- [ ] The message explains the outcome, not the file list.
 - [ ] Subject line ≤ 72 chars. Body wraps at 72.
-- [ ] No `git add -A` / `git add .`. Each file path is listed explicitly.
+- [ ] Each file path is staged explicitly (no `git add -A` or `git add .`).
 
----
 
 ## Hard rules
 
-1. **No AI attribution.** Never include `Generated with Claude Code`, `Co-Authored-By: Claude <…>`, or any equivalent line. Commits look human-authored. (Critical Rule #3 in `AGENTS.md`.)
-2. **No `git add -A` / `git add .`.** Always list the exact paths to avoid leaking secrets (`.env`, credentials) or unrelated work.
-3. **Never `--amend` a commit a hook rejected.** The hook rejected the commit, so it does not exist; `--amend` would mutate the previous commit instead. Fix the underlying issue and create a new commit.
-4. **Never `--amend` a published commit.** Once pushed, a commit is part of shared history. Add a forward commit (`fix:`, `revert:`) instead.
-5. **Never `--no-verify`** unless the user explicitly authorises bypassing hooks.
-6. **Forensic trailers close every message.** The last two lines are `Worktree: <name|primary>` then `Session: <label>` (SKILL.md §3.2). `.husky/commit-msg` runs `scripts/check-commit-trailers.ts` through `framework_gates_commit_msg` in `.husky/framework-gates.sh`: it WARNS, never blocks, when the pair is missing or not last, or when a harness-branded trailer (`Claude-Session:` and kin), an AI `Co-Authored-By:` or a "Generated with <tool>" line is present. A warning there means the commit landed wrong: fix the next one, never `--amend` a pushed one.
+1. No AI attribution (Critical Rule #3 in `AGENTS.md`). A commit carries no `Generated with Claude Code` line, no `Co-Authored-By: Claude <…>` and no equivalent, so it reads as human-authored.
+2. Stage exact paths, never `git add -A` or `git add .`, so secrets (`.env`, credentials) and unrelated work stay out.
+3. Never `--amend` after a hook rejected the commit. The rejected commit does not exist, so `--amend` would rewrite the previous one. Fix the cause and create a new commit.
+4. Never `--amend` a published commit: once pushed it is shared history. Add a forward commit (`fix:`, `revert:`).
+5. Never `--no-verify` unless the user explicitly authorises bypassing hooks.
+6. Forensic trailers close every message. The last two lines are `Worktree: <name|primary>` then `Session: <label>` (SKILL.md §3.2). `.husky/commit-msg` runs `scripts/check-commit-trailers.ts` through `framework_gates_commit_msg` in `.husky/framework-gates.sh`: it warns, and does not block, when the pair is missing or not last, or when a harness-branded trailer (`Claude-Session:` and kin), an AI `Co-Authored-By:` or a "Generated with <tool>" line is present. A warning there means the commit landed wrong: fix the next one, and leave a pushed one unamended.
 
----
 
-## Examples — full set
+## Examples
 
 ```
 feat(UPEX-123): add bulk-assign action

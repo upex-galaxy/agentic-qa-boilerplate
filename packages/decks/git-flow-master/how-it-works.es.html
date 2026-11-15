@@ -734,17 +734,18 @@ $ bun run git:policy apply --yes      # escribe el ruleset
     [--reviewer {users}] [--label {labels}] [--draft]</div>
         <table class="tt tight mt-s">
           <tr><th>Rama</th><th>Plantilla del cuerpo</th></tr>
-          <tr><td class="mono">test/*</td><td class="small"><span class="mono">references/pr-test-automation.md</span>: Summary, Changes, Test Plan, Traceability (issue, ATP, ATR, TCs), evidencia, riesgo, checklist</td></tr>
+          <tr><td class="mono">test/*</td><td class="small"><span class="mono">references/pr-test-automation.md</span>: Summary, Changes, Test Plan, Traceability (issue, ATP, ATR, TCs), evidencia, Merge danger, checklist</td></tr>
           <tr><td class="small">el resto</td><td class="small"><span class="mono">references/pr-templating.md</span></td></tr>
         </table>
       </div>
       <div class="stack" style="gap:14px">
         <div class="card"><p class="lbl">Título y placeholders</p><p class="small mt-s">Menos de 70 caracteres. Un placeholder que la skill no pudo llenar queda <b>visible</b> para el autor; ninguna sección se borra en silencio. Labels: verificar con <span class="mono">gh label list</span>.</p></div>
+        <div class="card"><p class="lbl">Merge danger y evidencia</p><p class="small mt-s">El cuerpo dice si el merge es una puerta de <b>un solo sentido</b> (migraciones, datos borrados, contratos publicados) o de dos, y el radio de impacto en una o dos palabras. La evidencia va ordenada por peso: capturas, salida de ejecución con el test que falló y luego pasó, y por último un chequeo descrito.</p></div>
         <div class="card card-accent"><p class="lbl">Se detiene en la creación</p><p class="small mt-s">El merge es el paso del usuario. Excepción: un worker supervisado cuyo brief <b>nombra</b> el merge ejecuta la instrucción del owner y lo dice en su reporte.</p></div>
-        <div class="card"><p class="lbl">Gate adversarial opcional</p><p class="small mt-s">Diff de más de 400 líneas o que toca scaffolding compartido: la skill ofrece <span class="mono">/judgment-day</span> antes de abrir. Nunca lo invoca sola.</p></div>
+        <div class="card"><p class="lbl">Gate adversarial opcional</p><p class="small mt-s">Diff de más de 400 líneas o con scaffolding compartido: la skill ofrece <span class="mono">/judgment-day</span> antes de abrir y no lo invoca sola.</p></div>
       </div>
     </div>
-    <div class="notes">El cuerpo se escribe a un tempfile y se pasa con --body-file para evitar problemas de escape. Sin gh o sin auth, la skill reporta el bloqueo; nunca da a entender que el PR existe.</div>
+    <div class="notes">El cuerpo se escribe a un tempfile y se pasa con --body-file para evitar problemas de escape. Merge danger es la sección que antes se llamaba riesgo; el placeholder de la plantilla sigue siendo RISK. Sin nadie al teclado, una rutina escribe el cuerpo a un archivo y reporta, salvo que su brief nombre abrir el PR. Sin gh o sin auth, la skill reporta el bloqueo; nunca da a entender que el PR existe.</div>
   </section>
 
   <!-- 13. PRs ENCADENADOS -->
@@ -930,23 +931,23 @@ $ bun run git:policy apply --yes      # escribe el ruleset
     <div class="notes">Un arreglo equivocado acá cuesta horas, y el usuario rara vez está tan apurado. Playbooks completos: references/conflict-resolution.md.</div>
   </section>
 
-  <!-- 18. ANTI-PATRONES -->
-  <section class="slide compact" data-title="Anti-patrones">
+  <!-- 18. REGLAS QUE SIEMPRE APLICAN -->
+  <section class="slide compact" data-title="Reglas que siempre aplican">
     <p class="kicker">Salvaguardas · 18 de 19</p>
-    <h2 class="h2">Anti-patrones: <span class="grad">nunca</span> hacer</h2>
+    <h2 class="h2">Lo que la skill <span class="grad">no hace</span>, y dónde está la regla</h2>
     <table class="tt mt-m" style="font-size:16px;border-spacing:0 5px">
-      <tr><th style="width:64px">#</th><th>Regla</th></tr>
-      <tr><td style="padding:8px 16px"><b class="mono">G1</b></td><td style="padding:8px 16px" class="small">Force-push a <span class="mono">main</span> o a cualquier rama compartida.</td></tr>
-      <tr><td style="padding:8px 16px"><b class="mono">G2</b></td><td style="padding:8px 16px" class="small">Amend o rebase de un commit ya pusheado.</td></tr>
-      <tr><td style="padding:8px 16px"><b class="mono">G3</b></td><td style="padding:8px 16px" class="small">Commitear secretos, credenciales, contenido de <span class="mono">.env</span> o tokens: la historia de git es para siempre.</td></tr>
-      <tr><td style="padding:8px 16px"><b class="mono">G4</b></td><td style="padding:8px 16px" class="small">Atribución a la IA en commits o cuerpos de PR (Regla #3).</td></tr>
-      <tr><td style="padding:8px 16px"><b class="mono">G5</b></td><td style="padding:8px 16px" class="small">Pushear a una protegida salteando la política de la Regla #5.</td></tr>
-      <tr><td style="padding:8px 16px"><b class="mono">G6</b></td><td style="padding:8px 16px" class="small"><span class="mono">--no-verify</span> para "ir más rápido": el hook atrapa el bug que no viste.</td></tr>
-      <tr><td style="padding:8px 16px"><b class="mono">G7</b></td><td style="padding:8px 16px" class="small">Mezclar responsabilidades en un commit (feat + refactor + lint).</td></tr>
-      <tr><td style="padding:8px 16px"><b class="mono">G8</b></td><td style="padding:8px 16px" class="small">Apilar PRs sin nombrar la cadena de dependencias en el cuerpo.</td></tr>
-      <tr><td style="padding:8px 16px"><b class="mono">G9</b></td><td style="padding:8px 16px" class="small">Descartes globales del working tree (Regla #15).</td></tr>
+      <tr><th style="width:190px">En el SKILL.md</th><th>Regla</th></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">Regla 5</b></td><td style="padding:8px 16px" class="small">Force-push a <span class="mono">main</span> o a cualquier rama compartida.</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">Regla 5</b></td><td style="padding:8px 16px" class="small">Amend o rebase de un commit ya pusheado.</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">Compact Rules</b></td><td style="padding:8px 16px" class="small">Commitear secretos, credenciales, contenido de <span class="mono">.env</span> o tokens: la historia de git es para siempre.</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">Regla 3</b></td><td style="padding:8px 16px" class="small">Atribución a la IA en commits o cuerpos de PR (Regla #3).</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">Regla 4</b></td><td style="padding:8px 16px" class="small">Pushear a una protegida salteando la política de la Regla #5.</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">Regla 5</b></td><td style="padding:8px 16px" class="small"><span class="mono">--no-verify</span> para "ir más rápido": el hook atrapa el bug que no viste.</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">Regla 2</b></td><td style="padding:8px 16px" class="small">Mezclar responsabilidades en un commit (feat + refactor + lint).</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">Compact Rules</b></td><td style="padding:8px 16px" class="small">Apilar PRs sin nombrar la cadena de dependencias en el cuerpo.</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">Regla 12</b></td><td style="padding:8px 16px" class="small">Descartes globales del working tree (Regla #15).</td></tr>
     </table>
-    <div class="notes">Los anti-patrones del SKILL.md. G1, G2 y G9 protegen el trabajo de otros; G3 y G4 protegen la historia; G5 a G8 protegen el review.</div>
+    <div class="notes">El SKILL.md ya no tiene una lista aparte de anti-patrones: cada prohibición vive una sola vez en las Compact Rules y en las Critical rules numeradas, y la tabla apunta a dónde. Force-push, amend, rebase de lo pusheado y --no-verify son la misma Regla 5; los descartes globales son la Regla 12 (la Regla #15 de AGENTS.md). Las reglas protegen distinto: unas el trabajo de otros, otras la historia, otras el review. Sin nadie al teclado, la skill hace el trabajo local y reversible (leer el estado, ramas, commits) y se detiene antes de push, PR, merge, un flag de fuerza o un bypass, y reporta. Una persona ausente nunca convierte confirm en allowed.</div>
   </section>
 
   <!-- 19. CIERRE -->
@@ -957,7 +958,7 @@ $ bun run git:policy apply --yes      # escribe el ruleset
       <div class="card">
         <p class="lbl">Cómo se invoca</p>
         <p class="small mt-s"><b>Claude Code:</b> <span class="mono">/git-flow-master</span>.<br><b>OpenCode y Codex:</b> cargá la skill <span class="mono">git-flow-master</span>.<br><b>Pi:</b> <span class="mono">/skill:git-flow-master</span></p>
-        <p class="small mt-s">En cada host se carga sola ante intenciones como <i>"commit and push"</i>, <i>"abrí un PR"</i>, <i>"tengo conflictos"</i> o <i>"configura el flujo de git"</i>. No tiene modos: la operación sale del pedido.</p>
+        <p class="small mt-s">En cada host se carga sola ante intenciones como <i>"commit and push"</i>, <i>"abrí un PR"</i>, <i>"tengo conflictos"</i> o <i>"configura el flujo de git"</i>; la descripción está en inglés y se empareja por significado. No tiene modos: la operación sale del pedido.</p>
       </div>
       <div class="card">
         <p class="lbl">Quién la llama</p>

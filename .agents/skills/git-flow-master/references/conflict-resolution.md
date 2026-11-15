@@ -1,20 +1,20 @@
-# Conflict Resolution — Per-Type Playbooks
+# Conflict resolution: per-type playbooks
 
-Conflicts are diagnosed before they are resolved. The user is rarely in a hurry; a wrong fix here costs hours of recovery. The shape of every playbook is the same:
+Diagnose a conflict before resolving it. The user is rarely in a hurry, and a wrong fix here costs hours of recovery. Every playbook has the same shape:
 
-1. **Explain** what happened (root cause, in the user's language).
-2. **Present options** ranked by safety. Never pick destructive options silently.
+1. **Explain** what happened: the root cause, in the user's language.
+2. **Present options** ranked by safety. A destructive option is the user's choice, so it is never picked silently.
 3. **Guide** the resolution step by step.
-4. **Verify** (`git status`, `git log --oneline -3`, working tree clean).
-5. **Teach prevention** (one short note on how to avoid it next time).
+4. **Verify** with `git status`, `git log --oneline -3` and a clean working tree.
+5. **Teach prevention** in one short note on how to avoid it next time.
 
-When in doubt, **abort** (`git merge --abort`, `git rebase --abort`, `git cherry-pick --abort`) rather than push forward. Aborting always wins over guessing.
+When in doubt, abort (`git merge --abort`, `git rebase --abort`, `git cherry-pick --abort`) instead of pushing forward. An abort always beats a guess.
 
 ---
 
 ## Table of contents
 
-1. [Diagnosis — gather information first](#diagnosis)
+1. [Diagnosis: gather information first](#diagnosis)
 2. [Merge conflict (content)](#merge-conflict-content)
 3. [Merge conflict (rename / delete)](#merge-conflict-rename--delete)
 4. [Rebase conflict](#rebase-conflict)
@@ -29,7 +29,7 @@ When in doubt, **abort** (`git merge --abort`, `git rebase --abort`, `git cherry
 
 ## Diagnosis
 
-Run silently and read the output before deciding which playbook applies:
+Run these without narrating, and read the output before deciding which playbook applies:
 
 ```bash
 git status
@@ -40,23 +40,23 @@ git diff --check
 ls -la .git | grep -E 'MERGE_HEAD|REBASE|CHERRY_PICK|BISECT'
 ```
 
-Classify by `git status` output and any state files in `.git/`:
+Classify by the `git status` output and any state files in `.git/`:
 
 | Symptom                                                                          | State file                                      | Probable problem                           |
 | -------------------------------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------ |
 | `both modified:`                                                                 | `MERGE_HEAD`                                    | Merge conflict (content)                   |
 | `deleted by us:` / `deleted by them:`                                            | `MERGE_HEAD`                                    | Merge conflict (rename/delete)             |
 | `interactive rebase in progress` / `REBASE_HEAD`                                 | `REBASE_HEAD`, `rebase-apply/`, `rebase-merge/` | Rebase conflict                            |
-| `MERGING` (no `both modified`)                                                   | `MERGE_HEAD`                                    | Incomplete merge — finish or abort         |
+| `MERGING` (no `both modified`)                                                   | `MERGE_HEAD`                                    | Incomplete merge: finish or abort          |
 | `HEAD detached at <sha>`                                                         | none                                            | Detached HEAD                              |
 | `Your branch and 'origin/X' have diverged`                                       | none                                            | Branch divergence                          |
 | `! [rejected]` from push                                                         | none                                            | Push rejected                              |
 | `error: Your local changes to the following files would be overwritten by merge` | none                                            | Stash needed before pull/merge             |
 | `CONFLICT (cherry-pick)`                                                         | `CHERRY_PICK_HEAD`                              | Cherry-pick conflict (use rebase playbook) |
 
-If the user provided context, use it. If not, ask:
+If the user gave context, use it. If not, ask:
 
-> _"What were you trying to do when this happened? — pull/fetch, push, merge, rebase, checkout, stash apply, or something else?"_
+> _"What were you trying to do when this happened: pull/fetch, push, merge, rebase, checkout, stash apply, or something else?"_
 
 ---
 
@@ -77,7 +77,7 @@ If the user provided context, use it. If not, ask:
 2. For each file, show the conflict block(s) and ask which side to keep:
 
    ```
-   📄 src/auth/login.ts (lines 45-52)
+   src/auth/login.ts (lines 45-52)
 
    <<<<<<< HEAD (your branch)
    const timeout = 5000;
@@ -89,7 +89,7 @@ If the user provided context, use it. If not, ask:
    [4] view more context
    ```
 
-3. Apply the resolution. For "keep ours" / "keep theirs" Git has shortcuts:
+3. Apply the resolution. Git has shortcuts for "keep ours" and "keep theirs":
 
    ```bash
    git checkout --ours <file>     # keep your branch's version
@@ -98,7 +98,7 @@ If the user provided context, use it. If not, ask:
    git add <file>
    ```
 
-   For "combine", edit the file manually, remove all conflict markers, then `git add <file>`.
+   For "combine", edit the file by hand, remove every conflict marker, then `git add <file>`.
 
 4. After all files are resolved:
 
@@ -109,13 +109,13 @@ If the user provided context, use it. If not, ask:
    git commit -m "merge: integrate {branch} into {current}"
    ```
 
-5. Verify clean state and a sensible log:
+5. Verify a clean state and a sensible log:
    ```bash
    git status
    git log --oneline -5
    ```
 
-**Prevention**: pull the upstream branch frequently; keep branches short-lived; coordinate on long-running shared files.
+**Prevention**: pull the upstream branch often, keep branches short-lived, and coordinate on long-running shared files.
 
 ---
 
@@ -123,7 +123,7 @@ If the user provided context, use it. If not, ask:
 
 **Explanation**:
 
-> _One branch deleted (or renamed) a file the other branch modified. Git doesn't know if the modification should follow the rename, be reapplied to a new path, or be discarded._
+> _One branch deleted (or renamed) a file the other branch modified. Git doesn't know whether the modification should follow the rename, be reapplied to a new path, or be discarded._
 
 **Steps**:
 
@@ -135,7 +135,7 @@ If the user provided context, use it. If not, ask:
    ```
 
 2. Decide:
-   - **Keep the deletion** (the file is gone, modifications discarded):
+   - **Keep the deletion** (the file is gone, the modifications are discarded):
      ```bash
      git rm <file>
      ```
@@ -145,11 +145,11 @@ If the user provided context, use it. If not, ask:
      git checkout MERGE_HEAD -- <file>      # if deleted by us
      git add <file>
      ```
-   - **Migrate modifications** to the renamed path (if a rename was the cause): manually copy the changes to the new path, `git add` it, `git rm` the old one.
+   - **Migrate the modifications** to the renamed path (when a rename was the cause): copy the changes to the new path by hand, `git add` it, and `git rm` the old one.
 
-3. Commit and verify (same as content conflict).
+3. Commit and verify, as for a content conflict.
 
-**Prevention**: when renaming files, do it in its own commit (no behaviour change in the same commit). Reviewers catch rename conflicts early.
+**Prevention**: rename files in their own commit, with no behaviour change in it. Reviewers catch rename conflicts early.
 
 ---
 
@@ -168,12 +168,12 @@ If the user provided context, use it. If not, ask:
    git rebase --show-current-patch     # full diff of the failing commit
    ```
 
-2. Present options:
+2. Present the options:
    - **Resolve and continue**: edit the conflicted files, `git add`, then `git rebase --continue`.
-   - **Skip this commit**: `git rebase --skip` (the commit is dropped — confirm with user; this is destructive).
-   - **Abort the rebase**: `git rebase --abort` (returns to pre-rebase state; safe).
+   - **Skip this commit**: `git rebase --skip` drops the commit, which is destructive, so confirm with the user first.
+   - **Abort the rebase**: `git rebase --abort` returns to the pre-rebase state and is safe.
 
-3. If resolving: same content-conflict flow as above (`git checkout --ours/--theirs` or manual edit, then `git add`, then `git rebase --continue`).
+3. When resolving, follow the content-conflict flow above (`git checkout --ours/--theirs` or a manual edit, then `git add`, then `git rebase --continue`).
 
 4. After all commits land, verify:
    ```bash
@@ -181,9 +181,9 @@ If the user provided context, use it. If not, ask:
    git status
    ```
 
-**Prevention**: rebase early and often (rebase a 1-day branch, not a 3-week branch); never rebase a branch others are working on.
+**Prevention**: rebase early and often (a 1-day branch, not a 3-week one).
 
-**Critical rule**: never rebase a branch that has been pushed AND is shared. Rewriting public history is forbidden.
+**Critical rule**: never rebase a branch that has been pushed and is shared. Rewriting public history is forbidden (Critical Rule #6 in `AGENTS.md`).
 
 ---
 
@@ -191,7 +191,7 @@ If the user provided context, use it. If not, ask:
 
 **Explanation**:
 
-> _The remote has commits you don't have locally. Pushing now would overwrite those commits and lose work. Git refuses to do that._
+> _The remote has commits you don't have locally. Pushing now would overwrite those commits and lose work, so Git refuses._
 
 **Steps**:
 
@@ -203,7 +203,7 @@ If the user provided context, use it. If not, ask:
    git log origin/{branch}..HEAD --oneline    # commits you have that aren't on remote
    ```
 
-2. Present options ranked by safety:
+2. Present the options, ranked by safety:
 
    **[1] Pull with merge** (safest, creates a merge commit):
 
@@ -221,16 +221,16 @@ If the user provided context, use it. If not, ask:
    git push
    ```
 
-   Reapplies your commits on top of the remote. Linear history. Safe **only** if the branch is yours alone (the rebase rewrites your local commits — fine if no one else has them).
+   This reapplies your commits on top of the remote for a linear history. It is safe only when the branch is yours alone, because the rebase rewrites your local commits, which is fine if no one else has them.
 
-   **[3] Force push** (DANGEROUS — only with explicit user opt-in AND only on unshared branches):
+   **[3] Force push** (dangerous: only with the user's explicit opt-in, and only on unshared branches):
 
    ```bash
-   # Never run silently. Confirm the branch is unshared.
+   # Confirm the branch is unshared before running this.
    git push --force-with-lease
    ```
 
-   `--force-with-lease` is safer than `--force`; it refuses if the remote moved since your last fetch. Still destructive — never on `main` or shared branches.
+   `--force-with-lease` is safer than `--force`, since it refuses when the remote moved after your last fetch. It is still destructive, and it never goes on `main` or on a shared branch.
 
 3. After pushing, verify:
    ```bash
@@ -238,7 +238,7 @@ If the user provided context, use it. If not, ask:
    git log --oneline -5
    ```
 
-**Prevention**: `git fetch` before starting work; pull frequently on long-running branches.
+**Prevention**: `git fetch` before starting work, and pull often on long-running branches.
 
 ---
 
@@ -246,7 +246,7 @@ If the user provided context, use it. If not, ask:
 
 **Explanation**:
 
-> _Normally HEAD points to a branch. "Detached" means HEAD points directly at a commit (no branch). Any commits you make here are easy to lose because no branch tracks them._
+> _Normally HEAD points to a branch. "Detached" means HEAD points straight at a commit, with no branch. Commits made here are easy to lose because no branch tracks them._
 
 **Steps**:
 
@@ -259,19 +259,19 @@ If the user provided context, use it. If not, ask:
 
 2. Decide:
 
-   **[1] Just looking — go back**:
+   **[1] Just looking, go back**:
 
    ```bash
    git checkout -                          # go back to the previous branch
    ```
 
-   **[2] Made changes I want to keep — create a branch from here**:
+   **[2] Made changes worth keeping, create a branch from here**:
 
    ```bash
    git checkout -b {prefix}/{slug}
    ```
 
-   (Use the branch-creation runbook in `SKILL.md` § 3.1 for naming.)
+   (Branch naming is in the branch-creation runbook, `SKILL.md` § 3.1.)
 
    **[3] Discard any changes and switch to a known branch**:
 
@@ -285,7 +285,7 @@ If the user provided context, use it. If not, ask:
    git branch --show-current
    ```
 
-**Prevention**: when checking out a tag or specific commit for inspection, use `git switch --detach <ref>` (Git 2.23+) so the detachment is intentional. Create a branch immediately if you plan to commit.
+**Prevention**: to inspect a tag or a specific commit, use `git switch --detach <ref>` (Git 2.23+) so the detachment is intentional, and create a branch right away if you plan to commit.
 
 ---
 
@@ -293,7 +293,7 @@ If the user provided context, use it. If not, ask:
 
 **Explanation**:
 
-> _A stash is uncommitted work saved temporarily. Applying (or popping) the stash conflicts with files that have changed since you saved it._
+> _A stash is uncommitted work saved temporarily. Applying (or popping) it conflicts with files that changed after you saved it._
 
 **Steps**:
 
@@ -306,14 +306,14 @@ If the user provided context, use it. If not, ask:
 
 2. Options:
 
-   **[1] Resolve manually**: edit conflicting files (same content-conflict flow), then:
+   **[1] Resolve manually**: edit the conflicting files (same content-conflict flow), then:
 
    ```bash
    git add <files>
    git stash drop                      # remove the stash if you used `git stash apply`
    ```
 
-   `git stash pop` removes the stash automatically after a clean apply; if the apply conflicts, the stash is **kept** so you can retry. Drop it explicitly when done.
+   `git stash pop` removes the stash after a clean apply. If the apply conflicts, the stash is kept so you can retry, so drop it explicitly when done.
 
    **[2] Abort and keep the stash**:
 
@@ -323,9 +323,9 @@ If the user provided context, use it. If not, ask:
    git reset HEAD <paths-from-stash>   # unstage anything that got staged
    ```
 
-   > ⚠️ Never `git checkout -- .` here — other agent sessions may hold uncommitted work in the same working tree (Anti-pattern G9, Critical Rule #15). Discard only the paths the stash apply touched.
+   > Never `git checkout -- .` here: other agent sessions may hold uncommitted work in the same working tree (Anti-pattern G9, Critical Rule #15). Discard only the paths the stash apply touched.
 
-   The stash is still in `git stash list`. Apply again later when the working tree is in a different state.
+   The stash is still in `git stash list`, so apply it again later when the working tree is in a different state.
 
 3. Verify:
    ```bash
@@ -341,7 +341,7 @@ If the user provided context, use it. If not, ask:
 
 **Explanation**:
 
-> _Git refuses to merge two branches that don't share any common commit. This usually happens when you initialised separate repos and tried to merge them, or cloned with `--depth` and history is missing._
+> _Git refuses to merge two branches that share no common commit. This usually happens when separate repos were initialised and then merged, or when a `--depth` clone is missing history._
 
 **Steps**:
 
@@ -352,7 +352,7 @@ If the user provided context, use it. If not, ask:
    git fetch --unshallow                # if it was a shallow clone
    ```
 
-2. If you intentionally want to merge unrelated histories:
+2. If you really want to merge unrelated histories:
 
    ```bash
    git pull origin main --allow-unrelated-histories
@@ -362,7 +362,7 @@ If the user provided context, use it. If not, ask:
 
    Then resolve any content conflicts that arise (same content-conflict flow).
 
-3. If you did NOT intend to merge unrelated histories, **stop** and figure out why the histories are unrelated. The flag suppresses a safety check; using it on the wrong repo bonds two unrelated codebases together.
+3. If you did not mean to merge unrelated histories, stop and find out why they are unrelated. The flag suppresses a safety check, and using it on the wrong repo bonds two unrelated codebases together.
 
 **Prevention**: clone with full history (`git clone <url>`, no `--depth`) when you plan to merge.
 
@@ -372,7 +372,7 @@ If the user provided context, use it. If not, ask:
 
 **Explanation**:
 
-> _A pre-commit hook (lint, format, test) returned non-zero, so the commit was NOT created. The hook is the gatekeeper; respecting it keeps the repo healthy._
+> _A pre-commit hook (lint, format, test) returned non-zero, so the commit was NOT created. The hook is the gatekeeper, and respecting it keeps the repo healthy._
 
 **Steps**:
 
@@ -381,27 +381,27 @@ If the user provided context, use it. If not, ask:
 2. Fix the underlying issue:
    - Lint failures: run the auto-fixer (`bun run lint:fix` / `pnpm lint --fix` / `eslint --fix`).
    - Format failures: run the formatter (`bun run format:fix` / `prettier --write`).
-   - Test failures: actually fix the test or the code under test.
+   - Test failures: fix the test or the code under test.
    - Type failures: fix the types.
 
-3. Re-stage the fixed files and create a **NEW** commit:
+3. Re-stage the fixed files and create a **new** commit:
 
    ```bash
    git add <fixed-files>
    git commit -m "{type}({key}): {description}"
    ```
 
-4. **Never** `git commit --amend` here. The hook rejected the commit — it does not exist. `--amend` would mutate the _previous_ commit, which destroys context. Forward commits only. (Critical Rule #6 in `AGENTS.md`.)
+4. Do not `git commit --amend` here. The hook rejected the commit, so it does not exist, and `--amend` would mutate the previous commit and destroy context. Make forward commits only (Critical Rule #6 in `AGENTS.md`).
 
-5. **Never** `git commit --no-verify` to bypass the hook unless the user explicitly authorises it. Hooks exist for a reason.
+5. Do not `git commit --no-verify` to bypass the hook unless the user explicitly authorises it. The hooks are the repo's quality gate.
 
-**Prevention**: run the hooks' commands locally before committing (`bun run lint:check`, `bun run types:check`, etc.). Faster than discovering the failure at commit time.
+**Prevention**: run the hooks' commands locally before committing (`bun run lint:check`, `bun run types:check`, and so on). That is faster than finding out at commit time.
 
 ---
 
 ## Emergency commands
 
-For when everything is broken and you need to recover. These commands can lose work — use them only with explicit user consent and only when the alternatives have been tried.
+For when everything is broken and you need to recover. These commands can lose work, so use them only with the user's explicit consent and after the alternatives have been tried.
 
 ```bash
 # Show every reference HEAD has pointed to (including "lost" commits)
@@ -426,4 +426,16 @@ git clone {url} {dir}-fresh
 # Then move uncommitted work over manually
 ```
 
-**Reflog is the safety net.** A commit only truly disappears after `git gc` runs (default: 90 days for unreferenced commits). Until then, reflog can recover anything that was once committed.
+The reflog is the safety net. A commit disappears only after `git gc` runs (default 90 days for unreferenced commits), so until then the reflog can recover anything that was once committed.
+
+---
+
+## With nobody at the keyboard
+
+The waits here are the choice among ranked options, the skip-commit confirmation, the force-push opt-in and every emergency command. `agentic-qa-core/references/decision-protocol.md` says which of them reach a person.
+
+| Who runs it | The gate |
+| --- | --- |
+| A person is present | Unchanged. |
+| A supervised worker | The conductor or launcher holds the gate and picks the option. The worker diagnoses, lists the options and reports. |
+| A routine with nobody | The delegating brief is the approval source when it covers the decision. Without one, do the reversible work (diagnose, resolve a content conflict, make a forward commit locally), abort anything unresolved, and stop before a force push, `--skip`, `reset --hard`, `--no-verify` or any push; report what is waiting. |

@@ -1,6 +1,6 @@
-# Branching Strategies — Catalogue, Detection, Trade-offs
+# Branching strategies: catalogue, detection, trade-offs
 
-Eight strategies are supported. Each one tells the skill where new branches start, where PRs target, what counts as "protected", and how releases promote.
+Each strategy answers four questions for the skill: where new branches start, where PRs target, which branches are protected, and how releases promote. Read this file to resolve the strategy, to plan chained PRs, or to find the field values a strategy writes into `git_strategy:`.
 
 ---
 
@@ -14,7 +14,7 @@ Eight strategies are supported. Each one tells the skill where new branches star
 6. [`github-flow`](#github-flow)
 7. [`gitlab-flow`](#gitlab-flow)
 8. [`sdet`](#sdet)
-9. [Detection algorithm — combined view](#detection-algorithm)
+9. [Detection algorithm](#detection-algorithm)
 10. [Chained-PR decision tree](#chained-pr-decision-tree)
 11. [Strategy comparison matrix](#strategy-comparison-matrix)
 
@@ -22,25 +22,25 @@ Eight strategies are supported. Each one tells the skill where new branches star
 
 ## `solo-main`
 
-**Shape**: one long-lived branch (`main`). All work lands directly. Optional ephemeral branches when the user wants a PR for documentation or CI gating.
+Shape: one long-lived branch (`main`). All work lands directly. Ephemeral branches appear only when the user wants a PR for documentation or CI gating.
 
-**Best for**: solo projects, prototypes, scratch repos, personal websites, throwaway demos.
+Best for: solo projects, prototypes, scratch repos, personal websites, throwaway demos.
 
-**Detection signals**:
+Detection signals:
 
 - `git branch -a` returns only `main` (or `master`) and no other long-lived remote branches.
-- Single contributor in `git log --format='%ae' | sort -u`.
-- No `staging` / `dev` / `develop` branch upstream.
+- A single contributor in `git log --format='%ae' | sort -u`.
+- No `staging`, `dev` or `develop` branch upstream.
 
-**Source branch for new work**: `main`.
+Source branch for new work: `main`.
 
-**PR base**: `main` (when PRs are used at all — solo-main often skips PRs entirely).
+PR base: `main`, when PRs are used at all (solo-main often skips them).
 
-**Protected branches**: `main`. A direct push follows `git_strategy.policy.direct_push_to_protected` (`allowed` = push without asking, `confirm` = ask every push, `forbidden` = PR).
+Protected branches: `main`. A direct push follows `git_strategy.policy.direct_push_to_protected` (`allowed` = push without asking, `confirm` = ask every push, `forbidden` = PR).
 
-**Release model**: continuous; every push is a release.
+Release model: continuous; every push is a release.
 
-**Trade-offs**:
+Trade-offs:
 
 - Pros: zero branching overhead, fast feedback loop.
 - Cons: no review gate; `main` may break between commits; no isolation for risky work.
@@ -49,30 +49,30 @@ Eight strategies are supported. Each one tells the skill where new branches star
 
 ## `main-integration`
 
-**Shape**: `main` (production) + one integration branch (`staging` / `dev` / `develop`). Features merge to integration; integration promotes to `main` only on release.
+Shape: `main` (production) plus one integration branch (`staging`, `dev` or `develop`). Features merge to integration; integration promotes to `main` only on release.
 
-**Best for**: small teams (2-10 people), one-product repos, CD pipelines that promote `staging → main` on a cadence.
+Best for: small teams (2-10 people), one-product repos, CD pipelines that promote `staging` to `main` on a cadence.
 
-**Detection signals**:
+Detection signals:
 
-- `git branch -a` shows `main` (or `master`) AND exactly one of `{staging, dev, develop, integration}` upstream.
-- Branch protection rules on both branches (if visible via `gh api`).
+- `git branch -a` shows `main` (or `master`) and exactly one of `{staging, dev, develop, integration}` upstream.
+- Branch protection rules on both branches (visible through `gh api`).
 - `AGENTS.md` mentions both branches in a "Git Workflow" section.
 
-**Source branch for new work**: integration branch (e.g. `staging`).
+Source branch for new work: the integration branch (for example `staging`).
 
-**PR base**: integration branch by default. Promotion PRs (`staging → main`) target `main`.
+PR base: the integration branch by default. Promotion PRs (`staging` to `main`) target `main`.
 
-**Protected branches**: `main` AND integration branch. Confirm before any direct push to either.
+Protected branches: `main` and the integration branch. Confirm before any direct push to either.
 
-**Release model**: integration branch is always deployable to a staging environment; `main` deploys to production on a release event.
+Release model: the integration branch is always deployable to a staging environment; `main` deploys to production on a release event.
 
-**Trade-offs**:
+Trade-offs:
 
-- Pros: single review gate; staging environment matches production; rollbacks are straightforward (revert the promotion PR).
-- Cons: integration branch can drift if releases are rare; double-merge cost when promoting (cherry-pick / merge / rebase / re-PR).
+- Pros: a single review gate; staging matches production; rollback is a revert of the promotion PR.
+- Cons: the integration branch drifts when releases are rare; promotion costs a second merge (cherry-pick, merge, rebase or re-PR).
 
-**Persisted in the `git_strategy:` block of `.agents/project.yaml`**:
+Persisted in the `git_strategy:` block of `.agents/project.yaml`:
 
 ```yaml
 git_strategy:
@@ -86,190 +86,190 @@ git_strategy:
 
 ## `enterprise`
 
-**Shape**: `main` + integration + many short-lived `feature/*`, `fix/*`, plus `release/*` and `hotfix/*` for production fixes. May add environment branches (`pre-production`, regional branches) when the deployment topology demands it.
+Shape: `main` plus integration plus many short-lived `feature/*` and `fix/*` branches, with `release/*` and `hotfix/*` for production fixes. Environment branches (`pre-production`, regional branches) appear when the deployment topology demands them.
 
-**Best for**: 10+ contributors, multiple parallel features, regulated environments (compliance / audit), products with explicit release cycles.
+Best for: 10+ contributors, several parallel features, regulated environments (compliance, audit), products with explicit release cycles.
 
-**Detection signals**:
+Detection signals:
 
-- `main` + integration + active `feature/*` or `release/*` branches in `git branch -a`.
-- `.github/CODEOWNERS` exists and is non-trivial.
-- `gh api repos/.../branches/main/protection` returns rules with required reviewers + status checks.
-- `release/*` or `hotfix/*` long-lived branches.
+- `main`, integration, and active `feature/*` or `release/*` branches in `git branch -a`.
+- A non-trivial `.github/CODEOWNERS`.
+- `gh api repos/.../branches/main/protection` returns rules with required reviewers and status checks.
+- Long-lived `release/*` or `hotfix/*` branches.
 
-**Source branch for new work**:
+Source branch for new work:
 
-- `feature/*`, `fix/*` → integration branch.
-- `hotfix/*` → `main` (cherry-pick back to integration after merge).
-- `release/X.Y.Z` → integration branch (cut for stabilisation).
+- `feature/*`, `fix/*`: the integration branch.
+- `hotfix/*`: `main` (cherry-pick back to integration after the merge).
+- `release/X.Y.Z`: the integration branch (cut for stabilisation).
 
-**PR base**: integration; `hotfix/*` → `main`; `release/*` → `main` (with back-merge to integration).
+PR base: integration; `hotfix/*` goes to `main`; `release/*` goes to `main` (with a back-merge to integration).
 
-**Protected branches**: `main`, integration, `release/*`. Confirm before any direct push.
+Protected branches: `main`, integration, `release/*`. Confirm before any direct push.
 
-**Release model**: explicit release branches stabilise; release PR merges to `main` and triggers production deploy.
+Release model: release branches stabilise; the release PR merges to `main` and triggers the production deploy.
 
-**Trade-offs**:
+Trade-offs:
 
-- Pros: parallel work isolated; release-branch stabilisation prevents "feature freeze" on integration; hotfix path independent of feature work.
-- Cons: branching overhead; back-merges easy to forget; release-branch coordination required.
+- Pros: parallel work stays isolated; release-branch stabilisation avoids a feature freeze on integration; the hotfix path is independent of feature work.
+- Cons: branching overhead; back-merges are easy to forget; release branches need coordination.
 
 ---
 
 ## `trunk-based`
 
-**Shape**: trunk (`main`) is the only long-lived branch. Short-lived branches (<1 day, often <1 hour) merge fast. Incomplete features hide behind feature flags. CI gate on every commit is non-negotiable.
+Shape: the trunk (`main`) is the only long-lived branch. Short-lived branches (under a day, often under an hour) merge fast. Incomplete features hide behind feature flags. A CI gate on every commit is a precondition.
 
-**Best for**: high-velocity teams with strong CI/CD, feature-flag infrastructure, mature test pyramid (DORA "elite performer" pattern).
+Best for: high-velocity teams with strong CI/CD, feature-flag infrastructure and a mature test pyramid (the DORA "elite performer" pattern).
 
-**Detection signals**:
+Detection signals:
 
-- `git branch -a` shows `main` plus only ephemeral feature branches (most ≤1 day old).
-- High commit frequency to `main` (`git log --since='7 days ago' --pretty=oneline | wc -l` > 20 in a small team).
-- Feature flag system in `package.json` / config (LaunchDarkly, Unleash, custom).
+- `git branch -a` shows `main` plus only ephemeral feature branches (most a day old or less).
+- High commit frequency to `main` (`git log --since='7 days ago' --pretty=oneline | wc -l` above 20 in a small team).
+- A feature flag system in `package.json` or config (LaunchDarkly, Unleash, custom).
 - `.github/workflows/` enforces CI on every PR.
 
-**Source branch for new work**: `main`.
+Source branch for new work: `main`.
 
-**PR base**: `main`. Direct commits to `main` for tiny changes are also acceptable in pure trunk-based.
+PR base: `main`. Direct commits to `main` for tiny changes are acceptable in pure trunk-based.
 
-**Protected branches**: `main`. CI gate is the protection — required status checks before merge.
+Protected branches: `main`. The CI gate is the protection: required status checks before merge.
 
-**Release model**: continuous deployment from `main`. Feature flags decouple deploy from release.
+Release model: continuous deployment from `main`. Feature flags decouple deploy from release.
 
-**Trade-offs**:
+Trade-offs:
 
-- Pros: minimal branching overhead; conflicts rare (short-lived branches); enables CD.
-- Cons: requires feature flags + strong CI; no obvious place for long-running spike work.
+- Pros: minimal branching overhead; conflicts are rare; enables CD.
+- Cons: needs feature flags and strong CI; no obvious place for long-running spike work.
 
 ---
 
 ## `gitflow`
 
-**Shape**: Vincent Driessen's classic (2010). `main` (releases only) + `develop` (integration) + `feature/*` (off `develop`) + `release/*` (off `develop`, merge to `main`) + `hotfix/*` (off `main`).
+Shape: Vincent Driessen's classic model. `main` (releases only), `develop` (integration), `feature/*` (off `develop`), `release/*` (off `develop`, merged to `main`) and `hotfix/*` (off `main`).
 
-**Best for**: products with explicit, infrequent versioned releases (desktop apps, libraries with semver, embedded software). Mostly **legacy**; Driessen himself notes most teams should prefer trunk-based or GitHub Flow.
+Best for: products with explicit, infrequent versioned releases (desktop apps, libraries with semver, embedded software). Mostly legacy: Driessen himself notes most teams should prefer trunk-based or GitHub Flow.
 
-**Detection signals**:
+Detection signals:
 
-- `develop` branch exists upstream (this is the unique signal).
-- `release/*` and / or `hotfix/*` long-lived branches.
-- `.gitflow` config file (rare).
-- Commit history shows merge commits with `Merge branch 'release/X.Y.Z'`.
+- A `develop` branch upstream (the unique signal).
+- Long-lived `release/*` or `hotfix/*` branches.
+- A `.gitflow` config file (rare).
+- Merge commits named `Merge branch 'release/X.Y.Z'` in the history.
 
-**Source branch for new work**:
+Source branch for new work:
 
-- `feature/*` → `develop`.
-- `release/*` → `develop`.
-- `hotfix/*` → `main`.
+- `feature/*`: `develop`.
+- `release/*`: `develop`.
+- `hotfix/*`: `main`.
 
-**PR base**:
+PR base:
 
-- `feature/*` → `develop`.
-- `release/*` → `main` (then back-merge to `develop`).
-- `hotfix/*` → `main` (then back-merge to `develop`).
+- `feature/*`: `develop`.
+- `release/*`: `main` (then back-merge to `develop`).
+- `hotfix/*`: `main` (then back-merge to `develop`).
 
-**Protected branches**: `main`, `develop`, all `release/*`.
+Protected branches: `main`, `develop`, all `release/*`.
 
-**Release model**: cut `release/X.Y.Z` from `develop`; stabilise; merge to `main` AND `develop`; tag.
+Release model: cut `release/X.Y.Z` from `develop`, stabilise, merge to `main` and `develop`, tag.
 
-**Trade-offs**:
+Trade-offs:
 
-- Pros: explicit release stabilisation; hotfix path independent; well-documented.
-- Cons: heavy; merge complexity; back-merge errors common; ill-suited to CD.
+- Pros: explicit release stabilisation; an independent hotfix path; well documented.
+- Cons: heavy; merge complexity; back-merge errors are common; ill-suited to CD.
 
 ---
 
 ## `github-flow`
 
-**Shape**: `main` always deployable. `feature/*` branches → PR → review → merge → deploy. No staging / develop branch.
+Shape: `main` is always deployable. `feature/*` branches go through PR, review, merge, deploy. No staging or develop branch.
 
-**Best for**: web apps with continuous deployment, GitHub-native teams, projects with one production environment.
+Best for: web apps with continuous deployment, GitHub-native teams, projects with one production environment.
 
-**Detection signals**:
+Detection signals:
 
-- `git branch -a` shows `main` + `feature/*` (or unprefixed feature branches) only.
-- No `staging` / `dev` / `develop` upstream.
+- `git branch -a` shows `main` and `feature/*` (or unprefixed feature branches) only.
+- No `staging`, `dev` or `develop` upstream.
 - `.github/workflows/` deploys on push to `main`.
-- `CONTRIBUTING.md` mentions "branch off main, open PR".
+- `CONTRIBUTING.md` says "branch off main, open PR".
 
-**Source branch for new work**: `main`.
+Source branch for new work: `main`.
 
-**PR base**: `main`.
+PR base: `main`.
 
-**Protected branches**: `main`. Required status checks + at least one review.
+Protected branches: `main`, with required status checks and at least one review.
 
-**Release model**: every merge to `main` deploys. Tags are optional, used for marketing versions.
+Release model: every merge to `main` deploys. Tags are optional, used for marketing versions.
 
-**Trade-offs**:
+Trade-offs:
 
-- Pros: simple; matches CD; clear single source of truth.
-- Cons: no staging environment without extra effort; rollback = revert PR.
+- Pros: simple; matches CD; one clear source of truth.
+- Cons: no staging environment without extra effort; rollback is a revert PR.
 
 ---
 
 ## `gitlab-flow`
 
-**Shape**: GitHub Flow + environment branches (`pre-production`, `production`, regional `production-eu`). Code flows in one direction: `main → pre-production → production`.
+Shape: GitHub Flow plus environment branches (`pre-production`, `production`, regional `production-eu`). Code flows one way: `main` to `pre-production` to `production`.
 
-**Best for**: teams that need a deployment pipeline with promotion gates but want to avoid GitFlow's release-branch complexity. Common in GitLab-hosted projects.
+Best for: teams that need a deployment pipeline with promotion gates but want to avoid GitFlow's release-branch complexity. Common in GitLab-hosted projects.
 
-**Detection signals**:
+Detection signals:
 
-- `.gitlab-ci.yml` exists and references multiple environments.
-- `git branch -a` shows `main` + `pre-production` (or `staging`) + `production`.
+- A `.gitlab-ci.yml` that references several environments.
+- `git branch -a` shows `main`, `pre-production` (or `staging`) and `production`.
 - Linear merge history (no back-merges).
-- GitLab repo (vs GitHub) — but the pattern is portable.
+- A GitLab repo, though the pattern is portable.
 
-**Source branch for new work**: `main`.
+Source branch for new work: `main`.
 
-**PR (MR) base**: `main` for feature work. Promotion MRs: `main → pre-production`, `pre-production → production`.
+PR (MR) base: `main` for feature work. Promotion MRs go `main` to `pre-production`, then `pre-production` to `production`.
 
-**Protected branches**: all environment branches (`main`, `pre-production`, `production`).
+Protected branches: every environment branch (`main`, `pre-production`, `production`).
 
-**Release model**: cherry-pick or fast-forward from `main` through environment branches.
+Release model: cherry-pick or fast-forward from `main` through the environment branches.
 
-**Trade-offs**:
+Trade-offs:
 
-- Pros: explicit promotion path; matches deployment pipeline; no back-merge complexity.
+- Pros: an explicit promotion path that matches the deployment pipeline; no back-merge complexity.
 - Cons: extra branches to maintain; promotion MRs add ceremony.
 
 ---
 
 ## `sdet`
 
-**SDET Gitflow — integration-trunk for chained test-automation suites.** Full runbook: `references/sdet-integration-trunk.md`.
+SDET Gitflow: an integration trunk for chained test-automation suites. The full runbook is `references/sdet-integration-trunk.md`; this entry holds what resolving the strategy needs.
 
-**Shape**: `main` (permanent — holds confirmed, regression-ready tests) + an **ephemeral per-suite integration trunk** named `test/<module>-suite`. The trunk is the local surrogate-`main` for one test suite: it is created off `main` when the suite starts and deleted after the suite's final PR merges. Each ticket is a `test/{KEY}-{slug}` branch cut from the trunk, PR'd **into the trunk** (not `main`), and merged `--no-ff`. Adjacent non-test work rides **Plus Branches** (`docs/*`, `chore/*`, `fix/*`) that also PR into the trunk. One final reviewed PR promotes `trunk → main`.
+Shape: `main` (permanent, holds confirmed regression-ready tests) plus an ephemeral per-suite integration trunk named `test/<module>-suite`. The trunk is the local stand-in for `main` for one suite: cut off `main` when the suite starts, deleted after the suite's final PR merges. Each ticket is a `test/{KEY}-{slug}` branch cut from the trunk, PR'd into the trunk (not `main`) and merged `--no-ff`. Adjacent non-test work rides Plus Branches (`docs/*`, `chore/*`, `fix/*`) that also PR into the trunk. One final reviewed PR promotes the trunk to `main`.
 
-**Best for**: test-automation repos where a single maintainer (or AI agent) automates multi-ticket suites (a whole module, or a chained ticket-driven scope from `/test-automation`). The defining problem it solves: avoid one giant unreviewable PR, avoid one tiny PR per ticket paying `main`'s ruleset tax, and keep the final diff clean.
+Best for: test-automation repos where one maintainer (or AI agent) automates multi-ticket suites (a whole module, or a chained ticket-driven scope from `/test-automation`). It avoids one giant unreviewable PR, avoids a tiny PR per ticket paying `main`'s ruleset tax, and keeps the final diff clean.
 
-**Detection signals**:
+Detection signals:
 
-- `git_strategy.strategy: sdet` in `.agents/project.yaml` (primary — this strategy is opt-in, never silently auto-detected).
-- A long-lived-for-the-suite `test/<module>-suite` trunk + multiple `test/{KEY}-*` ticket PRs targeting it (not `main`).
-- A QA/test-automation boilerplate repo (KATA, Playwright, `/test-automation` skill present).
+- `git_strategy.strategy: sdet` in `.agents/project.yaml` (the primary signal; the strategy is opt-in and is not inferred from layout).
+- A live `test/<module>-suite` trunk with several `test/{KEY}-*` PRs targeting it instead of `main`.
+- A QA or test-automation boilerplate repo (KATA, Playwright, the `/test-automation` skill present).
 
-**Source branch for new work**:
+Source branch for new work:
 
-- `test/{KEY}-{slug}` ticket branches → cut from the **integration trunk** (never from the previous ticket branch).
-- The trunk `test/<module>-suite` itself → cut from `main` on demand when a suite begins (NOT at Strategy Setup time).
-- Plus Branches (`docs/*`, `chore/*`, `fix/*`) → cut from the trunk, carry adjacent non-test work.
+- `test/{KEY}-{slug}` ticket branches: cut from the integration trunk, never from the previous ticket branch.
+- The trunk `test/<module>-suite`: cut from `main` on demand when a suite begins, not at Strategy Setup time.
+- Plus Branches (`docs/*`, `chore/*`, `fix/*`): cut from the trunk, carrying adjacent non-test work.
 
-**PR base**:
+PR base:
 
-- Ticket branches + Plus Branches → the **integration trunk**.
-- Final suite PR → `main` (the only PR that faces `main`'s rulesets).
+- Ticket branches and Plus Branches: the integration trunk.
+- The final suite PR: `main`, the only PR that faces `main`'s rulesets.
 
-**Protected branches**: `main` (final PR requires review + green CI — no CI-fallback here). The trunk is protected-by-convention while alive but intermediate ticket/Plus PRs are self-merged by the maintainer with no ruleset friction.
+Protected branches: `main` (the final PR needs review and green CI, with no CI-fallback). The trunk is protected by convention while alive; the maintainer self-merges intermediate ticket and Plus PRs with no ruleset friction.
 
-**Merge methods** (fixed, not a questionnaire choice): ticket/Plus → trunk is **always `--no-ff`** (preserve per-ticket history; never squash). `trunk → main` follows the repo's allowed merge method — prefer **merge-commit** to preserve the multi-branch look; squash collapses the suite to one commit on `main` (the chain still lives on the pushed trunk for traceability).
+Merge methods (fixed, not a questionnaire choice): ticket and Plus PRs into the trunk are always `--no-ff`, never squash, to preserve per-ticket history. The trunk to `main` follows the repo's allowed merge method; prefer a merge commit to keep the multi-branch look. Squash collapses the suite to one commit on `main` (the chain still lives on the pushed trunk).
 
-**Release model**: per suite. Tickets accumulate on the trunk behind Sanity-CI + review; a **sync gate** (`git merge origin/main`) runs before the final PR so the `trunk → main` diff shows only this suite's test work. "Automated" = running in CI on `main` (after the final merge), never at trunk-merge time.
+Release model: per suite. Tickets accumulate on the trunk behind Sanity CI and review. A sync gate (`git merge origin/main`) runs before the final PR so the diff against `main` shows only this suite's test work. "Automated" means running in CI on `main` after the final merge, never at trunk-merge time.
 
-**CI-fallback clause**: when a Sanity-CI red is purely infra / known-flake (proven by a local pass on both `local` and `staging` AND the red being present independent of the change), the local double-pass authorizes merging **into the trunk** only — never the final `trunk → main` PR. This is NOT a skip of the tests→types→lint rule (local gate still fully passes); it only governs whether a remote infra-red blocks a trunk-internal merge. ENVIRONMENT-class classification is owned by `/regression-testing`.
+CI-fallback clause: when a Sanity-CI red is purely infra or a known flake (proven by a local pass on both `local` and `staging`, and by the red being present independent of the change), the local double-pass authorizes merging into the trunk only, never the final `trunk` to `main` PR. It leaves the tests, types, lint order of Critical Rule 7 intact (the local gate still passes in full) and only governs whether a remote infra-red blocks a trunk-internal merge. `/regression-testing` owns the ENVIRONMENT-class classification.
 
-**Persisted in the `git_strategy:` block of `.agents/project.yaml`**:
+Persisted in the `git_strategy:` block of `.agents/project.yaml`:
 
 ```yaml
 git_strategy:
@@ -282,18 +282,18 @@ git_strategy:
     feature_merge: merge-commit
 ```
 
-`git_strategy.decisions.feature_merge` is fixed at `merge-commit` (`--no-ff`) — it is a defining property, not a questionnaire answer. `git_strategy.branches.integration` stays `null` (the trunk is ephemeral per-suite, captured in `git_strategy.branches.ephemeral_pattern`). `git_strategy.decisions.promote_method` / `.hotfix_policy` stay `n/a` (no production deploy; `main` is the confirmed-tests branch).
+`git_strategy.decisions.feature_merge` is fixed at `merge-commit` (`--no-ff`); it is a defining property, not a questionnaire answer. `git_strategy.branches.integration` stays `null` because the trunk is ephemeral per suite and lives in `git_strategy.branches.ephemeral_pattern`. `git_strategy.decisions.promote_method` and `.hotfix_policy` stay `n/a` (no production deploy; `main` is the confirmed-tests branch).
 
-**Trade-offs**:
+Trade-offs:
 
-- Pros: per-ticket scoped diffs (review is actually useful); per-ticket Sanity CI; zero ruleset friction on intermediate merges; one clean consolidated PR to `main`; `--no-ff` preserves the suite's commit topology.
-- Cons: extra branch layer; sync-gate ceremony before the final PR; the CI-fallback clause requires human judgment; assumes a single maintainer per suite (intermediate PRs are self-merged).
+- Pros: per-ticket scoped diffs (review is useful); per-ticket Sanity CI; no ruleset friction on intermediate merges; one clean consolidated PR to `main`; `--no-ff` keeps the suite's commit topology.
+- Cons: an extra branch layer; sync-gate ceremony before the final PR; the CI-fallback clause needs human judgment; assumes one maintainer per suite (intermediate PRs are self-merged).
 
 ---
 
 ## Detection algorithm
 
-The combined detection runs in this order. Stop at the first definitive answer.
+Run the steps in order and stop at the first definitive answer.
 
 ```
 1. Read the `git_strategy:` block of `.agents/project.yaml`. If `git_strategy.strategy`
@@ -319,15 +319,17 @@ The combined detection runs in this order. Stop at the first definitive answer.
    - `.github/workflows/deploy.yml` triggered on push to main, no other long-lived
      branches → github-flow.
 
-5. Fallback: ask the user. Show the eight options as a numbered list
+5. Fallback: ask the user. Show the options as a numbered list
    with one-line descriptions. Mirror their language. Do not pick silently.
 
-Note on `sdet`: it is **opt-in only** — never inferred silently from layout. It is
+Note on `sdet`: it is opt-in only and never inferred from layout. It is
 resolved from the `git_strategy:` block in `.agents/project.yaml` (step 1) or chosen explicitly in the fallback (step 5). On a
 test-automation repo (KATA / Playwright / `/test-automation`), surface it as the
 recommended option in the fallback list. A live `test/<module>-suite` trunk with
 `test/{KEY}-*` PRs targeting it confirms an already-active `sdet` suite.
 ```
+
+Step 5 asks the user, and the ask is a small decision, so follow `agentic-qa-core/references/decision-protocol.md`. With nobody present (a worker or a routine), take no silent pick: record the question in the run's notes, use the strategy `git_strategy` already holds if it is non-null, and otherwise report "strategy unresolved" and stop before any branch, push or PR.
 
 After resolution, persist to the `git_strategy:` block in `.agents/project.yaml` (in place, preserving the rest of the file):
 
@@ -346,9 +348,9 @@ git_strategy:
 
 ## Chained-PR decision tree
 
-> **`sdet` short-circuit**: when the active strategy is `sdet`, the integration-trunk model IS the standing chained mode for every test suite — do not walk this tree for test-automation work. `sdet` is `feature-branch-chain` promoted from a large-change exception to the permanent operational mode, with extra gates (`--no-ff` ticket merges, local double-env validation, Sanity CI, sync gate, single final PR). See `references/sdet-integration-trunk.md`. This tree still applies to non-test changes on an `sdet` repo (a one-off large refactor of the framework itself).
+> `sdet` short-circuit: when the active strategy is `sdet`, the integration-trunk model is the standing chained mode for every test suite, so do not walk this tree for test-automation work. `sdet` is `feature-branch-chain` promoted from a large-change exception to the permanent mode, with extra gates (`--no-ff` ticket merges, local double-env validation, Sanity CI, sync gate, one final PR). See `references/sdet-integration-trunk.md`. The tree still applies to non-test changes on an `sdet` repo (a one-off large refactor of the framework itself).
 
-When a planned change estimates `> 400 changed lines` (additions + deletions), apply this decision tree before opening PRs.
+When a planned change estimates over 400 changed lines (additions plus deletions), walk this tree before opening PRs.
 
 ```
 Q1: Is the change mostly mechanical (rename, formatter, generated code, vendor update)?
@@ -367,7 +369,7 @@ Q3: Does the change have shared scaffolding (new types, new base classes, new sc
          A monolithic non-mechanical change without shared scaffolding is a planning smell.
 ```
 
-**Answering it is the deliverable, not the label.** Callers gate on this decision and reject a bare strategy name (`SKILL.md` Compact Rules, the chained-PR rule). Record each answer with the concrete reason drawn from THIS change, stop at the leaf, and return this three-line block:
+The answer is the deliverable, not the label. Callers gate on this decision and reject a bare strategy name (`SKILL.md` Compact Rules, the chained-PR rule). Record each answer with the concrete reason drawn from this change, stop at the leaf, and return this three-line block:
 
 ```
 Chain strategy: feature-branch-chain
@@ -377,15 +379,17 @@ Decision trace: Q1=No (new fixture API and Page components, not a rename or form
 Decided by: /git-flow-master §Chained-PR decision tree (branching-strategies.md)
 ```
 
-A `Yes` at Q1 ends the walk: write `Q2=n/a · Q3=n/a`; a `Yes` at Q2 writes `Q3=n/a`. Answers that do not lead to the stated leaf, or a "trace" that only repeats the conclusion, are malformed and count as no decision. A re-run (the real diff outgrew the estimate) replaces the whole block; it never appends a second leaf to the old trace.
+A `Yes` at Q1 ends the walk: write `Q2=n/a · Q3=n/a`. A `Yes` at Q2 writes `Q3=n/a`. Answers that do not lead to the stated leaf, or a "trace" that only repeats the conclusion, are malformed and count as no decision. A re-run (the real diff outgrew the estimate) replaces the whole block; it does not append a second leaf to the old trace.
 
-**Strategy outputs**:
+The tree is a decision the agent makes from the diff, with no human sign-off needed in any mode.
 
-- `stacked-to-main` — 2 to 4 PRs, each branched off the strategy's default base. Each PR is self-contained; base always works after each merge.
-- `feature-branch-chain` — one long-lived integration branch cut from the strategy's default base; child PRs merge into it; final PR merges integration into base.
-- `size-exception` — single PR with explicit `Why size-exception:` line. Reviewer told upfront not to read line-by-line.
+Strategy outputs:
 
-The chosen plan is a **contract** for execution. If the actual diff exceeds the estimate, re-invoke the decision — do not silently up-budget.
+- `stacked-to-main`: 2 to 4 PRs, each branched off the strategy's default base. Each PR is self-contained and the base works after each merge.
+- `feature-branch-chain`: one long-lived integration branch cut from the strategy's default base; child PRs merge into it; the final PR merges integration into base.
+- `size-exception`: a single PR with an explicit `Why size-exception:` line. The reviewer is told upfront not to read line by line.
+
+The chosen plan is a contract for execution. If the actual diff exceeds the estimate, re-run the decision and replace the block; do not up-budget silently.
 
 ---
 
@@ -407,21 +411,21 @@ The chosen plan is a **contract** for execution. If the actual diff exceeds the 
 
 ## git_strategy field rules (per strategy)
 
-Strategy Setup (SKILL.md 3.6) does not render a prose runbook into `AGENTS.md` — it **populates the `git_strategy:` block in `.agents/project.yaml`** (in place, preserving the rest of the file), the single source of truth. This section is the authoritative reference for WHAT field VALUES each strategy writes into that block. The detailed operational HOW (release commands, hotfix commands, invariant prose) is NOT persisted anywhere — it lives in this catalogue (the per-strategy sections above) and in `references/sdet-integration-trunk.md`, read on demand. (The yaml snippets below show only the `git_strategy` block; everything nests under that key inside `.agents/project.yaml`.)
+Strategy Setup (SKILL.md 3.6) does not render a prose runbook into `AGENTS.md`. It populates the `git_strategy:` block in `.agents/project.yaml` in place, preserving the rest of the file; that block is the single source of truth. This section lists which field values each strategy writes. The operational detail (release commands, hotfix commands, invariant prose) is not persisted anywhere: it lives in the per-strategy sections above and in `references/sdet-integration-trunk.md`, read on demand. The yaml snippets below show only the `git_strategy` block; everything nests under that key.
 
-The conceptual blocks that the old runbook rendered now map to `git_strategy` fields:
+The pieces of the old runbook map to fields like this:
 
-- **(a) Markers → fields** — `git_strategy.strategy` + `git_strategy.branches.integration` (or `ephemeral_pattern`) + the applicable `git_strategy.decisions.*`. Decisions a strategy doesn't use stay `n/a`.
-- **(b) Invariant** — NOT persisted. It is implied by `git_strategy.decisions.promote_method: ff-only` (the "production is an ancestor of integration" invariant holds only for `ff-only`). The prose explaining it lives in this catalogue's per-strategy section, read on demand.
-- **(c) Branch-role table → `branches` + `protected`** — `git_strategy.branches.production` / `.integration` / `.ephemeral_pattern` capture the long-lived/ephemeral branches; `git_strategy.protected` lists the branches needing confirm-before-push. Work-branch prefixes live in `git_strategy.branch_prefixes`.
-- **(d) Merge methods + promotion + hotfix → `decisions`** — `feature_merge` (work-branch → integration/trunk), `promote_method` (integration → production), `hotfix_policy`. The actual command shapes are read from this catalogue, not stored in the block.
-- **(e) Protection policy → `policy`** (Q4, applies to ALL strategies) — `direct_push_to_protected` (`forbidden` | `confirm` | `allowed`), `admin_bypass` (team POLICY intent, not enforcement), `require_pr_reviews`. Consumed by the Push operation (SKILL.md 3.3). Per-strategy defaults are listed in each field-rule block below.
+- Markers: `git_strategy.strategy`, `git_strategy.branches.integration` (or `ephemeral_pattern`) and the `git_strategy.decisions.*` that apply. Decisions a strategy does not use stay `n/a`.
+- Invariant: not persisted. `git_strategy.decisions.promote_method: ff-only` implies it ("production is an ancestor of integration" holds only for `ff-only`). The prose lives in the per-strategy section.
+- Branch roles: `git_strategy.branches.production`, `.integration` and `.ephemeral_pattern` capture the long-lived and ephemeral branches; `git_strategy.protected` lists the branches that need confirmation before a push. Work-branch prefixes live in `git_strategy.branch_prefixes`.
+- Merge methods, promotion, hotfix: `feature_merge` (work branch into integration or trunk), `promote_method` (integration into production), `hotfix_policy`. Command shapes are read from the catalogue above, not stored in the block.
+- Protection policy (Q4, applies to every strategy): `git_strategy.policy` holds `direct_push_to_protected` (`forbidden`, `confirm` or `allowed`), `admin_bypass` (the team's policy intent, not enforcement) and `require_pr_reviews`. The Push operation (SKILL.md 3.3) consumes it. Per-strategy defaults are in each block below.
 
-> `git_strategy.decisions.promote_method: ff-only` is the marker for the fast-forward release model + the ancestor invariant. `merge-commit`/`squash` means the invariant does NOT hold — the per-strategy catalogue section explains the alternative command shape.
+> `git_strategy.decisions.promote_method: ff-only` marks the fast-forward release model and the ancestor invariant. `merge-commit` or `squash` means the invariant does not hold, and the per-strategy section gives the alternative command shape.
 
-### `solo-main` — field rule (MINIMAL)
+### `solo-main` field rule (minimal)
 
-Single long-lived branch. No integration, no promotion, no hotfix — all `decisions.*` stay `n/a`.
+Single long-lived branch. No integration, no promotion, no hotfix, so every `decisions.*` stays `n/a`.
 
 ```yaml
 git_strategy:
@@ -444,11 +448,11 @@ git_strategy:
     require_pr_reviews: 0
 ```
 
-Work lands on `main` directly, or via an optional PR → `main` when a review/CI gate is wanted. No promotion or hotfix ceremony — there is one branch. Q4 policy: direct push to `main` is `allowed` (standing authorization — no per-push confirm), no admin bypass, zero required reviews.
+Work lands on `main` directly, or through an optional PR to `main` when a review or CI gate is wanted. Q4 policy: direct push to `main` is `allowed` (standing authorization, no per-push confirm), no admin bypass, zero required reviews.
 
-### `github-flow` — field rule (MINIMAL)
+### `github-flow` field rule (minimal)
 
-`main` always deployable; feature branches → PR → merge → deploy. No integration, no promotion, no hotfix.
+`main` is always deployable; feature branches go PR, merge, deploy. No integration, no promotion, no hotfix.
 
 ```yaml
 git_strategy:
@@ -472,11 +476,11 @@ git_strategy:
     require_pr_reviews: 1
 ```
 
-Every change is a short-lived `feature/*` / `fix/*` branch off `main` → PR → `main`. Q4 policy: direct push to `main` is `forbidden` (PR-only), no admin bypass, 1 required review.
+Every change is a short-lived `feature/*` or `fix/*` branch off `main`, then a PR to `main`. Q4 policy: direct push to `main` is `forbidden` (PR only), no admin bypass, 1 required review.
 
-### `trunk-based` — field rule (MINIMAL)
+### `trunk-based` field rule (minimal)
 
-Trunk (`main`) is the only long-lived branch; short-lived branches merge fast behind flags. CI gate non-negotiable.
+The trunk (`main`) is the only long-lived branch; short-lived branches merge fast behind flags. The CI gate is a precondition.
 
 ```yaml
 git_strategy:
@@ -500,11 +504,11 @@ git_strategy:
     require_pr_reviews: 1
 ```
 
-Short-lived branch (off `main`, <1 day) → fast, CI-gated merge to trunk. `feature_merge` is recorded only if Q2 was asked; otherwise leave `n/a`. Q4 policy: direct push to `main` is `forbidden` (the CI gate runs on PRs), no admin bypass, 1 required review.
+A short-lived branch (off `main`, under a day) gets a fast, CI-gated merge to the trunk. Record `feature_merge` only if Q2 was asked; otherwise leave `n/a`. Q4 policy: direct push to `main` is `forbidden` (the CI gate runs on PRs), no admin bypass, 1 required review.
 
-### `main-integration` — field rule
+### `main-integration` field rule
 
-`main` (production) + one integration branch. Populates `branches.integration` + all three `decisions.*`. This is the GOLD shape.
+`main` (production) plus one integration branch. This block populates `branches.integration` and all three `decisions.*`, and is the reference shape for the others.
 
 ```yaml
 git_strategy:
@@ -530,13 +534,13 @@ git_strategy:
     require_pr_reviews: 1
 ```
 
-- `decisions.promote_method: ff-only` → the "main is an ancestor of staging" invariant holds; release is `git merge --ff-only staging`. For `merge-commit`/`squash` the invariant does NOT hold and the release command is `git merge --no-ff staging` (or `--squash`).
-- `decisions.feature_merge` → how `feature/fix → staging` accrues history.
-- `decisions.hotfix_policy: branch-off-prod-backmerge` → hotfix branches off `main`, PRs to `main`, back-merges to `staging` same day. Command shapes live in the `main-integration` catalogue section above.
+- `decisions.promote_method: ff-only` means `main` stays an ancestor of `staging`, and the release is `git merge --ff-only staging`. For `merge-commit` or `squash` the invariant does not hold and the release command is `git merge --no-ff staging` (or `--squash`).
+- `decisions.feature_merge` sets how `feature/fix` into `staging` accrues history.
+- `decisions.hotfix_policy: branch-off-prod-backmerge` branches the hotfix off `main`, PRs it to `main` and back-merges to `staging` the same day. The command shapes are in the `main-integration` section above.
 
-### `gitflow` — field rule
+### `gitflow` field rule
 
-`main` + `develop`; `release/*` cut off `develop`, merged to `main` AND back-merged to `develop`; `hotfix/*` off `main`.
+`main` plus `develop`; `release/*` is cut off `develop`, merged to `main` and back-merged to `develop`; `hotfix/*` branches off `main`.
 
 ```yaml
 git_strategy:
@@ -562,11 +566,11 @@ git_strategy:
     require_pr_reviews: 1
 ```
 
-> Field note: gitflow's `promote_method` is `merge-commit` BY NATURE — a `release/* → main` merge is inherently a merge commit, never a fast-forward. Do NOT normalize it to the Q1 `ff-only` default. gitflow's invariant is the same-day back-merge to `develop`, not an ancestor relation. `release/*` / `hotfix/*` are on-demand branches (not stored in `branches:`); their roles + command shapes live in the `gitflow` catalogue section above.
+> Field note: gitflow's `promote_method` is `merge-commit` by nature, because a `release/*` to `main` merge is a merge commit and never a fast-forward. Keep it as is and do not normalize it to the Q1 `ff-only` default. The gitflow invariant is the same-day back-merge to `develop`, not an ancestor relation. `release/*` and `hotfix/*` are on-demand branches (not stored in `branches:`); their roles and command shapes are in the `gitflow` section above.
 
-### `gitlab-flow` — field rule
+### `gitlab-flow` field rule
 
-`main` + environment branches; code flows one direction `main → pre-production → production`. `production` is the production branch.
+`main` plus environment branches; code flows one way, `main` to `pre-production` to `production`. `production` is the production branch.
 
 ```yaml
 git_strategy:
@@ -593,12 +597,12 @@ git_strategy:
     require_pr_reviews: 1
 ```
 
-- `branches.production` is `production` (NOT `main` — work integrates at `main`, production is the last env). The env branches `pre-production` / `production` carry the promotion chain; their roles + ff-promotion commands live in the `gitlab-flow` catalogue section above.
-- `decisions.hotfix_policy` for one-direction flows means branch off `production`, then forward-port / cherry-pick up the chain (no literal back-merge).
+- `branches.production` is `production`, not `main`: work integrates at `main` and production is the last environment. The `pre-production` and `production` branches carry the promotion chain; their roles and fast-forward promotion commands are in the `gitlab-flow` section above.
+- For one-direction flows, `decisions.hotfix_policy` means branch off `production`, then forward-port (cherry-pick) up the chain, with no literal back-merge.
 
-### `enterprise` — field rule
+### `enterprise` field rule
 
-`main` + integration + on-demand `feature/*`, `fix/*`, `release/*`, `hotfix/*`. Promotion is integration → `main` AND `release/*` → `main`.
+`main` plus integration plus on-demand `feature/*`, `fix/*`, `release/*` and `hotfix/*`. Promotion runs integration to `main` and `release/*` to `main`.
 
 ```yaml
 git_strategy:
@@ -625,11 +629,11 @@ git_strategy:
     require_pr_reviews: 1
 ```
 
-`release/*` / `hotfix/*` / `feature/*` are on-demand branches (created by the Branch operation, not at setup); their roles, the `release/* → main` promotion, and back-merge command shapes live in the `enterprise` catalogue section above.
+`release/*`, `hotfix/*` and `feature/*` are on-demand branches, created by the Branch operation and not at setup. Their roles, the `release/*` to `main` promotion and the back-merge command shapes are in the `enterprise` section above.
 
-### `sdet` — field rule
+### `sdet` field rule
 
-`main` (permanent) + an ephemeral per-suite integration trunk. No production deploy → no invariant, no promotion, no hotfix. The trunk is NOT a fixed branch name — it is a per-suite pattern captured in `branches.ephemeral_pattern`.
+`main` (permanent) plus an ephemeral per-suite integration trunk. There is no production deploy, so no invariant, no promotion and no hotfix. The trunk has no fixed name: it is a per-suite pattern held in `branches.ephemeral_pattern`.
 
 ```yaml
 git_strategy:
@@ -657,6 +661,6 @@ git_strategy:
 ```
 
 - `git_strategy.branches.ephemeral_pattern` holds the per-suite trunk pattern (`test/<module>-suite`); `git_strategy.branches.integration` stays `null` because no fixed integration branch persists.
-- `git_strategy.decisions.feature_merge: merge-commit` is FIXED (a defining property, never a questionnaire choice). `promote_method` / `hotfix_policy` stay `n/a`.
-- `git_strategy.policy`: `direct_push_to_protected: confirm` (the maintainer self-merges the trunk; pushes to `main` are confirmed), `admin_bypass: false`, `require_pr_reviews: 0` on the trunk / `1` on the final `trunk → main` PR.
-- The per-ticket loop, `--no-ff` ticket merges, Plus Branches, the sync gate, the single final `trunk → main` PR, and the CI-fallback clause are NOT in the yaml — they live in `references/sdet-integration-trunk.md` and the `sdet` catalogue section above.
+- `git_strategy.decisions.feature_merge: merge-commit` is fixed (a defining property, never a questionnaire choice). `promote_method` and `hotfix_policy` stay `n/a`.
+- `git_strategy.policy`: `direct_push_to_protected: confirm` (the maintainer self-merges the trunk; pushes to `main` are confirmed), `admin_bypass: false`, `require_pr_reviews: 0` on the trunk and `1` on the final `trunk → main` PR.
+- The per-ticket loop, `--no-ff` ticket merges, Plus Branches, the sync gate, the single final `trunk → main` PR and the CI-fallback clause are not in the yaml. They live in `references/sdet-integration-trunk.md` and the `sdet` section above.

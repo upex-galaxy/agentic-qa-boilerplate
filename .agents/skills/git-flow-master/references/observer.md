@@ -1,28 +1,27 @@
 # The observer: Merge Line
 
-> Loaded by: anyone reading, operating, repairing or changing Merge Line. The collector and the view
+> Read this to use, operate, repair or change Merge Line. The collector and the view
 > live in `cli/sprint-board/` (`merge-collect.ts`, `merge-build.ts`, `merge.ts`, `merge-read.ts`,
 > `app/merge-view.ts`); the board around them is owned by `sprint-testing/references/sprint-board.md`.
 
 ## 1 · What it is
 
-**Merge Line** is the `#merge` view of the Sprint Board (`bun run board:up`, then key `9`). It shows
+Merge Line is the `#merge` view of the Sprint Board (`bun run board:up`, then key `9`). It shows
 every pull request headed for the mainline (`git_strategy.branches.production`) or for an
 integration trunk, which session owns each one, and what each one is waiting for, in the board's own
 pieces: a bottom line, four tiles (Needs you, Waiting on others, Blocked, Ready to merge), lanes of PR
 cards, the interlocking strip, a drawer per PR, and a rail with the suggested order, the interference
 between PRs and what merged into the mainline since the day began.
 
-The **collector** is the part that reads: `cli/sprint-board/merge-collect.ts`, which the board
-server runs every 90 seconds. It is plain code, so a reading costs zero model tokens, and a GitHub
+The collector is the part that reads: `cli/sprint-board/merge-collect.ts`, which the board
+server runs every 90 seconds. It is plain code, so a reading costs no model tokens, and a GitHub
 `304` costs no REST quota. GitHub is the only code host it reads.
 
 ## 2 · The observer rule
 
-It never acts on GitHub: no merge, approval, review comment, label, assignment, close, reopen, push
-or webhook. It reads only (`gh api` GET, `git ls-remote`, `git fetch`, `git merge-tree`, the
-orchestrator's `worktree list` / `terminal list`, the board's own `source.json`) and writes only
-`.session/gitflow-master/`. It never switches a branch, stages or commits, which is why it can run
+The observer only reads GitHub. It makes no merge, approval, review comment, label, assignment, close, reopen, push or webhook. Its reads are (`gh api` GET, `git ls-remote`, `git fetch`, `git merge-tree`, the
+orchestrator's `worktree list` / `terminal list`, the board's own `source.json`) and its only writes go to
+`.session/gitflow-master/`. It does not switch a branch, stage or commit, so it can run
 against the primary checkout while other sessions work there. Tracker drift is shown, never fixed:
 the PR's drawer names who fixes it. The interactive work of this skill (merges and pushes, with the
 owner's yes) is a different persona.
@@ -41,28 +40,27 @@ bun run board:up  ->  board server (127.0.0.1:4477)
 page: merge.ts derives lanes, the why, the order and the freshness (pure, tested)
 ```
 
-**Lanes** (`laneOf`, first match wins): Blocked (checks failing, changes requested, a textual
+Lanes (`laneOf`, first match wins): Blocked (checks failing, changes requested, a textual
 conflict with its base); Needs you (your review requested, review findings unanswered, nobody asked
 to review a PR into the mainline, no session holds it); Waiting (checks or review running, a reviewer
 asked, not reviewed at this commit); Ready (all three signals green; a conflict with another open PR
-is named on the card). **Order** (`suggestOrder`): Ready, then Waiting, then Needs you, then
+is named on the card). Order (`suggestOrder`): Ready, then Waiting, then Needs you, then
 Blocked; within a lane, more signals cleared first, then the one that conflicts with more PRs, then
 the smaller. Feeders (PRs into a trunk) are listed but not ordered into the mainline.
 
-**Approval** is computed from people (requested reviewers, reviews, `review_requested` events),
-never from GitHub's `reviewDecision`, against `git_strategy.policy.require_pr_reviews`.
+Approval is computed from people (requested reviewers, reviews, `review_requested` events), not from GitHub's `reviewDecision`, and compared with `git_strategy.policy.require_pr_reviews`.
 
-**Tracker parity**: a ticket named in a PR's branch or title (by `board.ticket_key_pattern`) is
+Tracker parity: a ticket named in a PR's branch or title (by `board.ticket_key_pattern`) is
 looked up in the board's last tracker read, so the collector makes no tracker call every 90 s. An
 open PR into the mainline is out of step when its ticket sits in the `tested` or `dropped` bucket
 (code still landing on a ticket QA closed). A ticket only mentioned in the description is listed
 without an expectation, because a trunk PR's description names every ticket it carries.
 
-**Freshness** is known, not guessed: the server writes `collector.json` after each run. The view
+Freshness is read from the collector, not guessed: the server writes `collector.json` after each run. The view
 shows `GitHub read 40s ago` (green), `GitHub read late` (amber, two missed runs), or `Not updating`
 with the collector's last line and the command that fixes it.
 
-**Judgment on demand.** The rules above replace the model. When the owner wants a written note on a
+Judgment on demand: the rules above replace the model. When the owner wants a written note on a
 PR (why it is stuck, a deadline found in a comment), any session writes
 `.session/gitflow-master/notes/<n>.json` as `{"held": {"en": "...", "es": "..."}, "deadline":
 {"date", "by", "url", "quote"} | null, "at": "<iso>"}`. The drawer shows it; deleting the file
@@ -91,30 +89,26 @@ login for a day), `collect.log`. Gitignored like all of `.session/`.
 
 ## 6 · Operating it
 
-- **See it**: `bun run board:up`, then `#merge` or key `9`. `serve --merge-every <s>` changes the
+- To see it: `bun run board:up`, then `#merge` or key `9`. `serve --merge-every <s>` changes the
   cadence; `0` turns the loop off.
-- **Force a reading**: `bun cli/sprint-board/merge-collect.ts --reason owner`. The page updates
+- To force a reading: `bun cli/sprint-board/merge-collect.ts --reason owner`. The page updates
   within a second.
-- **Check it without touching anything real**: in the boilerplate's own checkout, the
-  sprint-board merge unit tests replay a recorded reading (no network).
-- **When it says Not updating**: read the collector line it shows. `COLLECT fail ...` names what
+- To check it without touching anything real: run the sprint-board merge unit tests in the boilerplate's own checkout. They replay a recorded reading, with no network.
+- When it says Not updating: read the collector line it shows. `COLLECT fail ...` names what
   failed; `degraded github` or `git` means the network or GitHub; no line at all means the board
   server is not running.
 
 ## 7 · Why it is not a hosted page
 
-A page that only a model session can keep current costs money every day just to stay fresh, works
-with one harness only, and depends on that session staying alive, while the same facts read locally
-cost nothing and refresh every 90 seconds. If a phone view is ever needed, a snapshot of this view
+A page only a model session can keep current costs money every day, works with one harness, and depends on that session staying alive. The same facts read locally cost nothing and refresh every 90 seconds. If a phone view is ever needed, a snapshot of this view
 published as an artifact is the path, as the Sprint Board already does with `snapshot --mode report`.
 
 ## 8 · Gotchas
 
-- Exactly one `gh` account should be visible, or the active one can drift between runs; pin it with
-  `GH_CONFIG_DIR` when several are logged in. The preflight warns.
+- Keep exactly one `gh` account visible: with several, the active one can drift between runs. Pin it with `GH_CONFIG_DIR`; the preflight warns.
 - `gh pr view --json files` stops at 100 files. File lists come from
   `gh api .../pulls/<n>/files --paginate`, cached by head SHA.
-- `reviewDecision` is not a gate: it can read empty or `REVIEW_REQUIRED` against what the reviews
+- Do not gate on `reviewDecision`: it can read empty or `REVIEW_REQUIRED` against what the reviews
   say. Approval is computed from people (§3).
 - A ticket counts for tracker parity only when the branch or the title names it (§3).
 - Terminal handles change across restarts. A session is identified by its worktree; a shared

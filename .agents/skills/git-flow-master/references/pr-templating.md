@@ -1,12 +1,11 @@
-# PR Templating — Body, Labels, Reviewers, Base Branch
+# PR templating: body, labels, reviewers, base branch
 
-This file is the contract for opening pull requests. The body is **rendered inline** — there is no template file in the repo to read. Placeholders the skill can fill from session context are filled; placeholders the skill cannot fill are left **visible** so the author can complete them before posting (do not silently drop sections).
+This file is the contract for opening pull requests. The body is rendered inline, because no template file exists in the repo. The skill fills every placeholder it can from session context and leaves the rest visible, so the author completes them before posting. A section is never dropped silently.
 
----
 
 ## Title
 
-Format: `{type}({ISSUE-KEY}): {description}` — under 70 characters.
+Format: `{type}({ISSUE-KEY}): {description}`, under 70 characters.
 
 Without an issue key: `{type}: {description}`.
 
@@ -17,13 +16,12 @@ Examples:
 - `docs: clarify branch prefix vocabulary`
 - `chore(deps): bump zod to v4`
 
-The title is the first thing reviewers see in the PR list — keep it scannable.
+The title is the first thing reviewers see in the PR list, so keep it scannable.
 
----
 
-## Body — inline template
+## Body: inline template
 
-Render this verbatim, substituting the placeholders:
+Render this as written, substituting the placeholders:
 
 ```markdown
 ## Summary
@@ -49,7 +47,7 @@ Render this verbatim, substituting the placeholders:
 
 <<EVIDENCE>>
 
-## Risk
+## Merge danger
 
 <<RISK>>
 ```
@@ -59,21 +57,36 @@ Render this verbatim, substituting the placeholders:
 | Placeholder     | What goes here                                                                                                                                                                                                             |
 | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `<<SUMMARY>>`   | One-paragraph summary derived from the commits: what changed and why.                                                                                                                                                      |
-| `<<CHANGES>>`   | Bulleted list — one bullet per commit, format `- {type}({ISSUE-KEY}): {description}`.                                                                                                                                      |
-| `<<TEST_PLAN>>` | Bulleted steps to verify: test commands run, manual checks done, environments hit. Mark each as `[x]` if already verified locally.                                                                                         |
-| `<<ISSUE_KEY>>` | Key extracted in the branch step. If absent, **drop the entire `- Issue:` line** rather than leave a dangling link.                                                                                                        |
+| `<<CHANGES>>`   | Bulleted list, one bullet per commit, format `- {type}({ISSUE-KEY}): {description}`.                                                                                                                                      |
+| `<<TEST_PLAN>>` | Bulleted steps to verify: test commands run, manual checks done, environments hit. Mark each `[x]` once verified locally.                                                                                         |
+| `<<ISSUE_KEY>>` | Key extracted in the branch step. Without one, drop the whole `- Issue:` line so no link dangles.                                                                                                       |
 | `<<ISSUE_URL>>` | `{{ATLASSIAN_URL}}/browse/<<ISSUE_KEY>>` when both available. Otherwise drop.                                                                                                                                              |
 | `{branch}`      | Current branch name (computed by the skill).                                                                                                                                                                               |
-| `{base}`        | PR base branch (resolved from the strategy — see table below).                                                                                                                                                             |
+| `{base}`        | PR base branch (resolved from the strategy, see the table below).                                                                                                                                                             |
 | `{strategy}`    | Active strategy slug (`solo-main`, `main-integration`, etc.). Helps reviewers understand the merge target.                                                                                                                 |
 | `<<EVIDENCE>>`  | Pointer to `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/evidence/` when applicable (screenshots, traces, logs). For backend/CLI PRs without visual evidence, leave the placeholder so the author can fill it in or delete it. |
 | `<<RISK>>`      | Short risk assessment: blast radius, affected modules, rollback plan. One paragraph.                                                                                                                                       |
 
-Do not pad sections. Empty sections invite skim-reads.
+A padded section invites skim-reads, so write each one at the size its content needs.
 
----
+### Evidence
 
-## Base branch — resolved from strategy
+Show a before and after: what the change did not do, then what it does. Rank by weight:
+
+1. Screenshots, when the environment allows it and the change is visual. These carry the most weight.
+2. Execution output: a test run, console output. Name the exact test that failed before and passes now, in a line of pseudocode.
+3. A description of the check, only when neither of the above exists.
+
+### Merge danger
+
+`<<RISK>>` renders as two lines, `**Door:**` then `**Blast radius:**` (see the worked example), each followed by optional detail.
+
+The door is `one-way` or `two-way`. A two-way door can be walked back, so a PR that is cheap to roll back is low risk. A destructive action or a hard-to-reverse decision (a migration, a deleted branch, a published release) makes it one-way, and then the section gives the rollback plan or says there is none.
+
+The blast radius is one word for the scope of impact (`docs`, `one module`, `all consumers`), followed by the ramifications a reviewer should weigh: broken consumers, layout shift, other environments, a pipeline that reads the changed file. Consider every consumer before choosing the word.
+
+
+## Base branch, resolved from strategy
 
 | Strategy           | Default PR base                                                  | Notes                                                           |
 | ------------------ | ---------------------------------------------------------------- | --------------------------------------------------------------- |
@@ -84,13 +97,12 @@ Do not pad sections. Empty sections invite skim-reads.
 | `gitflow`          | `develop` for `feature/*`; `main` for `release/*` and `hotfix/*` | Release PRs back-merge to `develop` after merging to `main`.    |
 | `github-flow`      | `main`                                                           | Always.                                                         |
 | `gitlab-flow`      | `main`                                                           | Promotion MRs target `pre-production`, then `production`.       |
-| `sdet`             | integration trunk `test/<module>-suite` for `test/{KEY}-*` + Plus Branches | The single final suite PR targets `main` (after the sync gate). Use the `pr-test-automation.md` body for the final PR. See `sdet-integration-trunk.md`. |
+| `sdet`             | integration trunk `test/<module>-suite` for `test/{KEY}-*` + Plus Branches | The single final suite PR targets `main` (after the sync gate) and uses the `pr-test-automation.md` body. See `sdet-integration-trunk.md`. |
 
 The user can override with `--base X` in arguments. When overridden, surface it in the confirmation:
 
 > _"PR will target `{base}` instead of the strategy default `{default}`. Confirm?"_
 
----
 
 ## Labels
 
@@ -105,20 +117,18 @@ Suggest labels based on the dominant commit type:
 | `chore:` / `refactor:` / `style:` / `test:` / `build:` / `ci:` | `chore`                                      |
 | Breaking change (`!`)                                          | `breaking-change`                            |
 
-Always combine the type label with `ready-for-review`, OR propose `--draft` if the user wants a draft PR.
+Combine the type label with `ready-for-review`, or propose `--draft` when the user wants a draft PR.
 
-**Verify before applying.** Repos differ. Run `gh label list` if uncertain — never hardcode labels the repo may not have configured. If a label is missing, ask the user whether to create it or skip.
+Repos differ, so run `gh label list` when unsure before applying a label, and treat the table as suggestions the repo may not have configured. When a label is missing, ask whether to create it or skip it.
 
----
 
 ## Reviewers
 
 - If `.github/CODEOWNERS` exists and matches the modified paths, suggest the matched owners.
-- Otherwise ask the user. **Never hardcode usernames** — repos and teams change.
+- Otherwise ask the user. Usernames come from the repo's CODEOWNERS or the user, because teams change.
 
 For solo-main / personal projects, reviewers are usually skipped.
 
----
 
 ## Draft vs ready-for-review
 
@@ -130,7 +140,6 @@ Open as `--draft` when:
 
 Otherwise open as ready-for-review with the appropriate label.
 
----
 
 ## Rendering and submission
 
@@ -154,17 +163,15 @@ gh pr create \
 rm "$TMP"
 ```
 
-Always show the rendered body and base branch to the user **before** running `gh pr create`. The user can edit, accept, or reject.
+Show the rendered body and base branch to the user before running `gh pr create`, so they can edit, accept or reject it. With nobody present (a worker or a routine), the delegating brief authorises the PR when it names it; otherwise stop with the body written to a file and report, because opening a PR is an outward action (see `agentic-qa-core/references/decision-protocol.md`).
 
----
 
 ## After creation
 
 - Return the PR URL.
 - Surface the next step: _"Review the PR. Once approved, merge via the GitHub UI or run `gh pr merge {number} {merge-flag}`."_ The flag comes from `SKILL.md` §3.4 "Which merge flag": `--merge` for every PR on an `sdet` suite (never `--squash` into the trunk), otherwise the one matching `git_strategy.decisions.feature_merge`.
-- **Do not auto-merge.** Merging is an explicit, separate action by the user.
+- Leave the merge to the user: it is a separate, explicit action, never part of opening the PR.
 
----
 
 ## Worked example
 
@@ -209,10 +216,11 @@ model with unit tests; UI uses the existing table-action slot.
 See `.context/PBI/epics/EPIC-UPEX-100-<epic-slug>/stories/STORY-UPEX-123-bulk-assign/evidence/` for the design
 walkthrough screenshots.
 
-## Risk
+## Merge danger
 
-Low blast radius — new code path behind a feature flag (`bulkAssign`).
-Rollback: disable the flag and revert this PR.
+**Door:** two-way. Disable the flag and revert this PR.
+
+**Blast radius:** one module. The new code path sits behind a feature flag (`bulkAssign`).
 ```
 
 Title: `feat(UPEX-123): add bulk-assign action`
