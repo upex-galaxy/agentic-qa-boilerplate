@@ -400,6 +400,8 @@ The list is `USER_LEVEL_SKILLS` in `cli/install.ts`; each entry carries its sour
 
 The installer asks per skill, in the Team phase: one checkbox per skill, every one pre-checked. A skill you uncheck is recorded as `declined` in the state file and is not offered again, not even when `INSTALL_FORCE_COMMUNITY=1` or `--sync-skills` forces a re-run; the question names the skills declined earlier and the `bunx skills add` line to install one by hand. A non-interactive run installs every skill you have not declined.
 
+An existing clone has already completed the community step, so it is not asked again: run `INSTALL_FORCE_COMMUNITY=1 bun setup` to get user-level skills added since, and skills you declined stay out.
+
 ### Skipping or re-running
 
 Run `INSTALL_SKIP_COMMUNITY=1 bun setup` to skip the community step entirely. Re-runs are idempotent: already-installed skills are detected via `state.skills["community:<level>:<slug>"] === "installed"` in `.template/installer.state.json` and skipped silently.
