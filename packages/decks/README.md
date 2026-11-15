@@ -33,16 +33,20 @@ A skill covered by a category deck gets no folder of its own: its human explanat
 ## Adding a new deck
 
 1. Create `packages/decks/<folder>/<slug>.<lang>.html` (self-contained: CSS + JS
-   inlined; Spanish decks use `.es.html`, technical terms stay in English). A
+   inlined; decks are written in Spanish and use `.es.html`, technical terms
+   stay in English; an optional English twin sits next to it as `.en.html`,
+   same slides and same shell). A
    workflow deck is `how-it-works.es.html`, mirrors the shell of an existing
    deck, and keeps the scale-to-fit canvas at 1440x900 (the desktop reference
    viewport): any smaller viewport gets the canvas scaled down, so a slide that
    fits at 1440x900 also fits on a laptop (1366x768, 1280x800) or a phone.
 2. Register a card in `packages/pages-home/index.html` (the homepage catalog is
    hardcoded HTML).
-3. If the AI should proactively offer it, register it in
+3. If the deck has an English twin, add an `English version` link under its
+   card (`.deck-wrap` + `.deck-en`) in the same file.
+4. If the AI should proactively offer it, register it in
    `.agents/skills/agentic-qa-onboard/SKILL.md` (deck tables) and, for
    `agentic-qa-core` decks, in `.agents/skills/agentic-qa-core/SKILL.md`.
-4. Nothing else: `pages.yml` copies this whole directory verbatim, so the new
+5. Nothing else: `pages.yml` copies this whole directory verbatim, so the new
    file publishes automatically at
    `https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/<folder>/<file>`.

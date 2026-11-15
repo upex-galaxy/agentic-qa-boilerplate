@@ -22,10 +22,10 @@ It is specific to **this** Playwright + KATA QA boilerplate and points at the co
 - The skill is a tour, not an executor. It ends the moment the user knows which skill to call; hand off there and step back.
 - Leave the downstream work to its owner: pre-sprint refinement is `/shift-left-testing`, per-ticket QA `/sprint-testing`, TMS authoring `/test-documentation`, automated tests `/test-automation`, suite runs `/regression-testing`, a new target repo `/project-discovery`, KATA adaptation `/test-framework-adaptation`.
 - When someone is lost or asks how a skill works, drop the terse working register for the whole explanation: full sentences, a warm tone, each technical term defined the first time it appears. Go back to the normal register once they are oriented.
-- Explain in the user's language. The visual decks are Spanish only (technical terms stay English), so say that before opening one for an English speaker.
+- Explain in the user's language. The visual decks are Spanish (technical terms stay English); the eight workflow decks (`sprint-testing`, `shift-left-testing`, `test-automation`, `test-documentation`, `regression-testing`, `exploratory-testing`, `orca-orchestration`, `agentic-qa-onboard`) and `user-level-skills` also have an English twin, `how-it-works.en.html`. For an English speaker, offer the twin when one exists and say the deck is in Spanish when it does not.
 - When the goal is unclear, ask one question first (testing a ticket, or understanding the whole flow?). Someone who asked about one stage does not need all of them.
 - Name a stage by its word (Shift-Left, Planning, Execution, Reporting, Documentation, Automation, Regression, Observation), never by number. A "Stage N" in an older doc resolves through `agentic-qa-core/references/stage-gates.md`; the why behind the stages is `iql-context`.
-- When someone asks about running several sessions at once ("parallelize the sprint", "one session per story", "fleet", "launch workers"), explain the two executors in plain words (a one-shot subagent lives inside the current turn and is the default for almost everything; a supervised worker is a persistent session you keep talking to), then hand off to `/orca-orchestration`. Its deck is `packages/decks/orca-orchestration/how-it-works.es.html`.
+- When someone asks about running several sessions at once ("parallelize the sprint", "one session per story", "fleet", "launch workers"), explain the two executors in plain words (a one-shot subagent lives inside the current turn and is the default for almost everything; a supervised worker is a persistent session you keep talking to), then hand off to `/orca-orchestration`. Its deck is `packages/decks/orca-orchestration/how-it-works.es.html` (English twin: `how-it-works.en.html`).
 - Explain the concept and why it matters before any command, flag or file path.
 - Ask before opening a how-it-works deck, because it launches the user's default browser. Open exactly one, then let them come back with questions before offering the next.
 - Prefer the published GitHub Pages URL over the local file: a project scaffolded from this boilerplate may not carry the HTML. Use the local copy offline or on explicit request.
@@ -46,11 +46,13 @@ The skill is also the front desk for anyone confused: "I don't know how to use t
 
 ## How-it-works presentations (visual, in the browser)
 
-Most workflow skills ship a self-contained HTML presentation (Spanish, technical terms in English) that teaches the skill as a step-by-step workflow. Two category decks cover a family of skills at once, `agentic-qa-core` adds cross-cutting reference decks, and some skills carry craft or curriculum decks. Every how-it-works deck has the same shape: slide 1 is the cover (`/skill-name`), slide 2 the workflow map (main path plus gates, fallbacks and handoffs), then one phase per slide, closing with handoffs and how to invoke the skill on each host.
+Most workflow skills ship a self-contained HTML presentation (Spanish with technical terms in English, and an optional English twin `<name>.en.html` next to it) that teaches the skill as a step-by-step workflow. Two category decks cover a family of skills at once, `agentic-qa-core` adds cross-cutting reference decks, and some skills carry craft or curriculum decks. Every how-it-works deck has the same shape: slide 1 is the cover (`/skill-name`), slide 2 the workflow map (main path plus gates, fallbacks and handoffs), then one phase per slide, closing with handoffs and how to invoke the skill on each host.
 
 Every path below is relative to `packages/decks/`, which is also the published path segment (see "Published site"). `ls packages/decks/` is the source index; the published catalog with a card per deck is the homepage.
 
 ### Workflow decks (one per skill)
+
+These eight also have an English twin, `how-it-works.en.html` in the same folder: `agentic-qa-onboard`, `shift-left-testing`, `sprint-testing`, `exploratory-testing`, `test-documentation`, `test-automation`, `regression-testing`, `orca-orchestration`. So does `user-level-skills`. Offer the twin to anyone writing in English; every other deck is Spanish only for now.
 
 | Skill / activity | Deck (Spanish) |
 | --- | --- |
@@ -72,6 +74,7 @@ Every path below is relative to `packages/decks/`, which is also the published p
 | Branches, commits, PRs, worktrees | `git-flow-master/how-it-works.es.html` |
 | Multi-session orchestration | `orca-orchestration/how-it-works.es.html` |
 | Handing a session to a fresh one | `session-handoff/how-it-works.es.html` |
+| The user-level skills the installer adds (`mkd`, `humanizer`, `grilling`, `retro` and the rest): who calls them, what they do, what happens when one is missing | `user-level-skills/how-it-works.es.html` (English twin: `.en.html`) |
 | Evolving the boilerplate itself | `framework-development/how-it-works.es.html` |
 
 ### Category decks (a family of skills)
@@ -125,10 +128,10 @@ All decks, the interactive **KATA Academy** and the boilerplate homepage are pub
 ```
 https://upex-galaxy.github.io/agentic-qa-boilerplate/                         ← homepage (deck catalog)
 https://upex-galaxy.github.io/agentic-qa-boilerplate/kata/                    ← KATA Academy (interactive)
-https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/<folder>/<file>.es.html
+https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/<folder>/<file>.es.html   (or <file>.en.html for the English twins)
 ```
 
-Example: `.../decks/sprint-testing/how-it-works.es.html`. The `<folder>/<file>.es.html` segment is exactly the path in the tables above. Use the `.es.html` file: an older name without `.es` is not a current deck. The published URL works even in consumer projects scaffolded from this boilerplate; the local file is for offline use or an explicit request.
+Example: `.../decks/sprint-testing/how-it-works.es.html`. The `<folder>/<file>.es.html` segment is exactly the path in the tables above. Use the `.es.html` file (or the `.en.html` twin for an English speaker): an older name without `.es` or `.en` is not a current deck. The published URL works even in consumer projects scaffolded from this boilerplate; the local file is for offline use or an explicit request.
 
 ### The docs site (second surface, local)
 
@@ -146,7 +149,7 @@ Both start a blocking local server and open the browser, so the same rule applie
 Opening a deck launches the user's default browser, so it needs a yes, one deck at a time.
 
 1. Announce and ask: "I can open a short visual deck that walks through how `/sprint-testing` works, the full workflow map first, then each phase step by step. Want me to open it in your browser?"
-2. If the user speaks English, mention first that the deck is in Spanish (technical terms stay in English).
+2. If the user speaks English, offer the `how-it-works.en.html` twin when the deck has one (see the list under "Workflow decks"); otherwise mention first that the deck is in Spanish (technical terms stay in English).
 3. On a yes, open exactly one deck, published URL first and the local file as the offline fallback (pick the OS command for the user's platform):
    ```bash
    open "https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/sprint-testing/how-it-works.es.html"  # macOS → default browser

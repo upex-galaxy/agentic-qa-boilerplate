@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-11-15T10:48:06.686Z`
+> Generated: `2026-11-15T10:53:43.348Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -73,10 +73,10 @@ Skills indexed: 29
 - The skill is a tour, not an executor. It ends the moment the user knows which skill to call; hand off there and step back.
 - Leave the downstream work to its owner: pre-sprint refinement is `/shift-left-testing`, per-ticket QA `/sprint-testing`, TMS authoring `/test-documentation`, automated tests `/test-automation`, suite runs `/regression-testing`, a new target repo `/project-discovery`, KATA adaptation `/test-framework-adaptation`.
 - When someone is lost or asks how a skill works, drop the terse working register for the whole explanation: full sentences, a warm tone, each technical term defined the first time it appears. Go back to the normal register once they are oriented.
-- Explain in the user's language. The visual decks are Spanish only (technical terms stay English), so say that before opening one for an English speaker.
+- Explain in the user's language. The visual decks are Spanish (technical terms stay English); the eight workflow decks (`sprint-testing`, `shift-left-testing`, `test-automation`, `test-documentation`, `regression-testing`, `exploratory-testing`, `orca-orchestration`, `agentic-qa-onboard`) and `user-level-skills` also have an English twin, `how-it-works.en.html`. For an English speaker, offer the twin when one exists and say the deck is in Spanish when it does not.
 - When the goal is unclear, ask one question first (testing a ticket, or understanding the whole flow?). Someone who asked about one stage does not need all of them.
 - Name a stage by its word (Shift-Left, Planning, Execution, Reporting, Documentation, Automation, Regression, Observation), never by number. A "Stage N" in an older doc resolves through `agentic-qa-core/references/stage-gates.md`; the why behind the stages is `iql-context`.
-- When someone asks about running several sessions at once ("parallelize the sprint", "one session per story", "fleet", "launch workers"), explain the two executors in plain words (a one-shot subagent lives inside the current turn and is the default for almost everything; a supervised worker is a persistent session you keep talking to), then hand off to `/orca-orchestration`. Its deck is `packages/decks/orca-orchestration/how-it-works.es.html`.
+- When someone asks about running several sessions at once ("parallelize the sprint", "one session per story", "fleet", "launch workers"), explain the two executors in plain words (a one-shot subagent lives inside the current turn and is the default for almost everything; a supervised worker is a persistent session you keep talking to), then hand off to `/orca-orchestration`. Its deck is `packages/decks/orca-orchestration/how-it-works.es.html` (English twin: `how-it-works.en.html`).
 - Explain the concept and why it matters before any command, flag or file path.
 - Ask before opening a how-it-works deck, because it launches the user's default browser. Open exactly one, then let them come back with questions before offering the next.
 - Prefer the published GitHub Pages URL over the local file: a project scaffolded from this boilerplate may not carry the HTML. Use the local copy offline or on explicit request.

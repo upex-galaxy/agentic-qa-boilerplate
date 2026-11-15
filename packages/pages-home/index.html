@@ -691,6 +691,26 @@
       .deck:hover {
         border-color: var(--line-2);
       }
+      .deck-wrap {
+        border-bottom: 1px solid var(--line);
+      }
+      .deck-wrap .deck {
+        border-bottom: 0;
+        padding-bottom: 8px;
+      }
+      .deck-en {
+        display: inline-block;
+        margin: 0 0 14px;
+        font-family: var(--mono);
+        font-size: 0.7rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--amber);
+        text-decoration: none;
+      }
+      .deck-en:hover {
+        text-decoration: underline;
+      }
       .cat-group {
         margin-top: 30px;
       }
@@ -1575,69 +1595,104 @@
           <div class="cat-group">
             <p class="cat-k">Empezar</p>
             <div class="decks">
-              <a class="deck" href="./decks/agentic-qa-onboard/how-it-works.es.html">
-                <span class="tag">Primera parada</span>
-                <h3>agentic-qa-onboard · Cómo funciona</h3>
-                <span class="go">→</span>
-                <p>
-                  Un recorrido en palabras simples por el repo, el pipeline y el camino de proyecto
-                  nuevo, que termina en la skill que te toca.
-                </p>
-              </a>
+              <div class="deck-wrap">
+                <a class="deck" href="./decks/agentic-qa-onboard/how-it-works.es.html">
+                  <span class="tag">Primera parada</span>
+                  <h3>agentic-qa-onboard · Cómo funciona</h3>
+                  <span class="go">→</span>
+                  <p>
+                    Un recorrido en palabras simples por el repo, el pipeline y el camino de
+                    proyecto nuevo, que termina en la skill que te toca.
+                  </p>
+                </a>
+                <a class="deck-en" href="./decks/agentic-qa-onboard/how-it-works.en.html"
+                  >English version →</a
+                >
+              </div>
             </div>
           </div>
 
           <div class="cat-group">
             <p class="cat-k">Los stages del pipeline</p>
             <div class="decks">
-              <a class="deck" href="./decks/shift-left-testing/how-it-works.es.html">
-                <span class="tag">Shift-Left</span>
-                <h3>Shift-Left Testing · Cómo funciona</h3>
-                <span class="go">→</span>
-                <p>
-                  El backlog refinado antes del sprint: gaps, el ATP en el campo de la Story y la
-                  Story lista para estimar.
-                </p>
-              </a>
-              <a class="deck" href="./decks/sprint-testing/how-it-works.es.html">
-                <span class="tag">Planning · Execution · Reporting</span>
-                <h3>Sprint Testing · Cómo funciona</h3>
-                <span class="go">→</span>
-                <p>QA manual por ticket: plan, exploración con la Trifuerza y reporte trazado.</p>
-              </a>
-              <a class="deck" href="./decks/exploratory-testing/how-it-works.es.html">
-                <span class="tag">Execution sin ticket</span>
-                <h3>Exploratory Testing · Cómo funciona</h3>
-                <span class="go">→</span>
-                <p>
-                  Charter, reconocimiento en paralelo, refutación y escenarios marcados contra la
-                  cobertura.
-                </p>
-              </a>
+              <div class="deck-wrap">
+                <a class="deck" href="./decks/shift-left-testing/how-it-works.es.html">
+                  <span class="tag">Shift-Left</span>
+                  <h3>Shift-Left Testing · Cómo funciona</h3>
+                  <span class="go">→</span>
+                  <p>
+                    El backlog refinado antes del sprint: gaps, el ATP en el campo de la Story y la
+                    Story lista para estimar.
+                  </p>
+                </a>
+                <a class="deck-en" href="./decks/shift-left-testing/how-it-works.en.html"
+                  >English version →</a
+                >
+              </div>
+              <div class="deck-wrap">
+                <a class="deck" href="./decks/sprint-testing/how-it-works.es.html">
+                  <span class="tag">Planning · Execution · Reporting</span>
+                  <h3>Sprint Testing · Cómo funciona</h3>
+                  <span class="go">→</span>
+                  <p>QA manual por ticket: plan, exploración con la Trifuerza y reporte trazado.</p>
+                </a>
+                <a class="deck-en" href="./decks/sprint-testing/how-it-works.en.html"
+                  >English version →</a
+                >
+              </div>
+              <div class="deck-wrap">
+                <a class="deck" href="./decks/exploratory-testing/how-it-works.es.html">
+                  <span class="tag">Execution sin ticket</span>
+                  <h3>Exploratory Testing · Cómo funciona</h3>
+                  <span class="go">→</span>
+                  <p>
+                    Charter, reconocimiento en paralelo, refutación y escenarios marcados contra la
+                    cobertura.
+                  </p>
+                </a>
+                <a class="deck-en" href="./decks/exploratory-testing/how-it-works.en.html"
+                  >English version →</a
+                >
+              </div>
               <a class="deck" href="./decks/sprint-conductor/how-it-works.es.html">
                 <span class="tag">Sprint en flota</span>
                 <h3>Sprint Conductor · Cómo funciona</h3>
                 <span class="go">→</span>
                 <p>Una flota de workers por ticket, mirada desde el Sprint Board.</p>
               </a>
-              <a class="deck" href="./decks/test-documentation/how-it-works.es.html">
-                <span class="tag">Documentation</span>
-                <h3>Test Documentation · Cómo funciona</h3>
-                <span class="go">→</span>
-                <p>Test cases en el TMS y un veredicto de ROI por escenario.</p>
-              </a>
-              <a class="deck" href="./decks/test-automation/how-it-works.es.html">
-                <span class="tag">Automation</span>
-                <h3>Test Automation · Cómo funciona</h3>
-                <span class="go">→</span>
-                <p>Plan, código y revisión sobre KATA + Playwright, solo para los Candidate.</p>
-              </a>
-              <a class="deck" href="./decks/regression-testing/how-it-works.es.html">
-                <span class="tag">Regression</span>
-                <h3>Regression Testing · Cómo funciona</h3>
-                <span class="go">→</span>
-                <p>Suites por CI, cada fallo clasificado y el veredicto de release.</p>
-              </a>
+              <div class="deck-wrap">
+                <a class="deck" href="./decks/test-documentation/how-it-works.es.html">
+                  <span class="tag">Documentation</span>
+                  <h3>Test Documentation · Cómo funciona</h3>
+                  <span class="go">→</span>
+                  <p>Test cases en el TMS y un veredicto de ROI por escenario.</p>
+                </a>
+                <a class="deck-en" href="./decks/test-documentation/how-it-works.en.html"
+                  >English version →</a
+                >
+              </div>
+              <div class="deck-wrap">
+                <a class="deck" href="./decks/test-automation/how-it-works.es.html">
+                  <span class="tag">Automation</span>
+                  <h3>Test Automation · Cómo funciona</h3>
+                  <span class="go">→</span>
+                  <p>Plan, código y revisión sobre KATA + Playwright, solo para los Candidate.</p>
+                </a>
+                <a class="deck-en" href="./decks/test-automation/how-it-works.en.html"
+                  >English version →</a
+                >
+              </div>
+              <div class="deck-wrap">
+                <a class="deck" href="./decks/regression-testing/how-it-works.es.html">
+                  <span class="tag">Regression</span>
+                  <h3>Regression Testing · Cómo funciona</h3>
+                  <span class="go">→</span>
+                  <p>Suites por CI, cada fallo clasificado y el veredicto de release.</p>
+                </a>
+                <a class="deck-en" href="./decks/regression-testing/how-it-works.en.html"
+                  >English version →</a
+                >
+              </div>
             </div>
           </div>
 
@@ -1759,16 +1814,21 @@
                   <code>ROUTE:</code> la nombra.
                 </p>
               </a>
-              <a class="deck" href="./decks/orca-orchestration/how-it-works.es.html">
-                <span class="tag">Orquestación</span>
-                <h3>Orca Orchestration · Cómo funciona</h3>
-                <span class="go">→</span>
-                <p>
-                  Un conductor coordinando una flota de sesiones worker: una por historia, por
-                  módulo o por cluster de fallos. Opcional: sin runtime, las líneas de lanzamiento
-                  las pega una persona.
-                </p>
-              </a>
+              <div class="deck-wrap">
+                <a class="deck" href="./decks/orca-orchestration/how-it-works.es.html">
+                  <span class="tag">Orquestación</span>
+                  <h3>Orca Orchestration · Cómo funciona</h3>
+                  <span class="go">→</span>
+                  <p>
+                    Un conductor coordinando una flota de sesiones worker: una por historia, por
+                    módulo o por cluster de fallos. Opcional: sin runtime, las líneas de lanzamiento
+                    las pega una persona.
+                  </p>
+                </a>
+                <a class="deck-en" href="./decks/orca-orchestration/how-it-works.en.html"
+                  >English version →</a
+                >
+              </div>
               <a class="deck" href="./decks/session-handoff/how-it-works.es.html">
                 <span class="tag">Sesiones largas</span>
                 <h3>session-handoff · Cómo funciona</h3>
@@ -1778,6 +1838,21 @@
                   sesión nueva sigue exactamente donde quedó.
                 </p>
               </a>
+              <div class="deck-wrap">
+                <a class="deck" href="./decks/user-level-skills/how-it-works.es.html">
+                  <span class="tag">Skills de usuario</span>
+                  <h3>User-level skills · Cómo funciona</h3>
+                  <span class="go">→</span>
+                  <p>
+                    Las diez skills que el instalador deja en tu usuario (<code>mkd</code>,
+                    <code>humanizer</code>, <code>grilling</code>, <code>retro</code> y más): quién
+                    las llama, qué hacen y qué pasa si no están instaladas.
+                  </p>
+                </a>
+                <a class="deck-en" href="./decks/user-level-skills/how-it-works.en.html"
+                  >English version →</a
+                >
+              </div>
             </div>
           </div>
 
