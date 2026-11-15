@@ -218,12 +218,12 @@
       "expect": ["critical-rules"]
     },
     {
-      "prompt": "¿qué dice la regla 15 sobre git stash?",
-      "expect": ["critical-rules", "git"]
-    },
-    {
       "prompt": "am I allowed to push to main directly under the critical rules?",
       "expect": ["git", "critical-rules"]
+    },
+    {
+      "prompt": "what does critical rule 15 say about git stash?",
+      "expect": ["critical-rules", "git"]
     },
     {
       "prompt": "how do I run the e2e tests?",
@@ -259,10 +259,6 @@
     },
     {
       "prompt": "build the coverage gap list: which behaviours have no test that exercises them?",
-      "expect": ["context-map"]
-    },
-    {
-      "prompt": "armá el inventario de cobertura y decime qué comportamientos no tienen tests",
       "expect": ["context-map"]
     },
     {
@@ -306,10 +302,6 @@
       "expect": ["harnesses"]
     },
     {
-      "prompt": "esto también funciona en Pi?",
-      "expect": ["harnesses"]
-    },
-    {
       "prompt": "round pi to two decimals in that formula",
       "expect": []
     },
@@ -347,6 +339,18 @@
     {
       "prompt": "orquestá una flota para el sprint 4",
       "expect": ["orchestration-detail", "context-map"]
+    },
+    {
+      "prompt": "¿qué dice la regla 15 sobre git stash?",
+      "expect": ["critical-rules", "git"]
+    },
+    {
+      "prompt": "armá el inventario de cobertura y decime qué comportamientos no tienen tests",
+      "expect": ["context-map"]
+    },
+    {
+      "prompt": "esto también funciona en Pi?",
+      "expect": ["harnesses"]
     }
   ]
 }

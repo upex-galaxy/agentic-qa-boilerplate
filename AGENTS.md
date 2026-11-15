@@ -6,7 +6,7 @@
 
 Before acting, match the request against the ROUTER and read each matched section file not yet in this conversation. A `ROUTE:` line from the hook is binding and wins over your judgment: read its file first. `ROUTE-OPTIONAL:` is not binding; read it only if the task needs it. `ROUTE-PENDING:` names a binding file still unread: read it next. Re-read only after compaction or `/clear`. Unsure whether a section applies: read it, a skipped section is the failure this design guards against. A section binds like this file; a `§N` citation names its numbered heading in the file the ROUTER lists.
 
-Skills and sections load by meaning in any language: a Spanish or other prompt loads what its English equivalent loads. With no `ROUTE:` line, route it yourself from the ROUTER. Replies still mirror the user's language (Critical Rule 14).
+Skills and sections load by meaning in any language; triggers are English, so for another language a `ROUTE:` line may be missing or partial: route from the ROUTER yourself. Replies mirror the user's language (Critical Rule 14).
 
 ---
 

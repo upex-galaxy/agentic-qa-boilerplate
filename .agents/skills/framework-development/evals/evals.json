@@ -1,0 +1,47 @@
+{
+  "skill_name": "framework-development",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Add a new fixture API to the KATA layer so tests can call the billing endpoints, and update the manifest.",
+      "expected_output": "Loads framework-development, runs the preflight and the path self-check, plans before coding, and delivers the fixture file, an updated kata-manifest.json and a consuming test, then runs the four verifiers.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Rewrite the sprint-testing skill so it reads better and loads less, and add an evals file for it.",
+      "expected_output": "Loads framework-development for a skill rewrite, follows the Writing a skill section, lets skill-creator build the draft and the evals, and runs skills:check and skills:registry.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "armá una fila nueva en el ROUTER de AGENTS.md para que el pedido de métricas cargue su sección de instrucciones",
+      "expected_output": "Loads framework-development in mode instructions from a Spanish prompt, asks for an ADR before the ROUTER row, edits the section file and not the L0 prose, and runs instructions:check.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "sincroniza la memoria de la IA y los docs después de cambiar el instalador, que no quede nada desactualizado",
+      "expected_output": "Loads framework-development for the docs follow-through after a boilerplate change, sweeps README, INSTALLER, AGENTS and the decks, and records Docs-Checked only with a reason.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Write the E2E test for the login flow of ticket BK-77.",
+      "expected_output": "Should NOT load framework-development: per-ticket test writing belongs to test-automation.",
+      "should_trigger": false,
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "Run the regression suite on staging and tell me if we can release.",
+      "expected_output": "Should NOT load framework-development: running a regression suite and the GO/NO-GO belong to regression-testing.",
+      "should_trigger": false,
+      "files": []
+    }
+  ]
+}
