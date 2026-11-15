@@ -35,7 +35,7 @@ apply? (yes / no)
 
 Verify the edit with the OpenAPI schema read (capability `api-schema`) before proposing it. Only `yes` applies it; silence is not approval. When you are a supervised worker, or nobody is at the keyboard, send the proposal to the conductor or record it in the run's notes, say in the report that it is unapplied, and continue.
 
-## Limits
+## Never
 
 - Edit only files inside this skill's `references/`.
 - Rewrite only the section that was contradicted. Regenerating the whole map belongs to `project-context`.

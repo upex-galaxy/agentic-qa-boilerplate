@@ -1,6 +1,6 @@
 ---
 name: business-api-context
-description: "The business meaning of the system's API: endpoint groups, callers, auth, flows, errors, integrations. Loaded by exploratory-testing and by the skill resolver for API-level dispatches."
+description: "The business meaning of the system's API: endpoint groups, callers, auth, flows, errors, integrations. Use when asking what an endpoint does or who may call it; an API status or auth rule looks wrong; the API map needs a fix."
 license: MIT
 compatibility: [claude-code, codex, opencode, pi]
 metadata:
@@ -42,7 +42,7 @@ The system's API as a business surface: which endpoint groups exist and what eac
 
 _(none yet: each rule carries `YYYY-MM-DD · rule · measured: how`)_
 
-## Elsewhere
+## Not here
 
 - Payload schemas and types: the OpenAPI contract and `api/schemas/`.
 - Entities, state machines and triggers: `business-data-context`.

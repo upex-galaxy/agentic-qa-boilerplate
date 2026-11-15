@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-11-15T07:40:20.774Z`
+> Generated: `2026-11-15T08:04:00.684Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -242,7 +242,7 @@ Skills indexed: 29
 
 ## Skill: framework-development
 
-**Purpose**: Evolve the QA boilerplate itself: KATA bases, fixtures, installer, scripts, OpenAPI pipeline, instruction files.
+**Purpose**: Evolve the QA boilerplate itself: KATA bases, fixtures, installer, scripts, OpenAPI pipeline, skills and instruction files.
 
 **Compact Rules**:
 - Use this skill for the architectural surface only. Test writing is `/test-automation`, manual QA is `/sprint-testing`, TMS docs are `/test-documentation`, suite runs are `/regression-testing`.
@@ -251,12 +251,12 @@ Skills indexed: 29
 - Run Plan, Code, Verify, Archive in order for every non-trivial framework change. The pipeline is the gate, and "it is a quick refactor" is not an exemption: skipping it for `ApiBase.ts`, `UiBase.ts`, `TestContext.ts`, fixtures, the installer or the OpenAPI pipeline reliably ships undetected regressions.
 - Leave per-ticket tests alone: the specs under `tests/e2e/` and `tests/integration/` and the per-module Page, Api and Steps components are `/test-automation` surface. The KATA bases (`TestContext.ts`, `ApiBase.ts`, `UiBase.ts`) and the fixture files are yours (`references/kata-invariants.md` §10.1).
 - Keep the KATA layers (TestContext, Base, Domain, Fixture) intact, whatever the simplicity argument. They are framework architecture, not speculative abstraction.
-- A new fixture API comes with the matching fixture file, an updated `kata-manifest.json`, and at least one existing test that consumes it. Orphan fixtures rot, and the manifest is the anti-duplication gate (Critical Rule #12).
+- A new fixture API comes with the matching fixture file (`tests/components/TestFixture.ts`, `ApiFixture.ts` or `UiFixture.ts`), an updated `kata-manifest.json`, and at least one existing test that consumes it. Orphan fixtures rot, and the manifest is the anti-duplication gate (Critical Rule #12).
 - A major bump of Playwright, Bun or TypeScript needs a regression run on a representative E2E suite first. Lockstep upgrades hide breaks in fixture lifecycle, locator engines and type emit.
 - A change to `cli/install.ts` is exercised through the full install flow on a clean clone. Checking on an already-installed repo proves nothing, and the installer is where a bug ships silently to every new user.
 - When the chosen approach reshapes test architecture (KATA layers, a fixture API, the runner, the isolation or parallelization model, the OpenAPI/type pipeline) and is hard to reverse, record an ADR under `.context/ADR/` after plan approval and before coding. The plan approval is the decision, so the ADR is written `Accepted` and cites it; it is never handed back for acceptance. `Proposed` is only for a question still open. ADRs are append-only: supersede, do not rewrite.
 - Verify with all four checks (test, types, lint, skills) and treat any non-zero exit as REJECT: present retry, skip-and-document or abort, and do not auto-fix. A skill that itself broke (a wrong step, a missing verifier, a stale rule) is reported upstream per `../agentic-qa-core/references/upstream-feedback.md`: drafted and redacted locally, filed only on explicit OK, verified with `gh issue view`.
-- When the change is a skill (a new or restructured `.agents/skills/<slug>/`), scaffold it per `../agentic-qa-core/references/skill-scaffold.md` (frontmatter including `metadata.kind`, per-kind files and sections, Definition of Done). Write the skill text with the `writing-for-agents` and `humanizer` skills (see "Writing a skill"), and let `skill-creator` build the draft, the test prompts, the evals and the description pass. Missing on the machine: scaffold from the reference's template and say so. Consumer SUT context skills are not this skill's job: `project-context` mode `context-skill` owns them.
+- When the change is a skill (a new or restructured `.agents/skills/<slug>/`), scaffold it per `../agentic-qa-core/references/skill-scaffold.md` (frontmatter including `metadata.kind`, per-kind files and sections, Definition of Done). Write the skill text with the `writing-for-agents` and `humanizer` skills (see "Writing a skill"), `skill-creator` (T3, installed at project level) is always the builder: it makes the draft, the test prompts, the evals and the description pass. When `skill-creator` is missing, scaffold from the reference's template and say so. Consumer SUT context skills are not this skill's job: `project-context` mode `context-skill` owns them.
 - `progress.md` is orchestrator-only. Code subagents return one-line summaries per task, and the orchestrator does not read their diffs.
 - Close every change that adds, renames or retires a skill, a `package.json` script or a doc path, or that changes a behaviour a page describes, with the docs follow-through (Phase 3): patch `.agents/instructions/agent-context-map.md`, `.agents/instructions/agent-skills-and-mcps.md`, `README.md`, `INSTALLER.md`, `CONTEXT.md`, the `docs/core/` pages, the decks (`packages/decks/**`) and the Pages home (`packages/pages-home/**`) in the same PR. `bun run docs:check` proves the router and the quoted scripts; the prose is judgment.
 - When an edit lands inside a `LINT.IfChange(<label>)` region (the hook prints a `DOCS:` line; ADR-0016), update every page its `LINT.ThenChange(...)` names in the same push. Add `Docs-Checked: <label> <reason>` to a commit message only when the documented behaviour did not change, and never by reflex or without a reason. Pre-push and CI block otherwise. A drift found later gets a new marker.
@@ -566,7 +566,7 @@ Skills indexed: 29
 
 ## Skill: shift-left-testing
 
-**Purpose**: Refine acceptance criteria on a batch of backlog Stories before they enter a sprint.
+**Purpose**: Shift-left QA: refine acceptance criteria on a batch of backlog Stories before they enter a sprint.
 
 **Compact Rules**:
 - ACs are the floor. Push past the happy path and surface the boundaries, exceptions, states and anomalies the Story is silent on.
