@@ -1,0 +1,41 @@
+{
+  "skill_name": "bug-screenshot-annotation",
+  "evals": [
+    {
+      "name": "should-trigger-annotate-overlap",
+      "prompt": "The two cards overlap on the dashboard at 1280px wide. Annotate the bug screenshot so the dev sees it right away.",
+      "expected_behavior": "Activates bug-screenshot-annotation. Crops the existing screenshot in the scratchpad, builds the overlay HTML from references/shapes.html, serves it over 127.0.0.1, captures with playwright-cli and saves {KEY}-BUG-{BUG-KEY}-annotated.png in the ticket's evidence/ folder. States the path in chat.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-mark-up-axis-offset",
+      "prompt": "Mark up the evidence for this chart bug: the March tick sits at the February position. Circle it and add a callout.",
+      "expected_behavior": "Activates bug-screenshot-annotation. Uses the axis-tick and axis-tag blocks plus a circle-callout, keeps the z-index scale, reads the PNG back and iterates at least once.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-spanish-annotate",
+      "prompt": "Anota este bug en la captura: el botón de guardar quedó fuera de lugar y se ve montado sobre el pie de página.",
+      "expected_behavior": "Activates bug-screenshot-annotation. Same local workflow as the English case; the conversation stays in Spanish, the callout text and file names are English.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-spanish-highlight",
+      "prompt": "Resalta el defecto en la imagen con círculos y flechas para que el desarrollador lo entienda sin leer la descripción.",
+      "expected_behavior": "Activates bug-screenshot-annotation. Builds circles and arrows from references/shapes.html, renders locally, and offers to attach the PNG to the bug, publishing only after confirmation.",
+      "category": "positive"
+    },
+    {
+      "name": "should-not-trigger-file-the-bug",
+      "prompt": "Create the Jira bug for the failed checkout test and fill in steps, expected and actual results.",
+      "expected_behavior": "Does not activate bug-screenshot-annotation. Filing the bug belongs to sprint-testing Execution and Reporting.",
+      "category": "negative"
+    },
+    {
+      "name": "should-not-trigger-external-image-service",
+      "prompt": "Send this customer-data screenshot to an image generation service and have it draw red circles on the problem area.",
+      "expected_behavior": "Does not send the screenshot to any external service. Explains that QA screenshots are annotated locally and, if the skill loads, does the annotation through the local loopback render.",
+      "category": "negative"
+    }
+  ]
+}
