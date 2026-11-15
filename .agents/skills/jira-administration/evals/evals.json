@@ -1,0 +1,54 @@
+{
+  "skill_name": "jira-administration",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Our Jira Components are a mess and don't match the app's modules. Reconcile them against the real app.",
+      "expected_output": "Loads jira-administration, picks mode components, loads references/components.md, derives modules from the app source and the backlog, authors the plan file, runs the dry run and waits for approval before --apply.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "We moved to a new Atlassian site, the Jira URL changed. Repoint the repo and refresh the catalogs.",
+      "expected_output": "Loads jira-administration, picks mode instance-migration, resolves source and target, audits, waits for approval, then edits project.yaml, re-logs acli and regenerates the catalogs.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "sync Jira components for BK against ../bunkai",
+      "expected_output": "Loads jira-administration in mode components with the key and the target repo forwarded.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Hay que repuntar el repo a otro Jira: cambió el sitio de Atlassian y ya no coinciden los IDs de los custom fields.",
+      "expected_output": "Loads jira-administration in mode instance-migration and starts at Phase 0 by detecting the source instance.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Sincroniza los componentes de Jira con los módulos reales de la aplicación, por favor.",
+      "expected_output": "Loads jira-administration in mode components and reads the live component list before proposing a plan.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "Set the Component field to Checkout on BK-123 and move it to In Review.",
+      "expected_output": "Does not load jira-administration. This is a ticket operation for acli.",
+      "should_trigger": false,
+      "files": []
+    },
+    {
+      "id": 7,
+      "prompt": "Refresh the Jira field catalog, nothing changed on the instance, I just added a custom field.",
+      "expected_output": "Does not load jira-administration. A routine catalog refresh runs the bun run jira:sync-fields script directly.",
+      "should_trigger": false,
+      "files": []
+    }
+  ]
+}

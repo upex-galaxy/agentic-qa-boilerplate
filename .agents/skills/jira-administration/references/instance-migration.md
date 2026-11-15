@@ -1,6 +1,6 @@
 ---
 name: jira-instance-migration
-description: Repoint this repo at a new Atlassian/Jira instance after a site migration, and regenerate the `.agents/` catalogs whose custom-field IDs the migration invalidated. Takes two inputs (source instance, target instance); detects the source from the repo and asks for whatever is missing before touching anything. Triggers on 'jira instance migration', 'migrar la instancia de jira', 'cambió la URL de Jira', 'jira site migration', 'we moved Jira workspaces', 'repoint jira', 'nuevo site de jira', 'actualizar ATLASSIAN_URL', 'the jira URL changed'. Do NOT use for: first-time Jira setup (see docs/core/setup/jira-xray.html), routine catalog refresh with no instance change (run `bun run jira:sync-*` directly), or Jira ticket operations (use /acli).
+description: Repoint this repo at a new Atlassian/Jira instance after a site migration and regenerate the `.agents/` catalogs whose custom-field IDs the migration invalidated. Takes a source and a target instance, detects the source from the repo and asks for what is missing before touching anything. Not for first-time Jira setup (`docs/core/setup/jira-xray.html`), a routine catalog refresh with no instance change (run `bun run jira:sync-*` directly), or Jira ticket operations (`/acli`).
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode, pi]
 ---
@@ -9,7 +9,7 @@ compatibility: [claude-code, copilot, cursor, codex, opencode, pi]
 
 Repoint this repository at a new Atlassian instance and regenerate everything the move invalidated.
 
-**Inputs**: `$ARGUMENTS` — the source instance and the target instance, in that order. Both may be omitted; Phase 0 resolves them.
+**Inputs**: `$ARGUMENTS` holds the source instance and the target instance, in that order. Both are optional, and Phase 0 resolves them.
 
 ```
 /jira-administration instance-migration oldsite.atlassian.net newsite.atlassian.net
@@ -20,19 +20,19 @@ Repoint this repository at a new Atlassian instance and regenerate everything th
 
 ## Why this is not a find-and-replace
 
-A site migration reassigns custom-field IDs instead of preserving them. The old ID usually still exists on the new instance, pointing at a **different field**. So the failure mode is not a 404 — it is a `200 OK` that writes your data into the wrong field, silently, forever.
+A site migration reassigns custom-field IDs instead of preserving them. The old ID usually still exists on the new instance, pointing at a different field. The failure is not a 404. It is a `200 OK` that writes your data into the wrong field, silently, forever.
 
-That is why this mode has two halves. Repointing the URL is the easy half. Regenerating the `.agents/` catalogs is the half that prevents silent corruption.
+So this mode has two halves. Repointing the URL is the easy half. Regenerating the `.agents/` catalogs is the half that prevents silent corruption.
 
-A second silent failure sits alongside it: `.agents/project.yaml` and the `acli` session are independent. Change one and not the other, and REST calls hit the new instance while `acli` keeps reading the old one, with no error to tell you.
+A second silent failure sits beside it: `.agents/project.yaml` and the `acli` session are independent. Change one and not the other, and REST calls hit the new instance while `acli` keeps reading the old one, with no error to tell you.
 
 ---
 
-## Phase 0 — Resolve the two instances (always first)
+## Phase 0: Resolve the two instances (always first)
 
-**Never edit anything before both values are confirmed by the user.**
+Edit nothing until the user has confirmed both values.
 
-**Source** — detect it, do not ask first. Read, in order, and report what each one says:
+**Source.** Detect it before asking. Read these in order and report what each one says:
 
 ```bash
 grep -n 'atlassian_url' .agents/project.yaml             # the source of truth
@@ -42,26 +42,21 @@ test -n "${ATLASSIAN_URL+x}" && echo 'ATLASSIAN_URL set in process' || echo 'ATL
 bunx varlock load --agent --filter ATLASSIAN_URL         # should print {} (see below)
 ```
 
-The last two are **contamination probes, not sources**. `ATLASSIAN_URL` is not a
-local variable in this repo: the host lives only in `.agents/project.yaml`. A hit
-on either line is a leftover from before that split, and it is dangerous
-precisely during a migration — an inherited process value is the thing that
-survives every restart and silently outlives the site it names. Report a hit as
-a finding to clean up, never as evidence of the current instance.
+The last two are contamination probes, not sources. `ATLASSIAN_URL` is not a local variable in this repo, because the host lives only in `.agents/project.yaml`. A hit on either line is a leftover from before that split, and it is dangerous during a migration: an inherited process value survives every restart and outlives the site it names. Report a hit as a finding to clean up, never as evidence of the current instance.
 
 Three outcomes:
 
-- All agree -> that is the source. State it and move on.
-- They disagree -> the repo is already in a half-migrated state. **Report all three values** and treat the migration as a repair, not a move. Ask which one is the real "before".
-- Nothing found -> ask the user for the source.
+- All three agree. That is the source: state it and move on.
+- They disagree. The repo is already half migrated, so report all three values, treat the run as a repair and not a move, and ask which one is the real "before".
+- Nothing is found. Ask the user for the source.
 
-**Target** — never guess. If it is not in `$ARGUMENTS`, ask. There is no way to detect a site the repo has never contacted.
+**Target.** Ask when `$ARGUMENTS` lacks it. No detection can find a site the repo has never contacted.
 
-Normalize both to the bare host (`site.atlassian.net`, no scheme, no trailing slash). Then confirm as one line and wait:
+Normalize both to the bare host (`site.atlassian.net`, no scheme, no trailing slash), then confirm in one line and wait:
 
 > Migrating `<source>` -> `<target>`. Two places change: `.agents/project.yaml` (the only place the host is written) and your machine-global `acli` session. Any stale `ATLASSIAN_URL` the probes found gets deleted, not updated. Confirm?
 
-**Verify the target is reachable and populated before proceeding.** Migrating into an empty or half-provisioned instance regenerates empty catalogs and publishes them, which is worse than doing nothing:
+Verify the target is reachable and populated before going on. Migrating into an empty or half-provisioned instance regenerates empty catalogs and publishes them, which is worse than doing nothing:
 
 ```text
 [ISSUE_TRACKER_TOOL] Authenticated GET:
@@ -70,11 +65,13 @@ Normalize both to the bare host (`site.atlassian.net`, no scheme, no trailing sl
   output=HTTP status
 ```
 
-Anything other than `200` stops the mode.
+Anything other than `200` ends the mode.
+
+With nobody to confirm the two hosts, the `## With nobody at the keyboard` rule in `SKILL.md` applies: Phases 0 and 1 run read-only, and the report with the audit table is the stop point.
 
 ---
 
-## Phase 1 — Audit before editing
+## Phase 1: Audit before editing
 
 Sweep for the source host, excluding dependencies and git internals:
 
@@ -82,36 +79,36 @@ Sweep for the source host, excluding dependencies and git internals:
 grep -rn "<source-slug>" -I . 2>/dev/null | grep -v "^./node_modules" | grep -v "^./.git/"
 ```
 
-Classify every hit into change / do-not-change, and **present the table to the user before editing anything**.
+Classify every hit as change or do-not-change, and present the table to the user before editing anything.
 
 ### Changes
 
 | Target | What to write |
 |---|---|
-| `.agents/project.yaml` -> `atlassian_url` | `https://<target>` — **the only place the host is written.** Every script resolves the instance from here (`cli/lib/atlassian-instance.ts`), the test runtime reads it through `config/variables.ts`, and `bun run jira:url` is how shell recipes read it. Write it WITH the scheme, matching what `bun run agents:setup` writes; the resolver accepts a bare slug too, but a mixed repo is harder to review |
-| a stale `ATLASSIAN_URL`, if either probe hit | **delete it**, do not update it. Remove the `.env` line; for a process value, find and fix whatever exports it (`ps eww -p $PPID` up the chain). Updating it instead just recreates a second copy that will go stale at the next migration |
-| `acli` session | machine-global (`~/.config/acli`), not a repo file — re-login required per machine |
+| `.agents/project.yaml` -> `atlassian_url` | `https://<target>`. This is the only place the host is written. Every script resolves the instance from here (`cli/lib/atlassian-instance.ts`), the test runtime reads it through `config/variables.ts`, and `bun run jira:url` is how shell recipes read it. Write it with the scheme, matching what `bun run agents:setup` writes. The resolver accepts a bare slug too, but a mixed repo is harder to review |
+| a stale `ATLASSIAN_URL`, if either probe hit | delete it, do not update it. Remove the `.env` line. For a process value, find and fix whatever exports it (`ps eww -p $PPID` up the chain). Updating it recreates a second copy that goes stale at the next migration |
+| `acli` session | machine-global (`~/.config/acli`), not a repo file. Re-login is required per machine |
 
 ### Does not change
 
-- **A vanity / alias domain** (an org-owned hostname that fronts Jira instead of the numbered or named instance slug). If one appears in the code, leave it: these normally redirect to whatever instance is active at the time, which is exactly why already-published `/browse/` links survive a migration. **But the alias is invisible from the repo** — tell the user to confirm by hand that it now resolves to the target. If it still points at the source, every published link is broken and nothing in the codebase reveals it.
-- **Historical records** — sprint reports, retros, changelogs of closed work. Rewriting them falsifies the past.
-- **Code whose pattern already generalizes.** If the logic matches the instance with a regex rather than a literal (`/site\d+\.atlassian\.net/`), it already supports the target and only a comment names the source. Read the code before deciding; do not edit a pattern that already generalizes.
-- **Regenerable cache** — `.context/PBI/` is rebuilt by the sync, so occurrences there clear themselves.
+- **A vanity or alias domain**: an org-owned hostname that fronts Jira instead of the numbered or named instance slug. Leave it if it appears in the code. These normally redirect to whatever instance is active, which is why already-published `/browse/` links survive a migration. The alias is invisible from the repo, so tell the user to confirm by hand that it now resolves to the target. If it still points at the source, every published link is broken and nothing in the codebase shows it.
+- **Historical records**: sprint reports, retros, changelogs of closed work. Rewriting them falsifies the past.
+- **Code whose pattern already generalizes.** If the logic matches the instance with a regex instead of a literal (`/site\d+\.atlassian\.net/`), it already supports the target and only a comment names the source. Read the code before deciding, and leave a pattern that already generalizes alone.
+- **Regenerable cache**: `.context/PBI/` is rebuilt by the sync, so occurrences there clear themselves.
 
-Anything that fits neither list — a CI workflow, a README, `.mcp.json`, a deploy script — **ask before touching it**.
+Anything that fits neither list (a CI workflow, a README, `.mcp.json`, a deploy script) goes to the user to decide before you touch it.
 
 ---
 
-## Phase 2 — Apply
+## Phase 2: Apply
 
-1. `.agents/project.yaml` -> `atlassian_url: https://<target>` — do this FIRST; it is what everything else reads. Confirm with `bun run --silent jira:url`, which must echo the target back.
-2. **Delete** any stale `ATLASSIAN_URL` the probes found (the `.env` line, and whatever exports it into the process). Do not update it — see the table above.
-3. Re-authenticate `acli`:
+1. Set `.agents/project.yaml` -> `atlassian_url: https://<target>` first, because everything else reads it. Confirm with `bun run --silent jira:url`, which must echo the target back.
+2. Delete any stale `ATLASSIAN_URL` the probes found: the `.env` line, and whatever exports it into the process. Do not update it (see the table above).
+3. Re-authenticate `acli`.
 
-> **The files are not the whole story — check the process environment.** A stale `ATLASSIAN_URL` inherited from whatever spawned this session still shadows anything that reads the env var directly, and it survives a full application restart because it is re-inherited every time. `bun run vars:env:check` reports it; so does `bun run setup:doctor`, which flags a host resolved from the env instead of the yaml. To hunt the source, walk the ancestry with `ps eww -p <pid>` and test the login shell in isolation with `env -i HOME=$HOME zsh -l -c 'test -n "${ATLASSIAN_URL+x}" && echo set || echo unset'` — testing from the contaminated shell inherits the bad value and gives a false negative.
+> **Check the process environment as well as the files.** An inherited `ATLASSIAN_URL` survives a full application restart because the parent re-exports it every time. `bun run vars:env:check` reports it, and so does `bun run setup:doctor`, which flags a host resolved from the env instead of the yaml. To hunt the source, walk the ancestry with `ps eww -p <pid>` and test the login shell in isolation with `env -i HOME=$HOME zsh -l -c 'test -n "${ATLASSIAN_URL+x}" && echo set || echo unset'`. Testing from the contaminated shell inherits the bad value and gives a false negative.
 >
-> **Template-repo carve-out for step 1.** A freshly scaffolded project receives `.agents/project.yaml` seeded from the blank template (`.agents/project.schema.yaml`), every identity value `null` until the project is onboarded; a concrete site written into it before then is a guess. Detect this by reading `project.project_name` in the same file: if it is `null`, the repo is an un-onboarded template. The boilerplate's own yaml is filled and is not this case: `bun run agents:schema` blanks its identity before anything travels. **Leave `atlassian_url: null`** and say so in the report. The same rule applies to `project_key` in Phase 4. Only a real, onboarded project gets the value written.
+> **Template-repo carve-out for step 1.** A freshly scaffolded project receives `.agents/project.yaml` seeded from the blank template (`.agents/project.schema.yaml`), with every identity value `null` until the project is onboarded, and a concrete site written into it before then is a guess. Detect this by reading `project.project_name` in the same file: if it is `null`, the repo is an un-onboarded template. The boilerplate's own yaml is filled and is not this case, because `bun run agents:schema` blanks its identity before anything travels. Leave `atlassian_url: null` and say so in the report. The same applies to `project_key` in Phase 4. Only a real, onboarded project gets the value written.
 
 ```text
 [ISSUE_TRACKER_TOOL] Authenticate, run inside `bunx varlock run -- sh -c '...'` so the pair is used by name:
@@ -120,20 +117,17 @@ Anything that fits neither list — a CI workflow, a README, `.mcp.json`, a depl
   token=$ATLASSIAN_API_TOKEN   (piped on stdin, never in argv, never echoed)
 ```
 
-`--site` takes the BARE host, which is what `--slug` prints. Reading it back from
-the yaml rather than retyping `<target>` also proves step 1 actually landed: if
-the yaml is wrong, the login fails loudly instead of quietly succeeding against a
-site the repo does not agree with.
+`--site` takes the bare host, which is what `--slug` prints. Reading it back from the yaml instead of retyping `<target>` also proves step 1 landed: if the yaml is wrong, the login fails loudly instead of quietly succeeding against a site the repo does not agree with.
 
-> **Secret hygiene (Critical Rule #1)**: never `cat`, `grep` or `source` the `.env`: even an exact-key grep puts `ATLASSIAN_API_TOKEN` in the terminal, the scrollback and the agent transcript, and the harness deny rules refuse it. Use the pair by NAME inside `bunx varlock run`, and check presence with `bunx varlock load --agent` (redacted). If a token does get printed, say so plainly and recommend rotating it. Canon: `agentic-qa-core/references/secret-hygiene.md`.
+> **Secret hygiene (Critical Rule #1).** Do not `cat`, `grep` or `source` the `.env`. Even an exact-key grep puts `ATLASSIAN_API_TOKEN` in the terminal, the scrollback and the agent transcript, and the harness deny rules refuse it. Use the pair by name inside `bunx varlock run`, and check presence with `bunx varlock load --agent` (redacted). If a token does get printed, say so plainly and recommend rotating it. Canon: `agentic-qa-core/references/secret-hygiene.md`.
 >
-> **Do not back the `.env` up inside the repo.** `cp .env .env.bak` feels prudent and is not: `.gitignore` usually covers the exact name `.env`, not arbitrary suffixes, so the backup lands as an untracked file holding a live API token, one `git add -A` away from being committed. Verify with `git check-ignore -v <path>` before writing any copy, or put it outside the working tree entirely. The `.env` edit here is a single line and is trivially reversible without a backup.
+> **Keep any `.env` backup out of the repo.** `cp .env .env.bak` feels prudent and is not: `.gitignore` usually covers the exact name `.env`, not arbitrary suffixes, so the backup lands as an untracked file holding a live API token, one `git add -A` from being committed. Verify with `git check-ignore -v <path>` before writing any copy, or put it outside the working tree. The `.env` edit here is one line and trivially reversible without a backup.
 
-The `acli` session is **global to the machine**, so this re-login repoints every project on it. That is usually what you want after a company-wide migration. If the operator still needs the old instance for another repo, stop and tell them — `acli` holds one session per product, and they will have to switch back and forth with the `/acli` authentication-switch operation.
+The `acli` session is global to the machine, so this re-login repoints every project on it, which is usually right after a company-wide migration. If the operator still needs the old instance for another repo, stop and tell them: `acli` holds one session per product, and they will have to switch back and forth with the `/acli` authentication-switch operation.
 
 ---
 
-## Phase 3 — Verify
+## Phase 3: Verify
 
 A migration where some places match and others do not is worse than one where none do, because it looks like it worked.
 
@@ -146,19 +140,15 @@ URL=$(bun run --silent jira:url)
 [ISSUE_TRACKER_TOOL] Authenticated GET, inside `bunx varlock run -- sh -c '...'`: url=$URL/rest/api/3/myself credentials=$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN output=HTTP status
 ```
 
-Checks 1-3 must name the target, check 4 must say `unset`, and the REST call must return `200`. Report all five as a table.
+Checks 1 to 3 must name the target, check 4 must say `unset`, and the REST call must return `200`. Report all five as a table.
 
-Check 2 is not redundant with check 1: it is the only one that proves the resolver agrees with the file, and it prints a warning to stderr if a leftover env var disagrees with the yaml. Check 4 is the one people skip — a surviving process value is invisible in every file yet still reaches anything that reads the variable directly.
-
-Anything short of that is a failed migration — say so and stop.
+Check 2 is the only one that proves the resolver agrees with the file, and it prints a warning to stderr when a leftover env var disagrees with the yaml. Check 4 is the one people skip, because a surviving process value is invisible in every file. Anything short of the expected results is a failed migration: say so and stop.
 
 ---
 
-## Phase 4 — Regenerate the `.agents/` catalogs
+## Phase 4: Regenerate the `.agents/` catalogs
 
-**The part people skip, and the one that corrupts data.**
-
-Agentic variables never hardcode Jira IDs; they resolve *slugs* against three workspace-specific catalogs. After a migration those catalogs describe an instance that no longer exists.
+This is the part people skip, and the one that corrupts data. Agentic variables never hardcode Jira IDs. They resolve slugs against three workspace-specific catalogs, and after a migration those catalogs describe an instance that no longer exists.
 
 | Catalog | Script | Holds |
 |---|---|---|
@@ -166,24 +156,22 @@ Agentic variables never hardcode Jira IDs; they resolve *slugs* against three wo
 | `.agents/jira-workflows.json` | `bun run jira:sync-workflows` | statuses and transitions per work type |
 | `.agents/jira-link-types.json` | `bun run jira:sync-link-types` | issue link types |
 
-`.agents/jira-required.yaml` holds no IDs — it declares everything **by slug**, so the migration does not invalidate its contents. But it is not a bystander either, and the next section is why.
+`.agents/jira-required.yaml` holds no IDs, because it declares everything by slug, so the migration does not invalidate its contents. It still matters, as the next section explains.
 
 ### Pre-flight: the manifest caps what the catalogs can contain
 
-**Do this BEFORE running any sync.** `.agents/jira-required.yaml` is the *input* to the regeneration, not a sibling output. `jira:sync-workflows` walks its `work_types:` section and catalogs **only the types declared there** — anything else is skipped with a `log.info` line that scrolls past in a wall of successful output:
+Do this before running any sync. `.agents/jira-required.yaml` is the input to the regeneration, not a sibling output. `jira:sync-workflows` walks its `work_types:` section and catalogs only the types declared there. Anything else is skipped with a `log.info` line that scrolls past in a wall of successful output:
 
 ```
 Project issue type "Task" exists in <KEY> but is not declared in
 .agents/jira-required.yaml work_types — declare it to catalog its workflow.
 ```
 
-So a stale manifest declaring 3 work types regenerates a catalog with 3 work types, exits `0`, and reports success. The migration looks clean and the catalog is missing everything the manifest forgot to ask for. Same silent-success failure this whole command exists to prevent, entering through the input side.
+So a stale manifest declaring 3 work types regenerates a catalog with 3 work types, exits `0` and reports success. The migration looks clean while the catalog is missing everything the manifest forgot to ask for. It is the silent success this mode exists to prevent, entering through the input side.
 
-The manifest goes stale quietly because **the updater never overwrites it** (`bootstrapOnly`, so `bun sync` never touches the project's customizations) and reports structural gaps only as informational rows (`.agents/instructions/agent-harnesses.md`; `bun run jira:baseline` warns when it declares fewer work types than upstream's baseline). A project scaffolded from an older boilerplate can be many versions behind with only that warning as signal.
+The manifest goes stale quietly. The updater never overwrites it (`bootstrapOnly`, so `bun sync` leaves the project's customizations alone) and reports structural gaps only as informational rows (`.agents/instructions/agent-harnesses.md`; `bun run jira:baseline` warns when it declares fewer work types than upstream's baseline).
 
-Compare against upstream before regenerating:
-
-There is no published URL for the manifest itself — derive it from the one the scripts already hardcode, by swapping the filename on `UPEX_UPSTREAM_URL` (it points at `jira-workflows.json` in the same `.agents/` directory):
+Compare against upstream before regenerating. There is no published URL for the manifest itself, so derive it from the one the scripts already hardcode by swapping the filename on `UPEX_UPSTREAM_URL` (it points at `jira-workflows.json` in the same `.agents/` directory):
 
 ```bash
 UPSTREAM=$(grep -oE "https://raw\.githubusercontent\.com/[^']+" scripts/sync-jira-workflows.ts \
@@ -195,13 +183,11 @@ wt() { awk '/^work_types:/{f=1;next} f&&/^[a-z_]+:/{f=0} f&&/^  [a-z_]+:/{print 
 diff <(wt .agents/jira-required.yaml) <(wt /tmp/jira-required.upstream.yaml)
 ```
 
-Then diff the whole file (`diff .agents/jira-required.yaml /tmp/jira-required.upstream.yaml`): nested `required_statuses`, `required_transitions` and `fallback:` changes inside an existing work type are invisible to the key lists.
+Then diff the whole file (`diff .agents/jira-required.yaml /tmp/jira-required.upstream.yaml`), because nested `required_statuses`, `required_transitions` and `fallback:` changes inside an existing work type do not show in the key lists. The same `wt` shape works on the `required:` and `optional:` sections with a different anchor, so check those too. A missing field slug is quieter than a missing work type but breaks the skill that references it.
 
-The same `wt` shape works on the `required:` / `optional:` sections by changing the anchor — check those too, not just `work_types:`. A missing field slug is quieter than a missing work type but breaks the skill that references it.
+Report the delta and stop for a decision. The file is co-owned: upstream owns the baseline contract (which work types and slugs the skills reference) and the project owns its adaptations (fields its Jira lacks, `fallback:` declarations). Adopting upstream wholesale clobbers real local customization, and ignoring the delta ships an amputated catalog. Present both sides and let the operator choose per work type. With nobody to choose, keep the local manifest, record the delta in the report and run no sync.
 
-Report the delta and **stop for a decision** — do not merge it silently. The file is genuinely co-owned: upstream owns the baseline contract (which work types and slugs the skills reference), the project owns its adaptations (fields its Jira lacks, `fallback:` declarations). Blindly adopting upstream clobbers real local customization; ignoring the delta ships an amputated catalog. Present both sides and let the operator choose per work type.
-
-If the manifest does need updating, **update it first, then run the syncs** — in the other order the catalogs get regenerated twice.
+If the manifest needs updating, update it first and then run the syncs. In the other order the catalogs are regenerated twice.
 
 ### With Administer permission (the correct path)
 
@@ -211,32 +197,30 @@ bun run jira:sync-link-types
 bun run jira:sync-workflows
 ```
 
-Three behaviors to anticipate, and they differ per script — do not assume one rule covers all three:
+The three scripts behave differently, so no single rule covers them:
 
-- **`jira:sync-fields` REQUIRES `--force`.** Its populated-catalog guard sits on the main path, so a plain re-run stops with `already populated. Re-run with --force to overwrite.` and exits `1`.
-- **`jira:sync-workflows` does NOT need `--force`, and should not get it.** Its identical-looking guard lives *inside* the `--upex` branch only, so the normal Jira path is idempotent. Adding `--force` re-prompts for already-mapped slugs and buys nothing. (In practice a canonical slug with exactly one candidate auto-resolves either way; prompts only appear on a collision or a no-match.)
-- **`jira:sync-link-types` has NO `--force` flag at all.** Its argument parser (check `--help`) has no `default:` case — so `--force` is silently swallowed rather than rejected. Passing it appears to work, which is exactly why it is worth not teaching.
+- `jira:sync-fields` requires `--force`. Its populated-catalog guard sits on the main path, so a plain re-run stops with `already populated. Re-run with --force to overwrite.` and exits `1`.
+- `jira:sync-workflows` does not need `--force` and should not get it. Its identical-looking guard lives inside the `--upex` branch only, so the normal Jira path is idempotent. Adding `--force` re-prompts for already-mapped slugs and buys nothing. In practice a canonical slug with exactly one candidate auto-resolves either way, and prompts appear only on a collision or a no-match.
+- `jira:sync-link-types` has no `--force` flag. Its argument parser (check `--help`) has no `default:` case, so `--force` is swallowed instead of rejected. Passing it appears to work, which is why it is not worth teaching.
 
-Plus one behavior shared with Phase 2:
+One behavior is shared with Phase 2: `jira:sync-workflows` prompts for the project key when `.agents/project.yaml` has it null, and then persists the answer into that file. In a real project that is correct, so leave it. In a boilerplate or template repo that must ship `project_key: null`, revert that one line after syncing. No CLI flag exists for it, and the prompt is the only channel.
 
-- **`jira:sync-workflows` prompts for the project key** when `.agents/project.yaml` has it null, and then **persists the answer into that file**. In a real project that is correct, leave it. In a boilerplate/template repo that must ship `project_key: null`, revert that one line after syncing. There is no CLI flag for it — the prompt is the only channel.
+### The `--upex` flag: usually not what you want
 
-### The `--upex` flag — usually NOT what you want
+Each script also accepts `--upex`, which skips Jira entirely and downloads a pre-built reference catalog published by the boilerplate's own authors, generated against their workspace.
 
-Each script also accepts `--upex`, which skips Jira entirely and downloads a **pre-built reference catalog published by the boilerplate's own authors, generated against THEIR workspace**.
+When you are migrating your own Jira instance, leave this flag alone. It overwrites your catalogs with someone else's field IDs, which describe an instance you have no relation to. Your own instance is the only correct source for your own catalogs, so run the plain sync above.
 
-**If you are migrating your own Jira instance, do not use this flag.** It would overwrite your catalogs with someone else's field IDs, which describe an instance you have no relation to. Your own instance is the only correct source for your own catalogs — run the plain sync above.
-
-The flag exists for exactly one situation: you lack Administer permission, cannot fetch your real catalog, and want a structurally valid placeholder so the repo's tooling runs at all. It is a scaffolding crutch, not a migration step. Treat the resulting catalog as known-wrong data whose IDs must be replaced the moment someone with Administer access can run the real sync.
+The flag exists for one situation: you lack Administer permission, cannot fetch your real catalog, and want a structurally valid placeholder so the repo's tooling runs at all. It is a scaffolding crutch, not a migration step. Treat the resulting catalog as known-wrong data whose IDs must be replaced as soon as someone with Administer access can run the real sync.
 
 ```bash
 bun run jira:sync-fields --upex        # reference catalog only — NOT your instance's IDs
 ```
 
-If you do reach for it, two rules:
+If you do reach for it, two rules hold:
 
-- **Catalogs from different boilerplates are not interchangeable.** Each script hardcodes its own upstream URL pointing at its own repo, and the catalogs deliberately differ (a QA-flavored boilerplate keeps its TMS plugin fields; a DEV one drops them). Never edit the URL to borrow another repo's catalog. To see which upstream applies here, read `UPEX_UPSTREAM_URL` in `scripts/sync-jira-fields.ts`.
-- **Ordering.** It only reflects a post-migration state *after* the upstream maintainers have regenerated and pushed their catalogs. Run it before that and you download their pre-migration IDs. When unsure whether the upstream has published, ask rather than guess.
+- Catalogs from different boilerplates are not interchangeable. Each script hardcodes its own upstream URL pointing at its own repo, and the catalogs deliberately differ (a QA-flavored boilerplate keeps its TMS plugin fields, a DEV one drops them). Do not edit the URL to borrow another repo's catalog. To see which upstream applies here, read `UPEX_UPSTREAM_URL` in `scripts/sync-jira-fields.ts`.
+- Ordering matters. The flag only reflects a post-migration state after the upstream maintainers have regenerated and pushed their catalogs. Run it before that and you download their pre-migration IDs. When unsure whether the upstream has published, ask.
 
 ### Then prove the IDs actually moved
 
@@ -245,9 +229,9 @@ git diff --stat .agents/
 git diff .agents/jira-fields.json | grep -E '^[+-].*"id"' | head -20
 ```
 
-Pick one known slug and state its before/after explicitly. Reassignment is normal and is the whole point — a diff showing zero ID changes means the sync did not reach the new instance.
+Pick one known slug and state its before and after explicitly. Reassignment is normal and is the point of the run: a diff with zero ID changes means the sync did not reach the new instance.
 
-**A changed ID is not a correct ID.** The diff proves the sync reached somewhere; it does not prove each slug now points at the field it names. Two slugs can *swap* IDs during a migration, which survives every check above: both IDs still exist, both still resolve, and each now names the other's entity. Verify by asking the live instance what each catalogued ID actually is, and comparing against the name the catalog recorded:
+A changed ID is not a correct ID. The diff proves the sync reached somewhere, not that each slug now points at the field it names. Two slugs can swap IDs during a migration, which survives every check above: both IDs still exist, both still resolve, and each now names the other's entity. Ask the live instance what each catalogued ID is, and compare it with the name the catalog recorded:
 
 ```text
 B=$(bun run --silent jira:url)
@@ -262,16 +246,16 @@ jq -s -r '
   .agents/jira-fields.json /tmp/live-fields.json
 ```
 
-Repeat the same shape for `jira-link-types.json` against `/rest/api/3/issueLinkType` (`.issueLinkTypes[]`) and for `jira-workflows.json` against `/rest/api/3/issuetype` and `/rest/api/3/status`. Any row printed is a mismatch and must be resolved before committing.
+Repeat the same shape for `jira-link-types.json` against `/rest/api/3/issueLinkType` (`.issueLinkTypes[]`) and for `jira-workflows.json` against `/rest/api/3/issuetype` and `/rest/api/3/status`. Any row printed is a mismatch, and each one is resolved before committing.
 
-**Check the option values came back too.** `jira-fields.json` stores the child options of select-type fields, and the options endpoint can return `404` per field while the parent sync still exits `0` — the warning goes to stderr and scrolls past. A field left with `options: []` looks catalogued and is not:
+Check that the option values came back too. `jira-fields.json` stores the child options of select-type fields, and the options endpoint can return `404` per field while the parent sync still exits `0`, with the warning going to stderr and scrolling past. A field left with `options: []` looks catalogued and is not:
 
 ```bash
 jq -r 'to_entries[] | select(.value.options != null and (.value.options|length)==0)
   | "\(.key)\t\(.value.id)\t\(.value.type)\tOPTIONS EMPTY"' .agents/jira-fields.json
 ```
 
-Report each one. It is only harmless if no skill resolves `{{jira.<slug>.<option>}}` for that field — confirm rather than assume.
+Report each one. It is harmless only if no skill resolves `{{jira.<slug>.<option>}}` for that field, so confirm that instead of assuming it.
 
 Then confirm no ID escaped the catalog:
 
@@ -280,11 +264,11 @@ grep -rnE "customfield_[0-9]{4,}" --include="*.ts" --include="*.md" --include="*
   | grep -v node_modules | grep -v "^\./\.agents/"
 ```
 
-**Match on digits, not on the `customfield_` prefix alone.** A bare-prefix grep also hits every legitimate mention: prose about `customfield_XXXXX`, the `customfield_*` wildcard, `customfield_<slug>` markers for unmapped fields, and `customfield_NNNNN` placeholders. In a mature repo that is dozens of false positives, and an operator told to "expect nothing" will either panic or learn to ignore the check.
+Match on digits, not on the `customfield_` prefix alone. A bare-prefix grep also hits every legitimate mention: prose about `customfield_XXXXX`, the `customfield_*` wildcard, `customfield_<slug>` markers for unmapped fields and `customfield_NNNNN` placeholders. In a mature repo that is dozens of false positives, and the operator learns to ignore the check.
 
-Expect only hits you can justify. A literal ID in a script, skill, or doc is a latent bug — it must resolve by slug against `.agents/jira-fields.json`. Two exemptions are legitimate: a tool-owner skill demonstrating syntax (`[ISSUE_TRACKER_TOOL] Update Field: id={{jira.<slug>}}`), where the dynamic slug resolves through the catalog, and any file the repo's own linter allowlists for this. Report every hit and classify it; do not silently rewrite.
+Expect only hits you can justify. A literal ID in a script, skill or doc is a latent bug, because it must resolve by slug against `.agents/jira-fields.json`. Two exemptions are legitimate: a tool-owner skill demonstrating syntax (`[ISSUE_TRACKER_TOOL] Update Field: id={{jira.<slug>}}`), where the dynamic slug resolves through the catalog, and any file the repo's own linter allowlists for this. Report every hit and classify it. Do not rewrite one silently.
 
-**Custom fields are not the only per-instance IDs.** Statuses, transitions and link types are reassigned by the same migration and hide in the same places — env examples, docs, commented reference implementations:
+Custom fields are not the only per-instance IDs. Statuses, transitions and link types are reassigned by the same migration and hide in the same places: env examples, docs, commented reference implementations.
 
 ```bash
 grep -rnE '(TRANSITION|STATUS|LINK_?TYPE)[A-Z_]*\s*[=:]\s*"?[0-9]{2,}' \
@@ -292,9 +276,9 @@ grep -rnE '(TRANSITION|STATUS|LINK_?TYPE)[A-Z_]*\s*[=:]\s*"?[0-9]{2,}' \
   | grep -v node_modules | grep -v "^\./\.agents/"
 ```
 
-These resolve through `.agents/jira-workflows.json` (`{{jira.transition.<work_type>.<slug>}}`, `{{jira.<work_type>.<status>}}`) and `.agents/jira-link-types.json`. A literal number is the same latent bug wearing different clothes.
+These resolve through `.agents/jira-workflows.json` (`{{jira.transition.<work_type>.<slug>}}`, `{{jira.<work_type>.<status>}}`) and `.agents/jira-link-types.json`. A literal number is the same latent bug in different clothes.
 
-**Also sweep the override channel.** Projects often expose an env var or config constant that PINS a field ID, as an escape hatch over the catalog (`*_FIELD`, `*_FIELD_ID`, `*_CUSTOM_FIELD`). A pinned value survives the catalog regeneration untouched and keeps pointing at the old instance — the exact silent-write bug this mode exists to prevent, reintroduced through the back door:
+Sweep the override channel too. Projects often expose an env var or config constant that pins a field ID as an escape hatch over the catalog (`*_FIELD`, `*_FIELD_ID`, `*_CUSTOM_FIELD`). A pinned value survives the catalog regeneration untouched and keeps pointing at the old instance, which reintroduces through the back door the silent-write bug this mode exists to prevent:
 
 ```bash
 grep -rniE '(FIELD|CUSTOMFIELD)(_ID)?\s*[=:]\s*.?customfield_[0-9]{4,}' \
@@ -302,43 +286,43 @@ grep -rniE '(FIELD|CUSTOMFIELD)(_ID)?\s*[=:]\s*.?customfield_[0-9]{4,}' \
   | grep -v node_modules
 ```
 
-Same digit rule as above — without it the pattern flags its own `customfield_NNNNN` placeholder as a finding.
+The same digit rule applies, or the pattern flags its own `customfield_NNNNN` placeholder as a finding.
 
-Every hit is either re-pointed at the new ID or, better, changed to resolve from the catalog by slug and left empty as an override. Prefer the second: an empty default plus a catalog lookup cannot go stale, and a pinned value silently survives the next migration too. **Before rewriting one, trace whether the code path is even reachable** — a constant guarded behind a provider switch or a disabled feature flag may be dormant, which changes the urgency but not the fix.
+Each hit is either re-pointed at the new ID or, better, changed to resolve from the catalog by slug and left empty as an override. Prefer the second: an empty default plus a catalog lookup cannot go stale, while a pinned value survives the next migration too. Before rewriting one, trace whether the code path is reachable. A constant behind a provider switch or a disabled feature flag may be dormant, which changes the urgency and not the fix.
 
 ---
 
-## Phase 5 — Commit
+## Phase 5: Commit
 
 `.env` is gitignored and never committed. What ships is `.agents/project.yaml` plus the three regenerated catalogs.
 
-Group into two commits — the config repoint and the catalog refresh are separate responsibilities:
+Make two commits, because the config repoint and the catalog refresh are separate responsibilities:
 
 ```
 chore(jira): point atlassian_url at the <target> instance
 chore(jira): refresh field, workflow and link-type catalogs for <target>
 ```
 
-**In a template repo the first commit has no content.** `.env` is gitignored and `atlassian_url` deliberately stayed `null` (Phase 2 carve-out), so there is nothing to stage. Skip it and say so — do not manufacture an empty commit, and do not "fix" the emptiness by writing the value.
+In a template repo the first commit has nothing to stage, because `atlassian_url` stayed `null` (the Phase 2 carve-out). Skip it and say so.
 
-If the manifest pre-flight produced a change, that is a third commit and it goes **first**, because the catalogs are generated from it:
+If the manifest pre-flight produced a change, that is a third commit and it goes first, because the catalogs are generated from it:
 
 ```
 chore(jira): sync jira-required.yaml work types with upstream
 ```
 
-Follow the repo's git strategy via `/git-flow-master`. **Do not push without explicit confirmation** — in a boilerplate, publishing catalogs affects every downstream project that later runs `--upex`.
+Follow the repo's git strategy through `/git-flow-master`. Push only with explicit confirmation, because in a boilerplate, publishing catalogs affects every downstream project that later runs `--upex`.
 
 ---
 
 ## Closing report
 
-Give the operator these, and flag the last three as needing a human:
+Give the operator these seven items, and flag the last three as needing a human:
 
-1. The three config points, with before/after. In a template repo, state explicitly that `atlassian_url` was left `null` by design so it does not read as an oversight.
+1. The three config points, with before and after. In a template repo, state that `atlassian_url` was left `null` by design so it does not read as an oversight.
 2. The manifest pre-flight result: local vs upstream work-type counts, and whether anything was adopted.
-3. Catalog counts: fields, work types, link types, plus any missing required slug and any field left with empty options.
-4. At least one custom-field ID before/after, as proof the regeneration reached the new instance, **plus** the id-to-name verification result — "N ids checked against the live instance, 0 mismatches" is the claim worth making; "the diff was large" is not.
-5. **Manual check**: does the vanity/alias domain now resolve to the target? Not visible from the repo.
-6. **Manual check**: if the manifest was behind, whatever made it drift will make it drift again. The updater treats it as bootstrap-only and reports structural gaps only as informational rows (`bun run jira:baseline` warns on a truncated manifest, nothing blocks), so the next gap will be just as quiet. Say so.
-7. **Team broadcast**: everyone re-runs the `acli` login on their own machine — a stale session returns old-instance data with no error, which is the one failure mode nobody notices. If the team consumes the upstream reference catalog via `--upex`, add that nobody should run it until the upstream has published its post-migration catalogs.
+3. Catalog counts for fields, work types and link types, plus any missing required slug and any field left with empty options.
+4. At least one custom-field ID before and after, as proof the regeneration reached the new instance, plus the id-to-name verification result. "N ids checked against the live instance, 0 mismatches" is the claim worth making; "the diff was large" is not.
+5. Manual check: does the vanity or alias domain now resolve to the target? The repo cannot show it.
+6. Manual check: if the manifest was behind, it will drift again, because nothing blocks on a truncated manifest (`bun run jira:baseline` only warns). Say so.
+7. Team broadcast: everyone re-runs the `acli` login on their own machine, because a stale session returns old-instance data with no error, which is the failure nobody notices. If the team consumes the upstream reference catalog through `--upex`, add that nobody should run it until the upstream has published its post-migration catalogs.
