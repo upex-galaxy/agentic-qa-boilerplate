@@ -13,6 +13,18 @@
       "category": "positive"
     },
     {
+      "name": "should-trigger-spanish-resume",
+      "prompt": "Se reinició la compu con tres workers corriendo. Retoma el conductor del sprint y vuelve a armar el centinela.",
+      "expected_behavior": "Activates sprint-conductor by meaning in Spanish: takes the resume path of references/boot-and-resume.md §4 (finds workers by the label in their tab title, re-issues tab and session renames, restarts the board, re-arms the sentinel with the same baseline, one resume message per live worker, no launch until all confirmed). Replies in Spanish; files stay English.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-spanish-round-close",
+      "prompt": "El worker de PROJ-7311 terminó. Cierra la ronda: verifica lo que dejó y pasa a la siguiente.",
+      "expected_behavior": "Activates sprint-conductor by meaning in Spanish: follows references/round-close.md (reads the ticket status back itself with a bounded poll, one round-close subagent verifies the artifacts, sprint record, board verdict, closes the worker), then forms the next round. Replies in Spanish.",
+      "category": "positive"
+    },
+    {
       "name": "no-orca-one-line-stop",
       "prompt": "/sprint-conductor 7 (on a machine where the orca binary is not installed)",
       "expected_behavior": "The gate fails in state A. The skill says exactly one line (sprint-conductor runs on Orca, no reachable runtime here, run the sprint with /sprint-testing sprint-wide and N executors, which writes paste-ready launch lines) and stops. It writes no file, starts no board, gives no install walkthrough.",
