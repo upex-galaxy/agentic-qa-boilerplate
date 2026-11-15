@@ -1,0 +1,47 @@
+{
+  "skill_name": "shift-left-testing",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Run shift-left on BK-101, BK-102 and BK-103. They are in Backlog and none is in a sprint yet.",
+      "expected_output": "Loads shift-left-testing, opens the batch session pair, ranks the three Stories in a table with a risk score and waits for the user's OK before any per-Story work. Refines the acceptance criteria, drafts an ATP outline per Story and prepares the handoff to PO and Dev.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Groom the backlog before sprint planning: clean up the acceptance criteria of the Stories in Shift-Left QA and tell me what the PO still has to answer.",
+      "expected_output": "Loads shift-left-testing, selects Stories only (other issue types are listed with a reason, never dropped silently), refines each one in its own subagent and writes the questions for the PO or Dev in the handoff.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "hagamos el shift-left de las historias BK-210 y BK-211 antes de que entren al sprint, necesito saber qué criterios de aceptación son ambiguos",
+      "expected_output": "Loads shift-left-testing from a Spanish prompt (skills load by meaning), runs Phase 0 and Phase 1, and replies in Spanish while every repo artifact stays in English.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "refiná los criterios de la historia BK-305 y armá el esquema del plan de pruebas (ATP) antes de planificar el sprint",
+      "expected_output": "Loads shift-left-testing for a single Story batch, drafts the ATP outline with names only and keeps the coverage estimate, and never advances the Story past ready_for_dev.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Test the story BK-120. It is Ready For QA and in the current sprint, run the manual QA on it.",
+      "expected_output": "Should NOT load shift-left-testing: a Story in the sprint with entry status Ready For QA belongs to sprint-testing.",
+      "should_trigger": false,
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "Write the Playwright automation for the checkout test cases already documented in Xray.",
+      "expected_output": "Should NOT load shift-left-testing: automation code belongs to test-automation.",
+      "should_trigger": false,
+      "files": []
+    }
+  ]
+}
