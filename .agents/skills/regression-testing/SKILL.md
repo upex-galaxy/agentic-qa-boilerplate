@@ -32,6 +32,7 @@ This skill takes a CI suite from trigger to release decision: it runs the suite,
 - Call a test FLAKY only with at least 5 runs of history. With fewer, label the failure INSUFFICIENT HISTORY and count it as REGRESSION for the verdict (fail-closed), then re-evaluate on the next run. When several classes match, the order is KNOWN-BLOCKED > KNOWN ISSUE > ENVIRONMENT > NEW TEST > FLAKY > REGRESSION: FLAKY wins only with its citation, and REGRESSION is what is left.
 - Take the run's counts (total, passed, failed, skipped, pass-rate) from `reports/test-outcomes.json`. Allure supplies each failure's detail and the history behind FLAKY, and the counts only when that file is missing from the downloaded artifacts (always for smoke and sanity runs; say so in the report).
 - Do not emit GO while any REGRESSION-class failure stands. Hard vetoes regardless of score: any `@critical` test failing, any HIGH/CRITICAL-severity regression, or a pass rate below 90%.
+- A borderline failure may be diagnosed with `diagnosing-bugs`, never fixed: no product-code instrumentation and no fix.
 - File only CONFIRMED product failures: the REGRESSION class, plus a NEW TEST failure once manually confirmed as a real defect. FLAKY, ENVIRONMENT and KNOWN ISSUE get no issue at all. Triage decides WHETHER to file; the defect-management doctrine decides the type and the fields.
 - Do not open a GitHub issue for a quality failure. File it in the issue tracker, parented to the QA Defect Management process epic and linked to the source Story, never to a product or dev epic.
 - Create the RTR (Regression Test Results, a Test Execution) BEFORE triggering CI, persist its key beside `RUN_ID`, and pass it as the `execution_key` dispatch input; Phase 1 has its fields. One RTR per verdict. The STR is created or completed only when the run is the sprint close (then it links to both the STP and the RTP).
@@ -78,7 +79,7 @@ Every dispatch follows `AGENTS.md` §3 and the 7-component briefing in `.agents/
 | Generate executive report                                  | Single     | inline, final synthesis, decisions live here                                                                  |
 | GO / CAUTION / NO-GO verdict                               | Single     | inline, main thread owns release decisions                                                                    |
 
-- **Error protocol**: on a subagent failure, stop, report the full context to the user and offer retry, skip or abort. Do not auto-fix (`.agents/skills/agentic-qa-core/references/orchestration-doctrine.md`). A skill that itself broke (a wrong step, a missing verifier, a stale rule) goes upstream per `../agentic-qa-core/references/upstream-feedback.md`: drafted and redacted locally, filed only on explicit OK, verified with `gh issue view`.
+- On a subagent failure, stop, report the full context to the user and offer retry, skip or abort. Do not auto-fix (`.agents/skills/agentic-qa-core/references/orchestration-doctrine.md`). A skill that itself broke (a wrong step, a missing verifier, a stale rule) goes upstream per `../agentic-qa-core/references/upstream-feedback.md`: drafted and redacted locally, filed only on explicit OK, verified with `gh issue view`.
 
 ---
 
@@ -90,7 +91,7 @@ One conductor reads the run, classifies and owns the verdict, so triage is never
 - The conductor writes `launch.txt` in `.session/regression-testing/<scope>/`, one self-contained line per cluster, whether or not any orchestration transport exists on the machine. `orca-orchestration/SKILL.md` (`[ORCHESTRATION_TOOL]`) owns launching, supervising and closing those sessions; `launch.txt` is the payload for the paste-by-hand fallback when nothing can launch them.
 - **The verdict stays with the conductor.** GO / CAUTION / NO-GO, the metrics, the RTR (or the sprint-close STR) and every Jira write are Phase 3. A worker fixes its cluster and reports; it does not re-score the run, file the defect or transition the RTR.
 - A worker authors its fix under `/test-automation` (Plan, Code, Review) on its own branch, and it lands per `git_strategy`: a regression fix gets no exemption from the automation gate.
-- **Silence rule**: a missing orchestration transport is never named to the user and never appears in the preflight gate, the Environment block or the report.
+- Silence rule: a missing orchestration transport is never named to the user and never appears in the preflight gate, the Environment block or the report.
 
 ---
 
@@ -129,13 +130,15 @@ Before suite selection or any `gh workflow run`, run the resume contract from `a
 
 ## With nobody at the keyboard
 
-This skill waits for a person at five points. What `agentic-qa-core/references/decision-protocol.md` and the record already settle, follow without asking. For the rest:
+This skill waits for a person at seven points. What `agentic-qa-core/references/decision-protocol.md` and the record already settle, follow without asking. For the rest:
 
 | Gate | Person present | Supervised worker | Routine, no person |
 |---|---|---|---|
 | Preflight checklist | one `AskUserQuestion` checklist | the worker reports gaps and REDs to the conductor, which holds the gate | the delegating brief supplies suite, env and grep or test_file; a gap it does not cover, or any RED, stops the run before CI and the report names it |
 | Phase 0 resume, restart or abort | the offer as written | the conductor picks | re-attach to a live `RUN_ID`, else resume from `progress.md`; restart (it re-triggers CI) only when the brief says so |
 | Allure same-major bump | offer it | the conductor decides | report the available update and bump nothing |
+| Allure new major | ask, presenting the breaking changes | the conductor decides | report the breaking changes and bump nothing |
+| `allurerc.mjs` or `TestFixture.ts` migration | show the diff and wait for approval | send the diff to the conductor | put the proposed diff in the report and change neither file |
 | Sprint-close `N` | ask the user | the conductor supplies it | without `N` in the brief, run a plain RTR and create no STR |
 | Subagent failure options | retry, skip or abort | the conductor picks | stop, report the full context, re-run nothing |
 
@@ -438,7 +441,7 @@ Three hard vetoes override the score: any `@critical` test fails, any HIGH/CRITI
 
 ### File defects in Jira (when decision = NO-GO or CAUTION with regressions)
 
-Quality issues go to Jira, never GitHub, following `agentic-qa-core/references/defect-management-doctrine.md` (the authority `/sprint-testing` uses) with the full mandatory field matrix. Only confirmed product failures qualify: the REGRESSION class, and a NEW TEST failure once manually confirmed as a genuine defect rather than a bad assertion. FLAKY, ENVIRONMENT and KNOWN ISSUE route to stabilization, infra or the existing ticket. Triage decides whether to file; the doctrine decides the type and the fields.
+Quality issues go to Jira, never GitHub, following `agentic-qa-core/references/defect-management-doctrine.md` (the authority `/sprint-testing` uses) with the full mandatory field matrix. Which failures qualify is in the Compact Rules. FLAKY, ENVIRONMENT and KNOWN ISSUE route to stabilization, infra or the existing ticket; the doctrine decides the type and the fields.
 
 For each issue that clears the gate:
 

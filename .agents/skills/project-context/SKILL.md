@@ -1,6 +1,6 @@
 ---
 name: project-context
-description: "Generate or refresh the business context maps and the master test plan. Use when asked for a data, API or e2e map, a feature inventory, a master test plan, or a refresh of project context; to scaffold an <aspect>-context skill; or to find coverage gaps (what is not tested)."
+description: "Generate or refresh the business context maps and the master test plan. Use when asked for a data, API or e2e (user journeys) map, a feature inventory, a master test plan, or a refresh of project context; to scaffold an <aspect>-context skill; or to find coverage gaps (what is not tested)."
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode, pi]
 complementary_categories: [testing-e2e, testing-api, meta-skill]

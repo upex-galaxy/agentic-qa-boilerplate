@@ -417,8 +417,8 @@ async {methodName}({params}): {ReturnType} { /* ... */ }
 | Field + range | Boundary ATCs (`min-1·min·min+1 … max-1·max·max+1`, zero/empty/null) |
 
 **Two reduction axes — keep them separate** (canon: doctrine §"Part 2.5"):
-- **EP and BVA decide the ATC count**: how many parameterized `@atc`s the cases split across (one per partition + boundary + state).
-- **Decision Table and Pairwise reduce the data rows inside one parameterized ATC.** When an ATC's data set combines 2+ interacting conditions, a Decision Table keeps one row per surviving rule; with 3+ factors, Pairwise keeps all-pairs rows instead of the full cartesian product. They shrink the fixture/`data-factory` row set, not the ATC count. Log the reduction in the fixture or the spec so it is visible and not a silent cap.
+- EP and BVA decide how many parameterized `@atc`s the cases split across: one per partition, boundary and state.
+- Decision Table and Pairwise reduce the data rows inside one parameterized ATC. When an ATC's data set combines 2+ interacting conditions, a Decision Table keeps one row per surviving rule; with 3+ factors, Pairwise keeps all-pairs rows instead of the full cartesian product. They shrink the fixture/`data-factory` row set, not the ATC count. Log the reduction in the fixture or the spec so it is visible and not a silent cap.
 
 | Parameterized ATC | Reduction applied | Rows after reduction |
 |---|---|---|
@@ -521,7 +521,7 @@ Who approves depends on the session (canon: `agentic-qa-core/references/decision
 
 ### Ticket-driven
 
-- [ ] Story materialized via `bun run jira:sync-issues get <STORY-KEY> --include-comments`; ACs, dev implementation-plan and ATP read from the synced `.md` (a plain work-item view returns null for custom fields).
+- [ ] Story materialized via `bun run jira:sync-issues get <STORY-KEY> --include-comments`; ACs, dev implementation-plan and ATP read from the synced `.md` (a plain view returns null for custom fields). Never read custom fields with `acli workitem view`.
 - [ ] TMS queried; every TC in scope passed the TC source gate (missing or unsigned ones routed to `/test-documentation`, never created here).
 - [ ] `spec.md` written with 1–7 TCs.
 - [ ] `automation-plan.md` §3 ATC Registry populated against `kata:manifest` output.
@@ -549,8 +549,6 @@ When `/test-automation` is invoked mid-flow, or resumed after context loss, the 
 | No  | No  | **Phase 1 — Plan** |
 | Yes | No  | **Phase 2 — Code** |
 | Yes | Yes | **Phase 3 — Review** |
-
-Before classifying state, read the current ticket in `PROGRESS.md` §Current status to confirm which ticket the resume applies to.
 
 Whatever row the resume lands on, the TC source gate (`../SKILL.md` §"TC source gate") runs first, before Code or Review continue: a plan written before the gate existed, or before a verdict changed, may list TCs that are no longer signed Candidates.
 

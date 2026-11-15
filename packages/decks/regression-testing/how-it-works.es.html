@@ -640,7 +640,7 @@ table.tbl .mono{font-size:13px}
     </div>
     <div class="cards c2 mt-m">
       <div class="callout"><h4>Checkpoint crítico</h4><p>El <span class="mono">RUN_ID</span> se añade a <span class="mono">plan.md §Inputs</span>, junto al <span class="mono">RTR_KEY</span>, y <span class="mono">progress.md</span> registra ambos. Sin RUN_ID persistido no hay re-attach; sin RTR_KEY una sesión retomada no sabe en qué Execution importó CI. En jira-native se omite <span class="mono">execution_key</span> en todas las suites.</p></div>
-      <div class="callout warn"><h4>Anti-patrón R5</h4><p>Registra el commit probado en el reporte (<span class="mono">gh run view &lt;RUN_ID&gt; --json headSha</span>) y compara tendencias solo entre runs con commit conocido: commit distinto, baseline distinta. Y <span class="mono">video_record=true</span> infla mucho los artefactos: solo para depurar.</p></div>
+      <div class="callout warn"><h4>Commit probado y artefactos</h4><p>Registra el commit probado en el reporte (<span class="mono">gh run view &lt;RUN_ID&gt; --json headSha</span>) y compara tendencias solo entre runs con commit conocido: commit distinto, baseline distinta. Y <span class="mono">video_record=true</span> infla mucho los artefactos: solo para depurar.</p></div>
     </div>
     <div class="notes">La condición de carrera es real: gh workflow run retorna antes de que el run exista en la API, de ahí la espera corta antes de gh run list. Los inputs que se muestran son los que declaran regression.yml, smoke.yml y sanity.yml en .github/workflows/. Video solo al depurar flakiness o capturar evidencia de un bug puntual.</div>
   </section>
@@ -682,7 +682,7 @@ table.tbl .mono{font-size:13px}
 <span class="p">$</span> PREV=$(gh run list --workflow=regression.yml --limit=2 --json databaseId -q '.[1].databaseId')
 <span class="p">$</span> gh run download $PREV -n merged-allure-results-staging -D ./analysis/previous/</pre>
     </div>
-    <div class="callout bad mt-m"><h4>Anti-patrón R4</h4><p>Nunca saltes la descarga de Allure en builds rojos — screenshots, traces y videos desaparecen al vencer la ventana de retención. Evidencia primero, análisis después.</p></div>
+    <div class="callout bad mt-m"><h4>Descarga de Allure en builds rojos</h4><p>Nunca saltes la descarga de Allure en builds rojos — screenshots, traces y videos desaparecen al vencer la ventana de retención. Evidencia primero, análisis después.</p></div>
     <div class="notes">Los metadata-reads (gh run view) quedan inline porque son cortos; solo las descargas justifican dispatch, un subagente por artefacto listado. Para triage local previo: bun allure:agent emite markdown legible por la IA sin parsear HTML.</div>
   </section>
 
@@ -707,7 +707,7 @@ table.tbl .mono{font-size:13px}
         <div class="callout"><h4>El label suite deriva del tag</h4><p><span class="mono">@smoke/@regression/@e2e/@integration/@critical</span> es la única taxonomía: el <span class="mono">suite</span> que lees ES el scope que CI corrió. Nunca reconcilies contra otro set de labels.</p></div>
       </div>
     </div>
-    <div class="callout warn mt-m"><h4>Sin retries: el flake aflora como fallo</h4><p>La política anti-retry es <span class="mono">retries: 0</span> (ver <span class="mono">playwright.config.ts</span>) — doctrina anti-retry: un reintento solo enmascararía el flake. La flakiness aparece como fallo intermitente normal y la clasifica la regla de historial (&gt;20% en los últimos 10 runs), nunca un pass-on-retry. Si un proyecto downstream habilitó retries conscientemente, aplica el anti-patrón R3: expón el conteo de <span class="mono">retries</span> en el reporte, no solo el status final.</p></div>
+    <div class="callout warn mt-m"><h4>Sin retries: el flake aflora como fallo</h4><p>La política anti-retry es <span class="mono">retries: 0</span> (ver <span class="mono">playwright.config.ts</span>) — doctrina anti-retry: un reintento solo enmascararía el flake. La flakiness aparece como fallo intermitente normal y la clasifica la regla de historial (&gt;20% en los últimos 10 runs), nunca un pass-on-retry. Si un proyecto downstream habilitó retries conscientemente, aplica la regla de la skill: expón el conteo de <span class="mono">retries</span> en el reporte, no solo el status final.</p></div>
     <div class="notes">Los KNOWN-BLOCKED (tests @blocked:{BUG-KEY} deliberadamente aparcados tras un bug ya archivado) no son fallos de regresión: se excluyen del pass-rate que gatea y se reportan aparte con su BUG-KEY — así la decisión no se manipula en ningún sentido.</div>
   </section>
 
@@ -732,7 +732,7 @@ table.tbl .mono{font-size:13px}
       <div class="callout"><h4>Dispatch por volumen</h4><p>&gt;10 fallos → chunks de ~10 con un subagente clasificador por chunk (cap 10), merge de JSONs en el hilo principal. ≤10 → inline: el overhead no se justifica.</p></div>
     </div>
     <div class="callout warn mt-m"><h4>El gate falla cerrado</h4><p>Toda clase salvo REGRESSION deja pasar el fallo, y quien la elige es el clasificador. Por eso cada una se sostiene solo con su cita (tabla de la slide siguiente). Sin cita, cita vacía o un ticket que esta misma sesión creó para volver «conocido» el fallo: cuenta como REGRESSION.</p></div>
-    <div class="notes">Cuando un fallo borderline no se resuelve con el log, la skill carga diagnosing-bugs solo para diagnosticar (sin arreglar nada); si la causa sigue sin probarse, el fallo queda como REGRESSION. Para poder decir FLAKY hacen falta al menos 5 runs de historial: con menos, se anota "INSUFFICIENT HISTORY" y para el gate cuenta como REGRESSION (falla cerrado); se reevalúa en el próximo run. Orden cuando coinciden varias: KNOWN-BLOCKED > KNOWN ISSUE > ENVIRONMENT > NEW TEST > FLAKY > REGRESSION; FLAKY gana solo con su cita completa y REGRESSION es lo que queda. El porcentaje de fallo se calcula sobre una ventana más ancha, los últimos N = min(10, disponibles) runs: 5 es el piso para tener señal, 10 es la ventana. R1: jamás FLAKY sin citar el historial de al menos 5 runs.</div>
+    <div class="notes">Cuando un fallo borderline no se resuelve con el log, la skill carga diagnosing-bugs solo para diagnosticar (sin arreglar nada); si la causa sigue sin probarse, el fallo queda como REGRESSION. Para poder decir FLAKY hacen falta al menos 5 runs de historial: con menos, se anota "INSUFFICIENT HISTORY" y para el gate cuenta como REGRESSION (falla cerrado); se reevalúa en el próximo run. Orden cuando coinciden varias: KNOWN-BLOCKED > KNOWN ISSUE > ENVIRONMENT > NEW TEST > FLAKY > REGRESSION; FLAKY gana solo con su cita completa y REGRESSION es lo que queda. El porcentaje de fallo se calcula sobre una ventana más ancha, los últimos N = min(10, disponibles) runs: 5 es el piso para tener señal, 10 es la ventana. Regla compacta: nunca FLAKY sin citar al menos 5 runs de historial.</div>
   </section>
 
   <!-- 11. FASE 2 · CATEGORÍA → ACCIÓN -->
@@ -754,7 +754,7 @@ table.tbl .mono{font-size:13px}
       <div class="callout warn"><h4>ENVIRONMENT no es chivo expiatorio</h4><p><span class="mono">ECONNREFUSED</span> a tu propia API suele significar que la app se cayó. Muchos tests sin relación rojos en el mismo host → ENVIRONMENT; UN test fallando en un endpoint que otros usan bien → probable REGRESSION disfrazada.</p></div>
       <div class="callout"><h4>Cláusula sdet CI-fallback</h4><p>Solo en suites integration-trunk: un rojo clase ENVIRONMENT en Sanity-CI puede autorizar merge <b>al trunk de integración</b> (nunca al PR final a main) si el cambio pasó en local + staging y el rojo existe sin el cambio. REGRESSION jamás califica.</p></div>
     </div>
-    <div class="notes">El triage decide SI se archiva; la doctrina de defect-management decide QUÉ tipo y con qué campos — son ejes separados. R7: nunca marcar KNOWN sin ticket de Jira que vincule la supresión.</div>
+    <div class="notes">El triage decide SI se archiva; la doctrina de defect-management decide QUÉ tipo y con qué campos — son ejes separados. Regla compacta: nunca marcar KNOWN sin un ticket de Jira que vincule la supresión.</div>
   </section>
 
   <!-- 12. FASE 2 · SEVERIDAD -->
@@ -815,7 +815,7 @@ table.tbl .mono{font-size:13px}
       <div class="card" style="border-top:2px solid var(--warn)"><h4>CAUTION — 4–6</h4><p>Revisión manual; riesgos aceptados documentados.</p></div>
       <div class="card" style="border-top:2px solid var(--bad)"><h4>NO-GO — &lt; 4</h4><p>Release bloqueado; fix + re-run planificados.</p></div>
     </div>
-    <div class="callout bad mt-m"><h4>Vetos duros — nunca auto-GO si…</h4><p>(1) falla cualquier test <span class="mono">@critical</span> · (2) existe cualquier REGRESSION HIGH/CRITICAL · (3) pass rate &lt; 90%. Anulan cualquier score. R2: el gate es binario — REGRESSION conocida &gt; 0 = no hay GO. R6: nunca mezclar smoke + regression en un solo pass-rate.</p></div>
+    <div class="callout bad mt-m"><h4>Vetos duros — nunca auto-GO si…</h4><p>(1) falla cualquier test <span class="mono">@critical</span> · (2) existe cualquier REGRESSION HIGH/CRITICAL · (3) pass rate &lt; 90%. Anulan cualquier score. El gate es binario: REGRESSION conocida &gt; 0 = no hay GO. Y nunca se mezclan smoke y regression en un solo pass-rate.</p></div>
     <div class="notes">El veredicto y la apertura de issues quedan inline en el hilo principal — las decisiones de release nunca se delegan a un subagente.</div>
   </section>
 

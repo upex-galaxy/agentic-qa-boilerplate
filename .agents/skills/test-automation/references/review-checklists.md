@@ -89,19 +89,43 @@ A change can pass one axis and fail the other. Tests that follow every KATA rule
 
 | Axis | Question | Reads | Does not read |
 |---|---|---|---|
-| Spec compliance | Do the tests deliver what the plan and the ticket asked for? | the diff, `.context/PBI/epics/EPIC-<KEY>-<slug>/test-specs/<scope>/spec.md` (or the automation plan), the ticket's ACs, the ATCs listed in the plan | this file, `automation-standards.md` |
-| Standards | Do the tests meet KATA and the delta checks below? | the diff, `automation-standards.md` §10, this file's §1 to §3 | the spec and the ACs |
+| Spec compliance | Do the tests deliver what the plan and the ticket asked for? | the diff, `spec.md`, `automation-plan.md`, `atc/*.md` and the in-scope TC bodies (under `.context/PBI/epics/EPIC-<KEY>-<slug>/test-specs/<scope>/`), the ticket's ACs, and the LT-1 and LT-2 rows of the lying-tests table below | `automation-standards.md`, the rest of this file |
+| Standards | Do the tests meet KATA and the delta checks below? | the diff, `automation-standards.md` §10, this file's §1 to §3, the LT-3 row of the lying-tests table | the spec and the ACs |
 
-The standards live in files only the Standards reviewer reads. The orchestrator and the Spec reviewer never load them, so neither of them is tempted to grade convention in place of behaviour. Each reviewer gets the diff command, the commit list and the files for its own axis, and returns a report of about 400 words.
+The KATA standards live in files only the Standards reviewer reads. The orchestrator and the Spec reviewer never load them, so neither is tempted to grade convention in place of behaviour. The lying-tests split follows what each axis can see: tautology and cannot-fail need the spec to know where the expected value should come from (Spec), structure sensitivity is a KATA locator and assertion matter (Standards). Each reviewer gets the diff command, the commit list and the files for its own axis, and returns a report of about 400 words.
 
-**Spec reviewer brief.** Report, quoting the plan or AC line for each finding:
+Both briefs use the same 7-component shape as Verifiers A to C. The goal and the report format differ, the rest is shared.
 
-- planned ATCs or ACs with no test, or only a partial one;
-- tests that cover behaviour nobody asked for (scope creep);
-- tests that look like they cover a requirement but check something else;
-- risk-beyond-AC coverage the plan promised (boundaries, state transitions, auth failure) that is missing.
+```
+Spec reviewer
+Goal: Check the diff against the approved plan and the TC bodies, and find lying tests (LT-1, LT-2).
+Context docs: the files in the Spec row above.
+Skills to load: (none)
+Exact instructions:
+  1. Run the diff command from the briefing.
+  2. Report planned ATCs or ACs with no test, or only a partial one.
+  3. Report tests that cover behaviour nobody asked for (scope creep).
+  4. Report tests that look like they cover a requirement but check something else.
+  5. Report risk-beyond-AC coverage the plan promised (boundaries, state transitions, auth failure) that is missing.
+  6. Apply LT-1 and LT-2 to every new assertion.
+Report format: about 400 words, each finding quoting the plan, AC or TC line, with severity and file:line.
+Rules:
+  - Do NOT read the standards.
+  - Do NOT edit code.
 
-**Standards reviewer brief.** Apply `automation-standards.md` §10, then the E2E delta (§2) or the API delta (§3), then the lying-tests check below. Report each failure with its check ID, its severity and the file and line. Skip what lint or the type checker already enforces.
+Standards reviewer
+Goal: Check the diff against the KATA standards and find structure-sensitive tests (LT-3).
+Context docs: the files in the Standards row above.
+Skills to load: (none)
+Exact instructions:
+  1. Run the diff command from the briefing.
+  2. Apply `automation-standards.md` §10, then the E2E delta (§2) or the API delta (§3), then LT-3.
+  3. Skip what lint or the type checker already enforces.
+Report format: about 400 words, each failure with its check ID, severity, file and line.
+Rules:
+  - Do NOT read the spec or the ACs.
+  - Do NOT edit code.
+```
 
 The reports stay separate. Do not merge or re-rank them: each axis keeps its own worst finding, and the verdict counts blockers from both. When no spec exists, say so in the report and let the Standards axis run alone.
 
@@ -109,7 +133,7 @@ This split does not replace the required separate verifier in `SKILL.md` Phase 3
 
 ### Lying tests
 
-A green test is evidence only if it could have been red. The Standards reviewer treats these three as findings, whatever the KATA checklist says about the same file:
+A green test is evidence only if it could have been red. The Spec reviewer checks LT-1 and LT-2 and the Standards reviewer checks LT-3. All three are findings, whatever the KATA checklist says about the same file:
 
 | ID | Check | Severity |
 |----|-------|----------|

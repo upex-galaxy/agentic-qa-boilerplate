@@ -116,7 +116,7 @@ If any is missing or a placeholder, say so before continuing:
 
 > Strongly recommend enriching context before adapting KATA. Missing/placeholder: `{list}`.
 >
-> Best practice: open a **clean session**, run `project-context` mode `refresh-all` (its fixed order is data → features → api → test-plan), then re-invoke `test-framework-adaptation`.
+> Best practice: open a **clean session**, run `project-context` mode `refresh-all` (its fixed order is in `project-context/SKILL.md`), then re-invoke `test-framework-adaptation`.
 >
 > Continue anyway, or pause to enrich context first? (yes-continue / pause)
 

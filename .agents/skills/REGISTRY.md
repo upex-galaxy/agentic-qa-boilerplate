@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-11-15T10:00:23.686Z`
+> Generated: `2026-11-15T10:22:53.061Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -520,6 +520,7 @@ Skills indexed: 29
 - Call a test FLAKY only with at least 5 runs of history. With fewer, label the failure INSUFFICIENT HISTORY and count it as REGRESSION for the verdict (fail-closed), then re-evaluate on the next run. When several classes match, the order is KNOWN-BLOCKED > KNOWN ISSUE > ENVIRONMENT > NEW TEST > FLAKY > REGRESSION: FLAKY wins only with its citation, and REGRESSION is what is left.
 - Take the run's counts (total, passed, failed, skipped, pass-rate) from `reports/test-outcomes.json`. Allure supplies each failure's detail and the history behind FLAKY, and the counts only when that file is missing from the downloaded artifacts (always for smoke and sanity runs; say so in the report).
 - Do not emit GO while any REGRESSION-class failure stands. Hard vetoes regardless of score: any `@critical` test failing, any HIGH/CRITICAL-severity regression, or a pass rate below 90%.
+- A borderline failure may be diagnosed with `diagnosing-bugs`, never fixed: no product-code instrumentation and no fix.
 - File only CONFIRMED product failures: the REGRESSION class, plus a NEW TEST failure once manually confirmed as a real defect. FLAKY, ENVIRONMENT and KNOWN ISSUE get no issue at all. Triage decides WHETHER to file; the defect-management doctrine decides the type and the fields.
 - Do not open a GitHub issue for a quality failure. File it in the issue tracker, parented to the QA Defect Management process epic and linked to the source Story, never to a product or dev epic.
 - Create the RTR (Regression Test Results, a Test Execution) BEFORE triggering CI, persist its key beside `RUN_ID`, and pass it as the `execution_key` dispatch input; Phase 1 has its fields. One RTR per verdict. The STR is created or completed only when the run is the sprint close (then it links to both the STP and the RTP).

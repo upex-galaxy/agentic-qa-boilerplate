@@ -49,7 +49,7 @@ bun run context:map business-e2e-context --list
 
 Before drawing the first figure, run the point-of-use check for capability `diagrams` (`../../agentic-qa-core/references/business-context-maps.md` §7).
 
-The UPDATE approval belongs to a person when one is present, to the launcher when this runs as a supervised worker (the worker reports the diff), and to the delegating brief in a routine with nobody. A routine without a brief that covers this update prepares the diff, writes nothing, and reports. General rule: `../../agentic-qa-core/references/decision-protocol.md`.
+In UPDATE mode, show the section-level diff and wait for explicit confirmation before writing (nobody present: `../SKILL.md`, `## With nobody at the keyboard`). General rule: `../../agentic-qa-core/references/decision-protocol.md`.
 
 ---
 

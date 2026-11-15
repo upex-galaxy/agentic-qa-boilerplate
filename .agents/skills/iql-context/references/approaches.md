@@ -57,7 +57,7 @@ Each card carries the web's fuller wording (translated), the phase badges as pri
 | Web wording | Automated testing integrated into CI/CD pipelines for immediate feedback on every change. Step 8 is where it is verified: the set runs in CI, on nightly builds or on every commit, and is not considered integrated until it passes stably, without flakiness |
 | Tab badge | MID-GAME, Detección, steps 5-9, QA Automation Engineer |
 | Operational in | Step 8 (Suite Verification in CI), Automation stage, Review + CI; the regression run in step 10 keeps it continuous |
-| Repo doctrine | `.agents/skills/test-automation/SKILL.md` (the three verifiers before the PR); `agentic-qa-core/references/stage-gates.md` §"Automation" and §"Regression"; failure classification and the FLAKY history rule in `.agents/skills/regression-testing/SKILL.md` |
+| Repo doctrine | `.agents/skills/test-automation/SKILL.md` (the three verifiers and the two axis reviewers before the PR); `agentic-qa-core/references/stage-gates.md` §"Automation" and §"Regression"; failure classification and the FLAKY history rule in `.agents/skills/regression-testing/SKILL.md` |
 
 ### Agile Testing
 
