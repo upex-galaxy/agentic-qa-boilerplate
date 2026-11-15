@@ -1,4 +1,4 @@
-# HANDOFF NN — from session `<predecessor-name>` (`<predecessor-session-id>`) to `<predecessor-name>-handoff-NN`
+# HANDOFF NN: from session `<predecessor-name>` (`<predecessor-session-id>`) to `<predecessor-name>-handoff-NN`
 
 > Written <YYYY-MM-DD HH:MM local> by the outgoing session at ~<N>% of a <window> context after ~<N> hours of work.
 > You are the continuation of that session: same owner, same repo, same authority, new context window.
@@ -47,15 +47,15 @@
 ## 6 · Files to read, in order
 
 1. This file.
-2. `<absolute path>` — <what it is, which sections>
+2. `<absolute path>`: <what it is, which sections>
 3. …
 
-## 7 · Live state you inherit — PERISHABLE
+## 7 · Live state you inherit (PERISHABLE)
 
 > Everything in this section was true at <HH:MM>. Re-verify each item with the command given BEFORE acting on it.
 > <If any item needs attention before §8's order, say it here.>
 
-- **<item>** — `PERISHABLE`, measured <HH:MM>. Ids: `<run>` `<task>` `<dispatch>` `<terminal>` `<session-id>` `<PR#>` `<KEY>` `<sha>`.
+- **<item>**: `PERISHABLE`, measured <HH:MM>. Ids: `<run>` `<task>` `<dispatch>` `<terminal>` `<session-id>` `<PR#>` `<KEY>` `<sha>`.
   Re-verify: `<the exact command>`. Then: <what to do with each outcome>.
   <Any branch the predecessor did not observe is labelled `predicted`.>
 
@@ -63,11 +63,11 @@
 
 **Decided by the owner:**
 
-A. <what — exact next step — depends on>
+A. <what; the exact next step; what it depends on>
 
 **Awaiting an owner decision:**
 
-B. <what — the options — what the session recommends>
+B. <what; the options; what the session recommends>
 
 ## 9 · Conventions the owner cares about
 
