@@ -47,6 +47,18 @@
       "prompt": "Document the candidate scenarios from yesterday's exploratory round on the invoices module.",
       "expected_behavior": "Activates test-documentation as discovery-driven and loads references/discovery-intake.md. Reads the anchor coverage Tech Story back from Jira, drops each COVERED candidate with a line, turns each WEAK one into a strengthen proposal for the existing test (no new Test), scores only NEW scenarios whose oracle: confirmed is on Jira, leaves oracle: observed ones unscored, and runs the >50% alarm per chunk.",
       "category": "positive"
+    },
+    {
+      "name": "should-trigger-documentar-casos-es",
+      "prompt": "Documenta en Xray los casos de prueba de la historia BK-120 y dime cuáles conviene automatizar.",
+      "expected_behavior": "Activates test-documentation by meaning, in Spanish. Resolves the TMS modality, scores ROI per scenario, documents the Candidate and Manual ones and reports Deferred ones, replying in Spanish.",
+      "category": "positive"
+    },
+    {
+      "name": "should-trigger-reparar-trazabilidad-es",
+      "prompt": "Los links entre la historia, el ATS, el ATP y los casos de prueba están rotos. Repáralos.",
+      "expected_behavior": "Activates test-documentation in mode repair-traceability, in Spanish. Audits the ticket's links, presents the repair plan and waits for explicit approval before applying anything.",
+      "category": "positive"
     }
   ]
 }
