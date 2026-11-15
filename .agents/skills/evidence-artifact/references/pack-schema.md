@@ -5,7 +5,7 @@ One JSON file per evidence artifact: `evidence/evidence-pack.json` for the ticke
 writes the pack; `scripts/build.py` renders it. Nobody edits the template per ticket.
 
 `build.py` validates the pack and stops with a message naming the field when something is wrong. It
-refuses `evidence-pack/1.0`, the earlier format of this repo, in one line: rewrite such a pack in this
+refuses `evidence-pack/1.0`, the earlier format of this repo, in one line; rewrite such a pack in this
 shape. Ticket keys follow `board.ticket_key_pattern` of `.agents/project.yaml` (the generic key shape
 when the `board:` block is not configured).
 
@@ -52,12 +52,12 @@ optional `verdictNote` (one line under the stamp), `severity`, `priority` (chips
 | `evidence` | the items of the viewer's filmstrip |
 | `compare` | optional pair, offered as one more filmstrip item |
 
-**Filmstrip order.** The page orders a case's items for the reader: items that show the defect
+Filmstrip order. The page orders a case's items for the reader: items that show the defect
 first, then screenshots (the compare right after them), API, SQL, timeline, note. Within a group the
 pack order is kept, so write items in the order they happened. A case holding earlier-round items is
 ordered differently (next section).
 
-**Compare.** `compare = {left: {image, label?, detail?, annotations?, coords?}, right: {...}, caption?}`;
+Compare. `compare = {left: {image, label?, detail?, annotations?, coords?}, right: {...}, caption?}`;
 `image` is an `images` key. Labels default to `EXPECTED` (left, green) and `ACTUAL` (right, red);
 `detail` adds the per-case line, so `{"detail": "TC1 run, same cart and card"}` renders
 `EXPECTED · TC1 run, same cart and card`. On a retest case leave `label` out: the left side defaults

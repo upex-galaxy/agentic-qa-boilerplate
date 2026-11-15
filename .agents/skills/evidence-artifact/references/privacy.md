@@ -2,20 +2,20 @@
 
 ## Sharing
 
-- An artifact publishes **private** to the owner. The **owner** shares it with the organization
-  from the page's Share menu. A session never shares it, never makes a public link, and says so in
-  the hand-off message to the owner: "Published private: share it from the page's Share menu before
+- An artifact publishes private to the owner. The owner shares it with the organization from the
+  page's Share menu. A session never shares it and never makes a public link; it says so in the
+  hand-off message to the owner: "Published private: share it from the page's Share menu before
   the links in the tracker and in chat work for the team."
 - Everyone in the organization may see ordinary product data in a screenshot: account names,
   configuration, figures. Those stay as captured.
-- **Mask very personal data**: customer or contact email addresses, phone numbers, people's names
+- Mask very personal data: customer or contact email addresses, phone numbers, people's names
   (and a reference number when it sits next to a person's name). A QA test login (the users in
   `.env`) is not personal data.
 
-## Masking means burning, never covering
+## Masking means burning, not covering
 
-An annotation box drawn over a value does **not** mask it: the page still carries the original
-pixels and anyone can toggle the marks off. Masking is done to the pixels before encoding:
+An annotation box drawn over a value does not mask it: the page still carries the original pixels and
+anyone can toggle the marks off. Masking happens to the pixels before encoding:
 
 - In the pack, give the image `"redact": [[x, y, w, h], ...]` in the screenshot's own pixels
   (`playwright-cli eval` on the element returns them, `workflow.md` §2). The build paints those
@@ -48,7 +48,7 @@ recovered with `extract` included. Image files outside the repo, in an `.auth` f
 HAR, trace, archive or state file are refused, and an image is accepted only when its bytes are PNG
 or JPEG.
 
-**Known limit**: a secret written as plain prose ("the password is ...") has no shape to detect;
+Known limit: a secret written as plain prose ("the password is ...") has no shape to detect;
 mask it before it reaches the pack.
 
 A trace bundles every network response the run captured, which can include unrelated customer data;
