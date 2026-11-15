@@ -1,10 +1,8 @@
-# Refinement Playbook — Phase 2 (Per-Story Subagent)
+# Refinement Playbook: Phase 2, per-Story subagent
 
-> **Subagent context**: this file is the primary "Context docs" reference for the Phase 2 Refinement subagent (see `shift-left-testing/SKILL.md` §Subagent Dispatch Strategy). It is a thin wrapper that CITES `sprint-testing/references/acceptance-test-planning.md` rather than duplicating it.
+This is the main reference for the Phase 2 Refinement subagent (see `shift-left-testing/SKILL.md` §Subagent Dispatch Strategy). It runs once per Story, reads the in-sprint playbook `sprint-testing/references/acceptance-test-planning.md`, applies the shift-left changes listed here, and writes one file: `shift-left-refinement.md` in the Story's PBI folder. Anything this file does not override behaves as in `acceptance-test-planning.md`, which stays the source of truth and is cited here, never copied.
 
-The Refinement subagent runs ONCE PER STORY. It reads the existing acceptance-test-planning playbook from sprint-testing, applies the shift-left-mode delta, and writes a single output file: `shift-left-refinement.md` inside the Story's PBI folder.
-
-This reference defines the delta only. Anything not overridden here behaves exactly as in `acceptance-test-planning.md`.
+The goal is a high-signal artifact for the PO and Dev before the feature exists, so they can still change the Story. Whatever needs the running system (data generation, parametrization tuning, fixture design) waits for `/sprint-testing` Stage 1.
 
 ---
 
@@ -28,10 +26,19 @@ Phases skipped:
   Phase 5  test-data generation strategy -> deferred to in-sprint
   Phase 6  Traceability + Ticket updates -> shift-left-testing Phase 3 owns this
   Phase 7  Final QA Feedback Report -> aggregated into batch report (Phase 3)
-  Phase 8  Commit                   -> NO COMMIT, Jira is canonical
+  Phase 8  Commit                   -> no commit, Jira is canonical
 ```
 
-The Refinement subagent's job is to produce a high-signal artifact for PO + Dev BEFORE the feature exists. Anything that requires running the system (data generation, parametrization tuning, fixture design) belongs in `/sprint-testing` Stage 1, not here.
+---
+
+## Interview and domain language
+
+The subagent never talks to a person, so the interview lives one level up. The orchestrator (the session the person types into) runs it before or after dispatch, and the skills below carry the method, so nothing of them is copied here.
+
+- When a Story or a batch needs stress-testing with the PO or Dev in the room, the orchestrator calls the Skill tool with "grilling" and feeds it the ambiguities, gaps and contradictions from Phase 2.
+- When the Story uses a term the project has not defined, or uses a known term in a new way, the orchestrator calls the Skill tool with "domain-modeling". New terms and decisions go to `business-domain-context`, so the next Story does not ask the same thing again.
+- When the PO has to answer questions later and asynchronously, the orchestrator calls the Skill tool with "to-questionnaire" on the Critical Questions from Step 7.
+- When nobody is available (an unattended or autonomous run), nothing waits. The subagent writes every open point as a Critical or Technical Question with a suggested answer, and the refinement goes on.
 
 ---
 
@@ -39,12 +46,12 @@ The Refinement subagent's job is to produce a high-signal artifact for PO + Dev 
 
 | Input | Source |
 |-------|--------|
-| Story (title, description, ACs, priority, labels, sprint, parent epic, comments) | `bun run jira:sync-issues get {STORY_KEY} --include-comments`, then read the synced `.md` (NEVER `acli view` — returns `null` for custom fields) |
-| Team Discussion | Synced `comments.md` — same extraction rules as `session-entry-points.md` §Step 1b |
-| Parent epic (if any) | `bun run jira:sync-issues get {EPIC_KEY}`, then read the synced epic `.md` — description + risk callouts only |
+| Story (title, description, ACs, priority, labels, sprint, parent epic, comments) | `bun run jira:sync-issues get {STORY_KEY} --include-comments`, then read the synced `.md` (never `acli view`, which returns `null` for custom fields) |
+| Team Discussion | Synced `comments.md`, same extraction rules as `session-entry-points.md` §Step 1b |
+| Parent epic (if any) | `bun run jira:sync-issues get {EPIC_KEY}`, then read the synced epic `.md`: description and risk callouts only |
 | Project-wide context | the business context skills (`bun run context:map business-data-context` / `business-e2e-context` / `business-api-context`), `.context/PBI/qa-artifacts/master-test-plan.md` |
 | Module context (if it exists) | `.context/PBI/epics/EPIC-<EPIC_KEY>-<slug>/module-context.md` (module = Epic, 1:1) |
-| Code (light read) | `{{BACKEND_REPO}}/{{BACKEND_ENTRY}}` + `{{FRONTEND_REPO}}/{{FRONTEND_ENTRY}}` — read enough to confirm feasibility, NOT to reproduce |
+| Code (light read) | `{{BACKEND_REPO}}/{{BACKEND_ENTRY}}` + `{{FRONTEND_REPO}}/{{FRONTEND_ENTRY}}`: read enough to confirm feasibility, not to reproduce |
 | Common gap catalog | `refinement-questions.md` (this skill) |
 | ATP outline skeleton | `atp-outline-template.md` (this skill) |
 
@@ -54,25 +61,25 @@ The Refinement subagent's job is to produce a high-signal artifact for PO + Dev 
 
 ```
 .context/PBI/epics/EPIC-<EPIC_KEY>-<slug>/stories/STORY-<STORY_KEY>-<slug>/
-  context.md                   # NON-Jira working file — created if missing (minimal)
-  shift-left-refinement.md     # NON-Jira working file — this subagent's deliverable
+  context.md                   # NON-Jira working file, created if missing (minimal)
+  shift-left-refinement.md     # NON-Jira working file, this subagent's deliverable
 ```
 
-`shift-left-refinement.md` follows the skeleton in `atp-outline-template.md`. Both files are NON-Jira working artifacts authored locally. Jira-mirrored files (story.md, acceptance-criteria.md, etc.) are produced ONLY by the sync — NEVER hand-write them.
+`shift-left-refinement.md` follows the skeleton in `atp-outline-template.md`. Both files are local working artifacts. The Jira-mirrored files (story.md, acceptance-criteria.md and the like) come only from the sync, so never hand-write them.
 
-The subagent must NOT touch Jira. Phase 3 of the orchestrator skill owns all Jira mutations.
+The subagent does not touch Jira. Phase 3 of the orchestrator skill owns every Jira mutation.
 
 ---
 
-## Step 1 — Bootstrap the Story's PBI folder
+## Step 1: Bootstrap the Story's PBI folder
 
 If `.context/PBI/epics/EPIC-<EPIC_KEY>-<slug>/stories/STORY-<STORY_KEY>-<slug>/` does not exist:
 
-1. Resolve the parent Epic — module = Epic (1:1). The epic folder is `EPIC-<EPIC_KEY>-<slug>` where `<slug>` is derived from the epic title (kebab-case). If the Story has no parent epic, use its module/component to name the epic folder.
-2. Derive the story `<slug>` from the Story title — max 5 words, kebab-case.
+1. Resolve the parent Epic (module = Epic, 1:1). The epic folder is `EPIC-<EPIC_KEY>-<slug>`, where `<slug>` is the epic title in kebab-case. If the Story has no parent epic, name the epic folder after its module or component.
+2. Derive the story `<slug>` from the Story title: at most 5 words, kebab-case.
 3. Create the folder under `stories/STORY-<STORY_KEY>-<slug>/`.
-4. Write a minimal `context.md` (template below). Do NOT include execution / smoke / evidence sections — those belong to `/sprint-testing` later.
-5. Do NOT create `evidence/`. The Story has not shipped — there is nothing to capture.
+4. Write a minimal `context.md` (template below). Leave out execution, smoke and evidence sections, which belong to `/sprint-testing` later.
+5. Skip `evidence/`. The Story has not shipped, so there is nothing to capture.
 
 ### Minimal `context.md` template
 
@@ -94,112 +101,112 @@ If `.context/PBI/epics/EPIC-<EPIC_KEY>-<slug>/stories/STORY-<STORY_KEY>-<slug>/`
 Shift-Left refinement: in progress (started {{YYYY-MM-DD}})
 ```
 
-If the folder already exists (because `/sprint-testing` ran on a sibling Story in the same module), DO NOT overwrite `context.md`. Just check it exists and proceed.
+If the folder already exists (because `/sprint-testing` ran on a sibling Story in the same module), leave `context.md` alone: check it exists and go on.
 
 ---
 
-## Step 2 — Run `acceptance-test-planning.md` Phase 1: Critical Analysis
+## Step 2: Phase 1, critical analysis
 
-Read sprint-testing/references/acceptance-test-planning.md §"Phase 1 — Critical Analysis". Apply as-is with these scoping notes:
+Read `sprint-testing/references/acceptance-test-planning.md` §"Phase 1 — Critical Analysis" and apply it as-is, with these scoping notes:
 
-- **Code exploration is LIGHT.** Read entry files + 1-2 related files to confirm that the feature is implementable on the current codebase. Do NOT trace call graphs, do NOT open test files, do NOT measure performance. The cost ceiling is "would a senior dev say this is feasible in the current code".
-- **Epic-level inheritance** — if `.context/PBI/epics/EPIC-<EPIC_KEY>-<slug>/feature-test-plan.md` exists, read it and reuse risks / integration points / PO answers verbatim. Cite, do not re-derive.
-- **Story complexity rating** drives the depth of Phase 2 below.
+- Keep code exploration light. Read the entry files and one or two related files to confirm the feature is implementable on the current codebase. Skip call graphs, test files and performance measurements. The bar is "would a senior dev say this is feasible in the current code".
+- If `.context/PBI/epics/EPIC-<EPIC_KEY>-<slug>/feature-test-plan.md` exists, read it and reuse its risks, integration points and PO answers verbatim. Cite them, do not re-derive them.
+- The Story complexity rating sets how deep Phase 2 goes.
 
 Capture the output in the `## Phase 1 — Critical Analysis` section of `shift-left-refinement.md`.
 
 ---
 
-## Step 3 — Run Phase 2: Story Quality Analysis (the heart of shift-left)
+## Step 3: Phase 2, story quality analysis
 
-This is where shift-left actually creates value. Read sprint-testing/references/acceptance-test-planning.md §"Phase 2 — Story Quality Analysis" — apply it MORE DEEPLY than the in-sprint variant, because PO is still able to act on the findings.
+This is where shift-left creates its value. Read `sprint-testing/references/acceptance-test-planning.md` §"Phase 2 — Story Quality Analysis" and go deeper than the in-sprint variant does, because the PO can still act on the findings.
 
-For each:
+For each of these, write down:
 
-- **Ambiguities** — location in Story + question for PO/Dev + impact on testing + suggested clarification.
-- **Gaps (missing info)** — type (AC / technical detail / business rule) + why critical + what to add + risk if omitted.
-- **Edge cases not in Story** — scenario + expected behavior (best guess, flag for PO confirmation) + criticality + action (add to AC / test only / ask PO).
-- **Testability validation** — Yes / Partial / No + list of issues (vague AC, missing error messages, no test data examples, missing performance criteria, cannot isolate).
-- **Contradictions** — sections of the Story (description vs ACs vs comments vs Figma link if present) that disagree. Surface explicitly: "Description says X but AC3 says Y".
+- Ambiguities: location in the Story, the question for PO/Dev, the impact on testing, a suggested clarification.
+- Gaps (missing info): type (AC, technical detail or business rule), why it matters, what to add, the risk if omitted.
+- Edge cases not in the Story: the scenario, the expected behavior (best guess, flagged for PO confirmation), criticality, and the action (add to AC, test only, or ask the PO).
+- Testability: Yes, Partial or No, plus the issues (vague AC, missing error messages, no test data examples, missing performance criteria, cannot isolate).
+- Contradictions: places where the description, the ACs, the comments or a linked design disagree. Say it plainly, for example "Description says X but AC3 says Y".
 
-Use the gap-catalog in `refinement-questions.md` as a checklist. The catalog is keyed by AC archetype (auth, money, search, state machine, list / table, integration). For each archetype matched in the Story, walk the corresponding question list.
+Use the gap catalog in `refinement-questions.md` as a checklist. It is keyed by AC archetype (auth, money, search, state machine, list or table, integration). For each archetype the Story matches, walk that question list.
 
-If the Story is genuinely clear, say so. A short "Story quality: good — no significant gaps" is better than inventing questions. Quality > quantity.
+If the Story is clear, say so. A short "Story quality: good, no significant gaps" beats invented questions.
 
-Capture in `## Phase 2 — Story Quality Analysis` section of `shift-left-refinement.md`.
-
----
-
-## Step 4 — Run Phase 3: Refined ACs
-
-Read sprint-testing/references/acceptance-test-planning.md §"Phase 3 — Refined Acceptance Criteria". Apply as-is — Given / When / Then with specific data.
-
-For each refined scenario:
-
-- **Type**: Positive / Negative / Boundary / Edge
-- **Priority**: Critical / High / Medium / Low
-- **Given**: initial system state + preconditions
-- **When**: triggering action with exact input values
-- **Then**: expected UI result + API status+body (if applicable) + DB changes + system state
-
-Mark any scenario that the refinement INFERRED (not literally in the original Story) with **NEEDS PO/DEV CONFIRMATION**. The marker survives into the Jira comment in Phase 3 — PO must see it during sprint planning.
-
-**1:N is the default — explode, then justify any collapse.** A non-trivial AC implies several scenarios. Derive them by the AC's shape (`agentic-qa-core/references/test-design-doctrine.md` Part 2): a range/limit → boundary scenarios (BVA); a status field → valid + invalid transition scenarios; 2+ interacting conditions → a decision-table set; 3+ factors → pairwise. Collapse an AC to a single scenario ONLY when it is trivially atomic (one boolean, no ranges/states/interactions) and say so. Counting estimate aside, a 1-line AC that hides a range or a state is NOT a 1-scenario AC.
-
-Capture in `## Phase 3 — Refined Acceptance Criteria` section of `shift-left-refinement.md`.
+Capture the result in the `## Phase 2 — Story Quality Analysis` section of `shift-left-refinement.md`.
 
 ---
 
-## Step 5 — Run Phase 4 (outline NAMES only)
+## Step 4: Phase 3, refined ACs
 
-Read sprint-testing/references/acceptance-test-planning.md §"Phase 4 — Test Design". Apply with these deltas:
+Read `sprint-testing/references/acceptance-test-planning.md` §"Phase 3 — Refined Acceptance Criteria" and apply it as-is: Given / When / Then with specific data.
+
+For each refined scenario, give:
+
+- Type: Positive / Negative / Boundary / Edge
+- Priority: Critical / High / Medium / Low
+- Given: initial system state and preconditions
+- When: the triggering action with exact input values
+- Then: the expected UI result, the API status and body (if applicable), DB changes and system state
+
+Mark every scenario the refinement inferred (one the original Story does not literally state) with **NEEDS PO/DEV CONFIRMATION**. The marker carries into the Jira comment in Phase 3, so the PO sees it during sprint planning.
+
+One AC usually means several scenarios, so explode first and justify any collapse. Derive them from the AC's shape (`agentic-qa-core/references/test-design-doctrine.md` Part 2): a range or limit gives boundary scenarios (BVA); a status field gives valid and invalid transitions; two or more interacting conditions give a decision-table set; three or more factors give pairwise. Collapse an AC to one scenario only when it is trivially atomic (one boolean, no ranges, states or interactions) and say so. A one-line AC that hides a range or a state is not a one-scenario AC.
+
+Capture the result in the `## Phase 3 — Refined Acceptance Criteria` section of `shift-left-refinement.md`.
+
+---
+
+## Step 5: Phase 4, outline names only
+
+Read `sprint-testing/references/acceptance-test-planning.md` §"Phase 4 — Test Design" and apply it with these deltas:
 
 | Phase 4 sub-step | Shift-Left action |
 |------------------|------------------|
-| Coverage estimate (Positive / Negative / Boundary / Integration / API counts) | **INCLUDE**. Feeds the AI Effort call and the split decision. |
-| Rationale paragraph | INCLUDE. Short, 2-3 sentences. |
-| Parametrization tables | **EXCLUDE**. Deferred to in-sprint. |
-| Per-outline structure (Title, Related scenario, Type, Priority, Test level, Preconditions, Test steps, Expected result, Test data JSON, Post-conditions) | **REPLACED** by outline NAME + 1-line precondition + 1-line expected. No test-data JSON, no numbered steps. |
-| Integration outlines (per integration point) | **NAMES ONLY**. List integration outlines as "Should validate {integration point} when {condition}". No mock strategy, no contract assertions. |
+| Coverage estimate (Positive / Negative / Boundary / Integration / API counts) | Include. It feeds the AI Effort call and the split decision. |
+| Rationale paragraph | Include, short: 2-3 sentences. |
+| Parametrization tables | Exclude. Deferred to in-sprint. |
+| Per-outline structure (Title, Related scenario, Type, Priority, Test level, Preconditions, Test steps, Expected result, Test data JSON, Post-conditions) | Replaced by the outline name, a 1-line precondition and a 1-line expected result. No test-data JSON, no numbered steps. |
+| Integration outlines (per integration point) | Names only, written as "Should validate {integration point} when {condition}". No mock strategy, no contract assertions. |
 
 ### Outline naming convention
 
-Format: `Should <BEHAVIOR> <CONDITION>`. Same as `acceptance-test-planning.md` §Phase 4. Examples:
+Format: `Should <BEHAVIOR> <CONDITION>`, the same as `acceptance-test-planning.md` §Phase 4. Examples:
 
 - `Should redirect to dashboard after successful OTP entry with valid code`
 - `Should display "Code expired" error after OTP entry with code older than 5 minutes`
 - `Should reject negative refund amount on POST /refunds`
 
-Capture in `## Phase 4 — Test Outlines (outline names only)` section of `shift-left-refinement.md`. Include the coverage estimate table at the top, then the outline list grouped by Type (Positive / Negative / Boundary / Integration).
+Capture the result in the `## Phase 4 — Test Outlines (outline names only)` section of `shift-left-refinement.md`: the coverage estimate table first, then the outline list grouped by Type (Positive / Negative / Boundary / Integration).
 
 ---
 
-## Step 6 — Run Phase 5 (edge-case NAMES only)
+## Step 6: Phase 5, edge-case names only
 
-Read sprint-testing/references/acceptance-test-planning.md §"Phase 5 — Edge case + Test-data summary". Apply with these deltas:
+Read `sprint-testing/references/acceptance-test-planning.md` §"Phase 5 — Edge case + Test-data summary" and apply it with these deltas:
 
 | Phase 5 sub-step | Shift-Left action |
 |------------------|------------------|
-| Edge case table (case / in original story? / added to refined AC? / outline / priority) | **INCLUDE** but without "added to refined AC?" auto-resolution — that happens in-sprint. |
-| Test-data categories table | **EXCLUDE**. Deferred to in-sprint. |
-| Data generation strategy (Static / Faker / Cleanup) | **EXCLUDE**. Deferred to in-sprint. |
+| Edge case table (case / in original story? / added to refined AC? / outline / priority) | Include, without the automatic resolution of "added to refined AC?". That happens in-sprint. |
+| Test-data categories table | Exclude. Deferred to in-sprint. |
+| Data generation strategy (Static / Faker / Cleanup) | Exclude. Deferred to in-sprint. |
 
-Capture in `## Phase 5 — Edge Cases (outline)` section of `shift-left-refinement.md`.
+Capture the result in the `## Phase 5 — Edge Cases (outline)` section of `shift-left-refinement.md`.
 
 ---
 
-## Step 7 — Summary block + open questions
+## Step 7: Summary block and open questions
 
 End `shift-left-refinement.md` with:
 
-- `## Story Quality Assessment` — one of: Good / Needs Improvement / Significant Issues.
-- `## Critical Questions for PO` — questions raised in Phase 2 that BLOCK sprint planning until answered. Format: question / context / impact-if-unanswered / suggested answer (if you have one).
-- `## Technical Questions for Dev` — questions that don't block PO but block implementation.
-- `## Suggested Story Improvements` — current state -> suggested change -> benefit.
-- `## Data feasibility flags` — if Phase 1 Selection marked `DATA-FEASIBILITY-RISK`, restate the risk here in concrete terms (which entity is missing, which API contract gap, which fixture needs to land first).
-- `## Recommended testing strategy` — pre / during / post implementation (high-level, NOT outline-level). Same as `acceptance-test-planning.md` §Phase 7.
+- `## Story Quality Assessment`: one of Good / Needs Improvement / Significant Issues.
+- `## Critical Questions for PO`: questions from Phase 2 that block sprint planning until answered. Each has the question, the context, the impact if unanswered, and a suggested answer when you have one.
+- `## Technical Questions for Dev`: questions that do not block the PO but do block implementation.
+- `## Suggested Story Improvements`: current state, suggested change, benefit.
+- `## Data feasibility flags`: if Phase 1 Selection marked `DATA-FEASIBILITY-RISK`, restate the risk concretely (which entity is missing, which API contract gap, which fixture has to land first).
+- `## Recommended testing strategy`: before, during and after implementation, at a high level and not at outline level. Same as `acceptance-test-planning.md` §Phase 7.
 
-The subagent's RETURN TO ORCHESTRATOR is a compact summary derived from this block:
+The subagent returns a compact summary derived from this block to the orchestrator:
 
 ```json
 {
@@ -217,33 +224,35 @@ The subagent's RETURN TO ORCHESTRATOR is a compact summary derived from this blo
 }
 ```
 
-The orchestrator presents the per-Story summary to the user, waits for OK, then dispatches the next Story's Refinement subagent (or moves to Phase 3 if this was the last Story).
+The orchestrator presents the per-Story summary to the user, waits for the OK, then dispatches the next Story's subagent (or moves to Phase 3 after the last one).
 
 ---
 
-## What the Refinement subagent must NOT do
+## What the Refinement subagent leaves alone
 
-- **No Jira mutations.** All updates land in Phase 3.
-- **No test execution.** No smoke, no DB queries, no API calls. Refinement is doc-only.
-- **No parametrization tables, no test-data JSON, no Faker recipes.** Deferred to in-sprint planning.
-- **No TC creation.** `/sprint-testing` Stage 1 (Modality jira-xray) or Stage 4 `/test-documentation` (Modality jira-native) creates them, per `sprint-testing/SKILL.md` §"TC creation timing".
-- **No git operations.** No branch, no commit.
-- **No new ATP / ATR Jira issues.** Phase 3 publishes the ATP to the `{{jira.acceptance_test_plan}}` field only — nobody in this skill creates TMS items. The Test Plan issue is created later by `/sprint-testing` Stage 1 from the field content.
-- **No subtask mutations.** The `[QA] Shift-Left Review` tracking subtask is owned by the orchestrator (Phase 1: find-or-create → `{{jira.status.subtask.active}}`; Phase 3: annotations + `{{jira.status.subtask.close}}`) — the Refinement subagent never touches it.
-- **No `evidence/` folder.** Feature does not exist yet.
-- **No "approval from user" mid-refinement.** Subagents do not prompt the user — they finish and return. The orchestrator presents and waits.
+Each item is out of scope here because another phase or skill owns it.
+
+- Jira mutations: all updates land in Phase 3.
+- Test execution: no smoke, no DB queries, no API calls. Refinement is doc-only.
+- Parametrization tables, test-data JSON and Faker recipes: deferred to in-sprint planning.
+- TC creation: `/sprint-testing` Stage 1 (Modality jira-xray) or Stage 4 `/test-documentation` (Modality jira-native) creates them, per `sprint-testing/SKILL.md` §"TC creation timing".
+- Git operations: no branch, no commit.
+- New ATP / ATR Jira issues: Phase 3 publishes the ATP to the `{{jira.acceptance_test_plan}}` field only, and nobody in this skill creates TMS items. The Test Plan issue is created later by `/sprint-testing` Stage 1 from the field content.
+- Subtask mutations: the `[QA] Shift-Left Review` tracking subtask belongs to the orchestrator (Phase 1: find-or-create, then `{{jira.status.subtask.active}}`; Phase 3: annotations, then `{{jira.status.subtask.close}}`).
+- An `evidence/` folder: the feature does not exist yet.
+- Asking the user mid-refinement: subagents finish and return, and the orchestrator presents and waits.
 
 ---
 
 ## Gotchas
 
-1. **Light code reads.** Reproduction-grade exploration is for `/sprint-testing` Stage 2. Here, "is this feasible in the current codebase" is the bar.
-2. **PO/Dev confirmation marker.** Any inferred scenario MUST carry `NEEDS PO/DEV CONFIRMATION` — verbatim, in English, in the local file and (later) in the Jira comment.
-3. **Quality via technique, not via minimization.** Outline count = whatever the technique triggers yield (EP partitions + BVA boundaries + state transitions + decision-table rules), not a number picked to "look thorough" OR to "stay lean". Padding (an outline exploring nothing new) and under-derivation (a range with no boundary outline, a status field with no invalid-transition outline) are BOTH failures. A 4-AC Story with two ranges and a state machine will legitimately exceed 6 outlines.
-4. **Cite, do not duplicate.** `acceptance-test-planning.md` is the source of truth for Phases 1-5 mechanics. If a future change to that file affects shift-left, the change propagates automatically.
-5. **Coverage estimate matters.** The per-Type counts feed the AI Effort call and the split decision (`references/ai-effort-checklist.md`): many Boundary or Integration outlines push toward Medium or High, and a High Story gets a size note (a warning, never a gate) in the handoff comment. Always include the table even if some Types are 0.
-6. **Module-context reuse.** If `.context/PBI/epics/EPIC-<EPIC_KEY>-<slug>/module-context.md` exists (module = Epic, 1:1), read it and skip module-level code exploration. Story-level reads only.
-7. **Output language**: artifact + Jira-bound content in English. Mirror user's language only in conversation. AGENTS.md §1 Rule #14.
+1. Light code reads. Reproduction-grade exploration is for `/sprint-testing` Stage 2. Here the bar is "is this feasible in the current codebase".
+2. The `NEEDS PO/DEV CONFIRMATION` marker goes on every inferred scenario, verbatim and in English, in the local file and later in the Jira comment.
+3. Outline count comes from the techniques, not from a target. EP partitions, BVA boundaries, state transitions and decision-table rules decide it. Padding (an outline that explores nothing new) and under-derivation (a range with no boundary outline, a status field with no invalid-transition outline) are both failures. A 4-AC Story with two ranges and a state machine will legitimately exceed 6 outlines.
+4. Cite, do not duplicate. `acceptance-test-planning.md` is the source of truth for the Phase 1-5 mechanics, so a later change there reaches shift-left on its own.
+5. The coverage estimate matters. The per-Type counts feed the AI Effort call and the split decision (`references/ai-effort-checklist.md`): many Boundary or Integration outlines push toward Medium or High, and a High Story gets a size note (a warning, not a gate) in the handoff comment. Include the table even when some Types are 0.
+6. Module-context reuse. If `.context/PBI/epics/EPIC-<EPIC_KEY>-<slug>/module-context.md` exists (module = Epic, 1:1), read it and skip module-level code exploration. Story-level reads only.
+7. Output language. The artifact and everything bound for Jira are in English; mirror the user's language only in conversation (AGENTS.md §1 Rule #14).
 
 ---
 
@@ -251,8 +260,8 @@ The orchestrator presents the per-Story summary to the user, waits for OK, then 
 
 - [ ] PBI folder bootstrapped (created or detected); minimal `context.md` written if missing
 - [ ] `shift-left-refinement.md` written with sections Phase 1 / Phase 2 / Phase 3 / Phase 4 (outline names only) / Phase 5 (outline) / Story Quality Assessment / Critical Questions / Tech Questions / Suggested Story Improvements / Data feasibility flags / Recommended testing strategy
-- [ ] All inferred scenarios + edge cases carry `NEEDS PO/DEV CONFIRMATION`
-- [ ] Phase 4 coverage estimate table included; per-outline test-data JSON NOT included
-- [ ] Phase 5 edge-case names included; test-data generation strategy NOT included
+- [ ] All inferred scenarios and edge cases carry `NEEDS PO/DEV CONFIRMATION`
+- [ ] Phase 4 coverage estimate table included; per-outline test-data JSON not included
+- [ ] Phase 5 edge-case names included; test-data generation strategy not included
 - [ ] No Jira mutations performed
 - [ ] Compact JSON summary returned to the orchestrator

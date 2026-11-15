@@ -1,10 +1,10 @@
-# Backlog Selection — Phase 1 Triage
+# Backlog selection: Phase 1 triage
 
-> **Subagent context**: this file is part of the "Context docs" briefing component for the Phase 1 Selection subagent (see `shift-left-testing/SKILL.md` §Subagent Dispatch Strategy). Owns the candidate-resolution + triage rubric only — refinement itself lives in `refinement-playbook.md`.
+> **Subagent context**: this file is part of the "Context docs" briefing component for the Phase 1 Selection subagent (see `shift-left-testing/SKILL.md` §Subagent Dispatch Strategy). It owns the candidate resolution and the triage rubric. Refinement itself lives in `refinement-playbook.md`.
 
-Decides which Backlog Stories deserve a Shift-Left refinement pass and at what depth. The output is a ranked, user-facing candidate table that the orchestrator presents BEFORE Phase 2 dispatches refinement subagents.
+The goal is to decide which Backlog Stories deserve a Shift-Left refinement pass and at what depth, so QA time goes where a missing or vague AC costs the most. The output is a ranked, user-facing candidate table that the orchestrator presents before Phase 2 dispatches refinement subagents.
 
-This reference is for **pre-sprint batch grooming**. It does NOT cover in-sprint triage (that lives in `sprint-testing/references/acceptance-test-planning.md` §Phase 0) nor bug triage (bugs are out of scope for this skill).
+This reference is for pre-sprint batch grooming. In-sprint triage lives in `sprint-testing/references/acceptance-test-planning.md` §Phase 0, and bugs are out of scope for this skill.
 
 ---
 
@@ -12,9 +12,9 @@ This reference is for **pre-sprint batch grooming**. It does NOT cover in-sprint
 
 | Input | Source |
 |-------|--------|
-| Candidate Story IDs (explicit mode) | User argument: `UPEX-100,101,102` or natural-language list |
-| Candidate Story IDs (JQL mode) | `[ISSUE_TRACKER_TOOL]` search using the query in §JQL Query below (trivial key+summary+status+type+labels list — `acli search` is fine here) |
-| Story metadata (detailed: description, ACs, comments) | `bun run jira:sync-issues get <STORY_KEY> --include-comments` (batch: `jql "<query>"`), then read the synced `.md`. NEVER `acli view` — returns `null` for custom fields. For the candidate triage itself (type/labels/priority) the trivial `acli search` list above suffices; sync only when a refined-AC-grade read is needed. |
+| Candidate Story IDs (explicit mode) | User argument: `UPEX-100,101,102` or a natural-language list |
+| Candidate Story IDs (JQL mode) | `[ISSUE_TRACKER_TOOL]` search using the query in §JQL Query below (a trivial key, summary, status, type and labels list, so `acli search` is fine here) |
+| Story metadata (detailed: description, ACs, comments) | `bun run jira:sync-issues get <STORY_KEY> --include-comments` (batch: `jql "<query>"`), then read the synced `.md`. `acli view` returns `null` for custom fields, so it is no source for ACs. The candidate triage itself (type, labels, priority) needs only the trivial `acli search` list above, and the sync is for when a refined-AC-grade read is needed. |
 | Project-wide context | the business context skills (`bun run context:map business-data-context` / `business-e2e-context` / `business-api-context`, `--section <id>` for one entity or endpoint group), `.context/PBI/qa-artifacts/master-test-plan.md` |
 | Jira workflow values | `.agents/jira-workflows.json` -> `{{jira.status.story.*}}` |
 
@@ -39,23 +39,23 @@ Optional filters the user may layer on:
 |--------|------|
 | `AND sprint in openSprints()` | "Next sprint candidates only" |
 | `AND "Epic Link" = <<EPIC_KEY>>` | Grooming one epic at a time (epic key supplied by the user at session start) |
-| `AND labels != "shift-left-reviewed"` | "Skip already-refined" — but PREFER surfacing those separately and letting the user decide (see §3 below) |
+| `AND labels != "shift-left-reviewed"` | "Skip already-refined". Prefer surfacing those separately and letting the user decide (see §Step 2) |
 | `AND updated >= -14d` | Recent additions only |
 
-The Selection subagent proposes the JQL, executes it via `[ISSUE_TRACKER_TOOL]`, and surfaces the result count to the user BEFORE Phase 1 triage starts. If the result set is > 12 Stories, recommend splitting into multiple sessions.
+The Selection subagent proposes the JQL, runs it through `[ISSUE_TRACKER_TOOL]`, and tells the user the result count before Phase 1 triage starts. When the result set is above 12 Stories, recommend splitting it into several sessions.
 
 ---
 
-## Step 1 — Type filter (hard)
+## Step 1: type filter (hard)
 
 For each fetched candidate:
 
 | Issue type | Action |
 |------------|--------|
 | Story | -> Step 2 |
-| Bug, Spike, Sub-task, Tech-debt, Task, Epic | REJECT. Surface with one-line reason. Do NOT silently drop. |
+| Bug, Spike, Sub-task, Tech-debt, Task, Epic | REJECT. Surface with a one-line reason, because a silent drop hides a mislabeled item. |
 
-Reason surfaced to user:
+Reason surfaced to the user:
 
 ```
 Rejected (non-Story):
@@ -66,9 +66,9 @@ Rejected (non-Story):
 
 ---
 
-## Step 2 — Label freshness check
+## Step 2: label freshness check
 
-For each surviving candidate, check labels:
+For each surviving candidate, check the labels:
 
 | Label state | Bucket | Default action |
 |-------------|--------|----------------|
@@ -76,13 +76,13 @@ For each surviving candidate, check labels:
 | Has `shift-left-reviewed`, dated label `shift-left-{date}` < 30 days old | RECENTLY REFINED | Surface separately. Default: skip. Ask user: "Refresh anyway?" |
 | Has `shift-left-reviewed`, dated label > 30 days OR missing | STALE | Surface separately. Default: re-refine (Story may have drifted). Ask user: "Refresh or skip?" |
 
-This step prevents accidental double-work and gives the user explicit control over re-refinement.
+This step prevents double work and gives the user explicit control over re-refinement.
 
 ---
 
-## Step 3 — Veto table (beats risk score)
+## Step 3: veto table (beats risk score)
 
-Apply before scoring. Adapted from `acceptance-test-planning.md` §0.1 for pre-sprint Stories; this table is authoritative for shift-left selection.
+Apply the vetoes before scoring. The table is adapted from `acceptance-test-planning.md` §0.1 for pre-sprint Stories and is authoritative for shift-left selection.
 
 ### SKIP REFINEMENT (drop from refinement set, log reason)
 
@@ -105,11 +105,11 @@ Apply before scoring. Adapted from `acceptance-test-planning.md` §0.1 for pre-s
 | State machines (order lifecycle, subscription, dispute, kyc) | Transition validity matters |
 | Calculations / formulas (tax, discount, accrual, interest) | Precision matters |
 
-If veto fires, write the reason into the candidate row and skip Step 4.
+When a veto fires, write the reason into the candidate row and skip Step 4.
 
 ---
 
-## Step 4 — Risk score (only if no veto)
+## Step 4: risk score (only if no veto)
 
 | Factor | Score | Condition |
 |--------|-------|-----------|
@@ -132,19 +132,20 @@ If veto fires, write the reason into the candidate row and skip Step 4.
 
 ---
 
-## Step 5 — Data feasibility scan (lightweight, optional)
+## Step 5: data feasibility scan (lightweight, optional)
 
-For HIGH-risk candidates only, the Selection subagent does a quick feasibility probe:
+For HIGH-risk candidates only, the Selection subagent does a quick feasibility probe by reading:
 
-- Read the data and API maps (`bun run context:map business-data-context`, `bun run context:map business-api-context`). Does the data model support the Story's ACs?
-- Read `master-test-plan.md`. Are there test-data fixtures for this entity / flow?
-- If neither answers "yes", flag the candidate with a `DATA-FEASIBILITY-RISK` marker. The refinement subagent will surface this as a critical PO question in Phase 2.
+- The data and API maps (`bun run context:map business-data-context`, `bun run context:map business-api-context`): does the data model support the Story's ACs?
+- `master-test-plan.md`: are there test-data fixtures for this entity or flow?
 
-This is a LIGHT scan — NO DB queries, NO API calls. The skill does not execute. Feasibility is established by reading the context docs only.
+If neither answers yes, flag the candidate with a `DATA-FEASIBILITY-RISK` marker. The refinement subagent surfaces it as a critical PO question in Phase 2.
+
+The scan is light on purpose: it makes no DB queries and no API calls, because the skill does not execute anything. Feasibility is established by reading the context docs only.
 
 ---
 
-## Output format — candidate table presented to the user
+## Output format: candidate table presented to the user
 
 The Selection subagent returns this table verbatim. The orchestrator pastes it into the conversation and waits for the user's OK.
 
@@ -190,18 +191,18 @@ The Selection subagent returns this table verbatim. The orchestrator pastes it i
 - Confirm refinement order above? (or override)
 ```
 
-The user replies with OKs or overrides. The orchestrator persists the FINAL accepted list into the session's `progress.md` (`.session/shift-left-testing/<batch-id>/`) before dispatching Phase 2 refinement subagents.
+The user replies with OKs or overrides. The orchestrator persists the final accepted list into the session's `progress.md` (`.session/shift-left-testing/<batch-id>/`) before dispatching the Phase 2 refinement subagents.
 
 ---
 
 ## Gotchas
 
-1. **Non-Story rejection is loud, not silent.** Surfacing them is the value — the user often discovers that what they thought was a Story is actually a Bug or Tech-debt mislabeled.
-2. **Refresh detection.** If a Story has `shift-left-reviewed` but its description changed after the dated label, that is a signal the original refinement is stale. Surface it.
-3. **JQL result-set sanity.** > 12 Stories in a single session burns user attention. Suggest splitting (e.g. by epic, by priority, by sprint candidate). 1-12 is the practical sweet spot.
-4. **Data-feasibility-risk is a SOFT flag**. It does not block — it surfaces a critical PO question in Phase 2. The Story still enters refinement.
-5. **Score is advisory, not authoritative.** The user can override LOW skips into the refinement set if they smell hidden complexity.
-6. **No execution.** The Selection subagent does NOT run smoke tests, DB queries, or API calls. Feasibility is established from the business context maps (read through `bun run context:map`) only.
+1. **Non-Story rejection is loud.** Surfacing the rejected items is the value, since the user often discovers that what they took for a Story is a mislabeled Bug or Tech-debt.
+2. **Refresh detection.** A Story with `shift-left-reviewed` whose description changed after the dated label has a stale refinement. Surface it.
+3. **JQL result-set sanity.** More than 12 Stories in one session burns the user's attention. Suggest splitting by epic, priority or sprint candidate. 1 to 12 is the practical sweet spot.
+4. **Data-feasibility risk is a soft flag.** It blocks nothing: it becomes a critical PO question in Phase 2, and the Story still enters refinement.
+5. **The score is advisory.** The user can override LOW skips into the refinement set when they smell hidden complexity.
+6. **No execution.** The Selection subagent runs no smoke tests, DB queries or API calls. Feasibility comes from the business context maps (read through `bun run context:map`) only.
 
 ---
 

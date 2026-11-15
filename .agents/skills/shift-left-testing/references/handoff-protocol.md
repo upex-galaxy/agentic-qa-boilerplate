@@ -1,14 +1,15 @@
-# Handoff Protocol — Phase 3 (Per-Story Jira Mutation + Batch Report)
+# Handoff Protocol: Phase 3 (per-story Jira mutation and batch report)
 
-> **Subagent context**: this file is the "Context docs" reference for the Phase 3 Handoff subagent + Batch Report subagent (see `shift-left-testing/SKILL.md` §Subagent Dispatch Strategy and §Phase 3). Owns Jira mutations + final report only — refinement content comes from `atp-outline-template.md` and the per-Story `shift-left-refinement.md`.
+> **Subagent context**: this file is the "Context docs" reference for the Phase 3 Handoff subagent and the Batch Report subagent (see `shift-left-testing/SKILL.md` §Subagent Dispatch Strategy and §Phase 3). It owns the Jira mutations and the final report. Refinement content comes from `atp-outline-template.md` and the per-Story `shift-left-refinement.md`.
 
-The Handoff subagent runs ONCE PER REFINED STORY. The Batch Report subagent runs ONCE PER SESSION at the end. Both are dispatched sequentially.
+The Handoff subagent runs once per refined Story. The Batch Report subagent runs once per session, at the end. Both run sequentially.
 
-This reference defines:
-1. Per-Story Jira mutation sequence (description update, ATP field population, AI Effort, handoff comment, labels, transition, subtask close, trace verify).
-2. Modality handling — the ATP write is **field-first in BOTH modalities**; modality only matters downstream, when `/sprint-testing` Stage 1 creates the Test Plan item from the field.
-3. Transition guardrails (stop at `ready_for_dev`).
-4. Batch report template + epic-comment posting rules.
+The goal of the handoff is that a PO, a dev lead and the later `/sprint-testing` run find everything they need in Jira, in the right place, without a second copy to reconcile. The protocol covers:
+
+1. The per-Story Jira mutation sequence: ACs, description, ATP field, AI Effort, handoff comment, labels, transition, subtask close, trace verify.
+2. Modality: the ATP write is field-first in both modalities. Modality only matters later, when `/sprint-testing` Stage 1 creates the Test Plan item from the field.
+3. The transition guardrail: stop at `ready_for_dev`.
+4. The batch report template and the epic-comment posting rules.
 
 ---
 
@@ -16,24 +17,24 @@ This reference defines:
 
 | Input | Source |
 |-------|--------|
-| Refined refinement file (NON-Jira working file) | `.context/PBI/epics/EPIC-<EPIC_KEY>-<slug>/stories/STORY-<STORY_KEY>-<slug>/shift-left-refinement.md` |
-| Current Story status | `bun run jira:sync-issues get {STORY_KEY}`, then read synced status (or `acli search` for the trivial status-only lookup) |
-| Current Story labels | Same synced read — labels list |
-| Modality | From the session's `plan.md` §Inputs (`.session/shift-left-testing/<batch-id>/`, resolved in shift-left-testing Phase 0.1). Informational here — the ATP write is field-first in both modalities |
-| TMS field map | `.agents/jira-fields.json` → `{{jira.acceptance_criteria}}`, `{{jira.acceptance_test_plan}}`, `{{jira.ai_effort}}` |
-| Workflow transitions | `.agents/jira-workflows.json` → `{{jira.transition.story.analyze}}`, `{{jira.transition.story.refined}}` |
-| Tracking subtask | The `[QA] Shift-Left Review` subtask created in Phase 1 (`{{jira.status.subtask.active}}` — the subtask workflow's names are `ACTIVE` / `Close`, NOT "In Progress" / "Done"). Closed at Step 5b via `{{jira.transition.subtask.complete}}`; if the catalog has no subtask work type, Phase 1 skipped it — Step 5b then skips with a warning too |
-| Artifact lifecycle | `agentic-qa-core/references/artifact-lifecycle.md` — §1 (Story + subtask rows), §2 (assignee = self on the subtask at create), §4 (unmapped-status fallback), §5 (light stage verifier) |
+| Refined refinement file (non-Jira working file) | `.context/PBI/epics/EPIC-<EPIC_KEY>-<slug>/stories/STORY-<STORY_KEY>-<slug>/shift-left-refinement.md` |
+| Current Story status | `bun run jira:sync-issues get {STORY_KEY}`, then read the synced status (or `acli search` for the trivial status-only lookup) |
+| Current Story labels | Same synced read, labels list |
+| Modality | The session's `plan.md` §Inputs (`.session/shift-left-testing/<batch-id>/`, resolved in shift-left-testing Phase 0.1). Informational here, since the ATP write is field-first in both modalities |
+| TMS field map | `.agents/jira-fields.json`: `{{jira.acceptance_criteria}}`, `{{jira.acceptance_test_plan}}`, `{{jira.ai_effort}}` |
+| Workflow transitions | `.agents/jira-workflows.json`: `{{jira.transition.story.analyze}}`, `{{jira.transition.story.refined}}` |
+| Tracking subtask | The `[QA] Shift-Left Review` subtask created in Phase 1 (`{{jira.status.subtask.active}}`; the subtask workflow names are `ACTIVE` and `Close`, not "In Progress" and "Done"). Step 5b closes it with `{{jira.transition.subtask.complete}}`. When the catalog has no subtask work type, Phase 1 skipped it, and Step 5b skips with a warning too |
+| Artifact lifecycle | `agentic-qa-core/references/artifact-lifecycle.md`: §1 (Story and subtask rows), §2 (assignee = self on the subtask at create), §4 (unmapped-status fallback), §5 (light stage verifier) |
 
 ---
 
 ## Per-Story handoff sequence
 
-> **Prerequisite**: `/acli` skill loaded (Phase 0.2). `/xray-cli` is never needed here — this protocol creates no TMS items.
+> **Prerequisite**: the `/acli` skill is loaded (Phase 0.2). `/xray-cli` is not needed, because this protocol creates no TMS items.
 
-### Step 1a — Write refined ACs to the Jira `acceptance_criteria` field
+### Step 1a: write refined ACs to the Jira `acceptance_criteria` field
 
-The refined Acceptance Criteria are CANONICAL and belong in the dedicated Jira field — Jira is source of truth; the local `acceptance-criteria.md` is a read-only cache produced by the sync. NEVER hand-write that file.
+The refined Acceptance Criteria are canonical and belong in the dedicated Jira field. Jira is the source of truth, and the local `acceptance-criteria.md` is a read-only cache produced by the sync, so the agent edits the field and leaves that file alone.
 
 ```
 [ISSUE_TRACKER_TOOL] Update Issue:
@@ -42,13 +43,13 @@ The refined Acceptance Criteria are CANONICAL and belong in the dedicated Jira f
     {{jira.acceptance_criteria}}: <Refined ACs — Phase 3 of shift-left-refinement.md verbatim>
 ```
 
-FALLBACK (field absent on this instance): post the refined ACs as a structured comment headed `## Acceptance Criteria`, per `.agents/jira-required.yaml` → `acceptance_criteria.fallback` (`{ target: comment, label: "Acceptance Criteria" }`). Never block.
+Fallback when the field is absent on this instance: post the refined ACs as a structured comment headed `## Acceptance Criteria`, per `.agents/jira-required.yaml` → `acceptance_criteria.fallback` (`{ target: comment, label: "Acceptance Criteria" }`). A missing field never blocks the handoff.
 
-After writing, run `bun run jira:sync-issues get {STORY_KEY} --include-comments` and read back the synced `acceptance-criteria.md` to confirm the field (or fallback comment) landed.
+After writing, run `bun run jira:sync-issues get {STORY_KEY} --include-comments` and read back the synced `acceptance-criteria.md` to confirm the field (or the fallback comment) landed.
 
-### Step 1b — Append supporting analysis to Story description
+### Step 1b: append supporting analysis to the Story description
 
-Append a "QA Refinements (Shift-Left Analysis)" section to the Story description. The section body is a CONDENSED extract of the SUPPORTING analysis from `shift-left-refinement.md` (refined ACs themselves live in the `acceptance_criteria` field from Step 1a) — the full body goes into the ATP (Step 2); the Step 3 comment is a pointer to it. Description should be readable in the Jira UI without scrolling forever.
+Append a "QA Refinements (Shift-Left Analysis)" section to the Story description. Its body is a condensed extract of the supporting analysis from `shift-left-refinement.md`. The refined ACs live in the field from Step 1a, the full body goes into the ATP (Step 2), and the Step 3 comment points to it. Keep the description readable in the Jira UI without endless scrolling.
 
 Description section template:
 
@@ -80,15 +81,15 @@ Description section template:
   description: <existing description + "\n\n" + QA Refinements section>
 ```
 
-The Handoff subagent must read the current description FIRST (from the synced `.md`), then append. Never overwrite.
+Read the current description first (from the synced `.md`), then append. Overwriting would destroy the PO's original text.
 
-### Step 2 — Populate the ATP (field-first — both modalities)
+### Step 2: populate the ATP (field-first, both modalities)
 
-> **ONE ATP per Story, authored early — as FIELD content, never as an item.** Shift-Left does not create a separate DRAFT artifact, and it does not create the Test Plan issue either. Pre-sprint, the ATP's home is the `{{jira.acceptance_test_plan}}` custom field on the Story. `/sprint-testing` Stage 1 creates the real **Test Plan** issue (titled `ATP: {STORY-KEY}: {story title}`, parented to the **QA Master Test Plan** epic, linked to the Story) FROM this field content, and refines the same ATP into the executable superset. There is no `(Shift-Left DRAFT)` title variant and no second Test Plan to reconcile later.
->
-> **Why field-first pre-sprint**: the Story is not in a sprint yet and scope may shrink (a High AI Effort Story may be split by a PO, optionally) — creating the item this early wastes an artifact and leaves a second copy for Stage 1 to reconcile. The field IS the only pre-sprint ATP write, in BOTH modalities; modality only decides which engine Stage 1 uses later.
->
-> What marks this ATP as pre-sprint is the Story's `shift-left-reviewed` + `shift-left-{YYYY-MM-DD}` labels, not the title. Stage 1 reads those labels first, but they only CLAIM a pass: the short-circuit opens only when the synced ATP body published here is present too (`sprint-testing/references/acceptance-test-planning.md` §0.0, fail-closed).
+There is one ATP per Story, authored early, as field content and never as an item. Shift-Left creates neither a separate DRAFT artifact nor the Test Plan issue. Before the sprint, the ATP's home is the `{{jira.acceptance_test_plan}}` custom field on the Story. `/sprint-testing` Stage 1 creates the real Test Plan issue (titled `ATP: {STORY-KEY}: {story title}`, parented to the QA Master Test Plan epic, linked to the Story) from this field content and refines the same ATP into the executable superset. There is no `(Shift-Left DRAFT)` title variant and no second Test Plan to reconcile.
+
+Why field-first: the Story is not in a sprint yet and its scope may shrink (a PO may split a High AI Effort Story). Creating an item this early wastes an artifact and leaves Stage 1 a second copy to reconcile. The field is the only pre-sprint ATP write in both modalities, and modality only decides which engine Stage 1 uses later.
+
+What marks this ATP as pre-sprint is the Story's `shift-left-reviewed` and `shift-left-{YYYY-MM-DD}` labels, not the title. Stage 1 reads those labels first, but they only claim a pass. The short-circuit opens only when the synced ATP body published here is present too (`sprint-testing/references/acceptance-test-planning.md` §0.0, fail-closed).
 
 The write is identical in Modality jira-xray and Modality jira-native:
 
@@ -99,11 +100,11 @@ The write is identical in Modality jira-xray and Modality jira-native:
     {{jira.acceptance_test_plan}}: <full shift-left-refinement.md body>
 ```
 
-FALLBACK (the instance has not provisioned `{{jira.acceptance_test_plan}}`): skip the field write and switch Step 3 to fallback mode — the `## Acceptance Test Plan (ATP)` comment carries the full body inline, per `.agents/jira-required.yaml` → `acceptance_test_plan.fallback` (`{ target: comment, label: "Acceptance Test Plan (ATP)" }`). Warn the user in the per-Story summary. Never block.
+Fallback when the instance has not provisioned `{{jira.acceptance_test_plan}}`: skip the field write and switch Step 3 to fallback mode, where the `## Acceptance Test Plan (ATP)` comment carries the full body inline, per `.agents/jira-required.yaml` → `acceptance_test_plan.fallback` (`{ target: comment, label: "Acceptance Test Plan (ATP)" }`). Warn the user in the per-Story summary. The handoff continues.
 
-### Step 2b — Set AI Effort
+### Step 2b: set AI Effort
 
-QA's sizing call, made after the refinement is complete. Answer the ordered checklist in `references/ai-effort-checklist.md` from the refined ACs, the Phase 1 critical analysis and the coverage estimate, then write ONE option. AI Effort is the effort of the whole item in an agentic workflow (implementing AND verifying it): not a time, not a token estimate.
+This is QA's sizing call, made after the refinement is complete. Answer the ordered checklist in `references/ai-effort-checklist.md` from the refined ACs, the Phase 1 critical analysis and the coverage estimate, then write one option. AI Effort is the effort of the whole item in an agentic workflow (implementing and verifying it). It is not a time and not a token estimate.
 
 ```
 [ISSUE_TRACKER_TOOL] Update Issue:
@@ -112,16 +113,16 @@ QA's sizing call, made after the refinement is complete. Answer the ordered chec
     {{jira.ai_effort}}: <low | medium | high>      # option slugs: {{jira.ai_effort.low}} / .medium / .high
 ```
 
-FALLBACK (field absent on this instance): post a structured comment headed `## AI Effort` with the value and the question numbers that tipped it, per `.agents/jira-required.yaml` → `ai_effort.fallback`. Never block. Do not write `{{jira.development_token_usage}}` or `{{jira.quality_token_usage}}` here: the dev agent and the QA agent measure and write those later.
+Fallback when the field is absent on this instance: post a structured comment headed `## AI Effort` with the value and the question numbers that tipped it, per `.agents/jira-required.yaml` → `ai_effort.fallback`. The handoff continues. Leave `{{jira.development_token_usage}}` and `{{jira.quality_token_usage}}` alone: the dev agent and the QA agent measure and write those later.
 
-Idempotency: read the current value first. An existing value set by a human is kept and the checklist result is reported as a suggestion in the per-Story summary.
+Idempotency: read the current value first. A value a human set stays, and the checklist result goes into the per-Story summary as a suggestion.
 
-### Step 3 — Handoff notification + fallback comment
+### Step 3: handoff notification and fallback comment
 
-Jira is the source of truth: the ATP lives in the `{{jira.acceptance_test_plan}}` field (Step 2) — do NOT mirror it into a comment when the field exists. Post ONE handoff comment on the Story:
+Jira is the source of truth, and the ATP lives in the `{{jira.acceptance_test_plan}}` field (Step 2). When the field exists, a mirrored copy in a comment would only drift, so post one handoff comment on the Story:
 
-- **Field present (default)**: a SHORT notification — the pre-sprint ATP is ready for review in the `{{jira.acceptance_test_plan}}` field. Do NOT paste the full body.
-- **FALLBACK — only if `{{jira.acceptance_test_plan}}` is absent on this instance** (per `.agents/jira-required.yaml` → `acceptance_test_plan.fallback`, `{ target: comment, label: "Acceptance Test Plan (ATP)" }`): inline the full body under a `## Acceptance Test Plan (ATP)` heading so the content still lands somewhere readable.
+- **Field present (default)**: a short notification that the pre-sprint ATP is ready for review in the `{{jira.acceptance_test_plan}}` field, without the full body.
+- **Fallback, only when `{{jira.acceptance_test_plan}}` is absent on this instance** (per `.agents/jira-required.yaml` → `acceptance_test_plan.fallback`, `{ target: comment, label: "Acceptance Test Plan (ATP)" }`): inline the full body under a `## Acceptance Test Plan (ATP)` heading so the content still lands somewhere readable.
 
 ```
 [ISSUE_TRACKER_TOOL] Add Comment:
@@ -141,7 +142,7 @@ Jira is the source of truth: the ATP lives in the `{{jira.acceptance_test_plan}}
 
 `test-documentation` mode `repair-traceability` checks the `{{jira.acceptance_test_plan}}` field, or this `## Acceptance Test Plan (ATP)` fallback comment when the field is absent.
 
-**When AI Effort is High**, append the size note to the same comment (a warning only: the Story still moves to Ready For Dev) (template and worked example: `references/ai-effort-checklist.md`):
+When AI Effort is High, append the size note to the same comment. It is a warning only, and the Story still moves to Ready For Dev (template and worked example: `references/ai-effort-checklist.md`):
 
 ```markdown
 ### AI Effort: High (may need splitting)
@@ -151,11 +152,11 @@ Suggested slices (optional):
 2. {slice 2, one sentence}
 ```
 
-A PO may clone or split the Story and re-refine it, but that is optional and never a gate. The skill never creates child Stories, never edits the Story's scope to match a slice, and holds no separate split-verdict field: the AI Effort value plus this comment is the record. Whoever resolves a split may add one optional label (`split-accepted`, `split-edited` or `split-rejected`, see `references/ai-effort-checklist.md`); absence is valid. The transition in Step 5 still runs.
+A PO may clone or split the Story and re-refine it, but that is optional and never a gate. The skill creates no child Stories, leaves the Story's scope as written, and keeps no separate split-verdict field: the AI Effort value plus this comment is the record. Whoever resolves a split may add one optional label (`split-accepted`, `split-edited` or `split-rejected`, see `references/ai-effort-checklist.md`), and a Story without one is valid. The transition in Step 5 still runs.
 
-Mention rule: include `@PO_HANDLE` and `@DEV_LEAD_HANDLE` in the comment IF those handles are available in `.agents/project.yaml`. Otherwise omit — mention-spam is worse than no mention.
+Mention rule: include `@PO_HANDLE` and `@DEV_LEAD_HANDLE` in the comment if those handles are available in `.agents/project.yaml`, and omit them otherwise. Mention spam is worse than no mention.
 
-### Step 4 — Labels
+### Step 4: labels
 
 ```
 [ISSUE_TRACKER_TOOL] Update Issue:
@@ -163,16 +164,16 @@ Mention rule: include `@PO_HANDLE` and `@DEV_LEAD_HANDLE` in the comment IF thos
   labels: +shift-left-reviewed, +shift-left-{{YYYY-MM-DD}}
 ```
 
-- `shift-left-reviewed` is the SOFT MARKER — `/sprint-testing` Stage 1 reads it, but a marker is not evidence: the short-circuit also needs the published ATP body (`sprint-testing/references/acceptance-test-planning.md` §0.0).
-- `shift-left-{{YYYY-MM-DD}}` is the FRESHNESS MARKER — `/sprint-testing` uses the date to decide whether refinement is still <30 days old and can be short-circuited.
+- `shift-left-reviewed` is the soft marker. `/sprint-testing` Stage 1 reads it, but a marker is not evidence: the short-circuit also needs the published ATP body (`sprint-testing/references/acceptance-test-planning.md` §0.0).
+- `shift-left-{{YYYY-MM-DD}}` is the freshness marker. `/sprint-testing` uses the date to decide whether the refinement is under 30 days old and can be short-circuited.
 
-Both labels are appended (never replaced). If the Story already carries an older `shift-left-{date}`, leave it — it documents the refinement timeline.
+Both labels are appended and never replaced. If the Story already carries an older `shift-left-{date}`, leave it, because it documents the refinement timeline.
 
-### Step 5 — Transition
+### Step 5: transition
 
-> **Guardrail**: NEVER advance beyond `{{jira.status.story.ready_for_dev}}`. Sprint commitment and dev start belong to PO + Dev lead.
+> **Guardrail**: the Story never advances beyond `{{jira.status.story.ready_for_dev}}`. Sprint commitment and dev start belong to the PO and the dev lead.
 
-Read current status, then transition along the shortest valid path to `ready_for_dev`:
+Read the current status, then transition along the shortest valid path to `ready_for_dev`:
 
 | Current status | Transitions to apply | Resolved IDs |
 |----------------|----------------------|--------------|
@@ -199,14 +200,14 @@ else:
     log warning "Unknown status {status}; SKIP transition"
 ```
 
-The skill NEVER applies the `back_from_shift_left_qa` transition automatically. That is a PO / Dev decision (Story does not meet readiness for development — go back to backlog).
+The `back_from_shift_left_qa` transition is a PO and dev decision (the Story does not meet readiness for development and goes back to backlog), so the skill leaves it to them.
 
-### Step 5b — Close the `[QA] Shift-Left Review` subtask
+### Step 5b: close the `[QA] Shift-Left Review` subtask
 
-Phase 1 found-or-created this subtask under the Story (assignee = self per `agentic-qa-core/references/artifact-lifecycle.md` §2), where Jira's `create` transition lands it in `{{jira.status.subtask.active}}`. The handoff closes it:
+Phase 1 found or created this subtask under the Story (assignee = self per `agentic-qa-core/references/artifact-lifecycle.md` §2), where Jira's `create` transition lands it in `{{jira.status.subtask.active}}`. The handoff closes it:
 
-1. Locate the subtask under the Story by exact title `[QA] Shift-Left Review`.
-2. **Post the exhaustive session annotations on the SUBTASK first** — the long analysis, refinement traces, and per-phase notes that are too verbose for the Story. The Story keeps only its canonical outputs (refined ACs field, description section, ATP field, pointer comment, labels); the subtask is where the full working trail lives.
+1. Locate the subtask under the Story by its exact title `[QA] Shift-Left Review`.
+2. Post the exhaustive session annotations on the subtask first: the long analysis, refinement traces and per-phase notes that are too verbose for the Story. The Story keeps only its canonical outputs (refined ACs field, description section, ATP field, pointer comment, labels), and the subtask holds the full working trail.
 
 ```
 [ISSUE_TRACKER_TOOL] Add Comment (or Update description):
@@ -218,14 +219,15 @@ Phase 1 found-or-created this subtask under the Story (assignee = self per `agen
 
 > **On an unmapped slug** (this project renamed the subtask statuses, or the catalog is
 > stale): run the fallback protocol in `agentic-qa-core/references/artifact-lifecycle.md`
-> §4 — list the LIVE transitions, propose the closest synonym in ONE `AskUserQuestion`,
-> fire the live id on yes, and recommend `bun run jira:sync-workflows`. Never skip silently.
+> §4. List the live transitions, propose the closest synonym in one `AskUserQuestion`,
+> fire the live id on yes, and recommend `bun run jira:sync-workflows`. Always ask; a
+> silent skip hides the mismatch.
 
-3. If Phase 1 skipped subtask creation (no subtask work type in `.agents/jira-workflows.json`, or the project disallows subtasks): skip this step with a warning in the per-Story log. Never block the handoff on subtask support.
+3. If Phase 1 skipped subtask creation (no subtask work type in `.agents/jira-workflows.json`, or the project disallows subtasks), skip this step with a warning in the per-Story log. Subtask support never blocks the handoff.
 
-### Step 6 — Verify trace
+### Step 6: verify trace
 
-Both modalities (field-first — there is no Test Plan item to trace pre-sprint):
+Both modalities are field-first, so there is no Test Plan item to trace before the sprint:
 
 ```
 bun run jira:sync-issues get {STORY_KEY} --include-comments
@@ -239,10 +241,9 @@ bun run jira:sync-issues get {STORY_KEY} --include-comments
 #   - "[QA] Shift-Left Review" subtask (when created) is at {{jira.status.subtask.close}}
 ```
 
-### Step 6b — Light stage verifier (closes the Shift-Left stage)
+### Step 6b: light stage verifier (closes the Shift-Left stage)
 
-Run the light stage verifier template in `agentic-qa-core/references/artifact-lifecycle.md` §5.
-The stage-specific status lines are:
+Run the light stage verifier template in `agentic-qa-core/references/artifact-lifecycle.md` §5. The stage-specific status lines are:
 
 ```
 [ ] Story at {{jira.status.story.ready_for_dev}} — via analyze -> refined, and STOPPED there
@@ -255,7 +256,7 @@ The stage-specific status lines are:
 [ ] Any unmapped slug went through the §4 fallback (asked), never a silent skip
 ```
 
-### Step 7 — Return per-Story log
+### Step 7: return the per-Story log
 
 ```json
 {
@@ -277,15 +278,15 @@ The stage-specific status lines are:
 }
 ```
 
-Warnings DO NOT abort the per-Story handoff — they are surfaced in the batch report.
+Warnings do not abort the per-Story handoff. They surface in the batch report.
 
-Errors DO abort. Per AGENTS.md §3 (Orchestration Mode), the orchestrator presents retry / skip / abort to the user. Do NOT auto-rollback Jira mutations — they are recorded in the partial log so a future session can resume.
+Errors abort. Per AGENTS.md §3 (Orchestration Mode), the orchestrator presents retry, skip or abort to the user. Jira mutations are not rolled back automatically: they stay in the partial log so a future session can resume.
 
 ---
 
 ## Batch report
 
-Dispatched ONCE after every Story has run Phase 3.
+Dispatched once, after every Story has run Phase 3.
 
 ### Output path
 
@@ -369,20 +370,20 @@ Sorted by risk + dependency:
 
 ### Posting rules
 
-1. **Always write** the file under `.session/shift-left-testing/<YYYY-MM-DD>-<descriptor>/batch-report.md`.
-2. **If all refined Stories share ONE parent epic**, post the batch report as a comment on that epic — the team grooms by epic, so the report lands where decision-makers look.
-3. **If Stories span multiple epics or have no common parent**, do NOT post to any epic — deliver inline to the user as the session-closing message.
-4. **Never post the report on every Story**. The per-Story handoff comment already landed in Step 3; the batch report is a session-level artifact.
+1. Always write the file under `.session/shift-left-testing/<YYYY-MM-DD>-<descriptor>/batch-report.md`.
+2. If all refined Stories share one parent epic, post the batch report as a comment on that epic. The team grooms by epic, so the report lands where decision-makers look.
+3. If the Stories span several epics or have no common parent, post to no epic and deliver the report inline to the user as the session-closing message.
+4. Post the report once, never on every Story. The per-Story handoff comment already landed in Step 3, and the batch report is a session-level artifact.
 
 ---
 
 ## Resume protocol
 
-The session is resumable. If interrupted (subagent failure, user abort, network drop), the next invocation:
+The session is resumable. After an interruption (subagent failure, user abort, network drop), the next invocation:
 
-1. Reads the session's `progress.md` (`.session/shift-left-testing/<batch-id>/`) to know which Stories are pending vs handed-off.
-2. Reads each pending Story's `shift-left-refinement.md` (if it exists) to know Phase 2 is done.
-3. Continues from the first incomplete step (Step 1 if description not yet updated, Step 2 if ATP not populated, ...).
+1. Reads the session's `progress.md` (`.session/shift-left-testing/<batch-id>/`) to learn which Stories are pending and which are handed off.
+2. Reads each pending Story's `shift-left-refinement.md` (if it exists) to learn that the refinement is done.
+3. Continues from the first incomplete step (Step 1 if the description is not yet updated, Step 2 if the ATP is not populated, and so on).
 
 Each step is idempotent:
 
@@ -398,32 +399,3 @@ Each step is idempotent:
 | Step 6 trace | Always re-verify |
 
 ---
-
-## Gotchas
-
-1. **Description append, never overwrite.** Read first, append second.
-2. **The comment is a pointer, not a mirror.** When `{{jira.acceptance_test_plan}}` exists, the handoff comment only points to the field — never paste the full body. The full body goes in the comment ONLY in fallback mode (field absent). `test-documentation` mode `repair-traceability` checks the field, or the fallback comment when the field is absent.
-3. **Transition guardrail.** STOP at `ready_for_dev`. Stories past that point keep the refinement (description + field + comment + labels) but skip transition.
-4. **No TMS items pre-sprint.** This protocol never creates the Test Plan issue — `/sprint-testing` Stage 1 creates it from the `{{jira.acceptance_test_plan}}` field content. If an older session already left a pre-sprint Test Plan on the Story, leave it, note it in the per-Story log, and let Stage 1 reconcile.
-5. **Mention discipline.** Only mention PO/Dev-lead handles that are explicitly listed in `.agents/project.yaml`. No guessing.
-6. **Dated label** (`shift-left-{date}`) is APPENDED on every refinement. `/sprint-testing` reads the most recent one. Old dated labels are NOT pruned by this skill.
-7. **Resume safety.** Every step is idempotent — re-running a partially-completed Story should converge to the same final state.
-8. **Language**: all Jira content English. Mirror user's language only in conversation. AGENTS.md §1 Rule #14.
-9. **NO git commit.** Jira is the source of truth. The local `shift-left-refinement.md` is a gitignored working artifact.
-10. **Epic comment posting** is a courtesy. If it fails (epic doesn't exist, permission denied, network), DO NOT abort — log a warning and proceed; the local report is still authoritative.
-11. **Subtask close is best-effort.** The `[QA] Shift-Left Review` subtask holds the exhaustive session annotations and shows the team QA worked the Story pre-sprint. No subtask work type in the catalog → Step 5b skips with a warning; the handoff still completes.
-
----
-
-## Checklist before closing the session
-
-- [ ] All accepted Stories ran the per-Story handoff
-- [ ] Each per-Story log captured in the session's `progress.md`
-- [ ] No transition advanced beyond `{{jira.status.story.ready_for_dev}}`
-- [ ] `{{jira.ai_effort}}` set per Story; every High Story has the size note in its handoff comment
-- [ ] No Test Plan item created (field-first — the item is `/sprint-testing` Stage 1's job)
-- [ ] `[QA] Shift-Left Review` subtask per Story: annotations posted + transitioned to `{{jira.status.subtask.close}}` (or skipped with warning)
-- [ ] Batch report written to `.session/shift-left-testing/<YYYY-MM-DD>-<descriptor>/batch-report.md`
-- [ ] Batch report posted to parent epic (if all Stories share one) OR delivered inline
-- [ ] User informed: when each Story reaches `Ready For QA`, run `/sprint-testing` (it short-circuits on the published ATP body, not on the label alone)
-- [ ] Warnings + errors surfaced explicitly in the user-facing session-close message
