@@ -497,6 +497,8 @@ export const USER_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [
   { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'blast-radius' },
   // Diagnosis loop for hard bugs and performance regressions, run before a bug is filed.
   { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'diagnosing-bugs' },
+  // Generic multi-session teaching workspace for any topic, started by hand with /teach.
+  { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'teach' },
 ];
 
 // Matches Claude Code ${VAR} and ${VAR:-default} placeholders in .mcp.json.

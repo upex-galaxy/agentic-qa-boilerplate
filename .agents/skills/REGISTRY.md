@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-11-16T01:07:08.891Z`
+> Generated: `2026-11-16T15:43:14.072Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 

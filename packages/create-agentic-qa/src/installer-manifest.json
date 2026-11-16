@@ -126,7 +126,7 @@
       ]
     },
     "communityUserSkills": {
-      "count": 4,
+      "count": 14,
       "items": [
         {
           "name": "find-skills",
@@ -146,6 +146,56 @@
         {
           "name": "mkd",
           "purpose": "Decision-deck CLI — the AI asks, the user answers point by point in a browser deck.",
+          "source": "https://github.com/upex-galaxy/agentic-user-skills"
+        },
+        {
+          "name": "humanizer",
+          "purpose": "Community skill: humanizer",
+          "source": "https://github.com/upex-galaxy/agentic-user-skills"
+        },
+        {
+          "name": "writing-for-agents",
+          "purpose": "Community skill: writing-for-agents",
+          "source": "https://github.com/upex-galaxy/agentic-user-skills"
+        },
+        {
+          "name": "grilling",
+          "purpose": "Community skill: grilling",
+          "source": "https://github.com/upex-galaxy/agentic-user-skills"
+        },
+        {
+          "name": "domain-modeling",
+          "purpose": "Community skill: domain-modeling",
+          "source": "https://github.com/upex-galaxy/agentic-user-skills"
+        },
+        {
+          "name": "to-questionnaire",
+          "purpose": "Community skill: to-questionnaire",
+          "source": "https://github.com/upex-galaxy/agentic-user-skills"
+        },
+        {
+          "name": "retro",
+          "purpose": "Community skill: retro",
+          "source": "https://github.com/upex-galaxy/agentic-user-skills"
+        },
+        {
+          "name": "show-me-your-work",
+          "purpose": "Community skill: show-me-your-work",
+          "source": "https://github.com/upex-galaxy/agentic-user-skills"
+        },
+        {
+          "name": "blast-radius",
+          "purpose": "Community skill: blast-radius",
+          "source": "https://github.com/upex-galaxy/agentic-user-skills"
+        },
+        {
+          "name": "diagnosing-bugs",
+          "purpose": "Community skill: diagnosing-bugs",
+          "source": "https://github.com/upex-galaxy/agentic-user-skills"
+        },
+        {
+          "name": "teach",
+          "purpose": "Community skill: teach",
           "source": "https://github.com/upex-galaxy/agentic-user-skills"
         }
       ]
