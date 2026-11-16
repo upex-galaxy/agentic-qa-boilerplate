@@ -78,6 +78,7 @@ import {
 } from './lib/updater-parity';
 import { makePbiCacheMigrationHook } from './lib/updater-pbi';
 import { CLAUDE_SETTINGS_FILE, formatHookCommand, mergeHookGroups, mergePermissionLists, readDeclinedDenies, readDeclinedHooks } from './lib/updater-settings';
+import { runSkillsUpdate, SKILLS_UPDATE_OPT_OUT_ENV, SKILLS_UPDATE_OPT_OUT_FLAG } from './lib/user-skills-update.ts';
 import { parseDotEnvExampleKeys, requiredNow, VAR_MANIFEST } from './lib/variables-manifest.ts';
 import { checkoutRoots } from './lib/worktree.ts';
 import { plainMsg, runUpPreflight } from './preflight.ts';
@@ -378,6 +379,8 @@ interface ParsedArgs {
   strict: boolean
   /** Skip the post-apply quality gates (`types:check`, `lint:check`, `kata:manifest:check`). */
   noGates: boolean
+  /** Skip the closing `bunx skills update` of the installer's community skills. */
+  noSkillsUpdate: boolean
   /** Keep the prompts even when stdin is not a TTY (the default there is `--auto`). */
   interactive: boolean
 }
@@ -394,6 +397,7 @@ export function parseArgs(args: string[]): ParsedArgs {
     force: false,
     strict: false,
     noGates: false,
+    noSkillsUpdate: false,
     interactive: false,
   };
   const valid = new Set(COMPONENTS.map(c => c.name).concat(['all', 'help', 'rollback']));
@@ -411,6 +415,7 @@ export function parseArgs(args: string[]): ParsedArgs {
     else if (a === '--force') { out.force = true; }
     else if (a === '--strict') { out.strict = true; }
     else if (a === '--no-gates') { out.noGates = true; }
+    else if (a === SKILLS_UPDATE_OPT_OUT_FLAG) { out.noSkillsUpdate = true; }
     else if (a === '--list') { out.listSkills = true; }
     else if (a === '--skill' || a === '--skills') {
       const next = args[i + 1];
@@ -509,6 +514,15 @@ VERIFICACION POST-SYNC (gates):
   que archivos aplicados esta corrida nombra) y como linea "Gates:" en el
   resumen. --no-gates lo desactiva.
 
+SKILLS DE LA COMUNIDAD (al final):
+  Corre \`bunx skills update <nombres> -g -y\` para las skills de usuario que
+  instala \`bun setup\` (USER_LEVEL_SKILLS) y \`-p\` para las de proyecto
+  (PROJECT_LEVEL_SKILLS), solo las que el CLI de skills tiene instaladas desde
+  esa misma fuente. Omite una skill instalada como symlink fuera del store del
+  CLI (un link de desarrollo) y copia antes cada skill de proyecto a
+  .backups/. Nunca bloquea: un fallo es un aviso. --no-skills-update o
+  ${SKILLS_UPDATE_OPT_OUT_ENV}=1 lo desactivan.
+
 RE-EJECUCION SEGURA:
   El sync deja sus archivos sin commitear a proposito (primero se revisa el
   prompt). La corrida registra lo que escribio en ${LAST_APPLY_FILE}
@@ -563,6 +577,10 @@ FLAGS:
                          nombra el gate que lo prueba).
   --no-gates             No corre types:check / lint:check / kata:manifest:check /
                          skills:check tras aplicar
+  --no-skills-update     No corre \`bunx skills update\` al final (las skills de la
+                         comunidad quedan como estan). La primera corrida con un
+                         updater viejo no conoce el flag: usa la variable de
+                         entorno de abajo
   --rollback             Restaura backup mas reciente
   --skill a,b,c          Sincroniza solo los skills indicados (subcomando skills)
   --list                 Lista los skills disponibles en el template
@@ -573,6 +591,9 @@ ENV:
                          o un clon LOCAL (ruta absoluta o file://, via git, sin
                          sesion gh). Para probar una rama no publicada contra
                          un consumidor.
+  ${SKILLS_UPDATE_OPT_OUT_ENV}=1
+                         Igual que --no-skills-update, y sirve tambien cuando
+                         el updater instalado todavia no conoce el flag.
 
 EJEMPLOS:
   bun sync                               # Flujo interactivo (5 fases)
@@ -2478,6 +2499,7 @@ async function main(): Promise<void> {
   const aborted = summary.aborted === true;
   if (!aborted) { printEndOfRun(summary, parsed.dryRun); }
   else if (summary.selfUpdateBlocked) { reportSelfUpdateBlocked(summary.selfUpdateBlocked, summary.newHeadSha, priorLockSha); }
+  if (!aborted) { await updateCommunitySkills(sink, parsed, ui?.lang ?? 'es'); }
 
   const verdict = runVerdict({ aborted, dryRun: parsed.dryRun, strict: parsed.strict }, runFacts.parity?.findings ?? []);
   if (verdict.reason) { tui.log.error(verdict.reason); }
@@ -2505,6 +2527,36 @@ async function main(): Promise<void> {
     await closeUi(aborted ? 'aborted' : verdict.exitCode !== 0 ? 'failed' : pending ? 'done-with-pending' : 'done', verdict.exitCode);
   }
   if (verdict.exitCode !== 0) { process.exit(verdict.exitCode); }
+}
+
+/**
+ * The closing step: `bunx skills update` for the community skills
+ * `cli/install.ts` declares (logic and measured CLI behaviour in
+ * ./lib/user-skills-update.ts). Runs once, after the sync: in a self-update
+ * the parent exits with the re-exec child's code, so only the child gets here.
+ * Warnings only, so neither the exit code nor `--strict` ever depends on it.
+ * The lists load lazily, the way `doctor.ts` loads them: `cli/install.ts`
+ * pulls the installer's prompt dependencies, which a sync must not need
+ * before this point.
+ */
+async function updateCommunitySkills(sink: ReportSink, parsed: ParsedArgs, lang: 'es' | 'en'): Promise<void> {
+  if (parsed.noSkillsUpdate || process.env[SKILLS_UPDATE_OPT_OUT_ENV] === '1') { return; }
+  try {
+    const { PROJECT_LEVEL_SKILLS, USER_LEVEL_SKILLS } = await import('./install.ts');
+    sink.step(lang === 'en' ? 'Community skills: checking for updates' : 'Skills de la comunidad: buscando actualizaciones');
+    await runSkillsUpdate({
+      cwd: process.cwd(),
+      global: USER_LEVEL_SKILLS,
+      project: PROJECT_LEVEL_SKILLS,
+      dryRun: parsed.dryRun,
+      info: msg => sink.step(msg),
+      warn: msg => sink.warn(msg),
+      lang,
+    });
+  }
+  catch (err) {
+    sink.warn(`skills update: ${err instanceof Error ? err.message : String(err)}`);
+  }
 }
 
 /** Terminal rows of the preflight: nothing when all is clear (today's output), every warn and block otherwise. */

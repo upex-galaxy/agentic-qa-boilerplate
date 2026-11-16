@@ -35,6 +35,8 @@
     "cli/lib/ui/updater-run.ts": "9852c94b80561963c655efb03846551d199b47e583d062a27c172444d8aa0e3b",
     "cli/lib/ui/updater-sink.test.ts": "cd525f1f9958d411a39620a2e50ea1f1b543d3d8321a4971ac51adced4515139",
     "cli/lib/ui/updater-sink.ts": "4132405933f7f691dfbc25c5c0314f298df9c77ba9a57aaa005511fdb75ff9e0",
+    "cli/lib/user-skills-update.test.ts": "3e05b79455dce6c283fe507ed6771b3b15f2a17abc342410d490f198febf46b2",
+    "cli/lib/user-skills-update.ts": "993d8ad8df6cbf1cdde85b0f5df4b0e5255eaa8d9611203d032a733ae4d67eea",
     "cli/preflight.test.ts": "55017ab0f7f2573984182b71be73ff122a1f628c57704bb66d954082aed02e25",
     "cli/preflight.ts": "279e4191a68b28db11d9180be92f976495ed790459c772098fda1a977e82d37a",
     "scripts/shared-check.ts": "a4863d03b318177a8c82b2e69b4dab2e5d4b4a3d6df7d9de94ef9a0b28e823a5"
