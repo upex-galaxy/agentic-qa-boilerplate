@@ -694,6 +694,10 @@
       .deck-wrap {
         border-bottom: 1px solid var(--line);
       }
+      .deck-wrap .step {
+        border-bottom: 0;
+        padding-bottom: 8px;
+      }
       .deck-wrap .deck {
         border-bottom: 0;
         padding-bottom: 8px;
@@ -1654,12 +1658,16 @@
                   >English version →</a
                 >
               </div>
-              <a class="deck" href="./decks/sprint-conductor/how-it-works.es.html">
-                <span class="tag">Sprint en flota</span>
-                <h3>Sprint Conductor · Cómo funciona</h3>
-                <span class="go">→</span>
-                <p>Una flota de workers por ticket, mirada desde el Sprint Board.</p>
-              </a>
+              <div class="deck-wrap">
+                <a class="deck" href="./decks/sprint-conductor/how-it-works.es.html">
+                  <span class="tag">Sprint en flota</span>
+                  <h3>Sprint Conductor · Cómo funciona</h3>
+                  <span class="go">→</span>
+                  <p>Una flota de workers por ticket, mirada desde el Sprint Board.</p> </a
+                ><a class="deck-en" href="./decks/sprint-conductor/how-it-works.en.html"
+                  >English version →</a
+                >
+              </div>
               <div class="deck-wrap">
                 <a class="deck" href="./decks/test-documentation/how-it-works.es.html">
                   <span class="tag">Documentation</span>
@@ -1699,121 +1707,165 @@
           <div class="cat-group">
             <p class="cat-k">Preparar un proyecto</p>
             <div class="decks">
-              <a class="deck" href="./decks/project-discovery/how-it-works.es.html">
-                <span class="tag">Descubrimiento</span>
-                <h3>project-discovery · Cómo funciona</h3>
-                <span class="go">→</span>
-                <p>
-                  Del repo desconocido al proyecto testeable: fases, mapas de dominio e
-                  infraestructura y el handoff a <code>project-context</code>.
-                </p>
-              </a>
-              <a class="deck" href="./decks/project-context/how-it-works.es.html">
-                <span class="tag">Mapas de negocio</span>
-                <h3>project-context · Cómo funciona</h3>
-                <span class="go">→</span>
-                <p>
-                  Cómo la IA genera y actualiza los mapas de datos, API y E2E y el Master Test Plan,
-                  sección por sección y con tu aprobación, y cruza los mapas con los tests para ver
-                  qué no está cubierto.
-                </p>
-              </a>
-              <a class="deck" href="./decks/context-skills/how-it-works.es.html">
-                <span class="tag">Categoría</span>
-                <h3>Context skills · Cómo funciona</h3>
-                <span class="go">→</span>
-                <p>
-                  Por qué existen las <code>&lt;aspect&gt;-context</code>, cómo se arma su mapa,
-                  quién lo genera y cómo un proyecto crea las suyas.
-                </p>
-              </a>
-              <a class="deck" href="./decks/test-framework-adaptation/how-it-works.es.html">
-                <span class="tag">Adaptación</span>
-                <h3>test-framework-adaptation · Cómo funciona</h3>
-                <span class="go">→</span>
-                <p>
-                  Conecta el boilerplate a tu proyecto: análisis y plan sin escribir, tu aprobación,
-                  y recién ahí auth, entidad, CI y MCPs.
-                </p>
-              </a>
-              <a class="deck" href="./decks/jira-administration/how-it-works.es.html">
-                <span class="tag">Jira</span>
-                <h3>jira-administration · Cómo funciona</h3>
-                <span class="go">→</span>
-                <p>
-                  Components alineados con la app real y migración de sitio de Atlassian, cada
-                  cambio leído, mostrado y aprobado antes de escribirse.
-                </p>
-              </a>
+              <div class="deck-wrap">
+                <a class="deck" href="./decks/project-discovery/how-it-works.es.html">
+                  <span class="tag">Descubrimiento</span>
+                  <h3>project-discovery · Cómo funciona</h3>
+                  <span class="go">→</span>
+                  <p>
+                    Del repo desconocido al proyecto testeable: fases, mapas de dominio e
+                    infraestructura y el handoff a <code>project-context</code>.
+                  </p> </a
+                ><a class="deck-en" href="./decks/project-discovery/how-it-works.en.html"
+                  >English version →</a
+                >
+              </div>
+              <div class="deck-wrap">
+                <a class="deck" href="./decks/project-context/how-it-works.es.html">
+                  <span class="tag">Mapas de negocio</span>
+                  <h3>project-context · Cómo funciona</h3>
+                  <span class="go">→</span>
+                  <p>
+                    Cómo la IA genera y actualiza los mapas de datos, API y E2E y el Master Test
+                    Plan, sección por sección y con tu aprobación, y cruza los mapas con los tests
+                    para ver qué no está cubierto.
+                  </p> </a
+                ><a class="deck-en" href="./decks/project-context/how-it-works.en.html"
+                  >English version →</a
+                >
+              </div>
+              <div class="deck-wrap">
+                <a class="deck" href="./decks/context-skills/how-it-works.es.html">
+                  <span class="tag">Categoría</span>
+                  <h3>Context skills · Cómo funciona</h3>
+                  <span class="go">→</span>
+                  <p>
+                    Por qué existen las <code>&lt;aspect&gt;-context</code>, cómo se arma su mapa,
+                    quién lo genera y cómo un proyecto crea las suyas.
+                  </p> </a
+                ><a class="deck-en" href="./decks/context-skills/how-it-works.en.html"
+                  >English version →</a
+                >
+              </div>
+              <div class="deck-wrap">
+                <a class="deck" href="./decks/test-framework-adaptation/how-it-works.es.html">
+                  <span class="tag">Adaptación</span>
+                  <h3>test-framework-adaptation · Cómo funciona</h3>
+                  <span class="go">→</span>
+                  <p>
+                    Conecta el boilerplate a tu proyecto: análisis y plan sin escribir, tu
+                    aprobación, y recién ahí auth, entidad, CI y MCPs.
+                  </p> </a
+                ><a class="deck-en" href="./decks/test-framework-adaptation/how-it-works.en.html"
+                  >English version →</a
+                >
+              </div>
+              <div class="deck-wrap">
+                <a class="deck" href="./decks/jira-administration/how-it-works.es.html">
+                  <span class="tag">Jira</span>
+                  <h3>jira-administration · Cómo funciona</h3>
+                  <span class="go">→</span>
+                  <p>
+                    Components alineados con la app real y migración de sitio de Atlassian, cada
+                    cambio leído, mostrado y aprobado antes de escribirse.
+                  </p> </a
+                ><a class="deck-en" href="./decks/jira-administration/how-it-works.en.html"
+                  >English version →</a
+                >
+              </div>
             </div>
           </div>
 
           <div class="cat-group">
             <p class="cat-k">Revisar y entregar</p>
             <div class="decks">
-              <a class="deck" href="./decks/git-flow-master/how-it-works.es.html">
-                <span class="tag">Git</span>
-                <h3>git-flow-master · Cómo funciona</h3>
-                <span class="go">→</span>
-                <p>
-                  Ramas, commits, push y PRs adaptados a la estrategia declarada en
-                  <code>git_strategy:</code>, con trailers forenses, paridad de rulesets, PRs
-                  encadenados y worktrees.
-                </p>
-              </a>
-              <a class="deck" href="./decks/pr-review-lead/how-it-works.es.html">
-                <span class="tag">Revisión de PR</span>
-                <h3>pr-review-lead · Cómo funciona</h3>
-                <span class="go">→</span>
-                <p>
-                  Revisión de QA Lead sobre un PR de automatización: rigor elegido, cada hallazgo
-                  con su cita, nota calibrada y nada publicado sin tu OK.
-                </p>
-              </a>
-              <a class="deck" href="./decks/judgment-day/how-it-works.es.html">
-                <span class="tag">Revisión adversarial</span>
-                <h3>judgment-day · Cómo funciona</h3>
-                <span class="go">→</span>
-                <p>
-                  Dos jueces ciegos revisan el mismo cambio en paralelo; lo que confirman los dos se
-                  arregla y se vuelve a juzgar hasta APPROVED o ESCALATED.
-                </p>
-              </a>
-              <a class="deck" href="./decks/bug-screenshot-annotation/how-it-works.es.html">
-                <span class="tag">Evidencia</span>
-                <h3>bug-screenshot-annotation · Cómo funciona</h3>
-                <span class="go">→</span>
-                <p>
-                  Convierte una captura cruda en evidencia anotada (óvalo, flecha, recuadro,
-                  etiqueta BUG) renderizada en local, lista para el bug de Jira.
-                </p>
-              </a>
+              <div class="deck-wrap">
+                <a class="deck" href="./decks/git-flow-master/how-it-works.es.html">
+                  <span class="tag">Git</span>
+                  <h3>git-flow-master · Cómo funciona</h3>
+                  <span class="go">→</span>
+                  <p>
+                    Ramas, commits, push y PRs adaptados a la estrategia declarada en
+                    <code>git_strategy:</code>, con trailers forenses, paridad de rulesets, PRs
+                    encadenados y worktrees.
+                  </p> </a
+                ><a class="deck-en" href="./decks/git-flow-master/how-it-works.en.html"
+                  >English version →</a
+                >
+              </div>
+              <div class="deck-wrap">
+                <a class="deck" href="./decks/pr-review-lead/how-it-works.es.html">
+                  <span class="tag">Revisión de PR</span>
+                  <h3>pr-review-lead · Cómo funciona</h3>
+                  <span class="go">→</span>
+                  <p>
+                    Revisión de QA Lead sobre un PR de automatización: rigor elegido, cada hallazgo
+                    con su cita, nota calibrada y nada publicado sin tu OK.
+                  </p> </a
+                ><a class="deck-en" href="./decks/pr-review-lead/how-it-works.en.html"
+                  >English version →</a
+                >
+              </div>
+              <div class="deck-wrap">
+                <a class="deck" href="./decks/judgment-day/how-it-works.es.html">
+                  <span class="tag">Revisión adversarial</span>
+                  <h3>judgment-day · Cómo funciona</h3>
+                  <span class="go">→</span>
+                  <p>
+                    Dos jueces ciegos revisan el mismo cambio en paralelo; lo que confirman los dos
+                    se arregla y se vuelve a juzgar hasta APPROVED o ESCALATED.
+                  </p> </a
+                ><a class="deck-en" href="./decks/judgment-day/how-it-works.en.html"
+                  >English version →</a
+                >
+              </div>
+              <div class="deck-wrap">
+                <a class="deck" href="./decks/bug-screenshot-annotation/how-it-works.es.html">
+                  <span class="tag">Evidencia</span>
+                  <h3>bug-screenshot-annotation · Cómo funciona</h3>
+                  <span class="go">→</span>
+                  <p>
+                    Convierte una captura cruda en evidencia anotada (óvalo, flecha, recuadro,
+                    etiqueta BUG) renderizada en local, lista para el bug de Jira.
+                  </p> </a
+                ><a class="deck-en" href="./decks/bug-screenshot-annotation/how-it-works.en.html"
+                  >English version →</a
+                >
+              </div>
             </div>
           </div>
 
           <div class="cat-group">
             <p class="cat-k">Herramientas y sesiones</p>
             <div class="decks">
-              <a class="deck" href="./decks/tooling/how-it-works.es.html">
-                <span class="tag">Categoría</span>
-                <h3>Tooling · Cómo funciona</h3>
-                <span class="go">→</span>
-                <p>
-                  Cómo las skills llegan a Jira, Xray, el navegador y la web: etiquetas, skills de
-                  utilidad (<code>acli</code>, <code>xray-cli</code>), skills de comunidad y
-                  capacidades MCP.
-                </p>
-              </a>
-              <a class="deck" href="./decks/progressive-disclosure/how-it-works.es.html">
-                <span class="tag">Categoría</span>
-                <h3>Progressive disclosure · Cómo funciona</h3>
-                <span class="go">→</span>
-                <p>
-                  Cómo cargan las instrucciones del agente: <code>AGENTS.md</code> siempre, cada
-                  sección de <code>.agents/instructions/</code> cuando el router o una línea
-                  <code>ROUTE:</code> la nombra.
-                </p>
-              </a>
+              <div class="deck-wrap">
+                <a class="deck" href="./decks/tooling/how-it-works.es.html">
+                  <span class="tag">Categoría</span>
+                  <h3>Tooling · Cómo funciona</h3>
+                  <span class="go">→</span>
+                  <p>
+                    Cómo las skills llegan a Jira, Xray, el navegador y la web: etiquetas, skills de
+                    utilidad (<code>acli</code>, <code>xray-cli</code>), skills de comunidad y
+                    capacidades MCP.
+                  </p> </a
+                ><a class="deck-en" href="./decks/tooling/how-it-works.en.html"
+                  >English version →</a
+                >
+              </div>
+              <div class="deck-wrap">
+                <a class="deck" href="./decks/progressive-disclosure/how-it-works.es.html">
+                  <span class="tag">Categoría</span>
+                  <h3>Progressive disclosure · Cómo funciona</h3>
+                  <span class="go">→</span>
+                  <p>
+                    Cómo cargan las instrucciones del agente: <code>AGENTS.md</code> siempre, cada
+                    sección de <code>.agents/instructions/</code> cuando el router o una línea
+                    <code>ROUTE:</code> la nombra.
+                  </p> </a
+                ><a class="deck-en" href="./decks/progressive-disclosure/how-it-works.en.html"
+                  >English version →</a
+                >
+              </div>
               <div class="deck-wrap">
                 <a class="deck" href="./decks/orca-orchestration/how-it-works.es.html">
                   <span class="tag">Orquestación</span>
@@ -1829,15 +1881,19 @@
                   >English version →</a
                 >
               </div>
-              <a class="deck" href="./decks/session-handoff/how-it-works.es.html">
-                <span class="tag">Sesiones largas</span>
-                <h3>session-handoff · Cómo funciona</h3>
-                <span class="go">→</span>
-                <p>
-                  Cuando la ventana de contexto se llena, la sesión se compacta en un archivo y una
-                  sesión nueva sigue exactamente donde quedó.
-                </p>
-              </a>
+              <div class="deck-wrap">
+                <a class="deck" href="./decks/session-handoff/how-it-works.es.html">
+                  <span class="tag">Sesiones largas</span>
+                  <h3>session-handoff · Cómo funciona</h3>
+                  <span class="go">→</span>
+                  <p>
+                    Cuando la ventana de contexto se llena, la sesión se compacta en un archivo y
+                    una sesión nueva sigue exactamente donde quedó.
+                  </p> </a
+                ><a class="deck-en" href="./decks/session-handoff/how-it-works.en.html"
+                  >English version →</a
+                >
+              </div>
               <div class="deck-wrap">
                 <a class="deck" href="./decks/user-level-skills/how-it-works.es.html">
                   <span class="tag">Skills de usuario</span>
@@ -1859,15 +1915,19 @@
           <div class="cat-group" id="mantenedores">
             <p class="cat-k">Para mantenedores</p>
             <div class="decks">
-              <a class="deck" href="./decks/framework-development/how-it-works.es.html">
-                <span class="tag">Evolucionar el boilerplate</span>
-                <h3>Framework Development · Cómo funciona</h3>
-                <span class="go">→</span>
-                <p>
-                  Cómo se cambia el boilerplate mismo: plan aprobado, código por lotes,
-                  verificaciones en paralelo y la doc en el mismo PR.
-                </p>
-              </a>
+              <div class="deck-wrap">
+                <a class="deck" href="./decks/framework-development/how-it-works.es.html">
+                  <span class="tag">Evolucionar el boilerplate</span>
+                  <h3>Framework Development · Cómo funciona</h3>
+                  <span class="go">→</span>
+                  <p>
+                    Cómo se cambia el boilerplate mismo: plan aprobado, código por lotes,
+                    verificaciones en paralelo y la doc en el mismo PR.
+                  </p> </a
+                ><a class="deck-en" href="./decks/framework-development/how-it-works.en.html"
+                  >English version →</a
+                >
+              </div>
               <a
                 class="deck"
                 href="https://github.com/upex-galaxy/agentic-qa-boilerplate#keeping-your-project-in-sync-with-the-boilerplate"
@@ -1923,63 +1983,105 @@
           </div>
 
           <div class="decks">
-            <a class="deck" href="./decks/agentic-qa-core/naming-conventions.es.html">
-              <span class="tag">Transversal</span>
-              <h3>El Códice de Nomenclatura</h3>
-              <span class="go">→</span>
-              <p>Cómo se nombra todo en el pipeline: artefactos, tests, ramas, IDs.</p>
-            </a>
-            <a class="deck" href="./decks/agentic-qa-core/skills-io-flow.es.html">
-              <span class="tag">Transversal</span>
-              <h3>skills-io — el flujo E2E por inputs y outputs</h3>
-              <span class="go">→</span>
-              <p>Qué lee y qué produce cada skill, con una pestaña por fase.</p>
-            </a>
-            <a class="deck" href="./decks/agentic-qa-core/output-style.es.html">
-              <span class="tag">Transversal</span>
-              <h3>Output Style — cómo escribe la IA</h3>
-              <span class="go">→</span>
-              <p>El contrato de voz del agente: qué dice, con cuánto detalle y en qué registro.</p>
-            </a>
-            <a class="deck" href="./decks/shift-left-testing/shift-left-craft.es.html">
-              <span class="tag">Shift-Left</span>
-              <h3>El Arte del Shift-Left</h3>
-              <span class="go">→</span>
-              <p>Prevenir, no detectar: los defectos que mueren en los requisitos.</p>
-            </a>
-            <a class="deck" href="./decks/sprint-testing/triforce-exploration.es.html">
-              <span class="tag">Execution</span>
-              <h3>La Trifuerza — UI · API · DB</h3>
-              <span class="go">→</span>
-              <p>Lo que se ve, lo que viaja y lo que queda, probados por separado.</p>
-            </a>
-            <a class="deck" href="./decks/sprint-testing/defect-management.es.html">
-              <span class="tag">Execution · Reporting</span>
-              <h3>Defect Management</h3>
-              <span class="go">→</span>
-              <p>Bug vs Defect vs Improvement, severidad, prioridad y traza a la Story.</p>
-            </a>
-            <a class="deck" href="./decks/test-documentation/test-case-craft.es.html">
-              <span class="tag">Documentation</span>
-              <h3>El Arte de Documentar Test Cases</h3>
-              <span class="go">→</span>
-              <p>Del hallazgo suelto al test case que otro pueda ejecutar sin preguntarte.</p>
-            </a>
-            <a class="deck" href="./decks/regression-testing/ci-pipelines-fundamentals.es.html">
-              <span class="tag">Regression · mini-curso, parte I</span>
-              <h3>CI para Testing: fundamentos de GitHub Actions</h3>
-              <span class="go">→</span>
-              <p>Triggers, jobs, secrets y artifacts sobre nuestros workflows reales.</p>
-            </a>
-            <a class="deck" href="./decks/regression-testing/ci-pipelines-architecture.es.html">
-              <span class="tag">Regression · mini-curso, parte II</span>
-              <h3>CI para Testing: arquitectura de suites y pipeline</h3>
-              <span class="go">→</span>
-              <p>
-                La estrategia smoke / sanity / regression, el write-back al TMS y el gate a
-                producción.
-              </p>
-            </a>
+            <div class="deck-wrap">
+              <a class="deck" href="./decks/agentic-qa-core/naming-conventions.es.html">
+                <span class="tag">Transversal</span>
+                <h3>El Códice de Nomenclatura</h3>
+                <span class="go">→</span>
+                <p>Cómo se nombra todo en el pipeline: artefactos, tests, ramas, IDs.</p> </a
+              ><a class="deck-en" href="./decks/agentic-qa-core/naming-conventions.en.html"
+                >English version →</a
+              >
+            </div>
+            <div class="deck-wrap">
+              <a class="deck" href="./decks/agentic-qa-core/skills-io-flow.es.html">
+                <span class="tag">Transversal</span>
+                <h3>skills-io — el flujo E2E por inputs y outputs</h3>
+                <span class="go">→</span>
+                <p>Qué lee y qué produce cada skill, con una pestaña por fase.</p> </a
+              ><a class="deck-en" href="./decks/agentic-qa-core/skills-io-flow.en.html"
+                >English version →</a
+              >
+            </div>
+            <div class="deck-wrap">
+              <a class="deck" href="./decks/agentic-qa-core/output-style.es.html">
+                <span class="tag">Transversal</span>
+                <h3>Output Style — cómo escribe la IA</h3>
+                <span class="go">→</span>
+                <p>
+                  El contrato de voz del agente: qué dice, con cuánto detalle y en qué registro.
+                </p> </a
+              ><a class="deck-en" href="./decks/agentic-qa-core/output-style.en.html"
+                >English version →</a
+              >
+            </div>
+            <div class="deck-wrap">
+              <a class="deck" href="./decks/shift-left-testing/shift-left-craft.es.html">
+                <span class="tag">Shift-Left</span>
+                <h3>El Arte del Shift-Left</h3>
+                <span class="go">→</span>
+                <p>Prevenir, no detectar: los defectos que mueren en los requisitos.</p> </a
+              ><a class="deck-en" href="./decks/shift-left-testing/shift-left-craft.en.html"
+                >English version →</a
+              >
+            </div>
+            <div class="deck-wrap">
+              <a class="deck" href="./decks/sprint-testing/triforce-exploration.es.html">
+                <span class="tag">Execution</span>
+                <h3>La Trifuerza — UI · API · DB</h3>
+                <span class="go">→</span>
+                <p>Lo que se ve, lo que viaja y lo que queda, probados por separado.</p> </a
+              ><a class="deck-en" href="./decks/sprint-testing/triforce-exploration.en.html"
+                >English version →</a
+              >
+            </div>
+            <div class="deck-wrap">
+              <a class="deck" href="./decks/sprint-testing/defect-management.es.html">
+                <span class="tag">Execution · Reporting</span>
+                <h3>Defect Management</h3>
+                <span class="go">→</span>
+                <p>Bug vs Defect vs Improvement, severidad, prioridad y traza a la Story.</p> </a
+              ><a class="deck-en" href="./decks/sprint-testing/defect-management.en.html"
+                >English version →</a
+              >
+            </div>
+            <div class="deck-wrap">
+              <a class="deck" href="./decks/test-documentation/test-case-craft.es.html">
+                <span class="tag">Documentation</span>
+                <h3>El Arte de Documentar Test Cases</h3>
+                <span class="go">→</span>
+                <p>Del hallazgo suelto al test case que otro pueda ejecutar sin preguntarte.</p> </a
+              ><a class="deck-en" href="./decks/test-documentation/test-case-craft.en.html"
+                >English version →</a
+              >
+            </div>
+            <div class="deck-wrap">
+              <a class="deck" href="./decks/regression-testing/ci-pipelines-fundamentals.es.html">
+                <span class="tag">Regression · mini-curso, parte I</span>
+                <h3>CI para Testing: fundamentos de GitHub Actions</h3>
+                <span class="go">→</span>
+                <p>Triggers, jobs, secrets y artifacts sobre nuestros workflows reales.</p> </a
+              ><a
+                class="deck-en"
+                href="./decks/regression-testing/ci-pipelines-fundamentals.en.html"
+                >English version →</a
+              >
+            </div>
+            <div class="deck-wrap">
+              <a class="deck" href="./decks/regression-testing/ci-pipelines-architecture.es.html">
+                <span class="tag">Regression · mini-curso, parte II</span>
+                <h3>CI para Testing: arquitectura de suites y pipeline</h3>
+                <span class="go">→</span>
+                <p>
+                  La estrategia smoke / sanity / regression, el write-back al TMS y el gate a
+                  producción.
+                </p> </a
+              ><a
+                class="deck-en"
+                href="./decks/regression-testing/ci-pipelines-architecture.en.html"
+                >English version →</a
+              >
+            </div>
           </div>
         </div>
       </section>
@@ -1996,46 +2098,78 @@
           </div>
 
           <div class="steps">
-            <a class="step" href="./decks/test-automation/coding-base.es.html">
-              <span class="n">01</span>
-              <h3>Coding Base — fundamentos de programación para QA Testers</h3>
-              <span class="go">→</span>
-            </a>
-            <a class="step" href="./decks/test-automation/coding-classes.es.html">
-              <span class="n">02</span>
-              <h3>Coding Classes — del código a las clases</h3>
-              <span class="go">→</span>
-            </a>
-            <a class="step" href="./decks/test-automation/dev-craft.es.html">
-              <span class="n">03</span>
-              <h3>Dev Craft — terminal, Git y tu primer Pull Request</h3>
-              <span class="go">→</span>
-            </a>
-            <a class="step" href="./decks/test-automation/playwright-pro.es.html">
-              <span class="n">04</span>
-              <h3>Playwright Pro — de scripts sueltos a suite profesional</h3>
-              <span class="go">→</span>
-            </a>
-            <a class="step" href="./decks/test-automation/dojo-lab-1.es.html">
-              <span class="n">05</span>
-              <h3>Dojo Lab I — primeros specs contra una app real</h3>
-              <span class="go">→</span>
-            </a>
-            <a class="step" href="./decks/test-automation/kata-bridge.es.html">
-              <span class="n">06</span>
-              <h3>KATA Bridge — del Page Object al framework profesional</h3>
-              <span class="go">→</span>
-            </a>
-            <a class="step" href="./decks/test-automation/automation-patterns.es.html">
-              <span class="n">07</span>
-              <h3>Automation Patterns — POM · Fixtures · Paralelización · KATA</h3>
-              <span class="go">→</span>
-            </a>
-            <a class="step" href="./decks/test-automation/api-automation-playwright.es.html">
-              <span class="n">08</span>
-              <h3>API Automation con Playwright — request · aserciones · KATA</h3>
-              <span class="go">→</span>
-            </a>
+            <div class="deck-wrap">
+              <a class="step" href="./decks/test-automation/coding-base.es.html">
+                <span class="n">01</span>
+                <h3>Coding Base — fundamentos de programación para QA Testers</h3>
+                <span class="go">→</span> </a
+              ><a class="deck-en" href="./decks/test-automation/coding-base.en.html"
+                >English version →</a
+              >
+            </div>
+            <div class="deck-wrap">
+              <a class="step" href="./decks/test-automation/coding-classes.es.html">
+                <span class="n">02</span>
+                <h3>Coding Classes — del código a las clases</h3>
+                <span class="go">→</span> </a
+              ><a class="deck-en" href="./decks/test-automation/coding-classes.en.html"
+                >English version →</a
+              >
+            </div>
+            <div class="deck-wrap">
+              <a class="step" href="./decks/test-automation/dev-craft.es.html">
+                <span class="n">03</span>
+                <h3>Dev Craft — terminal, Git y tu primer Pull Request</h3>
+                <span class="go">→</span> </a
+              ><a class="deck-en" href="./decks/test-automation/dev-craft.en.html"
+                >English version →</a
+              >
+            </div>
+            <div class="deck-wrap">
+              <a class="step" href="./decks/test-automation/playwright-pro.es.html">
+                <span class="n">04</span>
+                <h3>Playwright Pro — de scripts sueltos a suite profesional</h3>
+                <span class="go">→</span> </a
+              ><a class="deck-en" href="./decks/test-automation/playwright-pro.en.html"
+                >English version →</a
+              >
+            </div>
+            <div class="deck-wrap">
+              <a class="step" href="./decks/test-automation/dojo-lab-1.es.html">
+                <span class="n">05</span>
+                <h3>Dojo Lab I — primeros specs contra una app real</h3>
+                <span class="go">→</span> </a
+              ><a class="deck-en" href="./decks/test-automation/dojo-lab-1.en.html"
+                >English version →</a
+              >
+            </div>
+            <div class="deck-wrap">
+              <a class="step" href="./decks/test-automation/kata-bridge.es.html">
+                <span class="n">06</span>
+                <h3>KATA Bridge — del Page Object al framework profesional</h3>
+                <span class="go">→</span> </a
+              ><a class="deck-en" href="./decks/test-automation/kata-bridge.en.html"
+                >English version →</a
+              >
+            </div>
+            <div class="deck-wrap">
+              <a class="step" href="./decks/test-automation/automation-patterns.es.html">
+                <span class="n">07</span>
+                <h3>Automation Patterns — POM · Fixtures · Paralelización · KATA</h3>
+                <span class="go">→</span> </a
+              ><a class="deck-en" href="./decks/test-automation/automation-patterns.en.html"
+                >English version →</a
+              >
+            </div>
+            <div class="deck-wrap">
+              <a class="step" href="./decks/test-automation/api-automation-playwright.es.html">
+                <span class="n">08</span>
+                <h3>API Automation con Playwright — request · aserciones · KATA</h3>
+                <span class="go">→</span> </a
+              ><a class="deck-en" href="./decks/test-automation/api-automation-playwright.en.html"
+                >English version →</a
+              >
+            </div>
           </div>
 
           <div class="cta-row">

@@ -22,7 +22,7 @@ It is specific to **this** Playwright + KATA QA boilerplate and points at the co
 - The skill is a tour, not an executor. It ends the moment the user knows which skill to call; hand off there and step back.
 - Leave the downstream work to its owner: pre-sprint refinement is `/shift-left-testing`, per-ticket QA `/sprint-testing`, TMS authoring `/test-documentation`, automated tests `/test-automation`, suite runs `/regression-testing`, a new target repo `/project-discovery`, KATA adaptation `/test-framework-adaptation`.
 - When someone is lost or asks how a skill works, drop the terse working register for the whole explanation: full sentences, a warm tone, each technical term defined the first time it appears. Go back to the normal register once they are oriented.
-- Explain in the user's language. The visual decks are Spanish (technical terms stay English); a deck may also have an English twin, `how-it-works.en.html`, next to the Spanish file. Check the folder (`ls packages/decks/<folder>/`); for an English speaker, offer the twin when it exists and say the deck is in Spanish when it does not.
+- Explain in the user's language. The visual decks are Spanish (technical terms stay English); every deck also has an English twin, `<name>.en.html`, next to the Spanish file (same slides, same shell). For an English speaker, offer the twin.
 - When the goal is unclear, ask one question first (testing a ticket, or understanding the whole flow?). Someone who asked about one stage does not need all of them.
 - Name a stage by its word (Shift-Left, Planning, Execution, Reporting, Documentation, Automation, Regression, Observation), never by number. A "Stage N" in an older doc resolves through `agentic-qa-core/references/stage-gates.md`; the why behind the stages is `iql-context`.
 - When someone asks about running several sessions at once ("parallelize the sprint", "one session per story", "fleet", "launch workers"), explain the two executors in plain words (a one-shot subagent lives inside the current turn and is the default for almost everything; a supervised worker is a persistent session you keep talking to), then hand off to `/orca-orchestration`. Its deck is `packages/decks/orca-orchestration/how-it-works.es.html` (English twin: `how-it-works.en.html`).
@@ -46,13 +46,13 @@ The skill is also the front desk for anyone confused: "I don't know how to use t
 
 ## How-it-works presentations (visual, in the browser)
 
-Most workflow skills ship a self-contained HTML presentation (Spanish with technical terms in English, and an optional English twin `<name>.en.html` next to it) that teaches the skill as a step-by-step workflow. Two category decks cover a family of skills at once, `agentic-qa-core` adds cross-cutting reference decks, and some skills carry craft or curriculum decks. Every how-it-works deck has the same shape: slide 1 is the cover (`/skill-name`), slide 2 the workflow map (main path plus gates, fallbacks and handoffs), then one phase per slide, closing with handoffs and how to invoke the skill on each host.
+Most workflow skills ship a self-contained HTML presentation (Spanish with technical terms in English, and an English twin `<name>.en.html` next to it) that teaches the skill as a step-by-step workflow. Two category decks cover a family of skills at once, `agentic-qa-core` adds cross-cutting reference decks, and some skills carry craft or curriculum decks. Every how-it-works deck has the same shape: slide 1 is the cover (`/skill-name`), slide 2 the workflow map (main path plus gates, fallbacks and handoffs), then one phase per slide, closing with handoffs and how to invoke the skill on each host.
 
 Every path below is relative to `packages/decks/`, which is also the published path segment (see "Published site"). `ls packages/decks/` is the source index; the published catalog with a card per deck is the homepage.
 
 ### Workflow decks (one per skill)
 
-A deck may have an English twin, `how-it-works.en.html` in the same folder. Check the folder and offer the twin to anyone writing in English; a deck without one is Spanish only.
+Every deck has an English twin, `<name>.en.html` in the same folder (`how-it-works.en.html` for the workflow decks). Offer the twin to anyone writing in English.
 
 | Skill / activity | Deck (Spanish) |
 | --- | --- |
@@ -149,7 +149,7 @@ Both start a blocking local server and open the browser, so the same rule applie
 Opening a deck launches the user's default browser, so it needs a yes, one deck at a time.
 
 1. Announce and ask: "I can open a short visual deck that walks through how `/sprint-testing` works, the full workflow map first, then each phase step by step. Want me to open it in your browser?"
-2. If the user speaks English, offer the `how-it-works.en.html` twin when the deck has one (see the list under "Workflow decks"); otherwise mention first that the deck is in Spanish (technical terms stay in English).
+2. If the user speaks English, offer the `.en.html` twin of the deck.
 3. On a yes, open exactly one deck, published URL first and the local file as the offline fallback (pick the OS command for the user's platform):
    ```bash
    open "https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/sprint-testing/how-it-works.es.html"  # macOS → default browser

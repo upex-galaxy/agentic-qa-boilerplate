@@ -34,7 +34,7 @@ A skill covered by a category deck gets no folder of its own: its human explanat
 
 1. Create `packages/decks/<folder>/<slug>.<lang>.html` (self-contained: CSS + JS
    inlined; decks are written in Spanish and use `.es.html`, technical terms
-   stay in English; an optional English twin sits next to it as `.en.html`,
+   stay in English; an English twin sits next to it as `.en.html`,
    same slides and same shell). A
    workflow deck is `how-it-works.es.html`, mirrors the shell of an existing
    deck, and keeps the scale-to-fit canvas at 1440x900 (the desktop reference
