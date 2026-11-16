@@ -99,6 +99,22 @@ jobs:
           cp -R packages/decks/. _site/decks/
           rm -f _site/decks/README.md
 
+          # Per-skill decks of the user-level skills: each one ships inside its
+          # own folder in upex-galaxy/agentic-user-skills, and the portal deck
+          # (packages/decks/user-level-skills/) links to these copies.
+          # Non-fatal: without the clone the portal's skill links 404 until the
+          # next deploy, and the rest of the site still publishes.
+          if git clone --depth 1 --quiet https://github.com/upex-galaxy/agentic-user-skills.git "$RUNNER_TEMP/user-skills"; then
+            for deck in "$RUNNER_TEMP"/user-skills/skills/*/how-it-works.*.html; do
+              [ -e "$deck" ] || continue
+              name=$(basename "$(dirname "$deck")")
+              mkdir -p "_site/decks/user-level-skills/$name"
+              cp "$deck" "_site/decks/user-level-skills/$name/"
+            done
+          else
+            echo "::warning::agentic-user-skills is not reachable: the per-skill decks were not published this run"
+          fi
+
           # Docs site: docs/ only (manifest included), never the context maps
           cp -R docs/. _site/docs/
           rm -f _site/docs/README.md _site/docs/.gitignore

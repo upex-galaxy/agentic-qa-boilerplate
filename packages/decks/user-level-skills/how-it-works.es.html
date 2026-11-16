@@ -431,218 +431,63 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 
 <div class="deck">
 
-  <!-- 1. COVER -->
   <section class="slide is-active" data-title="Portada">
-    <p class="eyebrow" style="margin-bottom:20px">Agentic QA · Categoría de skills</p>
+    <p class="eyebrow" style="margin-bottom:20px">Agentic QA · Portal de skills</p>
     <h1 class="h1 anim-rise-in" data-anim="rise-in" style="font-size:84px;letter-spacing:-.02em">Skills de <span class="grad">user-level</span></h1>
-    <p class="lede mt-m">Once skills que <b>setup</b> instala una vez en tu usuario y que los flujos de QA llaman cuando hace falta: decidir, escribir, preguntar, diagnosticar, dejar rastro y aprender.</p>
-    <div class="row wrap mt-l" style="gap:12px">
-      <span class="chip"><span class="dot" style="background:var(--accent)"></span>Lista: <span class="mono" style="font-size:17px">USER_LEVEL_SKILLS</span></span>
-      <span class="chip"><span class="dot" style="background:var(--good)"></span>Instala: <span class="mono" style="font-size:17px">bun setup</span></span>
-      <span class="chip"><span class="dot" style="background:var(--accent-2)"></span>Fuente: <span class="mono" style="font-size:17px">upex-galaxy/agentic-user-skills</span></span>
-    </div>
-    <div class="notes">Este deck cubre las once skills del paquete agentic-user-skills que el instalador de QA ofrece a nivel usuario. Las otras tres de la lista (find-skills, github-actions-docs, html-ppt) vienen de otros paquetes y no se tratan acá.</div>
+    <p class="lede mt-m">Cada skill de <span class="mono">agentic-user-skills</span> trae su propio deck dentro de su carpeta. Este portal los junta: qué hace cada una, cuáles instala <b>setup</b> y dónde abrir su deck.</p>
+    <div class="row wrap mt-l" style="gap:12px"><span class="chip"><span class="dot" style="background:var(--accent)"></span>Lista: <span class="mono" style="font-size:17px">USER_LEVEL_SKILLS</span></span><span class="chip"><span class="dot" style="background:var(--good)"></span>Instala: <span class="mono" style="font-size:17px">bun setup</span></span><span class="chip"><span class="dot" style="background:var(--accent-2)"></span>Actualiza: <span class="mono" style="font-size:17px">bun sync</span></span></div>
+    <div class="notes">El portal cubre todas las skills del paquete agentic-user-skills, las instale setup o no, y las de otros paquetes que setup también instala. El detalle de cada skill está en su propio deck.</div>
   </section>
-  <!-- 2. USER LEVEL -->
-  <section class="slide compact" data-title="Qué es user-level">
-    <p class="kicker">El principio · 2 de 15</p>
-    <h2 class="h2">Se instalan <span class="grad">una vez</span> por máquina</h2>
-    <div class="grid g3 mt-m" style="gap:22px;align-items:start">
-      <div class="card card-accent"><p class="lbl">Una vez por máquina</p><p class="small mt-s"><span class="mono">bun setup</span> corre <span class="mono">bunx skills add --global</span> y pregunta skill por skill, todas marcadas. Lo que desmarcás queda rechazado y no se vuelve a ofrecer. Una corrida sin pantalla instala todas las no rechazadas.</p></div>
-      <div class="card"><p class="lbl">Sirven en todos los repos</p><p class="small mt-s">Viven en tu usuario, no en este repositorio, así que no se commitean y cada proyecto que las llama las encuentra igual. Las skills de proyecto, en cambio, bajan a <span class="mono">.agents/skills/</span>.</p></div>
-      <div class="card"><p class="lbl">Créditos</p><p class="small mt-s">Siete vienen de Matt Pocock (MIT) y tres de Lauren Tan (MIT), todas adaptadas por UPEX Galaxy. <span class="mono">mkd</span> es de UPEX Galaxy.</p></div>
-    </div>
-    <div class="card card-soft mt-m"><p class="lbl">La regla de instalación</p><p class="small mt-s">Una skill instalada necesita quien la cargue, o no debería instalarse: un skill que ningún flujo alcanza gasta tokens y falla en silencio. Por eso cada una de las once tiene una fila en la tabla T4 de <span class="mono">agentic-qa-onboard</span> que nombra su loader o dice que solo la invoca una persona, y <span class="mono">bun run skills:check</span> (<span class="mono">T4-LOADER</span>) falla si falta una fila.</p></div>
-    <div class="notes">Si una skill no está instalada, el paso que la llamaría corre inline, lo dice y nunca bloquea. Esa regla vale para toda skill que un flujo carga; <span class="mono">teach</span> la empieza una persona, así que ningún flujo depende de ella.</div>
+  <section class="slide compact" data-title="Dónde vive cada deck">
+    <p class="kicker">El principio · 2 de 8</p>
+    <h2 class="h2">Dónde vive <span class="grad">cada deck</span></h2>
+    <div class="wf-row mt-m"><div class="wf-node"><p class="n">1 · Fuente</p><p class="t">La carpeta de la skill</p><p class="c">skills/&lt;name&gt;/how-it-works.es.html</p></div><div class="wf-arr">→</div><div class="wf-node"><p class="n">2 · Instalada</p><p class="t">Viaja con la skill</p><p class="c">~/.agents/skills/&lt;name&gt;/</p></div><div class="wf-arr">→</div><div class="wf-node"><p class="n">3 · Publicada</p><p class="t">Copia en este sitio</p><p class="c">decks/user-level-skills/&lt;name&gt;/</p></div></div>
+    <div class="grid g2 mt-m" style="gap:18px;align-items:stretch"><div class="card card-accent"><p class="lbl">Ábrelo local</p><p class="small mt-s">Con la skill instalada, el deck ya está en tu máquina: <span class="mono">~/.agents/skills/&lt;name&gt;/how-it-works.es.html</span> (o <span class="mono">~/.claude/skills/&lt;name&gt;/</span> si el CLI de skills la instaló solo para Claude Code). El gemelo en inglés es <span class="mono">.en.html</span>.</p></div><div class="card"><p class="lbl">Se actualiza solo</p><p class="small mt-s">El deck se actualiza con la skill. <span class="mono">bun sync</span> corre <span class="mono">bunx skills update</span> al final, y el sitio copia los decks del repo de skills en cada deploy.</p></div></div>
+    <div class="notes">Los links de las tarjetas que siguen abren la copia publicada. Como esa copia se arma en el deploy del sitio, un deck nuevo en el repo de skills aparece acá en el deploy siguiente.</div>
   </section>
-  <!-- 3. MAP -->
   <section class="slide compact" data-title="Quién llama a quién">
-    <p class="kicker">El mapa · 3 de 15</p>
+    <p class="kicker">El mapa · 3 de 8</p>
     <h2 class="h2">Quién <span class="grad">llama</span> a cada una</h2>
     <table class="tt tight mt-s">
       <tr><th>Skill</th><th>La llama</th><th>En qué paso</th></tr>
       <tr><td style="padding:7px 14px"><b class="mono">mkd</b></td><td style="padding:7px 14px" class="small mono">decision-elicitation-doctrine §3</td><td style="padding:7px 14px" class="small">decisión pesada</td></tr><tr><td style="padding:7px 14px"><b class="mono">humanizer</b></td><td style="padding:7px 14px" class="small mono">/framework-development</td><td style="padding:7px 14px" class="small">Prose</td></tr><tr><td style="padding:7px 14px"><b class="mono">writing-for-agents</b></td><td style="padding:7px 14px" class="small mono">/framework-development</td><td style="padding:7px 14px" class="small">Structure</td></tr><tr><td style="padding:7px 14px"><b class="mono">grilling</b></td><td style="padding:7px 14px" class="small mono">/shift-left-testing</td><td style="padding:7px 14px" class="small">Phase 3 · 1</td></tr><tr><td style="padding:7px 14px"><b class="mono">domain-modeling</b></td><td style="padding:7px 14px" class="small mono">/shift-left-testing</td><td style="padding:7px 14px" class="small">Phase 3 · 3</td></tr><tr><td style="padding:7px 14px"><b class="mono">to-questionnaire</b></td><td style="padding:7px 14px" class="small mono">/shift-left-testing</td><td style="padding:7px 14px" class="small">Phase 1 · 7</td></tr><tr><td style="padding:7px 14px"><b class="mono">retro</b></td><td style="padding:7px 14px" class="small mono">/framework-development, /orca-orchestration</td><td style="padding:7px 14px" class="small">Phase 4 · 2</td></tr><tr><td style="padding:7px 14px"><b class="mono">show-me-your-work</b></td><td style="padding:7px 14px" class="small mono">/orca-orchestration</td><td style="padding:7px 14px" class="small">Decision log</td></tr><tr><td style="padding:7px 14px"><b class="mono">blast-radius</b></td><td style="padding:7px 14px" class="small mono">/sprint-testing, /regression-testing</td><td style="padding:7px 14px" class="small">risk score</td></tr><tr><td style="padding:7px 14px"><b class="mono">diagnosing-bugs</b></td><td style="padding:7px 14px" class="small mono">/sprint-testing, /regression-testing</td><td style="padding:7px 14px" class="small">retest, Step 4</td></tr><tr><td style="padding:7px 14px"><b class="mono">teach</b></td><td style="padding:7px 14px" class="small mono">una persona, escribiendo /teach</td><td style="padding:7px 14px" class="small">la señala el onboard</td></tr>
     </table>
-    <div class="notes">Fuente: la tabla de la sección Community skills installed at user level en agentic-qa-onboard. Las filas completas, con rutas y pasos exactos, están en cada slide de skill.</div>
+    <div class="notes">Fuente: la tabla de la sección Community skills installed at user level en agentic-qa-onboard. Ahí están las filas completas, con rutas y pasos exactos.</div>
   </section>
-  <!-- 4. mkd -->
-  <section class="slide compact" data-title="mkd">
-    <p class="kicker">Skill 1 de 11 · 4 de 15</p>
-    <h2 class="h2 mono" style="font-size:44px"><span class="grad">mkd</span> <span class="pill pill-accent" style="font-size:15px;vertical-align:middle">UPEX Galaxy</span></h2>
-    <div class="grid g3 mt-s" style="gap:16px;align-items:stretch">
-      <div class="card card-accent"><p class="lbl">Qué hace</p><p class="small mt-s">Abre una página en el navegador con un deck de decisiones: opciones con su costo y su valor, preguntas y reportes para reaccionar, una pantalla a la vez. La respuesta vuelve como un Result JSON que el agente ejecuta tal cual.</p></div>
-      <div class="card"><p class="lbl">Cuándo se dispara</p><p class="small mt-s">Cuando hay más de 3 decisiones, o un reporte largo que hay que juzgar punto por punto. Una decisión chica va por la pregunta del harness.</p></div>
-      <div class="card"><p class="lbl">Quién la llama</p><p class="small mt-s"><span class="mono">agentic-qa-core/references/decision-elicitation-doctrine.md</span> §3, desde cualquier flujo que llegue al umbral de decisión pesada. También es el instrumento de Handoff de <span class="mono">/exploratory-testing</span>.</p></div>
-    </div>
-    <div class="grid g2 mt-m" style="gap:16px;align-items:stretch">
-      <div class="card card-soft"><p class="lbl" style="color:var(--warn)">Si no está instalada</p><p class="small mt-s">El agente dice una línea ofreciendo instalarla, hace la pregunta con el harness y sigue. No bloquea.</p></div>
-      <div class="card card-soft"><p class="lbl" style="color:var(--good)">Sin nadie al teclado</p><p class="small mt-s">No se usa. Un subagente o una rutina nunca abre un deck: sus pendientes van a quien lo lanzó, que sí tiene a alguien enfrente.</p></div>
-    </div>
-    <div class="notes">Fuente: SKILL.md de la skill en agentic-user-skills y la fila de la tabla T4 en agentic-qa-onboard.</div>
+  <section class="slide compact" data-title="Decidir, evaluar y escribir">
+    <p class="kicker">Nuestras skills · 4 de 8</p>
+    <h2 class="h2"><span class="grad">Decidir, evaluar y escribir</span></h2>
+    <div class="grid g3 mt-s" style="gap:14px;align-items:stretch"><div class="card card-accent"><p class="lbl mono" style="text-transform:none;letter-spacing:0">mkd <span class="pill pill-accent" style="font-size:12px;vertical-align:middle">la instala setup</span></p><p class="small mt-s">Deck de decisiones en el navegador: cada opción con su costo y su valor, y la respuesta vuelve como un Result JSON.</p><p class="small mt-s mono"><a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/mkd/how-it-works.es.html" target="_blank" rel="noopener">Deck ES</a> · <a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/mkd/how-it-works.en.html" target="_blank" rel="noopener">EN</a></p></div><div class="card"><p class="lbl mono" style="text-transform:none;letter-spacing:0">agentic-audit <span class="pill pill-accent" style="font-size:12px;vertical-align:middle">a mano</span></p><p class="small mt-s">Auditoría con evidencia de un proyecto entero: nota de 0 a 5 por eje y un reporte HTML para compartir.</p><p class="small mt-s mono"><a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/agentic-audit/how-it-works.es.html" target="_blank" rel="noopener">Deck ES</a> · <a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/agentic-audit/how-it-works.en.html" target="_blank" rel="noopener">EN</a></p></div><div class="card card-accent"><p class="lbl mono" style="text-transform:none;letter-spacing:0">humanizer <span class="pill pill-accent" style="font-size:12px;vertical-align:middle">la instala setup</span></p><p class="small mt-s">Saca los patrones de escritura de IA de un texto que va a leer una persona.</p><p class="small mt-s mono"><a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/humanizer/how-it-works.es.html" target="_blank" rel="noopener">Deck ES</a> · <a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/humanizer/how-it-works.en.html" target="_blank" rel="noopener">EN</a></p></div><div class="card card-accent"><p class="lbl mono" style="text-transform:none;letter-spacing:0">writing-for-agents <span class="pill pill-accent" style="font-size:12px;vertical-align:middle">la instala setup</span></p><p class="small mt-s">Cómo escribir lo que lee un agente: skills e instrucciones como AGENTS.md o CLAUDE.md.</p><p class="small mt-s mono"><a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/writing-for-agents/how-it-works.es.html" target="_blank" rel="noopener">Deck ES</a> · <a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/writing-for-agents/how-it-works.en.html" target="_blank" rel="noopener">EN</a></p></div><div class="card"><p class="lbl mono" style="text-transform:none;letter-spacing:0">technical-writing <span class="pill pill-accent" style="font-size:12px;vertical-align:middle">a mano</span></p><p class="small mt-s">Estándar de redacción técnica para docs, RFCs, READMEs, descripciones de PR y mensajes de commit.</p><p class="small mt-s mono"><a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/technical-writing/how-it-works.es.html" target="_blank" rel="noopener">Deck ES</a> · <a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/technical-writing/how-it-works.en.html" target="_blank" rel="noopener">EN</a></p></div></div>
+    <div class="notes">Las marcadas "la instala setup" están en USER_LEVEL_SKILLS de cli/install.ts. Las otras se instalan a mano con bunx skills add upex-galaxy/agentic-user-skills --skill &lt;name&gt; -g. Las marcadas "la empiezas tú" son manuales: ningún flujo las carga.</div>
   </section>
-  <!-- 5. humanizer -->
-  <section class="slide compact" data-title="humanizer">
-    <p class="kicker">Skill 2 de 11 · 5 de 15</p>
-    <h2 class="h2 mono" style="font-size:44px"><span class="grad">humanizer</span> <span class="pill pill-accent" style="font-size:15px;vertical-align:middle">Lauren Tan, MIT</span></h2>
-    <div class="grid g3 mt-s" style="gap:16px;align-items:stretch">
-      <div class="card card-accent"><p class="lbl">Qué hace</p><p class="small mt-s">Saca los tics de máquina de un texto (em dash, tríadas, vocabulario inflado, «no es X sino Y») y deja el sentido y el tono. Cada regla tiene un número estable que otras skills citan.</p></div>
-      <div class="card"><p class="lbl">Cuándo se dispara</p><p class="small mt-s">Al escribir o editar un texto que va a leer una persona: un reporte, un comentario, un mensaje.</p></div>
-      <div class="card"><p class="lbl">Quién la llama</p><p class="small mt-s"><span class="mono">/framework-development</span>, en el paso Prose de los tres trabajos de un cambio de skill, y <span class="mono">agentic-qa-core/references/skill-scaffold.md</span>, para la prosa de una skill que se escribe.</p></div>
-    </div>
-    <div class="grid g2 mt-m" style="gap:16px;align-items:stretch">
-      <div class="card card-soft"><p class="lbl" style="color:var(--warn)">Si no está instalada</p><p class="small mt-s">El paso que la llamaría corre inline, el agente lo dice en voz alta y no se detiene.</p></div>
-      <div class="card card-soft"><p class="lbl" style="color:var(--good)">Sin nadie al teclado</p><p class="small mt-s">Funciona igual: es una edición de texto y no pregunta nada. Conserva el sentido y no toca código, rutas ni frontmatter.</p></div>
-    </div>
-    <div class="notes">Fuente: SKILL.md de la skill en agentic-user-skills y la fila de la tabla T4 en agentic-qa-onboard.</div>
+  <section class="slide compact" data-title="Pensar y planificar">
+    <p class="kicker">Nuestras skills · 5 de 8</p>
+    <h2 class="h2"><span class="grad">Pensar y planificar</span></h2>
+    <div class="grid g4 mt-s" style="gap:14px;align-items:stretch"><div class="card card-accent"><p class="lbl mono" style="text-transform:none;letter-spacing:0">grilling <span class="pill pill-accent" style="font-size:12px;vertical-align:middle">la instala setup</span></p><p class="small mt-s">Te interroga sin piedad sobre un plan, una decisión o una idea hasta que se sostiene.</p><p class="small mt-s mono"><a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/grilling/how-it-works.es.html" target="_blank" rel="noopener">Deck ES</a> · <a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/grilling/how-it-works.en.html" target="_blank" rel="noopener">EN</a></p></div><div class="card"><p class="lbl mono" style="text-transform:none;letter-spacing:0">grill-me <span class="pill pill-accent" style="font-size:12px;vertical-align:middle">a mano</span> <span class="pill" style="font-size:12px;vertical-align:middle">la empiezas tú</span></p><p class="small mt-s">La entrevista que afila un plan o un diseño, cuando la quieres empezar a propósito.</p><p class="small mt-s mono"><a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/grill-me/how-it-works.es.html" target="_blank" rel="noopener">Deck ES</a> · <a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/grill-me/how-it-works.en.html" target="_blank" rel="noopener">EN</a></p></div><div class="card"><p class="lbl mono" style="text-transform:none;letter-spacing:0">grill-with-docs <span class="pill pill-accent" style="font-size:12px;vertical-align:middle">a mano</span> <span class="pill" style="font-size:12px;vertical-align:middle">la empiezas tú</span></p><p class="small mt-s">La misma entrevista, y además escribe ADRs y el glosario a medida que avanza.</p><p class="small mt-s mono"><a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/grill-with-docs/how-it-works.es.html" target="_blank" rel="noopener">Deck ES</a> · <a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/grill-with-docs/how-it-works.en.html" target="_blank" rel="noopener">EN</a></p></div><div class="card card-accent"><p class="lbl mono" style="text-transform:none;letter-spacing:0">domain-modeling <span class="pill pill-accent" style="font-size:12px;vertical-align:middle">la instala setup</span></p><p class="small mt-s">Construye y afila el modelo de dominio: terminología, glosario y ADRs.</p><p class="small mt-s mono"><a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/domain-modeling/how-it-works.es.html" target="_blank" rel="noopener">Deck ES</a> · <a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/domain-modeling/how-it-works.en.html" target="_blank" rel="noopener">EN</a></p></div><div class="card card-accent"><p class="lbl mono" style="text-transform:none;letter-spacing:0">to-questionnaire <span class="pill pill-accent" style="font-size:12px;vertical-align:middle">la instala setup</span></p><p class="small mt-s">Convierte una decisión que no puedes contestar del todo en un cuestionario para otra persona.</p><p class="small mt-s mono"><a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/to-questionnaire/how-it-works.es.html" target="_blank" rel="noopener">Deck ES</a> · <a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/to-questionnaire/how-it-works.en.html" target="_blank" rel="noopener">EN</a></p></div><div class="card card-accent"><p class="lbl mono" style="text-transform:none;letter-spacing:0">teach <span class="pill pill-accent" style="font-size:12px;vertical-align:middle">la instala setup</span> <span class="pill" style="font-size:12px;vertical-align:middle">la empiezas tú</span></p><p class="small mt-s">Aprender una habilidad o un concepto en varias sesiones, en un workspace de enseñanza guiado.</p><p class="small mt-s mono"><a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/teach/how-it-works.es.html" target="_blank" rel="noopener">Deck ES</a> · <a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/teach/how-it-works.en.html" target="_blank" rel="noopener">EN</a></p></div><div class="card"><p class="lbl mono" style="text-transform:none;letter-spacing:0">wait-what <span class="pill pill-accent" style="font-size:12px;vertical-align:middle">a mano</span> <span class="pill" style="font-size:12px;vertical-align:middle">la empiezas tú</span></p><p class="small mt-s">Frena: el último mensaje no llegó, y el agente lo vuelve a explicar.</p><p class="small mt-s mono"><a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/wait-what/how-it-works.es.html" target="_blank" rel="noopener">Deck ES</a> · <a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/wait-what/how-it-works.en.html" target="_blank" rel="noopener">EN</a></p></div></div>
+    <div class="notes">Las marcadas "la instala setup" están en USER_LEVEL_SKILLS de cli/install.ts. Las otras se instalan a mano con bunx skills add upex-galaxy/agentic-user-skills --skill &lt;name&gt; -g. Las marcadas "la empiezas tú" son manuales: ningún flujo las carga.</div>
   </section>
-  <!-- 6. writing-for-agents -->
-  <section class="slide compact" data-title="writing-for-agents">
-    <p class="kicker">Skill 3 de 11 · 6 de 15</p>
-    <h2 class="h2 mono" style="font-size:44px"><span class="grad">writing-for-agents</span> <span class="pill pill-accent" style="font-size:15px;vertical-align:middle">Matt Pocock, MIT</span></h2>
-    <div class="grid g3 mt-s" style="gap:16px;align-items:stretch">
-      <div class="card card-accent"><p class="lbl">Qué hace</p><p class="small mt-s">Guía para escribir documentos que lee un agente: context pointers, las dos cargas (contexto y cognitiva) y una jerarquía de información de pasos y referencia.</p></div>
-      <div class="card"><p class="lbl">Cuándo se dispara</p><p class="small mt-s">Al crear o editar una skill o un archivo de instrucciones como <span class="mono">AGENTS.md</span> o <span class="mono">CLAUDE.md</span>.</p></div>
-      <div class="card"><p class="lbl">Quién la llama</p><p class="small mt-s"><span class="mono">/framework-development</span> (la nota sobre archivos de instrucciones y el paso Structure) y <span class="mono">agentic-qa-core/references/skill-scaffold.md</span>, cuando el cambio toca una skill.</p></div>
-    </div>
-    <div class="grid g2 mt-m" style="gap:16px;align-items:stretch">
-      <div class="card card-soft"><p class="lbl" style="color:var(--warn)">Si no está instalada</p><p class="small mt-s">El paso que la llamaría corre inline, el agente lo dice en voz alta y no se detiene.</p></div>
-      <div class="card card-soft"><p class="lbl" style="color:var(--good)">Sin nadie al teclado</p><p class="small mt-s">Tiene su propia sección <span class="mono">## With nobody at the keyboard</span>: anota la pregunta, toma el supuesto más seguro que el documento nombra, lo dice en el reporte y sigue.</p></div>
-    </div>
-    <div class="notes">Fuente: SKILL.md de la skill en agentic-user-skills y la fila de la tabla T4 en agentic-qa-onboard.</div>
+  <section class="slide compact" data-title="Ingeniería">
+    <p class="kicker">Nuestras skills · 6 de 8</p>
+    <h2 class="h2"><span class="grad">Ingeniería</span></h2>
+    <div class="grid g3 mt-s" style="gap:14px;align-items:stretch"><div class="card"><p class="lbl mono" style="text-transform:none;letter-spacing:0">research <span class="pill pill-accent" style="font-size:12px;vertical-align:middle">a mano</span></p><p class="small mt-s">Investiga una pregunta contra fuentes primarias y guarda los hallazgos citados en un archivo del repo.</p><p class="small mt-s mono"><a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/research/how-it-works.es.html" target="_blank" rel="noopener">Deck ES</a> · <a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/research/how-it-works.en.html" target="_blank" rel="noopener">EN</a></p></div><div class="card card-accent"><p class="lbl mono" style="text-transform:none;letter-spacing:0">diagnosing-bugs <span class="pill pill-accent" style="font-size:12px;vertical-align:middle">la instala setup</span></p><p class="small mt-s">Ciclo de diagnóstico para bugs difíciles y regresiones de rendimiento.</p><p class="small mt-s mono"><a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/diagnosing-bugs/how-it-works.es.html" target="_blank" rel="noopener">Deck ES</a> · <a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/diagnosing-bugs/how-it-works.en.html" target="_blank" rel="noopener">EN</a></p></div><div class="card card-accent"><p class="lbl mono" style="text-transform:none;letter-spacing:0">blast-radius <span class="pill pill-accent" style="font-size:12px;vertical-align:middle">la instala setup</span></p><p class="small mt-s">Qué puede romper un cambio, con su dato de seguridad probado corriendo código.</p><p class="small mt-s mono"><a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/blast-radius/how-it-works.es.html" target="_blank" rel="noopener">Deck ES</a> · <a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/blast-radius/how-it-works.en.html" target="_blank" rel="noopener">EN</a></p></div><div class="card card-accent"><p class="lbl mono" style="text-transform:none;letter-spacing:0">show-me-your-work <span class="pill pill-accent" style="font-size:12px;vertical-align:middle">la instala setup</span></p><p class="small mt-s">Rastro de decisiones para trabajo largo o desatendido: un TSV con una fila por decisión.</p><p class="small mt-s mono"><a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/show-me-your-work/how-it-works.es.html" target="_blank" rel="noopener">Deck ES</a> · <a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/show-me-your-work/how-it-works.en.html" target="_blank" rel="noopener">EN</a></p></div><div class="card card-accent"><p class="lbl mono" style="text-transform:none;letter-spacing:0">retro <span class="pill pill-accent" style="font-size:12px;vertical-align:middle">la instala setup</span></p><p class="small mt-s">Retrospectiva de una sesión que propone mejoras al entorno del agente.</p><p class="small mt-s mono"><a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/retro/how-it-works.es.html" target="_blank" rel="noopener">Deck ES</a> · <a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/retro/how-it-works.en.html" target="_blank" rel="noopener">EN</a></p></div><div class="card"><p class="lbl mono" style="text-transform:none;letter-spacing:0">wizard <span class="pill pill-accent" style="font-size:12px;vertical-align:middle">a mano</span></p><p class="small mt-s">Genera un wizard de bash interactivo para los pasos que solo puede hacer una persona.</p><p class="small mt-s mono"><a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/wizard/how-it-works.es.html" target="_blank" rel="noopener">Deck ES</a> · <a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/wizard/how-it-works.en.html" target="_blank" rel="noopener">EN</a></p></div></div>
+    <div class="notes">Las marcadas "la instala setup" están en USER_LEVEL_SKILLS de cli/install.ts. Las otras se instalan a mano con bunx skills add upex-galaxy/agentic-user-skills --skill &lt;name&gt; -g. Las marcadas "la empiezas tú" son manuales: ningún flujo las carga.</div>
   </section>
-  <!-- 7. grilling -->
-  <section class="slide compact" data-title="grilling">
-    <p class="kicker">Skill 4 de 11 · 7 de 15</p>
-    <h2 class="h2 mono" style="font-size:44px"><span class="grad">grilling</span> <span class="pill pill-accent" style="font-size:15px;vertical-align:middle">Matt Pocock, MIT</span></h2>
-    <div class="grid g3 mt-s" style="gap:16px;align-items:stretch">
-      <div class="card card-accent"><p class="lbl">Qué hace</p><p class="small mt-s">Entrevista sin piedad sobre un plan: arma un árbol de decisiones y pregunta en rondas todo lo que ya se puede preguntar, con una respuesta recomendada por pregunta. Termina cuando no queda frontera.</p></div>
-      <div class="card"><p class="lbl">Cuándo se dispara</p><p class="small mt-s">Cuando una Story o un plan tiene preguntas abiertas que hay que cerrar de a una por vez.</p></div>
-      <div class="card"><p class="lbl">Quién la llama</p><p class="small mt-s"><span class="mono">/shift-left-testing</span>, Phase 3 Handoff, paso 1 de la entrevista.</p></div>
-    </div>
-    <div class="grid g2 mt-m" style="gap:16px;align-items:stretch">
-      <div class="card card-soft"><p class="lbl" style="color:var(--warn)">Si no está instalada</p><p class="small mt-s">El paso que la llamaría corre inline, el agente lo dice en voz alta y no se detiene.</p></div>
-      <div class="card card-soft"><p class="lbl" style="color:var(--good)">Sin nadie al teclado</p><p class="small mt-s">Escribe cada pregunta con su respuesta recomendada en las notas. Toma la recomendada si es segura y fácil de deshacer; si no, deja esa rama abierta para quien lanzó y lo informa.</p></div>
-    </div>
-    <div class="notes">Fuente: SKILL.md de la skill en agentic-user-skills y la fila de la tabla T4 en agentic-qa-onboard.</div>
+  <section class="slide compact" data-title="Otros paquetes">
+    <p class="kicker">Terceros · 7 de 8</p>
+    <h2 class="h2">Skills de <span class="grad">otros paquetes</span></h2>
+    <p class="lede mt-s" style="font-size:22px">Setup también instala estas. No son de UPEX Galaxy, así que no traen un deck nuestro: el link lleva a su documentación de origen.</p>
+    <div class="grid g3 mt-m" style="gap:16px;align-items:stretch"><div class="card"><p class="lbl mono" style="text-transform:none;letter-spacing:0">find-skills <span class="pill pill-accent" style="font-size:12px;vertical-align:middle">la instala setup</span></p><p class="small mt-s">Busca e instala skills de la comunidad cuando ninguna instalada cubre la tarea.</p><p class="small mt-s mono"><a href="https://github.com/vercel-labs/skills" target="_blank" rel="noopener">vercel-labs/skills</a></p></div><div class="card"><p class="lbl mono" style="text-transform:none;letter-spacing:0">github-actions-docs <span class="pill pill-accent" style="font-size:12px;vertical-align:middle">la instala setup</span></p><p class="small mt-s">Documentación de GitHub Actions para escribir y revisar workflows.</p><p class="small mt-s mono"><a href="https://github.com/xixu-me/skills" target="_blank" rel="noopener">xixu-me/skills</a></p></div><div class="card"><p class="lbl mono" style="text-transform:none;letter-spacing:0">html-ppt <span class="pill pill-accent" style="font-size:12px;vertical-align:middle">la instala setup</span></p><p class="small mt-s">Presentaciones HTML con plantillas, temas y animaciones. De ahí sale el shell de estos decks.</p><p class="small mt-s mono"><a href="https://github.com/lewislulu/html-ppt-skill" target="_blank" rel="noopener">lewislulu/html-ppt-skill</a></p></div></div>
+    <div class="notes">La fuente de cada una es el campo package de su entrada en USER_LEVEL_SKILLS, en cli/install.ts.</div>
   </section>
-  <!-- 8. domain-modeling -->
-  <section class="slide compact" data-title="domain-modeling">
-    <p class="kicker">Skill 5 de 11 · 8 de 15</p>
-    <h2 class="h2 mono" style="font-size:44px"><span class="grad">domain-modeling</span> <span class="pill pill-accent" style="font-size:15px;vertical-align:middle">Matt Pocock, MIT</span></h2>
-    <div class="grid g3 mt-s" style="gap:16px;align-items:stretch">
-      <div class="card card-accent"><p class="lbl">Qué hace</p><p class="small mt-s">Construye y afila el lenguaje del dominio: desafía términos difusos, inventa casos borde y escribe el glosario y los ADRs en el momento en que cristalizan.</p></div>
-      <div class="card"><p class="lbl">Cuándo se dispara</p><p class="small mt-s">Cuando una respuesta fija un término del dominio que va a <span class="mono">business-domain-context</span>.</p></div>
-      <div class="card"><p class="lbl">Quién la llama</p><p class="small mt-s"><span class="mono">/shift-left-testing</span>, Phase 3 Handoff, paso 3 de la entrevista, y <span class="mono">shift-left-testing/references/refinement-playbook.md</span>.</p></div>
-    </div>
-    <div class="grid g2 mt-m" style="gap:16px;align-items:stretch">
-      <div class="card card-soft"><p class="lbl" style="color:var(--warn)">Si no está instalada</p><p class="small mt-s">El paso que la llamaría corre inline, el agente lo dice en voz alta y no se detiene.</p></div>
-      <div class="card card-soft"><p class="lbl" style="color:var(--good)">Sin nadie al teclado</p><p class="small mt-s">Escribe en el glosario solo lo que el código, los tickets o los docs ya resuelven. Un término inferido va al reporte como propuesto; un ADR solo si la tarea tomó la decisión y pasa las tres puertas.</p></div>
-    </div>
-    <div class="notes">Fuente: SKILL.md de la skill en agentic-user-skills y la fila de la tabla T4 en agentic-qa-onboard.</div>
-  </section>
-  <!-- 9. to-questionnaire -->
-  <section class="slide compact" data-title="to-questionnaire">
-    <p class="kicker">Skill 6 de 11 · 9 de 15</p>
-    <h2 class="h2 mono" style="font-size:44px"><span class="grad">to-questionnaire</span> <span class="pill pill-accent" style="font-size:15px;vertical-align:middle">Matt Pocock, MIT</span></h2>
-    <div class="grid g3 mt-s" style="gap:16px;align-items:stretch">
-      <div class="card card-accent"><p class="lbl">Qué hace</p><p class="small mt-s">Convierte lo que no se puede responder solo en un cuestionario Markdown para otra persona. Entrevista al usuario solo sobre el envío (a quién va, qué hace falta de vuelta) y escribe <span class="mono">to-questionnaire-&lt;slug&gt;.md</span>.</p></div>
-      <div class="card"><p class="lbl">Cuándo se dispara</p><p class="small mt-s">Cuando varias preguntas abiertas le tocan al PO o al Dev y conviene mandarlas juntas.</p></div>
-      <div class="card"><p class="lbl">Quién la llama</p><p class="small mt-s"><span class="mono">/shift-left-testing</span>, Phase 1 paso 7, y el paso del cuestionario al PO dentro de <span class="mono">## With nobody at the keyboard</span>.</p></div>
-    </div>
-    <div class="grid g2 mt-m" style="gap:16px;align-items:stretch">
-      <div class="card card-soft"><p class="lbl" style="color:var(--warn)">Si no está instalada</p><p class="small mt-s">El paso que la llamaría corre inline, el agente lo dice en voz alta y no se detiene.</p></div>
-      <div class="card card-soft"><p class="lbl" style="color:var(--good)">Sin nadie al teclado</p><p class="small mt-s">Se saltea los pasos 1 y 2: toma destinatario y datos del brief o del ticket. Si falta alguno, deja el supuesto en una línea bajo Purpose, escribe el archivo e informa la ruta.</p></div>
-    </div>
-    <div class="notes">Fuente: SKILL.md de la skill en agentic-user-skills y la fila de la tabla T4 en agentic-qa-onboard.</div>
-  </section>
-  <!-- 10. retro -->
-  <section class="slide compact" data-title="retro">
-    <p class="kicker">Skill 7 de 11 · 10 de 15</p>
-    <h2 class="h2 mono" style="font-size:44px"><span class="grad">retro</span> <span class="pill pill-accent" style="font-size:15px;vertical-align:middle">Matt Pocock, MIT</span></h2>
-    <div class="grid g3 mt-s" style="gap:16px;align-items:stretch">
-      <div class="card card-accent"><p class="lbl">Qué hace</p><p class="small mt-s">Retrospectiva de una sesión que propone mejoras al entorno del agente: navegación, checks automáticos, estándares, archivo global de instrucciones, tool economy, no-ops e information access.</p></div>
-      <div class="card"><p class="lbl">Cuándo se dispara</p><p class="small mt-s">Al cerrar un cambio del framework o una ola de workers.</p></div>
-      <div class="card"><p class="lbl">Quién la llama</p><p class="small mt-s"><span class="mono">/framework-development</span>, Phase 4 Archive, paso 2, y <span class="mono">/orca-orchestration</span> (<span class="mono">references/coordinator-playbook.md</span>, la cosecha al cerrar una ola).</p></div>
-    </div>
-    <div class="grid g2 mt-m" style="gap:16px;align-items:stretch">
-      <div class="card card-soft"><p class="lbl" style="color:var(--warn)">Si no está instalada</p><p class="small mt-s">El paso que la llamaría corre inline, el agente lo dice en voz alta y no se detiene.</p></div>
-      <div class="card card-soft"><p class="lbl" style="color:var(--good)">Sin nadie al teclado</p><p class="small mt-s">Escribe los candidatos ordenados por gravedad en un archivo de las notas del run, dice la ruta en el reporte y no aplica ninguno. Decide quien lanzó.</p></div>
-    </div>
-    <div class="notes">Fuente: SKILL.md de la skill en agentic-user-skills y la fila de la tabla T4 en agentic-qa-onboard.</div>
-  </section>
-  <!-- 11. show-me-your-work -->
-  <section class="slide compact" data-title="show-me-your-work">
-    <p class="kicker">Skill 8 de 11 · 11 de 15</p>
-    <h2 class="h2 mono" style="font-size:44px"><span class="grad">show-me-your-work</span> <span class="pill pill-accent" style="font-size:15px;vertical-align:middle">Lauren Tan, MIT</span></h2>
-    <div class="grid g3 mt-s" style="gap:16px;align-items:stretch">
-      <div class="card card-accent"><p class="lbl">Qué hace</p><p class="small mt-s">Un log de decisiones en TSV, una fila por decisión: <span class="mono">ts</span>, <span class="mono">phase</span>, <span class="mono">decision</span>, <span class="mono">why</span>, <span class="mono">evidence</span>, <span class="mono">result</span>. La evidencia es un puntero (SHA, <span class="mono">file:line</span>, ruta), nunca un párrafo.</p></div>
-      <div class="card"><p class="lbl">Cuándo se dispara</p><p class="small mt-s">En trabajo autónomo o de varias fases, y en cualquier trabajo que una persona revisa después de haberse ido.</p></div>
-      <div class="card"><p class="lbl">Quién la llama</p><p class="small mt-s"><span class="mono">/orca-orchestration</span>, sección <span class="mono">## Decision log</span>, para una rutina o un worker de larga duración.</p></div>
-    </div>
-    <div class="grid g2 mt-m" style="gap:16px;align-items:stretch">
-      <div class="card card-soft"><p class="lbl" style="color:var(--warn)">Si no está instalada</p><p class="small mt-s">El paso que la llamaría corre inline, el agente lo dice en voz alta y no se detiene.</p></div>
-      <div class="card card-soft"><p class="lbl" style="color:var(--good)">Sin nadie al teclado</p><p class="small mt-s">Es la skill hecha para ese caso: el log es lo que lee la persona al volver, y una fila por decisión evita reconstruir el run desde el chat.</p></div>
-    </div>
-    <div class="notes">Fuente: SKILL.md de la skill en agentic-user-skills y la fila de la tabla T4 en agentic-qa-onboard.</div>
-  </section>
-  <!-- 12. blast-radius -->
-  <section class="slide compact" data-title="blast-radius">
-    <p class="kicker">Skill 9 de 11 · 12 de 15</p>
-    <h2 class="h2 mono" style="font-size:44px"><span class="grad">blast-radius</span> <span class="pill pill-accent" style="font-size:15px;vertical-align:middle">Lauren Tan, MIT</span></h2>
-    <div class="grid g3 mt-s" style="gap:16px;align-items:stretch">
-      <div class="card card-accent"><p class="lbl">Qué hace</p><p class="small mt-s">Mide qué puede romper un cambio en otro lado. Listar los callers no es el trabajo: busca el hecho del que depende la seguridad del cambio y lo prueba corriendo código. Cada hecho sube una escala de 1 (lo dije) a 5 (lo reproduje en la app).</p></div>
-      <div class="card"><p class="lbl">Cuándo se dispara</p><p class="small mt-s">Al preguntar qué podría romper un cambio, o al revisar un diff chico en el que no se confía.</p></div>
-      <div class="card"><p class="lbl">Quién la llama</p><p class="small mt-s"><span class="mono">/sprint-testing</span> (risk score del bug, <span class="mono">references/session-entry-points.md</span> Step 1.3, <span class="mono">references/acceptance-test-planning.md</span> §0.2) y <span class="mono">/regression-testing</span> (<span class="mono">## When to run each suite</span>).</p></div>
-    </div>
-    <div class="grid g2 mt-m" style="gap:16px;align-items:stretch">
-      <div class="card card-soft"><p class="lbl" style="color:var(--warn)">Si no está instalada</p><p class="small mt-s">El paso que la llamaría corre inline, el agente lo dice en voz alta y no se detiene.</p></div>
-      <div class="card card-soft"><p class="lbl" style="color:var(--good)">Sin nadie al teclado</p><p class="small mt-s">Nunca necesita a nadie. Un hecho que queda sin probar se escribe como <span class="mono">unproven</span>, con lo que lo probaría.</p></div>
-    </div>
-    <div class="notes">Fuente: SKILL.md de la skill en agentic-user-skills y la fila de la tabla T4 en agentic-qa-onboard.</div>
-  </section>
-  <!-- 13. diagnosing-bugs -->
-  <section class="slide compact" data-title="diagnosing-bugs">
-    <p class="kicker">Skill 10 de 11 · 13 de 15</p>
-    <h2 class="h2 mono" style="font-size:44px"><span class="grad">diagnosing-bugs</span> <span class="pill pill-accent" style="font-size:15px;vertical-align:middle">Matt Pocock, MIT</span></h2>
-    <div class="grid g3 mt-s" style="gap:16px;align-items:stretch">
-      <div class="card card-accent"><p class="lbl">Qué hace</p><p class="small mt-s">Un ciclo de diagnóstico para bugs difíciles: primero se arma un feedback loop que se ponga rojo con este bug, y recién después se bisecta y se prueban hipótesis. Redacta los secretos antes de mostrar nada.</p></div>
-      <div class="card"><p class="lbl">Cuándo se dispara</p><p class="small mt-s">Cuando algo falla, lanza un error, o un bug se reproduce de forma intermitente y hay que fijar la causa antes de reportarlo.</p></div>
-      <div class="card"><p class="lbl">Quién la llama</p><p class="small mt-s"><span class="mono">/sprint-testing</span> (el paso Execute del retest, <span class="mono">references/session-entry-points.md</span> Step 1.7) y <span class="mono">/regression-testing</span> (Step 4 y <span class="mono">references/failure-classification.md</span> §6). Solo para diagnóstico.</p></div>
-    </div>
-    <div class="grid g2 mt-m" style="gap:16px;align-items:stretch">
-      <div class="card card-soft"><p class="lbl" style="color:var(--warn)">Si no está instalada</p><p class="small mt-s">El paso que la llamaría corre inline, el agente lo dice en voz alta y no se detiene.</p></div>
-      <div class="card card-soft"><p class="lbl" style="color:var(--good)">Sin nadie al teclado</p><p class="small mt-s">Cada paso que esperaría a una persona trae una línea Unattended: el hueco va al reporte y toda conclusión que dependa de él se marca como no confirmada.</p></div>
-    </div>
-    <div class="notes">Fuente: SKILL.md de la skill en agentic-user-skills y la fila de la tabla T4 en agentic-qa-onboard.</div>
-  </section>
-  <!-- 14. teach -->
-  <section class="slide compact" data-title="teach">
-    <p class="kicker">Skill 11 de 11 · 14 de 15</p>
-    <h2 class="h2 mono" style="font-size:44px"><span class="grad">teach</span> <span class="pill pill-accent" style="font-size:15px;vertical-align:middle">Matt Pocock, MIT</span></h2>
-    <div class="grid g3 mt-s" style="gap:16px;align-items:stretch">
-      <div class="card card-accent"><p class="lbl">Qué hace</p><p class="small mt-s">Un workspace de enseñanza para aprender un tema en varias sesiones. Guarda en la carpeta donde corre una misión (por qué querés aprenderlo), lecciones cortas en HTML, un registro de lo aprendido y un glosario, y ajusta cada lección a lo que ya sabés.</p></div>
-      <div class="card"><p class="lbl">Cuándo se dispara</p><p class="small mt-s">Solo cuando una persona escribe <span class="mono">/teach</span> (<span class="mono">disable-model-invocation</span>), para un curso sobre cualquier tema, no una explicación rápida.</p></div>
-      <div class="card"><p class="lbl">Quién la llama</p><p class="small mt-s">Nadie: ningún flujo puede cargarla. <span class="mono">agentic-qa-onboard</span>, en su modo enseñanza, le dice a la persona que la escriba. Su fila en la tabla T4 dice que solo la invoca una persona.</p></div>
-    </div>
-    <div class="grid g2 mt-m" style="gap:16px;align-items:stretch">
-      <div class="card card-soft"><p class="lbl" style="color:var(--warn)">Si no está instalada</p><p class="small mt-s">El modo enseñanza de <span class="mono">agentic-qa-onboard</span> sigue explicando dentro de la sesión, y la persona puede instalarla a mano con <span class="mono">bunx skills add</span>.</p></div>
-      <div class="card card-soft"><p class="lbl" style="color:var(--good)">Sin nadie al teclado</p><p class="small mt-s">Es una conversación con quien aprende, así que no corre sin supervisión.</p></div>
-    </div>
-    <div class="notes">Fuente: SKILL.md de la skill en agentic-user-skills y la fila de la tabla T4 en agentic-qa-onboard.</div>
-  </section>
-  <!-- 15. CLOSE -->
   <section class="slide compact" data-title="Cierre">
-    <p class="kicker">Cierre · 15 de 15</p>
-    <h2 class="h2">Dos clases de <span class="grad">invocación</span></h2>
-    <div class="grid g2 mt-s" style="gap:18px;align-items:start">
-      <div class="card card-accent"><p class="lbl">Model-invoked</p><p class="small mt-s">El agente la carga solo cuando su <span class="mono">description</span> coincide con la tarea o cuando un flujo la nombra. Diez de las once de este deck son así. Es lo que hace falta para que <span class="mono">/shift-left-testing</span> o <span class="mono">/sprint-testing</span> las usen sin pedírtelo.</p></div>
-      <div class="card"><p class="lbl">Manual</p><p class="small mt-s">Marcadas con <span class="mono">disable-model-invocation: true</span>: el agente no las dispara, las empieza una persona. En el repo de origen son cuatro, y solo <span class="mono">/teach</span> está en <span class="mono">USER_LEVEL_SKILLS</span>.</p></div>
-    </div>
-    <div class="grid g2 mt-m" style="gap:14px;align-items:stretch"><div class="card"><p class="lbl mono" style="text-transform:none;letter-spacing:0">/grill-me</p><p class="small mt-s">Entrevista sin piedad para afilar un plan o un diseño. Carga <span class="mono">grilling</span>.</p></div><div class="card"><p class="lbl mono" style="text-transform:none;letter-spacing:0">/grill-with-docs</p><p class="small mt-s">La misma entrevista, y además escribe ADRs y glosario sobre la marcha. Carga <span class="mono">grilling</span> y <span class="mono">domain-modeling</span>.</p></div><div class="card"><p class="lbl mono" style="text-transform:none;letter-spacing:0">/teach</p><p class="small mt-s">Aprender un tema en varias sesiones, en un workspace de enseñanza con su propio estado. La instala <span class="mono">setup</span>; <span class="mono">agentic-qa-onboard</span> la señala.</p></div><div class="card"><p class="lbl mono" style="text-transform:none;letter-spacing:0">/wait-what</p><p class="small mt-s">Frena: el último mensaje no llegó. Lo vuelve a explicar con contexto, en inglés técnico simple y con el lenguaje del glosario.</p></div></div>
-    <div class="notes">grilling es model-invoked y por eso shift-left-testing puede cargarla; grill-me y grill-with-docs son la versión manual que una persona empieza a propósito.</div>
+    <p class="kicker">Cierre · 8 de 8</p>
+    <h2 class="h2">Mantenerlas <span class="grad">al día</span></h2>
+    <div class="grid g3 mt-s" style="gap:16px;align-items:stretch"><div class="card card-accent"><p class="lbl mono" style="text-transform:none;letter-spacing:0">bun sync</p><p class="small mt-s">Su último paso corre <span class="mono">bunx skills update &lt;names&gt; -g -y</span> para las skills que instala setup, y <span class="mono">-p</span> para las de proyecto. Nunca bloquea: un fallo es un aviso.</p></div><div class="card"><p class="lbl mono" style="text-transform:none;letter-spacing:0">Links de desarrollo</p><p class="small mt-s">Una skill instalada como symlink fuera del store del CLI se salta, porque <span class="mono">update</span> cambiaría el link por una copia.</p></div><div class="card"><p class="lbl mono" style="text-transform:none;letter-spacing:0">Para no actualizar</p><p class="small mt-s"><span class="mono">--no-skills-update</span>, o <span class="mono">UPEX_SKIP_SKILLS_UPDATE=1</span> si tu updater todavía no conoce el flag.</p></div></div>
+    <div class="card card-soft mt-m"><p class="lbl">Instalar una a mano</p><div class="mk mt-s">bunx skills add upex-galaxy/agentic-user-skills --skill &lt;name&gt; -g</div></div>
+    <div class="notes">El detalle del paso de actualización está en INSTALLER.md, en Community skills update.</div>
   </section>
 
-  <div class="deck-footer"><span class="mono">user-level skills · USER_LEVEL_SKILLS · agentic-user-skills</span><span class="slide-number" data-current="1" data-total="15"></span></div>
+  <div class="deck-footer"><span class="mono">user-level skills · portal · agentic-user-skills</span><span class="slide-number" data-current="1" data-total="8"></span></div>
 </div>
 
 <!-- keyboard-nav hint (ported from defect-management deck) -->

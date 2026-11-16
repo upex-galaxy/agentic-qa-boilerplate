@@ -28,6 +28,8 @@ them. Edit decks here only; the published site is regenerated on push.
 | `<category>/` (a name that is not a skill slug) | one deck that explains a family of skills together, when a deck per skill would repeat itself | `context-skills/` (the `*-context` skills and their maps), `tooling/` (`/acli`, `/xray-cli`, `/playwright-cli`, tool resolution) |
 | `agentic-qa-core/` | cross-cutting reference decks the foundation skill hosts (naming, skills inputs and outputs, output style) | `agentic-qa-core/naming-conventions.es.html` |
 
+`user-level-skills/` is a portal, not a deck per skill: each user-level skill ships its own `how-it-works.{es,en}.html` inside its folder in `upex-galaxy/agentic-user-skills`, and `.github/workflows/pages.yml` clones that repo on every deploy and copies those decks to `/decks/user-level-skills/<name>/`, where the portal's cards link. Edit a per-skill deck in that repo, never here.
+
 A skill covered by a category deck gets no folder of its own: its human explanation is the category deck. When a deck is retired, delete its folder and repoint every link to the deck that replaced it.
 
 ## Adding a new deck

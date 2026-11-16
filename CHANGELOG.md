@@ -16,6 +16,10 @@ below names which one it applies to:
 
 ## Unreleased — Boilerplate
 
+### Added (`bun sync` updates the community skills; the user-level skills deck becomes a portal)
+- **`bun sync` closes with `bunx skills update`** for the skills `cli/install.ts` ships: `-g` for `USER_LEVEL_SKILLS`, `-p` for `PROJECT_LEVEL_SKILLS`, only the names the skills CLI reports as installed and tracked from the same source. A skill installed as a development symlink is skipped (an update would replace the link with a copy), each project skill is backed up to `.backups/` first, and a failure is a warning that never changes the exit code. Opt out with `--no-skills-update` or `UPEX_SKIP_SKILLS_UPDATE=1`. Logic and the measured CLI behaviour: `cli/lib/user-skills-update.ts` (shared with the dev boilerplate); docs: `INSTALLER.md`, Community skills update.
+- **`packages/decks/user-level-skills/` is now a portal.** Every skill in `upex-galaxy/agentic-user-skills` ships its own `how-it-works.{es,en}.html`; `pages.yml` copies them to `/decks/user-level-skills/<name>/` on deploy and the portal links each card there. Third-party skills link to their upstream repository. `agentic-qa-onboard` points at the per-skill deck inside the installed skill folder.
+
 ### Changed (`.agents/project.yaml` is values only; the schema is the documented template)
 - **`.agents/project.yaml` carries values only** (ADR-0025). Claude Code imports it into every session
   start, and most of its 29 329 B were comments; the maintainer copy is now one sentinel line plus

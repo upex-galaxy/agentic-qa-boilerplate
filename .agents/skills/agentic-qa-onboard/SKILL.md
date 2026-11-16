@@ -74,8 +74,10 @@ Every deck has an English twin, `<name>.en.html` in the same folder (`how-it-wor
 | Branches, commits, PRs, worktrees | `git-flow-master/how-it-works.es.html` |
 | Multi-session orchestration | `orca-orchestration/how-it-works.es.html` |
 | Handing a session to a fresh one | `session-handoff/how-it-works.es.html` |
-| The user-level skills the installer adds (`mkd`, `humanizer`, `grilling`, `retro` and the rest): who calls them, what they do, what happens when one is missing | `user-level-skills/how-it-works.es.html` (English twin: `.en.html`) |
+| The user-level skills the installer adds (`mkd`, `humanizer`, `grilling`, `retro` and the rest): the portal, with what each does, who calls it and a link to its own deck | `user-level-skills/how-it-works.es.html` (English twin: `.en.html`) |
 | Evolving the boilerplate itself | `framework-development/how-it-works.es.html` |
+
+Each user-level skill from `upex-galaxy/agentic-user-skills` also ships its own deck inside its installed folder: `~/.agents/skills/<name>/how-it-works.es.html` (English twin `.en.html`; `~/.claude/skills/<name>/` when the skills CLI installed it for Claude Code alone). Offer it like any other deck, asking before opening it.
 
 ### Category decks (a family of skills)
 
