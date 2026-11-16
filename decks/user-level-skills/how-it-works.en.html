@@ -435,39 +435,39 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <section class="slide is-active" data-title="Cover">
     <p class="eyebrow" style="margin-bottom:20px">Agentic QA · Skill category</p>
     <h1 class="h1 anim-rise-in" data-anim="rise-in" style="font-size:84px;letter-spacing:-.02em"> <span class="grad">user-level</span> skills</h1>
-    <p class="lede mt-m">Ten skills that <b>setup</b> installs once in your user, and that the QA flows call when they are needed: deciding, writing, asking, diagnosing and leaving a trail.</p>
+    <p class="lede mt-m">Eleven skills that <b>setup</b> installs once in your user, and that the QA flows call when they are needed: deciding, writing, asking, diagnosing, leaving a trail and learning.</p>
     <div class="row wrap mt-l" style="gap:12px">
       <span class="chip"><span class="dot" style="background:var(--accent)"></span>List: <span class="mono" style="font-size:17px">USER_LEVEL_SKILLS</span></span>
       <span class="chip"><span class="dot" style="background:var(--good)"></span>Installer: <span class="mono" style="font-size:17px">bun setup</span></span>
       <span class="chip"><span class="dot" style="background:var(--accent-2)"></span>Source: <span class="mono" style="font-size:17px">upex-galaxy/agentic-user-skills</span></span>
     </div>
-    <div class="notes">This deck covers the ten skills from the agentic-user-skills package that the QA installer offers at user level. The other three on the list (find-skills, github-actions-docs, html-ppt) come from other packages and are not covered here.</div>
+    <div class="notes">This deck covers the eleven skills from the agentic-user-skills package that the QA installer offers at user level. The other three on the list (find-skills, github-actions-docs, html-ppt) come from other packages and are not covered here.</div>
   </section>
   <!-- 2. USER LEVEL -->
   <section class="slide compact" data-title="What user-level means">
-    <p class="kicker">The idea · 2 of 14</p>
+    <p class="kicker">The idea · 2 of 15</p>
     <h2 class="h2">Installed <span class="grad">once</span> per machine</h2>
     <div class="grid g3 mt-m" style="gap:22px;align-items:start">
       <div class="card card-accent"><p class="lbl">Once per machine</p><p class="small mt-s"><span class="mono">bun setup</span> runs <span class="mono">bunx skills add --global</span> and asks skill by skill, all pre-checked. One you uncheck is declined and not offered again. A run with no screen installs every skill not declined.</p></div>
       <div class="card"><p class="lbl">Used across repos</p><p class="small mt-s">They live in your user, not in this repository, so they are not committed and every project that calls them finds them the same way. Project-level skills, by contrast, land in <span class="mono">.agents/skills/</span>.</p></div>
-      <div class="card"><p class="lbl">Credits</p><p class="small mt-s">Six come from Matt Pocock (MIT) and three from Lauren Tan (MIT), all adapted by UPEX Galaxy. <span class="mono">mkd</span> is by UPEX Galaxy.</p></div>
+      <div class="card"><p class="lbl">Credits</p><p class="small mt-s">Seven come from Matt Pocock (MIT) and three from Lauren Tan (MIT), all adapted by UPEX Galaxy. <span class="mono">mkd</span> is by UPEX Galaxy.</p></div>
     </div>
-    <div class="card card-soft mt-m"><p class="lbl">The install rule</p><p class="small mt-s">An installed skill needs a loader or it should not be installed: a skill no flow reaches spends tokens and fails silently. So each of the ten has a loader named in the T4 table of <span class="mono">agentic-qa-onboard</span>, and <span class="mono">bun run skills:check</span> (<span class="mono">T4-LOADER</span>) fails when a row is missing.</p></div>
-    <div class="notes">When a skill is not installed, the step that would call it runs inline, says so, and never blocks. That rule holds for all ten.</div>
+    <div class="card card-soft mt-m"><p class="lbl">The install rule</p><p class="small mt-s">An installed skill needs a loader or it should not be installed: a skill no flow reaches spends tokens and fails silently. So each of the eleven has a row in the T4 table of <span class="mono">agentic-qa-onboard</span> that names its loader, or says that only a person invokes it, and <span class="mono">bun run skills:check</span> (<span class="mono">T4-LOADER</span>) fails when a row is missing.</p></div>
+    <div class="notes">When a skill is not installed, the step that would call it runs inline, says so, and never blocks. That rule holds for every skill a flow loads; <span class="mono">teach</span> is started by a person, so no flow depends on it.</div>
   </section>
   <!-- 3. MAP -->
   <section class="slide compact" data-title="Who calls whom">
-    <p class="kicker">The map · 3 of 14</p>
+    <p class="kicker">The map · 3 of 15</p>
     <h2 class="h2">Who <span class="grad">calls</span> each one</h2>
     <table class="tt tight mt-s">
       <tr><th>Skill</th><th>Called by</th><th>At which step</th></tr>
-      <tr><td style="padding:7px 14px"><b class="mono">mkd</b></td><td style="padding:7px 14px" class="small mono">decision-elicitation-doctrine §3</td><td style="padding:7px 14px" class="small">heavy decision</td></tr><tr><td style="padding:7px 14px"><b class="mono">humanizer</b></td><td style="padding:7px 14px" class="small mono">/framework-development</td><td style="padding:7px 14px" class="small">Prose</td></tr><tr><td style="padding:7px 14px"><b class="mono">writing-for-agents</b></td><td style="padding:7px 14px" class="small mono">/framework-development</td><td style="padding:7px 14px" class="small">Structure</td></tr><tr><td style="padding:7px 14px"><b class="mono">grilling</b></td><td style="padding:7px 14px" class="small mono">/shift-left-testing</td><td style="padding:7px 14px" class="small">Phase 3 · 1</td></tr><tr><td style="padding:7px 14px"><b class="mono">domain-modeling</b></td><td style="padding:7px 14px" class="small mono">/shift-left-testing</td><td style="padding:7px 14px" class="small">Phase 3 · 3</td></tr><tr><td style="padding:7px 14px"><b class="mono">to-questionnaire</b></td><td style="padding:7px 14px" class="small mono">/shift-left-testing</td><td style="padding:7px 14px" class="small">Phase 1 · 7</td></tr><tr><td style="padding:7px 14px"><b class="mono">retro</b></td><td style="padding:7px 14px" class="small mono">/framework-development, /orca-orchestration</td><td style="padding:7px 14px" class="small">Phase 4 · 2</td></tr><tr><td style="padding:7px 14px"><b class="mono">show-me-your-work</b></td><td style="padding:7px 14px" class="small mono">/orca-orchestration</td><td style="padding:7px 14px" class="small">Decision log</td></tr><tr><td style="padding:7px 14px"><b class="mono">blast-radius</b></td><td style="padding:7px 14px" class="small mono">/sprint-testing, /regression-testing</td><td style="padding:7px 14px" class="small">risk score</td></tr><tr><td style="padding:7px 14px"><b class="mono">diagnosing-bugs</b></td><td style="padding:7px 14px" class="small mono">/sprint-testing, /regression-testing</td><td style="padding:7px 14px" class="small">retest, Step 4</td></tr>
+      <tr><td style="padding:7px 14px"><b class="mono">mkd</b></td><td style="padding:7px 14px" class="small mono">decision-elicitation-doctrine §3</td><td style="padding:7px 14px" class="small">heavy decision</td></tr><tr><td style="padding:7px 14px"><b class="mono">humanizer</b></td><td style="padding:7px 14px" class="small mono">/framework-development</td><td style="padding:7px 14px" class="small">Prose</td></tr><tr><td style="padding:7px 14px"><b class="mono">writing-for-agents</b></td><td style="padding:7px 14px" class="small mono">/framework-development</td><td style="padding:7px 14px" class="small">Structure</td></tr><tr><td style="padding:7px 14px"><b class="mono">grilling</b></td><td style="padding:7px 14px" class="small mono">/shift-left-testing</td><td style="padding:7px 14px" class="small">Phase 3 · 1</td></tr><tr><td style="padding:7px 14px"><b class="mono">domain-modeling</b></td><td style="padding:7px 14px" class="small mono">/shift-left-testing</td><td style="padding:7px 14px" class="small">Phase 3 · 3</td></tr><tr><td style="padding:7px 14px"><b class="mono">to-questionnaire</b></td><td style="padding:7px 14px" class="small mono">/shift-left-testing</td><td style="padding:7px 14px" class="small">Phase 1 · 7</td></tr><tr><td style="padding:7px 14px"><b class="mono">retro</b></td><td style="padding:7px 14px" class="small mono">/framework-development, /orca-orchestration</td><td style="padding:7px 14px" class="small">Phase 4 · 2</td></tr><tr><td style="padding:7px 14px"><b class="mono">show-me-your-work</b></td><td style="padding:7px 14px" class="small mono">/orca-orchestration</td><td style="padding:7px 14px" class="small">Decision log</td></tr><tr><td style="padding:7px 14px"><b class="mono">blast-radius</b></td><td style="padding:7px 14px" class="small mono">/sprint-testing, /regression-testing</td><td style="padding:7px 14px" class="small">risk score</td></tr><tr><td style="padding:7px 14px"><b class="mono">diagnosing-bugs</b></td><td style="padding:7px 14px" class="small mono">/sprint-testing, /regression-testing</td><td style="padding:7px 14px" class="small">retest, Step 4</td></tr><tr><td style="padding:7px 14px"><b class="mono">teach</b></td><td style="padding:7px 14px" class="small mono">a person, typing /teach</td><td style="padding:7px 14px" class="small">pointed to by onboard</td></tr>
     </table>
     <div class="notes">Source: the table in the section Community skills installed at user level of agentic-qa-onboard. The full rows, with exact paths and steps, are on each skill slide.</div>
   </section>
   <!-- 4. mkd -->
   <section class="slide compact" data-title="mkd">
-    <p class="kicker">Skill 1 of 10 · 4 of 14</p>
+    <p class="kicker">Skill 1 of 11 · 4 of 15</p>
     <h2 class="h2 mono" style="font-size:44px"><span class="grad">mkd</span> <span class="pill pill-accent" style="font-size:15px;vertical-align:middle">UPEX Galaxy</span></h2>
     <div class="grid g3 mt-s" style="gap:16px;align-items:stretch">
       <div class="card card-accent"><p class="lbl">What it does</p><p class="small mt-s">Opens a browser page with a decision deck: options with their cost and value, questions and reports to react to, one screen at a time. The answer comes back as a Result JSON the agent executes as written.</p></div>
@@ -482,7 +482,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   </section>
   <!-- 5. humanizer -->
   <section class="slide compact" data-title="humanizer">
-    <p class="kicker">Skill 2 of 10 · 5 of 14</p>
+    <p class="kicker">Skill 2 of 11 · 5 of 15</p>
     <h2 class="h2 mono" style="font-size:44px"><span class="grad">humanizer</span> <span class="pill pill-accent" style="font-size:15px;vertical-align:middle">Lauren Tan, MIT</span></h2>
     <div class="grid g3 mt-s" style="gap:16px;align-items:stretch">
       <div class="card card-accent"><p class="lbl">What it does</p><p class="small mt-s">Strips machine tics from a text (em dashes, rule of three, inflated vocabulary, "not just X but Y") and keeps the meaning and the tone. Each rule has a stable number other skills cite.</p></div>
@@ -497,7 +497,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   </section>
   <!-- 6. writing-for-agents -->
   <section class="slide compact" data-title="writing-for-agents">
-    <p class="kicker">Skill 3 of 10 · 6 of 14</p>
+    <p class="kicker">Skill 3 of 11 · 6 of 15</p>
     <h2 class="h2 mono" style="font-size:44px"><span class="grad">writing-for-agents</span> <span class="pill pill-accent" style="font-size:15px;vertical-align:middle">Matt Pocock, MIT</span></h2>
     <div class="grid g3 mt-s" style="gap:16px;align-items:stretch">
       <div class="card card-accent"><p class="lbl">What it does</p><p class="small mt-s">A guide to writing documents an agent reads: context pointers, the two loads (context and cognitive) and an information hierarchy of steps and reference.</p></div>
@@ -512,7 +512,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   </section>
   <!-- 7. grilling -->
   <section class="slide compact" data-title="grilling">
-    <p class="kicker">Skill 4 of 10 · 7 of 14</p>
+    <p class="kicker">Skill 4 of 11 · 7 of 15</p>
     <h2 class="h2 mono" style="font-size:44px"><span class="grad">grilling</span> <span class="pill pill-accent" style="font-size:15px;vertical-align:middle">Matt Pocock, MIT</span></h2>
     <div class="grid g3 mt-s" style="gap:16px;align-items:stretch">
       <div class="card card-accent"><p class="lbl">What it does</p><p class="small mt-s">Interviews the user relentlessly about a plan: builds a decision tree and asks in rounds everything that can be asked now, with a recommended answer per question. It ends when the frontier is empty.</p></div>
@@ -527,7 +527,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   </section>
   <!-- 8. domain-modeling -->
   <section class="slide compact" data-title="domain-modeling">
-    <p class="kicker">Skill 5 of 10 · 8 of 14</p>
+    <p class="kicker">Skill 5 of 11 · 8 of 15</p>
     <h2 class="h2 mono" style="font-size:44px"><span class="grad">domain-modeling</span> <span class="pill pill-accent" style="font-size:15px;vertical-align:middle">Matt Pocock, MIT</span></h2>
     <div class="grid g3 mt-s" style="gap:16px;align-items:stretch">
       <div class="card card-accent"><p class="lbl">What it does</p><p class="small mt-s">Builds and sharpens the domain language: challenges fuzzy terms, invents edge cases and writes the glossary and ADRs the moment they crystallise.</p></div>
@@ -542,7 +542,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   </section>
   <!-- 9. to-questionnaire -->
   <section class="slide compact" data-title="to-questionnaire">
-    <p class="kicker">Skill 6 of 10 · 9 of 14</p>
+    <p class="kicker">Skill 6 of 11 · 9 of 15</p>
     <h2 class="h2 mono" style="font-size:44px"><span class="grad">to-questionnaire</span> <span class="pill pill-accent" style="font-size:15px;vertical-align:middle">Matt Pocock, MIT</span></h2>
     <div class="grid g3 mt-s" style="gap:16px;align-items:stretch">
       <div class="card card-accent"><p class="lbl">What it does</p><p class="small mt-s">Turns something you cannot answer alone into a Markdown questionnaire for someone else. It interviews the user only about the send (who it goes to, what is needed back) and writes <span class="mono">to-questionnaire-&lt;slug&gt;.md</span>.</p></div>
@@ -557,7 +557,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   </section>
   <!-- 10. retro -->
   <section class="slide compact" data-title="retro">
-    <p class="kicker">Skill 7 of 10 · 10 of 14</p>
+    <p class="kicker">Skill 7 of 11 · 10 of 15</p>
     <h2 class="h2 mono" style="font-size:44px"><span class="grad">retro</span> <span class="pill pill-accent" style="font-size:15px;vertical-align:middle">Matt Pocock, MIT</span></h2>
     <div class="grid g3 mt-s" style="gap:16px;align-items:stretch">
       <div class="card card-accent"><p class="lbl">What it does</p><p class="small mt-s">A retrospective on a session that proposes improvements to the agent's environment: navigation, automated checks, coding standards, global instruction file, tool economy, no-ops and information access.</p></div>
@@ -572,7 +572,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   </section>
   <!-- 11. show-me-your-work -->
   <section class="slide compact" data-title="show-me-your-work">
-    <p class="kicker">Skill 8 of 10 · 11 of 14</p>
+    <p class="kicker">Skill 8 of 11 · 11 of 15</p>
     <h2 class="h2 mono" style="font-size:44px"><span class="grad">show-me-your-work</span> <span class="pill pill-accent" style="font-size:15px;vertical-align:middle">Lauren Tan, MIT</span></h2>
     <div class="grid g3 mt-s" style="gap:16px;align-items:stretch">
       <div class="card card-accent"><p class="lbl">What it does</p><p class="small mt-s">A decision log as TSV, one row per decision: <span class="mono">ts</span>, <span class="mono">phase</span>, <span class="mono">decision</span>, <span class="mono">why</span>, <span class="mono">evidence</span>, <span class="mono">result</span>. Evidence is a pointer (SHA, <span class="mono">file:line</span>, path), never a paragraph.</p></div>
@@ -587,7 +587,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   </section>
   <!-- 12. blast-radius -->
   <section class="slide compact" data-title="blast-radius">
-    <p class="kicker">Skill 9 of 10 · 12 of 14</p>
+    <p class="kicker">Skill 9 of 11 · 12 of 15</p>
     <h2 class="h2 mono" style="font-size:44px"><span class="grad">blast-radius</span> <span class="pill pill-accent" style="font-size:15px;vertical-align:middle">Lauren Tan, MIT</span></h2>
     <div class="grid g3 mt-s" style="gap:16px;align-items:stretch">
       <div class="card card-accent"><p class="lbl">What it does</p><p class="small mt-s">Sizes what a change can break elsewhere. Listing callers is not the job: it finds the fact the change's safety depends on and proves it by running code. Each fact climbs a ladder from 1 (I said so) to 5 (reproduced in the running app).</p></div>
@@ -602,7 +602,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   </section>
   <!-- 13. diagnosing-bugs -->
   <section class="slide compact" data-title="diagnosing-bugs">
-    <p class="kicker">Skill 10 of 10 · 13 of 14</p>
+    <p class="kicker">Skill 10 of 11 · 13 of 15</p>
     <h2 class="h2 mono" style="font-size:44px"><span class="grad">diagnosing-bugs</span> <span class="pill pill-accent" style="font-size:15px;vertical-align:middle">Matt Pocock, MIT</span></h2>
     <div class="grid g3 mt-s" style="gap:16px;align-items:stretch">
       <div class="card card-accent"><p class="lbl">What it does</p><p class="small mt-s">A diagnosis loop for hard bugs: first build a feedback loop that goes red on this bug, only then bisect and test hypotheses. It redacts secrets before showing anything.</p></div>
@@ -615,19 +615,34 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     </div>
     <div class="notes">Source: the skill SKILL.md in agentic-user-skills and its row in the T4 table of agentic-qa-onboard.</div>
   </section>
-  <!-- 14. CLOSE -->
+  <!-- 14. teach -->
+  <section class="slide compact" data-title="teach">
+    <p class="kicker">Skill 11 of 11 · 14 of 15</p>
+    <h2 class="h2 mono" style="font-size:44px"><span class="grad">teach</span> <span class="pill pill-accent" style="font-size:15px;vertical-align:middle">Matt Pocock, MIT</span></h2>
+    <div class="grid g3 mt-s" style="gap:16px;align-items:stretch">
+      <div class="card card-accent"><p class="lbl">What it does</p><p class="small mt-s">A teaching workspace for learning one topic over several sessions. It keeps a mission (why you want to learn it), short HTML lessons, a record of what you learned and a glossary in the folder where it runs, and sizes each lesson to what you already know.</p></div>
+      <div class="card"><p class="lbl">When it fires</p><p class="small mt-s">Only when a person types <span class="mono">/teach</span> (<span class="mono">disable-model-invocation</span>), for a course on any topic, not a quick explanation.</p></div>
+      <div class="card"><p class="lbl">Who calls it</p><p class="small mt-s">Nobody: no flow can load it. <span class="mono">agentic-qa-onboard</span>, in its teaching mode, tells the person to type it. Its row in the T4 table says user-invoked only.</p></div>
+    </div>
+    <div class="grid g2 mt-m" style="gap:16px;align-items:stretch">
+      <div class="card card-soft"><p class="lbl" style="color:var(--warn)">If it is not installed</p><p class="small mt-s">The teaching mode of <span class="mono">agentic-qa-onboard</span> keeps explaining inside the session, and the person can install it by hand with <span class="mono">bunx skills add</span>.</p></div>
+      <div class="card card-soft"><p class="lbl" style="color:var(--good)">With nobody at the keyboard</p><p class="small mt-s">It is a conversation with a learner, so it does not run unattended.</p></div>
+    </div>
+    <div class="notes">Source: the skill SKILL.md in agentic-user-skills and its row in the T4 table of agentic-qa-onboard.</div>
+  </section>
+  <!-- 15. CLOSE -->
   <section class="slide compact" data-title="Close">
-    <p class="kicker">Close · 14 of 14</p>
+    <p class="kicker">Close · 15 of 15</p>
     <h2 class="h2">Two kinds of <span class="grad">invocation</span></h2>
     <div class="grid g2 mt-s" style="gap:18px;align-items:start">
-      <div class="card card-accent"><p class="lbl">Model-invoked</p><p class="small mt-s">The agent loads it on its own when its <span class="mono">description</span> matches the task or when a flow names it. All ten in this deck work that way. That is what lets <span class="mono">/shift-left-testing</span> or <span class="mono">/sprint-testing</span> use them without asking you.</p></div>
-      <div class="card"><p class="lbl">Manual</p><p class="small mt-s">Marked <span class="mono">disable-model-invocation: true</span>: the agent does not fire them, a person starts them. There are four in the source repo, and none is in <span class="mono">USER_LEVEL_SKILLS</span>.</p></div>
+      <div class="card card-accent"><p class="lbl">Model-invoked</p><p class="small mt-s">The agent loads it on its own when its <span class="mono">description</span> matches the task or when a flow names it. Ten of the eleven in this deck work that way. That is what lets <span class="mono">/shift-left-testing</span> or <span class="mono">/sprint-testing</span> use them without asking you.</p></div>
+      <div class="card"><p class="lbl">Manual</p><p class="small mt-s">Marked <span class="mono">disable-model-invocation: true</span>: the agent does not fire them, a person starts them. There are four in the source repo, and only <span class="mono">/teach</span> is in <span class="mono">USER_LEVEL_SKILLS</span>.</p></div>
     </div>
-    <div class="grid g2 mt-m" style="gap:14px;align-items:stretch"><div class="card"><p class="lbl mono" style="text-transform:none;letter-spacing:0">/grill-me</p><p class="small mt-s">A relentless interview to sharpen a plan or design. Loads <span class="mono">grilling</span>.</p></div><div class="card"><p class="lbl mono" style="text-transform:none;letter-spacing:0">/grill-with-docs</p><p class="small mt-s">The same interview, and it also writes ADRs and the glossary as it goes. Loads <span class="mono">grilling</span> and <span class="mono">domain-modeling</span>.</p></div><div class="card"><p class="lbl mono" style="text-transform:none;letter-spacing:0">/teach</p><p class="small mt-s">Learn a topic over several sessions in a teaching workspace that keeps its own state.</p></div><div class="card"><p class="lbl mono" style="text-transform:none;letter-spacing:0">/wait-what</p><p class="small mt-s">Stop: the last message did not land. Re-pitches it with context, in simplified technical English and with the glossary language.</p></div></div>
+    <div class="grid g2 mt-m" style="gap:14px;align-items:stretch"><div class="card"><p class="lbl mono" style="text-transform:none;letter-spacing:0">/grill-me</p><p class="small mt-s">A relentless interview to sharpen a plan or design. Loads <span class="mono">grilling</span>.</p></div><div class="card"><p class="lbl mono" style="text-transform:none;letter-spacing:0">/grill-with-docs</p><p class="small mt-s">The same interview, and it also writes ADRs and the glossary as it goes. Loads <span class="mono">grilling</span> and <span class="mono">domain-modeling</span>.</p></div><div class="card"><p class="lbl mono" style="text-transform:none;letter-spacing:0">/teach</p><p class="small mt-s">Learn a topic over several sessions in a teaching workspace that keeps its own state. Installed by <span class="mono">setup</span>; <span class="mono">agentic-qa-onboard</span> points to it.</p></div><div class="card"><p class="lbl mono" style="text-transform:none;letter-spacing:0">/wait-what</p><p class="small mt-s">Stop: the last message did not land. Re-pitches it with context, in simplified technical English and with the glossary language.</p></div></div>
     <div class="notes">grilling is model-invoked, which is why shift-left-testing can load it; grill-me and grill-with-docs are the manual version a person starts on purpose.</div>
   </section>
 
-  <div class="deck-footer"><span class="mono">user-level skills · USER_LEVEL_SKILLS · agentic-user-skills</span><span class="slide-number" data-current="1" data-total="14"></span></div>
+  <div class="deck-footer"><span class="mono">user-level skills · USER_LEVEL_SKILLS · agentic-user-skills</span><span class="slide-number" data-current="1" data-total="15"></span></div>
 </div>
 
 <!-- keyboard-nav hint (ported from defect-management deck) -->
